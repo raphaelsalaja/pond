@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { type MenuItemSpec, renderMenuSpec } from "./items";
+import { renderMenuSpec } from "./items";
+import type { MenuItemSpec } from "./items";
 
 function Part({ children }: { children?: ReactNode }) {
   return <span>{children}</span>;

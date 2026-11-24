@@ -63,7 +63,9 @@ export function BlueskySignIn({ accountId }: { accountId: string }) {
       const result = await window.pond.query("accounts.blueskySignOut", {
         accountId,
       });
-      if (!result.ok) setError(result.error);
+      if (!result.ok) {
+        setError(result.error);
+      }
       await client.invalidateQueries({ queryKey: options.queryKey });
     } catch {
       setError("Pond couldn't sign out. Try again.");

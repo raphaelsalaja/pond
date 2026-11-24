@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+// oxlint-disable-next-line import/no-namespace -- utility processes load an `electron` module without `app`, so a named import would fail to link there
 import * as electron from "electron";
 import log from "electron-log/main.js";
 import which from "which";
@@ -20,14 +21,18 @@ export const YTDLP_FILENAME =
 const FFMPEG_FILENAME = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
 
 export function userBinDir(): string {
-  if (!app) throw new Error("The managed binary folder is only known in main.");
+  if (!app) {
+    throw new Error("The managed binary folder is only known in main.");
+  }
   return join(app.getPath("userData"), "bin");
 }
 
 let cached: ResolvedBinaries | null = null;
 
 export function binariesAvailable(): ResolvedBinaries {
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   cached = { ytdlp: resolveYtDlp(), ffmpeg: resolveFfmpeg() };
   log.info("[pond binaries] resolved", {
     ytdlp: cached.ytdlp,
@@ -43,34 +48,36 @@ export function invalidateBinariesCache(): void {
 function resolveYtDlp(): string | null {
   if (app) {
     const managed = join(userBinDir(), YTDLP_FILENAME);
-    if (existsSync(managed)) return managed;
+    if (existsSync(managed)) {
+      return managed;
+    }
   }
   return lookupOnPath(YTDLP_FILENAME);
 }
 
 function resolveFfmpeg(): string | null {
   const handed = process.env[FFMPEG_PATH_ENV];
-  if (handed && existsSync(handed)) return handed;
-  const candidates: string[] = [];
+  if (handed && existsSync(handed)) {
+    return handed;
+  }
+  const candidates: Array<string> = [];
   if (app?.isPackaged) {
     candidates.push(join(process.resourcesPath, "bin", FFMPEG_FILENAME));
   }
   candidates.push(
     resolve(__dirname, "../../../node_modules/ffmpeg-static", FFMPEG_FILENAME),
-  );
-  candidates.push(
     resolve(
       process.cwd(),
       "apps/desktop/node_modules/ffmpeg-static",
       FFMPEG_FILENAME,
     ),
-  );
-  candidates.push(
     resolve(process.cwd(), "node_modules/ffmpeg-static", FFMPEG_FILENAME),
   );
 
   for (const c of candidates) {
-    if (existsSync(c)) return c;
+    if (existsSync(c)) {
+      return c;
+    }
   }
   return lookupOnPath(FFMPEG_FILENAME);
 }

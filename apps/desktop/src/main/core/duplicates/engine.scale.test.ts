@@ -1,12 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { encodeImagePrint } from "../../lib/fingerprint/image-print";
 import { matchLibrary } from "./engine";
-import {
-  type FingerprintSets,
-  type LibraryAsset,
-  type LibrarySave,
-  MAX_FANOUT,
-} from "./types";
+import { MAX_FANOUT } from "./types";
+import type { FingerprintSets, LibraryAsset, LibrarySave } from "./types";
 
 const LIBRARY = 20_000;
 const COPIES = 200;
@@ -16,36 +12,37 @@ const ICON_OWNERS = 300;
 function random(seed: number) {
   let state = seed;
   const word = () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
     return BigInt(state);
   };
   return () => (word() << 32n) | word();
 }
 
+const imageAsset = (saveId: string, sha256: string): LibraryAsset => ({
+  saveId,
+  path: `${sha256.slice(-8)}.png`,
+  kind: "image",
+  size: 1,
+  sha256,
+  media: "image",
+});
+const save = (id: string, assets: Array<LibraryAsset>): LibrarySave => ({
+  id,
+  source: "local",
+  sourceId: "",
+  url: "",
+  captureUrl: null,
+  splitSourceId: null,
+  clip: null,
+  assets,
+});
+
 function buildLibrary() {
   const next = random(11);
   const image = new Map<string, Uint8Array>();
-  const saves: LibrarySave[] = [];
+  const saves: Array<LibrarySave> = [];
   let files = 0;
 
-  const imageAsset = (saveId: string, sha256: string): LibraryAsset => ({
-    saveId,
-    path: `${sha256.slice(-8)}.png`,
-    kind: "image",
-    size: 1,
-    sha256,
-    media: "image",
-  });
-  const save = (id: string, assets: LibraryAsset[]): LibrarySave => ({
-    id,
-    source: "local",
-    sourceId: "",
-    url: "",
-    captureUrl: null,
-    splitSourceId: null,
-    clip: null,
-    assets,
-  });
   const file = (saveId: string, print = { full: next(), center: next() }) => {
     const sha256 = (files++).toString(16).padStart(64, "0");
     image.set(sha256, encodeImagePrint(print));
@@ -65,7 +62,9 @@ function buildLibrary() {
 
   for (let index = 0; index < COPIES; index++) {
     const base = saves[index * 7];
-    if (!base) throw new Error(`No save-${index * 7}`);
+    if (!base) {
+      throw new Error(`No save-${index * 7}`);
+    }
     const id = `copy-${index}`;
     saves.push(
       save(
@@ -81,8 +80,10 @@ function buildLibrary() {
       full: photo.print.full ^ 0b101n,
       center: photo.print.center ^ 0b1n,
     });
-    saves.push(save(`photo-${index}`, [photo.asset]));
-    saves.push(save(`resized-${index}`, [resized.asset]));
+    saves.push(
+      save(`photo-${index}`, [photo.asset]),
+      save(`resized-${index}`, [resized.asset]),
+    );
   }
 
   const icon = file("icon");
@@ -111,8 +112,9 @@ describe("a large Library", () => {
     const elapsed = performance.now() - started;
 
     const counts = new Map<string, number>();
-    for (const pair of pairs)
+    for (const pair of pairs) {
       counts.set(pair.relation, (counts.get(pair.relation) ?? 0) + 1);
+    }
     const fanout =
       (MAX_FANOUT * (MAX_FANOUT - 1)) / 2 + (ICON_OWNERS - MAX_FANOUT);
     expect(Object.fromEntries(counts)).toEqual({
@@ -125,7 +127,9 @@ describe("a large Library", () => {
       (group) => group.relation === "exact" || group.relation === "near",
     );
     expect(merged).toHaveLength(COPIES + RESIZES);
-    for (const group of merged) expect(group.ids).toHaveLength(2);
+    for (const group of merged) {
+      expect(group.ids).toHaveLength(2);
+    }
     expect(
       merged.some(
         (group) =>

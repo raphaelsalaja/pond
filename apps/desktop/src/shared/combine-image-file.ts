@@ -19,13 +19,15 @@ export interface CombineImageCover {
 
 /** `files[0]` can be a post card, avatar, or quoted-post card, so Post Cover picks the media or the theme-matched card. */
 export function pickCombineImageFile<T extends CombineSourceFile>(
-  files: readonly T[],
+  files: ReadonlyArray<T>,
   cover: CombineImageCover = {},
 ): T | null {
   const tweetCover = cover.tweetCover ?? "media";
   const theme = cover.theme ?? "light";
   const card = themeCard(files, theme);
-  if (tweetCover === "screenshot" && card && combinable(card)) return card;
+  if (tweetCover === "screenshot" && card && combinable(card)) {
+    return card;
+  }
 
   const media = files.find(
     (file) =>
@@ -33,7 +35,9 @@ export function pickCombineImageFile<T extends CombineSourceFile>(
       !isAuxiliaryKind(file.kind) &&
       !isPostRenderKind(file.kind),
   );
-  if (media) return media;
+  if (media) {
+    return media;
+  }
   return card && combinable(card) ? card : null;
 }
 
@@ -42,7 +46,7 @@ function combinable(file: CombineSourceFile): boolean {
 }
 
 function themeCard<T extends CombineSourceFile>(
-  files: readonly T[],
+  files: ReadonlyArray<T>,
   theme: "light" | "dark",
 ): T | null {
   const preferred =

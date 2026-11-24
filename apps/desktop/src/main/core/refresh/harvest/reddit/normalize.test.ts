@@ -10,12 +10,15 @@ function readPost(html: string) {
     `<!doctype html><html><body>${html}</body></html>`,
     { url: PAGE },
   );
-  const read = runInNewContext(`(${inPageRedditNormalize.toString()})`, {
-    document: window.document,
-    location: window.location,
-    HTMLVideoElement: window.HTMLVideoElement,
-    URL,
-  });
+  const read: typeof inPageRedditNormalize = runInNewContext(
+    `(${inPageRedditNormalize.toString()})`,
+    {
+      document: window.document,
+      location: window.location,
+      HTMLVideoElement: window.HTMLVideoElement,
+      URL,
+    },
+  );
   return read().extractPostMeta();
 }
 

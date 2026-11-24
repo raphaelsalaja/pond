@@ -12,7 +12,7 @@ interface Member {
   species: FishSpecies;
 }
 
-const OTHERS: readonly Member[] = [
+const OTHERS: ReadonlyArray<Member> = [
   { color: "gold", species: "goldfish" },
   { color: "teal", species: "puffer" },
   { color: "red", species: "clownfish" },
@@ -34,7 +34,9 @@ function useActive(count: number): number {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    if (reduced) return;
+    if (reduced) {
+      return;
+    }
     const timer = setInterval(() => setStep((s) => s + 1), STEP_MS);
     return () => clearInterval(timer);
   }, [reduced]);

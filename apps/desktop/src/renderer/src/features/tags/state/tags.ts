@@ -49,8 +49,12 @@ function setRows(rows: ReadonlyArray<TagRow>): void {
 }
 
 async function load(): Promise<ReadonlyArray<TagRow>> {
-  if (tagsStore.state.loaded) return tagsStore.state.rows;
-  if (inflight) return inflight;
+  if (tagsStore.state.loaded) {
+    return tagsStore.state.rows;
+  }
+  if (inflight) {
+    return inflight;
+  }
   inflight = (async () => {
     const rows = TagRowsSchema.parse(await window.pond.query("tags.list", {}));
     const normalised = rows.filter((r): r is TagRow => r !== null).sort(byName);
@@ -62,22 +66,33 @@ async function load(): Promise<ReadonlyArray<TagRow>> {
 }
 
 function ensureSubscribed(): void {
-  if (subscribed) return;
+  if (subscribed) {
+    return;
+  }
   subscribed = true;
   window.pond.onSyncAction((event) => {
-    if (event.modelName !== "tag") return;
-    if (!tagsStore.state.loaded) return;
+    if (event.modelName !== "tag") {
+      return;
+    }
+    if (!tagsStore.state.loaded) {
+      return;
+    }
 
     const cache = tagsStore.state.rows;
 
     if (event.action === "I") {
       const inserted = TagRowSchema.safeParse(event.data);
-      if (!inserted.success) return;
+      if (!inserted.success) {
+        return;
+      }
       const row = inserted.data;
       const idx = cache.findIndex((r) => r.id === row.id);
       const next = cache.slice();
-      if (idx >= 0) next[idx] = row;
-      else next.push(row);
+      if (idx >= 0) {
+        next[idx] = row;
+      } else {
+        next.push(row);
+      }
       next.sort(byName);
       setRows(next);
       return;
@@ -85,15 +100,21 @@ function ensureSubscribed(): void {
 
     if (event.action === "U") {
       const idx = cache.findIndex((r) => r.id === event.modelId);
-      if (idx < 0) return;
+      if (idx < 0) {
+        return;
+      }
       const existing = cache[idx];
-      if (!existing) return;
+      if (!existing) {
+        return;
+      }
       const merged = TagRowSchema.safeParse({
         ...existing,
         ...TagPatchSchema.parse(event.data),
         id: existing.id,
       });
-      if (!merged.success) return;
+      if (!merged.success) {
+        return;
+      }
       const next = cache.slice();
       next[idx] = merged.data;
       next.sort(byName);

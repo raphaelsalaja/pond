@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  type ConnectDeps,
-  connectByHandle,
-  type NewHandleAccount,
-} from "./connect";
+import { connectByHandle } from "./connect";
+import type { ConnectDeps, NewHandleAccount } from "./connect";
 
 function deps(over: Partial<ConnectDeps> = {}): ConnectDeps {
   return {

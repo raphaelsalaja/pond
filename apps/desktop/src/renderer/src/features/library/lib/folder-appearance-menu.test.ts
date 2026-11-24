@@ -17,7 +17,9 @@ let prefs: WirePrefsPatch = {
 };
 let colorResult: OkResult = { ok: true };
 const query = vi.fn(async (name: string, input: WirePrefsPatch) => {
-  if (name === "settings.getPrefs") return prefs;
+  if (name === "settings.getPrefs") {
+    return prefs;
+  }
   if (name === "settings.setPrefs") {
     prefs = {
       ...prefs,
@@ -29,12 +31,24 @@ const query = vi.fn(async (name: string, input: WirePrefsPatch) => {
     };
     return { prefs };
   }
-  if (name === "folders.setColor") return colorResult;
+  if (name === "folders.setColor") {
+    return colorResult;
+  }
   return [];
 });
-const notifications: string[] = [];
+const notifications: Array<string> = [];
+function hasTitle(detail: unknown): detail is { title: string } {
+  return (
+    typeof detail === "object" &&
+    detail !== null &&
+    "title" in detail &&
+    typeof detail.title === "string"
+  );
+}
 const onNotification = (event: Event) => {
-  if (event instanceof CustomEvent) notifications.push(event.detail.title);
+  if ("detail" in event && hasTitle(event.detail)) {
+    notifications.push(event.detail.title);
+  }
 };
 
 beforeEach(async () => {
@@ -51,30 +65,32 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function group(items: MenuItemSpec[]): MenuItemSpec[] {
+function group(items: Array<MenuItemSpec>): Array<MenuItemSpec> {
   const match = items.find((item) => item.type === "group");
   return match?.type === "group" ? match.items : [];
 }
 
-function labels(items: MenuItemSpec[]): ReactNode[] {
+function labels(items: Array<MenuItemSpec>): Array<ReactNode> {
   return items.map((item) => ("label" in item ? item.label : null));
 }
 
-function pick(items: MenuItemSpec[], label: string): void {
+function pick(items: Array<MenuItemSpec>, label: string): void {
   const match = [...items, ...group(items)].find(
     (item) => "label" in item && item.label === label,
   );
-  if (match?.type !== "checkbox") throw new Error(`Missing item: ${label}`);
+  if (match?.type !== "checkbox") {
+    throw new Error(`Missing item: ${label}`);
+  }
   match.onCheckedChange?.(true);
 }
 
-function writes(): WirePrefsPatch[] {
+function writes(): Array<WirePrefsPatch> {
   return query.mock.calls.flatMap(([name, input]) =>
     name === "settings.setPrefs" ? [input] : [],
   );
 }
 
-function recentWrites(): WirePrefsPatch["folderAppearance"][] {
+function recentWrites(): Array<WirePrefsPatch["folderAppearance"]> {
   return writes().flatMap((write) => write.folderAppearance ?? []);
 }
 

@@ -1,5 +1,6 @@
+import { DataTable } from ".";
+import type { TableColumn } from ".";
 import type { ComponentDocs } from "../shared/docs";
-import { DataTable, type TableColumn } from ".";
 
 interface Save {
   id: string;
@@ -8,7 +9,7 @@ interface Save {
   saved: string;
 }
 
-const saves: Save[] = [
+const saves: Array<Save> = [
   {
     id: "grid-systems",
     title: "Grid Systems",
@@ -24,7 +25,7 @@ const saves: Save[] = [
   },
 ];
 
-const columns: TableColumn<Save>[] = [
+const columns: Array<TableColumn<Save>> = [
   {
     id: "title",
     header: "Title",

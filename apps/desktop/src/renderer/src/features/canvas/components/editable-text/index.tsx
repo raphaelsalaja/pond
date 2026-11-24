@@ -51,12 +51,14 @@ export function EditableText({
 
   useEffect(() => {
     const element = field.current;
-    if (!editing || !element) return;
+    if (!editing || !element) {
+      return;
+    }
     element.focus();
     element.setSelectionRange(element.value.length, element.value.length);
   }, [editing]);
 
-  if (editing && rich)
+  if (editing && rich) {
     return (
       <RichNote
         id={id}
@@ -66,7 +68,8 @@ export function EditableText({
         style={style}
       />
     );
-  if (editing)
+  }
+  if (editing) {
     return (
       <Input.Textarea
         ref={field}
@@ -83,7 +86,9 @@ export function EditableText({
         onBlur={() => board.finishEditing(id)}
         onKeyDown={(event) => {
           event.stopPropagation();
-          if (event.nativeEvent.isComposing) return;
+          if (event.nativeEvent.isComposing) {
+            return;
+          }
           if (event.key === "Escape") {
             event.currentTarget.blur();
             return;
@@ -99,6 +104,7 @@ export function EditableText({
         }}
       />
     );
+  }
   return (
     <div
       className={styles.body}
@@ -143,10 +149,15 @@ function RichNote({
 
   useEffect(() => {
     const element = field.current;
-    if (!element || started.current) return;
+    if (!element || started.current) {
+      return;
+    }
     started.current = true;
-    if (isRichNote(text)) element.innerHTML = richNote(text);
-    else element.textContent = text;
+    if (isRichNote(text)) {
+      element.innerHTML = richNote(text);
+    } else {
+      element.textContent = text;
+    }
     element.focus();
   }, [text]);
 
@@ -169,7 +180,6 @@ function RichNote({
           </Button>
         ))}
       </div>
-      {/* biome-ignore lint/a11y/useSemanticElements: notes store inline HTML, which a textarea cannot hold. */}
       <div
         ref={field}
         className={styles.field}
@@ -187,7 +197,9 @@ function RichNote({
         onBlur={() => board.finishEditing(id)}
         onKeyDown={(event) => {
           event.stopPropagation();
-          if (event.key === "Escape") event.currentTarget.blur();
+          if (event.key === "Escape") {
+            event.currentTarget.blur();
+          }
         }}
       />
     </div>

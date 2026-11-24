@@ -7,7 +7,7 @@ const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 
 interface YoutubeShortPosterPlan {
   fallbackUrl: string;
-  attempts: string[];
+  attempts: Array<string>;
 }
 
 /**
@@ -26,8 +26,10 @@ export function youtubeShortPosterPlan(
   const urls = collectUrls(rawJson, fallbackUrl);
   const videoId = urls
     .map(youtubeVideoIdFromUrl)
-    .find((id): id is string => id != null);
-  if (!videoId || !isShortCandidate(urls, durationOf(rawJson))) return null;
+    .find((id): id is string => id !== null);
+  if (!videoId || !isShortCandidate(urls, durationOf(rawJson))) {
+    return null;
+  }
   const fallback =
     fallbackUrl && fallbackUrl.length > 0
       ? fallbackUrl
@@ -44,7 +46,9 @@ export function youtubeShortPosterPlan(
 }
 
 function youtubeVideoIdFromUrl(url: string | null | undefined): string | null {
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -58,23 +62,34 @@ function youtubeVideoIdFromUrl(url: string | null | undefined): string | null {
   }
   if (host === "youtube.com" || host.endsWith(".youtube.com")) {
     const fromQuery = parsed.searchParams.get("v");
-    if (fromQuery && VIDEO_ID.test(fromQuery)) return fromQuery;
+    if (fromQuery && VIDEO_ID.test(fromQuery)) {
+      return fromQuery;
+    }
     const shorts = /^\/shorts\/([A-Za-z0-9_-]{11})(?:\/|$)/.exec(
       parsed.pathname,
     );
-    if (shorts?.[1]) return shorts[1];
+    if (shorts?.[1]) {
+      return shorts[1];
+    }
   }
   if (host === "ytimg.com" || host.endsWith(".ytimg.com")) {
     const thumb = /\/vi(?:_webp)?\/([A-Za-z0-9_-]{11})\//.exec(parsed.pathname);
-    if (thumb?.[1]) return thumb[1];
+    if (thumb?.[1]) {
+      return thumb[1];
+    }
   }
   return null;
 }
 
-function isShortCandidate(urls: string[], durationSec: number | null): boolean {
-  if (urls.some(isYoutubeShortsUrl)) return true;
+function isShortCandidate(
+  urls: Array<string>,
+  durationSec: number | null,
+): boolean {
+  if (urls.some(isYoutubeShortsUrl)) {
+    return true;
+  }
   return (
-    durationSec != null &&
+    durationSec !== null &&
     durationSec > 0 &&
     durationSec <= YOUTUBE_SHORT_MAX_DURATION_SEC
   );
@@ -95,16 +110,20 @@ function isYoutubeShortsUrl(url: string): boolean {
 
 function durationOf(rawJson: RawJson | null | undefined): number | null {
   const capture = rawJson?.capture?.duration;
-  if (capture != null && Number.isFinite(capture)) return capture;
+  if (capture !== undefined && Number.isFinite(capture)) {
+    return capture;
+  }
   const downloaded = rawJson?.ytdlp?.duration;
-  if (downloaded != null && Number.isFinite(downloaded)) return downloaded;
+  if (downloaded !== undefined && Number.isFinite(downloaded)) {
+    return downloaded;
+  }
   return null;
 }
 
 function collectUrls(
   rawJson: RawJson | null | undefined,
   fallbackUrl: string | null,
-): string[] {
+): Array<string> {
   const urls = [
     fallbackUrl,
     rawJson?.capture?.url,
@@ -118,11 +137,13 @@ function collectUrls(
   return urls.filter((url): url is string => Boolean(url));
 }
 
-function dedupe(urls: string[]): string[] {
+function dedupe(urls: Array<string>): Array<string> {
   const seen = new Set<string>();
-  const out: string[] = [];
+  const out: Array<string> = [];
   for (const url of urls) {
-    if (seen.has(url)) continue;
+    if (seen.has(url)) {
+      continue;
+    }
     seen.add(url);
     out.push(url);
   }

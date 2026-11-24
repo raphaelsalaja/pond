@@ -4,12 +4,12 @@ import { z } from "zod";
 import {
   NonEmptyTextParam,
   NullableStringParam,
-  type QueryHandlerMap,
   QueryParam,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 export const savedViewsQueries = {
   async "savedViews.list"() {

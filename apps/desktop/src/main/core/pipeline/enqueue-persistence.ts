@@ -1,49 +1,45 @@
-import {
-  type NewSave,
-  type NewSyncAction,
-  type NewTask,
-  type Save,
-  type Source,
-  type SyncAction,
-  saves,
-  syncActions,
-  tasks,
+import { saves, syncActions, tasks } from "@pond/schema/db";
+import type {
+  NewSave,
+  NewSyncAction,
+  NewTask,
+  Save,
+  Source,
+  SyncAction,
 } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
-import { type InboxFields, NOT_IN_INBOX } from "@pond/schema/inbox";
+import { NOT_IN_INBOX } from "@pond/schema/inbox";
+import type { InboxFields } from "@pond/schema/inbox";
 import { listKindsEqual, mergeListKinds } from "@pond/schema/list-kinds";
 import { and, eq, inArray } from "drizzle-orm";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
-import {
-  type EnqueueCandidate,
-  type EnqueueOptions,
-  enqueueCandidateKey,
-} from "./enqueue-input";
+import { enqueueCandidateKey } from "./enqueue-input";
+import type { EnqueueCandidate, EnqueueOptions } from "./enqueue-input";
 import { createPendingTasks } from "./enqueue-scheduling";
 import { seedToInsertColumns } from "./seed";
 
 export interface EnqueueBundle {
   save: NewSave;
-  tasks: NewTask[];
+  tasks: Array<NewTask>;
   action: NewSyncAction;
 }
 
 export interface EnqueuePersistence {
   loadExistingSave(source: Source, sourceId: string): Promise<Save | undefined>;
   loadExistingCandidateKeys(
-    candidates: readonly EnqueueCandidate[],
+    candidates: ReadonlyArray<EnqueueCandidate>,
   ): Promise<Set<string>>;
   insertBundle(bundle: EnqueueBundle): SyncAction | undefined;
   insertBundles(
-    bundles: EnqueueBundle[],
+    bundles: Array<EnqueueBundle>,
     groupSize: number,
-  ): Promise<SyncAction[]>;
+  ): Promise<Array<SyncAction>>;
 }
 
-function chunk<T>(rows: T[], size: number): T[][] {
-  const groups: T[][] = [];
+function chunk<T>(rows: Array<T>, size: number): Array<Array<T>> {
+  const groups: Array<Array<T>> = [];
   for (let index = 0; index < rows.length; index += size) {
     groups.push(rows.slice(index, index + size));
   }
@@ -61,7 +57,7 @@ export async function openEnqueuePersistence(): Promise<EnqueuePersistence> {
       return existing[0];
     },
     async loadExistingCandidateKeys(candidates) {
-      const bySource = new Map<Source, EnqueueCandidate[]>();
+      const bySource = new Map<Source, Array<EnqueueCandidate>>();
       for (const candidate of candidates) {
         const group = bySource.get(candidate.source) ?? [];
         group.push(candidate);
@@ -101,7 +97,7 @@ export async function openEnqueuePersistence(): Promise<EnqueuePersistence> {
       });
     },
     async insertBundles(bundles, groupSize) {
-      const insertedActions: SyncAction[] = [];
+      const insertedActions: Array<SyncAction> = [];
       for (const group of chunk(bundles, groupSize)) {
         const groupActions = db.transaction((tx) => {
           tx.insert(saves)
@@ -117,7 +113,9 @@ export async function openEnqueuePersistence(): Promise<EnqueuePersistence> {
             .all();
         });
         insertedActions.push(...groupActions);
-        await new Promise<void>((resolve) => setImmediate(resolve));
+        await new Promise<void>((resolve) => {
+          setImmediate(resolve);
+        });
       }
       return insertedActions;
     },
@@ -130,9 +128,13 @@ export async function persistMergedListKinds(
   incoming: NonNullable<Save["listKinds"]>,
   reason: string,
 ): Promise<void> {
-  if (incoming.length === 0) return;
+  if (incoming.length === 0) {
+    return;
+  }
   const merged = mergeListKinds(current, incoming);
-  if (listKindsEqual(current, merged)) return;
+  if (listKindsEqual(current, merged)) {
+    return;
+  }
   await persistSave(saveId, { listKinds: merged }, { actorReason: reason });
 }
 

@@ -17,7 +17,9 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
     title: "First reference",
     files: [],
   });
-  if (!first) throw new Error("Invalid fixture");
+  if (!first) {
+    throw new Error("Invalid fixture");
+  }
   pool.upsert(first);
   const query = vi.fn(async (name: string) =>
     name === "settings.getPrefs"
@@ -112,7 +114,9 @@ it("dims the grid for a peek and closes on a click outside", async () => {
     title: "Peeked reference",
     files: [],
   });
-  if (!save) throw new Error("Invalid fixture");
+  if (!save) {
+    throw new Error("Invalid fixture");
+  }
   pool.upsert(save);
   vi.stubGlobal("pond", {
     query: vi.fn(async () => PrefsSchema.parse({})),

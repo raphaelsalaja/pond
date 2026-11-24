@@ -7,7 +7,7 @@ function isFieldId(value: string): value is FieldId {
 
 const FIELD_ID_LIST = Object.keys(FIELD_DESCRIPTORS).filter(isFieldId);
 
-export const FIELD_IDS: readonly FieldId[] = Object.freeze(FIELD_ID_LIST);
+export const FIELD_IDS: ReadonlyArray<FieldId> = Object.freeze(FIELD_ID_LIST);
 
 function metaFor(id: FieldId): FieldMeta {
   const d = FIELD_DESCRIPTORS[id];
@@ -17,14 +17,25 @@ function metaFor(id: FieldId): FieldMeta {
     label: d.label,
     group: d.group,
   };
-  if (d.presets) meta.presets = d.presets;
+  if (d.presets) {
+    meta.presets = d.presets;
+  }
   return meta;
 }
 
-export const FIELD_META: Readonly<Record<FieldId, FieldMeta>> = Object.freeze(
-  /** SAFETY: the keys come from FIELD_DESCRIPTORS itself, so every FieldId is present. */
-  Object.fromEntries(FIELD_ID_LIST.map((id) => [id, metaFor(id)])) as Record<
-    FieldId,
-    FieldMeta
-  >,
-);
+function isComplete(
+  meta: Partial<Record<FieldId, FieldMeta>>,
+): meta is Record<FieldId, FieldMeta> {
+  return FIELD_ID_LIST.every((id) => meta[id] !== undefined);
+}
+
+const fieldMeta: Partial<Record<FieldId, FieldMeta>> = {};
+for (const id of FIELD_ID_LIST) {
+  fieldMeta[id] = metaFor(id);
+}
+if (!isComplete(fieldMeta)) {
+  throw new Error("Field metadata is missing a field");
+}
+
+export const FIELD_META: Readonly<Record<FieldId, FieldMeta>> =
+  Object.freeze(fieldMeta);

@@ -7,7 +7,9 @@ export function addPdfRenderWindow(
   const next = new Set(current);
   const start = Math.max(1, pageNumber - overscan);
   const end = Math.min(pageCount, pageNumber + overscan);
-  for (let page = start; page <= end; page += 1) next.add(page);
+  for (let page = start; page <= end; page += 1) {
+    next.add(page);
+  }
   return next;
 }
 
@@ -46,6 +48,8 @@ export function pdfPageWidth({
     const heightBound = Math.max(160, containerHeight - 48) * pageAspectRatio;
     return Math.round(Math.min(fitWidth, heightBound));
   }
-  if (fitMode === "width") return Math.round(fitWidth);
+  if (fitMode === "width") {
+    return Math.round(fitWidth);
+  }
   return Math.round(fitWidth * clampPdfZoom(zoom));
 }

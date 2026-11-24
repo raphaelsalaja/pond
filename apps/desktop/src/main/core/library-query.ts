@@ -1,17 +1,8 @@
 import { saves } from "@pond/schema/db";
 import { buildWhere } from "@pond/schema/filters";
 import { durationProjection } from "@pond/schema/filters/fields";
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  isNotNull,
-  isNull,
-  type SQLWrapper,
-  sql,
-} from "drizzle-orm";
+import { and, asc, count, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import type { SQLWrapper } from "drizzle-orm";
 import { z } from "zod";
 import type {
   LibraryQueryPage,
@@ -80,7 +71,7 @@ function splitPostOrder(): SQLWrapper {
 
 export function libraryQueryWhere(
   request: LibraryQueryRequest,
-  hiddenFolderIds: readonly string[] = [],
+  hiddenFolderIds: ReadonlyArray<string> = [],
 ) {
   const scope = request.scope ?? {};
   return and(
@@ -124,8 +115,8 @@ const UNPINNED_RANK = 1_000_000_000;
 
 function queryOrder(
   request: LibraryQueryRequest,
-  manualOrder: readonly string[],
-  pinnedIds: readonly string[] = [],
+  manualOrder: ReadonlyArray<string>,
+  pinnedIds: ReadonlyArray<string> = [],
 ) {
   const orderKey =
     request.sortKey === "manual" ? prepareManualOrder(manualOrder) : "";
@@ -167,20 +158,21 @@ interface LibraryPageRow {
 }
 
 function assertLibrary(request: LibraryQueryRequest, libraryId: string): void {
-  if (request.libraryId && request.libraryId !== libraryId)
+  if (request.libraryId && request.libraryId !== libraryId) {
     throw new PondError(
       "library_mismatch",
       "The active Library changed. Run the search again.",
     );
+  }
 }
 
 export async function queryLibraryPage(
   db: Db,
   libraryId: string,
   request: LibraryQueryRequest,
-  manualOrder: readonly string[] = [],
-  pinnedIds: readonly string[] = [],
-  hiddenFolderIds: readonly string[] = [],
+  manualOrder: ReadonlyArray<string> = [],
+  pinnedIds: ReadonlyArray<string> = [],
+  hiddenFolderIds: ReadonlyArray<string> = [],
 ): Promise<LibraryQueryPage> {
   assertLibrary(request, libraryId);
   const { column, pinRank, signature, orderBy, unpinnedRecency } = queryOrder(
@@ -190,21 +182,26 @@ export async function queryLibraryPage(
   );
   const revision = revisionOf(db);
   const cursor = request.cursor;
-  if (cursor && cursor.libraryId !== libraryId)
+  if (cursor && cursor.libraryId !== libraryId) {
     throw new PondError(
       "library_mismatch",
       "This cursor belongs to another Library. Run the search again.",
     );
-  if (cursor && cursor.sortSignature !== signature)
+  }
+  if (cursor && cursor.sortSignature !== signature) {
     throw new PondError(
       "stale_cursor",
       "The sort order changed. Run the search again.",
     );
+  }
   const ascending = request.sortDir === "asc";
   const where = libraryQueryWhere(request, hiddenFolderIds);
   const rank = cursor?.rank ?? UNPINNED_RANK;
   const fastCursor =
-    unpinnedRecency && rank === UNPINNED_RANK && cursor?.value != null;
+    unpinnedRecency &&
+    rank === UNPINNED_RANK &&
+    cursor?.value !== null &&
+    cursor?.value !== undefined;
   const within = !cursor
     ? undefined
     : fastCursor
@@ -220,8 +217,8 @@ export async function queryLibraryPage(
       ? sql`(${pinRank} > ${rank} or (${pinRank} = ${rank} and ${within}))`
       : undefined;
   const limit = Math.min(500, Math.max(1, request.limit ?? 250));
-  const result: { total: number; rows: LibraryPageRow[] } = db.$raw.transaction(
-    () => {
+  const result: { total: number; rows: Array<LibraryPageRow> } =
+    db.$raw.transaction(() => {
       const total =
         db.select({ count: count() }).from(saves).where(where).get()?.count ??
         0;
@@ -237,8 +234,7 @@ export async function queryLibraryPage(
         .limit(limit + 1)
         .all();
       return { total, rows };
-    },
-  )();
+    })();
   const page = result.rows.slice(0, limit);
   const last = page.at(-1);
   return {
@@ -263,9 +259,9 @@ export async function queryLibraryIds(
   db: Db,
   libraryId: string,
   request: LibraryQueryRequest,
-  manualOrder: readonly string[] = [],
-  pinnedIds: readonly string[] = [],
-  hiddenFolderIds: readonly string[] = [],
+  manualOrder: ReadonlyArray<string> = [],
+  pinnedIds: ReadonlyArray<string> = [],
+  hiddenFolderIds: ReadonlyArray<string> = [],
 ) {
   assertLibrary(request, libraryId);
   const { orderBy } = queryOrder(request, manualOrder, pinnedIds);

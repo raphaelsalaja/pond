@@ -16,7 +16,8 @@ import {
   resolve,
   sep,
 } from "node:path";
-import { MEDIA_TYPES, type NewSave, SOURCES, saves } from "@pond/schema/db";
+import { MEDIA_TYPES, SOURCES, saves } from "@pond/schema/db";
+import type { NewSave } from "@pond/schema/db";
 import { IMPORT_ORIGINS } from "@pond/schema/import-origin";
 import { InboxStateSchema } from "@pond/schema/inbox";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
@@ -35,10 +36,10 @@ import { newSaveInbox } from "./inbox";
 import { runLibraryTransfer } from "./library-transfers";
 import {
   importPackageOrganization,
-  type PackageOrganization,
   PackageOrganizationSchema,
   validatePackageOrganization,
 } from "./package-organization";
+import type { PackageOrganization } from "./package-organization";
 import { readSave } from "./pipeline/workers/apply";
 import {
   copyLibraryMediaFile,
@@ -137,7 +138,11 @@ interface PackageImportRuntime {
   folders: typeof importFolderTree;
   existing: (save: PackageSave) => Promise<string | null>;
   directory: (id: string) => string;
-  commit: (id: string, save: PackageSave, folderIds: string[]) => Promise<void>;
+  commit: (
+    id: string,
+    save: PackageSave,
+    folderIds: Array<string>,
+  ) => Promise<void>;
 }
 const runtime: PackageImportRuntime = {
   organization: importPackageOrganization,
@@ -214,14 +219,17 @@ const runtime: PackageImportRuntime = {
         },
       ]);
       const inserted = await readSave(id);
-      if (inserted) await writeEnrichmentSidecar(inserted);
-      if (!(await setSaveFolders(id, folderIds)).ok)
+      if (inserted) {
+        await writeEnrichmentSidecar(inserted);
+      }
+      if (!(await setSaveFolders(id, folderIds)).ok) {
         throw new Error("Could not assign imported folders.");
+      }
     });
   },
 };
 
-async function exportPackage(ids: readonly string[], destination: string) {
+async function exportPackage(ids: ReadonlyArray<string>, destination: string) {
   const parent = await realpath(dirname(resolve(destination)));
   const staging = await mkdtemp(join(parent, ".pond-package-"));
   try {
@@ -267,23 +275,27 @@ async function readPackage(directory: string) {
     folders.size !== manifest.folders.length ||
     new Set(manifest.saves.map((save) => save.id)).size !==
       manifest.saves.length
-  )
+  ) {
     throw new Error("The package contains duplicate identities.");
+  }
   for (const folder of manifest.folders) {
     const seen = new Set<string>([folder.id]);
     let parent = folder.parentId;
     while (parent) {
-      if (seen.has(parent) || !folders.has(parent))
+      if (seen.has(parent) || !folders.has(parent)) {
         throw new Error("The package folder hierarchy is invalid.");
+      }
       seen.add(parent);
       parent = folders.get(parent)?.parentId ?? null;
     }
   }
-  if (manifest.organization)
+  if (manifest.organization) {
     validatePackageOrganization(manifest.organization, folders);
+  }
   for (const save of manifest.saves) {
-    if (save.folderIds.some((id) => !folders.has(id)))
+    if (save.folderIds.some((id) => !folders.has(id))) {
       throw new Error("The package references a missing folder.");
+    }
     const names = new Set<string>();
     for (const file of save.files) {
       const target = resolve(root, file.path);
@@ -299,8 +311,9 @@ async function readPackage(directory: string) {
           "enrichment.json",
         ].includes(key) ||
         names.has(key)
-      )
+      ) {
         throw new Error("A package original path is unsafe or duplicated.");
+      }
       names.add(key);
     }
   }
@@ -309,25 +322,30 @@ async function readPackage(directory: string) {
   for (const entry of manifest.exportedFiles) {
     checkTransferCancellation();
     const path = await realpath(resolve(root, entry.path));
-    if (!path.startsWith(`${root}${sep}`))
+    if (!path.startsWith(`${root}${sep}`)) {
       throw new Error("A package file is outside the package.");
+    }
     const save = manifest.saves.find((item) => item.id === entry.saveId);
     const file = save?.files.find((item) => item.path === entry.sourcePath);
-    if (!file) throw new Error("The package contains an unrecognized file.");
+    if (!file) {
+      throw new Error("The package contains an unrecognized file.");
+    }
     const actual = await hashFile(path);
     if (
       actual.size !== file.size ||
       (file.sha256 && actual.sha256 !== file.sha256)
-    )
+    ) {
       throw new Error("A package original is missing or damaged.");
+    }
     await transferProgress(entry.path, file.size);
     const originals = paths.get(entry.saveId) ?? new Map<string, string>();
     originals.set(entry.sourcePath, path);
     paths.set(entry.saveId, originals);
   }
   for (const save of manifest.saves) {
-    if (save.files.some((file) => !paths.get(save.id)?.has(file.path)))
+    if (save.files.some((file) => !paths.get(save.id)?.has(file.path))) {
       throw new Error("The package is missing an original.");
+    }
   }
   return { manifest, paths };
 }
@@ -340,18 +358,20 @@ async function importPackage(
   const operation = (imports.get(dependencies) ?? Promise.resolve()).then(
     async () => {
       const { manifest, paths } = await readPackage(directory);
-      if (manifest.organization && !dependencies.organization)
+      if (manifest.organization && !dependencies.organization) {
         throw new Error(
           "This destination does not support library organization transfer.",
         );
+      }
       const folderIds = await dependencies.folders(manifest.folders);
       checkTransferCancellation();
-      if (manifest.organization)
+      if (manifest.organization) {
         await dependencies.organization?.(
           manifest.organization,
           folderIds,
           new Map(),
         );
+      }
       const savedIds = new Map<string, string>();
       let imported = 0;
       let skipped = 0;
@@ -376,7 +396,9 @@ async function importPackage(
           for (const file of save.files) {
             checkTransferCancellation();
             const source = paths.get(save.id)?.get(file.path);
-            if (!source) throw new Error("A package original is missing.");
+            if (!source) {
+              throw new Error("A package original is missing.");
+            }
             const target = resolve(destination, file.path);
             await mkdir(dirname(target), { recursive: true });
             await copyLibraryMediaFile(source, target);
@@ -384,15 +406,17 @@ async function importPackage(
             if (
               copiedFile.size !== file.size ||
               (file.sha256 && copiedFile.sha256 !== file.sha256)
-            )
+            ) {
               throw new Error("A package file changed during import.");
+            }
           }
           checkTransferCancellation();
           copied = true;
-          if (save.userTitleLocked)
+          if (save.userTitleLocked) {
             writeBundleJson(join(destination, "user-title.json"), {
               locked: true,
             });
+          }
           await dependencies.commit(id, save, assigned);
           imported += 1;
           savedIds.set(save.id, id);
@@ -401,15 +425,18 @@ async function importPackage(
             save.files.reduce((total, file) => total + file.size, 0),
           );
         } finally {
-          if (!copied) await rm(destination, { recursive: true, force: true });
+          if (!copied) {
+            await rm(destination, { recursive: true, force: true });
+          }
         }
       }
-      if (manifest.organization)
+      if (manifest.organization) {
         await dependencies.organization?.(
           manifest.organization,
           folderIds,
           savedIds,
         );
+      }
       return { imported, skipped };
     },
   );
@@ -421,11 +448,16 @@ async function importPackage(
   try {
     return await operation;
   } finally {
-    if (imports.get(dependencies) === settled) imports.delete(dependencies);
+    if (imports.get(dependencies) === settled) {
+      imports.delete(dependencies);
+    }
   }
 }
 
-export function exportPondPackage(ids: readonly string[], destination: string) {
+export function exportPondPackage(
+  ids: ReadonlyArray<string>,
+  destination: string,
+) {
   return runLibraryTransfer(() => exportPackage(ids, destination));
 }
 export function importPondPackage(

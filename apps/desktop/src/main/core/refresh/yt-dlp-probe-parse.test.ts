@@ -60,7 +60,7 @@ const youtube = info({
       vcodec: "none",
       acodec: "mp4a.40.2",
       abr: 129,
-      filesize: 9_000,
+      filesize: 9000,
     },
     {
       format_id: "251",
@@ -123,7 +123,9 @@ const youtube = info({
 
 describe("toDownloadProbe", () => {
   const probe = toDownloadProbe(youtube, "https://youtu.be/abc", "youtube");
-  if (probe.kind !== "single") throw new Error("expected a single probe");
+  if (probe.kind !== "single") {
+    throw new Error("expected a single probe");
+  }
 
   it("reads the basics", () => {
     expect(probe.title).toBe("A talk");
@@ -197,7 +199,9 @@ describe("toDownloadProbe playlists", () => {
       "youtube",
     );
     expect(probe.kind).toBe("playlist");
-    if (probe.kind !== "playlist") return;
+    if (probe.kind !== "playlist") {
+      return;
+    }
     expect(probe.site).toBe("youtube.com");
     expect(probe.entries).toEqual([
       {
@@ -260,7 +264,9 @@ describe("formats without codec names", () => {
       "https://archive.org/details/BigBuckBunny_124",
       "web",
     );
-    if (probe.kind !== "single") throw new Error("expected a single probe");
+    if (probe.kind !== "single") {
+      throw new Error("expected a single probe");
+    }
     expect(probe.videoOptions.map((option) => option.height)).toEqual([
       720, 360,
     ]);
@@ -277,17 +283,19 @@ describe("formats without codec names", () => {
   });
 });
 
-describe("preview streams", () => {
-  const single = (formats: ProbeFixture["formats"]) => {
-    const probe = toDownloadProbe(
-      info({ _type: "video", duration: 10, formats }),
-      "https://example.com/v",
-      "web",
-    );
-    if (probe.kind !== "single") throw new Error("expected a single probe");
-    return probe.preview;
-  };
+function single(formats: ProbeFixture["formats"]) {
+  const probe = toDownloadProbe(
+    info({ _type: "video", duration: 10, formats }),
+    "https://example.com/v",
+    "web",
+  );
+  if (probe.kind !== "single") {
+    throw new Error("expected a single probe");
+  }
+  return probe.preview;
+}
 
+describe("preview streams", () => {
   it("picks the sharpest stream up to 720p", () => {
     expect(
       single([

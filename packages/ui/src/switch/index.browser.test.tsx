@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { userEvent } from "vitest/browser";
 import { Switch } from ".";
 
 describe("Switch keyboard", () => {

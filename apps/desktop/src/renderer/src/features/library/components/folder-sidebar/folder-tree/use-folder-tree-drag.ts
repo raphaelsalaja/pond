@@ -1,11 +1,10 @@
 import {
-  type DragEndEvent,
-  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { Folder } from "@pond/schema/db";
 import { useEffect, useRef, useState } from "react";
@@ -13,11 +12,13 @@ import { SIDEBAR_SORTABLE_KEYBOARD_CODES } from "@/shared/lib/dnd-kit";
 import { createDragHaptics } from "@/shared/lib/haptics";
 import {
   FOLDER_ROOT_DROP_ID,
-  type FolderDropRow,
-  type FolderDropTarget,
-  type FolderNestDwell,
   pickFolderDropZone,
   resolveFolderDropTarget,
+} from "../folder-drop";
+import type {
+  FolderDropRow,
+  FolderDropTarget,
+  FolderNestDwell,
 } from "../folder-drop";
 import type {
   FolderDropState,
@@ -40,8 +41,8 @@ const KEYBOARD_SENSOR_OPTIONS = {
 
 interface UseFolderTreeDragInput {
   drag: ReturnType<typeof useFolderDragDrop>;
-  folderRows: Folder[];
-  visibleRows: readonly FolderDropRow[];
+  folderRows: Array<Folder>;
+  visibleRows: ReadonlyArray<FolderDropRow>;
 }
 
 export function useFolderTreeDrag({
@@ -93,9 +94,13 @@ export function useFolderTreeDrag({
 
   function scheduleArm(armsIn: number | undefined): void {
     window.clearTimeout(armTimer.current);
-    if (armsIn === undefined) return;
+    if (armsIn === undefined) {
+      return;
+    }
     armTimer.current = window.setTimeout(() => {
-      if (latest.current) preview(latest.current);
+      if (latest.current) {
+        preview(latest.current);
+      }
     }, armsIn);
   }
 
@@ -120,6 +125,7 @@ export function useFolderTreeDrag({
       id,
       offsetY: dndFolderDropOffset(active, over, pointerY.current),
       height: over.rect.height,
+      // oxlint-disable-next-line react/purity -- resolve only runs from dnd-kit drag callbacks and the arm timer, never during render.
       now: performance.now(),
       dwell: dwell.current,
     });
@@ -165,7 +171,9 @@ export function useFolderTreeDrag({
     reset();
     drop.current = target;
     haptics.drop(target !== null);
-    if (!target) return;
+    if (!target) {
+      return;
+    }
     setMovingFolderId(id);
     void drag.moveFolder(id, target).finally(() => setMovingFolderId(null));
   }
@@ -178,6 +186,7 @@ export function useFolderTreeDrag({
 
   return {
     activeFolderId,
+    // oxlint-disable-next-line react/refs -- The announcements read the ref only when dnd-kit announces a drag, never during render.
     announcements: folderDndAnnouncements(folderRows, drop),
     keyboardDrag,
     movingFolderId,

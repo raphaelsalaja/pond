@@ -5,21 +5,20 @@ import {
   agentModelOptionsKey,
   runControlsForOptions,
 } from "@shared/agent-model-options";
-import {
-  ASSISTANT_MODELS,
-  type AssistantActivity,
-  type AssistantProvider,
-  type AssistantSource,
+import { ASSISTANT_MODELS } from "@shared/assistant";
+import type {
+  AssistantActivity,
+  AssistantProvider,
+  AssistantSource,
 } from "@shared/assistant";
-import { DEFAULT_FISH_NAME, type FishColor } from "@shared/fish-contracts";
+import { DEFAULT_FISH_NAME } from "@shared/fish-contracts";
+import type { FishColor } from "@shared/fish-contracts";
 import { chosenModelId } from "@shared/provider-models";
 import { MotionConfig, useReducedMotion } from "motion/react";
-import { Fragment, type ReactNode, useEffect, useRef } from "react";
-import {
-  type AssistantState,
-  assistant,
-  useAssistant,
-} from "@/features/agent/state/assistant";
+import { Fragment, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { assistant, useAssistant } from "@/features/agent/state/assistant";
+import type { AssistantState } from "@/features/agent/state/assistant";
 import { pondChatSession } from "@/features/agent/state/pond-chat";
 import { fromUIMessage } from "@/features/agent/state/pond-messages";
 import {
@@ -40,8 +39,8 @@ import { ChatEvent } from "./chat-event";
 import { routineEventText } from "./chat-event/events";
 import { ComposeArea } from "./compose-area";
 import { RoutineEvents } from "./routine-events";
-import styles from "./styles.module.css";
 import { timeBreaks, timeLabel, turnMarks } from "./timeline";
+import styles from "./styles.module.css";
 
 export { AgentMessage } from "./agent-message";
 
@@ -50,6 +49,21 @@ interface AgentPersona {
   icon: ReactNode;
   color?: FishColor;
   avatar?: (activity: AssistantActivity) => ReactNode;
+}
+
+/** Rolls over at midnight so Today and Yesterday labels stay true while the pane stays open. */
+function useToday(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    const timer = setTimeout(
+      () => setNow(new Date()),
+      midnight.getTime() - Date.now(),
+    );
+    return () => clearTimeout(timer);
+  }, [now]);
+  return now;
 }
 
 function AgentPaneContent({
@@ -77,18 +91,30 @@ function AgentPaneContent({
   const running =
     status === "submitted" || status === "streaming" || state.busy;
   /** Only messages that first render mid-run pop in, so loaded history and post-run rehydration stay still. */
-  const entering = useRef(new Map<string, boolean>());
-  for (const message of messages) {
-    if (!entering.current.has(message.id))
-      entering.current.set(message.id, running);
+  const [entering, setEntering] = useState<ReadonlyMap<string, boolean>>(
+    () => new Map(),
+  );
+  const unseen = messages.filter((message) => !entering.has(message.id));
+  if (unseen.length) {
+    const next = new Map(entering);
+    for (const message of unseen) {
+      next.set(message.id, running);
+    }
+    setEntering(next);
   }
   const referenceMessage = state.messages.find(
     (message) => message.id === state.referenceMessageId,
   );
   const referenceSources = referenceMessage?.metadata?.sources;
-  const retainedReferenceSources = useRef<AssistantSource[]>([]);
-  if (referenceSources?.length)
-    retainedReferenceSources.current = referenceSources;
+  const [retainedReferenceSources, setRetainedReferenceSources] = useState<
+    Array<AssistantSource>
+  >([]);
+  if (
+    referenceSources?.length &&
+    referenceSources !== retainedReferenceSources
+  ) {
+    setRetainedReferenceSources(referenceSources);
+  }
   const attachedIds = state.attachments.map((source) => source.id);
   const lastAssistantId = [...messages]
     .reverse()
@@ -101,7 +127,9 @@ function AgentPaneContent({
     ? fromUIMessage(lastResponse, state.chatId ?? "pending").metadata
     : undefined;
   const reviews = messages.flatMap((message) => {
-    if (message.role !== "assistant") return [];
+    if (message.role !== "assistant") {
+      return [];
+    }
     const changes = fromUIMessage(message, state.chatId ?? "pending").metadata
       ?.changes;
     return changes?.length ? [{ messageId: message.id, changes }] : [];
@@ -125,21 +153,25 @@ function AgentPaneContent({
   const breaks = timeBreaks(
     messages.map((message) => createdAt.get(message.id)),
   );
-  const now = new Date();
+  const now = useToday();
   const marks = turnMarks(messages, state.chatId ?? "pending", persona.name);
 
   function focus() {
     input.current?.focus();
   }
   useEffect(() => {
-    if (state.focusRequest) requestAnimationFrame(() => input.current?.focus());
+    if (state.focusRequest) {
+      requestAnimationFrame(() => input.current?.focus());
+    }
   }, [state.focusRequest]);
-  function attach(sources: AssistantSource[]) {
+  function attach(sources: Array<AssistantSource>) {
     assistant.attach(sources);
     requestAnimationFrame(focus);
   }
   function submit(content = state.draft) {
-    if (!provider || running) return;
+    if (!provider || running) {
+      return;
+    }
     assistant.setDraft(content);
     void assistant.send(provider, {
       modelId,
@@ -147,7 +179,9 @@ function AgentPaneContent({
     });
   }
   function queue(content: string) {
-    if (!provider) return;
+    if (!provider) {
+      return;
+    }
     assistant.setDraft(content);
     void assistant.queue(provider, {
       modelId,
@@ -155,14 +189,18 @@ function AgentPaneContent({
     });
   }
   function regenerate() {
-    if (!provider || running) return;
+    if (!provider || running) {
+      return;
+    }
     void assistant.regenerate(provider, {
       modelId,
       controls: runControlsForOptions(modelOptions),
     });
   }
   async function answerQuestion(messageId: string, answer: string) {
-    if (!provider || running) return;
+    if (!provider || running) {
+      return;
+    }
     await assistant.answerQuestion(messageId, answer, provider, {
       modelId,
       controls: runControlsForOptions(modelOptions),
@@ -204,7 +242,7 @@ function AgentPaneContent({
                 lastError={lastMetadata?.error}
                 requiredAction={requiredAction}
                 referencesOpen={Boolean(referenceSources?.length)}
-                referenceSources={retainedReferenceSources.current}
+                referenceSources={retainedReferenceSources}
                 attachedIds={attachedIds}
                 inputRef={input}
                 focus={focus}
@@ -225,7 +263,7 @@ function AgentPaneContent({
                   {timeLabel(at, now)}
                 </time>
               ) : null;
-              if (message.role === "user" && metadata?.routine)
+              if (message.role === "user" && metadata?.routine) {
                 return (
                   <Fragment key={message.id}>
                     {stamp}
@@ -237,6 +275,7 @@ function AgentPaneContent({
                     </ChatEvent>
                   </Fragment>
                 );
+              }
               return (
                 <Fragment key={message.id}>
                   {stamp}
@@ -263,7 +302,7 @@ function AgentPaneContent({
                         message.role === "assistant" &&
                         message.id === messages.at(-1)?.id
                       }
-                      entering={entering.current.get(message.id) ?? false}
+                      entering={entering.get(message.id) ?? false}
                       latest={message.id === lastAssistantId}
                       onAnswer={answerQuestion}
                       onRegenerate={
@@ -345,26 +384,34 @@ export function AgentPane() {
       modelOptions={modelOptions}
       patchModel={(next) => {
         if (fish && fishModel) {
-          void fishStore.update(fish.id, { model: next }).catch((error) =>
-            notify({
-              id: "fish-model",
-              title: `Couldn't change ${fish.name}'s model`,
-              description: errorCopy(error, "Try again."),
-            }),
-          );
+          void fishStore
+            .update(fish.id, { model: next })
+            .catch((cause: unknown) =>
+              notify({
+                id: "fish-model",
+                title: `Couldn't change ${fish.name}'s model`,
+                description: errorCopy(cause, "Try again."),
+              }),
+            );
           return;
         }
         const update: Partial<typeof prefs> = {
           languageModel: next.provider,
           modelIds: { ...prefs.modelIds, [next.provider]: next.modelId },
         };
-        if (next.provider === "ollama") update.ollamaModelId = next.modelId;
-        if (next.provider === "lmstudio") update.lmstudioModelId = next.modelId;
-        patchPrefs(update);
+        if (next.provider === "ollama") {
+          update.ollamaModelId = next.modelId;
+        }
+        if (next.provider === "lmstudio") {
+          update.lmstudioModelId = next.modelId;
+        }
+        void patchPrefs(update);
       }}
       patchModelOptions={(next) => {
-        if (!provider || !modelId) return;
-        patchPrefs({
+        if (!provider || !modelId) {
+          return;
+        }
+        void patchPrefs({
           modelOptions: {
             ...prefs.modelOptions,
             [agentModelOptionsKey(provider, modelId)]: next,

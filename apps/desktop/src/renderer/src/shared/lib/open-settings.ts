@@ -1,5 +1,5 @@
 import { SETTINGS_SECTIONS } from "@pond/schema";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 
 const VALID_PATHS = new Set(SETTINGS_SECTIONS.map((section) => section.path));
 
@@ -39,5 +39,5 @@ export function settingsHref(section?: string, hash?: string): string {
 }
 
 export function openSettings(section?: string, hash?: string): void {
-  getAppRouter()?.history.push(settingsHref(section, hash));
+  getAppHistory()?.push(settingsHref(section, hash));
 }

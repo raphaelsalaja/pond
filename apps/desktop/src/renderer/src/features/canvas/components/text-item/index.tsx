@@ -1,4 +1,5 @@
-import { type NodeProps, NodeResizer } from "@xyflow/react";
+import { NodeResizer } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
 import type { TextNode } from "../../lib/document";
 import { MIN_SIZE } from "../../lib/transform";
 import { useBoard } from "../board/context";

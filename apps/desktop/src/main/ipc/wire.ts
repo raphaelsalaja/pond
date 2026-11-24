@@ -20,7 +20,7 @@ interface WireSaveOptions {
 
 export function toWireSave(
   row: WireSaveRow,
-  taskRows?: Task[],
+  taskRows?: Array<Task>,
   opts?: WireSaveOptions,
 ): WireSave {
   const wire: WireSave = {
@@ -34,15 +34,17 @@ export function toWireSave(
     ingestStartedAt: toMs(row.ingestStartedAt),
     ingestCompletedAt: toMs(row.ingestCompletedAt),
   };
-  if (taskRows) wire.tasks = taskRows.map(toWireTask);
+  if (taskRows) {
+    wire.tasks = taskRows.map(toWireTask);
+  }
   return wire;
 }
 
 export function toWireSaves(
-  rows: WireSaveRow[],
-  tasksBySave?: Map<string, Task[]>,
+  rows: Array<WireSaveRow>,
+  tasksBySave?: Map<string, Array<Task>>,
   opts?: WireSaveOptions,
-): WireSave[] {
+): Array<WireSave> {
   return rows.map((row) => toWireSave(row, tasksBySave?.get(row.id), opts));
 }
 
@@ -64,8 +66,14 @@ function toWireTask(task: Task): WireTask {
   };
 }
 
+function isObject(value: unknown): value is object {
+  return (
+    (typeof value === "object" && value !== null) || typeof value === "function"
+  );
+}
+
 const WireRowSchema = z.custom<WireRow>(
-  (value) => value instanceof Object && !Array.isArray(value),
+  (value) => isObject(value) && !Array.isArray(value),
 );
 const WirePayloadSchema = z
   .union([z.array(WireRowSchema), WireRowSchema])
@@ -90,15 +98,17 @@ const TIMESTAMP_KEYS = [
 
 function normaliseDataPayload(value: SyncAction["data"]): WireSyncPayload {
   const payload = WirePayloadSchema.parse(value);
-  if (payload === null) return null;
+  if (payload === null) {
+    return null;
+  }
   return Array.isArray(payload)
     ? payload.map(normaliseRow)
     : normaliseRow(payload);
 }
 
 function normaliseRow(row: WireRow): WireRow {
-  const stamped = TIMESTAMP_KEYS.filter((key) => key in row).map(
-    (key) => [key, toMs(row[key])] as const,
+  const stamped = TIMESTAMP_KEYS.flatMap((key) =>
+    key in row ? [[key, toMs(row[key])] as const] : [],
   );
   return { ...row, ...Object.fromEntries(stamped) };
 }

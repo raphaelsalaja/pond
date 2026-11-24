@@ -24,7 +24,9 @@ export function canonicalCaptureUrl(url: string): string {
     const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
     if (host === "instagram.com") {
       const shortcode = /^\/(?:p|reels?|tv)\/([^/]+)/.exec(parsed.pathname);
-      if (shortcode?.[1]) return `instagram.com/p/${shortcode[1]}`;
+      if (shortcode?.[1]) {
+        return `instagram.com/p/${shortcode[1]}`;
+      }
     }
     return `${host}${parsed.pathname.replace(/\/+$/, "")}`;
   } catch {
@@ -40,9 +42,14 @@ export function capture(
   const intent = /:(?:like|upvote)$/.test(trigger) ? "like" : "save";
   const key = `${intent} ${canonicalCaptureUrl(url)}`;
   const previous = recentCaptures.get(key);
-  if (previous !== undefined && now - previous < CAPTURE_DEDUPE_MS) return;
-  for (const [entry, at] of recentCaptures)
-    if (now - at >= CAPTURE_DEDUPE_MS) recentCaptures.delete(entry);
+  if (previous !== undefined && now - previous < CAPTURE_DEDUPE_MS) {
+    return;
+  }
+  for (const [entry, at] of recentCaptures) {
+    if (now - at >= CAPTURE_DEDUPE_MS) {
+      recentCaptures.delete(entry);
+    }
+  }
   recentCaptures.set(key, now);
   emit({ kind: "capture", payload: { url, trigger } });
 }
@@ -58,7 +65,7 @@ export function log(
 export interface RequestLens {
   readonly url: string;
   readonly method: string;
-  getHeader(name: string): string | null;
+  getHeader: (name: string) => string | null;
   readBody(): Promise<string | null>;
 }
 
@@ -76,7 +83,7 @@ interface SourceInterceptor {
 }
 
 interface Registry {
-  handlers: SourceInterceptor[];
+  handlers: Array<SourceInterceptor>;
   ids: Set<string>;
   patchedFetch: boolean;
   patchedXhr: boolean;
@@ -94,7 +101,9 @@ declare global {
 
 function registry(): Registry {
   const existing = window[REGISTRY_KEY];
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   const created: Registry = {
     handlers: [],
     ids: new Set<string>(),
@@ -109,17 +118,29 @@ function registry(): Registry {
 function once<T>(fn: () => Promise<T>): () => Promise<T> {
   let cached: Promise<T> | undefined;
   return () => {
-    if (!cached) cached = fn();
+    if (!cached) {
+      cached = fn();
+    }
     return cached;
   };
+}
+
+function isHeaders(value: HeadersInit): value is Headers {
+  return Object.prototype.toString.call(value) === "[object Headers]";
+}
+
+function isRequest(value: RequestInfo | URL): value is Request {
+  return Object.prototype.toString.call(value) === "[object Request]";
 }
 
 function normalizeHeaders(
   source: HeadersInit | Headers | null | undefined,
 ): Map<string, string> {
   const out = new Map<string, string>();
-  if (!source) return out;
-  if ("Headers" in globalThis && source instanceof Headers) {
+  if (!source) {
+    return out;
+  }
+  if (isHeaders(source)) {
     source.forEach((value, key) => {
       out.set(key.toLowerCase(), value);
     });
@@ -141,60 +162,93 @@ function normalizeHeaders(
 
 type InterceptedBody = Document | BodyInit | null | undefined;
 
+function isURLSearchParams(value: InterceptedBody): value is URLSearchParams {
+  return Object.prototype.toString.call(value) === "[object URLSearchParams]";
+}
+
+function isFormData(value: InterceptedBody): value is FormData {
+  return Object.prototype.toString.call(value) === "[object FormData]";
+}
+
+/** A File tags itself `[object File]` but is still a Blob body. */
+function isBlob(value: InterceptedBody): value is Blob {
+  const tag = Object.prototype.toString.call(value);
+  return tag === "[object Blob]" || tag === "[object File]";
+}
+
+function isArrayBuffer(value: InterceptedBody): value is ArrayBuffer {
+  return Object.prototype.toString.call(value) === "[object ArrayBuffer]";
+}
+
+function isFile(value: FormDataEntryValue): value is File {
+  return typeof value !== "string";
+}
+
 async function bodyToText(body: InterceptedBody): Promise<string | null> {
-  if (body == null) return null;
+  if (body === null || body === undefined) {
+    return null;
+  }
   const text = safeParse(TextValue, body);
-  if (text.success) return text.data;
-  if (body instanceof URLSearchParams) return body.toString();
-  if ("FormData" in globalThis && body instanceof FormData) {
+  if (text.success) {
+    return text.data;
+  }
+  if (isURLSearchParams(body)) {
+    return body.toString();
+  }
+  if (isFormData(body)) {
     const params = new URLSearchParams();
     body.forEach((value, key) => {
-      params.append(key, value instanceof File ? "[file]" : value);
+      params.append(key, isFile(value) ? "[file]" : value);
     });
     return params.toString();
   }
-  if ("Blob" in globalThis && body instanceof Blob) {
+  if (isBlob(body)) {
     try {
       return await body.text();
     } catch {
       return null;
     }
   }
-  if (body instanceof ArrayBuffer) return new TextDecoder().decode(body);
-  if (ArrayBuffer.isView(body)) return new TextDecoder().decode(body);
+  if (isArrayBuffer(body)) {
+    return new TextDecoder().decode(body);
+  }
+  if (ArrayBuffer.isView(body)) {
+    return new TextDecoder().decode(body);
+  }
   return null;
 }
 
 function safeMatch(handler: SourceInterceptor, req: RequestLens): boolean {
   try {
     return handler.match(req);
-  } catch (err) {
-    log("warn", `${handler.id} match error`, String(err));
+  } catch (error) {
+    log("warn", `${handler.id} match error`, String(error));
     return false;
   }
 }
 
 function dispatch(
-  matched: SourceInterceptor[],
+  matched: Array<SourceInterceptor>,
   req: RequestLens,
   res: ResponseLens,
 ): void {
   for (const handler of matched) {
     try {
-      const result = handler.onResponse(req, res);
-      if (result instanceof Promise) {
-        result.catch((err) =>
-          log("warn", `${handler.id} hook error`, String(err)),
-        );
-      }
-    } catch (err) {
-      log("warn", `${handler.id} hook error`, String(err));
+      void Promise.resolve(handler.onResponse(req, res)).catch(
+        (cause: unknown) => {
+          log("warn", `${handler.id} hook error`, String(cause));
+        },
+      );
+    } catch (error) {
+      log("warn", `${handler.id} hook error`, String(error));
     }
   }
 }
 
 function patchFetch(reg: Registry): void {
-  if (reg.patchedFetch) return;
+  if (reg.patchedFetch) {
+    return;
+  }
   reg.patchedFetch = true;
   const origFetch = window.fetch;
 
@@ -203,21 +257,24 @@ function patchFetch(reg: Registry): void {
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> {
-    const request =
-      "Request" in globalThis && input instanceof Request ? input : null;
+    const request = isRequest(input) ? input : null;
     const url = request ? request.url : String(input);
     const method = String(
       init?.method ?? request?.method ?? "GET",
     ).toUpperCase();
     const headers = normalizeHeaders(init?.headers ?? request?.headers);
 
-    let matched: SourceInterceptor[] = [];
+    let matched: Array<SourceInterceptor> = [];
     let req: RequestLens | null = null;
     if (reg.handlers.length > 0) {
       const requestClone =
-        request && init?.body == null ? request.clone() : null;
+        request && (init?.body === null || init?.body === undefined)
+          ? request.clone()
+          : null;
       const readBody = once(async () => {
-        if (init?.body != null) return bodyToText(init.body);
+        if (init?.body !== null && init?.body !== undefined) {
+          return bodyToText(init.body);
+        }
         if (requestClone) {
           try {
             return await requestClone.text();
@@ -238,7 +295,9 @@ function patchFetch(reg: Registry): void {
     }
 
     const promise = origFetch.call(this, input, init);
-    if (matched.length === 0 || !req) return promise;
+    if (matched.length === 0 || !req) {
+      return promise;
+    }
 
     const activeReq = req;
     const activeMatched = matched;
@@ -252,7 +311,9 @@ function patchFetch(reg: Registry): void {
           }
         })();
         const readText = once(async () => {
-          if (!clone) return null;
+          if (!clone) {
+            return null;
+          }
           try {
             return await clone.text();
           } catch {
@@ -284,19 +345,25 @@ type XhrOpenRest = [
   password?: string | null,
 ];
 
+type XhrOpen = (
+  this: XMLHttpRequest,
+  method: string,
+  url: string | URL,
+  ...rest: XhrOpenRest
+) => void;
+
 function patchXhr(reg: Registry): void {
-  if (reg.patchedXhr) return;
+  if (reg.patchedXhr) {
+    return;
+  }
   reg.patchedXhr = true;
 
   const proto = XMLHttpRequest.prototype;
-  const origOpen: (
-    this: XMLHttpRequest,
-    method: string,
-    url: string | URL,
-    ...rest: XhrOpenRest
-  ) => void = proto.open;
+  /* oxlint-disable typescript/unbound-method -- The originals are re-invoked with `.call(this, …)` on each request. */
+  const origOpen: XhrOpen = proto.open;
   const origSend = proto.send;
   const origSetHeader = proto.setRequestHeader;
+  /* oxlint-enable typescript/unbound-method */
   const states = new WeakMap<XMLHttpRequest, XhrState>();
 
   proto.open = function patchedOpen(
@@ -323,7 +390,9 @@ function patchXhr(reg: Registry): void {
     if (state) {
       try {
         state.headers.set(String(name).toLowerCase(), String(value));
-      } catch {}
+      } catch {
+        /** Header bookkeeping must never break the page's own request. */
+      }
     }
     return origSetHeader.call(this, name, value);
   };
@@ -367,24 +436,30 @@ function patchXhr(reg: Registry): void {
 }
 
 function patchBeacon(reg: Registry): void {
-  if (reg.patchedBeacon) return;
-  if (!globalThis.navigator?.sendBeacon) return;
+  if (reg.patchedBeacon) {
+    return;
+  }
+  if (!globalThis.navigator?.sendBeacon) {
+    return;
+  }
   reg.patchedBeacon = true;
   const origBeacon = navigator.sendBeacon.bind(navigator);
 
   navigator.sendBeacon = (url: string | URL, data?: BodyInit | null) => {
     const result = origBeacon(url, data);
-    const beaconHandlers = reg.handlers.filter((h) => h.onBeacon);
+    const beaconHandlers = reg.handlers.filter((h) => h.onBeacon !== undefined);
     if (beaconHandlers.length > 0) {
       const beaconUrl = String(url);
       void bodyToText(data).then((body) => {
         for (const handler of beaconHandlers) {
           try {
             void Promise.resolve(handler.onBeacon?.(beaconUrl, body)).catch(
-              (err) => log("warn", `${handler.id} beacon error`, String(err)),
+              (cause: unknown) => {
+                log("warn", `${handler.id} beacon error`, String(cause));
+              },
             );
-          } catch (err) {
-            log("warn", `${handler.id} beacon error`, String(err));
+          } catch (error) {
+            log("warn", `${handler.id} beacon error`, String(error));
           }
         }
       });
@@ -395,11 +470,15 @@ function patchBeacon(reg: Registry): void {
 
 export function installInterceptor(def: SourceInterceptor): void {
   const reg = registry();
-  if (reg.ids.has(def.id)) return;
+  if (reg.ids.has(def.id)) {
+    return;
+  }
   reg.ids.add(def.id);
   reg.handlers.push(def);
   patchFetch(reg);
   patchXhr(reg);
-  if (def.onBeacon) patchBeacon(reg);
+  if (def.onBeacon) {
+    patchBeacon(reg);
+  }
   log("info", `${def.id} inject ready`);
 }

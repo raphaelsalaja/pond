@@ -5,7 +5,7 @@ import styles from "./styles.module.css";
 
 interface SpeedSelectProps {
   className?: string;
-  options?: readonly number[];
+  options?: ReadonlyArray<number>;
 }
 
 export function SpeedSelect({

@@ -16,7 +16,8 @@ import {
 } from "@pond/icons";
 import { stepPlaybackRate } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerSaveNav } from "@/features/saves/components/viewers/viewer-save-nav";
@@ -93,10 +94,14 @@ function Hud({
   });
   const [openedMode] = useState(mode);
   const [switched, setSwitched] = useState(false);
-  if (!switched && mode !== openedMode) setSwitched(true);
+  if (!switched && mode !== openedMode) {
+    setSwitched(true);
+  }
 
-  if (!active) return null;
-  if (mode === "crop" && edits === "full")
+  if (!active) {
+    return null;
+  }
+  if (mode === "crop" && edits === "full") {
     return (
       <ChromePortal slot="top">
         <ViewerHud.Bar
@@ -137,6 +142,7 @@ function Hud({
         />
       </ChromePortal>
     );
+  }
 
   return (
     <ChromePortal slot="top">
@@ -268,7 +274,9 @@ function Gif({ active, gif, mode }: GifProps) {
     hotkeys,
   );
 
-  if (!active || !gif.ready || mode !== "view") return null;
+  if (!active || !gif.ready || mode !== "view") {
+    return null;
+  }
   const loopStart = clampGifFrame(gif.loop?.[0] ?? 0, gif.frameCount, gif.loop);
   const loopEnd = clampGifFrame(
     gif.loop?.[1] ?? gif.frameCount - 1,

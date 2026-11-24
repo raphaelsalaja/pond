@@ -33,7 +33,9 @@ export const HERO = (() => {
 export function Substack({ t }: { t: number }) {
   const rise = ease.outQuint(progress(t, CUES.substackRise, 1100));
   const away = ease.inOut(progress(t, end("substack") - 650, 600));
-  if (t < CUES.substackRise - 50 || away >= 1) return null;
+  if (t < CUES.substackRise - 50 || away >= 1) {
+    return null;
+  }
 
   const landed = t >= CUES.substackFly + 820;
   const scroll = mix(0, 400, ease.inOut(progress(t, CUES.read, 3200)));

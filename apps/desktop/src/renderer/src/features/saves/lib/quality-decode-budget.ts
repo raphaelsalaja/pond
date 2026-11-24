@@ -10,13 +10,15 @@ export function createQualityDecodeBudget(
   maxActive = MAX_ACTIVE_DECODES,
   maxQueued = MAX_QUEUED_DECODES,
 ) {
-  const queue: DecodeTask[] = [];
+  const queue: Array<DecodeTask> = [];
   let active = 0;
 
   const drain = () => {
     while (active < maxActive) {
       const task = queue.shift();
-      if (!task) return;
+      if (!task) {
+        return;
+      }
       active++;
       void task.run().finally(() => {
         active--;
@@ -34,7 +36,9 @@ export function createQualityDecodeBudget(
           cancelled = true;
         },
       };
-      if (queue.length >= maxQueued) queue.shift()?.cancel();
+      if (queue.length >= maxQueued) {
+        queue.shift()?.cancel();
+      }
       queue.push(task);
       drain();
       return task.cancel;

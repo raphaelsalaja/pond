@@ -7,11 +7,10 @@
 import { spawnSync } from "node:child_process";
 import { copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import sharp from "sharp";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 const buildDir = resolve(__dirname, "../build");
 const sourcePng = resolve(
   __dirname,
@@ -32,14 +31,14 @@ async function main() {
   let meta;
   try {
     meta = await sharp(sourcePng).metadata();
-  } catch (err) {
-    if (err?.code === "ENOENT") {
+  } catch (error) {
+    if (error?.code === "ENOENT") {
       console.warn(
         "[pond] skip prepare-app-icon: packages/icons/brand/tints/aqua/default.png missing",
       );
       return;
     }
-    throw err;
+    throw error;
   }
 
   await mkdir(buildDir, { recursive: true });
@@ -149,7 +148,9 @@ async function writeIcns(pngPath, icnsPath) {
   }
 }
 
-main().catch((err) => {
-  console.error("[pond] prepare-app-icon failed:", err);
+function fail(error) {
+  console.error("[pond] prepare-app-icon failed:", error);
   process.exitCode = 1;
-});
+}
+
+main().catch(fail);

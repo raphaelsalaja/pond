@@ -4,13 +4,16 @@ import {
   captureFromTweetDraft,
   draftFromDomHarvest,
 } from "../../../capture/tweet-draft";
-import { type HarvestAdaptCtx, parsePageBlob } from "../from-page";
+import { parsePageBlob } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { harvestSource } from "./item-source";
 import { inPageTwitterNormalize } from "./normalize";
 
 export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
   const page = parsePageBlob(raw);
-  if (!page) return null;
+  if (!page) {
+    return null;
+  }
   return captureFromTweetDraft(
     draftFromDomHarvest({
       source: "twitter",

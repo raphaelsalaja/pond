@@ -1,9 +1,7 @@
-import {
-  type NewSavedView,
-  type SavedView,
-  savedViews as savedViewsTable,
-} from "@pond/schema/db";
-import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
+import { savedViews as savedViewsTable } from "@pond/schema/db";
+import type { NewSavedView, SavedView } from "@pond/schema/db";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
 import type {
   BatchRenameInput,
@@ -21,8 +19,8 @@ import { recordBatchForUndo } from "./undo";
 
 interface SavedViewRuntime {
   getDb: () => Promise<Db>;
-  commit: (transactions: Transaction[]) => Promise<void>;
-  recordUndo?: (transactions: Transaction[]) => void;
+  commit: (transactions: Array<Transaction>) => Promise<void>;
+  recordUndo?: (transactions: Array<Transaction>) => void;
 }
 
 const defaultRuntime: SavedViewRuntime = {
@@ -33,8 +31,14 @@ const defaultRuntime: SavedViewRuntime = {
   recordUndo: recordBatchForUndo,
 };
 
+function isObject(value: unknown): value is object {
+  return (
+    (typeof value === "object" && value !== null) || typeof value === "function"
+  );
+}
+
 const StoredQuerySchema = z.custom<Query>(
-  (value) => value instanceof Object && !Array.isArray(value),
+  (value) => isObject(value) && !Array.isArray(value),
 );
 
 function coerceQuery(raw: Query | null): Query {
@@ -43,7 +47,7 @@ function coerceQuery(raw: Query | null): Query {
 
 export async function listViews(
   runtime: SavedViewRuntime = defaultRuntime,
-): Promise<SavedView[]> {
+): Promise<Array<SavedView>> {
   const db = await runtime.getDb();
   const rows = await db
     .select()
@@ -75,9 +79,13 @@ export async function createView(
   runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<OkResult<{ id: string }>> {
   const name = input.name.trim();
-  if (!name) return MISSING_NAME;
+  if (!name) {
+    return MISSING_NAME;
+  }
   return mutateViews(runtime, async (db) => {
-    if (!(await validParent(db, input.parentId ?? null))) return INVALID_PARENT;
+    if (!(await validParent(db, input.parentId ?? null))) {
+      return INVALID_PARENT;
+    }
     const data: NewSavedView = {
       id: ulid(),
       name,
@@ -110,7 +118,9 @@ export async function updateView(
 ): Promise<OkResult> {
   return mutateViews(runtime, async (db) => {
     const row = await viewById(db, id);
-    if (!row) return NOT_FOUND;
+    if (!row) {
+      return NOT_FOUND;
+    }
     if (
       patch.parentId !== undefined &&
       !(await validParent(db, patch.parentId, id))
@@ -119,7 +129,9 @@ export async function updateView(
     }
     if (patch.name !== undefined) {
       const name = patch.name.trim();
-      if (!name) return MISSING_NAME;
+      if (!name) {
+        return MISSING_NAME;
+      }
       patch = { ...patch, name };
     }
     await runtime.commit([
@@ -142,7 +154,9 @@ export async function renameView(
   runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<OkResult> {
   const target = name.trim();
-  if (!target) return MISSING_NAME;
+  if (!target) {
+    return MISSING_NAME;
+  }
   return updateView(id, { name: target }, runtime);
 }
 
@@ -152,18 +166,21 @@ export async function renameViewsBatch(
 ): Promise<OkResult<{ renamed: number }>> {
   const ids = [...new Set(input.ids.filter(Boolean))];
   const pattern = input.pattern.trim();
-  if (!pattern || ids.length === 0)
+  if (!pattern || ids.length === 0) {
     return { ok: false, error: "Enter a name pattern and choose views." };
+  }
   return mutateViews(runtime, async (db) => {
     const rows = await db
       .select()
       .from(savedViewsTable)
       .where(inArray(savedViewsTable.id, ids));
     const byId = new Map(rows.map((row) => [row.id, row]));
-    const transactions: Transaction[] = [];
+    const transactions: Array<Transaction> = [];
     for (const [index, id] of ids.entries()) {
       const row = byId.get(id);
-      if (!row) continue;
+      if (!row) {
+        continue;
+      }
       const name = applyRenameTemplate(pattern, {
         index,
         title: row.name,
@@ -174,7 +191,9 @@ export async function renameViewsBatch(
         replacement: input.replacement,
         textCase: input.textCase,
       });
-      if (!name || name === row.name) continue;
+      if (!name || name === row.name) {
+        continue;
+      }
       transactions.push({
         kind: "update",
         model: "saved_view",
@@ -196,12 +215,14 @@ export async function deleteView(
 ): Promise<OkResult> {
   return mutateViews(runtime, async (db) => {
     const row = await viewById(db, id);
-    if (!row) return NOT_FOUND;
+    if (!row) {
+      return NOT_FOUND;
+    }
     const children = await db
       .select()
       .from(savedViewsTable)
       .where(eq(savedViewsTable.parentId, id));
-    const transactions: Transaction[] = children.map((child) => ({
+    const transactions: Array<Transaction> = children.map((child) => ({
       kind: "update",
       model: "saved_view",
       id: child.id,
@@ -222,16 +243,20 @@ export async function deleteView(
 }
 
 export async function reorderViews(
-  orderedIds: string[],
+  orderedIds: Array<string>,
   runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<OkResult> {
   return mutateViews(runtime, async (db) => {
-    const txs: Transaction[] = [];
+    const txs: Array<Transaction> = [];
     for (let i = 0; i < orderedIds.length; i++) {
       const id = orderedIds[i];
-      if (!id) continue;
+      if (!id) {
+        continue;
+      }
       const row = await viewById(db, id);
-      if (!row || row.sortOrder === i) continue;
+      if (!row || row.sortOrder === i) {
+        continue;
+      }
       txs.push({
         kind: "update",
         model: "saved_view",
@@ -241,7 +266,9 @@ export async function reorderViews(
         meta: { actor: "user", actorReason: "saved-view-reorder" },
       });
     }
-    if (txs.length === 0) return { ok: true };
+    if (txs.length === 0) {
+      return { ok: true };
+    }
     await runtime.commit(txs);
     runtime.recordUndo?.(txs);
     return { ok: true };
@@ -273,10 +300,14 @@ async function validParent(
   const visited = new Set<string>();
   let ancestorId = parentId;
   while (ancestorId !== null) {
-    if (ancestorId === movingId || visited.has(ancestorId)) return false;
+    if (ancestorId === movingId || visited.has(ancestorId)) {
+      return false;
+    }
     visited.add(ancestorId);
     const parent = await viewById(db, ancestorId);
-    if (parent?.kind !== "group") return false;
+    if (parent?.kind !== "group") {
+      return false;
+    }
     ancestorId = parent.parentId;
   }
   return true;

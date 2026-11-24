@@ -1,14 +1,13 @@
-import {
-  CANVAS_SIDES,
-  type CanvasCap,
-  type CanvasColor,
-  type CanvasConnector,
-  type CanvasContent,
-  type CanvasItem,
-  type CanvasOutline,
-  type CanvasSide,
-  type CanvasViewport,
-  saveGridColumns,
+import { CANVAS_SIDES, saveGridColumns } from "@shared/canvas-contracts";
+import type {
+  CanvasCap,
+  CanvasColor,
+  CanvasConnector,
+  CanvasContent,
+  CanvasItem,
+  CanvasOutline,
+  CanvasSide,
+  CanvasViewport,
 } from "@shared/canvas-contracts";
 import type { Edge, Node, NodeChange, XYPosition } from "@xyflow/react";
 
@@ -56,8 +55,8 @@ export const CONNECTOR_STYLE: ConnectorStyle = {
 export type StrokePoint = [x: number, y: number, pressure: number];
 
 export interface CanvasSnapshot {
-  items: CanvasItem[];
-  connectors: CanvasConnector[];
+  items: Array<CanvasItem>;
+  connectors: Array<CanvasConnector>;
 }
 
 export const GRID = 24;
@@ -132,7 +131,9 @@ export function withBox(
     width: box.width,
     height: box.height,
   };
-  if (node.type !== "drawing") return { ...node, ...frame };
+  if (node.type !== "drawing") {
+    return { ...node, ...frame };
+  }
   const scaleX = box.width / width;
   const scaleY = box.height / height;
   return {
@@ -140,9 +141,11 @@ export function withBox(
     ...frame,
     data: {
       ...node.data,
-      points: node.data.points.map(
-        ([x, y, pressure]): StrokePoint => [x * scaleX, y * scaleY, pressure],
-      ),
+      points: node.data.points.map(([x, y, pressure]): StrokePoint => [
+        x * scaleX,
+        y * scaleY,
+        pressure,
+      ]),
     },
   };
 }
@@ -220,7 +223,9 @@ export function toItem(node: CanvasNode): CanvasItem {
     width: round(Math.max(1, node.width ?? node.measured?.width ?? 1)),
     height: round(Math.max(1, node.height ?? node.measured?.height ?? 1)),
   };
-  if (isLocked(node)) frame.locked = true;
+  if (isLocked(node)) {
+    frame.locked = true;
+  }
   switch (node.type) {
     case "save":
       return { ...node.data, ...frame, kind: "save" };
@@ -282,21 +287,21 @@ function toConnector(edge: ConnectorEdge): CanvasConnector {
 }
 
 export function snapshotOf(
-  nodes: readonly CanvasNode[],
-  edges: readonly ConnectorEdge[],
+  nodes: ReadonlyArray<CanvasNode>,
+  edges: ReadonlyArray<ConnectorEdge>,
 ): CanvasSnapshot {
   const ids = new Set(nodes.map((node) => node.id));
   return {
     items: nodes.map(toItem),
-    connectors: edges
-      .filter((edge) => ids.has(edge.source) && ids.has(edge.target))
-      .map(toConnector),
+    connectors: edges.flatMap((edge) =>
+      ids.has(edge.source) && ids.has(edge.target) ? [toConnector(edge)] : [],
+    ),
   };
 }
 
 export function contentOf(
-  nodes: readonly CanvasNode[],
-  edges: readonly ConnectorEdge[],
+  nodes: ReadonlyArray<CanvasNode>,
+  edges: ReadonlyArray<ConnectorEdge>,
   viewport: CanvasViewport,
 ): CanvasContent {
   return {
@@ -310,10 +315,10 @@ export function contentOf(
 }
 
 function saveGrid(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   origin: XYPosition,
   columns: number,
-): CanvasItem[] {
+): Array<CanvasItem> {
   return saveIds.map((saveId, index) => ({
     kind: "save",
     id: newId(),
@@ -326,9 +331,9 @@ function saveGrid(
 
 /** Saves dropped together fan out in a grid centred on the drop point. */
 export function placeSaves(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   center: XYPosition,
-): CanvasItem[] {
+): Array<CanvasItem> {
   const columns = saveGridColumns(saveIds.length);
   const across = Math.min(columns, saveIds.length);
   const rows = Math.ceil(saveIds.length / columns);
@@ -344,11 +349,18 @@ export function placeSaves(
 
 /** A batch from a folder lands to the right of everything on the board, so it never covers existing work. */
 export function placeSavesBeside(
-  saveIds: readonly string[],
-  frames: readonly { x: number; y: number; width: number; height: number }[],
+  saveIds: ReadonlyArray<string>,
+  frames: ReadonlyArray<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }>,
   fallback: XYPosition,
-): CanvasItem[] {
-  if (!frames.length) return placeSaves(saveIds, fallback);
+): Array<CanvasItem> {
+  if (!frames.length) {
+    return placeSaves(saveIds, fallback);
+  }
   return saveGrid(
     saveIds,
     {
@@ -416,11 +428,13 @@ export function sectionAt(point: XYPosition, color: CanvasColor): CanvasItem {
 
 /** A wrapping section leaves a grid step of room around its contents. */
 export function sectionAround(
-  frames: readonly Bounds[],
+  frames: ReadonlyArray<Bounds>,
   color: CanvasColor,
 ): CanvasItem | null {
   const box = extentOf(frames);
-  if (!box) return null;
+  if (!box) {
+    return null;
+  }
   const x = box.left - GRID * 2;
   const y = box.top - GRID * 3;
   return {
@@ -489,7 +503,9 @@ export function resizeTable(
         height: round(item.height + cellHeight),
       };
     case "remove-row":
-      if (item.rows.length < 2) return item;
+      if (item.rows.length < 2) {
+        return item;
+      }
       return {
         ...item,
         rows: item.rows.slice(0, -1),
@@ -502,7 +518,9 @@ export function resizeTable(
         width: round(item.width + cellWidth),
       };
     case "remove-column":
-      if (columns < 2) return item;
+      if (columns < 2) {
+        return item;
+      }
       return {
         ...item,
         rows: item.rows.map((row) => row.slice(0, -1)),
@@ -535,30 +553,42 @@ export function withCap(
 
 /** Selecting or deselecting one member of a group applies to the whole group; selecting wins a tie. */
 export function groupChanges(
-  nodes: readonly CanvasNode[],
-  changes: NodeChange<CanvasNode>[],
-): NodeChange<CanvasNode>[] {
+  nodes: ReadonlyArray<CanvasNode>,
+  changes: Array<NodeChange<CanvasNode>>,
+): Array<NodeChange<CanvasNode>> {
   const groupOf = new Map(
     nodes.flatMap((node) =>
       node.data.group ? [[node.id, node.data.group] as const] : [],
     ),
   );
-  if (!groupOf.size) return changes;
+  if (!groupOf.size) {
+    return changes;
+  }
   const picked = new Set<string>();
   const dropped = new Set<string>();
   for (const change of changes) {
-    if (change.type !== "select") continue;
+    if (change.type !== "select") {
+      continue;
+    }
     const group = groupOf.get(change.id);
-    if (group) (change.selected ? picked : dropped).add(group);
+    if (group) {
+      (change.selected ? picked : dropped).add(group);
+    }
   }
-  if (!picked.size && !dropped.size) return changes;
-  const members = nodes.flatMap((node): NodeChange<CanvasNode>[] => {
+  if (!picked.size && !dropped.size) {
+    return changes;
+  }
+  const members = nodes.flatMap((node): Array<NodeChange<CanvasNode>> => {
     const group = node.data.group;
-    if (!group) return [];
-    if (picked.has(group))
+    if (!group) {
+      return [];
+    }
+    if (picked.has(group)) {
       return [{ type: "select", id: node.id, selected: true }];
-    if (dropped.has(group))
+    }
+    if (dropped.has(group)) {
       return [{ type: "select", id: node.id, selected: false }];
+    }
     return [];
   });
   return [
@@ -582,27 +612,26 @@ function inside(outer: Bounds, inner: Bounds): boolean {
 /** A section carries every item that sits wholly inside it, nested sections and their contents included. */
 export function sectionContents(
   section: Bounds,
-  frames: readonly Bounds[],
-): string[] {
-  return frames
-    .filter((frame) => inside(section, frame))
-    .map((frame) => frame.id);
+  frames: ReadonlyArray<Bounds>,
+): Array<string> {
+  return frames.flatMap((frame) => (inside(section, frame) ? [frame.id] : []));
 }
 
 const BRANCH_GAP = { x: 72, y: 24 };
 
-function branchesOf(snapshot: CanvasSnapshot): Map<string, string[]> {
+function branchesOf(snapshot: CanvasSnapshot): Map<string, Array<string>> {
   const topics = new Set(
     snapshot.items.flatMap((item) => (item.kind === "topic" ? [item.id] : [])),
   );
-  const children = new Map<string, string[]>();
+  const children = new Map<string, Array<string>>();
   for (const connector of snapshot.connectors) {
     if (
       connector.fromSide !== "right" ||
       !topics.has(connector.from) ||
       !topics.has(connector.to)
-    )
+    ) {
       continue;
+    }
     children.set(connector.from, [
       ...(children.get(connector.from) ?? []),
       connector.to,
@@ -612,10 +641,14 @@ function branchesOf(snapshot: CanvasSnapshot): Map<string, string[]> {
 }
 
 function parentOf(
-  children: ReadonlyMap<string, readonly string[]>,
+  children: ReadonlyMap<string, ReadonlyArray<string>>,
   id: string,
 ): string | null {
-  for (const [parent, kids] of children) if (kids.includes(id)) return parent;
+  for (const [parent, kids] of children) {
+    if (kids.includes(id)) {
+      return parent;
+    }
+  }
   return null;
 }
 
@@ -628,8 +661,10 @@ function layoutMindMap(
   const frames = new Map(snapshot.items.map((item) => [item.id, item]));
   let root = id;
   const seen = new Set([root]);
-  for (let parent = parentOf(children, root); parent; ) {
-    if (seen.has(parent)) break;
+  for (let parent = parentOf(children, root); parent;) {
+    if (seen.has(parent)) {
+      break;
+    }
     seen.add(parent);
     root = parent;
     parent = parentOf(children, root);
@@ -637,7 +672,9 @@ function layoutMindMap(
   const heights = new Map<string, number>();
   const heightOf = (node: string, trail: Set<string>): number => {
     const frame = frames.get(node);
-    if (!frame || trail.has(node)) return 0;
+    if (!frame || trail.has(node)) {
+      return 0;
+    }
     const kids = children.get(node) ?? [];
     const next = new Set(trail).add(node);
     const stacked =
@@ -656,7 +693,9 @@ function layoutMindMap(
     trail: Set<string>,
   ) => {
     const frame = frames.get(node);
-    if (!frame || trail.has(node)) return;
+    if (!frame || trail.has(node)) {
+      return;
+    }
     positions.set(node, { x: round(x), y: round(centerY - frame.height / 2) });
     const kids = children.get(node) ?? [];
     const next = new Set(trail).add(node);
@@ -671,8 +710,9 @@ function layoutMindMap(
     }
   };
   const rootFrame = frames.get(root);
-  if (rootFrame)
+  if (rootFrame) {
     place(root, rootFrame.x, rootFrame.y + rootFrame.height / 2, new Set());
+  }
   return positions;
 }
 
@@ -683,11 +723,15 @@ export function branchOf(
   kind: "child" | "sibling",
 ): { snapshot: CanvasSnapshot; created: string } | null {
   const topic = snapshot.items.find((item) => item.id === id);
-  if (topic?.kind !== "topic") return null;
+  if (topic?.kind !== "topic") {
+    return null;
+  }
   const parentId =
     kind === "sibling" ? (parentOf(branchesOf(snapshot), id) ?? id) : id;
   const parent = snapshot.items.find((item) => item.id === parentId);
-  if (parent?.kind !== "topic") return null;
+  if (parent?.kind !== "topic") {
+    return null;
+  }
   const created: CanvasItem = {
     kind: "topic",
     id: newId(),
@@ -729,12 +773,14 @@ export function branchOf(
 
 /** Stroke points are stored relative to the drawing's own frame so moving it never rewrites them. */
 export function drawingFrom(
-  points: readonly StrokePoint[],
+  points: ReadonlyArray<StrokePoint>,
   color: CanvasColor,
   size: number,
   ink?: "highlight",
 ): CanvasItem | null {
-  if (!points.length) return null;
+  if (!points.length) {
+    return null;
+  }
   const xs = points.map(([x]) => x);
   const ys = points.map(([, y]) => y);
   const left = Math.min(...xs) - size;
@@ -748,15 +794,15 @@ export function drawingFrom(
     height: round(Math.max(1, Math.max(...ys) + size - top)),
     color,
     size,
-    points: points.map(
-      ([x, y, pressure]): StrokePoint => [
-        round(x - left),
-        round(y - top),
-        round(pressure),
-      ],
-    ),
+    points: points.map(([x, y, pressure]): StrokePoint => [
+      round(x - left),
+      round(y - top),
+      round(pressure),
+    ]),
   };
-  if (!ink) return drawing;
+  if (!ink) {
+    return drawing;
+  }
   return { ...drawing, ink };
 }
 
@@ -833,13 +879,19 @@ export function pasteOf(
 ): CanvasSnapshot {
   const seen = new Set(onBoard);
   const items = clip.items.filter((item) => {
-    if (item.kind !== "save") return true;
-    if (seen.has(item.saveId)) return false;
+    if (item.kind !== "save") {
+      return true;
+    }
+    if (seen.has(item.saveId)) {
+      return false;
+    }
     seen.add(item.saveId);
     return true;
   });
   const box = extentOf(items);
-  if (!box) return { items: [], connectors: [] };
+  if (!box) {
+    return { items: [], connectors: [] };
+  }
   return copyOf(
     { items, connectors: clip.connectors },
     {
@@ -849,8 +901,10 @@ export function pasteOf(
   );
 }
 
-function extentOf(frames: readonly Bounds[]) {
-  if (!frames.length) return null;
+function extentOf(frames: ReadonlyArray<Bounds>) {
+  if (!frames.length) {
+    return null;
+  }
   return {
     left: Math.min(...frames.map((frame) => frame.x)),
     top: Math.min(...frames.map((frame) => frame.y)),
@@ -860,12 +914,14 @@ function extentOf(frames: readonly Bounds[]) {
 }
 
 export function alignFrames(
-  frames: readonly Bounds[],
+  frames: ReadonlyArray<Bounds>,
   edge: AlignEdge,
 ): Map<string, XYPosition> {
   const box = extentOf(frames);
   const moved = new Map<string, XYPosition>();
-  if (!box) return moved;
+  if (!box) {
+    return moved;
+  }
   for (const frame of frames) {
     const x =
       edge === "left"
@@ -890,7 +946,7 @@ export function alignFrames(
 
 /** The outermost frames stay put and the rest spread out so every gap between neighbours is equal. */
 export function distributeFrames(
-  frames: readonly Bounds[],
+  frames: ReadonlyArray<Bounds>,
   axis: Axis,
 ): Map<string, XYPosition> {
   const start = axis === "horizontal" ? "x" : "y";
@@ -898,7 +954,9 @@ export function distributeFrames(
   const sorted = [...frames].sort((a, b) => a[start] - b[start]);
   const moved = new Map<string, XYPosition>();
   const first = sorted[0];
-  if (!first || sorted.length < 3) return moved;
+  if (!first || sorted.length < 3) {
+    return moved;
+  }
   const end = Math.max(...sorted.map((frame) => frame[start] + frame[size]));
   const occupied = sorted.reduce((total, frame) => total + frame[size], 0);
   const gap = (end - first[start] - occupied) / (sorted.length - 1);
@@ -915,10 +973,14 @@ export function distributeFrames(
 }
 
 /** Tidy Up lays the frames out in reading order on a near-square grid with one grid step between cells. */
-export function tidyFrames(frames: readonly Bounds[]): Map<string, XYPosition> {
+export function tidyFrames(
+  frames: ReadonlyArray<Bounds>,
+): Map<string, XYPosition> {
   const box = extentOf(frames);
   const moved = new Map<string, XYPosition>();
-  if (!box) return moved;
+  if (!box) {
+    return moved;
+  }
   const columns = Math.ceil(Math.sqrt(frames.length));
   const cell = Math.max(...frames.map((frame) => frame.width));
   const ordered = [...frames].sort((a, b) => a.y - b.y || a.x - b.x);
@@ -938,14 +1000,18 @@ export function tidyFrames(frames: readonly Bounds[]): Map<string, XYPosition> {
 
 /** List order is paint order, so the last entry draws on top. */
 export function reorder<Entry extends { id: string }>(
-  list: readonly Entry[],
+  list: ReadonlyArray<Entry>,
   ids: ReadonlySet<string>,
   move: LayerMove,
-): Entry[] {
+): Array<Entry> {
   const picked = list.filter((entry) => ids.has(entry.id));
   const rest = list.filter((entry) => !ids.has(entry.id));
-  if (move === "front") return [...rest, ...picked];
-  if (move === "back") return [...picked, ...rest];
+  if (move === "front") {
+    return [...rest, ...picked];
+  }
+  if (move === "back") {
+    return [...picked, ...rest];
+  }
   const next = [...list];
   const step = move === "forward" ? 1 : -1;
   const order =
@@ -955,7 +1021,9 @@ export function reorder<Entry extends { id: string }>(
   for (const index of order) {
     const here = next[index];
     const there = next[index + step];
-    if (!here || !there || !ids.has(here.id) || ids.has(there.id)) continue;
+    if (!here || !there || !ids.has(here.id) || ids.has(there.id)) {
+      continue;
+    }
     next[index] = there;
     next[index + step] = here;
   }
@@ -963,8 +1031,8 @@ export function reorder<Entry extends { id: string }>(
 }
 
 export function createHistory(limit = 100) {
-  let past: CanvasSnapshot[] = [];
-  let future: CanvasSnapshot[] = [];
+  let past: Array<CanvasSnapshot> = [];
+  let future: Array<CanvasSnapshot> = [];
   return {
     record(snapshot: CanvasSnapshot): void {
       past = [...past.slice(-(limit - 1)), snapshot];
@@ -972,14 +1040,18 @@ export function createHistory(limit = 100) {
     },
     undo(current: CanvasSnapshot): CanvasSnapshot | null {
       const previous = past.at(-1);
-      if (!previous) return null;
+      if (!previous) {
+        return null;
+      }
       past = past.slice(0, -1);
       future = [...future, current];
       return previous;
     },
     redo(current: CanvasSnapshot): CanvasSnapshot | null {
       const next = future.at(-1);
-      if (!next) return null;
+      if (!next) {
+        return null;
+      }
       future = future.slice(0, -1);
       past = [...past, current];
       return next;

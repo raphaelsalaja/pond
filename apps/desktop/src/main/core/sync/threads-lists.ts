@@ -23,34 +23,42 @@ export interface ThreadsListGap {
 export type ThreadsListsResult =
   | {
       ok: true;
-      entries: Array<SavedEntry & { listKinds: ListKind[] }>;
-      gaps: ThreadsListGap[];
+      entries: Array<SavedEntry & { listKinds: Array<ListKind> }>;
+      gaps: Array<ThreadsListGap>;
     }
   | (HarvestFailure & { kind: ThreadsListKind });
 
 export function threadsListKinds(
   plan: Pick<ListHarvestPlan, "primary" | "liked">,
-): ThreadsListKind[] {
-  const kinds: ThreadsListKind[] = [];
-  if (plan.primary) kinds.push("saved");
-  if (plan.liked) kinds.push("liked");
+): Array<ThreadsListKind> {
+  const kinds: Array<ThreadsListKind> = [];
+  if (plan.primary) {
+    kinds.push("saved");
+  }
+  if (plan.liked) {
+    kinds.push("liked");
+  }
   return kinds;
 }
 
 /** The first list you import decides whether the run fails; a later list that fails only leaves a gap. */
 export async function harvestThreadsLists(
-  kinds: readonly ThreadsListKind[],
+  kinds: ReadonlyArray<ThreadsListKind>,
   args: SavedHarvestArgs,
   harvest: ThreadsListHarvester,
   signal: AbortSignal,
 ): Promise<ThreadsListsResult> {
-  let entries: Array<SavedEntry & { listKinds: ListKind[] }> = [];
-  const gaps: ThreadsListGap[] = [];
+  let entries: Array<SavedEntry & { listKinds: Array<ListKind> }> = [];
+  const gaps: Array<ThreadsListGap> = [];
   for (const [index, kind] of kinds.entries()) {
-    if (signal.aborted) break;
+    if (signal.aborted) {
+      break;
+    }
     const result = await harvest(kind, args);
     if (!result.ok) {
-      if (index === 0) return { ...result, kind };
+      if (index === 0) {
+        return { ...result, kind };
+      }
       gaps.push({ kind, reason: result.reason });
       continue;
     }

@@ -2,7 +2,7 @@ import type { Source } from "@pond/schema/db";
 import { startConnect, startWatch } from "@/features/sources/lib/create";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
 
 export type SourcesIntent =
   | { type: "new-source" }
@@ -22,9 +22,11 @@ export function openSources(intent?: SourcesIntent): void {
   }
   const router = getAppRouter();
   if (router && router.state.location.pathname !== "/sources") {
-    router.history.push("/sources");
+    getAppHistory()?.push("/sources");
   }
-  if (!intent) return;
+  if (!intent) {
+    return;
+  }
   switch (intent.type) {
     case "new-source":
       sourceNewMenu.open();

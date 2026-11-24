@@ -3,11 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useSaves } from "@/features/saves/pool";
 import { downloadStatusReason } from "../components/page/status-reason";
-import {
-  type DownloadRow,
-  PipelineStatusSchema,
-  projectLiveDownloads,
-} from "../lib/status-feed";
+import { PipelineStatusSchema, projectLiveDownloads } from "../lib/status-feed";
+import type { DownloadRow } from "../lib/status-feed";
+import { useDownloadClock } from "./use-download-activity";
 import { useLiveDownloadHydration } from "./use-live-download-hydration";
 import { useSourceGates } from "./use-source-gates";
 
@@ -30,11 +28,13 @@ export function useDownloadHealth() {
       ),
   });
   const paused = pipeline.data?.paused === true;
+  const now = useDownloadClock(
+    live.some((row) => row.status === "retrying" || row.status === "parked"),
+  );
   const rows = useMemo(() => {
     const bySource = new Map(
       (gates.data ?? []).map((gate) => [gate.source, gate]),
     );
-    const now = Date.now();
     return live.map((row): DownloadHealthRow => {
       const gate = bySource.get(row.source) ?? null;
       return {
@@ -43,6 +43,6 @@ export function useDownloadHealth() {
         reason: downloadStatusReason(row, { paused, gate, now }),
       };
     });
-  }, [live, gates.data, paused]);
+  }, [live, gates.data, paused, now]);
   return { rows, paused, loaded: pipeline.isSuccess };
 }

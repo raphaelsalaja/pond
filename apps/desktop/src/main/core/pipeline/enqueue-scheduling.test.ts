@@ -1,9 +1,10 @@
-import * as schema from "@pond/schema/db";
-import * as eventsSchema from "@pond/schema/events";
+import { queueGenerations, saves, tasks } from "@pond/schema/db";
+import type { TaskStatus } from "@pond/schema/db";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { eventTables, libraryTables } from "../../database/tables";
 import { initializePondSchema } from "../../db";
 import { createPendingTasks, rependArchiveTasks } from "./enqueue-scheduling";
 import { isInteractiveTask } from "./priority";
@@ -48,7 +49,11 @@ describe("createPendingTasks", () => {
       "sync:twitter",
     );
 
-    expect(background.every((row) => row.payload == null)).toBe(true);
+    expect(
+      background.every(
+        (row) => row.payload === null || row.payload === undefined,
+      ),
+    ).toBe(true);
     expect(
       createPendingTasks("local-id", "local", new Date(1), "toolbar"),
     ).toEqual([]);
@@ -61,27 +66,31 @@ function nativeSqliteAvailable(): boolean {
     probe.close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
 
-const databases: Database.Database[] = [];
+const databases: Array<Database.Database> = [];
 
 afterEach(() => {
-  for (const db of databases.splice(0)) db.close();
+  for (const db of databases.splice(0)) {
+    db.close();
+  }
 });
 
-function archiveTasks(statuses: readonly schema.TaskStatus[]) {
+function archiveTasks(statuses: ReadonlyArray<TaskStatus>) {
   const sqlite = new Database(":memory:");
   databases.push(sqlite);
   initializePondSchema(sqlite, () => false);
   const db = Object.assign(
-    drizzle(sqlite, { schema: { ...schema, ...eventsSchema } }),
+    drizzle(sqlite, { schema: { ...libraryTables, ...eventTables } }),
     { $raw: sqlite },
   );
   const at = new Date(1);
-  db.insert(schema.saves)
+  db.insert(saves)
     .values({
       id: "web-save",
       source: "web",
@@ -90,10 +99,10 @@ function archiveTasks(statuses: readonly schema.TaskStatus[]) {
       status: "complete",
     })
     .run();
-  db.insert(schema.queueGenerations)
+  db.insert(queueGenerations)
     .values({ id: "old-generation", kind: "retry", status: "done" })
     .run();
-  db.insert(schema.tasks)
+  db.insert(tasks)
     .values(
       createPendingTasks("web-save", "web", at, undefined).map(
         (task, index) => ({
@@ -118,11 +127,7 @@ function archiveTasks(statuses: readonly schema.TaskStatus[]) {
   return {
     db,
     read: () =>
-      db
-        .select()
-        .from(schema.tasks)
-        .where(eq(schema.tasks.saveId, "web-save"))
-        .all(),
+      db.select().from(tasks).where(eq(tasks.saveId, "web-save")).all(),
   };
 }
 

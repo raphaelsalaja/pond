@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { registerCommands } from "./commands";
 import { completionScript } from "./commands/core";
 
-function commandPaths(command: Command, parent = ""): string[] {
+function commandPaths(command: Command, parent = ""): Array<string> {
   return command.commands.flatMap((child) => {
     const path = parent ? `${parent} ${child.name()}` : child.name();
     return [path, ...commandPaths(child, path)];
@@ -13,7 +13,9 @@ function commandPaths(command: Command, parent = ""): string[] {
 function commandAt(program: Command, path: string): Command {
   return path.split(" ").reduce((parent, name) => {
     const command = parent.commands.find((child) => child.name() === name);
-    if (!command) throw new Error(`Missing command ${path}.`);
+    if (!command) {
+      throw new Error(`Missing command ${path}.`);
+    }
     return command;
   }, program);
 }

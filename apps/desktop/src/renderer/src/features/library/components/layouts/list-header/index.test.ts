@@ -14,7 +14,9 @@ describe("list header column menu", () => {
       items.find((item) => "label" in item && item.label === "Date Added"),
     ).toMatchObject({ type: "checkbox", checked: true });
     const tags = items.find((item) => "label" in item && item.label === "Tags");
-    if (tags?.type !== "checkbox") throw new Error("Missing tags column");
+    if (tags?.type !== "checkbox") {
+      throw new Error("Missing tags column");
+    }
     tags.onCheckedChange?.(true);
     expect(onChange).toHaveBeenCalledWith("tags", true);
   });

@@ -3,7 +3,7 @@ const { spawn, spawnSync } = require("node:child_process");
 const { createHash } = require("node:crypto");
 const { existsSync, statSync } = require("node:fs");
 const { tmpdir } = require("node:os");
-const { join } = require("node:path");
+const nodePath = require("node:path");
 const sharp = require("sharp");
 
 const VIDEO = { width: 1120, height: 700 };
@@ -21,9 +21,13 @@ const LIGHTS = [
 ];
 
 function ffmpegPath() {
-  if (process.env.FFMPEG) return process.env.FFMPEG;
+  if (process.env.FFMPEG) {
+    return process.env.FFMPEG;
+  }
   for (const candidate of ["/opt/homebrew/bin/ffmpeg", "ffmpeg"]) {
-    if (spawnSync(candidate, ["-version"]).status === 0) return candidate;
+    if (spawnSync(candidate, ["-version"]).status === 0) {
+      return candidate;
+    }
   }
   return require("ffmpeg-static");
 }
@@ -48,15 +52,19 @@ function run(command, args) {
 async function wallpaperSource(path) {
   const file = path || DEFAULT_WALLPAPER;
   if (!existsSync(file)) {
-    if (path) throw new Error(`Wallpaper not found: ${path}`);
+    if (path) {
+      throw new Error(`Wallpaper not found: ${path}`);
+    }
     return null;
   }
-  if (!/\.heic$/i.test(file)) return file;
+  if (!/\.heic$/i.test(file)) {
+    return file;
+  }
   const key = createHash("sha256")
     .update(`${file}:${statSync(file).mtimeMs}`)
     .digest("hex")
     .slice(0, 16);
-  const png = join(tmpdir(), `pond-proof-wallpaper-${key}.png`);
+  const png = nodePath.join(tmpdir(), `pond-proof-wallpaper-${key}.png`);
   if (!existsSync(png)) {
     await run("sips", ["-s", "format", "png", file, "--out", png]);
   }
@@ -268,7 +276,7 @@ async function composePair(left, right) {
 /** Writes lossless window frames at a constant rate while capturing, then composites and encodes. */
 function startRecorder(frame, scratch, fps, bare = false) {
   const ffmpeg = ffmpegPath();
-  const raw = join(scratch, `raw-${Date.now()}.mkv`);
+  const raw = nodePath.join(scratch, `raw-${Date.now()}.mkv`);
   /** libx264rgb drops alpha, so transparent windows keep it with lossless ffv1. */
   const codec = bare
     ? ["-c:v", "ffv1", "-pix_fmt", "bgra"]
@@ -319,15 +327,17 @@ function startRecorder(frame, scratch, fps, bare = false) {
     },
     async write(bitmap) {
       if (!child.stdin.write(bitmap)) {
-        await new Promise((resolve) => child.stdin.once("drain", resolve));
+        await new Promise((resolve) => {
+          child.stdin.once("drain", resolve);
+        });
       }
     },
     async finish(out, options) {
       child.stdin.end();
       await closed;
       const { background, cover } = await layers(frame, options);
-      const backgroundPath = join(scratch, "background.png");
-      const coverPath = join(scratch, "cover.png");
+      const backgroundPath = nodePath.join(scratch, "background.png");
+      const coverPath = nodePath.join(scratch, "cover.png");
       await sharp(background).toFile(backgroundPath);
       await sharp(cover).toFile(coverPath);
       await run(ffmpeg, [

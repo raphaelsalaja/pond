@@ -2,11 +2,8 @@ import type { SplitAllProgress } from "@shared/saves-mutation-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
-import {
-  type NotifyOptions,
-  notify,
-  updateNotification,
-} from "@/shared/lib/toast";
+import { notify, updateNotification } from "@/shared/lib/toast";
+import type { NotifyOptions } from "@/shared/lib/toast";
 
 const POLL_MS = 500;
 const SAVES = { one: "save", other: "saves" };
@@ -16,7 +13,9 @@ const store = new Store({ running: false });
 let tracking: Promise<void> | null = null;
 
 export function splittableDescription(count: number): string {
-  if (count === 0) return "No saves have several images or videos.";
+  if (count === 0) {
+    return "No saves have several images or videos.";
+  }
   return `Splits ${formatPlural(count, SAVES)} with several images or videos, which can't be undone.`;
 }
 
@@ -31,11 +30,12 @@ export function splitAllDoneCopy(
     progress.failed === 0
       ? undefined
       : `${formatPlural(progress.failed, SAVES)} couldn't be split and ${progress.failed === 1 ? "is" : "are"} unchanged. Split again to retry.`;
-  if (progress.split === 0)
+  if (progress.split === 0) {
     return {
       title: failed ? "Couldn't split" : "Nothing to split",
       description: failed,
     };
+  }
   return {
     title: `Split ${formatPlural(progress.split, SAVES)} into ${formatNumber(progress.split + progress.created)}`,
     description: failed,
@@ -43,7 +43,9 @@ export function splitAllDoneCopy(
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function follow(first: SplitAllProgress): Promise<void> {
@@ -61,7 +63,9 @@ async function follow(first: SplitAllProgress): Promise<void> {
     while (progress.running) {
       await delay(POLL_MS);
       progress = await window.pond.query("saves.splitAllStatus", {});
-      if (!progress.running || progress.total === 0) continue;
+      if (!progress.running || progress.total === 0) {
+        continue;
+      }
       updateNotification({
         id,
         title: "Splitting saves",
@@ -103,7 +107,9 @@ export async function splitAllSaves(): Promise<void> {
 /** Picks a run back up after a reload, so its toast and the Settings button stay in step. */
 export async function resumeSplitAll(): Promise<void> {
   const progress = await window.pond.query("saves.splitAllStatus", {});
-  if (progress.running) await track(progress);
+  if (progress.running) {
+    await track(progress);
+  }
 }
 
 export function useSplitAllRunning(): boolean {

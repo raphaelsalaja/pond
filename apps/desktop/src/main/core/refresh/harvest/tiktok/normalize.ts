@@ -77,7 +77,7 @@ export interface TiktokVideoPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: TiktokMedia[];
+  mediaUrls?: Array<TiktokMedia>;
   mediaType?: MediaType;
   meta?: TiktokVideoMeta;
 }
@@ -140,7 +140,9 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
     const avatarImg = document.querySelector<HTMLImageElement>(
       '[data-e2e="browse-user-avatar"] img, [data-e2e="video-avatar"] img',
     );
-    if (avatarImg?.src) meta.authorAvatar = avatarImg.src;
+    if (avatarImg?.src) {
+      meta.authorAvatar = avatarImg.src;
+    }
 
     const soundLink = document.querySelector<HTMLElement>(
       '[data-e2e="browse-music"], [data-e2e="video-music"]',
@@ -153,7 +155,9 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
     if (video?.src) {
       const poster = video.poster || undefined;
       const clip: TiktokMedia = { url: video.src, type: "video" };
-      if (poster) clip.poster = poster;
+      if (poster) {
+        clip.poster = poster;
+      }
       out.mediaUrl = poster || video.src;
       out.mediaUrls = [clip];
       out.mediaType = "video";
@@ -169,8 +173,12 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
       meta.lang = lang;
     }
 
-    if (Object.keys(meta).length > 0) out.meta = meta;
-    if (!out.title && !out.description && !out.mediaUrl) return null;
+    if (Object.keys(meta).length > 0) {
+      out.meta = meta;
+    }
+    if (!out.title && !out.description && !out.mediaUrl) {
+      return null;
+    }
     return out;
   }
 
@@ -183,10 +191,17 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
         `script#${varName}, script[id="${varName}"]`,
       );
       if (script?.textContent) {
-        return JSON.parse(script.textContent);
+        const parsed: unknown = JSON.parse(script.textContent);
+        return isHydration(parsed) ? parsed : null;
       }
-    } catch {}
+    } catch {
+      /** Unparseable hydration falls back to the copy the page inlined. */
+    }
     return inlined || null;
+  }
+
+  function isHydration(value: unknown): value is TiktokHydration {
+    return validators.object.safeParse(value).success;
   }
 
   function isItemStruct(
@@ -199,11 +214,15 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
     const container =
       data.__DEFAULT_SCOPE__?.["webapp.video-detail"]?.itemInfo?.itemStruct ??
       data.ItemModule;
-    if (!container) return null;
+    if (!container) {
+      return null;
+    }
     const rawItem = isItemStruct(container)
       ? container
       : Object.values(container)[0];
-    if (!rawItem) return null;
+    if (!rawItem) {
+      return null;
+    }
     const item = validators.tiktokItem.parse(rawItem);
 
     const out: TiktokVideoPage = {};
@@ -223,27 +242,45 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
     if (author?.uniqueId) {
       out.author = `@${author.uniqueId}`;
       meta.authorUrl = `https://www.tiktok.com/@${author.uniqueId}`;
-      if (author.nickname) meta.authorName = author.nickname;
-      if (author.avatarThumb) meta.authorAvatar = author.avatarThumb;
-      if (author.verified !== undefined) meta.verified = author.verified;
+      if (author.nickname) {
+        meta.authorName = author.nickname;
+      }
+      if (author.avatarThumb) {
+        meta.authorAvatar = author.avatarThumb;
+      }
+      if (author.verified !== undefined) {
+        meta.verified = author.verified;
+      }
     }
 
     const stats = item.stats;
     if (stats) {
       const metrics: NonNullable<TiktokVideoMeta["metrics"]> = {};
-      if (stats.diggCount !== undefined) metrics.likes = stats.diggCount;
-      if (stats.commentCount !== undefined)
+      if (stats.diggCount !== undefined) {
+        metrics.likes = stats.diggCount;
+      }
+      if (stats.commentCount !== undefined) {
         metrics.comments = stats.commentCount;
-      if (stats.shareCount !== undefined) metrics.shares = stats.shareCount;
-      if (stats.playCount !== undefined) metrics.plays = stats.playCount;
+      }
+      if (stats.shareCount !== undefined) {
+        metrics.shares = stats.shareCount;
+      }
+      if (stats.playCount !== undefined) {
+        metrics.plays = stats.playCount;
+      }
       /** collectCount is TikTok's "Favorites" button, the equivalent of bookmarks elsewhere. */
-      if (stats.collectCount !== undefined)
+      if (stats.collectCount !== undefined) {
         metrics.bookmarks = stats.collectCount;
-      if (Object.keys(metrics).length > 0) meta.metrics = metrics;
+      }
+      if (Object.keys(metrics).length > 0) {
+        meta.metrics = metrics;
+      }
     }
 
     const music = item.music;
-    if (music?.title) meta.soundName = music.title;
+    if (music?.title) {
+      meta.soundName = music.title;
+    }
 
     const videoData = item.video;
     if (videoData) {
@@ -251,7 +288,9 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
       const cover = videoData.cover || videoData.originCover || "";
       if (videoUrl || cover) {
         const clip: TiktokMedia = { url: videoUrl || cover, type: "video" };
-        if (cover) clip.poster = cover;
+        if (cover) {
+          clip.poster = cover;
+        }
         out.mediaUrl = cover || videoUrl;
         out.mediaUrls = [clip];
         out.mediaType = "video";
@@ -265,7 +304,9 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
       meta.publishedAt = new Date(item.createTime * 1000).toISOString();
     }
 
-    if (Object.keys(meta).length > 0) out.meta = meta;
+    if (Object.keys(meta).length > 0) {
+      out.meta = meta;
+    }
     return out;
   }
 

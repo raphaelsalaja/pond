@@ -2,10 +2,10 @@ import { expect, it, vi } from "vitest";
 import { agentStreamRequest } from "../../../shared/assistant";
 import {
   latestUserText,
-  type StreamTurnDependencies,
   streamAgentTurn,
   uiMessageErrorResponse,
 } from "./stream";
+import type { StreamTurnDependencies } from "./stream";
 
 const user = {
   id: "user-1",
@@ -84,10 +84,11 @@ it.each(["stopped", "failed"] as const)(
     expect(body).toContain(
       outcome === "stopped" ? '"status":"stopped"' : '"status":"error"',
     );
-    if (outcome === "failed")
+    if (outcome === "failed") {
       expect(body.indexOf('"message-metadata"')).toBeLessThan(
         body.indexOf('"type":"error"'),
       );
+    }
   },
 );
 
@@ -119,7 +120,7 @@ it("writes a UIMessage SSE round-trip for validated text and Pond data parts", a
           role: "assistant",
           content: "A lighting study.",
           metadata: {
-            elapsedMs: 90000,
+            elapsedMs: 90_000,
             question: {
               question: "Which topic?",
               options: ["Film", "Architecture"],

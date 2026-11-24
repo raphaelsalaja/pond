@@ -1,3 +1,5 @@
+import { isHTMLElement } from "@pond/ui/dom";
+
 const SETTLE_MS = 64;
 const PANE_PROPERTIES = new Set([
   "--window-left-width",
@@ -30,14 +32,16 @@ function isDiscreteLayoutTransition(node: Element): boolean {
   );
 }
 
-function isPaneWidthTransition(event: Event): boolean {
-  if (!(event instanceof TransitionEvent)) return false;
+function isPaneWidthTransition(event: TransitionEvent): boolean {
   if (PANE_PROPERTIES.has(event.propertyName)) {
     return true;
   }
-  if (event.propertyName !== "width") return false;
-  const slot =
-    event.target instanceof HTMLElement ? event.target.dataset.slot : undefined;
+  if (event.propertyName !== "width") {
+    return false;
+  }
+  const slot = isHTMLElement(event.target)
+    ? event.target.dataset.slot
+    : undefined;
   return slot === "left" || slot === "right";
 }
 
@@ -76,7 +80,9 @@ export function observeSettledSize(
         clearTimeout(timer);
         timer = 0;
       }
-      if (frame) return;
+      if (frame) {
+        return;
+      }
       frame = requestAnimationFrame(apply);
       return;
     }
@@ -84,12 +90,18 @@ export function observeSettledSize(
       cancelAnimationFrame(frame);
       frame = 0;
     }
-    if (timer) clearTimeout(timer);
+    if (timer) {
+      clearTimeout(timer);
+    }
     timer = window.setTimeout(apply, SETTLE_MS);
   };
-  const onTransitionEnd = (event: Event) => {
-    if (!isPaneWidthTransition(event)) return;
-    if (isAnimatingPane(element)) return;
+  const onTransitionEnd = (event: TransitionEvent) => {
+    if (!isPaneWidthTransition(event)) {
+      return;
+    }
+    if (isAnimatingPane(element)) {
+      return;
+    }
     apply();
   };
 
@@ -104,7 +116,11 @@ export function observeSettledSize(
     observer.disconnect();
     root?.removeEventListener("transitionend", onTransitionEnd);
     root?.removeEventListener("transitioncancel", onTransitionEnd);
-    if (frame) cancelAnimationFrame(frame);
-    if (timer) clearTimeout(timer);
+    if (frame) {
+      cancelAnimationFrame(frame);
+    }
+    if (timer) {
+      clearTimeout(timer);
+    }
   };
 }

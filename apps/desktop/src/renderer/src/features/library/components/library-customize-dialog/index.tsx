@@ -20,7 +20,8 @@ import type { LibraryMarkSource } from "@shared/library-mark";
 import type { LogoSource } from "@shared/logo-crop";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type ReactNode, type RefObject, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 import { listAppIconPreviews } from "@/features/settings";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
 import { LogoCropDialog } from "@/shared/components/logo-crop-dialog";
@@ -33,16 +34,16 @@ import {
   LIBRARY_ICONS,
   LIBRARY_SWATCHES,
   LibraryIcon,
-  type LibrarySwatch,
 } from "./icons";
+import type { LibrarySwatch } from "./icons";
 import {
   isDefaultMark,
-  type LibraryMark,
   markKey,
   markToLogo,
   PREVIEW_EMOJI,
   PREVIEW_GLYPH,
 } from "./mark";
+import type { LibraryMark } from "./mark";
 import styles from "./styles.module.css";
 
 type Picker = "pond" | "emoji" | "icon";
@@ -80,7 +81,9 @@ function restoreMark(
 ): MarkSelection {
   const source = library.mark;
   const image = { kind: "image", src: library.icon } as const;
-  if (!source) return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
+  if (!source) {
+    return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
+  }
   if (source.kind === "pond") {
     return {
       mark: { kind: "pond", tint: source.tint },
@@ -98,7 +101,9 @@ function restoreMark(
     return { mark: { kind: "emoji", emoji: source.emoji }, swatch };
   }
   const icon = LIBRARY_ICONS.find((entry) => entry.id === source.icon);
-  if (!icon) return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
+  if (!icon) {
+    return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
+  }
   return { mark: { kind: "icon", icon: icon.id }, swatch };
 }
 
@@ -106,8 +111,12 @@ function markSource(
   mark: LibraryMark,
   swatch: LibrarySwatch,
 ): LibraryMarkSource | null {
-  if (isDefaultMark(mark)) return null;
-  if (mark.kind === "pond") return { kind: "pond", tint: mark.tint };
+  if (isDefaultMark(mark)) {
+    return null;
+  }
+  if (mark.kind === "pond") {
+    return { kind: "pond", tint: mark.tint };
+  }
   if (mark.kind === "emoji") {
     return { kind: "emoji", emoji: mark.emoji, color: swatch.id };
   }
@@ -167,17 +176,20 @@ export function LibraryCustomizeDialog({
     setError(null);
     try {
       const result = await window.pond.query("library.identity.pickIcon", {});
-      if (result.ok) setCropSource(result.image);
-      else if (result.reason !== "cancelled") {
+      if (result.ok) {
+        setCropSource(result.image);
+      } else if (result.reason !== "cancelled") {
         setError("Choose a supported image.");
       }
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't choose the image. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't choose the image. Try again."));
     }
   }
 
   async function submit(): Promise<void> {
-    if (!changed || !nextName) return;
+    if (!changed || !nextName) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -206,8 +218,8 @@ export function LibraryCustomizeDialog({
         client.invalidateQueries({ queryKey: ["recent-libraries"] }),
       ]);
       onClose();
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't save the library. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't save the library. Try again."));
     } finally {
       setBusy(false);
     }
@@ -217,8 +229,11 @@ export function LibraryCustomizeDialog({
     <Dialog.Root
       open
       onOpenChange={(open, details) => {
-        if (busy) details.cancel();
-        else if (!open) onClose();
+        if (busy) {
+          details.cancel();
+        } else if (!open) {
+          onClose();
+        }
       }}
     >
       <Dialog.Portal>
@@ -278,7 +293,9 @@ export function LibraryCustomizeDialog({
                   onOpenChange={setPickerOpen}
                   onChange={(next) => {
                     changeMark(next);
-                    if (next.kind !== "icon") setPickerOpen(false);
+                    if (next.kind !== "icon") {
+                      setPickerOpen(false);
+                    }
                   }}
                 />
               </div>
@@ -522,7 +539,7 @@ interface PickerOption {
   next: LibraryMark;
 }
 
-function pickerOptions(picker: Picker, mark: LibraryMark): PickerOption[] {
+function pickerOptions(picker: Picker, mark: LibraryMark): Array<PickerOption> {
   if (picker === "pond") {
     return POND_LOGOS.map((entry) => ({
       key: entry.id,

@@ -30,8 +30,9 @@ export function createMymindSyncState(now: number): MymindSyncState {
 }
 
 function statePath(root: string, accountId: string): string {
-  if (!/^[A-Za-z0-9_-]+$/.test(accountId))
+  if (!/^[A-Za-z0-9_-]+$/.test(accountId)) {
     throw new Error("The mymind account ID is invalid.");
+  }
   return join(root, "mymind", `${accountId}.json`);
 }
 
@@ -39,12 +40,11 @@ export async function readMymindSyncState(
   root: string,
   accountId: string,
 ): Promise<MymindSyncState> {
-  const bundle = await readBundleJsonAsync<MymindSyncState>(
-    statePath(root, accountId),
-  );
+  const bundle = await readBundleJsonAsync(statePath(root, accountId));
   const parsed = MymindSyncStateSchema.safeParse(bundle?.data);
-  if (!parsed.success)
+  if (!parsed.success) {
     throw new Error("The mymind import state is missing or invalid.");
+  }
   return parsed.data;
 }
 
@@ -54,7 +54,9 @@ export async function writeMymindSyncState(
   state: MymindSyncState,
 ): Promise<void> {
   const parsed = MymindSyncStateSchema.safeParse(state);
-  if (!parsed.success) throw new Error("The mymind import state is invalid.");
+  if (!parsed.success) {
+    throw new Error("The mymind import state is invalid.");
+  }
   await writeBundleJsonAsync(statePath(root, accountId), parsed.data);
 }
 

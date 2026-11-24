@@ -1,29 +1,42 @@
 import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { Readable } from "node:stream";
 import { afterEach, describe, expect, it } from "vitest";
 import yauzl from "yauzl";
 import { zipDirectory } from "./export-zip";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   );
 });
 
+async function readText(stream: Readable): Promise<string> {
+  const chunks: Array<Buffer> = [];
+  for await (const chunk of stream) {
+    chunks.push(Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
 function entries(path: string): Promise<Map<string, string>> {
   return new Promise((done, fail) => {
     yauzl.open(path, { lazyEntries: true }, (error, zip) => {
-      if (error) return fail(error);
+      if (error) {
+        return fail(error);
+      }
       const found = new Map<string, string>();
       zip.on("entry", (entry: yauzl.Entry) => {
-        zip.openReadStream(entry, async (streamError, stream) => {
-          if (streamError) return fail(streamError);
-          const chunks: Buffer[] = [];
-          for await (const chunk of stream) chunks.push(Buffer.from(chunk));
-          found.set(entry.fileName, Buffer.concat(chunks).toString("utf8"));
-          zip.readEntry();
+        zip.openReadStream(entry, (streamError, stream) => {
+          if (streamError) {
+            return fail(streamError);
+          }
+          void readText(stream).then((text) => {
+            found.set(entry.fileName, text);
+            zip.readEntry();
+          }, fail);
         });
       });
       zip.on("end", () => done(found));

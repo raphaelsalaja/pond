@@ -1,9 +1,11 @@
 import { readColorMatch } from "@pond/schema/filters/color";
 import { FIELD_META } from "@pond/schema/filters/meta";
+import { isPredicateList } from "@pond/schema/filters/types";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Chip } from "@pond/ui";
-import { type ReactNode, useState } from "react";
-import { fieldIcon } from "@/features/search/query";
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { FIELD_ICONS } from "@/features/search/query";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
 import { FilterChip, FilterIcons, FilterPopup } from "../chip";
 import { ChoiceFilter } from "../choice";
@@ -11,7 +13,8 @@ import { ColorFilter } from "../color";
 import { ContentFilter } from "../content";
 import { editorIsSearchable, filterLayout } from "../layout";
 import type { FilterOption } from "../options";
-import { CustomFilter, type RangeUnit } from "../range";
+import { CustomFilter } from "../range";
+import type { RangeUnit } from "../range";
 import { DimensionsFilter } from "../range/dimensions";
 import {
   isFilterSelected,
@@ -27,12 +30,12 @@ export function FilterCategory({
   onChange,
 }: {
   field: FieldId;
-  options: FilterOption[];
-  rows: Predicate[];
-  onChange: (rows: Predicate[]) => void;
+  options: Array<FilterOption>;
+  rows: Array<Predicate>;
+  onChange: (rows: Array<Predicate>) => void;
 }) {
   const meta = FIELD_META[field];
-  const Icon = fieldIcon(field);
+  const Icon = FIELD_ICONS[field];
   const categoryFields = new Set<FieldId>(
     field === "width" ? ["width", "height"] : [field],
   );
@@ -113,20 +116,26 @@ const MAX_CHIP_ICONS = 3;
 const TILE_FIELDS = new Set<FieldId>(["source", "account"]);
 
 function selectedOptionIcons(
-  rules: readonly Predicate[],
-  options: readonly FilterOption[],
-): { key: string; icon: ReactNode }[] {
+  rules: ReadonlyArray<Predicate>,
+  options: ReadonlyArray<FilterOption>,
+): Array<{ key: string; icon: ReactNode }> {
   const [rule] = rules;
-  if (rules.length !== 1 || !rule || rule.negate) return [];
-  if (!["eq", "in", "some", "every"].includes(rule.operator)) return [];
-  const values = Array.isArray(rule.value) ? rule.value : [rule.value];
+  if (rules.length !== 1 || !rule || rule.negate) {
+    return [];
+  }
+  if (!["eq", "in", "some", "every"].includes(rule.operator)) {
+    return [];
+  }
+  const values = isPredicateList(rule.value) ? rule.value : [rule.value];
   const entries = values.map((value) => ({
     key: String(value),
     icon: options.find((option) =>
       isFilterSelected([{ ...rule, operator: "eq", value }], option.predicate),
     )?.icon,
   }));
-  if (!entries.every((entry) => entry.icon)) return [];
+  if (!entries.every((entry) => Boolean(entry.icon))) {
+    return [];
+  }
   return entries.slice(0, MAX_CHIP_ICONS);
 }
 
@@ -139,11 +148,11 @@ export function FilterEditor({
   onChange,
 }: {
   field: FieldId;
-  options: FilterOption[];
+  options: Array<FilterOption>;
   matching?: "any" | "all";
-  rows: Predicate[];
+  rows: Array<Predicate>;
   search: string;
-  onChange: (rows: Predicate[]) => void;
+  onChange: (rows: Array<Predicate>) => void;
 }) {
   const type = FIELD_META[field].type;
   const current = rows.find((row) => row.field === field);
@@ -153,9 +162,10 @@ export function FilterEditor({
   const apply = (predicate: Predicate) =>
     onChange(selectFilter(rows, predicate, true));
   const clearField = () => onChange(rows.filter((row) => row.field !== field));
-  if (field === "width")
+  if (field === "width") {
     return <DimensionsFilter rows={rows} onChange={onChange} />;
-  if (type === "enum" || type === "stringArray")
+  }
+  if (type === "enum" || type === "stringArray") {
     return (
       <ChoiceFilter
         field={field}
@@ -166,7 +176,8 @@ export function FilterEditor({
         onChange={onChange}
       />
     );
-  if (type === "optional" || type === "string")
+  }
+  if (type === "optional" || type === "string") {
     return (
       <ContentFilter
         field={field}
@@ -175,11 +186,13 @@ export function FilterEditor({
         onChange={onChange}
       />
     );
-  if (type === "color")
+  }
+  if (type === "color") {
     return (
       <ColorFilter current={current} onApply={apply} onClear={clearField} />
     );
-  if (type === "number" || type === "date")
+  }
+  if (type === "number" || type === "date") {
     return (
       <CustomFilter
         field={field}
@@ -190,5 +203,6 @@ export function FilterEditor({
         onClear={clearField}
       />
     );
+  }
   return null;
 }

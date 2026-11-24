@@ -1,15 +1,13 @@
 import { createListbox, definePrimitive, isComposing } from "@ui-sdk/core";
 import { usePrimitive } from "@ui-sdk/react/primitive";
 import {
-  type KeyboardEvent,
-  type MouseEvent,
-  type PointerEvent,
   useCallback,
   useEffect,
   useId,
   useMemo,
   useSyncExternalStore,
 } from "react";
+import type { KeyboardEvent, MouseEvent, PointerEvent } from "react";
 
 type ArrowKey = "ArrowDown" | "ArrowLeft" | "ArrowRight" | "ArrowUp";
 
@@ -19,7 +17,9 @@ export function nextPickerIndex(
   key: ArrowKey,
   columns = 1,
 ): number {
-  if (length <= 0) return -1;
+  if (length <= 0) {
+    return -1;
+  }
   const safeCurrent = current >= 0 && current < length ? current : 0;
   const step =
     key === "ArrowDown"
@@ -64,16 +64,33 @@ const pickerCursor = definePrimitive({
   slots: (slot) => ({ root: slot({ role: "none" }) }),
 });
 
+type Binder = (el: HTMLElement | null) => (() => void) | undefined;
+
+function createBinders(
+  listbox: Pick<ReturnType<typeof createListbox>, "bind">,
+) {
+  const binders = new Map<string, Binder>();
+  return (key: string) => {
+    let binder = binders.get(key);
+    if (!binder) {
+      binder = (el) =>
+        el ? listbox.bind(el, { key, props: { value: key } }) : undefined;
+      binders.set(key, binder);
+    }
+    return binder;
+  };
+}
+
 export interface PickerCursorOptions<T> {
   activeId?: string | null;
   collectionId?: string;
   columns?: number;
-  getId(item: T): string;
-  items: readonly T[];
-  onActivate(item: T): void;
-  onActiveIdChange?(id: string | null): void;
-  onHorizontalKey?(key: "ArrowLeft" | "ArrowRight", item: T): boolean;
-  onTab?(direction: 1 | -1): void;
+  getId: (item: T) => string;
+  items: ReadonlyArray<T>;
+  onActivate: (item: T) => void;
+  onActiveIdChange?: (id: string | null) => void;
+  onHorizontalKey?: (key: "ArrowLeft" | "ArrowRight", item: T) => boolean;
+  onTab?: (direction: 1 | -1) => void;
 }
 
 export function usePickerCursor<T>({
@@ -87,7 +104,7 @@ export function usePickerCursor<T>({
   onHorizontalKey,
   onTab,
 }: PickerCursorOptions<T>) {
-  const reactId = useId().replace(/:/g, "");
+  const reactId = useId().replaceAll(":", "");
   const collectionId = requestedCollectionId ?? `picker-collection-${reactId}`;
   const cursor = usePrimitive(pickerCursor, { onHighlight: onActiveIdChange });
   const { listbox } = cursor.api;
@@ -113,22 +130,12 @@ export function usePickerCursor<T>({
   const activeDomId = activeId ? optionId(activeId) : undefined;
 
   /** Stable ref callbacks per option, so a render never unbinds and rebinds the highlighted row. */
-  const bindOption = useMemo(() => {
-    type Binder = (el: HTMLElement | null) => (() => void) | undefined;
-    const binders = new Map<string, Binder>();
-    return (key: string) => {
-      let binder = binders.get(key);
-      if (!binder) {
-        binder = (el) =>
-          el ? listbox.bind(el, { key, props: { value: key } }) : undefined;
-        binders.set(key, binder);
-      }
-      return binder;
-    };
-  }, [listbox]);
+  const bindOption = useMemo(() => createBinders(listbox), [listbox]);
 
   useEffect(() => {
-    if (!activeDomId) return;
+    if (!activeDomId) {
+      return;
+    }
     document
       .getElementById(activeDomId)
       ?.scrollIntoView?.({ block: "nearest" });
@@ -140,7 +147,9 @@ export function usePickerCursor<T>({
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     const { key } = event;
-    if (isComposing(event.nativeEvent)) return;
+    if (isComposing(event.nativeEvent)) {
+      return;
+    }
 
     if (key === "Tab" && onTab) {
       event.preventDefault();
@@ -150,24 +159,34 @@ export function usePickerCursor<T>({
 
     if (key === "Enter") {
       const item = activeIndex >= 0 ? items[activeIndex] : undefined;
-      if (!item) return;
+      if (!item) {
+        return;
+      }
       event.preventDefault();
       onActivate(item);
       return;
     }
 
     const activeItem = items[activeIndex];
-    if (!activeItem) return;
+    if (!activeItem) {
+      return;
+    }
     const horizontal = key === "ArrowLeft" || key === "ArrowRight";
     if (horizontal && onHorizontalKey?.(key, activeItem)) {
       event.preventDefault();
       return;
     }
-    if (horizontal && columns === 1) return;
-    if (!isArrowKey(key) && key !== "PageUp" && key !== "PageDown") return;
+    if (horizontal && columns === 1) {
+      return;
+    }
+    if (!isArrowKey(key) && key !== "PageUp" && key !== "PageDown") {
+      return;
+    }
 
     /** The default first row is derived, so seed the listbox before it steps from it. */
-    if (highlighted !== activeId) listbox.highlight(activeId);
+    if (highlighted !== activeId) {
+      listbox.highlight(activeId);
+    }
 
     if (isArrowKey(key) && columns > 1) {
       event.preventDefault();
@@ -176,8 +195,9 @@ export function usePickerCursor<T>({
       return;
     }
 
-    if (listbox.keydown(event.nativeEvent) !== undefined)
+    if (listbox.keydown(event.nativeEvent) !== undefined) {
       event.preventDefault();
+    }
   }
 
   function getItemProps(item: T) {
@@ -189,8 +209,9 @@ export function usePickerCursor<T>({
       onClick: () => onActivate(item),
       onMouseDown: (event: MouseEvent<HTMLElement>) => event.preventDefault(),
       onPointerMove: (event: PointerEvent<HTMLElement>) => {
-        if (id !== activeId)
+        if (id !== activeId) {
           listbox.highlight(id, { event: event.nativeEvent });
+        }
       },
     };
   }

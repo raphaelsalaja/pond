@@ -1,14 +1,17 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { Predicate } from "@pond/schema/filters/types";
+import { isHTMLTag } from "@pond/ui/dom";
 import { RouterContextProvider } from "@tanstack/react-router";
 import { act, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openLibraryAt } from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import { FilterCategory } from "./category";
-import { choiceOptions, type FilterOption, presetOptions } from "./options";
+import { choiceOptions, presetOptions } from "./options";
+import type { FilterOption } from "./options";
 
 function Harness({
   field,
@@ -17,9 +20,9 @@ function Harness({
   onRows,
 }: {
   field: Predicate["field"];
-  initial: Predicate[];
-  options: FilterOption[];
-  onRows: (rows: Predicate[]) => void;
+  initial: Array<Predicate>;
+  options: Array<FilterOption>;
+  onRows: (rows: Array<Predicate>) => void;
 }) {
   const [value, setValue] = useState(initial);
   onRows(value);
@@ -33,10 +36,79 @@ function Harness({
   );
 }
 
+function element(role: string, text: string): HTMLElement {
+  const elements = [
+    ...document.querySelectorAll<HTMLElement>(
+      role === "button" ? "button" : `[role="${role}"]`,
+    ),
+  ];
+  const match = elements.find(
+    (node) =>
+      node.getAttribute("aria-label") === text || node.textContent === text,
+  );
+  if (!match) {
+    throw new Error(`Missing ${role}: ${text}`);
+  }
+  return match;
+}
+
+async function click(role: string, text: string) {
+  await act(async () => element(role, text).click());
+}
+
+async function fill(label: string, value: string) {
+  const labels = [...document.querySelectorAll<HTMLLabelElement>("label")];
+  const input =
+    document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+      `input[aria-label="${label}"]`,
+    ) ??
+    document.querySelector<HTMLTextAreaElement>(
+      `textarea[aria-label="${label}"]`,
+    ) ??
+    document.getElementById(
+      labels.find((node) => node.textContent === label)?.htmlFor ?? "",
+    );
+  if (!isHTMLTag(input, "input") && !isHTMLTag(input, "textarea")) {
+    throw new Error(`Missing input ${label}`);
+  }
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      isHTMLTag(input, "textarea")
+        ? HTMLTextAreaElement.prototype
+        : HTMLInputElement.prototype,
+      "value",
+    )?.set?.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+
+async function apply() {
+  await act(
+    async () =>
+      new Promise((resolve) => {
+        setTimeout(resolve, 300);
+      }),
+  );
+}
+
+async function context(text: string) {
+  await act(async () => {
+    element("menuitemcheckbox", text).dispatchEvent(
+      new MouseEvent("contextmenu", { bubbles: true, cancelable: true }),
+    );
+  });
+}
+
+function checkboxLabels() {
+  return [...document.querySelectorAll('[role="menuitemcheckbox"]')].map(
+    (node) => node.textContent,
+  );
+}
+
 describe("filter editors", () => {
   let root: Root;
   let host: HTMLDivElement;
-  let rows: Predicate[];
+  let rows: Array<Predicate>;
   beforeEach(() => {
     vi.stubGlobal(
       "ResizeObserver",
@@ -50,7 +122,7 @@ describe("filter editors", () => {
       ["one", ["design", "motion"]],
       ["two", ["design"]],
       ["three", []],
-    ] satisfies [string, string[]][]) {
+    ] satisfies Array<[string, Array<string>]>) {
       const save = normalise({
         id,
         tags,
@@ -60,7 +132,9 @@ describe("filter editors", () => {
           ? [{ kind: "file", path: "asset.design", sha256: "", size: 1 }]
           : [],
       });
-      if (!save) throw new Error("Invalid count fixture");
+      if (!save) {
+        throw new Error("Invalid count fixture");
+      }
       pool.upsert(save);
     }
     rows = [];
@@ -76,8 +150,8 @@ describe("filter editors", () => {
   });
   async function render(
     field: Predicate["field"],
-    initial: Predicate[] = [],
-    options: FilterOption[] = field === "tags"
+    initial: Array<Predicate> = [],
+    options: Array<FilterOption> = field === "tags"
       ? choiceOptions(field, [
           { label: "Design", value: "design" },
           { label: "Motion", value: "motion" },
@@ -108,60 +182,6 @@ describe("filter editors", () => {
         ?.click(),
     );
   }
-  function element(role: string, text: string): HTMLElement {
-    const elements = [
-      ...document.querySelectorAll<HTMLElement>(
-        role === "button" ? "button" : `[role="${role}"]`,
-      ),
-    ];
-    const match = elements.find(
-      (node) =>
-        node.getAttribute("aria-label") === text || node.textContent === text,
-    );
-    if (!match) throw new Error(`Missing ${role}: ${text}`);
-    return match;
-  }
-  async function click(role: string, text: string) {
-    await act(async () => element(role, text).click());
-  }
-  async function fill(label: string, value: string) {
-    const labels = [...document.querySelectorAll<HTMLLabelElement>("label")];
-    const input =
-      document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
-        `input[aria-label="${label}"]`,
-      ) ??
-      document.querySelector<HTMLTextAreaElement>(
-        `textarea[aria-label="${label}"]`,
-      ) ??
-      document.getElementById(
-        labels.find((node) => node.textContent === label)?.htmlFor ?? "",
-      );
-    if (
-      !(input instanceof HTMLInputElement) &&
-      !(input instanceof HTMLTextAreaElement)
-    )
-      throw new Error(`Missing input ${label}`);
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(
-        input instanceof HTMLTextAreaElement
-          ? HTMLTextAreaElement.prototype
-          : HTMLInputElement.prototype,
-        "value",
-      )?.set?.call(input, value);
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-  }
-  async function apply() {
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 300)));
-  }
-  async function context(text: string) {
-    await act(async () => {
-      element("menuitemcheckbox", text).dispatchEvent(
-        new MouseEvent("contextmenu", { bubbles: true, cancelable: true }),
-      );
-    });
-  }
-
   it("opens text fields such as font family with a search input", async () => {
     await render("fontFamily");
     const label = FIELD_META.fontFamily.label;
@@ -238,13 +258,9 @@ describe("filter editors", () => {
       [{ field: "tags", operator: "some", value: ["unused-0"] }],
       choiceOptions("tags", [{ label: "Design", value: "design" }, ...unused]),
     );
-    const labels = () =>
-      [...document.querySelectorAll('[role="menuitemcheckbox"]')].map(
-        (node) => node.textContent,
-      );
-    expect(labels()).toEqual(["Untagged1", "Design2", "Unused 0"]);
+    expect(checkboxLabels()).toEqual(["Untagged1", "Design2", "Unused 0"]);
     await click("menuitem", "8 tags with no matching Saves");
-    expect(labels()).toHaveLength(11);
+    expect(checkboxLabels()).toHaveLength(11);
   });
 
   it("has no generic matching control or range presets for duration", async () => {

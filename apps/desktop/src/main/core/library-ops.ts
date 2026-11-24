@@ -17,8 +17,8 @@ import { commitLibraryPointer } from "./recent-libraries";
 import { recordForUndo } from "./undo";
 
 interface IntegrityReport {
-  orphans: string[];
-  missing: string[];
+  orphans: Array<string>;
+  missing: Array<string>;
   errors: Record<string, string>;
   totalIndexed: number;
   totalOnDisk: number;
@@ -38,7 +38,7 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
     .map((e) => e.slice(0, -".info".length));
   const onDiskSet = new Set(onDiskIds);
 
-  const orphans: string[] = [];
+  const orphans: Array<string> = [];
   const errors: Record<string, string> = {};
   for (const id of onDiskIds) {
     if (!indexedSet.has(id)) {
@@ -123,7 +123,7 @@ export async function relocateLibrary(
   readOrCreateLibraryId(destResolved);
 
   const globalDb = await getGlobalDb();
-  await globalDb
+  globalDb
     .insert(settingsTable)
     .values({ id: "singleton", libraryRoot: destResolved })
     .onConflictDoUpdate({
@@ -143,7 +143,9 @@ export async function relocateLibrary(
 export async function syncLibraryRootMetadata(): Promise<void> {
   const pointerPath = readLibraryPointer();
   const pointer = pointerPath ? normalizeLibraryPath(pointerPath) : "";
-  if (!pointer) return;
+  if (!pointer) {
+    return;
+  }
 
   const globalDb = await getGlobalDb();
   const rows = await globalDb
@@ -151,9 +153,11 @@ export async function syncLibraryRootMetadata(): Promise<void> {
     .from(settingsTable)
     .where(eq(settingsTable.id, "singleton"));
   const stored = rows[0]?.libraryRoot ?? "";
-  if (isSamePath(stored, pointer)) return;
+  if (isSamePath(stored, pointer)) {
+    return;
+  }
 
-  await globalDb
+  globalDb
     .insert(settingsTable)
     .values({ id: "singleton", libraryRoot: pointer })
     .onConflictDoUpdate({
@@ -174,8 +178,10 @@ export async function emptyTrashOlderThan(days: number): Promise<number> {
   const targets = cutoff
     ? all.filter((r) => r.deletedAt && r.deletedAt.getTime() <= cutoff)
     : all;
-  if (targets.length === 0) return 0;
-  const txs: Transaction[] = targets.map((r) => ({
+  if (targets.length === 0) {
+    return 0;
+  }
+  const txs: Array<Transaction> = targets.map((r) => ({
     kind: "purge",
     model: "save",
     id: r.id,
@@ -183,12 +189,16 @@ export async function emptyTrashOlderThan(days: number): Promise<number> {
     meta: { actor: "system", actorReason: "trash-auto-empty" },
   }));
   await executeBatch(txs);
-  for (const tx of txs) recordForUndo(tx);
+  for (const tx of txs) {
+    recordForUndo(tx);
+  }
   return txs.length;
 }
 
 export async function purgeDirectory(target: string): Promise<number> {
-  if (!existsSync(target)) return 0;
+  if (!existsSync(target)) {
+    return 0;
+  }
   const entries = await readdir(target);
   for (const entry of entries) {
     await rm(join(target, entry), { recursive: true, force: true });

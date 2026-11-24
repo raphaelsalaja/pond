@@ -25,7 +25,7 @@ interface TrayTemplateItem {
   registerAccelerator?: boolean;
   role?: "quit";
   click?: () => void;
-  submenu?: TrayTemplateItem[];
+  submenu?: Array<TrayTemplateItem>;
 }
 
 export interface TrayTemplateActions {
@@ -65,7 +65,9 @@ export function traySavingLabel(
   input: Pick<TrayStatusInput, "ingesting" | "inflight">,
 ): string | null {
   const { ingesting, inflight } = input;
-  if (ingesting <= 0) return null;
+  if (ingesting <= 0) {
+    return null;
+  }
   if (inflight <= 0) {
     return ingesting === 1
       ? "Waiting to save 1 item"
@@ -87,9 +89,9 @@ export function buildTrayTemplate(
   options: {
     version: string;
     accelerators?: TrayAccelerators;
-    blankDocuments?: readonly TrayBlankDocument[];
+    blankDocuments?: ReadonlyArray<TrayBlankDocument>;
   },
-): TrayTemplateItem[] {
+): Array<TrayTemplateItem> {
   const accelerators = options.accelerators ?? {};
   const run = (
     label: string,
@@ -102,7 +104,7 @@ export function buildTrayTemplate(
     click: () => void actions.onMenuAction(id),
   });
 
-  const template: TrayTemplateItem[] = [
+  const template: Array<TrayTemplateItem> = [
     {
       label: trayHeaderLabel(status),
       enabled: false,

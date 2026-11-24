@@ -7,13 +7,13 @@ import { useInboxNavigation } from "@/features/library/hooks/use-inbox-items";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
 import type { ReviewQueue } from "@/features/library/lib/review-queue";
 import {
-  type InboxScope,
   inboxPicker,
   inboxReview,
   useInboxReview,
   useInboxReviewScope,
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
+import type { InboxScope } from "@/features/library/state/inbox-review";
 import { lastGridHrefOutsideInbox } from "@/features/library/state/last-grid";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
@@ -23,11 +23,11 @@ import {
   useNotification,
 } from "@/features/notifications";
 import { ensureSaves } from "@/features/saves/pool";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import styles from "./styles.module.css";
 
 function leaveInbox() {
-  getAppRouter()?.history.push(lastGridHrefOutsideInbox());
+  getAppHistory()?.push(lastGridHrefOutsideInbox());
 }
 
 export function InboxReview() {
@@ -38,11 +38,16 @@ export function InboxReview() {
   const loaded = useInboxReviewScope();
 
   useEffect(() => {
-    if (scope) void inboxReview.start(scope);
-    else inboxReview.exit();
+    if (scope) {
+      void inboxReview.start(scope);
+    } else {
+      inboxReview.exit();
+    }
   }, [scope]);
 
-  if (!scope) return null;
+  if (!scope) {
+    return null;
+  }
   return <InboxPage scope={scope} queue={loaded === scope ? queue : null} />;
 }
 
@@ -64,13 +69,17 @@ function InboxPage({
 
   const ids = queue?.ids;
   useEffect(() => {
-    if (ids) void ensureSaves(ids).catch(() => {});
+    if (ids) {
+      void ensureSaves(ids).catch(() => {});
+    }
   }, [ids]);
 
   /** A resolved notification or settled work drops back to the deck instead of a blank pane. */
   const open = notification !== null || progress !== undefined;
   useEffect(() => {
-    if (selectedId && !open) inboxPicker.select(null);
+    if (selectedId && !open) {
+      inboxPicker.select(null);
+    }
   }, [selectedId, open]);
 
   const close = () => (total > 0 ? inboxPicker.select(null) : leaveInbox());
@@ -78,8 +87,10 @@ function InboxPage({
   /** With no Saves to review, the first notification opens rather than an empty state. */
   const autoOpen = queue !== null && total === 0 && !navigation.empty;
   useEffect(() => {
-    if (autoOpen && !inboxPicker.selected()) navigation.step(1);
-  });
+    if (autoOpen && !inboxPicker.selected()) {
+      navigation.step(1);
+    }
+  }, [autoOpen, navigation]);
 
   return (
     <div className={styles.page}>
@@ -92,15 +103,15 @@ function InboxPage({
         <NotificationDetail
           key={notification.id}
           notification={notification}
-          onLeave={navigation.leave}
-          onStep={navigation.step}
+          onLeave={() => navigation.leave()}
+          onStep={(by) => navigation.step(by)}
           onClose={close}
         />
       ) : progress ? (
         <ProgressDetail
           key={progress.id}
           progress={progress}
-          onStep={navigation.step}
+          onStep={(by) => navigation.step(by)}
           onClose={close}
         />
       ) : queue === null ? (
@@ -153,7 +164,7 @@ function InboxPage({
         <ReviewDeck
           queue={queue}
           onExit={leaveInbox}
-          onStep={navigation.step}
+          onStep={(by) => navigation.step(by)}
           finished={
             <ReviewFinished
               queue={queue}

@@ -77,7 +77,7 @@ describe("Assistant model policy", () => {
   });
 
   it("offers first-party chat providers only", () => {
-    const modelIds: readonly string[] = ASSISTANT_MODELS.map(
+    const modelIds: ReadonlyArray<string> = ASSISTANT_MODELS.map(
       (model) => model.id,
     );
     expect(modelIds).not.toContain("qwen");

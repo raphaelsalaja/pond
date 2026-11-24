@@ -18,14 +18,16 @@ export interface ReferenceItem {
 }
 
 export function toReferenceItems(
-  ids: string[],
-  sources: AssistantSource[],
+  ids: Array<string>,
+  sources: Array<AssistantSource>,
   renderMedia?: (source: AssistantSource) => ReactNode,
-): ReferenceItem[] {
+): Array<ReferenceItem> {
   const byId = new Map(sources.map((source) => [source.id, source]));
   return [...new Set(ids)].flatMap((id) => {
     const source = byId.get(id);
-    if (!source) return [];
+    if (!source) {
+      return [];
+    }
     const excerpt = sourceExcerpt(source.notes || source.description, 140);
     return [
       {
@@ -48,10 +50,10 @@ export function SavePreview({
   onAttach,
 }: {
   item: ReferenceItem;
-  sources: AssistantSource[];
-  attachedIds: string[];
+  sources: Array<AssistantSource>;
+  attachedIds: Array<string>;
   onOpenSave: (id: string) => void;
-  onAttach: (sources: AssistantSource[]) => void;
+  onAttach: (sources: Array<AssistantSource>) => void;
 }) {
   const attached = attachedIds.includes(item.id);
   return (
@@ -77,7 +79,9 @@ export function SavePreview({
               disabled={attached}
               onClick={() => {
                 const source = sources.find((save) => save.id === item.id);
-                if (source) onAttach([source]);
+                if (source) {
+                  onAttach([source]);
+                }
               }}
             >
               {attached ? "Added to message" : "Add to message"}
@@ -96,7 +100,9 @@ export function fileType(path: string | undefined) {
 
 function RowMeta({ id }: { id: string }) {
   const save = useSave(id);
-  if (!save) return null;
+  if (!save) {
+    return null;
+  }
   const type = fileType(pickPrimaryFile(save)?.path);
   const date = formatAbsolute(save.savedAt);
   return (
@@ -115,11 +121,11 @@ export function ConsultedSaves({
   onAttach,
   renderMedia,
 }: {
-  sources: AssistantSource[];
-  saveIds?: string[];
-  attachedIds?: string[];
+  sources: Array<AssistantSource>;
+  saveIds?: Array<string>;
+  attachedIds?: Array<string>;
   onOpenSave: (id: string) => void;
-  onAttach: (sources: AssistantSource[]) => void;
+  onAttach: (sources: Array<AssistantSource>) => void;
   renderMedia?: (source: AssistantSource) => ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -129,7 +135,9 @@ export function ConsultedSaves({
     renderMedia,
   );
   useSourceCovers(items.map((item) => item.id));
-  if (!items.length) return null;
+  if (!items.length) {
+    return null;
+  }
   const renderRow = (item: ReferenceItem) => (
     <article key={item.id} className={styles.row} data-hover-row="">
       <Popover.Root>
@@ -190,10 +198,10 @@ export function ReferencedSavesPopover({
   onClose,
 }: {
   open: boolean;
-  sources: AssistantSource[];
-  attachedIds: string[];
+  sources: Array<AssistantSource>;
+  attachedIds: Array<string>;
   anchorRef: RefObject<HTMLElement | null>;
-  onAttach: (sources: AssistantSource[]) => void;
+  onAttach: (sources: Array<AssistantSource>) => void;
   onClose: () => void;
 }) {
   return (
@@ -201,7 +209,9 @@ export function ReferencedSavesPopover({
       open={open}
       modal={false}
       onOpenChange={(next) => {
-        if (!next) onClose();
+        if (!next) {
+          onClose();
+        }
       }}
     >
       <Popover.Portal>

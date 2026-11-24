@@ -2,12 +2,11 @@ import { PrefsSchema } from "@pond/schema";
 import type { LibraryQueryRequest } from "@shared/library-query";
 import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/app/test/library-router";
+import { openLibraryAt } from "@/app/test/library-router";
+import type { LibraryTestRouter } from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import {
@@ -31,7 +30,9 @@ function save(id: string) {
     files: [],
     tags: [],
   });
-  if (!row) throw new Error("Invalid fixture");
+  if (!row) {
+    throw new Error("Invalid fixture");
+  }
   return row;
 }
 
@@ -73,8 +74,12 @@ describe("tagging in a filtered view", () => {
     closeSaveTagPicker();
     vi.stubGlobal("pond", {
       query: vi.fn(async (name: string, _input?: LibraryQueryRequest) => {
-        if (name === "settings.getPrefs") return prefs;
-        if (name === "settings.setPrefs") return { prefs };
+        if (name === "settings.getPrefs") {
+          return prefs;
+        }
+        if (name === "settings.setPrefs") {
+          return { prefs };
+        }
         if (name === "saves.queryPage") {
           return {
             ids: [...ids],
@@ -84,14 +89,20 @@ describe("tagging in a filtered view", () => {
             nextCursor: null,
           };
         }
-        if (name === "saves.queryIds") return { ids: [...ids] };
-        if (name === "saves.getMany") return [];
+        if (name === "saves.queryIds") {
+          return { ids: [...ids] };
+        }
+        if (name === "saves.getMany") {
+          return [];
+        }
         return [];
       }),
       onSyncAction: (listener: () => void) => {
         sync = listener;
         return () => {
-          if (sync === listener) sync = null;
+          if (sync === listener) {
+            sync = null;
+          }
         };
       },
       onPrefsChanged: () => () => {},
@@ -119,7 +130,9 @@ describe("tagging in a filtered view", () => {
     ids = ["keep"];
     sync?.();
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 150);
+      });
     });
 
     expect(host.querySelector("[data-ids]")?.getAttribute("data-ids")).toBe(
@@ -143,13 +156,17 @@ describe("tagging in a filtered view", () => {
 async function settle(expected: string): Promise<void> {
   for (let attempt = 0; attempt < 30; attempt++) {
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
     });
     const ids = document.querySelector("[data-ids]")?.getAttribute("data-ids");
     const loading = document
       .querySelector("[data-loading]")
       ?.getAttribute("data-loading");
-    if (ids === expected && loading === "false") return;
+    if (ids === expected && loading === "false") {
+      return;
+    }
   }
   throw new Error(
     `Filtered view did not settle: ${document.body.textContent ?? ""}`,

@@ -50,8 +50,12 @@ function isGenericOgImage(url: string): boolean {
 }
 
 function needsCheck(row: AvatarSubject): boolean {
-  if (!row.handle) return false;
-  if (row.avatarUrl && isGenericOgImage(row.avatarUrl)) return true;
+  if (!row.handle) {
+    return false;
+  }
+  if (row.avatarUrl && isGenericOgImage(row.avatarUrl)) {
+    return true;
+  }
   const checked = row.avatarCheckedAt ? Date.parse(row.avatarCheckedAt) : 0;
   const ttl = row.avatarUrl ? FOUND_TTL_MS : MISS_TTL_MS;
   return !Number.isFinite(checked) || Date.now() - checked > ttl;
@@ -68,7 +72,9 @@ const probedAt = new Map<string, number>();
 
 /** Avatar links 404 once the person changes their picture, so found links get a HEAD probe at most hourly. */
 async function linkBroken(url: string): Promise<boolean> {
-  if (Date.now() - (probedAt.get(url) ?? 0) < PROBE_TTL_MS) return false;
+  if (Date.now() - (probedAt.get(url) ?? 0) < PROBE_TTL_MS) {
+    return false;
+  }
   probedAt.set(url, Date.now());
   try {
     const res = await fetch(url, {
@@ -84,8 +90,12 @@ async function linkBroken(url: string): Promise<boolean> {
 }
 
 async function needsRefresh(row: AvatarSubject): Promise<boolean> {
-  if (needsCheck(row)) return true;
-  if (!row.handle || !row.avatarUrl) return false;
+  if (needsCheck(row)) {
+    return true;
+  }
+  if (!row.handle || !row.avatarUrl) {
+    return false;
+  }
   return signedLinkExpired(row.avatarUrl) || (await linkBroken(row.avatarUrl));
 }
 
@@ -94,7 +104,9 @@ function profilePageUrl(
   handle: string,
   kind: WatchKind | undefined,
 ): string | null {
-  if (kind === "playlist" || kind === "list") return null;
+  if (kind === "playlist" || kind === "list") {
+    return null;
+  }
   const owner = handle.split("/")[0] ?? handle;
   const h = encodeURIComponent(owner);
   switch (source) {
@@ -139,11 +151,11 @@ function profilePageUrl(
 
 function decodeEntities(s: string): string {
   return s
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replaceAll("&amp;", "&")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">");
 }
 
 function ogImageFrom(html: string): string | null {
@@ -154,9 +166,13 @@ function ogImageFrom(html: string): string | null {
       continue;
     }
     const content = /content\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1];
-    if (!content) continue;
+    if (!content) {
+      continue;
+    }
     const url = decodeEntities(content);
-    if (/^https?:\/\//i.test(url) && !isGenericOgImage(url)) return url;
+    if (/^https?:\/\//i.test(url) && !isGenericOgImage(url)) {
+      return url;
+    }
   }
   return null;
 }
@@ -174,11 +190,17 @@ async function fetchOgImage(pageUrl: string): Promise<string | null> {
           cookie: "CONSENT=YES+cb; SOCS=CAI",
         },
       });
-      if (!res.ok) continue;
+      if (!res.ok) {
+        continue;
+      }
       const html = (await res.text()).slice(0, HTML_SCAN_BYTES);
       const image = ogImageFrom(html);
-      if (image) return image;
-    } catch {}
+      if (image) {
+        return image;
+      }
+    } catch {
+      /** A failed fetch falls through to the next user agent. */
+    }
   }
   return null;
 }
@@ -196,7 +218,9 @@ async function arenaAvatar(
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     const body = AvatarResponseSchema.safeParse(await res.json());
     return body.success ? (body.data.avatar ?? null) : null;
   } catch {
@@ -214,7 +238,9 @@ async function substackAvatar(handle: string): Promise<string | null> {
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     const body = SubstackProfileSchema.safeParse(await res.json());
     return body.success ? (body.data.photo_url ?? null) : null;
   } catch {
@@ -233,11 +259,15 @@ async function pinterestAvatar(user: string): Promise<string | null> {
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     const html = await res.text();
     const raw = /"image_xlarge_url"\s*:\s*"([^"]+)"/.exec(html)?.[1];
-    if (!raw) return null;
-    const url = decodeEntities(raw.replace(/\\\//g, "/"));
+    if (!raw) {
+      return null;
+    }
+    const url = decodeEntities(raw.replaceAll(String.raw`\/`, "/"));
     return /^https?:\/\//i.test(url) ? url : null;
   } catch {
     return null;
@@ -261,11 +291,12 @@ async function redditAvatar(
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       },
     );
-    if (!res.ok) return null;
-    const { avatarFromMeJson } = await import(
-      "../refresh/harvest/reddit/listing"
-    );
-    return avatarFromMeJson(await res.json());
+    if (!res.ok) {
+      return null;
+    }
+    const { avatarFromMeJson, RedditAccountSchema } =
+      await import("../refresh/harvest/reddit/listing");
+    return avatarFromMeJson(RedditAccountSchema.parse(await res.json()));
   } catch {
     return null;
   }
@@ -281,11 +312,17 @@ async function resolveAvatarUrl(
     if (kind === undefined || kind === "user") {
       return arenaAvatar(handle, "users");
     }
-    if (kind === "group") return arenaAvatar(handle, "groups");
+    if (kind === "group") {
+      return arenaAvatar(handle, "groups");
+    }
     return null;
   }
-  if (source === "reddit") return redditAvatar(handle, partition);
-  if (source === "substack") return substackAvatar(handle);
+  if (source === "reddit") {
+    return redditAvatar(handle, partition);
+  }
+  if (source === "substack") {
+    return substackAvatar(handle);
+  }
   if (source === "pinterest") {
     const owner = handle.split("/")[0];
     return owner ? pinterestAvatar(owner) : null;
@@ -297,7 +334,9 @@ async function resolveAvatarUrl(
 let sweeping = false;
 
 export function fillMissingAvatars(): void {
-  if (sweeping) return;
+  if (sweeping) {
+    return;
+  }
   sweeping = true;
   void (async () => {
     try {
@@ -314,15 +353,19 @@ export function fillMissingAvatars(): void {
           await checkAccount(account);
           continue;
         }
-        if (!(await needsRefresh(account))) continue;
+        if (!(await needsRefresh(account))) {
+          continue;
+        }
         await checkAccount(account);
       }
       for (const watch of await listWatches()) {
-        if (!(await needsRefresh(watch))) continue;
+        if (!(await needsRefresh(watch))) {
+          continue;
+        }
         await checkWatch(watch);
       }
-    } catch (err) {
-      log.warn("[pond avatars] sweep failed", err);
+    } catch (error) {
+      log.warn("[pond avatars] sweep failed", error);
     } finally {
       sweeping = false;
     }
@@ -334,7 +377,9 @@ async function probeHandle(account: ConnectedAccount): Promise<void> {
   const checked = account.avatarCheckedAt
     ? Date.parse(account.avatarCheckedAt)
     : 0;
-  if (Number.isFinite(checked) && Date.now() - checked < MISS_TTL_MS) return;
+  if (Number.isFinite(checked) && Date.now() - checked < MISS_TTL_MS) {
+    return;
+  }
   const { ensureAccountHandle } = await import("./account-key");
   await ensureAccountHandle(account);
   const probed = await getAccount(account.id);

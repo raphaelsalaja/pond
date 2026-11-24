@@ -9,8 +9,12 @@ export function isSourceFetchDue(
   now: number,
   lastAttemptAt = 0,
 ): boolean {
-  if (sync.paused) return false;
-  if (sync.intervalHours === undefined) return globalDue;
+  if (sync.paused) {
+    return false;
+  }
+  if (sync.intervalHours === undefined) {
+    return globalDue;
+  }
   const synced = sync.lastSyncedAt ? Date.parse(sync.lastSyncedAt) : 0;
   const last = Math.max(lastAttemptAt, Number.isNaN(synced) ? 0 : synced);
   return now - last >= sync.intervalHours * 3_600_000;
@@ -22,7 +26,9 @@ export function isSyncScheduleDue(
   lastRunAt: number,
   calendarSince: number,
 ): boolean {
-  if (!schedule.enabled) return false;
+  if (!schedule.enabled) {
+    return false;
+  }
   if (schedule.recurrence) {
     const next = nextSyncOccurrence(
       schedule,
@@ -30,8 +36,9 @@ export function isSyncScheduleDue(
     );
     return next !== null && next.getTime() <= now.getTime();
   }
-  if (!schedule.calendar)
+  if (!schedule.calendar) {
     return now.getTime() - lastRunAt >= schedule.intervalHours * 3_600_000;
+  }
   const { calendar } = schedule;
   const [hours = 0, minutes = 0] = calendar.time.split(":").map(Number);
   for (let offset = 0; offset < 7; offset++) {
@@ -41,34 +48,49 @@ export function isSyncScheduleDue(
     if (
       calendar.kind === "weekly" &&
       !calendar.days.includes(candidate.getDay())
-    )
+    ) {
       continue;
+    }
     const at = candidate.getTime();
-    if (at <= now.getTime() && at > Math.max(lastRunAt, calendarSince))
+    if (at <= now.getTime() && at > Math.max(lastRunAt, calendarSince)) {
       return true;
+    }
   }
   return false;
 }
 
 export function describeSyncSchedule(schedule: SyncSchedule): string {
-  if (!schedule.enabled) return "Manual only";
+  if (!schedule.enabled) {
+    return "Manual only";
+  }
   if (schedule.recurrence) {
     const { every, unit, time } = schedule.recurrence;
     return `Every ${every} ${unit}${every === 1 ? "" : "s"}${unit === "hour" ? "" : ` at ${time}`}`;
   }
-  if (!schedule.calendar)
+  if (!schedule.calendar) {
     return `Every ${schedule.intervalHours} ${schedule.intervalHours === 1 ? "hour" : "hours"}`;
+  }
   const { calendar } = schedule;
-  if (calendar.kind === "daily") return `Daily at ${calendar.time}`;
+  if (calendar.kind === "daily") {
+    return `Daily at ${calendar.time}`;
+  }
   const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return `${calendar.days.map((day) => names[day]).join(", ")} at ${calendar.time}`;
+}
+
+function dayNumber(date: Date): number {
+  return (
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000
+  );
 }
 
 export function nextSyncOccurrence(
   schedule: SyncSchedule,
   after: Date,
 ): Date | null {
-  if (!schedule.enabled || !schedule.recurrence) return null;
+  if (!schedule.enabled || !schedule.recurrence) {
+    return null;
+  }
   const rule = schedule.recurrence;
   const [year = 2026, month = 1, day = 1] = rule.startDate
     .split("-")
@@ -88,8 +110,6 @@ export function nextSyncOccurrence(
         Math.max(0, Math.floor((+after - +start) / interval) + 1) * interval,
     );
   }
-  const dayNumber = (date: Date) =>
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000;
   const elapsedDays = dayNumber(after) - dayNumber(start);
   const elapsedMonths =
     (after.getFullYear() - year) * 12 + after.getMonth() - (month - 1);
@@ -122,9 +142,12 @@ export function nextSyncOccurrence(
     for (let offset = 0; offset < (rule.unit === "week" ? 7 : 1); offset++) {
       const occurrence = new Date(candidate);
       occurrence.setDate(occurrence.getDate() + offset);
-      if (rule.unit === "week" && !rule.days.includes(occurrence.getDay()))
+      if (rule.unit === "week" && !rule.days.includes(occurrence.getDay())) {
         continue;
-      if (+occurrence >= +start && +occurrence > +after) return occurrence;
+      }
+      if (+occurrence >= +start && +occurrence > +after) {
+        return occurrence;
+      }
     }
   }
   return null;

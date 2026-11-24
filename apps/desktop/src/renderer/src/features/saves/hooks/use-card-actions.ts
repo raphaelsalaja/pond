@@ -1,12 +1,13 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { useCallback, useEffect } from "react";
 import { canImportDrop } from "@/features/saves/lib/import-feedback";
 import type { SaveListMode } from "@/features/saves/lib/list";
 import {
   notifyUnsupportedDrop,
-  type PasteImportTarget,
   pasteImportOf,
   runPasteImport,
 } from "@/features/saves/lib/paste-import";
+import type { PasteImportTarget } from "@/features/saves/lib/paste-import";
 import { isPeekClick } from "@/features/saves/lib/peek-click";
 import {
   clearSaveSelection,
@@ -52,7 +53,9 @@ export function useCardActions(
 
   const handleCardAuxClick = useCallback(
     (id: string, e: React.MouseEvent) => {
-      if (e.button !== 1) return;
+      if (e.button !== 1) {
+        return;
+      }
       e.preventDefault();
       runViewerAction(id, viewer.middleClickAction);
     },
@@ -68,7 +71,9 @@ export function useCardActions(
       }
       const meta = e.metaKey || e.ctrlKey;
       const shift = e.shiftKey;
-      if (meta || shift) e.preventDefault();
+      if (meta || shift) {
+        e.preventDefault();
+      }
       clickSave(id, { meta, shift }, filteredIds);
     },
     [filteredIds, viewer.peekClick],
@@ -91,7 +96,7 @@ export function useCardActions(
     const onPaste = (e: ClipboardEvent) => {
       const el = document.activeElement;
       if (
-        el instanceof HTMLElement &&
+        isHTMLElement(el) &&
         (el.isContentEditable ||
           el.tagName === "TEXTAREA" ||
           el.tagName === "INPUT")
@@ -100,9 +105,13 @@ export function useCardActions(
       }
 
       const data = e.clipboardData;
-      if (!data) return;
+      if (!data) {
+        return;
+      }
       const plan = pasteImportOf(data);
-      if (!plan) return;
+      if (!plan) {
+        return;
+      }
       e.preventDefault();
       void runPasteImport(plan, importFolder);
     };
@@ -112,7 +121,9 @@ export function useCardActions(
   }, [importFolder]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
-    if (!e.dataTransfer || isLibrarySaveDrag(e.dataTransfer)) return;
+    if (!e.dataTransfer || isLibrarySaveDrag(e.dataTransfer)) {
+      return;
+    }
     if (canImportDrop(e.dataTransfer.types ?? [])) {
       e.preventDefault();
       e.dataTransfer.dropEffect = "copy";
@@ -123,12 +134,16 @@ export function useCardActions(
     async (e: React.DragEvent) => {
       e.preventDefault();
       const dt = e.dataTransfer;
-      if (!dt || isLibrarySaveDrag(dt)) return;
+      if (!dt || isLibrarySaveDrag(dt)) {
+        return;
+      }
 
       const plan = pasteImportOf(dt);
-      if (plan && plan.kind !== "clipboard")
+      if (plan && plan.kind !== "clipboard") {
         await runPasteImport(plan, importFolder);
-      else notifyUnsupportedDrop();
+      } else {
+        notifyUnsupportedDrop();
+      }
     },
     [importFolder],
   );

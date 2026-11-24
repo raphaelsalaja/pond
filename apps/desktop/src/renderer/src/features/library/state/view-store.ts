@@ -10,18 +10,20 @@ import { z } from "zod";
 import type { SortDir } from "@/features/library/hooks/use-filtered-saves";
 import {
   canSearchAllSaves,
-  type SearchScope,
-  type SearchView,
   searchViewKey,
+} from "@/features/library/lib/search-view";
+import type {
+  SearchScope,
+  SearchView,
 } from "@/features/library/lib/search-view";
 import { combineQueries } from "@/features/library/lib/smart-folders";
 import {
   isLayoutValue,
-  type LayoutValue,
   nextLayout,
   readViewPref,
   writeViewPref,
 } from "@/features/library/lib/view-prefs";
+import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import {
   clampZoom,
   ZOOM_DEFAULT,
@@ -32,10 +34,8 @@ import {
   predicateIsActive,
 } from "@/features/search/query";
 import { notify } from "@/shared/lib/toast";
-import {
-  type FolderPresentation,
-  saveFolderPresentation,
-} from "./folder-presentation";
+import { saveFolderPresentation } from "./folder-presentation";
+import type { FolderPresentation } from "./folder-presentation";
 
 export type Combinator = "and" | "or";
 
@@ -45,7 +45,7 @@ export interface Sort {
 }
 
 function deriveQuery(
-  rows: Predicate[],
+  rows: Array<Predicate>,
   combinator: Combinator,
   previous: Query = EMPTY_QUERY,
 ): Query {
@@ -60,20 +60,22 @@ function deriveQuery(
 }
 
 function applyZoomVar(zoom: number): void {
-  if (!globalThis.document) return;
+  if (!globalThis.document) {
+    return;
+  }
   document.documentElement.style.setProperty("--grid-min", `${zoom}px`);
 }
 
 export type VisualProbe =
   | { kind: "saveId"; id: string; label: string }
-  | { kind: "vector"; model: string; values: number[]; label: string };
+  | { kind: "vector"; model: string; values: Array<number>; label: string };
 
 interface ViewStoreState {
   q: string;
   searchInput: string;
   /** Widening holds for the view it was chosen in; every other view searches itself. */
   searchAllView: string | null;
-  rows: Predicate[];
+  rows: Array<Predicate>;
   combinator: Combinator;
   query: Query;
   inheritedQuery: Query;
@@ -98,7 +100,9 @@ function readInitialLayout(): LayoutValue {
 }
 
 function readInitialZoom(): number {
-  if (!globalThis.window) return ZOOM_DEFAULT;
+  if (!globalThis.window) {
+    return ZOOM_DEFAULT;
+  }
   try {
     const raw = window.localStorage.getItem(ZOOM_STORAGE_KEY);
     const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
@@ -123,7 +127,9 @@ function readPersistedFilters(): PersistedFilters {
     semanticQuery: null,
   };
   const raw = readViewPref("filterRules");
-  if (!raw) return empty;
+  if (!raw) {
+    return empty;
+  }
   try {
     const parsed = PersistedFilters.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : empty;
@@ -135,7 +141,9 @@ function readPersistedFilters(): PersistedFilters {
 /** Filters now live in the URL; builds that kept them in a pref hand them over once, on the first launch. */
 export function takeLegacyFilters(): PersistedFilters | null {
   const legacy = readPersistedFilters();
-  if (!readViewPref("filterRules")) return null;
+  if (!readViewPref("filterRules")) {
+    return null;
+  }
   writeViewPref("filterRules", "");
   return legacy.rows.length > 0 || legacy.semanticQuery ? legacy : null;
 }
@@ -238,10 +246,10 @@ export function useHasActiveSearch(): boolean {
   return useSelector(store, (s) =>
     Boolean(
       s.q.trim() ||
-        s.query.rules.length ||
-        s.inheritedQuery.rules.length ||
-        s.semanticQuery ||
-        s.visualProbe,
+      s.query.rules.length ||
+      s.inheritedQuery.rules.length ||
+      s.semanticQuery ||
+      s.visualProbe,
     ),
   );
 }
@@ -270,7 +278,9 @@ export function useSearchScope(view: SearchView): SearchScope {
 }
 
 export function searchAllSaves(view: SearchView): void {
-  if (!canSearchAllSaves(view)) return;
+  if (!canSearchAllSaves(view)) {
+    return;
+  }
   const searchAllView = searchViewKey(view);
   store.setState((state) =>
     state.searchAllView === searchAllView ? state : { ...state, searchAllView },
@@ -307,7 +317,7 @@ export function setQuery(query: Query): void {
 }
 
 export function setSearchInput(
-  predicates: Predicate[],
+  predicates: Array<Predicate>,
   q: string,
   verbatim?: string,
 ): void {
@@ -321,7 +331,7 @@ export function setSearchInput(
   }));
 }
 
-export function updateLocalFilters(rows: Predicate[]): void {
+export function updateLocalFilters(rows: Array<Predicate>): void {
   store.setState((s) => ({
     ...s,
     searchInput: s.q,
@@ -380,8 +390,9 @@ export function getOverlays() {
 }
 
 export function setIncludeSubfolders(include: boolean): void {
-  if (!store.state.presentationFolderId)
+  if (!store.state.presentationFolderId) {
     writeViewPref("subfolders", include ? "1" : "0");
+  }
   store.setState((s) => ({ ...s, includeSubfolders: include }));
   persistPresentation();
 }
@@ -431,7 +442,9 @@ export function applySavedView(view: {
 
 export function addCondition(field?: FieldId): void {
   const next = field ?? FIELD_IDS[0];
-  if (!next) return;
+  if (!next) {
+    return;
+  }
   store.setState((s) => {
     const rows = [...s.rows, defaultPredicateFor(next)];
     return { ...s, rows, query: deriveQuery(rows, s.combinator, s.query) };
@@ -440,10 +453,15 @@ export function addCondition(field?: FieldId): void {
 
 export function updateRow(idx: number, next: Predicate | null): void {
   store.setState((s) => {
-    if (idx < 0 || idx >= s.rows.length) return s;
+    if (idx < 0 || idx >= s.rows.length) {
+      return s;
+    }
     const rows = [...s.rows];
-    if (next === null) rows.splice(idx, 1);
-    else rows[idx] = next;
+    if (next === null) {
+      rows.splice(idx, 1);
+    } else {
+      rows[idx] = next;
+    }
     return { ...s, rows, query: deriveQuery(rows, s.combinator, s.query) };
   });
 }
@@ -465,7 +483,9 @@ export function reorderRows(from: number, to: number): void {
     }
     const rows = [...s.rows];
     const [moved] = rows.splice(from, 1);
-    if (!moved) return s;
+    if (!moved) {
+      return s;
+    }
     rows.splice(to, 0, moved);
     return { ...s, rows, query: deriveQuery(rows, s.combinator, s.query) };
   });
@@ -495,7 +515,9 @@ function folderPresentationSnapshot(): Omit<
 }
 function persistPresentation(): void {
   const id = store.state.presentationFolderId;
-  if (!id) return;
+  if (!id) {
+    return;
+  }
   void saveFolderPresentation(id, folderPresentationSnapshot()).catch(() =>
     notify({
       id: "folder-view-save",
@@ -507,7 +529,9 @@ export function activateFolderPresentation(
   id: string | null,
   presentation?: FolderPresentation,
 ): void {
-  if (store.state.presentationFolderId === id) return;
+  if (store.state.presentationFolderId === id) {
+    return;
+  }
   if (id === null && store.state.activeViewId) {
     store.setState((state) => ({ ...state, presentationFolderId: null }));
     return;
@@ -534,13 +558,17 @@ export function useRandomSeed(): string {
 
 export function reseedRandomSort(): void {
   const randomSeed = crypto.randomUUID();
-  if (!store.state.presentationFolderId) writeViewPref("seed", randomSeed);
+  if (!store.state.presentationFolderId) {
+    writeViewPref("seed", randomSeed);
+  }
   store.setState((state) => ({ ...state, randomSeed }));
   persistPresentation();
 }
 
 export function setLayout(layout: LayoutValue): void {
-  if (!store.state.presentationFolderId) writeViewPref("view", layout);
+  if (!store.state.presentationFolderId) {
+    writeViewPref("view", layout);
+  }
   store.setState((s) => ({ ...s, layout }));
   persistPresentation();
 }
@@ -563,7 +591,7 @@ export function setSort(next: { key: string; dir: SortDir }): void {
   persistPresentation();
 }
 
-const SORT_KEY_CYCLE: readonly string[] = [
+const SORT_KEY_CYCLE: ReadonlyArray<string> = [
   "savedAt",
   "createdAt",
   "publishedAt",
@@ -606,7 +634,9 @@ export function setZoom(zoom: number): void {
   if (globalThis.window && !store.state.presentationFolderId) {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(clamped));
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the in-memory state still applies. */
+    }
   }
   applyZoomVar(clamped);
   store.setState((s) => ({ ...s, zoom: clamped }));
@@ -622,7 +652,9 @@ export function restoreDefaults(): void {
   if (globalThis.window && !store.state.presentationFolderId) {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(ZOOM_DEFAULT));
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the in-memory state still applies. */
+    }
   }
   applyZoomVar(ZOOM_DEFAULT);
   store.setState((s) => ({

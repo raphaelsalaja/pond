@@ -1,11 +1,7 @@
+import { isElement } from "@pond/ui/dom";
 import { useHotkeys } from "@tanstack/react-hotkeys";
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { AppShell } from "@/features/library/components/workspace-shell";
 import type { PreviewStepBinding, ViewerNav } from "@/features/saves";
 import {
@@ -13,13 +9,13 @@ import {
   controlKeepsKey,
   isTextOnlySave,
   loadOpenWithApps,
-  type OpenWithApp,
   openWithKind,
   peekOpenWithApps,
   previewStepRuns,
   saveOwnsKeyboard,
   useTrackVisit,
 } from "@/features/saves";
+import type { OpenWithApp } from "@/features/saves";
 import {
   closeSave,
   followDeparture,
@@ -38,22 +34,23 @@ import {
   setSaveViewerFileIndex,
   setSaveViewerNavigation,
   TextViewer,
-  type ViewerNavigation,
   viewerEscape,
 } from "@/features/saves/viewers";
+import type { ViewerNavigation } from "@/features/saves/viewers";
 import { tagClipboard } from "@/features/tags";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
-import {
-  bindingKeys,
-  type ShortcutDef,
-  useShortcutBindings,
-} from "@/shared/lib/shortcuts";
+import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
+import type { ShortcutDef } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
+
+type DetailAction =
+  | { kind: "step"; delta: -1 | 1; withinSave: boolean }
+  | { kind: "close" };
 
 interface DetailHotkey {
   hotkey: NonNullable<ShortcutDef["keys"]>;
   when?: (event: KeyboardEvent) => boolean;
-  run: () => void;
+  action: DetailAction;
 }
 
 export function SaveDetailPage({ id }: { id: string }) {
@@ -62,7 +59,9 @@ export function SaveDetailPage({ id }: { id: string }) {
   useTrackVisit(id);
 
   useEffect(() => {
-    if (primarySelection.get() !== id) primarySelection.set(id);
+    if (primarySelection.get() !== id) {
+      primarySelection.set(id);
+    }
     selection.setCursor(id);
   }, [id]);
 
@@ -74,7 +73,9 @@ export function SaveDetailPage({ id }: { id: string }) {
 
   const stepImageOrSave = useCallback(
     (delta: number) => {
-      if (viewerNav.current?.step(delta)) return;
+      if (viewerNav.current?.step(delta)) {
+        return;
+      }
       step(delta);
     },
     [step],
@@ -88,52 +89,67 @@ export function SaveDetailPage({ id }: { id: string }) {
       videoShown: activeVideoShown(),
     });
 
-  const hotkeys: DetailHotkey[] = [
+  const hotkeys: Array<DetailHotkey> = [
     {
       hotkey: bindingKeys(shortcuts, "viewer.step-prev"),
       when: stepRuns("step"),
-      run: () => stepImageOrSave(-1),
+      action: { kind: "step", delta: -1, withinSave: true },
     },
     {
       hotkey: bindingKeys(shortcuts, "viewer.step-next"),
       when: stepRuns("step"),
-      run: () => stepImageOrSave(1),
+      action: { kind: "step", delta: 1, withinSave: true },
     },
     {
       hotkey: bindingKeys(shortcuts, "viewer.video-step-prev"),
       when: stepRuns("video-step"),
-      run: () => stepImageOrSave(-1),
+      action: { kind: "step", delta: -1, withinSave: true },
     },
     {
       hotkey: bindingKeys(shortcuts, "viewer.video-step-next"),
       when: stepRuns("video-step"),
-      run: () => stepImageOrSave(1),
+      action: { kind: "step", delta: 1, withinSave: true },
     },
     {
       hotkey: bindingKeys(shortcuts, "viewer.prev-save"),
-      run: () => step(-1),
+      action: { kind: "step", delta: -1, withinSave: false },
     },
     {
       hotkey: bindingKeys(shortcuts, "viewer.next-save"),
-      run: () => step(1),
+      action: { kind: "step", delta: 1, withinSave: false },
     },
     {
       hotkey: "Escape",
-      run: () => {
-        if (!viewerEscape.cancel()) closeSave();
-      },
+      action: { kind: "close" },
     },
   ];
+  const run = (action: DetailAction) => {
+    if (action.kind === "close") {
+      if (!viewerEscape.cancel()) {
+        closeSave();
+      }
+    } else if (action.withinSave) {
+      stepImageOrSave(action.delta);
+    } else {
+      step(action.delta);
+    }
+  };
 
   useHotkeys(
-    hotkeys.map(({ hotkey, when, run }) => ({
+    hotkeys.map(({ hotkey, when, action }) => ({
       hotkey,
       callback: (event: KeyboardEvent) => {
-        if (!saveOwnsKeyboard(event)) return;
-        if (event.key !== "Escape" && controlKeepsKey(event)) return;
-        if (when && !when(event)) return;
+        if (!saveOwnsKeyboard(event)) {
+          return;
+        }
+        if (event.key !== "Escape" && controlKeepsKey(event)) {
+          return;
+        }
+        if (when && !when(event)) {
+          return;
+        }
         event.preventDefault();
-        run();
+        run(action);
       },
       options: {
         ignoreInputs: true,
@@ -156,7 +172,9 @@ function SaveDetailSession({
   const saveId = save?.id;
   const pageRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (saveId) pageRef.current?.focus({ preventScroll: true });
+    if (saveId) {
+      pageRef.current?.focus({ preventScroll: true });
+    }
   }, [saveId]);
   const [activeFile, setActiveFile] = useState<{
     saveId?: string;
@@ -182,7 +200,9 @@ function SaveDetailSession({
   );
 
   useEffect(() => {
-    if (!saveId) return;
+    if (!saveId) {
+      return;
+    }
     return () => {
       setSaveViewerFileIndex(null);
       setSaveViewerNavigation(null);
@@ -193,7 +213,7 @@ function SaveDetailSession({
   const menuFileIndex = useRef<number | null>(null);
   const [openWith, setOpenWith] = useState<{
     saveId?: string;
-    apps: OpenWithApp[];
+    apps: Array<OpenWithApp>;
   }>({ apps: [] });
   const openWithApps = openWith.saveId === saveId ? openWith.apps : [];
 
@@ -222,10 +242,9 @@ function SaveDetailSession({
         }}
         onOpen={(eventDetails) => {
           const target = eventDetails.event?.target;
-          const slide =
-            target instanceof Element
-              ? target.closest("[data-blossom-slide]")
-              : null;
+          const slide = isElement(target)
+            ? target.closest("[data-blossom-slide]")
+            : null;
           menuVideo.current =
             slide?.querySelector<HTMLVideoElement>("video") ?? null;
           menuFileIndex.current = fileIndexFromSlide(slide) ?? activeFileIndex;

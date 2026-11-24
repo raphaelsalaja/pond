@@ -1,12 +1,13 @@
 import type { MenuItemSpec } from "@pond/ui";
-import { type ComponentType, createElement, type ReactElement } from "react";
+import { createElement } from "react";
+import type { ComponentType, ReactElement } from "react";
 import { notify } from "@/shared/lib/toast";
 
 export function glyph(Icon: ComponentType): ReactElement {
   return createElement(Icon);
 }
 
-export function submenuHidden(items: MenuItemSpec[]): boolean {
+export function submenuHidden(items: Array<MenuItemSpec>): boolean {
   return items.every(
     (item) =>
       item.type === "separator" ||
@@ -16,6 +17,8 @@ export function submenuHidden(items: MenuItemSpec[]): boolean {
 }
 
 export function notifyCopy(result: { ok: boolean; message: string }): void {
-  if (!result.ok) return;
+  if (!result.ok) {
+    return;
+  }
   notify({ id: "copy-selection", title: result.message });
 }

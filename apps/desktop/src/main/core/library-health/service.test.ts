@@ -7,14 +7,13 @@ import type {
   LibraryIntegrityRuntime,
   PayloadInspection,
 } from "../library-integrity";
-import {
-  createLibraryHealthService,
-  type HealthIndexReport,
-  type HealthSave,
-} from "./service";
+import { createLibraryHealthService } from "./service";
+import type { HealthIndexReport, HealthSave } from "./service";
 import { createLibraryHealthStore } from "./store";
 
-const roots: string[] = [];
+function noop(): void {}
+
+const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
@@ -65,10 +64,10 @@ function healthy(id: string): HealthSave {
 }
 
 async function fixture(
-  rows: HealthSave[],
+  rows: Array<HealthSave>,
   options: {
-    missing?: string[];
-    unreadable?: string[];
+    missing?: Array<string>;
+    unreadable?: Array<string>;
     index?: HealthIndexReport;
     gate?: Promise<void>;
   } = {},
@@ -85,7 +84,9 @@ async function fixture(
     async inspectPayload(path, expected): Promise<PayloadInspection> {
       await options.gate;
       const name = basename(path);
-      if (unreadable.has(name)) throw new Error(`EACCES: ${name}`);
+      if (unreadable.has(name)) {
+        throw new Error(`EACCES: ${name}`);
+      }
       return missing.has(name)
         ? { ok: false, size: null, sha256: null, reason: "missing" }
         : {
@@ -98,7 +99,9 @@ async function fixture(
     canRenderThumbnail: async (path) => path.endsWith(".png"),
     async readInfo(path) {
       const row = byId.get(basename(dirname(path)).replace(/\.info$/, ""));
-      if (!row) return { status: "missing" };
+      if (!row) {
+        return { status: "missing" };
+      }
       return {
         status: "valid",
         fingerprint: row.id,
@@ -117,7 +120,7 @@ async function fixture(
     },
   };
   const store = createLibraryHealthStore(() => join(root, "health"));
-  let now = 1_000;
+  let now = 1000;
   const create = () =>
     createLibraryHealthService({
       now: () => (now += 10),
@@ -236,7 +239,7 @@ describe("Library Health check", () => {
   });
 
   it("keeps the last result when you cancel a check", async () => {
-    let release = () => {};
+    let release: () => void = noop;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
@@ -279,7 +282,7 @@ describe("Library Health check", () => {
   });
 
   it("caps the stored list but not the count", async () => {
-    const rows = Array.from({ length: 2_001 }, (_, index) =>
+    const rows = Array.from({ length: 2001 }, (_, index) =>
       save(`s${index}`, [file("image", `s${index}.png`)]),
     );
     const { service } = await fixture(rows, {
@@ -287,8 +290,8 @@ describe("Library Health check", () => {
     });
     service.start();
     const { check } = await settled(service);
-    expect(check?.counts["invalid-content"]).toBe(2_001);
-    expect(check?.issues).toHaveLength(2_000);
+    expect(check?.counts["invalid-content"]).toBe(2001);
+    expect(check?.issues).toHaveLength(2000);
   });
 });
 

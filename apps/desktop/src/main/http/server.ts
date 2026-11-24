@@ -1,5 +1,5 @@
-import { Server as HttpServer } from "node:http";
-import { type ServerType, serve } from "@hono/node-server";
+import { serve } from "@hono/node-server";
+import type { ServerType } from "@hono/node-server";
 import { getConnInfo } from "@hono/node-server/conninfo";
 import { API_VERSION } from "@pond/schema/api";
 import { app as electronApp } from "electron";
@@ -25,15 +25,27 @@ import { sessionPendingHandler } from "./session-pending";
 /** The CLI, Raycast and MCP send no `Origin`; browsers get extensions plus pages named in `prefs.api.allowedOrigins`. */
 export function isAllowedOrigin(
   origin: string | undefined,
-  extraAllowed: readonly string[],
+  extraAllowed: ReadonlyArray<string>,
 ): boolean {
-  if (!origin || origin === "null") return false;
-  if (origin.startsWith("chrome-extension://")) return true;
-  if (origin.startsWith("moz-extension://")) return true;
-  if (origin.startsWith("safari-web-extension://")) return true;
+  if (!origin || origin === "null") {
+    return false;
+  }
+  if (origin.startsWith("chrome-extension://")) {
+    return true;
+  }
+  if (origin.startsWith("moz-extension://")) {
+    return true;
+  }
+  if (origin.startsWith("safari-web-extension://")) {
+    return true;
+  }
   for (const allowed of extraAllowed) {
-    if (!allowed) continue;
-    if (origin === allowed) return true;
+    if (!allowed) {
+      continue;
+    }
+    if (origin === allowed) {
+      return true;
+    }
     if (allowed.endsWith("*") && origin.startsWith(allowed.slice(0, -1))) {
       return true;
     }
@@ -144,7 +156,9 @@ export async function startHttpServer(
       new Promise<void>((resolve, reject) => {
         nodeServer.close((err) => (err ? reject(err) : resolve()));
         /** `close()` waits for open connections, so a held request would block quitting. */
-        if (nodeServer instanceof HttpServer) nodeServer.closeAllConnections();
+        if ("closeAllConnections" in nodeServer) {
+          nodeServer.closeAllConnections();
+        }
       }),
   };
 }

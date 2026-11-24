@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { userEvent } from "vitest/browser";
 import { Video } from ".";
 
 async function renderPlayer(name?: string) {
@@ -18,7 +18,9 @@ async function renderPlayer(name?: string) {
     </Video.Root>,
   );
   const video = screen.container.querySelector("video");
-  if (!video) throw new Error("Missing video element");
+  if (!video) {
+    throw new Error("Missing video element");
+  }
   /** No source loads here, so report metadata the way a loaded file would or the scrubber stays disabled. */
   Object.defineProperty(video, "duration", { configurable: true, value: 12 });
   video.dispatchEvent(new Event("loadedmetadata"));

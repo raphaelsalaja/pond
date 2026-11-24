@@ -45,7 +45,7 @@ function reverseSearchLogo(
   }
 }
 
-function combinableImageCount(items: readonly Save[]): number {
+function combinableImageCount(items: ReadonlyArray<Save>): number {
   return items.filter((item) =>
     item.files.some(
       (file) =>
@@ -69,7 +69,7 @@ export function buildReverseSearchItems({
   ids,
   batch,
   hasHttpUrl,
-}: SaveMenuContext): MenuItemSpec[] {
+}: SaveMenuContext): Array<MenuItemSpec> {
   return [
     {
       label: "Find Similar Saves",
@@ -112,16 +112,16 @@ export function buildReverseSearchItems({
 }
 
 export interface SupplementalMenuItems {
-  copy: MenuItemSpec[];
+  copy: Array<MenuItemSpec>;
   details: ReturnType<typeof buildDetailItems>;
-  file: MenuItemSpec[];
-  more: MenuItemSpec[];
-  organization: MenuItemSpec[];
+  file: Array<MenuItemSpec>;
+  more: Array<MenuItemSpec>;
+  organization: Array<MenuItemSpec>;
 }
 
 export function buildSupplementalItems(
   context: SaveMenuContext,
-  maintenanceItems: MenuItemSpec[],
+  maintenanceItems: Array<MenuItemSpec>,
 ): SupplementalMenuItems {
   const { save, saves, ids, batch, fontActivated } = context;
   const details = buildDetailItems(context);

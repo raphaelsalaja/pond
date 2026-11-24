@@ -1,4 +1,5 @@
-import { DEFAULT_PREFS, type Prefs } from "@pond/schema";
+import { DEFAULT_PREFS } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
 import { describe, expect, it, vi } from "vitest";
 import type { Save } from "@/features/saves/types";
 import { florenceModelVersion } from "../florence";

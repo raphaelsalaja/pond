@@ -3,10 +3,8 @@ import { Button, Pane, Tabs } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { useEffect, useRef, useState } from "react";
 import { Section } from "@/shared/components/inspector-section";
-import {
-  type InspectorDrafts,
-  InspectorTextField,
-} from "@/shared/components/inspector-text-field";
+import { InspectorTextField } from "@/shared/components/inspector-text-field";
+import type { InspectorDrafts } from "@/shared/components/inspector-text-field";
 import { ModelPicker } from "@/shared/components/model-picker";
 import { updateFish } from "../../lib/menu";
 import {
@@ -51,7 +49,9 @@ export function FishProfile({
   const rootRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (editingId !== fishId) return;
+    if (editingId !== fishId) {
+      return;
+    }
     const frame = requestAnimationFrame(() => {
       const name = rootRef.current?.querySelector<HTMLInputElement>(
         'input[aria-label="Name"]',
@@ -63,11 +63,13 @@ export function FishProfile({
     return () => cancelAnimationFrame(frame);
   }, [editingId, fishId]);
 
-  if (!target) return null;
+  if (!target) {
+    return null;
+  }
   const openRoutine = target.routines.find(
     (routine) => routine.id === openRoutineId,
   );
-  if (openRoutine)
+  if (openRoutine) {
     return (
       <section className={styles.root} aria-label={openRoutine.name}>
         <RoutineView
@@ -79,6 +81,7 @@ export function FishProfile({
         />
       </section>
     );
+  }
 
   return (
     <Tabs.Root
@@ -117,7 +120,9 @@ export function FishProfile({
           maxLength={40}
           commit={async (value) => {
             const name = value.trim();
-            if (!name) throw new Error("Give this fish a name.");
+            if (!name) {
+              throw new Error("Give this fish a name.");
+            }
             await fishStore.update(target.id, { name });
           }}
         />

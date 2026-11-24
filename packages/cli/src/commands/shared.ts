@@ -1,15 +1,12 @@
 import { createInterface } from "node:readline";
 import type { Command } from "commander";
-import {
-  type ApiSave,
-  type JsonObject,
-  type JsonValue,
-  PondApi,
-} from "pond-api";
+import { PondApi } from "pond-api";
+import type { ApiSave, JsonObject, JsonValue } from "pond-api";
 import { z } from "zod";
 import { resolvedConfig } from "../config";
 import { parseArguments, runOperation } from "../operations";
-import { type OutputFormat, type OutputOptions, writeOutput } from "../output";
+import { writeOutput } from "../output";
+import type { OutputFormat, OutputOptions } from "../output";
 import { ensurePondAvailable } from "../runtime";
 
 export interface GlobalOptions {
@@ -39,12 +36,22 @@ export const OperationOptionsSchema = z.object({
 });
 
 function outputOptions(options: GlobalOptions): OutputOptions {
-  const requested: OutputFormat[] = [];
-  if (options.json) requested.push("json");
-  if (options.ndjson) requested.push("ndjson");
-  if (options.md) requested.push("md");
-  if (options.table) requested.push("table");
-  if (requested.length > 1) throw new Error("Choose one output format.");
+  const requested: Array<OutputFormat> = [];
+  if (options.json) {
+    requested.push("json");
+  }
+  if (options.ndjson) {
+    requested.push("ndjson");
+  }
+  if (options.md) {
+    requested.push("md");
+  }
+  if (options.table) {
+    requested.push("table");
+  }
+  if (requested.length > 1) {
+    throw new Error("Choose one output format.");
+  }
   return {
     format: requested[0] ?? (process.stdout.isTTY ? "human" : "json"),
     compact: options.compact,
@@ -73,9 +80,9 @@ export async function commandContext(program: Command) {
 export function action<Result>(
   program: Command,
   command: Command,
-  run: (...args: CommandArgument[]) => Promise<Result>,
+  run: (...args: Array<CommandArgument>) => Promise<Result>,
 ): void {
-  command.action(async (...args) => {
+  command.action(async (...args: Array<CommandArgument>) => {
     const result = await run(...args.slice(0, -1), command.opts());
     const { output } = await commandContext(program);
     writeOutput(z.json().parse(result), output);
@@ -106,36 +113,42 @@ export function operationCommand(
       ...parseArguments(flags.args),
     };
     const parsedId = StringSchema.safeParse(id);
-    if (parsedId.success)
+    if (parsedId.success) {
       args[idKey] = idKey === "ids" ? [parsedId.data] : parsedId.data;
+    }
     return runOperation(api, operation, args, flags);
   });
 }
 
-export async function stdinLines(): Promise<string[]> {
-  const values: string[] = [];
+export async function stdinLines(): Promise<Array<string>> {
+  const values: Array<string> = [];
   const input = createInterface({ input: process.stdin });
   for await (const line of input) {
     const value = line.trim();
-    if (value) values.push(value);
+    if (value) {
+      values.push(value);
+    }
   }
   return values;
 }
 
 export async function waitForSaves(
   api: PondApi,
-  ids: string[],
+  ids: Array<string>,
   timeout: number,
-): Promise<ApiSave[]> {
+): Promise<Array<ApiSave>> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     const rows = await api.saves({ ids, includeDeleted: true });
     if (
       rows.length === ids.length &&
       rows.every((row) => row.status !== "ingesting")
-    )
+    ) {
       return rows;
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 500);
+    });
   }
   throw new Error("Downloads did not finish before the timeout.");
 }

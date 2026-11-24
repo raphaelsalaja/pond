@@ -4,23 +4,25 @@ export interface FolderRow {
   folder: Folder;
   depth: number;
   /** Ancestor names, root first, so search results say where a folder lives. */
-  path: string[];
+  path: Array<string>;
 }
 
 /** Flattens folders depth-first; a missing or cyclic parent makes a folder a root. */
-export function folderRows(folders: readonly Folder[]): FolderRow[] {
+export function folderRows(folders: ReadonlyArray<Folder>): Array<FolderRow> {
   const ids = new Set(folders.map((folder) => folder.id));
-  const children = new Map<string | null, Folder[]>();
+  const children = new Map<string | null, Array<Folder>>();
   for (const folder of folders) {
     const parent =
       folder.parentId && ids.has(folder.parentId) ? folder.parentId : null;
     children.set(parent, [...(children.get(parent) ?? []), folder]);
   }
-  const rows: FolderRow[] = [];
+  const rows: Array<FolderRow> = [];
   const seen = new Set<string>();
-  const walk = (parent: string | null, depth: number, path: string[]) => {
+  const walk = (parent: string | null, depth: number, path: Array<string>) => {
     for (const folder of children.get(parent) ?? []) {
-      if (seen.has(folder.id)) continue;
+      if (seen.has(folder.id)) {
+        continue;
+      }
       seen.add(folder.id);
       rows.push({ folder, depth, path });
       walk(folder.id, depth + 1, [...path, folder.name]);
@@ -28,7 +30,9 @@ export function folderRows(folders: readonly Folder[]): FolderRow[] {
   };
   walk(null, 0, []);
   for (const folder of folders) {
-    if (seen.has(folder.id)) continue;
+    if (seen.has(folder.id)) {
+      continue;
+    }
     seen.add(folder.id);
     rows.push({ folder, depth: 0, path: [] });
     walk(folder.id, 1, [folder.name]);
@@ -37,21 +41,23 @@ export function folderRows(folders: readonly Folder[]): FolderRow[] {
 }
 
 export function searchFolders(
-  rows: readonly FolderRow[],
+  rows: ReadonlyArray<FolderRow>,
   query: string,
-): FolderRow[] {
+): Array<FolderRow> {
   const needle = query.trim().toLowerCase();
-  if (!needle) return [...rows];
+  if (!needle) {
+    return [...rows];
+  }
   return rows.filter((row) => row.folder.name.toLowerCase().includes(needle));
 }
 
 /** Starred tags lead, then the ones you used here recently, then the ones Pond sees most. */
 export function rankTags(
-  tags: readonly Tag[],
-  recent: readonly string[],
+  tags: ReadonlyArray<Tag>,
+  recent: ReadonlyArray<string>,
   query: string,
   limit: number,
-): string[] {
+): Array<string> {
   const needle = query.trim().toLowerCase();
   const recentRank = new Map(recent.map((name, index) => [name, index]));
   const matches = tags.filter(

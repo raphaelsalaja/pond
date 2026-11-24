@@ -1,7 +1,7 @@
 import { useRef } from "react";
+import { Dialog } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Dialog } from ".";
 
 function RenameFolder() {
   return (

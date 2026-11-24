@@ -23,7 +23,7 @@ export function SystemPreferences() {
           }}
         />
       </Input.Root>
-      <span>An HTTP or SOCKS address for Pond's requests.</span>
+      <span>An HTTP or SOCKS address for Pond&apos;s requests.</span>
     </label>
   );
 }

@@ -1,6 +1,7 @@
 import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { useRecents } from "@/features/saves";
 
@@ -9,8 +10,14 @@ function sameFolderMap(
   a: Record<string, number>,
   b: Record<string, number>,
 ): boolean {
-  if (Object.keys(a).length !== Object.keys(b).length) return false;
-  for (const key of Object.keys(a)) if (a[key] !== b[key]) return false;
+  if (Object.keys(a).length !== Object.keys(b).length) {
+    return false;
+  }
+  for (const key of Object.keys(a)) {
+    if (a[key] !== b[key]) {
+      return false;
+    }
+  }
   return true;
 }
 function sameCounts(a: LibrarySidebarCounts, b: LibrarySidebarCounts): boolean {
@@ -45,7 +52,7 @@ const EMPTY: LibrarySidebarCounts = {
 
 /** The query runs synchronously on the main process, so every sidebar part shares one result instead of querying per mount. */
 const store = new Store<LibrarySidebarCounts>(EMPTY);
-let recentIds: string[] = [];
+let recentIds: Array<string> = [];
 let loadedKey: string | null = null;
 let users = 0;
 let stopListening: (() => void) | undefined;
@@ -54,7 +61,9 @@ let dirty = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
 
 function schedule(): void {
-  if (timer) return;
+  if (timer) {
+    return;
+  }
   timer = setTimeout(() => {
     timer = undefined;
     void refresh();
@@ -70,13 +79,16 @@ async function refresh(): Promise<void> {
   dirty = false;
   try {
     const next = await window.pond.query("saves.sidebarCounts", { recentIds });
-    if (users > 0 && next)
+    if (users > 0 && next) {
       store.setState((prev) => (sameCounts(prev, next) ? prev : next));
-  } catch (error) {
-    console.warn("[pond] sidebar counts failed", error);
+    }
+  } catch (cause) {
+    log.warn("[pond] sidebar counts failed", cause);
   } finally {
     pending = false;
-    if (users > 0 && dirty) schedule();
+    if (users > 0 && dirty) {
+      schedule();
+    }
   }
 }
 
@@ -86,20 +98,28 @@ export function useSidebarCounts(): LibrarySidebarCounts {
     .join("\0");
   useEffect(() => {
     users += 1;
-    if (users === 1) stopListening = window.pond.onSyncAction(schedule);
+    if (users === 1) {
+      stopListening = window.pond.onSyncAction(schedule);
+    }
     return () => {
       users -= 1;
-      if (users > 0) return;
+      if (users > 0) {
+        return;
+      }
       stopListening?.();
       stopListening = undefined;
-      if (timer) clearTimeout(timer);
+      if (timer) {
+        clearTimeout(timer);
+      }
       timer = undefined;
       loadedKey = null;
       store.setState(() => EMPTY);
     };
   }, []);
   useEffect(() => {
-    if (loadedKey === recentKey) return;
+    if (loadedKey === recentKey) {
+      return;
+    }
     loadedKey = recentKey;
     recentIds = recentKey ? recentKey.split("\0") : [];
     void refresh();

@@ -37,15 +37,15 @@ const FACTS = [
   },
 ] as const;
 
+function chat() {
+  fish.open(DEFAULT_FISH_ID);
+  fishIntroDialog.close();
+}
+
 function Intro() {
   useHydrateFish();
   const koi = useFish(DEFAULT_FISH_ID);
   const name = koi?.name ?? DEFAULT_FISH_NAME;
-
-  function chat() {
-    fish.open(DEFAULT_FISH_ID);
-    fishIntroDialog.close();
-  }
 
   return (
     <Dialog.Popup>
@@ -100,7 +100,9 @@ export function FishIntroDialog() {
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) fishIntroDialog.close();
+        if (!next) {
+          fishIntroDialog.close();
+        }
       }}
     >
       <Dialog.Portal>

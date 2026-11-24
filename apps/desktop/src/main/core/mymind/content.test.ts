@@ -163,11 +163,11 @@ describe("mymindContentText", () => {
           ],
         },
       }),
-    ).toBe("\\# \\[literal\\] \\*text\\*");
+    ).toBe(String.raw`\# \[literal\] \*text\*`);
   });
 
   it("rejects invalid bodies and unsupported leaves instead of dropping content", () => {
-    const invalid: NonNullable<MymindObject["content"]>[] = [
+    const invalid: Array<NonNullable<MymindObject["content"]>> = [
       { type: "text/markdown", body: {} },
       { type: "text/plain", body: 12 },
       { type: "text/html", body: "<p>Text</p>" },

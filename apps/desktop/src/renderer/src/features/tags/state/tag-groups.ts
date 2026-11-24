@@ -11,8 +11,8 @@ export interface TagGroupRow {
   color: string | null;
   sortOrder: number;
   collapsed: boolean;
-  tagIds: string[];
-  tagNames: string[];
+  tagIds: Array<string>;
+  tagNames: Array<string>;
 }
 
 interface TagGroupsState {
@@ -43,7 +43,7 @@ const TagGroupPatchSchema = TagGroupRowSchema.partial().nullish().catch(null);
 let inflight: Promise<ReadonlyArray<TagGroupRow>> | null = null;
 let subscribed = false;
 
-function sortGroups(rows: ReadonlyArray<TagGroupRow>): TagGroupRow[] {
+function sortGroups(rows: ReadonlyArray<TagGroupRow>): Array<TagGroupRow> {
   return rows.slice().sort(bySortOrderThenName);
 }
 
@@ -52,8 +52,12 @@ function setRows(rows: ReadonlyArray<TagGroupRow>): void {
 }
 
 async function load(): Promise<ReadonlyArray<TagGroupRow>> {
-  if (tagGroupsStore.state.loaded) return tagGroupsStore.state.rows;
-  if (inflight) return inflight;
+  if (tagGroupsStore.state.loaded) {
+    return tagGroupsStore.state.rows;
+  }
+  if (inflight) {
+    return inflight;
+  }
   inflight = (async () => {
     const rows = TagGroupRowsSchema.parse(
       await window.pond.query("tagGroups.list", {}),
@@ -68,7 +72,9 @@ async function load(): Promise<ReadonlyArray<TagGroupRow>> {
 
 let refetchScheduled = false;
 function scheduleRefetch(): void {
-  if (refetchScheduled) return;
+  if (refetchScheduled) {
+    return;
+  }
   refetchScheduled = true;
   queueMicrotask(() => {
     refetchScheduled = false;
@@ -85,39 +91,53 @@ function scheduleRefetch(): void {
 }
 
 function ensureSubscribed(): void {
-  if (subscribed) return;
+  if (subscribed) {
+    return;
+  }
   subscribed = true;
   window.pond.onSyncAction((event) => {
     if (event.modelName === "tag_group_member") {
       scheduleRefetch();
       return;
     }
-    if (event.modelName !== "tag_group") return;
-    if (!tagGroupsStore.state.loaded) return;
+    if (event.modelName !== "tag_group") {
+      return;
+    }
+    if (!tagGroupsStore.state.loaded) {
+      return;
+    }
 
     const cache = tagGroupsStore.state.rows;
 
     if (event.action === "I") {
       const inserted = TagGroupRowSchema.safeParse(event.data);
-      if (!inserted.success) return;
+      if (!inserted.success) {
+        return;
+      }
       const row = inserted.data;
       const idx = cache.findIndex((r) => r.id === row.id);
       const next = cache.slice();
-      if (idx >= 0)
+      if (idx >= 0) {
         next[idx] = {
           ...row,
           tagIds: cache[idx]?.tagIds ?? [],
           tagNames: cache[idx]?.tagNames ?? [],
         };
-      else next.push(row);
+      } else {
+        next.push(row);
+      }
       setRows(next);
       return;
     }
     if (event.action === "U") {
       const idx = cache.findIndex((r) => r.id === event.modelId);
-      if (idx < 0) return;
+      if (idx < 0) {
+        return;
+      }
       const existing = cache[idx];
-      if (!existing) return;
+      if (!existing) {
+        return;
+      }
       const next = cache.slice();
       next[idx] = { ...existing, ...TagGroupPatchSchema.parse(event.data) };
       setRows(next);

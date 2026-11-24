@@ -1,6 +1,8 @@
-import { SOUND_PATCH, type UiSoundName } from "@pond/ui/sounds";
+import { SOUND_PATCH } from "@pond/ui/sounds";
+import type { UiSoundName } from "@pond/ui/sounds";
 import type { FeedbackEvent } from "@shared/feedback";
-import { ensureReady, type PlayOptions } from "@web-kits/audio";
+import { ensureReady } from "@web-kits/audio";
+import type { PlayOptions } from "@web-kits/audio";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 type SoundKind = UiSoundName | "toggle";
@@ -17,7 +19,9 @@ let parking: Promise<void> | null = null;
 function park(context: AudioContext, delay: number): void {
   clearTimeout(parkTimer);
   parkTimer = setTimeout(() => {
-    if (performance.now() - lastSoundAt < PARK_AFTER_MS) return;
+    if (performance.now() - lastSoundAt < PARK_AFTER_MS) {
+      return;
+    }
     parking = context
       .suspend()
       .catch(() => {})
@@ -32,7 +36,9 @@ function ready(): Promise<AudioContext> {
 }
 
 function reduceMotion(): boolean {
-  if (!("document" in globalThis)) return false;
+  if (!("document" in globalThis)) {
+    return false;
+  }
   return (
     globalThis.document.documentElement.getAttribute("data-reduce-motion") ===
     "true"
@@ -41,16 +47,24 @@ function reduceMotion(): boolean {
 
 function soundsEnabled(interfaceSound: boolean): boolean {
   const prefs = getPrefsSnapshot();
-  if (prefs?.preferences.soundsEnabled === false) return false;
+  if (prefs?.preferences.soundsEnabled === false) {
+    return false;
+  }
   return !interfaceSound || prefs?.feedback.sounds.interface !== false;
 }
 
 function play(kind: SoundKind, name: UiSoundName, interfaceSound = true): void {
-  if (reduceMotion()) return;
-  if (!soundsEnabled(interfaceSound)) return;
+  if (reduceMotion()) {
+    return;
+  }
+  if (!soundsEnabled(interfaceSound)) {
+    return;
+  }
   const now = performance.now();
   const prev = lastPlayed.get(kind) ?? 0;
-  if (now - prev < RATE_MS) return;
+  if (now - prev < RATE_MS) {
+    return;
+  }
   lastPlayed.set(kind, now);
   lastSoundAt = now;
   const spread = kind === "success" ? 16 : 28;
@@ -68,7 +82,9 @@ function play(kind: SoundKind, name: UiSoundName, interfaceSound = true): void {
 
 /** Opening the audio device blocks for about 100 ms, so open it before the first click needs a sound. */
 export function warmUiSounds(): void {
-  if (reduceMotion() || !soundsEnabled(true)) return;
+  if (reduceMotion() || !soundsEnabled(true)) {
+    return;
+  }
   void ready()
     .then((context) => park(context, 0))
     .catch(() => {});
@@ -98,6 +114,8 @@ export function emitFeedback(
   event: Extract<FeedbackEvent, "saveDeletion" | "folderDeletion">,
 ): void {
   const prefs = getPrefsSnapshot();
-  if (prefs?.feedback.sounds[event] !== false) playTrashThunk();
+  if (prefs?.feedback.sounds[event] !== false) {
+    playTrashThunk();
+  }
   void window.pond.query("feedback.emit", { event }).catch(() => {});
 }

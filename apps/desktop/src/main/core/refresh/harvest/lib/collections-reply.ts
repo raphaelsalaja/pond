@@ -26,7 +26,7 @@ export type CollectionsReply =
     };
 
 export type CollectionsResult =
-  | { ok: true; collections: ImportCollectionOption[] }
+  | { ok: true; collections: Array<ImportCollectionOption> }
   | {
       ok: false;
       reason: CollectionFailureReason;
@@ -75,8 +75,12 @@ export function readCollectionsReply(value: JsonValue): CollectionsResult {
       ok: false,
       reason: reply.reason,
     };
-    if (reply.detail) failure.detail = reply.detail;
-    if (reply.viewer) failure.viewer = reply.viewer;
+    if (reply.detail) {
+      failure.detail = reply.detail;
+    }
+    if (reply.viewer) {
+      failure.viewer = reply.viewer;
+    }
     return failure;
   }
   return {

@@ -1,4 +1,5 @@
-import { app, type BrowserWindow, dialog } from "electron";
+import { app, dialog } from "electron";
+import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
 import { linkMatchesLibrary } from "../shared/library-links";
@@ -7,7 +8,7 @@ import { libraryId } from "./paths";
 
 let pendingDeepLink: string | null = null;
 
-export function deepLinkArg(argv: readonly string[]): string | null {
+export function deepLinkArg(argv: ReadonlyArray<string>): string | null {
   return argv.find((arg) => arg.startsWith("pond://")) ?? null;
 }
 
@@ -30,11 +31,16 @@ export function handleDeepLink(
 ): "library" | undefined {
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== "pond:") return;
+    if (parsed.protocol !== "pond:") {
+      return;
+    }
     if (parsed.hostname === "save") {
       const link = parseSaveLink(parsed);
-      if (link) void app.whenReady().then(() => handleSaveLink(link));
-      else log.info("[pond deep-link] ignored", url);
+      if (link) {
+        void app.whenReady().then(() => handleSaveLink(link));
+      } else {
+        log.info("[pond deep-link] ignored", url);
+      }
       return;
     }
     if (parsed.searchParams.has("library")) {
@@ -61,13 +67,19 @@ export function handleDeepLink(
       route = "/inbox";
     } else if (parsed.hostname === "item") {
       const id = parsed.pathname.replace(/^\//, "");
-      if (id) route = `/save/${encodeURIComponent(id)}`;
+      if (id) {
+        route = `/save/${encodeURIComponent(id)}`;
+      }
     } else if (parsed.hostname === "folder") {
       const id = parsed.pathname.replace(/^\//, "");
-      if (id) route = `/folders/${encodeURIComponent(id)}`;
+      if (id) {
+        route = `/folders/${encodeURIComponent(id)}`;
+      }
     } else if (parsed.hostname === "view") {
       const id = parsed.pathname.replace(/^\//, "");
-      if (id) route = `/views/${encodeURIComponent(id)}`;
+      if (id) {
+        route = `/views/${encodeURIComponent(id)}`;
+      }
     } else if (parsed.hostname === "search") {
       const q = parsed.searchParams.get("q") ?? "";
       route = `/?q=${encodeURIComponent(q)}`;
@@ -89,13 +101,15 @@ export function handleDeepLink(
       pendingDeepLink = route;
       return "library";
     }
-    if (target.isMinimized()) target.restore();
+    if (target.isMinimized()) {
+      target.restore();
+    }
     target.show();
     target.focus();
     target.webContents.send(IPC.nav, route);
     return "library";
-  } catch (err) {
-    log.warn("[pond deep-link] parse failed", url, err);
+  } catch (error) {
+    log.warn("[pond deep-link] parse failed", url, error);
   }
 }
 
@@ -110,13 +124,15 @@ type SecondInstanceDeps = {
 
 /** A second launch either carries a pond:// link or only asks to be shown. */
 export function handleSecondInstance(
-  argv: readonly string[],
+  argv: ReadonlyArray<string>,
   deps: SecondInstanceDeps,
 ): void {
   const url = deepLinkArg(argv);
   if (url) {
     const destination = deps.handleDeepLink(url, deps.getMainWindow());
-    if (destination === "library") void deps.openLibraryWindow();
+    if (destination === "library") {
+      void deps.openLibraryWindow();
+    }
     return;
   }
   /** openLibraryWindow also recreates a window that was closed. */

@@ -86,7 +86,7 @@ const BARE = {
   count: false,
 } satisfies Record<CardDetail, boolean>;
 
-export const PRESETS: Preset[] = [
+export const PRESETS: Array<Preset> = [
   {
     value: "calm",
     label: "Calm",

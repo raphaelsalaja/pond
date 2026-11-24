@@ -48,7 +48,7 @@ export interface HealthEntry {
   found: string;
   reason: string | null;
   originals: "usable" | "unusable" | "none" | "unknown";
-  files: readonly HealthFileCheck[];
+  files: ReadonlyArray<HealthFileCheck>;
   attempts: { count: number; max: number | null } | null;
   nextAttemptAt: number | null;
   repair: LibraryRepairKind | null;
@@ -63,16 +63,16 @@ export interface HealthCategory {
   total: number;
   attention: number;
   progress: number;
-  entries: readonly HealthEntry[];
+  entries: ReadonlyArray<HealthEntry>;
   checked: boolean;
 }
 
 export interface HealthInput {
   overview: LibraryHealthOverview | null;
-  downloads: readonly DownloadHealthRow[];
+  downloads: ReadonlyArray<DownloadHealthRow>;
   enrichment: {
     inflight: number;
-    failures: readonly EnrichmentFailure[];
+    failures: ReadonlyArray<EnrichmentFailure>;
     missingIds: ReadonlySet<string>;
   };
   title: (saveId: string) => string | null;
@@ -100,7 +100,7 @@ export const RESOLUTION_LABELS = {
 } satisfies Record<HealthResolution, string>;
 
 /** Worst first, so a category takes the status of its most urgent entry. */
-const SEVERITY: readonly HealthStatus[] = [
+const SEVERITY: ReadonlyArray<HealthStatus> = [
   "terminal",
   "damaged",
   "failed",
@@ -159,15 +159,19 @@ export function describeFinding(file: HealthFileCheck): string {
 }
 
 export function describeSize(size: number | null): string {
-  return size == null ? "—" : formatBytes(size);
+  return size === null ? "—" : formatBytes(size);
 }
 
-function foundFromFiles(files: readonly HealthFileCheck[]): string {
+function foundFromFiles(files: ReadonlyArray<HealthFileCheck>): string {
   const problems = files.filter((file) => file.finding !== "ok");
-  if (problems.length === 0) return "Every file checked out.";
+  if (problems.length === 0) {
+    return "Every file checked out.";
+  }
   const shown = problems.slice(0, 2).map(describeFinding).join(". ");
   const extra = problems.length - 2;
-  if (extra <= 0) return `${shown}.`;
+  if (extra <= 0) {
+    return `${shown}.`;
+  }
   const more = formatPlural(extra, {
     one: "more file has",
     other: "more files have",
@@ -233,10 +237,10 @@ function checkCategory(
   id: HealthCategoryId,
   title: string,
   overview: LibraryHealthOverview | null,
-  entries: readonly HealthEntry[],
+  entries: ReadonlyArray<HealthEntry>,
   total: number,
 ): HealthCategory {
-  const checked = overview?.check != null;
+  const checked = overview?.check !== null && overview?.check !== undefined;
   return {
     id,
     group: "files",
@@ -254,30 +258,32 @@ function checkCategory(
   };
 }
 
-function fileCategories(input: HealthInput): HealthCategory[] {
+function fileCategories(input: HealthInput): Array<HealthCategory> {
   const check = input.overview?.check ?? null;
   const issues = (kind: LibraryRepairKind) =>
     (check?.issues ?? [])
       .filter((issue) => issue.kind === kind)
       .map(integrityEntry);
   const count = (key: HealthCountKey) => check?.counts[key] ?? 0;
-  const unverified: HealthEntry[] = (check?.unverified ?? []).map((save) => ({
-    id: `unverified:${save.saveId}`,
-    saveId: save.saveId,
-    title: save.title?.trim() || save.saveId,
-    status: "unverified",
-    resolution: "user",
-    summary: "Pond couldn't check this Save",
-    expected: "Files Pond can read.",
-    found: save.reason,
-    reason: "Check that the library folder is reachable, then recheck it.",
-    originals: "unknown",
-    files: [],
-    attempts: null,
-    nextAttemptAt: null,
-    repair: null,
-    openable: true,
-  }));
+  const unverified: Array<HealthEntry> = (check?.unverified ?? []).map(
+    (save) => ({
+      id: `unverified:${save.saveId}`,
+      saveId: save.saveId,
+      title: save.title?.trim() || save.saveId,
+      status: "unverified",
+      resolution: "user",
+      summary: "Pond couldn't check this Save",
+      expected: "Files Pond can read.",
+      found: save.reason,
+      reason: "Check that the library folder is reachable, then recheck it.",
+      originals: "unknown",
+      files: [],
+      attempts: null,
+      nextAttemptAt: null,
+      repair: null,
+      openable: true,
+    }),
+  );
   return [
     checkCategory(
       "originals",
@@ -369,13 +375,13 @@ function indexCategory(input: HealthInput): HealthCategory {
       ]
     : [];
   const unverified =
-    check != null && (index == null || check.indexError != null);
+    check !== null && (index === null || check.indexError !== null);
   return {
     id: "index",
     group: "files",
     title: "Library Index",
     status:
-      check == null
+      check === null
         ? "unchecked"
         : unverified
           ? "unverified"
@@ -386,7 +392,7 @@ function indexCategory(input: HealthInput): HealthCategory {
     attention: unverified ? Math.max(1, entries.length) : entries.length,
     progress: 0,
     entries,
-    checked: check != null,
+    checked: check !== null,
   };
 }
 
@@ -420,7 +426,7 @@ function posterCategory(input: HealthInput): HealthCategory {
     ...(check?.posters ?? []).map((gap) => gap.saveId),
   ]);
   const gaps = new Map((check?.posters ?? []).map((gap) => [gap.saveId, gap]));
-  const entries: HealthEntry[] = [...ids].map((saveId) => {
+  const entries: Array<HealthEntry> = [...ids].map((saveId) => {
     const failure = failed.get(saveId);
     const gap = gaps.get(saveId);
     const status: HealthStatus = failure
@@ -490,7 +496,7 @@ function posterCategory(input: HealthInput): HealthCategory {
     attention,
     progress,
     entries,
-    checked: check != null || entries.length > 0,
+    checked: check !== null || entries.length > 0,
   };
 }
 
@@ -498,7 +504,7 @@ function processingCategory(input: HealthInput): HealthCategory {
   const failures = input.enrichment.failures.filter(
     (failure) => !input.enrichment.missingIds.has(failure.saveId),
   );
-  const entries: HealthEntry[] = failures.map((failure) => ({
+  const entries: Array<HealthEntry> = failures.map((failure) => ({
     id: `processing:${failure.key}`,
     saveId: failure.saveId,
     title:
@@ -587,15 +593,19 @@ function downloadResolution(
   if (item.row.status === "failed" || item.row.status === "dead") {
     return "retry";
   }
-  if (status === "blocked") return "user";
+  if (status === "blocked") {
+    return "user";
+  }
   return "wait";
 }
 
 function downloadsCategory(input: HealthInput): HealthCategory {
-  const entries: HealthEntry[] = [];
+  const entries: Array<HealthEntry> = [];
   for (const item of input.downloads) {
     const status = downloadStatus(item);
-    if (!status) continue;
+    if (!status) {
+      continue;
+    }
     const { row } = item;
     const attempts = row.task?.attempts ?? row.attempts;
     entries.push({
@@ -607,7 +617,7 @@ function downloadsCategory(input: HealthInput): HealthCategory {
       summary: row.error ?? item.reason ?? "Not finished",
       expected: "Every file downloaded and saved.",
       found:
-        row.status === "running" && row.progress != null
+        row.status === "running" && row.progress !== null
           ? `${Math.round(row.progress * 100)}% downloaded.`
           : row.stage
             ? `Stopped at ${row.stage.toLowerCase()}.`
@@ -670,8 +680,8 @@ export function categoryFact(id: HealthCategoryId, device: string): string {
 }
 
 export function statusBreakdown(
-  entries: readonly HealthEntry[],
-): [HealthStatus, number][] {
+  entries: ReadonlyArray<HealthEntry>,
+): Array<[HealthStatus, number]> {
   const counts = new Map<HealthStatus, number>();
   for (const entry of entries) {
     counts.set(entry.status, (counts.get(entry.status) ?? 0) + 1);
@@ -682,7 +692,9 @@ export function statusBreakdown(
   });
 }
 
-export function buildHealthCategories(input: HealthInput): HealthCategory[] {
+export function buildHealthCategories(
+  input: HealthInput,
+): Array<HealthCategory> {
   return [
     ...fileCategories(input),
     posterCategory(input),
@@ -691,7 +703,7 @@ export function buildHealthCategories(input: HealthInput): HealthCategory[] {
   ];
 }
 
-export function healthTotals(categories: readonly HealthCategory[]) {
+export function healthTotals(categories: ReadonlyArray<HealthCategory>) {
   let attention = 0;
   let progress = 0;
   for (const category of categories) {

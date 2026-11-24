@@ -11,14 +11,24 @@ export const Route = createFileRoute("/_library/_grid/")({
   },
   validateSearch: legacyIndexSearchSchema,
   beforeLoad: ({ search }) => {
-    if (search.folder)
-      throw redirect({
+    if (search.folder) {
+      redirect({
         href: pathForLibraryNav({ kind: "folder", id: search.folder }),
         replace: true,
+        throw: true,
       });
-    if (search.inbox !== undefined)
-      throw redirect({ href: "/inbox", replace: true });
-    if (search.view && !isLayoutValue(search.view))
-      throw redirect({ href: savedViewPath(search.view), replace: true });
+      return;
+    }
+    if (search.inbox !== undefined) {
+      redirect({ href: "/inbox", replace: true, throw: true });
+      return;
+    }
+    if (search.view && !isLayoutValue(search.view)) {
+      redirect({
+        href: savedViewPath(search.view),
+        replace: true,
+        throw: true,
+      });
+    }
   },
 });

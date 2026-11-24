@@ -25,30 +25,30 @@ export type InferenceRequest =
       id: number;
       op: "clipAesthetic";
       image: SerializedImage;
-      labels: string[];
+      labels: Array<string>;
     }
   | {
       id: number;
       op: "sensitiveContent";
-      images: SerializedImage[];
+      images: Array<SerializedImage>;
     }
   | { id: number; op: "embedText"; text: string }
-  | { id: number; op: "embedTexts"; texts: string[] }
+  | { id: number; op: "embedTexts"; texts: Array<string> }
   | { id: number; op: "embedAudio"; audio: Float32Array }
   | {
       id: number;
       op: "embedVideoFrames";
-      frames: SerializedVideoFrame[];
+      frames: Array<SerializedVideoFrame>;
       duration: number;
     }
   | { id: number; op: "transcribe"; audio: Float32Array };
 
 export type InferenceResult =
   | string
-  | number[]
+  | Array<number>
   | Float32Array
-  | Float32Array[]
-  | string[];
+  | Array<Float32Array>
+  | Array<string>;
 
 export type InferenceResponse =
   | { id: number; ok: true; result: InferenceResult }

@@ -38,7 +38,9 @@ export async function loadModel(input: {
   if (input.provider === "azure") {
     const { createAzure } = await import("@ai-sdk/azure");
     const baseURL = input.baseUrl?.trim();
-    if (!baseURL) throw new Error("Enter a resource name in Settings.");
+    if (!baseURL) {
+      throw new Error("Enter a resource name in Settings.");
+    }
     return createAzure({ apiKey: key, baseURL })(modelId);
   }
   if (input.provider === "xai") {
@@ -95,12 +97,13 @@ export async function loadModel(input: {
   if (input.provider === "openrouter") {
     return createOpenRouterModel(key, modelId);
   }
-  if (input.provider === "ollama" || input.provider === "lmstudio")
+  if (input.provider === "ollama" || input.provider === "lmstudio") {
     return createLocalLanguageModel({
       provider: input.provider,
       model: modelId,
       apiKey: key,
       baseUrl: input.baseUrl,
     });
+  }
   return null;
 }

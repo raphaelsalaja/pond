@@ -14,10 +14,8 @@ export function Splash() {
           <Logo className={styles.logo} size={48} aria-hidden />
         </div>
       </div>
-      <script
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: static inline script, no user input.
-        dangerouslySetInnerHTML={{ __html: ONCE_A_WEEK }}
-      />
+      {/* oxlint-disable-next-line react/no-danger -- static inline script, no user input */}
+      <script dangerouslySetInnerHTML={{ __html: ONCE_A_WEEK }} />
     </>
   );
 }

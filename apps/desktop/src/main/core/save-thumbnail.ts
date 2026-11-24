@@ -45,9 +45,15 @@ function thumbnailWriteArgs(
     bytes,
     mimeType: "image/webp",
   };
-  if (width) write.width = width;
-  if (height) write.height = height;
-  if (custom) write.custom = true;
+  if (width) {
+    write.width = width;
+  }
+  if (height) {
+    write.height = height;
+  }
+  if (custom) {
+    write.custom = true;
+  }
   return write;
 }
 
@@ -61,7 +67,9 @@ export async function persistSaveThumbnail(
 ): Promise<boolean> {
   const db = await getDb();
   const row = db.select().from(saves).where(eq(saves.id, saveId)).all()[0];
-  if (!row) return false;
+  if (!row) {
+    return false;
+  }
   const meta = await sharp(bytes)
     .metadata()
     .catch(() => null);
@@ -109,7 +117,9 @@ export async function repairMismatchedThumbnail(
           const thumbnail = await readLibraryMedia(
             saveFile(saveId, file.path),
           ).catch(() => null);
-          if (!thumbnail) return null;
+          if (!thumbnail) {
+            return null;
+          }
           return thumbnailLooksLikeSource(thumbnail, sourceBytes);
         }),
       );
@@ -121,7 +131,9 @@ export async function repairMismatchedThumbnail(
     }
   }
   const plan = planThumbnailRepair(files, matches);
-  if (plan === "keep") return;
+  if (plan === "keep") {
+    return;
+  }
   await ensureSaveThumbnail(saveId, save, { force: plan === "rebuild" });
 }
 
@@ -131,11 +143,17 @@ export async function ensureSaveThumbnail(
   options: { force?: boolean } = {},
 ): Promise<void> {
   const files = save?.files;
-  if (!files?.length) return;
+  if (!files?.length) {
+    return;
+  }
   const primary = thumbnailToRender(files, options.force === true);
-  if (!primary) return;
+  if (!primary) {
+    return;
+  }
   const thumbnail = await renderThumbnail(saveFile(saveId, primary.path));
-  if (!thumbnail) return;
+  if (!thumbnail) {
+    return;
+  }
   const meta = await sharp(thumbnail)
     .metadata()
     .catch(() => null);
@@ -156,7 +174,7 @@ export async function ensureSaveThumbnail(
         ],
       },
     );
-  } catch (err) {
-    log.warn("[pond thumbnail] could not write sidecar", saveId, err);
+  } catch (error) {
+    log.warn("[pond thumbnail] could not write sidecar", saveId, error);
   }
 }

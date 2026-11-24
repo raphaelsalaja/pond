@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
-import { Toggle } from "../toggle";
+import { userEvent } from "vitest/browser";
 import { ToggleGroup } from ".";
+import { Toggle } from "../toggle";
 
 describe("ToggleGroup keyboard", () => {
   it("roves focus with arrows, Home and End and presses with Space", async () => {

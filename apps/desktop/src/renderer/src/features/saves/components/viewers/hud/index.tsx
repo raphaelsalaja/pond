@@ -1,13 +1,7 @@
 import { Button, Tooltip, Tray } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentProps,
-  createContext,
-  type HTMLAttributes,
-  type ReactNode,
-  use,
-  useState,
-} from "react";
+import { createContext, use, useState } from "react";
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import styles from "./styles.module.css";
 
@@ -47,9 +41,13 @@ export function HudHost({
 
 function Root({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   const host = use(HudOverlayContext);
-  if (host?.enabled === false) return null;
+  if (host?.enabled === false) {
+    return null;
+  }
   const hud = <div className={cn(styles.hud, className)} {...props} />;
-  if (host?.overlay) return createPortal(hud, host.overlay);
+  if (host?.overlay) {
+    return createPortal(hud, host.overlay);
+  }
   return hud;
 }
 

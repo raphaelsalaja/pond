@@ -6,8 +6,10 @@ import type { ComponentProps, ReactNode } from "react";
 import { gentleSpring } from "@/shared/lib/motion";
 import styles from "./styles.module.css";
 
-export interface ToggleProps
-  extends Omit<ComponentProps<typeof Button>, "children" | "onClick"> {
+export interface ToggleProps extends Omit<
+  ComponentProps<typeof Button>,
+  "children" | "onClick"
+> {
   open: boolean;
   active?: boolean;
   controlsId: string;
@@ -42,8 +44,10 @@ function Toggle({
   );
 }
 
-export interface BarProps
-  extends Omit<ComponentProps<typeof motion.fieldset>, "children" | "id"> {
+export interface BarProps extends Omit<
+  ComponentProps<typeof motion.fieldset>,
+  "children" | "id"
+> {
   open: boolean;
   id: string;
   label: string;

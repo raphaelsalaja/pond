@@ -39,7 +39,7 @@ function Harness({
 }
 
 it("commits each draft once and cancels before blur can create it", async () => {
-  const created: { kind: TagEntity; name: string }[] = [];
+  const created: Array<{ kind: TagEntity; name: string }> = [];
   const host = document.createElement("div");
   const root = createRoot(host);
   const operations = {
@@ -51,7 +51,9 @@ it("commits each draft once and cancels before blur can create it", async () => 
     const button = [...host.querySelectorAll("button")].find(
       (node) => node.textContent === label,
     );
-    if (!button) throw new Error(`Missing ${label} button`);
+    if (!button) {
+      throw new Error(`Missing ${label} button`);
+    }
     await act(async () => button.click());
   }
   try {

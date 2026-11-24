@@ -155,7 +155,9 @@ const DETAIL_VIEW_FAMILY_BY_EXTENSION = new Map<
 >();
 
 for (const family of Object.keys(EAGLE_DETAIL_VIEW_FORMATS)) {
-  if (!isEagleDetailViewFamily(family)) continue;
+  if (!isEagleDetailViewFamily(family)) {
+    continue;
+  }
   for (const extension of EAGLE_DETAIL_VIEW_FORMATS[family]) {
     DETAIL_VIEW_FAMILY_BY_EXTENSION.set(extension, family);
   }

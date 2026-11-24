@@ -41,7 +41,9 @@ function setSelection(ids: Iterable<string>): void {
 
 function addToSelection(id: string): void {
   selectionStore.setState((s) => {
-    if (s.ids.has(id)) return s;
+    if (s.ids.has(id)) {
+      return s;
+    }
     const next = new Set(s.ids);
     next.add(id);
     return withIds(s, next);
@@ -51,8 +53,11 @@ function addToSelection(id: string): void {
 function toggleSelection(id: string): void {
   selectionStore.setState((s) => {
     const next = new Set(s.ids);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
     return withIds(s, next);
   });
 }
@@ -62,8 +67,13 @@ function removeFromSelection(gone: ReadonlySet<string>): void {
     const anchor = s.anchor !== null && gone.has(s.anchor) ? null : s.anchor;
     const cursor = s.cursor !== null && gone.has(s.cursor) ? null : s.cursor;
     const kept = new Set([...s.ids].filter((id) => !gone.has(id)));
-    if (kept.size === s.ids.size && anchor === s.anchor && cursor === s.cursor)
+    if (
+      kept.size === s.ids.size &&
+      anchor === s.anchor &&
+      cursor === s.cursor
+    ) {
       return s;
+    }
     return { ...withIds(s, kept, anchor), cursor };
   });
 }
@@ -75,8 +85,9 @@ function clearSelection(): void {
       s.anchor === null &&
       s.cursor === null &&
       !s.picking
-    )
+    ) {
       return s;
+    }
     return initialSelection;
   });
 }
@@ -98,7 +109,9 @@ function setSelectionRange(
 ): void {
   const fromIdx = allIds.indexOf(from);
   const toIdx = allIds.indexOf(to);
-  if (fromIdx < 0 || toIdx < 0) return;
+  if (fromIdx < 0 || toIdx < 0) {
+    return;
+  }
   const lo = Math.min(fromIdx, toIdx);
   const hi = Math.max(fromIdx, toIdx);
   selectionStore.setState((s) => withIds(s, new Set(allIds.slice(lo, hi + 1))));
@@ -151,7 +164,7 @@ export const selection = {
   },
 };
 
-export function useSelectedIds(): readonly string[] {
+export function useSelectedIds(): ReadonlyArray<string> {
   return useSelector(selectionStore, (s) => s.snapshot);
 }
 

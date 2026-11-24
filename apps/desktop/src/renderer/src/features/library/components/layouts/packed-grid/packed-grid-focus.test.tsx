@@ -21,7 +21,7 @@ it("repairs a removed result cursor when focus enters the new collection", async
   document.body.append(host);
   const root = createRoot(host);
   try {
-    await act(() =>
+    await act(async () => {
       root.render(
         <PackedGrid
           layout="grid"
@@ -48,19 +48,25 @@ it("repairs a removed result cursor when focus enters the new collection", async
             </span>
           )}
         />,
-      ),
-    );
+      );
+    });
     const collection = host.querySelector<HTMLElement>(
       "[data-save-collection]",
     );
-    if (!collection) throw new Error("Missing collection");
-    await act(() => collection.focus());
+    if (!collection) {
+      throw new Error("Missing collection");
+    }
+    await act(async () => {
+      collection.focus();
+    });
     expect(collection.getAttribute("aria-activedescendant")).toBe(
       "save-option-available",
     );
     expect(selection.getCursor()).toBe("available");
   } finally {
-    await act(() => root.unmount());
+    await act(async () => {
+      root.unmount();
+    });
     host.remove();
   }
 });
@@ -92,11 +98,11 @@ it("keeps a virtual cursor mounted and reveals it on focus return without changi
   const root = createRoot(host);
   let pageRequests = 0;
   try {
-    await act(() =>
+    await act(async () => {
       root.render(
         <PackedGrid
           layout="grid"
-          totalHeight={10000}
+          totalHeight={10_000}
           items={items}
           onEndReached={() => {
             pageRequests++;
@@ -113,27 +119,35 @@ it("keeps a virtual cursor mounted and reveals it on focus return without changi
             </span>
           )}
         />,
-      ),
-    );
+      );
+    });
     const collection = host.querySelector<HTMLElement>(
       "[data-save-collection]",
     );
-    if (!collection) throw new Error("Missing collection");
+    if (!collection) {
+      throw new Error("Missing collection");
+    }
     expect(document.getElementById("save-option-90")).not.toBeNull();
     expect(pageRequests).toBe(0);
-    await act(() => collection.focus());
+    await act(async () => {
+      collection.focus();
+    });
     expect(host.scrollTop).toBeGreaterThan(0);
     const other = document.createElement("button");
     host.append(other);
     other.focus();
     host.scrollTop = 0;
-    await act(() => collection.focus());
+    await act(async () => {
+      collection.focus();
+    });
     expect(host.scrollTop).toBeGreaterThan(0);
     expect(selection.snapshot()).toEqual(["0", "90"]);
     expect(selection.getCursor()).toBe("90");
     expect(document.activeElement).toBe(collection);
   } finally {
-    await act(() => root.unmount());
+    await act(async () => {
+      root.unmount();
+    });
     host.remove();
   }
 });
@@ -179,18 +193,28 @@ it("keeps the scroll position when focus returns after the cursor save leaves", 
       />,
     );
   try {
-    await act(() => render(items));
-    await act(() => render(items.filter((item) => item.id !== "25")));
+    await act(async () => {
+      render(items);
+    });
+    await act(async () => {
+      render(items.filter((item) => item.id !== "25"));
+    });
     host.scrollTop = 2500;
     const collection = host.querySelector<HTMLElement>(
       "[data-save-collection]",
     );
-    if (!collection) throw new Error("Missing collection");
-    await act(() => collection.focus());
+    if (!collection) {
+      throw new Error("Missing collection");
+    }
+    await act(async () => {
+      collection.focus();
+    });
     expect(host.scrollTop).toBe(2500);
     expect(selection.getCursor()).not.toBe("0");
   } finally {
-    await act(() => root.unmount());
+    await act(async () => {
+      root.unmount();
+    });
     host.remove();
   }
 });
@@ -230,7 +254,7 @@ it("moves the cursor without re-rendering mounted cards", async () => {
     );
   };
   try {
-    await act(() =>
+    await act(async () => {
       root.render(
         <PackedGrid
           layout="grid"
@@ -238,10 +262,12 @@ it("moves the cursor without re-rendering mounted cards", async () => {
           items={items}
           renderItem={renderItem}
         />,
-      ),
-    );
+      );
+    });
     const before = renders;
-    await act(() => selection.setCursor("b"));
+    await act(async () => {
+      selection.setCursor("b");
+    });
     expect(
       host
         .querySelector("[data-save-collection]")
@@ -249,7 +275,9 @@ it("moves the cursor without re-rendering mounted cards", async () => {
     ).toBe("save-option-b");
     expect(renders).toBe(before);
   } finally {
-    await act(() => root.unmount());
+    await act(async () => {
+      root.unmount();
+    });
     host.remove();
   }
 });

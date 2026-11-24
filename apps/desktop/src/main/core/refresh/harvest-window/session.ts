@@ -1,7 +1,8 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { ConnectedAccount, Source } from "@pond/schema/db";
 import { connectsByHandle } from "@pond/schema/sources";
-import { type Cookie, session, shell } from "electron";
+import { session, shell } from "electron";
+import type { Cookie } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { readMymindCredential } from "../../mymind/credentials";
@@ -21,13 +22,15 @@ export async function signInToSource(
   source: Source,
 ): Promise<{ ok: boolean; mode: SignInMode }> {
   const url = homeUrlForSource(source);
-  if (!url) return { ok: false, mode: "external" };
+  if (!url) {
+    return { ok: false, mode: "external" };
+  }
   try {
     await shell.openExternal(url);
     log.info("[pond refresh:signin] opened external browser for", source, url);
     return { ok: true, mode: "external" };
-  } catch (err) {
-    log.warn("[pond refresh:signin] openExternal failed", source, err);
+  } catch (error) {
+    log.warn("[pond refresh:signin] openExternal failed", source, error);
     return { ok: false, mode: "external" };
   }
 }
@@ -52,16 +55,21 @@ export async function readPartitionCookie(
 export async function isAccountConnected(
   account: ConnectedAccount,
 ): Promise<boolean> {
-  if (account.source === "mymind")
+  if (account.source === "mymind") {
     return (await readMymindCredential(account.id)) !== null;
-  if (connectsByHandle(account.source)) return account.identityKey !== null;
+  }
+  if (connectsByHandle(account.source)) {
+    return account.identityKey !== null;
+  }
   return isPartitionSignedIn(account.source, partitionForAccount(account.id));
 }
 
 export async function isSourceConnected(source: Source): Promise<boolean> {
   const accounts = await listAccountsForSource(source);
   for (const account of accounts) {
-    if (await isAccountConnected(account)) return true;
+    if (await isAccountConnected(account)) {
+      return true;
+    }
   }
   return isPartitionSignedIn(source, PARTITION);
 }
@@ -79,7 +87,7 @@ export interface ImportableCookie {
 }
 
 export async function writePartitionCookies(args: {
-  cookies: ImportableCookie[];
+  cookies: Array<ImportableCookie>;
   partition: string;
 }): Promise<{ written: number; skipped: number }> {
   const persistent = session.fromPartition(args.partition);
@@ -98,17 +106,19 @@ export async function writePartitionCookies(args: {
       sameSite: c.sameSite ?? "unspecified",
       expirationDate: c.expirationDate ?? undefined,
     };
-    if (!c.hostOnly) details.domain = c.domain;
+    if (!c.hostOnly) {
+      details.domain = c.domain;
+    }
     try {
       await persistent.cookies.set(details);
       written += 1;
-    } catch (err) {
+    } catch (error) {
       skipped += 1;
       log.warn(
         "[pond refresh:cookies] set failed",
         c.name,
         c.domain,
-        err instanceof Error ? err.message : err,
+        error instanceof Error ? error.message : error,
       );
     }
   }
@@ -124,7 +134,9 @@ export async function probeUserHandle(
   if (source === "reddit") {
     const { probeRedditHandle } = await import("../harvest/reddit/api");
     const viaApi = await probeRedditHandle(partition ?? PARTITION);
-    if (viaApi) return viaApi;
+    if (viaApi) {
+      return viaApi;
+    }
   }
   if (source === "cosmos") {
     const { probeCosmosHandle } = await import("../harvest/cosmos/api");
@@ -133,7 +145,9 @@ export async function probeUserHandle(
   if (source === "github") {
     const { probeGithubHandle } = await import("../harvest/github/account");
     const viaCookie = await probeGithubHandle(partition ?? PARTITION);
-    if (viaCookie) return viaCookie;
+    if (viaCookie) {
+      return viaCookie;
+    }
   }
   if (source === "substack") {
     const { probeSubstackHandle } = await import("../harvest/substack/api");
@@ -158,7 +172,9 @@ export async function probeUserHandle(
   if (source === "tiktok") {
     const { probeTiktokHandle } = await import("../harvest/tiktok/api");
     const viaApi = await probeTiktokHandle(partition ?? PARTITION);
-    if (viaApi) return viaApi;
+    if (viaApi) {
+      return viaApi;
+    }
   }
   const lease = await leaseWindow(source, { partition });
   try {
@@ -187,8 +203,8 @@ export async function probeUserHandle(
     }
     const handle = raw.trim().replace(/^@/, "");
     return handle.length > 0 ? handle : null;
-  } catch (err) {
-    log.warn("[pond refresh:probe] unexpected error", source, err);
+  } catch (error) {
+    log.warn("[pond refresh:probe] unexpected error", source, error);
     return null;
   } finally {
     lease.release();
@@ -196,25 +212,63 @@ export async function probeUserHandle(
 }
 
 function probeUrlForSource(source: Source): string {
-  if (source === "tiktok") return "https://www.tiktok.com/";
-  if (source === "arena") return "https://www.are.na/";
-  if (source === "twitter") return "https://x.com/home";
-  if (source === "instagram") return "https://www.instagram.com/";
-  if (source === "pinterest") return "https://www.pinterest.com/me/";
-  if (source === "youtube") return "https://www.youtube.com/account";
-  if (source === "reddit") return "https://www.reddit.com/";
-  if (source === "threads") return "https://www.threads.com/";
-  if (source === "cosmos") return "https://www.cosmos.so/";
-  if (source === "github") return "https://github.com/";
-  if (source === "substack") return "https://substack.com/home";
-  if (source === "tumblr") return "https://www.tumblr.com/";
-  if (source === "savee") return "https://savee.com/you/";
-  if (source === "behance") return "https://www.behance.net/";
-  if (source === "vimeo") return "https://vimeo.com/";
-  if (source === "dribbble") return "https://dribbble.com/";
-  if (source === "unsplash") return "https://unsplash.com/";
-  if (source === "marked") return "https://marked.dev/explore";
-  if (source === "linkedin") return "https://www.linkedin.com/feed/";
+  if (source === "tiktok") {
+    return "https://www.tiktok.com/";
+  }
+  if (source === "arena") {
+    return "https://www.are.na/";
+  }
+  if (source === "twitter") {
+    return "https://x.com/home";
+  }
+  if (source === "instagram") {
+    return "https://www.instagram.com/";
+  }
+  if (source === "pinterest") {
+    return "https://www.pinterest.com/me/";
+  }
+  if (source === "youtube") {
+    return "https://www.youtube.com/account";
+  }
+  if (source === "reddit") {
+    return "https://www.reddit.com/";
+  }
+  if (source === "threads") {
+    return "https://www.threads.com/";
+  }
+  if (source === "cosmos") {
+    return "https://www.cosmos.so/";
+  }
+  if (source === "github") {
+    return "https://github.com/";
+  }
+  if (source === "substack") {
+    return "https://substack.com/home";
+  }
+  if (source === "tumblr") {
+    return "https://www.tumblr.com/";
+  }
+  if (source === "savee") {
+    return "https://savee.com/you/";
+  }
+  if (source === "behance") {
+    return "https://www.behance.net/";
+  }
+  if (source === "vimeo") {
+    return "https://vimeo.com/";
+  }
+  if (source === "dribbble") {
+    return "https://dribbble.com/";
+  }
+  if (source === "unsplash") {
+    return "https://unsplash.com/";
+  }
+  if (source === "marked") {
+    return "https://marked.dev/explore";
+  }
+  if (source === "linkedin") {
+    return "https://www.linkedin.com/feed/";
+  }
   return homeUrlForSource(source);
 }
 
@@ -237,10 +291,12 @@ export function isAuthCookieName(
 async function listCookiesForSource(
   source: Source,
   partition: string,
-): Promise<Cookie[]> {
+): Promise<Array<Cookie>> {
   const persistent = session.fromPartition(partition);
   const domain = primaryDomainForSource(source);
-  if (!domain) return [];
+  if (!domain) {
+    return [];
+  }
   const host = domain.replace(/^\./, "").toLowerCase();
   try {
     /** `cookies.get({ domain })` does not return host-only subdomain cookies (cosmos auth lives on `www.cosmos.so`); fetch all and filter by host suffix. */
@@ -249,8 +305,8 @@ async function listCookiesForSource(
       const ck = (c.domain ?? "").replace(/^\./, "").toLowerCase();
       return ck === host || ck.endsWith(`.${host}`);
     });
-  } catch (err) {
-    log.warn("[pond refresh:window] cookies.get failed", domain, err);
+  } catch (error) {
+    log.warn("[pond refresh:window] cookies.get failed", domain, error);
     return [];
   }
 }

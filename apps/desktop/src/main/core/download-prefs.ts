@@ -6,7 +6,8 @@ import type {
   StoredVideoDownload,
   VideoDownloadSettings,
 } from "@pond/schema/db";
-import { EXTERNAL_SOURCE_IDS, type ExternalSource } from "@pond/schema/sources";
+import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
+import type { ExternalSource } from "@pond/schema/sources";
 import { z } from "zod";
 
 const ALLOWED_HEIGHTS = new Set([
@@ -55,10 +56,16 @@ function snapToSet(
   set: Set<number>,
   fallback: number,
 ): number | null {
-  if (value === null || value === undefined) return null;
+  if (value === null || value === undefined) {
+    return null;
+  }
   const n = Math.floor(Number(value));
-  if (!Number.isFinite(n) || n <= 0) return null;
-  if (set.has(n)) return n;
+  if (!Number.isFinite(n) || n <= 0) {
+    return null;
+  }
+  if (set.has(n)) {
+    return n;
+  }
   let best = fallback;
   let bestDelta = Math.abs(best - n);
   for (const bucket of set) {
@@ -103,7 +110,7 @@ export function normalizeImage(
     lossless: stored.lossless ?? false,
     progressive: stored.progressive ?? false,
     preserveMetadata: stored.preserveMetadata ?? false,
-    maxFileSizeMb: clampFilesize(stored.maxFileSizeMb, 1_000),
+    maxFileSizeMb: clampFilesize(stored.maxFileSizeMb, 1000),
     splitPosts: stored.splitPosts ?? false,
     splitMinMedia:
       snapToSet(stored.splitMinMedia, ALLOWED_SPLIT_MIN_MEDIA, 2) ?? 2,
@@ -112,7 +119,9 @@ export function normalizeImage(
 
 function clampQuality(q: number | null | undefined): number {
   const n = Math.floor(Number(q));
-  if (!Number.isFinite(n)) return 80;
+  if (!Number.isFinite(n)) {
+    return 80;
+  }
   return Math.min(100, Math.max(1, n));
 }
 
@@ -120,9 +129,13 @@ function clampFilesize(
   mb: number | null | undefined,
   ceiling: number,
 ): number | null {
-  if (mb === null || mb === undefined) return null;
+  if (mb === null || mb === undefined) {
+    return null;
+  }
   const n = Math.floor(Number(mb));
-  if (!Number.isFinite(n) || n <= 0) return null;
+  if (!Number.isFinite(n) || n <= 0) {
+    return null;
+  }
   return Math.min(n, ceiling);
 }
 
@@ -138,14 +151,20 @@ function sourceOverrides<T>(
 ): SourceOverrides<T> {
   const sources = StoredSourcesSchema.parse(stored).sources;
   const out: SourceOverrides<T> = {};
-  if (!sources) return out;
+  if (!sources) {
+    return out;
+  }
   for (const source of EXTERNAL_SOURCE_IDS) {
-    if (!(source in sources)) continue;
-    const parsed = schema.parse(sources[source] ?? {});
-    /** SAFETY: entries come from `parsed`, a Partial<T>, with only undefined values dropped. */
-    out[source] = Object.fromEntries(
-      Object.entries(parsed).filter(([, value]) => value !== undefined),
-    ) as Partial<T>;
+    if (!(source in sources)) {
+      continue;
+    }
+    const parsed: Partial<T> = { ...schema.parse(sources[source] ?? {}) };
+    for (const key in parsed) {
+      if (parsed[key] === undefined) {
+        delete parsed[key];
+      }
+    }
+    out[source] = parsed;
   }
   return out;
 }
@@ -165,7 +184,9 @@ export function imageSourceOverrides(
 function isExternal(
   source: Source | null | undefined,
 ): source is ExternalSource {
-  return source != null && EXTERNAL_SOURCES.has(source);
+  return (
+    source !== null && source !== undefined && EXTERNAL_SOURCES.has(source)
+  );
 }
 
 export function resolveVideo(

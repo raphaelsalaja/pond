@@ -1,4 +1,5 @@
-import { type ImportScope, type Save, saves, tasks } from "@pond/schema/db";
+import { saves, tasks } from "@pond/schema/db";
+import type { ImportScope, Save } from "@pond/schema/db";
 import { majorityMediaType } from "@pond/schema/media-type";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import type { Transaction } from "@pond/schema/tx";
@@ -6,10 +7,10 @@ import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import {
   accountImportScope,
-  type ImportFilterReason,
   importFilterReason,
   listFilterReason,
 } from "../../../shared/import-scope";
+import type { ImportFilterReason } from "../../../shared/import-scope";
 import { getDb } from "../../db";
 import { executeBatch } from "../executor";
 import { persistSave } from "../persist-save";
@@ -31,11 +32,17 @@ async function skipFiltered(
   save: Save,
   reasonFor: (scope: ImportScope | undefined) => ImportFilterReason | null,
 ): Promise<boolean> {
-  if (!save.accountId || save.status !== "ingesting") return false;
+  if (!save.accountId || save.status !== "ingesting") {
+    return false;
+  }
   const account = await getAccount(save.accountId);
-  if (!account) return false;
+  if (!account) {
+    return false;
+  }
   const reason = reasonFor(accountImportScope(account.source, account.sync));
-  if (!reason) return false;
+  if (!reason) {
+    return false;
+  }
   await persistSave(
     save.id,
     {
@@ -111,7 +118,9 @@ export async function releaseFilteredSaves(accountId: string): Promise<number> {
         ),
       ),
     );
-  if (rows.length === 0) return 0;
+  if (rows.length === 0) {
+    return 0;
+  }
   await purgeReleased(rows);
   log.info("[pond pipeline:import-filter] released", {
     accountId,
@@ -122,9 +131,11 @@ export async function releaseFilteredSaves(accountId: string): Promise<number> {
 
 /** Purges saves skipped for their list, so the walk that found them on another list queues them again. */
 export async function releaseListFilteredSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
-  if (ids.length === 0) return;
+  if (ids.length === 0) {
+    return;
+  }
   const db = await getDb();
   const rows = await db
     .select()
@@ -139,16 +150,16 @@ export async function releaseListFilteredSaves(
   await purgeReleased(rows);
 }
 
-async function purgeReleased(rows: Save[]): Promise<void> {
-  if (rows.length === 0) return;
-  const transactions = rows.map(
-    (row): Transaction => ({
-      kind: "purge",
-      model: "save",
-      id: row.id,
-      before: row,
-      meta: { actor: "system", actorReason: "sync:import-filter:release" },
-    }),
-  );
+async function purgeReleased(rows: Array<Save>): Promise<void> {
+  if (rows.length === 0) {
+    return;
+  }
+  const transactions = rows.map((row): Transaction => ({
+    kind: "purge",
+    model: "save",
+    id: row.id,
+    before: row,
+    meta: { actor: "system", actorReason: "sync:import-filter:release" },
+  }));
   await executeBatch(transactions);
 }

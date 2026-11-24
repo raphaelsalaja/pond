@@ -7,7 +7,7 @@ export interface Page {
 
 export interface PageGroup {
   label: string;
-  pages: readonly Page[];
+  pages: ReadonlyArray<Page>;
 }
 
 export const INTRODUCTION: Page = { href: "/design", name: "Introduction" };
@@ -28,7 +28,7 @@ const FOUNDATIONS = [
   { id: "motion", name: "Motion" },
 ] as const;
 
-const componentGroups = (): PageGroup[] =>
+const componentGroups = (): Array<PageGroup> =>
   groupByTier().map((group) => ({
     label: group.label,
     pages: group.docs.map((docs) => ({
@@ -37,7 +37,7 @@ const componentGroups = (): PageGroup[] =>
     })),
   }));
 
-export function pageGroups(): PageGroup[] {
+export function pageGroups(): Array<PageGroup> {
   return [
     {
       label: "Foundations",
@@ -54,7 +54,7 @@ export function pageGroups(): PageGroup[] {
 }
 
 /** Foundations are sections of one page, so the walk passes through Tokens once. */
-function pageOrder(): Page[] {
+function pageOrder(): Array<Page> {
   return [
     INTRODUCTION,
     TOKENS,
@@ -66,7 +66,9 @@ function pageOrder(): Page[] {
 /** Pages scroll inside the panel, so links skip Next's window scroll and a same-page hash lands here. */
 export function reveal(href: string) {
   const [path, id] = href.split("#");
-  if (!id || path !== window.location.pathname) return;
+  if (!id || path !== window.location.pathname) {
+    return;
+  }
   document.getElementById(id)?.scrollIntoView();
 }
 
@@ -78,6 +80,8 @@ interface Neighbors {
 export function neighbors(href: string): Neighbors {
   const order = pageOrder();
   const index = order.findIndex((page) => page.href === href);
-  if (index === -1) return { previous: undefined, next: undefined };
+  if (index === -1) {
+    return { previous: undefined, next: undefined };
+  }
   return { previous: order[index - 1], next: order[index + 1] };
 }

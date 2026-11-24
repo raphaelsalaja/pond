@@ -44,13 +44,17 @@ it("shows only verified result IDs and streams the same data it persists", async
     dependencies,
   );
   const show = context.tools.find((tool) => tool.name === "showSaves");
-  if (!show) throw new Error("Missing showSaves tool");
+  if (!show) {
+    throw new Error("Missing showSaves tool");
+  }
   await expect(
     show.execute({ title: "References", saveIds: ["unknown"] }),
   ).rejects.toThrow(/Only Saves/);
   expect(context.results()).toEqual([]);
   const search = context.tools.find((tool) => tool.name === "searchLibrary");
-  if (!search) throw new Error("Missing searchLibrary tool");
+  if (!search) {
+    throw new Error("Missing searchLibrary tool");
+  }
   let calls = 0;
   const model = new MockLanguageModelV4({
     doStream: async () => {
@@ -126,7 +130,9 @@ it("keeps distinct curated groups and deduplicates repeats regardless of order",
     .find((tool) => tool.name === "searchLibrary")
     ?.execute({ query: "film" });
   const show = context.tools.find((tool) => tool.name === "showSaves");
-  if (!show) throw new Error("Missing showSaves");
+  if (!show) {
+    throw new Error("Missing showSaves");
+  }
   await show.execute({ title: "Lighting", saveIds: ["one", "two"] });
   await show.execute({ title: "Lighting", saveIds: ["two", "one"] });
   await expect(

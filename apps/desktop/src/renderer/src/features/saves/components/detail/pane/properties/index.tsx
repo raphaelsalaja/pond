@@ -1,10 +1,12 @@
 import { IconCopy, IconDots } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { sensitiveContentBand } from "@pond/schema/content-safety";
-import { Menu, type MenuItemSpec, Rating } from "@pond/ui";
+import { Menu, Rating } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
-import { type DetailRow, groupDetailRows } from "@/features/saves/lib/detail";
+import { groupDetailRows } from "@/features/saves/lib/detail";
+import type { DetailRow } from "@/features/saves/lib/detail";
 import {
   deriveTypeLabel,
   pickPrimaryFile,
@@ -59,11 +61,17 @@ function totalSize(save: Save): number {
   return save.fileSize ?? save.files.reduce((sum, file) => sum + file.size, 0);
 }
 
-function propertyRows(rows: DetailRow[], save: Save): DetailRow[] {
-  const out = rows.flatMap((row): DetailRow[] => {
-    if (row.id === "type" || row.id === "size") return [];
-    if (METRIC_IDS.has(row.id) && row.value.trim() === "0") return [];
-    if (row.id === "imported") return [{ ...row, label: "Added" }];
+function propertyRows(rows: Array<DetailRow>, save: Save): Array<DetailRow> {
+  const out = rows.flatMap((row): Array<DetailRow> => {
+    if (row.id === "type" || row.id === "size") {
+      return [];
+    }
+    if (METRIC_IDS.has(row.id) && row.value.trim() === "0") {
+      return [];
+    }
+    if (row.id === "imported") {
+      return [{ ...row, label: "Added" }];
+    }
     return [row];
   });
   out.push({
@@ -73,13 +81,14 @@ function propertyRows(rows: DetailRow[], save: Save): DetailRow[] {
     kind: "text",
   });
   const size = totalSize(save);
-  if (size)
+  if (size) {
     out.push({
       id: "size",
       label: "Size",
       value: formatBytes(size),
       kind: "text",
     });
+  }
   const added = out.find((row) => row.id === "imported");
   return out.filter(
     (row) =>
@@ -95,13 +104,13 @@ const GROUP_TITLES = new Map([
 interface MenuEntry {
   label: string;
   value: string;
-  items: () => MenuItemSpec[];
+  items: () => Array<MenuItemSpec>;
 }
 
 function groupMenu(
   title: string,
-  entries: readonly MenuEntry[],
-): MenuItemSpec[] {
+  entries: ReadonlyArray<MenuEntry>,
+): Array<MenuItemSpec> {
   const text = entries
     .map((entry) => `${entry.label}: ${entry.value}`)
     .join("\n");
@@ -112,11 +121,15 @@ function groupMenu(
       onClick: () => copyFact(title, text),
     },
     { type: "separator" },
-    ...entries.flatMap((entry): MenuItemSpec[] => {
+    ...entries.flatMap((entry): Array<MenuItemSpec> => {
       const items = entry.items();
       const actions = items.filter((item) => item.type !== "separator");
-      if (actions.length === 0) return [];
-      if (actions.length === 1) return actions;
+      if (actions.length === 0) {
+        return [];
+      }
+      if (actions.length === 1) {
+        return actions;
+      }
       return [{ type: "submenu", label: entry.label, items }];
     }),
   ];
@@ -128,7 +141,7 @@ function Group({
   children,
 }: {
   label: string;
-  entries: readonly MenuEntry[];
+  entries: ReadonlyArray<MenuEntry>;
   children: React.ReactNode;
 }) {
   const title = GROUP_TITLES.get(label) ?? label;
@@ -159,8 +172,10 @@ function rowDisplay(row: DetailRow): string {
   return DATE_IDS.has(row.id) ? day(row.value) : row.value;
 }
 
-function rowMenu(row: DetailRow, save: Save): MenuItemSpec[] {
-  if (!FACT_IDS.has(row.id)) return buildRowMenu(row, save);
+function rowMenu(row: DetailRow, save: Save): Array<MenuItemSpec> {
+  if (!FACT_IDS.has(row.id)) {
+    return buildRowMenu(row, save);
+  }
   const filters = factFilters({ ...row, display: rowDisplay(row) }, save);
   return factMenu(row.label, row.value, filters);
 }
@@ -168,8 +183,10 @@ function rowMenu(row: DetailRow, save: Save): MenuItemSpec[] {
 function ratingEntry(
   rating: number | null,
   onRate: (rating: number) => void,
-): MenuEntry[] {
-  if (rating === null) return [];
+): Array<MenuEntry> {
+  if (rating === null) {
+    return [];
+  }
   return [
     {
       label: "Rating",
@@ -262,14 +279,17 @@ function SaveGroups({ save, rating, onRate }: RatingProps & { save: Save }) {
     sensitivity === "likely-sensitive"
       ? "Likely Sensitive"
       : "Possibly Sensitive";
-  const sensitivityMenu = (): MenuItemSpec[] => [
+  const sensitivityMenu = (): Array<MenuItemSpec> => [
     sensitiveContentMenuItem({
       ids: [save.id],
       saves: [save],
-      allTrashed: save.deletedAt != null,
+      allTrashed: save.deletedAt !== null && save.deletedAt !== undefined,
     }),
   ];
-  const entriesFor = (title: string, groupRows: DetailRow[]): MenuEntry[] => [
+  const entriesFor = (
+    title: string,
+    groupRows: Array<DetailRow>,
+  ): Array<MenuEntry> => [
     ...(title === "File" ? ratingEntry(rating, onRate) : []),
     ...groupRows.map((row) => ({
       label: row.label,
@@ -333,11 +353,11 @@ function SelectionGroups({
   saves,
   rating,
   onRate,
-}: RatingProps & { saves: readonly Save[] }) {
+}: RatingProps & { saves: ReadonlyArray<Save> }) {
   const size = formatBytes(
     saves.reduce((total, save) => total + totalSize(save), 0),
   );
-  const sizeMenu = (): MenuItemSpec[] => [
+  const sizeMenu = (): Array<MenuItemSpec> => [
     {
       label: "Copy Size",
       icon: <IconCopy />,
@@ -363,7 +383,7 @@ function SelectionGroups({
 export function SaveProperties({
   saves,
   ...rating
-}: RatingProps & { saves: readonly Save[] }) {
+}: RatingProps & { saves: ReadonlyArray<Save> }) {
   const single = saves.length === 1 ? saves[0] : undefined;
   return single ? (
     <SaveGroups save={single} {...rating} />

@@ -34,12 +34,17 @@ function same(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-function useTagEntries(name: string | null, searching: boolean): MenuEntry[] {
+function useTagEntries(
+  name: string | null,
+  searching: boolean,
+): Array<MenuEntry> {
   const tags = useTags();
   const groups = useTagGroups();
   return useMemo(() => {
     const tag = name ? tags.find((row) => same(row.name, name)) : undefined;
-    if (!tag) return [];
+    if (!tag) {
+      return [];
+    }
     const inGroup =
       groups.find((group) => group.tagNames.some((n) => same(n, tag.name)))
         ?.name ?? null;
@@ -62,11 +67,15 @@ function useTagEntries(name: string | null, searching: boolean): MenuEntry[] {
           group,
         }),
       onMoveToGroup: (group) => {
-        if (!inGroup || inGroup === group) return;
+        if (!inGroup || inGroup === group) {
+          return;
+        }
         void tagOperations.moveToGroup(tag.name, inGroup, group);
       },
       onRemoveFromGroup: () => {
-        if (!inGroup) return;
+        if (!inGroup) {
+          return;
+        }
         void window.pond.query("tagGroups.removeTag", {
           tag: tag.name,
           group: inGroup,
@@ -84,7 +93,9 @@ function useTagEntries(name: string | null, searching: boolean): MenuEntry[] {
           emptyError: "Enter a tag name.",
           onConfirm: async (value) => {
             const next = value.trim();
-            if (next === tag.name) return;
+            if (next === tag.name) {
+              return;
+            }
             await tagOperations.rename("tag", tag.name, next);
             selectLibraryNav({ kind: "tag", name: next });
           },
@@ -116,7 +127,7 @@ function useTagEntries(name: string | null, searching: boolean): MenuEntry[] {
 function useSavedViewEntries(
   enabled: boolean,
   searching: boolean,
-): MenuEntry[] {
+): Array<MenuEntry> {
   const activeViewId = useActiveViewId();
   const views = useSavedViews();
   const [presentations] = usePrefs("savedViewViews");
@@ -124,7 +135,9 @@ function useSavedViewEntries(
     const view = enabled
       ? views.find((entry) => entry.id === activeViewId)
       : undefined;
-    if (!view) return [];
+    if (!view) {
+      return [];
+    }
     const items = entryItems({
       view,
       views,
@@ -154,10 +167,15 @@ function useSavedViewEntries(
   }, [enabled, activeViewId, views, presentations, searching]);
 }
 
-function useCanvasEntries(pathname: string, searching: boolean): MenuEntry[] {
+function useCanvasEntries(
+  pathname: string,
+  searching: boolean,
+): Array<MenuEntry> {
   const canvas = useCanvas(canvasIdFromPath(pathname));
   return useMemo(() => {
-    if (!canvas) return [];
+    if (!canvas) {
+      return [];
+    }
     const group = "Current Canvas";
     return offerEntries({
       group,
@@ -170,10 +188,15 @@ function useCanvasEntries(pathname: string, searching: boolean): MenuEntry[] {
   }, [canvas, searching]);
 }
 
-function useFishEntries(pathname: string, searching: boolean): MenuEntry[] {
+function useFishEntries(
+  pathname: string,
+  searching: boolean,
+): Array<MenuEntry> {
   const target = useFish(fishIdFromPath(pathname));
   return useMemo(() => {
-    if (!target) return [];
+    if (!target) {
+      return [];
+    }
     const group = "Current Fish";
     return offerEntries({
       group,
@@ -184,7 +207,7 @@ function useFishEntries(pathname: string, searching: boolean): MenuEntry[] {
   }, [target, searching]);
 }
 
-function useRegisteredEntries(searching: boolean): MenuEntry[] {
+function useRegisteredEntries(searching: boolean): Array<MenuEntry> {
   const contexts = useCommandContexts();
   return useMemo(
     () =>
@@ -204,7 +227,7 @@ function useRegisteredEntries(searching: boolean): MenuEntry[] {
 export function usePageEntries(
   pathname: string,
   searching: boolean,
-): MenuEntry[] {
+): Array<MenuEntry> {
   const nav = useLibraryNav();
   const onCollection = useOnCollection(pathname);
   const tag = useTagEntries(

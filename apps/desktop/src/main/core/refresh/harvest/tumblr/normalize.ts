@@ -97,11 +97,13 @@ export const PermalinkSchema = z.object({
   }),
 });
 
-export function parsePosts(rows: readonly unknown[]): TumblrPost[] {
-  const out: TumblrPost[] = [];
+export function parsePosts(rows: ReadonlyArray<unknown>): Array<TumblrPost> {
+  const out: Array<TumblrPost> = [];
   for (const row of rows) {
     const parsed = TumblrPostSchema.safeParse(row);
-    if (parsed.success) out.push(parsed.data);
+    if (parsed.success) {
+      out.push(parsed.data);
+    }
   }
   return out;
 }
@@ -125,13 +127,15 @@ export function blogFromUrl(url: string): string | null {
     /^https?:\/\/(?:www\.)?tumblr\.com\/(?:blog\/view\/)?([a-z0-9-]+)\/\d/i.exec(
       url,
     );
-  if (www?.[1]) return www[1].toLowerCase();
+  if (www?.[1]) {
+    return www[1].toLowerCase();
+  }
   const sub = /^https?:\/\/(?!www\.)([a-z0-9-]+)\.tumblr\.com\//i.exec(url);
   return sub?.[1] ? sub[1].toLowerCase() : null;
 }
 
 /** Reblogs carry no blocks of their own; the original's blocks live in the trail. */
-function blocksOf(post: TumblrPost): NpfBlock[] {
+function blocksOf(post: TumblrPost): Array<NpfBlock> {
   return post.content.length > 0
     ? post.content
     : post.trail.flatMap((t) => t.content);
@@ -141,27 +145,37 @@ function largest(media: NpfBlock["media"]): NpfMedia | undefined {
   const list = Array.isArray(media) ? media : media ? [media] : [];
   let best: NpfMedia | undefined;
   for (const m of list) {
-    if (!best || (m.width ?? 0) > (best.width ?? 0)) best = m;
+    if (!best || (m.width ?? 0) > (best.width ?? 0)) {
+      best = m;
+    }
   }
   return best;
 }
 
-function mediaOf(post: TumblrPost): CaptureMedia[] {
-  const out: CaptureMedia[] = [];
+function mediaOf(post: TumblrPost): Array<CaptureMedia> {
+  const out: Array<CaptureMedia> = [];
   for (const block of blocksOf(post)) {
     if (block.type === "image") {
       const m = largest(block.media);
-      if (!m) continue;
+      if (!m) {
+        continue;
+      }
       const media: CaptureMedia = { url: m.url, type: "image" };
-      if (m.width) media.width = m.width;
-      if (m.height) media.height = m.height;
+      if (m.width) {
+        media.width = m.width;
+      }
+      if (m.height) {
+        media.height = m.height;
+      }
       out.push(media);
     } else if (block.type === "video") {
       const m = largest(block.media);
       if (m) {
         const media: CaptureMedia = { url: m.url, type: "video" };
         const poster = largest(block.poster);
-        if (poster) media.posterUrl = poster.url;
+        if (poster) {
+          media.posterUrl = poster.url;
+        }
         out.push(media);
       } else if (block.url) {
         out.push({ url: block.url, type: "link" });
@@ -202,11 +216,17 @@ export function postEntry(post: TumblrPost): ListEntry {
     listKinds: ["liked"],
   };
   const savedAt = isoFromUnix(post.likedTimestamp);
-  if (savedAt) entry.savedAt = savedAt;
+  if (savedAt) {
+    entry.savedAt = savedAt;
+  }
   const title = headingOf(post);
   const text = textOf(post);
-  if (title) entry.title = title;
-  if (text) entry.description = clip(text);
+  if (title) {
+    entry.title = title;
+  }
+  if (text) {
+    entry.description = clip(text);
+  }
   const media = mediaOf(post);
   const [first] = media;
   if (first) {
@@ -237,11 +257,19 @@ export function captureFromPost(post: TumblrPost): Capture {
   };
   const title = headingOf(post);
   const text = textOf(post);
-  if (title) capture.title = title;
-  if (text) capture.description = clip(text);
+  if (title) {
+    capture.title = title;
+  }
+  if (text) {
+    capture.description = clip(text);
+  }
   const publishedAt = isoFromUnix(post.timestamp);
-  if (publishedAt) capture.publishedAt = publishedAt;
+  if (publishedAt) {
+    capture.publishedAt = publishedAt;
+  }
   /** Notes count likes and reblogs together, so they are reactions rather than likes. */
-  if (post.noteCount != null) capture.metrics = { reactions: post.noteCount };
+  if (post.noteCount !== undefined) {
+    capture.metrics = { reactions: post.noteCount };
+  }
   return capture;
 }

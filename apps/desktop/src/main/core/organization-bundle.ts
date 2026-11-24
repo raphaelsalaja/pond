@@ -58,24 +58,31 @@ export function hydrateOrganizationBundle(db: Db, root: string): void {
     return;
   }
   const envelope = readBundleJson(file);
-  if (!envelope)
+  if (!envelope) {
     throw new Error(
       "Library organization could not be read. Restore a verified backup.",
     );
+  }
   const data = OrganizationBundleSchema.parse(envelope.data);
   db.$raw.transaction(() => {
     const folder = db.$raw.prepare(
       "insert into folders (id,parent_id,name,color,sort_order,created_at) values (@id,@parent_id,@name,@color,@sort_order,@created_at) on conflict(id) do update set parent_id=excluded.parent_id,name=excluded.name,color=excluded.color,sort_order=excluded.sort_order",
     );
-    for (const row of data.folders) folder.run(row);
+    for (const row of data.folders) {
+      folder.run(row);
+    }
     const metadata = db.$raw.prepare(
       "insert into folder_metadata (folder_id,description,external_link) values (@folder_id,@description,@external_link) on conflict(folder_id) do update set description=excluded.description,external_link=excluded.external_link",
     );
-    for (const row of data.folderMetadata) metadata.run(row);
+    for (const row of data.folderMetadata) {
+      metadata.run(row);
+    }
     const view = db.$raw.prepare(
       "insert into saved_views (id,name,kind,parent_id,question,query,sort_key,sort_dir,layout,sort_order,created_at) values (@id,@name,@kind,@parent_id,@question,@query,@sort_key,@sort_dir,@layout,@sort_order,@created_at) on conflict(id) do update set name=excluded.name,kind=excluded.kind,parent_id=excluded.parent_id,question=excluded.question,query=excluded.query,sort_key=excluded.sort_key,sort_dir=excluded.sort_dir,layout=excluded.layout,sort_order=excluded.sort_order",
     );
-    for (const row of data.views) view.run(row);
+    for (const row of data.views) {
+      view.run(row);
+    }
     db.$raw
       .prepare(
         "delete from folder_metadata where folder_id not in (select value from json_each(?))",

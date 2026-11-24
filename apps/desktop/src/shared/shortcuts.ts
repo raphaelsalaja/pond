@@ -1,8 +1,5 @@
-import {
-  type Hotkey,
-  normalizeHotkey,
-  validateHotkey,
-} from "@tanstack/hotkeys";
+import { normalizeHotkey, validateHotkey } from "@tanstack/hotkeys";
+import type { Hotkey } from "@tanstack/hotkeys";
 import { GLOBAL_SHORTCUTS, LAYOUT_CYCLE_SHORTCUT } from "./global-shortcuts";
 
 /** An unknown platform (such as jsdom's empty string) keeps the original macOS behavior. */
@@ -10,8 +7,12 @@ export function shortcutPlatformFromName(
   platform: string,
 ): "mac" | "windows" | "linux" {
   const value = platform.toLowerCase();
-  if (!value || value.includes("mac") || value === "darwin") return "mac";
-  if (value.includes("win")) return "windows";
+  if (!value || value.includes("mac") || value === "darwin") {
+    return "mac";
+  }
+  if (value.includes("win")) {
+    return "windows";
+  }
   return "linux";
 }
 
@@ -40,7 +41,7 @@ export interface ShortcutDef {
   label: string;
   group: ShortcutGroup;
   keys?: Hotkey;
-  sequence?: readonly Hotkey[];
+  sequence?: ReadonlyArray<Hotkey>;
 }
 
 export const SHORTCUTS = {
@@ -551,11 +552,12 @@ export function resolveShortcuts(
   }
   for (const id of Object.keys(resolved).filter(isShortcutId)) {
     const override = preferences.overrides[id];
-    if (override && isRecordable(resolved[id]) && isValidShortcut(override))
+    if (override && isRecordable(resolved[id]) && isValidShortcut(override)) {
       resolved[id] = {
         ...resolved[id],
         keys: normalizeHotkey(override, SHORTCUT_PLATFORM),
       };
+    }
   }
   return resolved;
 }

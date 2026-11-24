@@ -1,4 +1,5 @@
-import { type SaveFile, type Source, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { SaveFile, Source } from "@pond/schema/db";
 import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
 import { and, asc, eq, gt, isNull, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -9,17 +10,18 @@ import { getDb } from "../db";
 import { libraryId } from "../paths";
 import { resolveImage } from "./download-prefs";
 import { getDownloadConfig } from "./prefs";
-import { type SplitSaveResult, splitSave } from "./split-save";
+import { splitSave } from "./split-save";
+import type { SplitSaveResult } from "./split-save";
 
 export interface SplitCandidate {
   id: string;
   source: Source;
-  files: SaveFile[];
+  files: Array<SaveFile>;
 }
 
 export interface SplitAllRuntime {
   /** Complete saves outside Trash with more than one original file, by ID after `after`. */
-  page(after: string | null, limit: number): Promise<SplitCandidate[]>;
+  page(after: string | null, limit: number): Promise<Array<SplitCandidate>>;
   /** Fewest images or videos a save from each source needs; null where the source's own Split Into Saves setting is off. */
   minMedia(): Promise<(source: Source) => number | null>;
   split(id: string): Promise<SplitSaveResult>;
@@ -77,7 +79,10 @@ const runtime: SplitAllRuntime = {
   },
   split: (id) => splitSave(id, "user"),
   library: libraryId,
-  pause: () => new Promise((resolve) => setTimeout(resolve, BATCH_PAUSE_MS)),
+  pause: () =>
+    new Promise((resolve) => {
+      setTimeout(resolve, BATCH_PAUSE_MS);
+    }),
 };
 
 let status: SplitAllProgress = IDLE;
@@ -85,18 +90,22 @@ let status: SplitAllProgress = IDLE;
 /** Splitting leaves one slide per save, so a rerun after a quit only finds the saves still left. */
 export async function splittableIds(
   dependencies: SplitAllRuntime,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const minMedia = await dependencies.minMedia();
-  const ids: string[] = [];
+  const ids: Array<string> = [];
   let after: string | null = null;
   for (;;) {
     const rows = await dependencies.page(after, PAGE_SIZE);
     for (const row of rows) {
       const min = minMedia(row.source);
-      if (min !== null && canSplitFiles(row.files, min)) ids.push(row.id);
+      if (min !== null && canSplitFiles(row.files, min)) {
+        ids.push(row.id);
+      }
     }
     const last = rows.at(-1);
-    if (!last || rows.length < PAGE_SIZE) return ids;
+    if (!last || rows.length < PAGE_SIZE) {
+      return ids;
+    }
     after = last.id;
   }
 }
@@ -110,15 +119,18 @@ export async function runSplitAll(
   const progress = { ...IDLE, running: true, total: ids.length };
   report({ ...progress });
   for (let start = 0; start < ids.length; start += BATCH_SIZE) {
-    if (dependencies.library() !== library) break;
+    if (dependencies.library() !== library) {
+      break;
+    }
     for (const id of ids.slice(start, start + BATCH_SIZE)) {
-      const result = await dependencies.split(id).catch((err) => {
-        log.warn("[pond split] split all skipped a save", id, err);
+      const result = await dependencies.split(id).catch((cause: unknown) => {
+        log.warn("[pond split] split all skipped a save", id, cause);
         return null;
       });
       progress.processed += 1;
-      if (!result) progress.failed += 1;
-      else if (result.ok) {
+      if (!result) {
+        progress.failed += 1;
+      } else if (result.ok) {
         progress.split += 1;
         progress.created += result.created.length;
       }
@@ -142,7 +154,9 @@ export function splitAllStatus(): SplitAllProgress {
 export function startSplitAll(
   dependencies: SplitAllRuntime = runtime,
 ): SplitAllProgress {
-  if (status.running) return splitAllStatus();
+  if (status.running) {
+    return splitAllStatus();
+  }
   status = { ...IDLE, running: true };
   void runSplitAll(dependencies, (next) => {
     status = next;
@@ -150,8 +164,8 @@ export function startSplitAll(
     .then((final) => {
       status = final;
     })
-    .catch((err) => {
-      log.warn("[pond split] split all stopped", err);
+    .catch((cause: unknown) => {
+      log.warn("[pond split] split all stopped", cause);
       status = { ...status, running: false };
     });
   return splitAllStatus();

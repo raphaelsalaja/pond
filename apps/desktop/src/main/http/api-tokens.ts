@@ -4,11 +4,8 @@ import {
   randomUUID,
   timingSafeEqual,
 } from "node:crypto";
-import {
-  type ApiTokenInfo,
-  ApiTokenInfoSchema,
-  type ApiTokenScope,
-} from "@pond/schema/api";
+import { ApiTokenInfoSchema } from "@pond/schema/api";
+import type { ApiTokenInfo, ApiTokenScope } from "@pond/schema/api";
 import { z } from "zod";
 import { KEYCHAIN_API_TOKENS } from "../../shared/constants";
 import { getSecret, setSecret } from "../keychain";
@@ -32,8 +29,10 @@ function publicInfo({ hash: _hash, ...info }: StoredToken): ApiTokenInfo {
   return info;
 }
 
-function parseStored(raw: string | null): StoredToken[] {
-  if (!raw) return [];
+function parseStored(raw: string | null): Array<StoredToken> {
+  if (!raw) {
+    return [];
+  }
   try {
     const parsed = z.array(StoredTokenSchema).safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : [];
@@ -47,16 +46,19 @@ export function createApiTokenStore(
   storage: ApiTokenStorage,
   now: () => number = Date.now,
 ) {
-  let cache: StoredToken[] | null = null;
+  let cache: Array<StoredToken> | null = null;
   let queue: Promise<unknown> = Promise.resolve();
 
-  async function load(): Promise<StoredToken[]> {
+  async function load(): Promise<Array<StoredToken>> {
     cache ??= parseStored(await storage.read());
     return cache;
   }
 
   function mutate<T>(
-    change: (tokens: StoredToken[]) => { tokens: StoredToken[]; result: T },
+    change: (tokens: Array<StoredToken>) => {
+      tokens: Array<StoredToken>;
+      result: T;
+    },
   ): Promise<T> {
     const next = queue.then(async () => {
       const { tokens, result } = change(await load());
@@ -68,13 +70,13 @@ export function createApiTokenStore(
     return next;
   }
 
-  async function list(): Promise<ApiTokenInfo[]> {
+  async function list(): Promise<Array<ApiTokenInfo>> {
     return (await load()).map(publicInfo);
   }
 
   function create(
     name: string,
-    scopes: readonly ApiTokenScope[],
+    scopes: ReadonlyArray<ApiTokenScope>,
   ): Promise<{ token: string; info: ApiTokenInfo }> {
     const token = `${TOKEN_PREFIX}${randomBytes(24).toString("hex")}`;
     const stored: StoredToken = {
@@ -99,7 +101,9 @@ export function createApiTokenStore(
   }
 
   async function authenticate(presented: string): Promise<ApiTokenInfo | null> {
-    if (!presented.startsWith(TOKEN_PREFIX)) return null;
+    if (!presented.startsWith(TOKEN_PREFIX)) {
+      return null;
+    }
     const presentedDigest = digest(presented);
     const match = (await load()).find((entry) => {
       const stored = Buffer.from(entry.hash, "hex");
@@ -108,7 +112,9 @@ export function createApiTokenStore(
         timingSafeEqual(stored, presentedDigest)
       );
     });
-    if (!match) return null;
+    if (!match) {
+      return null;
+    }
     const usedAt = now();
     if (
       match.lastUsedAt === null ||

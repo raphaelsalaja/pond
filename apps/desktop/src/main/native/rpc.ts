@@ -2,7 +2,8 @@ import type { ExtensionSettings } from "@pond/schema/browser-extension";
 import type { CaptureReceipt, CaptureWebDraft } from "@pond/schema/capture";
 import type { Source } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
-import { type NativeResponse, nativeRequestSchema } from "@pond/schema/native";
+import { nativeRequestSchema } from "@pond/schema/native";
+import type { NativeResponse } from "@pond/schema/native";
 import type {
   ExtensionCookie,
   SessionImportResponse,
@@ -14,7 +15,7 @@ import type { LibraryInfo } from "../ops/library";
 
 export interface EnqueueOpts {
   trigger?: string;
-  cookies?: ExtensionCookie[];
+  cookies?: Array<ExtensionCookie>;
 }
 
 export interface EnqueueResult {
@@ -46,26 +47,26 @@ export interface NativeFish {
 export interface NativePorts {
   capture?: (
     draft: CaptureWebDraft,
-    cookies?: ExtensionCookie[],
+    cookies?: Array<ExtensionCookie>,
     fishId?: string,
   ) => Promise<CaptureReceipt>;
   captureStatus?: (id: string) => Promise<CaptureReceipt>;
   enqueue: (url: string, opts: EnqueueOpts) => Promise<EnqueueResult>;
   libraryInfo: () => Promise<LibraryInfo>;
-  foldersList?: () => Promise<NativeFolder[]>;
-  tagsList?: () => Promise<NativeTag[]>;
-  fishList?: () => Promise<NativeFish[]>;
+  foldersList?: () => Promise<Array<NativeFolder>>;
+  tagsList?: () => Promise<Array<NativeTag>>;
+  fishList?: () => Promise<Array<NativeFish>>;
   extensionSettings?: () => Promise<ExtensionSettings>;
   sessionPending: () => { source: Source } | null;
   sessionImport: (
     source: Source,
-    cookies: ExtensionCookie[],
+    cookies: Array<ExtensionCookie>,
   ) => Promise<SessionImportResponse>;
   sessionRefresh?: (
     source: Source,
-    cookies: ExtensionCookie[],
+    cookies: Array<ExtensionCookie>,
   ) => Promise<SessionRefreshResponse>;
-  importSharedFiles?: (paths: string[]) => Promise<{ ids: string[] }>;
+  importSharedFiles?: (paths: Array<string>) => Promise<{ ids: Array<string> }>;
   appVersion: () => string;
 }
 
@@ -90,14 +91,17 @@ export async function dispatchNative(
   try {
     switch (req.type) {
       case "capture.accept":
-        if (!ports.capture) return { ok: false, error: "capture_unavailable" };
+        if (!ports.capture) {
+          return { ok: false, error: "capture_unavailable" };
+        }
         return {
           ok: true,
           data: await ports.capture(req.draft, req.cookies, req.fishId),
         };
       case "capture.status":
-        if (!ports.captureStatus)
+        if (!ports.captureStatus) {
           return { ok: false, error: "capture_unavailable" };
+        }
         return { ok: true, data: await ports.captureStatus(req.id) };
       case "hello":
         return {
@@ -107,25 +111,35 @@ export async function dispatchNative(
       case "library.info":
         return { ok: true, data: await ports.libraryInfo() };
       case "folders.list":
-        if (!ports.foldersList)
+        if (!ports.foldersList) {
           return { ok: false, error: "folders_unavailable" };
+        }
         return { ok: true, data: await ports.foldersList() };
       case "tags.list":
-        if (!ports.tagsList) return { ok: false, error: "tags_unavailable" };
+        if (!ports.tagsList) {
+          return { ok: false, error: "tags_unavailable" };
+        }
         return { ok: true, data: await ports.tagsList() };
       case "fish.list":
-        if (!ports.fishList) return { ok: false, error: "fish_unavailable" };
+        if (!ports.fishList) {
+          return { ok: false, error: "fish_unavailable" };
+        }
         return { ok: true, data: await ports.fishList() };
       case "extension.settings":
-        if (!ports.extensionSettings)
+        if (!ports.extensionSettings) {
           return { ok: false, error: "settings_unavailable" };
+        }
         return { ok: true, data: await ports.extensionSettings() };
       case "session.pending":
         return { ok: true, data: ports.sessionPending() };
       case "enqueue": {
         const opts: EnqueueOpts = {};
-        if (req.trigger) opts.trigger = req.trigger;
-        if (req.cookies && req.cookies.length > 0) opts.cookies = req.cookies;
+        if (req.trigger) {
+          opts.trigger = req.trigger;
+        }
+        if (req.cookies && req.cookies.length > 0) {
+          opts.cookies = req.cookies;
+        }
         return { ok: true, data: await ports.enqueue(req.url, opts) };
       }
       case "session.import": {
@@ -133,28 +147,31 @@ export async function dispatchNative(
         return { ok: true, data };
       }
       case "session.refresh": {
-        if (!ports.sessionRefresh)
+        if (!ports.sessionRefresh) {
           return { ok: false, error: "session_refresh_unavailable" };
+        }
         const data = await ports.sessionRefresh(req.source, req.cookies);
         return { ok: true, data };
       }
       case "files.import": {
-        if (!ports.importSharedFiles)
+        if (!ports.importSharedFiles) {
           return { ok: false, error: "files_unavailable" };
+        }
         try {
           return { ok: true, data: await ports.importSharedFiles(req.paths) };
-        } catch (err) {
-          if (err instanceof Error && err.message === "no_files")
+        } catch (error) {
+          if (error instanceof Error && error.message === "no_files") {
             return { ok: false, error: "no_files" };
-          throw err;
+          }
+          throw error;
         }
       }
     }
-  } catch (err) {
-    if (err instanceof UnsupportedError) {
+  } catch (error) {
+    if (error instanceof UnsupportedError) {
       return { ok: false, error: "unsupported_url" };
     }
-    log.error("[pond native] dispatch failed", req.type, err);
+    log.error("[pond native] dispatch failed", req.type, error);
     return { ok: false, error: "internal" };
   }
 }

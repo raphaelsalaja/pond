@@ -1,19 +1,20 @@
 /** @vitest-environment jsdom */
 
 import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
+import { isHTMLElement, isHTMLTag } from "@pond/ui/dom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
-import { createOverlayStore } from "../store";
 import { Toasts } from ".";
+import { createOverlayStore } from "../store";
 import styles from "./styles.module.css";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
 const css = readFileSync(
-  resolve(dirname(fileURLToPath(import.meta.url)), "styles.module.css"),
+  resolve(import.meta.dirname, "styles.module.css"),
   "utf8",
 );
 
@@ -26,11 +27,13 @@ function rule(selector: string) {
     start,
     `${selector} is missing from the toast stylesheet`,
   ).toBeGreaterThanOrEqual(0);
-  return css.slice(start, css.indexOf("}", start)).replace(/\s+/g, " ");
+  return css.slice(start, css.indexOf("}", start)).replaceAll(/\s+/g, " ");
 }
 
 function className(value: string | undefined, name: string) {
-  if (value === undefined) throw new Error(`Missing ${name} class`);
+  if (value === undefined) {
+    throw new Error(`Missing ${name} class`);
+  }
   return value;
 }
 
@@ -44,7 +47,7 @@ function apply(selector: string, className: string) {
 
 let host: HTMLDivElement;
 let root: Root;
-const applied: HTMLStyleElement[] = [];
+const applied: Array<HTMLStyleElement> = [];
 
 beforeEach(() => {
   host = document.createElement("div");
@@ -55,7 +58,9 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  for (const style of applied) style.remove();
+  for (const style of applied) {
+    style.remove();
+  }
   applied.length = 0;
 });
 
@@ -90,13 +95,15 @@ it("clamps an already-saved page title so the toast stays compact", async () => 
   const heading = host.querySelector("h2");
   const description = host.querySelector("p");
   expect(heading?.textContent).toBe("Already in Pond");
-  if (!(description instanceof HTMLParagraphElement)) {
+  if (!isHTMLTag(description, "p")) {
     throw new Error("Missing description");
   }
   expect(description.textContent).toBe(PAGE_TITLE);
 
   const status = heading?.querySelector("span");
-  if (!(status instanceof HTMLElement)) throw new Error("Missing status");
+  if (!isHTMLElement(status)) {
+    throw new Error("Missing status");
+  }
   const swapClass = className(styles.swap, "swap");
   const descriptionClass = className(styles.description, "description");
   expect(status.classList.contains(swapClass)).toBe(true);
@@ -116,8 +123,10 @@ it("clamps an already-saved page title so the toast stays compact", async () => 
 
   const open = button("Open");
   const dismiss = button("Dismiss");
-  if (!(open instanceof HTMLButtonElement)) throw new Error("Missing Open");
-  if (!(dismiss instanceof HTMLButtonElement)) {
+  if (!isHTMLTag(open, "button")) {
+    throw new Error("Missing Open");
+  }
+  if (!isHTMLTag(dismiss, "button")) {
     throw new Error("Missing Dismiss");
   }
   expect(open.hasAttribute("disabled")).toBe(false);

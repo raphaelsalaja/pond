@@ -1,4 +1,5 @@
-import { PrefsSchema, type SaveFile, type Source } from "@pond/schema/db";
+import { PrefsSchema } from "@pond/schema/db";
+import type { SaveFile, Source } from "@pond/schema/db";
 import { describe, expect, it, vi } from "vitest";
 import type { WriteFileArgs } from "./apply";
 import { hasWarcArchive, runArchivePage } from "./archive-page";
@@ -32,7 +33,7 @@ function setup(
     authWalled: false,
   }));
   const persistArchive = vi.fn(
-    async (_saveId: string, files: WriteFileArgs[]) => {
+    async (_saveId: string, files: Array<WriteFileArgs>) => {
       save.files = [
         ...save.files,
         ...files.map((file) => ({

@@ -31,7 +31,9 @@ it.each([24, 30, 60, null])(
       );
       const video = host.querySelector("video");
       const button = host.querySelector("button");
-      if (!video || !button) throw new Error("Missing video controls");
+      if (!video || !button) {
+        throw new Error("Missing video controls");
+      }
       await act(async () => button.focus());
       expect(
         host

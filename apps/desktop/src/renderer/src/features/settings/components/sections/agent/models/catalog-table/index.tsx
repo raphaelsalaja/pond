@@ -16,7 +16,7 @@ export function ModelCatalogTable({
   onSave,
   onOpenProviders = () => openSettings("models"),
 }: {
-  models: CatalogModel[];
+  models: Array<CatalogModel>;
   visibleByProvider: VisibleModelIds;
   onSave: (visibleModelIds: VisibleModelIds) => Promise<void>;
   onOpenProviders?: () => void;
@@ -33,12 +33,13 @@ export function ModelCatalogTable({
   );
   const groups = new Map<
     AssistantProvider,
-    { name: string; models: CatalogModel[] }
+    { name: string; models: Array<CatalogModel> }
   >();
   for (const model of filtered) {
     const group = groups.get(model.provider);
-    if (group) group.models.push(model);
-    else {
+    if (group) {
+      group.models.push(model);
+    } else {
       groups.set(model.provider, {
         name: model.providerName,
         models: [model],
@@ -54,7 +55,9 @@ export function ModelCatalogTable({
   ).length;
 
   async function save(next: VisibleModelIds) {
-    if (pending) return;
+    if (pending) {
+      return;
+    }
     setPending(true);
     setError("");
     try {
@@ -75,19 +78,23 @@ export function ModelCatalogTable({
 
   function allVisible() {
     const next = { ...visibleByProvider };
-    const byProvider = new Map<AssistantProvider, string[]>();
+    const byProvider = new Map<AssistantProvider, Array<string>>();
     for (const model of selectable) {
       const ids = byProvider.get(model.provider) ?? [];
       ids.push(model.id);
       byProvider.set(model.provider, ids);
     }
-    for (const [provider, ids] of byProvider) next[provider] = ids;
+    for (const [provider, ids] of byProvider) {
+      next[provider] = ids;
+    }
     return next;
   }
 
   function noneVisible() {
     const next = { ...visibleByProvider };
-    for (const model of models) next[model.provider] = [];
+    for (const model of models) {
+      next[model.provider] = [];
+    }
     return next;
   }
 
@@ -101,7 +108,9 @@ export function ModelCatalogTable({
             value={search}
             onValueChange={(value) => {
               setSearch(value);
-              if (value.trim()) setCollapsed(new Set());
+              if (value.trim()) {
+                setCollapsed(new Set());
+              }
             }}
           />
         </Input.Root>
@@ -134,8 +143,11 @@ export function ModelCatalogTable({
           setCollapsed((current) => {
             const next = new Set(current);
             for (const provider of groups.keys()) {
-              if (expanded.includes(provider)) next.delete(provider);
-              else next.add(provider);
+              if (expanded.includes(provider)) {
+                next.delete(provider);
+              } else {
+                next.add(provider);
+              }
             }
             return next;
           });
@@ -176,8 +188,11 @@ export function ModelCatalogTable({
                     disabled: pending,
                     onCheckedChange: (model, checked) => {
                       const next = new Set(providerVisible(model.provider));
-                      if (checked) next.add(model.id);
-                      else next.delete(model.id);
+                      if (checked) {
+                        next.add(model.id);
+                      } else {
+                        next.delete(model.id);
+                      }
                       void save({
                         ...visibleByProvider,
                         [model.provider]: [...next],

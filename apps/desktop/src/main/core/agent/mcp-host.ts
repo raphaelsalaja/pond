@@ -13,7 +13,7 @@ export interface McpHostWatchInput {
   pollMs?: number;
 }
 
-const PARENT_POLL_MS = 5_000;
+const PARENT_POLL_MS = 5000;
 
 /** Electron keeps running after the stdio transport closes, so a host that quits would leave this process running forever. */
 export function watchMcpHost({
@@ -26,7 +26,9 @@ export function watchMcpHost({
   const host = parentPid();
   let stopped = false;
   const lose = (reason: McpHostLoss) => {
-    if (stopped) return;
+    if (stopped) {
+      return;
+    }
     stop();
     onLost(reason);
   };
@@ -35,10 +37,14 @@ export function watchMcpHost({
   stdin.once("close", closed);
   /** A host that dies without closing the pipe still reparents this process. */
   const cancelPoll = every(() => {
-    if (parentPid() !== host) lose("parent-exited");
+    if (parentPid() !== host) {
+      lose("parent-exited");
+    }
   }, pollMs);
   function stop(): void {
-    if (stopped) return;
+    if (stopped) {
+      return;
+    }
     stopped = true;
     stdin.off("end", closed);
     stdin.off("close", closed);

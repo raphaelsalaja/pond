@@ -21,10 +21,21 @@ const OPEN_TIMEOUT = 15_000;
 
 const IMAGES: Predicate = { field: "type", operator: "eq", value: "image" };
 
-describe("recently added menu", () => {
-  const items = (hasItems: boolean) =>
-    buildRecentlyAddedMenuItems({ hasItems, onChooseDate: () => {} });
+function items(hasItems: boolean) {
+  return buildRecentlyAddedMenuItems({ hasItems, onChooseDate: () => {} });
+}
 
+function day(popup: HTMLElement, date: Date): HTMLElement {
+  const cell = popup.querySelector<HTMLElement>(
+    `[data-day="${formatLocalDay(date)}"]`,
+  );
+  if (!cell) {
+    throw new Error(`Missing day ${formatLocalDay(date)}`);
+  }
+  return cell;
+}
+
+describe("recently added menu", () => {
   it("offers the date shortcuts", () => {
     expect(labels(items(true))).toEqual([
       "Added Today",
@@ -86,20 +97,13 @@ describe("recently added date shortcuts", () => {
         const popup = document.querySelector<HTMLElement>(
           '[aria-label="Choose Date"]',
         );
-        if (!popup?.querySelector("table"))
+        if (!popup?.querySelector("table")) {
           throw new Error("Calendar did not open");
+        }
         return popup;
       },
       { timeout: OPEN_TIMEOUT },
     );
-  }
-
-  function day(popup: HTMLElement, date: Date): HTMLElement {
-    const cell = popup.querySelector<HTMLElement>(
-      `[data-day="${formatLocalDay(date)}"]`,
-    );
-    if (!cell) throw new Error(`Missing day ${formatLocalDay(date)}`);
-    return cell;
   }
 
   it("opens Recently Added filtered to yesterday in place of other filters", async () => {

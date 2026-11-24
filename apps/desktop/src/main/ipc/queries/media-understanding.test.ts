@@ -1,9 +1,8 @@
-import { DEFAULT_PREFS, type Prefs } from "@pond/schema/db";
+import { DEFAULT_PREFS } from "@pond/schema/db";
+import type { Prefs } from "@pond/schema/db";
 import { describe, expect, it, vi } from "vitest";
-import {
-  type MediaUnderstanding,
-  MediaUnderstandingError,
-} from "../../core/media-understanding";
+import { MediaUnderstandingError } from "../../core/media-understanding";
+import type { MediaUnderstanding } from "../../core/media-understanding";
 import { queryOperationAccess } from "./agent-operation-access";
 import { agentOperationsForQueries } from "./agent-operations";
 import { createMediaUnderstandingQueries } from "./media-understanding";

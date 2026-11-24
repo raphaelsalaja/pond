@@ -1,6 +1,7 @@
 import type { JsonValue } from "@pond/schema/json";
 import { describe, expect, it } from "vitest";
-import { type BlueskyPost, PostsSchema, tidToDate } from "./atproto";
+import { PostsSchema, tidToDate } from "./atproto";
+import type { BlueskyPost } from "./atproto";
 import { captureFromPost, postEntry, postMedia } from "./normalize";
 
 const DID = "did:plc:z72i7hdynmk6r22z27h6tvur";
@@ -39,7 +40,9 @@ const RAW_POST = {
 
 function parsePost(raw: JsonValue): BlueskyPost {
   const [post] = PostsSchema.parse({ posts: [raw] }).posts;
-  if (!post) throw new Error("fixture did not parse");
+  if (!post) {
+    throw new Error("fixture did not parse");
+  }
   return post;
 }
 

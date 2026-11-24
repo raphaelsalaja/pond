@@ -3,12 +3,14 @@ import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_PREFS,
   DEFAULT_VIDEO_DOWNLOAD,
-  type ImageDownloadSettings,
-  type Prefs,
-  type Source,
-  type SourceOverrides,
   settings as settingsTable,
-  type VideoDownloadSettings,
+} from "@pond/schema/db";
+import type {
+  ImageDownloadSettings,
+  Prefs,
+  Source,
+  SourceOverrides,
+  VideoDownloadSettings,
 } from "@pond/schema/db";
 import type { ExternalSource } from "@pond/schema/sources";
 import { eq } from "drizzle-orm";
@@ -31,14 +33,12 @@ import {
   mergePondSlice,
   mergePrefs,
   normalizeStoredPrefs,
-  type PondPrefs,
   readBundlePondPrefs,
-  type StoredPrefs,
-  type StoredPrefsInput,
   splitPrefsPatch,
   withoutFolderPrefs,
   writeBundlePondPrefs,
 } from "./prefs-scope";
+import type { PondPrefs, StoredPrefs, StoredPrefsInput } from "./prefs-scope";
 
 interface SettingsCache {
   libraryId: string;
@@ -94,9 +94,11 @@ async function resolvePondSlice(
   stored: StoredPrefs,
   libraryId: string,
 ): Promise<DeepPartial<PondPrefs>> {
-  if (isUnboundLibraryId(libraryId)) return stored.pending ?? {};
+  if (isUnboundLibraryId(libraryId)) {
+    return stored.pending ?? {};
+  }
 
-  let bundle: DeepPartial<PondPrefs> | null = null;
+  let bundle: DeepPartial<PondPrefs> | null;
   try {
     bundle = readBundlePondPrefs();
   } catch (error) {
@@ -105,20 +107,22 @@ async function resolvePondSlice(
     });
     return stored.pending ?? {};
   }
-  if (bundle) return bundle;
+  if (bundle) {
+    return bundle;
+  }
 
   const seed = mergePondSlice(stored.pending ?? {});
   try {
     writeBundlePondPrefs(seed);
-  } catch (err) {
-    log.warn("[pond prefs] seeding bundle settings.json failed", err);
+  } catch (error) {
+    log.warn("[pond prefs] seeding bundle settings.json failed", error);
     return seed;
   }
   if (stored.pending) {
     try {
       await persistStoredPrefs({ ...stored, pending: null });
-    } catch (err) {
-      log.warn("[pond prefs] clearing pending library prefs failed", err);
+    } catch (error) {
+      log.warn("[pond prefs] clearing pending library prefs failed", error);
     }
   }
   return seed;
@@ -128,11 +132,13 @@ async function loadSettings(): Promise<SettingsCache> {
   try {
     const cached = settingsCache.peek();
     const libraryId = currentLibraryId();
-    if (cached && cached.libraryId === libraryId) return cached;
+    if (cached && cached.libraryId === libraryId) {
+      return cached;
+    }
     settingsCache.invalidate();
     return await settingsCache.get();
-  } catch (err) {
-    log.warn("[pond prefs] failed to read settings, using defaults", err);
+  } catch (error) {
+    log.warn("[pond prefs] failed to read settings, using defaults", error);
     return {
       libraryId: currentLibraryId(),
       prefs: DEFAULT_PREFS,
@@ -154,8 +160,7 @@ function isSameStored(raw: StoredPrefsInput, stored: StoredPrefs): boolean {
 
 async function persistStoredPrefs(stored: StoredPrefs): Promise<void> {
   const db = await getGlobalDb();
-  await db
-    .insert(settingsTable)
+  db.insert(settingsTable)
     .values({
       id: "singleton",
       prefs: stored,
@@ -213,7 +218,7 @@ export function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   return enqueuePrefs(() => applyPrefs(patch));
 }
 
-export function removeFolderPrefs(ids: readonly string[]): Promise<Prefs> {
+export function removeFolderPrefs(ids: ReadonlyArray<string>): Promise<Prefs> {
   return enqueuePrefs(() =>
     applyPrefs({}, (slice) => withoutFolderPrefs(slice, ids)),
   );
@@ -253,8 +258,9 @@ async function applyPrefs(
     ? prepareGlobalShortcuts(merged.shortcuts.overrides)
     : null;
   try {
-    if (!isUnboundLibraryId(libraryId) && writesPond)
+    if (!isUnboundLibraryId(libraryId) && writesPond) {
       writeBundlePondPrefs(pondSlice);
+    }
     await persistStoredPrefs(stored);
     shortcutChange?.commit();
   } catch (error) {
@@ -292,8 +298,7 @@ async function writeDownloads(next: DownloadConfig): Promise<void> {
   const videoDownload = { ...next.videoDownload, sources: next.videoSources };
   const imageDownload = { ...next.imageDownload, sources: next.imageSources };
   const db = await getGlobalDb();
-  await db
-    .insert(settingsTable)
+  db.insert(settingsTable)
     .values({ id: "singleton", videoDownload, imageDownload })
     .onConflictDoUpdate({
       target: settingsTable.id,

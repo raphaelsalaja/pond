@@ -1,6 +1,6 @@
 import { IconMagnifier } from "@pond/icons";
-import type { ComponentDocs } from "../shared/docs";
 import { Input } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 export const docs: ComponentDocs = {
   slug: "input",

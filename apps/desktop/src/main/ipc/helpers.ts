@@ -18,11 +18,19 @@ export function isTrustedSender(event: {
   senderFrame?: { url: string } | null;
 }): boolean {
   const url = event.senderFrame?.url ?? "";
-  if (!url) return false;
+  if (!url) {
+    return false;
+  }
   const devUrl = process.env.ELECTRON_RENDERER_URL;
-  if (devUrl && url.startsWith(devUrl)) return true;
-  if (url.startsWith("file://")) return true;
-  if (url.startsWith("pond://")) return true;
+  if (devUrl && url.startsWith(devUrl)) {
+    return true;
+  }
+  if (url.startsWith("file://")) {
+    return true;
+  }
+  if (url.startsWith("pond://")) {
+    return true;
+  }
   return false;
 }
 
@@ -31,7 +39,7 @@ function isInsideLibrary(absolute: string): boolean {
   return absolute === root || absolute.startsWith(root + pathSep);
 }
 
-export function safeHandle<Args extends unknown[], R>(
+export function safeHandle<Args extends Array<unknown>, R>(
   channel: string,
   handler: (event: IpcMainInvokeEvent, ...args: Args) => R,
   bus: IpcMain = ipcMain,
@@ -57,11 +65,13 @@ export async function resolveSaveFilePath(
     const db = await getDb();
     const rows = await db.select().from(saves).where(eq(saves.id, id));
     const row = rows[0];
-    if (!row) return { ok: false, reason: "not_found" };
+    if (!row) {
+      return { ok: false, reason: "not_found" };
+    }
 
     return resolveRowFile(id, toWireSave(row).files ?? [], fileIndex);
-  } catch (err) {
-    log.warn("[pond ipc] resolveSaveFilePath failed", err);
+  } catch (error) {
+    log.warn("[pond ipc] resolveSaveFilePath failed", error);
     return { ok: false, reason: "not_found" };
   }
 }
@@ -71,9 +81,13 @@ function resolveRowFile(
   files: ReadonlyArray<{ kind: string; path: string }>,
   fileIndex: number | undefined,
 ): ReasonResult<SaveFileFailure, { path: string }> {
-  if (files.length === 0) return { ok: false, reason: "no_files" };
+  if (files.length === 0) {
+    return { ok: false, reason: "no_files" };
+  }
   const file = files[fileIndex ?? 0];
-  if (!file) return { ok: false, reason: "out_of_range" };
+  if (!file) {
+    return { ok: false, reason: "out_of_range" };
+  }
   if (isAuxiliaryKind(file.kind)) {
     return { ok: false, reason: "auxiliary_file" };
   }
@@ -82,14 +96,16 @@ function resolveRowFile(
     log.warn("[pond ipc] refused path outside library", { id, absolute });
     return { ok: false, reason: "unsafe_path" };
   }
-  if (!existsSync(absolute)) return { ok: false, reason: "missing" };
+  if (!existsSync(absolute)) {
+    return { ok: false, reason: "missing" };
+  }
   return { ok: true, path: absolute };
 }
 
 export function resolveOriginalFilePaths(
   id: string,
   files: ReadonlyArray<{ kind: string; path: string }>,
-): string[] {
+): Array<string> {
   return files.flatMap((_, index) => {
     const target = resolveRowFile(id, files, index);
     return target.ok ? [target.path] : [];
@@ -107,8 +123,10 @@ const PREVIEW_KINDS = ["thumbnail", "poster"];
 /** One query for the whole selection, each save resolving its own file index. */
 export async function resolveSaveDragFiles(
   requests: ReadonlyArray<{ id: string; fileIndex: number }>,
-): Promise<SaveDragFile[]> {
-  if (requests.length === 0) return [];
+): Promise<Array<SaveDragFile>> {
+  if (requests.length === 0) {
+    return [];
+  }
   const db = await getDb();
   const rows = await db
     .select()
@@ -123,7 +141,9 @@ export async function resolveSaveDragFiles(
   return requests.flatMap(({ id, fileIndex }) => {
     const files = byId.get(id)?.files ?? [];
     const target = resolveRowFile(id, files, fileIndex);
-    if (!target.ok) return [];
+    if (!target.ok) {
+      return [];
+    }
     const dragged = files[fileIndex];
     const previewFile =
       PREVIEW_KINDS.map((kind) =>
@@ -152,15 +172,21 @@ export function resolvePondSavePath(
   } catch {
     return null;
   }
-  if (url.protocol !== `${POND_PROTOCOL}:`) return null;
+  if (url.protocol !== `${POND_PROTOCOL}:`) {
+    return null;
+  }
   const saveId = canonicalPondSaveId(url.hostname);
   const file = decodeURIComponent(url.pathname.replace(/^\//, ""));
-  if (!saveId || !file) return null;
+  if (!saveId || !file) {
+    return null;
+  }
   const absolute = resolvePath(saveFile(saveId, file));
   if (!isInsideLibrary(absolute)) {
     log.warn("[pond ipc] refused pond URL outside library", { src, absolute });
     return null;
   }
-  if (!existsSync(absolute)) return null;
+  if (!existsSync(absolute)) {
+    return null;
+  }
   return { saveId, path: absolute };
 }

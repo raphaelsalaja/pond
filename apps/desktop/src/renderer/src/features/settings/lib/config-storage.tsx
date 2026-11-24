@@ -10,10 +10,8 @@ import {
 } from "@/features/settings/components/sections/storage/lib/sections";
 import { StorageLocationSettings } from "@/features/settings/components/sections/storage/location";
 import { StorageSummary } from "@/features/settings/components/sections/storage/storage-summary";
-import {
-  defineSection,
-  type SettingsValues,
-} from "@/features/settings/lib/engine-types";
+import { defineSection } from "@/features/settings/lib/engine-types";
+import type { SettingsValues } from "@/features/settings/lib/engine-types";
 
 const guardsOff = (v: SettingsValues) => v.guardsEnabled !== true;
 const limitOff = (v: SettingsValues) => guardsOff(v) || v.maxLibraryGb === null;

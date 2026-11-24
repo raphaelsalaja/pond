@@ -9,14 +9,8 @@ import {
   useReducedMotion,
 } from "motion/react";
 import {
-  type ComponentPropsWithoutRef,
-  type CSSProperties,
   createContext,
-  type Dispatch,
-  type ForwardedRef,
   forwardRef,
-  type ReactNode,
-  type SetStateAction,
   use,
   useCallback,
   useEffect,
@@ -25,12 +19,31 @@ import {
   useRef,
   useState,
 } from "react";
-import { Button, ButtonDefaults, type ButtonProps } from "../button";
+import type {
+  ComponentPropsWithoutRef,
+  CSSProperties,
+  Dispatch,
+  ForwardedRef,
+  ReactNode,
+  SetStateAction,
+} from "react";
+import { Button, ButtonDefaults } from "../button";
+import type { ButtonProps } from "../button";
+import { isHTMLElement } from "../dom";
 import { Tooltip } from "../tooltip";
 import { DialogPageContext, useDialogPage } from "./context";
 import styles from "./styles.module.css";
 
 const PAGE_EASE = [0.26, 0.08, 0.25, 1] as const;
+
+type PopupStyle = Base.Popup.Props["style"];
+
+/** Base UI also accepts a style callback, which the popup's size variables can't merge into. */
+function isStaticStyle(
+  style: PopupStyle,
+): style is Exclude<PopupStyle, (...args: never) => void> {
+  return typeof style !== "function";
+}
 
 const FOOTER_BUTTONS = { size: "xs" } as const;
 
@@ -112,9 +125,14 @@ function Portal({
 }
 
 function assignRef<T>(ref: ForwardedRef<T>, value: T | null) {
-  if (!ref) return;
-  if ("current" in ref) ref.current = value;
-  else ref(value);
+  if (!ref) {
+    return;
+  }
+  if ("current" in ref) {
+    ref.current = value;
+  } else {
+    ref(value);
+  }
 }
 
 const PortalTarget = forwardRef<
@@ -133,7 +151,9 @@ const PortalTarget = forwardRef<
 
   useLayoutEffect(() => {
     const node = localRef.current;
-    if (!node) return;
+    if (!node) {
+      return;
+    }
     setContainer(node);
     return () => {
       setContainer((current) => (current === node ? null : current));
@@ -165,8 +185,9 @@ type PopupProps = Base.Popup.Props &
   );
 
 function Popup(props: PopupProps) {
-  if (props.pageId !== undefined)
+  if (props.pageId !== undefined) {
     return <PagedPopup {...props} pageId={props.pageId} depth={props.depth} />;
+  }
   const {
     pageId: _pageId,
     depth: _depth,
@@ -214,7 +235,9 @@ function PagedPopup({
   }, []);
 
   useEffect(() => {
-    if (!size) return;
+    if (!size) {
+      return;
+    }
     const id = requestAnimationFrame(() => setAnimateSize(true));
     return () => cancelAnimationFrame(id);
   }, [size]);
@@ -228,7 +251,7 @@ function PagedPopup({
     "--width"?: string;
     "--height"?: string;
   } = {
-    ...style,
+    ...(isStaticStyle(style) ? style : undefined),
   };
   if (size) {
     popupStyle["--width"] = `${size.width}px`;
@@ -247,13 +270,13 @@ function PagedPopup({
   );
 }
 
-interface HeaderProps extends ComponentPropsWithoutRef<"header"> {}
+type HeaderProps = ComponentPropsWithoutRef<"header">;
 
 function Header({ className, ...props }: HeaderProps) {
   return <header className={cn(styles.header, className)} {...props} />;
 }
 
-interface PreviewProps extends ComponentPropsWithoutRef<"div"> {}
+type PreviewProps = ComponentPropsWithoutRef<"div">;
 
 /** Popup chrome without a dialog root, for inert specimens in docs and galleries. */
 function Preview({ className, ...props }: PreviewProps) {
@@ -267,14 +290,16 @@ function Preview({ className, ...props }: PreviewProps) {
 function Title({ className, children, ...props }: Base.Title.Props) {
   const page = use(DialogPageContext);
   const preview = use(DialogPreviewContext);
-  if (preview)
+  if (preview) {
     return <h2 className={cn(styles.title, className)}>{children}</h2>;
-  if (!page)
+  }
+  if (!page) {
     return (
       <Base.Title className={cn(styles.title, className)} {...props}>
         {children}
       </Base.Title>
     );
+  }
   const { pageId, reduceMotion } = page;
   return (
     <Base.Title className={cn(styles.title, className)} {...props}>
@@ -297,14 +322,15 @@ function Title({ className, children, ...props }: Base.Title.Props) {
   );
 }
 
-interface DescriptionProps extends ComponentPropsWithoutRef<"p"> {}
+type DescriptionProps = ComponentPropsWithoutRef<"p">;
 
 /** An exiting page keeps a plain paragraph so its unmount can't clear the incoming page's `aria-describedby`. */
 function Description({ className, ...props }: DescriptionProps) {
   const preview = use(DialogPreviewContext);
   const present = useIsPresent();
-  if (preview || !present)
+  if (preview || !present) {
     return <p className={cn(styles.description, className)} {...props} />;
+  }
   return (
     <Base.Description
       className={cn(styles.description, className)}
@@ -313,7 +339,7 @@ function Description({ className, ...props }: DescriptionProps) {
   );
 }
 
-interface ViewportProps extends ComponentPropsWithoutRef<"div"> {}
+type ViewportProps = ComponentPropsWithoutRef<"div">;
 
 function Viewport({ className, children, ...props }: ViewportProps) {
   const { pageId, deeper } = useDialogPage();
@@ -321,7 +347,9 @@ function Viewport({ className, children, ...props }: ViewportProps) {
   const previousPage = useRef(pageId);
 
   useLayoutEffect(() => {
-    if (previousPage.current === pageId) return;
+    if (previousPage.current === pageId) {
+      return;
+    }
     previousPage.current = pageId;
     viewportRef.current
       ?.querySelector<HTMLElement>("[data-dialog-page]:not([inert])")
@@ -348,11 +376,13 @@ function Page({ children }: { children: React.ReactNode }) {
 
   useLayoutEffect(() => {
     const node = ref.current;
-    if (!node || !present) return;
+    if (!node || !present) {
+      return;
+    }
     const viewport = node.parentElement;
     const chrome = Array.from(viewport?.parentElement?.children ?? []).filter(
       (element): element is HTMLElement =>
-        element !== viewport && element instanceof HTMLElement,
+        element !== viewport && isHTMLElement(element),
     );
     const measure = () =>
       setSize(
@@ -366,7 +396,9 @@ function Page({ children }: { children: React.ReactNode }) {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(node);
-    for (const element of chrome) observer.observe(element);
+    for (const element of chrome) {
+      observer.observe(element);
+    }
     return () => observer.disconnect();
   }, [present, setSize]);
 

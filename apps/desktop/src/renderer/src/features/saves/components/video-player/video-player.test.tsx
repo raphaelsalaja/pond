@@ -1,6 +1,10 @@
-import { type Prefs, PrefsSchema } from "@pond/schema";
-import { act, type ComponentProps } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { PrefsSchema } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
+import { isHTMLElement } from "@pond/ui/dom";
+import { act } from "react";
+import type { ComponentProps } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
@@ -17,7 +21,9 @@ let savedPrefs = PrefsSchema.parse({});
 function emitPrefs(next: Prefs): void {
   savedPrefs = next;
   const snapshot = structuredClone(savedPrefs);
-  for (const listener of prefsListeners) listener(snapshot);
+  for (const listener of prefsListeners) {
+    listener(snapshot);
+  }
 }
 
 function seedViewer(patch: Partial<Prefs["viewer"]>): void {
@@ -48,8 +54,12 @@ beforeEach(async () => {
       return () => prefsListeners.delete(listener);
     },
     query: async (name: string, params?: Partial<Prefs>) => {
-      if (name === "saves.mediaTiming") return { frameRate: 24 };
-      if (name === "settings.getPrefs") return structuredClone(savedPrefs);
+      if (name === "saves.mediaTiming") {
+        return { frameRate: 24 };
+      }
+      if (name === "settings.getPrefs") {
+        return structuredClone(savedPrefs);
+      }
       if (name === "settings.setPrefs") {
         savedPrefs = PrefsSchema.parse({
           ...savedPrefs,
@@ -62,8 +72,11 @@ beforeEach(async () => {
     },
     tx: async () => ({ ok: true }),
   });
-  if (prefsListeners.size === 0) await loadPrefs();
-  else emitPrefs(savedPrefs);
+  if (prefsListeners.size === 0) {
+    await loadPrefs();
+  } else {
+    emitPrefs(savedPrefs);
+  }
   Object.defineProperty(HTMLMediaElement.prototype, "play", {
     configurable: true,
     value: () => Promise.resolve(),
@@ -170,7 +183,9 @@ it("composes one top video toolbar and one bottom playback toolbar", async () =>
     configurable: true,
     value: 60,
   });
-  if (video) video.currentTime = 20;
+  if (video) {
+    video.currentTime = 20;
+  }
   await act(async () => {
     document.dispatchEvent(
       new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }),
@@ -209,12 +224,16 @@ it("keeps Space toggling playback after the seek bar is clicked", async () => {
   });
   const seek = host.querySelector('[aria-label="Seek"]');
   const thumb = seek?.querySelector("input");
-  if (!seek || !thumb) throw new Error("Missing seek bar");
+  if (!seek || !thumb) {
+    throw new Error("Missing seek bar");
+  }
 
   thumb.focus();
   await act(async () => {
     seek.dispatchEvent(new MouseEvent("pointerup", { bubbles: true }));
-    await new Promise((resolve) => requestAnimationFrame(resolve));
+    await new Promise((resolve) => {
+      requestAnimationFrame(resolve);
+    });
   });
   expect(seek.contains(document.activeElement)).toBe(false);
 
@@ -233,7 +252,7 @@ it("seeks to the pressed point on the seek track", async () => {
   });
   const video = host.querySelector("video");
   const control = host.querySelector('[aria-label="Seek"]')?.firstElementChild;
-  if (!video || !(control instanceof HTMLElement)) {
+  if (!video || !isHTMLElement(control)) {
     throw new Error("Missing seek track");
   }
   Object.defineProperty(video, "duration", { configurable: true, value: 60 });
@@ -274,7 +293,9 @@ it("keeps one scrub preview open across the timeline and closes it on leave", as
   });
   const video = host.querySelector("video");
   const seek = host.querySelector<HTMLElement>('[aria-label="Seek"]');
-  if (!video || !seek) throw new Error("Missing seek bar");
+  if (!video || !seek) {
+    throw new Error("Missing seek bar");
+  }
   Object.defineProperty(video, "duration", { configurable: true, value: 60 });
   await act(async () => video.dispatchEvent(new Event("durationchange")));
   seek.getBoundingClientRect = () => new DOMRect(0, 0, 200, 24);
@@ -427,8 +448,9 @@ it("puts the whole viewer, playback toolbar included, in full screen", async () 
       "fullscreenEnabled",
       "fullscreenElement",
       "exitFullscreen",
-    ])
+    ]) {
       Reflect.deleteProperty(document, name);
+    }
     Reflect.deleteProperty(HTMLElement.prototype, "requestFullscreen");
   }
 });
@@ -457,7 +479,7 @@ it("shows the video over the poster once the first frame loads", async () => {
 });
 
 it("holds the poster until a video frame is presented", async () => {
-  let present = () => {};
+  let present: (() => void) | undefined;
   Object.defineProperties(HTMLVideoElement.prototype, {
     requestVideoFrameCallback: {
       configurable: true,
@@ -487,7 +509,7 @@ it("holds the poster until a video frame is presented", async () => {
     });
     expect(poster()?.hasAttribute("data-covered")).toBe(false);
 
-    await act(async () => present());
+    await act(async () => present?.());
 
     expect(poster()?.hasAttribute("data-covered")).toBe(true);
   } finally {
@@ -535,7 +557,9 @@ it("carries mute to the next preview and keeps volume", async () => {
   const mute = host.querySelector<HTMLButtonElement>(
     'button[aria-label="Mute"]',
   );
-  if (!first || !mute) throw new Error("Missing video mute control");
+  if (!first || !mute) {
+    throw new Error("Missing video mute control");
+  }
   first.volume = 0.4;
 
   await act(async () => mute.click());
@@ -551,7 +575,9 @@ it("carries mute to the next preview and keeps volume", async () => {
   });
 
   const second = host.querySelector("video");
-  if (!second) throw new Error("Missing reopened video");
+  if (!second) {
+    throw new Error("Missing reopened video");
+  }
   expect(second).not.toBe(first);
   expect(second.muted).toBe(true);
   expect(second.volume).toBe(1);
@@ -589,7 +615,9 @@ it("changes video volume with the arrow keys", async () => {
     root.render(<TestVideoPlayer />);
   });
   const video = host.querySelector("video");
-  if (!video) throw new Error("Missing video");
+  if (!video) {
+    throw new Error("Missing video");
+  }
   video.volume = 0.5;
 
   await act(async () => {
@@ -653,7 +681,7 @@ it("changes video volume with the arrow keys", async () => {
   const mute = host.querySelector('button[aria-label="Mute"]');
   try {
     for (const control of [field, range, slider, seek, mute]) {
-      if (!(control instanceof HTMLElement)) {
+      if (!isHTMLElement(control)) {
         throw new Error("Missing interactive control");
       }
       control.focus();
@@ -666,6 +694,17 @@ it("changes video volume with the arrow keys", async () => {
     slider.remove();
   }
 });
+
+const playIndicator = () =>
+  host.querySelector<HTMLElement>("[data-play-indicator]");
+
+function currentVideo(): HTMLVideoElement {
+  const element = host.querySelector("video");
+  if (!element) {
+    throw new Error("Missing video");
+  }
+  return element;
+}
 
 it("toggles playback by clicking the video and ignores toolbar clicks", async () => {
   let paused = true;
@@ -695,36 +734,30 @@ it("toggles playback by clicking the video and ignores toolbar clicks", async ()
     value: pause,
   });
 
-  const indicator = () =>
-    host.querySelector<HTMLElement>("[data-play-indicator]");
-  const video = () => {
-    const element = host.querySelector("video");
-    if (!element) throw new Error("Missing video");
-    return element;
-  };
-
   try {
     seedViewer({ autoplayVideo: false });
     await act(async () => {
       root.render(<TestVideoPlayer />);
     });
-    expect(indicator()?.hasAttribute("data-paused")).toBe(true);
-    expect(video().parentElement?.contains(indicator() ?? null)).toBe(true);
-    expect(indicator()?.querySelector("svg")).not.toBeNull();
+    expect(playIndicator()?.hasAttribute("data-paused")).toBe(true);
+    expect(
+      currentVideo().parentElement?.contains(playIndicator() ?? null),
+    ).toBe(true);
+    expect(playIndicator()?.querySelector("svg")).not.toBeNull();
 
     play.mockClear();
     pause.mockClear();
-    await act(async () => video().click());
+    await act(async () => currentVideo().click());
     expect(play).toHaveBeenCalledTimes(1);
     expect(pause).not.toHaveBeenCalled();
-    expect(indicator()?.hasAttribute("data-paused")).toBe(false);
+    expect(playIndicator()?.hasAttribute("data-paused")).toBe(false);
 
     play.mockClear();
     pause.mockClear();
-    await act(async () => video().click());
+    await act(async () => currentVideo().click());
     expect(pause).toHaveBeenCalledTimes(1);
     expect(play).not.toHaveBeenCalled();
-    expect(indicator()?.hasAttribute("data-paused")).toBe(true);
+    expect(playIndicator()?.hasAttribute("data-paused")).toBe(true);
 
     play.mockClear();
     pause.mockClear();
@@ -739,7 +772,7 @@ it("toggles playback by clicking the video and ignores toolbar clicks", async ()
     });
     expect(play).toHaveBeenCalledTimes(1);
     expect(pause).not.toHaveBeenCalled();
-    expect(indicator()?.hasAttribute("data-paused")).toBe(false);
+    expect(playIndicator()?.hasAttribute("data-paused")).toBe(false);
 
     play.mockClear();
     pause.mockClear();
@@ -759,14 +792,14 @@ it("toggles playback by clicking the video and ignores toolbar clicks", async ()
     await act(async () => playback.click());
     expect(pause).toHaveBeenCalledTimes(1);
     expect(play).not.toHaveBeenCalled();
-    expect(indicator()?.hasAttribute("data-paused")).toBe(true);
+    expect(playIndicator()?.hasAttribute("data-paused")).toBe(true);
 
     play.mockClear();
     pause.mockClear();
     const overlay = document.createElement("button");
     overlay.type = "button";
     overlay.setAttribute("aria-label", "Overlay");
-    video().parentElement?.append(overlay);
+    currentVideo().parentElement?.append(overlay);
     await act(async () => {
       seek.click();
       rotate.click();
@@ -776,7 +809,7 @@ it("toggles playback by clicking the video and ignores toolbar clicks", async ()
     overlay.remove();
     expect(play).not.toHaveBeenCalled();
     expect(pause).not.toHaveBeenCalled();
-    expect(indicator()?.hasAttribute("data-paused")).toBe(true);
+    expect(playIndicator()?.hasAttribute("data-paused")).toBe(true);
 
     await act(async () => root.render(null));
     play.mockClear();
@@ -791,7 +824,7 @@ it("toggles playback by clicking the video and ignores toolbar clicks", async ()
     expect(host.querySelector("[data-play-indicator]")).toBeNull();
     play.mockClear();
     pause.mockClear();
-    await act(async () => video().click());
+    await act(async () => currentVideo().click());
     expect(play).not.toHaveBeenCalled();
     expect(pause).not.toHaveBeenCalled();
   } finally {

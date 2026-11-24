@@ -51,9 +51,13 @@ export function isRasterImageHeader(header: Uint8Array): boolean {
 }
 
 export function clampThumbWidth(raw: number): number | null {
-  if (!Number.isFinite(raw)) return null;
+  if (!Number.isFinite(raw)) {
+    return null;
+  }
   const w = Math.round(raw);
-  if (w <= 0) return null;
+  if (w <= 0) {
+    return null;
+  }
   return Math.min(Math.max(w, MIN_WIDTH), MAX_WIDTH);
 }
 
@@ -78,7 +82,9 @@ export function createThumbnailScheduler(
         foreground.shift() ??
         visible.pop() ??
         (backgroundActive < maxBackground ? background.shift() : undefined);
-      if (!next) return;
+      if (!next) {
+        return;
+      }
       next();
     }
   }
@@ -90,7 +96,9 @@ export function createThumbnailScheduler(
     await new Promise<void>((resolve) => {
       const start = () => {
         active += 1;
-        if (priority === "background") backgroundActive += 1;
+        if (priority === "background") {
+          backgroundActive += 1;
+        }
         resolve();
       };
       queues[priority].push(start);
@@ -100,7 +108,9 @@ export function createThumbnailScheduler(
       return await task();
     } finally {
       active -= 1;
-      if (priority === "background") backgroundActive -= 1;
+      if (priority === "background") {
+        backgroundActive -= 1;
+      }
       drain();
     }
   }
@@ -112,11 +122,17 @@ export type ThumbnailKind = "sharp" | "native" | "sharp-or-native";
 
 export function thumbnailKindForExtension(ext: string): ThumbnailKind | null {
   const lower = ext.toLowerCase();
-  if (NATIVE_RASTER_EXT.has(lower)) return "native";
+  if (NATIVE_RASTER_EXT.has(lower)) {
+    return "native";
+  }
   if (lower === ".jxl" || lower === ".tif" || lower === ".tiff") {
     return "sharp-or-native";
   }
-  if (isThumbnailable(lower)) return "sharp";
-  if (canRequestNativeThumbnail(`preview${lower}`)) return "native";
+  if (isThumbnailable(lower)) {
+    return "sharp";
+  }
+  if (canRequestNativeThumbnail(`preview${lower}`)) {
+    return "native";
+  }
   return null;
 }

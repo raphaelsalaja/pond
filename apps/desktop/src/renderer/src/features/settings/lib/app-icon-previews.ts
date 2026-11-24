@@ -1,10 +1,10 @@
 import {
-  type AppIconAppearance,
   appIconLabel,
   appIconTint,
   pickIconGeneration,
   sortAppIconIds,
 } from "@shared/app-icons";
+import type { AppIconAppearance } from "@shared/app-icons";
 import { z } from "zod";
 
 const previews = import.meta.glob(
@@ -36,7 +36,9 @@ function parsePreviewPath(
   path: string,
 ): { id: string; generation: number | null; dark: boolean } | null {
   const match = path.match(/([^/.]+)(?:\.(\d+))?(\.dark)?\.png$/);
-  if (!match?.[1]) return null;
+  if (!match?.[1]) {
+    return null;
+  }
   return {
     id: match[1],
     generation: match[2] ? Number(match[2]) : null,
@@ -52,9 +54,13 @@ const previewsById = new Map<
 >();
 for (const [path, url] of Object.entries(previews)) {
   const parsed = PreviewUrlSchema.safeParse(url);
-  if (!parsed.success) continue;
+  if (!parsed.success) {
+    continue;
+  }
   const preview = parsePreviewPath(path);
-  if (!preview) continue;
+  if (!preview) {
+    continue;
+  }
   const entry = previewsById.get(preview.id) ?? {
     base: {},
     generations: new Map<number, PreviewSet>(),
@@ -64,12 +70,13 @@ for (const [path, url] of Object.entries(previews)) {
       ? entry.base
       : (entry.generations.get(preview.generation) ?? {});
   set[preview.dark ? "dark" : "light"] = parsed.data;
-  if (preview.generation !== null)
+  if (preview.generation !== null) {
     entry.generations.set(preview.generation, set);
+  }
   previewsById.set(preview.id, entry);
 }
 
-export function listAppIconPreviews(): AppIconPreview[] {
+export function listAppIconPreviews(): Array<AppIconPreview> {
   const ids = [...previewsById].flatMap(([id, entry]) =>
     entry.base.light ? [id] : [],
   );
@@ -95,6 +102,8 @@ export function appIconSwatch(
     generation === null
       ? icon.base
       : (icon.generations.get(generation) ?? icon.base);
-  if (appearance?.style === "dark" && set.dark) return set.dark;
+  if (appearance?.style === "dark" && set.dark) {
+    return set.dark;
+  }
   return set.light ?? icon.base.light ?? "";
 }

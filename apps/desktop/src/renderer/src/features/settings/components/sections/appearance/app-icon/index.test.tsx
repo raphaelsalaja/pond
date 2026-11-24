@@ -9,8 +9,9 @@ import { AppIconRow } from "./";
 async function swatchFor(style: AppIconStyle | null, label: string) {
   vi.stubGlobal("pond", {
     async query(name: string) {
-      if (name === "settings.appIconAppearance")
+      if (name === "settings.appIconAppearance") {
         return { style, macosMajor: 26 };
+      }
       throw new Error(`unexpected query ${name}`);
     },
   });
@@ -26,7 +27,12 @@ async function swatchFor(style: AppIconStyle | null, label: string) {
       </QueryClientProvider>,
     ),
   );
-  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  await act(
+    () =>
+      new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      }),
+  );
   const src =
     host
       .querySelector(`button[aria-label="${label}"] img`)
@@ -50,8 +56,9 @@ it("switches the swatches when the icon style changes while Pond was in the back
   let style: AppIconStyle = "light";
   vi.stubGlobal("pond", {
     async query(name: string) {
-      if (name === "settings.appIconAppearance")
+      if (name === "settings.appIconAppearance") {
         return { style, macosMajor: 26 };
+      }
       throw new Error(`unexpected query ${name}`);
     },
   });
@@ -74,7 +81,12 @@ it("switches the swatches when the icon style changes while Pond was in the back
         </QueryClientProvider>,
       ),
     );
-    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await act(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        }),
+    );
     expect(grapeSrc()).not.toContain(".dark");
     style = "dark";
     await act(async () => {
@@ -82,7 +94,12 @@ it("switches the swatches when the icon style changes while Pond was in the back
     });
     // The refetch settles on its own schedule; give it up to a second.
     for (let tries = 0; tries < 50 && !grapeSrc().includes(".dark"); tries++) {
-      await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+      await act(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(resolve, 20);
+          }),
+      );
     }
     expect(grapeSrc()).toContain("grape.dark");
   } finally {

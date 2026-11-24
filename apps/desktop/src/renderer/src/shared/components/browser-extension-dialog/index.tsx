@@ -66,9 +66,19 @@ export function BrowserExtensionDialog({
   const [error, setError] = useState<string | null>(null);
   const [safari, setSafari] = useState<SafariExtensionStatus | null>(null);
   const [needsUnsigned, setNeedsUnsigned] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setSafari(null);
+      setNeedsUnsigned(false);
+    }
+  }
 
   const refreshSafari = useCallback(() => {
-    if (!IS_MAC) return;
+    if (!IS_MAC) {
+      return;
+    }
     void window.pond
       .query("extension.safariStatus", {})
       .then(setSafari)
@@ -76,9 +86,9 @@ export function BrowserExtensionDialog({
   }, []);
 
   useEffect(() => {
-    if (!open) return;
-    setSafari(null);
-    setNeedsUnsigned(false);
+    if (!open) {
+      return;
+    }
     refreshSafari();
     /** Enabling happens in Safari; re-read on return so the row updates without a reopen. */
     window.addEventListener("focus", refreshSafari);
@@ -101,7 +111,9 @@ export function BrowserExtensionDialog({
   async function openSafariSettings(): Promise<void> {
     setError(null);
     const result = await window.pond.query("extension.openSafariSettings", {});
-    if (result.ok) return;
+    if (result.ok) {
+      return;
+    }
     setNeedsUnsigned(result.reason === "unsigned-build");
     setError(result.error);
     await window.pond.query("extension.openSafari", {});

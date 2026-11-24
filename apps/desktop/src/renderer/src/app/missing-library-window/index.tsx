@@ -23,13 +23,16 @@ function useView(): MissingLibraryView | null {
   const [view, setView] = useState<MissingLibraryView | null>(null);
   useEffect(() => {
     const api = window.pondMissingLibrary;
-    if (!api) return;
+    if (!api) {
+      return;
+    }
     let active = true;
     const apply = (next: MissingLibraryView) => {
-      if (active)
+      if (active) {
         setView((current) =>
           current && current.attempt >= next.attempt ? current : next,
         );
+      }
     };
     const stop = api.onView(apply);
     void api.ready().then(apply);
@@ -51,7 +54,9 @@ export function MissingLibraryWindow() {
   const choice = busy ? (answer?.choice ?? null) : null;
 
   const choose = (next: MissingLibraryChoice) => {
-    if (!view || busy) return;
+    if (!view || busy) {
+      return;
+    }
     setAnswer({ attempt: view.attempt, choice: next });
     void window.pondMissingLibrary?.choose(next);
   };
@@ -64,7 +69,7 @@ export function MissingLibraryWindow() {
           <Empty.Root className={styles.empty}>
             <Empty.Title>Library Not Found</Empty.Title>
             <Empty.Description aria-live="polite">
-              Pond can't find {view.name} at{" "}
+              Pond can&apos;t find {view.name} at{" "}
               <span className={styles.path}>{view.path}</span>. {view.detail}
             </Empty.Description>
             <Finder file={fileName(view.path)} />
@@ -85,7 +90,7 @@ export function MissingLibraryWindow() {
               </Button>
             </Empty.Action>
             <p className={styles.hint}>
-              Can't find it?{" "}
+              Can&apos;t find it?{" "}
               <Button
                 variant="link"
                 size="xs"

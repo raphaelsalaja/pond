@@ -1,12 +1,8 @@
-import {
-  existsSync,
-  type FSWatcher,
-  statSync,
-  unlinkSync,
-  watch,
-} from "node:fs";
+import { existsSync, statSync, unlinkSync, watch } from "node:fs";
+import type { FSWatcher } from "node:fs";
 import { chmod, mkdir } from "node:fs/promises";
-import { createServer, type Server, type Socket } from "node:net";
+import { createServer } from "node:net";
+import type { Server, Socket } from "node:net";
 import { basename, dirname } from "node:path";
 import type { JsonValue } from "@pond/schema/json";
 import type { NativeMessage, NativeResponse } from "@pond/schema/native";
@@ -39,20 +35,26 @@ function writeFrame(socket: Socket, value: NativeMessage): void {
 }
 
 function handleConn(socket: Socket, dispatch: NativeDispatch): void {
-  const chunks: Buffer[] = [];
+  const chunks: Array<Buffer> = [];
   let settled = false;
 
   const fail = (error: string) => {
-    if (settled) return;
+    if (settled) {
+      return;
+    }
     settled = true;
     writeFrame(socket, { ok: false, error });
   };
 
   socket.on("data", (chunk) => {
-    if (settled) return;
+    if (settled) {
+      return;
+    }
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     const decoded = tryDecodeFrame(Buffer.concat(chunks));
-    if (decoded.status === "need-more") return;
+    if (decoded.status === "need-more") {
+      return;
+    }
     if (decoded.status === "invalid") {
       fail(decoded.error);
       return;
@@ -60,8 +62,8 @@ function handleConn(socket: Socket, dispatch: NativeDispatch): void {
     settled = true;
     void dispatch(decoded.value).then(
       (res) => writeFrame(socket, res),
-      (err) => {
-        log.error("[pond native] handler threw", err);
+      (cause: unknown) => {
+        log.error("[pond native] handler threw", cause);
         writeFrame(socket, { ok: false, error: "internal" });
       },
     );
@@ -83,14 +85,18 @@ function bindPath(server: Server, path: string): void {
   }
   const restoreMissing = () => {
     const bound = listenPaths.get(server);
-    if (!bound || bound.restoring || existsSync(bound.path)) return;
+    if (!bound || bound.restoring || existsSync(bound.path)) {
+      return;
+    }
     log.warn("[pond native] sock missing, restoring", bound.path);
     restoreSocket(server);
   };
   const restore = setInterval(restoreMissing, 1000);
   restore.unref();
   const watcher = watch(dirname(path), (_event, filename) => {
-    if (filename && filename !== basename(path)) return;
+    if (filename && filename !== basename(path)) {
+      return;
+    }
     restoreMissing();
   });
   watcher.unref?.();
@@ -104,7 +110,9 @@ function isNamedPipe(path: string): boolean {
 /** Recreate the path after Node's unix close() unlinks it, including when an older process exits. */
 function restoreSocket(server: Server): void {
   const bound = listenPaths.get(server);
-  if (!bound || bound.restoring || !server.listening) return;
+  if (!bound || bound.restoring || !server.listening) {
+    return;
+  }
   bound.restoring = true;
   const path = bound.path;
   server.close((err) => {
@@ -115,8 +123,8 @@ function restoreSocket(server: Server): void {
     }
     server.listen(path, () => {
       void chmod(path, 0o600)
-        .catch((chmodErr) => {
-          log.warn("[pond native] restore chmod failed", chmodErr);
+        .catch((cause: unknown) => {
+          log.warn("[pond native] restore chmod failed", cause);
         })
         .finally(() => {
           bindPath(server, path);
@@ -137,7 +145,9 @@ export async function startNativeServer(
     await mkdir(dirname(path), { recursive: true });
     try {
       unlinkSync(path);
-    } catch {}
+    } catch {
+      /** No stale socket file to remove. */
+    }
   }
 
   const sockets = new Set<Socket>();
@@ -163,7 +173,9 @@ export async function startNativeServer(
 }
 
 export async function stopNativeServer(server: Server | null): Promise<void> {
-  if (!server) return;
+  if (!server) {
+    return;
+  }
   const bound = listenPaths.get(server);
   if (bound) {
     clearInterval(bound.restore);
@@ -173,11 +185,19 @@ export async function stopNativeServer(server: Server | null): Promise<void> {
     server.close(() => resolve());
   });
   /** `close()` waits for open connections, and a stalled native host would block quitting. */
-  for (const socket of openSockets.get(server) ?? []) socket.destroy();
+  for (const socket of openSockets.get(server) ?? []) {
+    socket.destroy();
+  }
   await closed;
-  if (!bound) return;
+  if (!bound) {
+    return;
+  }
   try {
     /** A newer listener may already own this path after a reload. */
-    if (statSync(bound.path).ino === bound.ino) unlinkSync(bound.path);
-  } catch {}
+    if (statSync(bound.path).ino === bound.ino) {
+      unlinkSync(bound.path);
+    }
+  } catch {
+    /** The socket file is already gone. */
+  }
 }

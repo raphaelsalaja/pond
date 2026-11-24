@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { extname, join } from "node:path";
-import { type Save, type SaveFile, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { Save, SaveFile } from "@pond/schema/db";
 import type { Transaction, TxSaveFile } from "@pond/schema/tx";
 import { THUMBNAIL_KIND, webpThumbnailFilename } from "@shared/save-file-names";
 import { inArray } from "drizzle-orm";
@@ -30,12 +31,12 @@ export interface CompressionCandidate {
 
 export interface CompressionRuntime {
   load(
-    ids: readonly string[],
+    ids: ReadonlyArray<string>,
     fileIndex: number,
     signal: AbortSignal,
-  ): Promise<CompressionCandidate[]>;
-  commit(transactions: Transaction[]): Promise<void>;
-  recordUndo(transactions: Transaction[]): void;
+  ): Promise<Array<CompressionCandidate>>;
+  commit(transactions: Array<Transaction>): Promise<void>;
+  recordUndo(transactions: Array<Transaction>): void;
 }
 
 export interface ImageCompressionResult {
@@ -60,13 +61,16 @@ const runtime: CompressionRuntime = {
       ids.map((id) =>
         limit(async (): Promise<CompressionCandidate | null> => {
           signal.throwIfAborted();
-          if (resolvePaths().libraryRoot !== root)
+          if (resolvePaths().libraryRoot !== root) {
             throw new Error(
               "The active library changed. Start the compression again.",
             );
+          }
           const save = byId.get(id);
           const file = save?.files?.[fileIndex];
-          if (!save || !file) return null;
+          if (!save || !file) {
+            return null;
+          }
           const thumbnail = save.files?.find(
             (entry) => entry.kind === THUMBNAIL_KIND,
           );
@@ -106,7 +110,7 @@ export async function compressExistingImages(
 ): Promise<ImageCompressionResult> {
   const ids = [...new Set(input.ids)];
   const candidates = await operations.load(ids, input.fileIndex, input.signal);
-  const transactions: Transaction[] = [];
+  const transactions: Array<Transaction> = [];
   let bytesBefore = 0;
   let bytesAfter = 0;
   let skipped = ids.length - candidates.length;
@@ -161,7 +165,9 @@ export async function encodeCompressedImage(
   const extension = extname(path).slice(1).toLowerCase();
   if (mode === "upscale") {
     const metadata = await sharp(source).metadata();
-    if (!metadata.width || !metadata.height) return null;
+    if (!metadata.width || !metadata.height) {
+      return null;
+    }
     return sharp(source)
       .resize(metadata.width * 2, metadata.height * 2, {
         fit: "fill",
@@ -186,9 +192,11 @@ export async function encodeCompressedImage(
         (pixels[offset + 1] ?? 0) - targetGreen,
         (pixels[offset + 2] ?? 0) - targetBlue,
       );
-      if (distance < 36) pixels[offset + 3] = 0;
-      else if (distance < 72)
+      if (distance < 36) {
+        pixels[offset + 3] = 0;
+      } else if (distance < 72) {
         pixels[offset + 3] = Math.round(((distance - 36) / 36) * 255);
+      }
     }
     return sharp(pixels, { raw: decoded.info })
       .webp({ lossless: true })
@@ -205,7 +213,9 @@ export async function encodeCompressedImage(
       .toBuffer();
   }
   if (extension === "svg") {
-    if (mode !== "lossless") return null;
+    if (mode !== "lossless") {
+      return null;
+    }
     return optimizeSvg(source);
   }
   const image = sharp(source, {
@@ -218,7 +228,9 @@ export async function encodeCompressedImage(
     case "jpeg":
     case "jpe":
     case "jfif":
-      if (mode === "lossless") return null;
+      if (mode === "lossless") {
+        return null;
+      }
       return image.jpeg({ quality, mozjpeg: true }).toBuffer();
     case "png":
       return image
@@ -237,8 +249,9 @@ export async function encodeCompressedImage(
         .webp({ quality, lossless: mode === "lossless", effort: 6 })
         .toBuffer();
     case "gif":
-      if (!sharp.format.gif.output)
+      if (!sharp.format.gif.output) {
         throw new Error("Sharp cannot compress GIF files in this build.");
+      }
       return image
         .gif(
           mode === "lossless"
@@ -287,8 +300,10 @@ async function compressionTransaction(
   const files = (candidate.save.files ?? []).map((file) =>
     file.path === candidate.file.path ? updatedFile : file,
   );
-  const writes: TxSaveFile[] = [{ filename: outputPath, bytes: compressed }];
-  const beforeFiles: TxSaveFile[] = [
+  const writes: Array<TxSaveFile> = [
+    { filename: outputPath, bytes: compressed },
+  ];
+  const beforeFiles: Array<TxSaveFile> = [
     { filename: candidate.file.path, bytes: candidate.source },
   ];
   let thumbnailBytes: Buffer | null = null;
@@ -312,7 +327,9 @@ async function compressionTransaction(
       const thumbnailIndex = files.findIndex(
         (file) => file.path === previousPath,
       );
-      if (thumbnailIndex >= 0) files[thumbnailIndex] = updatedThumbnail;
+      if (thumbnailIndex >= 0) {
+        files[thumbnailIndex] = updatedThumbnail;
+      }
       writes.push({
         filename: thumbnailPath,
         bytes: thumbnailBytes,
@@ -368,9 +385,9 @@ async function compressionTransaction(
 }
 
 function renameList(
-  imageRenames: { from: string; to: string }[],
+  imageRenames: Array<{ from: string; to: string }>,
   thumbnailRename: { from: string; to: string } | null,
-): { from: string; to: string }[] | undefined {
+): Array<{ from: string; to: string }> | undefined {
   const renames = [
     ...imageRenames,
     ...(thumbnailRename ? [thumbnailRename] : []),
@@ -386,8 +403,8 @@ function optimizeSvg(source: Buffer): Buffer {
   const optimized = source
     .toString("utf8")
     .replace(/^\uFEFF/, "")
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/\r\n?/g, "\n")
+    .replaceAll(/<!--[\s\S]*?-->/g, "")
+    .replaceAll(/\r\n?/g, "\n")
     .trim();
   return Buffer.from(optimized);
 }

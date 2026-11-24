@@ -24,7 +24,7 @@ describe("folder Saves on a canvas", () => {
 
   it("stops at the canvas item limit and says how many didn't fit", () => {
     const ids = Array.from({ length: 12 }, (_, index) => `save-${index}`);
-    const plan = planFolderSaves(ids, { saveIds: [], itemCount: 4_990 });
+    const plan = planFolderSaves(ids, { saveIds: [], itemCount: 4990 });
     expect(plan.saveIds).toEqual(ids.slice(0, 10));
     expect(plan.overflow).toBe(2);
     expect(folderSavesNotice("Big", plan)).toEqual({
@@ -37,7 +37,7 @@ describe("folder Saves on a canvas", () => {
     expect(
       folderSavesNotice(
         "Full",
-        planFolderSaves(["a"], { saveIds: [], itemCount: 5_000 }),
+        planFolderSaves(["a"], { saveIds: [], itemCount: 5000 }),
       ).title,
     ).toBe('"Full" is full');
     expect(

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SettingsSectionView } from "@/features/settings/components/engine";
 import { sourceDownloadsSection } from "@/features/settings/lib/config-source-downloads";
@@ -21,7 +22,7 @@ interface Call {
 
 let host: HTMLDivElement;
 let root: Root;
-let calls: Call[];
+let calls: Array<Call>;
 
 function stubPond(
   overrides: {
@@ -33,10 +34,12 @@ function stubPond(
   vi.stubGlobal("pond", {
     async query(name: string, params: QueryParams) {
       calls.push({ name, params });
-      if (name === "saves.missingVideoCount")
+      if (name === "saves.missingVideoCount") {
         return { count: overrides.missing ?? 0 };
-      if (name === "saves.downloadMissingVideos")
+      }
+      if (name === "saves.downloadMissingVideos") {
         return { ok: true, queued: overrides.missing ?? 0 };
+      }
       return {
         id: "singleton",
         libraryRoot: null,
@@ -64,12 +67,22 @@ async function render(node: React.ReactNode) {
 
 async function settle() {
   for (let tick = 0; tick < 5; tick += 1) {
-    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await act(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        }),
+    );
   }
 }
 
 function row(key: string) {
   return host.querySelector(`#setting-sources-youtube-${key}`);
+}
+
+function item(label: string) {
+  return host.querySelector(`[aria-label="Edit ${label}"]`)?.parentElement
+    ?.parentElement;
 }
 
 beforeEach(() => {
@@ -123,10 +136,6 @@ it("unlocks every row on a custom source, even with auto-download off", async ()
 it("marks only sources with custom settings", async () => {
   stubPond({ videoDownloadSources: { youtube: {} } });
   await render(<DownloadSources />);
-
-  const item = (label: string) =>
-    host.querySelector(`[aria-label="Edit ${label}"]`)?.parentElement
-      ?.parentElement;
 
   expect(item("YouTube")?.textContent).toContain("Custom");
   expect(item("Reddit")?.textContent).not.toContain("Custom");

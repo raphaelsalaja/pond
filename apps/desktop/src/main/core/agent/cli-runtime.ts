@@ -164,7 +164,7 @@ const CLAUDE_ISOLATION_ARGS = [
 export function claudeInvocationArgs(input: {
   schema: string;
   systemPrompt: string;
-}): string[] {
+}): Array<string> {
   return [
     "--print",
     "--output-format",
@@ -266,7 +266,7 @@ function windowsCliDirectories() {
 export function posixCliDirectories(
   home: string,
   env: NodeJS.ProcessEnv,
-  nvmVersions: string[],
+  nvmVersions: Array<string>,
 ) {
   const nvm = join(home, ".nvm/versions/node");
   return [
@@ -289,19 +289,23 @@ const CMD_META_CHARS = /([()\][%!^"`<>&|;, *?])/g;
  * so the helper cannot be shared without a new package dependency).
  */
 export function quoteCmdArg(arg: string, passes = 2) {
-  if (/[\r\n%!]/.test(arg) || arg.includes("\0"))
+  if (/[\r\n%!]/.test(arg) || arg.includes("\0")) {
     throw new Error(
       "A CLI argument contains characters Windows cannot pass safely (%, ! or a line break), usually from a user or temp folder name. Use a folder name without them, or install the CLI as a native executable instead of an npm .cmd shim.",
     );
-  const escaped = arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, "$1$1");
+  }
+  const escaped = arg
+    .replaceAll(/(\\*)"/g, String.raw`$1$1\"`)
+    .replace(/(\\+)$/, "$1$1");
   let quoted = `"${escaped}"`;
-  for (let pass = 0; pass < passes; pass++)
-    quoted = quoted.replace(CMD_META_CHARS, "^$1");
+  for (let pass = 0; pass < passes; pass++) {
+    quoted = quoted.replaceAll(CMD_META_CHARS, "^$1");
+  }
   return quoted;
 }
 
 /** Node refuses to spawn .cmd/.bat files directly (CVE-2024-27980), so run them through cmd.exe without a shell. */
-export function cmdShimInvocation(executable: string, args: string[]) {
+export function cmdShimInvocation(executable: string, args: Array<string>) {
   const commandLine = [
     quoteCmdArg(executable, 1),
     ...args.map((arg) => quoteCmdArg(arg)),
@@ -328,11 +332,16 @@ export function scrubbedEnvironment(
     if (
       inherited.has(name) ||
       (name.startsWith("CODEX_") && name !== "CODEX_HOME")
-    )
+    ) {
       delete env[key];
+    }
   }
   const assign = (name: string, value: string) => {
-    for (const key of Object.keys(env)) if (fold(key) === name) delete env[key];
+    for (const key of Object.keys(env)) {
+      if (fold(key) === name) {
+        delete env[key];
+      }
+    }
     env[name] = value;
   };
   if (codexHome) {
@@ -368,7 +377,7 @@ async function cliEnvironment(codexHome?: string) {
 
 export async function runCli(input: {
   provider: CliProvider;
-  args: string[];
+  args: Array<string>;
   cwd: string;
   codexHome?: string;
   stdin?: string;
@@ -381,8 +390,9 @@ export async function runCli(input: {
   const executable = await which(command, { path: env[pathEnvKey(env)] }).catch(
     () => null,
   );
-  if (!executable)
+  if (!executable) {
     throw new Error(`Install ${command} first. ${loginHint(input.provider)}`);
+  }
   input.signal?.throwIfAborted();
   return new Promise((resolve, reject) => {
     const shim =
@@ -405,10 +415,15 @@ export async function runCli(input: {
     let failure: Error | undefined;
     let forceKill: ReturnType<typeof setTimeout> | undefined;
     const kill = (signal: NodeJS.Signals) => {
-      if (!child.pid) return;
+      if (!child.pid) {
+        return;
+      }
       try {
-        if (process.platform !== "win32") process.kill(-child.pid, signal);
-        else killProcessTree(child, signal);
+        if (process.platform !== "win32") {
+          process.kill(-child.pid, signal);
+        } else {
+          killProcessTree(child, signal);
+        }
       } catch {
         /* The process group may already have exited. */
       }
@@ -416,7 +431,7 @@ export async function runCli(input: {
     const stop = (error: Error) => {
       failure ??= error;
       kill("SIGTERM");
-      forceKill ??= setTimeout(() => kill("SIGKILL"), 2_000);
+      forceKill ??= setTimeout(() => kill("SIGKILL"), 2000);
       forceKill.unref();
     };
     const abort = () => stop(new Error("Reply cancelled."));
@@ -425,7 +440,9 @@ export async function runCli(input: {
       input.timeoutMs ?? 5 * 60_000,
     );
     input.signal?.addEventListener("abort", abort, { once: true });
-    if (input.signal?.aborted) abort();
+    if (input.signal?.aborted) {
+      abort();
+    }
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     const collect = (data: string, output: "stdout" | "stderr") => {
@@ -434,23 +451,33 @@ export async function runCli(input: {
         stop(new Error(`${command} returned too much output.`));
         return;
       }
-      if (output === "stdout") stdout += data;
-      else stderr += data;
+      if (output === "stdout") {
+        stdout += data;
+      } else {
+        stderr += data;
+      }
     };
     child.stdout.on("data", (data: string) => collect(data, "stdout"));
     child.stderr.on("data", (data: string) => collect(data, "stderr"));
     child.stdin.on("error", (error: NodeJS.ErrnoException) => {
-      if (error.code !== "EPIPE") stop(error);
+      if (error.code !== "EPIPE") {
+        stop(error);
+      }
     });
     child.on("error", (error) => {
       failure = error;
     });
     child.on("close", (code) => {
       clearTimeout(timer);
-      if (forceKill) clearTimeout(forceKill);
+      if (forceKill) {
+        clearTimeout(forceKill);
+      }
       input.signal?.removeEventListener("abort", abort);
-      if (failure) reject(failure);
-      else resolve({ stdout, stderr, code });
+      if (failure) {
+        reject(failure);
+      } else {
+        resolve({ stdout, stderr, code });
+      }
     });
     child.stdin.end(input.stdin ?? "");
   });
@@ -510,7 +537,9 @@ async function loadBundledCodexCatalog(
   codexHome: string,
   signal?: AbortSignal,
 ) {
-  if (bundledCodexCatalog) return bundledCodexCatalog;
+  if (bundledCodexCatalog) {
+    return bundledCodexCatalog;
+  }
   const result = await runCli({
     provider: "codex",
     args: ["debug", "models", "--bundled"],
@@ -519,14 +548,16 @@ async function loadBundledCodexCatalog(
     timeoutMs: 15_000,
     signal,
   });
-  if (result.code !== 0) throw new Error("Codex model catalog is unavailable.");
+  if (result.code !== 0) {
+    throw new Error("Codex model catalog is unavailable.");
+  }
   const parsed = codexCatalogSchema.parse(JSON.parse(result.stdout));
   bundledCodexCatalog ??= parsed;
   return bundledCodexCatalog;
 }
 
 /** `claude --model` resolves these aliases to the newest model your plan includes. */
-const CLAUDE_CODE_MODELS: CliModel[] = [
+const CLAUDE_CODE_MODELS: Array<CliModel> = [
   {
     id: "opus",
     name: "Opus",
@@ -554,8 +585,10 @@ export type CliModel = {
 export async function listCliModels(
   provider: CliProvider,
   signal?: AbortSignal,
-): Promise<CliModel[]> {
-  if (provider === "claude-code") return CLAUDE_CODE_MODELS;
+): Promise<Array<CliModel>> {
+  if (provider === "claude-code") {
+    return CLAUDE_CODE_MODELS;
+  }
   const directory = await mkdtemp(join(tmpdir(), "pond-codex-models-"));
   try {
     const codexHome = join(directory, "codex-home");
@@ -569,16 +602,22 @@ export async function listCliModels(
 
 /** Hidden catalog entries are internal review and research models. */
 export function listedCodexModels(
-  models: z.infer<typeof codexCatalogModelSchema>[],
-): CliModel[] {
+  models: Array<z.infer<typeof codexCatalogModelSchema>>,
+): Array<CliModel> {
   return models.flatMap((model) => {
-    if (model.visibility !== "list") return [];
+    if (model.visibility !== "list") {
+      return [];
+    }
     const entry: CliModel = {
       id: model.slug,
       name: model.display_name || model.slug,
     };
-    if (model.description) entry.description = model.description;
-    if (model.context_window) entry.contextWindow = model.context_window;
+    if (model.description) {
+      entry.description = model.description;
+    }
+    if (model.context_window) {
+      entry.contextWindow = model.context_window;
+    }
     return [entry];
   });
 }
@@ -627,8 +666,9 @@ export async function prepareCodexRuntime(
       error instanceof Error &&
       "code" in error &&
       error.code === "EPERM"
-    )
+    ) {
       throw new CodexSymlinkUnavailableError();
+    }
     throw error;
   }
   const bundled = await loadBundledCodexCatalog(directory, codexHome, signal);
@@ -637,7 +677,9 @@ export async function prepareCodexRuntime(
     const fallback = models.toSorted(
       (left, right) => Number(right.priority ?? 0) - Number(left.priority ?? 0),
     )[0];
-    if (!fallback) throw new Error("Codex model catalog is unavailable.");
+    if (!fallback) {
+      throw new Error("Codex model catalog is unavailable.");
+    }
     models.push({
       ...fallback,
       slug: model,
@@ -661,11 +703,15 @@ export function codexRuntimeArgs(runtime: CodexRuntime) {
 }
 
 function supportsClaudeIsolation(result: CliResult): boolean {
-  if (result.code !== 0) return false;
+  if (result.code !== 0) {
+    return false;
+  }
   const version = `${result.stdout}\n${result.stderr}`.match(
     /\b(\d+)\.(\d+)\.(\d+)\b/,
   );
-  if (!version) return false;
+  if (!version) {
+    return false;
+  }
   const [, majorText = "0", minorText = "0", patchText = "0"] = version;
   const [major = 0, minor = 0, patch = 0] = [
     majorText,
@@ -698,7 +744,7 @@ function supportsCodexIsolation(
       roots.length > 0 && roots.every((root) => root === isolatedSystemSkills)
     );
   });
-  let nativeToolsAreDisabled = false;
+  let nativeToolsAreDisabled: boolean;
   try {
     const catalog = codexCatalogSchema.parse(
       JSON.parse(effectiveCatalog.stdout),
@@ -706,11 +752,12 @@ function supportsCodexIsolation(
     nativeToolsAreDisabled = catalog.models.every(
       (model) =>
         model.shell_type === "disabled" &&
-        model.apply_patch_tool_type == null &&
+        (model.apply_patch_tool_type === null ||
+          model.apply_patch_tool_type === undefined) &&
         Array.isArray(model.experimental_supported_tools) &&
         model.experimental_supported_tools.length === 0 &&
         model.supports_search_tool === false &&
-        model.tool_mode == null &&
+        (model.tool_mode === null || model.tool_mode === undefined) &&
         model.node_repl_disabled === true,
     );
   } catch {
@@ -747,8 +794,9 @@ async function findCodexCredentialStore(signal?: AbortSignal) {
     if (
       result.code === 0 &&
       /logged in using ChatGPT/i.test(`${result.stdout}\n${result.stderr}`)
-    )
+    ) {
       return credentialStore;
+    }
   }
 }
 
@@ -759,14 +807,16 @@ export async function checkCliConnection(
   try {
     if (provider === "codex") {
       const codexCredentialStore = await findCodexCredentialStore(signal);
-      if (!codexCredentialStore)
+      if (!codexCredentialStore) {
         return { ok: false, error: loginHint(provider) };
-      if (codexCredentialStore === "keyring")
+      }
+      if (codexCredentialStore === "keyring") {
         return {
           ok: false,
           error:
             "Pond requires file-backed Codex credentials for an isolated connection. Run codex -c 'cli_auth_credentials_store=\"file\"' login, then connect again.",
         };
+      }
       const directory = await mkdtemp(join(tmpdir(), "pond-codex-isolation-"));
       try {
         const runtime = await prepareCodexRuntime(directory, "default", signal);
@@ -817,8 +867,9 @@ export async function checkCliConnection(
             effectiveCatalog,
             runtime.codexHome,
           )
-        )
+        ) {
           return { ok: true };
+        }
         return {
           ok: false,
           error:
@@ -843,7 +894,9 @@ export async function checkCliConnection(
         auth.success &&
         auth.data.loggedIn &&
         ["claude.ai", "oauth_token"].includes(auth.data.authMethod);
-      if (!subscriptionLogin) return { ok: false, error: loginHint(provider) };
+      if (!subscriptionLogin) {
+        return { ok: false, error: loginHint(provider) };
+      }
       const capability = await runCli({
         provider,
         cwd: homedir(),
@@ -857,7 +910,9 @@ export async function checkCliConnection(
           "--version",
         ],
       });
-      if (supportsClaudeIsolation(capability)) return { ok: true };
+      if (supportsClaudeIsolation(capability)) {
+        return { ok: true };
+      }
       return {
         ok: false,
         error: "Update Claude Code to v2.1.248 or later, then connect again.",

@@ -1,3 +1,4 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -7,7 +8,8 @@ import {
   useParams,
 } from "@tanstack/react-router";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { SettingsPage } from "./";
 
@@ -57,7 +59,9 @@ async function mount(initialEntry: string) {
 
 function scroller(): HTMLElement {
   const element = host.querySelector("[data-scroll-fade]");
-  if (!(element instanceof HTMLElement)) throw new Error("Missing scroller");
+  if (!isHTMLElement(element)) {
+    throw new Error("Missing scroller");
+  }
   return element;
 }
 

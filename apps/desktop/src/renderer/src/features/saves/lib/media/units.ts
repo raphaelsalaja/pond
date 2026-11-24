@@ -35,10 +35,8 @@ import {
   textBodyForSave,
 } from "@/features/saves/lib/text";
 import type { Save, SaveFile } from "@/features/saves/types";
-import {
-  type ResolvedTheme,
-  resolveCurrentTheme,
-} from "@/shared/hooks/use-resolved-theme";
+import { resolveCurrentTheme } from "@/shared/hooks/use-resolved-theme";
+import type { ResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
@@ -72,9 +70,11 @@ function resolveCurrentTweetCover(): TweetCover {
 export function buildMediaUnits(
   save: Save,
   opts: MediaPickOptions = {},
-): MediaUnit[] {
+): Array<MediaUnit> {
   const units = buildOriginalMediaUnits(save);
-  if (units.length > 0) return units;
+  if (units.length > 0) {
+    return units;
+  }
 
   const screenshot = pickTweetScreenshot(save, opts.theme);
   return screenshot
@@ -89,7 +89,7 @@ export function buildMediaUnits(
 }
 
 /** The Save's own photos and videos, without the rendered post card that stands in for text-only posts. */
-export function buildOriginalMediaUnits(save: Save): MediaUnit[] {
+export function buildOriginalMediaUnits(save: Save): Array<MediaUnit> {
   const allFiles = save.files ?? [];
   const posters = allFiles.filter((f) => f.kind === "poster");
   const files = allFiles.filter(
@@ -107,7 +107,9 @@ export function buildOriginalMediaUnits(save: Save): MediaUnit[] {
     images.length === 0 || (images.length === 1 && save.source !== "local");
   if (videos.length === 1 && imageIsCover) {
     const video = videos[0];
-    if (!video) return [];
+    if (!video) {
+      return [];
+    }
     const poster = posters[0] ?? images[0];
     const unit: MediaUnit = {
       key: video.path,
@@ -121,7 +123,7 @@ export function buildOriginalMediaUnits(save: Save): MediaUnit[] {
     return [unit];
   }
 
-  const units: MediaUnit[] = [];
+  const units: Array<MediaUnit> = [];
   let videoSeen = 0;
   for (const f of files) {
     if (isRenderableVideoFile(f)) {
@@ -168,7 +170,9 @@ export function pickPrimaryUnit(
 
   const units = buildMediaUnits(save, opts);
   const video = units.find((u) => u.isVideo);
-  if (video) return video;
+  if (video) {
+    return video;
+  }
   return units[0] ?? null;
 }
 
@@ -202,7 +206,9 @@ export function pickCardUnit(
   }
 
   const primary = pickPrimaryUnit(save, opts);
-  if (primary) return primary;
+  if (primary) {
+    return primary;
+  }
 
   const poster = (save.files ?? []).find((file) => file.kind === POSTER_KIND);
   if (poster) {
@@ -214,7 +220,9 @@ export function pickCardUnit(
   }
 
   const previewable = (save.files ?? []).find((file) => {
-    if (isAuxiliaryFile(file)) return false;
+    if (isAuxiliaryFile(file)) {
+      return false;
+    }
     const kind = classifyLibraryFile(file.path, file.mimeType).previewKind;
     return (
       kind === "audio" ||
@@ -234,8 +242,12 @@ export function pickCardUnit(
 }
 
 export function detailsPreviewUrl(unit: MediaUnit | null): string | null {
-  if (!unit) return null;
-  if (unit.isVideo) return unit.posterUrl ?? null;
+  if (!unit) {
+    return null;
+  }
+  if (unit.isVideo) {
+    return unit.posterUrl ?? null;
+  }
   return unit.requiresGeneratedPreview
     ? previewThumbUrlFor(unit.url, 560)
     : unit.url;
@@ -249,11 +261,16 @@ export function cardThumbnailUrl(
   const hasThumbnail = (save.files ?? []).some((file) =>
     isThumbnailKind(file.kind),
   );
-  if (!hasThumbnail && richFilePreviewKind(pickPrimaryFile(save, opts)))
+  if (!hasThumbnail && richFilePreviewKind(pickPrimaryFile(save, opts))) {
     return null;
+  }
   const unit = pickCardUnit(save, opts);
-  if (!unit) return null;
-  if (unit.isVideo) return unit.posterUrl ?? null;
+  if (!unit) {
+    return null;
+  }
+  if (unit.isVideo) {
+    return unit.posterUrl ?? null;
+  }
   return unit.requiresGeneratedPreview ? previewUrlFor(unit.url) : unit.url;
 }
 
@@ -264,7 +281,9 @@ export function pickPrimaryFile(
   const unit = pickPrimaryUnit(save, opts);
   if (unit) {
     const file = (save.files ?? []).find((f) => f.path === unit.key);
-    if (file) return file;
+    if (file) {
+      return file;
+    }
   }
   return (save.files ?? []).find((file) => !isAuxiliaryFile(file)) ?? null;
 }
@@ -302,7 +321,9 @@ function pickTweetScreenshot(
   save: Save,
   theme: ResolvedTheme | undefined,
 ): SaveFile | null {
-  if (!rendersPostCard(save.source)) return null;
+  if (!rendersPostCard(save.source)) {
+    return null;
+  }
   const files = save.files ?? [];
   const resolved = theme ?? resolveCurrentTheme();
   const preferredKind =
@@ -321,19 +342,31 @@ function pickTweetScreenshot(
 }
 
 export function needsTextCover(save: Save): boolean {
-  if (rendersPostCard(save.source)) return false;
-  if (hasArchive(save)) return false;
-  if (!textBodyForSave(save)) return false;
-  if (!isTextOnlyAsideFromCover(save)) return false;
+  if (rendersPostCard(save.source)) {
+    return false;
+  }
+  if (hasArchive(save)) {
+    return false;
+  }
+  if (!textBodyForSave(save)) {
+    return false;
+  }
+  if (!isTextOnlyAsideFromCover(save)) {
+    return false;
+  }
   const hasThumb = (save.files ?? []).some((file) =>
     isThumbnailKind(file.kind),
   );
-  if (!hasThumb) return true;
+  if (!hasThumb) {
+    return true;
+  }
   return textCoverVersionFromRawJson(save.rawJson) < RENDER_TEXT_COVER_VERSION;
 }
 
 export function isImageFile(file: SaveFile): boolean {
-  if (isOriginalImageKind(file.kind)) return true;
+  if (isOriginalImageKind(file.kind)) {
+    return true;
+  }
   const previewKind = classifyLibraryFile(file.path, file.mimeType).previewKind;
   return previewKind === "direct-image" || previewKind === "native-image";
 }
@@ -349,28 +382,60 @@ type TypeKind =
   | "other";
 
 export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
-  if (save.source === "web") return "link";
+  if (save.source === "web") {
+    return "link";
+  }
 
   if (file) {
     const format = classifyLibraryFile(file.path, file.mimeType);
-    if (format.mediaType === "image") return "image";
-    if (format.mediaType === "video") return "video";
-    if (format.mediaType === "audio") return "audio";
-    if (format.mediaType === "font") return "font";
-    if (format.mediaType === "document") return "doc";
-    if (format.mediaType === "text") return "text";
-    if (isOriginalImageKind(file.kind)) return "image";
+    if (format.mediaType === "image") {
+      return "image";
+    }
+    if (format.mediaType === "video") {
+      return "video";
+    }
+    if (format.mediaType === "audio") {
+      return "audio";
+    }
+    if (format.mediaType === "font") {
+      return "font";
+    }
+    if (format.mediaType === "document") {
+      return "doc";
+    }
+    if (format.mediaType === "text") {
+      return "text";
+    }
+    if (isOriginalImageKind(file.kind)) {
+      return "image";
+    }
   }
 
   const media = save.mediaType?.toLowerCase();
-  if (media === "text") return "text";
-  if (media === "image") return "image";
-  if (media === "video") return "video";
-  if (media === "audio") return "audio";
-  if (media === "document") return "doc";
-  if (media === "font") return "font";
-  if (media === "file") return "other";
-  if (media === "link") return "link";
+  if (media === "text") {
+    return "text";
+  }
+  if (media === "image") {
+    return "image";
+  }
+  if (media === "video") {
+    return "video";
+  }
+  if (media === "audio") {
+    return "audio";
+  }
+  if (media === "document") {
+    return "doc";
+  }
+  if (media === "font") {
+    return "font";
+  }
+  if (media === "file") {
+    return "other";
+  }
+  if (media === "link") {
+    return "link";
+  }
 
   return save.url ? "link" : "other";
 }
@@ -382,9 +447,15 @@ export function deriveTypeLabel(
   if (save.source === "web") {
     return webTypeKey(save) === "product" ? "Product" : "Web";
   }
-  if (save.source === "github") return "Repository";
-  if (save.files.some((f) => f.kind === ARTICLE_KIND)) return "Article";
-  if (arenaBlockClass(save) === "text") return "Text";
+  if (save.source === "github") {
+    return "Repository";
+  }
+  if (save.files.some((f) => f.kind === ARTICLE_KIND)) {
+    return "Article";
+  }
+  if (arenaBlockClass(save) === "text") {
+    return "Text";
+  }
   if (
     !file &&
     !hasArchive(save) &&
@@ -394,14 +465,28 @@ export function deriveTypeLabel(
     return "Text";
   }
   const extensionLabel = file ? typeLabelForPath(file.path) : null;
-  if (extensionLabel) return extensionLabel;
+  if (extensionLabel) {
+    return extensionLabel;
+  }
   const subtype = file?.mimeType?.split("/")[1]?.split(";")[0];
-  if (subtype) return subtype.toUpperCase();
+  if (subtype) {
+    return subtype.toUpperCase();
+  }
   const media = save.mediaType?.toLowerCase();
-  if (media === "text") return "Text";
-  if (media === "video") return "Video";
-  if (media === "image") return "Image";
-  if (media === "link") return "Website";
-  if (save.mediaType) return save.mediaType.toUpperCase();
+  if (media === "text") {
+    return "Text";
+  }
+  if (media === "video") {
+    return "Video";
+  }
+  if (media === "image") {
+    return "Image";
+  }
+  if (media === "link") {
+    return "Website";
+  }
+  if (save.mediaType) {
+    return save.mediaType.toUpperCase();
+  }
   return save.url ? "Link" : null;
 }

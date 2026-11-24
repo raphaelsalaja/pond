@@ -111,22 +111,29 @@ export function registerAutomationCommands(program: Command): void {
     const deadline = Date.now() + settings.timeout;
     while (Date.now() < deadline) {
       const jobs = await api.runOperation("transferJobs.list", {});
-      const entries: JsonObject[] = [];
+      const entries: Array<JsonObject> = [];
       if (Array.isArray(jobs)) {
         for (const entry of jobs) {
           const parsed = JsonObjectSchema.safeParse(entry);
-          if (parsed.success) entries.push(parsed.data);
+          if (parsed.success) {
+            entries.push(parsed.data);
+          }
         }
       }
       const current = entries.find((entry) => entry.id === jobId);
-      if (!current) return { id: jobId, status: "complete" };
+      if (!current) {
+        return { id: jobId, status: "complete" };
+      }
       if (
         "status" in current &&
         !["pending", "running"].includes(String(current.status))
-      )
+      ) {
         return current;
+      }
       process.stderr.write(`Waiting for ${jobId}\n`);
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 500);
+      });
     }
     throw new Error("The job did not finish before the timeout.");
   });

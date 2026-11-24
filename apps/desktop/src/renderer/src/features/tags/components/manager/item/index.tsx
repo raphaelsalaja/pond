@@ -1,4 +1,5 @@
 import { useDataTable } from "@pond/ui/data-table";
+import { isElement } from "@pond/ui/dom";
 import { useSelector } from "@tanstack/react-store";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { TagContextMenu } from "@/features/tags/components/context-menu";
@@ -10,8 +11,7 @@ import styles from "./styles.module.css";
 
 function fromControl(target: EventTarget | null) {
   return (
-    target instanceof Element &&
-    target.closest("button, input, textarea, a") !== null
+    isElement(target) && target.closest("button, input, textarea, a") !== null
   );
 }
 
@@ -35,31 +35,43 @@ function ItemRow({ variant }: { variant: "row" | "card" | "index" }) {
   const selected = useSelector(selectionStore, (state) =>
     state.selectedIds.has(row.id),
   );
-  if (row.kind !== "tag") return null;
+  if (row.kind !== "tag") {
+    return null;
+  }
 
   function selectRange() {
     actions.toggleRow(row.id, true);
   }
 
   function openFromPointer(event: MouseEvent<HTMLDivElement>) {
-    if (variant !== "index") return;
+    if (variant !== "index") {
+      return;
+    }
     if (event.shiftKey) {
       selectRange();
       return;
     }
-    if (renaming || fromControl(event.target)) return;
+    if (renaming || fromControl(event.target)) {
+      return;
+    }
     openTagItems();
   }
 
   function openFromKeyboard(event: KeyboardEvent<HTMLDivElement>) {
-    if (variant !== "index") return;
-    if (event.key !== "Enter" && event.key !== " ") return;
+    if (variant !== "index") {
+      return;
+    }
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
     if (event.shiftKey) {
       event.preventDefault();
       selectRange();
       return;
     }
-    if (renaming || fromControl(event.target)) return;
+    if (renaming || fromControl(event.target)) {
+      return;
+    }
     event.preventDefault();
     openTagItems();
   }

@@ -34,7 +34,7 @@ export function WhatsNewRow() {
   return (
     <>
       <Settings.ItemDetails>
-        <Settings.ItemTitle>What's New</Settings.ItemTitle>
+        <Settings.ItemTitle>What&apos;s New</Settings.ItemTitle>
         <Settings.ItemDescription>
           Read the release notes for every version of Pond.
         </Settings.ItemDescription>

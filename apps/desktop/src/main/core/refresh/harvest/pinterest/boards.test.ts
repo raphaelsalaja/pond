@@ -7,13 +7,12 @@ import {
   boardPinsPage,
   boardsPage,
   collectBoards,
-  type PinterestBoard,
-  type ResourcePageResult,
   resourceFailure,
   walkBoards,
 } from "./boards";
+import type { PinterestBoard, ResourcePageResult } from "./boards";
 
-function pins(ids: string[]): ListEntry[] {
+function pins(ids: Array<string>): Array<ListEntry> {
   return ids.map((id) => ({
     sourceId: id,
     url: `https://www.pinterest.com/pin/${id}/`,
@@ -21,7 +20,7 @@ function pins(ids: string[]): ListEntry[] {
 }
 
 /** Serves board pages from a fixture and records every request, like the resource API. */
-function boardFeed(pages: Record<string, ListEntry[][]>) {
+function boardFeed(pages: Record<string, Array<Array<ListEntry>>>) {
   const requests: Array<[string, string | null]> = [];
   const fetchPage = async (
     boardId: string,
@@ -29,7 +28,9 @@ function boardFeed(pages: Record<string, ListEntry[][]>) {
   ): Promise<ResourcePageResult<ListEntry>> => {
     requests.push([boardId, bookmark]);
     const board = pages[boardId];
-    if (!board) return { ok: false, reason: "unknown" };
+    if (!board) {
+      return { ok: false, reason: "unknown" };
+    }
     const index = bookmark ? Number(bookmark) : 0;
     const items = board[index] ?? [];
     const next = index + 1 < board.length ? String(index + 1) : null;
@@ -120,12 +121,14 @@ describe("boardPinsPage", () => {
   });
 });
 
+function failure(http_status?: number) {
+  return resourceFailure({
+    resource_response: { status: "failure", http_status },
+  });
+}
+
 describe("resourceFailure", () => {
   it("maps a failure envelope to a harvest reason", () => {
-    const failure = (http_status?: number) =>
-      resourceFailure({
-        resource_response: { status: "failure", http_status },
-      });
     expect(failure(401)).toBe("auth_required");
     expect(failure(429)).toBe("rate_limited");
     expect(failure(500)).toBe("unknown");
@@ -148,7 +151,7 @@ describe("boardFeedUrl", () => {
 
 describe("collectBoards", () => {
   it("pages through every board", async () => {
-    const pages: PinterestBoard[][] = [
+    const pages: Array<Array<PinterestBoard>> = [
       [{ id: "1", name: "One", pinCount: 3 }],
       [{ id: "2", name: "Two", pinCount: null }],
     ];

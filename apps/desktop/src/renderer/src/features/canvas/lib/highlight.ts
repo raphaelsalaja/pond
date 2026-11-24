@@ -18,24 +18,30 @@ export function useHighlight(
   code: string,
   language: string,
   enabled: boolean,
-): CodeToken[][] | null {
+): Array<Array<CodeToken>> | null {
   const key = `${language}\n${code}`;
   const [result, setResult] = useState<{
     key: string;
-    lines: CodeToken[][];
+    lines: Array<Array<CodeToken>>;
   } | null>(null);
 
   useEffect(() => {
-    if (!enabled || !code || language === "text") return;
+    if (!enabled || !code || language === "text") {
+      return;
+    }
     let live = true;
     void (async () => {
       const shiki = await import("shiki");
-      if (!hasKey(shiki.bundledLanguages, language)) return;
+      if (!hasKey(shiki.bundledLanguages, language)) {
+        return;
+      }
       const lines = await shiki.codeToTokensWithThemes(code, {
         lang: language,
         themes: { light: "github-light", dark: "github-dark" },
       });
-      if (!live) return;
+      if (!live) {
+        return;
+      }
       setResult({
         key,
         lines: lines.map((line) =>

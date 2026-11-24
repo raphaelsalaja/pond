@@ -18,7 +18,7 @@ function rawClipboardFormat(type: string): string {
   return `electron application/osclipboard;format="${type}"`;
 }
 
-function privateFormats(type: string): string[] {
+function privateFormats(type: string): Array<string> {
   return [type, rawClipboardFormat(type)];
 }
 
@@ -27,6 +27,8 @@ export async function clipboardPrefill(
 ): Promise<string> {
   const formats = PRIVATE_CLIPBOARD_TYPES.flatMap(privateFormats);
   const marked = await Promise.all(formats.map((format) => reader.has(format)));
-  if (marked.includes(true)) return "";
+  if (marked.includes(true)) {
+    return "";
+  }
   return (await reader.readText()).slice(0, MAX_PREFILL);
 }

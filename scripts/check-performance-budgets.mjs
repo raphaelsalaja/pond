@@ -9,7 +9,9 @@ function addResult(name, bytes, budget) {
 }
 
 function fileSize(path) {
-  if (!existsSync(path)) throw new Error(`missing build artifact: ${path}`);
+  if (!existsSync(path)) {
+    throw new Error(`missing build artifact: ${path}`);
+  }
   return statSync(path).size;
 }
 
@@ -26,13 +28,17 @@ function mainStaticGraph(entry) {
   const seen = new Set();
   const visit = (path) => {
     const absolute = resolve(path);
-    if (seen.has(absolute) || !existsSync(absolute)) return;
+    if (seen.has(absolute) || !existsSync(absolute)) {
+      return;
+    }
     seen.add(absolute);
     const source = readFileSync(absolute, "utf8");
     const staticImport = /(?:\bfrom\s*|^\s*import\s*)["'](\.\.?\/[^"']+)["']/gm;
     for (const match of source.matchAll(staticImport)) {
       let dependency = resolve(dirname(absolute), match[1]);
-      if (!extname(dependency)) dependency += ".js";
+      if (!extname(dependency)) {
+        dependency += ".js";
+      }
       visit(dependency);
     }
   };
@@ -44,7 +50,9 @@ function htmlAssetSize(htmlPath, assetRoot, pattern, filter = () => true) {
   const html = readFileSync(htmlPath, "utf8");
   const assets = new Set();
   for (const match of html.matchAll(pattern)) {
-    if (filter(match[0])) assets.add(match[1]);
+    if (filter(match[0])) {
+      assets.add(match[1]);
+    }
   }
   return [...assets].reduce(
     (total, asset) => total + fileSize(join(assetRoot, asset)),
@@ -96,10 +104,14 @@ for (const result of results) {
   console.log(
     `${status} ${result.name}: ${formatBytes(result.bytes)} / ${formatBytes(result.budget)} (${percent}%)`,
   );
-  if (!result.ok) failed = true;
+  if (!result.ok) {
+    failed = true;
+  }
 }
 
-if (failed) process.exitCode = 1;
+if (failed) {
+  process.exitCode = 1;
+}
 
 function formatBytes(bytes) {
   return `${(bytes / 1024).toFixed(1)} KiB`;

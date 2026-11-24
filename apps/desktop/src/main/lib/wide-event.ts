@@ -1,12 +1,13 @@
-import { type Op, saves, tasks } from "@pond/schema/db";
-import {
-  type ErrorInfo,
-  type IngestOutcome,
-  type PipelineTaskEvent,
-  pipelineEvents,
-  type SaveIngestEvent,
-  type SyncRunEvent,
-  type WideEvent,
+import { saves, tasks } from "@pond/schema/db";
+import type { Op } from "@pond/schema/db";
+import { pipelineEvents } from "@pond/schema/events";
+import type {
+  ErrorInfo,
+  IngestOutcome,
+  PipelineTaskEvent,
+  SaveIngestEvent,
+  SyncRunEvent,
+  WideEvent,
 } from "@pond/schema/events";
 import { desc, eq, lt } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -89,7 +90,9 @@ export async function commitSaveIngestEvent(
   try {
     const db = await getDb();
     const save = db.select().from(saves).where(eq(saves.id, saveId)).get();
-    if (!save) return;
+    if (!save) {
+      return;
+    }
     const taskRows = db
       .select({ attempts: tasks.attempts })
       .from(tasks)
@@ -114,13 +117,15 @@ export async function commitSaveIngestEvent(
       trigger: override.trigger ?? null,
     });
     await commitEvent(event);
-  } catch (err) {
-    log.warn("[pond events] save-ingest commit failed", err);
+  } catch (error) {
+    log.warn("[pond events] save-ingest commit failed", error);
   }
 }
 
 export function toErrorInfo(cause: unknown): ErrorInfo | null {
-  if (!cause) return null;
+  if (!cause) {
+    return null;
+  }
   if (cause instanceof Error) {
     return { name: cause.name, message: cause.message };
   }
@@ -159,7 +164,7 @@ export async function commitEvent(ev: WideEvent): Promise<void> {
         .from(pipelineEvents)
         .orderBy(desc(pipelineEvents.id))
         .limit(1)
-        .offset(5_000)
+        .offset(5000)
         .get();
       if (boundary) {
         db.delete(pipelineEvents)
@@ -167,8 +172,8 @@ export async function commitEvent(ev: WideEvent): Promise<void> {
           .run();
       }
     }
-  } catch (err) {
-    log.warn("[pond events] commit failed", err);
+  } catch (error) {
+    log.warn("[pond events] commit failed", error);
   }
   log.info(formatSummary(ev));
 }
@@ -181,14 +186,18 @@ function formatSummary(ev: WideEvent): string {
       return `[gate ${ev.source}] ${ev.from}:${ev.to} · trigger=${ev.trigger}`;
     case "pipeline.task.completed": {
       const tag = `[task ${ev.source}/${ev.op}]`;
-      const meta: string[] = [
+      const meta: Array<string> = [
         ev.outcome,
         `${ev.durationMs}ms`,
         `attempt ${ev.attempts}/${ev.maxAttempts}`,
         `save=${ev.saveId.slice(0, 8)}`,
       ];
-      if (ev.error) meta.push(`${ev.error.name}: ${ev.error.message}`);
-      if (ev.gate) meta.push(`gate=${ev.gate.reason}`);
+      if (ev.error) {
+        meta.push(`${ev.error.name}: ${ev.error.message}`);
+      }
+      if (ev.gate) {
+        meta.push(`gate=${ev.gate.reason}`);
+      }
       if (ev.nextRunAt) {
         meta.push(`nextRunAt=+${Math.round((ev.nextRunAt - ev.ts) / 1000)}s`);
       }
@@ -196,32 +205,44 @@ function formatSummary(ev: WideEvent): string {
     }
     case "sync.run.completed": {
       const tag = `[sync ${ev.source}]`;
-      const meta: string[] = [
+      const meta: Array<string> = [
         ev.outcome,
         `${Math.round(ev.durationMs / 100) / 10}s`,
         `trigger=${ev.trigger}`,
       ];
-      if (ev.harvest)
+      if (ev.harvest) {
         meta.push(
           `seen=${ev.harvest.seen ?? 0} fresh=${ev.harvest.fresh ?? 0}`,
         );
-      if (ev.enqueue)
+      }
+      if (ev.enqueue) {
         meta.push(`queued=${ev.enqueue.succeeded} failed=${ev.enqueue.failed}`);
-      if (ev.watchdogTripped) meta.push("watchdog");
-      if (ev.error) meta.push(`${ev.error.name}: ${ev.error.message}`);
+      }
+      if (ev.watchdogTripped) {
+        meta.push("watchdog");
+      }
+      if (ev.error) {
+        meta.push(`${ev.error.name}: ${ev.error.message}`);
+      }
       return `${tag} ${meta.join(" · ")}`;
     }
     case "save.ingest.completed": {
       const tag = `[ingest ${ev.source}]`;
-      const meta: string[] = [
+      const meta: Array<string> = [
         ev.outcome,
         `${Math.round(ev.durationMs / 100) / 10}s`,
         `save=${ev.saveId.slice(0, 8)}`,
         `attempts=${ev.attempts}`,
       ];
-      if (ev.failedOp) meta.push(`failedAt=${ev.failedOp}`);
-      if (ev.error) meta.push(`${ev.error.name}: ${ev.error.message}`);
-      if (ev.fileCount) meta.push(`files=${ev.fileCount}`);
+      if (ev.failedOp) {
+        meta.push(`failedAt=${ev.failedOp}`);
+      }
+      if (ev.error) {
+        meta.push(`${ev.error.name}: ${ev.error.message}`);
+      }
+      if (ev.fileCount) {
+        meta.push(`files=${ev.fileCount}`);
+      }
       return `${tag} ${meta.join(" · ")}`;
     }
   }

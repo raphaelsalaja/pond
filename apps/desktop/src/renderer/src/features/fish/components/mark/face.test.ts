@@ -7,15 +7,17 @@ const pivot = { x: 10, y: 12 };
 function fish() {
   let seed = 7;
   const random = () => {
-    seed = (seed * 16807) % 2147483647;
-    return seed / 2147483647;
+    seed = (seed * 16_807) % 2_147_483_647;
+    return seed / 2_147_483_647;
   };
   return createAvatar({ head, pivot, random });
 }
 
 function run(avatar: ReturnType<typeof fish>, seconds: number) {
   let pose = avatar.step(0);
-  for (let t = 0; t < seconds; t += 1 / 60) pose = avatar.step(1 / 60);
+  for (let t = 0; t < seconds; t += 1 / 60) {
+    pose = avatar.step(1 / 60);
+  }
   return pose;
 }
 

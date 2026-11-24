@@ -7,8 +7,8 @@ import { assistant } from "./assistant";
 import {
   agentStreamBridge,
   createAssistantHarness,
-  type StreamReply,
 } from "./assistant.test-harness";
+import type { StreamReply } from "./assistant.test-harness";
 
 it("keeps the composer draft and attachments and streams question answers", async () => {
   const question = {
@@ -25,12 +25,16 @@ it("keeps the composer draft and attachments and streams question answers", asyn
       name: string,
       _params?: { content?: string; allowCloudOnce?: boolean },
     ) => {
-      if (name === "agent.messages") return [question];
-      if (name === "agent.chats") return [{ id: "chat", title: "Topics" }];
+      if (name === "agent.messages") {
+        return [question];
+      }
+      if (name === "agent.chats") {
+        return [{ id: "chat", title: "Topics" }];
+      }
       return {};
     },
   );
-  const requests: AgentStreamRequest[] = [];
+  const requests: Array<AgentStreamRequest> = [];
   const agentStream = agentStreamBridge((request) => {
     requests.push(request);
     return {};
@@ -93,7 +97,7 @@ it("keeps the composer draft and attachments and streams question answers", asyn
     expect(harness.host.textContent).toContain('"attached":1');
     await act(async () => assistant.quote("A paragraph.\n\nSecond paragraph."));
     expect(harness.host.textContent).toContain(
-      "Keep this draft\\n\\n> A paragraph.\\n> \\n> Second paragraph.\\n\\n",
+      String.raw`Keep this draft\n\n> A paragraph.\n> \n> Second paragraph.\n\n`,
     );
     expect(harness.host.textContent).toContain('"attached":1');
   } finally {
@@ -104,7 +108,7 @@ it("keeps the composer draft and attachments and streams question answers", asyn
 
 it("preserves new attachments and retries through the shared stream session", async () => {
   const failed = Promise.withResolvers<StreamReply>();
-  const requests: AgentStreamRequest[] = [];
+  const requests: Array<AgentStreamRequest> = [];
   const query = vi.fn((_name: string) => Promise.resolve([]));
   const agentStream = agentStreamBridge(async (request) => {
     requests.push(request);

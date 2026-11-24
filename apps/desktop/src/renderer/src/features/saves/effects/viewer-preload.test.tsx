@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   cancelPreload,
@@ -49,7 +50,9 @@ beforeEach(() => {
     configurable: true,
     value: () => new Promise<void>(() => {}),
   });
-  for (const id of ["first", "second", "third"]) pool.upsert(imageSave(id));
+  for (const id of ["first", "second", "third"]) {
+    pool.upsert(imageSave(id));
+  }
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -57,7 +60,9 @@ beforeEach(() => {
 
 afterEach(async () => {
   await act(async () => root.unmount());
-  for (const url of heldImageUrls()) cancelPreload(url);
+  for (const url of heldImageUrls()) {
+    cancelPreload(url);
+  }
   selection.setCursor(null);
   Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
   host.remove();

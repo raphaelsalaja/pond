@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import {
   AUDIO_PRINT_SAMPLE_RATE,
-  type AudioPrint,
   audioPrintFromSamples,
   compareAudioPrints,
   decodeAudioPrint,
   encodeAudioPrint,
   isSilent,
 } from "./audio-print";
+import type { AudioPrint } from "./audio-print";
 import { fft } from "./fft";
 
 function random(seed: number) {
   let state = seed >>> 0;
   return () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
     return state / 2 ** 32;
   };
 }
@@ -33,16 +33,19 @@ function melody(seed: number): Float32Array {
   );
   const levels = new Float64Array(TONES);
   for (let index = 0; index < samples.length; index++) {
-    if (index % noteLength === 0)
-      for (let tone = 0; tone < TONES; tone++)
+    if (index % noteLength === 0) {
+      for (let tone = 0; tone < TONES; tone++) {
         levels[tone] = 0.006 + next() * 0.024;
+      }
+    }
     const t = index / AUDIO_PRINT_SAMPLE_RATE;
     const envelope = 1 - (index % noteLength) / noteLength / 2;
     let value = 0;
-    for (let tone = 0; tone < TONES; tone++)
+    for (let tone = 0; tone < TONES; tone++) {
       value +=
         (levels[tone] ?? 0) *
         Math.sin(2 * Math.PI * (frequencies[tone] ?? 0) * t);
+    }
     samples[index] = envelope * value;
   }
   return samples;

@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
+import type { JsonValue } from "@pond/schema/json";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { renameSyncWithRetry, renameWithRetry } from "./rename-retry";
@@ -22,9 +23,9 @@ interface BundleEnvelope<T> {
   data: T;
 }
 
-export interface BundleJsonRead<T> {
+export interface BundleJsonRead {
   updatedAt: number;
-  data: T;
+  data: JsonValue;
 }
 
 export function writeBundleJson<T>(file: string, data: T): void {
@@ -54,9 +55,9 @@ export async function writeBundleJsonAsync<T>(
   await renameWithRetry(tmp, file);
 }
 
-export async function readBundleJsonAsync<T>(
+export async function readBundleJsonAsync(
   file: string,
-): Promise<BundleJsonRead<T> | null> {
+): Promise<BundleJsonRead | null> {
   let contents: string;
   try {
     contents = await readFile(file, "utf8");
@@ -66,20 +67,24 @@ export async function readBundleJsonAsync<T>(
     }
     throw error;
   }
-  return parseContents<T>(contents);
+  return parseContents(contents);
 }
 
-export function readBundleJson<T>(
+export function readBundleJson(
   file: string,
   backupDir?: string,
-): BundleJsonRead<T> | null {
-  if (!existsSync(file)) return null;
-  const direct = parseEnvelope<T>(file);
-  if (direct) return direct;
+): BundleJsonRead | null {
+  if (!existsSync(file)) {
+    return null;
+  }
+  const direct = parseEnvelope(file);
+  if (direct) {
+    return direct;
+  }
 
   log.error("[pond bundle] corrupt root JSON, trying backups", file);
   if (backupDir) {
-    const recovered = recoverFromBackups<T>(file, backupDir);
+    const recovered = recoverFromBackups(file, backupDir);
     if (recovered) {
       log.warn("[pond bundle] recovered from backup", file);
       return recovered;
@@ -91,42 +96,47 @@ export function readBundleJson<T>(
 
 const EnvelopeSchema = z.object({
   updatedAt: z.number().catch(0),
-  data: z.unknown(),
+  data: z.json(),
 });
 
-function parseEnvelope<T>(file: string): BundleJsonRead<T> | null {
-  if (!existsSync(file)) return null;
+function parseEnvelope(file: string): BundleJsonRead | null {
+  if (!existsSync(file)) {
+    return null;
+  }
   const contents = readFileSync(file, "utf8");
-  return parseContents<T>(contents);
+  return parseContents(contents);
 }
 
-function parseContents<T>(contents: string): BundleJsonRead<T> | null {
+function parseContents(contents: string): BundleJsonRead | null {
   try {
     const parsed = EnvelopeSchema.safeParse(JSON.parse(contents));
-    if (!parsed.success || parsed.data.data === undefined) return null;
-    /** SAFETY: `T` is what the caller wrote through `writeBundleJson`; every reader re-validates it. */
+    if (!parsed.success) {
+      return null;
+    }
     return {
       updatedAt: parsed.data.updatedAt,
-      data: parsed.data.data as T,
+      data: parsed.data.data,
     };
   } catch {
     return null;
   }
 }
 
-function recoverFromBackups<T>(
+function recoverFromBackups(
   file: string,
   backupDir: string,
-): BundleJsonRead<T> | null {
+): BundleJsonRead | null {
   const name = basename(file);
   for (const dir of listBackupDirsNewestFirst(backupDir)) {
-    const candidate = parseEnvelope<T>(join(backupDir, dir, name));
-    if (candidate) return candidate;
+    const candidate = parseEnvelope(join(backupDir, dir, name));
+    if (candidate) {
+      return candidate;
+    }
   }
   return null;
 }
 
-function listBackupDirsNewestFirst(backupDir: string): string[] {
+function listBackupDirsNewestFirst(backupDir: string): Array<string> {
   try {
     return readdirSync(backupDir, { withFileTypes: true })
       .filter((e) => e.isDirectory())
@@ -140,19 +150,24 @@ function listBackupDirsNewestFirst(backupDir: string): string[] {
 
 const BACKUP_KEEP = 10;
 
-export function rotateBundleBackups(backupDir: string, files: string[]): void {
+export function rotateBundleBackups(
+  backupDir: string,
+  files: Array<string>,
+): void {
   const present = files.filter((f) => existsSync(f));
-  if (present.length === 0) return;
+  if (present.length === 0) {
+    return;
+  }
 
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const stamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
   const target = join(backupDir, stamp);
   try {
     mkdirSync(target, { recursive: true });
     for (const file of present) {
       cpSync(file, join(target, basename(file)));
     }
-  } catch (err) {
-    log.warn("[pond bundle] backup snapshot failed", err);
+  } catch (error) {
+    log.warn("[pond bundle] backup snapshot failed", error);
     return;
   }
 
@@ -160,8 +175,8 @@ export function rotateBundleBackups(backupDir: string, files: string[]): void {
   for (const dir of dirs.slice(BACKUP_KEEP)) {
     try {
       rmSync(join(backupDir, dir), { recursive: true, force: true });
-    } catch (err) {
-      log.warn("[pond bundle] backup prune failed", dir, err);
+    } catch (error) {
+      log.warn("[pond bundle] backup prune failed", dir, error);
     }
   }
 }
@@ -180,21 +195,25 @@ export function createDebouncedTask(
   const run = async (): Promise<void> => {
     try {
       await fn();
-    } catch (err) {
-      log.warn("[pond bundle] debounced task failed", err);
+    } catch (error) {
+      log.warn("[pond bundle] debounced task failed", error);
     }
   };
 
   return {
     schedule() {
-      if (timer) clearTimeout(timer);
+      if (timer) {
+        clearTimeout(timer);
+      }
       timer = setTimeout(() => {
         timer = null;
         void run();
       }, waitMs);
     },
     async flush() {
-      if (!timer) return;
+      if (!timer) {
+        return;
+      }
       clearTimeout(timer);
       timer = null;
       await run();

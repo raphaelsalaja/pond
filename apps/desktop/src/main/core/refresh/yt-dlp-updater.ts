@@ -45,11 +45,19 @@ export function ytDlpAsset(
   platform: NodeJS.Platform,
   arch: string,
 ): string | undefined {
-  if (platform === "darwin") return "yt-dlp_macos";
-  if (platform === "linux") return "yt-dlp_linux";
+  if (platform === "darwin") {
+    return "yt-dlp_macos";
+  }
+  if (platform === "linux") {
+    return "yt-dlp_linux";
+  }
   if (platform === "win32") {
-    if (arch === "x64") return "yt-dlp.exe";
-    if (arch === "arm64") return "yt-dlp_arm64.exe";
+    if (arch === "x64") {
+      return "yt-dlp.exe";
+    }
+    if (arch === "arm64") {
+      return "yt-dlp_arm64.exe";
+    }
   }
   return undefined;
 }
@@ -80,8 +88,9 @@ export interface UpdaterDeps {
 
 function defaultDeps(): UpdaterDeps {
   const asset = ytDlpAsset(process.platform, process.arch);
-  if (!asset && process.platform === "win32")
+  if (!asset && process.platform === "win32") {
     log.warn("[pond yt-dlp-update] no yt-dlp build for", process.arch);
+  }
   return {
     dir: userBinDir(),
     asset,
@@ -106,7 +115,9 @@ interface UpdateOptions {
 export function maybeUpdateYtDlp(
   opts: Partial<UpdateOptions> = {},
 ): Promise<void> {
-  if (inFlight) return inFlight;
+  if (inFlight) {
+    return inFlight;
+  }
   inFlight = runUpdate(defaultDeps(), {
     force: opts.force ?? false,
     install: opts.install ?? true,
@@ -118,11 +129,17 @@ export function maybeUpdateYtDlp(
 
 /** A failed install backs off so a batch of queued videos makes one attempt, not one each. */
 export async function ensureYtDlp(): Promise<void> {
-  if (binariesAvailable().ytdlp) return;
-  if (Date.now() - onDemandFailedAt < ON_DEMAND_RETRY_MS) return;
+  if (binariesAvailable().ytdlp) {
+    return;
+  }
+  if (Date.now() - onDemandFailedAt < ON_DEMAND_RETRY_MS) {
+    return;
+  }
   await inFlight;
   await maybeUpdateYtDlp({ force: true, install: true });
-  if (!binariesAvailable().ytdlp) onDemandFailedAt = Date.now();
+  if (!binariesAvailable().ytdlp) {
+    onDemandFailedAt = Date.now();
+  }
 }
 
 /**
@@ -131,7 +148,9 @@ export async function ensureYtDlp(): Promise<void> {
  */
 export function recoverYtDlp(): Promise<void> {
   recovering ??= recoverFiles(defaultDeps())
-    .catch((err) => log.warn("[pond yt-dlp-update] recovery failed", err))
+    .catch((cause: unknown) =>
+      log.warn("[pond yt-dlp-update] recovery failed", cause),
+    )
     .finally(() => {
       recovering = null;
     });
@@ -143,7 +162,9 @@ export async function runUpdate(
   { force, install }: UpdateOptions,
 ): Promise<void> {
   const { asset, dir } = deps;
-  if (!asset) return;
+  if (!asset) {
+    return;
+  }
 
   const active = join(dir, YTDLP_FILENAME);
   const previous = join(dir, PREVIOUS_FILENAME);
@@ -153,11 +174,17 @@ export async function runUpdate(
   try {
     await (recovering ?? recoverFiles(deps));
 
-    if (!install && !existsSync(active)) return;
-    if (!force && (await checkedRecently(dir))) return;
+    if (!install && !existsSync(active)) {
+      return;
+    }
+    if (!force && (await checkedRecently(dir))) {
+      return;
+    }
 
     const tag = await deps.fetchLatestTag();
-    if (!tag) return;
+    if (!tag) {
+      return;
+    }
 
     const installedTag = await readText(join(dir, VERSION_FILE));
     if (installedTag === tag && existsSync(active)) {
@@ -179,9 +206,9 @@ export async function runUpdate(
         await deps.fetchBinary(assetUrl(tag, asset)),
         tmp,
       );
-    } catch (err) {
+    } catch (error) {
       await rm(tmp, { force: true });
-      throw err;
+      throw error;
     }
     if (actualSha !== expectedSha) {
       log.warn("[pond yt-dlp-update] sha256 mismatch, refusing", {
@@ -192,7 +219,9 @@ export async function runUpdate(
       await rm(tmp, { force: true });
       return;
     }
-    if (process.platform !== "win32") await chmod(tmp, 0o755);
+    if (process.platform !== "win32") {
+      await chmod(tmp, 0o755);
+    }
 
     if (!(await deps.smokeTest(tmp))) {
       log.warn("[pond yt-dlp-update] downloaded binary failed --version");
@@ -200,23 +229,25 @@ export async function runUpdate(
       return;
     }
 
-    if (existsSync(active)) await rotateToPrevious(dir, active, previous, move);
+    if (existsSync(active)) {
+      await rotateToPrevious(dir, active, previous, move);
+    }
     try {
       await move(tmp, active);
-    } catch (err) {
+    } catch (error) {
       await rm(tmp, { force: true });
       if (!existsSync(active) && existsSync(previous)) {
         await move(previous, active);
         invalidateBinariesCache();
       }
-      throw err;
+      throw error;
     }
     await writeFile(join(dir, VERSION_FILE), tag, "utf8");
     invalidateBinariesCache();
     await markChecked(dir);
     log.info("[pond yt-dlp-update] updated to", tag);
-  } catch (err) {
-    log.warn("[pond yt-dlp-update] check failed", err);
+  } catch (error) {
+    log.warn("[pond yt-dlp-update] check failed", error);
   }
 }
 
@@ -232,19 +263,23 @@ export async function recoverFiles(
 
   /** Downloads are written to `<name>.<pid>.tmp` only after recovery has run. */
   for (const name of await readdir(dir).catch(() => [])) {
-    if (isStaleTmp(name)) await rm(join(dir, name), { force: true });
+    if (isStaleTmp(name)) {
+      await rm(join(dir, name), { force: true });
+    }
   }
 
   if (existsSync(active) && (await deps.smokeTest(active))) {
-    if (!existsSync(previous))
+    if (!existsSync(previous)) {
       await rm(join(dir, VERSION_PREVIOUS_FILE), { force: true });
+    }
     return;
   }
   if (!existsSync(previous)) {
-    if (existsSync(active))
+    if (existsSync(active)) {
       log.warn(
         "[pond yt-dlp-update] active binary failed --version, no backup",
       );
+    }
     return;
   }
   /** A backup that cannot run would only replace one broken state with another. */
@@ -311,14 +346,16 @@ export async function renameWithRetry(
   for (let attempt = 1; ; attempt++) {
     try {
       return await move(from, to);
-    } catch (err) {
-      const code = z.object({ code: z.string() }).safeParse(err).data?.code;
+    } catch (error) {
+      const code = z.object({ code: z.string() }).safeParse(error).data?.code;
       const retry =
         platform === "win32" &&
         attempt < RENAME_ATTEMPTS &&
         code !== undefined &&
         RETRYABLE_RENAME_CODES.has(code);
-      if (!retry) throw err;
+      if (!retry) {
+        throw error;
+      }
       await sleep(Math.min(500, 100 * attempt));
     }
   }
@@ -347,11 +384,15 @@ async function fetchExpectedSha(
     redirect: "follow",
     headers: { "user-agent": "pond-desktop" },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    return null;
+  }
   const text = await res.text();
   for (const line of text.split("\n")) {
     const [sha, name] = line.trim().split(/\s+/);
-    if (name === asset && sha) return sha.toLowerCase();
+    if (name === asset && sha) {
+      return sha.toLowerCase();
+    }
   }
   return null;
 }
@@ -362,7 +403,9 @@ async function fetchBinary(url: string): Promise<AsyncIterable<Uint8Array>> {
     headers: { "user-agent": "pond-desktop" },
     signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
   });
-  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status} for ${url}`);
+  if (!res.ok || !res.body) {
+    throw new Error(`HTTP ${res.status} for ${url}`);
+  }
   return res.body;
 }
 
@@ -397,7 +440,9 @@ function smokeTest(binaryPath: string): Promise<boolean> {
     const timer = setTimeout(() => {
       try {
         killProcessTree(child, "SIGKILL");
-      } catch {}
+      } catch {
+        /** The smoke test already failed; a process that won't die changes nothing. */
+      }
       resolve(false);
     }, SMOKE_TIMEOUT_MS);
     child.on("error", () => {
@@ -413,9 +458,13 @@ function smokeTest(binaryPath: string): Promise<boolean> {
 
 async function checkedRecently(dir: string): Promise<boolean> {
   const last = await readText(join(dir, LAST_CHECK_FILE));
-  if (!last) return false;
+  if (!last) {
+    return false;
+  }
   const ts = Date.parse(last);
-  if (Number.isNaN(ts)) return false;
+  if (Number.isNaN(ts)) {
+    return false;
+  }
   return Date.now() - ts < CHECK_INTERVAL_MS;
 }
 
@@ -423,7 +472,9 @@ async function markChecked(dir: string): Promise<void> {
   try {
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, LAST_CHECK_FILE), new Date().toISOString());
-  } catch {}
+  } catch {
+    /** A missing marker only means the next launch checks again. */
+  }
 }
 
 async function readText(path: string): Promise<string | null> {

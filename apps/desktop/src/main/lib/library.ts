@@ -10,18 +10,10 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { extname, join } from "node:path";
-import {
-  MEDIA_TYPES,
-  type MediaType,
-  type Save,
-  SOURCES,
-  type Source,
-} from "@pond/schema/db";
-import {
-  type ImportOrigin,
-  legacyImportOrigin,
-  toImportOrigin,
-} from "@pond/schema/import-origin";
+import { MEDIA_TYPES, SOURCES } from "@pond/schema/db";
+import type { MediaType, NewSave, Save, Source } from "@pond/schema/db";
+import { legacyImportOrigin, toImportOrigin } from "@pond/schema/import-origin";
+import type { ImportOrigin } from "@pond/schema/import-origin";
 import type { RawJson } from "@pond/schema/raw";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import type { TxSaveFile } from "@pond/schema/tx";
@@ -34,14 +26,16 @@ import type { SaveUserData } from "./library-format";
 import {
   applyPatchToInfo,
   INFO_FILE,
-  type InfoDoc,
-  type InfoFile,
-  type InfoInbox,
   infoDocFromSave,
   infoFilesFromSave,
   SOURCE_FILE,
-  type StoredInfoDoc,
   StoredInfoDocSchema,
+} from "./library-format";
+import type {
+  InfoDoc,
+  InfoFile,
+  InfoInbox,
+  StoredInfoDoc,
 } from "./library-format";
 import { libraryWriteBlock } from "./library-placement";
 
@@ -53,8 +47,8 @@ interface SaveMetadata {
   url: string;
   name: string | null;
   annotation: string;
-  tags: string[];
-  folders: string[];
+  tags: Array<string>;
+  folders: Array<string>;
   ext: string | null;
   size: number | null;
   width: number | null;
@@ -64,7 +58,7 @@ interface SaveMetadata {
   importedAt: number;
   isDeleted: boolean;
   deletedAt: number | null;
-  files: InfoFile[];
+  files: Array<InfoFile>;
   pond: {
     schemaVersion: number;
     userData?: SaveUserData;
@@ -92,7 +86,9 @@ function decodeFile(file: TxSaveFile) {
 
 async function createSaveDirectory(id: string): Promise<string> {
   const blocked = libraryWriteBlock(resolvePaths().libraryRoot);
-  if (blocked) throw userError(blocked);
+  if (blocked) {
+    throw userError(blocked);
+  }
   const dir = saveDir(id);
   await mkdir(dir, { recursive: true });
   return dir;
@@ -107,7 +103,7 @@ async function writeInfoFiles(
   const infoPath = join(dir, INFO_FILE);
   await writeFile(infoPath, JSON.stringify(info, null, 2));
   const sourcePath = join(dir, SOURCE_FILE);
-  if (rawSource == null) {
+  if (rawSource === null || rawSource === undefined) {
     await unlink(sourcePath).catch(() => {});
   } else {
     await writeFile(sourcePath, JSON.stringify(rawSource, null, 2));
@@ -115,11 +111,11 @@ async function writeInfoFiles(
 }
 
 export function mergeWrittenFiles(
-  files: InfoFile[],
+  files: Array<InfoFile>,
   written: Array<{ filename: string; buf: Buffer }>,
-): InfoFile[] {
+): Array<InfoFile> {
   const entries = new Map(files.map((file) => [file.path, file]));
-  for (const file of written)
+  for (const file of written) {
     entries.set(file.filename, {
       kind: inferKindFromFilename(file.filename),
       ...entries.get(file.filename),
@@ -127,6 +123,7 @@ export function mergeWrittenFiles(
       sha256: sha256(file.buf),
       size: file.buf.length,
     });
+  }
   return [...entries.values()];
 }
 
@@ -143,8 +140,8 @@ export async function writeSaveInfo(save: Save): Promise<void> {
 
 export async function writeSaveFiles(
   id: string,
-  save: Save,
-  files: TxSaveFile[] = [],
+  save: NewSave,
+  files: Array<TxSaveFile> = [],
 ): Promise<{ written: Array<{ filename: string; buf: Buffer }> }> {
   const dir = await createSaveDirectory(id);
 
@@ -170,10 +167,12 @@ export async function writeSaveFiles(
 export async function patchSaveFiles(
   id: string,
   patch: Partial<Save>,
-  files: TxSaveFile[] = [],
+  files: Array<TxSaveFile> = [],
 ): Promise<boolean> {
   const current = await readInfoForEdit(id);
-  if (!current) return false;
+  if (!current) {
+    return false;
+  }
 
   const decoded = files.map(decodeFile);
   for (const { filename, buf } of decoded) {
@@ -203,7 +202,9 @@ export async function readSaveMetadata(
   const infoPath = root
     ? join(saveDirIn(root, id), INFO_FILE)
     : saveFile(id, INFO_FILE);
-  if (!existsSync(infoPath)) return { status: "missing" };
+  if (!existsSync(infoPath)) {
+    return { status: "missing" };
+  }
   try {
     const info = StoredInfoDocSchema.parse(
       JSON.parse(await readFile(infoPath, "utf8")),
@@ -212,11 +213,11 @@ export async function readSaveMetadata(
       status: "ok",
       metadata: metadataFromInfo(id, info, await readSourceDoc(id, root)),
     };
-  } catch (err) {
-    log.warn("[pond library] corrupt item metadata", id, err);
+  } catch (error) {
+    log.warn("[pond library] corrupt item metadata", id, error);
     return {
       status: "corrupt",
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -228,9 +229,13 @@ async function readSourceDoc(
   const path = root
     ? join(saveDirIn(root, id), SOURCE_FILE)
     : saveFile(id, SOURCE_FILE);
-  if (!existsSync(path)) return null;
+  if (!existsSync(path)) {
+    return null;
+  }
   const decoded: unknown = JSON.parse(await readFile(path, "utf8"));
-  if (decoded == null) return null;
+  if (decoded === null) {
+    return null;
+  }
   return storedAsRawJson(StoredRawJsonSchema.parse(decoded));
 }
 
@@ -238,14 +243,16 @@ async function readInfoForEdit(
   id: string,
 ): Promise<{ info: StoredInfoDoc; rawSource: RawJson | null } | null> {
   const infoPath = saveFile(id, INFO_FILE);
-  if (!existsSync(infoPath)) return null;
+  if (!existsSync(infoPath)) {
+    return null;
+  }
   try {
     const info = StoredInfoDocSchema.parse(
       JSON.parse(await readFile(infoPath, "utf8")),
     );
     return { info, rawSource: await readSourceDoc(id) };
-  } catch (err) {
-    log.warn("[pond library] corrupt info.json", id, err);
+  } catch (error) {
+    log.warn("[pond library] corrupt info.json", id, error);
     return null;
   }
 }
@@ -277,7 +284,7 @@ function metadataFromInfo(
     btime: createdMs ?? Date.now(),
     mtime: savedMs ?? createdMs ?? Date.now(),
     importedAt: savedMs ?? Date.now(),
-    isDeleted: deletedMs != null,
+    isDeleted: deletedMs !== null,
     deletedAt: deletedMs,
     files,
     pond: {
@@ -296,7 +303,9 @@ function metadataFromInfo(
 }
 
 function parseTimestamp(value: string | null): number | null {
-  if (value === null) return null;
+  if (value === null) {
+    return null;
+  }
   const ms = Date.parse(value);
   return Number.isFinite(ms) ? ms : null;
 }
@@ -324,30 +333,32 @@ export async function* scanLibrary(root?: string): AsyncGenerator<{
   mtimeMs: number;
 }> {
   const savesDir = root ? join(root, "items") : resolvePaths().savesDir;
-  let entries: string[] = [];
+  let entries: Array<string>;
   try {
     entries = await readdir(savesDir);
   } catch {
     return;
   }
   for (const entry of entries) {
-    if (!entry.endsWith(".info")) continue;
+    if (!entry.endsWith(".info")) {
+      continue;
+    }
     const id = entry.slice(0, -".info".length);
     const dir = join(savesDir, entry);
     try {
       const info = await stat(join(dir, INFO_FILE));
       yield { id, mtimeMs: info.mtimeMs };
-    } catch (err) {
-      if (!isMissing(err)) {
-        log.warn("[pond library] scan stat failed", id, err);
+    } catch (error) {
+      if (!isMissing(error)) {
+        log.warn("[pond library] scan stat failed", id, error);
         continue;
       }
       /** An item that lost its record still reconciles, so a row can't stay "complete" after its files are gone. */
       try {
         const directory = await stat(dir);
         yield { id, mtimeMs: directory.mtimeMs };
-      } catch (dirErr) {
-        log.warn("[pond library] scan stat failed", id, dirErr);
+      } catch (error) {
+        log.warn("[pond library] scan stat failed", id, error);
       }
     }
   }

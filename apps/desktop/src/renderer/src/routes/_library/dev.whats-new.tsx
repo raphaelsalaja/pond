@@ -4,7 +4,9 @@ import { WhatsNewPrototype } from "@/prototypes/whats-new";
 
 export const Route = createFileRoute("/_library/dev/whats-new")({
   beforeLoad: () => {
-    if (!import.meta.env.DEV) throw redirect({ to: "/" });
+    if (!import.meta.env.DEV) {
+      redirect({ to: "/", throw: true });
+    }
   },
   staticData: {
     details: null,

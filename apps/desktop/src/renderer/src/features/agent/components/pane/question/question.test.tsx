@@ -1,5 +1,7 @@
-import { act, type ComponentProps } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ComponentProps } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { KoiQuestion } from ".";
 

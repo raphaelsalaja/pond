@@ -19,8 +19,8 @@
 :where(.frame) *,
 :where(.frame) *::before,
 :where(.frame) *::after {
-  /* biome-ignore lint/complexity/noImportantStyles: must beat transitions declared by Pond UI classes */
+  /* stylelint-disable-next-line declaration-no-important -- must beat transitions declared by Pond UI classes */
   transition: none !important;
-  /* biome-ignore lint/complexity/noImportantStyles: must beat animations declared by Pond UI classes */
+  /* stylelint-disable-next-line declaration-no-important -- must beat animations declared by Pond UI classes */
   animation: none !important;
 }

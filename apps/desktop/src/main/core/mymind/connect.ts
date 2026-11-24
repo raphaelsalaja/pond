@@ -1,7 +1,5 @@
-import {
-  type ConnectedAccount,
-  DEFAULT_SOURCE_SYNC_PREFS,
-} from "@pond/schema/db";
+import { DEFAULT_SOURCE_SYNC_PREFS } from "@pond/schema/db";
+import type { ConnectedAccount } from "@pond/schema/db";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { ulid } from "ulid";
 import { libraryRoot } from "../../paths";
@@ -68,44 +66,53 @@ export async function connectMymind(
   const existing = input.accountId
     ? await dependencies.getAccount(input.accountId)
     : null;
-  if (input.accountId && existing?.source !== "mymind")
+  if (input.accountId && existing?.source !== "mymind") {
     return { ok: false, error: "mymind Account not found." };
+  }
   if (
     existing &&
     (dependencies.isSyncing(existing.id) || isMymindConnecting(existing.id))
-  )
+  ) {
     return { ok: false, error: "Stop the mymind import before reconnecting." };
+  }
 
-  if (existing) connectingAccounts.add(existing.id);
+  if (existing) {
+    connectingAccounts.add(existing.id);
+  }
   try {
     const credential = { kid: input.kid, secret: input.secret };
     await dependencies.validate(credential);
-    if (dependencies.root() !== root)
+    if (dependencies.root() !== root) {
       return { ok: false, error: "The Library changed. Connect mymind again." };
+    }
 
     if (existing) {
       // A new key must keep the first connection's import start time.
       await dependencies.readState(root, existing.id);
       const current = await dependencies.getAccount(existing.id);
-      if (dependencies.root() !== root)
+      if (dependencies.root() !== root) {
         return {
           ok: false,
           error: "The Library changed. Connect mymind again.",
         };
-      if (current?.source !== "mymind")
+      }
+      if (current?.source !== "mymind") {
         return { ok: false, error: "mymind Account not found." };
-      if (dependencies.isSyncing(existing.id))
+      }
+      if (dependencies.isSyncing(existing.id)) {
         return {
           ok: false,
           error: "Stop the mymind import before reconnecting.",
         };
+      }
       await dependencies.writeCredential(existing.id, credential);
       const connected = await dependencies.getAccount(existing.id);
-      if (dependencies.root() !== root)
+      if (dependencies.root() !== root) {
         return {
           ok: false,
           error: "The Library changed. Connect mymind again.",
         };
+      }
       if (!connected) {
         await dependencies.removeCredential(existing.id);
         return { ok: false, error: "mymind Account not found." };
@@ -114,11 +121,12 @@ export async function connectMymind(
         lastError: null,
       });
       const account = await dependencies.getAccount(existing.id);
-      if (dependencies.root() !== root)
+      if (dependencies.root() !== root) {
         return {
           ok: false,
           error: "The Library changed. Connect mymind again.",
         };
+      }
       if (!account) {
         await dependencies.removeCredential(existing.id);
         return { ok: false, error: "mymind Account not found." };
@@ -132,11 +140,12 @@ export async function connectMymind(
     try {
       await dependencies.writeState(root, id, state);
       await dependencies.writeCredential(id, credential);
-      if (dependencies.root() !== root)
+      if (dependencies.root() !== root) {
         return {
           ok: false,
           error: "The Library changed. Connect mymind again.",
         };
+      }
       const account = await dependencies.createAccount({
         id,
         source: "mymind",
@@ -152,6 +161,8 @@ export async function connectMymind(
       }
     }
   } finally {
-    if (existing) connectingAccounts.delete(existing.id);
+    if (existing) {
+      connectingAccounts.delete(existing.id);
+    }
   }
 }

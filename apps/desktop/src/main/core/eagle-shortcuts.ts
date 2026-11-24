@@ -4,9 +4,9 @@ import { z } from "zod";
 import {
   isValidShortcut,
   SHORTCUT_PLATFORM,
-  type ShortcutId,
   shortcutPlatformFromName,
 } from "../../shared/shortcuts";
+import type { ShortcutId } from "../../shared/shortcuts";
 
 const EagleSettingsSchema = z.object({
   preferences: z.object({
@@ -22,7 +22,7 @@ export type EagleShortcutDiscoveryStatus =
   | "invalid"
   | "unreadable";
 
-export interface EagleShortcutOverrides extends Record<string, string> {}
+export type EagleShortcutOverrides = Record<string, string>;
 
 export interface EagleShortcutDiscovery {
   status: EagleShortcutDiscoveryStatus;
@@ -31,10 +31,10 @@ export interface EagleShortcutDiscovery {
 
 interface ShortcutMapping {
   target: ShortcutId;
-  sources: readonly string[];
+  sources: ReadonlyArray<string>;
 }
 
-function shortcutMappings(platform: NodeJS.Platform): ShortcutMapping[] {
+function shortcutMappings(platform: NodeJS.Platform): Array<ShortcutMapping> {
   const rename =
     platform === "darwin" ? "edit.rename.darwin" : "edit.rename.win32";
   const remove =
@@ -165,38 +165,56 @@ export function normalizeEagleShortcut(
     .split("+")
     .map((part) => part.trim())
     .filter(Boolean);
-  if (parts.length === 0) return null;
+  if (parts.length === 0) {
+    return null;
+  }
   const normalized = parts.map((part, index) => {
     const lower = part.toLowerCase();
     if (index < parts.length - 1) {
-      if (lower === "command" || lower === "cmd") return "Mod";
-      if (lower === "option") return "Alt";
-      if (lower === "ctrl") return "Control";
-      if (lower === "shift") return "Shift";
-      if (lower === "control") return "Control";
+      if (lower === "command" || lower === "cmd") {
+        return "Mod";
+      }
+      if (lower === "option") {
+        return "Alt";
+      }
+      if (lower === "ctrl") {
+        return "Control";
+      }
+      if (lower === "shift") {
+        return "Shift";
+      }
+      if (lower === "control") {
+        return "Control";
+      }
       return part;
     }
     return normalizeEagleKey(part);
   });
   const shortcut = normalized.join("+");
-  if (!isValidShortcut(shortcut)) return null;
+  if (!isValidShortcut(shortcut)) {
+    return null;
+  }
   return normalizeHotkey(shortcut, platform);
 }
 
 export function mapEagleShortcuts(
   keybinds: Readonly<Record<string, string>>,
   platform: NodeJS.Platform = process.platform,
-): EagleShortcutOverrides {
+) {
   const overrides: EagleShortcutOverrides = {};
   for (const mapping of shortcutMappings(platform)) {
     for (const source of mapping.sources) {
       const value = keybinds[source]?.trim();
-      if (!value) continue;
+      if (!value) {
+        continue;
+      }
       const shortcut = normalizeEagleShortcut(
         value,
         shortcutPlatformFromName(platform),
       );
-      if (shortcut) overrides[mapping.target] = shortcut;
+      if (shortcut) {
+        overrides[mapping.target] = shortcut;
+      }
       break;
     }
   }
@@ -210,7 +228,9 @@ export function parseEagleShortcuts(
   let parsed: z.infer<typeof EagleSettingsSchema>;
   try {
     const result = EagleSettingsSchema.safeParse(JSON.parse(text));
-    if (!result.success) return { status: "invalid", overrides: {} };
+    if (!result.success) {
+      return { status: "invalid", overrides: {} };
+    }
     parsed = result.data;
   } catch {
     return { status: "invalid", overrides: {} };
@@ -234,9 +254,9 @@ export async function readEagleShortcuts(
 ): Promise<EagleShortcutDiscovery> {
   try {
     return parseEagleShortcuts(await readFile(path, "utf8"), platform);
-  } catch (cause) {
+  } catch (error) {
     return {
-      status: errnoCode(cause) === "ENOENT" ? "missing" : "unreadable",
+      status: errnoCode(error) === "ENOENT" ? "missing" : "unreadable",
       overrides: {},
     };
   }

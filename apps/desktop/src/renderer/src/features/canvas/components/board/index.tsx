@@ -17,20 +17,20 @@ import {
   IconTypography,
   IconUngroup,
 } from "@pond/icons";
-import {
-  CANVAS_ITEM_LIMIT,
-  type Canvas,
-  type CanvasAlign,
-  CanvasClipSchema,
-  type CanvasColor,
-  type CanvasConnector,
-  type CanvasContent,
-  type CanvasItem,
-  type CanvasOutline,
-  type CanvasSide,
-  type CanvasTheme,
-  type CanvasValign,
-  type CanvasWeight,
+import { isHTMLElement } from "@pond/ui/dom";
+import { CANVAS_ITEM_LIMIT, CanvasClipSchema } from "@shared/canvas-contracts";
+import type {
+  Canvas,
+  CanvasAlign,
+  CanvasColor,
+  CanvasConnector,
+  CanvasContent,
+  CanvasItem,
+  CanvasOutline,
+  CanvasSide,
+  CanvasTheme,
+  CanvasValign,
+  CanvasWeight,
 } from "@shared/canvas-contracts";
 import {
   addEdge,
@@ -38,31 +38,40 @@ import {
   applyNodeChanges,
   Background,
   BackgroundVariant,
-  type Connection,
   ConnectionMode,
-  type EdgeChange,
-  type EdgeTypes,
-  type NodeChange,
-  type NodeTypes,
-  type OnConnectEnd,
-  type OnSelectionChangeParams,
   ReactFlow,
-  type Rect,
   reconnectEdge,
   SelectionMode,
   useReactFlow,
-  type Viewport,
-  type XYPosition,
+} from "@xyflow/react";
+import type {
+  Connection,
+  EdgeChange,
+  EdgeTypes,
+  NodeChange,
+  NodeTypes,
+  OnConnectEnd,
+  OnSelectionChangeParams,
+  Rect,
+  Viewport,
+  XYPosition,
 } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   isLibrarySaveDrag,
-  type PasteImport,
   pasteImportOf,
   runPasteImport,
   saveDropIds,
 } from "@/features/saves";
+import type { PasteImport } from "@/features/saves";
 import {
   openSave,
   primarySelection,
@@ -83,26 +92,18 @@ import {
   fillItems,
   fontItems,
   languageItems,
-  type MenuTarget,
   sizeItems,
-  type TableChange,
   tableItems,
   themeItems,
   weightItems,
 } from "../../lib/board-menu";
-import {
-  type CanvasCommand,
-  commandForKey,
-  glyphsFor,
-} from "../../lib/commands";
+import type { MenuTarget, TableChange } from "../../lib/board-menu";
+import { commandForKey, glyphsFor } from "../../lib/commands";
+import type { CanvasCommand } from "../../lib/commands";
 import {
   alignFrames,
   branchOf,
-  type CanvasNode,
-  type CanvasSnapshot,
   CONNECTOR_STYLE,
-  type ConnectorEdge,
-  type ConnectorStyle,
   clipOf,
   clipText,
   codeAt,
@@ -122,7 +123,6 @@ import {
   placeSavesBeside,
   reorder,
   resizeTable,
-  type StrokePoint,
   sectionAround,
   sectionAt,
   snapshotOf,
@@ -138,6 +138,13 @@ import {
   withGroup,
   withLock,
 } from "../../lib/document";
+import type {
+  CanvasNode,
+  CanvasSnapshot,
+  ConnectorEdge,
+  ConnectorStyle,
+  StrokePoint,
+} from "../../lib/document";
 import {
   eraseDrawings,
   flipped,
@@ -145,19 +152,13 @@ import {
   noteFromText,
   notesSorted,
   quickPair,
-  type StampKind,
   turned,
 } from "../../lib/edit";
+import type { StampKind } from "../../lib/edit";
 import { renderBoard } from "../../lib/export";
 import type { TextStyle } from "../../lib/text-style";
-import {
-  type Box,
-  type Corner,
-  groupScale,
-  MIN_SIZE,
-  type Size,
-  scaleBox,
-} from "../../lib/transform";
+import { groupScale, MIN_SIZE, scaleBox } from "../../lib/transform";
+import type { Box, Corner, Size } from "../../lib/transform";
 import { canvases } from "../../state/canvases";
 import { minimap, useMinimapShown } from "../../state/minimap";
 import { Affordance } from "../affordance";
@@ -167,29 +168,26 @@ import { DrawLayer } from "../draw-layer";
 import { DrawingItem } from "../drawing-item";
 import { FigureItem } from "../figure-item";
 import { Guides } from "../guides";
-import { Minimap, type MinimapItem } from "../minimap";
+import { Minimap } from "../minimap";
+import type { MinimapItem } from "../minimap";
 import { NoteItem } from "../note-item";
 import { Picker } from "../picker";
 import { PlaceLayer } from "../place-layer";
 import { SaveItem } from "../save-item";
 import { SectionItem } from "../section-item";
-import { SelectionBar, type SelectionControl } from "../selection-bar";
+import { SelectionBar } from "../selection-bar";
+import type { SelectionControl } from "../selection-bar";
 import { SelectionFrame } from "../selection-frame";
 import { TableItem } from "../table-item";
 import { TextItem } from "../text-item";
-import {
-  type CanvasTool,
-  COLORED_TOOLS,
-  type PenMode,
-  STAMP_TOOLS,
-  Tools,
-  toolForKey,
-} from "../tools";
+import { COLORED_TOOLS, STAMP_TOOLS, Tools, toolForKey } from "../tools";
+import type { CanvasTool, PenMode } from "../tools";
 import { TopicItem } from "../topic-item";
 import { Zoom } from "../zoom";
-import { type BoardActions, BoardContext } from "./context";
-import styles from "./styles.module.css";
+import { BoardContext } from "./context";
+import type { BoardActions } from "./context";
 import { useSettle } from "./use-settle";
+import styles from "./styles.module.css";
 
 const NODE_TYPES: NodeTypes = {
   save: SaveItem,
@@ -214,7 +212,9 @@ const CLIP_TYPE = "application/x-pond-canvas";
 const LARGE_BOARD = 400;
 
 function parseClip(raw: string): CanvasSnapshot | null {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   try {
     const parsed = CanvasClipSchema.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : null;
@@ -289,7 +289,11 @@ function defaultAlign(node: StyledNode): CanvasAlign {
   return node.type === "figure" || node.type === "topic" ? "center" : "left";
 }
 
-function sharedValue<Value>(values: readonly Value[]): Value | null {
+function isStamp(value: CanvasTool): value is StampKind {
+  return STAMP_TOOLS.has(value);
+}
+
+function sharedValue<Value>(values: ReadonlyArray<Value>): Value | null {
   const unique = new Set(values);
   const [only] = unique;
   return unique.size === 1 && only !== undefined ? only : null;
@@ -320,10 +324,10 @@ interface BoardProps {
 export function Board({ canvas }: BoardProps) {
   const flow = useReactFlow<CanvasNode, ConnectorEdge>();
   const wrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes] = useState<CanvasNode[]>(() =>
+  const [nodes, setNodes] = useState<Array<CanvasNode>>(() =>
     canvas.items.map(toNode),
   );
-  const [edges, setEdges] = useState<ConnectorEdge[]>(() =>
+  const [edges, setEdges] = useState<Array<ConnectorEdge>>(() =>
     canvas.connectors.map(toEdge),
   );
   const [tool, setTool] = useState<CanvasTool>("select");
@@ -341,7 +345,7 @@ export function Board({ canvas }: BoardProps) {
   const minimapShown = useMinimapShown();
   const minimapItems = useMemo(
     () =>
-      nodes.flatMap((node): MinimapItem[] =>
+      nodes.flatMap((node): Array<MinimapItem> =>
         node.hidden
           ? []
           : [
@@ -360,7 +364,9 @@ export function Board({ canvas }: BoardProps) {
   );
 
   const latest = useRef({ nodes, edges });
-  latest.current = { nodes, edges };
+  useLayoutEffect(() => {
+    latest.current = { nodes, edges };
+  }, [nodes, edges]);
   const {
     guides,
     settle,
@@ -381,7 +387,7 @@ export function Board({ canvas }: BoardProps) {
   const groupResize = useRef<{
     corner: Corner;
     bounds: Box;
-    members: { id: string; box: Box; min: Size }[];
+    members: Array<{ id: string; box: Box; min: Size }>;
   } | null>(null);
 
   const current = useCallback(
@@ -409,10 +415,12 @@ export function Board({ canvas }: BoardProps) {
 
   const insert = useCallback(
     (
-      items: CanvasItem[],
-      options?: { edit?: boolean; connectors?: CanvasConnector[] },
+      items: Array<CanvasItem>,
+      options?: { edit?: boolean; connectors?: Array<CanvasConnector> },
     ) => {
-      if (!items.length) return;
+      if (!items.length) {
+        return;
+      }
       record();
       const added = new Set(items.map((item) => item.id));
       setNodes((existing) => [
@@ -424,14 +432,18 @@ export function Board({ canvas }: BoardProps) {
         ...(options?.connectors ?? []).map(toEdge),
       ]);
       const first = items[0];
-      if (options?.edit && first && added.size === 1) beginEdit(first.id, null);
+      if (options?.edit && first && added.size === 1) {
+        beginEdit(first.id, null);
+      }
     },
     [beginEdit, record],
   );
 
   const viewCenter = useCallback((): XYPosition => {
     const bounds = wrapper.current?.getBoundingClientRect();
-    if (!bounds) return { x: 0, y: 0 };
+    if (!bounds) {
+      return { x: 0, y: 0 };
+    }
     return flow.screenToFlowPosition({
       x: bounds.left + bounds.width / 2,
       y: bounds.top + bounds.height / 2,
@@ -439,7 +451,7 @@ export function Board({ canvas }: BoardProps) {
   }, [flow]);
 
   const addSaves = useCallback(
-    (saveIds: readonly string[], at?: XYPosition | "beside") => {
+    (saveIds: ReadonlyArray<string>, at?: XYPosition | "beside") => {
       const onBoard = new Set(
         latest.current.nodes.flatMap((node) =>
           node.type === "save" ? [node.data.saveId] : [],
@@ -451,7 +463,7 @@ export function Board({ canvas }: BoardProps) {
       if (at === "beside") {
         const items = placeSavesBeside(fresh, current().items, viewCenter());
         insert(items);
-        if (items.length)
+        if (items.length) {
           requestAnimationFrame(
             () =>
               void flow.fitView({
@@ -460,6 +472,7 @@ export function Board({ canvas }: BoardProps) {
                 padding: 0.2,
               }),
           );
+        }
         return;
       }
       if (!fresh.length) {
@@ -482,11 +495,15 @@ export function Board({ canvas }: BoardProps) {
       claimUndo({
         undo: () => {
           const previous = history.undo(current());
-          if (previous) restore(previous);
+          if (previous) {
+            restore(previous);
+          }
         },
         redo: () => {
           const next = history.redo(current());
-          if (next) restore(next);
+          if (next) {
+            restore(next);
+          }
         },
       }),
     [current, history, restore],
@@ -517,7 +534,9 @@ export function Board({ canvas }: BoardProps) {
       try {
         await ensureSaves(saveIdsKey ? saveIdsKey.split("\n") : []);
       } finally {
-        if (live) setSavesReady(true);
+        if (live) {
+          setSavesReady(true);
+        }
       }
     })();
     return () => {
@@ -532,7 +551,9 @@ export function Board({ canvas }: BoardProps) {
   const save = useCallback(
     (content: CanvasContent) => {
       const serialized = JSON.stringify(content);
-      if (serialized === lastSaved.current) return;
+      if (serialized === lastSaved.current) {
+        return;
+      }
       lastSaved.current = serialized;
       void (async () => {
         try {
@@ -568,14 +589,14 @@ export function Board({ canvas }: BoardProps) {
   useEffect(() => () => flush(), [flush]);
 
   const onNodesChange = useCallback(
-    (changes: NodeChange<CanvasNode>[]) => {
+    (changes: Array<NodeChange<CanvasNode>>) => {
       const settled = settle(changes);
       setNodes((existing) => applyNodeChanges(settled, existing));
     },
     [settle],
   );
   const onEdgesChange = useCallback(
-    (changes: EdgeChange<ConnectorEdge>[]) =>
+    (changes: Array<EdgeChange<ConnectorEdge>>) =>
       setEdges((existing) => applyEdgeChanges(changes, existing)),
     [],
   );
@@ -598,7 +619,9 @@ export function Board({ canvas }: BoardProps) {
   );
   const onReconnect = useCallback(
     (previous: ConnectorEdge, connection: Connection) => {
-      if (connection.source === connection.target) return;
+      if (connection.source === connection.target) {
+        return;
+      }
       record();
       setEdges((existing) =>
         reconnectEdge(previous, connection, existing, {
@@ -613,10 +636,14 @@ export function Board({ canvas }: BoardProps) {
   const onConnectEnd = useCallback<OnConnectEnd>(
     (event, state) => {
       setConnecting(false);
-      if (state.isValid || !state.fromNode || !state.fromHandle) return;
+      if (state.isValid || !state.fromNode || !state.fromHandle) {
+        return;
+      }
       const pointer =
         "changedTouches" in event ? event.changedTouches[0] : event;
-      if (!pointer) return;
+      if (!pointer) {
+        return;
+      }
       const point = flow.screenToFlowPosition(
         { x: pointer.clientX, y: pointer.clientY },
         { snapToGrid: false },
@@ -625,7 +652,9 @@ export function Board({ canvas }: BoardProps) {
       const target = flow
         .getIntersectingNodes({ x: point.x, y: point.y, width: 1, height: 1 })
         .findLast((node) => node.id !== fromId);
-      if (!target) return;
+      if (!target) {
+        return;
+      }
       const bounds = flow.getNodesBounds([target]);
       onConnect({
         source: fromId,
@@ -648,7 +677,9 @@ export function Board({ canvas }: BoardProps) {
         primarySelection.set(saveIds[0] ?? null);
         return;
       }
-      if (!ownsSelection.current) return;
+      if (!ownsSelection.current) {
+        return;
+      }
       ownsSelection.current = false;
       selection.clear();
       primarySelection.set(null);
@@ -657,22 +688,26 @@ export function Board({ canvas }: BoardProps) {
   );
 
   const onStroke = useCallback(
-    (points: StrokePoint[], size: number) => {
+    (points: Array<StrokePoint>, size: number) => {
       const drawing = drawingFrom(
         points,
         color,
         size,
         penMode === "highlight" ? "highlight" : undefined,
       );
-      if (drawing) insert([drawing]);
+      if (drawing) {
+        insert([drawing]);
+      }
     },
     [color, insert, penMode],
   );
 
   const onErase = useCallback(
-    (points: StrokePoint[]) => {
+    (points: Array<StrokePoint>) => {
       const next = eraseDrawings(current().items, points, 18 / flow.getZoom());
-      if (!next) return;
+      if (!next) {
+        return;
+      }
       record();
       const selectedIds = new Set(
         latest.current.nodes.flatMap((node) =>
@@ -693,7 +728,9 @@ export function Board({ canvas }: BoardProps) {
     const recolors = latest.current.nodes.some(
       (node) => node.selected && isColored(node) && node.data.color !== next,
     );
-    if (!recolors) return;
+    if (!recolors) {
+      return;
+    }
     record();
     setNodes((existing) =>
       existing.map((node) =>
@@ -759,9 +796,13 @@ export function Board({ canvas }: BoardProps) {
 
   const changeTable = (id: string, change: TableChange) => {
     const item = current().items.find((entry) => entry.id === id);
-    if (item?.kind !== "table") return;
+    if (item?.kind !== "table") {
+      return;
+    }
     const next = resizeTable(item, change);
-    if (next === item) return;
+    if (next === item) {
+      return;
+    }
     record();
     setNodes((existing) =>
       existing.map((node) =>
@@ -781,7 +822,9 @@ export function Board({ canvas }: BoardProps) {
       (node) =>
         node.selected && node.type === "figure" && node.data.outline !== next,
     );
-    if (!reoutlines) return;
+    if (!reoutlines) {
+      return;
+    }
     record();
     setNodes((existing) =>
       existing.map((node) =>
@@ -794,13 +837,16 @@ export function Board({ canvas }: BoardProps) {
 
   const finishEditing = useCallback(
     (id: string) => {
-      if (editing.current !== id) return;
+      if (editing.current !== id) {
+        return;
+      }
       const start = editStart.current;
       editStart.current = null;
       editing.current = null;
       setEditingId(null);
-      if (start && entryOf(start.snapshot, id) !== entryOf(current(), id))
+      if (start && entryOf(start.snapshot, id) !== entryOf(current(), id)) {
         history.record(start.snapshot);
+      }
     },
     [current, history],
   );
@@ -817,7 +863,9 @@ export function Board({ canvas }: BoardProps) {
     const branch: BoardActions["branch"] = (id, kind) => {
       finishEditing(id);
       const result = branchOf(current(), id, kind);
-      if (!result) return;
+      if (!result) {
+        return;
+      }
       record();
       const positions = new Map(
         result.snapshot.items.map((item) => [
@@ -871,11 +919,15 @@ export function Board({ canvas }: BoardProps) {
       },
       setCrop: (id, crop) => {
         const node = latest.current.nodes.find((entry) => entry.id === id);
-        if (node?.type !== "save") return;
+        if (node?.type !== "save") {
+          return;
+        }
         record();
         setNodes((existing) =>
           existing.map((entry) => {
-            if (entry.id !== id || entry.type !== "save") return entry;
+            if (entry.id !== id || entry.type !== "save") {
+              return entry;
+            }
             if (!crop) {
               const { crop: _crop, ...data } = entry.data;
               return { ...entry, data };
@@ -889,7 +941,9 @@ export function Board({ canvas }: BoardProps) {
         record();
         setNodes((existing) =>
           existing.map((entry) => {
-            if (entry.id !== id || entry.type !== "save") return entry;
+            if (entry.id !== id || entry.type !== "save") {
+              return entry;
+            }
             const { crop: _crop, ...data } = entry.data;
             return { ...entry, data: { ...data, saveId } };
           }),
@@ -909,13 +963,17 @@ export function Board({ canvas }: BoardProps) {
       branch,
       quickCreate: (id, side) => {
         const node = latest.current.nodes.find((entry) => entry.id === id);
-        if (!node || isLocked(node)) return;
+        if (!node || isLocked(node)) {
+          return;
+        }
         if (node.type === "topic" && side === "right") {
           branch(id, "child");
           return;
         }
         const pair = quickPair(toItem(node), side);
-        if (!pair) return;
+        if (!pair) {
+          return;
+        }
         insert([pair.item], { connectors: [pair.connector], edit: true });
       },
       restyle: (patch: Partial<ConnectorStyle>) => {
@@ -967,7 +1025,9 @@ export function Board({ canvas }: BoardProps) {
       const next = positions.get(node.id);
       return next && (next.x !== node.position.x || next.y !== node.position.y);
     });
-    if (!moves) return;
+    if (!moves) {
+      return;
+    }
     record();
     setNodes((existing) =>
       existing.map((node) => {
@@ -979,7 +1039,9 @@ export function Board({ canvas }: BoardProps) {
 
   const nudge = (x: number, y: number): boolean => {
     const targets = movable();
-    if (!targets.length) return false;
+    if (!targets.length) {
+      return false;
+    }
     place(
       new Map(
         targets.map((node) => [
@@ -994,15 +1056,18 @@ export function Board({ canvas }: BoardProps) {
   const restack = (move: Parameters<typeof reorder>[2]) => {
     const ids = pickedIds();
     const next = reorder(latest.current.nodes, ids, move);
-    if (next.every((node, index) => node === latest.current.nodes[index]))
+    if (next.every((node, index) => node === latest.current.nodes[index])) {
       return;
+    }
     record();
     setNodes((existing) => reorder(existing, ids, move));
   };
 
   const toggleLock = () => {
     const picked = latest.current.nodes.filter((node) => node.selected);
-    if (!picked.length) return;
+    if (!picked.length) {
+      return;
+    }
     const lock = picked.some((node) => !isLocked(node));
     record();
     setNodes((existing) =>
@@ -1012,7 +1077,9 @@ export function Board({ canvas }: BoardProps) {
 
   const writeClip = (data: DataTransfer): boolean => {
     const ids = pickedIds();
-    if (!ids.size) return false;
+    if (!ids.size) {
+      return false;
+    }
     const clip = clipOf(current(), ids);
     data.setData(CLIP_TYPE, JSON.stringify(clip));
     data.setData("text/plain", clipText(clip));
@@ -1021,8 +1088,9 @@ export function Board({ canvas }: BoardProps) {
 
   const regroup = (group: string | null) => {
     const picked = latest.current.nodes.filter((node) => node.selected);
-    if (group ? picked.length < 2 : !picked.some((node) => node.data.group))
+    if (group ? picked.length < 2 : !picked.some((node) => node.data.group)) {
       return;
+    }
     record();
     setNodes((existing) =>
       existing.map((node) => (node.selected ? withGroup(node, group) : node)),
@@ -1032,7 +1100,9 @@ export function Board({ canvas }: BoardProps) {
   const wrap = () => {
     const picked = latest.current.nodes.filter((node) => node.selected);
     const section = sectionAround(picked.map(frameOf), "gray");
-    if (!section) return;
+    if (!section) {
+      return;
+    }
     record();
     setNodes((existing) => {
       const at = Math.max(
@@ -1058,9 +1128,12 @@ export function Board({ canvas }: BoardProps) {
     const picked = all.filter((node) => node.selected);
     const targets =
       scope === "board" || (!scope && !picked.length) ? all : picked;
-    if (!surface || !targets.length) return;
-    if (document.activeElement instanceof HTMLElement)
+    if (!surface || !targets.length) {
+      return;
+    }
+    if (isHTMLElement(document.activeElement)) {
       document.activeElement.blur();
+    }
     const shown = new Set(targets.map((node) => node.id));
     const wasSelected = new Set(picked.map((node) => node.id));
     const selectedEdges = new Set(
@@ -1124,11 +1197,12 @@ export function Board({ canvas }: BoardProps) {
         format,
         ...image,
       });
-      if (result.ok)
+      if (result.ok) {
         notify({
           id: "canvas-export",
           title: format === "png" ? "Exported PNG" : "Exported PDF",
         });
+      }
     } catch (error) {
       notify({
         id: "canvas-export",
@@ -1141,7 +1215,9 @@ export function Board({ canvas }: BoardProps) {
   const importAt = async (plan: PasteImport, at: XYPosition) => {
     try {
       const ids = await runPasteImport(plan);
-      if (ids.length) addSaves(ids, at);
+      if (ids.length) {
+        addSaves(ids, at);
+      }
     } catch (error) {
       notify({
         id: "canvas-import",
@@ -1163,14 +1239,15 @@ export function Board({ canvas }: BoardProps) {
         ),
       );
       const copy = pasteOf(clip, at, onBoard);
-      if (copy.items.length)
+      if (copy.items.length) {
         insert(copy.items, { connectors: copy.connectors });
-      else
+      } else {
         addSaves(
           clip.items.flatMap((item) =>
             item.kind === "save" ? [item.saveId] : [],
           ),
         );
+      }
       return true;
     }
     const plan = pasteImportOf(data);
@@ -1179,7 +1256,9 @@ export function Board({ canvas }: BoardProps) {
       return true;
     }
     const text = data.getData("text/plain").trim();
-    if (!text) return false;
+    if (!text) {
+      return false;
+    }
     insert([textAt(at, text)]);
     return true;
   };
@@ -1211,7 +1290,9 @@ export function Board({ canvas }: BoardProps) {
         return;
       case "align": {
         const frames = movable().map(frameOf);
-        if (frames.length > 1) place(alignFrames(frames, command.edge));
+        if (frames.length > 1) {
+          place(alignFrames(frames, command.edge));
+        }
         return;
       }
       case "distribute":
@@ -1219,7 +1300,9 @@ export function Board({ canvas }: BoardProps) {
         return;
       case "tidy": {
         const frames = movable().map(frameOf);
-        if (frames.length > 1) place(tidyFrames(frames));
+        if (frames.length > 1) {
+          place(tidyFrames(frames));
+        }
         return;
       }
       case "lock":
@@ -1239,11 +1322,13 @@ export function Board({ canvas }: BoardProps) {
         return;
       case "zoom": {
         const picked = latest.current.nodes.filter((node) => node.selected);
-        if (command.to === "actual") void flow.zoomTo(1, { duration: 200 });
-        else if (command.to === "selection" && picked.length)
+        if (command.to === "actual") {
+          void flow.zoomTo(1, { duration: 200 });
+        } else if (command.to === "selection" && picked.length) {
           void flow.fitView({ nodes: picked, duration: 200, padding: 0.2 });
-        else if (command.to === "fit")
+        } else if (command.to === "fit") {
           void flow.fitView({ duration: 200, padding: 0.2 });
+        }
         return;
       }
       case "minimap":
@@ -1254,7 +1339,9 @@ export function Board({ canvas }: BoardProps) {
         return;
       case "rotate": {
         const targets = movable().filter((node) => node.type !== "section");
-        if (!targets.length) return;
+        if (!targets.length) {
+          return;
+        }
         record();
         const ids = new Set(targets.map((node) => node.id));
         setNodes((existing) =>
@@ -1272,14 +1359,20 @@ export function Board({ canvas }: BoardProps) {
         const figures = latest.current.nodes.filter(
           (node) => node.selected && node.type === "figure" && !isLocked(node),
         );
-        if (!figures.length) return;
+        if (!figures.length) {
+          return;
+        }
         record();
         const ids = new Set(figures.map((node) => node.id));
         setNodes((existing) =>
           existing.map((node) => {
-            if (!ids.has(node.id) || node.type !== "figure") return node;
+            if (!ids.has(node.id) || node.type !== "figure") {
+              return node;
+            }
             const item = toItem(node);
-            if (item.kind !== "figure") return node;
+            if (item.kind !== "figure") {
+              return node;
+            }
             return { ...toNode(flipped(item, command.axis)), selected: true };
           }),
         );
@@ -1289,12 +1382,16 @@ export function Board({ canvas }: BoardProps) {
         const texts = latest.current.nodes.filter(
           (node) => node.selected && node.type === "text" && !isLocked(node),
         );
-        if (!texts.length) return;
+        if (!texts.length) {
+          return;
+        }
         record();
         const ids = new Set(texts.map((node) => node.id));
         setNodes((existing) =>
           existing.map((node) => {
-            if (!ids.has(node.id) || node.type !== "text") return node;
+            if (!ids.has(node.id) || node.type !== "text") {
+              return node;
+            }
             const item = toItem(node);
             return item.kind === "text"
               ? { ...toNode(noteFromText(item, color)), selected: true }
@@ -1307,7 +1404,9 @@ export function Board({ canvas }: BoardProps) {
         const notes = latest.current.nodes.filter(
           (node) => node.selected && node.type === "note" && !isLocked(node),
         );
-        if (notes.length < 2) return;
+        if (notes.length < 2) {
+          return;
+        }
         place(
           notesSorted(
             notes.flatMap((node) =>
@@ -1332,19 +1431,25 @@ export function Board({ canvas }: BoardProps) {
         const save = latest.current.nodes.find(
           (node) => node.selected && node.type === "save",
         );
-        if (save) setCroppingId(save.id);
+        if (save) {
+          setCroppingId(save.id);
+        }
         return;
       }
       case "reset-crop": {
         const saves = latest.current.nodes.filter(
           (node) => node.selected && node.type === "save" && node.data.crop,
         );
-        if (!saves.length) return;
+        if (!saves.length) {
+          return;
+        }
         record();
         const ids = new Set(saves.map((node) => node.id));
         setNodes((existing) =>
           existing.map((node) => {
-            if (!ids.has(node.id) || node.type !== "save") return node;
+            if (!ids.has(node.id) || node.type !== "save") {
+              return node;
+            }
             const { crop: _crop, ...data } = node.data;
             return { ...node, data };
           }),
@@ -1354,8 +1459,9 @@ export function Board({ canvas }: BoardProps) {
       case "quick": {
         const picked = latest.current.nodes.filter((node) => node.selected);
         const [single] = picked;
-        if (picked.length === 1 && single)
+        if (picked.length === 1 && single) {
           actions.quickCreate(single.id, command.side);
+        }
         return;
       }
     }
@@ -1383,7 +1489,9 @@ export function Board({ canvas }: BoardProps) {
 
   const resizeGroup = (point: XYPosition, keepAspect: boolean) => {
     const resize = groupResize.current;
-    if (!resize) return;
+    if (!resize) {
+      return;
+    }
     const scale = groupScale(
       resize.bounds,
       resize.corner,
@@ -1402,7 +1510,7 @@ export function Board({ canvas }: BoardProps) {
     );
   };
 
-  const startDrag = (dragged: readonly CanvasNode[]) => {
+  const startDrag = (dragged: ReadonlyArray<CanvasNode>) => {
     record();
     setDragging(true);
     beginSettle(dragged);
@@ -1414,9 +1522,12 @@ export function Board({ canvas }: BoardProps) {
   };
 
   const menuItems = () => {
-    if (menuKind.current === "pane")
+    if (menuKind.current === "pane") {
       return boardItems({ kind: "pane", minimap: minimap.shown() }, run);
-    if (menuKind.current === "edge") return boardItems({ kind: "edge" }, run);
+    }
+    if (menuKind.current === "edge") {
+      return boardItems({ kind: "edge" }, run);
+    }
     const picked = latest.current.nodes.filter((node) => node.selected);
     return boardItems(
       {
@@ -1460,23 +1571,27 @@ export function Board({ canvas }: BoardProps) {
 
   const arrangeable = selected.filter((node) => !isLocked(node)).length;
 
-  const lead: SelectionControl[] = [];
-  const style: SelectionControl[] = [];
-  const extras: SelectionControl[] = [];
+  let lead: Array<SelectionControl> = [];
+  let style: Array<SelectionControl> = [];
+  let extras: Array<SelectionControl> = [];
   const figures = selected.filter((node) => node.type === "figure");
   if (figures.length) {
-    lead.push({
-      kind: "custom",
-      label: "Shape",
-      element: (
-        <Picker.Outlines
-          value={sharedValue(figures.map((node) => node.data.outline))}
-          size="xs"
-          onChange={changeOutline}
-        />
-      ),
-    });
-    style.push(
+    lead = [
+      ...lead,
+      {
+        kind: "custom",
+        label: "Shape",
+        element: (
+          <Picker.Outlines
+            value={sharedValue(figures.map((node) => node.data.outline))}
+            size="xs"
+            onChange={changeOutline}
+          />
+        ),
+      },
+    ];
+    style = [
+      ...style,
       {
         kind: "menu",
         label: "Fill",
@@ -1501,12 +1616,13 @@ export function Board({ canvas }: BoardProps) {
               }),
           ),
       },
-    );
+    ];
   }
   const codes = selected.filter((node) => node.type === "code");
   if (codes.length) {
     const language = sharedValue(codes.map((node) => node.data.language));
-    lead.push(
+    lead = [
+      ...lead,
       {
         kind: "menu",
         label: "Language",
@@ -1523,33 +1639,41 @@ export function Board({ canvas }: BoardProps) {
             changeTheme,
           ),
       },
-    );
+    ];
   }
-  if (selected.length === 1 && only?.type === "table")
-    lead.push({
-      kind: "menu",
-      label: "Table",
-      icon: <IconTable />,
-      buildItems: () => tableItems((change) => changeTable(only.id, change)),
-    });
+  if (selected.length === 1 && only?.type === "table") {
+    lead = [
+      ...lead,
+      {
+        kind: "menu",
+        label: "Table",
+        icon: <IconTable />,
+        buildItems: () => tableItems((change) => changeTable(only.id, change)),
+      },
+    ];
+  }
   const inks = selected.filter((node) => node.type === "drawing");
-  if (inks.length)
-    style.push({
-      kind: "menu",
-      label: "Stroke",
-      icon: <IconLineWeight />,
-      buildItems: () =>
-        weightItems(
-          sharedValue(
-            inks.map((node) =>
-              node.data.size > inkSize(node.data.ink, "thin")
-                ? "thick"
-                : "thin",
+  if (inks.length) {
+    style = [
+      ...style,
+      {
+        kind: "menu",
+        label: "Stroke",
+        icon: <IconLineWeight />,
+        buildItems: () =>
+          weightItems(
+            sharedValue(
+              inks.map((node) =>
+                node.data.size > inkSize(node.data.ink, "thin")
+                  ? "thick"
+                  : "thin",
+              ),
             ),
+            changeInkWeight,
           ),
-          changeInkWeight,
-        ),
-    });
+      },
+    ];
+  }
   const styled = selected.filter(isStyled);
   if (styled.length) {
     const bold = styled.every((node) => node.data.bold);
@@ -1557,7 +1681,8 @@ export function Board({ canvas }: BoardProps) {
     const align = sharedValue(
       styled.map((node) => node.data.align ?? defaultAlign(node)),
     );
-    style.push(
+    style = [
+      ...style,
       {
         kind: "menu",
         label: "Font",
@@ -1610,17 +1735,22 @@ export function Board({ canvas }: BoardProps) {
             ),
           ),
       },
-    );
+    ];
   }
-  if (selected.length === 1 && only?.type === "section" && !isLocked(only))
-    extras.push({
-      kind: "action",
-      label: "Rename",
-      icon: <IconPencil />,
-      onClick: () => actions.startEditing(only.id),
-    });
-  if (arrangeable > 1)
-    extras.push(
+  if (selected.length === 1 && only?.type === "section" && !isLocked(only)) {
+    extras = [
+      ...extras,
+      {
+        kind: "action",
+        label: "Rename",
+        icon: <IconPencil />,
+        onClick: () => actions.startEditing(only.id),
+      },
+    ];
+  }
+  if (arrangeable > 1) {
+    extras = [
+      ...extras,
       {
         kind: "action",
         label: "Tidy Up",
@@ -1634,33 +1764,44 @@ export function Board({ canvas }: BoardProps) {
         icon: <IconSection />,
         onClick: () => run({ type: "wrap" }),
       },
-    );
-  if (selected.some((node) => node.data.group))
-    extras.push({
-      kind: "action",
-      label: "Ungroup",
-      icon: <IconUngroup />,
-      shortcut: glyphsFor({ type: "ungroup" }),
-      onClick: () => run({ type: "ungroup" }),
-    });
-  else if (selected.length > 1)
-    extras.push({
-      kind: "action",
-      label: "Group",
-      icon: <IconGroup />,
-      shortcut: glyphsFor({ type: "group" }),
-      onClick: () => run({ type: "group" }),
-    });
+    ];
+  }
+  if (selected.some((node) => node.data.group)) {
+    extras = [
+      ...extras,
+      {
+        kind: "action",
+        label: "Ungroup",
+        icon: <IconUngroup />,
+        shortcut: glyphsFor({ type: "ungroup" }),
+        onClick: () => run({ type: "ungroup" }),
+      },
+    ];
+  } else if (selected.length > 1) {
+    extras = [
+      ...extras,
+      {
+        kind: "action",
+        label: "Group",
+        icon: <IconGroup />,
+        shortcut: glyphsFor({ type: "group" }),
+        onClick: () => run({ type: "group" }),
+      },
+    ];
+  }
   if (selected.length) {
     const locked = selected.every(isLocked);
-    extras.push({
-      kind: "action",
-      label: locked ? "Unlock" : "Lock",
-      icon: locked ? <IconLock /> : <IconLockOpen />,
-      shortcut: glyphsFor({ type: "lock" }),
-      pressed: locked,
-      onClick: () => run({ type: "lock" }),
-    });
+    extras = [
+      ...extras,
+      {
+        kind: "action",
+        label: locked ? "Unlock" : "Lock",
+        icon: locked ? <IconLock /> : <IconLockOpen />,
+        shortcut: glyphsFor({ type: "lock" }),
+        pressed: locked,
+        onClick: () => run({ type: "lock" }),
+      },
+    ];
   }
 
   const placeAt = (point: XYPosition): CanvasItem | null => {
@@ -1688,7 +1829,9 @@ export function Board({ canvas }: BoardProps) {
     rect: { x: number; y: number; width: number; height: number } | null,
     point: XYPosition,
   ) => {
-    if (!isStamp(tool)) return;
+    if (!isStamp(tool)) {
+      return;
+    }
     const item = rect
       ? itemForRect(tool, rect, {
           color,
@@ -1696,7 +1839,9 @@ export function Board({ canvas }: BoardProps) {
           language: DEFAULT_LANGUAGE,
         })
       : placeAt(point);
-    if (!item) return;
+    if (!item) {
+      return;
+    }
     insert([item], {
       edit:
         item.kind === "note" ||
@@ -1705,13 +1850,10 @@ export function Board({ canvas }: BoardProps) {
         item.kind === "topic" ||
         item.kind === "code",
     });
-    if (!kept) setTool("select");
+    if (!kept) {
+      setTool("select");
+    }
   };
-
-  function isStamp(value: CanvasTool): value is StampKind {
-    return STAMP_TOOLS.has(value);
-  }
-
   return (
     <BoardContext.Provider value={actions}>
       <SpecContextMenu buildItems={menuItems}>
@@ -1733,47 +1875,73 @@ export function Board({ canvas }: BoardProps) {
             pointer.current = null;
           }}
           onCopy={(event) => {
-            if (isEditableTarget(event.target)) return;
-            if (writeClip(event.clipboardData)) event.preventDefault();
+            if (isEditableTarget(event.target)) {
+              return;
+            }
+            if (writeClip(event.clipboardData)) {
+              event.preventDefault();
+            }
           }}
           onCut={(event) => {
-            if (isEditableTarget(event.target)) return;
-            if (!writeClip(event.clipboardData)) return;
+            if (isEditableTarget(event.target)) {
+              return;
+            }
+            if (!writeClip(event.clipboardData)) {
+              return;
+            }
             event.preventDefault();
             void flow.deleteElements({
               nodes: latest.current.nodes.filter((node) => node.selected),
             });
           }}
           onPaste={(event) => {
-            if (isEditableTarget(event.target)) return;
-            if (!pasteFrom(event.clipboardData)) return;
+            if (isEditableTarget(event.target)) {
+              return;
+            }
+            if (!pasteFrom(event.clipboardData)) {
+              return;
+            }
             event.preventDefault();
             event.stopPropagation();
           }}
           onKeyDownCapture={(event) => {
-            if (isEditableTarget(event.target)) return;
+            if (isEditableTarget(event.target)) {
+              return;
+            }
             const command = commandForKey(event);
-            if (command?.type !== "nudge") return;
+            if (command?.type !== "nudge") {
+              return;
+            }
             /** React Flow moves focused nodes on arrow keys too, so the board takes the key first. */
-            if (!nudge(command.x, command.y)) return;
+            if (!nudge(command.x, command.y)) {
+              return;
+            }
             event.preventDefault();
             event.stopPropagation();
           }}
           onKeyDown={(event) => {
-            if (isEditableTarget(event.target)) return;
+            if (isEditableTarget(event.target)) {
+              return;
+            }
             const command = commandForKey(event);
             if (command && command.type !== "copy" && command.type !== "cut") {
-              if (command.type === "nudge") return;
+              if (command.type === "nudge") {
+                return;
+              }
               event.preventDefault();
               run(command);
               return;
             }
-            if (event.metaKey || event.ctrlKey || event.altKey) return;
+            if (event.metaKey || event.ctrlKey || event.altKey) {
+              return;
+            }
             if (event.key === "Enter" && selected.length === 1 && only) {
               event.preventDefault();
-              if (openable) openSave(openable);
-              else if (hasText(only) && !isLocked(only))
+              if (openable) {
+                openSave(openable);
+              } else if (hasText(only) && !isLocked(only)) {
                 actions.startEditing(only.id);
+              }
               return;
             }
             if (
@@ -1807,13 +1975,14 @@ export function Board({ canvas }: BoardProps) {
             }
           }}
           onDragOver={(event) => {
-            const types = Array.from(event.dataTransfer.types);
+            const types = new Set(Array.from(event.dataTransfer.types));
             if (
               !isLibrarySaveDrag(event.dataTransfer) &&
-              !types.includes("Files") &&
-              !types.includes("text/uri-list")
-            )
+              !types.has("Files") &&
+              !types.has("text/uri-list")
+            ) {
               return;
+            }
             event.preventDefault();
             event.stopPropagation();
             event.dataTransfer.dropEffect = "copy";
@@ -1832,7 +2001,9 @@ export function Board({ canvas }: BoardProps) {
             event.preventDefault();
             event.stopPropagation();
             const plan = pasteImportOf(event.dataTransfer);
-            if (plan && plan.kind !== "clipboard") void importAt(plan, at);
+            if (plan && plan.kind !== "clipboard") {
+              void importAt(plan, at);
+            }
           }}
         >
           <ReactFlow<CanvasNode, ConnectorEdge>
@@ -1881,15 +2052,22 @@ export function Board({ canvas }: BoardProps) {
               flush();
             }}
             onNodeDoubleClick={(_, node) => {
-              if (tool !== "select") return;
+              if (tool !== "select") {
+                return;
+              }
               if (node.type === "save") {
-                if (pool.get(node.data.saveId)) openSave(node.data.saveId);
-              } else if (hasText(node) && !isLocked(node))
+                if (pool.get(node.data.saveId)) {
+                  openSave(node.data.saveId);
+                }
+              } else if (hasText(node) && !isLocked(node)) {
                 actions.startEditing(node.id);
+              }
             }}
             onNodeContextMenu={(_, node) => {
               menuKind.current = "nodes";
-              if (node.selected) return;
+              if (node.selected) {
+                return;
+              }
               setNodes((existing) =>
                 existing.map((entry) => ({
                   ...entry,
@@ -1919,10 +2097,14 @@ export function Board({ canvas }: BoardProps) {
               menuKind.current = "pane";
             }}
             onEdgeDoubleClick={(_, edge) => {
-              if (tool === "select") actions.startEditing(edge.id);
+              if (tool === "select") {
+                actions.startEditing(edge.id);
+              }
             }}
             onPaneClick={() => {
-              if (croppingId) setCroppingId(null);
+              if (croppingId) {
+                setCroppingId(null);
+              }
             }}
           >
             <Background
@@ -2001,15 +2183,20 @@ export function Board({ canvas }: BoardProps) {
               extras={extras}
               onColor={recolor}
               onOpen={() => {
-                if (openable) openSave(openable);
+                if (openable) {
+                  openSave(openable);
+                }
               }}
               onCrop={() => {
-                if (only?.type === "save") setCroppingId(only.id);
+                if (only?.type === "save") {
+                  setCroppingId(only.id);
+                }
               }}
               onReplace={(ids) => {
                 const next = ids[0];
-                if (next && only?.type === "save")
+                if (next && only?.type === "save") {
                   actions.replaceSave(only.id, next);
+                }
               }}
               onDuplicate={duplicate}
               onDelete={() => void flow.deleteElements({ nodes: selected })}

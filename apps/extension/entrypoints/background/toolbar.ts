@@ -2,7 +2,9 @@ import type { ToolbarAction } from "@/utils/types";
 
 /** An empty popup makes the browser fire `action.onClicked`, which saves in one click. */
 export async function applyToolbarAction(action: ToolbarAction): Promise<void> {
-  if (!browser.action) return;
+  if (!browser.action) {
+    return;
+  }
   await browser.action
     .setPopup({ popup: action === "popup" ? "popup.html" : "" })
     .catch(() => {});
@@ -27,7 +29,9 @@ export function createToolbarApply(input: {
   return async () => {
     const ticket = ++generation;
     const action = await input.read();
-    if (ticket !== generation) return;
+    if (ticket !== generation) {
+      return;
+    }
     await input.apply(action);
   };
 }

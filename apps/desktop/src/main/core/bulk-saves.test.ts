@@ -1,9 +1,8 @@
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import type { Transaction } from "@pond/schema/tx";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
 import { bulkEditSaves } from "./bulk-saves";
 
@@ -12,31 +11,40 @@ function nativeAvailable() {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
-const opened: Database.Database[] = [];
+const opened: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of opened.splice(0)) db.close();
+  for (const db of opened.splice(0)) {
+    db.close();
+  }
 });
 function fixture() {
   const raw = new Database(":memory:");
   opened.push(raw);
   initializePondSchema(raw, () => false);
-  const db = Object.assign(drizzle(raw, { schema: { ...schema, ...events } }), {
-    $raw: raw,
-  });
+  const db = Object.assign(
+    drizzle(raw, { schema: { ...libraryTables, ...eventTables } }),
+    {
+      $raw: raw,
+    },
+  );
   const insert = raw.prepare(
     "insert into saves(id,source,source_id,url,tags,suggested_tags,rating) values(?,'local',?,'','[\"original\"]','[\"Suggested\"]',1)",
   );
   const ids = Array.from({ length: 1301 }, (_, i) => `save-${i}`);
   raw.transaction(() => {
-    for (const id of ids) insert.run(id, id);
+    for (const id of ids) {
+      insert.run(id, id);
+    }
   })();
-  const batches: Transaction[][] = [];
-  const undo: Transaction[][] = [];
-  const commit = async (transactions: Transaction[]) => {
+  const batches: Array<Array<Transaction>> = [];
+  const undo: Array<Array<Transaction>> = [];
+  const commit = async (transactions: Array<Transaction>) => {
     batches.push(transactions);
   };
   return {
@@ -46,7 +54,7 @@ function fixture() {
     batches,
     undo,
     commit,
-    recordUndo: (transactions: Transaction[]) =>
+    recordUndo: (transactions: Array<Transaction>) =>
       `step-${undo.push(transactions)}`,
   };
 }
@@ -74,16 +82,22 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
       );
       expect(result.changed).toBe(1301);
       const batch = f.batches.at(-1);
-      if (!batch) throw new Error("Expected a committed batch");
+      if (!batch) {
+        throw new Error("Expected a committed batch");
+      }
       expect(
         new Set(batch.filter((tx) => tx.model === "save").map((tx) => tx.id)),
       ).toEqual(new Set(f.ids));
-      if (operation.kind !== "purge") expect(f.undo.at(-1)).toEqual(batch);
-      else expect(f.undo).toHaveLength(f.batches.length - 1);
-      if (operation.kind === "tags")
+      if (operation.kind !== "purge") {
+        expect(f.undo.at(-1)).toEqual(batch);
+      } else {
+        expect(f.undo).toHaveLength(f.batches.length - 1);
+      }
+      if (operation.kind === "tags") {
         expect(
           batch.filter((tx) => tx.kind === "create" && tx.model === "tag"),
         ).toHaveLength(2);
+      }
     }
   });
   it("does not silently commit a partial selection when a cold ID vanished", async () => {

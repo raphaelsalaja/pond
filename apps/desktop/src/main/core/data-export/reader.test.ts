@@ -5,10 +5,11 @@ import JSZip from "jszip";
 import { afterEach, describe, expect, it } from "vitest";
 import { openExportReader } from "./reader";
 
-const dirs: string[] = [];
+const dirs: Array<string> = [];
 afterEach(async () => {
-  for (const dir of dirs.splice(0))
+  for (const dir of dirs.splice(0)) {
     await rm(dir, { recursive: true, force: true });
+  }
 });
 
 async function temp() {

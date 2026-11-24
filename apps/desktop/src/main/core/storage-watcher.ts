@@ -47,7 +47,9 @@ export function getStorageGuardState(): StorageGuardStatus {
 }
 
 export async function startStorageWatcher(): Promise<void> {
-  if (timer) return;
+  if (timer) {
+    return;
+  }
   await applyStorageWatcherPrefs();
 }
 
@@ -65,8 +67,8 @@ export async function applyStorageWatcherPrefs(): Promise<void> {
   let prefs: Prefs;
   try {
     prefs = await getPrefs();
-  } catch (err) {
-    log.warn("[pond storage-watcher] prefs read failed", err);
+  } catch (error) {
+    log.warn("[pond storage-watcher] prefs read failed", error);
     return;
   }
   const cfg = prefs.storage;
@@ -99,14 +101,18 @@ export async function applyStorageWatcherPrefs(): Promise<void> {
     void runTick();
     return;
   }
-  if (timer) clearInterval(timer);
+  if (timer) {
+    clearInterval(timer);
+  }
   intervalMs = nextMs;
   timer = setInterval(() => void runTick(), nextMs);
   void runTick();
 }
 
 function clampInterval(minutes: number): number {
-  if (!Number.isFinite(minutes)) return 5;
+  if (!Number.isFinite(minutes)) {
+    return 5;
+  }
   return Math.max(1, Math.min(60, Math.floor(minutes)));
 }
 
@@ -114,12 +120,14 @@ async function runTick(): Promise<void> {
   let prefs: Prefs;
   try {
     prefs = await getPrefs();
-  } catch (err) {
-    log.warn("[pond storage-watcher] tick prefs read failed", err);
+  } catch (error) {
+    log.warn("[pond storage-watcher] tick prefs read failed", error);
     return;
   }
   const cfg = prefs.storage;
-  if (!cfg.guardsEnabled) return;
+  if (!cfg.guardsEnabled) {
+    return;
+  }
 
   const someWindowVisible = BrowserWindow.getAllWindows().some(
     (w) => !w.isDestroyed() && w.isVisible(),
@@ -128,8 +136,8 @@ async function runTick(): Promise<void> {
   let snapshot: Awaited<ReturnType<typeof getStorageSnapshot>>;
   try {
     snapshot = await getStorageSnapshot();
-  } catch (err) {
-    log.warn("[pond storage-watcher] snapshot failed", err);
+  } catch (error) {
+    log.warn("[pond storage-watcher] snapshot failed", error);
     return;
   }
 
@@ -142,9 +150,11 @@ async function runTick(): Promise<void> {
 
   let next: StorageGuardState = "ok";
   if (cap !== null) {
-    if (snapshot.pondBytes >= cap) next = "exceeded";
-    else if (warnBytes !== null && snapshot.pondBytes >= warnBytes)
+    if (snapshot.pondBytes >= cap) {
+      next = "exceeded";
+    } else if (warnBytes !== null && snapshot.pondBytes >= warnBytes) {
       next = "warn";
+    }
   }
 
   applyAction(next, cfg.action);
@@ -184,8 +194,8 @@ function applyAction(state: StorageGuardState, action: StorageGuardAction) {
       log.info("[pond storage-watcher] cap exceeded, pausing source syncs");
       try {
         cancelAllSyncs();
-      } catch (err) {
-        log.warn("[pond storage-watcher] cancelAllSyncs threw", err);
+      } catch (error) {
+        log.warn("[pond storage-watcher] cancelAllSyncs threw", error);
       }
     }
     syncBlocked = true;

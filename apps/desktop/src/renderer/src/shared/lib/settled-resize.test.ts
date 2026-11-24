@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { observeSettledSize } from "./settled-resize";
 
-const observers: FakeResizeObserver[] = [];
+const observers: Array<FakeResizeObserver> = [];
 
 class FakeResizeObserver implements ResizeObserver {
   callback: ResizeObserverCallback;

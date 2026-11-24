@@ -1,12 +1,10 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
-import {
-  currentLocation,
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/app/test/library-router";
+import { currentLocation, openLibraryAt } from "@/app/test/library-router";
+import type { LibraryTestRouter } from "@/app/test/library-router";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { ToastHost } from "@/shared/components/toast-host";
@@ -54,17 +52,20 @@ function showAction(): HTMLButtonElement | undefined {
 
 interface ImportReply {
   ok: boolean;
-  ids?: string[];
-  failedPaths?: string[];
+  ids?: Array<string>;
+  failedPaths?: Array<string>;
   error?: string;
   reason?: string;
 }
 
 function stubImport(reply: ImportReply) {
   const query = vi.fn(async (operation: string) => {
-    if (operation === "saves.reviewImportDuplicates") return { candidates: [] };
-    if (operation === "saves.stageClipboard")
+    if (operation === "saves.reviewImportDuplicates") {
+      return { candidates: [] };
+    }
+    if (operation === "saves.stageClipboard") {
       return { ok: true, paths: ["/tmp/pond-clip/clipboard.png"] };
+    }
     return reply;
   });
   vi.stubGlobal("pond", { query });

@@ -14,7 +14,7 @@ export function registerPipelineHandlers(): void {
     return { ok: true as const, paused: await setReconcilerPaused(paused) };
   });
 
-  safeHandle(IPC.pipelineCancelSaves, async (_, ids: string[]) => {
+  safeHandle(IPC.pipelineCancelSaves, async (_, ids: Array<string>) => {
     const saveIds = SaveIdsSchema.parse(ids).filter(Boolean);
     const cancelled = await cancelSavesIngest(saveIds);
     return { ok: true as const, cancelled };

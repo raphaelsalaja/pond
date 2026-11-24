@@ -75,8 +75,12 @@ const descriptions = new Map<string, string>(
 
 function describe(name: QueryName): string {
   const explicit = descriptions.get(name);
-  if (explicit) return explicit;
-  const words = name.replace(/([a-z])([A-Z])/g, "$1 $2").replaceAll(".", " ");
+  if (explicit) {
+    return explicit;
+  }
+  const words = name
+    .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
+    .replaceAll(".", " ");
   return name.startsWith("savedViews.")
     ? `Smart Folders, Saved Views, and Groups: ${words}. Uses the same operation as Pond's interface.`
     : `${words}. Uses the same operation as Pond's interface.`;
@@ -86,18 +90,35 @@ type QueryHandler = NonNullable<QueryHandlerMap[QueryName]> & {
   inputSchema?: z.ZodType;
 };
 
+function isQueryName(key: string): key is QueryName {
+  return Object.hasOwn(queryOperationAccess, key);
+}
+
+/** A JSON round trip, not `structuredClone`: agents read Dates as ISO strings and never see `undefined` fields. */
+function jsonRoundTrip<T>(value: T) {
+  const text = JSON.stringify(value);
+  const parsed: unknown = JSON.parse(text);
+  return z.json().parse(parsed);
+}
+
 export function agentOperationsForQueries(
   registry: QueryHandlerMap,
-): PondOperation[] {
+): Array<PondOperation> {
   const names = z.enum(Object.keys(queryOperationAccess));
   return Object.keys(registry).flatMap((key) => {
     const name = names.parse(key);
-    /** SAFETY: the exhaustive QueryName record above is the source of this validated name. */
-    const queryName = name as QueryName;
+    if (!isQueryName(name)) {
+      return [];
+    }
+    const queryName = name;
     const access = queryOperationAccess[queryName];
-    if (access === "hidden") return [];
+    if (access === "hidden") {
+      return [];
+    }
     const handler: QueryHandler | undefined = registry[queryName];
-    if (!handler) return [];
+    if (!handler) {
+      return [];
+    }
     return [
       {
         name,
@@ -117,7 +138,7 @@ export function agentOperationsForQueries(
               )
               .parse(result);
           }
-          return z.json().parse(JSON.parse(JSON.stringify(result ?? null)));
+          return jsonRoundTrip(result ?? null);
         },
       },
     ];

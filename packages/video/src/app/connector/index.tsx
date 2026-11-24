@@ -1,4 +1,5 @@
-import { type CanvasColor, INK } from "../board/colors";
+import { INK } from "../board/colors";
+import type { CanvasColor } from "../board/colors";
 import type { Box } from "../card";
 import type { Side } from "../handles";
 import styles from "./styles.module.css";
@@ -12,11 +13,15 @@ export interface End {
 /** Where a connector meets `box` on `side`: the outer edge of that side's handle. */
 export function anchor(box: Box, side: Side): End {
   const out = 16;
-  if (side === "top") return { x: box.x + box.width / 2, y: box.y - out, side };
-  if (side === "bottom")
+  if (side === "top") {
+    return { x: box.x + box.width / 2, y: box.y - out, side };
+  }
+  if (side === "bottom") {
     return { x: box.x + box.width / 2, y: box.y + box.height + out, side };
-  if (side === "left")
+  }
+  if (side === "left") {
     return { x: box.x - out, y: box.y + box.height / 2, side };
+  }
   return { x: box.x + box.width + out, y: box.y + box.height / 2, side };
 }
 
@@ -32,9 +37,15 @@ const offset = (distance: number) =>
   distance >= 0 ? 0.5 * distance : 0.25 * 25 * Math.sqrt(-distance);
 
 function control(end: End, other: { x: number; y: number }) {
-  if (end.side === "left") return [end.x - offset(end.x - other.x), end.y];
-  if (end.side === "right") return [end.x + offset(other.x - end.x), end.y];
-  if (end.side === "top") return [end.x, end.y - offset(end.y - other.y)];
+  if (end.side === "left") {
+    return [end.x - offset(end.x - other.x), end.y];
+  }
+  if (end.side === "right") {
+    return [end.x + offset(other.x - end.x), end.y];
+  }
+  if (end.side === "top") {
+    return [end.x, end.y - offset(end.y - other.y)];
+  }
   return [end.x, end.y + offset(other.y - end.y)];
 }
 

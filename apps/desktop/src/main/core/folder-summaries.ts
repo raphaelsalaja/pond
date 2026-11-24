@@ -15,12 +15,12 @@ import { getDb } from "../db";
 
 export async function folderSummaries(
   parentId: string,
-): Promise<FolderSummary[]> {
+): Promise<Array<FolderSummary>> {
   return queryFolderSummaries(await getDb(), parentId);
 }
 
 export async function folderDownloadingCount(
-  folderIds: string[],
+  folderIds: Array<string>,
 ): Promise<number> {
   return queryFolderDownloadingCount(await getDb(), folderIds);
 }
@@ -28,9 +28,11 @@ export async function folderDownloadingCount(
 /** Folder views only list complete saves, so this counts the members still on their way in. */
 export async function queryFolderDownloadingCount(
   db: Db,
-  folderIds: string[],
+  folderIds: Array<string>,
 ): Promise<number> {
-  if (folderIds.length === 0) return 0;
+  if (folderIds.length === 0) {
+    return 0;
+  }
   const [row] = await db
     .select({ value: countDistinct(saveFolders.saveId) })
     .from(saveFolders)
@@ -48,14 +50,16 @@ export async function queryFolderDownloadingCount(
 export async function queryFolderSummaries(
   db: Db,
   parentId: string,
-): Promise<FolderSummary[]> {
+): Promise<Array<FolderSummary>> {
   const children = await db
     .select({ id: folders.id })
     .from(folders)
     .where(eq(folders.parentId, parentId))
     .orderBy(folders.sortOrder, folders.name);
   const ids = children.map((folder) => folder.id);
-  if (ids.length === 0) return [];
+  if (ids.length === 0) {
+    return [];
+  }
 
   const directCounts = (status: "complete" | "ingesting") =>
     db
@@ -103,19 +107,21 @@ export async function queryFolderSummaries(
 }
 
 export async function folderPreviews(
-  folderIds: string[],
+  folderIds: Array<string>,
   limit: number,
-): Promise<Record<string, string[]>> {
+): Promise<Record<string, Array<string>>> {
   return queryFolderPreviews(await getDb(), folderIds, limit);
 }
 
 /** The newest finished Saves in each folder or any of its subfolders, newest first. */
 export async function queryFolderPreviews(
   db: Db,
-  folderIds: string[],
+  folderIds: Array<string>,
   limit: number,
-): Promise<Record<string, string[]>> {
-  if (folderIds.length === 0) return {};
+): Promise<Record<string, Array<string>>> {
+  if (folderIds.length === 0) {
+    return {};
+  }
   const roots = sql.join(
     folderIds.map((id) => sql`${id}`),
     sql`,`,
@@ -150,7 +156,7 @@ export async function queryFolderPreviews(
         order by root_id,rank`,
     ),
   );
-  const previews: Record<string, string[]> = {};
+  const previews: Record<string, Array<string>> = {};
   for (const row of rows) {
     const ids = previews[row.id] ?? [];
     ids.push(row.saveId);

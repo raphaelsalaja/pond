@@ -12,7 +12,7 @@ import type { App } from "electron";
 import { afterEach, describe, expect, it } from "vitest";
 import { resolveLogFile } from "./logging";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(() => {
   for (const root of roots.splice(0)) {
@@ -51,7 +51,9 @@ describe("resolveLogFile", () => {
     const file = resolveLogFile({
       ...test.app,
       getPath: (name) => {
-        if (name === "logs") throw new Error("Failed to get 'logs' path");
+        if (name === "logs") {
+          throw new Error("Failed to get 'logs' path");
+        }
         return test.userData;
       },
     });

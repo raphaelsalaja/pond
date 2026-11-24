@@ -9,7 +9,7 @@ export interface SaveFolderReference {
 
 export interface DuplicateReviewRequest {
   saveId?: string;
-  ids?: readonly string[];
+  ids?: ReadonlyArray<string>;
 }
 
 /** `recent` lists recent destinations for one-key assignment; `multiple` opens straight into staged selection. */
@@ -18,7 +18,7 @@ export type FolderPickerMode = "all" | "multiple" | "recent";
 export interface SaveCanvasReference {
   id: string;
   name: string;
-  saveIds: readonly string[];
+  saveIds: ReadonlyArray<string>;
 }
 
 export interface SaveLibraryBridge {
@@ -29,32 +29,32 @@ export interface SaveLibraryBridge {
   openTaggedItems(name: string): void;
   showPost(key: string): void;
   closeDetails(): void;
-  openFolderPicker(ids: readonly string[], mode?: FolderPickerMode): void;
-  openRename(ids: readonly string[]): void;
+  openFolderPicker(ids: ReadonlyArray<string>, mode?: FolderPickerMode): void;
+  openRename(ids: ReadonlyArray<string>): void;
   openConversion(
-    ids: readonly string[],
+    ids: ReadonlyArray<string>,
     fileIndex: number,
     mode?: "files" | "converted",
   ): void;
   openDuplicateReview(request: DuplicateReviewRequest): void;
   findSimilarColor(color: string): void;
   showMatching(predicate: Predicate): void;
-  showSaves(ids: readonly string[], folderId?: string): void;
+  showSaves(ids: ReadonlyArray<string>, folderId?: string): void;
   showLibrary(nav: LibraryNav, predicate?: Predicate): void;
   setVisualProbe(input: { id: string; label: string }): void;
-  foldersForSave(id: string): readonly SaveFolderReference[];
-  foldersSnapshot(): readonly SaveFolderReference[];
+  foldersForSave(id: string): ReadonlyArray<SaveFolderReference>;
+  foldersSnapshot(): ReadonlyArray<SaveFolderReference>;
   lastUsedFolderId(): string | null;
-  rememberFolderDestinations(ids: string[]): void;
+  rememberFolderDestinations(ids: Array<string>): void;
   refreshFolders(): Promise<void>;
   startEditingFolder(id: string): void;
   saveFolderPresentation(
     folderId: string,
-    patch: { pinnedIds?: string[]; coverSaveId?: string | null },
+    patch: { pinnedIds?: Array<string>; coverSaveId?: string | null },
   ): Promise<void>;
-  canvasesSnapshot(): readonly SaveCanvasReference[];
-  addSavesToCanvas(canvasId: string, ids: readonly string[]): void;
-  createCanvasWithSaves(ids: readonly string[]): void;
+  canvasesSnapshot(): ReadonlyArray<SaveCanvasReference>;
+  addSavesToCanvas(canvasId: string, ids: ReadonlyArray<string>): void;
+  createCanvasWithSaves(ids: ReadonlyArray<string>): void;
 }
 
 function unavailable(): never {

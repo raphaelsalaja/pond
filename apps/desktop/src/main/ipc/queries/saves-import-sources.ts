@@ -22,12 +22,13 @@ import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { setPrefs } from "../../core/prefs";
 import { restoreSave } from "../../core/restore-save";
 import { setSaveTags } from "../../core/tags";
-import { type QueryHandlerMap, query, StringParam } from "./params";
+import { query, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 import {
   normalizeQuickAddInput,
-  type QuickAddInput,
   QuickAddParamsSchema,
 } from "./saves-import-input";
+import type { QuickAddInput } from "./saves-import-input";
 
 const EAGLE_IMPORT_PROGRESS_INTERVAL_MS = 100;
 
@@ -49,7 +50,9 @@ async function quickAdd({
   }
   try {
     const result = await enqueue(url, { trigger: "user:quickAdd" });
-    if (tags.length > 0) await setSaveTags(result.id, tags);
+    if (tags.length > 0) {
+      await setSaveTags(result.id, tags);
+    }
     if (note) {
       await persistSave(
         result.id,
@@ -69,8 +72,9 @@ async function quickAdd({
         tags,
         inboxChannel: "captures",
       });
-      if (result.ok && result.trashed)
+      if (result.ok && result.trashed) {
         await restoreSave(result.id, "user:quickAdd");
+      }
       return result.ok
         ? { ok: true, id: result.id, created: !result.skipped }
         : { ok: false, error: "unsupported_url" };
@@ -86,7 +90,9 @@ async function quickAdd({
 export const savesImportSourceQueries = {
   "saves.classifyUrl": query(z.object({ url: StringParam }), (params) => {
     const url = params.url.trim();
-    if (!url) return { source: null };
+    if (!url) {
+      return { source: null };
+    }
     const { source } = classifyUrlToSource(normalizeUrl(url));
     return { source };
   }),
@@ -103,7 +109,9 @@ export const savesImportSourceQueries = {
       ? await dialog.showOpenDialog(win, options)
       : await dialog.showOpenDialog(options);
     const path = result.filePaths[0];
-    if (result.canceled || !path) return { ok: false, reason: "cancelled" };
+    if (result.canceled || !path) {
+      return { ok: false, reason: "cancelled" };
+    }
     return { ok: true, path };
   },
 
@@ -203,7 +211,9 @@ export const savesImportSourceQueries = {
     async (params): Promise<QueryResult<"saves.quickAdd">> => {
       const { folderId, ...input } = normalizeQuickAddInput(params);
       const result = await quickAdd(input);
-      if (!result.ok || !folderId) return result;
+      if (!result.ok || !folderId) {
+        return result;
+      }
       try {
         await addSavesToFolder(folderId, [result.id]);
         return result;
@@ -230,14 +240,17 @@ export const savesImportSourceQueries = {
       ? await dialog.showOpenDialog(win, options)
       : await dialog.showOpenDialog(options);
     const path = picked.filePaths[0];
-    if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
+    if (picked.canceled || !path) {
+      return { ok: false, reason: "cancelled" };
+    }
     const file = parseBookmarkFile(await readFile(path, "utf8"));
-    if (!file?.bookmarks.length)
+    if (!file?.bookmarks.length) {
       return {
         ok: false,
         error:
           "That file has no web bookmarks. Export bookmarks as HTML from your browser and try again.",
       };
+    }
     return importBookmarkFile(file);
   },
 
@@ -251,7 +264,9 @@ export const savesImportSourceQueries = {
       ? await dialog.showOpenDialog(win, options)
       : await dialog.showOpenDialog(options);
     const path = picked.filePaths[0];
-    if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
+    if (picked.canceled || !path) {
+      return { ok: false, reason: "cancelled" };
+    }
     return importMymindExport(path);
   },
 
@@ -272,7 +287,9 @@ export const savesImportSourceQueries = {
       ? await dialog.showOpenDialog(win, options)
       : await dialog.showOpenDialog(options);
     const path = picked.filePaths[0];
-    if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
+    if (picked.canceled || !path) {
+      return { ok: false, reason: "cancelled" };
+    }
     const { importDataExport } = await import("../../core/data-export");
     return importDataExport(path);
   },
@@ -281,7 +298,9 @@ export const savesImportSourceQueries = {
     z.object({ url: StringParam }),
     async (params): Promise<QueryResult<"saves.extractPageAssets">> => {
       const url = params.url.trim();
-      if (!url) return { ok: false, imported: 0, skipped: 0, error: "empty" };
+      if (!url) {
+        return { ok: false, imported: 0, skipped: 0, error: "empty" };
+      }
       return extractPageAssets(url);
     },
   ),

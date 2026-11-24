@@ -1,17 +1,7 @@
-import {
-  Input,
-  Select,
-  type SelectItemSpec,
-  Settings,
-  Toggle,
-  ToggleGroup,
-} from "@pond/ui";
-import {
-  type AssistantProvider,
-  assistantCatalog,
-  offeredProviders,
-  type ProviderGroup,
-} from "@shared/assistant";
+import { Input, Select, Settings, Toggle, ToggleGroup } from "@pond/ui";
+import type { SelectItemSpec } from "@pond/ui";
+import { assistantCatalog, offeredProviders } from "@shared/assistant";
+import type { AssistantProvider, ProviderGroup } from "@shared/assistant";
 import type { ReactNode } from "react";
 import { ProviderLogo } from "@/features/settings";
 import { IS_MAC, THIS_DEVICE } from "@/shared/lib/platform";
@@ -20,7 +10,7 @@ import styles from "./styles.module.css";
 
 export { AssistantPreview } from "./preview";
 
-const CHOICES: readonly { value: AssistantChoice; label: string }[] = [
+const CHOICES: ReadonlyArray<{ value: AssistantChoice; label: string }> = [
   { value: "later", label: "Not Now" },
   { value: "cloud", label: "API Key" },
   { value: "subscription", label: "Subscription" },
@@ -28,8 +18,12 @@ const CHOICES: readonly { value: AssistantChoice; label: string }[] = [
 ];
 
 function defaultEndpoint(id: AssistantProvider) {
-  if (id === "ollama") return "http://127.0.0.1:11434/v1";
-  if (id === "lmstudio") return "http://127.0.0.1:1234/v1";
+  if (id === "ollama") {
+    return "http://127.0.0.1:11434/v1";
+  }
+  if (id === "lmstudio") {
+    return "http://127.0.0.1:1234/v1";
+  }
   return "";
 }
 
@@ -53,23 +47,23 @@ function ProviderSelect({
   onChange: (provider: AssistantProvider) => void;
 }) {
   const providers = providersFor(group);
-  const items = providers.map(
-    (entry): SelectItemSpec<string> => ({
-      value: entry.id,
-      label: (
-        <span className={styles.option}>
-          <ProviderLogo provider={entry.id} size={14} />
-          {entry.provider}
-        </span>
-      ),
-    }),
-  );
+  const items = providers.map((entry): SelectItemSpec<string> => ({
+    value: entry.id,
+    label: (
+      <span className={styles.option}>
+        <ProviderLogo provider={entry.id} size={14} />
+        {entry.provider}
+      </span>
+    ),
+  }));
   return (
     <Select.Root
       value={value}
       onValueChange={(next) => {
         const match = providers.find((entry) => entry.id === next);
-        if (match) onChange(match.id);
+        if (match) {
+          onChange(match.id);
+        }
       }}
     >
       <Select.Trigger aria-label="Provider">
@@ -120,7 +114,9 @@ function Row({
 export function AssistantOptions({ choices, update }: StepProps) {
   const { assistant, provider, apiKey, endpoint } = choices;
   const choose = (next: AssistantChoice) => {
-    if (next === "later") return update({ assistant: next });
+    if (next === "later") {
+      return update({ assistant: next });
+    }
     const first = providersFor(next)[0]?.id ?? provider;
     update({
       assistant: next,
@@ -135,7 +131,9 @@ export function AssistantOptions({ choices, update }: StepProps) {
         value={[assistant]}
         onValueChange={(value) => {
           const next = CHOICES.find((choice) => choice.value === value[0]);
-          if (next) choose(next.value);
+          if (next) {
+            choose(next.value);
+          }
         }}
       >
         {CHOICES.map(({ value, label }) => (

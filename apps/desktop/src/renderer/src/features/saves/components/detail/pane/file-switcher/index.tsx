@@ -6,8 +6,8 @@ import styles from "./styles.module.css";
 export interface FilePager {
   index: number;
   count: number;
-  onPrevious(): void;
-  onNext(): void;
+  onPrevious: () => void;
+  onNext: () => void;
 }
 
 export function FileSwitcher({
@@ -19,7 +19,9 @@ export function FileSwitcher({
   shortcuts?: boolean;
 }) {
   const { index, count, onPrevious, onNext } = pager;
-  if (count < 2) return null;
+  if (count < 2) {
+    return null;
+  }
 
   return (
     <div className={styles.switcher}>

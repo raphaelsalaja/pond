@@ -144,7 +144,9 @@ export function registerSaveCommands(program: Command): void {
         ...StringArraySchema.parse(urls),
         ...(flags.stdin ? await stdinLines() : []),
       ];
-      if (requested.length === 0) throw new Error("Provide at least one URL.");
+      if (requested.length === 0) {
+        throw new Error("Provide at least one URL.");
+      }
       const results = [];
       for (const url of requested) {
         const result = await api.enqueue({
@@ -160,7 +162,9 @@ export function registerSaveCommands(program: Command): void {
         );
         results.push({ url, ...result });
       }
-      if (flags.detach) return results;
+      if (flags.detach) {
+        return results;
+      }
       const rows = await waitForSaves(
         api,
         results.map((result) => result.id),

@@ -1,11 +1,10 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
 import {
   hydrateOrganizationBundle,
@@ -18,24 +17,32 @@ function available() {
     db.close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
-const roots: string[] = [];
-const dbs: Database.Database[] = [];
+const roots: Array<string> = [];
+const dbs: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of dbs.splice(0)) db.close();
-  for (const root of roots.splice(0))
+  for (const db of dbs.splice(0)) {
+    db.close();
+  }
+  for (const root of roots.splice(0)) {
     rmSync(root, { recursive: true, force: true });
+  }
 });
 function db() {
   const raw = new Database(":memory:");
   dbs.push(raw);
   initializePondSchema(raw, () => false);
-  return Object.assign(drizzle(raw, { schema: { ...schema, ...events } }), {
-    $raw: raw,
-  });
+  return Object.assign(
+    drizzle(raw, { schema: { ...libraryTables, ...eventTables } }),
+    {
+      $raw: raw,
+    },
+  );
 }
 describe.skipIf(!available())("portable organization", () => {
   it("restores folders, nested smart groups and saved presentation into a fresh index", () => {

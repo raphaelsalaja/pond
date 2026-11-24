@@ -1,3 +1,4 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { ease, mix, progress } from "@pond/video";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { Source } from "../data";
@@ -12,7 +13,7 @@ interface RollProps {
   t: number;
   prefix: string;
   suffix?: string;
-  items: Source[];
+  items: Array<Source>;
   enter: number;
   /** When the chip leaves its first item; each later item lands `step` ms after the last. */
   roll: number;
@@ -36,19 +37,23 @@ export function Roll({
   size = 64,
 }: RollProps) {
   const measure = useRef<HTMLSpanElement>(null);
-  const [widths, setWidths] = useState<number[]>([]);
+  const [widths, setWidths] = useState<Array<number>>([]);
   useLayoutEffect(() => {
-    /** SAFETY: the measure span renders only `<span>` children. */
-    const next = [...(measure.current?.children ?? [])].map(
-      (item) => (item as HTMLElement).offsetWidth,
+    const next = [...(measure.current?.children ?? [])].map((item) =>
+      isHTMLElement(item) ? item.offsetWidth : 0,
     );
-    if (next.join() !== widths.join()) setWidths(next);
-  });
-  if (t < enter - 50 || t > exit + 600) return null;
+    if (next.join() !== widths.join()) {
+      setWidths(next);
+    }
+  }, [t, prefix, suffix, items, enter, roll, step, exit, y, size, widths]);
+  if (t < enter - 50 || t > exit + 600) {
+    return null;
+  }
 
   let index = 0;
-  for (let i = 0; i < items.length - 1; i++)
+  for (let i = 0; i < items.length - 1; i++) {
     index += ease.inOut(progress(t, roll + i * step, MOVE));
+  }
   const from = Math.floor(index);
   const to = Math.min(from + 1, items.length - 1);
   const k = index - from;
@@ -104,7 +109,9 @@ export function Roll({
       >
         {items.map((item, i) => {
           const distance = Math.abs(i - index);
-          if (distance >= 1) return null;
+          if (distance >= 1) {
+            return null;
+          }
           return (
             <span
               key={item.name}

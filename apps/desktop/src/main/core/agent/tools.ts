@@ -1,17 +1,8 @@
 import { saves, tags } from "@pond/schema/db";
 import { tagsEmpty } from "@pond/schema/filters/fields";
 import { FIELD_IDS } from "@pond/schema/filters/meta";
-import {
-  and,
-  count,
-  desc,
-  eq,
-  isNotNull,
-  isNull,
-  or,
-  type SQL,
-  sql,
-} from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import { IPC } from "../../../shared/constants";
 import {
@@ -22,12 +13,12 @@ import { getDb } from "../../db";
 import { broadcast } from "../../lib/broadcast";
 import { folderIdsForSave, listFolders } from "../folders";
 import {
-  type LibraryRetrievalScope,
   libraryRetrievalInput,
   libraryScopeClauses,
   retrieveLibrary,
   toFtsMatchQuery,
 } from "../library-retrieval";
+import type { LibraryRetrievalScope } from "../library-retrieval";
 import { getPrefs } from "../prefs";
 
 export const searchLibraryInput = libraryRetrievalInput;
@@ -234,7 +225,9 @@ export async function readSave(
     and(eq(saves.id, input.id), ...libraryScopeClauses(scope)),
   );
   const row = rows[0];
-  if (!row) return { error: "Save not found." };
+  if (!row) {
+    return { error: "Save not found." };
+  }
   const fields = {
     description: row.description ?? "",
     notes: row.notes ?? "",
@@ -300,7 +293,9 @@ export async function grepLibrary(
   deps = toolDependencies,
 ) {
   const match = toFtsMatchQuery(input.query);
-  if (!match) return { hits: [] };
+  if (!match) {
+    return { hits: [] };
+  }
   /** SQLite snippet() returns null for columns that did not match. */
   const rows = GrepRowsSchema.parse(
     await deps.grepRows(match, input.id, input.limit ?? 20),

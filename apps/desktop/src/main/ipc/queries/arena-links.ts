@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { IPC } from "../../../shared/constants";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const PROGRESS_INTERVAL_MS = 250;
 
@@ -26,7 +27,9 @@ export const arenaLinkQueries = {
           ? (progress) => {
               const now = Date.now();
               const done = progress.processed === progress.total;
-              if (!done && now - lastProgressAt < PROGRESS_INTERVAL_MS) return;
+              if (!done && now - lastProgressAt < PROGRESS_INTERVAL_MS) {
+                return;
+              }
               lastProgressAt = now;
               if (!event.sender.isDestroyed()) {
                 event.sender.send(IPC.arenaLinkProgress, {

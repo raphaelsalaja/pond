@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
-import { type Session, session } from "electron";
+import { session } from "electron";
+import type { Session } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { partitionForIngest } from "../../../sync/accounts";
@@ -66,7 +67,9 @@ const EnvelopeSchema = z.object({
 /** GraphQL rejects a call unless the `bcp` cookie and `X-BCP` header carry the same client-made id. */
 async function ensureBcp(ses: Session): Promise<string> {
   const [hit] = await ses.cookies.get({ url: WWW, name: "bcp" });
-  if (hit?.value) return hit.value;
+  if (hit?.value) {
+    return hit.value;
+  }
   const value = randomUUID();
   await ses.cookies.set({
     url: WWW,
@@ -109,11 +112,13 @@ async function behanceGraphql<T>(
   try {
     res = await post(JSON.stringify({ query, variables }));
     text = await res.text();
-  } catch (err) {
-    log.warn("[pond behance-api] fetch threw", err);
+  } catch (error) {
+    log.warn("[pond behance-api] fetch threw", error);
     return { ok: false, status: 0 };
   }
-  if (res.status === 429) return { ok: false, status: 429 };
+  if (res.status === 429) {
+    return { ok: false, status: 429 };
+  }
   if (res.status === 403 && text.includes("js_challenge_value")) {
     return { ok: false, status: 403, challenge: true };
   }
@@ -135,7 +140,9 @@ function failure(result: GraphqlFailure): BehanceListResult {
   if (result.status === 401 || result.status === 403) {
     return { ok: false, reason: "auth_required" };
   }
-  if (result.status === 429) return { ok: false, reason: "rate_limited" };
+  if (result.status === 429) {
+    return { ok: false, reason: "rate_limited" };
+  }
   return { ok: false, reason: "unknown" };
 }
 
@@ -143,7 +150,9 @@ async function viewerUsername(
   post: BehancePost,
 ): Promise<{ ok: true; username: string } | GraphqlFailure> {
   const viewer = await behanceGraphql(post, VIEWER_QUERY, {}, ViewerSchema);
-  if (!viewer.ok) return viewer;
+  if (!viewer.ok) {
+    return viewer;
+  }
   const username = viewer.json.viewer?.username;
   return username ? { ok: true, username } : { ok: false, status: 401 };
 }
@@ -176,12 +185,14 @@ export async function readBehanceAppreciations(
   post: BehancePost,
 ): Promise<BehanceListResult> {
   const viewer = await viewerUsername(post);
-  if (!viewer.ok) return failure(viewer);
+  if (!viewer.ok) {
+    return failure(viewer);
+  }
 
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   let cursor = args.resumeCursor;
   let knownPageStreak = 0;
 
@@ -193,7 +204,9 @@ export async function readBehanceAppreciations(
       AppreciatedSchema,
     );
     if (!result.ok) {
-      if (page === 0) return failure(result);
+      if (page === 0) {
+        return failure(result);
+      }
       log.warn("[pond behance-api] appreciations page failed", result.status);
       return partial(entries, cursor);
     }
@@ -202,7 +215,9 @@ export async function readBehanceAppreciations(
     let fresh = 0;
     for (const edge of list?.edges ?? []) {
       const entry = appreciationEntry(edge);
-      if (!entry) continue;
+      if (!entry) {
+        continue;
+      }
       const savedAt = entry.savedAt ? Date.parse(entry.savedAt) : Number.NaN;
       if (
         Number.isFinite(since) &&
@@ -212,7 +227,9 @@ export async function readBehanceAppreciations(
         return { ok: true, entries, reachedEnd: true, seen: entries.length };
       }
       read += 1;
-      if (!known.has(entry.sourceId)) fresh += 1;
+      if (!known.has(entry.sourceId)) {
+        fresh += 1;
+      }
       entries.push(entry);
     }
     if (earlyStop && read > 0 && fresh === 0) {
@@ -234,7 +251,7 @@ export async function readBehanceAppreciations(
 }
 
 function partial(
-  entries: ListEntry[],
+  entries: Array<ListEntry>,
   cursor: string | undefined,
 ): ListHarvestResult {
   const result: ListHarvestResult = {
@@ -243,7 +260,9 @@ function partial(
     reachedEnd: false,
     seen: entries.length,
   };
-  if (cursor) result.resumeCursor = cursor;
+  if (cursor) {
+    result.resumeCursor = cursor;
+  }
   return result;
 }
 
@@ -254,7 +273,9 @@ export async function harvestBehanceAppreciations(
   const jar = partition ?? (await partitionForIngest("behance"));
   const post = sessionPost(jar);
   const first = await readBehanceAppreciations(args, post);
-  if (first.ok || !("challenge" in first)) return first;
+  if (first.ok || !("challenge" in first)) {
+    return first;
+  }
   await warmBehance(jar);
   return readBehanceAppreciations(args, post);
 }

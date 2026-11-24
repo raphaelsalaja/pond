@@ -60,13 +60,17 @@ const WEB_EXTRACTOR: Extractor = {
   },
 };
 
-export const EXTRACTOR_LIST: readonly Extractor[] = Object.values(
+export const EXTRACTOR_LIST: ReadonlyArray<Extractor> = Object.values(
   EXTRACTORS,
 ).filter((extractor) => extractor !== null);
 
 export function extractorFor(source: Source): Extractor | null {
-  if (source === "local") return null;
-  if (source === "web") return WEB_EXTRACTOR;
+  if (source === "local") {
+    return null;
+  }
+  if (source === "web") {
+    return WEB_EXTRACTOR;
+  }
   return EXTRACTORS[source];
 }
 
@@ -78,9 +82,13 @@ export function resolveExtractor(rawUrl: string): Extractor {
     throw new UnsupportedError(`invalid url: ${rawUrl}`);
   }
   for (const ex of EXTRACTOR_LIST) {
-    if (ex.suitable(url)) return ex;
+    if (ex.suitable(url)) {
+      return ex;
+    }
   }
-  if (WEB_EXTRACTOR.suitable(url)) return WEB_EXTRACTOR;
+  if (WEB_EXTRACTOR.suitable(url)) {
+    return WEB_EXTRACTOR;
+  }
   throw new UnsupportedError(`no extractor for ${rawUrl}`);
 }
 

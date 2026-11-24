@@ -20,7 +20,7 @@ export function FishActivity({
   onOpenChat?: (chatId: string) => void;
 }) {
   const runs = fishRuns(fish);
-  if (!runs.length)
+  if (!runs.length) {
     return (
       <Empty.Root size="card">
         <Empty.Media>
@@ -42,6 +42,7 @@ export function FishActivity({
         </Empty.Description>
       </Empty.Root>
     );
+  }
   return runsByDay(runs).map(({ day, runs }) => (
     <Section
       key={day}

@@ -17,17 +17,23 @@ export function FishDetails() {
     fishIdFromPath(location.pathname),
   );
   const [fishId, setFishId] = useState(openId);
-  if (openId && openId !== fishId) setFishId(openId);
+  if (openId && openId !== fishId) {
+    setFishId(openId);
+  }
   const editingId = useFishEditingId();
   const routineId = useOpenRoutineId(fishId);
   const folders = useFolders();
   const tags = useTags();
 
   useEffect(() => {
-    if (editingId || routineId) libraryChrome.setDetailsOpen(true);
+    if (editingId || routineId) {
+      libraryChrome.setDetailsOpen(true);
+    }
   }, [editingId, routineId]);
 
-  if (!fishId) return null;
+  if (!fishId) {
+    return null;
+  }
   return (
     <FishProfile
       fishId={fishId}

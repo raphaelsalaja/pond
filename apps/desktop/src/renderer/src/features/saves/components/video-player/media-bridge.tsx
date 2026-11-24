@@ -1,4 +1,5 @@
 import { stepPlaybackRate, stepVolume, useVideo } from "@pond/ui";
+import { isElement } from "@pond/ui/dom";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { useMediaSession } from "@/features/saves/hooks/use-media-session";
@@ -27,12 +28,24 @@ const ARROW_KEY_OWNER = [
   "[role='textbox']",
 ].join(", ");
 
+function owns(node: EventTarget | null): boolean {
+  return isElement(node) && node.closest(ARROW_KEY_OWNER) !== null;
+}
+
 /** Focused fields, sliders, and other controls keep arrow keys for themselves. */
 function controlOwnsArrowKeys(event: KeyboardEvent): boolean {
-  const owns = (node: EventTarget | null) =>
-    node instanceof Element && node.closest(ARROW_KEY_OWNER) != null;
-  if (owns(document.activeElement) || owns(event.target)) return true;
+  if (owns(document.activeElement) || owns(event.target)) {
+    return true;
+  }
   return event.composedPath().some((node) => owns(node));
+}
+
+/** The media element is DOM state owned outside React, so effects and handlers write it here. */
+function writeMedia(
+  video: HTMLVideoElement,
+  patch: Partial<Pick<HTMLVideoElement, "loop" | "muted" | "volume">>,
+): void {
+  Object.assign(video, patch);
 }
 
 export function MediaBridge({
@@ -55,7 +68,9 @@ export function MediaBridge({
   const [prefs, , prefsReady] = usePrefs("viewer");
   const applyingMute = useRef(false);
   const videoMutedRef = useRef(prefs.videoMuted);
-  videoMutedRef.current = prefs.videoMuted;
+  useLayoutEffect(() => {
+    videoMutedRef.current = prefs.videoMuted;
+  }, [prefs.videoMuted]);
   const shortcuts = useShortcutBindings();
   const lastSavedSecond = useRef(-1);
   const restored = useRef(false);
@@ -63,20 +78,33 @@ export function MediaBridge({
   const { seek, seekBy, play, pause } = actions;
   const { currentTime, playing, duration, rate } = state;
   useEffect(() => {
-    if (!meta.videoRef.current) return;
+    const video = meta.videoRef.current;
+    if (!video) {
+      return;
+    }
     const automaticLoop =
       prefs.loopShortVideos !== false && duration > 0 && duration < 30;
-    meta.videoRef.current.loop = !loopRange && (loopOverride ?? automaticLoop);
+    writeMedia(video, {
+      loop: !loopRange && (loopOverride ?? automaticLoop),
+    });
   }, [duration, loopOverride, meta.videoRef, prefs.loopShortVideos, loopRange]);
 
   useEffect(() => {
-    if (!active || !playing || !loopRange || loopRange[1] > duration) return;
+    if (!active || !playing || !loopRange || loopRange[1] > duration) {
+      return;
+    }
     const video = meta.videoRef.current;
-    if (!video) return;
+    if (!video) {
+      return;
+    }
     let request = 0;
     const loop = () => {
-      if (video.currentTime >= loopRange[1] || video.currentTime < loopRange[0])
+      if (
+        video.currentTime >= loopRange[1] ||
+        video.currentTime < loopRange[0]
+      ) {
         video.currentTime = loopRange[0];
+      }
       request = requestAnimationFrame(loop);
     };
     request = requestAnimationFrame(loop);
@@ -85,7 +113,9 @@ export function MediaBridge({
 
   useEffect(() => {
     const video = meta.videoRef.current;
-    if (!active || !video || !loopRange || loopRange[1] > duration) return;
+    if (!active || !video || !loopRange || loopRange[1] > duration) {
+      return;
+    }
     const restart = () => {
       video.currentTime = loopRange[0];
       void video.play().catch(() => {});
@@ -95,16 +125,25 @@ export function MediaBridge({
   }, [active, loopRange, duration, meta.videoRef]);
 
   useEffect(() => {
-    if (restored.current || duration <= 0) return;
+    if (restored.current || duration <= 0) {
+      return;
+    }
     restored.current = true;
     if (prefs.rememberPlayback !== false) {
       const position = viewerMemory.playback(src);
-      if (position > 0 && position < duration - 1) seek(position);
+      if (position > 0 && position < duration - 1) {
+        seek(position);
+      }
     }
   }, [duration, prefs.rememberPlayback, seek, src]);
   useEffect(() => {
-    if (prefs.rememberPlayback === false || !restored.current || duration <= 0)
+    if (
+      prefs.rememberPlayback === false ||
+      !restored.current ||
+      duration <= 0
+    ) {
       return;
+    }
     const position = meta.videoRef.current?.currentTime ?? currentTime;
     const second = Math.floor(position);
     if (second !== lastSavedSecond.current) {
@@ -171,11 +210,16 @@ export function MediaBridge({
   );
   const nudgeVolume = (delta: number) => {
     const video = meta.videoRef.current;
-    if (!video) return;
+    if (!video) {
+      return;
+    }
     const next = stepVolume(video.volume, delta);
     // Raising the level while muted should be heard. Lowering it stays muted.
-    if (delta > 0 || !video.muted) actions.setVolume(next);
-    else video.volume = next;
+    if (delta > 0 || !video.muted) {
+      actions.setVolume(next);
+    } else {
+      writeMedia(video, { volume: next });
+    }
     actions.showControls();
   };
   const volumeHotkeys = {
@@ -188,7 +232,9 @@ export function MediaBridge({
   useHotkey(
     bindingKeys(shortcuts, "viewer.volume-up"),
     (event) => {
-      if (event.defaultPrevented || controlOwnsArrowKeys(event)) return;
+      if (event.defaultPrevented || controlOwnsArrowKeys(event)) {
+        return;
+      }
       event.preventDefault();
       nudgeVolume(0.05);
     },
@@ -197,7 +243,9 @@ export function MediaBridge({
   useHotkey(
     bindingKeys(shortcuts, "viewer.volume-down"),
     (event) => {
-      if (event.defaultPrevented || controlOwnsArrowKeys(event)) return;
+      if (event.defaultPrevented || controlOwnsArrowKeys(event)) {
+        return;
+      }
       event.preventDefault();
       nudgeVolume(-0.05);
     },
@@ -214,16 +262,22 @@ export function MediaBridge({
   // The M shortcut writes `muted` directly, so `volumechange` records it.
   useLayoutEffect(() => {
     const video = meta.video;
-    if (!prefsReady || !video || video.muted === prefs.videoMuted) return;
+    if (!prefsReady || !video || video.muted === prefs.videoMuted) {
+      return;
+    }
     applyingMute.current = true;
-    video.muted = prefs.videoMuted;
+    writeMedia(video, { muted: prefs.videoMuted });
     applyingMute.current = false;
   }, [meta.video, prefs.videoMuted, prefsReady]);
   useEffect(() => {
     const video = meta.video;
-    if (!video) return;
+    if (!video) {
+      return;
+    }
     const onVolumeChange = () => {
-      if (applyingMute.current || video.muted === videoMutedRef.current) return;
+      if (applyingMute.current || video.muted === videoMutedRef.current) {
+        return;
+      }
       void patchPrefsSection("viewer", { videoMuted: video.muted });
     };
     video.addEventListener("volumechange", onVolumeChange);
@@ -231,9 +285,14 @@ export function MediaBridge({
   }, [meta.video]);
 
   useEffect(() => {
-    if (!prefsReady || !meta.video) return;
-    if (active && prefs.autoplayVideo !== false) play();
-    else pause();
+    if (!prefsReady || !meta.video) {
+      return;
+    }
+    if (active && prefs.autoplayVideo !== false) {
+      play();
+    } else {
+      pause();
+    }
   }, [active, meta.video, play, pause, prefs.autoplayVideo, prefsReady]);
 
   return null;

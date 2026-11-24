@@ -20,9 +20,9 @@ export interface ListingEntry {
   likes?: number;
   comments?: number;
   mediaUrl?: string;
-  mediaUrls?: ListingMedia[];
+  mediaUrls?: Array<ListingMedia>;
   mediaType?: MediaType;
-  listKinds?: ListKind[];
+  listKinds?: Array<ListKind>;
 }
 
 export type RedditListingKind = "saved" | "upvoted";
@@ -37,12 +37,14 @@ export function redditListingUrl(
     raw_json: "1",
     type: "links",
   });
-  if (after) params.set("after", after);
+  if (after) {
+    params.set("after", after);
+  }
   return `https://www.reddit.com/user/${encodeURIComponent(handle)}/${kind}.json?${params}`;
 }
 
 export interface ListingPage {
-  entries: ListingEntry[];
+  entries: Array<ListingEntry>;
   after: string | null;
 }
 
@@ -170,15 +172,21 @@ export const RedditPostResponseSchema = z.union([
 
 export function handleFromMeJson(account: RedditAccount): string | null {
   const name = account.data?.name;
-  if (name === undefined) return null;
+  if (name === undefined) {
+    return null;
+  }
   const handle = name.replace(/^u\//, "").trim();
-  if (!handle || handle === "[deleted]" || handle === "me") return null;
+  if (!handle || handle === "[deleted]" || handle === "me") {
+    return null;
+  }
   return handle;
 }
 
 export function avatarFromMeJson(account: RedditAccount): string | null {
   const data = account.data;
-  if (!data) return null;
+  if (!data) {
+    return null;
+  }
   const sub = data.subreddit;
   for (const raw of [
     data.icon_img,
@@ -187,27 +195,42 @@ export function avatarFromMeJson(account: RedditAccount): string | null {
     sub?.community_icon,
   ]) {
     const url = cleanAvatarUrl(raw);
-    if (url) return url;
+    if (url) {
+      return url;
+    }
   }
   return null;
 }
 
 function cleanAvatarUrl(raw: string | undefined): string | null {
-  if (raw === undefined) return null;
-  const url = raw.replace(/&amp;/g, "&").replace(/\\\//g, "/").trim();
+  if (raw === undefined) {
+    return null;
+  }
+  const url = raw
+    .replaceAll("&amp;", "&")
+    .replaceAll(String.raw`\/`, "/")
+    .trim();
   return /^https?:\/\//i.test(url) ? url : null;
 }
 
 export function entriesFromListing(listing: RedditListing): ListingPage {
-  if (listing.error === 403) return { entries: [], after: null };
+  if (listing.error === 403) {
+    return { entries: [], after: null };
+  }
   const children = listing.data?.children ?? [];
-  const entries: ListingEntry[] = [];
+  const entries: Array<ListingEntry> = [];
   for (const child of children) {
-    if (child.kind !== "t3") continue;
+    if (child.kind !== "t3") {
+      continue;
+    }
     const data = child.data;
-    if (!data) continue;
+    if (!data) {
+      continue;
+    }
     const id = data.id;
-    if (!id) continue;
+    if (!id) {
+      continue;
+    }
     const permalink = data.permalink ?? `/comments/${id}/`;
     const url = permalink.startsWith("http")
       ? permalink
@@ -220,20 +243,30 @@ export function entriesFromListing(listing: RedditListing): ListingPage {
       data.subreddit_name_prefixed ??
       (data.subreddit ? `r/${data.subreddit}` : undefined);
     const entry: ListingEntry = { sourceId: id, url };
-    if (data.title) entry.title = data.title;
+    if (data.title) {
+      entry.title = data.title;
+    }
     if (selftext) {
       entry.description =
         selftext.length > 4000 ? `${selftext.slice(0, 4000)}…` : selftext;
     }
-    if (data.author) entry.author = data.author;
-    if (subreddit) entry.subreddit = subreddit;
+    if (data.author) {
+      entry.author = data.author;
+    }
+    if (subreddit) {
+      entry.subreddit = subreddit;
+    }
     Object.assign(entry, mediaFromPost(data));
     if (publishedAt) {
       entry.publishedAt = publishedAt;
       entry.savedAt = publishedAt;
     }
-    if (data.score !== undefined) entry.likes = data.score;
-    if (data.num_comments !== undefined) entry.comments = data.num_comments;
+    if (data.score !== undefined) {
+      entry.likes = data.score;
+    }
+    if (data.num_comments !== undefined) {
+      entry.comments = data.num_comments;
+    }
     entries.push(entry);
   }
   const after = listing.data?.after ?? null;
@@ -255,7 +288,9 @@ function mediaFromPost(
   data: RedditPost,
 ): Pick<ListingEntry, "mediaUrl" | "mediaUrls" | "mediaType"> {
   const video = videoFromPost(data);
-  if (video) return video;
+  if (video) {
+    return video;
+  }
   const gallery = galleryUrls(data);
   if (gallery.length > 0) {
     return {
@@ -287,17 +322,23 @@ function videoFromPost(
   data: RedditPost,
 ): Pick<ListingEntry, "mediaUrl" | "mediaUrls" | "mediaType"> | null {
   const own = hostedVideo(data);
-  if (own) return videoMedia(own.url, own.poster);
+  if (own) {
+    return videoMedia(own.url, own.poster);
+  }
   for (const parent of data.crosspost_parent_list ?? []) {
     const parentVideo = hostedVideo(parent);
-    if (!parentVideo) continue;
+    if (!parentVideo) {
+      continue;
+    }
     return videoMedia(
       parentVideo.url,
       firstPreviewUrl(data) ?? parentVideo.poster,
     );
   }
   const embed = embeddedVideoUrl(data) ?? parentEmbeddedVideoUrl(data);
-  if (embed) return videoMedia(embed, firstPreviewUrl(data));
+  if (embed) {
+    return videoMedia(embed, firstPreviewUrl(data));
+  }
   return null;
 }
 
@@ -306,7 +347,9 @@ function videoMedia(
   poster: string | undefined,
 ): Pick<ListingEntry, "mediaUrl" | "mediaUrls" | "mediaType"> {
   const video: ListingMedia = { url, type: "video" };
-  if (poster) video.poster = poster;
+  if (poster) {
+    video.poster = poster;
+  }
   return {
     mediaUrl: poster ?? url,
     mediaUrls: [video],
@@ -320,7 +363,9 @@ function hostedVideo(
   const redditVideo =
     data.media?.reddit_video ?? data.secure_media?.reddit_video;
   const url = redditVideo?.fallback_url ?? redditVideo?.dash_url;
-  if (data.is_video !== true || !url) return null;
+  if (data.is_video !== true || !url) {
+    return null;
+  }
   const poster = firstPreviewUrl(data);
   return poster ? { url, poster } : { url };
 }
@@ -328,7 +373,9 @@ function hostedVideo(
 function parentEmbeddedVideoUrl(data: RedditPost): string | null {
   for (const parent of data.crosspost_parent_list ?? []) {
     const url = embeddedVideoUrl(parent);
-    if (url) return url;
+    if (url) {
+      return url;
+    }
   }
   return null;
 }
@@ -336,7 +383,9 @@ function parentEmbeddedVideoUrl(data: RedditPost): string | null {
 function embeddedVideoUrl(data: RedditLink): string | null {
   for (const raw of [data.url_overridden_by_dest, data.url]) {
     const video = supportedEmbedUrl(raw);
-    if (video) return video;
+    if (video) {
+      return video;
+    }
   }
   return null;
 }
@@ -345,13 +394,17 @@ function isEmbedVideoSource(
   source: ReturnType<typeof hostToSource>,
 ): source is (typeof EMBED_VIDEO_SOURCES)[number] {
   for (const id of EMBED_VIDEO_SOURCES) {
-    if (source === id) return true;
+    if (source === id) {
+      return true;
+    }
   }
   return false;
 }
 
 function supportedEmbedUrl(raw: string | undefined): string | null {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   const source = hostToSource(raw);
   if (
     isEmbedVideoSource(source) &&
@@ -378,7 +431,9 @@ function youtubeVideoUrl(raw: string): string | null {
     host === "youtube.com" ||
     host === "youtube-nocookie.com" ||
     host.endsWith(".youtube.com");
-  if (!youtube) return null;
+  if (!youtube) {
+    return null;
+  }
   const fromPath = /^\/(?:embed|live|shorts)\/([^/?#]+)/.exec(
     url.pathname,
   )?.[1];
@@ -388,16 +443,20 @@ function youtubeVideoUrl(raw: string): string | null {
 
 function firstPreviewUrl(data: RedditLink): string | undefined {
   const source = data.preview?.images?.[0]?.source;
-  return source?.url?.replace(/&amp;/g, "&");
+  return source?.url?.replaceAll("&amp;", "&");
 }
 
-function galleryUrls(data: RedditPost): ListingMedia[] {
+function galleryUrls(data: RedditPost): Array<ListingMedia> {
   const meta = data.media_metadata;
-  if (!meta) return [];
-  const out: ListingMedia[] = [];
+  if (!meta) {
+    return [];
+  }
+  const out: Array<ListingMedia> = [];
   for (const value of Object.values(meta)) {
-    const url = value.s?.u?.replace(/&amp;/g, "&");
-    if (url) out.push({ url, type: "image" });
+    const url = value.s?.u?.replaceAll("&amp;", "&");
+    if (url) {
+      out.push({ url, type: "image" });
+    }
   }
   return out;
 }

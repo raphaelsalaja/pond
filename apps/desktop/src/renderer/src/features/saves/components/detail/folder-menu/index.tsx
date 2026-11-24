@@ -2,24 +2,12 @@ import {
   IconChevronRight as ChevronRight,
   IconPlus as Plus,
 } from "@pond/icons";
-import {
-  Button,
-  Keyboard,
-  PickerPanel,
-  type PickerSelectionState,
-  usePickerCursor,
-} from "@pond/ui";
-import {
-  type CSSProperties,
-  type KeyboardEvent,
-  useMemo,
-  useState,
-} from "react";
-import {
-  FolderIcon,
-  type FolderIconId,
-  folderColorCss,
-} from "@/shared/lib/folder-icons";
+import { Button, Keyboard, PickerPanel, usePickerCursor } from "@pond/ui";
+import type { PickerSelectionState } from "@pond/ui";
+import { useMemo, useState } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
+import { FolderIcon, folderColorCss } from "@/shared/lib/folder-icons";
+import type { FolderIconId } from "@/shared/lib/folder-icons";
 import { formatPlural } from "@/shared/lib/format";
 import { chordGlyphs } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
@@ -35,9 +23,9 @@ export interface FolderMenuItem {
 }
 
 interface FolderNode extends FolderMenuItem {
-  children: FolderNode[];
+  children: Array<FolderNode>;
   depth: number;
-  parents: readonly string[];
+  parents: ReadonlyArray<string>;
   path: string;
 }
 
@@ -52,31 +40,33 @@ interface FolderRowStyle extends CSSProperties {
 export interface FolderMenuBatch {
   staged: ReadonlySet<string>;
   applying?: boolean;
-  onToggle(folder: FolderMenuItem): void;
-  onApply(): void;
-  onCancel(): void;
+  onToggle: (folder: FolderMenuItem) => void;
+  onApply: () => void;
+  onCancel: () => void;
 }
 
 export interface FolderMenuProps {
-  folders: readonly FolderMenuItem[];
+  folders: ReadonlyArray<FolderMenuItem>;
   selectionSize: number;
   selection?: "multiple" | "single";
-  onToggle(folder: FolderMenuItem): void | Promise<void>;
-  onCreate?(name: string): void | Promise<void>;
-  onStartBatch?(): void;
+  onToggle: (folder: FolderMenuItem) => void | Promise<void>;
+  onCreate?: (name: string) => void | Promise<void>;
+  onStartBatch?: () => void;
   /** Staged mode: rows toggle a pending set that applies together as one change. */
   batch?: FolderMenuBatch;
 }
 
 const APPLY_CHORD = "Mod+Enter";
 
-function buildTree(folders: readonly FolderMenuItem[]): FolderNode[] {
+function buildTree(folders: ReadonlyArray<FolderMenuItem>): Array<FolderNode> {
   const byId = new Map(folders.map((folder) => [folder.id, folder]));
-  const children = new Map<string, FolderMenuItem[]>();
+  const children = new Map<string, Array<FolderMenuItem>>();
   const nested = new Set<string>();
 
   for (const folder of folders) {
-    if (!folder.parentId || !byId.has(folder.parentId)) continue;
+    if (!folder.parentId || !byId.has(folder.parentId)) {
+      continue;
+    }
     const ancestors = new Set([folder.id]);
     let parentId: string | null | undefined = folder.parentId;
     let cyclic = false;
@@ -88,7 +78,9 @@ function buildTree(folders: readonly FolderMenuItem[]): FolderNode[] {
       ancestors.add(parentId);
       parentId = byId.get(parentId)?.parentId;
     }
-    if (cyclic) continue;
+    if (cyclic) {
+      continue;
+    }
     children.set(folder.parentId, [
       ...(children.get(folder.parentId) ?? []),
       folder,
@@ -100,7 +92,7 @@ function buildTree(folders: readonly FolderMenuItem[]): FolderNode[] {
     a.name.localeCompare(b.name);
   const expand = (
     folder: FolderMenuItem,
-    parents: readonly string[],
+    parents: ReadonlyArray<string>,
     depth: number,
   ): FolderNode => ({
     ...folder,
@@ -118,14 +110,14 @@ function buildTree(folders: readonly FolderMenuItem[]): FolderNode[] {
     .map((folder) => expand(folder, [], 0));
 }
 
-function flatten(nodes: readonly FolderNode[]): FolderNode[] {
+function flatten(nodes: ReadonlyArray<FolderNode>): Array<FolderNode> {
   return nodes.flatMap((node) => [node, ...flatten(node.children)]);
 }
 
 function visibleTree(
-  nodes: readonly FolderNode[],
+  nodes: ReadonlyArray<FolderNode>,
   collapsed: ReadonlySet<string>,
-): FolderNode[] {
+): Array<FolderNode> {
   return nodes.flatMap((node) => [
     node,
     ...(!collapsed.has(node.id) ? visibleTree(node.children, collapsed) : []),
@@ -133,9 +125,9 @@ function visibleTree(
 }
 
 function searchFolders(
-  folders: readonly FolderNode[],
+  folders: ReadonlyArray<FolderNode>,
   query: string,
-): FolderNode[] {
+): Array<FolderNode> {
   const matching = folders.filter((folder) =>
     folder.path.toLowerCase().includes(query),
   );
@@ -175,19 +167,23 @@ export function FolderMenu({
   );
   const normalizedQuery = query.trim().toLowerCase();
   const foldersForScope = useMemo(() => {
-    if (normalizedQuery) return searchFolders(flat, normalizedQuery);
+    if (normalizedQuery) {
+      return searchFolders(flat, normalizedQuery);
+    }
     return visibleTree(tree, collapsed);
   }, [collapsed, flat, normalizedQuery, tree]);
   const exactMatch = flat.some(
     (folder) => folder.name.toLowerCase() === normalizedQuery,
   );
-  const rows = useMemo<FolderPickerRow[]>(() => {
+  const rows = useMemo<Array<FolderPickerRow>>(() => {
     const folderRows = foldersForScope.map((folder) => ({
       id: `folder-${folder.id}`,
       kind: "folder" as const,
       folder,
     }));
-    if (!normalizedQuery || !onCreate || exactMatch) return folderRows;
+    if (!normalizedQuery || !onCreate || exactMatch) {
+      return folderRows;
+    }
     return [
       ...folderRows,
       { id: `create-${normalizedQuery}`, kind: "create", name: query.trim() },
@@ -198,8 +194,11 @@ export function FolderMenu({
   function toggleExpanded(id: string) {
     setCollapsed((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }
@@ -209,12 +208,16 @@ export function FolderMenu({
       void onCreate?.(row.name);
       return;
     }
-    if (row.folder.disabled) return;
+    if (row.folder.disabled) {
+      return;
+    }
     if (!batch) {
       void onToggle(row.folder);
       return;
     }
-    if (row.folder.count !== selectionSize) batch.onToggle(row.folder);
+    if (row.folder.count !== selectionSize) {
+      batch.onToggle(row.folder);
+    }
   }
 
   const cursor = usePickerCursor({
@@ -222,13 +225,19 @@ export function FolderMenu({
     getId: rowId,
     onActivate: activate,
     onHorizontalKey: (key, row) => {
-      if (!showTree || row.kind !== "folder") return false;
+      if (!showTree || row.kind !== "folder") {
+        return false;
+      }
       const { folder } = row;
-      if (!folder.children.length) return true;
-      if (key === "ArrowLeft" && !collapsed.has(folder.id))
+      if (!folder.children.length) {
+        return true;
+      }
+      if (key === "ArrowLeft" && !collapsed.has(folder.id)) {
         toggleExpanded(folder.id);
-      if (key === "ArrowRight" && collapsed.has(folder.id))
+      }
+      if (key === "ArrowRight" && collapsed.has(folder.id)) {
         toggleExpanded(folder.id);
+      }
       return true;
     },
   });
@@ -236,7 +245,9 @@ export function FolderMenu({
   function onSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (batch && event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
-      if (batch.staged.size && !batch.applying) batch.onApply();
+      if (batch.staged.size && !batch.applying) {
+        batch.onApply();
+      }
       return;
     }
     cursor.inputProps.onKeyDown(event);
@@ -268,11 +279,12 @@ export function FolderMenu({
       >
         {rows.map((row) => {
           const itemProps = cursor.getItemProps(row);
-          if (row.kind === "create")
+          if (row.kind === "create") {
             return (
               <PickerPanel.Item
                 {...itemProps}
                 key={row.id}
+                // oxlint-disable-next-line jsx-a11y/role-has-required-aria-props -- PickerPanel.Item sets aria-selected from `selected`
                 role="option"
                 selected="unchecked"
               >
@@ -284,6 +296,7 @@ export function FolderMenu({
                 </PickerPanel.ItemLabel>
               </PickerPanel.Item>
             );
+          }
 
           const { folder } = row;
           const assigned = folder.count === selectionSize;

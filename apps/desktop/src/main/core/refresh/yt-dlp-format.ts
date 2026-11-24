@@ -48,7 +48,7 @@ function formatSelector(
   const vf = videoCodecFilter(prefs.videoCodec);
   const af = audioCodecFilter(prefs.audioCodec);
 
-  const chain: string[] = [];
+  const chain: Array<string> = [];
   if (source === "tiktok") {
     chain.push(`bv*${vf}[format_note*=play]${limits}+ba${af}`);
   }
@@ -69,14 +69,18 @@ function formatSelector(
 export function cookieAttempts(
   source: Source | null,
   cookieCount: number,
-): readonly boolean[] {
-  if (cookieCount === 0) return [false];
+): ReadonlyArray<boolean> {
+  if (cookieCount === 0) {
+    return [false];
+  }
   return source === "youtube" ? [false, true] : [true];
 }
 
 function maxFilesizeArg(prefs: VideoDownloadSettings): string | null {
   const mb = prefs.maxFileSizeMb;
-  if (mb === null || mb === undefined || mb <= 0) return null;
+  if (mb === null || mb === undefined || mb <= 0) {
+    return null;
+  }
   return `${mb}M`;
 }
 
@@ -88,7 +92,9 @@ function sectionArg(range: DownloadRange): string {
 function requestedContainer(
   request: DownloadRequest | undefined,
 ): "mp4" | "webm" | null {
-  if (!request?.container) return null;
+  if (!request?.container) {
+    return null;
+  }
   return request.container === "webm" ? "webm" : "mp4";
 }
 
@@ -101,7 +107,7 @@ interface DownloadArgvInput {
 }
 
 /** Everything but cookies, the manifest and the output template, which change per attempt. */
-export function downloadArgv(input: DownloadArgvInput): string[] {
+export function downloadArgv(input: DownloadArgvInput): Array<string> {
   const { source, request, ffmpeg } = input;
   const audio = request?.mode === "audio";
   const prefs: VideoDownloadSettings = request
@@ -137,7 +143,9 @@ export function downloadArgv(input: DownloadArgvInput): string[] {
     argv.push("--write-thumbnail", "--convert-thumbnails", "jpg");
   }
   const filesize = maxFilesizeArg(prefs);
-  if (filesize) argv.unshift("--max-filesize", filesize);
+  if (filesize) {
+    argv.unshift("--max-filesize", filesize);
+  }
 
   if (ffmpeg) {
     argv.push("--ffmpeg-location", ffmpeg);
@@ -149,8 +157,12 @@ export function downloadArgv(input: DownloadArgvInput): string[] {
         "--audio-quality",
         "0",
       );
-      if (prefs.embedMetadata) argv.push("--embed-metadata");
-      if (prefs.embedThumbnail) argv.push("--embed-thumbnail");
+      if (prefs.embedMetadata) {
+        argv.push("--embed-metadata");
+      }
+      if (prefs.embedThumbnail) {
+        argv.push("--embed-thumbnail");
+      }
     } else {
       const container = requestedContainer(request);
       if (container) {
@@ -163,9 +175,15 @@ export function downloadArgv(input: DownloadArgvInput): string[] {
       } else if (prefs.container !== "auto") {
         argv.push("--merge-output-format", prefs.container);
       }
-      if (prefs.embedMetadata) argv.push("--embed-metadata");
-      if (prefs.embedThumbnail) argv.push("--embed-thumbnail");
-      if (prefs.embedChapters && !range) argv.push("--embed-chapters");
+      if (prefs.embedMetadata) {
+        argv.push("--embed-metadata");
+      }
+      if (prefs.embedThumbnail) {
+        argv.push("--embed-thumbnail");
+      }
+      if (prefs.embedChapters && !range) {
+        argv.push("--embed-chapters");
+      }
       if (prefs.sponsorblockRemove && !range) {
         argv.push("--sponsorblock-remove", "all");
       }
@@ -175,7 +193,9 @@ export function downloadArgv(input: DownloadArgvInput): string[] {
     }
     if (range) {
       argv.push("--download-sections", sectionArg(range));
-      if (!audio) argv.push("--force-keyframes-at-cuts");
+      if (!audio) {
+        argv.push("--force-keyframes-at-cuts");
+      }
     }
   } else if (!audio) {
     argv.push("-f", "b[ext=mp4]/b");
@@ -188,7 +208,9 @@ export function downloadArgv(input: DownloadArgvInput): string[] {
       "--sub-langs",
       prefs.subtitleLang,
     );
-    if (ffmpeg) argv.push("--convert-subs", "srt");
+    if (ffmpeg) {
+      argv.push("--convert-subs", "srt");
+    }
   }
   return argv;
 }

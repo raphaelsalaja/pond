@@ -23,9 +23,13 @@ let listCalls = 0;
 let releaseRefetch: (() => void) | null = null;
 
 const query = vi.fn((name: string) => {
-  if (name !== "tagGroups.list") return Promise.resolve([]);
+  if (name !== "tagGroups.list") {
+    return Promise.resolve([]);
+  }
   listCalls += 1;
-  if (listCalls === 1) return Promise.resolve(rows);
+  if (listCalls === 1) {
+    return Promise.resolve(rows);
+  }
   return new Promise((resolve) => {
     releaseRefetch = () => resolve(rows);
   });
@@ -50,7 +54,9 @@ it("keeps the group list on screen while a membership change refetches", async (
   try {
     await act(async () => root.render(<Harness />));
     expect(host.textContent).toBe("Design");
-    if (!handler) throw new Error("Tag groups never subscribed to sync events");
+    if (!handler) {
+      throw new Error("Tag groups never subscribed to sync events");
+    }
 
     await act(async () => {
       handler?.({ modelName: "tag_group_member", action: "I" });

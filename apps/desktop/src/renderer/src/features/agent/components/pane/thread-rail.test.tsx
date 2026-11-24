@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Thread } from "../thread";
 
@@ -55,7 +56,9 @@ it("draws one tick per turn and jumps to the turn you pick", () => {
   const viewport = host
     .querySelector<HTMLElement>("[data-thread-mark]")
     ?.closest<HTMLElement>('[data-scroll-fade="vertical"]');
-  if (!viewport) throw new Error("No viewport");
+  if (!viewport) {
+    throw new Error("No viewport");
+  }
   const scrollTo = vi.fn();
   viewport.scrollTo = scrollTo;
   act(() => ticks[1]?.click());

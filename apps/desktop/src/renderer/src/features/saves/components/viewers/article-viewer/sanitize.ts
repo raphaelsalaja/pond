@@ -151,7 +151,9 @@ export function readArticle(source: string): Article {
 
   replaceEmbeds(body);
   collapsePictures(body);
-  for (const element of body.querySelectorAll(DROPPED)) element.remove();
+  for (const element of body.querySelectorAll(DROPPED)) {
+    element.remove();
+  }
   for (const anchor of body.querySelectorAll("a.image-link")) {
     anchor.replaceWith(...anchor.childNodes);
   }
@@ -166,7 +168,9 @@ export function readArticle(source: string): Article {
       continue;
     }
     keepAttributes(element, tag, meta.url);
-    if (tag === "img" && !element.hasAttribute("src")) element.remove();
+    if (tag === "img" && !element.hasAttribute("src")) {
+      element.remove();
+    }
   }
   for (const paragraph of body.querySelectorAll("p")) {
     if (!paragraph.textContent?.trim() && !paragraph.querySelector("img")) {
@@ -219,7 +223,9 @@ function keepAttributes(element: Element, tag: string, base?: string): void {
   const kept = KEPT_ATTRIBUTES.get(tag);
   for (const attribute of Array.from(element.attributes)) {
     const name = attribute.name.toLowerCase();
-    if (name === FOOTNOTE_ATTRIBUTE && tag === "div") continue;
+    if (name === FOOTNOTE_ATTRIBUTE && tag === "div") {
+      continue;
+    }
     if (name === "id") {
       element.setAttribute("id", `${ARTICLE_ID_PREFIX}${attribute.value}`);
       continue;
@@ -230,13 +236,19 @@ function keepAttributes(element: Element, tag: string, base?: string): void {
     }
     if (name === "href") {
       const href = linkTarget(attribute.value, base);
-      if (href) element.setAttribute("href", href);
-      else element.removeAttribute("href");
+      if (href) {
+        element.setAttribute("href", href);
+      } else {
+        element.removeAttribute("href");
+      }
     }
     if (name === "src") {
       const src = httpsUrl(attribute.value);
-      if (src) element.setAttribute("src", src);
-      else element.removeAttribute("src");
+      if (src) {
+        element.setAttribute("src", src);
+      } else {
+        element.removeAttribute("src");
+      }
     }
   }
 }
@@ -248,12 +260,16 @@ function linkTarget(value: string, base?: string): string | null {
       ? `#${ARTICLE_ID_PREFIX}${trimmed.slice(1)}`
       : null;
   }
-  if (/^mailto:/i.test(trimmed)) return trimmed;
+  if (/^mailto:/i.test(trimmed)) {
+    return trimmed;
+  }
   return webUrl(trimmed, base) ?? null;
 }
 
 function webUrl(value: string | undefined, base?: string): string | undefined {
-  if (!value) return undefined;
+  if (!value) {
+    return undefined;
+  }
   try {
     const url = new URL(value, base);
     return url.protocol === "https:" || url.protocol === "http:"
@@ -284,20 +300,28 @@ function collapsePictures(body: HTMLElement): void {
     picture.replaceWith(img);
   }
   for (const img of body.querySelectorAll("img")) {
-    if (httpsUrl(img.getAttribute("src") ?? undefined)) continue;
+    if (httpsUrl(img.getAttribute("src") ?? undefined)) {
+      continue;
+    }
     const src = widestSource(img.getAttribute("srcset"));
-    if (src) img.setAttribute("src", src);
+    if (src) {
+      img.setAttribute("src", src);
+    }
   }
 }
 
 function widestSource(srcset: string | null | undefined): string | undefined {
-  if (!srcset) return undefined;
+  if (!srcset) {
+    return undefined;
+  }
   let best: { url: string; width: number } | undefined;
   for (const candidate of srcset.split(/,\s+/)) {
     const [url, descriptor = ""] = candidate.trim().split(/\s+/);
     const width = Number.parseInt(descriptor, 10) || 0;
     const safe = httpsUrl(url);
-    if (safe && (!best || width > best.width)) best = { url: safe, width };
+    if (safe && (!best || width > best.width)) {
+      best = { url: safe, width };
+    }
   }
   return best?.url;
 }
@@ -314,8 +338,11 @@ function replaceEmbeds(body: HTMLElement): void {
       : element.classList.contains("twitter-embed")
         ? tweetQuote(document, embed)
         : embedLink(document, element, embed);
-    if (replacement) element.replaceWith(replacement);
-    else element.remove();
+    if (replacement) {
+      element.replaceWith(replacement);
+    } else {
+      element.remove();
+    }
   }
 }
 
@@ -334,7 +361,9 @@ function galleryFigure(document: Document, embed: Embed): Element | null {
     const src = httpsUrl(image.src);
     return src ? [src] : [];
   });
-  if (sources.length === 0) return null;
+  if (sources.length === 0) {
+    return null;
+  }
   const figure = document.createElement("figure");
   for (const src of sources) {
     const img = document.createElement("img");
@@ -347,7 +376,9 @@ function galleryFigure(document: Document, embed: Embed): Element | null {
 
 function tweetQuote(document: Document, embed: Embed): Element | null {
   const url = webUrl(embed.url);
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   const quote = document.createElement("blockquote");
   if (embed.text) {
     const text = document.createElement("p");
@@ -375,7 +406,9 @@ function embedLink(
     ? embed.videoId &&
       `https://www.youtube.com/watch?v=${encodeURIComponent(embed.videoId)}`
     : webUrl(embed.url);
-  if (!url) return null;
+  if (!url) {
+    return null;
+  }
   const paragraph = document.createElement("p");
   const link = document.createElement("a");
   link.setAttribute("href", url);
@@ -388,9 +421,14 @@ function firstImage(body: HTMLElement): string | undefined {
   return body.querySelector("img")?.getAttribute("src") ?? undefined;
 }
 
+function imageFileName(url: string): string {
+  return decodeURIComponent(url).split("/").pop() ?? url;
+}
+
 /** Substack's CDN wraps the stored image URL, so compare the underlying file name. */
 function sameImage(a: string, b: string | undefined): boolean {
-  if (!b) return false;
-  const name = (url: string) => decodeURIComponent(url).split("/").pop() ?? url;
-  return name(a) === name(b);
+  if (!b) {
+    return false;
+  }
+  return imageFileName(a) === imageFileName(b);
 }

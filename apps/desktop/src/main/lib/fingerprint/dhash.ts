@@ -11,7 +11,9 @@ export function dhashFromGray(pixels: ArrayLike<number>): bigint {
     for (let x = 0; x < DHASH_WIDTH - 1; x++) {
       const left = pixels[y * DHASH_WIDTH + x] ?? 0;
       const right = pixels[y * DHASH_WIDTH + x + 1] ?? 0;
-      if (left > right) bits |= 1n << BigInt(63 - index);
+      if (left > right) {
+        bits |= 1n << BigInt(63 - index);
+      }
       index += 1;
     }
   }

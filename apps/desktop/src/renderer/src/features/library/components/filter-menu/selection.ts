@@ -1,4 +1,5 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
+import { isPredicateList } from "@pond/schema/filters/types";
 import type {
   FieldId,
   Predicate,
@@ -11,16 +12,20 @@ type ChoiceValue = string | number;
 export type ChoiceMode = "any" | "all" | "exclude";
 
 function choiceMode(rule: Predicate): ChoiceMode | null {
-  if (["neq", "nin", "none"].includes(rule.operator))
+  if (["neq", "nin", "none"].includes(rule.operator)) {
     return rule.negate ? "any" : "exclude";
-  if (["eq", "in", "some"].includes(rule.operator))
+  }
+  if (["eq", "in", "some"].includes(rule.operator)) {
     return rule.negate ? "exclude" : "any";
-  if (rule.operator === "every" && !rule.negate) return "all";
+  }
+  if (rule.operator === "every" && !rule.negate) {
+    return "all";
+  }
   return null;
 }
 
 export function selectedChoiceMode(
-  rows: readonly Predicate[],
+  rows: ReadonlyArray<Predicate>,
   field: FieldId,
 ): "any" | "all" {
   return rows.some((row) => row.field === field && choiceMode(row) === "all")
@@ -29,7 +34,7 @@ export function selectedChoiceMode(
 }
 
 export function isChoiceSelected(
-  rows: readonly Predicate[],
+  rows: ReadonlyArray<Predicate>,
   option: Predicate,
   mode: ChoiceMode,
 ): boolean {
@@ -46,10 +51,10 @@ export function isChoiceSelected(
 }
 
 export function changeChoiceMode(
-  rows: readonly Predicate[],
+  rows: ReadonlyArray<Predicate>,
   field: FieldId,
   mode: "any" | "all",
-): Predicate[] {
+): Array<Predicate> {
   return rows.map((row) =>
     row.field === field && ["any", "all"].includes(choiceMode(row) ?? "")
       ? {
@@ -63,19 +68,23 @@ export function changeChoiceMode(
 }
 
 export function selectChoice(
-  rows: readonly Predicate[],
+  rows: ReadonlyArray<Predicate>,
   option: Predicate,
   checked: boolean,
   mode: ChoiceMode,
-): Predicate[] {
+): Array<Predicate> {
   const field = option.field;
   const array = FIELD_META[field].type === "stringArray";
-  const included: ChoiceValue[] = [];
-  const excluded: ChoiceValue[] = [];
+  const included: Array<ChoiceValue> = [];
+  const excluded: Array<ChoiceValue> = [];
   for (const row of rows) {
-    if (row.field !== field) continue;
+    if (row.field !== field) {
+      continue;
+    }
     const current = choiceMode(row);
-    if (current === null) continue;
+    if (current === null) {
+      continue;
+    }
     const bucket = current === "exclude" ? excluded : included;
     for (const value of choiceValues(row)) {
       const target =
@@ -83,22 +92,30 @@ export function selectChoice(
       if (
         (checked || target) &&
         choiceValues(option).some((v) => sameValue(v, value))
-      )
+      ) {
         continue;
-      if (!bucket.some((v) => sameValue(v, value))) bucket.push(value);
+      }
+      if (!bucket.some((v) => sameValue(v, value))) {
+        bucket.push(value);
+      }
     }
   }
-  if (checked)
+  if (checked) {
     (mode === "exclude" ? excluded : included).push(...choiceValues(option));
+  }
   const rest = rows.filter(
     (row) =>
       row.field !== field ||
       (choiceMode(row) === null && row.operator !== "empty"),
   );
-  const add = (selected: ChoiceValue[], exclude: boolean) => {
-    if (!selected.length) return;
+  const add = (selected: Array<ChoiceValue>, exclude: boolean) => {
+    if (!selected.length) {
+      return;
+    }
     const value = array || selected.length > 1 ? selected : selected[0];
-    if (value === undefined) return;
+    if (value === undefined) {
+      return;
+    }
     rest.push({
       field,
       operator: array
@@ -127,14 +144,14 @@ function isChoice(rule: Predicate): boolean {
   return !rule.negate && ["eq", "in", "some"].includes(rule.operator);
 }
 
-function values(rule: Predicate): PredicateValue[] {
-  return Array.isArray(rule.value) ? [...rule.value] : [rule.value];
+function values(rule: Predicate): Array<PredicateValue> {
+  return isPredicateList(rule.value) ? [...rule.value] : [rule.value];
 }
 
 const Choice = z.union([z.string(), z.number()]);
 const Text = z.string();
 
-function choiceValues(rule: Predicate): ChoiceValue[] {
+function choiceValues(rule: Predicate): Array<ChoiceValue> {
   return values(rule).flatMap((value) => {
     const parsed = Choice.safeParse(value);
     return parsed.success ? [parsed.data] : [];
@@ -150,11 +167,13 @@ function sameValue(a: PredicateValue, b: PredicateValue): boolean {
 }
 
 export function isFilterSelected(
-  rows: readonly Predicate[],
+  rows: ReadonlyArray<Predicate>,
   option: Predicate,
 ): boolean {
   return rows.some((row) => {
-    if (row.field !== option.field || row.negate) return false;
+    if (row.field !== option.field || row.negate) {
+      return false;
+    }
     if (isChoice(row) && isChoice(option)) {
       return values(option).every((value) =>
         values(row).some((selected) => sameValue(selected, value)),
@@ -167,10 +186,10 @@ export function isFilterSelected(
 }
 
 export function selectFilter(
-  rows: readonly Predicate[],
+  rows: ReadonlyArray<Predicate>,
   option: Predicate,
   checked: boolean,
-): Predicate[] {
+): Array<Predicate> {
   const type = FIELD_META[option.field].type;
   if ((type === "enum" || type === "stringArray") && isChoice(option)) {
     const rest = rows.filter(
@@ -183,15 +202,21 @@ export function selectFilter(
       (value) =>
         !choiceValues(option).some((candidate) => sameValue(candidate, value)),
     );
-    if (checked) next.push(...choiceValues(option));
+    if (checked) {
+      next.push(...choiceValues(option));
+    }
     const unique = next.filter(
       (value, index) =>
         next.findIndex((candidate) => sameValue(candidate, value)) === index,
     );
-    if (unique.length === 0) return rest;
+    if (unique.length === 0) {
+      return rest;
+    }
     const value =
       type === "stringArray" || unique.length > 1 ? unique : unique[0];
-    if (value === undefined) return rest;
+    if (value === undefined) {
+      return rest;
+    }
     return [
       ...rest,
       {

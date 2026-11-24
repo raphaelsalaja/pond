@@ -7,7 +7,7 @@ import type { AppleSchema } from "./apple-schema";
 
 const HELPER = "pond-apple-model";
 const TIMEOUT_MS = 120_000;
-const DEFAULT_CONTEXT_SIZE = 4_096;
+const DEFAULT_CONTEXT_SIZE = 4096;
 
 export type AppleRequest =
   | { command: "status" }
@@ -63,7 +63,9 @@ export function appleErrorMessage(code: string): string {
 }
 
 function helperPath(): string {
-  if (app.isPackaged) return join(process.resourcesPath, "bin", HELPER);
+  if (app.isPackaged) {
+    return join(process.resourcesPath, "bin", HELPER);
+  }
   const bundled = join(app.getAppPath(), "resources", "bin", HELPER);
   const candidates = [bundled, join(process.cwd(), "resources", "bin", HELPER)];
   return candidates.find((path) => existsSync(path)) ?? bundled;
@@ -74,8 +76,9 @@ export function runAppleHelper(
   signal?: AbortSignal,
 ): Promise<AppleReply> {
   const path = helperPath();
-  if (!existsSync(path))
+  if (!existsSync(path)) {
     return Promise.resolve({ ok: false, error: "missing" });
+  }
   return new Promise((resolve) => {
     const child = spawn(path, [], {
       stdio: ["pipe", "pipe", "ignore"],
@@ -112,7 +115,9 @@ export async function appleStatus(
     { command: "status" },
     signal,
   );
-  if (!reply.ok) return { ok: false, error: appleErrorMessage(reply.error) };
+  if (!reply.ok) {
+    return { ok: false, error: appleErrorMessage(reply.error) };
+  }
   const size = z.number().int().positive().safeParse(reply.contextSize);
   return {
     ok: true,

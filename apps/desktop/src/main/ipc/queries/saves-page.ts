@@ -14,7 +14,7 @@ export function pageAfter(
 }
 
 export function cursorFor(
-  rows: readonly SavePageCursor[],
+  rows: ReadonlyArray<SavePageCursor>,
 ): SavePageCursor | null {
   const row = rows.at(-1);
   return row ? { savedAt: row.savedAt, id: row.id } : null;

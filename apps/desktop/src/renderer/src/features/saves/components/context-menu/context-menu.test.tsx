@@ -1,6 +1,8 @@
 import "@/app/effects/save-library-bridge";
+import { isElement } from "@pond/ui/dom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
@@ -29,7 +31,9 @@ beforeEach(() => {
   const fixture = normalise(
     SavePatchSchema.parse({ id: "a", title: "Screenshot", source: "local" }),
   );
-  if (!fixture) throw new Error("Invalid Save fixture");
+  if (!fixture) {
+    throw new Error("Invalid Save fixture");
+  }
   save = fixture;
   pool.upsert(save);
 });
@@ -57,7 +61,7 @@ async function renderHosted() {
     root.render(
       <SaveCollectionContextMenu
         acceptsBackground={(target) =>
-          target instanceof Element && target.closest("[data-bg]") != null
+          isElement(target) && target.closest("[data-bg]") !== null
         }
         buildBackgroundItems={() => [{ label: "Paste Here" }]}
       >
@@ -73,7 +77,9 @@ async function renderHosted() {
 
 async function rightClick(selector: string) {
   const element = host.querySelector(selector);
-  if (!element) throw new Error(`Missing ${selector}`);
+  if (!element) {
+    throw new Error(`Missing ${selector}`);
+  }
   await act(async () => {
     element.dispatchEvent(
       new MouseEvent("contextmenu", {

@@ -33,8 +33,10 @@ describe("asynchronous bundle files", () => {
       writeBundleJsonAsync(file, { marker: "first" }),
       writeBundleJsonAsync(file, { marker: "second" }),
     ]);
-    const read = await readBundleJsonAsync<{ marker: string }>(file);
-    expect(["first", "second"]).toContain(read?.data.marker);
+    const read = await readBundleJsonAsync(file);
+    expect([{ marker: "first" }, { marker: "second" }]).toContainEqual(
+      read?.data,
+    );
     expect(readdirSync(root)).toEqual(["enrichment.json"]);
   });
 
@@ -98,10 +100,8 @@ describe("writeBundleJson / readBundleJson", () => {
   it("round-trips data through the versioned envelope", () => {
     const file = join(root, "settings.json");
     writeBundleJson(file, { sync: { sources: { twitter: true } } });
-    const read = readBundleJson<{ sync: { sources: Record<string, boolean> } }>(
-      file,
-    );
-    expect(read?.data.sync.sources.twitter).toBe(true);
+    const read = readBundleJson(file);
+    expect(read?.data).toEqual({ sync: { sources: { twitter: true } } });
     expect(read?.updatedAt).toBeGreaterThan(0);
   });
 
@@ -133,8 +133,8 @@ describe("writeBundleJson / readBundleJson", () => {
     rotateBundleBackups(backupDir, [file]);
 
     writeFileSync(file, "{truncated garbage");
-    const read = readBundleJson<{ marker: string }>(file, backupDir);
-    expect(read?.data.marker).toBe("good");
+    const read = readBundleJson(file, backupDir);
+    expect(read?.data).toMatchObject({ marker: "good" });
   });
 
   it("returns null for a corrupt file with no backups", () => {
@@ -152,7 +152,9 @@ describe("rotateBundleBackups", () => {
 
     for (let i = 0; i < 12; i++) {
       rotateBundleBackups(backupDir, [file, join(root, "missing.json")]);
-      await new Promise((r) => setTimeout(r, 2));
+      await new Promise((r) => {
+        setTimeout(r, 2);
+      });
     }
 
     const dirs = readdirSync(backupDir);

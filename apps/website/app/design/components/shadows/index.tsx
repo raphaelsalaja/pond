@@ -18,7 +18,7 @@ const SHADOWS = [
   { token: "--ds-shadow-dialog", use: "Dialogs and the command menu." },
 ] as const;
 
-interface ShadowsProps extends React.ComponentPropsWithoutRef<"ul"> {}
+type ShadowsProps = React.ComponentPropsWithoutRef<"ul">;
 
 export function Shadows({ className, ...props }: ShadowsProps) {
   return (

@@ -13,6 +13,15 @@ import {
   savedViewList,
 } from "./test-harness";
 
+function setInput(input: HTMLInputElement, value: string): void {
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  )?.set;
+  setter?.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 describe("folder sidebar saved views", () => {
   const harness = createFolderSidebarHarness();
 
@@ -39,31 +48,25 @@ describe("folder sidebar saved views", () => {
     expect(pondQuery).toHaveBeenCalledWith("savedViews.list", {});
   }
 
-  function setInput(input: HTMLInputElement, value: string): void {
-    const setter = Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      "value",
-    )?.set;
-    setter?.call(input, value);
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-  }
-
   it("renames a saved view inline from the hover menu", async () => {
     await mountUnreadView();
-    const more = harness.host.querySelector(
+    const more = harness.host.querySelector<HTMLElement>(
       '[aria-label="More Actions for Unread"]',
     );
-    if (!(more instanceof HTMLElement)) throw new Error("Missing More Actions");
+    if (!more) {
+      throw new Error("Missing More Actions");
+    }
     expect(more.dataset.rounding).toBe("full");
     expect(more.dataset.variant).toBe("text");
     await act(async () => more.click());
     await act(async () => harness.menuItem("Rename").click());
     expect(document.querySelector('[role="dialog"]')).toBeNull();
-    const input = harness.host.querySelector(
+    const input = harness.host.querySelector<HTMLInputElement>(
       'input[aria-label="Saved View name"]',
     );
-    if (!(input instanceof HTMLInputElement))
+    if (!input) {
       throw new Error("Missing inline rename");
+    }
     expect(document.activeElement).toBe(input);
     expect(input.value).toBe("Unread");
     await act(async () => {
@@ -80,10 +83,12 @@ describe("folder sidebar saved views", () => {
 
   it("deletes a saved view from the hover menu", async () => {
     await mountUnreadView();
-    const more = harness.host.querySelector(
+    const more = harness.host.querySelector<HTMLElement>(
       '[aria-label="More Actions for Unread"]',
     );
-    if (!(more instanceof HTMLElement)) throw new Error("Missing More Actions");
+    if (!more) {
+      throw new Error("Missing More Actions");
+    }
     await act(async () => more.click());
     expect(harness.menuItem("Rename").querySelector("svg")).not.toBeNull();
     expect(harness.menuItem("Delete").querySelector("svg")).not.toBeNull();
@@ -157,7 +162,9 @@ describe("folder sidebar saved views", () => {
       (button) => button.textContent?.trim() === "Unread",
     );
     const quickRow = rows.at(-1);
-    if (!quickRow) throw new Error("Missing Quick Access Saved View");
+    if (!quickRow) {
+      throw new Error("Missing Quick Access Saved View");
+    }
     await act(async () => {
       quickRow.dispatchEvent(
         new MouseEvent("contextmenu", {
@@ -192,18 +199,24 @@ describe("folder sidebar saved views", () => {
       const dialog = document.querySelector('[role="dialog"]');
       expect(dialog?.textContent).toContain(label);
       const nameInput = dialog?.querySelector("input");
-      if (!nameInput) throw new Error("Missing name input");
+      if (!nameInput) {
+        throw new Error("Missing name input");
+      }
       await act(async () => {
         setInput(nameInput, "Untitled");
-        const ruleValue = dialog?.querySelector('[aria-label="Name Value"]');
-        if (ruleValue instanceof HTMLInputElement) {
+        const ruleValue = dialog?.querySelector<HTMLInputElement>(
+          'input[aria-label="Name Value"]',
+        );
+        if (ruleValue) {
           setInput(ruleValue, "qa");
         }
       });
       const create = [...(dialog?.querySelectorAll("button") ?? [])].find(
         (node) => node.textContent === "Create",
       );
-      if (!create) throw new Error("Missing Create button");
+      if (!create) {
+        throw new Error("Missing Create button");
+      }
       pondQuery.mockImplementationOnce(async () => {
         savedViewList.current = [
           { ...savedView("created", kind), name: "Untitled" },
@@ -252,11 +265,12 @@ describe("folder sidebar saved views", () => {
       }),
     );
     expect(getViewState().activeViewId).toBe("created");
-    const input = harness.host.querySelector(
+    const input = harness.host.querySelector<HTMLInputElement>(
       'input[aria-label="Saved View name"]',
     );
-    if (!(input instanceof HTMLInputElement))
+    if (!input) {
       throw new Error("Missing inline name input");
+    }
     pondQuery.mockImplementationOnce(async () => {
       savedViewList.current = [
         { ...savedView("created", "saved_view"), name: "Reading" },

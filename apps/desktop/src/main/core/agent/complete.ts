@@ -1,14 +1,11 @@
 import type { AgentRunControls } from "@pond/schema";
 import type { JsonObject, JsonValue } from "@pond/schema/json";
-import {
-  isStepCount,
-  type LanguageModel,
-  type ModelMessage,
-  type OnToolExecutionEndCallback,
-  type OnToolExecutionStartCallback,
-  pruneMessages,
-  ToolLoopAgent,
-  tool,
+import { isStepCount, pruneMessages, ToolLoopAgent, tool } from "ai";
+import type {
+  LanguageModel,
+  ModelMessage,
+  OnToolExecutionEndCallback,
+  OnToolExecutionStartCallback,
 } from "ai";
 import { z } from "zod";
 import type {
@@ -23,10 +20,8 @@ import {
   compactTools,
 } from "./apple-profile";
 import type { AgentProviderId } from "./keys";
-import {
-  type LocalRuntimeCoordinator,
-  localRuntimeCoordinator,
-} from "./local-runtime-coordinator";
+import { localRuntimeCoordinator } from "./local-runtime-coordinator";
+import type { LocalRuntimeCoordinator } from "./local-runtime-coordinator";
 import {
   answerProblem,
   conversation,
@@ -42,7 +37,7 @@ export type ChatMessage = {
 export type ToolResult =
   | JsonValue
   | Date
-  | ToolResult[]
+  | Array<ToolResult>
   | { [key: string]: ToolResult | undefined };
 
 export type ToolSpec = {
@@ -84,16 +79,16 @@ export interface CompletionInput {
   controls?: AgentRunControls;
   apiKey: string | null;
   baseUrl?: string;
-  messages: ChatMessage[];
+  messages: Array<ChatMessage>;
   threadId?: string;
-  canonicalMessages?: ModelMessage[];
+  canonicalMessages?: Array<ModelMessage>;
   context: string;
-  tools: ToolSpec[];
+  tools: Array<ToolSpec>;
   languageModel?: LanguageModel;
   onToolExecutionStart?: OnToolExecutionStartCallback;
   onToolExecutionEnd?: OnToolExecutionEndCallback;
-  attachments?: AssistantSource[];
-  sources?: () => AssistantSource[];
+  attachments?: Array<AssistantSource>;
+  sources?: () => Array<AssistantSource>;
   images?: Array<{ mimeType: string; data: string }>;
   files?: Array<{ name: string; mediaType: string; data: Buffer }>;
   onActivity?: (activity: AssistantActivity) => void;
@@ -106,14 +101,17 @@ const textChunkDelayMs = 50;
 const maxTextChunks = 40;
 
 const waitForTextChunk = (milliseconds: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 
 function validatedTextChunks(text: string) {
   const words = text.match(/\S+\s*|\s+/g) ?? [];
   const wordsPerChunk = Math.max(1, Math.ceil(words.length / maxTextChunks));
-  const chunks: string[] = [];
-  for (let index = 0; index < words.length; index += wordsPerChunk)
+  const chunks: Array<string> = [];
+  for (let index = 0; index < words.length; index += wordsPerChunk) {
     chunks.push(words.slice(index, index + wordsPerChunk).join(""));
+  }
   return chunks;
 }
 
@@ -123,18 +121,24 @@ async function publishValidatedText(input: CompletionInput, text: string) {
   for (let index = 0; index < chunks.length; index++) {
     input.abortController.signal.throwIfAborted();
     input.onText(chunks[index] ?? "");
-    if (index < chunks.length - 1) await wait(textChunkDelayMs);
+    if (index < chunks.length - 1) {
+      await wait(textChunkDelayMs);
+    }
   }
 }
 
-function uniqueSources(sources: AssistantSource[]): AssistantSource[] {
+function uniqueSources(
+  sources: Array<AssistantSource>,
+): Array<AssistantSource> {
   return [
     ...new Map(sources.map((source) => [source.id, source] as const)).values(),
   ];
 }
 
 function serializableMessage(message: ModelMessage) {
-  if (!Array.isArray(message.content)) return message;
+  if (!Array.isArray(message.content)) {
+    return message;
+  }
   return {
     ...message,
     content: message.content.map((part) => {
@@ -142,28 +146,36 @@ function serializableMessage(message: ModelMessage) {
       if (
         kind.success &&
         (kind.data.type === "image" || kind.data.type === "file")
-      )
+      ) {
         return { ...part, image: "[binary]", data: "[binary]" };
+      }
       return part;
     }),
   };
 }
 
-function messageTurns(messages: ModelMessage[]): ModelMessage[][] {
-  const turns: ModelMessage[][] = [];
+function messageTurns(
+  messages: Array<ModelMessage>,
+): Array<Array<ModelMessage>> {
+  const turns: Array<Array<ModelMessage>> = [];
   for (const message of messages) {
-    if (message.role === "user" || !turns.length) turns.push([message]);
-    else turns.at(-1)?.push(message);
+    if (message.role === "user" || !turns.length) {
+      turns.push([message]);
+    } else {
+      turns.at(-1)?.push(message);
+    }
   }
   return turns;
 }
 
 function turnTokens(
-  turn: ModelMessage[],
-  encode: (value: string) => number[],
+  turn: Array<ModelMessage>,
+  encode: (value: string) => Array<number>,
 ): number {
   const binaryParts = turn.reduce((total, message) => {
-    if (!Array.isArray(message.content)) return total;
+    if (!Array.isArray(message.content)) {
+      return total;
+    }
     return (
       total +
       message.content.filter((part) => {
@@ -177,16 +189,16 @@ function turnTokens(
   }, 0);
   return (
     encode(JSON.stringify(turn.map(serializableMessage))).length +
-    binaryParts * 1_024
+    binaryParts * 1024
   );
 }
 
 export function budgetMessages(
-  messages: ModelMessage[],
+  messages: Array<ModelMessage>,
   inputBudget: number,
   fixedTokens: number,
-  encode: (value: string) => number[],
-): ModelMessage[] {
+  encode: (value: string) => Array<number>,
+): Array<ModelMessage> {
   const current = messages.findLastIndex((message) => message.role === "user");
   /** Tool rounds in the current turn stay intact, or each step forgets what the previous one found. */
   const pruned = [
@@ -200,17 +212,22 @@ export function budgetMessages(
   const turns = messageTurns(pruned);
   const latest = turns.at(-1) ?? [];
   const latestTokens = turnTokens(latest, encode);
-  if (fixedTokens + latestTokens > inputBudget)
+  if (fixedTokens + latestTokens > inputBudget) {
     throw new Error(
       "The selected Context is too small for this request. Choose a larger Context or remove attached Saves.",
     );
+  }
   let total = fixedTokens + latestTokens;
   const kept = [latest];
   for (let index = turns.length - 2; index >= 0; index--) {
     const turn = turns[index];
-    if (!turn) continue;
+    if (!turn) {
+      continue;
+    }
     const size = turnTokens(turn, encode);
-    if (total + size > inputBudget) break;
+    if (total + size > inputBudget) {
+      break;
+    }
     total += size;
     kept.unshift(turn);
   }
@@ -221,18 +238,26 @@ function nativeFastOptions(
   provider: AgentProviderId,
   enabled: boolean,
 ): Record<string, Record<string, string>> | undefined {
-  if (!enabled) return undefined;
-  if (provider === "openai") return { openai: { serviceTier: "fast" } };
-  if (provider === "anthropic") return { anthropic: { speed: "fast" } };
-  if (provider === "gemini") return { google: { serviceTier: "priority" } };
+  if (!enabled) {
+    return undefined;
+  }
+  if (provider === "openai") {
+    return { openai: { serviceTier: "fast" } };
+  }
+  if (provider === "anthropic") {
+    return { anthropic: { speed: "fast" } };
+  }
+  if (provider === "gemini") {
+    return { google: { serviceTier: "priority" } };
+  }
   return undefined;
 }
 
 function toModelMessages(
-  history: ChatMessage[],
+  history: Array<ChatMessage>,
   images: Array<{ mimeType: string; data: string }>,
   files: Array<{ name: string; mediaType: string; data: Buffer }>,
-): ModelMessage[] {
+): Array<ModelMessage> {
   const filtered = conversation(history);
   return filtered.map((message, index): ModelMessage => {
     if (
@@ -274,15 +299,21 @@ function toModelMessages(
 }
 
 function attachFilesToLatestUserMessage(
-  messages: ModelMessage[],
+  messages: Array<ModelMessage>,
   images: Array<{ mimeType: string; data: string }>,
   files: Array<{ name: string; mediaType: string; data: Buffer }>,
-): ModelMessage[] {
-  if (!images.length && !files.length) return messages;
+): Array<ModelMessage> {
+  if (!images.length && !files.length) {
+    return messages;
+  }
   const index = messages.findLastIndex((message) => message.role === "user");
-  if (index < 0) return messages;
+  if (index < 0) {
+    return messages;
+  }
   const message = messages[index];
-  if (message?.role !== "user") return messages;
+  if (message?.role !== "user") {
+    return messages;
+  }
   const content = Array.isArray(message.content)
     ? [...message.content]
     : [{ type: "text" as const, text: message.content }];
@@ -324,9 +355,13 @@ const providerError = z.union([
 ]);
 
 function providerErrorMessage(error: z.infer<typeof providerError>): string {
-  if (error instanceof Error && error.message.trim()) return error.message;
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
   const asString = z.string().safeParse(error);
-  if (asString.success && asString.data.trim()) return asString.data;
+  if (asString.success && asString.data.trim()) {
+    return asString.data;
+  }
   const parsed = z
     .object({
       message: z.string().optional(),
@@ -336,15 +371,20 @@ function providerErrorMessage(error: z.infer<typeof providerError>): string {
     })
     .safeParse(error);
   if (parsed.success) {
-    if (parsed.data.message?.trim()) return parsed.data.message;
+    if (parsed.data.message?.trim()) {
+      return parsed.data.message;
+    }
     const nested = parsed.data.error;
     const nestedText = z.string().safeParse(nested);
-    if (nestedText.success && nestedText.data.trim()) return nestedText.data;
+    if (nestedText.success && nestedText.data.trim()) {
+      return nestedText.data;
+    }
     const nestedObject = z
       .object({ message: z.string().optional() })
       .safeParse(nested);
-    if (nestedObject.success && nestedObject.data.message?.trim())
+    if (nestedObject.success && nestedObject.data.message?.trim()) {
       return nestedObject.data.message;
+    }
   }
   return "The model could not reply.";
 }
@@ -355,7 +395,9 @@ export async function completeWithTools(
 ): Promise<string> {
   input.abortController.signal.throwIfAborted();
   const languageModel = input.languageModel ?? (await loadModel(input));
-  if (!languageModel) throw new Error("Choose a supported model in Settings.");
+  if (!languageModel) {
+    throw new Error("Choose a supported model in Settings.");
+  }
   const compact = input.provider === "apple";
   const specs = compact ? compactTools(input.tools) : input.tools;
   const tools = Object.fromEntries(
@@ -398,7 +440,7 @@ export async function completeWithTools(
   };
   const outputReserve = compact
     ? APPLE_OUTPUT_RESERVE
-    : Math.max(2_048, Math.min(8_192, Math.floor(controls.contextTokens / 5)));
+    : Math.max(2048, Math.min(8192, Math.floor(controls.contextTokens / 5)));
   const inputBudget = controls.contextTokens - outputReserve;
   const { encode } = await import("gpt-tokenizer");
   const toolSchemas = JSON.stringify(
@@ -437,14 +479,18 @@ export async function completeWithTools(
   /** Text written before a tool call goes out as its own message so the user hears back while the tools run. */
   const publishHeadsUp = async () => {
     const pending = assembled.slice(published);
-    if (!pending.trim()) return;
+    if (!pending.trim()) {
+      return;
+    }
     if (
       answerProblem(pending) ||
       evidenceAnswerProblem(pending, evidenceCount())
-    )
+    ) {
       return;
-    if (!assembled.trimEnd().endsWith(MESSAGE_BREAK))
+    }
+    if (!assembled.trimEnd().endsWith(MESSAGE_BREAK)) {
       assembled = `${assembled.trimEnd()}\n${MESSAGE_BREAK}\n`;
+    }
     await publishValidatedText(input, assembled.slice(published));
     published = assembled.length;
     writing = false;
@@ -462,7 +508,9 @@ export async function completeWithTools(
       const failed = z
         .object({ type: z.literal("error"), error: z.unknown() })
         .safeParse(part);
-      if (failed.success) throw failed.data.error;
+      if (failed.success) {
+        throw failed.data.error;
+      }
       const tool = z
         .object({ type: z.enum(["tool-input-start", "tool-call"]) })
         .safeParse(part);
@@ -473,7 +521,9 @@ export async function completeWithTools(
       const delta = z
         .object({ type: z.literal("text-delta"), text: z.string() })
         .safeParse(part);
-      if (!delta.success || !delta.data.text) continue;
+      if (!delta.success || !delta.data.text) {
+        continue;
+      }
       assembled += delta.data.text;
       if (!writing) {
         writing = true;
@@ -506,17 +556,20 @@ export async function completeWithTools(
         /tensor "[^"]+" size overflow/.test(message)
         ? "Ollama couldn't load this model. Update it in Ollama or choose another model in Settings."
         : message,
+      { cause: error },
     );
   }
   input.abortController.signal.throwIfAborted();
   const problem = answerProblem(assembled, input.messages.at(-1)?.content);
   const evidenceProblem = evidenceAnswerProblem(assembled, evidenceCount());
-  if (assembled.trim() && (problem || evidenceProblem))
+  if (assembled.trim() && (problem || evidenceProblem)) {
     throw new Error(
       "The model returned an unreadable reply. Try again or choose another model.",
     );
+  }
   input.abortController.signal.throwIfAborted();
-  if (assembled.length > published)
+  if (assembled.length > published) {
     await publishValidatedText(input, assembled.slice(published));
+  }
   return assembled;
 }

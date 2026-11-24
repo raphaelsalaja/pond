@@ -3,7 +3,7 @@ import { ARTICLE_FILE, ARTICLE_KIND } from "@shared/save-file-names";
 import type { WriteFileArgs } from "./apply";
 
 interface ArticleWrite {
-  newFiles?: WriteFileArgs[];
+  newFiles?: Array<WriteFileArgs>;
   replaceFilesWithKind?: WriteFileArgs["kind"];
 }
 
@@ -15,7 +15,9 @@ interface SplitArticle {
 /** Moves the post body off the capture so `rawJson` stays small, and into its own file. */
 export function splitArticle(harvested: Capture): SplitArticle {
   const { article, ...capture } = harvested;
-  if (!article) return { capture, files: {} };
+  if (!article) {
+    return { capture, files: {} };
+  }
   return {
     capture,
     files: {
@@ -45,12 +47,11 @@ function articleDocument(capture: Capture, article: CaptureArticle): string {
     ["pond:cover", capture.media.find((m) => m.type === "image")?.url],
     ["pond:preview", article.preview ? "true" : undefined],
   ]);
-  const tags = [...meta]
-    .filter((entry): entry is [string, string] => Boolean(entry[1]))
-    .map(
-      ([name, content]) =>
-        `<meta name="${name}" content="${escapeAttribute(content)}">`,
-    );
+  const tags = [...meta].flatMap(([name, content]) =>
+    content
+      ? [`<meta name="${name}" content="${escapeAttribute(content)}">`]
+      : [],
+  );
   return [
     "<!doctype html>",
     '<html><head><meta charset="utf-8">',
@@ -64,11 +65,11 @@ function articleDocument(capture: Capture, article: CaptureArticle): string {
 
 function escapeText(text: string): string {
   return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function escapeAttribute(text: string): string {
-  return escapeText(text).replace(/"/g, "&quot;");
+  return escapeText(text).replaceAll('"', "&quot;");
 }

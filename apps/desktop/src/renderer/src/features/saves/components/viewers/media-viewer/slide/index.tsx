@@ -37,7 +37,7 @@ interface SlideProps {
   onNavigate?: (id: string) => void;
   title?: string | null;
   artist?: string | null;
-  chapters?: ChapterCue[];
+  chapters?: Array<ChapterCue>;
   ratio?: number;
   onRatio?: (src: string, ratio: number) => void;
 }
@@ -142,20 +142,25 @@ function VideoSlide({
   active: boolean;
   title?: string | null;
   artist?: string | null;
-  chapters?: ChapterCue[];
+  chapters?: Array<ChapterCue>;
   ratioOverride?: number;
   onRatio?: (src: string, ratio: number) => void;
   onError: () => void;
 }) {
   const { setLocal } = useResolvedRatio(slide, ratioOverride);
-  const [playbackSrc, setPlaybackSrc] = useState(slide.src);
+  const [preview, setPreview] = useState<{ src: string; url: string } | null>(
+    null,
+  );
+  if (preview && preview.src !== slide.src) {
+    setPreview(null);
+  }
+  const playbackSrc = preview?.src === slide.src ? preview.url : slide.src;
   const attemptedCompatiblePreview = useRef(false);
   const requestId = useRef(0);
 
   useEffect(() => {
     requestId.current += 1;
     attemptedCompatiblePreview.current = false;
-    setPlaybackSrc(slide.src);
     return () => {
       requestId.current += 1;
     };
@@ -171,15 +176,19 @@ function VideoSlide({
     void window.pond
       .query("video.preparePreview", { src: slide.src })
       .then((result) => {
-        if (requestId.current !== currentRequest) return;
+        if (requestId.current !== currentRequest) {
+          return;
+        }
         if (result.ok && result.url) {
-          setPlaybackSrc(result.url);
+          setPreview({ src: slide.src, url: result.url });
           return;
         }
         onError();
       })
       .catch(() => {
-        if (requestId.current === currentRequest) onError();
+        if (requestId.current === currentRequest) {
+          onError();
+        }
       });
   }, [onError, slide.src]);
 
@@ -219,7 +228,9 @@ function VideoSlide({
 }
 
 function PosterSlide({ slide, saveId }: { slide: MediaSlide; saveId: string }) {
-  if (!slide.posterUrl) return <div className={styles["media-shell"]} />;
+  if (!slide.posterUrl) {
+    return <div className={styles["media-shell"]} />;
+  }
   return (
     <button
       type="button"

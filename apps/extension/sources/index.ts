@@ -1,5 +1,6 @@
 import { SOURCES } from "@pond/schema/source-ids";
-import { type ExternalSource, sourceIdFromUrl } from "@pond/schema/sources";
+import { sourceIdFromUrl } from "@pond/schema/sources";
+import type { ExternalSource } from "@pond/schema/sources";
 import { MatchPattern } from "wxt/utils/match-patterns";
 import { matches as arena } from "./arena/matches";
 import { matches as behance } from "./behance/matches";
@@ -23,9 +24,9 @@ import { matches as vimeo } from "./vimeo/matches";
 import { matches as youtube } from "./youtube/matches";
 
 interface HookSource {
-  matches: readonly string[];
+  matches: ReadonlyArray<string>;
   /** Triggers that record a like or upvote rather than an explicit save. */
-  likes: readonly string[];
+  likes: ReadonlyArray<string>;
   item: string;
 }
 
@@ -53,14 +54,14 @@ export const HOOK_SOURCES = {
   mymind: { matches: [], likes: [], item: "Card" },
 } as const satisfies Record<ExternalSource, HookSource>;
 
-export const HOOK_SOURCE_IDS: readonly ExternalSource[] = SOURCES.filter(
+export const HOOK_SOURCE_IDS: ReadonlyArray<ExternalSource> = SOURCES.filter(
   (source): source is ExternalSource =>
     source !== "web" &&
     source !== "local" &&
     HOOK_SOURCES[source].matches.length > 0,
 );
 
-export const HOOK_MATCHES: string[] = HOOK_SOURCE_IDS.flatMap((source) => [
+export const HOOK_MATCHES: Array<string> = HOOK_SOURCE_IDS.flatMap((source) => [
   ...HOOK_SOURCES[source].matches,
 ]);
 
@@ -68,7 +69,7 @@ export function isLikeTrigger(
   source: ExternalSource,
   trigger: string,
 ): boolean {
-  const likes: readonly string[] = HOOK_SOURCES[source].likes;
+  const likes: ReadonlyArray<string> = HOOK_SOURCES[source].likes;
   return likes.includes(trigger);
 }
 

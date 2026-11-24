@@ -17,7 +17,9 @@ function seed() {
   const save = normalise(
     SavePatchSchema.parse({ id: ids[0], url: "https://example.com/0" }),
   );
-  if (!save) throw new Error("Invalid fixture");
+  if (!save) {
+    throw new Error("Invalid fixture");
+  }
   pool.upsert(save);
 }
 afterEach(() => {
@@ -26,8 +28,19 @@ afterEach(() => {
   tagClipboard.clear();
   vi.unstubAllGlobals();
 });
+function hasTitle(detail: unknown): detail is { title: string } {
+  return (
+    typeof detail === "object" &&
+    detail !== null &&
+    "title" in detail &&
+    typeof detail.title === "string"
+  );
+}
 function notificationTitle(event: Event): string | undefined {
-  return event instanceof CustomEvent ? event.detail.title : undefined;
+  if (!("detail" in event)) {
+    return undefined;
+  }
+  return hasTitle(event.detail) ? event.detail.title : undefined;
 }
 it("adds tags and retries using all selected IDs without hydrating the renderer pool", async () => {
   seed();
@@ -56,7 +69,9 @@ it("confirms a tag copy but lets the pasted tags speak for themselves", async ()
       tags: ["Reviewed"],
     }),
   );
-  if (!save) throw new Error("Invalid fixture");
+  if (!save) {
+    throw new Error("Invalid fixture");
+  }
   pool.upsert(save);
   const titles: Array<string | undefined> = [];
   const query = vi.fn(async () => ({ changed: 301 }));
@@ -78,12 +93,12 @@ it("confirms a tag copy but lets the pasted tags speak for themselves", async ()
 it("hydrates cold metadata before copying every selected URL", async () => {
   seed();
   let copied = "";
-  const requested: string[][] = [];
+  const requested: Array<Array<string>> = [];
   vi.stubGlobal("window", {
     pond: {
       query: async (
         method: string,
-        input: { ids?: string[]; text?: string },
+        input: { ids?: Array<string>; text?: string },
       ) => {
         if (method === "saves.getMany") {
           requested.push(input.ids ?? []);

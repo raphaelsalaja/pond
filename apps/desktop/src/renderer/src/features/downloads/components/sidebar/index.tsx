@@ -8,14 +8,15 @@ import {
   IconWindowDownload,
 } from "@pond/icons";
 import { Sidebar } from "@pond/ui";
-import { type ReactNode, useMemo } from "react";
+import { useMemo } from "react";
+import type { ReactNode } from "react";
 import {
   defaultDownloadFilters,
   projectLiveDownloads,
   STATUS_FILTER_OPTIONS,
-  type StatusFilter,
   statusBucket,
 } from "@/features/downloads/lib/status-feed";
+import type { StatusFilter } from "@/features/downloads/lib/status-feed";
 import {
   downloadsFilters,
   useDownloadsFilters,
@@ -59,7 +60,7 @@ function Row({
     >
       <Sidebar.Icon>{icon}</Sidebar.Icon>
       <Sidebar.ItemLabel>{label}</Sidebar.ItemLabel>
-      {count != null ? (
+      {count !== undefined ? (
         <Sidebar.Count>{count.toLocaleString("en-US")}</Sidebar.Count>
       ) : null}
     </Sidebar.Item>

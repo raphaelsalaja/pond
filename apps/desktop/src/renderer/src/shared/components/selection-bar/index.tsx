@@ -1,5 +1,6 @@
 import { IconXmark } from "@pond/icons";
-import { Button, type ButtonProps, Keyboard, Menu, Tooltip } from "@pond/ui";
+import { Button, Keyboard, Menu, Tooltip } from "@pond/ui";
+import type { ButtonProps } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ComponentProps, ReactElement, ReactNode } from "react";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
@@ -65,14 +66,16 @@ function Root({ label, count, onClear, children }: RootProps) {
   );
 }
 
-function shortcutHint(keys: readonly string[] | undefined) {
+function shortcutHint(keys: ReadonlyArray<string> | undefined) {
   return keys?.length ? <Keyboard.Cluster keys={[...keys]} /> : undefined;
 }
 
-interface ActionProps
-  extends Omit<ButtonProps, "icon" | "size" | "variant" | "aria-label"> {
+interface ActionProps extends Omit<
+  ButtonProps,
+  "icon" | "size" | "variant" | "aria-label"
+> {
   label: string;
-  shortcut?: readonly string[];
+  shortcut?: ReadonlyArray<string>;
 }
 
 /** Stays focusable while disabled so its tooltip still names the icon. */
@@ -91,13 +94,12 @@ function Action({ label, shortcut, ...props }: ActionProps) {
   );
 }
 
-interface ActionMenuProps
-  extends Pick<
-    ComponentProps<typeof SpecMenu>,
-    "buildItems" | "onOpen" | "search" | "searchLabel" | "minWidth"
-  > {
+interface ActionMenuProps extends Pick<
+  ComponentProps<typeof SpecMenu>,
+  "buildItems" | "onOpen" | "search" | "searchLabel" | "minWidth"
+> {
   label: string;
-  shortcut?: readonly string[];
+  shortcut?: ReadonlyArray<string>;
   disabled?: boolean;
   children: ReactElement;
 }

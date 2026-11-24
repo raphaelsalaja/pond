@@ -36,14 +36,20 @@ export class SaveeItemExtractor implements Extractor {
 
   /** Savee sets no cookies for visitors beyond analytics, so any other cookie means a session; the GraphQL probe confirms it. */
   authCookies(name: string, value?: string): boolean {
-    if (value !== undefined && value.length === 0) return false;
+    if (value !== undefined && value.length === 0) {
+      return false;
+    }
     return !/^(?:_ga|_gid|_gcl|ph_|OptanonConsent|__cf|cf_)/.test(name);
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
-    if (segments.length !== 1 || !first) return null;
-    if (SAVEE_RESERVED.has(first.toLowerCase())) return null;
+    if (segments.length !== 1 || !first) {
+      return null;
+    }
+    if (SAVEE_RESERVED.has(first.toLowerCase())) {
+      return null;
+    }
     return /^[A-Za-z0-9_.-]{1,40}$/.test(first) ? first : null;
   }
 
@@ -62,7 +68,9 @@ export class SaveeItemExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("savee", input.url.href);
-    if (!sourceId) throw new TerminalError("could not parse savee item");
+    if (!sourceId) {
+      throw new TerminalError("could not parse savee item");
+    }
     return captureFromSource({
       url: `https://savee.com/i/${sourceId}/`,
       source: "savee",

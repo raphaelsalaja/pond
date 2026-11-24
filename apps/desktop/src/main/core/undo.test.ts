@@ -9,12 +9,13 @@ it("undoes and redoes an entire rating batch in one command", async () => {
   ]);
   const history = createUndoHistory(async (transactions) => {
     for (const transaction of transactions) {
-      if (transaction.kind !== "update" || transaction.model !== "save")
+      if (transaction.kind !== "update" || transaction.model !== "save") {
         throw new Error("Unexpected transaction");
+      }
       ratings.set(transaction.id, transaction.patch.rating ?? 0);
     }
   });
-  const transactions: Transaction[] = ["a", "b"].map((id, index) => ({
+  const transactions: Array<Transaction> = ["a", "b"].map((id, index) => ({
     kind: "update",
     model: "save",
     id,
@@ -33,7 +34,9 @@ it("undoes and redoes an entire rating batch in one command", async () => {
 it("keeps the batch available when undo fails and clears redo on new work", async () => {
   let failing = true;
   const history = createUndoHistory(async () => {
-    if (failing) throw new Error("Library unavailable");
+    if (failing) {
+      throw new Error("Library unavailable");
+    }
   });
   const transaction: Transaction = {
     kind: "update",
@@ -78,7 +81,7 @@ it("does not carry in-flight undo history into another library", async () => {
 });
 
 it("swaps replacement bytes when undoing and redoing file compression", async () => {
-  const committed: Transaction[][] = [];
+  const committed: Array<Array<Transaction>> = [];
   const history = createUndoHistory(async (transactions) => {
     committed.push(transactions);
   });
@@ -118,13 +121,15 @@ function ratingChange(id: string, rating: number): Transaction {
 }
 
 it("undoes and redoes a step only while it is the latest change in that direction", async () => {
-  const committed: string[] = [];
+  const committed: Array<string> = [];
   let next = 0;
   const history = createUndoHistory(
     async (transactions) => {
-      for (const transaction of transactions)
-        if (transaction.kind === "update" && transaction.model === "save")
+      for (const transaction of transactions) {
+        if (transaction.kind === "update" && transaction.model === "save") {
           committed.push(`${transaction.id}:${transaction.patch.rating}`);
+        }
+      }
     },
     () => `step-${++next}`,
   );
@@ -146,11 +151,13 @@ it("undoes and redoes a step only while it is the latest change in that directio
 });
 
 it("runs a step's side effects after its transactions in each direction", async () => {
-  const order: string[] = [];
+  const order: Array<string> = [];
   const history = createUndoHistory(async (transactions) => {
-    for (const transaction of transactions)
-      if (transaction.kind === "update" && transaction.model === "save")
+    for (const transaction of transactions) {
+      if (transaction.kind === "update" && transaction.model === "save") {
         order.push(`commit:${transaction.patch.rating}`);
+      }
+    }
   });
   history.record([ratingChange("a", 5)], {
     undo: async () => {
@@ -170,10 +177,14 @@ it("runs a step's side effects after its transactions in each direction", async 
 it("keeps a step in place when its scoped undo fails", async () => {
   let failing = true;
   const history = createUndoHistory(async () => {
-    if (failing) throw new Error("Library unavailable");
+    if (failing) {
+      throw new Error("Library unavailable");
+    }
   });
   const step = history.record([ratingChange("a", 5)]);
-  if (!step) throw new Error("Missing step");
+  if (!step) {
+    throw new Error("Missing step");
+  }
   expect(await history.undoStep(step)).toBe("failed");
   expect(history.canUndo()).toBe(true);
   failing = false;
@@ -185,7 +196,9 @@ it("records no step for an empty change and forgets steps from another library",
   const history = createUndoHistory(async () => {});
   expect(history.record([])).toBeNull();
   const step = history.record([ratingChange("a", 5)]);
-  if (!step) throw new Error("Missing step");
+  if (!step) {
+    throw new Error("Missing step");
+  }
   history.clear();
   expect(await history.undoStep(step)).toBe("stale");
 });
@@ -195,7 +208,9 @@ it("reports which step the latest Undo and Redo reversed", async () => {
   let next = 0;
   const history = createUndoHistory(
     async () => {
-      if (failing) throw new Error("Library unavailable");
+      if (failing) {
+        throw new Error("Library unavailable");
+      }
     },
     () => `step-${++next}`,
   );

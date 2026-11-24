@@ -1,10 +1,11 @@
-import { inverse, type Transaction } from "@pond/schema/tx";
+import { inverse } from "@pond/schema/tx";
+import type { Transaction } from "@pond/schema/tx";
 import { describe, expect, it } from "vitest";
 import {
-  type BatchExtensionRuntime,
   batchEditExtensions,
   planBatchExtensionEdits,
 } from "./batch-extensions";
+import type { BatchExtensionRuntime } from "./batch-extensions";
 
 const rows = [
   {
@@ -49,7 +50,9 @@ describe("batch extension editing", () => {
       },
     });
     const transaction = result.transactions[0];
-    if (!transaction) throw new Error("Missing transaction");
+    if (!transaction) {
+      throw new Error("Missing transaction");
+    }
     expect(inverse(transaction)).toMatchObject({
       fileRenames: [{ from: "media-0.webp", to: "media-0.jpg" }],
       patch: { files: rows[0]?.files },
@@ -75,15 +78,17 @@ describe("batch extension editing", () => {
   });
 
   it("records Undo only after the transaction commits", async () => {
-    const batches: Transaction[][] = [];
-    const undo: Transaction[][] = [];
+    const batches: Array<Array<Transaction>> = [];
+    const undo: Array<Array<Transaction>> = [];
     let fail = true;
     const runtime: BatchExtensionRuntime = {
       async read() {
         return rows;
       },
       async commit(transactions) {
-        if (fail) throw new Error("Disk unavailable");
+        if (fail) {
+          throw new Error("Disk unavailable");
+        }
         batches.push(transactions);
       },
       recordUndo(transactions) {

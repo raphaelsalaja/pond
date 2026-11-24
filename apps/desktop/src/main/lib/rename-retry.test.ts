@@ -6,12 +6,14 @@ function busy(code: string) {
 }
 
 function flaky(failures: number, code: string) {
-  const calls: string[] = [];
+  const calls: Array<string> = [];
   return {
     calls,
     rename(from: string, to: string) {
       calls.push(`${from}>${to}`);
-      if (calls.length <= failures) throw busy(code);
+      if (calls.length <= failures) {
+        throw busy(code);
+      }
     },
   };
 }
@@ -21,7 +23,7 @@ const sleep = async () => {};
 describe("renameWithRetry", () => {
   it("retries transient Windows lock errors", async () => {
     const fs = flaky(2, "EPERM");
-    const waits: number[] = [];
+    const waits: Array<number> = [];
     await renameWithRetry("a", "b", {
       rename: async (from, to) => fs.rename(from, to),
       platform: "win32",

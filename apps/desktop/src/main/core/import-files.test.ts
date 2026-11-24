@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { importFiles } from "./import-files";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -22,12 +22,12 @@ async function fixture() {
     [];
   const files: Array<{
     id: string;
-    filePaths: string[];
-    tags: string[];
+    filePaths: Array<string>;
+    tags: Array<string>;
     importedFrom?: string;
-    folderIds: string[];
+    folderIds: Array<string>;
   }> = [];
-  const restored: Array<{ id: string; folderIds: string[] | null }> = [];
+  const restored: Array<{ id: string; folderIds: Array<string> | null }> = [];
   const runtime: NonNullable<Parameters<typeof importFiles>[1]> = {
     async createFolder(input) {
       const folder = { ...input, id: `folder-${folders.length}` };
@@ -44,7 +44,9 @@ async function fixture() {
     },
     async assignFolders(id, folderIds) {
       const file = files.find((value) => value.id === id);
-      if (!file) return { ok: false };
+      if (!file) {
+        return { ok: false };
+      }
       file.folderIds = folderIds;
       return { ok: true };
     },
@@ -69,7 +71,9 @@ describe("restoring a trashed duplicate", () => {
       },
       runtime,
     );
-    if (!result.ok) throw new Error(result.error);
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
     expect(result.ids).toEqual(["trashed-save"]);
     expect(files).toEqual([]);
     expect(restored).toEqual([
@@ -85,7 +89,9 @@ describe("hierarchy-preserving file import", () => {
       { paths: [tree], tags: ["inspiration"], folderIds: ["destination"] },
       runtime,
     );
-    if (!result.ok) throw new Error(result.error);
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
     expect(result.ids).toHaveLength(2);
     expect(folders).toEqual([
       { id: "folder-0", name: "Design", parentId: "destination" },
@@ -117,7 +123,9 @@ describe("hierarchy-preserving file import", () => {
     const { tree, folders, files, runtime } = await fixture();
     const path = join(tree, "reference.png");
     const result = await importFiles({ paths: [path, path] }, runtime);
-    if (!result.ok) throw new Error(result.error);
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
     expect(result.ids).toHaveLength(1);
     expect(folders).toEqual([]);
     expect(files[0]?.folderIds).toEqual([]);
@@ -172,7 +180,9 @@ describe("hierarchy-preserving file import", () => {
       { paths: [missing, join(tree, "reference.png")] },
       runtime,
     );
-    if (!result.ok) throw new Error(result.error);
+    if (!result.ok) {
+      throw new Error(result.error);
+    }
     expect(result.ids).toHaveLength(1);
     expect(result.failedPaths).toEqual([missing]);
   });

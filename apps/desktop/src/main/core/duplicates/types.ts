@@ -20,8 +20,8 @@ export interface LibrarySave {
   /** Set on Saves made by splitting a post, which share the post's URL without being the same Save. */
   splitSourceId: string | null;
   /** Original files only. Thumbnails, posters and other generated files never count. */
-  assets: LibraryAsset[];
-  clip: number[] | null;
+  assets: Array<LibraryAsset>;
+  clip: Array<number> | null;
 }
 
 /** One piece of evidence for a pair. `supporting` evidence never counts toward coverage. */
@@ -64,33 +64,43 @@ export function assetFound(
   evidence: AssetEvidence,
   supporting = false,
 ): Found | null {
-  if (evidence.left.saveId === evidence.right.saveId) return null;
+  if (evidence.left.saveId === evidence.right.saveId) {
+    return null;
+  }
   const flipped = evidence.left.saveId > evidence.right.saveId;
   const oriented = flipped
     ? { ...evidence, left: evidence.right, right: evidence.left }
     : evidence;
-  if (flipped && "offsetSeconds" in oriented)
+  if (flipped && "offsetSeconds" in oriented) {
     oriented.offsetSeconds = -oriented.offsetSeconds;
+  }
   const found: Found = {
     ids: [oriented.left.saveId, oriented.right.saveId],
     asset: oriented,
   };
-  if (supporting) found.supporting = true;
+  if (supporting) {
+    found.supporting = true;
+  }
   return found;
 }
 
 /** Every pair among the first `limit` ids, then each remaining id paired with the first. */
 export function fanoutPairs(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   limit = MAX_FANOUT,
 ): Array<[string, string]> {
   const pairs: Array<[string, string]> = [];
   const head = ids.slice(0, limit);
-  for (const [offset, left] of head.entries())
-    for (const right of head.slice(offset + 1))
+  for (const [offset, left] of head.entries()) {
+    for (const right of head.slice(offset + 1)) {
       pairs.push(orderIds(left, right));
+    }
+  }
   const anchor = ids[0];
-  if (anchor)
-    for (const id of ids.slice(limit)) pairs.push(orderIds(anchor, id));
+  if (anchor) {
+    for (const id of ids.slice(limit)) {
+      pairs.push(orderIds(anchor, id));
+    }
+  }
   return pairs;
 }

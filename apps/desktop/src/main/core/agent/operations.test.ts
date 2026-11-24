@@ -5,13 +5,12 @@ import type { AgentOperationRequest } from "../../../shared/agent-operations";
 import {
   applyPondOperation,
   fishOperationCatalog,
-  type OperationCatalog,
-  type PondOperation,
   pondOperationCatalog,
   pondOperationTools,
   registerExternalOperations,
   registerPondOperations,
 } from "./operations";
+import type { OperationCatalog, PondOperation } from "./operations";
 
 function fixture() {
   let libraryId = "library-one";
@@ -46,7 +45,9 @@ function fixture() {
   );
   function tool(name: string) {
     const found = tools.find((entry) => entry.name === name);
-    if (!found) throw new Error(`Missing tool ${name}`);
+    if (!found) {
+      throw new Error(`Missing tool ${name}`);
+    }
     return found;
   }
   return {
@@ -186,7 +187,9 @@ it("stops tool execution after cancellation or a Library switch", async () => {
 it("preserves operation failures rather than reporting completion", async () => {
   const state = fixture();
   const original = state.catalog.operations[0];
-  if (!original) throw new Error("Missing fixture operation");
+  if (!original) {
+    throw new Error("Missing fixture operation");
+  }
   const catalog: OperationCatalog = {
     ...state.catalog,
     operations: [
@@ -202,7 +205,7 @@ it("preserves operation failures rather than reporting completion", async () => 
 });
 
 it("pages a large result without executing its operation twice", async () => {
-  const execute = vi.fn(async () => ({ text: "reference ".repeat(3_000) }));
+  const execute = vi.fn(async () => ({ text: "reference ".repeat(3000) }));
   const catalog: OperationCatalog = {
     libraryId: () => "library",
     operations: [
@@ -221,7 +224,9 @@ it("pages a large result without executing its operation twice", async () => {
   );
   const run = tools.find((entry) => entry.name === "runPondOperation");
   const read = tools.find((entry) => entry.name === "readPondOperationResult");
-  if (!run || !read) throw new Error("Missing operation tools");
+  if (!run || !read) {
+    throw new Error("Missing operation tools");
+  }
   const first = z
     .object({
       resultId: z.string(),
@@ -240,7 +245,7 @@ it("pages a large result without executing its operation twice", async () => {
     }),
   );
   expect(JSON.parse(first.text + second.text)).toEqual({
-    text: "reference ".repeat(3_000),
+    text: "reference ".repeat(3000),
   });
   expect(execute).toHaveBeenCalledOnce();
 });

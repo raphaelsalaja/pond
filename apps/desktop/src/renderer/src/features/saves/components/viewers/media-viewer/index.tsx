@@ -1,18 +1,16 @@
+import { isHTMLTag } from "@pond/ui/dom";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
-import {
-  type MediaSlide,
-  Slide,
-} from "@/features/saves/components/viewers/media-viewer/slide";
+import { Slide } from "@/features/saves/components/viewers/media-viewer/slide";
+import type { MediaSlide } from "@/features/saves/components/viewers/media-viewer/slide";
 import {
   copyVideoFrame,
   saveVideoFrame,
 } from "@/features/saves/lib/media/capture-frame";
-import {
-  type ChapterCue,
-  chaptersForSave,
-} from "@/features/saves/lib/media/chapters-vtt";
+import { chaptersForSave } from "@/features/saves/lib/media/chapters-vtt";
+import type { ChapterCue } from "@/features/saves/lib/media/chapters-vtt";
 import { buildMediaUnits } from "@/features/saves/lib/media/units";
 import { openSave } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
@@ -62,17 +60,22 @@ export function MediaViewer({
   showControls = true,
 }: MediaViewerProps) {
   const theme = useResolvedTheme();
-  const chapters = useMemo<ChapterCue[]>(() => chaptersForSave(save), [save]);
+  const chapters = useMemo<Array<ChapterCue>>(
+    () => chaptersForSave(save),
+    [save],
+  );
   const singleVideo = useMemo(
     () =>
       buildMediaUnits(save, { theme }).filter((u) => u.isVideo).length === 1,
     [save, theme],
   );
-  const allSlides = useMemo<MediaSlide[]>(
+  const allSlides = useMemo<Array<MediaSlide>>(
     () =>
       buildMediaUnits(save, { theme }).flatMap((u) => {
         const fileIndex = save.files.findIndex((f) => f.path === u.key);
-        if (fileIndex < 0) return [];
+        if (fileIndex < 0) {
+          return [];
+        }
         const file = save.files[fileIndex];
         const poster = u.posterKey
           ? save.files.find((f) => f.path === u.posterKey)
@@ -109,7 +112,9 @@ export function MediaViewer({
       onPositionChange?.(null);
       return;
     }
-    if (slides.length !== 1) return;
+    if (slides.length !== 1) {
+      return;
+    }
     onActiveFileIndexChange?.(firstFileIndex);
     onPositionChange?.({ index: 0, count: 1, fileIndex: firstFileIndex });
   }, [
@@ -125,7 +130,9 @@ export function MediaViewer({
 
   if (slides.length === 1) {
     const only = slides[0];
-    if (!only) return null;
+    if (!only) {
+      return null;
+    }
     return (
       <MediaViewerFrame showControls={showControls}>
         <Slide
@@ -173,14 +180,16 @@ export function MediaViewerFrame({
     const video = root?.querySelector("[data-blossom-slide]")
       ? root.querySelector("[data-blossom-slide][data-active] video")
       : root?.querySelector("video");
-    return video instanceof HTMLVideoElement && video.videoWidth ? video : null;
+    return isHTMLTag(video, "video") && video.videoWidth ? video : null;
   };
 
   useHotkey(
     bindingKeys(shortcuts, "viewer.copy-frame"),
     (event) => {
       const video = activeVideo();
-      if (!video) return;
+      if (!video) {
+        return;
+      }
       event.preventDefault();
       void copyVideoFrame(video);
     },
@@ -190,7 +199,9 @@ export function MediaViewerFrame({
     bindingKeys(shortcuts, "viewer.save-frame"),
     (event) => {
       const video = activeVideo();
-      if (!video) return;
+      if (!video) {
+        return;
+      }
       event.preventDefault();
       void saveVideoFrame(video);
     },
@@ -200,7 +211,9 @@ export function MediaViewerFrame({
     bindingKeys(shortcuts, "viewer.mute"),
     (event) => {
       const video = activeVideo();
-      if (!video) return;
+      if (!video) {
+        return;
+      }
       event.preventDefault();
       video.muted = !video.muted;
     },
@@ -226,8 +239,8 @@ function Carousel({
 }: {
   save: Save;
   onNavigate: (id: string) => void;
-  slides: MediaSlide[];
-  chapters?: ChapterCue[];
+  slides: Array<MediaSlide>;
+  chapters?: Array<ChapterCue>;
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
   onPositionChange?: (position: ViewerPosition | null) => void;
   navRef?: RefObject<ViewerNav | null>;
@@ -277,7 +290,9 @@ function Carousel({
   }, [active, slides, onActiveFileIndexChange, onPositionChange]);
 
   useEffect(() => {
-    if (!navRef) return;
+    if (!navRef) {
+      return;
+    }
     navRef.current = { step };
     return () => {
       navRef.current = null;

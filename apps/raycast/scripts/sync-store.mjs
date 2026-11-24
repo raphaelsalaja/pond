@@ -1,11 +1,10 @@
 /** Copies this extension into a raycast/extensions checkout, pinned to the published pond-api. */
 import { execFileSync } from "node:child_process";
 import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const FILES = [".prettierrc", "CHANGELOG.md", "README.md", "ai.yaml", "eslint.config.js", "tsconfig.json"];
+const root = resolve(import.meta.dirname, "..");
+const FILES = [".prettierrc", "CHANGELOG.md", "README.md", "ai.yaml", "eslint.config.mjs", "tsconfig.json"];
 const FOLDERS = ["assets", "metadata", "src", "tests"];
 const MANAGED = new Set([...FILES, ...FOLDERS, "package.json", "package-lock.json", "node_modules"]);
 
@@ -38,9 +37,13 @@ if (published !== api.version) {
 }
 
 await mkdir(destination, { recursive: true });
-for (const file of FILES) await cp(join(root, file), join(destination, file));
+for (const file of FILES) {
+  await cp(join(root, file), join(destination, file));
+}
 for (const folder of FOLDERS) {
-  if (!(await exists(join(root, folder)))) continue;
+  if (!(await exists(join(root, folder)))) {
+    continue;
+  }
   await rm(join(destination, folder), { recursive: true, force: true });
   await cp(join(root, folder), join(destination, folder), { recursive: true });
 }
@@ -52,7 +55,9 @@ manifest.scripts = { ...scripts, dev: develop };
 await writeFile(join(destination, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 
 const extra = (await readdir(destination)).filter((name) => !MANAGED.has(name));
-if (extra.length) console.warn(`Left alone in the Store copy, check they still belong: ${extra.join(", ")}`);
+if (extra.length) {
+  console.warn(`Left alone in the Store copy, check they still belong: ${extra.join(", ")}`);
+}
 
 if (install) {
   execFileSync("npm", ["install", "--no-audit", "--no-fund"], { cwd: destination, stdio: "inherit" });

@@ -7,7 +7,7 @@ export interface Rival {
 }
 
 /** Competitors in column order. Pond's column always comes last. */
-export const RIVALS: Rival[] = [
+export const RIVALS: Array<Rival> = [
   { id: "mymind", name: "mymind", logo: "/media/logo-mymind.png" },
   { id: "eagle", name: "Eagle", logo: "/media/logo-eagle.png" },
   { id: "raindrop", name: "Raindrop.io", logo: "/media/logo-raindrop.png" },
@@ -20,12 +20,12 @@ export type Mark = "yes" | "partly" | "no" | { text: string };
 export interface Row {
   label: string;
   /** One mark per rival, in `RIVALS` order. */
-  rivals: Mark[];
+  rivals: Array<Mark>;
   pond: Mark;
 }
 
 /** Read from each vendor's own site in November 2026. */
-export const ROWS: Row[] = [
+export const ROWS: Array<Row> = [
   {
     label: "Price",
     rivals: [

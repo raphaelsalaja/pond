@@ -27,9 +27,9 @@ describe("virtual DataTable navigation", () => {
     const rows = Array.from({ length: 100 }, (_, index) => ({
       id: `row-${index}`,
     }));
-    let selection: string[] = [];
+    let selection: Array<string> = [];
     try {
-      await act(() =>
+      await act(async () => {
         root.render(
           <DataTable.Provider
             data={rows}
@@ -44,11 +44,13 @@ describe("virtual DataTable navigation", () => {
             <DataTable.Hotkeys />
             <DataTable.Root aria-label="Virtual records" />
           </DataTable.Provider>,
-        ),
-      );
+        );
+      });
       const grid = host.querySelector<HTMLElement>('[role="grid"]');
       const viewport = host.querySelector<HTMLElement>("[data-viewport]");
-      if (!grid || !viewport) throw new Error("Missing virtual table");
+      if (!grid || !viewport) {
+        throw new Error("Missing virtual table");
+      }
       const scrollTo = vi.fn((options: ScrollToOptions) => {
         viewport.scrollTop = options.top ?? 0;
         viewport.dispatchEvent(new Event("scroll"));
@@ -74,17 +76,21 @@ describe("virtual DataTable navigation", () => {
       const other = document.createElement("button");
       host.append(other);
       other.focus();
-      await act(() => {
+      await act(async () => {
         viewport.scrollTop = 0;
         viewport.dispatchEvent(new Event("scroll"));
       });
-      await act(() => grid.focus());
+      await act(async () => {
+        grid.focus();
+      });
       expect(viewport.scrollTop).toBeGreaterThan(0);
       expect(selection).toEqual(["row-99"]);
       expect(document.activeElement).toBe(grid);
       expect(host.querySelectorAll("[aria-selected]").length).toBeLessThan(100);
     } finally {
-      await act(() => root.unmount());
+      await act(async () => {
+        root.unmount();
+      });
       host.remove();
     }
   });

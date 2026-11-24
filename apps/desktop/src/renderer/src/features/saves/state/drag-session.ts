@@ -2,7 +2,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 export interface SaveDragSession {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   hasFiles: boolean;
 }
 
@@ -17,7 +17,9 @@ export function startSaveDragSession(session: SaveDragSession): void {
 }
 
 export function endSaveDragSession(): void {
-  if (store.state) store.setState(() => null);
+  if (store.state) {
+    store.setState(() => null);
+  }
 }
 
 export function useSaveDragSession(): SaveDragSession | null {

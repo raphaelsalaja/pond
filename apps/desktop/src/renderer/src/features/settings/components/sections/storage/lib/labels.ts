@@ -35,7 +35,9 @@ export function labelForExtension(extension: string): string {
 }
 
 export function formatShare(bytes: number, total: number): string {
-  if (total <= 0 || bytes <= 0) return "0%";
+  if (total <= 0 || bytes <= 0) {
+    return "0%";
+  }
   const percent = (bytes / total) * 100;
   return percent < 1 ? "<1%" : `${Math.round(percent)}%`;
 }

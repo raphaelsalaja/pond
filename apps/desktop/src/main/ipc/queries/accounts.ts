@@ -3,22 +3,24 @@ import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { sourceLabel } from "@pond/schema/sources";
 import { z } from "zod";
 import {
-  type ImportCollectionKind,
-  type ImportScopeProblem,
   importScopeOptions,
   importsAnyList,
   normalizeImportScope,
+} from "../../../shared/import-scope";
+import type {
+  ImportCollectionKind,
+  ImportScopeProblem,
 } from "../../../shared/import-scope";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
 import { MymindCredentialSchema } from "../../core/mymind/client";
 import { connectMymind } from "../../core/mymind/connect";
 import { releaseFilteredSaves } from "../../core/pipeline/import-filter";
-import type { CollectionFailureReason } from "../../core/refresh/harvest/lib/collections-reply";
 import {
   collectionsNeedHandle,
   isAccountConnected,
   listSourceCollections,
 } from "../../core/refresh/harvest-window";
+import type { CollectionFailureReason } from "../../core/refresh/harvest/lib/collections-reply";
 import { isSyncing, syncAccount } from "../../core/sync";
 import { resolveAccountHandle } from "../../core/sync/account-key";
 import {
@@ -32,12 +34,8 @@ import {
 import { fillMissingAvatars } from "../../core/sync/avatars";
 import { importScopePatch } from "../../core/sync/import-scope";
 import { countSavesForAccount } from "../../core/sync/sync-baseline";
-import {
-  type QueryHandlerMap,
-  query,
-  StringParam,
-  TrimmedTextParam,
-} from "./params";
+import { query, StringParam, TrimmedTextParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const ACCOUNT_NOT_FOUND: OkFailure = { ok: false, error: "Account not found." };
 /** Plural nouns for the collections each Source names differently. */
@@ -104,7 +102,9 @@ export function createSetImportScopeQuery(
     }),
     async (params) => {
       const account = await dependencies.getAccount(params.accountId);
-      if (!account) return ACCOUNT_NOT_FOUND;
+      if (!account) {
+        return ACCOUNT_NOT_FOUND;
+      }
       const normalized = normalizeImportScope(account.source, params.scope);
       if (!normalized.ok) {
         return {
@@ -171,9 +171,13 @@ export function createImportOptionsQuery(
     z.strictObject({ accountId: z.string().trim().min(1) }),
     async (params) => {
       const account = await dependencies.getAccount(params.accountId);
-      if (!account) return ACCOUNT_NOT_FOUND;
+      if (!account) {
+        return ACCOUNT_NOT_FOUND;
+      }
       const kind = importScopeOptions(account.source).collections;
-      if (!kind) return { ok: true as const, collections: null };
+      if (!kind) {
+        return { ok: true as const, collections: null };
+      }
       const label = sourceLabel(account.source);
       const nouns = COLLECTION_NOUNS[kind];
       const needsHandle = collectionsNeedHandle(account.source);
@@ -209,10 +213,11 @@ export const accountsQueries = {
     async (params) => {
       try {
         const result = await connectMymind(params);
-        if (result.ok)
+        if (result.ok) {
           void syncAccount(result.account.id, { trigger: "manual" }).catch(
             () => {},
           );
+        }
         return result;
       } catch (error) {
         return {
@@ -252,7 +257,9 @@ export const accountsQueries = {
         avatarUrl: null,
         avatarCheckedAt: null,
       });
-      if (!account) return ACCOUNT_NOT_FOUND;
+      if (!account) {
+        return ACCOUNT_NOT_FOUND;
+      }
       fillMissingAvatars();
       return { ok: true as const, account };
     },
@@ -276,7 +283,9 @@ export const accountsQueries = {
     z.object({ accountId: StringParam }),
     async (params) => {
       const account = await getAccount(params.accountId);
-      if (!account) return ACCOUNT_NOT_FOUND;
+      if (!account) {
+        return ACCOUNT_NOT_FOUND;
+      }
       await removeAccount(params.accountId);
       return { ok: true as const };
     },
@@ -286,10 +295,11 @@ export const accountsQueries = {
     z.object({ accountId: StringParam }),
     async (params) => {
       const account = await getAccount(params.accountId);
-      if (account?.source !== "bluesky") return ACCOUNT_NOT_FOUND;
-      const { blueskySessionStatus } = await import(
-        "../../core/refresh/harvest/bluesky/session"
-      );
+      if (account?.source !== "bluesky") {
+        return ACCOUNT_NOT_FOUND;
+      }
+      const { blueskySessionStatus } =
+        await import("../../core/refresh/harvest/bluesky/session");
       const status = await blueskySessionStatus(account);
       return {
         ok: true as const,
@@ -303,10 +313,11 @@ export const accountsQueries = {
     z.object({ accountId: StringParam }),
     async (params) => {
       const account = await getAccount(params.accountId);
-      if (account?.source !== "bluesky") return ACCOUNT_NOT_FOUND;
-      const { signInToBluesky } = await import(
-        "../../core/refresh/harvest/bluesky/session"
-      );
+      if (account?.source !== "bluesky") {
+        return ACCOUNT_NOT_FOUND;
+      }
+      const { signInToBluesky } =
+        await import("../../core/refresh/harvest/bluesky/session");
       const result = await signInToBluesky(account);
       if (result.ok) {
         void syncAccount(account.id, { trigger: "manual" }).catch(() => {});
@@ -326,10 +337,11 @@ export const accountsQueries = {
     z.object({ accountId: StringParam }),
     async (params) => {
       const account = await getAccount(params.accountId);
-      if (account?.source !== "bluesky") return ACCOUNT_NOT_FOUND;
-      const { signOutOfBluesky } = await import(
-        "../../core/refresh/harvest/bluesky/session"
-      );
+      if (account?.source !== "bluesky") {
+        return ACCOUNT_NOT_FOUND;
+      }
+      const { signOutOfBluesky } =
+        await import("../../core/refresh/harvest/bluesky/session");
       await signOutOfBluesky(account);
       return { ok: true as const };
     },

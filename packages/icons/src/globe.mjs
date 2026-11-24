@@ -1,8 +1,7 @@
-import globe from "./globe.mjs";
 import turn from "./parts/opens-turn.mjs";
 import ring from "./parts/ring.mjs";
 
-export default (h, s) => {
+const globe = (h, s) => {
   const [cx, cy, r] = s.keylines.circle;
   const rx = 3.25;
   return [
@@ -11,6 +10,8 @@ export default (h, s) => {
     `M ${cx - r} ${cy} H ${cx + r}`,
   ];
 };
+
+export default globe;
 
 /** The globe tilts on its axis; the ring stays put. */
 export const open = (h, s) => {

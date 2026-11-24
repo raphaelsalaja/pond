@@ -1,13 +1,14 @@
 import type { JsonValue } from "@pond/schema/json";
 import { describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import {
-  type ApiSave,
   hostToSource,
   PondApi,
   PondApiError,
   SOURCES,
   sourceLabel,
 } from "./index";
+import type { ApiSave } from "./index";
 
 const SAVE: ApiSave = {
   id: "save-1",
@@ -33,8 +34,15 @@ const SAVE: ApiSave = {
   text: { caption: false, ocr: true, transcript: false },
 };
 
+const PinnedBody = z.object({ libraryId: z.string().optional() });
+
+function sentBody(init: RequestInit) {
+  const body: unknown = JSON.parse(String(init.body));
+  return z.json().parse(body);
+}
+
 function recorder(body: JsonValue) {
-  const calls: { url: string; init: RequestInit }[] = [];
+  const calls: Array<{ url: string; init: RequestInit }> = [];
   const client = new PondApi({
     token: "secret",
     fetch: async (url, init = {}) => {
@@ -292,7 +300,7 @@ describe("PondApi", () => {
       calls.map((call) => [
         call.url.replace("http://127.0.0.1:41610/api/v2", ""),
         call.init.method,
-        JSON.parse(String(call.init.body)),
+        sentBody(call.init),
       ]),
     ).toEqual([
       ["/saves/tags", "POST", { ids: ["a"], add: ["design"] }],
@@ -313,7 +321,7 @@ describe("PondApi", () => {
     await client.setRating(["a"], 2, "lib");
     await client.setFavorite(["a"], false, "lib");
     expect(
-      calls.map((call) => JSON.parse(String(call.init.body)).libraryId),
+      calls.map((call) => PinnedBody.parse(sentBody(call.init)).libraryId),
     ).toEqual(["lib", "lib", "lib", "lib", "lib"]);
   });
 

@@ -1,7 +1,8 @@
 import "@/app/effects/save-library-bridge";
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { act, useLayoutEffect, useRef, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { selectOnlySave } from "@/features/saves";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
@@ -20,13 +21,15 @@ function Gallery({
   resolveIds,
   loadPages = true,
 }: {
-  initialIds?: string[];
-  resolveIds?: () => Promise<string[]>;
+  initialIds?: Array<string>;
+  resolveIds?: () => Promise<Array<string>>;
   loadPages?: boolean;
 }) {
   const [ids, setIds] = useState(initialIds);
   const loaded = useRef(ids);
-  loaded.current = ids;
+  useLayoutEffect(() => {
+    loaded.current = ids;
+  });
   const collection = useRef<HTMLDivElement>(null);
   useGridHotkeys(ids);
   useLayoutEffect(() => {
@@ -37,7 +40,9 @@ function Gallery({
       loadedIds: () => loaded.current,
       allIds: resolveIds ?? (async () => allIds),
       loadMore: async () => {
-        if (!loadPages) return;
+        if (!loadPages) {
+          return;
+        }
         loaded.current = allIds;
         setIds(allIds);
       },
@@ -55,8 +60,12 @@ function Gallery({
   useLayoutEffect(
     () =>
       resultNavigation.registerReveal((id) => {
-        if (!loaded.current.includes(id)) return;
-        if (resultNavigation.shouldFocus()) collection.current?.focus();
+        if (!loaded.current.includes(id)) {
+          return;
+        }
+        if (resultNavigation.shouldFocus()) {
+          collection.current?.focus();
+        }
         resultNavigation.didReveal(id);
       }),
     [],
@@ -83,30 +92,37 @@ function Gallery({
   );
 }
 
+async function press(key: string, options: KeyboardEventInit = {}) {
+  await act(async () => {
+    (document.activeElement ?? document).dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+        ...options,
+      }),
+    );
+  });
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
+
+function lookupNotPending() {
+  throw new Error("Lookup is not pending");
+}
+
 describe("gallery keyboard interaction", () => {
   let host: HTMLDivElement;
   let root: Root;
   function collection() {
     const element = host.querySelector<HTMLElement>("[data-save-collection]");
-    if (!element) throw new Error("Missing collection");
+    if (!element) {
+      throw new Error("Missing collection");
+    }
     return element;
-  }
-  async function press(key: string, options: KeyboardEventInit = {}) {
-    await act(async () => {
-      (document.activeElement ?? document).dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key,
-          bubbles: true,
-          cancelable: true,
-          ...options,
-        }),
-      );
-    });
-    await act(async () => {
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => resolve()),
-      );
-    });
   }
   beforeEach(() => {
     host = document.createElement("div");
@@ -118,12 +134,16 @@ describe("gallery keyboard interaction", () => {
       const save = normalise(
         SavePatchSchema.parse({ id, url: `https://example.com/${id}` }),
       );
-      if (!save) throw new Error("Invalid Save fixture");
+      if (!save) {
+        throw new Error("Invalid Save fixture");
+      }
       pool.upsert(save);
     }
   });
   afterEach(async () => {
-    await act(() => root.unmount());
+    await act(async () => {
+      root.unmount();
+    });
     host.remove();
     resultNavigation.setSource({ key: "empty", ids: [] });
     selection.clear();
@@ -131,13 +151,13 @@ describe("gallery keyboard interaction", () => {
     pool.clear();
   });
   async function mount(initialIds = allIds) {
-    await act(() =>
+    await act(async () => {
       root.render(
         <HotkeysProvider>
           <Gallery initialIds={initialIds} />
         </HotkeysProvider>,
-      ),
-    );
+      );
+    });
     collection().focus();
   }
   it("extends into the next loaded page and opens the range endpoint", async () => {
@@ -172,15 +192,13 @@ describe("gallery keyboard interaction", () => {
   });
   it("abandons an asynchronous range lookup after focus moves to another pane", async () => {
     let calls = 0;
-    let finish: (ids: string[]) => void = () => {
-      throw new Error("Lookup is not pending");
-    };
-    const pending = new Promise<string[]>((resolve) => {
+    let finish: (ids: Array<string>) => void = lookupNotPending;
+    const pending = new Promise<Array<string>>((resolve) => {
       finish = resolve;
     });
     const resolveIds = () =>
       ++calls === 1 ? Promise.resolve(allIds) : pending;
-    await act(() =>
+    await act(async () => {
       root.render(
         <HotkeysProvider>
           <Gallery
@@ -189,8 +207,8 @@ describe("gallery keyboard interaction", () => {
             loadPages={false}
           />
         </HotkeysProvider>,
-      ),
-    );
+      );
+    });
     collection().focus();
     selectOnlySave("B");
     await press("ArrowRight", { shiftKey: true });

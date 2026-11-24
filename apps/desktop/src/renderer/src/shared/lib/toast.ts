@@ -64,9 +64,15 @@ function toastOptions(
     id: options.id,
     title: options.title,
   };
-  if (options.description != null) toast.description = options.description;
-  if (options.timeout != null) toast.timeout = options.timeout;
-  if (options.onClose) toast.onClose = options.onClose;
+  if (options.description !== undefined) {
+    toast.description = options.description;
+  }
+  if (options.timeout !== undefined) {
+    toast.timeout = options.timeout;
+  }
+  if (options.onClose) {
+    toast.onClose = options.onClose;
+  }
   return toast;
 }
 

@@ -16,9 +16,13 @@ export function repairedCapture(
   rawJson: RawJson | null,
   entry: BookmarksEntry,
 ): Capture | null {
-  if (rawJson?.extractorId !== SEED_EXTRACTOR_ID) return null;
+  if (rawJson?.extractorId !== SEED_EXTRACTOR_ID) {
+    return null;
+  }
   const fresh = buildTwitterBookmarkSeed(entry)?.rawJson.capture;
-  if (!fresh) return null;
+  if (!fresh) {
+    return null;
+  }
   const next = withFreshText(rawJson.capture, fresh);
   return next === rawJson.capture ? null : next;
 }
@@ -35,8 +39,12 @@ function withFreshText(stored: Capture, fresh: Capture): Capture {
     return stored;
   }
   const next: Capture = { ...stored };
-  if (description !== undefined) next.description = description;
-  if (quoted) next.quoted = quoted;
+  if (description !== undefined) {
+    next.description = description;
+  }
+  if (quoted) {
+    next.quoted = quoted;
+  }
   return next;
 }
 
@@ -53,10 +61,12 @@ function lostLinks(
 }
 
 export async function repairTweetLinks(
-  entries: readonly BookmarksEntry[],
+  entries: ReadonlyArray<BookmarksEntry>,
 ): Promise<number> {
   const byId = new Map(entries.map((e) => [e.tweetId, e]));
-  if (byId.size === 0) return 0;
+  if (byId.size === 0) {
+    return 0;
+  }
   const db = await getDb();
   const ids = [...byId.keys()];
   let repaired = 0;
@@ -78,9 +88,13 @@ export async function repairTweetLinks(
       .all();
     for (const row of rows) {
       const entry = byId.get(row.sourceId);
-      if (!entry || !row.rawJson) continue;
+      if (!entry || !row.rawJson) {
+        continue;
+      }
       const capture = repairedCapture(row.rawJson, entry);
-      if (!capture) continue;
+      if (!capture) {
+        continue;
+      }
       await persistSave(
         row.id,
         {
@@ -91,11 +105,11 @@ export async function repairTweetLinks(
       );
       try {
         await runCaptureTweet(row.id, { nativeOnly: true, force: true });
-      } catch (err) {
+      } catch (error) {
         log.warn(
           "[pond sync:twitter] link repair card redraw failed",
           row.id,
-          err,
+          error,
         );
       }
       repaired += 1;

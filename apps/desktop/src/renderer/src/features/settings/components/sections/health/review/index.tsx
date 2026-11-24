@@ -1,26 +1,17 @@
-import { Button, type ButtonProps, Toggle, ToggleGroup } from "@pond/ui";
+import { Button, Toggle, ToggleGroup } from "@pond/ui";
+import type { ButtonProps } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentPropsWithoutRef,
-  createContext,
-  type ReactNode,
-  use,
-  useState,
-} from "react";
+import { createContext, use, useState } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import type { DownloadHealthRow } from "@/features/downloads/health";
 import { openSave } from "@/features/saves/navigation";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { THIS_DEVICE } from "@/shared/lib/platform";
-import { type HealthAction, healthActions } from "../actions";
-import {
-  categoryFact,
-  type HealthCategory,
-  type HealthEntry,
-  type HealthStatus,
-  STATUS_LABELS,
-  statusBreakdown,
-} from "../categories";
+import { healthActions } from "../actions";
+import type { HealthAction } from "../actions";
+import { categoryFact, STATUS_LABELS, statusBreakdown } from "../categories";
+import type { HealthCategory, HealthEntry, HealthStatus } from "../categories";
 import { HealthEntryRow } from "../entry";
 import { useCategoryRunning } from "../use-library-health";
 import styles from "./styles.module.css";
@@ -31,14 +22,14 @@ const SAVES = { one: "Save", other: "Saves" };
 
 interface ReviewValue {
   category: HealthCategory;
-  breakdown: [HealthStatus, number][];
+  breakdown: Array<[HealthStatus, number]>;
   filter: Filter;
   setFilter: (filter: Filter) => void;
-  shown: readonly HealthEntry[];
+  shown: ReadonlyArray<HealthEntry>;
   busy: string | null;
   running: boolean;
   run: (key: string, action: HealthAction) => Promise<void>;
-  actionsFor: (targets: readonly HealthEntry[]) => HealthAction[];
+  actionsFor: (targets: ReadonlyArray<HealthEntry>) => Array<HealthAction>;
   onNavigate: (() => void) | undefined;
 }
 
@@ -46,7 +37,7 @@ const ReviewContext = createContext<ReviewValue | null>(null);
 
 interface RootProps {
   category: HealthCategory;
-  downloads: readonly DownloadHealthRow[];
+  downloads: ReadonlyArray<DownloadHealthRow>;
   /** Runs before an action leaves this view, so a dialog can close first. */
   onNavigate?: () => void;
   children: ReactNode;
@@ -68,7 +59,9 @@ function Root({ category, downloads, onNavigate, children }: RootProps) {
       : category.entries.filter((entry) => entry.status === filter);
 
   async function run(key: string, action: HealthAction): Promise<void> {
-    if (action.navigates) onNavigate?.();
+    if (action.navigates) {
+      onNavigate?.();
+    }
     setBusy(key);
     try {
       await action.run();
@@ -77,7 +70,9 @@ function Root({ category, downloads, onNavigate, children }: RootProps) {
     }
   }
 
-  function actionsFor(targets: readonly HealthEntry[]): HealthAction[] {
+  function actionsFor(
+    targets: ReadonlyArray<HealthEntry>,
+  ): Array<HealthAction> {
     return healthActions(category.id, targets, { qc, downloads });
   }
 
@@ -108,7 +103,9 @@ function useReview(): ReviewValue | null {
 
 function Filters({ className }: { className?: string }) {
   const review = useReview();
-  if (!review || review.breakdown.length < 2) return null;
+  if (!review || review.breakdown.length < 2) {
+    return null;
+  }
   const { breakdown, filter, setFilter, category } = review;
   return (
     <ToggleGroup
@@ -162,7 +159,7 @@ function EntryActions({
             size="xs"
             variant="secondary"
             loading={busy === `${entry.id}:${action.id}`}
-            disabled={busy != null || running}
+            disabled={busy !== null || running}
             onClick={() => void run(`${entry.id}:${action.id}`, action)}
           >
             {action.label}
@@ -174,7 +171,9 @@ function EntryActions({
 
 function List({ className, ...props }: ComponentPropsWithoutRef<"ul">) {
   const review = useReview();
-  if (!review) return null;
+  if (!review) {
+    return null;
+  }
   const { shown, category } = review;
   if (shown.length === 0) {
     return category.entries.length > 0 ? (
@@ -201,7 +200,9 @@ function List({ className, ...props }: ComponentPropsWithoutRef<"ul">) {
 
 function Fact({ className, ...props }: ComponentPropsWithoutRef<"p">) {
   const review = useReview();
-  if (!review) return null;
+  if (!review) {
+    return null;
+  }
   return (
     <p className={className} {...props}>
       {categoryFact(review.category.id, THIS_DEVICE)}
@@ -211,7 +212,9 @@ function Fact({ className, ...props }: ComponentPropsWithoutRef<"p">) {
 
 function Note() {
   const review = useReview();
-  if (!review) return null;
+  if (!review) {
+    return null;
+  }
   const { category } = review;
   const unlisted = Math.max(0, category.total - category.entries.length);
   return unlisted > 0 ? (
@@ -231,7 +234,9 @@ function Actions({
 }) {
   const review = useReview();
   const bulk = review ? review.actionsFor(review.shown) : [];
-  if (!review || bulk.length === 0) return fallback;
+  if (!review || bulk.length === 0) {
+    return fallback;
+  }
   const { busy, running, run } = review;
   return bulk.map((action) => (
     <Button
@@ -239,7 +244,7 @@ function Actions({
       size={size}
       variant={action.primary ? "primary" : "secondary"}
       loading={busy === `bulk:${action.id}` || (running && action.primary)}
-      disabled={busy != null || running}
+      disabled={busy !== null || running}
       onClick={() => void run(`bulk:${action.id}`, action)}
     >
       {action.navigates || action.bulkOnly

@@ -11,13 +11,14 @@ export function decodeAudioSamples(
   sampleRate = SAMPLE_RATE,
 ): Promise<{ audio: Float32Array; hasMore: boolean }> {
   const { ffmpeg } = binariesAvailable();
-  if (!ffmpeg)
+  if (!ffmpeg) {
     return Promise.reject(
       new Error("FFmpeg is unavailable for audio analysis"),
     );
+  }
   return new Promise((resolve, reject) => {
     const byteLimit = (maxSamples + 1) * Float32Array.BYTES_PER_ELEMENT;
-    const chunks: Buffer[] = [];
+    const chunks: Array<Buffer> = [];
     let bytes = 0;
     let stderr = "";
     let settled = false;
@@ -50,7 +51,9 @@ export function decodeAudioSamples(
       { stdio: ["ignore", "pipe", "pipe"], windowsHide: true },
     );
     const fail = (error: Error): void => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       clearTimeout(timer);
       try {
@@ -77,7 +80,9 @@ export function decodeAudioSamples(
     });
     child.on("error", fail);
     child.on("close", (code) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       clearTimeout(timer);
       if (code !== 0 || bytes % Float32Array.BYTES_PER_ELEMENT !== 0) {

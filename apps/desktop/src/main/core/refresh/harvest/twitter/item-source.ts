@@ -19,7 +19,7 @@ interface TweetPageQuoted {
   authorName?: string;
   authorAvatar?: string;
   text?: string;
-  media?: TweetPageMedia[];
+  media?: Array<TweetPageMedia>;
 }
 
 interface TweetPageCard {
@@ -55,7 +55,7 @@ interface TweetPageMeta {
   conversationId?: string;
   quotedTweet?: TweetPageQuoted;
   metrics?: TweetPageMetrics;
-  media?: TweetPageMedia[];
+  media?: Array<TweetPageMedia>;
   card?: TweetPageCard;
 }
 
@@ -65,7 +65,7 @@ interface TweetPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: TweetPageMedia[];
+  mediaUrls?: Array<TweetPageMedia>;
   mediaType?: "image" | "video";
   meta?: TweetPageMeta;
 }
@@ -79,11 +79,13 @@ export function harvestSource(): string {
       `a[href*="/status/${tweetId}"]`,
     );
     const article = anchor?.closest("article") ?? null;
-    if (!article) return null;
+    if (!article) {
+      return null;
+    }
 
     const out: TweetPage = {};
     const meta: TweetPageMeta = {};
-    const mediaItems: TweetPageMedia[] = [];
+    const mediaItems: Array<TweetPageMedia> = [];
 
     function notInNested(el: Element): boolean {
       const closest = el.closest("article");
@@ -125,7 +127,7 @@ export function harvestSource(): string {
         }
       });
       if (handleLink) {
-        const handle = new URL(handleLink.href).pathname.replace(/\//g, "");
+        const handle = new URL(handleLink.href).pathname.replaceAll("/", "");
         if (handle) {
           out.author = `@${handle}`;
           meta.authorUrl = `https://x.com/${handle}`;
@@ -134,8 +136,10 @@ export function harvestSource(): string {
 
       const nameLink = handleLink;
       if (nameLink) {
-        const raw = nameLink.textContent?.replace(/\s+/g, " ").trim();
-        if (raw) meta.authorName = raw;
+        const raw = nameLink.textContent?.replaceAll(/\s+/g, " ").trim();
+        if (raw) {
+          meta.authorName = raw;
+        }
       }
 
       meta.verified = !!userName.querySelector(
@@ -144,7 +148,9 @@ export function harvestSource(): string {
 
       const time = userName.querySelector<HTMLTimeElement>("time[datetime]");
       const dt = time?.getAttribute("datetime");
-      if (dt) meta.publishedAt = dt;
+      if (dt) {
+        meta.publishedAt = dt;
+      }
     }
 
     if (!meta.publishedAt) {
@@ -152,7 +158,9 @@ export function harvestSource(): string {
         article.querySelectorAll<HTMLTimeElement>("time[datetime]"),
       ).find(notInNested);
       const dt = time?.getAttribute("datetime");
-      if (dt) meta.publishedAt = dt;
+      if (dt) {
+        meta.publishedAt = dt;
+      }
     }
 
     const avatarImg = article.querySelector<HTMLImageElement>(
@@ -188,7 +196,9 @@ export function harvestSource(): string {
               'a[href*="/status/"]',
             ),
           ).find((link) => {
-            if (link.closest("article") !== candidate) return false;
+            if (link.closest("article") !== candidate) {
+              return false;
+            }
             const id = link.href.match(/\/status\/(\d+)/)?.[1];
             return !!id && id !== tweetId;
           });
@@ -196,7 +206,7 @@ export function harvestSource(): string {
       }
       const parentId = parentLink?.href.match(/\/status\/(\d+)/)?.[1];
       if (parentLink && parentId) {
-        let pathname = `/i/status/${parentId}`;
+        let pathname: string;
         try {
           pathname = new URL(parentLink.href).pathname;
         } catch {
@@ -218,7 +228,9 @@ export function harvestSource(): string {
           /Replying to/i.test(link.textContent ?? ""),
         );
         const handle = label?.textContent?.match(/@([A-Za-z0-9_]+)/)?.[1];
-        if (handle) meta.replyingTo = handle;
+        if (handle) {
+          meta.replyingTo = handle;
+        }
       }
     }
 
@@ -249,13 +261,15 @@ export function harvestSource(): string {
         }
       });
       if (innerHandle) {
-        const h = new URL(innerHandle.href).pathname.replace(/\//g, "");
+        const h = new URL(innerHandle.href).pathname.replaceAll("/", "");
         if (h) {
           quoted.author = `@${h}`;
           const innerName = innerHandle.textContent
-            ?.replace(/\s+/g, " ")
+            ?.replaceAll(/\s+/g, " ")
             .trim();
-          if (innerName) quoted.authorName = innerName;
+          if (innerName) {
+            quoted.authorName = innerName;
+          }
         }
       }
       const innerAvatar = innerArticle.querySelector<HTMLImageElement>(
@@ -290,13 +304,21 @@ export function harvestSource(): string {
 
     const metrics: TweetPageMetrics = {};
     const reply = norm.metricFromTestid(article, "reply");
-    if (reply !== undefined) metrics.replies = reply;
+    if (reply !== undefined) {
+      metrics.replies = reply;
+    }
     const rt = norm.metricFromTestid(article, "retweet");
-    if (rt !== undefined) metrics.retweets = rt;
+    if (rt !== undefined) {
+      metrics.retweets = rt;
+    }
     const like = norm.metricFromTestid(article, "like");
-    if (like !== undefined) metrics.likes = like;
+    if (like !== undefined) {
+      metrics.likes = like;
+    }
     const views = norm.metricFromTestid(article, "viewCount");
-    if (views !== undefined) metrics.views = views;
+    if (views !== undefined) {
+      metrics.views = views;
+    }
     let bookmarks = norm.metricFromTestid(article, "bookmark");
     if (bookmarks === undefined) {
       const candidates = Array.from(
@@ -304,9 +326,13 @@ export function harvestSource(): string {
       ).filter(notInNested);
       for (const el of candidates) {
         const lbl = el.getAttribute("aria-label") ?? "";
-        if (!/bookmark/i.test(lbl)) continue;
+        if (!/bookmark/i.test(lbl)) {
+          continue;
+        }
         const match = lbl.match(/([\d.,]+\s*[KMB]?)\s+Bookmark/i);
-        if (!match?.[1]) continue;
+        if (!match?.[1]) {
+          continue;
+        }
         const parsed = norm.parseMetric(match[1]);
         if (parsed !== undefined) {
           bookmarks = parsed;
@@ -314,7 +340,9 @@ export function harvestSource(): string {
         }
       }
     }
-    if (bookmarks !== undefined) metrics.bookmarks = bookmarks;
+    if (bookmarks !== undefined) {
+      metrics.bookmarks = bookmarks;
+    }
 
     let quotes: number | undefined;
     {
@@ -326,7 +354,9 @@ export function harvestSource(): string {
       for (const el of quoteCandidates) {
         const lbl = el.getAttribute("aria-label") ?? el.textContent ?? "";
         const match = lbl.match(/([\d.,]+\s*[KMB]?)\s+Quote/i);
-        if (!match?.[1]) continue;
+        if (!match?.[1]) {
+          continue;
+        }
         const parsed = norm.parseMetric(match[1]);
         if (parsed !== undefined) {
           quotes = parsed;
@@ -334,13 +364,19 @@ export function harvestSource(): string {
         }
       }
     }
-    if (quotes !== undefined) metrics.quotes = quotes;
-    if (Object.keys(metrics).length > 0) meta.metrics = metrics;
+    if (quotes !== undefined) {
+      metrics.quotes = quotes;
+    }
+    if (Object.keys(metrics).length > 0) {
+      meta.metrics = metrics;
+    }
 
-    const media: TweetPageMedia[] = [];
+    const media: Array<TweetPageMedia> = [];
     const seen = new Set<string>();
     const push = (m: TweetPageMedia) => {
-      if (!m.url || seen.has(m.url)) return;
+      if (!m.url || seen.has(m.url)) {
+        return;
+      }
       seen.add(m.url);
       media.push(m);
     };
@@ -354,16 +390,30 @@ export function harvestSource(): string {
     let videoHeight: number | undefined;
     for (const v of videos) {
       const dur = norm.readDuration(v);
-      if (dur) videoDuration = dur;
-      if (v.videoWidth) videoWidth = v.videoWidth;
-      if (v.videoHeight) videoHeight = v.videoHeight;
+      if (dur) {
+        videoDuration = dur;
+      }
+      if (v.videoWidth) {
+        videoWidth = v.videoWidth;
+      }
+      if (v.videoHeight) {
+        videoHeight = v.videoHeight;
+      }
       const poster = norm.httpMediaUrl(v.poster);
-      if (!poster) continue;
+      if (!poster) {
+        continue;
+      }
       push({ url: poster, type: "video", poster });
       const item: TweetPageMedia = { url: poster, type: "video", poster };
-      if (dur) item.durationSec = dur;
-      if (v.videoWidth) item.width = v.videoWidth;
-      if (v.videoHeight) item.height = v.videoHeight;
+      if (dur) {
+        item.durationSec = dur;
+      }
+      if (v.videoWidth) {
+        item.width = v.videoWidth;
+      }
+      if (v.videoHeight) {
+        item.height = v.videoHeight;
+      }
       mediaItems.push(item);
       capturedVideoPoster = true;
     }
@@ -378,14 +428,21 @@ export function harvestSource(): string {
           ? norm.pickLargestSrcset(img.srcset)
           : undefined;
         const poster = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
-        if (!poster) continue;
+        if (!poster) {
+          continue;
+        }
         push({ url: poster, type: "video", poster });
         const item: TweetPageMedia = { url: poster, type: "video", poster };
-        if (videoDuration) item.durationSec = videoDuration;
-        if (videoWidth) item.width = videoWidth;
-        if (videoHeight) item.height = videoHeight;
+        if (videoDuration) {
+          item.durationSec = videoDuration;
+        }
+        if (videoWidth) {
+          item.width = videoWidth;
+        }
+        if (videoHeight) {
+          item.height = videoHeight;
+        }
         mediaItems.push(item);
-        capturedVideoPoster = true;
       }
     }
 
@@ -397,20 +454,28 @@ export function harvestSource(): string {
     for (const img of photoImgs) {
       const best = img.srcset ? norm.pickLargestSrcset(img.srcset) : undefined;
       const src = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
-      if (!src) continue;
+      if (!src) {
+        continue;
+      }
       push({ url: src, type: "image" });
       const item: TweetPageMedia = { url: src, type: "image" };
       const alt = img.getAttribute("alt")?.trim();
-      if (alt) item.altText = alt;
+      if (alt) {
+        item.altText = alt;
+      }
       const w = img.naturalWidth;
       const h = img.naturalHeight;
-      if (w) item.width = w;
-      if (h) item.height = h;
+      if (w) {
+        item.width = w;
+      }
+      if (h) {
+        item.height = h;
+      }
       mediaItems.push(item);
     }
 
     if (innerArticle) {
-      const quotedMedia: TweetPageMedia[] = [];
+      const quotedMedia: Array<TweetPageMedia> = [];
       const pushQuoted = (m: TweetPageMedia) => {
         push(m);
         mediaItems.push(m);
@@ -422,14 +487,22 @@ export function harvestSource(): string {
       let capturedQuotedVideo = false;
       for (const v of quotedVideos) {
         const poster = norm.httpMediaUrl(v.poster);
-        if (!poster) continue;
+        if (!poster) {
+          continue;
+        }
         const dur = norm.readDuration(v);
         const w = v.videoWidth;
         const h = v.videoHeight;
         const item: TweetPageMedia = { url: poster, type: "video", poster };
-        if (dur) item.durationSec = dur;
-        if (w) item.width = w;
-        if (h) item.height = h;
+        if (dur) {
+          item.durationSec = dur;
+        }
+        if (w) {
+          item.width = w;
+        }
+        if (h) {
+          item.height = h;
+        }
         pushQuoted(item);
         capturedQuotedVideo = true;
       }
@@ -444,7 +517,9 @@ export function harvestSource(): string {
             ? norm.pickLargestSrcset(img.srcset)
             : undefined;
           const poster = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
-          if (!poster) continue;
+          if (!poster) {
+            continue;
+          }
           pushQuoted({ url: poster, type: "video", poster });
         }
       }
@@ -459,14 +534,22 @@ export function harvestSource(): string {
           ? norm.pickLargestSrcset(img.srcset)
           : undefined;
         const src = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
-        if (!src) continue;
+        if (!src) {
+          continue;
+        }
         const item: TweetPageMedia = { url: src, type: "image" };
         const alt = img.getAttribute("alt")?.trim();
-        if (alt) item.altText = alt;
+        if (alt) {
+          item.altText = alt;
+        }
         const w = img.naturalWidth;
         const h = img.naturalHeight;
-        if (w) item.width = w;
-        if (h) item.height = h;
+        if (w) {
+          item.width = w;
+        }
+        if (h) {
+          item.height = h;
+        }
         pushQuoted(item);
       }
 
@@ -504,7 +587,9 @@ export function harvestSource(): string {
       out.mediaType = first.type;
     }
 
-    if (mediaItems.length > 0) meta.media = mediaItems;
+    if (mediaItems.length > 0) {
+      meta.media = mediaItems;
+    }
 
     const cardWrap = Array.from(
       article.querySelectorAll<HTMLElement>('[data-testid="card.wrapper"]'),
@@ -513,7 +598,9 @@ export function harvestSource(): string {
       const card: TweetPageCard = {};
 
       const linkEl = cardWrap.querySelector<HTMLAnchorElement>("a[href]");
-      if (linkEl?.href) card.url = linkEl.href;
+      if (linkEl?.href) {
+        card.url = linkEl.href;
+      }
 
       card.large = !!cardWrap.querySelector(
         '[data-testid="card.layoutLarge.media"]',
@@ -537,10 +624,14 @@ export function harvestSource(): string {
           const match = window
             .getComputedStyle(bgEl)
             .backgroundImage.match(/url\((['"]?)(.*?)\1\)/);
-          if (match?.[2]) cardImgSrc = match[2];
+          if (match?.[2]) {
+            cardImgSrc = match[2];
+          }
         }
       }
-      if (cardImgSrc) card.imageUrl = cardImgSrc;
+      if (cardImgSrc) {
+        card.imageUrl = cardImgSrc;
+      }
 
       /** The detail column stacks domain, title, description as separate spans; read each span's own text to avoid concatenating parent rows, then map by X's fixed ordering. */
       const detail =
@@ -549,23 +640,35 @@ export function harvestSource(): string {
       const directText = (el: Element): string => {
         let s = "";
         el.childNodes.forEach((n) => {
-          if (n.nodeType === 3) s += n.textContent ?? "";
+          if (n.nodeType === 3) {
+            s += n.textContent ?? "";
+          }
         });
-        return s.replace(/\s+/g, " ").trim();
+        return s.replaceAll(/\s+/g, " ").trim();
       };
       const rows = Array.from(detail.querySelectorAll<HTMLElement>("span"))
         .map(directText)
         .filter((t) => t.length > 0);
       const unique = rows.filter((t, i) => rows.indexOf(t) === i);
       const [domain, title, description] = unique;
-      if (domain) card.domain = domain;
-      if (title) card.title = title;
-      if (description) card.description = description;
+      if (domain) {
+        card.domain = domain;
+      }
+      if (title) {
+        card.title = title;
+      }
+      if (description) {
+        card.description = description;
+      }
 
-      if (card.url || card.title || card.imageUrl) meta.card = card;
+      if (card.url || card.title || card.imageUrl) {
+        meta.card = card;
+      }
     }
 
-    if (Object.keys(meta).length > 0) out.meta = meta;
+    if (Object.keys(meta).length > 0) {
+      out.meta = meta;
+    }
     return out;
   }
 

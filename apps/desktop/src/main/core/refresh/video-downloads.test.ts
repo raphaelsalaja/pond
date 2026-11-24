@@ -1,10 +1,17 @@
-import * as schema from "@pond/schema/db";
-import * as eventsSchema from "@pond/schema/events";
+import { saves, tasks } from "@pond/schema/db";
+import type {
+  NewSave,
+  NewTask,
+  Op,
+  SaveFile,
+  Source,
+  TaskStatus,
+} from "@pond/schema/db";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import Database from "better-sqlite3";
 import { and, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { wrapSqlite } from "../../database/client";
 import { initializePondSchema } from "../../db";
 import type { persistSave } from "../persist-save";
 import {
@@ -19,28 +26,29 @@ function nativeSqliteAvailable(): boolean {
     probe.close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
 
-const databases: Database.Database[] = [];
+const databases: Array<Database.Database> = [];
 
 afterEach(() => {
-  for (const db of databases.splice(0)) db.close();
+  for (const db of databases.splice(0)) {
+    db.close();
+  }
 });
 
 function setup() {
   const sqlite = new Database(":memory:");
   databases.push(sqlite);
   initializePondSchema(sqlite, () => false);
-  const db = Object.assign(
-    drizzle(sqlite, { schema: { ...schema, ...eventsSchema } }),
-    { $raw: sqlite },
-  );
-  const kicks: number[] = [];
+  const db = wrapSqlite(sqlite);
+  const kicks: Array<number> = [];
   const persisted: Array<{ id: string; options: PersistOptions }> = [];
-  const posters: string[] = [];
+  const posters: Array<string> = [];
   const runtime = {
     getDb: async () => db,
     kickReconciler: () => {
@@ -48,7 +56,7 @@ function setup() {
     },
     async persistSave(
       id: string,
-      patch: Partial<schema.NewSave>,
+      patch: Partial<NewSave>,
       options: PersistOptions,
     ) {
       persisted.push({ id, options });
@@ -56,15 +64,15 @@ function setup() {
       const files =
         replaced.length > 0
           ? db
-              .select({ files: schema.saves.files })
-              .from(schema.saves)
-              .where(eq(schema.saves.id, id))
+              .select({ files: saves.files })
+              .from(saves)
+              .where(eq(saves.id, id))
               .get()
               ?.files.filter((file) => !replaced.includes(file.kind))
           : undefined;
-      db.update(schema.saves)
+      db.update(saves)
         .set(files ? { ...patch, files } : patch)
-        .where(eq(schema.saves.id, id))
+        .where(eq(saves.id, id))
         .run();
       return null;
     },
@@ -79,10 +87,10 @@ type PersistOptions = Parameters<typeof persistSave>[2];
 
 function taskRow(
   saveId: string,
-  op: schema.Op,
-  status: schema.TaskStatus,
-  payload?: schema.NewTask["payload"],
-): schema.NewTask {
+  op: Op,
+  status: TaskStatus,
+  payload?: NewTask["payload"],
+): NewTask {
   const now = new Date();
   return {
     id: `${saveId}-${op}`,
@@ -99,9 +107,9 @@ function taskRow(
 
 function videoSave(
   id: string,
-  source: schema.Source,
-  files: schema.SaveFile[] = [],
-): schema.NewSave {
+  source: Source,
+  files: Array<SaveFile> = [],
+): NewSave {
   return {
     id,
     source,
@@ -119,7 +127,7 @@ function videoSave(
 describe.skipIf(!nativeSqliteAvailable())("findSavesMissingVideo", () => {
   it("returns only saves from the source that lack a video file", async () => {
     const { db, runtime } = setup();
-    db.insert(schema.saves)
+    db.insert(saves)
       .values([
         videoSave("a", "youtube"),
         videoSave("b", "youtube", [
@@ -136,33 +144,29 @@ describe.skipIf(!nativeSqliteAvailable())("findSavesMissingVideo", () => {
   });
 });
 
+function taskFor(db: ReturnType<typeof setup>["db"], saveId: string, op: Op) {
+  return db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.saveId, saveId), eq(tasks.op, op)))
+    .get();
+}
+
+function saveStatus(db: ReturnType<typeof setup>["db"], id: string) {
+  return db
+    .select({ status: saves.status })
+    .from(saves)
+    .where(eq(saves.id, id))
+    .get()?.status;
+}
+
 describe.skipIf(!nativeSqliteAvailable())("queueVideoDownloads", () => {
   const interactive = { interactive: true };
   const background = { interactive: false };
 
-  function taskFor(
-    db: ReturnType<typeof setup>["db"],
-    saveId: string,
-    op: schema.Op,
-  ) {
-    return db
-      .select()
-      .from(schema.tasks)
-      .where(and(eq(schema.tasks.saveId, saveId), eq(schema.tasks.op, op)))
-      .get();
-  }
-
-  function saveStatus(db: ReturnType<typeof setup>["db"], id: string) {
-    return db
-      .select({ status: schema.saves.status })
-      .from(schema.saves)
-      .where(eq(schema.saves.id, id))
-      .get()?.status;
-  }
-
   it("queues a requested fetch_video_ytdlp task and reopens the save", async () => {
     const { db, runtime, kicks } = setup();
-    db.insert(schema.saves).values(videoSave("a", "youtube")).run();
+    db.insert(saves).values(videoSave("a", "youtube")).run();
     expect(await queueVideoDownloads(["a"], interactive, runtime)).toBe(1);
     const video = taskFor(db, "a", "fetch_video_ytdlp");
     expect(video?.status).toBe("pending");
@@ -177,7 +181,7 @@ describe.skipIf(!nativeSqliteAvailable())("queueVideoDownloads", () => {
 
   it("queues bulk requests without interactive priority", async () => {
     const { db, runtime } = setup();
-    db.insert(schema.saves).values(videoSave("a", "youtube")).run();
+    db.insert(saves).values(videoSave("a", "youtube")).run();
     expect(await queueVideoDownloads(["a"], background, runtime)).toBe(1);
     expect(taskFor(db, "a", "fetch_video_ytdlp")?.payload).toEqual({
       requested: true,
@@ -186,8 +190,8 @@ describe.skipIf(!nativeSqliteAvailable())("queueVideoDownloads", () => {
 
   it("resets an existing done task to pending with zero attempts", async () => {
     const { db, runtime } = setup();
-    db.insert(schema.saves).values(videoSave("a", "youtube")).run();
-    db.insert(schema.tasks)
+    db.insert(saves).values(videoSave("a", "youtube")).run();
+    db.insert(tasks)
       .values({
         ...taskRow("a", "fetch_video_ytdlp", "done"),
         attempts: 3,
@@ -209,10 +213,10 @@ describe.skipIf(!nativeSqliteAvailable())("queueVideoDownloads", () => {
 
   it("skips failed saves whose earlier tasks would block the download", async () => {
     const { db, runtime, kicks } = setup();
-    db.insert(schema.saves)
+    db.insert(saves)
       .values({ ...videoSave("a", "youtube"), status: "failed" })
       .run();
-    db.insert(schema.tasks)
+    db.insert(tasks)
       .values(taskRow("a", "fetch_blobs", "dead"))
       .run();
     expect(await queueVideoDownloads(["a"], interactive, runtime)).toBe(0);
@@ -222,10 +226,10 @@ describe.skipIf(!nativeSqliteAvailable())("queueVideoDownloads", () => {
 
   it("marks a pending download on an ingesting save as requested", async () => {
     const { db, runtime, kicks, persisted } = setup();
-    db.insert(schema.saves)
+    db.insert(saves)
       .values({ ...videoSave("a", "youtube"), status: "ingesting" })
       .run();
-    db.insert(schema.tasks)
+    db.insert(tasks)
       .values([
         taskRow("a", "fetch_video_ytdlp", "deferred", { force: true }),
         taskRow("a", "finalize", "pending"),
@@ -242,10 +246,10 @@ describe.skipIf(!nativeSqliteAvailable())("queueVideoDownloads", () => {
 
   it("reruns a skipped download before finalize on an ingesting save", async () => {
     const { db, runtime } = setup();
-    db.insert(schema.saves)
+    db.insert(saves)
       .values({ ...videoSave("a", "youtube"), status: "ingesting" })
       .run();
-    db.insert(schema.tasks)
+    db.insert(tasks)
       .values([
         taskRow("a", "fetch_video_ytdlp", "done"),
         taskRow("a", "ensure_poster", "done"),
@@ -264,10 +268,10 @@ describe.skipIf(!nativeSqliteAvailable())("queueVideoDownloads", () => {
 
   it("leaves a skipped download alone while finalize is running", async () => {
     const { db, runtime, kicks } = setup();
-    db.insert(schema.saves)
+    db.insert(saves)
       .values({ ...videoSave("a", "youtube"), status: "ingesting" })
       .run();
-    db.insert(schema.tasks)
+    db.insert(tasks)
       .values([
         taskRow("a", "fetch_video_ytdlp", "done"),
         taskRow("a", "finalize", "running"),
@@ -291,7 +295,7 @@ describe.skipIf(!nativeSqliteAvailable())("removeVideos", () => {
 
   it("drops video and subtitle files and fetches a poster when missing", async () => {
     const { db, runtime, persisted, posters } = setup();
-    db.insert(schema.saves)
+    db.insert(saves)
       .values([
         videoSave("a", "youtube", [video, subtitle, poster]),
         videoSave("b", "twitter", [video]),

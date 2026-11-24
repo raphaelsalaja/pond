@@ -1,7 +1,8 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type Cookie, session } from "electron";
+import { session } from "electron";
+import type { Cookie } from "electron";
 import log from "electron-log/main.js";
 import { LEGACY_PARTITION } from "../sync/accounts";
 
@@ -33,16 +34,16 @@ export async function writeNetscapeCookies(
   const cleanup = async () => {
     try {
       await rm(dir, { recursive: true, force: true });
-    } catch (err) {
-      log.warn("[pond cookies] cleanup failed", dir, err);
+    } catch (error) {
+      log.warn("[pond cookies] cleanup failed", dir, error);
     }
   };
 
-  let allCookies: Cookie[] = [];
+  let allCookies: Array<Cookie> = [];
   try {
     const persistent = session.fromPartition(partition);
     const buckets = await Promise.all(
-      COOKIE_HOSTS.map(async (url): Promise<Cookie[]> => {
+      COOKIE_HOSTS.map(async (url): Promise<Array<Cookie>> => {
         try {
           return await persistent.cookies.get({ url });
         } catch {
@@ -54,13 +55,15 @@ export async function writeNetscapeCookies(
     for (const bucket of buckets) {
       for (const c of bucket) {
         const key = `${c.domain ?? ""}|${c.name}|${c.path ?? "/"}`;
-        if (seen.has(key)) continue;
+        if (seen.has(key)) {
+          continue;
+        }
         seen.add(key);
         allCookies.push(c);
       }
     }
-  } catch (err) {
-    log.warn("[pond cookies] enumerate failed; writing empty jar", err);
+  } catch (error) {
+    log.warn("[pond cookies] enumerate failed; writing empty jar", error);
     allCookies = [];
   }
 
@@ -71,7 +74,9 @@ export async function writeNetscapeCookies(
   ];
   for (const c of allCookies) {
     const line = formatNetscapeLine(c);
-    if (line) lines.push(line);
+    if (line) {
+      lines.push(line);
+    }
   }
   await writeFile(filePath, `${lines.join("\n")}\n`, "utf8");
 
@@ -79,9 +84,13 @@ export async function writeNetscapeCookies(
 }
 
 function formatNetscapeLine(c: Cookie): string | null {
-  if (!c.name || c.value === undefined) return null;
+  if (!c.name || c.value === undefined) {
+    return null;
+  }
   const domain = c.domain ?? "";
-  if (!domain) return null;
+  if (!domain) {
+    return null;
+  }
   const includeSubdomains = domain.startsWith(".") ? "TRUE" : "FALSE";
   const path = c.path ?? "/";
   const secure = c.secure ? "TRUE" : "FALSE";
@@ -92,7 +101,9 @@ function formatNetscapeLine(c: Cookie): string | null {
       : Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
   const safeName = sanitise(c.name);
   const safeValue = sanitise(c.value);
-  if (!safeName || safeValue === null) return null;
+  if (!safeName || safeValue === null) {
+    return null;
+  }
   return [
     domain,
     includeSubdomains,
@@ -105,7 +116,11 @@ function formatNetscapeLine(c: Cookie): string | null {
 }
 
 function sanitise(s: string): string | null {
-  if (s == null) return null;
-  if (s.includes("\n") || s.includes("\r") || s.includes("\t")) return null;
+  if (s === null || s === undefined) {
+    return null;
+  }
+  if (s.includes("\n") || s.includes("\r") || s.includes("\t")) {
+    return null;
+  }
   return s;
 }

@@ -16,8 +16,8 @@ export function EmptyChoice({
   label: string;
   count: ReactNode;
   icon?: ReactNode;
-  rows: Predicate[];
-  onChange: (rows: Predicate[]) => void;
+  rows: Array<Predicate>;
+  onChange: (rows: Array<Predicate>) => void;
 }) {
   const current = rows.find(
     (row) => row.field === field && row.operator === "empty",
@@ -26,7 +26,9 @@ export function EmptyChoice({
     const next = rows.filter((row) => row.field !== field);
     if (checked) {
       const predicate: Predicate = { field, operator: "empty", value: true };
-      if (excluded) predicate.negate = true;
+      if (excluded) {
+        predicate.negate = true;
+      }
       next.push(predicate);
     }
     onChange(next);

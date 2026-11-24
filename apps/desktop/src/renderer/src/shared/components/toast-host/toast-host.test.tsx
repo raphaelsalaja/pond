@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   ask,
@@ -40,7 +41,7 @@ it("renders toasts at the app root", async () => {
 it("keeps repeated notifications as unique toast instances", async () => {
   await act(async () => root.render(<ToastHost />));
 
-  const ids: string[] = [];
+  const ids: Array<string> = [];
   await act(async () => {
     for (let index = 0; index < 4; index += 1) {
       ids.push(
@@ -105,6 +106,10 @@ it("renders determinate toast progress", async () => {
   expect(progress?.max).toBe(10);
 });
 
+function status() {
+  return document.body.querySelector("[data-status]");
+}
+
 it("morphs a working toast's spinner into its result", async () => {
   await act(async () => root.render(<ToastHost />));
 
@@ -117,7 +122,6 @@ it("morphs a working toast's spinner into its result", async () => {
       timeout: 0,
     });
   });
-  const status = () => document.body.querySelector("[data-status]");
   expect(status()?.getAttribute("data-status")).toBe("loading");
 
   await act(async () => {

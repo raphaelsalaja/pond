@@ -7,12 +7,8 @@ import {
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
 import sharp from "sharp";
-import {
-  DownloadSizeError,
-  fetchDownload,
-  type MediaFetcher,
-  type TransferOptions,
-} from "./download-transfer";
+import { DownloadSizeError, fetchDownload } from "./download-transfer";
+import type { MediaFetcher, TransferOptions } from "./download-transfer";
 
 const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024;
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -28,8 +24,12 @@ interface FetchMediaOptions extends TransferOptions {
 type BlobMiss = "transient" | "permanent" | "challenged";
 
 function classifyHttpStatus(status: number): BlobMiss {
-  if (status === 408 || status === 425 || status === 429) return "transient";
-  if (status >= 500) return "transient";
+  if (status === 408 || status === 425 || status === 429) {
+    return "transient";
+  }
+  if (status >= 500) {
+    return "transient";
+  }
   return "permanent";
 }
 
@@ -57,25 +57,55 @@ interface MediaBatchEntry {
 
 function extensionFor(mimeType: string | null, url: string): string {
   const fromUrl = extname(new URL(url).pathname).toLowerCase();
-  if (fromUrl) return fromUrl;
-  if (!mimeType) return ".bin";
-  if (mimeType.includes("jpeg")) return ".jpg";
-  if (mimeType.includes("png")) return ".png";
-  if (mimeType.includes("gif")) return ".gif";
-  if (mimeType.includes("webp")) return ".webp";
-  if (mimeType.includes("avif")) return ".avif";
-  if (mimeType.includes("mp4")) return ".mp4";
-  if (mimeType.includes("webm")) return ".webm";
-  if (mimeType.includes("quicktime")) return ".mov";
-  if (mimeType.includes("svg")) return ".svg";
-  if (mimeType.includes("icon")) return ".ico";
+  if (fromUrl) {
+    return fromUrl;
+  }
+  if (!mimeType) {
+    return ".bin";
+  }
+  if (mimeType.includes("jpeg")) {
+    return ".jpg";
+  }
+  if (mimeType.includes("png")) {
+    return ".png";
+  }
+  if (mimeType.includes("gif")) {
+    return ".gif";
+  }
+  if (mimeType.includes("webp")) {
+    return ".webp";
+  }
+  if (mimeType.includes("avif")) {
+    return ".avif";
+  }
+  if (mimeType.includes("mp4")) {
+    return ".mp4";
+  }
+  if (mimeType.includes("webm")) {
+    return ".webm";
+  }
+  if (mimeType.includes("quicktime")) {
+    return ".mov";
+  }
+  if (mimeType.includes("svg")) {
+    return ".svg";
+  }
+  if (mimeType.includes("icon")) {
+    return ".ico";
+  }
   return ".bin";
 }
 
 function kindFor(mimeType: string | null): "image" | "video" | "other" {
-  if (!mimeType) return "other";
-  if (mimeType.startsWith("image/")) return "image";
-  if (mimeType.startsWith("video/")) return "video";
+  if (!mimeType) {
+    return "other";
+  }
+  if (mimeType.startsWith("image/")) {
+    return "image";
+  }
+  if (mimeType.startsWith("video/")) {
+    return "video";
+  }
   return "other";
 }
 
@@ -95,7 +125,9 @@ async function downloadMedia(
       ...options,
     });
   } catch (error) {
-    if (options.signal?.aborted) throw error;
+    if (options.signal?.aborted) {
+      throw error;
+    }
     log.warn("[pond blob] fetch failed", mediaUrl, error);
     return {
       miss: error instanceof DownloadSizeError ? "permanent" : "transient",
@@ -110,7 +142,9 @@ async function fetchMediaToTxFile(
 ): Promise<MediaFetchOutcome> {
   const { challengeFetcher, ...transfer } = options;
   let result = await downloadMedia(mediaUrl, index, transfer);
-  if ("miss" in result) return result;
+  if ("miss" in result) {
+    return result;
+  }
   if (!result.bytes && challengeFetcher && isBotChallenge(result.response)) {
     log.info("[pond blob] bot challenge, retrying in the harvest session", {
       url: mediaUrl,
@@ -120,10 +154,14 @@ async function fetchMediaToTxFile(
       ...transfer,
       fetcher: challengeFetcher,
     });
-    if ("miss" in result) return result;
+    if ("miss" in result) {
+      return result;
+    }
   }
   const { response: res, bytes: buf } = result;
-  if (!buf) return { miss: classifyMiss(res) };
+  if (!buf) {
+    return { miss: classifyMiss(res) };
+  }
   const mime = res.headers.get("content-type")?.split(";")[0]?.trim() ?? null;
 
   const ext = extensionFor(mime, mediaUrl);
@@ -144,7 +182,9 @@ function nameFor(
   ext: string,
   index: number,
 ): string {
-  if (kind === "video") return harvestedFilename("video", index, ext);
+  if (kind === "video") {
+    return harvestedFilename("video", index, ext);
+  }
   return harvestedFilename("image", index, ext);
 }
 
@@ -156,7 +196,9 @@ const ICO_ENTRY_BYTES = 16;
 
 /** Sites serve broken bytes under an image content type, so decode the pixels instead of trusting the header. */
 export async function isReadableImage(buf: Buffer): Promise<boolean> {
-  if (buf.subarray(0, 4).equals(ICO_HEADER)) return isReadableIco(buf);
+  if (buf.subarray(0, 4).equals(ICO_HEADER)) {
+    return isReadableIco(buf);
+  }
   try {
     await sharp(buf).stats();
     return true;
@@ -167,7 +209,9 @@ export async function isReadableImage(buf: Buffer): Promise<boolean> {
 
 /** sharp has no ICO decoder, so only entry bounds and embedded PNG entries can be checked. */
 async function isReadableIco(buf: Buffer): Promise<boolean> {
-  if (buf.byteLength < 6) return false;
+  if (buf.byteLength < 6) {
+    return false;
+  }
   const count = buf.readUInt16LE(4);
   if (count === 0 || buf.byteLength < 6 + count * ICO_ENTRY_BYTES) {
     return false;
@@ -176,7 +220,9 @@ async function isReadableIco(buf: Buffer): Promise<boolean> {
     const entry = 6 + i * ICO_ENTRY_BYTES;
     const size = buf.readUInt32LE(entry + 8);
     const offset = buf.readUInt32LE(entry + 12);
-    if (size === 0 || offset + size > buf.byteLength) return false;
+    if (size === 0 || offset + size > buf.byteLength) {
+      return false;
+    }
     const payload = buf.subarray(offset, offset + size);
     if (
       payload.subarray(0, 8).equals(PNG_SIGNATURE) &&
@@ -198,8 +244,8 @@ async function fetchSmallImageToTxFile(
       redirect: "follow",
       signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
     });
-  } catch (err) {
-    log.warn(`[pond blob] ${baseName} fetch failed`, imageUrl, err);
+  } catch (error) {
+    log.warn(`[pond blob] ${baseName} fetch failed`, imageUrl, error);
     return { miss: "transient" };
   }
   if (!res.ok) {
@@ -220,8 +266,8 @@ async function fetchSmallImageToTxFile(
   let buf: Buffer;
   try {
     buf = Buffer.from(await res.arrayBuffer());
-  } catch (err) {
-    log.warn(`[pond blob] ${baseName} body read failed`, imageUrl, err);
+  } catch (error) {
+    log.warn(`[pond blob] ${baseName} body read failed`, imageUrl, error);
     return { miss: "transient" };
   }
   if (buf.byteLength > MAX_AVATAR_BYTES) {
@@ -267,20 +313,24 @@ export function fetchSourceIconToTxFile(
 }
 
 export async function fetchMediaBatch(
-  urls: string[],
+  urls: Array<string>,
   options: FetchMediaOptions = {},
-): Promise<MediaBatchEntry[]> {
-  const unique: string[] = [];
+): Promise<Array<MediaBatchEntry>> {
+  const unique: Array<string> = [];
   const seen = new Set<string>();
   for (const u of urls) {
-    if (!u || seen.has(u)) continue;
+    if (!u || seen.has(u)) {
+      continue;
+    }
     seen.add(u);
     unique.push(u);
   }
-  if (unique.length === 0) return [];
+  if (unique.length === 0) {
+    return [];
+  }
 
   const limit = pLimit(6);
-  const results: MediaBatchEntry[] = await Promise.all(
+  const results: Array<MediaBatchEntry> = await Promise.all(
     unique.map((u, i) =>
       limit(async (): Promise<MediaBatchEntry> => {
         try {
@@ -291,9 +341,11 @@ export async function fetchMediaBatch(
           return "file" in outcome
             ? { url: u, file: outcome.file }
             : { url: u, file: null, miss: outcome.miss };
-        } catch (err) {
-          if (options.signal?.aborted) throw err;
-          log.warn("[pond blob] batch fetch failed", u, err);
+        } catch (error) {
+          if (options.signal?.aborted) {
+            throw error;
+          }
+          log.warn("[pond blob] batch fetch failed", u, error);
           return { url: u, file: null, miss: "transient" };
         }
       }),

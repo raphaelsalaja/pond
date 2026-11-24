@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const SEEK_SECONDS = 10;
 
@@ -42,11 +42,13 @@ interface ArtworkBlob {
 function useArtworkBlob(
   url: string | null | undefined,
 ): ArtworkBlob | undefined {
-  const [artwork, setArtwork] = useState<ArtworkBlob | undefined>();
+  const [loaded, setLoaded] = useState<{
+    url: string;
+    artwork: ArtworkBlob | undefined;
+  } | null>(null);
 
   useEffect(() => {
     if (!url) {
-      setArtwork(undefined);
       return;
     }
     let cancelled = false;
@@ -54,25 +56,33 @@ function useArtworkBlob(
     void (async () => {
       try {
         const res = await fetch(url);
-        if (!res.ok) return;
+        if (!res.ok) {
+          return;
+        }
         const blob = await res.blob();
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         objectUrl = URL.createObjectURL(blob);
-        setArtwork({
-          src: objectUrl,
-          type: blob.type || "image/jpeg",
+        setLoaded({
+          url,
+          artwork: { src: objectUrl, type: blob.type || "image/jpeg" },
         });
       } catch {
-        if (!cancelled) setArtwork(undefined);
+        if (!cancelled) {
+          setLoaded({ url, artwork: undefined });
+        }
       }
     })();
     return () => {
       cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
     };
   }, [url]);
 
-  return artwork;
+  return loaded?.url === url ? loaded.artwork : undefined;
 }
 
 function bindAction(
@@ -81,14 +91,18 @@ function bindAction(
 ): void {
   try {
     navigator.mediaSession.setActionHandler(action, handler);
-  } catch {}
+  } catch {
+    /** Chromium throws for actions it doesn't support; those stay unbound. */
+  }
 }
 
 function clearSession(): void {
   const session = navigator.mediaSession;
   session.metadata = null;
   session.playbackState = "none";
-  for (const action of ACTIONS) bindAction(action, null);
+  for (const action of ACTIONS) {
+    bindAction(action, null);
+  }
 }
 
 export function useMediaSession(
@@ -100,12 +114,16 @@ export function useMediaSession(
     playback.active ? (meta.artworkUrl ?? null) : null,
   );
   const actionsRef = useRef(actions);
-  actionsRef.current = actions;
   const playingRef = useRef(playback.playing);
-  playingRef.current = playback.playing;
+  useLayoutEffect(() => {
+    actionsRef.current = actions;
+    playingRef.current = playback.playing;
+  });
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !playback.active) return;
+    if (!("mediaSession" in navigator) || !playback.active) {
+      return;
+    }
 
     const id = ++sessionOwner;
     const session = navigator.mediaSession;
@@ -127,26 +145,36 @@ export function useMediaSession(
       actionsRef.current.seekBy(details.seekOffset ?? SEEK_SECONDS);
     });
     bindAction("seekto", (details) => {
-      if (details.seekTime != null) actionsRef.current.seek(details.seekTime);
+      if (details.seekTime !== undefined && details.seekTime !== null) {
+        actionsRef.current.seek(details.seekTime);
+      }
     });
 
     return () => {
       queueMicrotask(() => {
-        if (sessionOwner === id) clearSession();
+        if (sessionOwner === id) {
+          clearSession();
+        }
       });
     };
   }, [playback.active, meta.title, meta.artist, artwork]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !playback.active) return;
+    if (!("mediaSession" in navigator) || !playback.active) {
+      return;
+    }
     navigator.mediaSession.playbackState = playback.playing
       ? "playing"
       : "paused";
   }, [playback.active, playback.playing]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !playback.active) return;
-    if (!(playback.duration > 0) || !Number.isFinite(playback.duration)) return;
+    if (!("mediaSession" in navigator) || !playback.active) {
+      return;
+    }
+    if (!(playback.duration > 0) || !Number.isFinite(playback.duration)) {
+      return;
+    }
     try {
       navigator.mediaSession.setPositionState({
         duration: playback.duration,
@@ -156,6 +184,8 @@ export function useMediaSession(
           playback.duration,
         ),
       });
-    } catch {}
+    } catch {
+      /** Chromium rejects position states it considers inconsistent; the next update retries. */
+    }
   }, [playback.active, playback.currentTime, playback.duration, playback.rate]);
 }

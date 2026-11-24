@@ -40,8 +40,10 @@ async function checksum(path: string) {
   const hash = createHash("sha256");
   let size = 0;
   for await (const chunk of createReadStream(path)) {
-    hash.update(chunk);
-    size += chunk.length;
+    if (Buffer.isBuffer(chunk)) {
+      hash.update(chunk);
+      size += chunk.length;
+    }
   }
   return { sha256: hash.digest("hex"), size };
 }
@@ -49,28 +51,33 @@ async function checksum(path: string) {
 async function inventory(
   root: string,
   directory = root,
-): Promise<BackupEntry[]> {
-  const files: BackupEntry[] = [];
+): Promise<Array<BackupEntry>> {
+  const files: Array<BackupEntry> = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
-    if (path === join(root, MANIFEST)) continue;
-    if (entry.isSymbolicLink())
+    if (path === join(root, MANIFEST)) {
+      continue;
+    }
+    if (entry.isSymbolicLink()) {
       throw new Error(
         `Backup cannot include a symbolic link: ${relative(root, path)}`,
       );
-    if (entry.isDirectory()) files.push(...(await inventory(root, path)));
-    else if (entry.isFile())
+    }
+    if (entry.isDirectory()) {
+      files.push(...(await inventory(root, path)));
+    } else if (entry.isFile()) {
       files.push({
         path: relative(root, path).split(sep).join("/"),
         ...(await checksum(path)),
       });
+    }
   }
   return files.sort((a, b) => a.path.localeCompare(b.path));
 }
 
 function sameInventory(
-  before: readonly BackupEntry[],
-  after: readonly BackupEntry[],
+  before: ReadonlyArray<BackupEntry>,
+  after: ReadonlyArray<BackupEntry>,
 ) {
   return (
     before.length === after.length &&
@@ -85,12 +92,16 @@ function sameInventory(
   );
 }
 
-async function validateReferences(root: string, files: readonly BackupEntry[]) {
+async function validateReferences(
+  root: string,
+  files: ReadonlyArray<BackupEntry>,
+) {
   const indexed = new Map(files.map((file) => [file.path, file]));
-  if (!indexed.has("metadata.json"))
+  if (!indexed.has("metadata.json")) {
     throw new Error(
       "This is not a complete Pond library: metadata.json is missing.",
     );
+  }
   for (const name of ["metadata.json", "settings.json", "tags.json"]) {
     if (indexed.has(name)) {
       const path = join(root, name);
@@ -102,8 +113,9 @@ async function validateReferences(root: string, files: readonly BackupEntry[]) {
       !/(?:^|[/\\])(?:items|trash)[/\\].+\.info[/\\]info\.json$/.test(
         entry.path,
       )
-    )
+    ) {
       continue;
+    }
     const infoPath = join(root, entry.path);
     const item = SaveFilesSchema.parse(
       JSON.parse(await readFile(infoPath, "utf8")),
@@ -111,17 +123,19 @@ async function validateReferences(root: string, files: readonly BackupEntry[]) {
     const directory = dirname(entry.path);
     for (const file of item.files) {
       const path = resolve(root, directory, file.path);
-      if (!path.startsWith(`${resolve(root, directory)}${sep}`))
+      if (!path.startsWith(`${resolve(root, directory)}${sep}`)) {
         throw new Error(`Unsafe original path in Save ${item.id}.`);
+      }
       const original = indexed.get(relative(root, path).split(sep).join("/"));
       if (
         !original ||
         original.size !== file.size ||
         (file.sha256 && original.sha256 !== file.sha256)
-      )
+      ) {
         throw new Error(
           `An original is missing or damaged in Save ${item.id}: ${file.path}`,
         );
+      }
     }
   }
 }
@@ -136,10 +150,11 @@ export async function verifyLibraryBackup(directory: string) {
     const manifest = BackupManifestSchema.parse(
       JSON.parse(await readFile(manifestFile, "utf8")),
     );
-    if (!sameInventory(manifest.files, files))
+    if (!sameInventory(manifest.files, files)) {
       throw new Error(
         "The backup is incomplete or changed since it was created.",
       );
+    }
   }
   return { files: files.length, verifiedManifest: Boolean(exists) };
 }
@@ -156,14 +171,16 @@ export async function createLibraryBackup(input: {
     isSamePath(destination, source) ||
     isPathInside(source, destination) ||
     isPathInside(destination, source)
-  )
+  ) {
     throw new Error("The backup must be outside the source library.");
+  }
   const existing = await lstat(destination).catch(() => null);
   if (
     existing &&
     (!existing.isDirectory() || (await readdir(destination)).length > 0)
-  )
+  ) {
     throw new Error("The backup destination already contains files.");
+  }
   const staging = await mkdtemp(join(parent, ".pond-backup-"));
   try {
     const before = await inventory(source);
@@ -178,10 +195,11 @@ export async function createLibraryBackup(input: {
     }
     const after = await inventory(source);
     const copiedFiles = await inventory(staging);
-    if (!sameInventory(before, after) || !sameInventory(before, copiedFiles))
+    if (!sameInventory(before, after) || !sameInventory(before, copiedFiles)) {
       throw new Error(
         "The library changed during backup. Try again when imports and edits finish.",
       );
+    }
     await validateReferences(staging, copiedFiles);
     await writeFile(
       join(staging, MANIFEST),

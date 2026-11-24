@@ -10,12 +10,12 @@ import { z } from "zod";
 import { AppNavigationSchema } from "../../../../shared/app-navigation";
 import {
   ConversionApiRequestSchema,
-  type ConversionJob,
   ConversionJobSchema,
   ConversionPresetSchema,
   ImageCompressionRequestSchema,
   VideoCompressionRequestSchema,
 } from "../../../../shared/conversion-contracts";
+import type { ConversionJob } from "../../../../shared/conversion-contracts";
 import { LibraryQueryRequestSchema } from "../../../../shared/library-query";
 import { queryActiveLibraryPage } from "../../active-library-query";
 import { conversionCapabilities } from "../../conversion-capabilities";
@@ -38,7 +38,8 @@ import {
 } from "../tools";
 import { navigatePond } from "./app-client";
 import { listSavedViews, listTags, saveCards } from "./library";
-import { type PreviewSize, savePreview } from "./previews";
+import { savePreview } from "./previews";
+import type { PreviewSize } from "./previews";
 import {
   errorResult,
   jsonResult,
@@ -105,8 +106,10 @@ const SaveCardSchema = z.object({
   savedAt: z.string().nullable(),
 });
 
-interface PreviewCaption
-  extends Pick<z.infer<typeof SaveCardSchema>, "id" | "title" | "source"> {
+interface PreviewCaption extends Pick<
+  z.infer<typeof SaveCardSchema>,
+  "id" | "title" | "source"
+> {
   error?: string;
 }
 
@@ -121,7 +124,7 @@ const PREVIEW_SIZES = [
   "small",
   "medium",
   "large",
-] as const satisfies readonly PreviewSize[];
+] as const satisfies ReadonlyArray<PreviewSize>;
 
 const JOB_POLL_MS = 500;
 
@@ -199,7 +202,9 @@ function registerSearchTools(server: McpServer): void {
     },
     withAccess("search", async ({ detail, ...args }) => {
       const result = await searchLibrary(searchLibraryInput.parse(args));
-      if (detail !== "concise") return jsonResult(result);
+      if (detail !== "concise") {
+        return jsonResult(result);
+      }
       return jsonResult({
         saves: result.saves.map(({ id, title, source, url }) => ({
           id,
@@ -306,7 +311,7 @@ function registerSearchTools(server: McpServer): void {
     },
     withAccess("search", async ({ ids, size }) => {
       const cards = await saveCards(ids);
-      const content: ContentBlock[] = [];
+      const content: Array<ContentBlock> = [];
       for (const card of cards) {
         const image = await savePreview(card, size ?? "medium");
         const caption: PreviewCaption = {
@@ -314,9 +319,13 @@ function registerSearchTools(server: McpServer): void {
           title: card.title,
           source: card.source,
         };
-        if (!image) caption.error = "No image to show for this Save.";
+        if (!image) {
+          caption.error = "No image to show for this Save.";
+        }
         content.push({ type: "text", text: JSON.stringify(caption) });
-        if (image) content.push(image);
+        if (image) {
+          content.push(image);
+        }
       }
       const found = new Set(cards.map((card) => card.id));
       const missing = ids.filter((id) => !found.has(id));

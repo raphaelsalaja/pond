@@ -87,7 +87,7 @@ function LibraryNav({
   hidden,
 }: {
   name: string;
-  hidden: readonly SidebarDestination[];
+  hidden: ReadonlyArray<SidebarDestination>;
 }) {
   return (
     <nav className={styles.nav} data-view="library">
@@ -157,7 +157,7 @@ export function Sidebar({
   hidden = [],
 }: {
   name?: string;
-  hidden?: readonly SidebarDestination[];
+  hidden?: ReadonlyArray<SidebarDestination>;
 }) {
   return (
     <div className={styles.sidebar}>

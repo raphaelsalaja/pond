@@ -6,12 +6,12 @@ import { pool } from "@/features/saves/state/pool";
 import type { NotifyOptions } from "@/shared/lib/toast";
 import { notifyRefreshBlocked } from "./refresh-blocked-toast";
 
-let notices: NotifyOptions[] = [];
-let connects: Source[] = [];
+let notices: Array<NotifyOptions> = [];
+let connects: Array<Source> = [];
 let whenConnected: (() => void) | null = null;
-let refreshed: string[] = [];
+let refreshed: Array<string> = [];
 let closed = 0;
-let closedToasts: string[] = [];
+let closedToasts: Array<string> = [];
 const deps = {
   notify: (options: NotifyOptions) => {
     notices.push(options);
@@ -65,7 +65,9 @@ beforeEach(() => {
     url: "https://www.instagram.com/p/abc/",
     source: "instagram",
   });
-  if (!save) throw new Error("Invalid save fixture");
+  if (!save) {
+    throw new Error("Invalid save fixture");
+  }
   pool.upsert(save);
 });
 

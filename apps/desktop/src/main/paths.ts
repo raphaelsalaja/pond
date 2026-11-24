@@ -31,7 +31,9 @@ export interface PondPaths {
 let cached: PondPaths | null = null;
 
 function ensureDir(p: string): string {
-  if (!existsSync(p)) mkdirSync(p, { recursive: true });
+  if (!existsSync(p)) {
+    mkdirSync(p, { recursive: true });
+  }
   return p;
 }
 
@@ -44,7 +46,9 @@ export function invalidatePaths(): void {
 }
 
 export function resolvePaths(libraryRootOverride?: string): PondPaths {
-  if (cached && !libraryRootOverride) return cached;
+  if (cached && !libraryRootOverride) {
+    return cached;
+  }
 
   const appData = ensureDir(app.getPath("userData"));
   /** Keep Pond derivatives separate from Chromium's case-insensitive `Cache` directory. */
@@ -56,12 +60,14 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
   const open = currentLibraryAnchor();
   /** The open folder was moved or replaced. Keep its index id and do not recreate items/. */
   const displaced =
-    open != null &&
+    open !== null &&
     isSamePath(open.root, root) &&
     classifyLibraryPlacement(open, observeLibrarySync(root)) !== "present";
   const committed =
-    libraryRootOverride != null || pointer != null || existsSync(root);
-  if (committed && !displaced) ensureLibraryDirs(root);
+    libraryRootOverride !== undefined || pointer !== null || existsSync(root);
+  if (committed && !displaced) {
+    ensureLibraryDirs(root);
+  }
 
   const libraryId =
     displaced && open ? open.libraryId : resolveLibraryId(root, committed);

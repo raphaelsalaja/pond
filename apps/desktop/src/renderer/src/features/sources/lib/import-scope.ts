@@ -1,8 +1,6 @@
 import type { ImportMediaKind, ImportScope, Source } from "@pond/schema/db";
-import {
-  type ImportCollectionKind,
-  importScopeOptions,
-} from "@shared/import-scope";
+import { importScopeOptions } from "@shared/import-scope";
+import type { ImportCollectionKind } from "@shared/import-scope";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { syncMonitor } from "@/features/sources/state/sync-monitor";
@@ -139,8 +137,12 @@ export function sinceCopy(source: Source): SinceCopy {
 
 /** The local `YYYY-MM-DD` a preset starts from; empty for any time or a custom date. */
 export function sinceForPreset(preset: SincePreset, now = new Date()): string {
-  if (preset === "any" || preset === "custom") return "";
-  if (preset === "today") return localDay(now);
+  if (preset === "any" || preset === "custom") {
+    return "";
+  }
+  if (preset === "today") {
+    return localDay(now);
+  }
   const start = new Date(
     now.getFullYear(),
     now.getMonth() - SINCE_PRESET_MONTHS[preset],
@@ -167,8 +169,12 @@ export async function saveImportScope(input: {
     scope: input.scope,
     start: input.start,
   });
-  if (!result.ok) return result;
-  if (input.start) startImportSync(input.accountId, input.source);
+  if (!result.ok) {
+    return result;
+  }
+  if (input.start) {
+    startImportSync(input.accountId, input.source);
+  }
   await refetchAccounts();
   return { ok: true };
 }

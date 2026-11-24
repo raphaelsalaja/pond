@@ -3,8 +3,13 @@ export function createNavigationMailbox<T = string>() {
   let pending: T | undefined;
   return {
     receive(path: T): void {
-      if (!listeners.size) pending = path;
-      else for (const listener of listeners) listener(path);
+      if (!listeners.size) {
+        pending = path;
+      } else {
+        for (const listener of listeners) {
+          listener(path);
+        }
+      }
     },
     subscribe(listener: (path: T) => void): () => void {
       listeners.add(listener);

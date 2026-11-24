@@ -1,7 +1,7 @@
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentPropsWithoutRef<"span"> {}
+type RootProps = React.ComponentPropsWithoutRef<"span">;
 
 function Root({ className, ...props }: RootProps) {
   return (
@@ -9,7 +9,7 @@ function Root({ className, ...props }: RootProps) {
   );
 }
 
-interface DotsProps extends React.ComponentPropsWithoutRef<"span"> {}
+type DotsProps = React.ComponentPropsWithoutRef<"span">;
 
 function Dots({ className, ...props }: DotsProps) {
   return (
@@ -26,7 +26,7 @@ const SPINNER_VIEW_BOX = 207;
 const SPINNER_RADIUS = 77;
 const SPINNER_THICKNESS = 30;
 
-interface SpinnerProps extends React.ComponentPropsWithoutRef<"svg"> {}
+type SpinnerProps = React.ComponentPropsWithoutRef<"svg">;
 
 function Spinner({ className, ...props }: SpinnerProps) {
   const center = SPINNER_VIEW_BOX / 2;

@@ -1,7 +1,8 @@
 import { PrefsSchema } from "@pond/schema";
 import { THUMBNAIL_CACHE_VERSION } from "@shared/media-index";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { Save } from "@/features/saves/types";
 import { loadPrefs } from "@/shared/state/prefs";
@@ -61,6 +62,8 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
+const shown = () => host.querySelector("img")?.getAttribute("src");
+
 it("upgrades a large card to a sharper thumbnail, never the original", async () => {
   await loadPrefs();
   await act(async () =>
@@ -74,7 +77,6 @@ it("upgrades a large card to a sharper thumbnail, never the original", async () 
       />,
     ),
   );
-  const shown = () => host.querySelector("img")?.getAttribute("src");
 
   expect(shown()).toBe(thumb(512));
   expect(decodes.map(({ src }) => src)).toEqual([thumb(768)]);

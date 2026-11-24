@@ -15,7 +15,7 @@ export type ThreadsListKind = Extract<ListKind, "saved" | "liked">;
 export const THREADS_LIST_PAGES = {
   saved: ["https://www.threads.com/saved"],
   liked: ["https://www.threads.com/liked", "https://www.threads.com/activity"],
-} as const satisfies Record<ThreadsListKind, readonly string[]>;
+} as const satisfies Record<ThreadsListKind, ReadonlyArray<string>>;
 
 export const THREADS_LIST_URL = THREADS_LIST_PAGES.saved[0];
 
@@ -31,7 +31,7 @@ interface ThreadsListEntry {
   title?: string;
   author?: string;
   mediaUrl?: string;
-  mediaUrls?: ThreadsListMedia[];
+  mediaUrls?: Array<ThreadsListMedia>;
   mediaType?: MediaType;
 }
 
@@ -56,14 +56,16 @@ async function inPageThreadsList(
   }
 
   function collectFn() {
-    const out: ThreadsListEntry[] = [];
+    const out: Array<ThreadsListEntry> = [];
     const seen = new Set<string>();
     const links = Array.from(
       document.querySelectorAll<HTMLAnchorElement>('a[href*="/post/"]'),
     );
     for (const a of links) {
       const id = norm.extractPostCode(a.href);
-      if (!id || seen.has(id)) continue;
+      if (!id || seen.has(id)) {
+        continue;
+      }
       seen.add(id);
 
       let pathname = "";
@@ -72,7 +74,9 @@ async function inPageThreadsList(
         const u = new URL(a.href, location.origin);
         pathname = u.pathname;
         href = u.href;
-      } catch {}
+      } catch {
+        /** An unparseable href keeps the anchor's own value and no handle. */
+      }
 
       const card =
         a.closest("[data-pressable-container], [role='article'], article") ??
@@ -84,25 +88,37 @@ async function inPageThreadsList(
       )
         .map((el) => (el.textContent ?? "").trim())
         .filter((t) => {
-          if (!t) return false;
-          if (handle && t.replace(/^@/, "") === handle) return false;
-          if (/^Translate$/i.test(t)) return false;
+          if (!t) {
+            return false;
+          }
+          if (handle && t.replace(/^@/, "") === handle) {
+            return false;
+          }
+          if (/^Translate$/i.test(t)) {
+            return false;
+          }
           return t.length > 1;
         });
       const text = texts[0];
 
-      const mediaUrls: ThreadsListMedia[] = [];
+      const mediaUrls: Array<ThreadsListMedia> = [];
       const seenMedia = new Set<string>();
       const push = (
         url: string | undefined,
         type: MediaType,
         poster?: string,
       ) => {
-        if (!url || url.startsWith("data:") || url.startsWith("blob:")) return;
-        if (norm.isBrandAsset(url) || seenMedia.has(url)) return;
+        if (!url || url.startsWith("data:") || url.startsWith("blob:")) {
+          return;
+        }
+        if (norm.isBrandAsset(url) || seenMedia.has(url)) {
+          return;
+        }
         seenMedia.add(url);
         const entry: ThreadsListMedia = { url, type };
-        if (poster) entry.poster = poster;
+        if (poster) {
+          entry.poster = poster;
+        }
         mediaUrls.push(entry);
       };
 
@@ -118,8 +134,12 @@ async function inPageThreadsList(
       )) {
         const best =
           norm.pickLargestSrcset(img.srcset) ?? img.currentSrc ?? img.src;
-        if (!best) continue;
-        if (norm.looksLikeAvatar(best, img.alt)) continue;
+        if (!best) {
+          continue;
+        }
+        if (norm.looksLikeAvatar(best, img.alt)) {
+          continue;
+        }
         push(best, "image");
       }
 
@@ -130,8 +150,12 @@ async function inPageThreadsList(
           ? cleanUrl
           : `https://www.threads.com${cleanUrl}`,
       };
-      if (text) entry.title = norm.titleFromText(text);
-      if (handle) entry.author = handle;
+      if (text) {
+        entry.title = norm.titleFromText(text);
+      }
+      if (handle) {
+        entry.author = handle;
+      }
       const firstMedia = mediaUrls[0];
       if (firstMedia) {
         entry.mediaUrl = firstMedia.url;

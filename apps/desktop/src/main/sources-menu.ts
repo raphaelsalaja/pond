@@ -14,14 +14,14 @@ interface SourcesMenuOptions {
 export function sourcesSubmenu({
   accelerator,
   sendMenuAction,
-}: SourcesMenuOptions): Electron.MenuItemConstructorOptions[] {
-  const syncItems: Electron.MenuItemConstructorOptions[] = SOURCES.filter(
+}: SourcesMenuOptions): Array<Electron.MenuItemConstructorOptions> {
+  const syncItems: Array<Electron.MenuItemConstructorOptions> = SOURCES.filter(
     (source) => source !== "local",
   ).map((source) => ({
     label: `Sync ${sourceLabel(source)}`,
     click: () => {
-      void syncSource(source, { trigger: "manual" }).catch((error) =>
-        log.warn(`[pond menu] sync ${source} failed`, error),
+      void syncSource(source, { trigger: "manual" }).catch((cause: unknown) =>
+        log.warn(`[pond menu] sync ${source} failed`, cause),
       );
     },
   }));

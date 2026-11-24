@@ -46,8 +46,8 @@ export interface DownloadActivity {
   updatedAt: number;
   phase: DownloadPhase;
   phaseStartedAt: number;
-  transfers: DownloadTransfer[];
-  timeline: { phase: DownloadPhase; at: number; fileIndex?: number }[];
+  transfers: Array<DownloadTransfer>;
+  timeline: Array<{ phase: DownloadPhase; at: number; fileIndex?: number }>;
 }
 
 export interface DownloadActivityUpdate {

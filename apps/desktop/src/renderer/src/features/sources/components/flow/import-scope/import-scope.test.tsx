@@ -1,13 +1,12 @@
 import { Dialog } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { localDay } from "@/features/sources/lib/import-scope";
-import {
-  type ImportScopeAccount,
-  importScopeFlow,
-} from "@/features/sources/state/import-scope-flow";
+import { importScopeFlow } from "@/features/sources/state/import-scope-flow";
+import type { ImportScopeAccount } from "@/features/sources/state/import-scope-flow";
 import {
   ImportScopeFilters,
   ImportScopeLists,
@@ -45,7 +44,9 @@ beforeEach(() => {
     if (name === "accounts.importOptions") {
       return { ok: true, collections: BOARDS };
     }
-    if (name === "accounts.list") return { accounts: [] };
+    if (name === "accounts.list") {
+      return { accounts: [] };
+    }
     return { ok: true };
   });
   syncRunNow = vi.fn(async () => ({ ok: true }));
@@ -90,27 +91,43 @@ function toggle(label: string): HTMLElement {
   const found = host.querySelector<HTMLElement>(
     `[role="switch"][aria-label="${label}"]`,
   );
-  if (!found) throw new Error(`Missing switch: ${label}`);
+  if (!found) {
+    throw new Error(`Missing switch: ${label}`);
+  }
   return found;
+}
+
+function noop() {}
+
+function collectionsInput() {
+  return host.querySelector<HTMLInputElement>(
+    'input[aria-label="Collections"]',
+  );
 }
 
 function button(label: string): HTMLButtonElement {
   const found = Array.from(host.querySelectorAll("button")).find(
     (element) => element.textContent === label,
   );
-  if (!found) throw new Error(`Missing button: ${label}`);
+  if (!found) {
+    throw new Error(`Missing button: ${label}`);
+  }
   return found;
 }
 
 async function choose(field: string, option: string): Promise<void> {
   const trigger = host.querySelector<HTMLElement>(`[aria-label="${field}"]`);
-  if (!trigger) throw new Error(`Missing select: ${field}`);
+  if (!trigger) {
+    throw new Error(`Missing select: ${field}`);
+  }
   await act(async () => trigger.click());
   const found = await vi.waitFor(() => {
     const match = Array.from(
       document.querySelectorAll<HTMLElement>('[role="option"]'),
     ).find((element) => element.textContent?.startsWith(option));
-    if (!match) throw new Error(`Missing option: ${option}`);
+    if (!match) {
+      throw new Error(`Missing option: ${option}`);
+    }
     return match;
   });
   await act(async () => found.click());
@@ -120,7 +137,9 @@ async function openCombobox(field: string): Promise<void> {
   const input = host.querySelector<HTMLInputElement>(
     `input[aria-label="${field}"]`,
   );
-  if (!input) throw new Error(`Missing combobox: ${field}`);
+  if (!input) {
+    throw new Error(`Missing combobox: ${field}`);
+  }
   await act(async () => {
     input.focus();
     input.dispatchEvent(
@@ -135,7 +154,9 @@ async function pick(field: string, option: string): Promise<void> {
     const match = Array.from(
       document.querySelectorAll<HTMLElement>('[role="option"]'),
     ).find((element) => element.textContent?.startsWith(option));
-    if (!match) throw new Error(`Missing option: ${option}`);
+    if (!match) {
+      throw new Error(`Missing option: ${option}`);
+    }
     return match;
   });
   await act(async () => found.click());
@@ -380,10 +401,12 @@ it("explains a board list Pond couldn't load", async () => {
 });
 
 it("runs one retry at a time while the list loads", async () => {
-  let finish: (value: { ok: true; collections: never[] }) => void = () => {};
+  let finish: (value: { ok: true; collections: Array<never> }) => void = noop;
   let attempts = 0;
   query.mockImplementation(async (name: string) => {
-    if (name !== "accounts.importOptions") return { ok: true };
+    if (name !== "accounts.importOptions") {
+      return { ok: true };
+    }
     attempts += 1;
     if (attempts === 1) {
       return { ok: false, error: "Pond couldn't load your collections." };
@@ -498,13 +521,11 @@ it("dims collections and Add to Folders while the saved list is off", async () =
     source: "instagram",
     sync: { importPending: true },
   });
-  const input = () =>
-    host.querySelector<HTMLInputElement>('input[aria-label="Collections"]');
-  expect(input()?.disabled).toBe(false);
+  expect(collectionsInput()?.disabled).toBe(false);
   await act(async () => toggle("Saved Posts").click());
-  expect(input()?.disabled).toBe(true);
+  expect(collectionsInput()?.disabled).toBe(true);
   expect(toggle("Add to Folders").getAttribute("aria-disabled")).toBe("true");
-  expect(input()?.closest("div[aria-disabled]")).not.toBeNull();
+  expect(collectionsInput()?.closest("div[aria-disabled]")).not.toBeNull();
 });
 
 it("keeps the date visible but off until you choose Custom Date", async () => {
@@ -545,7 +566,9 @@ it("saves media and date filters with the scope", async () => {
   await choose("Posted Since", "Custom Date");
   const trigger = await vi.waitFor(() => {
     const found = host.querySelector<HTMLElement>('[aria-label^="Date"]');
-    if (!found) throw new Error("Missing date picker");
+    if (!found) {
+      throw new Error("Missing date picker");
+    }
     return found;
   });
   await act(async () => trigger.click());
@@ -555,7 +578,9 @@ it("saves media and date filters with the scope", async () => {
     const found = document.querySelector<HTMLButtonElement>(
       `[data-day="${first}"]`,
     );
-    if (!found) throw new Error("Missing calendar day");
+    if (!found) {
+      throw new Error("Missing calendar day");
+    }
     return found;
   });
   await act(async () => day.click());

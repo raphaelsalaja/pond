@@ -34,7 +34,9 @@ function failure(status: number): Extract<ListHarvestResult, { ok: false }> {
   if (status === 401 || status === 400) {
     return { ok: false, reason: "auth_required" };
   }
-  if (status === 429) return { ok: false, reason: "rate_limited" };
+  if (status === 429) {
+    return { ok: false, reason: "rate_limited" };
+  }
   return { ok: false, reason: "unknown" };
 }
 
@@ -46,7 +48,7 @@ export async function readBlueskyBookmarks(
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   let cursor = args.resumeCursor;
   let knownStreak = 0;
@@ -64,7 +66,9 @@ export async function readBlueskyBookmarks(
       reachedEnd: false,
       seen: entries.length,
     };
-    if (cursor) result.resumeCursor = cursor;
+    if (cursor) {
+      result.resumeCursor = cursor;
+    }
     return result;
   };
 
@@ -72,13 +76,17 @@ export async function readBlueskyBookmarks(
     const res = await page(cursor);
     const parsed = BookmarksSchema.safeParse(res?.body);
     if (res?.status !== 200 || !parsed.success) {
-      if (n === 0) return failure(res?.status ?? 0);
+      if (n === 0) {
+        return failure(res?.status ?? 0);
+      }
       return unfinished();
     }
     let fresh = 0;
     let read = 0;
     for (const bookmark of parsed.data.bookmarks) {
-      if (!bookmark?.item) continue;
+      if (!bookmark?.item) {
+        continue;
+      }
       const { createdAt } = bookmark;
       if (
         Number.isFinite(since) &&
@@ -91,19 +99,27 @@ export async function readBlueskyBookmarks(
         ...postEntry(bookmark.item, createdAt),
         listKinds: ["saved"],
       };
-      if (seen.has(entry.sourceId)) continue;
+      if (seen.has(entry.sourceId)) {
+        continue;
+      }
       seen.add(entry.sourceId);
       read += 1;
-      if (!known.has(entry.sourceId)) fresh += 1;
+      if (!known.has(entry.sourceId)) {
+        fresh += 1;
+      }
       entries.push(entry);
     }
     if (earlyStop && read > 0 && fresh === 0) {
       knownStreak += 1;
-      if (knownStreak >= 2) return done();
+      if (knownStreak >= 2) {
+        return done();
+      }
     } else {
       knownStreak = 0;
     }
-    if (!parsed.data.cursor) return done();
+    if (!parsed.data.cursor) {
+      return done();
+    }
     cursor = parsed.data.cursor;
   }
   return unfinished();

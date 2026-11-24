@@ -15,14 +15,14 @@ export function ChipsField<Value extends string>({
 }: {
   label: string;
   placeholder: string;
-  items: Value[];
-  value: Value[];
+  items: Array<Value>;
+  value: Array<Value>;
   labelOf: (value: Value) => string;
   detailOf?: (value: Value) => string | undefined;
   empty: string;
   disabled?: boolean;
   onOpen?: () => void;
-  onValueChange: (value: Value[]) => void;
+  onValueChange: (value: Array<Value>) => void;
 }) {
   return (
     <Combobox.Root
@@ -32,13 +32,15 @@ export function ChipsField<Value extends string>({
       disabled={disabled}
       itemToStringLabel={labelOf}
       onOpenChange={(open) => {
-        if (open) onOpen?.();
+        if (open) {
+          onOpen?.();
+        }
       }}
       onValueChange={onValueChange}
     >
       <Combobox.InputGroup className={styles.chips}>
         <Combobox.Value>
-          {(selected: Value[]) => (
+          {(selected: Array<Value>) => (
             <Combobox.Chips>
               {selected.map((item) => (
                 <Combobox.Chip key={item} aria-label={labelOf(item)}>

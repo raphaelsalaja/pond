@@ -3,12 +3,12 @@ const assert = require("node:assert/strict");
 const { execFileSync } = require("node:child_process");
 const { mkdtempSync, rmSync, writeFileSync } = require("node:fs");
 const { tmpdir } = require("node:os");
-const { join } = require("node:path");
+const path = require("node:path");
 const ffmpeg = require("ffmpeg-static");
 
-const sandbox = mkdtempSync(join(tmpdir(), "pond-auxiliary-smoke-"));
-const imagePath = join(sandbox, "reference.png");
-const videoPath = join(sandbox, "reference.webm");
+const sandbox = mkdtempSync(path.join(tmpdir(), "pond-auxiliary-smoke-"));
+const imagePath = path.join(sandbox, "reference.png");
+const videoPath = path.join(sandbox, "reference.webm");
 process.env.POND_SANDBOX = sandbox;
 process.once("exit", () => {
   try {
@@ -44,7 +44,7 @@ execFileSync(ffmpeg, [
 let started = false;
 const deadline = setTimeout(
   () => fail(new Error("Auxiliary window smoke timed out")),
-  60000,
+  60_000,
 );
 function fail(error) {
   clearTimeout(deadline);
@@ -55,8 +55,12 @@ function fail(error) {
 async function waitFor(check, description) {
   const start = Date.now();
   while (!(await check())) {
-    if (Date.now() - start > 10000) throw new Error(description);
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    if (Date.now() - start > 10_000) {
+      throw new Error(description);
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
   }
 }
 
@@ -74,7 +78,9 @@ async function checkPreview(window, mediaType) {
 
 app.on("web-contents-created", (_, contents) => {
   contents.on("did-finish-load", () => {
-    if (started || !contents.getURL().includes("index.html")) return;
+    if (started || !contents.getURL().includes("index.html")) {
+      return;
+    }
     started = true;
     void run(contents).catch(fail);
   });
@@ -173,7 +179,7 @@ async function run(contents) {
   });
 
   rmSync(
-    join(
+    path.join(
       fixture.library.path,
       "items",
       `${fixture.videoId}.info`,

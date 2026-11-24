@@ -6,7 +6,7 @@ import { useExtensionDependency } from "@lexical/react/useExtensionComponent";
 import { useSignalValue } from "@lexical/react/useExtensionSignalValue";
 import { Input } from "@pond/ui";
 import { Debouncer } from "@tanstack/pacer";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
   ChromePortal,
@@ -30,8 +30,8 @@ import { MermaidPreview } from "./mermaid-preview";
 import { createNoteExtension } from "./note-extension";
 import { NoteShortcuts } from "./shortcuts";
 import { SlashMenu } from "./slash-menu";
-import styles from "./styles.module.css";
 import { YouTubeEmbed } from "./youtube-embed";
+import styles from "./styles.module.css";
 
 export const NOTE_TITLE_PLACEHOLDER = "Untitled";
 export const NOTE_BODY_PLACEHOLDER = "Write anything, or type / for commands";
@@ -136,7 +136,9 @@ function TitleField({
   const [syncedTitle, setSyncedTitle] = useState(title);
   if (title !== syncedTitle) {
     setSyncedTitle(title);
-    if (title.trim() !== draft.trim()) setDraft(title);
+    if (title.trim() !== draft.trim()) {
+      setDraft(title);
+    }
   }
   const inputRef = useRef<HTMLInputElement>(null);
   const persist = useMemo(
@@ -145,7 +147,9 @@ function TitleField({
         (id: string, next: string) => {
           const value = next.trim() || null;
           const current = pool.get(id)?.title?.trim() || null;
-          if (value === current) return;
+          if (value === current) {
+            return;
+          }
           void mutateSave(id, { title: value }, { actorReason: "user:rename" });
         },
         { wait: 400 },
@@ -154,7 +158,9 @@ function TitleField({
   );
 
   useEffect(() => {
-    if (autoFocus) inputRef.current?.focus();
+    if (autoFocus) {
+      inputRef.current?.focus();
+    }
   }, [autoFocus]);
 
   useEffect(() => () => persist.flush(), [persist]);
@@ -187,39 +193,52 @@ function TitleField({
 function PersistPlugin({ save }: { save: Save }) {
   const [editor] = useLexicalComposerContext();
   const saveRef = useRef(save);
-  saveRef.current = save;
+  useLayoutEffect(() => {
+    saveRef.current = save;
+  }, [save]);
   const last = useRef(noteBodyForSave(save));
   const { output } = useExtensionDependency(EditorStateExtension);
   const editorState = useSignalValue(output);
-  const persist = useMemo(
-    () =>
-      new Debouncer(
-        (id: string, markdown: string) => {
-          const current = saveRef.current;
-          const next = markdown.trim() || null;
-          const prev = current.description?.trim() || null;
-          if (next === prev) return;
-          void mutateSave(
-            id,
-            { description: next },
-            { actorReason: "user:edit-description" },
-          );
-          ensureTextCover({ ...current, description: next }, { force: true });
-        },
-        { wait: 400 },
-      ),
-    [],
-  );
-
-  useEffect(() => () => persist.flush(), [persist]);
+  const persistRef = useRef<Debouncer<
+    (id: string, markdown: string) => void
+  > | null>(null);
 
   useEffect(() => {
-    if (!editorState) return;
+    const persist = new Debouncer(
+      (id: string, markdown: string) => {
+        const current = saveRef.current;
+        const next = markdown.trim() || null;
+        const prev = current.description?.trim() || null;
+        if (next === prev) {
+          return;
+        }
+        void mutateSave(
+          id,
+          { description: next },
+          { actorReason: "user:edit-description" },
+        );
+        ensureTextCover({ ...current, description: next }, { force: true });
+      },
+      { wait: 400 },
+    );
+    persistRef.current = persist;
+    return () => {
+      persist.flush();
+      persistRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!editorState) {
+      return;
+    }
     const markdown = markdownFromEditor(editor);
-    if (markdown === last.current) return;
+    if (markdown === last.current) {
+      return;
+    }
     last.current = markdown;
-    persist.maybeExecute(save.id, markdown);
-  }, [editor, editorState, persist, save.id]);
+    persistRef.current?.maybeExecute(save.id, markdown);
+  }, [editor, editorState, save.id]);
 
   return null;
 }

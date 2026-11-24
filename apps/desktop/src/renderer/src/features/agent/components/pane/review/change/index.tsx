@@ -76,8 +76,10 @@ export function ChangeActions({
   onAction: (action: ReviewAction) => void;
 }) {
   const title = reviewTitle(change.title);
-  if (working) return null;
-  if (change.status === "pending")
+  if (working) {
+    return null;
+  }
+  if (change.status === "pending") {
     return (
       <span className={styles.actions}>
         <Tooltip label="Dismiss">
@@ -106,7 +108,10 @@ export function ChangeActions({
         </Tooltip>
       </span>
     );
-  if (change.status !== "applied" || change.undoable === false) return null;
+  }
+  if (change.status !== "applied" || change.undoable === false) {
+    return null;
+  }
   return (
     <span className={styles.actions}>
       <Button

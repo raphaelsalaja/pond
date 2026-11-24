@@ -37,7 +37,7 @@ interface ThumbnailInput {
 }
 
 export function thumbnailSource(
-  files: readonly { kind: string; path: string }[],
+  files: ReadonlyArray<{ kind: string; path: string }>,
 ): { kind: string; path: string } | undefined {
   return (
     files.find((file) => file.kind === POSTER_KIND) ??
@@ -91,22 +91,32 @@ export async function thumbnailLooksLikeSource(
     differenceHash(thumbnail),
     differenceHash(source),
   ]);
-  if (left === null || right === null) return null;
+  if (left === null || right === null) {
+    return null;
+  }
   return hammingDistance(left, right) <= THUMBNAIL_MISMATCH_BITS;
 }
 
 export function planThumbnailRepair(
-  files: readonly ThumbnailInput[],
+  files: ReadonlyArray<ThumbnailInput>,
   matchesSource: boolean | null,
 ): "keep" | "create" | "rebuild" {
-  if (hasCustomThumbnail(files)) return "keep";
-  if (!thumbnailSource(files)) return "keep";
-  if (!hasMediaThumbnail(files)) return "create";
-  if (matchesSource === false) return "rebuild";
+  if (hasCustomThumbnail(files)) {
+    return "keep";
+  }
+  if (!thumbnailSource(files)) {
+    return "keep";
+  }
+  if (!hasMediaThumbnail(files)) {
+    return "create";
+  }
+  if (matchesSource === false) {
+    return "rebuild";
+  }
   return "keep";
 }
 
-function hasCustomThumbnail(files: readonly ThumbnailInput[]): boolean {
+function hasCustomThumbnail(files: ReadonlyArray<ThumbnailInput>): boolean {
   return files.some(
     (file) =>
       (file.kind === THUMBNAIL_KIND || file.kind === THUMBNAIL_DARK_KIND) &&
@@ -116,10 +126,14 @@ function hasCustomThumbnail(files: readonly ThumbnailInput[]): boolean {
 
 /** The file a new thumbnail renders from; a thumbnail you picked is never replaced, even when forced. */
 export function thumbnailToRender(
-  files: readonly ThumbnailInput[],
+  files: ReadonlyArray<ThumbnailInput>,
   force: boolean,
 ): { kind: string; path: string } | undefined {
-  if (hasCustomThumbnail(files)) return undefined;
-  if (!force && hasMediaThumbnail(files)) return undefined;
+  if (hasCustomThumbnail(files)) {
+    return undefined;
+  }
+  if (!force && hasMediaThumbnail(files)) {
+    return undefined;
+  }
   return thumbnailSource(files);
 }

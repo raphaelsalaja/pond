@@ -17,12 +17,11 @@ import {
   mediaVideoEmbedding,
 } from "../clip";
 import { loadImage, representativeImageUrl } from "../image";
-import {
-  MAX_EMBEDDING_AUDIO_SAMPLES,
-  type VideoEmbeddingFrame,
-} from "../inference-client";
+import { MAX_EMBEDDING_AUDIO_SAMPLES } from "../inference-client";
+import type { VideoEmbeddingFrame } from "../inference-client";
 import type { Enricher } from "../types";
-import { type DecodeMono16kOptions, decodeMono16k } from "../whisper";
+import { decodeMono16k } from "../whisper";
+import type { DecodeMono16kOptions } from "../whisper";
 
 export const MEDIA_EMBEDDING_AUDIO_OPTIONS = {
   maxSamples: MAX_EMBEDDING_AUDIO_SAMPLES,
@@ -35,7 +34,7 @@ export const MEDIA_EMBEDDING_VIDEO_OPTIONS = {
 } as const;
 
 interface SampledVideo {
-  frames: VideoEmbeddingFrame[];
+  frames: Array<VideoEmbeddingFrame>;
   duration: number;
 }
 
@@ -58,7 +57,7 @@ export interface MediaEmbeddingDependencies {
   embedImage(image: RawImage): Promise<Float32Array>;
   embedAudio(audio: Float32Array): Promise<Float32Array>;
   embedVideoFrames(
-    frames: VideoEmbeddingFrame[],
+    frames: Array<VideoEmbeddingFrame>,
     duration: number,
   ): Promise<Float32Array>;
   persist(id: string, vector: Float32Array, model: string): Promise<void>;
@@ -81,10 +80,14 @@ function mediaKind(save: Save): EmbeddableMedia | null {
 }
 
 function mediaUrl(save: Save, kind: EmbeddableMedia): string | null {
-  if (kind === "image") return representativeImageUrl(save);
+  if (kind === "image") {
+    return representativeImageUrl(save);
+  }
   if (kind === "video") {
     const unit = pickPrimaryUnit(save);
-    if (unit?.isVideo) return unit.url;
+    if (unit?.isVideo) {
+      return unit.url;
+    }
   }
   const file = pickPrimaryFile(save);
   return file ? buildPondUrl(save.id, file) : null;
@@ -115,6 +118,10 @@ async function rawImage(
   );
 }
 
+function isSampledDuration(value: unknown): value is number {
+  return typeof value === "number";
+}
+
 async function sampleVideo(
   url: string,
   options: VideoSampleOptions,
@@ -124,7 +131,11 @@ async function sampleVideo(
     maxFrames: options.maxFrames,
     strategy: "embedding",
   });
-  if (!result.ok || result.duration == null || result.frames.length === 0) {
+  if (
+    !result.ok ||
+    !isSampledDuration(result.duration) ||
+    result.frames.length === 0
+  ) {
     return null;
   }
   const decoded = await Promise.all(
@@ -156,15 +167,23 @@ export function createMediaEmbeddingEnricher(
     id: "clip",
     enabled: (prefs) => prefs?.ai?.enableClip === true,
     eligible(save: Save) {
-      if (save.status !== "complete" || save.deletedAt != null) return false;
-      if (!mediaKind(save)) return false;
+      if (save.status !== "complete" || save.deletedAt !== null) {
+        return false;
+      }
+      if (!mediaKind(save)) {
+        return false;
+      }
       return save.clipModel !== mediaEmbeddingVersion();
     },
     async run(save: Save) {
       const kind = mediaKind(save);
-      if (!kind) return null;
+      if (!kind) {
+        return null;
+      }
       const url = mediaUrl(save, kind);
-      if (!url) return null;
+      if (!url) {
+        return null;
+      }
 
       let vector: Float32Array;
       if (kind === "image") {
@@ -182,7 +201,9 @@ export function createMediaEmbeddingEnricher(
           url,
           MEDIA_EMBEDDING_VIDEO_OPTIONS,
         );
-        if (!sampled) return null;
+        if (!sampled) {
+          return null;
+        }
         const frameVector = normalize(
           await dependencies.embedVideoFrames(sampled.frames, sampled.duration),
         );

@@ -1,9 +1,8 @@
 import { writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import sharp from "sharp";
 
-const fixtureDirectory = dirname(fileURLToPath(import.meta.url));
+const fixtureDirectory = import.meta.dirname;
 const sampleRate = 16_000;
 const samples = sampleRate;
 const wav = Buffer.alloc(44 + samples * 2);

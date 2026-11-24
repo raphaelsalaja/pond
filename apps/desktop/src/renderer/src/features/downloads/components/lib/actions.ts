@@ -1,9 +1,6 @@
 import { z } from "zod";
-import {
-  type DownloadRow,
-  statusBucket,
-  statusFeed,
-} from "@/features/downloads/lib/status-feed";
+import { statusBucket, statusFeed } from "@/features/downloads/lib/status-feed";
+import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import {
   invalidatePendingSaveHydration,
@@ -41,22 +38,28 @@ export function canRetryDownload(row: DownloadRow): boolean {
 }
 
 function uniqueSaveIds(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
   include: (row: DownloadRow) => boolean,
-): string[] {
-  return [...new Set(rows.filter(include).map((row) => row.saveId))];
+): Array<string> {
+  return [
+    ...new Set(rows.flatMap((row) => (include(row) ? [row.saveId] : []))),
+  ];
 }
 
 export async function retryDownloadRows(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
 ): Promise<boolean> {
   const ids = uniqueSaveIds(rows, canRetryDownload);
-  if (ids.length === 0) return false;
+  if (ids.length === 0) {
+    return false;
+  }
   try {
     const result = RetryResultSchema.parse(
       await window.pond.query("saves.retryFailed", { ids }),
     );
-    if (!result.ok || result.requeued === 0) throw new Error("retry failed");
+    if (!result.ok || result.requeued === 0) {
+      throw new Error("retry failed");
+    }
     downloadsSelection.clear();
     return true;
   } catch {
@@ -66,15 +69,19 @@ export async function retryDownloadRows(
 }
 
 export async function cancelDownloadRows(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
 ): Promise<boolean> {
   const ids = uniqueSaveIds(rows, canCancelDownload);
-  if (ids.length === 0) return false;
+  if (ids.length === 0) {
+    return false;
+  }
   try {
     const result = CancelResultSchema.parse(
       await window.pond.pipelineCancelSaves(ids),
     );
-    if (!result.ok) throw new Error("cancel failed");
+    if (!result.ok) {
+      throw new Error("cancel failed");
+    }
     downloadsSelection.clear();
     return result.cancelled > 0;
   } catch {
@@ -87,15 +94,19 @@ export async function cancelDownloadRows(
 }
 
 export async function skipDownloadRows(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
 ): Promise<boolean> {
   const ids = uniqueSaveIds(rows, canSkipDownload);
-  if (ids.length === 0) return false;
+  if (ids.length === 0) {
+    return false;
+  }
   try {
     const result = SkipResultSchema.parse(
       await window.pond.query("saves.skipIngest", { ids }),
     );
-    if (!result.ok || result.skipped === 0) throw new Error("skip failed");
+    if (!result.ok || result.skipped === 0) {
+      throw new Error("skip failed");
+    }
     downloadsSelection.clear();
     return true;
   } catch {
@@ -118,9 +129,9 @@ interface TrashDownloadDependencies extends TrashNotificationDependencies {
 
 interface ClearUnfinishedDependencies extends TrashNotificationDependencies {
   clear: () => Promise<ClearUnfinishedResult>;
-  invalidate: (ids: readonly string[]) => void;
-  reconcile: (ids: readonly string[]) => void;
-  reload: (ids: readonly string[]) => Promise<void>;
+  invalidate: (ids: ReadonlyArray<string>) => void;
+  reconcile: (ids: ReadonlyArray<string>) => void;
+  reload: (ids: ReadonlyArray<string>) => Promise<void>;
 }
 
 const TRASH_DOWNLOAD_DEPENDENCIES: TrashDownloadDependencies = {
@@ -142,7 +153,9 @@ const CLEAR_UNFINISHED_DEPENDENCIES: ClearUnfinishedDependencies = {
     const deletedAt = Date.now();
     for (const id of ids) {
       const save = pool.get(id);
-      if (save) pool.upsert({ ...save, deletedAt });
+      if (save) {
+        pool.upsert({ ...save, deletedAt });
+      }
     }
     emitFeedback("saveDeletion");
   },
@@ -186,14 +199,18 @@ function notifyTrashedDownloads(
 }
 
 async function trashDownloadIds(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   dependencies: TrashDownloadDependencies,
 ): Promise<boolean> {
   const uniqueIds = [...new Set(ids)];
-  if (uniqueIds.length === 0) return false;
+  if (uniqueIds.length === 0) {
+    return false;
+  }
   try {
     const { changed } = await dependencies.trash(uniqueIds);
-    if (changed === 0) return false;
+    if (changed === 0) {
+      return false;
+    }
     notifyTrashedDownloads(changed, dependencies);
     return true;
   } catch {
@@ -210,7 +227,9 @@ export async function clearUnfinishedDownloads(
 ): Promise<boolean> {
   try {
     const result = await dependencies.clear();
-    if (result.changed === 0) return false;
+    if (result.changed === 0) {
+      return false;
+    }
     dependencies.invalidate(result.ids);
     dependencies.reconcile(result.ids);
     notifyTrashedDownloads(result.changed, dependencies, async () => {
@@ -228,7 +247,7 @@ export async function clearUnfinishedDownloads(
 }
 
 export function trashDownloadRows(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
   dependencies = TRASH_DOWNLOAD_DEPENDENCIES,
 ): Promise<boolean> {
   return trashDownloadIds(uniqueSaveIds(rows, canTrashDownload), dependencies);

@@ -10,12 +10,18 @@ export function findComposerTrigger(
   start: number,
   end = start,
 ): ComposerTrigger | null {
-  if (start !== end || (value[start] && !/\s/.test(value[start]))) return null;
+  if (start !== end || (value[start] && !/\s/.test(value[start]))) {
+    return null;
+  }
   const match = /(?:^|\s)([@/])([^@/\n]*)$/.exec(value.slice(0, start));
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   const kind = match[1];
   const query = match[2] ?? "";
-  if (kind !== "@" && kind !== "/") return null;
+  if (kind !== "@" && kind !== "/") {
+    return null;
+  }
   return {
     kind,
     query,

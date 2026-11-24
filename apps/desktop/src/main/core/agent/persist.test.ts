@@ -23,7 +23,9 @@ function nativeAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
@@ -70,7 +72,9 @@ describe.skipIf(!nativeAvailable())("rewindLastTurn", () => {
       rmSync(dir, { recursive: true, force: true });
     } catch (error) {
       /** Pond keeps `global.db` open until the process ends, and Windows can't delete an open file. */
-      if (process.platform !== "win32") throw error;
+      if (process.platform !== "win32") {
+        throw error;
+      }
     }
   });
 

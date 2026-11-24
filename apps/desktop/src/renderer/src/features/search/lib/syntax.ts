@@ -21,7 +21,7 @@ interface DatePreset {
   iso: string;
 }
 
-export const DATE_PRESETS: readonly DatePreset[] = [
+export const DATE_PRESETS: ReadonlyArray<DatePreset> = [
   { slug: "today", label: "Today", iso: "today" },
   { slug: "past-3-days", label: "Past 3 Days", iso: "-P3D" },
   { slug: "past-week", label: "Past Week", iso: "-P1W" },
@@ -32,10 +32,10 @@ export const DATE_PRESETS: readonly DatePreset[] = [
 
 interface TokenFieldSpec {
   field: FieldId;
-  keys: readonly string[];
+  keys: ReadonlyArray<string>;
 }
 
-const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
+const TOKEN_FIELDS: ReadonlyArray<TokenFieldSpec> = [
   { field: "title", keys: ["name", "title"] },
   { field: "tags", keys: ["tag", "tags"] },
   { field: "folder", keys: ["folder", "folders"] },
@@ -75,7 +75,9 @@ const KEY_TO_FIELD = new Map<string, FieldId>();
 const FIELD_TO_KEY = new Map<FieldId, string>();
 for (const spec of TOKEN_FIELDS) {
   FIELD_TO_KEY.set(spec.field, spec.keys[0] ?? spec.field);
-  for (const key of spec.keys) KEY_TO_FIELD.set(key, spec.field);
+  for (const key of spec.keys) {
+    KEY_TO_FIELD.set(key, spec.field);
+  }
 }
 
 function canonicalKey(field: FieldId): string {
@@ -97,19 +99,26 @@ interface RawToken {
   end: number;
 }
 
-function tokenize(input: string): RawToken[] {
-  const tokens: RawToken[] = [];
+function tokenize(input: string): Array<RawToken> {
+  const tokens: Array<RawToken> = [];
   const n = input.length;
   let i = 0;
   while (i < n) {
-    while (i < n && /\s/.test(input[i] ?? "")) i += 1;
-    if (i >= n) break;
+    while (i < n && /\s/.test(input[i] ?? "")) {
+      i += 1;
+    }
+    if (i >= n) {
+      break;
+    }
     const start = i;
     let inQuote = false;
     while (i < n) {
       const ch = input[i] ?? "";
-      if (ch === '"') inQuote = !inQuote;
-      else if (!inQuote && /\s/.test(ch)) break;
+      if (ch === '"') {
+        inQuote = !inQuote;
+      } else if (!inQuote && /\s/.test(ch)) {
+        break;
+      }
       i += 1;
     }
     tokens.push({ text: input.slice(start, i), start, end: i });
@@ -132,10 +141,14 @@ const FIELD_TOKEN_RE = /^(-?)([a-zA-Z]+)(>=|<=|:|>|<)(.*)$/s;
 
 function matchFieldToken(token: string): FieldToken | null {
   const m = FIELD_TOKEN_RE.exec(token);
-  if (!m) return null;
+  if (!m) {
+    return null;
+  }
   const field = fieldForKey(m[2] ?? "");
   const op = OP_SYMBOLS.find((symbol) => symbol === m[3]);
-  if (!field || !op) return null;
+  if (!field || !op) {
+    return null;
+  }
   return { field, op, rawValue: m[4] ?? "", negate: m[1] === "-" };
 }
 
@@ -147,7 +160,7 @@ function unquote(value: string): string {
   return t;
 }
 
-function splitList(value: string): string[] {
+function splitList(value: string): Array<string> {
   return value
     .split(",")
     .map(unquote)
@@ -162,9 +175,15 @@ function toNumber(value: string): number | null {
 function toDateValue(value: string): string | null {
   const t = value.trim();
   const iso = DATE_SLUG_TO_ISO.get(t.toLowerCase());
-  if (iso) return iso;
-  if (/^[+-]?P/i.test(t)) return t;
-  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t;
+  if (iso) {
+    return iso;
+  }
+  if (/^[+-]?P/i.test(t)) {
+    return t;
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
+    return t;
+  }
   return null;
 }
 
@@ -175,7 +194,9 @@ function toColorValue(value: string): string | null {
     const [r, g, b] = short[1] ?? "";
     return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
   }
-  if (/^#?[0-9a-f]{6}$/i.test(t)) return t.startsWith("#") ? t : `#${t}`;
+  if (/^#?[0-9a-f]{6}$/i.test(t)) {
+    return t.startsWith("#") ? t : `#${t}`;
+  }
   return COLOR_LABEL_TO_HEX.get(t.toLowerCase()) ?? null;
 }
 
@@ -226,7 +247,9 @@ function buildPredicate(token: FieldToken): Predicate | null {
       const [first, ...rest] = splitList(raw).map((v) =>
         field === "account" ? resolveAccountToken(v) : v.toLowerCase(),
       );
-      if (first === undefined) return null;
+      if (first === undefined) {
+        return null;
+      }
       if (rest.length === 0) {
         return { field, operator: negate ? "neq" : "eq", value: first };
       }
@@ -244,7 +267,9 @@ function buildPredicate(token: FieldToken): Predicate | null {
               return kind ? [kind] : [];
             })
           : splitList(raw).map((v) => v.toLowerCase());
-      if (list.length === 0) return null;
+      if (list.length === 0) {
+        return null;
+      }
       return { field, operator: negate ? "none" : "some", value: list };
     }
     case "optional": {
@@ -254,19 +279,25 @@ function buildPredicate(token: FieldToken): Predicate | null {
       if (raw.toLowerCase() === "with" || raw.toLowerCase() === "true") {
         return { field, operator: "exists", value: !negate };
       }
-      if (!raw) return { field, operator: "exists", value: !negate };
+      if (!raw) {
+        return { field, operator: "exists", value: !negate };
+      }
       return { field, operator: "contains", value: raw.toLowerCase() };
     }
     case "boolean": {
       const value = raw.toLowerCase();
-      if (OPTIONAL_FALSE.has(value))
+      if (OPTIONAL_FALSE.has(value)) {
         return { field, operator: "eq", value: negate };
-      if (BOOLEAN_TRUE.has(value))
+      }
+      if (BOOLEAN_TRUE.has(value)) {
         return { field, operator: "eq", value: !negate };
+      }
       return null;
     }
     case "string": {
-      if (!raw) return null;
+      if (!raw) {
+        return null;
+      }
       return {
         field,
         operator: "contains",
@@ -275,33 +306,47 @@ function buildPredicate(token: FieldToken): Predicate | null {
     }
     case "color": {
       const hex = toColorValue(raw);
-      if (!hex) return null;
+      if (!hex) {
+        return null;
+      }
       return { field, operator: "near", value: hex };
     }
     case "number": {
-      if (!raw) return null;
+      if (!raw) {
+        return null;
+      }
       if (raw.includes("..")) {
         const [a, b] = raw.split("..");
         const lo = toNumber(a ?? "");
         const hi = toNumber(b ?? "");
-        if (lo === null && hi === null) return null;
+        if (lo === null && hi === null) {
+          return null;
+        }
         return { field, operator: "between", value: [lo ?? 0, hi ?? 0] };
       }
       const n = toNumber(raw);
-      if (n === null) return null;
+      if (n === null) {
+        return null;
+      }
       return { field, operator: numericOperator(op, negate), value: n };
     }
     case "date": {
-      if (!raw) return null;
+      if (!raw) {
+        return null;
+      }
       if (raw.includes("..")) {
         const [a, b] = raw.split("..");
         const lo = toDateValue(a ?? "");
         const hi = toDateValue(b ?? "");
-        if (!lo && !hi) return null;
+        if (!lo && !hi) {
+          return null;
+        }
         return { field, operator: "between", value: [lo ?? "", hi ?? ""] };
       }
       const dv = toDateValue(raw);
-      if (!dv) return null;
+      if (!dv) {
+        return null;
+      }
       return { field, operator: dateOperator(op), value: dv };
     }
     default:
@@ -310,13 +355,13 @@ function buildPredicate(token: FieldToken): Predicate | null {
 }
 
 interface ParsedSearch {
-  predicates: Predicate[];
+  predicates: Array<Predicate>;
   text: string;
 }
 
 export function parseSearchInput(input: string): ParsedSearch {
-  const predicates: Predicate[] = [];
-  const free: string[] = [];
+  const predicates: Array<Predicate> = [];
+  const free: Array<string> = [];
 
   for (const token of tokenize(input)) {
     const matched = matchFieldToken(token.text);
@@ -329,7 +374,9 @@ export function parseSearchInput(input: string): ParsedSearch {
       predicates.push(predicate);
       continue;
     }
-    if (matched.rawValue.trim() === "") continue;
+    if (matched.rawValue.trim() === "") {
+      continue;
+    }
     free.push(token.text);
   }
 
@@ -370,7 +417,9 @@ export function serializePredicate(predicate: Predicate): string | null {
             : String(v),
         ),
       );
-      if (list.length === 0) return null;
+      if (list.length === 0) {
+        return null;
+      }
       return `${negate ? "-" : ""}${key}:${list.join(",")}`;
     }
     case "stringArray": {
@@ -378,27 +427,39 @@ export function serializePredicate(predicate: Predicate): string | null {
       const list = (Array.isArray(value) ? value : [value]).map((v) =>
         quoteIfNeeded(String(v)),
       );
-      if (list.length === 0) return null;
+      if (list.length === 0) {
+        return null;
+      }
       return `${negate ? "-" : ""}${key}:${list.join(",")}`;
     }
     case "optional": {
       if (operator === "contains") {
         const text = String(value ?? "").trim();
-        if (!text) return null;
+        if (!text) {
+          return null;
+        }
         return `${key}:${quoteIfNeeded(text)}`;
       }
-      if (operator !== "exists") return null;
+      if (operator !== "exists") {
+        return null;
+      }
       return `${key}:${value === false ? "without" : "with"}`;
     }
     case "boolean": {
-      if (operator !== "eq" || !FIELD_TO_KEY.has(predicate.field)) return null;
+      if (operator !== "eq" || !FIELD_TO_KEY.has(predicate.field)) {
+        return null;
+      }
       return `${key}:${value === false ? "no" : "yes"}`;
     }
     case "color": {
       const parsed = z.string().safeParse(value);
-      if (!parsed.success) return null;
+      if (!parsed.success) {
+        return null;
+      }
       const hex = parsed.data;
-      if (!hex) return null;
+      if (!hex) {
+        return null;
+      }
       const preset = COLOR_PRESETS.find(
         (c) => c.hex.toLowerCase() === hex.toLowerCase(),
       );
@@ -417,12 +478,16 @@ export function serializePredicate(predicate: Predicate): string | null {
       }
       const text = String(value ?? "");
       const preset = DATE_PRESETS.find((d) => d.iso === text);
-      if (preset && operator === "gte") return `${key}:${preset.slug}`;
+      if (preset && operator === "gte") {
+        return `${key}:${preset.slug}`;
+      }
       return `${key}${operatorSymbol(operator)}${text}`;
     }
     case "string": {
       const text = String(value ?? "").trim();
-      if (!text) return null;
+      if (!text) {
+        return null;
+      }
       return `${key}:${quoteIfNeeded(text)}`;
     }
     default:
@@ -431,12 +496,18 @@ export function serializePredicate(predicate: Predicate): string | null {
 }
 
 export function serializeQuery(query: Query | null | undefined): string {
-  if (!query) return "";
-  const parts: string[] = [];
+  if (!query) {
+    return "";
+  }
+  const parts: Array<string> = [];
   for (const rule of query.rules) {
-    if (!isPredicate(rule)) continue;
+    if (!isPredicate(rule)) {
+      continue;
+    }
     const token = serializePredicate(rule);
-    if (token) parts.push(token);
+    if (token) {
+      parts.push(token);
+    }
   }
   return parts.join(" ");
 }

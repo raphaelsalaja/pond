@@ -1,10 +1,5 @@
-import {
-  OPS,
-  type Op,
-  SOURCES,
-  type Source,
-  type TaskDeferredReason,
-} from "@pond/schema/db";
+import { OPS, SOURCES } from "@pond/schema/db";
+import type { Op, Source, TaskDeferredReason } from "@pond/schema/db";
 import { INGEST_OUTCOMES } from "@pond/schema/events";
 import { hostToSource } from "@pond/schema/sources";
 import type { TransferJob } from "@shared/transfer-contracts";
@@ -94,10 +89,10 @@ export interface DownloadFilters {
   q: string;
 }
 
-export const STATUS_FILTER_OPTIONS: readonly {
+export const STATUS_FILTER_OPTIONS: ReadonlyArray<{
   id: StatusFilter;
   label: string;
-}[] = [
+}> = [
   { id: "active", label: "Active" },
   { id: "waiting", label: "Waiting" },
   { id: "failed", label: "Failed" },
@@ -106,9 +101,9 @@ export const STATUS_FILTER_OPTIONS: readonly {
   { id: "complete", label: "Completed" },
 ];
 
-const DEFAULT_STATUS_FILTERS: readonly StatusFilter[] =
-  STATUS_FILTER_OPTIONS.map((option) => option.id).filter(
-    (id) => id !== "complete",
+const DEFAULT_STATUS_FILTERS: ReadonlyArray<StatusFilter> =
+  STATUS_FILTER_OPTIONS.flatMap((option) =>
+    option.id === "complete" ? [] : [option.id],
   );
 
 export function defaultDownloadFilters(): DownloadFilters {
@@ -149,21 +144,41 @@ function isRetryingTask(task: WireTask): boolean {
 }
 
 function liveStatus(save: Save): DownloadStatus | null {
-  if (save.status === "skipped") return "skipped";
+  if (save.status === "skipped") {
+    return "skipped";
+  }
   if (save.status === "failed") {
-    if (wasCancelled(save)) return "cancelled";
-    if (save.tasks?.some((task) => task.status === "dead")) return "dead";
+    if (wasCancelled(save)) {
+      return "cancelled";
+    }
+    if (save.tasks?.some((task) => task.status === "dead")) {
+      return "dead";
+    }
     return "failed";
   }
-  if (save.status !== "ingesting") return null;
+  if (save.status !== "ingesting") {
+    return null;
+  }
   const tasks = save.tasks ?? [];
-  if (tasks.some((t) => t.status === "running")) return "running";
-  if (tasks.some((t) => t.status === "blocked")) return "blocked";
-  if (tasks.some((t) => t.status === "dead")) return "dead";
-  if (tasks.some((t) => t.status === "cancelled")) return "cancelled";
+  if (tasks.some((t) => t.status === "running")) {
+    return "running";
+  }
+  if (tasks.some((t) => t.status === "blocked")) {
+    return "blocked";
+  }
+  if (tasks.some((t) => t.status === "dead")) {
+    return "dead";
+  }
+  if (tasks.some((t) => t.status === "cancelled")) {
+    return "cancelled";
+  }
   const next = tasks.find((t) => t.status !== "done");
-  if (next && isRetryingTask(next)) return "retrying";
-  if (next?.status === "deferred") return "parked";
+  if (next && isRetryingTask(next)) {
+    return "retrying";
+  }
+  if (next?.status === "deferred") {
+    return "parked";
+  }
   return "waiting";
 }
 
@@ -181,8 +196,12 @@ function currentTask(save: Save): WireTask | null {
 function latestTaskError(save: Save): string | null {
   let latest: WireTask | null = null;
   for (const t of save.tasks ?? []) {
-    if (t.status === "done" || !t.lastError) continue;
-    if (!latest || t.updatedAt > latest.updatedAt) latest = t;
+    if (t.status === "done" || !t.lastError) {
+      continue;
+    }
+    if (!latest || t.updatedAt > latest.updatedAt) {
+      latest = t;
+    }
   }
   return latest?.lastError ?? null;
 }
@@ -216,12 +235,18 @@ const DOWNLOAD_STATUS_RANK = {
   complete: 9,
 } satisfies Record<DownloadStatus, number>;
 
-export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
-  const rows: DownloadRow[] = [];
+export function projectLiveDownloads(
+  saves: ReadonlyArray<Save>,
+): Array<DownloadRow> {
+  const rows: Array<DownloadRow> = [];
   for (const save of saves) {
-    if (save.deletedAt != null || save.source === "local") continue;
+    if (save.deletedAt !== null || save.source === "local") {
+      continue;
+    }
     const status = liveStatus(save);
-    if (!status) continue;
+    if (!status) {
+      continue;
+    }
     const tasks = save.tasks ?? [];
     const done = tasks.filter((t) => t.status === "done").length;
     const task = currentTask(save);
@@ -266,12 +291,21 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
 }
 
 export function statusBucket(status: DownloadStatus): StatusFilter {
-  if (status === "failed" || status === "blocked" || status === "dead")
+  if (status === "failed" || status === "blocked" || status === "dead") {
     return "failed";
-  if (status === "cancelled") return "cancelled";
-  if (status === "skipped") return "skipped";
-  if (status === "complete") return "complete";
-  if (status === "running") return "active";
+  }
+  if (status === "cancelled") {
+    return "cancelled";
+  }
+  if (status === "skipped") {
+    return "skipped";
+  }
+  if (status === "complete") {
+    return "complete";
+  }
+  if (status === "running") {
+    return "active";
+  }
   return "waiting";
 }
 
@@ -296,7 +330,9 @@ export function matchesDownloadFilters(
     return false;
   }
   const q = filters.q.trim().toLowerCase();
-  if (!q) return true;
+  if (!q) {
+    return true;
+  }
   const hay = [row.name, row.url, row.stage, row.error, row.source]
     .filter(Boolean)
     .join(" ")
@@ -305,9 +341,9 @@ export function matchesDownloadFilters(
 }
 
 export function mergeDownloadRows(
-  live: readonly DownloadRow[],
-  history: readonly DownloadRow[],
-): DownloadRow[] {
+  live: ReadonlyArray<DownloadRow>,
+  history: ReadonlyArray<DownloadRow>,
+): Array<DownloadRow> {
   const liveIds = new Set(live.map((r) => r.saveId));
   const extra = history.filter((r) => !liveIds.has(r.saveId));
   return [...live, ...extra];

@@ -1,7 +1,8 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type ImageCrop, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { ImageCrop } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import type { InspectQueryResults } from "../../shared/inspect-contracts";
 import { getDb } from "../db";
@@ -16,8 +17,9 @@ export async function saveCropCopy(input: {
   frameIndex?: number;
 }): Promise<InspectQueryResults["saves.cropAsCopy"]> {
   const target = await resolveSaveFilePath(input.id, input.fileIndex);
-  if (!target.ok)
+  if (!target.ok) {
     return { ok: false, error: "The original image is unavailable." };
+  }
   const directory = await mkdtemp(join(tmpdir(), "pond-crop-"));
   try {
     const db = await getDb();
@@ -25,8 +27,9 @@ export async function saveCropCopy(input: {
       .select()
       .from(saves)
       .where(eq(saves.id, input.id));
-    if (!original)
+    if (!original) {
       return { ok: false, error: "The original save is unavailable." };
+    }
     const bytes = await cropImage(target.path, input.crop, input.frameIndex);
     const path = join(directory, "crop.png");
     await writeFile(path, bytes);

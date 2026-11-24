@@ -19,9 +19,9 @@ export interface ProviderModel {
   catalogId?: string;
   description?: string;
   maxOutputTokens?: number;
-  capabilities?: string[];
+  capabilities?: Array<string>;
   modelCapabilities?: ModelCapabilities;
-  reasoningOptions?: AgentReasoning[];
+  reasoningOptions?: Array<AgentReasoning>;
   pricing?: {
     input?: string;
     output?: string;
@@ -31,7 +31,7 @@ export interface ProviderModel {
   available?: boolean;
 }
 
-export type ProviderModelsResult = { models: ProviderModel[] } & (
+export type ProviderModelsResult = { models: Array<ProviderModel> } & (
   | OkSuccess<{ warning?: string }>
   | OkFailure
 );
@@ -49,9 +49,15 @@ export function displayName(id: string): string {
     .filter(Boolean)
     .map((part) => {
       const token = TOKENS.get(part.toLowerCase());
-      if (token) return token;
-      if (/^\d/.test(part)) return part;
-      if (part.length <= 2) return part.toUpperCase();
+      if (token) {
+        return token;
+      }
+      if (/^\d/.test(part)) {
+        return part;
+      }
+      if (part.length <= 2) {
+        return part.toUpperCase();
+      }
       return part.charAt(0).toUpperCase() + part.slice(1);
     })
     .join(" ");
@@ -66,17 +72,25 @@ export function chosenModelId(
   },
 ): string {
   const fromMap = prefs.modelIds?.[provider]?.trim();
-  if (fromMap) return fromMap;
-  if (provider === "ollama") return prefs.ollamaModelId?.trim() ?? "";
-  if (provider === "lmstudio") return prefs.lmstudioModelId?.trim() ?? "";
+  if (fromMap) {
+    return fromMap;
+  }
+  if (provider === "ollama") {
+    return prefs.ollamaModelId?.trim() ?? "";
+  }
+  if (provider === "lmstudio") {
+    return prefs.lmstudioModelId?.trim() ?? "";
+  }
   return "";
 }
 
 export function modelsForChooser(
-  models: ProviderModel[],
-  visibleIds: string[] | undefined,
-): ProviderModel[] {
-  if (visibleIds === undefined) return models;
+  models: Array<ProviderModel>,
+  visibleIds: Array<string> | undefined,
+): Array<ProviderModel> {
+  if (visibleIds === undefined) {
+    return models;
+  }
   return [...new Set(visibleIds)].map(
     (id) =>
       models.find((model) => model.id === id) ?? { id, name: displayName(id) },

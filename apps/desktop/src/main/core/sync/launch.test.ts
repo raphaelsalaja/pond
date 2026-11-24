@@ -1,4 +1,5 @@
-import { DEFAULT_PREFS, type Prefs } from "@pond/schema/db";
+import { DEFAULT_PREFS } from "@pond/schema/db";
+import type { Prefs } from "@pond/schema/db";
 import { describe, expect, it, vi } from "vitest";
 import { startLaunchSync } from "./launch";
 

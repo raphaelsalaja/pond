@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { WorkspaceMenu } from ".";
@@ -97,7 +98,9 @@ describe("workspace menu", () => {
       );
     });
     const trigger = host.querySelector("button");
-    if (!trigger) throw new Error("Missing workspace menu trigger");
+    if (!trigger) {
+      throw new Error("Missing workspace menu trigger");
+    }
     await vi.waitFor(() =>
       expect(trigger.getAttribute("aria-label")).toBe("Memes"),
     );
@@ -139,10 +142,12 @@ describe("workspace menu", () => {
   it("switches to a recent library", async () => {
     await openLibraryMenu();
     await vi.waitFor(() => expect(document.body.textContent).toContain("Work"));
-    const work = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (item) => item.textContent?.includes("Work"),
-    );
-    if (!(work instanceof HTMLElement)) throw new Error("Missing Work library");
+    const work = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ].find((item) => item.textContent?.includes("Work"));
+    if (!work) {
+      throw new Error("Missing Work library");
+    }
     await act(async () => work.click());
     await vi.waitFor(() =>
       expect(query).toHaveBeenCalledWith("library.switchTo", {
@@ -156,11 +161,12 @@ describe("workspace menu", () => {
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Create Library"),
     );
-    const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (entry) => entry.textContent?.includes("Create Library"),
-    );
-    if (!(item instanceof HTMLElement))
+    const item = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ].find((entry) => entry.textContent?.includes("Create Library"));
+    if (!item) {
       throw new Error("Missing Create Library action");
+    }
     await act(async () => item.click());
     await vi.waitFor(() =>
       expect(query).toHaveBeenCalledWith("library.createAt", {
@@ -175,11 +181,12 @@ describe("workspace menu", () => {
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Merge Library"),
     );
-    const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (entry) => entry.textContent?.includes("Merge Library"),
-    );
-    if (!(item instanceof HTMLElement))
+    const item = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ].find((entry) => entry.textContent?.includes("Merge Library"));
+    if (!item) {
       throw new Error("Missing Merge Library action");
+    }
     await act(async () => item.click());
     await vi.waitFor(() =>
       expect(query).toHaveBeenCalledWith("library.mergeFrom", {}),

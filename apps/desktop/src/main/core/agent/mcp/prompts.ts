@@ -1,8 +1,5 @@
-import {
-  completable,
-  type GetPromptResult,
-  type McpServer,
-} from "@modelcontextprotocol/server";
+import { completable } from "@modelcontextprotocol/server";
+import type { GetPromptResult, McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 import { listLibraryFolders } from "../tools";
 import { accessError } from "./results";
@@ -13,8 +10,10 @@ function ask(text: string): GetPromptResult {
   return { messages: [{ role: "user", content: { type: "text", text } }] };
 }
 
-async function folderNames(value: string): Promise<string[]> {
-  if (await accessError("search")) return [];
+async function folderNames(value: string): Promise<Array<string>> {
+  if (await accessError("search")) {
+    return [];
+  }
   const { folders } = await listLibraryFolders();
   const needle = value.toLowerCase();
   return folders

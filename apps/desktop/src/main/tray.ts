@@ -5,7 +5,7 @@ import { pipelineSnapshot } from "./core/pipeline/reconciler";
 import { loadTrayIcon } from "./tray-icon";
 import { buildMenu, buildTooltip } from "./tray-menu";
 
-const BUSY_POLL_MS = 1_000;
+const BUSY_POLL_MS = 1000;
 
 export interface TrayHandle {
   tray: Tray;
@@ -30,8 +30,12 @@ export function isTrayVisible(): boolean {
 
 export async function setTrayVisible(visible: boolean): Promise<void> {
   if (visible) {
-    if (handle) return;
-    if (!lastOpts) return;
+    if (handle) {
+      return;
+    }
+    if (!lastOpts) {
+      return;
+    }
     await ensureTray(lastOpts);
     return;
   }
@@ -43,14 +47,16 @@ export async function setTrayVisible(visible: boolean): Promise<void> {
 
 export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   lastOpts = opts;
-  if (handle) return handle;
+  if (handle) {
+    return handle;
+  }
 
   let tray: Tray;
   try {
     tray = new Tray(loadTrayIcon());
-  } catch (err) {
-    log.error("[pond tray] failed to create tray", err);
-    throw err;
+  } catch (error) {
+    log.error("[pond tray] failed to create tray", error);
+    throw error;
   }
   tray.setToolTip("Pond");
   log.info("[pond tray] created");
@@ -75,8 +81,8 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
         tray.setContextMenu(menu);
         tray.setToolTip(await buildTooltip());
         scheduleBusyPoll(ingesting > 0 || inflight > 0);
-      } catch (err) {
-        log.warn("[pond tray] refresh failed", err);
+      } catch (error) {
+        log.warn("[pond tray] refresh failed", error);
       }
     },
     destroy() {
@@ -94,7 +100,9 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
 
 function scheduleBusyPoll(busy: boolean): void {
   clearBusyPoll();
-  if (!busy) return;
+  if (!busy) {
+    return;
+  }
   busyPoll = setTimeout(() => {
     busyPoll = null;
     void handle?.refresh();
@@ -102,7 +110,9 @@ function scheduleBusyPoll(busy: boolean): void {
 }
 
 function clearBusyPoll(): void {
-  if (!busyPoll) return;
+  if (!busyPoll) {
+    return;
+  }
   clearTimeout(busyPoll);
   busyPoll = null;
 }

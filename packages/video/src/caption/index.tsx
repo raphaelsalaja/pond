@@ -34,8 +34,8 @@ interface Word {
   tight?: boolean;
 }
 
-function parse(text: string): Word[] {
-  const words: Word[] = [];
+function parse(text: string): Array<Word> {
+  const words: Array<Word> = [];
   let group = 0;
   for (const match of text.matchAll(
     /\[([^\]]+)\](\S*)|\{([^}]+)\}(\S*)|(\S+)/g,
@@ -44,9 +44,13 @@ function parse(text: string): Word[] {
     const chip = plain ? "plain" : accent ? "accent" : undefined;
     const body = plain ?? accent ?? bare ?? "";
     group++;
-    for (const part of body.split(" ")) words.push({ text: part, chip, group });
+    for (const part of body.split(" ")) {
+      words.push({ text: part, chip, group });
+    }
     const tail = plainTail || accentTail;
-    if (tail) words.push({ text: tail, group: ++group, tight: true });
+    if (tail) {
+      words.push({ text: tail, group: ++group, tight: true });
+    }
   }
   return words;
 }
@@ -62,19 +66,43 @@ export function Caption({
   stagger = 75,
   brands,
 }: CaptionProps) {
-  if (t < enter - 50 || t > exit + 500) return null;
-  const groups: Word[][] = [];
+  if (t < enter - 50 || t > exit + 500) {
+    return null;
+  }
+  const groups: Array<Array<Word>> = [];
   for (const word of parse(text)) {
     const last = groups.at(-1);
-    if (last && last[0]?.group === word.group) last.push(word);
-    else groups.push([word]);
+    if (last && last[0]?.group === word.group) {
+      last.push(word);
+    } else {
+      groups.push([word]);
+    }
   }
+  const laidOut: Array<{
+    group: Array<Word>;
+    first: number;
+    words: Array<{ word: Word; at: number; letters: Array<[number, string]> }>;
+  }> = [];
   let index = 0;
   let letter = 0;
+  for (const group of groups) {
+    const first = index;
+    const words = [];
+    for (const word of group) {
+      const at = enter + index * stagger;
+      index += 1;
+      const letters: Array<[number, string]> = [];
+      for (const char of Array.from(word.text)) {
+        letters.push([letter, char]);
+        letter += 1;
+      }
+      words.push({ word, at, letters });
+    }
+    laidOut.push({ group, first, words });
+  }
   return (
     <div className={styles.caption} style={{ top: y, fontSize: size }}>
-      {groups.map((group) => {
-        const first = index;
+      {laidOut.map(({ group, first, words }) => {
         const chip = group[0]?.chip;
         const brand = chip
           ? brands?.[group.map((word) => word.text).join(" ")]
@@ -84,8 +112,7 @@ export function Caption({
           (chip === "accent" ? "var(--ds-accent-hover)" : undefined);
         const fill = ease.out(progress(t, enter + first * stagger + 260, 420));
         const gone = ease.in(progress(t, exit + 60, 260));
-        const inner = group.map((word) => {
-          const at = enter + index++ * stagger;
+        const inner = words.map(({ word, at, letters }) => {
           const show = progress(t, at, 360);
           const ink = ease.inOut(progress(t, at + 140, 480));
           const tone = Math.round(mix(GRAY, INK, ink));
@@ -103,8 +130,7 @@ export function Caption({
                 transform: `translateY(${(1 - ease.outQuint(show)) * 10}px)`,
               }}
             >
-              {[...word.text].map((char) => {
-                const k = letter++;
+              {letters.map(([k, char]) => {
                 const out = progress(t, exit + scatter(k) * 280, 160);
                 return (
                   <span key={k} style={{ opacity: 1 - out }}>
@@ -115,7 +141,9 @@ export function Caption({
             </span>
           );
         });
-        if (!chip) return inner;
+        if (!chip) {
+          return inner;
+        }
         const mark = ease.outBack(
           progress(t, enter + first * stagger + 60, 520),
         );

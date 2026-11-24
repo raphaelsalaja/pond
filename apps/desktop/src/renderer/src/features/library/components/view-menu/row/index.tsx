@@ -1,7 +1,7 @@
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentPropsWithoutRef<"div"> {}
+type RootProps = React.ComponentPropsWithoutRef<"div">;
 
 function Root({ className, ...props }: RootProps) {
   return <div className={cn(styles.row, className)} {...props} />;

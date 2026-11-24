@@ -181,7 +181,9 @@ const EAGLE_MIME = new Map<string, string>([
 
 function eagleMime(extension: string, group: string): string {
   const known = EAGLE_MIME.get(extension) ?? GENERIC_MIME.get(extension);
-  if (known) return known;
+  if (known) {
+    return known;
+  }
   switch (group) {
     case "rasterImage":
     case "rawImage":
@@ -237,28 +239,38 @@ export function classifyLibraryFile(
   }
 
   const directImage = DIRECT_IMAGES.get(extension);
-  if (directImage)
+  if (directImage) {
     return format(extension, "image", directImage, "direct-image");
+  }
 
   const nativeImage = NATIVE_IMAGES.get(extension);
-  if (nativeImage)
+  if (nativeImage) {
     return format(extension, "image", nativeImage, "native-image");
+  }
 
   const video = VIDEOS.get(extension);
-  if (video) return format(extension, "video", video, "video");
+  if (video) {
+    return format(extension, "video", video, "video");
+  }
 
   const audio = AUDIO.get(extension);
-  if (audio) return format(extension, "audio", audio, "audio");
+  if (audio) {
+    return format(extension, "audio", audio, "audio");
+  }
 
   if (extension === "pdf") {
     return format(extension, "document", "application/pdf", "pdf");
   }
 
   const font = FONTS.get(extension);
-  if (font) return format(extension, "font", font, "font");
+  if (font) {
+    return format(extension, "font", font, "font");
+  }
 
   const text = TEXT.get(extension);
-  if (text) return format(extension, "text", text, "text");
+  if (text) {
+    return format(extension, "text", text, "text");
+  }
 
   const eagleGroup = eagleFormatGroup(extension);
   if (eagleGroup) {
@@ -354,11 +366,13 @@ export function libraryFilename(path: string, fallback = "file.bin"): string {
     return code <= 31 || code === 127 ? "_" : character;
   }).join("");
   const cleaned = withoutControls
-    .replace(/[<>:"/\\|?*]/g, "_")
+    .replaceAll(/[<>:"/\\|?*]/g, "_")
     .replace(/^\.+/, "")
     .replace(/[. ]+$/, "")
     .trim();
-  if (!cleaned) return fallback;
+  if (!cleaned) {
+    return fallback;
+  }
   return avoidWindowsReservedName(cleaned).slice(0, 180);
 }
 

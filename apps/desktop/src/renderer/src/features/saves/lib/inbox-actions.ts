@@ -22,15 +22,15 @@ export function isWaitingInInbox(save: Pick<Save, "inboxState">): boolean {
   return save.inboxState === "review" || save.inboxState === "snoozed";
 }
 
-export function waitingInInbox(ids: readonly string[]): string[] {
+export function waitingInInbox(ids: ReadonlyArray<string>): Array<string> {
   return ids.filter((id) => {
     const save = pool.get(id);
-    return save != null && !save.deletedAt && isWaitingInInbox(save);
+    return save !== undefined && !save.deletedAt && isWaitingInInbox(save);
   });
 }
 
 async function changeInbox(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   {
     operation,
     title,
@@ -38,10 +38,12 @@ async function changeInbox(
     onUndo,
   }: InboxChange,
 ): Promise<number> {
-  if (ids.length === 0) return 0;
+  if (ids.length === 0) {
+    return 0;
+  }
   try {
     const { changed, undoId } = await bulkMutation(ids, operation);
-    if (changed > 0)
+    if (changed > 0) {
       notifyUndoable({
         id: TOAST_ID,
         title: title(formatPlural(changed, SAVES)),
@@ -50,6 +52,7 @@ async function changeInbox(
         step: undoId,
         onUndo,
       });
+    }
     return changed;
   } catch (error) {
     notify({
@@ -62,7 +65,7 @@ async function changeInbox(
 }
 
 export function markProcessed(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   onUndo?: () => void,
 ): Promise<number> {
   return changeInbox(ids, {
@@ -72,14 +75,14 @@ export function markProcessed(
   });
 }
 
-export function addToInbox(ids: readonly string[]): Promise<number> {
+export function addToInbox(ids: ReadonlyArray<string>): Promise<number> {
   return changeInbox(ids, {
     operation: { kind: "inbox", state: "review" },
     title: (saves) => `Added ${saves} to Inbox`,
   });
 }
 
-export function removeFromInbox(ids: readonly string[]): Promise<number> {
+export function removeFromInbox(ids: ReadonlyArray<string>): Promise<number> {
   return changeInbox(ids, {
     operation: { kind: "inbox", state: null },
     title: (saves) => `Removed ${saves} from Inbox`,
@@ -87,7 +90,7 @@ export function removeFromInbox(ids: readonly string[]): Promise<number> {
 }
 
 export function snoozeSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   until: number,
 ): Promise<number> {
   const time = formatSnoozeTime(until);
@@ -98,7 +101,7 @@ export function snoozeSaves(
 }
 
 export function trashWithUndo(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   onUndo?: () => void,
 ): Promise<number> {
   return changeInbox(ids, {

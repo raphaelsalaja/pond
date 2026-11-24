@@ -10,8 +10,8 @@ import { assistant, useAssistant } from "./assistant";
 import {
   agentStreamBridge,
   createAssistantHarness,
-  type StreamReply,
 } from "./assistant.test-harness";
+import type { StreamReply } from "./assistant.test-harness";
 import { pondChatSession } from "./pond-chat";
 import { messageText } from "./pond-messages";
 
@@ -21,7 +21,7 @@ interface RenderSnapshot {
   text: string;
 }
 
-function Probe({ snapshots }: { snapshots: RenderSnapshot[] }) {
+function Probe({ snapshots }: { snapshots: Array<RenderSnapshot> }) {
   const state = useAssistant();
   const chat = pondChatSession(state.chatId ?? "draft");
   const { messages, status } = useChat({ chat });
@@ -37,7 +37,7 @@ function Probe({ snapshots }: { snapshots: RenderSnapshot[] }) {
 it("renders a multi-chunk reply progressively", async () => {
   const chatId = "multi-chunk-render";
   const nextChunk = Promise.withResolvers<void>();
-  const snapshots: RenderSnapshot[] = [];
+  const snapshots: Array<RenderSnapshot> = [];
   vi.stubGlobal("pond", {
     query: vi.fn(() => Promise.resolve([])),
     agentStream: agentStreamBridge(() => ({
@@ -92,11 +92,15 @@ it("renders a multi-chunk reply progressively", async () => {
 
 it("keeps the singleton run across pane unmount and waits for saved metadata after stop", async () => {
   const response = Promise.withResolvers<StreamReply>();
-  let persisted: AssistantMessage[] = [];
+  let persisted: Array<AssistantMessage> = [];
   let requestId = "";
   const query = vi.fn((name: string) => {
-    if (name === "agent.messages") return Promise.resolve(persisted);
-    if (name === "agent.stop") return Promise.resolve({});
+    if (name === "agent.messages") {
+      return Promise.resolve(persisted);
+    }
+    if (name === "agent.stop") {
+      return Promise.resolve({});
+    }
     return Promise.resolve([]);
   });
   const agentStream = agentStreamBridge(async (request) => {
@@ -222,7 +226,7 @@ it("streams normal submissions without inferring context from selection pronouns
   const query = vi.fn((name: string) =>
     name === "agent.newChat" ? created.promise : Promise.resolve([]),
   );
-  const requests: AgentStreamRequest[] = [];
+  const requests: Array<AgentStreamRequest> = [];
   const agentStream = agentStreamBridge((request) => {
     requests.push(request);
     return {};
@@ -270,7 +274,7 @@ it("streams normal submissions without inferring context from selection pronouns
 it("sends attached Saves as context while searching the entire library", async () => {
   const response = Promise.withResolvers<StreamReply>();
   const query = vi.fn(() => Promise.resolve([]));
-  const requests: AgentStreamRequest[] = [];
+  const requests: Array<AgentStreamRequest> = [];
   const agentStream = agentStreamBridge(async (request) => {
     requests.push(request);
     return response.promise;

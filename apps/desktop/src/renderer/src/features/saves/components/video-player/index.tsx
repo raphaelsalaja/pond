@@ -1,15 +1,14 @@
 import { IconMediaPlay } from "@pond/icons";
 import { Tooltip, useVideo, Video } from "@pond/ui";
+import { isElement } from "@pond/ui/dom";
 import {
-  type MouseEvent,
-  type ReactEventHandler,
-  type ReactNode,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import type { MouseEvent, ReactEventHandler, ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
   ChromePortal,
@@ -28,14 +27,15 @@ import { usePrefs } from "@/shared/state/prefs";
 import { videoScaleForRotation } from "./geometry";
 import { MediaBridge } from "./media-bridge";
 import { Poster } from "./poster";
-import styles from "./styles.module.css";
 import { TimelinePreview } from "./timeline-preview";
 import { PlayerButton } from "./toolbar-buttons";
-import { VideoToolbarContent, type VideoToolbarSlots } from "./toolbar-content";
+import { VideoToolbarContent } from "./toolbar-content";
+import type { VideoToolbarSlots } from "./toolbar-content";
 import { useChaptersTrackUrl } from "./use-chapters-track-url";
 import { useFirstFrame } from "./use-first-frame";
 import { VolumeControl } from "./volume";
 import { WheelBridge } from "./wheel-bridge";
+import styles from "./styles.module.css";
 
 /** Drawn over the frame. A click on one belongs to that control, not playback. */
 const SURFACE_CONTROLS =
@@ -48,7 +48,7 @@ interface VideoPlayerProps {
   poster?: string;
   title?: string | null;
   artist?: string | null;
-  chapters?: readonly ChapterCue[];
+  chapters?: ReadonlyArray<ChapterCue>;
   active?: boolean;
   width?: number | null;
   height?: number | null;
@@ -65,13 +65,17 @@ interface VideoPlayerProps {
 function PlayIndicator({ active, src }: { active: boolean; src: string }) {
   const { state } = useVideo();
   const [viewer] = usePrefs("viewer");
-  const played = useRef({ src, started: false });
-  if (played.current.src !== src) played.current = { src, started: false };
-  if (state.playing) played.current.started = true;
-  if (!active) return null;
+  const [played, setPlayed] = useState({ src, started: false });
+  const started = played.src === src && played.started;
+  if (played.src !== src || (state.playing && !started)) {
+    setPlayed({ src, started: state.playing });
+  }
+  if (!active) {
+    return null;
+  }
   const visible =
     !state.playing &&
-    (played.current.started || state.ended || viewer.autoplayVideo === false);
+    (started || state.ended || viewer.autoplayVideo === false);
   return (
     <div
       className={styles.indicator}
@@ -124,7 +128,9 @@ function VideoSurface({
    */
   useLayoutEffect(() => {
     const root = frame.current?.parentElement;
-    if (!root) return;
+    if (!root) {
+      return;
+    }
     const measure = () => {
       const width = root.clientWidth;
       const height = root.clientHeight;
@@ -135,7 +141,9 @@ function VideoSurface({
       );
     };
     measure();
-    if (!globalThis.ResizeObserver) return;
+    if (!globalThis.ResizeObserver) {
+      return;
+    }
     const observer = new ResizeObserver(measure);
     observer.observe(root);
     return () => observer.disconnect();
@@ -156,9 +164,11 @@ function VideoSurface({
    * `Video.Root`, which is why the handler is not on the root.
    */
   const onSurfaceClick = (event: MouseEvent<HTMLVideoElement>) => {
-    if (event.button !== 0 || event.defaultPrevented) return;
+    if (event.button !== 0 || event.defaultPrevented) {
+      return;
+    }
     const { target } = event;
-    if (!(target instanceof Element) || target.closest(SURFACE_CONTROLS)) {
+    if (!isElement(target) || target.closest(SURFACE_CONTROLS)) {
       return;
     }
     actions.togglePlay();
@@ -233,19 +243,32 @@ export function VideoPlayer({
   const trackUrl = useChaptersTrackUrl(chapters);
   const subtitle = save?.files.find((file) => file.kind === "subtitle");
   const subtitleUrl = save && subtitle ? buildPondUrl(save.id, subtitle) : null;
-  const [frameRate, setFrameRate] = useState<number | null>(null);
+  const timingKey = `${saveId ?? ""}:${fileIndex}:${src}`;
+  const [timing, setTiming] = useState<{
+    key: string;
+    frameRate: number | null;
+  } | null>(null);
+  const frameRate = timing?.key === timingKey ? timing.frameRate : null;
   const [loopRange, setLoopRange] = useState<[number, number] | null>(() =>
     viewerMemory.loop(src),
   );
-  useEffect(() => {
-    setFrameRate(null);
+  const [loopKey, setLoopKey] = useState(timingKey);
+  if (timingKey !== loopKey) {
+    setLoopKey(timingKey);
     setLoopRange(viewerMemory.loop(src));
-    if (!saveId) return;
+  }
+  useEffect(() => {
+    if (!saveId) {
+      return;
+    }
     let current = true;
+    const key = `${saveId}:${fileIndex}:${src}`;
     void window.pond
       .query("saves.mediaTiming", { id: saveId, fileIndex })
-      .then((timing) => {
-        if (current) setFrameRate(timing.frameRate);
+      .then((result) => {
+        if (current) {
+          setTiming({ key, frameRate: result.frameRate });
+        }
       })
       .catch(() => {});
     return () => {
@@ -273,11 +296,15 @@ export function VideoPlayer({
   const [ratioSizeKey, setRatioSizeKey] = useState(sizeKey);
   if (sizeKey !== ratioSizeKey) {
     setRatioSizeKey(sizeKey);
-    if (width && height) setRatio(width / height);
+    if (width && height) {
+      setRatio(width / height);
+    }
   }
 
   useEffect(() => {
-    if (ratio && onRatio) onRatio(ratio);
+    if (ratio && onRatio) {
+      onRatio(ratio);
+    }
   }, [ratio, onRatio]);
 
   const onLoadedMetadata = useCallback<ReactEventHandler<HTMLVideoElement>>(

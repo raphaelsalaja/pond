@@ -3,13 +3,15 @@ import styles from "./styles.module.css";
 
 const ENTITY = /(https?:\/\/[^\s]+|www\.[^\s]+|[@#$][\w]+)/g;
 
-function renderTokens(text: string): ReactNode[] {
-  const out: ReactNode[] = [];
+function renderTokens(text: string): Array<ReactNode> {
+  const out: Array<ReactNode> = [];
   let last = 0;
   let key = 0;
   for (const match of text.matchAll(ENTITY)) {
     const idx = match.index ?? 0;
-    if (idx > last) out.push(text.slice(last, idx));
+    if (idx > last) {
+      out.push(text.slice(last, idx));
+    }
     const token = match[0];
     out.push(
       <span key={`e${key}`} className={styles.entity}>
@@ -21,7 +23,9 @@ function renderTokens(text: string): ReactNode[] {
     key += 1;
     last = idx + token.length;
   }
-  if (last < text.length) out.push(text.slice(last));
+  if (last < text.length) {
+    out.push(text.slice(last));
+  }
   return out;
 }
 

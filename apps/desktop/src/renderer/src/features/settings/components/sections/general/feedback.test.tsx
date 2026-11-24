@@ -7,7 +7,9 @@ import { SoundPreferences } from "./feedback";
 it("gives every sound switch its own accessible name", async () => {
   vi.stubGlobal("pond", {
     async query(name: string) {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
       throw new Error(`Unexpected query: ${name}`);
     },
   });

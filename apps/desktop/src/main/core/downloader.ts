@@ -21,9 +21,13 @@ async function findExistingSave(url: string): Promise<string | null> {
   try {
     const normalized = normalizeUrl(url);
     const { source } = classifyUrlToSource(normalized);
-    if (!source) return null;
+    if (!source) {
+      return null;
+    }
     const sourceId = sourceIdFromUrl(source, normalized);
-    if (!sourceId) return null;
+    if (!sourceId) {
+      return null;
+    }
     const persistence = await openEnqueuePersistence();
     const save = await persistence.loadExistingSave(source, sourceId);
     return save && !save.deletedAt ? save.id : null;
@@ -70,19 +74,24 @@ async function probeLinkedFile(url: string): Promise<DownloadFileProbe | null> {
 export async function probeDownload(url: string): Promise<DownloadProbeResult> {
   const result = await probeLink(url);
   if (!result.ok) {
-    if (!POST_FALLBACK.has(result.reason)) return result;
+    if (!POST_FALLBACK.has(result.reason)) {
+      return result;
+    }
     const found = (await probePost(url)) ?? (await probeLinkedFile(url));
     return found ? { ok: true, probe: found } : result;
   }
-  if (result.probe.kind !== "single") return result;
+  if (result.probe.kind !== "single") {
+    return result;
+  }
   /** yt-dlp's generic extractor accepts any direct link, so a PDF reads as media with nothing to play. */
   if (
     result.probe.videoOptions.length === 0 &&
     result.probe.duration === null
   ) {
     const file = await probeLinkedFile(url);
-    if (file && !/^(audio|video)\//.test(file.mimeType ?? ""))
+    if (file && !/^(audio|video)\//.test(file.mimeType ?? "")) {
       return { ok: true, probe: file };
+    }
   }
   const existingSaveId = await findExistingSave(result.probe.url);
   return { ok: true, probe: { ...result.probe, existingSaveId } };
@@ -91,16 +100,16 @@ export async function probeDownload(url: string): Promise<DownloadProbeResult> {
 export function sampleDownloadFrames(
   url: string,
   count: number,
-): Promise<string[]> {
+): Promise<Array<string>> {
   return probeFrames(url, count);
 }
 
 export async function startDownloads(
-  urls: readonly string[],
+  urls: ReadonlyArray<string>,
   request: DownloadRequest,
 ): Promise<DownloadStartResult> {
-  const ids: string[] = [];
-  const failed: string[] = [];
+  const ids: Array<string> = [];
+  const failed: Array<string> = [];
   const single = urls.length === 1;
   for (const url of urls) {
     try {
@@ -109,8 +118,11 @@ export async function startDownloads(
         interactive: true,
         download: single ? request : { ...request, range: null },
       });
-      if (queued > 0) ids.push(id);
-      else failed.push(url);
+      if (queued > 0) {
+        ids.push(id);
+      } else {
+        failed.push(url);
+      }
     } catch (error) {
       log.warn("[pond downloader] could not start", url, error);
       failed.push(url);

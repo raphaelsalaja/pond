@@ -2,7 +2,9 @@
 export const SYSTEM_LOCALE_ARG = "--pond-locale=";
 
 export function canonicalLocale(tag: string | undefined): string | undefined {
-  if (!tag) return undefined;
+  if (!tag) {
+    return undefined;
+  }
   try {
     return Intl.getCanonicalLocales(tag)[0];
   } catch {

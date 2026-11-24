@@ -11,8 +11,8 @@ export interface QuerySessionState {
 }
 export interface QuerySessionRuntime {
   page(request: LibraryQueryRequest): Promise<LibraryQueryPage>;
-  ids(request: LibraryQueryRequest): Promise<{ ids: string[] }>;
-  refresh(ids: readonly string[]): Promise<void>;
+  ids(request: LibraryQueryRequest): Promise<{ ids: Array<string> }>;
+  refresh(ids: ReadonlyArray<string>): Promise<void>;
 }
 function scopeKey(request: LibraryQueryRequest): string {
   return JSON.stringify({ ...request, keywords: undefined });
@@ -27,7 +27,9 @@ const caches = new WeakMap<
 
 function pagesFor(runtime: QuerySessionRuntime): Map<string, LibraryQueryPage> {
   const existing = caches.get(runtime);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   const pages = new Map<string, LibraryQueryPage>();
   caches.set(runtime, pages);
   return pages;
@@ -40,9 +42,13 @@ function rememberPage(
 ): void {
   pages.delete(key);
   pages.set(key, page);
-  if (pages.size <= CACHED_PAGES) return;
+  if (pages.size <= CACHED_PAGES) {
+    return;
+  }
   const oldest = pages.keys().next();
-  if (!oldest.done) pages.delete(oldest.value);
+  if (!oldest.done) {
+    pages.delete(oldest.value);
+  }
 }
 
 export function cachedQueryPage(
@@ -68,7 +74,9 @@ export function createQuerySession(
     emit(state);
   }
   async function load(append = false): Promise<void> {
-    if (!request || (append && (active || !state.page?.nextCursor))) return;
+    if (!request || (append && (active || !state.page?.nextCursor))) {
+      return;
+    }
     const captured = request;
     const capturedKey = key;
     const ticket = ++sequence;
@@ -81,7 +89,9 @@ export function createQuerySession(
         ...captured,
         cursor: append ? previous?.nextCursor : null,
       });
-      if (!current()) return;
+      if (!current()) {
+        return;
+      }
       while (
         !append &&
         result.nextCursor &&
@@ -91,11 +101,15 @@ export function createQuerySession(
           ...captured,
           cursor: result.nextCursor,
         });
-        if (!current()) return;
+        if (!current()) {
+          return;
+        }
         result = { ...next, ids: [...result.ids, ...next.ids] };
       }
       await runtime.refresh(result.ids);
-      if (!current()) return;
+      if (!current()) {
+        return;
+      }
       const page = {
         ...result,
         ids:
@@ -106,16 +120,20 @@ export function createQuerySession(
       pageKey = capturedKey;
       rememberPage(pages, capturedKey, page);
       /** Sync actions reload the page; an identical result must not rebuild the grid. */
-      if (!dequal(previous, page)) update({ page });
-    } catch (cause) {
-      if (!current()) return;
+      if (!dequal(previous, page)) {
+        update({ page });
+      }
+    } catch (error) {
+      if (!current()) {
+        return;
+      }
       if (append) {
         active = false;
         await load(false);
         return;
       }
       update({
-        error: errorCopy(cause, "Couldn't complete the search. Try again."),
+        error: errorCopy(error, "Couldn't complete the search. Try again."),
       });
     } finally {
       if (current()) {
@@ -128,7 +146,9 @@ export function createQuerySession(
     snapshot: () => state,
     setRequest(next: LibraryQueryRequest): boolean {
       const nextKey = JSON.stringify(next);
-      if (nextKey === key) return false;
+      if (nextKey === key) {
+        return false;
+      }
       /** Typing only changes keywords, so current results stay up until the debounced search replaces them. */
       const retyped = request !== null && scopeKey(request) === scopeKey(next);
       request = next;
@@ -136,7 +156,9 @@ export function createQuerySession(
       sequence++;
       active = false;
       const cached = retyped ? null : (pages.get(nextKey) ?? null);
-      if (cached) pageKey = nextKey;
+      if (cached) {
+        pageKey = nextKey;
+      }
       update({
         page: retyped ? state.page : cached,
         loading: true,
@@ -146,7 +168,9 @@ export function createQuerySession(
     },
     load,
     async allIds() {
-      if (!request) return null;
+      if (!request) {
+        return null;
+      }
       const capturedKey = key;
       const result = await runtime.ids(request);
       return key === capturedKey ? result.ids : null;

@@ -4,7 +4,8 @@ import { createReadStream } from "node:fs";
 import { mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
-import { type Save, type SaveFile, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { Save, SaveFile } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -64,12 +65,14 @@ export interface VideoProbe {
 }
 
 export interface VideoCompressionRuntime {
-  load(ids: readonly string[]): Promise<{ root: string; saves: VideoSave[] }>;
+  load(
+    ids: ReadonlyArray<string>,
+  ): Promise<{ root: string; saves: Array<VideoSave> }>;
   probe(path: string): Promise<VideoProbe>;
   encode(input: {
     source: string;
     output: string;
-    args: string[];
+    args: Array<string>;
     duration: number;
     signal: AbortSignal;
   }): Promise<void>;
@@ -110,12 +113,16 @@ const runtime: VideoCompressionRuntime = {
   },
   async probe(path) {
     const { ffmpeg } = binariesAvailable();
-    if (!ffmpeg) throw new Error("FFmpeg is required to compress videos.");
+    if (!ffmpeg) {
+      throw new Error("FFmpeg is required to compress videos.");
+    }
     return parseVideoProbe(await ffmpegInfo(ffmpeg, path));
   },
   async encode(input) {
     const { ffmpeg } = binariesAvailable();
-    if (!ffmpeg) throw new Error("FFmpeg is required to compress videos.");
+    if (!ffmpeg) {
+      throw new Error("FFmpeg is required to compress videos.");
+    }
     await runFfmpeg({
       path: ffmpeg,
       args: input.args,
@@ -130,7 +137,12 @@ const runtime: VideoCompressionRuntime = {
   },
   async hash(path) {
     const hash = createHash("sha256");
-    for await (const chunk of createReadStream(path)) hash.update(chunk);
+    await new Promise<void>((resolveHash, reject) => {
+      const stream = createReadStream(path);
+      stream.on("data", (chunk) => hash.update(chunk));
+      stream.on("error", reject);
+      stream.on("end", resolveHash);
+    });
     return hash.digest("hex");
   },
   size: async (path) => (await stat(path)).size,
@@ -169,7 +181,7 @@ export async function compressExistingVideos(
     input.signal.throwIfAborted();
     input.assertActive?.();
     const save = byId.get(id);
-    let outcome: { bytesBefore: number; bytesAfter: number } | null = null;
+    let outcome: { bytesBefore: number; bytesAfter: number } | null;
     try {
       outcome = save
         ? await compressSaveVideos({
@@ -215,15 +227,19 @@ async function compressSaveVideos(input: {
 }): Promise<{ bytesBefore: number; bytesAfter: number } | null> {
   const { save, operations } = input;
   const videos = (save.files ?? []).filter(isCompressibleVideo);
-  if (videos.length === 0) return null;
+  if (videos.length === 0) {
+    return null;
+  }
   const workspace = await operations.workspace();
   try {
-    const encoded: EncodedVideo[] = [];
+    const encoded: Array<EncodedVideo> = [];
     for (const [index, file] of videos.entries()) {
       input.signal.throwIfAborted();
       const source = join(input.directory, file.path);
       const probe = await operations.probe(source);
-      if (!isSafeSource(probe) || probe.duration === null) continue;
+      if (!isSafeSource(probe) || probe.duration === null) {
+        continue;
+      }
       const output = join(workspace.path, `${index}.mp4`);
       await operations.encode({
         source,
@@ -240,11 +256,14 @@ async function compressSaveVideos(input: {
       });
       const before = file.size ?? (await operations.size(source));
       const after = await operations.size(output);
-      if (after > before * (1 - MIN_SAVINGS)) continue;
-      if (!isFaithfulEncode(probe, await operations.probe(output)))
+      if (after > before * (1 - MIN_SAVINGS)) {
+        continue;
+      }
+      if (!isFaithfulEncode(probe, await operations.probe(output))) {
         throw new Error(
           `The compressed copy of ${file.path} does not match the original.`,
         );
+      }
       encoded.push({
         file,
         output,
@@ -254,17 +273,23 @@ async function compressSaveVideos(input: {
         sha256: await operations.hash(output),
       });
     }
-    if (encoded.length === 0) return null;
+    if (encoded.length === 0) {
+      return null;
+    }
     input.signal.throwIfAborted();
     input.assertActive?.();
     /** Encodes can take hours, so commit against the Save as it is now, not as the batch found it. */
     const { saves: fresh } = await operations.load([save.id]);
     const current = fresh.find((row) => row.id === save.id);
-    if (!current) return null;
+    if (!current) {
+      return null;
+    }
     const replacements = encoded.filter((item) =>
       isStillReplaceable(current, item),
     );
-    if (replacements.length === 0) return null;
+    if (replacements.length === 0) {
+      return null;
+    }
     await operations.commit(videoCompressionTransaction(current, replacements));
     return {
       bytesBefore: replacements.reduce(
@@ -279,8 +304,9 @@ async function compressSaveVideos(input: {
 }
 
 function isCompressibleVideo(file: SaveFile): boolean {
-  if (file.kind !== "video" && !file.mimeType?.startsWith("video/"))
+  if (file.kind !== "video" && !file.mimeType?.startsWith("video/")) {
     return false;
+  }
   return VIDEO_EXTENSIONS.has(extname(file.path).toLowerCase());
 }
 
@@ -299,8 +325,9 @@ function isStillReplaceable(save: VideoSave, item: EncodedVideo): boolean {
     !source ||
     source.sha256 !== item.file.sha256 ||
     source.size !== item.file.size
-  )
+  ) {
     return false;
+  }
   const target = item.path.toLowerCase();
   return !files.some(
     (file) =>
@@ -312,8 +339,9 @@ function isStillReplaceable(save: VideoSave, item: EncodedVideo): boolean {
 export function assertVideoCompressionSupported(
   platform: NodeJS.Platform = process.platform,
 ): void {
-  if (platform !== "darwin")
+  if (platform !== "darwin") {
     throw new Error("Video compression is available on macOS only.");
+  }
 }
 
 /** Only one-stream, 8-bit SDR 4:2:0 sources with a known length keep everything through `yuv420p` and `0:v:0`. */
@@ -334,7 +362,7 @@ export function hevcArguments(input: {
   output: string;
   crf: number;
   copyAudio: boolean;
-}): string[] {
+}): Array<string> {
   return [
     "-nostdin",
     "-hide_banner",
@@ -378,21 +406,29 @@ export function isFaithfulEncode(
   source: VideoProbe,
   encoded: VideoProbe,
 ): boolean {
-  if (encoded.videoCodec !== "hevc") return false;
-  if (source.audioCodec !== null && encoded.audioCodec === null) return false;
-  if (source.duration === null || encoded.duration === null) return false;
+  if (encoded.videoCodec !== "hevc") {
+    return false;
+  }
+  if (source.audioCodec !== null && encoded.audioCodec === null) {
+    return false;
+  }
+  if (source.duration === null || encoded.duration === null) {
+    return false;
+  }
   const tolerance = Math.max(0.5, source.duration * 0.02);
   return Math.abs(source.duration - encoded.duration) <= tolerance;
 }
 
 function videoCompressionTransaction(
   save: VideoSave,
-  replacements: readonly EncodedVideo[],
+  replacements: ReadonlyArray<EncodedVideo>,
 ): Transaction {
   const byPath = new Map(replacements.map((item) => [item.file.path, item]));
   const files = (save.files ?? []).map((file): SaveFile => {
     const replacement = byPath.get(file.path);
-    if (!replacement) return file;
+    if (!replacement) {
+      return file;
+    }
     return {
       ...file,
       path: replacement.path,
@@ -421,9 +457,11 @@ function videoCompressionTransaction(
     before.videoCodec = save.videoCodec;
     before.bitrate = save.bitrate;
   }
-  const renames = replacements
-    .filter((item) => item.path !== item.file.path)
-    .map((item) => ({ from: item.file.path, to: item.path }));
+  const renames = replacements.flatMap((item) =>
+    item.path === item.file.path
+      ? []
+      : [{ from: item.file.path, to: item.path }],
+  );
   const transaction: Transaction = {
     kind: "update",
     model: "save",
@@ -436,7 +474,9 @@ function videoCompressionTransaction(
     })),
     meta: { actor: "user", actorReason: "video:compress" },
   };
-  if (renames.length > 0) transaction.fileRenames = renames;
+  if (renames.length > 0) {
+    transaction.fileRenames = renames;
+  }
   return transaction;
 }
 
@@ -482,6 +522,8 @@ export function encodeTimeout(duration: number): number {
 
 export function parseDuration(output: string): number | null {
   const match = /Duration:\s*(\d+):(\d{2}):(\d{2}(?:\.\d+)?)/.exec(output);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
 }

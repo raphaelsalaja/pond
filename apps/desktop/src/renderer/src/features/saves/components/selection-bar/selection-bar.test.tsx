@@ -1,6 +1,7 @@
 import { Tooltip } from "@pond/ui";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearSaveSelection,
@@ -42,8 +43,16 @@ function save(id: string): Save {
 const IDS = ["a", "b", "c"];
 
 interface BulkEditInput {
-  ids?: readonly string[];
+  ids?: ReadonlyArray<string>;
   operation?: { kind: string; rating?: number };
+}
+
+async function settle() {
+  await act(async () => {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
+  });
 }
 
 describe("Library selection toolbar", () => {
@@ -59,14 +68,10 @@ describe("Library selection toolbar", () => {
     const button = toolbar()?.querySelector<HTMLButtonElement>(
       `button[aria-label="${label}"]`,
     );
-    if (!button) throw new Error(`Missing toolbar action ${label}`);
+    if (!button) {
+      throw new Error(`Missing toolbar action ${label}`);
+    }
     return button;
-  }
-
-  async function settle() {
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
   }
 
   beforeEach(async () => {
@@ -87,7 +92,9 @@ describe("Library selection toolbar", () => {
         return { ok: true, changed: 0 };
       },
     });
-    for (const id of IDS) pool.upsert(save(id));
+    for (const id of IDS) {
+      pool.upsert(save(id));
+    }
     resultNavigation.setSource({ key: "selection-bar", ids: IDS });
     libraryViewContext.set(IDS, "library");
     host = document.createElement("div");
@@ -134,8 +141,9 @@ describe("Library selection toolbar", () => {
       "Move to Trash",
       "More Actions",
       "Clear Selection",
-    ])
+    ]) {
       expect(action(label)).toBeTruthy();
+    }
   });
 
   it("selects every result with Select All", async () => {
@@ -156,7 +164,9 @@ describe("Library selection toolbar", () => {
     const item = [
       ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
     ].find((element) => element.textContent?.includes("Rate 3 Stars"));
-    if (!item) throw new Error("Missing Rate 3 Stars");
+    if (!item) {
+      throw new Error("Missing Rate 3 Stars");
+    }
     await act(async () => item.click());
     await settle();
 

@@ -1,7 +1,8 @@
 import { extname } from "node:path";
 import type { ImageDownloadSettings, ImageFormat } from "@pond/schema/db";
 import log from "electron-log/main.js";
-import sharp, { type Sharp } from "sharp";
+import sharp from "sharp";
+import type { Sharp } from "sharp";
 
 type ImageEncodeSettings = Omit<
   ImageDownloadSettings,
@@ -36,18 +37,24 @@ export async function processImage(
   mimeType: string | undefined,
   prefs: ImageEncodeSettings,
 ): Promise<ProcessedImage | null> {
-  if (mimeType && !mimeType.startsWith("image/")) return null;
+  if (mimeType && !mimeType.startsWith("image/")) {
+    return null;
+  }
 
   const nothingToDo =
     prefs.maxLongEdge === null &&
     prefs.format === "original" &&
     !prefs.preserveMetadata;
-  if (nothingToDo) return null;
+  if (nothingToDo) {
+    return null;
+  }
 
   try {
     const pipeline = sharp(bytes, { failOn: "none" });
     const metadata = await pipeline.metadata();
-    if ((metadata.pages ?? 1) > 1) return null;
+    if ((metadata.pages ?? 1) > 1) {
+      return null;
+    }
 
     if (prefs.maxLongEdge !== null) {
       pipeline.resize(prefs.maxLongEdge, prefs.maxLongEdge, {
@@ -60,7 +67,9 @@ export async function processImage(
       applyFormat(pipeline, prefs);
     }
 
-    if (prefs.preserveMetadata) pipeline.withMetadata();
+    if (prefs.preserveMetadata) {
+      pipeline.withMetadata();
+    }
 
     const { data: outBytes, info } = await pipeline.toBuffer({
       resolveWithObject: true,
@@ -83,8 +92,8 @@ export async function processImage(
       filename: replaceExt(filename, ext),
       ...dims,
     };
-  } catch (err) {
-    log.warn("[pond image-process] failed, keeping original", filename, err);
+  } catch (error) {
+    log.warn("[pond image-process] failed, keeping original", filename, error);
     return null;
   }
 }
@@ -93,7 +102,9 @@ export async function processImage(
 export async function probeImageDims(
   bytes: Buffer,
 ): Promise<{ width: number; height: number } | null> {
-  if (bytes.subarray(0, 4).equals(ICO_HEADER)) return icoDims(bytes);
+  if (bytes.subarray(0, 4).equals(ICO_HEADER)) {
+    return icoDims(bytes);
+  }
   const meta = await sharp(bytes, { failOn: "none" }).metadata();
   const dims = dimsFromMeta(meta);
   return dims.width && dims.height
@@ -134,8 +145,12 @@ interface ImageDims {
 
 function dimsFromMeta(meta: ImageDims): ImageDims {
   const { width, height } = meta;
-  if (!width || !height) return {};
-  if (!Number.isFinite(width) || !Number.isFinite(height)) return {};
+  if (!width || !height) {
+    return {};
+  }
+  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+    return {};
+  }
   return { width, height };
 }
 

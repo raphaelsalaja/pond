@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  createTagOperations,
-  type TagClient,
-  type TagEntity,
-} from "./tag-operations";
+import { createTagOperations } from "./tag-operations";
+import type { TagClient, TagEntity } from "./tag-operations";
 
 function setup() {
   const tags = new Set(["Animation", "Typography"]);
@@ -15,36 +12,53 @@ function setup() {
     kind === "tag" ? tags : new Set(groups.keys());
   const client: TagClient = {
     async create(kind, name) {
-      if (kind === "tag") tags.add(name);
-      else if (!groups.has(name)) groups.set(name, new Set());
+      if (kind === "tag") {
+        tags.add(name);
+      } else if (!groups.has(name)) {
+        groups.set(name, new Set());
+      }
     },
     async rename(kind, from, to) {
-      if (!entities(kind).has(from)) throw new Error("Missing label");
+      if (!entities(kind).has(from)) {
+        throw new Error("Missing label");
+      }
       if (kind === "tag") {
         tags.delete(from);
         tags.add(to);
-        for (const members of groups.values())
-          if (members.delete(from)) members.add(to);
+        for (const members of groups.values()) {
+          if (members.delete(from)) {
+            members.add(to);
+          }
+        }
       } else {
         const members = groups.get(from);
-        if (!members) throw new Error("Missing group");
+        if (!members) {
+          throw new Error("Missing group");
+        }
         groups.delete(from);
         groups.set(to, members);
       }
     },
     async deleteTag(name) {
       tags.delete(name);
-      for (const members of groups.values()) members.delete(name);
+      for (const members of groups.values()) {
+        members.delete(name);
+      }
     },
     async merge(from, to) {
       tags.delete(from);
       tags.add(to);
-      for (const members of groups.values())
-        if (members.delete(from)) members.add(to);
+      for (const members of groups.values()) {
+        if (members.delete(from)) {
+          members.add(to);
+        }
+      }
     },
     async addToGroup(tag, group) {
       const members = groups.get(group);
-      if (!members) throw new Error("Missing group");
+      if (!members) {
+        throw new Error("Missing group");
+      }
       members.add(tag);
     },
     async removeFromGroup(tag, group) {

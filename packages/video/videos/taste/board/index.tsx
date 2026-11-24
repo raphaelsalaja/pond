@@ -13,7 +13,9 @@ const TILE_HEIGHT = 112;
 export function Board({ t }: { t: number }) {
   const rise = ease.outQuint(progress(t, CUES.boardIn, 900));
   const away = ease.inOut(progress(t, CUES.boardOut, 420));
-  if (t < CUES.boardIn - 20 || away >= 1) return null;
+  if (t < CUES.boardIn - 20 || away >= 1) {
+    return null;
+  }
 
   const pan = ease.inOut(
     progress(t, CUES.boardPan, CUES.boardOut - CUES.boardPan + 300),
@@ -65,7 +67,9 @@ export function Board({ t }: { t: number }) {
             </h2>
             <div className={styles.tiles}>
               {REFS.map((item, index) => {
-                if (item.group !== groupIndex) return null;
+                if (item.group !== groupIndex) {
+                  return null;
+                }
                 const at = CUES.tiles + index * CUES.tileStep;
                 const k = ease.outQuint(progress(t, at, 560));
                 return (

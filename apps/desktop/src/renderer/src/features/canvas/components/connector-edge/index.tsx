@@ -2,20 +2,16 @@ import type { CanvasCap } from "@shared/canvas-contracts";
 import {
   BaseEdge,
   EdgeLabelRenderer,
-  type EdgeProps,
   getBezierPath,
   getSmoothStepPath,
   getStraightPath,
   useStore,
-  type XYPosition,
 } from "@xyflow/react";
+import type { EdgeProps, XYPosition } from "@xyflow/react";
 import { clsx as cn } from "clsx";
 import { INK } from "../../lib/colors";
-import {
-  CONNECTOR_STYLE,
-  type ConnectorEdge as ConnectorEdgeType,
-  capsOf,
-} from "../../lib/document";
+import { CONNECTOR_STYLE, capsOf } from "../../lib/document";
+import type { ConnectorEdge as ConnectorEdgeType } from "../../lib/document";
 import { useBoard } from "../board/context";
 import { ConnectorBar } from "../connector-bar";
 import { EditableText } from "../editable-text";
@@ -93,7 +89,9 @@ function Relation({ cap, ink }: { cap: CanvasCap; ink: string }) {
 }
 
 function Cap({ id, cap, ink }: CapProps) {
-  if (cap === "none") return null;
+  if (cap === "none") {
+    return null;
+  }
   if (isRelation(cap)) {
     return (
       <marker

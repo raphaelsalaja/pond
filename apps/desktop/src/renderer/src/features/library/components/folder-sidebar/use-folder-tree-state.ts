@@ -1,7 +1,15 @@
 import type { Folder } from "@pond/schema/db";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { z } from "zod";
-import { type FolderListSort, flattenFolderTree, sortFolderRows } from "./tree";
+import { flattenFolderTree, sortFolderRows } from "./tree";
+import type { FolderListSort } from "./tree";
 import type { FolderDropState } from "./use-folder-drag-drop";
 
 const COLLAPSED_FOLDERS_KEY = "pond:collapsed-folders";
@@ -25,7 +33,9 @@ function loadCollapsedFolders(): Set<string> {
 function persistCollapsedFolders(next: Set<string>): Set<string> {
   try {
     localStorage.setItem(COLLAPSED_FOLDERS_KEY, JSON.stringify([...next]));
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked; the in-memory state still applies. */
+  }
   return next;
 }
 
@@ -36,15 +46,19 @@ function loadFolderListSort(): FolderListSort {
 function persistFolderListSort(next: FolderListSort): FolderListSort {
   try {
     localStorage.setItem(FOLDER_LIST_SORT_KEY, next);
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked; the in-memory state still applies. */
+  }
   return next;
 }
 
-export function useFolderTreeState(folderRows: Folder[]) {
+export function useFolderTreeState(folderRows: Array<Folder>) {
   const [collapsed, setCollapsed] = useState(loadCollapsedFolders);
   const [sort, setSortState] = useState(loadFolderListSort);
   const folderRowsRef = useRef(folderRows);
-  folderRowsRef.current = folderRows;
+  useLayoutEffect(() => {
+    folderRowsRef.current = folderRows;
+  });
   const sortedRows = useMemo(
     () => sortFolderRows(folderRows, sort),
     [folderRows, sort],
@@ -56,7 +70,9 @@ export function useFolderTreeState(folderRows: Folder[]) {
   const parentIds = useMemo(() => {
     const ids = new Set<string>();
     for (const row of folderRows) {
-      if (row.parentId) ids.add(row.parentId);
+      if (row.parentId) {
+        ids.add(row.parentId);
+      }
     }
     return ids;
   }, [folderRows]);
@@ -72,7 +88,9 @@ export function useFolderTreeState(folderRows: Folder[]) {
       const seen = new Set<string>();
       while (current && !seen.has(current)) {
         seen.add(current);
-        if (next.delete(current)) changed = true;
+        if (next.delete(current)) {
+          changed = true;
+        }
         current = parents.get(current) ?? null;
       }
       return changed ? persistCollapsedFolders(next) : previous;
@@ -82,8 +100,11 @@ export function useFolderTreeState(folderRows: Folder[]) {
   function toggleFolder(id: string): void {
     setCollapsed((previous) => {
       const next = new Set(previous);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return persistCollapsedFolders(next);
     });
   }
@@ -92,9 +113,14 @@ export function useFolderTreeState(folderRows: Folder[]) {
     setCollapsed((previous) => {
       const next = new Set(previous);
       for (const row of folderRows) {
-        if (row.parentId !== parentId || !parentIds.has(row.id)) continue;
-        if (expanded) next.add(row.id);
-        else next.delete(row.id);
+        if (row.parentId !== parentId || !parentIds.has(row.id)) {
+          continue;
+        }
+        if (expanded) {
+          next.add(row.id);
+        } else {
+          next.delete(row.id);
+        }
       }
       return persistCollapsedFolders(next);
     });
@@ -105,8 +131,11 @@ export function useFolderTreeState(folderRows: Folder[]) {
       const next = new Set(previous);
       const expand = [...parentIds].some((id) => previous.has(id));
       for (const id of parentIds) {
-        if (expand) next.delete(id);
-        else next.add(id);
+        if (expand) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
       }
       return persistCollapsedFolders(next);
     });
@@ -134,7 +163,9 @@ export function useRevealFolderDrop(
   revealFolder: (id: string) => void,
 ): void {
   useEffect(() => {
-    if (folderDrop?.kind !== "into") return;
+    if (folderDrop?.kind !== "into") {
+      return;
+    }
     const timer = window.setTimeout(() => revealFolder(folderDrop.id), 600);
     return () => window.clearTimeout(timer);
   }, [folderDrop, revealFolder]);

@@ -7,7 +7,7 @@ import { normalise } from "./reconcile";
 
 const warmups = 5;
 const samples = 30;
-function summary(values: number[]) {
+function summary(values: Array<number>) {
   const sorted = [...values].sort((a, b) => a - b);
   return {
     p50: sorted[Math.ceil(sorted.length * 0.5) - 1],
@@ -37,8 +37,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-for (const size of [1_000, 10_000, 50_000]) {
-  for (const count of [1, 100, 1_000]) {
+for (const size of [1000, 10_000, 50_000]) {
+  for (const count of [1, 100, 1000]) {
     for (const kind of ["rating", "trash", "purge", "rollback"] as const) {
       it.skipIf(process.env.POND_BENCH_LIBRARY !== "1")(
         `bulk ${kind} N=${size} K=${count}`,
@@ -54,15 +54,17 @@ for (const size of [1_000, 10_000, 50_000]) {
               createdAt: i,
               deletedAt: null,
             });
-            if (!save) throw new Error("Invalid synthetic Save");
+            if (!save) {
+              throw new Error("Invalid synthetic Save");
+            }
             return save;
           });
           const fixtureMs = performance.now() - fixtureStarted;
           const ids = saves.slice(0, count).map((save) => save.id);
-          const elapsed: number[] = [];
-          const resets: number[] = [];
-          const publications: number[] = [];
-          const optimisticPublications: number[] = [];
+          const elapsed: Array<number> = [];
+          const resets: Array<number> = [];
+          const publications: Array<number> = [];
+          const optimisticPublications: Array<number> = [];
           const memoryBefore = process.memoryUsage();
           const deadline = performance.now() + 90_000;
           for (
@@ -70,10 +72,11 @@ for (const size of [1_000, 10_000, 50_000]) {
             repetition < warmups + samples;
             repetition++
           ) {
-            if (performance.now() > deadline)
+            if (performance.now() > deadline) {
               throw new Error(
                 `Bounded bulk case exceeded 90s: ${size}/${count}/${kind}`,
               );
+            }
             const resetStarted = performance.now();
             pool.clear();
             pool.bulkUpsert(saves);
@@ -102,9 +105,11 @@ for (const size of [1_000, 10_000, 50_000]) {
                 ({ changed }) => ({ changed, rejected: false }),
                 () => ({ changed: 0, rejected: true }),
               );
-              if (kind === "rollback")
+              if (kind === "rollback") {
                 pending.reject(new Error("Synthetic rejection"));
-              else pending.resolve({ changed: count });
+              } else {
+                pending.resolve({ changed: count });
+              }
               const result = await settled;
               const duration = performance.now() - started;
               expect(result).toEqual({
@@ -115,12 +120,15 @@ for (const size of [1_000, 10_000, 50_000]) {
                 kind === "purge" ? size - count : size,
               );
               for (const id of ids) {
-                if (kind === "purge") expect(pool.get(id)).toBeUndefined();
-                else if (kind === "rating")
+                if (kind === "purge") {
+                  expect(pool.get(id)).toBeUndefined();
+                } else if (kind === "rating") {
                   expect(pool.get(id)?.rating).toBe(3);
-                else if (kind === "trash")
+                } else if (kind === "trash") {
                   expect(pool.get(id)?.deletedAt).toBeGreaterThan(0);
-                else expect(pool.get(id)?.rating).toBeNull();
+                } else {
+                  expect(pool.get(id)?.rating).toBeNull();
+                }
               }
               expect(query).toHaveBeenCalledWith("saves.bulkEdit", {
                 ids,

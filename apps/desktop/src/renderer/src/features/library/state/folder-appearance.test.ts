@@ -14,7 +14,9 @@ let stored: WirePrefsPatch = {
 beforeEach(() => {
   query.mockReset();
   query.mockImplementation(async (name: string, input: WirePrefsPatch) => {
-    if (name !== "settings.setPrefs") return stored;
+    if (name !== "settings.setPrefs") {
+      return stored;
+    }
     stored = {
       folderAppearance: {
         ...stored.folderAppearance,

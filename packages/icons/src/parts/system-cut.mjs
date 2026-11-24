@@ -58,18 +58,24 @@ export function outline(
   const fillet = (i) => {
     const named = corners[i] !== undefined;
     const r0 = named ? corners[i] : radius;
-    if (!r0) return null;
+    if (!r0) {
+      return null;
+    }
     const [a, b, c] = [at(i - 1), at(i), at(i + 1)];
     const u = unit(sub(a, b));
     const v = unit(sub(c, b));
     const angle = Math.acos(
       Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1])),
     );
-    if (angle > Math.PI - 1e-3) return null;
+    if (angle > Math.PI - 1e-3) {
+      return null;
+    }
     const la = len(sub(a, b));
     const lc = len(sub(c, b));
     let r = named ? r0 : Math.min(r0, Math.min(la, lc) / 4);
-    if (!named && angle < Math.PI / 3) r /= 2;
+    if (!named && angle < Math.PI / 3) {
+      r /= 2;
+    }
     const t = Math.min(r / Math.tan(angle / 2), la / 2, lc / 2);
     r = t * Math.tan(angle / 2);
     const from = add(b, mul(u, t));
@@ -86,7 +92,9 @@ export function outline(
   const segs = [];
   let cursor = null;
   const lineTo = (p) => {
-    if (cursor && len(sub(p, cursor)) > 1e-6) segs.push(line(cursor, p));
+    if (cursor && len(sub(p, cursor)) > 1e-6) {
+      segs.push(line(cursor, p));
+    }
     cursor = p;
   };
   const indices = closed ? [...points.keys(), 0] : [...points.keys()];
@@ -98,7 +106,9 @@ export function outline(
       continue;
     }
     lineTo(f.from);
-    if (closed && k === indices.length - 1) continue;
+    if (closed && k === indices.length - 1) {
+      continue;
+    }
     segs.push(f.seg);
     cursor = f.to;
   }
@@ -135,8 +145,11 @@ const pieces = (seg, inside) => {
   const edge = (lo, hi, startIn) => {
     for (let k = 0; k < 40; k++) {
       const mid = (lo + hi) / 2;
-      if (inside(point(seg, mid)) === startIn) lo = mid;
-      else hi = mid;
+      if (inside(point(seg, mid)) === startIn) {
+        lo = mid;
+      } else {
+        hi = mid;
+      }
     }
     return (lo + hi) / 2;
   };
@@ -147,20 +160,25 @@ const pieces = (seg, inside) => {
     const now = inside(point(seg, u));
     if (now !== prev) {
       const e = edge((k - 1) / steps, u, prev);
-      if (now) out.push([start, e]);
-      else start = e;
+      if (now) {
+        out.push([start, e]);
+      } else {
+        start = e;
+      }
       prev = now;
     }
   }
-  if (!prev) out.push([start, 1]);
-  return out
-    .filter(([a, b]) => b - a > 1e-6)
-    .map(([u0, u1]) => ({ seg, u0, u1 }));
+  if (!prev) {
+    out.push([start, 1]);
+  }
+  return out.flatMap(([u0, u1]) => (u1 - u0 > 1e-6 ? [{ seg, u0, u1 }] : []));
 };
 
 const emit = (p) => {
   const end = point(p.seg, p.u1);
-  if (p.seg.kind === "line") return [`L ${pt(end)}`];
+  if (p.seg.kind === "line") {
+    return [`L ${pt(end)}`];
+  }
   if (p.seg.kind === "cubic") {
     const tail = split(p.seg.p, p.u0)[1];
     const [, b, c, d] = split(tail, (p.u1 - p.u0) / (1 - p.u0 || 1))[0];
@@ -169,7 +187,9 @@ const emit = (p) => {
   const turn = p.seg.turn * (p.u1 - p.u0);
   const cmd = (q, t) =>
     `A ${n(p.seg.rx)} ${n(p.seg.ry)} 0 ${Math.abs(t) > Math.PI ? 1 : 0} ${t > 0 ? 1 : 0} ${pt(q)}`;
-  if (Math.abs(turn) < Math.PI * 1.5) return [cmd(end, turn)];
+  if (Math.abs(turn) < Math.PI * 1.5) {
+    return [cmd(end, turn)];
+  }
   const mid = point(p.seg, (p.u0 + p.u1) / 2);
   return [cmd(mid, turn / 2), cmd(end, turn / 2)];
 };
@@ -182,11 +202,11 @@ export function cut(segs, holes = [hole()], { closed = true } = {}) {
     kept.length === segs.length && kept.every((p) => p.u0 === 0 && p.u1 === 1);
   if (closed && !whole && kept.length > 1) {
     const first = kept[0];
-    const last = kept[kept.length - 1];
+    const last = kept.at(-1);
     if (
       first.seg === segs[0] &&
       first.u0 === 0 &&
-      last.seg === segs[segs.length - 1] &&
+      last.seg === segs.at(-1) &&
       last.u1 === 1
     ) {
       let k = kept.length - 1;
@@ -195,8 +215,9 @@ export function cut(segs, holes = [hole()], { closed = true } = {}) {
         kept[k - 1].u1 === 1 &&
         kept[k].u0 === 0 &&
         segs.indexOf(kept[k - 1].seg) === segs.indexOf(kept[k].seg) - 1
-      )
+      ) {
         k--;
+      }
       kept = [...kept.slice(k), ...kept.slice(0, k)];
     }
   }
@@ -204,7 +225,9 @@ export function cut(segs, holes = [hole()], { closed = true } = {}) {
   let cursor = null;
   for (const p of kept) {
     const start = point(p.seg, p.u0);
-    if (!cursor || len(sub(start, cursor)) > 1e-6) out.push(`M ${pt(start)}`);
+    if (!cursor || len(sub(start, cursor)) > 1e-6) {
+      out.push(`M ${pt(start)}`);
+    }
     out.push(...emit(p));
     cursor = point(p.seg, p.u1);
   }

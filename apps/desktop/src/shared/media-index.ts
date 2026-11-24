@@ -41,8 +41,12 @@ interface ThumbnailFileLike {
 }
 
 export function isVideoFile(file: ThumbnailFileLike): boolean {
-  if (file.kind === "video") return true;
-  if (file.mimeType?.startsWith("video/") === true) return true;
+  if (file.kind === "video") {
+    return true;
+  }
+  if (file.mimeType?.startsWith("video/") === true) {
+    return true;
+  }
   return /\.(mp4|webm|mov|m4v|mkv)$/i.test(file.path);
 }
 

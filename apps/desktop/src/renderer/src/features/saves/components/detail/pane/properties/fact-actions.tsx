@@ -19,7 +19,7 @@ export interface FactAction {
 
 const MB = 1_000_000;
 
-type SaveTime = Save["savedAt"] | Save["createdAt"] | Save["takenAt"];
+type SaveTime = Save["savedAt"] | Save["takenAt"];
 
 interface DateField {
   field: FieldId;
@@ -60,9 +60,13 @@ function extensionOf(path: string | undefined): string | null {
 }
 
 function dayRange(value: SaveTime): [number, number] | null {
-  if (value == null) return null;
+  if (value === null || value === undefined) {
+    return null;
+  }
   const start = new Date(value);
-  if (Number.isNaN(start.getTime())) return null;
+  if (Number.isNaN(start.getTime())) {
+    return null;
+  }
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
@@ -73,10 +77,10 @@ function dayRange(value: SaveTime): [number, number] | null {
 export function factFilters(
   fact: { id: string; value: string; display: string },
   save: Save,
-): FactAction[] {
+): Array<FactAction> {
   switch (fact.id) {
     case "type": {
-      const out: FactAction[] = [];
+      const out: Array<FactAction> = [];
       const extension = extensionOf(pickPrimaryFile(save)?.path);
       if (extension) {
         out.push(
@@ -104,7 +108,7 @@ export function factFilters(
       return out;
     }
     case "dimensions": {
-      const out: FactAction[] = [];
+      const out: Array<FactAction> = [];
       const orientation = orientationFromDims(save.width, save.height);
       const orientationLabel = orientation
         ? presetLabel("shape", orientation)
@@ -133,8 +137,10 @@ export function factFilters(
     case "size": {
       const size =
         save.fileSize ?? save.files.reduce((sum, file) => sum + file.size, 0);
-      if (!size) return [];
-      if (size < MB)
+      if (!size) {
+        return [];
+      }
+      if (size < MB) {
         return [
           show("Show Saves Under 1 MB", {
             field: "fileSize",
@@ -142,7 +148,8 @@ export function factFilters(
             value: MB,
           }),
         ];
-      if (size < 10 * MB)
+      }
+      if (size < 10 * MB) {
         return [
           show("Show Saves Under 10 MB", {
             field: "fileSize",
@@ -150,6 +157,7 @@ export function factFilters(
             value: 10 * MB,
           }),
         ];
+      }
       return [
         show("Show Saves Over 10 MB", {
           field: "fileSize",
@@ -161,7 +169,9 @@ export function factFilters(
     default: {
       const date = DATE_FIELDS.get(fact.id);
       const range = date ? dayRange(date.at(save)) : null;
-      if (!date || !range) return [];
+      if (!date || !range) {
+        return [];
+      }
       return [
         show(`Show Saves ${date.verb} ${fact.display}`, {
           field: date.field,
@@ -176,7 +186,7 @@ export function factFilters(
 export function ratingMenu(
   rating: number,
   setRating: (rating: number) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     {
       label: rating ? `Show ${rating}-Star Saves` : "Show Unrated Saves",
@@ -207,8 +217,8 @@ export function copyFact(label: string, value: string): void {
 export function factMenu(
   label: string,
   value: string,
-  filters: readonly FactAction[],
-): MenuItemSpec[] {
+  filters: ReadonlyArray<FactAction>,
+): Array<MenuItemSpec> {
   return [
     ...filters.map((filter) => ({
       label: filter.label,

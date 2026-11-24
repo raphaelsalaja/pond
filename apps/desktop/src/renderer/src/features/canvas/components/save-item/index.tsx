@@ -1,7 +1,8 @@
 import { IconCircleWarning, IconTrash } from "@pond/icons";
 import { domainFromUrl } from "@pond/schema/domain";
 import { cssVars } from "@pond/ui";
-import { type NodeProps, NodeResizer } from "@xyflow/react";
+import { NodeResizer } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
 import { useRef, useState } from "react";
 import { CardThumb } from "@/features/saves";
 import { useSave } from "@/features/saves/pool";
@@ -36,7 +37,9 @@ export function SaveItem({
 
   const fraction = (event: React.PointerEvent) => {
     const bounds = media.current?.getBoundingClientRect();
-    if (!bounds?.width || !bounds.height) return null;
+    if (!bounds?.width || !bounds.height) {
+      return null;
+    }
     return {
       x: (event.clientX - bounds.left) / bounds.width,
       y: (event.clientY - bounds.top) / bounds.height,
@@ -94,9 +97,13 @@ export function SaveItem({
             <div
               className={`${styles.shade} nodrag nowheel nopan`}
               onPointerDown={(event) => {
-                if (event.button !== 0) return;
+                if (event.button !== 0) {
+                  return;
+                }
                 const point = fraction(event);
-                if (!point) return;
+                if (!point) {
+                  return;
+                }
                 event.currentTarget.setPointerCapture(event.pointerId);
                 event.stopPropagation();
                 origin.current = point;
@@ -105,7 +112,9 @@ export function SaveItem({
               onPointerMove={(event) => {
                 const start = origin.current;
                 const point = fraction(event);
-                if (!start || !point) return;
+                if (!start || !point) {
+                  return;
+                }
                 setDraft({
                   x: Math.min(start.x, point.x),
                   y: Math.min(start.y, point.y),
@@ -118,7 +127,9 @@ export function SaveItem({
                 const point = fraction(event);
                 origin.current = null;
                 setDraft(null);
-                if (!start || !point) return;
+                if (!start || !point) {
+                  return;
+                }
                 board.setCrop(id, cropOf(start, point));
               }}
             >

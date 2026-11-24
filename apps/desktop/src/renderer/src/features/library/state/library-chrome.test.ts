@@ -14,9 +14,8 @@ describe("library chrome", () => {
 
   it("raises old sidebar widths to the tab-safe minimum", async () => {
     localStorage.setItem("pond.sidebarWidth", "180");
-    const { libraryChrome, SIDEBAR_WIDTH_MIN } = await import(
-      "./library-chrome"
-    );
+    const { libraryChrome, SIDEBAR_WIDTH_MIN } =
+      await import("./library-chrome");
     expect(libraryChrome.getState().sidebarWidth).toBe(SIDEBAR_WIDTH_MIN);
     libraryChrome.setSidebarWidth(200);
     expect(libraryChrome.getState().sidebarWidth).toBe(SIDEBAR_WIDTH_MIN);

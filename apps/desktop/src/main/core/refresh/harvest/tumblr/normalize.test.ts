@@ -10,8 +10,8 @@ const LIKED = {
   idString: "178735553447",
   blogName: "pascalcampion",
   summary: "Looking for inspiration #pascalcampion",
-  timestamp: 1538680987,
-  likedTimestamp: 1538681948,
+  timestamp: 1_538_680_987,
+  likedTimestamp: 1_538_681_948,
   noteCount: 1430,
   tags: [],
   blog: { name: "pascalcampion", title: "Pascal Campion" },
@@ -40,7 +40,7 @@ const LIKED = {
 const REBLOG = {
   idString: "644045205583052800",
   blogName: "punkmonksteven",
-  likedTimestamp: 1614290185,
+  likedTimestamp: 1_614_290_185,
   content: [],
   trail: [
     {

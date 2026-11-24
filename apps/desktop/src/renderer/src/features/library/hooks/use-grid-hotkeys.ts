@@ -1,5 +1,6 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { useHotkeys } from "@tanstack/react-hotkeys";
-import { useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import type { ResultDirection } from "@/features/saves";
 import {
   clearSaveSelection,
@@ -35,7 +36,9 @@ function canNavigate(event: KeyboardEvent): boolean {
 export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
   const shortcuts = useShortcutBindings();
   const idsRef = useRef(filteredIds);
-  idsRef.current = filteredIds;
+  useLayoutEffect(() => {
+    idsRef.current = filteredIds;
+  });
   const movementQueue = useRef(Promise.resolve());
 
   const move = async (
@@ -44,9 +47,13 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
     key: string | undefined,
     focusOnly: boolean,
   ) => {
-    if (key !== resultNavigation.key() || !collectionOwnsKeyboard()) return;
-    let ids: readonly string[] = idsRef.current;
-    if (!ids.length) return;
+    if (key !== resultNavigation.key() || !collectionOwnsKeyboard()) {
+      return;
+    }
+    let ids: ReadonlyArray<string> = idsRef.current;
+    if (!ids.length) {
+      return;
+    }
     const cursor = selection.getCursor();
     const base = cursor && ids.includes(cursor) ? cursor : null;
     const forward =
@@ -54,16 +61,16 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       direction === "down" ||
       direction === "page-down";
     const active = document.activeElement;
-    const parent = findScrollParent(
-      active instanceof HTMLElement ? active : null,
-    );
-    let next: string | null = null;
-    if (direction === "first") next = ids[0] ?? null;
-    else if (direction === "last") {
+    const parent = findScrollParent(isHTMLElement(active) ? active : null);
+    let next: string | null;
+    if (direction === "first") {
+      next = ids[0] ?? null;
+    } else if (direction === "last") {
       ids = await resultNavigation.ids();
       next = ids.at(-1) ?? null;
-    } else if (!base) next = forward ? (ids[0] ?? null) : (ids.at(-1) ?? null);
-    else {
+    } else if (!base) {
+      next = forward ? (ids[0] ?? null) : (ids.at(-1) ?? null);
+    } else {
       next = resultNavigation.neighbor(
         base,
         direction,
@@ -71,9 +78,9 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       );
       if ((!next || direction === "page-down") && forward) {
         if (await resultNavigation.loadNextPage()) {
-          await new Promise<void>((resolve) =>
-            requestAnimationFrame(() => resolve()),
-          );
+          await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => resolve());
+          });
           ids = idsRef.current;
           next = resultNavigation.neighbor(
             base,
@@ -82,27 +89,38 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
           );
         }
       }
-      if (!next && (direction === "left" || direction === "right"))
+      if (!next && (direction === "left" || direction === "right")) {
         next = await resultNavigation.next(
           base,
           direction === "right" ? 1 : -1,
         );
+      }
     }
-    if (!next || key !== resultNavigation.key() || !collectionOwnsKeyboard())
+    if (!next || key !== resultNavigation.key() || !collectionOwnsKeyboard()) {
       return;
+    }
     await ensureSaves([next]);
-    if (key !== resultNavigation.key() || !collectionOwnsKeyboard()) return;
-    if (focusOnly) selection.setCursor(next);
-    else if (extend) {
-      if (!ids.includes(next)) ids = await resultNavigation.ids();
-      if (key !== resultNavigation.key() || !collectionOwnsKeyboard()) return;
+    if (key !== resultNavigation.key() || !collectionOwnsKeyboard()) {
+      return;
+    }
+    if (focusOnly) {
+      selection.setCursor(next);
+    } else if (extend) {
+      if (!ids.includes(next)) {
+        ids = await resultNavigation.ids();
+      }
+      if (key !== resultNavigation.key() || !collectionOwnsKeyboard()) {
+        return;
+      }
       const anchor = selection.getAnchor();
       const from = anchor && ids.includes(anchor) ? anchor : (base ?? next);
       selection.setAnchor(from);
       selection.setRange(ids, from, next);
       selection.setCursor(next);
       primarySelection.set(next);
-    } else selectOnlySave(next);
+    } else {
+      selectOnlySave(next);
+    }
     await resultNavigation.reveal(next, { focus: true });
   };
 
@@ -112,7 +130,9 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
     event: KeyboardEvent,
     focusOnly = false,
   ) => {
-    if (!canNavigate(event)) return;
+    if (!canNavigate(event)) {
+      return;
+    }
     event.preventDefault();
     const key = resultNavigation.key();
     movementQueue.current = movementQueue.current
@@ -179,9 +199,13 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       {
         hotkey: "Shift+Space",
         callback: (event) => {
-          if (!canNavigate(event)) return;
+          if (!canNavigate(event)) {
+            return;
+          }
           const cursor = selection.getCursor();
-          if (!cursor) return;
+          if (!cursor) {
+            return;
+          }
           event.preventDefault();
           selection.toggle(cursor);
           selection.setAnchor(cursor);
@@ -223,9 +247,13 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       {
         hotkey: bindingKeys(shortcuts, "grid.open"),
         callback: (event) => {
-          if (!canNavigate(event)) return;
+          if (!canNavigate(event)) {
+            return;
+          }
           const cursor = selection.getCursor();
-          if (!cursor || !idsRef.current.includes(cursor)) return;
+          if (!cursor || !idsRef.current.includes(cursor)) {
+            return;
+          }
           event.preventDefault();
           openSave(cursor);
         },
@@ -233,7 +261,9 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       {
         hotkey: bindingKeys(shortcuts, "grid.select-all"),
         callback: (event) => {
-          if (!canNavigate(event)) return;
+          if (!canNavigate(event)) {
+            return;
+          }
           event.preventDefault();
           void selectResults("all");
         },
@@ -241,7 +271,9 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       {
         hotkey: bindingKeys(shortcuts, "grid.clear"),
         callback: (event) => {
-          if (!canNavigate(event)) return;
+          if (!canNavigate(event)) {
+            return;
+          }
           event.preventDefault();
           clearSaveSelection();
         },

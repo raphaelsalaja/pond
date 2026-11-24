@@ -15,13 +15,8 @@ import {
 } from "../../core/sync/watches";
 import { resolveWatchTarget } from "../../core/watch/resolve";
 import { watchNow } from "../../core/watch/run";
-import {
-  type QueryHandlerMap,
-  query,
-  SourceParam,
-  StringParam,
-  TrimmedTextParam,
-} from "./params";
+import { query, SourceParam, StringParam, TrimmedTextParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const WATCH_NOT_FOUND: OkFailure = { ok: false, error: "Watch not found." };
 
@@ -55,7 +50,9 @@ export const watchesQueries = {
           return fetch(url, init);
         },
       );
-      if (!resolved) return { ok: false as const };
+      if (!resolved) {
+        return { ok: false as const };
+      }
       return { ok: true as const, target: resolved };
     },
   ),
@@ -128,7 +125,9 @@ export const watchesQueries = {
     z.object({ watchId: StringParam }),
     async (params) => {
       const watch = await getWatch(params.watchId);
-      if (!watch) return WATCH_NOT_FOUND;
+      if (!watch) {
+        return WATCH_NOT_FOUND;
+      }
       await removeWatch(params.watchId);
       return { ok: true as const };
     },

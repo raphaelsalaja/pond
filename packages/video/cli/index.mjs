@@ -27,7 +27,9 @@ const USAGE = `Usage: pnpm video <command> <slug>
   render <slug>            Capture every frame, score, mux, pull the poster, and check the edges`;
 
 const [command, slug, extra] = process.argv.slice(2);
-if (!command || !slug) fail(USAGE);
+if (!command || !slug) {
+  fail(USAGE);
+}
 
 const source = join(root, "videos", slug);
 const out = join(root, "out", slug);
@@ -40,12 +42,15 @@ function fail(message) {
 
 function run(file, args, options = {}) {
   const result = spawnSync(file, args, { stdio: "inherit", ...options });
-  if (result.status !== 0) fail(`video: ${file} exited with ${result.status}`);
+  if (result.status !== 0) {
+    fail(`video: ${file} exited with ${result.status}`);
+  }
 }
 
 function config() {
-  if (!existsSync(join(source, "index.tsx")))
+  if (!existsSync(join(source, "index.tsx"))) {
     fail(`video: no videos/${slug}/index.tsx`);
+  }
   return {
     configFile: false,
     root: join(root, "stage"),
@@ -138,7 +143,9 @@ function loudness(file) {
 
 const commands = {
   new() {
-    if (existsSync(source)) fail(`video: videos/${slug} already exists`);
+    if (existsSync(source)) {
+      fail(`video: videos/${slug} already exists`);
+    }
     cpSync(join(root, "videos/starter"), source, {
       recursive: true,
       filter: (path) => !path.includes("/public/"),
@@ -161,15 +168,18 @@ const commands = {
 
   async stills() {
     const times = extra?.split(",").filter(Boolean) ?? [];
-    if (!times.length) fail("video: pass times in ms, like 0,4100,9300");
+    if (!times.length) {
+      fail("video: pass times in ms, like 0,4100,9300");
+    }
     await build(config());
     const stills = join(out, "stills");
     rmSync(stills, { recursive: true, force: true });
     mkdirSync(stills, { recursive: true });
     for (const file of readdirSync(out).filter((name) =>
       name.startsWith("still-"),
-    ))
+    )) {
       rmSync(join(out, file));
+    }
     capture([`--stills=${times.join(",")}`]);
     const captured = readdirSync(out)
       .filter((name) => name.startsWith("still-"))
@@ -214,12 +224,17 @@ const commands = {
 
   async music() {
     const plan = join(source, "music.json");
-    if (!existsSync(plan)) fail(`video: no videos/${slug}/music.json`);
+    if (!existsSync(plan)) {
+      fail(`video: no videos/${slug}/music.json`);
+    }
     const env = join(repo, ".env.local");
-    if (!process.env.ELEVENLABS_API_KEY && existsSync(env))
+    if (!process.env.ELEVENLABS_API_KEY && existsSync(env)) {
       process.loadEnvFile(env);
+    }
     const key = process.env.ELEVENLABS_API_KEY;
-    if (!key) fail("video: set ELEVENLABS_API_KEY to compose music");
+    if (!key) {
+      fail("video: set ELEVENLABS_API_KEY to compose music");
+    }
     const response = await fetch(
       "https://api.elevenlabs.io/v1/music?output_format=mp3_48000_192",
       {
@@ -228,10 +243,11 @@ const commands = {
         body: readFileSync(plan, "utf8"),
       },
     );
-    if (!response.ok)
+    if (!response.ok) {
       fail(
         `video: ElevenLabs returned ${response.status}: ${await response.text()}`,
       );
+    }
     const file = join(source, "music.mp3");
     writeFileSync(file, Buffer.from(await response.arrayBuffer()));
     const song = response.headers.get("song-id");
@@ -325,17 +341,23 @@ const commands = {
       `video: out/${slug}/${slug}.mp4, ${count} frames (${(count / stage.fps).toFixed(2)}s)`,
     );
     console.log(`video: poster out/${slug}/${slug}.jpg at ${stage.poster}ms`);
-    if (lufs) console.log(`video: ${lufs} LUFS integrated`);
+    if (lufs) {
+      console.log(`video: ${lufs} LUFS integrated`);
+    }
     const problems = [
       count === expected ? "" : `expected ${expected} frames, got ${count}`,
       first >= 250 ? "" : `first frame is not white (min luma ${first})`,
       last >= 250 ? "" : `last frame is not white (min luma ${last})`,
     ].filter(Boolean);
-    if (problems.length) fail(`video: ${problems.join("; ")}`);
+    if (problems.length) {
+      fail(`video: ${problems.join("; ")}`);
+    }
     console.log("video: first and last frames are white");
   },
 };
 
 const action = commands[command];
-if (!action) fail(USAGE);
+if (!action) {
+  fail(USAGE);
+}
 await action();

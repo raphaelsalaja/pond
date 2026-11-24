@@ -1,14 +1,16 @@
 import "@/app/effects/save-library-bridge";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { act, type ReactNode } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   createLibraryTestRouter,
   currentLocation,
-  type LibraryTestRouter,
 } from "@/app/test/library-router";
+import type { LibraryTestRouter } from "@/app/test/library-router";
 import { folders } from "@/features/library/state/folders";
 import { inboxReview } from "@/features/library/state/inbox-review";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
@@ -20,9 +22,9 @@ let host: HTMLDivElement;
 let root: Root;
 let router: LibraryTestRouter;
 interface QueryInput {
-  ids?: string[];
+  ids?: Array<string>;
   folderId?: string;
-  saveIds?: string[];
+  saveIds?: Array<string>;
 }
 
 const requests: Array<{ name: string; input?: QueryInput }> = [];
@@ -47,12 +49,16 @@ function addInboxSave(id: string, title: string) {
       ],
     }),
   );
-  if (!save) throw new Error("Invalid Save fixture");
+  if (!save) {
+    throw new Error("Invalid Save fixture");
+  }
   pool.upsert({ ...save, inboxState: "review" });
 }
 
 function keyCode(key: string): string {
-  if (/^[a-z]$/i.test(key)) return `Key${key.toUpperCase()}`;
+  if (/^[a-z]$/i.test(key)) {
+    return `Key${key.toUpperCase()}`;
+  }
   return /^\d$/.test(key) ? `Digit${key}` : key;
 }
 
@@ -106,7 +112,7 @@ beforeEach(async () => {
     redoStep: async () => ({ outcome: "done", canUndo: true, canRedo: false }),
     query: async (name: string, input?: QueryInput) => {
       requests.push({ name, input });
-      if (name === "folders.list")
+      if (name === "folders.list") {
         return [
           {
             id: "folder",
@@ -117,11 +123,20 @@ beforeEach(async () => {
             createdAt: new Date(0),
           },
         ];
-      if (name === "folders.memberships" || name === "tags.list") return [];
-      if (name === "saves.getMany") return [];
-      if (name === "libraryHealth.overview") return null;
-      if (name === "saves.queryPage") return { ids: ["a", "b"] };
-      if (name === "saves.sidebarCounts")
+      }
+      if (name === "folders.memberships" || name === "tags.list") {
+        return [];
+      }
+      if (name === "saves.getMany") {
+        return [];
+      }
+      if (name === "libraryHealth.overview") {
+        return null;
+      }
+      if (name === "saves.queryPage") {
+        return { ids: ["a", "b"] };
+      }
+      if (name === "saves.sidebarCounts") {
         return {
           library: 2,
           uncategorized: 2,
@@ -134,6 +149,7 @@ beforeEach(async () => {
           folders: {},
           foldersDownloading: {},
         };
+      }
       return { changed: 1, undoId: "step-1" };
     },
   });
@@ -231,7 +247,9 @@ it("rewinds to the Save whose change the toast undid", async () => {
   const undo = [...document.querySelectorAll("button")].find(
     (button) => button.textContent === "Undo",
   );
-  if (!undo) throw new Error("Missing Undo toast");
+  if (!undo) {
+    throw new Error("Missing Undo toast");
+  }
   undo.focus();
   await act(async () => undo.click());
   expect(progress()).toBe("1 / 2");

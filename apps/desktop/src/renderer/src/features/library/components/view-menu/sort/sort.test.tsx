@@ -1,6 +1,7 @@
 import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openLibraryAt } from "@/app/test/library-router";
 import {
@@ -9,6 +10,21 @@ import {
   setSort,
 } from "@/features/library/state/view-store";
 import { SortSection } from "./";
+
+function control(label: string) {
+  const match = [
+    ...document.querySelectorAll<HTMLElement>(
+      "button, label, [role='combobox'], [role='option']",
+    ),
+  ].find((node) => {
+    const text = (node.textContent ?? "").replaceAll(/\s+/g, " ").trim();
+    return node.getAttribute("aria-label") === label || text === label;
+  });
+  if (!match) {
+    throw new Error(`Missing control ${label}`);
+  }
+  return match;
+}
 
 describe("sort section", () => {
   let root: Root;
@@ -47,24 +63,13 @@ describe("sort section", () => {
     );
   }
 
-  function control(label: string) {
-    const match = [
-      ...document.querySelectorAll<HTMLElement>(
-        "button, label, [role='combobox'], [role='option']",
-      ),
-    ].find((node) => {
-      const text = (node.textContent ?? "").replace(/\s+/g, " ").trim();
-      return node.getAttribute("aria-label") === label || text === label;
-    });
-    if (!match) throw new Error(`Missing control ${label}`);
-    return match;
-  }
-
   it("picks a sort key from the select", async () => {
     await render();
     await act(async () => {
       const trigger = document.querySelector<HTMLElement>("[role='combobox']");
-      if (!trigger) throw new Error(document.body.innerHTML);
+      if (!trigger) {
+        throw new Error(document.body.innerHTML);
+      }
       trigger.click();
     });
     expect(control("Date Published").textContent).toContain("Date Published");

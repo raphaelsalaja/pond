@@ -8,8 +8,10 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { downloadsColumnsLayout } from "@/features/downloads/state/downloads-columns";
 import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
@@ -58,7 +60,7 @@ function save(
     ...extras,
   };
 }
-function setSaves(saves: Save[]) {
+function setSaves(saves: Array<Save>) {
   savesStore.setState((state) => ({
     byId: new Map(saves.map((save) => [save.id, save])),
     sorted: saves,
@@ -69,20 +71,44 @@ let host: HTMLDivElement;
 let root: Root;
 let client: QueryClient;
 const query = vi.fn();
+const IdsArgSchema = z
+  .object({ ids: z.array(z.unknown()) })
+  .transform(({ ids }) =>
+    ids.filter((id): id is string => typeof id === "string"),
+  )
+  .catch([]);
 async function defaultQuery(name: string) {
-  if (name === "settings.getPrefs") return {};
-  if (name === "downloads.activity") return [];
-  if (name === "downloads.history") return { rows: [], nextCursor: null };
-  if (name === "pipeline.status") return { paused: false };
-  if (name === "pipeline.inflight") return [];
-  if (name === "downloads.ingestingOrFailed") return [];
-  if (name === "saves.getMany") return [];
-  if (name === "queue.sourceGates") return [];
-  if (name === "transferJobs.list") return [];
+  if (name === "settings.getPrefs") {
+    return {};
+  }
+  if (name === "downloads.activity") {
+    return [];
+  }
+  if (name === "downloads.history") {
+    return { rows: [], nextCursor: null };
+  }
+  if (name === "pipeline.status") {
+    return { paused: false };
+  }
+  if (name === "pipeline.inflight") {
+    return [];
+  }
+  if (name === "downloads.ingestingOrFailed") {
+    return [];
+  }
+  if (name === "saves.getMany") {
+    return [];
+  }
+  if (name === "queue.sourceGates") {
+    return [];
+  }
+  if (name === "transferJobs.list") {
+    return [];
+  }
   throw new Error(`Unexpected query: ${name}`);
 }
 const pipelinePause = vi.fn(async (paused: boolean) => ({ ok: true, paused }));
-const pipelineCancelSaves = vi.fn(async (ids: readonly string[]) => ({
+const pipelineCancelSaves = vi.fn(async (ids: ReadonlyArray<string>) => ({
   ok: true,
   cancelled: ids.length,
 }));
@@ -148,23 +174,29 @@ async function render() {
     );
   });
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 }
 async function click(selector: string, modifiers = {}) {
   const element = document.querySelector(selector);
-  if (!element) throw new Error(`Missing ${selector}`);
+  if (!element) {
+    throw new Error(`Missing ${selector}`);
+  }
   await act(async () => {
     element.dispatchEvent(
       new MouseEvent("click", { bubbles: true, ...modifiers }),
     );
   });
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 }
 
-function rowNames(): string[] {
+function rowNames(): Array<string> {
   return [...host.querySelectorAll('[role="row"]')].flatMap((row) => {
     const name = [...row.querySelectorAll("[title]")]
       .find((node) => node.textContent?.trim())
@@ -178,10 +210,14 @@ async function clickButton(label: string) {
     (node) =>
       node.getAttribute("aria-label") === label || node.textContent === label,
   );
-  if (!button) throw new Error(`Missing button ${label}`);
+  if (!button) {
+    throw new Error(`Missing button ${label}`);
+  }
   await act(async () => button.click());
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 }
 
@@ -189,33 +225,51 @@ async function clickFilterOption(label: string) {
   const option = [
     ...document.querySelectorAll('[role="menuitemcheckbox"]'),
   ].find((node) => node.textContent === label);
-  if (!option) throw new Error(`Missing filter option ${label}`);
+  if (!option) {
+    throw new Error(`Missing filter option ${label}`);
+  }
   await act(async () =>
     option.dispatchEvent(new MouseEvent("click", { bubbles: true })),
   );
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 }
 it("shows live downloads that paging missed without hydrating the whole library", async () => {
   const queued = save("Old failure", "failed", "dead");
   setSaves([save("Recent clip", "complete")]);
-  query.mockImplementation(async (name: string, args?: { ids?: string[] }) => {
-    if (name === "settings.getPrefs") return {};
-    if (name === "downloads.activity") return [];
-    if (name === "downloads.history") return { rows: [], nextCursor: null };
-    if (name === "pipeline.status") return { paused: false };
-    if (name === "pipeline.inflight") return [];
-    if (name === "downloads.ingestingOrFailed") return [queued.id];
-    if (name === "saves.getMany") {
-      expect(args?.ids).toEqual([queued.id]);
-      return [queued];
-    }
-    if (name === "saves.list") {
-      throw new Error("must not hydrate the full save pool");
-    }
-    throw new Error(`Unexpected query: ${name}`);
-  });
+  query.mockImplementation(
+    async (name: string, args?: { ids?: Array<string> }) => {
+      if (name === "settings.getPrefs") {
+        return {};
+      }
+      if (name === "downloads.activity") {
+        return [];
+      }
+      if (name === "downloads.history") {
+        return { rows: [], nextCursor: null };
+      }
+      if (name === "pipeline.status") {
+        return { paused: false };
+      }
+      if (name === "pipeline.inflight") {
+        return [];
+      }
+      if (name === "downloads.ingestingOrFailed") {
+        return [queued.id];
+      }
+      if (name === "saves.getMany") {
+        expect(args?.ids).toEqual([queued.id]);
+        return [queued];
+      }
+      if (name === "saves.list") {
+        throw new Error("must not hydrate the full save pool");
+      }
+      throw new Error(`Unexpected query: ${name}`);
+    },
+  );
   await render();
   expect(query).toHaveBeenCalledWith("downloads.ingestingOrFailed", {});
   expect(query).not.toHaveBeenCalledWith("saves.list", expect.anything());
@@ -225,15 +279,27 @@ it("shows live downloads that paging missed without hydrating the whole library"
 
 it("does not refetch queue saves that are already in the library pool", async () => {
   query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") return {};
-    if (name === "downloads.activity") return [];
-    if (name === "downloads.history") return { rows: [], nextCursor: null };
-    if (name === "pipeline.status") return { paused: false };
-    if (name === "pipeline.inflight") return [];
+    if (name === "settings.getPrefs") {
+      return {};
+    }
+    if (name === "downloads.activity") {
+      return [];
+    }
+    if (name === "downloads.history") {
+      return { rows: [], nextCursor: null };
+    }
+    if (name === "pipeline.status") {
+      return { paused: false };
+    }
+    if (name === "pipeline.inflight") {
+      return [];
+    }
     if (name === "downloads.ingestingOrFailed") {
       return ["Running video", "Waiting video", "Failed video"];
     }
-    if (name === "saves.getMany") return [];
+    if (name === "saves.getMany") {
+      return [];
+    }
     throw new Error(`Unexpected query: ${name}`);
   });
 
@@ -249,7 +315,7 @@ it("hydrates large queues in renderer-sized batches", async () => {
   await hydrateLiveDownloadSaves(ids, () => false);
 
   const batches = query.mock.calls.flatMap(([name, args]) =>
-    name === "saves.getMany" ? [args.ids] : [],
+    name === "saves.getMany" ? [IdsArgSchema.parse(args)] : [],
   );
   expect(batches.map((batch) => batch.length)).toEqual([200, 200, 1]);
 });
@@ -313,7 +379,9 @@ it("selects a download row on click", async () => {
 it("selects every download with Command-A while the table is focused", async () => {
   await render();
   const table = host.querySelector<HTMLElement>('[role="grid"]');
-  if (!table) throw new Error("Missing Downloads table");
+  if (!table) {
+    throw new Error("Missing Downloads table");
+  }
   table.focus();
 
   await act(async () => {
@@ -345,13 +413,17 @@ function barButton(label: string): HTMLButtonElement {
   const button = selectionBar()?.querySelector<HTMLButtonElement>(
     `button[aria-label="${label}"]`,
   );
-  if (!button) throw new Error(`Missing selection action ${label}`);
+  if (!button) {
+    throw new Error(`Missing selection action ${label}`);
+  }
   return button;
 }
 
 async function settle() {
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 }
 
@@ -372,7 +444,9 @@ it("selects and clears every download from the header checkbox", async () => {
   const header = host.querySelector<HTMLElement>(
     '[role="columnheader"] [role="checkbox"]',
   );
-  if (!header) throw new Error("Missing header checkbox");
+  if (!header) {
+    throw new Error("Missing header checkbox");
+  }
   expect(header.getAttribute("aria-checked")).toBe("false");
 
   await click('[title="Running video"]');
@@ -410,8 +484,12 @@ it("shows bulk actions for the selection and cancels it in one request", async (
 
 it("retries only failed rows and skips the rest from the selection toolbar", async () => {
   query.mockImplementation(async (name: string) => {
-    if (name === "saves.retryFailed") return { ok: true, requeued: 1 };
-    if (name === "saves.skipIngest") return { ok: true, skipped: 3 };
+    if (name === "saves.retryFailed") {
+      return { ok: true, requeued: 1 };
+    }
+    if (name === "saves.skipIngest") {
+      return { ok: true, skipped: 3 };
+    }
     return defaultQuery(name);
   });
   await render();
@@ -437,7 +515,7 @@ it("retries only failed rows and skips the rest from the selection toolbar", asy
   const skipped = query.mock.calls.find(
     ([name]) => name === "saves.skipIngest",
   );
-  expect([...(skipped?.[1]?.ids ?? [])].sort()).toEqual([
+  expect(IdsArgSchema.parse(skipped?.[1]).sort()).toEqual([
     "Failed video",
     "Running video",
     "Waiting video",
@@ -452,7 +530,9 @@ it("applies a context menu action to every selected download", async () => {
   const row = host
     .querySelector('[title="Waiting video"]')
     ?.closest('[role="row"]');
-  if (!row) throw new Error("Missing Waiting video row");
+  if (!row) {
+    throw new Error("Missing Waiting video row");
+  }
 
   await act(async () => {
     row.dispatchEvent(
@@ -469,7 +549,9 @@ it("applies a context menu action to every selected download", async () => {
   const item = [...document.querySelectorAll('[role="menuitem"]')].find(
     (node) => node.textContent === "Cancel Selected",
   );
-  if (!item) throw new Error("Missing Cancel Selected menu item");
+  if (!item) {
+    throw new Error("Missing Cancel Selected menu item");
+  }
   await act(async () =>
     item.dispatchEvent(new MouseEvent("click", { bubbles: true })),
   );
@@ -507,15 +589,20 @@ it("lists waiting and completed rows in the same table", async () => {
 
 it("shows completed history in the table without opening a group", async () => {
   query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") return {};
-    if (name === "pipeline.status") return { paused: false };
+    if (name === "settings.getPrefs") {
+      return {};
+    }
+    if (name === "pipeline.status") {
+      return { paused: false };
+    }
     if (
       name === "downloads.activity" ||
       name === "downloads.ingestingOrFailed" ||
       name === "pipeline.inflight"
-    )
+    ) {
       return [];
-    if (name === "downloads.history")
+    }
+    if (name === "downloads.history") {
       return {
         rows: [
           {
@@ -529,7 +616,7 @@ it("shows completed history in the table without opening a group", async () => {
             attempts: 0,
             failedOp: null,
             error: null,
-            ts: 2_000,
+            ts: 2000,
           },
           {
             id: 1,
@@ -547,6 +634,7 @@ it("shows completed history in the table without opening a group", async () => {
         ],
         nextCursor: null,
       };
+    }
     throw new Error(`Unexpected query: ${name}`);
   });
   downloadsFilters.setStatuses(new Set());
@@ -561,7 +649,7 @@ it("shows completed history in the table without opening a group", async () => {
 it("hides completed downloads by default and shows them on request", async () => {
   setSaves([]);
   query.mockImplementation(async (name: string) => {
-    if (name === "downloads.history")
+    if (name === "downloads.history") {
       return {
         rows: [
           {
@@ -580,6 +668,7 @@ it("hides completed downloads by default and shows them on request", async () =>
         ],
         nextCursor: { ts: 1000, id: 1 },
       };
+    }
     return defaultQuery(name);
   });
   await render();
@@ -653,7 +742,9 @@ it("explains why a download failed from its status", async () => {
     for (const type of ["pointerenter", "mouseenter", "mousemove"]) {
       status?.dispatchEvent(new MouseEvent(type, { bubbles: true }));
     }
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 800);
+    });
   });
   expect(document.body.textContent).toContain(
     "Instagram needs you to sign in again. Reconnect it in Sources to resume.",
@@ -680,7 +771,7 @@ it("explains a download waiting on its hourly limit", async () => {
     }),
   ]);
   query.mockImplementation(async (name: string) => {
-    if (name === "queue.sourceGates")
+    if (name === "queue.sourceGates") {
       return [
         {
           source: "twitter",
@@ -694,11 +785,14 @@ it("explains a download waiting on its hourly limit", async () => {
           recoveryProbe: false,
         },
       ];
+    }
     return defaultQuery(name);
   });
   await render();
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 
   const queuedRow = host
@@ -712,7 +806,9 @@ it("explains a download waiting on its hourly limit", async () => {
     for (const type of ["pointerenter", "mouseenter", "mousemove"]) {
       status?.dispatchEvent(new MouseEvent(type, { bubbles: true }));
     }
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 800);
+    });
   });
   expect(document.body.textContent).toContain(
     "Hourly download limit reached (40/hour). Resumes in 12 min.",
@@ -740,8 +836,12 @@ it("refreshes a download once its last running task settles", async () => {
   let current = running;
   setSaves([running]);
   query.mockImplementation(async (name: string) => {
-    if (name === "pipeline.inflight") return inflight;
-    if (name === "saves.getMany") return [current];
+    if (name === "pipeline.inflight") {
+      return inflight;
+    }
+    if (name === "saves.getMany") {
+      return [current];
+    }
     return defaultQuery(name);
   });
 
@@ -754,11 +854,15 @@ it("refreshes a download once its last running task settles", async () => {
     inflight = [];
     current = blocked;
     await act(async () => {
-      vi.advanceTimersByTime(2_000);
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      vi.advanceTimersByTime(2000);
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
     });
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
     });
 
     expect(query).toHaveBeenCalledWith("saves.getMany", {
@@ -814,11 +918,21 @@ it("moves every unfinished download to Trash and leaves finished saves", async (
     save("Finished video", "complete"),
   ]);
   query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") return {};
-    if (name === "downloads.activity") return [];
-    if (name === "downloads.history") return { rows: [], nextCursor: null };
-    if (name === "pipeline.status") return { paused: false };
-    if (name === "pipeline.inflight") return [];
+    if (name === "settings.getPrefs") {
+      return {};
+    }
+    if (name === "downloads.activity") {
+      return [];
+    }
+    if (name === "downloads.history") {
+      return { rows: [], nextCursor: null };
+    }
+    if (name === "pipeline.status") {
+      return { paused: false };
+    }
+    if (name === "pipeline.inflight") {
+      return [];
+    }
     if (name === "downloads.ingestingOrFailed") {
       return [
         "Running video",
@@ -827,7 +941,9 @@ it("moves every unfinished download to Trash and leaves finished saves", async (
         "Older hidden failure",
       ];
     }
-    if (name === "saves.getMany") return [];
+    if (name === "saves.getMany") {
+      return [];
+    }
     if (name === "downloads.clearUnfinished") {
       return {
         changed: 4,
@@ -839,7 +955,9 @@ it("moves every unfinished download to Trash and leaves finished saves", async (
         ],
       };
     }
-    if (name === "feedback.emit") return { ok: true };
+    if (name === "feedback.emit") {
+      return { ok: true };
+    }
     throw new Error(`Unexpected query: ${name}`);
   });
 
@@ -860,18 +978,34 @@ it("prevents duplicate clear requests while moving downloads to Trash", async ()
     finishTrash = resolve;
   });
   query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") return {};
-    if (name === "downloads.activity") return [];
-    if (name === "downloads.history") return { rows: [], nextCursor: null };
-    if (name === "pipeline.status") return { paused: false };
-    if (name === "pipeline.inflight") return [];
-    if (name === "downloads.ingestingOrFailed") return ["Running video"];
-    if (name === "saves.getMany") return [];
+    if (name === "settings.getPrefs") {
+      return {};
+    }
+    if (name === "downloads.activity") {
+      return [];
+    }
+    if (name === "downloads.history") {
+      return { rows: [], nextCursor: null };
+    }
+    if (name === "pipeline.status") {
+      return { paused: false };
+    }
+    if (name === "pipeline.inflight") {
+      return [];
+    }
+    if (name === "downloads.ingestingOrFailed") {
+      return ["Running video"];
+    }
+    if (name === "saves.getMany") {
+      return [];
+    }
     if (name === "downloads.clearUnfinished") {
       await trashFinished;
       return { changed: 1, ids: ["Running video"] };
     }
-    if (name === "feedback.emit") return { ok: true };
+    if (name === "feedback.emit") {
+      return { ok: true };
+    }
     throw new Error(`Unexpected query: ${name}`);
   });
 
@@ -879,10 +1013,17 @@ it("prevents duplicate clear requests while moving downloads to Trash", async ()
   const button = [...document.querySelectorAll("button")].find(
     (node) => node.getAttribute("aria-label") === "Clear Unfinished",
   );
-  if (!button) throw new Error("Missing Clear Unfinished button");
+  if (!button) {
+    throw new Error("Missing Clear Unfinished button");
+  }
   expect(button.querySelector("svg")).not.toBeNull();
   await act(async () => button.click());
-  await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+  await act(
+    async () =>
+      new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      }),
+  );
   expect(button.hasAttribute("disabled")).toBe(true);
   await act(async () => button.click());
 
@@ -896,23 +1037,39 @@ it("prevents duplicate clear requests while moving downloads to Trash", async ()
 });
 
 it("ignores hydration rows captured before unfinished downloads were cleared", async () => {
-  let finishHydration: ((rows: Save[]) => void) | undefined;
-  const hydration = new Promise<Save[]>((resolve) => {
+  let finishHydration: ((rows: Array<Save>) => void) | undefined;
+  const hydration = new Promise<Array<Save>>((resolve) => {
     finishHydration = resolve;
   });
   setSaves([save("Running video", "ingesting", "running")]);
   query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") return {};
-    if (name === "downloads.activity") return [];
-    if (name === "downloads.history") return { rows: [], nextCursor: null };
-    if (name === "pipeline.status") return { paused: false };
-    if (name === "pipeline.inflight") return [];
-    if (name === "downloads.ingestingOrFailed") return ["Older failure"];
-    if (name === "saves.getMany") return hydration;
+    if (name === "settings.getPrefs") {
+      return {};
+    }
+    if (name === "downloads.activity") {
+      return [];
+    }
+    if (name === "downloads.history") {
+      return { rows: [], nextCursor: null };
+    }
+    if (name === "pipeline.status") {
+      return { paused: false };
+    }
+    if (name === "pipeline.inflight") {
+      return [];
+    }
+    if (name === "downloads.ingestingOrFailed") {
+      return ["Older failure"];
+    }
+    if (name === "saves.getMany") {
+      return hydration;
+    }
     if (name === "downloads.clearUnfinished") {
       return { changed: 2, ids: ["Running video", "Older failure"] };
     }
-    if (name === "feedback.emit") return { ok: true };
+    if (name === "feedback.emit") {
+      return { ok: true };
+    }
     throw new Error(`Unexpected query: ${name}`);
   });
 
@@ -921,7 +1078,9 @@ it("ignores hydration rows captured before unfinished downloads were cleared", a
   await act(async () => {
     finishHydration?.([save("Older failure", "failed", "dead")]);
     await hydration;
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 
   expect(host.querySelector('[title="Running video"]')).toBeNull();
@@ -929,23 +1088,39 @@ it("ignores hydration rows captured before unfinished downloads were cleared", a
 });
 
 it("ignores in-flight reloads captured before running downloads were cleared", async () => {
-  let finishReload: ((rows: Save[]) => void) | undefined;
-  const reload = new Promise<Save[]>((resolve) => {
+  let finishReload: ((rows: Array<Save>) => void) | undefined;
+  const reload = new Promise<Array<Save>>((resolve) => {
     finishReload = resolve;
   });
   setSaves([save("Running video", "ingesting", "running")]);
   query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") return {};
-    if (name === "downloads.activity") return [];
-    if (name === "downloads.history") return { rows: [], nextCursor: null };
-    if (name === "pipeline.status") return { paused: false };
-    if (name === "pipeline.inflight") return ["Running video"];
-    if (name === "downloads.ingestingOrFailed") return [];
-    if (name === "saves.getMany") return reload;
+    if (name === "settings.getPrefs") {
+      return {};
+    }
+    if (name === "downloads.activity") {
+      return [];
+    }
+    if (name === "downloads.history") {
+      return { rows: [], nextCursor: null };
+    }
+    if (name === "pipeline.status") {
+      return { paused: false };
+    }
+    if (name === "pipeline.inflight") {
+      return ["Running video"];
+    }
+    if (name === "downloads.ingestingOrFailed") {
+      return [];
+    }
+    if (name === "saves.getMany") {
+      return reload;
+    }
     if (name === "downloads.clearUnfinished") {
       return { changed: 1, ids: ["Running video"] };
     }
-    if (name === "feedback.emit") return { ok: true };
+    if (name === "feedback.emit") {
+      return { ok: true };
+    }
     throw new Error(`Unexpected query: ${name}`);
   });
 
@@ -954,7 +1129,9 @@ it("ignores in-flight reloads captured before running downloads were cleared", a
   await act(async () => {
     finishReload?.([save("Running video", "ingesting", "running")]);
     await reload;
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 
   expect(host.querySelector('[title="Running video"]')).toBeNull();
@@ -962,7 +1139,7 @@ it("ignores in-flight reloads captured before running downloads were cleared", a
 
 it("bounds the initial render before the downloads table is measured", async () => {
   setSaves(
-    Array.from({ length: 1_000 }, (_, index) =>
+    Array.from({ length: 1000 }, (_, index) =>
       save(`Failed video ${index}`, "failed", "dead"),
     ),
   );
@@ -974,7 +1151,7 @@ it("bounds the initial render before the downloads table is measured", async () 
 
 it("shows Library Transfers as rows in the Downloads table", async () => {
   query.mockImplementation(async (name: string) => {
-    if (name === "transferJobs.list")
+    if (name === "transferJobs.list") {
       return [
         {
           id: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -994,6 +1171,7 @@ it("shows Library Transfers as rows in the Downloads table", async () => {
           updatedAt: Date.now(),
         },
       ];
+    }
     return defaultQuery(name);
   });
   await render();

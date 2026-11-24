@@ -19,10 +19,14 @@ export function poly(
 ) {
   const count = points.length;
   const at = (i) => points[(i + count) % count];
+  /** An open line's end segment has no corner at its far end, so its whole length can round this one. */
+  const free = (j) => !closed && (j === 0 || j === count - 1);
   const fillet = (i) => {
     const named = corners[i] !== undefined;
     const r0 = named ? corners[i] : radius;
-    if (!r0) return null;
+    if (!r0) {
+      return null;
+    }
     const a = at(i - 1);
     const b = at(i);
     const c = at(i + 1);
@@ -31,13 +35,15 @@ export function poly(
     const angle = Math.acos(
       Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1])),
     );
-    if (angle > Math.PI - 1e-3) return null;
+    if (angle > Math.PI - 1e-3) {
+      return null;
+    }
     const la = len(sub(a, b));
     const lc = len(sub(c, b));
     let r = named ? r0 : Math.min(r0, Math.min(la, lc) / 4);
-    if (!named && angle < Math.PI / 3) r /= 2;
-    /** An open line's end segment has no corner at its far end, so its whole length can round this one. */
-    const free = (j) => !closed && (j === 0 || j === count - 1);
+    if (!named && angle < Math.PI / 3) {
+      r /= 2;
+    }
     const t = Math.min(
       r / Math.tan(angle / 2),
       free(i - 1) ? la : la / 2,
@@ -120,11 +126,12 @@ export function draw(script, style) {
   const body = parts
     .map((p) => {
       const part = toPart(p);
-      if (part.solid)
+      if (part.solid) {
         return `<path d="${part.d}" fill="currentColor" stroke="none"/>`;
+      }
       return `<path d="${part.d}"${part.fill ? ` fill="currentColor"` : ""}${part.width ? ` stroke-width="${part.width}"` : ""}/>`;
     })
     .join("")
-    .replace(/-?\d+\.\d{4,}/g, (m) => String(+(+m).toFixed(3)));
+    .replaceAll(/-?\d+\.\d{4,}/g, (m) => String(+(+m).toFixed(3)));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${GRID} ${GRID}" fill="none" stroke="currentColor" stroke-width="${style.stroke}" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 }

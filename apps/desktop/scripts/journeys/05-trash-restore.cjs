@@ -8,11 +8,16 @@ exports.run = async (ctx) => {
   await untilSave(
     ctx,
     coral,
-    (save) => save.deletedAt != null,
+    (save) => save.deletedAt !== null && save.deletedAt !== undefined,
     "moved to Trash",
   );
   await ctx.navigate("/trash");
   await select(ctx, coral);
   await ctx.key("Backspace");
-  await untilSave(ctx, coral, (save) => save.deletedAt == null, "came back");
+  await untilSave(
+    ctx,
+    coral,
+    (save) => save.deletedAt === null || save.deletedAt === undefined,
+    "came back",
+  );
 };

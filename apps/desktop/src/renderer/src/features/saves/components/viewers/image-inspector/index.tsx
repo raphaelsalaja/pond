@@ -1,14 +1,9 @@
 import type { ImageCrop } from "@pond/schema/db";
+import { isElement } from "@pond/ui/dom";
 import { isStaticThumbnailFile } from "@shared/media-index";
 import { pickCardFile } from "@shared/save-file-names";
-import {
-  type CSSProperties,
-  type ReactNode,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import { useViewerChromeEnabled } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { useGifPlayer } from "@/features/saves/hooks/use-gif-player";
@@ -25,9 +20,9 @@ import {
   flipPatch,
   rotatePatch,
 } from "@/features/saves/lib/inspect-actions";
+import { mediaTransformStyle } from "@/features/saves/lib/media-transform";
 import { buildOriginalMediaUnits } from "@/features/saves/lib/media/units";
 import { pondFileUrl } from "@/features/saves/lib/media/url";
-import { mediaTransformStyle } from "@/features/saves/lib/media-transform";
 import { beginSaveDrag } from "@/features/saves/lib/start-drag";
 import { FIT_POSE, zoomImageAt } from "@/features/saves/lib/viewer-memory";
 import { cardThumbnailFor } from "@/features/saves/state/card-thumbnails";
@@ -40,13 +35,14 @@ import { notify } from "@/shared/lib/toast";
 import { usePrefs } from "@/shared/state/prefs";
 import { ImageControls } from "./controls";
 import { GifContextMenu } from "./gif-menu";
-import { createImageGestures, type ImageDrag } from "./image-gestures";
+import { useImageGestures } from "./image-gestures";
+import type { ImageDrag } from "./image-gestures";
 import { Navigator } from "./navigator";
 import { ImageOverlay } from "./overlay";
-import styles from "./styles.module.css";
 import type { InspectorMode } from "./types";
 import { useCropKeyboard } from "./use-crop-keyboard";
 import { useImageViewport } from "./use-image-viewport";
+import styles from "./styles.module.css";
 
 interface ImageInspectorProps {
   save: Save;
@@ -92,9 +88,9 @@ export function ImageInspector({
   const [gifFramesOpen, setGifFramesOpen] = useState(false);
   const [draft, setDraft] = useState<ImageCrop | null>(null);
   const [busy, setBusy] = useState(false);
-  const drag = useRef<ImageDrag | null>(null);
+  const dragRef = useRef<ImageDrag | null>(null);
   const lastNavigate = useRef(0);
-  const gestureMoved = useRef(false);
+  const gestureMovedRef = useRef(false);
   const pending = useRef(false);
   const gif = useGifPlayer(
     src,
@@ -102,17 +98,41 @@ export function ImageInspector({
     active && mode === "view",
     prefs.gifAutoplay !== false,
   );
+  const {
+    canvas: gifCanvasRef,
+    frameIndex: gifFrameIndex,
+    loop: gifLoop,
+    ready: gifReady,
+    resetLoop: resetGifLoop,
+  } = gif;
   const navigate = (delta: number) => {
-    if (!onNavigate || Date.now() - lastNavigate.current < 200) return;
+    if (!onNavigate || Date.now() - lastNavigate.current < 200) {
+      return;
+    }
     lastNavigate.current = Date.now();
     void resultNavigation
       .next(save.id, delta)
       .then((next) => {
-        if (next) onNavigate(next);
+        if (next) {
+          onNavigate(next);
+        }
       })
       .catch(() => {});
   };
-  const viewport = useImageViewport({
+  const {
+    actual: viewActual,
+    bounds: viewBounds,
+    frame: frameRef,
+    image: imageRef,
+    live: viewLive,
+    oneToOne,
+    pointFromClient,
+    pose: viewPose,
+    ratio: imageRatio,
+    reportImage,
+    setPosition,
+    size: viewSize,
+  } = useImageViewport({
     active,
     defaultSize: prefs.defaultImageSize,
     initialRatio:
@@ -121,7 +141,7 @@ export function ImageInspector({
         : save.width && save.height
           ? save.width / save.height
           : null,
-    isDragging: () => drag.current !== null,
+    isDragging: () => dragRef.current !== null,
     mode,
     naturalWidth: file?.width || save.width || 0,
     onNavigate: navigate,
@@ -131,7 +151,7 @@ export function ImageInspector({
     staticAtFit: quick,
     wheelBehavior: prefs.wheelBehavior,
   });
-  const decoded = useImageDecoded(viewport.image, src);
+  const decoded = useImageDecoded(imageRef, src);
   const thumbnail = cardThumbnailFor(src);
   const cardFile = pickCardFile(save.files);
   /** `save.blurhash` encodes the card's still, so it only stands in for that same file. */
@@ -139,11 +159,13 @@ export function ImageInspector({
     cardFile && cardFile.path === file?.path && isStaticThumbnailFile(cardFile)
       ? save.blurhash
       : null;
-  const shown = useMediaReveal(decoded || gif.ready, src);
+  const shown = useMediaReveal(decoded || gifReady, src);
   useReportMediaReady(shown);
 
   const run = async (action: () => Promise<void>) => {
-    if (pending.current) return;
+    if (pending.current) {
+      return;
+    }
     pending.current = true;
     setBusy(true);
     try {
@@ -171,29 +193,32 @@ export function ImageInspector({
     const nextMode = mode === "crop" ? "view" : "crop";
     setMode(nextMode);
     setDraft(nextMode === "crop" ? fullImageCrop() : null);
-    viewport.setPosition(() => FIT_POSE);
+    setPosition(() => FIT_POSE);
   };
   const actualSize = () => {
-    const one = viewport.oneToOne;
-    if (one)
-      viewport.setPosition(() => ({
+    const one = oneToOne;
+    if (one) {
+      setPosition(() => ({
         zoom: Math.min(32, one),
         x: 0,
         y: 0,
       }));
+    }
   };
   const zoomOut = () =>
-    viewport.setPosition((previous) =>
+    setPosition((previous) =>
       zoomImageAt(previous, previous.zoom / 1.25, { x: 0, y: 0 }),
     );
   const zoomIn = () =>
-    viewport.setPosition((previous) =>
+    setPosition((previous) =>
       zoomImageAt(previous, previous.zoom * 1.25, { x: 0, y: 0 }),
     );
   const setZoomRatio = (ratio: number) => {
-    const one = viewport.oneToOne;
-    if (!one) return;
-    viewport.setPosition((previous) =>
+    const one = oneToOne;
+    if (!one) {
+      return;
+    }
+    setPosition((previous) =>
       zoomImageAt(previous, Math.min(32, ratio * one), { x: 0, y: 0 }),
     );
   };
@@ -202,36 +227,42 @@ export function ImageInspector({
       .query("saves.setGifThumbnail", {
         id: save.id,
         src,
-        frameIndex: gif.frameIndex,
+        frameIndex: gifFrameIndex,
       })
       .then((result) => {
-        if (!result.ok)
+        if (!result.ok) {
           notify({
             id: "gif-thumb",
             title: "Couldn't set this GIF frame as the thumbnail.",
           });
+        }
       });
   };
   const setImageThumbnail = () => {
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     void window.pond
       .query("saves.setImageThumbnail", {
         id: save.id,
         src: pondFileUrl(save.id, file.path),
       })
       .then((result) => {
-        if (!result.ok)
+        if (!result.ok) {
           notify({
             id: "image-thumb",
             title: "Couldn't set this image as the thumbnail.",
           });
+        }
       });
   };
 
   const canApplyCrop =
     !!draft && draft.w > 0 && draft.h > 0 && !isFullImageCrop(draft);
   const applyCrop = () => {
-    if (!draft || !canApplyCrop) return;
+    if (!draft || !canApplyCrop) {
+      return;
+    }
     void run(async () => {
       await applyInspect(save.id, cropPatch(draft), "inspect:crop");
       setDraft(null);
@@ -241,23 +272,27 @@ export function ImageInspector({
   useCropKeyboard({
     active: active && edits === "full",
     draft,
-    frame: viewport.frame,
+    frame: frameRef,
     mode,
     onApply: applyCrop,
-    ratio: viewport.ratio,
+    ratio: imageRatio,
     setDraft,
     setMode,
   });
   const saveCrop = () => {
-    if (!draft) return;
+    if (!draft) {
+      return;
+    }
     void run(async () => {
       const result = await window.pond.query("saves.cropAsCopy", {
         id: save.id,
         fileIndex,
         crop: draft,
-        frameIndex: isGif ? gif.frameIndex : undefined,
+        frameIndex: isGif ? gifFrameIndex : undefined,
       });
-      if (!result.ok) throw new Error(result.error);
+      if (!result.ok) {
+        throw new Error(result.error);
+      }
       setDraft(null);
       setMode("view");
       notify({ id: "image-crop-copy", title: "Crop saved as a new image" });
@@ -268,41 +303,46 @@ export function ImageInspector({
     mode === "view" ? mediaTransformStyle(save) : { transform: "none" };
   imageStyle.imageRendering =
     prefs.imageRendering === "pixelated" ? "pixelated" : "auto";
-  if (grayscale) imageStyle.filter = "grayscale(1)";
+  if (grayscale) {
+    imageStyle.filter = "grayscale(1)";
+  }
   const previousMode = useRef(mode);
   useEffect(() => {
     const leftMode = previousMode.current !== mode && mode === "view";
     previousMode.current = mode;
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     if (mode !== "view") {
-      viewport.frame.current?.focus();
+      frameRef.current?.focus();
       return;
     }
     const focusLost =
       !document.activeElement || document.activeElement === document.body;
     /** The crop bar unmounts with its focused button; return focus to the image instead of body. */
-    if (leftMode && focusLost)
-      viewport.frame.current?.focus({ preventScroll: true });
-  }, [active, mode, viewport.frame]);
-  const gestures = createImageGestures({
+    if (leftMode && focusLost) {
+      frameRef.current?.focus({ preventScroll: true });
+    }
+  }, [active, mode, frameRef]);
+  const gestures = useImageGestures({
     active,
     draft,
-    drag,
-    gestureMoved,
+    dragRef,
+    gestureMovedRef,
     mode,
     onNavigate: navigate,
-    pointFromClient: viewport.pointFromClient,
-    poseZoom: viewport.pose.zoom,
-    ratio: viewport.ratio,
+    pointFromClient,
+    poseZoom: viewPose.zoom,
+    ratio: imageRatio,
     setDraft,
-    setPosition: viewport.setPosition,
+    setPosition,
   });
 
   return (
     <div
       className={styles.root}
       data-active={active || undefined}
-      data-gif-player={gif.ready || undefined}
+      data-gif-player={gifReady || undefined}
     >
       <span id={instructionsId} className={styles.instructions}>
         {mode === "crop"
@@ -310,18 +350,20 @@ export function ImageInspector({
           : "Arrow keys pan. Plus and minus zoom."}
       </span>
       <div
-        ref={viewport.frame}
+        ref={frameRef}
         className={styles.frame}
         role="application"
         aria-label="Image"
         aria-describedby={instructionsId}
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard users pan and zoom the image from this frame
         tabIndex={active ? 0 : -1}
         onKeyDown={(event) => {
           if (
             event.target !== event.currentTarget ||
             event.nativeEvent.isComposing
-          )
+          ) {
             return;
+          }
           const direction = {
             ArrowLeft: [-1, 0],
             ArrowRight: [1, 0],
@@ -329,7 +371,7 @@ export function ImageInspector({
             ArrowDown: [0, 1],
           }[event.key];
           /** At fit, Quick Preview leaves arrow keys to step between items and Saves. */
-          const stepping = quick && !!direction && viewport.pose.zoom <= 1;
+          const stepping = quick && !!direction && viewPose.zoom <= 1;
           if (
             mode === "view" &&
             !stepping &&
@@ -337,8 +379,8 @@ export function ImageInspector({
           ) {
             event.preventDefault();
             event.stopPropagation();
-            if (direction)
-              viewport.setPosition((previous) => ({
+            if (direction) {
+              setPosition((previous) => ({
                 ...previous,
                 x:
                   previous.x -
@@ -347,15 +389,18 @@ export function ImageInspector({
                   previous.y -
                   (direction[1] ?? 0) * (event.shiftKey ? 100 : 20),
               }));
-            else if (event.key === "-") zoomOut();
-            else zoomIn();
+            } else if (event.key === "-") {
+              zoomOut();
+            } else {
+              zoomIn();
+            }
           }
         }}
         data-background={prefs.transparentBackground ?? "none"}
         data-mode={mode}
         data-click-zoom={
           quick && mode === "view"
-            ? viewport.pose.zoom > 1
+            ? viewPose.zoom > 1
               ? "out"
               : "in"
             : undefined
@@ -369,28 +414,29 @@ export function ImageInspector({
             ? (event) => {
                 const start = press.current;
                 press.current = null;
-                if (mode !== "view" || event.button !== 0) return;
-                if (
-                  event.target instanceof Element &&
-                  event.target.closest("button")
-                )
+                if (mode !== "view" || event.button !== 0) {
                   return;
+                }
+                if (isElement(event.target) && event.target.closest("button")) {
+                  return;
+                }
                 if (
                   start &&
                   Math.abs(event.clientX - start.x) +
                     Math.abs(event.clientY - start.y) >
                     4
-                )
+                ) {
                   return;
-                if (viewport.pose.zoom > 1) {
-                  viewport.setPosition(() => FIT_POSE);
+                }
+                if (viewPose.zoom > 1) {
+                  setPosition(() => FIT_POSE);
                   return;
                 }
                 const rect = event.currentTarget.getBoundingClientRect();
-                viewport.setPosition((previous) =>
+                setPosition((previous) =>
                   zoomImageAt(
                     previous,
-                    Math.min(32, Math.max(2, viewport.oneToOne ?? 0)),
+                    Math.min(32, Math.max(2, oneToOne ?? 0)),
                     {
                       x: event.clientX - rect.left - rect.width / 2,
                       y: event.clientY - rect.top - rect.height / 2,
@@ -403,20 +449,20 @@ export function ImageInspector({
       >
         <div
           className={styles.position}
-          data-live={viewport.live || undefined}
+          data-live={viewLive || undefined}
           style={{
-            transform: `translate(${viewport.pose.x}px, ${viewport.pose.y}px) scale(${viewport.pose.zoom})`,
+            transform: `translate(${viewPose.x}px, ${viewPose.y}px) scale(${viewPose.zoom})`,
           }}
         >
           <div
             className={styles.content}
             style={
-              viewport.size.width && viewport.size.height
+              viewSize.width && viewSize.height
                 ? {
-                    left: viewport.bounds.left,
-                    top: viewport.bounds.top,
-                    width: viewport.bounds.width,
-                    height: viewport.bounds.height,
+                    left: viewBounds.left,
+                    top: viewBounds.top,
+                    width: viewBounds.width,
+                    height: viewBounds.height,
                   }
                 : undefined
             }
@@ -442,12 +488,10 @@ export function ImageInspector({
             ) : null}
             <img
               ref={(element) => {
-                viewport.image.current = element;
-                if (element?.complete && element.naturalWidth)
-                  viewport.reportImage(
-                    element.naturalWidth,
-                    element.naturalHeight,
-                  );
+                imageRef.current = element;
+                if (element?.complete && element.naturalWidth) {
+                  reportImage(element.naturalWidth, element.naturalHeight);
+                }
               }}
               src={src}
               alt={save.title ?? ""}
@@ -455,13 +499,13 @@ export function ImageInspector({
               data-pending={!shown || undefined}
               decoding="async"
               fetchPriority={active ? "high" : "low"}
-              style={{ ...imageStyle, display: gif.ready ? "none" : undefined }}
-              draggable={mode === "view" && viewport.pose.zoom <= 1}
+              style={{ ...imageStyle, display: gifReady ? "none" : undefined }}
+              draggable={mode === "view" && viewPose.zoom <= 1}
               onDragStart={(event) => {
                 beginSaveDrag(save.id, event);
               }}
               onLoad={(event) =>
-                viewport.reportImage(
+                reportImage(
                   event.currentTarget.naturalWidth,
                   event.currentTarget.naturalHeight,
                 )
@@ -470,41 +514,41 @@ export function ImageInspector({
             />
             {isGif ? (
               <GifContextMenu
-                hasLoop={gif.loop !== null}
-                onResetLoop={gif.resetLoop}
+                hasLoop={gifLoop !== null}
+                onResetLoop={resetGifLoop}
                 onSetThumbnail={setGifThumbnail}
               >
                 <canvas
-                  ref={gif.canvas}
+                  ref={gifCanvasRef}
                   className={styles.image}
-                  data-frame={gif.frameIndex}
+                  data-frame={gifFrameIndex}
                   data-pending={!shown || undefined}
                   style={{
                     ...imageStyle,
-                    display: gif.ready ? "block" : "none",
+                    display: gifReady ? "block" : "none",
                   }}
-                  aria-label={`${save.title || "GIF"}, frame ${gif.frameIndex + 1}`}
+                  aria-label={`${save.title || "GIF"}, frame ${gifFrameIndex + 1}`}
                 />
               </GifContextMenu>
             ) : null}
             <ImageOverlay draft={draft} mode={mode} />
           </div>
         </div>
-        {showNavigator && viewport.size.width > 0 ? (
+        {showNavigator && viewSize.width > 0 ? (
           <Navigator
             src={src}
-            pose={viewport.pose}
-            bounds={viewport.bounds}
+            pose={viewPose}
+            bounds={viewBounds}
             stage={{
-              width: viewport.frame.current?.clientWidth ?? 1,
-              height: viewport.frame.current?.clientHeight ?? 1,
+              width: viewSize.width,
+              height: viewSize.height,
             }}
-            onPose={(next) => viewport.setPosition(() => next, true)}
+            onPose={(next) => setPosition(() => next, true)}
           />
         ) : null}
       </div>
       <ImageControls.Hud
-        actual={viewport.actual}
+        actual={viewActual}
         active={active}
         busy={busy}
         canCrop={canApplyCrop}
@@ -520,7 +564,7 @@ export function ImageInspector({
         onActualSize={actualSize}
         onApplyCrop={applyCrop}
         onCancelCrop={cancelCrop}
-        onFit={() => viewport.setPosition(() => FIT_POSE)}
+        onFit={() => setPosition(() => FIT_POSE)}
         onFlip={() =>
           void run(() =>
             applyInspect(save.id, flipPatch(save, "x"), "inspect:flip"),

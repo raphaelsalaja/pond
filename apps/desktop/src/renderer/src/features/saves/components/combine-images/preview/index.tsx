@@ -8,7 +8,8 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { buildPondUrl, thumbUrlFor } from "@/features/saves/lib/media/url";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { type Highlight, supportsTransparency } from "../options";
+import { supportsTransparency } from "../options";
+import type { Highlight } from "../options";
 import { clampZoom, stepZoom, ZoomBar } from "../zoom";
 import styles from "./styles.module.css";
 
@@ -25,7 +26,9 @@ function useSize<T extends HTMLElement>() {
   const [size, setSize] = useState({ width: 0, height: 0 });
   useLayoutEffect(() => {
     const element = ref.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     const measure = () =>
       setSize({ width: element.clientWidth, height: element.clientHeight });
     measure();
@@ -44,7 +47,7 @@ export function Preview({
   dropping,
   subscribeZoom,
 }: {
-  images: readonly CombineImage[];
+  images: ReadonlyArray<CombineImage>;
   layout: CombineLayout;
   options: CombineImagesOptions;
   highlight: Highlight;
@@ -69,11 +72,13 @@ export function Preview({
   useEffect(
     () =>
       subscribeZoom((action) => {
-        if (action === "view.zoom-reset") setZoom(1);
-        else
+        if (action === "view.zoom-reset") {
+          setZoom(1);
+        } else {
           setZoom(
             stepZoom(scaleRef.current, action === "view.zoom-in" ? 1 : -1),
           );
+        }
       }),
     [subscribeZoom],
   );
@@ -133,7 +138,7 @@ function Canvas({
   highlight,
   scale,
 }: {
-  images: readonly CombineImage[];
+  images: ReadonlyArray<CombineImage>;
   layout: CombineLayout;
   options: CombineImagesOptions;
   highlight: Highlight;
@@ -158,7 +163,9 @@ function Canvas({
     >
       {images.map(({ save, file }, index) => {
         const item = layout.items[index];
-        if (!item) return null;
+        if (!item) {
+          return null;
+        }
         const width = item.width * scale;
         return (
           <img

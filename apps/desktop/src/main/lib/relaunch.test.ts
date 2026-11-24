@@ -6,9 +6,16 @@ import {
   planRelaunch,
   RELAUNCH_ARG,
   relaunchCommand,
-  type SpawnRelaunchProcess,
   spawnRelaunch,
 } from "./relaunch";
+import type { SpawnRelaunchProcess } from "./relaunch";
+
+const failingSpawn: SpawnRelaunchProcess = () => ({
+  unref: () => {},
+  once: (_event, listener) => {
+    listener(new Error("spawn failed"));
+  },
+});
 
 describe("appRelaunchOptions", () => {
   it("relaunches Linux AppImages from the stable AppImage path", () => {
@@ -154,17 +161,11 @@ describe("spawnRelaunch", () => {
 
   it("reports a spawn failure to the caller", () => {
     let reported: Error | null = null;
-    const spawnProcess: SpawnRelaunchProcess = () => ({
-      unref: () => {},
-      once: (_event, listener) => {
-        listener(new Error("spawn failed"));
-      },
-    });
 
     spawnRelaunch(
       { command: "/home/user/Pond.AppImage", args: [], env: {} },
       {
-        spawnProcess,
+        spawnProcess: failingSpawn,
         onError: (error) => {
           reported = error;
         },

@@ -35,10 +35,13 @@ async function encode(
   const type = format === "jpeg" ? "image/jpeg" : "image/png";
   const blob = await canvas.convertToBlob({ type, quality: JPEG_QUALITY });
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  if (bytes.length > MAX_IMAGE_BYTES) throw new ScreenshotError(TOO_LARGE);
+  if (bytes.length > MAX_IMAGE_BYTES) {
+    throw new ScreenshotError(TOO_LARGE);
+  }
   let binary = "";
-  for (let offset = 0; offset < bytes.length; offset += 8192)
+  for (let offset = 0; offset < bytes.length; offset += 8192) {
     binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
+  }
   return {
     dataUrl: `data:${type};base64,${btoa(binary)}`,
     width: canvas.width,
@@ -58,7 +61,9 @@ async function render(
   const height = Math.max(1, Math.round(crop.height * scale));
   const canvas = new OffscreenCanvas(width, height);
   const context = canvas.getContext("2d");
-  if (!context) throw new ScreenshotError("Screenshots aren't available.");
+  if (!context) {
+    throw new ScreenshotError("Screenshots aren't available.");
+  }
   if (options.format === "jpeg") {
     context.fillStyle = "#fff";
     context.fillRect(0, 0, width, height);
@@ -163,24 +168,28 @@ function pageCaptureState(
       .map(Number);
     document.documentElement.removeAttribute(key);
     document.getElementById("pond-capture-style")?.remove();
-    for (const node of document.querySelectorAll("[data-pond-capture-fixed]"))
+    for (const node of document.querySelectorAll("[data-pond-capture-fixed]")) {
       node.removeAttribute("data-pond-capture-fixed");
-    if (previous?.length === 2)
+    }
+    if (previous?.length === 2) {
       window.scrollTo({
         left: previous[0] ?? 0,
         top: previous[1] ?? 0,
         behavior: "instant",
       });
+    }
     return null;
   }
   if (operation === "start") {
-    if (document.documentElement.hasAttribute(key))
+    if (document.documentElement.hasAttribute(key)) {
       throw new Error("A page capture is already running.");
+    }
     document.documentElement.setAttribute(key, `${scrollX},${scrollY}`);
     for (const node of document.querySelectorAll("body *")) {
       const position = getComputedStyle(node).position;
-      if (position === "fixed" || position === "sticky")
+      if (position === "fixed" || position === "sticky") {
         node.setAttribute("data-pond-capture-fixed", "");
+      }
     }
     const style = document.createElement("style");
     style.id = "pond-capture-style";
@@ -189,9 +198,10 @@ function pageCaptureState(
     document.documentElement.append(style);
   } else {
     const style = document.getElementById("pond-capture-style");
-    if (style && (x > 0 || y > 0))
+    if (style && (x > 0 || y > 0)) {
       style.textContent +=
         "[data-pond-capture-fixed]{visibility:hidden!important}";
+    }
   }
   window.scrollTo({ left: x, top: y, behavior: "instant" });
   return {
@@ -222,11 +232,14 @@ export async function captureFullPage(
     });
     const page = initial?.result;
     started = !!page;
-    if (!page) throw new ScreenshotError("Pond can't capture this page.");
-    if (page.width * page.height * page.scale ** 2 > MAX_PAGE_PIXELS)
+    if (!page) {
+      throw new ScreenshotError("Pond can't capture this page.");
+    }
+    if (page.width * page.height * page.scale ** 2 > MAX_PAGE_PIXELS) {
       throw new ScreenshotError(
         "This page is too large. Capture a region instead.",
       );
+    }
     for (let y = 0; y < page.height; y += page.viewportHeight) {
       for (let x = 0; x < page.width; x += page.viewportWidth) {
         const [moved] = await browser.scripting.executeScript({
@@ -239,12 +252,15 @@ export async function captureFullPage(
           !position ||
           position.viewportWidth !== page.viewportWidth ||
           position.viewportHeight !== page.viewportHeight
-        )
+        ) {
           throw new ScreenshotError(
             "The window size changed. Capture the page again.",
           );
+        }
         /** Chrome rate-limits captureVisibleTab to about two calls a second. */
-        await new Promise((resolve) => setTimeout(resolve, 550));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 550);
+        });
         const bitmap = await bitmapFrom(await grabVisible(tabId, windowId));
         try {
           density = bitmap.width / page.viewportWidth;
@@ -254,8 +270,9 @@ export async function captureFullPage(
             Math.round(page.height * sy),
           );
           const context = canvas.getContext("2d");
-          if (!context)
+          if (!context) {
             throw new ScreenshotError("Screenshots aren't available.");
+          }
           context.drawImage(
             bitmap,
             Math.round(position.x * density),
@@ -266,11 +283,13 @@ export async function captureFullPage(
         }
       }
     }
-    if (!canvas) throw new ScreenshotError("Pond couldn't capture this page.");
+    if (!canvas) {
+      throw new ScreenshotError("Pond couldn't capture this page.");
+    }
     const full = { x: 0, y: 0, width: canvas.width, height: canvas.height };
     return await render(canvas, full, density, options);
   } finally {
-    if (started)
+    if (started) {
       await browser.scripting
         .executeScript({
           target: { tabId },
@@ -278,5 +297,6 @@ export async function captureFullPage(
           args: ["restore"],
         })
         .catch(() => {});
+    }
   }
 }

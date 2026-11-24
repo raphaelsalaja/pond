@@ -13,16 +13,18 @@ import { RichFilePreview } from "@/features/saves/components/card/rich-file-prev
 import type { LibraryCardView } from "@/features/saves/components/card/types";
 import { useMediaPickOptions } from "@/features/saves/hooks/use-media-pick-options";
 import { ensureTextCover } from "@/features/saves/lib/ensure-text-cover";
+import { orientedThumbStyle } from "@/features/saves/lib/media-transform";
 import { richFilePreviewKind } from "@/features/saves/lib/media/rich-file-preview";
 import {
   buildMediaUnits,
-  type MediaPickOptions,
-  type MediaUnit,
   pickCardUnit,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
+import type {
+  MediaPickOptions,
+  MediaUnit,
+} from "@/features/saves/lib/media/units";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
-import { orientedThumbStyle } from "@/features/saves/lib/media-transform";
 import { shouldBlurSensitiveThumbnail } from "@/features/saves/lib/sensitive-content";
 import { isTextOnlySave, textBodyForSave } from "@/features/saves/lib/text";
 import { aspectDimsFor, aspectFor } from "@/features/saves/state/aspect";
@@ -77,7 +79,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   save: Save;
   view?: LibraryCardView;
   width?: number;
-  mediaUnits: MediaUnit[];
+  mediaUnits: Array<MediaUnit>;
   pickOptions: MediaPickOptions;
   unit: MediaUnit | null;
   primary: SaveFile | null;
@@ -99,7 +101,9 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       : null;
   }, [primary, save]);
   const hasVideoDims = useMemo(() => {
-    if (!unit?.isVideo) return false;
+    if (!unit?.isVideo) {
+      return false;
+    }
     const primary = (save.files ?? []).find((f) => f.path === unit.key) ?? null;
     if (
       primary?.width &&
@@ -118,15 +122,25 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   }, [save]);
 
   const slides = useMemo(() => {
-    if (!unit || unit.isVideo) return null;
+    if (!unit || unit.isVideo) {
+      return null;
+    }
     const images = mediaUnits.filter((candidate) => !candidate.isVideo);
-    if (images.length < 2) return null;
+    if (images.length < 2) {
+      return null;
+    }
     const idx = images.findIndex((u) => u.url === unit.url);
-    if (idx < 0) return null;
-    if (idx === 0) return images;
+    if (idx < 0) {
+      return null;
+    }
+    if (idx === 0) {
+      return images;
+    }
     const reordered = [...images];
     const [primary] = reordered.splice(idx, 1);
-    if (primary) reordered.unshift(primary);
+    if (primary) {
+      reordered.unshift(primary);
+    }
     return reordered;
   }, [mediaUnits, unit]);
 
@@ -136,7 +150,9 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
-      if (rect.width === 0) return;
+      if (rect.width === 0) {
+        return;
+      }
       const pointerRatio = Math.min(
         1,
         Math.max(0, (e.clientX - rect.left) / rect.width),
@@ -151,7 +167,9 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
           `${Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height)) * 100}%`,
         );
       }
-      if (!slides || viewer.thumbnailBehavior === "still") return;
+      if (!slides || viewer.thumbnailBehavior === "still") {
+        return;
+      }
       const ratio =
         viewer.thumbnailSpeed === "slow"
           ? pointerRatio ** 1.6

@@ -15,11 +15,11 @@ export function ChoiceOption({
   onChange,
 }: {
   option: FilterOption;
-  rows: Predicate[];
+  rows: Array<Predicate>;
   matching: "any" | "all";
   count: ReactNode;
   icon?: ReactNode;
-  onChange: (rows: Predicate[]) => void;
+  onChange: (rows: Array<Predicate>) => void;
 }) {
   const excluded = isChoiceSelected(rows, option.predicate, "exclude");
   const included = isChoiceSelected(rows, option.predicate, matching);

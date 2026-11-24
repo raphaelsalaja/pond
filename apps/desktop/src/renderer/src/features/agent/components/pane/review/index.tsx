@@ -3,11 +3,8 @@ import { Button, HoverHighlight, Reveal, Swap } from "@pond/ui";
 import { Prompt } from "@pond/ui/prompt";
 import type { AssistantChange } from "@shared/assistant";
 import { useState } from "react";
-import {
-  type ReviewPerform,
-  review,
-  useReview,
-} from "@/features/agent/state/review";
+import { review, useReview } from "@/features/agent/state/review";
+import type { ReviewPerform } from "@/features/agent/state/review";
 import { useFolders } from "@/features/library";
 import { cardKeys } from "../card-keys";
 import { useSourceCovers } from "../save-preview";
@@ -26,7 +23,7 @@ function useFolderName() {
     folders.find((folder) => folder.id === id)?.name ?? "Deleted Folder";
 }
 
-function useChangeCovers(changes: readonly AssistantChange[]) {
+function useChangeCovers(changes: ReadonlyArray<AssistantChange>) {
   useSourceCovers(changes.flatMap((change) => change.saveId || []));
 }
 
@@ -37,7 +34,7 @@ export function ChangeReview({
   perform,
 }: {
   messageId: string;
-  changes: AssistantChange[];
+  changes: Array<AssistantChange>;
   disabled?: boolean;
   perform?: ReviewPerform;
 }) {
@@ -81,7 +78,7 @@ function LibraryReview({
   perform,
 }: {
   messageId: string;
-  changes: AssistantChange[];
+  changes: Array<AssistantChange>;
   busy: boolean;
   perform?: ReviewPerform;
 }) {
@@ -229,7 +226,7 @@ function TrashPrompt({
         <Prompt.Body>
           <Prompt.Title>Empty Trash?</Prompt.Title>
           <Prompt.Description>
-            Every Save in Trash is deleted for good. You can't undo this.
+            Every Save in Trash is deleted for good. You can&apos;t undo this.
           </Prompt.Description>
         </Prompt.Body>
         <Prompt.Footer>

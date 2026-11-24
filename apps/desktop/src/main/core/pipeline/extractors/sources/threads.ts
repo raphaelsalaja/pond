@@ -24,11 +24,17 @@ export class ThreadsPostExtractor implements Extractor {
     return name === "sessionid";
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
-    if (!first) return null;
-    if (first.startsWith("@")) return first.slice(1);
-    if (!["t", "post", "login", "search"].includes(first)) return first;
+    if (!first) {
+      return null;
+    }
+    if (first.startsWith("@")) {
+      return first.slice(1);
+    }
+    if (!["t", "post", "login", "search"].includes(first)) {
+      return first;
+    }
     return null;
   }
 
@@ -51,7 +57,9 @@ export class ThreadsPostExtractor implements Extractor {
   async extract(input: ExtractInput): Promise<Capture> {
     const match = firstMatch(input.url, this.validUrl);
     const code = match?.[1] ?? null;
-    if (!code) throw new TerminalError("could not parse threads post code");
+    if (!code) {
+      throw new TerminalError("could not parse threads post code");
+    }
     const handleFromUrl = input.url.pathname.match(/\/@([^/]+)\//)?.[1];
     const canonical = handleFromUrl
       ? `https://www.threads.com/@${handleFromUrl}/post/${code}`

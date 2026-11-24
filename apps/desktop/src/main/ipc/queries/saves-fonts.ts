@@ -23,30 +23,29 @@ import { persistSave } from "../../core/persist-save";
 import { hasUserTitle } from "../../core/user-metadata";
 import { getDb } from "../../db";
 import { saveFile } from "../../paths";
-import {
-  type QueryHandlerMap,
-  query,
-  StringListParam,
-  StringParam,
-} from "./params";
+import { query, StringListParam, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 export const savesFontQueries = {
   "saves.batchRename": query(
     RenameOptionsSchema.extend({ ids: StringListParam, pattern: StringParam }),
     async (params): Promise<QueryResult<"saves.batchRename">> => {
       const pattern = params.pattern.trim();
-      if (!pattern || params.ids.length === 0)
+      if (!pattern || params.ids.length === 0) {
         return { ok: false, error: "Enter a name pattern and choose Saves." };
+      }
       const db = await getDb();
       const rows = await db
         .select()
         .from(saves)
         .where(inArray(saves.id, params.ids));
       const byId = new Map(rows.map((row) => [row.id, row]));
-      const txs: Transaction[] = [];
+      const txs: Array<Transaction> = [];
       for (const [index, id] of [...new Set(params.ids)].entries()) {
         const row = byId.get(id);
-        if (!row) continue;
+        if (!row) {
+          continue;
+        }
         const stored = row.files[0];
         const family =
           stored?.family ??
@@ -74,7 +73,9 @@ export const savesFontQueries = {
           replacement: params.replacement,
           textCase: params.textCase,
         });
-        if (!title || title === row.title) continue;
+        if (!title || title === row.title) {
+          continue;
+        }
         txs.push({
           kind: "update",
           model: "save",
@@ -85,7 +86,9 @@ export const savesFontQueries = {
           meta: { actor: "user", actorReason: "batch-rename" },
         });
       }
-      if (txs.length > 0) await executeBatch(txs);
+      if (txs.length > 0) {
+        await executeBatch(txs);
+      }
       return { ok: true, renamed: txs.length };
     },
   ),
@@ -104,7 +107,9 @@ export const savesFontQueries = {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
       const file = row?.files[0];
-      if (!row || !file?.path) return { ok: false, error: "missing_file" };
+      if (!row || !file?.path) {
+        return { ok: false, error: "missing_file" };
+      }
       const { app } = await import("electron");
       const result = await activateFont({
         sourcePath: saveFile(id, file.path),
@@ -127,7 +132,9 @@ export const savesFontQueries = {
     z.object({ id: StringParam }),
     async ({ id }): Promise<QueryResult<"saves.deactivateFont">> => {
       const installed = readFontActivation(id);
-      if (!installed) return { ok: true };
+      if (!installed) {
+        return { ok: true };
+      }
       const { app } = await import("electron");
       const result = await deactivateFont({
         installedPath: installed,
@@ -153,7 +160,9 @@ export const savesFontQueries = {
     async ({ id, bpm }): Promise<QueryResult<"saves.setAudioAnalysis">> => {
       const db = await getDb();
       const [row] = await db.select().from(saves).where(eq(saves.id, id));
-      if (!row) return { ok: false, error: "Save not found." };
+      if (!row) {
+        return { ok: false, error: "Save not found." };
+      }
       const files = row.files.map((file, index) =>
         index === 0 ? { ...file, bpm } : file,
       );

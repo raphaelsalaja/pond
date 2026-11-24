@@ -1,3 +1,4 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { LibraryNav } from "@/shared/lib/library-nav";
 
@@ -12,40 +13,40 @@ interface TreeEntry {
  * @remarks With `orderedIds`, order comes from data so unmounted rows navigate; keep the cursor's row mounted.
  */
 export function useOrganizationTree(
-  entries: readonly TreeEntry[],
-  onSelection: (ids: string[]) => void,
+  entries: ReadonlyArray<TreeEntry>,
+  onSelection: (ids: Array<string>) => void,
   navigation?: LibraryNav | null,
-  orderedIds?: readonly string[],
+  orderedIds?: ReadonlyArray<string>,
 ) {
   const dataDriven = orderedIds !== undefined;
   const { byId, positions } = useMemo(() => {
     const byId = new Map(entries.map((entry) => [entry.id, entry]));
-    const siblings = new Map<string | null, string[]>();
+    const siblings = new Map<string | null, Array<string>>();
     for (const entry of entries) {
       const ids = siblings.get(entry.parentId) ?? [];
       ids.push(entry.id);
       siblings.set(entry.parentId, ids);
     }
     const positions = new Map<string, { size: number; position: number }>();
-    for (const ids of siblings.values())
+    for (const ids of siblings.values()) {
       ids.forEach((id, index) => {
         positions.set(id, { size: ids.length, position: index + 1 });
       });
+    }
     return { byId, positions };
   }, [entries]);
   const root = useRef<HTMLDivElement>(null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Array<string>>([]);
   const hadFocus = useRef(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const pendingFocus = useRef<string | null>(null);
   const selecting = useRef(false);
   const anchor = useRef<string | null>(null);
-  const commit = (ids: string[]) => {
+  const commit = (ids: Array<string>) => {
     selecting.current = true;
     setSelected(ids);
     onSelection(ids);
   };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `navigation` is the reset trigger.
   useEffect(() => {
     if (selecting.current) {
       selecting.current = false;
@@ -56,9 +57,24 @@ export function useOrganizationTree(
   }, [navigation]);
   const rowElement = (id: string) =>
     root.current?.querySelector<HTMLElement>(`[data-tree-id="${id}"]`) ?? null;
+  const visibleRows = () =>
+    [
+      ...(root.current?.querySelectorAll<HTMLElement>('[role="treeitem"]') ??
+        []),
+    ].filter((row) => !row.closest("[inert]"));
+  /** Row ids in display order: the provided data list, or the mounted rows. */
+  const rowIds = () =>
+    orderedIds !== undefined
+      ? [...orderedIds]
+      : visibleRows()
+          .map((row) => row.dataset.treeId)
+          .filter((id): id is string => !!id);
+  // oxlint-disable-next-line react-hooks/exhaustive-deps -- Reconciles the cursor with the rows the DOM rendered, which change without any input changing; every setState is guarded so it settles.
   useLayoutEffect(() => {
     const retained = selected.filter((id) => byId.has(id));
-    if (retained.length !== selected.length) commit(retained);
+    if (retained.length !== selected.length) {
+      commit(retained);
+    }
     const rows = visibleRows();
     const ids = rowIds();
     if (!cursor || !ids.includes(cursor)) {
@@ -96,18 +112,6 @@ export function useOrganizationTree(
     }
   });
   const typeahead = useRef({ text: "", time: 0 });
-  const visibleRows = () =>
-    [
-      ...(root.current?.querySelectorAll<HTMLElement>('[role="treeitem"]') ??
-        []),
-    ].filter((row) => !row.closest("[inert]"));
-  /** Row ids in display order: the provided data list, or the mounted rows. */
-  const rowIds = () =>
-    orderedIds !== undefined
-      ? [...orderedIds]
-      : visibleRows()
-          .map((row) => row.dataset.treeId)
-          .filter((id): id is string => !!id);
   const select = (
     id: string,
     modifiers: {
@@ -117,7 +121,7 @@ export function useOrganizationTree(
     } = {},
   ) => {
     const ordered = rowIds();
-    let next: string[];
+    let next: Array<string>;
     if (
       modifiers.shiftKey &&
       anchor.current &&
@@ -148,8 +152,9 @@ export function useOrganizationTree(
     expanded: boolean | undefined,
     toggle?: () => void,
   ) {
-    if (event.nativeEvent.isComposing || event.target !== event.currentTarget)
+    if (event.nativeEvent.isComposing || event.target !== event.currentTarget) {
       return;
+    }
     const rows = visibleRows();
     const ids = rowIds();
     const index = dataDriven
@@ -176,15 +181,19 @@ export function useOrganizationTree(
         nextId = ids.at(-1);
         break;
       case "ArrowRight":
-        if (expanded === false) toggle?.();
-        else if (expanded) {
+        if (expanded === false) {
+          toggle?.();
+        } else if (expanded) {
           const child = ids[index + 1];
-          if (byId.get(child ?? "")?.parentId === id) nextId = child;
+          if (byId.get(child ?? "")?.parentId === id) {
+            nextId = child;
+          }
         }
         break;
       case "ArrowLeft":
-        if (expanded) toggle?.();
-        else {
+        if (expanded) {
+          toggle?.();
+        } else {
           const parentId = byId.get(id)?.parentId ?? undefined;
           nextId = parentId && ids.includes(parentId) ? parentId : undefined;
         }
@@ -205,8 +214,9 @@ export function useOrganizationTree(
           event.metaKey ||
           event.ctrlKey ||
           event.altKey
-        )
+        ) {
           return;
+        }
         const now = Date.now();
         const text =
           (now - typeahead.current.time < 700 ? typeahead.current.text : "") +
@@ -230,14 +240,18 @@ export function useOrganizationTree(
         next?.scrollIntoView?.({ block: "nearest" });
       }
       if (event.shiftKey) {
-        if (!anchor.current || !byId.has(anchor.current)) anchor.current = id;
+        if (!anchor.current || !byId.has(anchor.current)) {
+          anchor.current = id;
+        }
         select(nextId, event);
       }
     }
   }
   /** Memoized rows keep old row props, so their handlers must reach this render's selection. */
   const latest = useRef({ select, keyDown });
-  latest.current = { select, keyDown };
+  useLayoutEffect(() => {
+    latest.current = { select, keyDown };
+  });
   return {
     root,
     selected,
@@ -272,10 +286,11 @@ export function useOrganizationTree(
         },
         onBlur: (event: React.FocusEvent) => {
           if (
-            event.relatedTarget instanceof HTMLElement &&
+            isHTMLElement(event.relatedTarget) &&
             !root.current?.contains(event.relatedTarget)
-          )
+          ) {
             hadFocus.current = false;
+          }
         },
         onClick: (event: React.MouseEvent) => latest.current.select(id, event),
         onContextMenu: (event: React.MouseEvent<HTMLElement>) => {

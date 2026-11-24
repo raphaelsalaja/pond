@@ -10,7 +10,9 @@ import { SETTINGS_SEARCH_INDEX } from "./search-index";
 
 function entry(id: string) {
   const result = SETTINGS_SEARCH_INDEX.find((candidate) => candidate.id === id);
-  if (!result) throw new Error(`Missing Settings search entry: ${id}`);
+  if (!result) {
+    throw new Error(`Missing Settings search entry: ${id}`);
+  }
   return result;
 }
 
@@ -112,14 +114,14 @@ describe("settings child sections", () => {
   });
 });
 
+async function indexFor(isMac: boolean) {
+  vi.resetModules();
+  vi.stubGlobal("navigator", { platform: isMac ? "MacIntel" : "Win32" });
+  return (await import("./search-index")).SETTINGS_SEARCH_INDEX;
+}
+
 describe("settings search index platform rows", () => {
   afterEach(() => vi.unstubAllGlobals());
-
-  async function indexFor(isMac: boolean) {
-    vi.resetModules();
-    vi.stubGlobal("navigator", { platform: isMac ? "MacIntel" : "Win32" });
-    return (await import("./search-index")).SETTINGS_SEARCH_INDEX;
-  }
 
   it("hides macOS-only rows off macOS", async () => {
     const ids = (await indexFor(false)).map((candidate) => candidate.id);

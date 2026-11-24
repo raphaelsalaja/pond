@@ -8,10 +8,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
-const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const packageRoot = resolve(import.meta.dirname, "..");
 const manifest = JSON.parse(
   readFileSync(join(packageRoot, "package.json"), "utf8"),
 );
@@ -32,7 +31,9 @@ function run(command, args, cwd, env) {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
-  if (result.error) throw result.error;
+  if (result.error) {
+    throw result.error;
+  }
   if (result.status !== 0) {
     throw new Error(
       [
@@ -114,8 +115,9 @@ try {
       `Expected pond --version to print ${manifest.version}, received ${version}.`,
     );
   }
-  if (existsSync(pondConfig))
+  if (existsSync(pondConfig)) {
     throw new Error("pond --version wrote CLI configuration.");
+  }
 
   process.stdout.write(
     `Installed @pond/cli ${manifest.version} and verified pond --version.\n`,

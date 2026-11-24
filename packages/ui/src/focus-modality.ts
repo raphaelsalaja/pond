@@ -15,7 +15,9 @@ const KEYS = new Set([
 let installed = false;
 
 function install(): void {
-  if (installed || !globalThis.document) return;
+  if (installed || !globalThis.document) {
+    return;
+  }
   installed = true;
 
   const root = globalThis.document.documentElement;
@@ -31,7 +33,9 @@ function install(): void {
   root.addEventListener(
     "keydown",
     (event) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
       if (KEYS.has(event.key)) {
         root.dataset.focusSource = "keyboard";
       }

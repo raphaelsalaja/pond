@@ -12,7 +12,9 @@ const ALPHABET =
 
 function mediaIdFor(shortcode: string): string {
   let n = 0n;
-  for (const ch of shortcode) n = n * 64n + BigInt(ALPHABET.indexOf(ch));
+  for (const ch of shortcode) {
+    n = n * 64n + BigInt(ALPHABET.indexOf(ch));
+  }
   return n.toString();
 }
 
@@ -28,6 +30,10 @@ function graphqlBody(operation: string, variables: JsonValue): string {
 }
 
 const noHeaders = () => null;
+
+function saveRootHeaders(name: string) {
+  return name === "x-root-field-name" ? "xig_media_save" : null;
+}
 
 describe("isSaveMutation", () => {
   it.each([
@@ -49,9 +55,7 @@ describe("isSaveMutation", () => {
   });
 
   it("accepts the save root field header", () => {
-    const headers = (name: string) =>
-      name === "x-root-field-name" ? "xig_media_save" : null;
-    expect(isSaveMutation(headers, null)).toBe(true);
+    expect(isSaveMutation(saveRootHeaders, null)).toBe(true);
   });
 });
 

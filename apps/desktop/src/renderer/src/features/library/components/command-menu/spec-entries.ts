@@ -1,21 +1,27 @@
-import { type MenuItemSpec, menuLabelText } from "@pond/ui";
+import { menuLabelText } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import type { MenuEntry } from "./types";
 
-function glyphs(shortcut: string | string[] | undefined): readonly string[] {
-  if (!shortcut) return [];
+function glyphs(
+  shortcut: string | Array<string> | undefined,
+): ReadonlyArray<string> {
+  if (!shortcut) {
+    return [];
+  }
   return Array.isArray(shortcut) ? shortcut : [shortcut];
 }
 
 /** Turns a context menu spec into command entries, so both surfaces offer the same actions; submenus become pages. */
 export function specEntries(
-  items: readonly MenuItemSpec[],
+  items: ReadonlyArray<MenuItemSpec>,
   group: string,
   key: string,
-): MenuEntry[] {
-  const entries: MenuEntry[] = [];
+): Array<MenuEntry> {
+  const entries: Array<MenuEntry> = [];
   items.forEach((item, index) => {
-    if (item.type === "separator" || item.type === "custom" || item.hidden)
+    if (item.type === "separator" || item.type === "custom" || item.hidden) {
       return;
+    }
     if (item.type === "group") {
       entries.push(...specEntries(item.items, group, `${key}.${index}`));
       return;
@@ -23,7 +29,9 @@ export function specEntries(
     if (item.type === "radio") {
       for (const option of item.options) {
         const label = menuLabelText(option.label);
-        if (option.disabled || label === null) continue;
+        if (option.disabled || label === null) {
+          continue;
+        }
         entries.push({
           id: `${key}.${index}.${option.value}`,
           group,
@@ -38,7 +46,9 @@ export function specEntries(
       return;
     }
     const label = menuLabelText(item.label);
-    if (item.disabled || label === null) return;
+    if (item.disabled || label === null) {
+      return;
+    }
     const base = {
       id: `${key}.${index}`,
       group,
@@ -48,7 +58,9 @@ export function specEntries(
     };
     if (item.type === "submenu") {
       const children = specEntries(item.items, "", base.id);
-      if (children.length === 0) return;
+      if (children.length === 0) {
+        return;
+      }
       entries.push({
         ...base,
         page: () => ({
@@ -62,7 +74,9 @@ export function specEntries(
     }
     if (item.type === "checkbox") {
       const { checked, onCheckedChange } = item;
-      if (!onCheckedChange) return;
+      if (!onCheckedChange) {
+        return;
+      }
       entries.push({
         ...base,
         keys: glyphs(item.shortcut),
@@ -71,7 +85,9 @@ export function specEntries(
       });
       return;
     }
-    if (!item.onClick) return;
+    if (!item.onClick) {
+      return;
+    }
     entries.push({ ...base, keys: glyphs(item.shortcut), run: item.onClick });
   });
   return entries;

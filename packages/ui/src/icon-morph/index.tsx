@@ -1,16 +1,12 @@
 import { IconFrame, iconStrokeProps } from "@pond/icons/create-icon";
 import type { IconComponent, IconProps } from "@pond/icons/types";
 import { animate, useReducedMotionConfig } from "motion/react";
-import {
-  type CSSProperties,
-  createElement,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { createElement, useLayoutEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import { pageHidden } from "../shared/page-hidden";
 import { Swap } from "../swap";
-import { type MorphPlan, planMorph, polyline } from "./plan";
+import { planMorph, polyline } from "./plan";
+import type { MorphPlan } from "./plan";
 
 interface IconMorphProps extends IconProps {
   icon: IconComponent;
@@ -23,6 +19,15 @@ interface Frame {
 
 const SHRUNK = 0.25;
 
+function fade(amount: number): CSSProperties {
+  return {
+    opacity: amount,
+    transform: `scale(${SHRUNK + (1 - SHRUNK) * amount})`,
+    transformBox: "fill-box",
+    transformOrigin: "center",
+  };
+}
+
 export function IconMorph({ icon: Icon, ...props }: IconMorphProps) {
   const reduced = useReducedMotionConfig();
   const settled = useRef(Icon);
@@ -31,7 +36,9 @@ export function IconMorph({ icon: Icon, ...props }: IconMorphProps) {
   useLayoutEffect(() => {
     const from = settled.current;
     settled.current = Icon;
-    if (from === Icon || reduced) return;
+    if (from === Icon || reduced) {
+      return;
+    }
     const plan = pageHidden() ? null : planMorph(from, Icon);
     if (!plan) {
       setFrame(null);
@@ -55,17 +62,13 @@ export function IconMorph({ icon: Icon, ...props }: IconMorphProps) {
       </Swap>
     );
   }
-  if (!frame || !Icon.glyph) return <Icon {...props} />;
+  if (!frame || !Icon.glyph) {
+    return <Icon {...props} />;
+  }
 
   const { plan, t } = frame;
   const variant = Icon.glyph.style;
   const fixed = iconStrokeProps(variant, props.size);
-  const fade = (amount: number): CSSProperties => ({
-    opacity: amount,
-    transform: `scale(${SHRUNK + (1 - SHRUNK) * amount})`,
-    transformBox: "fill-box",
-    transformOrigin: "center",
-  });
   return (
     <IconFrame variant={variant} {...props}>
       {plan.still.map(([tag, attrs], index) =>

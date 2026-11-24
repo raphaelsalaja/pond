@@ -1,10 +1,5 @@
-import {
-  CANCEL_REASON,
-  type NewTask,
-  queueGenerations,
-  saves,
-  tasks,
-} from "@pond/schema/db";
+import { CANCEL_REASON, queueGenerations, saves, tasks } from "@pond/schema/db";
+import type { NewTask } from "@pond/schema/db";
 import { isWebPageSave } from "@shared/web-page-save";
 import { and, eq, inArray, isNull, ne, notInArray, or } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -36,11 +31,12 @@ export async function startArchiveBackfill(
   ok: true;
   queued: number;
 }> {
-  if (!(await autoArchive())) return { ok: true, queued: 0 };
+  if (!(await autoArchive())) {
+    return { ok: true, queued: 0 };
+  }
   /** archive-page pulls in the WARC stack; IPC handlers import this module at launch. */
-  const { ARCHIVE_VERSION, hasWarcArchive, readArchivedMeta } = await import(
-    "../pipeline/workers/archive-page"
-  );
+  const { ARCHIVE_VERSION, hasWarcArchive, readArchivedMeta } =
+    await import("../pipeline/workers/archive-page");
   const db = await runtime.getDb();
   /** Settled saves only: ingesting saves already have live tasks, and pending archive_page behind non-done peers would deadlock the sequential gate. */
   const rows = db
@@ -61,7 +57,7 @@ export async function startArchiveBackfill(
     .all()
     .filter((row) => isWebPageSave(row));
 
-  const candidates: { id: string }[] = [];
+  const candidates: Array<{ id: string }> = [];
   for (const r of rows) {
     if (!hasWarcArchive(r.files)) {
       candidates.push({ id: r.id });
@@ -73,7 +69,9 @@ export async function startArchiveBackfill(
     }
   }
 
-  if (candidates.length === 0) return { ok: true, queued: 0 };
+  if (candidates.length === 0) {
+    return { ok: true, queued: 0 };
+  }
 
   const withTask = new Set(
     db
@@ -121,8 +119,12 @@ export async function startArchiveBackfill(
         ),
       )
       .get();
-    if (blocked) continue;
-    if (!rependArchiveTasks(db, id, now)) continue;
+    if (blocked) {
+      continue;
+    }
+    if (!rependArchiveTasks(db, id, now)) {
+      continue;
+    }
     if (withTask.has(id)) {
       db.update(tasks)
         .set({
@@ -153,7 +155,9 @@ export async function startArchiveBackfill(
     queued += 1;
   }
 
-  if (queued === 0) return { ok: true, queued };
+  if (queued === 0) {
+    return { ok: true, queued };
+  }
   log.info("[pond archive-backfill] queued web saves for archiving", {
     queued,
   });
@@ -181,7 +185,9 @@ export async function archiveSiteForSave(
   }
 
   const now = new Date();
-  if (!rependArchiveTasks(db, saveId, now)) return { ok: false };
+  if (!rependArchiveTasks(db, saveId, now)) {
+    return { ok: false };
+  }
   const payload = { scope: "site" as const };
   const existing = db
     .select({ id: tasks.id })

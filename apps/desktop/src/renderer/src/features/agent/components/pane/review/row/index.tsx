@@ -5,17 +5,21 @@ import { openSave } from "@/features/saves/navigation";
 import { SourceThumbnail } from "../../save-preview";
 import {
   ChangeActions,
-  type ChangeProps,
   ChangeSummary,
   fieldIcons,
   statusLabels,
 } from "../change";
+import type { ChangeProps } from "../change";
 import { reviewTitle } from "../lib";
 import styles from "./styles.module.css";
 
 function statusText(change: AssistantChange, working: boolean) {
-  if (working) return "Updating";
-  if (change.status !== "pending") return statusLabels[change.status];
+  if (working) {
+    return "Updating";
+  }
+  if (change.status !== "pending") {
+    return statusLabels[change.status];
+  }
   return change.error ? "Failed" : null;
 }
 
@@ -24,8 +28,12 @@ function actionsKey(
   working: boolean,
   actions: boolean,
 ) {
-  if (working) return "working";
-  if (change.status !== "pending") return change.status;
+  if (working) {
+    return "working";
+  }
+  if (change.status !== "pending") {
+    return change.status;
+  }
   return actions ? "pending" : "none";
 }
 

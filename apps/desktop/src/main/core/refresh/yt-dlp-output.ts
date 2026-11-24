@@ -22,7 +22,9 @@ async function readInfoJson(
     return null;
   }
   const parsed = RawYtdlpSchema.safeParse(JSON.parse(text));
-  if (!parsed.success) return null;
+  if (!parsed.success) {
+    return null;
+  }
   const kept = Object.fromEntries(
     Object.entries(parsed.data).filter(([, value]) => value !== undefined),
   );
@@ -67,14 +69,16 @@ export function keepsPartialDownload(
 export async function pickProducedFiles(
   dir: string,
   only?: ReadonlySet<string>,
-): Promise<ProducedFile[]> {
-  let entries: string[];
+): Promise<Array<ProducedFile>> {
+  let entries: Array<string>;
   try {
     entries = await readdir(dir);
   } catch {
     return [];
   }
-  if (entries.length === 0) return [];
+  if (entries.length === 0) {
+    return [];
+  }
 
   const sized = await Promise.all(
     entries
@@ -86,7 +90,9 @@ export async function pickProducedFiles(
         const full = join(dir, name);
         try {
           const s = await stat(full);
-          if (s.size <= 0) return null;
+          if (s.size <= 0) {
+            return null;
+          }
           const infoJson = await readInfoJson(dir, full);
           return {
             path: full,
@@ -123,12 +129,14 @@ const AUDIO_EXTENSIONS = new Set([
   ".wav",
 ]);
 
-function withoutSeparateStreams(files: ProducedFile[]): ProducedFile[] {
+function withoutSeparateStreams(
+  files: Array<ProducedFile>,
+): Array<ProducedFile> {
   const finished = files.filter((file) => !isSeparateStream(file.path));
   const videoStems = new Set(
-    finished
-      .filter((file) => !isAudioExtension(file.path))
-      .map((file) => fileStem(file.path)),
+    finished.flatMap((file) =>
+      isAudioExtension(file.path) ? [] : [fileStem(file.path)],
+    ),
   );
   return finished.filter(
     (file) =>
@@ -168,15 +176,21 @@ function isSubtitle(name: string): boolean {
   return ext === ".srt" || ext === ".vtt";
 }
 
-export async function pickSubtitleFiles(dir: string): Promise<SubtitleFile[]> {
+export async function pickSubtitleFiles(
+  dir: string,
+): Promise<Array<SubtitleFile>> {
   const entries = await readdir(dir);
-  const out: SubtitleFile[] = [];
+  const out: Array<SubtitleFile> = [];
   for (const name of entries) {
-    if (!isSubtitle(name)) continue;
+    if (!isSubtitle(name)) {
+      continue;
+    }
     const full = join(dir, name);
     try {
       const s = await stat(full);
-      if (s.size === 0) continue;
+      if (s.size === 0) {
+        continue;
+      }
     } catch {
       continue;
     }
@@ -200,12 +214,18 @@ export async function pickProducedPoster(
   const stem = basename(videoPath, extname(videoPath));
   const entries = await readdir(dir);
   for (const name of entries) {
-    if (!name.startsWith(stem)) continue;
-    if (!isThumbnail(name)) continue;
+    if (!name.startsWith(stem)) {
+      continue;
+    }
+    if (!isThumbnail(name)) {
+      continue;
+    }
     const full = join(dir, name);
     try {
       const s = await stat(full);
-      if (s.size === 0) continue;
+      if (s.size === 0) {
+        continue;
+      }
     } catch {
       continue;
     }
@@ -219,14 +239,16 @@ export async function readSidecars(dir: string): Promise<{
   infoJson: RawYtdlp | null;
   poster: { path: string; mimeType: string } | null;
 }> {
-  let entries: string[];
+  let entries: Array<string>;
   try {
     entries = await readdir(dir);
   } catch {
     return { infoJson: null, poster: null };
   }
   const info = entries.find((name) => /\.info\.json$/i.test(name));
-  if (!info) return { infoJson: null, poster: null };
+  if (!info) {
+    return { infoJson: null, poster: null };
+  }
   const anchor = join(dir, `${info.replace(/\.info\.json$/i, "")}.media`);
   const [infoJson, poster] = await Promise.all([
     readInfoJson(dir, anchor).catch(() => null),

@@ -3,17 +3,20 @@ import { Button, Tooltip } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import { useReducedMotionConfig } from "motion/react";
 import {
-  type ComponentProps,
-  type ComponentPropsWithoutRef,
   createContext,
   forwardRef,
-  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useState,
 } from "react";
-import { type ScrollToBottom, useStickToBottom } from "use-stick-to-bottom";
+import type {
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  ReactNode,
+} from "react";
+import { useStickToBottom } from "use-stick-to-bottom";
+import type { ScrollToBottom } from "use-stick-to-bottom";
 import { ComposerView } from "../composer-view";
 import styles from "./styles.module.css";
 
@@ -48,8 +51,9 @@ function Messages({
   children: ReactNode;
   empty?: ReactNode;
 }) {
-  if (!children || (Array.isArray(children) && children.length === 0))
+  if (!children || (Array.isArray(children) && children.length === 0)) {
     return empty ? <div className={styles.empty}>{empty}</div> : null;
+  }
   return <>{children}</>;
 }
 
@@ -64,14 +68,18 @@ const ThreadScrollContext = createContext<ThreadScroll | null>(null);
 /** Follow, release and return to the latest message from anywhere inside a `Thread.Conversation`. */
 export function useThreadScroll(): ThreadScroll {
   const value = useContext(ThreadScrollContext);
-  if (!value) throw new Error("useThreadScroll requires Thread.Conversation");
+  if (!value) {
+    throw new Error("useThreadScroll requires Thread.Conversation");
+  }
   return value;
 }
 
 function ScrollToLatest() {
   const reduceMotion = useReducedMotionConfig();
   const { isAtBottom, scrollToBottom } = useThreadScroll();
-  if (isAtBottom) return null;
+  if (isAtBottom) {
+    return null;
+  }
   return (
     <div className={styles["scroll-action"]}>
       <Button
@@ -108,12 +116,14 @@ const READ_LINE = 1 / 3;
 
 function useCurrentMark(
   viewport: HTMLElement | null,
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): string | null {
   const [current, setCurrent] = useState<string | null>(null);
   const key = ids.join("\n");
   useEffect(() => {
-    if (!viewport) return;
+    if (!viewport) {
+      return;
+    }
     const list = key ? key.split("\n") : [];
     const update = () => {
       const box = viewport.getBoundingClientRect();
@@ -121,13 +131,16 @@ function useCurrentMark(
       let next = list[0] ?? null;
       for (const id of list) {
         const node = markNode(viewport, id);
-        if (node && node.getBoundingClientRect().top <= line) next = id;
+        if (node && node.getBoundingClientRect().top <= line) {
+          next = id;
+        }
       }
       if (
         viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <
         4
-      )
+      ) {
         next = list.at(-1) ?? next;
+      }
       setCurrent(next);
     };
     update();
@@ -143,7 +156,7 @@ function useCurrentMark(
 }
 
 interface RailProps extends ComponentPropsWithoutRef<"nav"> {
-  marks: readonly ThreadMark[];
+  marks: ReadonlyArray<ThreadMark>;
   viewport: HTMLElement | null;
 }
 
@@ -155,11 +168,15 @@ function Rail({ marks, viewport, className, ...props }: RailProps) {
     viewport,
     marks.map((mark) => mark.id),
   );
-  if (marks.length < 2) return null;
+  if (marks.length < 2) {
+    return null;
+  }
 
   function jump(id: string) {
     const node = viewport && markNode(viewport, id);
-    if (!viewport || !node) return;
+    if (!viewport || !node) {
+      return;
+    }
     scroll?.stopScroll();
     const offset =
       node.getBoundingClientRect().top - viewport.getBoundingClientRect().top;
@@ -217,7 +234,7 @@ function Conversation({
 }: ComponentProps<typeof Root> & {
   empty?: ReactNode;
   composer?: ReactNode;
-  marks?: readonly ThreadMark[];
+  marks?: ReadonlyArray<ThreadMark>;
   viewportProps?: Omit<ComponentProps<typeof Viewport>, "ref">;
 }) {
   const reduceMotion = useReducedMotionConfig();

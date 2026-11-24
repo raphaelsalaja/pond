@@ -25,7 +25,9 @@ export function ActionBar({
   const [copied, setCopied] = useState(false);
   const [spinning, setSpinning] = useState(false);
   useEffect(() => {
-    if (!copied) return;
+    if (!copied) {
+      return;
+    }
     const timer = setTimeout(() => setCopied(false), 1500);
     return () => clearTimeout(timer);
   }, [copied]);
@@ -40,7 +42,9 @@ export function ActionBar({
             aria-label="Copy"
             disabled={!text}
             onClick={() => {
-              if (!text) return;
+              if (!text) {
+                return;
+              }
               const write =
                 onCopy ?? ((value) => navigator.clipboard.writeText(value));
               void write(text).then(

@@ -1,3 +1,4 @@
+import log from "electron-log/renderer";
 import { useEffect, useMemo, useState } from "react";
 import { useFolders } from "@/features/library/state/folders";
 import { useIncludeSubfolders } from "@/features/library/state/view-store";
@@ -8,17 +9,20 @@ export function useFolderDownloading(folderId: string | null): number {
   const folders = useFolders();
   const includeSubfolders = useIncludeSubfolders();
   const key = useMemo(() => {
-    if (!folderId) return "";
+    if (!folderId) {
+      return "";
+    }
     const ids = includeSubfolders
       ? [...descendantFolderIds(folderId, folders)]
       : [folderId];
     return ids.join("\0");
   }, [folderId, folders, includeSubfolders]);
-  const [count, setCount] = useState(0);
+  const [counted, setCounted] = useState({ key, count: 0 });
   useEffect(() => {
     const ids = key ? key.split("\0") : [];
-    setCount(0);
-    if (ids.length === 0) return;
+    if (ids.length === 0) {
+      return;
+    }
     let active = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const refresh = async () => {
@@ -26,14 +30,18 @@ export function useFolderDownloading(folderId: string | null): number {
         const next = await window.pond.query("folders.downloading", {
           folderIds: ids,
         });
-        if (active) setCount(next.count);
-      } catch (error) {
-        console.warn("[pond] folder downloading count failed", error);
+        if (active) {
+          setCounted({ key, count: next.count });
+        }
+      } catch (cause) {
+        log.warn("[pond] folder downloading count failed", cause);
       }
     };
     void refresh();
     const off = window.pond.onSyncAction(() => {
-      if (timer) return;
+      if (timer) {
+        return;
+      }
       timer = setTimeout(() => {
         timer = undefined;
         void refresh();
@@ -42,8 +50,10 @@ export function useFolderDownloading(folderId: string | null): number {
     return () => {
       active = false;
       off();
-      if (timer) clearTimeout(timer);
+      if (timer) {
+        clearTimeout(timer);
+      }
     };
   }, [key]);
-  return count;
+  return counted.key === key ? counted.count : 0;
 }

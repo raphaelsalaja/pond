@@ -13,22 +13,29 @@ export async function flushPortableMetadata(): Promise<void> {
   writeOrganizationBundle(db, root);
   let cursor = "";
   while (true) {
-    if (libraryRoot() !== root)
+    if (libraryRoot() !== root) {
       throw new Error("The library changed while preparing its metadata.");
+    }
     const rows = await db
       .select()
       .from(saves)
       .where(and(gt(saves.id, cursor), isNull(saves.deletedAt)))
       .orderBy(asc(saves.id))
       .limit(250);
-    if (!rows.length) return;
+    if (!rows.length) {
+      return;
+    }
     for (const row of rows) {
       const path = saveFile(row.id, "info.json");
-      if (!existsSync(path)) continue;
+      if (!existsSync(path)) {
+        continue;
+      }
       const info = StoredInfoDocSchema.parse(
         JSON.parse(await readFile(path, "utf8")),
       );
-      if (!info.userData) await writeSaveInfo(row);
+      if (!info.userData) {
+        await writeSaveInfo(row);
+      }
     }
     cursor = rows.at(-1)?.id ?? cursor;
   }

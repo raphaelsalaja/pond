@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { savedViews, tagGroupMembers, tagGroups, tags } from "@pond/schema/db";
-import { isGroup, type Query } from "@pond/schema/filters/types";
+import { isGroup } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import { FolderPresentationSchema } from "@pond/schema/folder-presentation";
 import { FolderRulesSchema } from "@pond/schema/folder-rules";
 import type { Transaction } from "@pond/schema/tx";
@@ -52,15 +53,15 @@ export type PackageOrganization = z.infer<typeof PackageOrganizationSchema>;
 export async function readPackageOrganization(
   root: string,
   views: PackageOrganization["views"],
-  folderIds?: readonly string[],
+  folderIds?: ReadonlyArray<string>,
 ): Promise<PackageOrganization> {
-  const tagsBundle = readBundleJson<unknown>(join(root, "tags.json"));
+  const tagsBundle = readBundleJson(join(root, "tags.json"));
   const tagData = tagsBundle
     ? z
         .object({ data: PackageOrganizationSchema.omit({ views: true }) })
         .parse(tagsBundle).data
     : {};
-  const settingsBundle = readBundleJson<unknown>(join(root, "settings.json"));
+  const settingsBundle = readBundleJson(join(root, "settings.json"));
   const preferences = settingsBundle
     ? z
         .object({
@@ -97,18 +98,21 @@ export function validatePackageOrganization(
     [...Object.keys(data.folderRules), ...Object.keys(data.folderViews)].some(
       (id) => !folders.has(id),
     )
-  )
+  ) {
     throw new Error("A package tag rule references a missing folder.");
+  }
   const views = new Map(data.views.map((view) => [view.id, view]));
-  if (views.size !== data.views.length)
+  if (views.size !== data.views.length) {
     throw new Error("The package contains duplicate view identities.");
+  }
   for (const view of data.views) {
     const seen = new Set([view.id]);
     let parent = view.parent_id;
     while (parent) {
       const ancestor = views.get(parent);
-      if (ancestor?.kind !== "group" || seen.has(parent))
+      if (ancestor?.kind !== "group" || seen.has(parent)) {
         throw new Error("The package view hierarchy is invalid.");
+      }
       seen.add(parent);
       parent = ancestor.parent_id;
     }
@@ -125,8 +129,9 @@ export function validatePackageOrganization(
     data.members.some(
       (member) => !tagIds.has(member.tagId) || !groupIds.has(member.groupId),
     )
-  )
+  ) {
     throw new Error("The package tag groups are invalid.");
+  }
 }
 
 function remapQuery(
@@ -136,16 +141,22 @@ function remapQuery(
   return {
     ...query,
     rules: query.rules.map((rule) => {
-      if (isGroup(rule)) return remapQuery(rule, folderIds);
-      if (rule.field !== "folder" || rule.operator === "empty") return rule;
-      if (!Array.isArray(rule.value))
+      if (isGroup(rule)) {
+        return remapQuery(rule, folderIds);
+      }
+      if (rule.field !== "folder" || rule.operator === "empty") {
+        return rule;
+      }
+      if (!Array.isArray(rule.value)) {
         throw new Error("A package folder rule is invalid.");
+      }
       return {
         ...rule,
         value: rule.value.map((id) => {
           const mapped = folderIds.get(String(id));
-          if (!mapped)
+          if (!mapped) {
             throw new Error("A package view references a missing folder.");
+          }
           return mapped;
         }),
       };
@@ -163,8 +174,9 @@ export function mergePackageOrganization(
   const result = PackageOrganizationSchema.parse(existing);
   for (const [id, rule] of Object.entries(incoming.folderRules)) {
     const mapped = folderIds.get(id);
-    if (!mapped)
+    if (!mapped) {
       throw new Error("A package tag rule references a missing folder.");
+    }
     result.folderRules[mapped] = {
       automaticTags: normalizeTagList([
         ...(result.folderRules[mapped]?.automaticTags ?? []),
@@ -174,7 +186,9 @@ export function mergePackageOrganization(
   }
   for (const [id, view] of Object.entries(incoming.folderViews)) {
     const mapped = folderIds.get(id);
-    if (!mapped) throw new Error("A folder view references a missing folder.");
+    if (!mapped) {
+      throw new Error("A folder view references a missing folder.");
+    }
     const existingView = result.folderViews[mapped];
     const manualOrder = view.manualOrder.flatMap((saveId) => {
       const target = saveIds.get(saveId);
@@ -197,8 +211,9 @@ export function mergePackageOrganization(
       (view) => !view.parent_id || viewIds.has(view.parent_id),
     );
     const view = pending.splice(index, 1)[0];
-    if (!view || index < 0)
+    if (!view || index < 0) {
       throw new Error("The package view hierarchy is invalid.");
+    }
     const parent = view.parent_id
       ? (viewIds.get(view.parent_id) ?? null)
       : null;
@@ -259,13 +274,14 @@ export function mergePackageOrganization(
   )) {
     const tagId = tagIds.get(member.tagId);
     const groupId = groupIds.get(member.groupId);
-    if (!tagId || !groupId)
+    if (!tagId || !groupId) {
       throw new Error("The package tag groups are invalid.");
+    }
     if (
       !result.members.some(
         (row) => row.tagId === tagId && row.groupId === groupId,
       )
-    )
+    ) {
       result.members.push({
         tagId,
         groupId,
@@ -277,6 +293,7 @@ export function mergePackageOrganization(
               .map((row) => row.sortOrder),
           ) + 1,
       });
+    }
   }
   return result;
 }
@@ -327,14 +344,14 @@ export async function importPackageOrganization(
       folderIds,
       saveIds,
     );
-    const transactions: Transaction[] = [];
+    const transactions: Array<Transaction> = [];
     const meta = {
       actor: "user" as const,
       actorReason: "package-organization-import",
     };
     for (const row of merged.views.filter(
       (view) => !existing.views.some((old) => old.id === view.id),
-    ))
+    )) {
       transactions.push({
         kind: "create",
         model: "saved_view",
@@ -354,9 +371,10 @@ export async function importPackageOrganization(
         },
         meta,
       });
+    }
     for (const row of merged.tags.filter(
       (tag) => !existing.tags.some((old) => old.id === tag.id),
-    ))
+    )) {
       transactions.push({
         kind: "create",
         model: "tag",
@@ -368,9 +386,10 @@ export async function importPackageOrganization(
         },
         meta,
       });
+    }
     for (const row of merged.groups.filter(
       (group) => !existing.groups.some((old) => old.id === group.id),
-    ))
+    )) {
       transactions.push({
         kind: "create",
         model: "tag_group",
@@ -378,12 +397,13 @@ export async function importPackageOrganization(
         data: { ...row, createdAt: new Date(row.createdAt) },
         meta,
       });
+    }
     for (const row of merged.members.filter(
       (member) =>
         !existing.members.some(
           (old) => old.tagId === member.tagId && old.groupId === member.groupId,
         ),
-    ))
+    )) {
       transactions.push({
         kind: "create",
         model: "tag_group_member",
@@ -391,14 +411,18 @@ export async function importPackageOrganization(
         data: row,
         meta,
       });
-    if (transactions.length) await executeBatch(transactions);
+    }
+    if (transactions.length) {
+      await executeBatch(transactions);
+    }
     if (
       Object.keys(incoming.folderRules).length ||
       Object.keys(incoming.folderViews).length
-    )
+    ) {
       await setPrefs({
         folderRules: merged.folderRules,
         folderViews: merged.folderViews,
       });
+    }
   });
 }

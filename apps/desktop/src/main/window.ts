@@ -2,8 +2,10 @@ import type { BrowserWindowConstructorOptions } from "electron";
 import { BrowserWindow, nativeTheme, shell } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
-import { IPC, type MenuActionId } from "../shared/constants";
-import { SHELL_HINT_ARG, type ShellHint } from "../shared/shell-hint";
+import { IPC } from "../shared/constants";
+import type { MenuActionId } from "../shared/constants";
+import { SHELL_HINT_ARG } from "../shared/shell-hint";
+import type { ShellHint } from "../shared/shell-hint";
 import { SYSTEM_LOCALE_ARG } from "../shared/system-locale";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
@@ -19,7 +21,8 @@ import { systemLocale } from "./lib/system-locale";
 import { shouldStayResident } from "./lifecycle";
 import { markStartup } from "./startup-timing";
 import { resolveTheme } from "./theme";
-import { ensureTray, isTrayVisible, type TrayHandle } from "./tray";
+import { ensureTray, isTrayVisible } from "./tray";
+import type { TrayHandle } from "./tray";
 
 import { mainWindowState } from "./window-state";
 
@@ -53,7 +56,9 @@ const MIN_WINDOW_HEIGHT = 480;
 function usableWindowBounds(
   bounds: { x: number; y: number; width: number; height: number } | null,
 ): { x: number; y: number; width: number; height: number } | null {
-  if (!bounds) return null;
+  if (!bounds) {
+    return null;
+  }
   if (bounds.width < MIN_WINDOW_WIDTH || bounds.height < MIN_WINDOW_HEIGHT) {
     return null;
   }
@@ -83,7 +88,9 @@ export function setCloseToTray(enabled: boolean): void {
 }
 
 export function queueTrayRefresh(): void {
-  if (!tray || trayRefreshQueued) return;
+  if (!tray || trayRefreshQueued) {
+    return;
+  }
   trayRefreshQueued = true;
   setTimeout(() => {
     trayRefreshQueued = false;
@@ -93,7 +100,9 @@ export function queueTrayRefresh(): void {
 
 export async function syncShellChrome(): Promise<void> {
   const win = mainWindowState.current;
-  if (!win || win.isDestroyed()) return;
+  if (!win || win.isDestroyed()) {
+    return;
+  }
 
   const resolved = await resolveTheme();
   const background =
@@ -102,13 +111,17 @@ export async function syncShellChrome(): Promise<void> {
       ? "#000000"
       : "#ffffff");
 
-  if (win.isDestroyed()) return;
+  if (win.isDestroyed()) {
+    return;
+  }
   win.setBackgroundColor(background);
 }
 
 export async function resolveShellHint(): Promise<ShellHint> {
   const resolved = await resolveTheme();
-  if (!resolved) return {};
+  if (!resolved) {
+    return {};
+  }
   const { mode, ...vars } = resolved;
   return { theme: mode, ...vars };
 }
@@ -140,9 +153,8 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
       ? "#000000"
       : "#ffffff");
 
-  const { applyPreferredAppIcon, resolveAppIconPath } = await import(
-    "./core/app-icon"
-  );
+  const { applyPreferredAppIcon, resolveAppIconPath } =
+    await import("./core/app-icon");
   const appIcon = resolveAppIconPath(prefs?.window.appIcon ?? DEFAULT_APP_ICON);
 
   const options: BrowserWindowConstructorOptions = {
@@ -170,14 +182,20 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
       ],
     },
   };
-  if (!isMac && appIcon) options.icon = appIcon;
+  if (!isMac && appIcon) {
+    options.icon = appIcon;
+  }
 
   const win = new BrowserWindow(options);
   markStartup("window-created");
   mainWindowState.current = win;
   win.once("closed", () => {
-    if (mainWindowState.current === win) mainWindowState.current = null;
-    if (!isQuitting) void settleDockAfterClose();
+    if (mainWindowState.current === win) {
+      mainWindowState.current = null;
+    }
+    if (!isQuitting) {
+      void settleDockAfterClose();
+    }
   });
   win.on("show", () => {
     hiddenLibraryRelease.shown(win);
@@ -185,9 +203,12 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   });
   /** On macOS, Logi Options+ and three-finger trackpad swipes send back and forward as swipes. */
   win.on("swipe", (_event, direction) => {
-    if (direction === "left") win.webContents.send(IPC.navigationSwipe, "back");
-    if (direction === "right")
+    if (direction === "left") {
+      win.webContents.send(IPC.navigationSwipe, "back");
+    }
+    if (direction === "right") {
       win.webContents.send(IPC.navigationSwipe, "forward");
+    }
   });
   lockRendererZoom(win.webContents);
   followInterfaceZoom(win.webContents, { getPrefs, subscribePrefs });
@@ -202,15 +223,23 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
 
   let saveBoundsTimer: NodeJS.Timeout | null = null;
   const saveBounds = () => {
-    if (win.isDestroyed()) return;
-    if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
+    if (win.isDestroyed()) {
+      return;
+    }
+    if (saveBoundsTimer) {
+      clearTimeout(saveBoundsTimer);
+    }
     saveBoundsTimer = setTimeout(() => {
       saveBoundsTimer = null;
-      if (win.isDestroyed()) return;
+      if (win.isDestroyed()) {
+        return;
+      }
       const b = usableWindowBounds(win.getBounds());
-      if (!b) return;
-      void setPrefs({ window: { bounds: b } }).catch((err) =>
-        log.warn("[pond] persist window bounds failed", err),
+      if (!b) {
+        return;
+      }
+      void setPrefs({ window: { bounds: b } }).catch((cause: unknown) =>
+        log.warn("[pond] persist window bounds failed", cause),
       );
     }, 400);
   };
@@ -218,18 +247,29 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   win.on("move", saveBounds);
   /** macOS hides the traffic lights in full screen, so the renderer drops their inset. */
   const sendFullScreen = () => {
-    if (!win.isDestroyed())
+    if (!win.isDestroyed()) {
       win.webContents.send(IPC.windowFullScreen, win.isFullScreen());
+    }
   };
   win.on("enter-full-screen", sendFullScreen);
   win.on("leave-full-screen", sendFullScreen);
 
   win.on("close", (event) => {
-    if (isQuitting) return;
-    if (!closeToTrayEnabled) return;
-    if (!hasTray()) return;
-    if (win.isDestroyed()) return;
-    if (mainWindowState.current !== win) return;
+    if (isQuitting) {
+      return;
+    }
+    if (!closeToTrayEnabled) {
+      return;
+    }
+    if (!hasTray()) {
+      return;
+    }
+    if (win.isDestroyed()) {
+      return;
+    }
+    if (mainWindowState.current !== win) {
+      return;
+    }
     event.preventDefault();
     win.hide();
     hiddenLibraryRelease.hidden(win);
@@ -237,8 +277,12 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   });
 
   win.webContents.on("did-finish-load", () => {
-    if (win.isDestroyed()) return;
-    if (win.isFullScreen()) sendFullScreen();
+    if (win.isDestroyed()) {
+      return;
+    }
+    if (win.isFullScreen()) {
+      sendFullScreen();
+    }
     const route = consumePendingDeepLink();
     if (route) {
       win.webContents.send(IPC.nav, route);
@@ -248,7 +292,9 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   win.webContents.on(
     "did-fail-load",
     (_event, code, desc, url, isMainFrame) => {
-      if (!isMainFrame) return;
+      if (!isMainFrame) {
+        return;
+      }
       log.error("[pond] renderer did-fail-load", { code, desc, url });
     },
   );
@@ -259,7 +305,9 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
 
   win.webContents.on("console-message", (event) => {
     const level = event.level;
-    if (level !== "warning" && level !== "error") return;
+    if (level !== "warning" && level !== "error") {
+      return;
+    }
     log.warn("[pond renderer]", event.message);
   });
 
@@ -273,8 +321,11 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
         return false;
       }
     })();
-    if (isHttp) void shell.openExternal(url);
-    else log.warn("[pond] blocked window.open for non-http(s) URL", url);
+    if (isHttp) {
+      void shell.openExternal(url);
+    } else {
+      log.warn("[pond] blocked window.open for non-http(s) URL", url);
+    }
     return { action: "deny" };
   });
 
@@ -282,10 +333,18 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
 
   win.webContents.on("will-navigate", (event, url) => {
     const allowed = (() => {
-      if (devUrl && url.startsWith(devUrl)) return true;
-      if (url.startsWith("file://")) return true;
-      if (url.startsWith("pond://")) return true;
-      if (url === "about:blank") return true;
+      if (devUrl && url.startsWith(devUrl)) {
+        return true;
+      }
+      if (url.startsWith("file://")) {
+        return true;
+      }
+      if (url.startsWith("pond://")) {
+        return true;
+      }
+      if (url === "about:blank") {
+        return true;
+      }
       return false;
     })();
     if (!allowed) {
@@ -328,7 +387,9 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
 }
 
 async function ensureMainWindow(): Promise<BrowserWindow> {
-  if (openingLibraryWindow) return openingLibraryWindow;
+  if (openingLibraryWindow) {
+    return openingLibraryWindow;
+  }
   if (!mainWindowState.current || mainWindowState.current.isDestroyed()) {
     return createWindow();
   }
@@ -337,7 +398,9 @@ async function ensureMainWindow(): Promise<BrowserWindow> {
 
 export async function openLibraryWindow(): Promise<void> {
   const win = await ensureMainWindow();
-  if (win.isMinimized()) win.restore();
+  if (win.isMinimized()) {
+    win.restore();
+  }
   win.show();
   win.focus();
 }
@@ -349,8 +412,12 @@ export async function handleActivate(): Promise<void> {
 
 export function focusedOrMain(): BrowserWindow | null {
   const target = mainWindowState.current;
-  if (!target || target.isDestroyed()) return null;
-  if (target.isMinimized()) target.restore();
+  if (!target || target.isDestroyed()) {
+    return null;
+  }
+  if (target.isMinimized()) {
+    target.restore();
+  }
   target.show();
   target.focus();
   return target;
@@ -358,7 +425,9 @@ export function focusedOrMain(): BrowserWindow | null {
 
 export async function summonMainWindow(): Promise<void> {
   const win = await ensureMainWindow();
-  if (win.isMinimized()) win.restore();
+  if (win.isMinimized()) {
+    win.restore();
+  }
   win.show();
   win.focus();
 }
@@ -385,10 +454,10 @@ export async function initTray(): Promise<void> {
       },
       onMenuAction: runLibraryMenuAction,
     });
-  } catch (err) {
+  } catch (error) {
     log.error(
       "[pond] failed to create tray; menu-bar icon will be unavailable",
-      err,
+      error,
     );
   }
 }

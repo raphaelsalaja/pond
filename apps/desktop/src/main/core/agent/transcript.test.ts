@@ -1,4 +1,4 @@
-import * as schema from "@pond/schema/db";
+import { agentChats, agentMessages } from "@pond/schema/db";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
@@ -10,30 +10,32 @@ function nativeAvailable() {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
 
-const databases: Database.Database[] = [];
+const databases: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of databases.splice(0)) db.close();
+  for (const db of databases.splice(0)) {
+    db.close();
+  }
 });
 function setup() {
   const sqlite = new Database(":memory:");
   databases.push(sqlite);
   initializePondSchema(sqlite, () => false);
-  const db = drizzle(sqlite, { schema });
-  db.insert(schema.agentChats)
-    .values({ id: "chat", title: "Existing chat" })
-    .run();
+  const db = drizzle(sqlite, { schema: { agentChats, agentMessages } });
+  db.insert(agentChats).values({ id: "chat", title: "Existing chat" }).run();
   return { db, sqlite };
 }
 
 describe.skipIf(!nativeAvailable())("canonical agent transcript", () => {
   it("hydrates visible messages and keeps user metadata on disk", async () => {
     const { db } = setup();
-    db.insert(schema.agentMessages)
+    db.insert(agentMessages)
       .values({
         id: "user",
         chatId: "chat",
@@ -44,14 +46,14 @@ describe.skipIf(!nativeAvailable())("canonical agent transcript", () => {
       .run();
     const messages = await loadModelTranscript("chat", db);
     expect(messages).toEqual([{ role: "user", content: "Search" }]);
-    expect(db.select().from(schema.agentMessages).all()[0]?.metadata).toEqual({
+    expect(db.select().from(agentMessages).all()[0]?.metadata).toEqual({
       scopeLabel: "Library",
     });
   });
 
   it("uses validated visible replies for later turns", async () => {
     const { db } = setup();
-    db.insert(schema.agentMessages)
+    db.insert(agentMessages)
       .values([
         {
           id: "user",
@@ -94,7 +96,7 @@ describe.skipIf(!nativeAvailable())("canonical agent transcript", () => {
 
   it("excludes unsafe replies but preserves valid stopped text", async () => {
     const { db } = setup();
-    db.insert(schema.agentMessages)
+    db.insert(agentMessages)
       .values([
         {
           id: "user",

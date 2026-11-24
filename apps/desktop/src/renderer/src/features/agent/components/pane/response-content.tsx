@@ -14,30 +14,42 @@ import { Suggestions } from "./suggestions";
 
 export function inferredLookupResult(
   content: string,
-  sources: AssistantSource[],
+  sources: Array<AssistantSource>,
 ) {
-  if (sources.length < 2) return null;
+  if (sources.length < 2) {
+    return null;
+  }
   const lines = content
     .trim()
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (lines.length < 2) return null;
-  const references: number[] = [];
+  if (lines.length < 2) {
+    return null;
+  }
+  const references: Array<number> = [];
   for (const line of lines) {
-    if (!/^(?:(?:\d+[.)]|[-*+])\s+)?\[\d+\]/.test(line)) return null;
+    if (!/^(?:(?:\d+[.)]|[-*+])\s+)?\[\d+\]/.test(line)) {
+      return null;
+    }
     const matches = [...line.matchAll(/\[(\d+)\](?:\(#save-(\d+)\))?/g)];
-    if (!matches.length) return null;
+    if (!matches.length) {
+      return null;
+    }
     for (const match of matches) {
       const reference = Number(match[2] ?? match[1]);
-      if (reference < 1 || reference > sources.length) return null;
+      if (reference < 1 || reference > sources.length) {
+        return null;
+      }
       references.push(reference);
     }
   }
   const saveIds = [...new Set(references)].flatMap(
     (reference) => sources[reference - 1]?.id ?? [],
   );
-  if (saveIds.length < 2) return null;
+  if (saveIds.length < 2) {
+    return null;
+  }
   return { title: "References", saveIds } as const;
 }
 
@@ -56,9 +68,9 @@ export function ResponseExtras({
   questionAnswer?: string;
   questionDisabled: boolean;
   provider: AssistantProvider;
-  attachedIds: string[];
+  attachedIds: Array<string>;
   busy: boolean;
-  attach: (sources: AssistantSource[]) => void;
+  attach: (sources: Array<AssistantSource>) => void;
   onAnswer?: (answer: string) => Promise<void>;
   onSuggest?: (suggestion: string) => void;
 }) {
@@ -73,7 +85,8 @@ export function ResponseExtras({
   const changed = new Set(
     (message.metadata?.changes ?? []).map((change) => change.saveId),
   );
-  const unchanged = (ids: string[]) => ids.filter((id) => !changed.has(id));
+  const unchanged = (ids: Array<string>) =>
+    ids.filter((id) => !changed.has(id));
   return (
     <>
       {results.map((result) => (
@@ -125,8 +138,11 @@ export function ResponseExtras({
         <Suggestions
           suggestions={suggestions}
           onPick={(suggestion) => {
-            if (onSuggest) onSuggest(suggestion);
-            else void assistant.suggest(suggestion, provider);
+            if (onSuggest) {
+              onSuggest(suggestion);
+            } else {
+              void assistant.suggest(suggestion, provider);
+            }
           }}
         />
       ) : null}

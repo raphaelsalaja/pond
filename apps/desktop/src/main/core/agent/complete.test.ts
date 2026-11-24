@@ -4,10 +4,8 @@ import { expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { AssistantSource } from "../../../shared/assistant";
 import { splitMessages } from "../../../shared/assistant-text";
-import {
-  type CompletionInput,
-  completeWithTools as complete,
-} from "./complete";
+import { completeWithTools as complete } from "./complete";
+import type { CompletionInput } from "./complete";
 import { contextDependencies, libraryContext } from "./context";
 import type { LocalRuntimeCoordinator } from "./local-runtime-coordinator";
 import {
@@ -17,10 +15,10 @@ import {
   textModel,
   toolCallChunks,
 } from "./mock-model";
-import { type OperationCatalog, pondOperationTools } from "./operations";
+import { pondOperationTools } from "./operations";
+import type { OperationCatalog } from "./operations";
 
-const dump =
-  '{"saves":[{"id":"film","title":"Film","url":"https://example.com","description":"Transcript\\nShow transcript"}]}';
+const dump = String.raw`{"saves":[{"id":"film","title":"Film","url":"https://example.com","description":"Transcript\nShow transcript"}]}`;
 
 function request(model = textModel("Hi! How can I help?")): CompletionInput {
   return {
@@ -41,7 +39,7 @@ function tool(name: string, execute = vi.fn()) {
   return { name, description: name, schema: z.looseObject({}), execute };
 }
 
-const filmSources: AssistantSource[] = Array.from(
+const filmSources: Array<AssistantSource> = Array.from(
   { length: 8 },
   (_, index) => ({
     id: `film-${index}`,
@@ -51,12 +49,14 @@ const filmSources: AssistantSource[] = Array.from(
   }),
 );
 
-function scriptedModel(...steps: ReturnType<typeof textChunks>[]) {
+function scriptedModel(...steps: Array<ReturnType<typeof textChunks>>) {
   let step = 0;
   return new MockLanguageModelV4({
     doStream: async () => {
       const chunks = steps[step++];
-      if (!chunks) throw new Error("Unexpected model step");
+      if (!chunks) {
+        throw new Error("Unexpected model step");
+      }
       return { stream: simulateReadableStream({ chunks }) };
     },
   });
@@ -220,11 +220,13 @@ it("lets the model explain empty results without substituting a canned reply", a
   expect(model.doStreamCalls).toHaveLength(2);
 });
 
+function unresolved() {}
+
 it("keeps parallel search citations in evidence registry order", async () => {
-  let finishFilm = () => {};
-  let finishCinema = () => {};
-  let searchesStarted = () => {};
-  let cinemaCollected = () => {};
+  let finishFilm: () => void = unresolved;
+  let finishCinema: () => void = unresolved;
+  let searchesStarted: () => void = unresolved;
+  let cinemaCollected: () => void = unresolved;
   const started = new Promise<void>((resolve) => {
     searchesStarted = resolve;
   });
@@ -263,13 +265,17 @@ it("keeps parallel search citations in evidence registry order", async () => {
       signal: input.abortController.signal,
       onActivity: vi.fn(),
       onSources: (sources) => {
-        if (sources[0]?.id === "film-2") cinemaCollected();
+        if (sources[0]?.id === "film-2") {
+          cinemaCollected();
+        }
       },
     },
     {
       ...contextDependencies,
       searchLibrary: (args) => {
-        if (++searches === 2) searchesStarted();
+        if (++searches === 2) {
+          searchesStarted();
+        }
         return args.query === "film" ? film : cinema;
       },
     },
@@ -662,7 +668,7 @@ it("sends Apple Intelligence the compact prompt and only read-only tools", async
     apiKey: null,
     controls: {
       fast: false,
-      contextTokens: 4_096,
+      contextTokens: 4096,
       reasoning: "provider-default",
     },
     tools: [tool("searchLibrary"), tool("proposeChanges")],

@@ -70,12 +70,21 @@ function LibraryEmptyState({
     hasActiveFilter,
     libraryTotal,
   });
-  if (kind === "trash") return <TrashEmpty />;
-  if (kind === "folder")
+  if (kind === "trash") {
+    return <TrashEmpty />;
+  }
+  if (kind === "folder") {
     return <FolderEmpty folderId={folderId} downloading={downloading} />;
-  if (kind === "library") return <LibraryEmpty />;
-  if (kind === "uncategorized") return <UncategorizedEmpty />;
-  if (kind === "inbox") return <InboxEmpty />;
+  }
+  if (kind === "library") {
+    return <LibraryEmpty />;
+  }
+  if (kind === "uncategorized") {
+    return <UncategorizedEmpty />;
+  }
+  if (kind === "inbox") {
+    return <InboxEmpty />;
+  }
   if (kind === "section" && mode !== "library" && mode !== "trash") {
     return <LibrarySectionEmpty mode={mode} />;
   }
@@ -97,6 +106,7 @@ export function LibraryView() {
   const [folderViews] = usePrefs("folderViews");
   const folderId = nav.kind === "folder" ? nav.id : null;
   const pinnedIds = data.paging.pinnedIds;
+  const { allIds: pagedAllIds, loadMore: loadMorePages } = data.paging;
   const sections = useMemo(
     () => splitPinned(data.filtered, pinnedIds),
     [data.filtered, pinnedIds],
@@ -116,14 +126,17 @@ export function LibraryView() {
     [data.filteredIds, lead, pinnedCount, sections.contents],
   );
   const allIds = useMemo(() => {
-    if (!collapsed) return data.paging.allIds;
+    if (!collapsed) {
+      return pagedAllIds;
+    }
     const hidden = new Set(pinnedIds);
     return async () =>
-      (await data.paging.allIds())?.filter((id) => !hidden.has(id)) ?? null;
-  }, [collapsed, data.paging.allIds, pinnedIds]);
+      (await pagedAllIds())?.filter((id) => !hidden.has(id)) ?? null;
+  }, [collapsed, pagedAllIds, pinnedIds]);
   const togglePinned = useCallback(() => {
-    if (folderId)
+    if (folderId) {
       void saveFolderPresentation(folderId, { pinnedCollapsed: !collapsed });
+    }
   }, [collapsed, folderId]);
   const actions = useCardActions(
     visibleIds,
@@ -142,8 +155,8 @@ export function LibraryView() {
     nav.kind === "folder" ? nav.id : null,
   );
   const onEndReached = useCallback(() => {
-    void data.paging.loadMore();
-  }, [data.paging.loadMore]);
+    void loadMorePages();
+  }, [loadMorePages]);
   // A new scope clears its page before the first answer arrives. Publishing
   // that empty list under the new key makes an open preview treat the Save as gone.
   const publishedKey = useRef<string | null>(null);
@@ -156,7 +169,9 @@ export function LibraryView() {
       data.paging.loading &&
       data.filteredIds.length === 0 &&
       !data.paging.settledEmpty;
-    if (unsettled) return;
+    if (unsettled) {
+      return;
+    }
     publishedKey.current = key;
     libraryViewContext.set(data.filteredIds, data.mode);
     resultNavigation.setSource({
@@ -198,9 +213,15 @@ export function LibraryView() {
         data-library-grid=""
         onPointerDown={marquee.onPointerDown}
         onMouseDown={(event) => {
-          if (event.defaultPrevented || event.button !== 0) return;
-          if (event.metaKey || event.ctrlKey || event.shiftKey) return;
-          if (!isLibraryBackgroundTarget(event.target)) return;
+          if (event.defaultPrevented || event.button !== 0) {
+            return;
+          }
+          if (event.metaKey || event.ctrlKey || event.shiftKey) {
+            return;
+          }
+          if (!isLibraryBackgroundTarget(event.target)) {
+            return;
+          }
           clearSaveSelection();
         }}
         onDragOver={actions.onDragOver}

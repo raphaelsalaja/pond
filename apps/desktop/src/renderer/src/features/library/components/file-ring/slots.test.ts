@@ -1,4 +1,5 @@
-import { FILE_RING_CAPACITY, type FileRingItem } from "@pond/schema/file-ring";
+import { FILE_RING_CAPACITY } from "@pond/schema/file-ring";
+import type { FileRingItem } from "@pond/schema/file-ring";
 import { describe, expect, it } from "vitest";
 import {
   autoRingItems,
@@ -7,9 +8,9 @@ import {
   layoutRing,
   pickRingFolders,
   RING_FILL,
-  type RingDropHandlers,
   ringOpens,
 } from "./slots";
+import type { RingDropHandlers } from "./slots";
 
 interface Row {
   id: string;
@@ -17,7 +18,7 @@ interface Row {
   sortOrder: number;
 }
 
-const rows: Row[] = [
+const rows: Array<Row> = [
   { id: "inbox", name: "Inbox", sortOrder: 0 },
   { id: "portraits", name: "Portraits", sortOrder: 1 },
   { id: "rooms", name: "Rooms", sortOrder: 2 },
@@ -26,13 +27,13 @@ const rows: Row[] = [
   { id: "plants", name: "Plants", sortOrder: 5 },
 ];
 
-function ids(folders: readonly Row[]): string[] {
+function ids(folders: ReadonlyArray<Row>): Array<string> {
   return folders.map((folder) => folder.id);
 }
 
 function recordingHandlers() {
-  const calls: string[] = [];
-  const handlers: RingDropHandlers<Row, string[]> = {
+  const calls: Array<string> = [];
+  const handlers: RingDropHandlers<Row, Array<string>> = {
     addToFolder: (saveIds, folder) =>
       calls.push(`add ${saveIds.join(",")} to ${folder.id}`),
     createFolder: (saveIds) => calls.push(`create ${saveIds.join(",")}`),
@@ -77,7 +78,7 @@ describe("ring folders", () => {
   });
 });
 
-function folderItems(folderIds: readonly string[]): FileRingItem[] {
+function folderItems(folderIds: ReadonlyArray<string>): Array<FileRingItem> {
   return folderIds.map((folderId) => ({ kind: "folder", folderId }));
 }
 
@@ -125,7 +126,7 @@ describe("ring layout", () => {
   });
 
   it("places a customized ring in its saved order", () => {
-    const items: FileRingItem[] = [
+    const items: Array<FileRingItem> = [
       { kind: "folder", folderId: "film" },
       { kind: "action", action: "export-files" },
       { kind: "folder", folderId: "plants" },
@@ -171,11 +172,13 @@ describe("ring opening", () => {
   });
 
   it("opens a customized ring for any sector that takes the drop", () => {
-    const actions: FileRingItem[] = [{ kind: "action", action: "new-folder" }];
+    const actions: Array<FileRingItem> = [
+      { kind: "action", action: "new-folder" },
+    ];
     expect(ringOpens(layoutRing(actions, [], dragActions(false)), true)).toBe(
       true,
     );
-    const exportOnly: FileRingItem[] = [
+    const exportOnly: Array<FileRingItem> = [
       { kind: "action", action: "export-files" },
     ];
     expect(
@@ -188,7 +191,7 @@ describe("ring opening", () => {
   });
 
   it("dims click-only actions during a drag", () => {
-    const items: FileRingItem[] = [
+    const items: Array<FileRingItem> = [
       { kind: "action", action: "search" },
       { kind: "action", action: "new-folder" },
     ];

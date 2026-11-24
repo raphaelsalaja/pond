@@ -2,7 +2,8 @@ import { IconAscendingSorting, IconDescendingSorting } from "@pond/icons";
 import { Button, Select } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import { isSortKey } from "@/features/library/hooks/use-filtered-saves";
-import { type SortKey, useView } from "@/features/library/hooks/use-view";
+import { useView } from "@/features/library/hooks/use-view";
+import type { SortKey } from "@/features/library/hooks/use-view";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
   reseedRandomSort,
@@ -47,7 +48,9 @@ export function SortSection({ onArrange }: { onArrange?: () => void }) {
         items={SORT_OPTIONS}
         value={key}
         onValueChange={(value) => {
-          if (value && isSortKey(value)) actions.setSort({ key: value, dir });
+          if (value && isSortKey(value)) {
+            actions.setSort({ key: value, dir });
+          }
         }}
       >
         <ViewMenuRow.Root>

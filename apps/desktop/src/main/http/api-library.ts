@@ -12,12 +12,13 @@ import {
   retrieveLibrary,
 } from "../core/library-retrieval";
 import { listViews } from "../core/saved-views";
-import { type ApiRuntime, requireLibrary } from "./api-runtime";
+import { requireLibrary } from "./api-runtime";
+import type { ApiRuntime } from "./api-runtime";
 import { apiSavesByIds } from "./api-saves";
 
 const live = and(isNull(saves.deletedAt), ne(saves.status, "skipped"));
 
-export async function libraryTags(runtime: ApiRuntime): Promise<ApiTag[]> {
+export async function libraryTags(runtime: ApiRuntime): Promise<Array<ApiTag>> {
   const db = await runtime.getDb();
   const used = await db
     .select({ name: sql<string>`value`, count: count() })
@@ -42,7 +43,7 @@ export async function libraryTags(runtime: ApiRuntime): Promise<ApiTag[]> {
 
 export async function libraryFolders(
   runtime: ApiRuntime,
-): Promise<ApiFolder[]> {
+): Promise<Array<ApiFolder>> {
   const db = await runtime.getDb();
   const counts = await db
     .select({ folderId: saveFolders.folderId, count: count() })
@@ -64,7 +65,7 @@ export async function libraryFolders(
   }));
 }
 
-export async function libraryViews(): Promise<ApiView[]> {
+export async function libraryViews(): Promise<Array<ApiView>> {
   return (await listViews()).map((view) => ({
     id: view.id,
     name: view.name,
@@ -78,8 +79,10 @@ export async function libraryViews(): Promise<ApiView[]> {
 
 export async function librarySources(
   runtime: ApiRuntime,
-): Promise<ApiSource[]> {
-  const rows = await (await runtime.getDb())
+): Promise<Array<ApiSource>> {
+  const rows = await (
+    await runtime.getDb()
+  )
     .select({ source: saves.source, count: count() })
     .from(saves)
     .where(live)

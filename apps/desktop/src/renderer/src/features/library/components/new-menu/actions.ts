@@ -20,7 +20,7 @@ import {
 import { selection } from "@/features/saves/navigation";
 import { openSources } from "@/features/sources";
 import { tagCreation } from "@/features/tags";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
@@ -37,6 +37,24 @@ const LIST_FORMAT = new Intl.ListFormat("en", { type: "conjunction" });
 const SAVES = { one: "Save", other: "Saves" };
 const ITEMS = { one: "item", other: "items" };
 
+function parseImportLinks(text: string): Array<string> {
+  const urls = asUrlList(text);
+  if (
+    !urls ||
+    urls.some((value) => {
+      try {
+        const url = new URL(value);
+        return !url.hostname || !["https:", "http:"].includes(url.protocol);
+      } catch {
+        return true;
+      }
+    })
+  ) {
+    throw new Error("Enter valid website links, one per line.");
+  }
+  return [...new Set(urls)];
+}
+
 export interface NewActionServices {
   notify: typeof notify;
   updateNotification: typeof updateNotification;
@@ -46,7 +64,7 @@ export interface NewActionServices {
   openSavedViewEditor: (kind: "smart_folder" | "group") => void;
   openSource: (kind: "connect" | "watch", source: Source) => void;
   selectSave: (id: string) => void;
-  showSaves: (ids: readonly string[], folderId?: string) => void;
+  showSaves: (ids: ReadonlyArray<string>, folderId?: string) => void;
   currentFolderId: () => string | null;
   onEagleImportProgress: (
     callback: (progress: EagleImportProgress) => void,
@@ -66,7 +84,7 @@ export function createNewActions({
   currentFolderId,
   onEagleImportProgress,
 }: NewActionServices) {
-  function reportSaved(ids: string[], folderId?: string): void {
+  function reportSaved(ids: Array<string>, folderId?: string): void {
     notify({
       id: "new-import",
       title:
@@ -80,7 +98,7 @@ export function createNewActions({
     });
   }
 
-  function reportDownloading(ids: string[]): void {
+  function reportDownloading(ids: Array<string>): void {
     notify({
       id: "new-import",
       title:
@@ -130,12 +148,14 @@ export function createNewActions({
     const picked = await window.pond.query("saves.pickImportPaths", {
       kind,
     });
-    if (picked.paths.length === 0) return;
+    if (picked.paths.length === 0) {
+      return;
+    }
     await importFilePaths(picked.paths, folderId);
   }
 
   async function importFilePaths(
-    paths: string[],
+    paths: Array<string>,
     folderId?: string,
   ): Promise<void> {
     const result = SaveResultSchema.parse(
@@ -143,7 +163,9 @@ export function createNewActions({
         folderId ? { paths, folderIds: [folderId] } : { paths },
       ),
     );
-    if (result.reason === "cancelled") return;
+    if (result.reason === "cancelled") {
+      return;
+    }
     if (!result.ok || !result.ids?.length) {
       throw new Error(
         "No files were imported. Choose readable, non-empty files.",
@@ -158,11 +180,15 @@ export function createNewActions({
     const picked = await window.pond.query("saves.pickImportPaths", {
       kind: "folders",
     });
-    if (picked.paths.length === 0) return;
+    if (picked.paths.length === 0) {
+      return;
+    }
     const result = SaveResultSchema.parse(
       await importFilesWithDuplicateReview({ paths: picked.paths }),
     );
-    if (result.reason === "cancelled") return;
+    if (result.reason === "cancelled") {
+      return;
+    }
     if (!result.ok || !result.ids?.length) {
       throw new Error(
         `No files were imported from the ${source} export. Choose its exported media folder.`,
@@ -175,7 +201,9 @@ export function createNewActions({
     const result = SaveResultSchema.parse(
       await importClipboardWithDuplicateReview({}),
     );
-    if (result.reason === "cancelled") return;
+    if (result.reason === "cancelled") {
+      return;
+    }
     if (!result.ok || !result.ids?.length) {
       throw new Error(
         "Copy an image or files first. Use Import from Links for URLs.",
@@ -187,7 +215,9 @@ export function createNewActions({
   async function importBookmarks(): Promise<void> {
     const result = await window.pond.query("saves.importBookmarks", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") return;
+      if (result.reason === "cancelled") {
+        return;
+      }
       throw new Error(result.error);
     }
     notify({
@@ -203,7 +233,9 @@ export function createNewActions({
   async function importMymind(): Promise<void> {
     const result = await window.pond.query("saves.importMymind", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") return;
+      if (result.reason === "cancelled") {
+        return;
+      }
       throw new Error(result.error);
     }
     notify({
@@ -219,7 +251,9 @@ export function createNewActions({
   async function importDataExport(): Promise<void> {
     const result = await window.pond.query("saves.importDataExport", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") return;
+      if (result.reason === "cancelled") {
+        return;
+      }
       throw new Error(result.error);
     }
     await refreshFolders();
@@ -242,7 +276,9 @@ export function createNewActions({
 
   async function importPageAssets(url: string): Promise<void> {
     const href = url.trim();
-    if (!href) throw new Error("Enter a website link.");
+    if (!href) {
+      throw new Error("Enter a website link.");
+    }
     const notificationId = notify({
       id: "new-import",
       title: "Extracting page assets",
@@ -271,7 +307,9 @@ export function createNewActions({
 
   async function importEagle(): Promise<void> {
     const picked = await window.pond.query("saves.pickEagleLibrary", {});
-    if (!picked.ok || !picked.path) return;
+    if (!picked.ok || !picked.path) {
+      return;
+    }
     const progressId = crypto.randomUUID();
     const notificationId = notify({
       id: "new-import",
@@ -281,7 +319,9 @@ export function createNewActions({
       timeout: 0,
     });
     const unsubscribe = onEagleImportProgress((progress) => {
-      if (progress.id !== progressId) return;
+      if (progress.id !== progressId) {
+        return;
+      }
       const hasItems = progress.total > 0;
       updateNotification({
         id: notificationId,
@@ -331,7 +371,9 @@ export function createNewActions({
   async function importPondPackage(): Promise<void> {
     const result = await window.pond.query("saves.importPackage", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") return;
+      if (result.reason === "cancelled") {
+        return;
+      }
       throw new Error(
         result.error || "Couldn't import the package. Try again.",
       );
@@ -350,7 +392,9 @@ export function createNewActions({
   async function importEaglePackage(): Promise<void> {
     const result = await window.pond.query("saves.importEaglePackage", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") return;
+      if (result.reason === "cancelled") {
+        return;
+      }
       throw new Error(
         result.error || "Couldn't import the Eagle package. Try again.",
       );
@@ -374,8 +418,9 @@ export function createNewActions({
         mediaType: "text",
       }),
     );
-    if (!result.ok || !result.id)
+    if (!result.ok || !result.id) {
       throw new Error("Couldn't save the note. Try again.");
+    }
     await placeCreatedSave(result.id);
   }
 
@@ -386,8 +431,9 @@ export function createNewActions({
         folderId: currentFolderId(),
       }),
     );
-    if (!result.ok || !result.id)
+    if (!result.ok || !result.id) {
       throw new Error("Couldn't create the document. Try again.");
+    }
     selectSave(result.id);
   }
 
@@ -489,7 +535,7 @@ export function createNewActions({
       });
       return;
     }
-    const happened: string[] = [];
+    const happened: Array<string> = [];
     if (missing > 0) {
       happened.push(
         `${formatPlural(missing, { one: "save is", other: "saves are" })} missing from disk`,
@@ -515,45 +561,35 @@ export function createNewActions({
 
   async function exportDebugReport(): Promise<void> {
     const result = await window.pond.query("library.exportDebugReport", {});
-    if (!result.ok && result.reason !== "cancelled")
+    if (!result.ok && result.reason !== "cancelled") {
       throw new Error("Couldn't export the debug report.");
-    if (result.ok)
+    }
+    if (result.ok) {
       notify({ id: "debug-report", title: "Debug Report Exported" });
+    }
   }
 
-  function parseImportLinks(text: string): string[] {
-    const urls = asUrlList(text);
-    if (
-      !urls ||
-      urls.some((value) => {
-        try {
-          const url = new URL(value);
-          return !url.hostname || !["https:", "http:"].includes(url.protocol);
-        } catch {
-          return true;
-        }
-      })
-    )
-      throw new Error("Enter valid website links, one per line.");
-    return [...new Set(urls)];
-  }
-
-  async function importLinks(text: string): Promise<string[]> {
+  async function importLinks(text: string): Promise<Array<string>> {
     const urls = parseImportLinks(text);
-    const failed: string[] = [];
-    const added: string[] = [];
+    const failed: Array<string> = [];
+    const added: Array<string> = [];
     for (const url of urls) {
       try {
         const result = SaveResultSchema.parse(
           await window.pond.query("saves.quickAdd", { url }),
         );
-        if (!result.ok) failed.push(url);
-        else if (result.id) added.push(result.id);
+        if (!result.ok) {
+          failed.push(url);
+        } else if (result.id) {
+          added.push(result.id);
+        }
       } catch {
         failed.push(url);
       }
     }
-    if (added.length > 0) reportDownloading(added);
+    if (added.length > 0) {
+      reportDownloading(added);
+    }
     return failed;
   }
 
@@ -618,7 +654,7 @@ export const {
   refreshFolders: () => folders.refresh(),
   startEditingFolder: (id) => folders.startEditing(id),
   openTagCreation: (kind) => {
-    getAppRouter()?.history.push("/tags");
+    getAppHistory()?.push("/tags");
     tagCreation.request(kind);
   },
   openSavedViewEditor: (kind) => savedViews.openEditor({ kind }),

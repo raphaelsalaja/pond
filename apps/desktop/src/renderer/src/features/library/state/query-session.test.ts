@@ -10,7 +10,7 @@ function deferred<T>() {
   });
   return { promise, resolve };
 }
-function page(ids: string[], more = false): LibraryQueryPage {
+function page(ids: Array<string>, more = false): LibraryQueryPage {
   return {
     ids,
     total: 4,
@@ -25,7 +25,7 @@ describe("query session", () => {
   it("discards an older reply after the user changes scope", async () => {
     const first = deferred<LibraryQueryPage>();
     let calls = 0;
-    const hydrated: string[][] = [];
+    const hydrated: Array<Array<string>> = [];
     const session = createQuerySession(
       {
         page: async () => (++calls === 1 ? first.promise : page(["new"])),
@@ -68,7 +68,7 @@ describe("query session", () => {
     expect(session.snapshot().page?.ids).toEqual(["x", "a", "b", "c"]);
   });
   it("does not apply Select All from an abandoned query", async () => {
-    const response = deferred<{ ids: string[] }>();
+    const response = deferred<{ ids: Array<string> }>();
     const session = createQuerySession(
       {
         page: async () => page([]),

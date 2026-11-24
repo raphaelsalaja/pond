@@ -5,11 +5,14 @@ import { isAvatarUrl, stripTwitterShortUrls } from "@shared/tweet-card";
 const isDataUrl = (url: string | undefined): url is string =>
   url?.startsWith("data:image/") === true;
 
+const pad = (n: number) => String(Math.abs(n)).padStart(2, "0");
+
 /** ISO 8601 in the machine's zone, so xeet prints the time the reader saw. */
 function localIso(iso: string): string | undefined {
   const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return undefined;
-  const pad = (n: number) => String(Math.abs(n)).padStart(2, "0");
+  if (!Number.isFinite(d.getTime())) {
+    return undefined;
+  }
   const offset = -d.getTimezoneOffset();
   const sign = offset >= 0 ? "+" : "-";
   return (
@@ -19,11 +22,13 @@ function localIso(iso: string): string | undefined {
   );
 }
 
-const TWITTER_EPOCH_MS = 1288834974657n;
+const TWITTER_EPOCH_MS = 1_288_834_974_657n;
 
 /** X status ids are snowflakes, so a quote saved without its time still has one. */
 function snowflakeIso(id: string | undefined): string | undefined {
-  if (!id || !/^\d{15,20}$/.test(id)) return undefined;
+  if (!id || !/^\d{15,20}$/.test(id)) {
+    return undefined;
+  }
   const ms = Number((BigInt(id) >> 22n) + TWITTER_EPOCH_MS);
   return new Date(ms).toISOString();
 }
@@ -32,7 +37,7 @@ const URL_RE = /https?:\/\/[^\s…]+/g;
 
 /** Page captures keep X's shortened link text ("example.com/a-long-pa…"); xeet shortens it again. */
 function visibleText(text: string | undefined): string {
-  return stripTwitterShortUrls(text ?? "").replace(
+  return stripTwitterShortUrls(text ?? "").replaceAll(
     /(https?:\/\/[^\s…]+)…/g,
     "$1",
   );
@@ -46,19 +51,24 @@ function hostOf(url: string): string | undefined {
   }
 }
 
-function mapMedia(media: readonly CaptureMedia[]): XMedia[] {
-  const out: XMedia[] = [];
+function mapMedia(media: ReadonlyArray<CaptureMedia>): Array<XMedia> {
+  const out: Array<XMedia> = [];
   for (const m of media) {
-    if (m.type === "link" || isAvatarUrl(m.url)) continue;
+    if (m.type === "link" || isAvatarUrl(m.url)) {
+      continue;
+    }
     const item: XMedia = {
       kind: m.type === "video" ? "video" : "image",
       width: m.width ?? 0,
       height: m.height ?? 0,
     };
     const data = m.type === "video" ? m.posterUrl : m.url;
-    if (isDataUrl(data)) item.data = data;
-    if (m.type === "video" && m.durationSec !== undefined)
+    if (isDataUrl(data)) {
+      item.data = data;
+    }
+    if (m.type === "video" && m.durationSec !== undefined) {
       item.duration = m.durationSec;
+    }
     out.push(item);
   }
   return out;
@@ -79,14 +89,21 @@ function mapPost(
       verified: capture.author?.verified ? "blue" : "none",
     },
   };
-  if (isDataUrl(capture.author?.avatarUrl))
+  if (isDataUrl(capture.author?.avatarUrl)) {
     post.author.avatar = capture.author.avatarUrl;
+  }
   const media = mapMedia(capture.media ?? []);
-  if (media.length > 0) post.media = media;
+  if (media.length > 0) {
+    post.media = media;
+  }
   const published = capture.publishedAt ?? snowflakeIso(capture.id);
   const createdAt = published ? localIso(published) : undefined;
-  if (createdAt) post.createdAt = createdAt;
-  if (now) post.now = now;
+  if (createdAt) {
+    post.createdAt = createdAt;
+  }
+  if (now) {
+    post.now = now;
+  }
   return post;
 }
 
@@ -99,8 +116,9 @@ export function captureToXPost(
   fallbackAuthor?: string | null,
   now: Date = new Date(),
 ): XPost | null {
-  if (capture.replyTo?.description || capture.replyTo?.media.length)
+  if (capture.replyTo?.description || capture.replyTo?.media.length) {
     return null;
+  }
   const reference = localIso(now.toISOString());
   const post = mapPost(capture, reference, fallbackAuthor);
 
@@ -123,11 +141,18 @@ export function captureToXPost(
     /** A page capture can put the card's title where its domain goes. */
     const domainIsTitle = card.domain !== undefined && /\s/.test(card.domain);
     const title = card.title ?? (domainIsTitle ? card.domain : undefined);
-    if (title) link.title = title;
-    if (card.description) link.description = card.description;
-    if (card.domain && !domainIsTitle) link.domain = card.domain;
-    if (isDataUrl(card.imageUrl))
+    if (title) {
+      link.title = title;
+    }
+    if (card.description) {
+      link.description = card.description;
+    }
+    if (card.domain && !domainIsTitle) {
+      link.domain = card.domain;
+    }
+    if (isDataUrl(card.imageUrl)) {
       link.image = { width: 0, height: 0, data: card.imageUrl };
+    }
     /** X attaches the card to the last link in the text; a t.co card URL means that link was stripped. */
     const last = post.text.match(URL_RE)?.at(-1);
     const written =
@@ -136,9 +161,12 @@ export function captureToXPost(
         ? last
         : undefined;
     const key = written ?? card.url;
-    if (!link.domain && hostOf(key) === "t.co") link.domain = "";
-    if (!written)
+    if (!link.domain && hostOf(key) === "t.co") {
+      link.domain = "";
+    }
+    if (!written) {
       post.text = post.text ? `${post.text}\n\n${card.url}` : card.url;
+    }
     post.links = { [key]: link };
   }
 

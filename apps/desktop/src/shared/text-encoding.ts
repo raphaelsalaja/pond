@@ -1,4 +1,4 @@
-export type TextEncoding = "utf-8" | "utf-16le" | "utf-16be" | "windows-1252";
+export type TextEncoding = "utf8" | "utf-16le" | "utf-16be" | "windows-1252";
 
 export interface DecodedText {
   text: string;
@@ -20,13 +20,22 @@ function likelyUtf16(bytes: Uint8Array): "utf-16le" | "utf-16be" | null {
   let evenZeros = 0;
   let oddZeros = 0;
   for (let index = 0; index < sample.length; index += 1) {
-    if (sample[index] !== 0) continue;
-    if (index % 2 === 0) evenZeros += 1;
-    else oddZeros += 1;
+    if (sample[index] !== 0) {
+      continue;
+    }
+    if (index % 2 === 0) {
+      evenZeros += 1;
+    } else {
+      oddZeros += 1;
+    }
   }
   const threshold = Math.max(2, sample.length / 8);
-  if (oddZeros > threshold && oddZeros > evenZeros * 2) return "utf-16le";
-  if (evenZeros > threshold && evenZeros > oddZeros * 2) return "utf-16be";
+  if (oddZeros > threshold && oddZeros > evenZeros * 2) {
+    return "utf-16le";
+  }
+  if (evenZeros > threshold && evenZeros > oddZeros * 2) {
+    return "utf-16be";
+  }
   return null;
 }
 
@@ -39,7 +48,7 @@ export function decodeTextBytes(input: Uint8Array): DecodedText {
   ) {
     return {
       text: new TextDecoder("utf-8").decode(input.subarray(3)),
-      encoding: "utf-8",
+      encoding: "utf8",
       hadBom: true,
     };
   }
@@ -71,7 +80,7 @@ export function decodeTextBytes(input: Uint8Array): DecodedText {
   try {
     return {
       text: new TextDecoder("utf-8", { fatal: true }).decode(input),
-      encoding: "utf-8",
+      encoding: "utf8",
       hadBom: false,
     };
   } catch {

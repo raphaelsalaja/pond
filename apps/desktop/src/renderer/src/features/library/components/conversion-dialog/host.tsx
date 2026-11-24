@@ -24,7 +24,9 @@ const ConversionDialog = lazy(() =>
 export function ConversionDialogHost() {
   const state = useSelector(conversionDialogStore, (state) => state);
   const [last, setLast] = useState(state);
-  if (state && state !== last) setLast(state);
+  if (state && state !== last) {
+    setLast(state);
+  }
   return last ? (
     <Suspense fallback={null}>
       <ConversionDialog

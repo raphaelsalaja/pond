@@ -16,8 +16,14 @@ export function mediaWarmPauseReason(
   if (signals.thermal === "serious" || signals.thermal === "critical") {
     return "thermal";
   }
-  if (signals.manual) return null;
-  if (signals.onBattery) return "battery";
-  if (signals.idleSeconds < 10) return "active";
+  if (signals.manual) {
+    return null;
+  }
+  if (signals.onBattery) {
+    return "battery";
+  }
+  if (signals.idleSeconds < 10) {
+    return "active";
+  }
   return null;
 }

@@ -2,15 +2,16 @@ import { join } from "node:path";
 import {
   folders,
   libraryScan,
-  type SyncAction,
   saveFolders,
   saves,
   syncActions,
 } from "@pond/schema/db";
+import type { SyncAction } from "@pond/schema/db";
 import { isAuxiliaryKind } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
-import { type Db, getDb } from "../db";
+import { getDb } from "../db";
+import type { Db } from "../db";
 import { readSaveMetadata, scanLibrary } from "../lib/library";
 import { inboxFromInfo } from "../lib/library-format";
 import { withRawSlim } from "../lib/raw-slim";
@@ -28,7 +29,7 @@ export interface MissingOriginal {
 export async function reconcileLibrary(): Promise<{
   updated: number;
   total: number;
-  missingFiles: MissingOriginal[];
+  missingFiles: Array<MissingOriginal>;
 }> {
   return runLibraryTransfer(async () =>
     reconcileLibraryIndex({
@@ -52,7 +53,7 @@ export async function reconcileLibraryIndex(
 ): Promise<{
   updated: number;
   total: number;
-  missingFiles: MissingOriginal[];
+  missingFiles: Array<MissingOriginal>;
 }> {
   const { db, root } = runtime;
   let updated = 0;
@@ -66,10 +67,14 @@ export async function reconcileLibraryIndex(
         .from(libraryScan)
         .where(eq(libraryScan.itemId, id));
 
-      if (existing[0] && existing[0].mtimeMs === mtimeMs) return;
+      if (existing[0] && existing[0].mtimeMs === mtimeMs) {
+        return;
+      }
       const read = await readSaveMetadata(id, root);
       if (read.status !== "ok") {
-        if (await markMissingOriginalsFailed(runtime, id, mtimeMs)) updated++;
+        if (await markMissingOriginalsFailed(runtime, id, mtimeMs)) {
+          updated++;
+        }
         return;
       }
       const { metadata } = read;
@@ -81,7 +86,7 @@ export async function reconcileLibraryIndex(
           hasSourceId: Boolean(metadata.sourceId),
           hasUrl: Boolean(metadata.url),
         });
-        await stampScan(db, id, mtimeMs);
+        stampScan(db, id, mtimeMs);
         return;
       }
 
@@ -116,11 +121,12 @@ export async function reconcileLibraryIndex(
           height: metadata.height,
           fileSize: metadata.size,
           deletedAt:
-            metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
+            metadata.deletedAt !== null ? new Date(metadata.deletedAt) : null,
           savedAt: new Date(metadata.importedAt),
           createdAt: new Date(metadata.btime),
           publishedAt:
-            metadata.pond.publishedAt != null
+            metadata.pond.publishedAt !== null &&
+            metadata.pond.publishedAt !== undefined
               ? new Date(metadata.pond.publishedAt)
               : null,
         };
@@ -144,7 +150,7 @@ export async function reconcileLibraryIndex(
           height: metadata.height,
           fileSize: metadata.size,
           deletedAt:
-            metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
+            metadata.deletedAt !== null ? new Date(metadata.deletedAt) : null,
         };
         const scanned = restoreCompleteStatus(
           updateSet,
@@ -187,10 +193,12 @@ export async function reconcileLibraryIndex(
           stampScan(tx, id, mtimeMs);
           return inserted;
         });
-        if (action) runtime.changed(action);
+        if (action) {
+          runtime.changed(action);
+        }
         updated++;
-      } catch (err) {
-        log.warn("[pond scan] upsert failed", { id, err });
+      } catch (error) {
+        log.warn("[pond scan] upsert failed", { id, error });
       }
     });
   }
@@ -206,7 +214,7 @@ export async function reconcileLibraryIndex(
 /** Indexed saves whose directories left with a moved library are not visited by the disk walk. */
 async function markRowsWithMissingOriginals(
   runtime: LibraryScanRuntime,
-): Promise<{ updated: number; missingFiles: MissingOriginal[] }> {
+): Promise<{ updated: number; missingFiles: Array<MissingOriginal> }> {
   const rows = await runtime.db
     .select({
       id: saves.id,
@@ -216,16 +224,26 @@ async function markRowsWithMissingOriginals(
       files: saves.files,
     })
     .from(saves);
-  const missingFiles: MissingOriginal[] = [];
+  const missingFiles: Array<MissingOriginal> = [];
   let updated = 0;
   for (const row of rows) {
-    if (row.deletedAt != null) continue;
-    if (row.status !== "complete" && row.status !== "failed") continue;
-    if (await originalsPresent(runtime.root, row.id, row.files)) continue;
+    if (row.deletedAt !== null) {
+      continue;
+    }
+    if (row.status !== "complete" && row.status !== "failed") {
+      continue;
+    }
+    if (await originalsPresent(runtime.root, row.id, row.files)) {
+      continue;
+    }
     missingFiles.push({ id: row.id, title: row.title });
-    if (row.status !== "complete") continue;
+    if (row.status !== "complete") {
+      continue;
+    }
     await runtime.mutate(async () => {
-      if (await markMissingOriginalsFailed(runtime, row.id, 0)) updated++;
+      if (await markMissingOriginalsFailed(runtime, row.id, 0)) {
+        updated++;
+      }
     });
   }
   return { updated, missingFiles };
@@ -238,9 +256,13 @@ async function markMissingOriginalsFailed(
   mtimeMs: number,
 ): Promise<boolean> {
   const { db, root } = runtime;
-  const row = await db.select().from(saves).where(eq(saves.id, id)).get();
-  if (!row || row.deletedAt != null || row.status === "failed") return false;
-  if (await originalsPresent(root, id, row.files)) return false;
+  const row = db.select().from(saves).where(eq(saves.id, id)).get();
+  if (!row || row.deletedAt !== null || row.status === "failed") {
+    return false;
+  }
+  if (await originalsPresent(root, id, row.files)) {
+    return false;
+  }
 
   const updateSet = { status: "failed" as const };
   const action = db.transaction((tx) => {
@@ -260,7 +282,9 @@ async function markMissingOriginalsFailed(
     stampScan(tx, id, mtimeMs);
     return inserted;
   });
-  if (action) runtime.changed(action);
+  if (action) {
+    runtime.changed(action);
+  }
   return true;
 }
 
@@ -268,7 +292,9 @@ function restoreCompleteStatus<T extends object>(
   update: T,
   restore: boolean,
 ): T | (T & { status: "complete" }) {
-  if (!restore) return update;
+  if (!restore) {
+    return update;
+  }
   return { ...update, status: "complete" };
 }
 
@@ -297,7 +323,9 @@ async function originalsPresent(
       const actual = await libraryMediaMetadata(
         join(root, "items", `${id}.info`, file.path),
       );
-      if (actual.originalSize !== file.size) return false;
+      if (actual.originalSize !== file.size) {
+        return false;
+      }
     } catch {
       return false;
     }

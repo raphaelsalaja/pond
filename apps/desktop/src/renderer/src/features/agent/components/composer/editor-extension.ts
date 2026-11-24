@@ -1,4 +1,5 @@
 import { $convertFromMarkdownString } from "@lexical/mdast";
+import log from "electron-log/renderer";
 import { defineExtension } from "lexical";
 import { markdownEditorExtension } from "@/shared/markdown-editor/extension";
 import { composerMdastExtension, SaveMentionNode } from "./mention";
@@ -42,7 +43,7 @@ export function createComposerExtension(markdown: string, editable: boolean) {
     },
     $initialEditorState: () => $convertFromMarkdownString(markdown),
     onError: (error: Error) => {
-      console.error("[pond composer]", error);
+      log.error("[pond composer]", error);
     },
   });
 }

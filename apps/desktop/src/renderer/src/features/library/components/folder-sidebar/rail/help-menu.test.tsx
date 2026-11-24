@@ -5,7 +5,8 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setAppRouter } from "@/shared/lib/app-router";
 import { menuLabels, topLevelMenuLabels } from "@/shared/test/menu-labels";
@@ -57,8 +58,9 @@ describe("help menu spec", () => {
   it("starts an update check instead of opening Settings", () => {
     const onCheckForUpdates = vi.fn();
     const item = findItem(build({ onCheckForUpdates }), "Check for Updates");
-    if (!item || !("onClick" in item) || !item.onClick)
+    if (!item || !("onClick" in item) || !item.onClick) {
       throw new Error("Missing Check for Updates item");
+    }
     item.onClick();
     expect(onCheckForUpdates).toHaveBeenCalledOnce();
   });
@@ -66,8 +68,9 @@ describe("help menu spec", () => {
   it("opens the browser extension dialog", () => {
     const onBrowserExtension = vi.fn();
     const item = findItem(build({ onBrowserExtension }), "Browser Extension");
-    if (!item || !("onClick" in item) || !item.onClick)
+    if (!item || !("onClick" in item) || !item.onClick) {
       throw new Error("Missing Browser Extension item");
+    }
     item.onClick();
     expect(onBrowserExtension).toHaveBeenCalledOnce();
   });
@@ -75,6 +78,16 @@ describe("help menu spec", () => {
 
 const query = vi.fn(async (_name: string) => ({ ok: true }));
 const openExternal = vi.fn(async (_url: string) => ({ ok: true }));
+
+function storeButton(dialog: Element | null, label: string) {
+  const button = [...(dialog?.querySelectorAll("button") ?? [])].find(
+    (entry) => entry.textContent === label,
+  );
+  if (!button) {
+    throw new Error(`Missing ${label} button`);
+  }
+  return button;
+}
 
 describe("help menu", () => {
   let host: HTMLDivElement;
@@ -117,12 +130,16 @@ describe("help menu", () => {
   async function clickItem(label: string) {
     await act(async () => root.render(<HelpMenu />));
     const trigger = host.querySelector("button");
-    if (!trigger) throw new Error("Missing help menu trigger");
+    if (!trigger) {
+      throw new Error("Missing help menu trigger");
+    }
     await act(async () => trigger.click());
-    const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (entry) => entry.textContent?.includes(label),
-    );
-    if (!(item instanceof HTMLElement)) throw new Error(`Missing ${label}`);
+    const item = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ].find((entry) => entry.textContent?.includes(label));
+    if (!item) {
+      throw new Error(`Missing ${label}`);
+    }
     await act(async () => item.click());
   }
 
@@ -132,14 +149,6 @@ describe("help menu", () => {
       expect(document.querySelector('[role="dialog"]')).not.toBeNull(),
     );
     return document.querySelector('[role="dialog"]');
-  }
-
-  function storeButton(dialog: Element | null, label: string) {
-    const button = [...(dialog?.querySelectorAll("button") ?? [])].find(
-      (entry) => entry.textContent === label,
-    );
-    if (!button) throw new Error(`Missing ${label} button`);
-    return button;
   }
 
   it("opens each browser's store listing from the extension dialog", async () => {

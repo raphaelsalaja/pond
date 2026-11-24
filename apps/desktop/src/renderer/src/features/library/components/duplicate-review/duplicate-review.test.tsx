@@ -5,7 +5,8 @@ import type {
   DuplicateRelation,
   DuplicateScan,
 } from "@shared/duplicate-contracts";
-import { act, type ReactElement } from "react";
+import { act } from "react";
+import type { ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { normalise } from "@/features/saves";
@@ -36,9 +37,10 @@ function pairOf(relation: DuplicateRelation, left: string, right: string) {
     assetEvidence: [],
     coverage: { left: 1, leftTotal: 1, right: 1, rightTotal: 1 },
   };
-  if (relation === "exact")
+  if (relation === "exact") {
     pair.saveEvidence.push({ matcher: "manifest", files: 1 });
-  if (relation === "near")
+  }
+  if (relation === "near") {
     pair.assetEvidence.push({
       matcher: "image",
       algorithm: "image-dhash@1",
@@ -46,30 +48,34 @@ function pairOf(relation: DuplicateRelation, left: string, right: string) {
       left: file(left),
       right: file(right),
     });
-  if (relation === "overlap")
+  }
+  if (relation === "overlap") {
     pair.coverage = { ...pair.coverage, leftTotal: 2 };
-  if (relation === "related")
+  }
+  if (relation === "related") {
     pair.saveEvidence.push({
       matcher: "semantic",
       model: "clip",
       distance: 0.02,
     });
+  }
   return pair;
 }
 
 function scanOf(
-  groups: { relation: DuplicateRelation; ids: string[] }[],
+  groups: Array<{ relation: DuplicateRelation; ids: Array<string> }>,
   pending = 0,
 ): DuplicateScan {
-  const pairs: DuplicatePair[] = [];
+  const pairs: Array<DuplicatePair> = [];
   return {
     groups: groups.map((group) => {
-      const positions: number[] = [];
-      for (const [offset, left] of group.ids.entries())
+      const positions: Array<number> = [];
+      for (const [offset, left] of group.ids.entries()) {
         for (const right of group.ids.slice(offset + 1)) {
           positions.push(pairs.length);
           pairs.push(pairOf(group.relation, left, right));
         }
+      }
       return { ...group, pairs: positions };
     }),
     pairs,
@@ -78,7 +84,7 @@ function scanOf(
 }
 
 function setup(
-  groups: { relation: DuplicateRelation; ids: string[] }[],
+  groups: Array<{ relation: DuplicateRelation; ids: Array<string> }>,
   pending = 0,
 ) {
   vi.stubGlobal(
@@ -93,13 +99,23 @@ function setup(
   vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(1200);
   for (const id of groups.flatMap((group) => group.ids)) {
     const save = normalise(row(id));
-    if (save) pool.upsert(save);
+    if (save) {
+      pool.upsert(save);
+    }
   }
-  const query = vi.fn(async (name: string, input: { ids?: string[] }) => {
-    if (name === "saves.findDuplicates") return scanOf(groups, pending);
-    if (name === "saves.getMany") return (input.ids ?? []).map(row);
-    if (name === "settings.getPrefs") return PrefsSchema.parse({});
-    if (name === "saves.dismissDuplicates") return { ok: true, dismissed: 1 };
+  const query = vi.fn(async (name: string, input: { ids?: Array<string> }) => {
+    if (name === "saves.findDuplicates") {
+      return scanOf(groups, pending);
+    }
+    if (name === "saves.getMany") {
+      return (input.ids ?? []).map(row);
+    }
+    if (name === "settings.getPrefs") {
+      return PrefsSchema.parse({});
+    }
+    if (name === "saves.dismissDuplicates") {
+      return { ok: true, dismissed: 1 };
+    }
     return { ok: true, trashed: 1 };
   });
   vi.stubGlobal("pond", { query });
@@ -123,7 +139,9 @@ async function render(element: ReactElement, run: () => Promise<void>) {
 
 function byLabel(label: string) {
   const match = document.querySelector<HTMLElement>(`[aria-label="${label}"]`);
-  if (!match) throw new Error(`Missing ${label}`);
+  if (!match) {
+    throw new Error(`Missing ${label}`);
+  }
   return match;
 }
 

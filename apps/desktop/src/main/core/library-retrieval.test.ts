@@ -3,11 +3,10 @@ import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { describe, expect, it, vi } from "vitest";
 import {
   normalizeMedia,
-  type RetrievalRecord,
-  type RetrievalStore,
   retrieveLibraryWithStore,
   toFtsMatchQuery,
 } from "./library-retrieval";
+import type { RetrievalRecord, RetrievalStore } from "./library-retrieval";
 
 const dialect = new SQLiteSyncDialect();
 
@@ -15,10 +14,10 @@ function fakeDb(input: {
   candidates?: Array<{ id: string; rank: number }>;
   knnClip?: Array<{ id: string; distance: number }>;
   knnText?: Array<{ id: string; distance: number }>;
-  rows?: RetrievalRecord[];
+  rows?: Array<RetrievalRecord>;
 }) {
   const where = vi.fn<(condition: SQL | undefined) => void>();
-  const neighborLimits: number[] = [];
+  const neighborLimits: Array<number> = [];
   const rows = input.rows ?? [];
   const db: RetrievalStore = {
     records: async (condition) => {
@@ -40,11 +39,40 @@ function fakeDb(input: {
     neighborLimits,
     query: () => {
       const condition = where.mock.calls[0]?.[0];
-      if (!condition) throw new Error("Expected a scoped query");
+      if (!condition) {
+        throw new Error("Expected a scoped query");
+      }
       return dialect.sqlToQuery(condition);
     },
   };
 }
+
+const arenaVideo = (id: string, savedAt: number): RetrievalRecord => ({
+  id,
+  title: id,
+  url: `https://example.com/${id}`,
+  author: null,
+  source: "arena",
+  notes: null,
+  description: null,
+  mediaType: "video",
+  savedAt: new Date(savedAt),
+});
+
+const localMedia = (
+  id: string,
+  mediaType: "audio" | "video",
+): RetrievalRecord => ({
+  id,
+  title: id,
+  url: `https://example.com/${id}`,
+  author: null,
+  source: "local",
+  notes: null,
+  description: null,
+  mediaType,
+  savedAt: new Date(200),
+});
 
 describe("LibraryRetrievalService", () => {
   it("builds safe prefix FTS expressions", () => {
@@ -195,17 +223,6 @@ describe("LibraryRetrievalService", () => {
   });
 
   it("excludes a Save media probe while preserving its retrieval scope", async () => {
-    const record = (id: string, savedAt: number): RetrievalRecord => ({
-      id,
-      title: id,
-      url: `https://example.com/${id}`,
-      author: null,
-      source: "arena",
-      notes: null,
-      description: null,
-      mediaType: "video",
-      savedAt: new Date(savedAt),
-    });
     const harness = fakeDb({
       knnClip: [
         { id: "probe", distance: 0 },
@@ -213,7 +230,11 @@ describe("LibraryRetrievalService", () => {
         { id: "far", distance: 0.2 },
         { id: "outside", distance: 0.25 },
       ],
-      rows: [record("probe", 400), record("near", 300), record("far", 200)],
+      rows: [
+        arenaVideo("probe", 400),
+        arenaVideo("near", 300),
+        arenaVideo("far", 200),
+      ],
     });
 
     const result = await retrieveLibraryWithStore(
@@ -231,26 +252,12 @@ describe("LibraryRetrievalService", () => {
   });
 
   it("uses one media channel for scoped audio and video Saves", async () => {
-    const record = (
-      id: string,
-      mediaType: "audio" | "video",
-    ): RetrievalRecord => ({
-      id,
-      title: id,
-      url: `https://example.com/${id}`,
-      author: null,
-      source: "local",
-      notes: null,
-      description: null,
-      mediaType,
-      savedAt: new Date(200),
-    });
     const harness = fakeDb({
       knnClip: [
         { id: "audio", distance: 0.05 },
         { id: "video", distance: 0.1 },
       ],
-      rows: [record("audio", "audio"), record("video", "video")],
+      rows: [localMedia("audio", "audio"), localMedia("video", "video")],
     });
 
     const result = await retrieveLibraryWithStore(

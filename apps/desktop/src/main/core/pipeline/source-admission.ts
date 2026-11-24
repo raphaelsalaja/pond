@@ -117,10 +117,14 @@ export function inspectSourceAdmission(
   let dayRelease = 0;
   for (const row of rows) {
     dayCount += row.permits;
-    if (dayRelease === 0) dayRelease = row.requestedAt + DAY_MS;
+    if (dayRelease === 0) {
+      dayRelease = row.requestedAt + DAY_MS;
+    }
     if (row.requestedAt >= at - HOUR_MS) {
       hourCount += row.permits;
-      if (hourRelease === 0) hourRelease = row.requestedAt + HOUR_MS;
+      if (hourRelease === 0) {
+        hourRelease = row.requestedAt + HOUR_MS;
+      }
     }
   }
   const budgetRelease = Math.max(
@@ -187,7 +191,9 @@ export async function recordSourceRequest(
         at,
         taskLease.getStore(),
       );
-      if (!admission.admitted) return admission;
+      if (!admission.admitted) {
+        return admission;
+      }
       db.$raw
         .prepare(
           `INSERT INTO source_request_ledger (
@@ -403,7 +409,8 @@ export async function noteDurableSourceFailure(
         return;
       }
       const inWindow =
-        row?.failureWindowStartedAt != null &&
+        row !== null &&
+        row.failureWindowStartedAt !== null &&
         at - row.failureWindowStartedAt <= input.windowMs;
       const count = inWindow ? row.failureCount + 1 : 1;
       const startedAt = inWindow ? row.failureWindowStartedAt : at;

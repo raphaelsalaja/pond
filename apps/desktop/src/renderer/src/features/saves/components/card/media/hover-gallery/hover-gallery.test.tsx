@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { MediaUnit } from "@/features/saves/lib/media/units";
 import type { Save } from "@/features/saves/types";
@@ -57,7 +58,7 @@ describe("HoverGallery preview scheduling", () => {
       createdAt: 0,
       deletedAt: null,
     };
-    const slides: MediaUnit[] = [
+    const slides: Array<MediaUnit> = [
       { key: "first.jpg", url: "pond://gallery/first.jpg", isVideo: false },
       { key: "second.jpg", url: "pond://gallery/second.jpg", isVideo: false },
     ];
@@ -91,9 +92,13 @@ describe("HoverGallery preview scheduling", () => {
         naturalHeight: { configurable: true, value: 600 },
       });
     }
-    act(() => images[1]?.dispatchEvent(new Event("load")));
+    act(() => {
+      images[1]?.dispatchEvent(new Event("load"));
+    });
     expect(onReady).not.toHaveBeenCalled();
-    act(() => images[0]?.dispatchEvent(new Event("load")));
+    act(() => {
+      images[0]?.dispatchEvent(new Event("load"));
+    });
     expect(onReady).toHaveBeenCalledTimes(1);
     expect(images[0]?.getAttribute("data-loaded")).toBe("true");
   });

@@ -9,7 +9,7 @@ interface NamedCookie {
 
 export function identityKeyFromCookies(
   source: Source,
-  cookies: NamedCookie[],
+  cookies: Array<NamedCookie>,
 ): string | null {
   const get = (name: string): string | null => {
     const hit = cookies.find((c) => c.name === name);
@@ -19,7 +19,9 @@ export function identityKeyFromCookies(
     case "twitter": {
       /** twid looks like "u%3D783214" — url-encoded `u=<numeric user id>`. */
       const raw = get("twid");
-      if (!raw) return null;
+      if (!raw) {
+        return null;
+      }
       const decoded = decodeURIComponent(raw);
       const m = decoded.match(/u=(\d+)/);
       return m?.[1] ?? decoded;

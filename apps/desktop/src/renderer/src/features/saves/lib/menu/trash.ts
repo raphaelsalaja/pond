@@ -18,7 +18,7 @@ export function buildTrashItems({
   ids,
   batch,
   allTrashed,
-}: SaveMenuContext): MenuItemSpec[] {
+}: SaveMenuContext): Array<MenuItemSpec> {
   return allTrashed
     ? [
         {
@@ -26,8 +26,11 @@ export function buildTrashItems({
           icon: glyph(IconUndo),
           shortcut: shortcutGlyphs("save.restore"),
           onClick: () => {
-            if (batch) void restoreSelection(ids);
-            else void untrashSave(save.id);
+            if (batch) {
+              void restoreSelection(ids);
+            } else {
+              void untrashSave(save.id);
+            }
           },
         },
         {
@@ -36,8 +39,11 @@ export function buildTrashItems({
           variant: "destructive",
           shortcut: shortcutGlyphs("save.delete-forever"),
           onClick: () => {
-            if (batch) void deleteSelectionForever(ids);
-            else void purgeSave(save.id);
+            if (batch) {
+              void deleteSelectionForever(ids);
+            } else {
+              void purgeSave(save.id);
+            }
           },
         },
       ]
@@ -48,8 +54,11 @@ export function buildTrashItems({
           variant: "destructive",
           shortcut: shortcutGlyphs("save.trash"),
           onClick: () => {
-            if (batch) void moveSelectionToTrash(ids);
-            else void moveSavesToTrash([save.id]);
+            if (batch) {
+              void moveSelectionToTrash(ids);
+            } else {
+              void moveSavesToTrash([save.id]);
+            }
           },
         },
       ];

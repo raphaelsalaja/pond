@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { SAFARI_APP_GROUP, SHARE_INBOX_DIR } from "@pond/schema/native";
 
 const WINDOWS_SID = /^S-\d+(?:-\d+)+$/;
-export const WINDOWS_SID_LOOKUP_TIMEOUT_MS = 3_000;
+export const WINDOWS_SID_LOOKUP_TIMEOUT_MS = 3000;
 const execFileAsync = promisify(execFile);
 
 export type WindowsSidLoader = () => Promise<string>;
@@ -24,7 +24,11 @@ async function loadWindowsUserSid(): Promise<string> {
   try {
     const { stdout } = await execFileAsync(
       /** An absolute path, since Git Bash's whoami can shadow the system one on PATH. */
-      join(process.env.SystemRoot ?? "C:\\Windows", "System32", "whoami.exe"),
+      join(
+        process.env.SystemRoot ?? String.raw`C:\Windows`,
+        "System32",
+        "whoami.exe",
+      ),
       ["/user", "/fo", "csv", "/nh"],
       {
         encoding: "utf8",
@@ -48,8 +52,12 @@ export function createWindowsUserSidResolver(
   let cached: string | null = null;
   let pending: Promise<string> | null = null;
   return () => {
-    if (cached) return Promise.resolve(cached);
-    if (pending) return pending;
+    if (cached) {
+      return Promise.resolve(cached);
+    }
+    if (pending) {
+      return pending;
+    }
     const lookup = load()
       .then((sid) => {
         if (!WINDOWS_SID.test(sid)) {
@@ -59,7 +67,9 @@ export function createWindowsUserSidResolver(
         return sid;
       })
       .finally(() => {
-        if (pending === lookup) pending = null;
+        if (pending === lookup) {
+          pending = null;
+        }
       });
     pending = lookup;
     return lookup;
@@ -69,7 +79,9 @@ export function createWindowsUserSidResolver(
 const resolveWindowsUserSid = createWindowsUserSidResolver();
 
 export function windowsNativePipePath(sid: string): string {
-  if (!WINDOWS_SID.test(sid)) throw new Error("Invalid Windows user SID.");
+  if (!WINDOWS_SID.test(sid)) {
+    throw new Error("Invalid Windows user SID.");
+  }
   return `\\\\.\\pipe\\pond-native-host-${sid}`;
 }
 
@@ -120,13 +132,17 @@ export async function nativeSocketPath(
   if (platform === "win32") {
     const pipe = windowsNativePipePath(await sidResolver());
     /** Pipe names are machine-global, so a sandbox gets its own and never takes the installed app's pipe. */
-    if (!sandbox) return pipe;
+    if (!sandbox) {
+      return pipe;
+    }
     const id = createHash("sha256").update(sandbox).digest("hex").slice(0, 16);
     return `${pipe}-sandbox-${id}`;
   }
   if (sandbox) {
     return posix.join(sandbox, "native.sock");
   }
-  if (platform === "linux") return linuxNativeSocketPath(env, home);
+  if (platform === "linux") {
+    return linuxNativeSocketPath(env, home);
+  }
   return posix.join(home, "Library/Application Support/Pond", "native.sock");
 }

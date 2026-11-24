@@ -6,11 +6,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   applyAfterSave,
   CAPTURE_METADATA_WARNING,
-  type CaptureQueuePorts,
   createCaptureQueue,
 } from "./capture-queue";
+import type { CaptureQueuePorts } from "./capture-queue";
 
-const roots: string[] = [];
+function noop(): void {}
+
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -36,12 +38,14 @@ async function fixture(process: CaptureQueuePorts["process"]) {
 }
 describe("durable capture queue", () => {
   it("persists acceptance and resumes only the unfinished item after failure", async () => {
-    const calls: string[] = [];
+    const calls: Array<string> = [];
     let fail = true;
     const { root, ports, queue } = await fixture(
       async (_item, _meta, identity) => {
         calls.push(identity);
-        if (identity.endsWith(":1") && fail) throw new Error("offline");
+        if (identity.endsWith(":1") && fail) {
+          throw new Error("offline");
+        }
         return { id: identity };
       },
     );
@@ -69,15 +73,15 @@ describe("durable capture queue", () => {
     });
   });
   it("cancels after the active item and resumes only remaining captures", async () => {
-    let release = () => {};
-    let began = () => {};
+    let release: () => void = noop;
+    let began: () => void = noop;
     const started = new Promise<void>((resolve) => {
       began = resolve;
     });
     const pending = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const calls: string[] = [];
+    const calls: Array<string> = [];
     const { queue } = await fixture(async (_item, _meta, id) => {
       calls.push(id);
       began();

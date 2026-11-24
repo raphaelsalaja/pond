@@ -1,5 +1,7 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
 import type { Save } from "@/features/saves/types";
@@ -65,7 +67,9 @@ describe("KebabMenu", () => {
   it("shows the focused detail actions", async () => {
     await act(async () => root.render(<KebabMenu save={save} />));
     const trigger = document.querySelector('[aria-label="Save Actions"]');
-    if (!(trigger instanceof HTMLElement)) throw new Error("Missing trigger");
+    if (!isHTMLElement(trigger)) {
+      throw new Error("Missing trigger");
+    }
 
     await act(async () => {
       trigger.click();

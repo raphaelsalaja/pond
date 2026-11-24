@@ -1,13 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { saves } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
-import {
-  ClipboardItem,
-  clipboard,
-  dialog,
-  type NativeImage,
-  nativeImage,
-} from "electron";
+import { ClipboardItem, clipboard, dialog, nativeImage } from "electron";
+import type { NativeImage } from "electron";
 import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
@@ -18,20 +13,20 @@ import { extractFrameAt, extractSampledFrames } from "../../lib/ffmpeg-frame";
 import { saveFile } from "../../paths";
 import { resolvePondSavePath } from "../helpers";
 import { toWireSave } from "../wire";
-import {
-  NumberParam,
-  type QueryHandlerMap,
-  query,
-  StringParam,
-} from "./params";
+import { NumberParam, query, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 async function frameImage(
   resolved: { path: string } | null,
   timeSec: number,
 ): Promise<NativeImage | null> {
-  if (!resolved) return null;
+  if (!resolved) {
+    return null;
+  }
   const frame = await extractFrameAt(resolved.path, timeSec);
-  if (!frame) return null;
+  if (!frame) {
+    return null;
+  }
   try {
     const img = nativeImage.createFromBuffer(await readFile(frame.path));
     return img.isEmpty() ? null : img;
@@ -66,13 +61,17 @@ export const videoQueries = {
     SampleFramesParams,
     async (params): Promise<QueryResult<"video.sampleFrames">> => {
       const resolved = resolvePondSavePath(params.src);
-      if (!resolved) return FILE_NOT_FOUND;
+      if (!resolved) {
+        return FILE_NOT_FOUND;
+      }
       const sampled = await extractSampledFrames(
         resolved.path,
         params.maxFrames,
         params.strategy,
       );
-      if (!sampled) return FRAME_UNAVAILABLE;
+      if (!sampled) {
+        return FRAME_UNAVAILABLE;
+      }
       try {
         const frames = await Promise.all(
           sampled.frames.map(async (frame, index) => ({
@@ -95,7 +94,9 @@ export const videoQueries = {
         resolvePondSavePath(params.src),
         params.timeSec,
       );
-      if (!img) return FRAME_UNAVAILABLE;
+      if (!img) {
+        return FRAME_UNAVAILABLE;
+      }
       await clipboard.write([
         new ClipboardItem({
           "image/png": new Blob([Uint8Array.from(img.toPNG())], {
@@ -111,15 +112,20 @@ export const videoQueries = {
     FrameParams,
     async (params): Promise<QueryResult<"video.saveFrame">> => {
       const resolved = resolvePondSavePath(params.src);
-      if (!resolved) return FILE_NOT_FOUND;
+      if (!resolved) {
+        return FILE_NOT_FOUND;
+      }
       const result = await dialog.showSaveDialog({
         defaultPath: `frame-${Date.now()}.png`,
         filters: [{ name: "Images", extensions: ["png"] }],
       });
-      if (result.canceled || !result.filePath)
+      if (result.canceled || !result.filePath) {
         return { ok: false, reason: "cancelled" };
+      }
       const img = await frameImage(resolved, params.timeSec);
-      if (!img) return FRAME_UNAVAILABLE;
+      if (!img) {
+        return FRAME_UNAVAILABLE;
+      }
       await writeFile(result.filePath, img.toPNG());
       return { ok: true, path: result.filePath };
     },
@@ -129,13 +135,17 @@ export const videoQueries = {
     FrameParams.extend({ saveId: StringParam }),
     async (params): Promise<QueryResult<"video.setThumbnail">> => {
       const saveId = params.saveId;
-      if (!saveId) return FILE_NOT_FOUND;
+      if (!saveId) {
+        return FILE_NOT_FOUND;
+      }
       const resolved = resolvePondSavePath(params.src);
       if (!resolved || resolved.saveId.toLowerCase() !== saveId.toLowerCase()) {
         return FILE_NOT_FOUND;
       }
       const img = await frameImage(resolved, params.timeSec);
-      if (!img) return FRAME_UNAVAILABLE;
+      if (!img) {
+        return FRAME_UNAVAILABLE;
+      }
       const ok = await persistSaveThumbnail(
         saveId,
         img.toPNG(),
@@ -152,13 +162,19 @@ export const videoQueries = {
     async (params): Promise<QueryResult<"video.copyFilePath">> => {
       const db = await getDb();
       const saveId = params.saveId;
-      if (!saveId) return FILE_NOT_FOUND;
+      if (!saveId) {
+        return FILE_NOT_FOUND;
+      }
       const rows = await db.select().from(saves).where(eq(saves.id, saveId));
       const save = rows[0];
-      if (!save) return FILE_NOT_FOUND;
+      if (!save) {
+        return FILE_NOT_FOUND;
+      }
       const wire = toWireSave(save);
       const f = wire.files[0];
-      if (!f) return FILE_NOT_FOUND;
+      if (!f) {
+        return FILE_NOT_FOUND;
+      }
       await clipboard.writeText(saveFile(saveId, f.path));
       return { ok: true };
     },

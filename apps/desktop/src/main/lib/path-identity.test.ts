@@ -10,14 +10,14 @@ const win = { platform: "win32" } as const;
 const mac = { platform: "darwin" } as const;
 
 describe("isPathInside", () => {
-  const root = "C:\\Users\\A\\Pond.pond\\items";
+  const root = String.raw`C:\Users\A\Pond.pond\items`;
 
   it("accepts descendants and rejects sibling prefixes on win32", () => {
     expect(isPathInside(root, `${root}\\abc\\a.png`, win)).toBe(true);
     expect(isPathInside(root, `${root}-old\\abc\\a.png`, win)).toBe(false);
-    expect(isPathInside(root, "C:\\Users\\A\\Pond.pond\\items2", win)).toBe(
-      false,
-    );
+    expect(
+      isPathInside(root, String.raw`C:\Users\A\Pond.pond\items2`, win),
+    ).toBe(false);
   });
 
   it("ignores case and trailing separators on win32", () => {
@@ -27,8 +27,10 @@ describe("isPathInside", () => {
 
   it("rejects traversal, other drives and foreign roots", () => {
     expect(isPathInside(root, `${root}\\..\\..\\secret`, win)).toBe(false);
-    expect(isPathInside(root, "D:\\items\\a.png", win)).toBe(false);
-    expect(isPathInside(root, "\\\\server\\share\\a.png", win)).toBe(false);
+    expect(isPathInside(root, String.raw`D:\items\a.png`, win)).toBe(false);
+    expect(isPathInside(root, String.raw`\\server\share\a.png`, win)).toBe(
+      false,
+    );
   });
 
   it("accepts names that merely start with two dots", () => {
@@ -53,10 +55,10 @@ describe("isPathInside", () => {
 describe("normalizeLibraryPath", () => {
   it("drops trailing separators of either kind on win32", () => {
     expect(normalizeLibraryPath("C:\\Libs\\A.pond\\", "win32")).toBe(
-      "C:\\Libs\\A.pond",
+      String.raw`C:\Libs\A.pond`,
     );
     expect(normalizeLibraryPath("C:/Libs/A.pond//", "win32")).toBe(
-      "C:\\Libs\\A.pond",
+      String.raw`C:\Libs\A.pond`,
     );
   });
 
@@ -71,22 +73,26 @@ describe("normalizeLibraryPath", () => {
 
   it("keeps the stored casing", () => {
     expect(normalizeLibraryPath("C:\\Libs\\MiXed.pond\\", "win32")).toBe(
-      "C:\\Libs\\MiXed.pond",
+      String.raw`C:\Libs\MiXed.pond`,
     );
   });
 });
 
 describe("isSamePath", () => {
   it("matches trailing separators and case on win32", () => {
-    expect(isSamePath("C:\\Libs\\A.pond\\", "c:\\libs\\a.POND", "win32")).toBe(
-      true,
-    );
-    expect(isSamePath("C:/Libs/A.pond", "C:\\Libs\\A.pond", "win32")).toBe(
-      true,
-    );
-    expect(isSamePath("C:\\Libs\\A.pond", "C:\\Libs\\B.pond", "win32")).toBe(
-      false,
-    );
+    expect(
+      isSamePath("C:\\Libs\\A.pond\\", String.raw`c:\libs\a.POND`, "win32"),
+    ).toBe(true);
+    expect(
+      isSamePath("C:/Libs/A.pond", String.raw`C:\Libs\A.pond`, "win32"),
+    ).toBe(true);
+    expect(
+      isSamePath(
+        String.raw`C:\Libs\A.pond`,
+        String.raw`C:\Libs\B.pond`,
+        "win32",
+      ),
+    ).toBe(false);
   });
 
   it("is case-sensitive on POSIX and tolerates trailing slashes", () => {
@@ -101,7 +107,7 @@ describe("isSamePath", () => {
 });
 
 describe("pond:// style targets", () => {
-  const savesDir = "C:\\Lib.pond\\items";
+  const savesDir = String.raw`C:\Lib.pond\items`;
   const containedUrlPath = (pathname: string) => {
     const file = decodeURIComponent(pathname.replace(/^\//, ""));
     return isPathInside(

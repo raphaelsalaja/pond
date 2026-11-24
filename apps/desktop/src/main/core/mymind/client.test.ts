@@ -1,13 +1,14 @@
 import { createHmac } from "node:crypto";
-import { createServer, type Server } from "node:http";
+import { createServer } from "node:http";
+import type { Server } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
   createMymindClient,
   MymindApiError,
   MymindCredentialSchema,
-  type MymindObject,
 } from "./client";
+import type { MymindObject } from "./client";
 
 const CREDENTIAL = {
   kid: "test-key",
@@ -38,16 +39,20 @@ function fixture() {
 }
 
 async function collect(items: AsyncIterable<MymindObject>) {
-  const result: MymindObject[] = [];
-  for await (const item of items) result.push(item);
+  const result: Array<MymindObject> = [];
+  for await (const item of items) {
+    result.push(item);
+  }
   return result;
 }
 
-function streamResponse(chunks: Uint8Array[]) {
+function streamResponse(chunks: Array<Uint8Array>) {
   return new Response(
     new ReadableStream<Uint8Array>({
       start(controller) {
-        for (const chunk of chunks) controller.enqueue(chunk);
+        for (const chunk of chunks) {
+          controller.enqueue(chunk);
+        }
         controller.close();
       },
     }),
@@ -128,7 +133,9 @@ describe("mymind API client", () => {
     await client.validateCredential();
 
     const call = request.mock.calls[0];
-    if (!call) throw new Error("The credential check did not make a request.");
+    if (!call) {
+      throw new Error("The credential check did not make a request.");
+    }
     const [url, init] = call;
     expect(url).toBe("https://api.mymind.com/objects?limit=1");
     expect(init.method).toBe("GET");

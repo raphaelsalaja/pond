@@ -12,11 +12,8 @@ import { readLibraryPointer } from "../../../lib/library-pointer";
 import { invalidatePaths, resolvePaths } from "../../../paths";
 import { invalidatePrefs } from "../../prefs";
 import type { ToolResult } from "../complete";
-import {
-  MCP_ACCESS_OFF,
-  type McpAccessGroup,
-  mcpToolAllowed,
-} from "../mcp-access";
+import { MCP_ACCESS_OFF, mcpToolAllowed } from "../mcp-access";
+import type { McpAccessGroup } from "../mcp-access";
 import type { listSavedViews } from "./library";
 
 export type McpToolBody =
@@ -51,7 +48,9 @@ export function errorResult(error: string): CallToolResult {
 /** MCP hosts keep this process alive across Library switches in the app, so reopen the index when the pointer moves. */
 function followActiveLibrary(): void {
   const pointer = readLibraryPointer();
-  if (!pointer || pointer === resolvePaths().libraryRoot) return;
+  if (!pointer || pointer === resolvePaths().libraryRoot) {
+    return;
+  }
   log.info("[pond mcp] following Library switch", pointer);
   closeDb();
   invalidatePaths();
@@ -74,7 +73,9 @@ export function withAccess<Args>(
 ) {
   return async (args: Args, ctx: ServerContext): Promise<CallToolResult> => {
     const denied = await accessError(group);
-    if (denied) return errorResult(denied);
+    if (denied) {
+      return errorResult(denied);
+    }
     return run(args, ctx);
   };
 }

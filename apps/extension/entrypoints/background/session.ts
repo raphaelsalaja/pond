@@ -1,10 +1,11 @@
 import {
-  type ExtensionCookie,
   ROTATING_SESSIONS,
   sessionImportResponseSchema,
   sessionRefreshResponseSchema,
 } from "@pond/schema/session";
-import { SOURCES, type Source } from "@pond/schema/source-ids";
+import type { ExtensionCookie } from "@pond/schema/session";
+import { SOURCES } from "@pond/schema/source-ids";
+import type { Source } from "@pond/schema/source-ids";
 import { z } from "zod";
 import { isUnreachable, nativeCall } from "@/utils/native";
 import { createSingleFlightTrigger } from "@/utils/single-flight";
@@ -21,7 +22,7 @@ const IDLE_PROBE_MS = 5 * 60_000;
 const SESSION_ALARM = "pond-session";
 const SCHEDULER_STORAGE_KEY = "sessionPushScheduler";
 /** A rotation reissues several cookies at once; forward them together. */
-const ROTATION_SETTLE_MS = 5_000;
+const ROTATION_SETTLE_MS = 5000;
 const FOLLOW_STORAGE_KEY = "sessionFollow";
 
 const followStateSchema = z.object({
@@ -73,31 +74,42 @@ function cookieFromBrowser(c: chrome.cookies.Cookie): ExtensionCookie {
 function normaliseSameSite(
   s: chrome.cookies.Cookie["sameSite"],
 ): ExtensionCookie["sameSite"] {
-  if (s === "no_restriction" || s === "lax" || s === "strict") return s;
+  if (s === "no_restriction" || s === "lax" || s === "strict") {
+    return s;
+  }
   return "unspecified";
 }
 
 /** Live-tab cookies for explicit saves; archive_page writes them into a throwaway partition then drops them. */
-export async function cookiesForUrl(url: string): Promise<ExtensionCookie[]> {
+export async function cookiesForUrl(
+  url: string,
+): Promise<Array<ExtensionCookie>> {
   try {
     const page = new URL(url);
-    if (page.protocol !== "http:" && page.protocol !== "https:") return [];
+    if (page.protocol !== "http:" && page.protocol !== "https:") {
+      return [];
+    }
     const [byUrl, byDomain] = await Promise.all([
       browser.cookies.getAll({ url }),
       browser.cookies.getAll({ domain: page.hostname }),
     ]);
     const seen = new Set<string>();
-    const out: ExtensionCookie[] = [];
+    const out: Array<ExtensionCookie> = [];
     for (const c of [...byUrl, ...byDomain]) {
       const key = `${c.name}\0${c.domain}\0${c.path}`;
-      if (seen.has(key)) continue;
+      if (seen.has(key)) {
+        continue;
+      }
       seen.add(key);
       out.push(cookieFromBrowser(c));
-      if (out.length >= 500) break;
+      if (out.length >= 500) {
+        break;
+      }
     }
     return out;
-  } catch (err) {
-    console.warn("[pond] cookiesForUrl failed", err);
+  } catch (error) {
+    // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
+    console.warn("[pond] cookiesForUrl failed", error);
     return [];
   }
 }
@@ -108,7 +120,7 @@ async function pushSession(source: Source): Promise<PushSessionResult> {
     return { ok: false, reason: "no_cookies", detail: "source is public" };
   }
 
-  const raw: chrome.cookies.Cookie[] = [];
+  const raw: Array<chrome.cookies.Cookie> = [];
   try {
     const batches = await Promise.all(
       domains.map((domain) => browser.cookies.getAll({ domain })),
@@ -116,15 +128,17 @@ async function pushSession(source: Source): Promise<PushSessionResult> {
     const seen = new Set<string>();
     for (const cookie of batches.flat()) {
       const key = `${cookie.name}\0${cookie.domain}\0${cookie.path}`;
-      if (seen.has(key)) continue;
+      if (seen.has(key)) {
+        continue;
+      }
       seen.add(key);
       raw.push(cookie);
     }
-  } catch (err) {
+  } catch (error) {
     return {
       ok: false,
       reason: "no_cookies",
-      detail: err instanceof Error ? err.message : String(err),
+      detail: error instanceof Error ? error.message : String(error),
     };
   }
 
@@ -178,7 +192,9 @@ function forwardRotation(source: Source): Promise<void> {
 async function refreshSession(source: Source): Promise<void> {
   const session = ROTATING_SESSIONS.get(source);
   const state = await readFollowState();
-  if (!session || state.untracked.includes(source)) return;
+  if (!session || state.untracked.includes(source)) {
+    return;
+  }
 
   const cookies = await browser.cookies.getAll({ domain: session.domain });
   const result = await nativeCall({
@@ -189,7 +205,9 @@ async function refreshSession(source: Source): Promise<void> {
   const missed = state.missed.filter((s) => s !== source);
   const next: FollowState = { ...state, missed };
   if (!result.ok) {
-    if (isUnreachable(result.error)) next.missed = [...missed, source];
+    if (isUnreachable(result.error)) {
+      next.missed = [...missed, source];
+    }
   } else {
     const refresh = sessionRefreshResponseSchema.safeParse(result.data);
     if (refresh.success && !refresh.data.tracked) {
@@ -206,38 +224,50 @@ export function startSessionFollow(): void {
     for (const source of ROTATING_SESSIONS.keys()) {
       try {
         await forwardRotation(source);
-      } catch (err) {
-        console.warn("[pond] session refresh failed", source, err);
+      } catch (error) {
+        // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
+        console.warn("[pond] session refresh failed", source, error);
       }
     }
   })();
   browser.cookies.onChanged?.addListener(({ cookie, removed }) => {
-    if (removed) return;
+    if (removed) {
+      return;
+    }
     const source = rotatedSessionSource(cookie);
-    if (!source) return;
+    if (!source) {
+      return;
+    }
     clearTimeout(settling.get(source));
     settling.set(
       source,
       setTimeout(() => {
         settling.delete(source);
-        void forwardRotation(source).catch((err) =>
-          console.warn("[pond] session refresh failed", source, err),
-        );
+        void forwardRotation(source).catch((cause: unknown) => {
+          // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
+          console.warn("[pond] session refresh failed", source, cause);
+        });
       }, ROTATION_SETTLE_MS),
     );
   });
 
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name !== SESSION_ALARM) return;
+    if (alarm.name !== SESSION_ALARM) {
+      return;
+    }
     void readFollowState().then(({ missed }) => {
-      for (const source of missed) void forwardRotation(source);
+      for (const source of missed) {
+        void forwardRotation(source);
+      }
     });
   });
 }
 
 async function fetchPendingSource(): Promise<PendingProbe> {
   const result = await nativeCall({ type: "session.pending" });
-  if (!result.ok) return { kind: "offline" };
+  if (!result.ok) {
+    return { kind: "offline" };
+  }
   const pending = pendingSessionSchema.safeParse(result.data);
   return pending.success
     ? { kind: "pending", source: pending.data.source }
@@ -256,7 +286,7 @@ async function writeSchedulerState(state: SchedulerState): Promise<void> {
 }
 
 function scheduleSessionAlarm(pending: boolean): void {
-  browser.alarms.create(SESSION_ALARM, {
+  void browser.alarms.create(SESSION_ALARM, {
     periodInMinutes: pending ? 0.5 : 5,
   });
 }
@@ -274,7 +304,9 @@ export function startSessionConnect(onConnected: () => void): void {
   const maybeAutoPush = createSingleFlightTrigger(async (force) => {
     const now = Date.now();
     const state = await readSchedulerState();
-    if (!force && now < state.nextProbeAt) return;
+    if (!force && now < state.nextProbeAt) {
+      return;
+    }
 
     const probeResult = await fetchPendingSource();
     if (probeResult.kind === "idle") {
@@ -326,8 +358,11 @@ export function startSessionConnect(onConnected: () => void): void {
       onConnected();
       return;
     }
-    if (result.ok) return;
+    if (result.ok) {
+      return;
+    }
     if (result.reason === "network") {
+      // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
       console.warn("[pond] auto-push failed", result.detail);
     }
   });
@@ -344,17 +379,25 @@ export function startSessionConnect(onConnected: () => void): void {
   });
 
   browser.tabs.onUpdated.addListener((_id, change, tab) => {
-    if (change.status !== "complete" || !tab.url) return;
-    if (!isCookieSourceUrl(tab.url)) return;
+    if (change.status !== "complete" || !tab.url) {
+      return;
+    }
+    if (!isCookieSourceUrl(tab.url)) {
+      return;
+    }
     void maybeAutoPush(true);
   });
 
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === SESSION_ALARM) void maybeAutoPush();
+    if (alarm.name === SESSION_ALARM) {
+      void maybeAutoPush();
+    }
   });
 
   void readSchedulerState()
     .then((state) => scheduleSessionAlarm(state.pending))
     .catch(() => scheduleSessionAlarm(false))
-    .finally(() => maybeAutoPush(true));
+    .finally(() => {
+      void maybeAutoPush(true);
+    });
 }

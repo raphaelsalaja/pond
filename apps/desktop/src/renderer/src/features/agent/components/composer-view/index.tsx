@@ -1,20 +1,13 @@
 import { IconArrowUp } from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import {
-  AnimatePresence,
-  motion,
-  type Transition,
-  useReducedMotionConfig,
-} from "motion/react";
-import {
-  type ComponentProps,
-  type ComponentPropsWithoutRef,
-  forwardRef,
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
+import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
+import type { Transition } from "motion/react";
+import { forwardRef, useEffect, useRef, useState } from "react";
+import type {
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  ReactNode,
 } from "react";
 import styles from "./styles.module.css";
 
@@ -79,12 +72,18 @@ function Send({ children, ...props }: ActionProps) {
 function useGrown(empty: boolean) {
   const field = useRef<HTMLDivElement>(null);
   const [grown, setGrown] = useState(false);
-  if (empty && grown) setGrown(false);
+  if (empty && grown) {
+    setGrown(false);
+  }
   useEffect(() => {
     const node = field.current;
-    if (!node) return;
+    if (!node) {
+      return;
+    }
     const observer = new ResizeObserver(() => {
-      if (node.offsetHeight > ONE_LINE_MAX_HEIGHT) setGrown(true);
+      if (node.offsetHeight > ONE_LINE_MAX_HEIGHT) {
+        setGrown(true);
+      }
     });
     observer.observe(node);
     return () => observer.disconnect();

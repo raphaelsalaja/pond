@@ -1,7 +1,7 @@
-import {
-  type Binding,
-  group,
-  type SettingsValues,
+import { group } from "@/features/settings/lib/engine-types";
+import type {
+  Binding,
+  SettingsValues,
 } from "@/features/settings/lib/engine-types";
 import { usePrefs } from "@/shared/state/prefs";
 

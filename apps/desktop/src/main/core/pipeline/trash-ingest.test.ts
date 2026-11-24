@@ -1,7 +1,8 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type Op, queueGenerations, SKIP_REASON, tasks } from "@pond/schema/db";
+import { queueGenerations, SKIP_REASON, tasks } from "@pond/schema/db";
+import type { Op } from "@pond/schema/db";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
 import { app } from "electron";
@@ -25,7 +26,9 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
@@ -39,7 +42,7 @@ async function seedSave(
   status = "ingesting",
   deletedAt: number | null = null,
 ): Promise<void> {
-  await (await raw())
+  (await raw())
     .prepare(
       `INSERT INTO saves (id, source, source_id, url, status, deleted_at)
       VALUES (?, 'web', ?, ?, ?, ?)`,
@@ -55,7 +58,7 @@ async function seedTask(
   generationId: string | null = null,
   running = false,
 ): Promise<void> {
-  await (await raw())
+  (await raw())
     .prepare(
       `INSERT INTO tasks (
         id, save_id, source, op, status, generation_id, cancellation_fence,
@@ -75,7 +78,7 @@ async function seedTask(
 }
 
 async function seedGeneration(id: string): Promise<void> {
-  await (await raw())
+  (await raw())
     .prepare(
       `INSERT INTO queue_generations (id, kind, status, created_at, updated_at)
       VALUES (?, 'sync', 'active', 1, 1)`,
@@ -84,7 +87,7 @@ async function seedGeneration(id: string): Promise<void> {
 }
 
 async function taskStatus(id: string): Promise<string | undefined> {
-  const row = await (await getDb())
+  const row = (await getDb())
     .select({ status: tasks.status, generationId: tasks.generationId })
     .from(tasks)
     .where(eq(tasks.id, id))
@@ -93,7 +96,7 @@ async function taskStatus(id: string): Promise<string | undefined> {
 }
 
 async function taskGeneration(id: string): Promise<string | null | undefined> {
-  const row = await (await getDb())
+  const row = (await getDb())
     .select({ generationId: tasks.generationId })
     .from(tasks)
     .where(eq(tasks.id, id))
@@ -102,7 +105,7 @@ async function taskGeneration(id: string): Promise<string | null | undefined> {
 }
 
 async function generationStatus(id: string): Promise<string | undefined> {
-  const row = await (await getDb())
+  const row = (await getDb())
     .select({ status: queueGenerations.status })
     .from(queueGenerations)
     .where(eq(queueGenerations.id, id))
@@ -153,7 +156,9 @@ describe.skipIf(!nativeSqliteAvailable())(
       try {
         rmSync(dir, { recursive: true, force: true });
       } catch (error) {
-        if (process.platform !== "win32") throw error;
+        if (process.platform !== "win32") {
+          throw error;
+        }
       }
     });
 
@@ -170,12 +175,14 @@ describe.skipIf(!nativeSqliteAvailable())(
       );
       await seedSave("visible");
       await seedTask("visible-task", "visible", "render_text_cover");
-      const hiddenRunning = await (await getDb())
+      const hiddenRunning = (await getDb())
         .select()
         .from(tasks)
         .where(eq(tasks.id, "hidden-running"))
         .get();
-      if (!hiddenRunning) throw new Error("missing hidden task");
+      if (!hiddenRunning) {
+        throw new Error("missing hidden task");
+      }
 
       const claimed = await claimOpenTasks();
 
@@ -242,7 +249,7 @@ describe.skipIf(!nativeSqliteAvailable())(
         "render_text_cover",
         "cancelled",
       );
-      await (await raw())
+      (await raw())
         .prepare("UPDATE tasks SET last_error = ? WHERE id = ?")
         .run(SKIP_REASON, "clear-skipped-task");
 

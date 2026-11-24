@@ -1,12 +1,16 @@
 import { Dialog } from "@pond/ui";
+import { isHTMLTag } from "@pond/ui/dom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { UpdateDialog } from "@/features/settings/components/update-dialog";
 import { CheckNowRow } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
+
+function noop() {}
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -34,7 +38,7 @@ afterEach(async () => {
 });
 
 it("opens the update dialog from Settings without waiting to leave the page", async () => {
-  let finishCheck: (value: { ok: true; version: string }) => void = () => {};
+  let finishCheck: (value: { ok: true; version: string }) => void = noop;
   const pending = new Promise<{ ok: true; version: string }>((resolve) => {
     finishCheck = resolve;
   });
@@ -59,7 +63,9 @@ it("opens the update dialog from Settings without waiting to leave the page", as
         checks += 1;
         return pending;
       }
-      if (name === "updates.currentNotice") return notice;
+      if (name === "updates.currentNotice") {
+        return notice;
+      }
       throw new Error(name);
     },
   });
@@ -76,8 +82,9 @@ it("opens the update dialog from Settings without waiting to leave the page", as
   const button = [...host.querySelectorAll("button")].find(
     (entry) => entry.textContent === "Check Now",
   );
-  if (!(button instanceof HTMLButtonElement))
+  if (!isHTMLTag(button, "button")) {
     throw new Error("Missing Check Now button");
+  }
   await act(async () => {
     button.click();
     button.click();

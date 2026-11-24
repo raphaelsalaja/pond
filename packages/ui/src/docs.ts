@@ -48,8 +48,8 @@ import { docs as tabs } from "./tabs/examples";
 import { docs as textReveal } from "./text-reveal/examples";
 import { docs as titleBar } from "./title-bar/examples";
 import { docs as toast } from "./toast/examples";
-import { docs as toggle } from "./toggle/examples";
 import { docs as toggleGroup } from "./toggle-group/examples";
+import { docs as toggle } from "./toggle/examples";
 import { docs as toolbar } from "./toolbar/examples";
 import { docs as tooltip } from "./tooltip/examples";
 import { docs as tray } from "./tray/examples";
@@ -66,7 +66,7 @@ export type {
 } from "./shared/docs";
 export { TIER_LABELS } from "./shared/docs";
 
-export const COMPONENT_DOCS: readonly ComponentDocs[] = [
+export const COMPONENT_DOCS: ReadonlyArray<ComponentDocs> = [
   accordion,
   badge,
   brandTile,

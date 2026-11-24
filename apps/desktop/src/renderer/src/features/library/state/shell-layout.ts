@@ -2,12 +2,8 @@ import {
   useDetailsOpen,
   useSidebarOpen,
 } from "@/features/library/state/library-chrome";
-import {
-  type RailPage,
-  type ShellDetails,
-  useLatestRouteMeta,
-  useRouteMeta,
-} from "@/shared/lib/route-meta";
+import { useLatestRouteMeta, useRouteMeta } from "@/shared/lib/route-meta";
+import type { RailPage, ShellDetails } from "@/shared/lib/route-meta";
 
 export type { RailPage, ShellDetails } from "@/shared/lib/route-meta";
 

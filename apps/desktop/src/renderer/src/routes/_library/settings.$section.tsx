@@ -15,8 +15,9 @@ export const Route = createFileRoute("/_library/settings/$section")({
     if (resolved.section === params.section && resolved.hash === currentHash) {
       return;
     }
-    throw redirect({
+    redirect({
       href: settingsHref(resolved.section, resolved.hash ?? undefined),
+      throw: true,
     });
   },
   component: SettingsSectionRoute,
@@ -26,7 +27,9 @@ function SettingsSectionRoute() {
   const { section } = Route.useParams();
   const hash = useRouteLocation((location) => {
     const value = location.hash;
-    if (!value) return null;
+    if (!value) {
+      return null;
+    }
     return value.replace(/^#/, "") || null;
   });
   return <SettingsDetail section={section} hash={hash} />;

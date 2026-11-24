@@ -19,7 +19,7 @@ interface Swatch {
 export async function extractPalette(
   input: string | Buffer,
   count = 5,
-): Promise<string[]> {
+): Promise<Array<string>> {
   try {
     const size = 64;
     const read = (source: string | Buffer) =>
@@ -36,7 +36,9 @@ export async function extractPalette(
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      if (r === undefined || g === undefined || b === undefined) continue;
+      if (r === undefined || g === undefined || b === undefined) {
+        continue;
+      }
       const key = `${r >> 4}-${g >> 4}-${b >> 4}`;
       const entry = buckets.get(key) ?? { count: 0, r: 0, g: 0, b: 0 };
       entry.count++;
@@ -46,7 +48,7 @@ export async function extractPalette(
       buckets.set(key, entry);
     }
 
-    const swatches: Swatch[] = Array.from(buckets.values()).map((e) => {
+    const swatches: Array<Swatch> = Array.from(buckets.values()).map((e) => {
       const r = Math.round(e.r / e.count);
       const g = Math.round(e.g / e.count);
       const b = Math.round(e.b / e.count);
@@ -60,19 +62,27 @@ export async function extractPalette(
       .filter((sw) => sw.saturation >= 0.15 && isMidtone(sw))
       .sort((a, b) => b.score - a.score);
 
-    const chosen: Swatch[] = [];
+    const chosen: Array<Swatch> = [];
     const pushUnique = (sw: Swatch) => {
-      if (chosen.length >= count) return;
-      if (chosen.some((c) => distance(c, sw) < 48)) return;
+      if (chosen.length >= count) {
+        return;
+      }
+      if (chosen.some((c) => distance(c, sw) < 48)) {
+        return;
+      }
       chosen.push(sw);
     };
-    for (const sw of vibrant) pushUnique(sw);
+    for (const sw of vibrant) {
+      pushUnique(sw);
+    }
 
     if (chosen.length < count) {
       const byFrequency = swatches
         .filter((sw) => !chosen.includes(sw))
         .sort((a, b) => b.count - a.count);
-      for (const sw of byFrequency) pushUnique(sw);
+      for (const sw of byFrequency) {
+        pushUnique(sw);
+      }
     }
 
     return chosen.map((sw) => toHex(sw.r, sw.g, sw.b));
@@ -107,7 +117,11 @@ function toHsl(r: number, g: number, b: number): Hsl {
   return { s, l };
 }
 
+function hexByte(n: number): string {
+  return n.toString(16).padStart(2, "0");
+}
+
 function toHex(r: number, g: number, b: number): string {
-  const h = (n: number) => n.toString(16).padStart(2, "0");
+  const h = hexByte;
   return `#${h(r)}${h(g)}${h(b)}`;
 }

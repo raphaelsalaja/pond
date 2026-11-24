@@ -16,12 +16,14 @@ import { libraryRoot } from "../paths";
 import { runRecoverableBatch } from "./batch-journal";
 import { executeBatch, withMutationScope } from "./executor";
 import {
-  type InternalLibraryRepairIssue,
   inspectCurrentSaveIntegrity,
-  type LibraryIntegrityRuntime,
   libraryIntegrityRuntime,
-  type RepairSave,
   scanLibraryIntegrity,
+} from "./library-integrity";
+import type {
+  InternalLibraryRepairIssue,
+  LibraryIntegrityRuntime,
+  RepairSave,
 } from "./library-integrity";
 import { currentLibraryId } from "./prefs-scope";
 import { renderThumbnail } from "./save-thumbnail-file";
@@ -36,7 +38,7 @@ interface PreviewRecord {
   libraryId: string;
   root: string;
   expiresAt: number;
-  issues: InternalLibraryRepairIssue[];
+  issues: Array<InternalLibraryRepairIssue>;
   consumed: boolean;
 }
 
@@ -45,8 +47,8 @@ export interface LibraryRepairServiceDependencies {
   libraryId(): string;
   root(): string;
   integrityRuntime: LibraryIntegrityRuntime;
-  commit(transactions: Transaction[]): Promise<void>;
-  recordUndo(transactions: Transaction[]): void;
+  commit(transactions: Array<Transaction>): Promise<void>;
+  recordUndo(transactions: Array<Transaction>): void;
   repairMetadata(row: RepairSave): Promise<void>;
 }
 
@@ -58,13 +60,15 @@ export function createLibraryRepairService(
   function prune(): void {
     const now = dependencies.now();
     for (const [token, preview] of previews) {
-      if (preview.expiresAt <= now || preview.consumed) previews.delete(token);
+      if (preview.expiresAt <= now || preview.consumed) {
+        previews.delete(token);
+      }
     }
   }
 
   async function preview(input: {
     kind: LibraryRepairKind;
-    saveIds?: readonly string[];
+    saveIds?: ReadonlyArray<string>;
     signal?: AbortSignal;
     onProgress?: (processed: number, total: number) => void;
   }): Promise<LibraryRepairPreview> {
@@ -75,10 +79,14 @@ export function createLibraryRepairService(
       ...input,
       runtime: dependencies.integrityRuntime,
     });
-    if (libraryId !== dependencies.libraryId() || root !== dependencies.root())
+    if (
+      libraryId !== dependencies.libraryId() ||
+      root !== dependencies.root()
+    ) {
       throw new Error(
         "The active Library changed. Start a new repair preview.",
       );
+    }
     const token = randomUUID();
     const expiresAt = dependencies.now() + PREVIEW_TTL_MS;
     previews.set(token, {
@@ -105,8 +113,9 @@ export function createLibraryRepairService(
   }): Promise<{ kind: LibraryRepairKind; result: LibraryRepairResult }> {
     prune();
     const preview = previews.get(input.token);
-    if (!preview)
+    if (!preview) {
       throw new Error("This repair preview expired. Preview again.");
+    }
     if (
       preview.expiresAt <= dependencies.now() ||
       preview.libraryId !== dependencies.libraryId() ||
@@ -115,12 +124,13 @@ export function createLibraryRepairService(
       previews.delete(input.token);
       throw new Error("The active Library changed. Preview the repair again.");
     }
-    if (preview.consumed)
+    if (preview.consumed) {
       throw new Error("This repair preview has already been applied.");
+    }
     preview.consumed = true;
 
-    const undoable: Transaction[] = [];
-    const currentIssues: InternalLibraryRepairIssue[] = [];
+    const undoable: Array<Transaction> = [];
+    const currentIssues: Array<InternalLibraryRepairIssue> = [];
     for (const expected of preview.issues) {
       throwIfAborted(input.signal);
       const current = await inspectCurrentSaveIntegrity({
@@ -128,10 +138,11 @@ export function createLibraryRepairService(
         saveId: expected.saveId,
         runtime: dependencies.integrityRuntime,
       });
-      if (!current || current.fingerprint !== expected.fingerprint)
+      if (!current || current.fingerprint !== expected.fingerprint) {
         throw new Error(
           `Save ${expected.saveId} changed. Preview the repair again.`,
         );
+      }
       currentIssues.push(current);
     }
 
@@ -145,16 +156,22 @@ export function createLibraryRepairService(
           dependencies,
           input.signal,
         );
-        if (transactions.length > 0) undoable.push(...transactions);
+        if (transactions.length > 0) {
+          undoable.push(...transactions);
+        }
         repaired += 1;
         input.onProgress?.(index + 1, preview.issues.length);
       }
     } catch (error) {
-      if (undoable.length > 0) dependencies.recordUndo(undoable);
+      if (undoable.length > 0) {
+        dependencies.recordUndo(undoable);
+      }
       previews.delete(input.token);
       throw error;
     }
-    if (undoable.length > 0) dependencies.recordUndo(undoable);
+    if (undoable.length > 0) {
+      dependencies.recordUndo(undoable);
+    }
     previews.delete(input.token);
     return {
       kind: preview.kind,
@@ -177,8 +194,9 @@ export function createLibraryRepairService(
       !value ||
       value.libraryId !== dependencies.libraryId() ||
       value.root !== dependencies.root()
-    )
+    ) {
       return null;
+    }
     return value.kind;
   }
 
@@ -189,10 +207,12 @@ async function applyIssue(
   issue: InternalLibraryRepairIssue,
   dependencies: LibraryRepairServiceDependencies,
   signal: AbortSignal | undefined,
-): Promise<Transaction[]> {
+): Promise<Array<Transaction>> {
   throwIfAborted(signal);
   const row = await dependencies.integrityRuntime.getSave(issue.saveId);
-  if (!row) throw new Error("The Save no longer exists.");
+  if (!row) {
+    throw new Error("The Save no longer exists.");
+  }
   switch (issue.action.kind) {
     case "thumbnail": {
       const action = issue.action;
@@ -203,8 +223,9 @@ async function applyIssue(
         action.source,
       );
       const bytes = await renderThumbnail(source);
-      if (!bytes)
+      if (!bytes) {
         throw new Error(`Could not generate a thumbnail for Save ${row.id}.`);
+      }
       const nextFile = {
         kind: "thumbnail",
         path: action.destination,
@@ -269,7 +290,9 @@ async function applyIssue(
     }
     case "invalid-content":
     case "eagle-previews": {
-      if (row.deletedAt) return [];
+      if (row.deletedAt) {
+        return [];
+      }
       const transaction: Transaction = {
         kind: "trash",
         model: "save",
@@ -307,8 +330,9 @@ async function repairMetadataWithJournal(row: RepairSave): Promise<void> {
       batchId,
       transactions: [transaction],
       async applyDisk() {
-        if (libraryRoot() !== root)
+        if (libraryRoot() !== root) {
           throw new Error("The active Library changed during repair.");
+        }
         const current = db
           .select()
           .from(saves)
@@ -321,8 +345,9 @@ async function repairMetadataWithJournal(row: RepairSave): Promise<void> {
           current.sourceId !== row.sourceId ||
           current.url !== row.url ||
           JSON.stringify(current.files) !== JSON.stringify(row.files)
-        )
+        ) {
           throw new Error("The Save changed. Preview the repair again.");
+        }
         await writeSaveInfo(current);
       },
       commitIndex: () => {
@@ -381,7 +406,9 @@ function isRepairThumbnail(kind: string): boolean {
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) throw new DOMException("Repair canceled.", "AbortError");
+  if (signal?.aborted) {
+    throw new DOMException("Repair canceled.", "AbortError");
+  }
 }
 
 const defaultDependencies: LibraryRepairServiceDependencies = {

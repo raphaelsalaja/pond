@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { page, userEvent } from "vitest/browser";
+import { ContextMenu } from ".";
 import { expectAccessible } from "../../test/axe";
 import { Button } from "../button";
-import { ContextMenu } from ".";
 
 function FolderActions({ onSelect }: { onSelect?: (label: string) => void }) {
   return (
@@ -48,7 +48,7 @@ describe("ContextMenu keyboard", () => {
   });
 
   it("runs the highlighted item with Enter", async () => {
-    const selected: string[] = [];
+    const selected: Array<string> = [];
     const screen = await render(
       <FolderActions onSelect={(label) => selected.push(label)} />,
     );

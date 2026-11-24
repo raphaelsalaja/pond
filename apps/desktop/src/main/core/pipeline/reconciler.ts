@@ -18,7 +18,6 @@ import {
 } from "./queue-generations";
 import { noteSuccess } from "./rate-governor";
 import {
-  type DueTask,
   MAX_BACKGROUND_INFLIGHT,
   MAX_GLOBAL_INFLIGHT,
   MAX_INTERACTIVE_INFLIGHT,
@@ -30,6 +29,7 @@ import {
   WORKERS,
   WorkerWatchdogError,
 } from "./reconciler-config";
+import type { DueTask } from "./reconciler-config";
 import {
   abortRunningIngest,
   trackRunningIngest,
@@ -105,7 +105,9 @@ export async function pauseAndDrainReconciler(
   try {
     await Promise.race([
       (async () => {
-        while (pendingWork.size) await Promise.all(pendingWork);
+        while (pendingWork.size) {
+          await Promise.all(pendingWork);
+        }
       })(),
       new Promise<never>((_, reject) => {
         timer = setTimeout(
@@ -121,10 +123,14 @@ export async function pauseAndDrainReconciler(
     ]);
     return wasPaused;
   } catch (error) {
-    if (!wasPaused) resumeReconciler();
+    if (!wasPaused) {
+      resumeReconciler();
+    }
     throw error;
   } finally {
-    if (timer) clearTimeout(timer);
+    if (timer) {
+      clearTimeout(timer);
+    }
   }
 }
 
@@ -142,20 +148,26 @@ export function pipelineSnapshot(): PipelineSnapshot {
 }
 
 export function pauseReconciler(): void {
-  if (paused) return;
+  if (paused) {
+    return;
+  }
   paused = true;
   log.info("[pond pipeline:reconciler] paused");
 }
 
 export function resumeReconciler(): void {
-  if (!paused) return;
+  if (!paused) {
+    return;
+  }
   paused = false;
   log.info("[pond pipeline:reconciler] resumed");
   kickReconciler();
 }
 
 export async function suspendReconciler(): Promise<void> {
-  if (suspended) return;
+  if (suspended) {
+    return;
+  }
   suspended = true;
   pausedBeforeSuspend = paused;
   pauseReconciler();
@@ -165,12 +177,16 @@ export async function suspendReconciler(): Promise<void> {
 }
 
 export async function resumeReconcilerAfterSuspend(): Promise<void> {
-  if (!suspended) return;
+  if (!suspended) {
+    return;
+  }
   suspended = false;
   const db = await getDb();
   const at = Date.now();
   extendOwnedLeasesSync(db.$raw, LEASE_OWNER, at, true);
-  if (!pausedBeforeSuspend) resumeReconciler();
+  if (!pausedBeforeSuspend) {
+    resumeReconciler();
+  }
 }
 
 export async function cancelSaveIngest(saveId: string): Promise<boolean> {
@@ -180,14 +196,18 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
     .from(saves)
     .where(eq(saves.id, saveId))
     .get();
-  if (save?.status !== "ingesting") return false;
+  if (save?.status !== "ingesting") {
+    return false;
+  }
 
   const running = db
     .select({ id: tasks.id })
     .from(tasks)
     .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "running")))
     .all();
-  for (const { id } of running) abortRunningIngest(id);
+  for (const { id } of running) {
+    abortRunningIngest(id);
+  }
 
   db.update(tasks)
     .set({
@@ -219,11 +239,13 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
 }
 
 export async function cancelSavesIngest(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<number> {
   let cancelled = 0;
   for (const id of new Set(saveIds)) {
-    if (await cancelSaveIngest(id)) cancelled += 1;
+    if (await cancelSaveIngest(id)) {
+      cancelled += 1;
+    }
   }
   return cancelled;
 }
@@ -238,14 +260,18 @@ export async function cancelAllIngest(): Promise<number> {
     .where(eq(saves.status, "ingesting"))
     .all();
   const cancelled = await cancelSavesIngest(rows.map((row) => row.id));
-  if (!wasPaused) resumeReconciler();
+  if (!wasPaused) {
+    resumeReconciler();
+  }
   log.info("[pond pipeline:reconciler] cancelled all ingest", { cancelled });
   return cancelled;
 }
 
 export async function cancelGeneration(generationId: string): Promise<number> {
   const runningIds = await cancelQueueGeneration(generationId);
-  for (const id of runningIds) abortRunningIngest(id);
+  for (const id of runningIds) {
+    abortRunningIngest(id);
+  }
   log.info("[pond pipeline:reconciler] cancelled generation", {
     generationId,
     running: runningIds.length,
@@ -253,7 +279,7 @@ export async function cancelGeneration(generationId: string): Promise<number> {
   return runningIds.length;
 }
 
-export async function skipSaves(ids: readonly string[]): Promise<number> {
+export async function skipSaves(ids: ReadonlyArray<string>): Promise<number> {
   const db = await getDb();
   let skipped = 0;
   for (const saveId of ids) {
@@ -262,15 +288,21 @@ export async function skipSaves(ids: readonly string[]): Promise<number> {
       .from(saves)
       .where(eq(saves.id, saveId))
       .get();
-    if (!save || save.deletedAt) continue;
-    if (save.status === "skipped" || save.status === "complete") continue;
+    if (!save || save.deletedAt) {
+      continue;
+    }
+    if (save.status === "skipped" || save.status === "complete") {
+      continue;
+    }
 
     const running = db
       .select({ id: tasks.id })
       .from(tasks)
       .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "running")))
       .all();
-    for (const { id } of running) abortRunningIngest(id);
+    for (const { id } of running) {
+      abortRunningIngest(id);
+    }
 
     await persistSave(
       saveId,
@@ -303,17 +335,23 @@ export async function skipSaves(ids: readonly string[]): Promise<number> {
 }
 
 export function startReconciler(): void {
-  if (started) return;
+  if (started) {
+    return;
+  }
   started = true;
   log.info("[pond pipeline:reconciler] starting");
-  void track(initializeReconciler()).catch((err) =>
-    log.error("[pond pipeline:reconciler] initialization failed", err),
+  void track(initializeReconciler()).catch((cause: unknown) =>
+    log.error("[pond pipeline:reconciler] initialization failed", cause),
   );
 }
 
 export function kickReconciler(): void {
-  if (!started) return;
-  if (kickPending) return;
+  if (!started) {
+    return;
+  }
+  if (kickPending) {
+    return;
+  }
   kickPending = true;
   setImmediate(() => {
     kickPending = false;
@@ -332,9 +370,13 @@ async function initializeReconciler(): Promise<void> {
 }
 
 function schedulePoll(ms: number): void {
-  if (pollTimer) clearTimeout(pollTimer);
+  if (pollTimer) {
+    clearTimeout(pollTimer);
+  }
   pollTimer = setTimeout(() => {
-    if (!started) return;
+    if (!started) {
+      return;
+    }
     void track(tick()).finally(() => schedulePoll(POLL_INTERVAL_MS));
   }, ms);
 }
@@ -356,30 +398,37 @@ async function tick(): Promise<void> {
 }
 
 async function claimAndDispatch(): Promise<void> {
-  if (!started || paused) return;
+  if (!started || paused) {
+    return;
+  }
   if (Date.now() >= nextOrphanSweepAt) {
     nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
-    void track(sweepOrphanTasks()).catch((err) =>
-      log.warn("[pond pipeline:reconciler] periodic orphan sweep failed", err),
+    void track(sweepOrphanTasks()).catch((cause: unknown) =>
+      log.warn(
+        "[pond pipeline:reconciler] periodic orphan sweep failed",
+        cause,
+      ),
     );
-    void track(recoverExpiredLeases()).catch((err) =>
+    void track(recoverExpiredLeases()).catch((cause: unknown) =>
       log.warn(
         "[pond pipeline:reconciler] periodic lease recovery failed",
-        err,
+        cause,
       ),
     );
-    void track(sweepTasklessIngestingSaves()).catch((err) =>
+    void track(sweepTasklessIngestingSaves()).catch((cause: unknown) =>
       log.warn(
         "[pond pipeline:reconciler] periodic taskless sweep failed",
-        err,
+        cause,
       ),
     );
-    void track(releaseIngestForTrashedSaves(null)).catch((err) =>
-      log.warn("[pond pipeline:reconciler] periodic trash sweep failed", err),
+    void track(releaseIngestForTrashedSaves(null)).catch((cause: unknown) =>
+      log.warn("[pond pipeline:reconciler] periodic trash sweep failed", cause),
     );
   }
   const globalRoom = MAX_GLOBAL_INFLIGHT - inflightGlobal;
-  if (globalRoom <= 0) return;
+  if (globalRoom <= 0) {
+    return;
+  }
   const availableByOp = z
     .record(z.enum(OPS), z.number())
     .parse(
@@ -403,9 +452,13 @@ async function claimAndDispatch(): Promise<void> {
     ),
     availableByOp,
   });
-  if (due.length === 0) return;
+  if (due.length === 0) {
+    return;
+  }
   for (const task of due) {
-    if (runningTaskIds.has(task.id)) continue;
+    if (runningTaskIds.has(task.id)) {
+      continue;
+    }
     if (
       !canDispatchTask({
         interactive: isInteractiveTask(task),
@@ -426,12 +479,16 @@ async function claimAndDispatch(): Promise<void> {
 
 async function dispatchTask(task: DueTask): Promise<void> {
   const leaseToken = task.leaseToken;
-  if (!leaseToken) return;
+  if (!leaseToken) {
+    return;
+  }
   const interactive = isInteractiveTask(task);
   runningTaskIds.add(task.id);
   inflightByOp[task.op]++;
   inflightGlobal++;
-  if (interactive) inflightInteractive++;
+  if (interactive) {
+    inflightInteractive++;
+  }
   metrics.tasksDispatched++;
   const controller = new AbortController();
   trackRunningIngest(task.id, controller);
@@ -474,10 +531,12 @@ async function dispatchTask(task: DueTask): Promise<void> {
   const heartbeat = setInterval(
     () => {
       void heartbeatTaskLease(task).then((renewed) => {
-        if (!renewed) controller.abort();
+        if (!renewed) {
+          controller.abort();
+        }
       });
     },
-    Math.max(1_000, Math.floor(TASK_LEASE_MS / 3)),
+    Math.max(1000, Math.floor(TASK_LEASE_MS / 3)),
   );
   try {
     if (!(await ingestLeaseStillRunnable(task))) {
@@ -493,7 +552,9 @@ async function dispatchTask(task: DueTask): Promise<void> {
         metrics.watchdogTrips++;
         try {
           controller.abort();
-        } catch {}
+        } catch {
+          /** An abort listener's throw must not stop the watchdog from rejecting. */
+        }
         reject(new WorkerWatchdogError(task.op, budget));
       }, budget);
     });
@@ -514,7 +575,9 @@ async function dispatchTask(task: DueTask): Promise<void> {
         watchdog,
       ]);
     } finally {
-      if (watchdogHandle) clearTimeout(watchdogHandle);
+      if (watchdogHandle) {
+        clearTimeout(watchdogHandle);
+      }
     }
     controller.signal.throwIfAborted();
     const settled = await markDone(task);
@@ -523,15 +586,17 @@ async function dispatchTask(task: DueTask): Promise<void> {
       return;
     }
     metrics.tasksCompleted++;
-    if (isSourceTask(task.op)) noteSuccess(task.source);
+    if (isSourceTask(task.op)) {
+      noteSuccess(task.source);
+    }
     await maybeFinalizeSave(task.saveId);
     await completeQueueGenerationIfSettled(task.generationId);
     activity.finish("completed");
     ev.outcome = "ok";
     ev.attempts = task.attempts + 1;
-  } catch (err) {
+  } catch (error) {
     activity.finish("failed");
-    const result = await handleFailure(task, err);
+    const result = await handleFailure(task, error);
     if (result.settled) {
       await completeQueueGenerationIfSettled(task.generationId);
     }
@@ -546,7 +611,9 @@ async function dispatchTask(task: DueTask): Promise<void> {
     untrackRunningIngest(task.id);
     inflightByOp[task.op]--;
     inflightGlobal--;
-    if (interactive) inflightInteractive--;
+    if (interactive) {
+      inflightInteractive--;
+    }
     ev.durationMs = Date.now() - t0;
     ev.pipeline = { inflight: inflightGlobal, paused };
     ev.gate = gateForSource(task.source);
@@ -580,7 +647,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
 }
 
 async function releaseIngestForTrashedSaves(
-  saveIds: readonly string[] | null,
+  saveIds: ReadonlyArray<string> | null,
 ): Promise<void> {
   const db = await getDb();
   const released = releaseTrashedIngestSync(db.$raw, saveIds, Date.now());
@@ -595,9 +662,11 @@ async function releaseIngestForTrashedSaves(
 }
 
 async function resumeIngestForRestoredSaves(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<void> {
-  if (saveIds.length === 0) return;
+  if (saveIds.length === 0) {
+    return;
+  }
   const db = await getDb();
   const resumed = resumeTrashedIngestSync(db.$raw, saveIds, Date.now());
   if (resumed > 0) {
@@ -607,6 +676,10 @@ async function resumeIngestForRestoredSaves(
 }
 
 registerTrashIngestHandler(async ({ trashedIds, restoredIds }) => {
-  if (trashedIds.length > 0) await releaseIngestForTrashedSaves(trashedIds);
-  if (restoredIds.length > 0) await resumeIngestForRestoredSaves(restoredIds);
+  if (trashedIds.length > 0) {
+    await releaseIngestForTrashedSaves(trashedIds);
+  }
+  if (restoredIds.length > 0) {
+    await resumeIngestForRestoredSaves(restoredIds);
+  }
 });

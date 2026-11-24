@@ -21,8 +21,11 @@ export function VideoDownload({ save }: { save: Save }) {
     window.pond
       .query("saves.downloadVideo", { ids: [save.id] })
       .then((result) => {
-        if (!result.ok) fail("Couldn't download video");
-        else if (result.queued === 0) fail("No videos to download");
+        if (!result.ok) {
+          fail("Couldn't download video");
+        } else if (result.queued === 0) {
+          fail("No videos to download");
+        }
       })
       .catch(() => fail("Couldn't download video"));
   };

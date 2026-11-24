@@ -12,7 +12,9 @@ export function textBodyFromFields(
   title: string | null | undefined,
 ): string {
   const body = description?.trim() ?? "";
-  if (body) return body;
+  if (body) {
+    return body;
+  }
   return title?.trim() ?? "";
 }
 
@@ -36,6 +38,8 @@ export function buildTextCardData(
   text: string | null | undefined,
 ): TextCardData | null {
   const body = text?.trim() ?? "";
-  if (!body) return null;
+  if (!body) {
+    return null;
+  }
   return { text: body };
 }

@@ -1,11 +1,10 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PreviewWindowState } from "../../shared/preview-window-contracts";
-import {
-  type PreviewControlActions,
-  PreviewControls,
-} from "./preview-controls";
+import { PreviewControls } from "./preview-controls";
+import type { PreviewControlActions } from "./preview-controls";
 
 const actions = {
   close: vi.fn(),
@@ -61,13 +60,13 @@ describe("detached preview controls", () => {
     root = createRoot(container);
   });
 
-  afterEach(async () => {
-    await act(() => root.unmount());
+  afterEach(() => {
+    act(() => root.unmount());
     container.remove();
   });
 
   async function render(state: PreviewWindowState, slideshow = false) {
-    await act(() =>
+    await act(async () =>
       root.render(
         <PreviewControls
           actions={actions}
@@ -93,7 +92,9 @@ describe("detached preview controls", () => {
     const rotate = container.querySelector<HTMLButtonElement>(
       'button[aria-label="Rotate"]',
     );
-    if (!rotate) throw new Error("Missing Rotate control");
+    if (!rotate) {
+      throw new Error("Missing Rotate control");
+    }
     rotate.click();
     expect(actions.rotate).toHaveBeenCalledOnce();
   });
@@ -118,7 +119,9 @@ describe("detached preview controls", () => {
     const fill = container.querySelector<HTMLButtonElement>(
       'button[aria-label="Fill"]',
     );
-    if (!fill) throw new Error("Missing Fill control");
+    if (!fill) {
+      throw new Error("Missing Fill control");
+    }
     fill.click();
     expect(actions.toggleSize).toHaveBeenCalledOnce();
 
@@ -147,7 +150,9 @@ describe("detached preview controls", () => {
     const exportOriginal = container.querySelector<HTMLButtonElement>(
       'button[aria-label="Export Original"]',
     );
-    if (!open || !exportOriginal) throw new Error("Missing original actions");
+    if (!open || !exportOriginal) {
+      throw new Error("Missing original actions");
+    }
     open.click();
     exportOriginal.click();
     expect(actions.openOriginal).toHaveBeenCalledOnce();

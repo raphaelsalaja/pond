@@ -3,9 +3,11 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
-const cleanups: (() => Promise<void>)[] = [];
+const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
-  for (const cleanup of cleanups.splice(0)) await cleanup();
+  for (const cleanup of cleanups.splice(0)) {
+    await cleanup();
+  }
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -37,7 +39,9 @@ function createReveal() {
   const root = createRoot(host);
   let mounted = true;
   const unmount = async () => {
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     await act(async () => root.unmount());
     mounted = false;
   };
@@ -64,7 +68,9 @@ function createReveal() {
       const callbacks = [...frames.values()];
       frames.clear();
       await act(async () => {
-        for (const callback of callbacks) callback(now);
+        for (const callback of callbacks) {
+          callback(now);
+        }
       });
     },
     unmount,
@@ -91,7 +97,9 @@ it("reveals Unicode letters on animation frames without splitting a code point",
   expect(reveal.text).toBe("🌿");
   await reveal.advance();
   expect(reveal.text).toBe("🌿P");
-  for (let frame = 0; frame < 4; frame++) await reveal.advance();
+  for (let frame = 0; frame < 4; frame++) {
+    await reveal.advance();
+  }
   expect(reveal.text).toBe("🌿Pond");
   expect(reveal.pending).toBe(false);
   expect(reveal.scheduled).toBe(0);
@@ -108,8 +116,9 @@ it("drains the final received text after the model completes without jumping to 
   await reveal.advance();
   expect(reveal.text.length).toBeGreaterThan(first.length);
   expect(reveal.text).not.toBe("A short answer with saved references.");
-  for (let frame = 0; frame < 40 && reveal.pending; frame++)
+  for (let frame = 0; frame < 40 && reveal.pending; frame++) {
     await reveal.advance();
+  }
   expect(reveal.text).toBe("A short answer with saved references.");
   expect(reveal.pending).toBe(false);
 });
@@ -123,8 +132,9 @@ it("replaces unrelated content without concatenating a stale revealed prefix", a
   expect(reveal.text).toBe("Replacement");
   await reveal.advance();
   await reveal.render("Replacement continued", true);
-  for (let frame = 0; frame < 30 && reveal.pending; frame++)
+  for (let frame = 0; frame < 30 && reveal.pending; frame++) {
     await reveal.advance();
+  }
   expect(reveal.text).toBe("Replacement continued");
   expect(reveal.pending).toBe(false);
 });

@@ -3,13 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import type { SplitAllProgress } from "../../shared/saves-mutation-contracts";
 import {
   runSplitAll,
-  type SplitAllRuntime,
-  type SplitCandidate,
   splitAllStatus,
   splittableIds,
   startSplitAll,
 } from "./split-all";
-import { runSplitSave, type SplitSaveRuntime } from "./split-save";
+import type { SplitAllRuntime, SplitCandidate } from "./split-all";
+import { runSplitSave } from "./split-save";
+import type { SplitSaveRuntime } from "./split-save";
 import { capture, carousel, file } from "./split-save.fixtures";
 
 function candidate(id: string, source: Source = "instagram"): SplitCandidate {
@@ -20,7 +20,19 @@ function candidate(id: string, source: Source = "instagram"): SplitCandidate {
   };
 }
 
-function ids(count: number): string[] {
+function sized(id: string, source: Source, count: number) {
+  return {
+    id,
+    source,
+    files: Array.from({ length: count }, (_, i) =>
+      file("image", `${id}-${i + 1}.jpg`),
+    ),
+  };
+}
+
+function noop() {}
+
+function ids(count: number): Array<string> {
   return Array.from(
     { length: count },
     (_, i) => `save-${String(i + 1).padStart(4, "0")}`,
@@ -28,7 +40,7 @@ function ids(count: number): string[] {
 }
 
 /** Pages like the real query: by ID, after the cursor, capped at the limit. */
-function pager(rows: readonly SplitCandidate[]): SplitAllRuntime["page"] {
+function pager(rows: ReadonlyArray<SplitCandidate>): SplitAllRuntime["page"] {
   return async (after, limit) =>
     [...rows]
       .sort((a, b) => a.id.localeCompare(b.id))
@@ -37,10 +49,10 @@ function pager(rows: readonly SplitCandidate[]): SplitAllRuntime["page"] {
 }
 
 function fakeRuntime(
-  rows: readonly SplitCandidate[],
+  rows: ReadonlyArray<SplitCandidate>,
   overrides: Partial<SplitAllRuntime> = {},
 ) {
-  const split: string[] = [];
+  const split: Array<string> = [];
   let pauses = 0;
   const runtime: SplitAllRuntime = {
     page: pager(rows),
@@ -65,14 +77,14 @@ function fakeRuntime(
 }
 
 function track() {
-  const reports: SplitAllProgress[] = [];
+  const reports: Array<SplitAllProgress> = [];
   return { reports, report: (next: SplitAllProgress) => reports.push(next) };
 }
 
 describe("splittableIds", () => {
   it("walks the whole library a page at a time", async () => {
-    const pages: (string | null)[] = [];
-    const page = pager(ids(1_200).map((id) => candidate(id)));
+    const pages: Array<string | null> = [];
+    const page = pager(ids(1200).map((id) => candidate(id)));
     const library = fakeRuntime([], {
       page: (after, limit) => {
         pages.push(after);
@@ -80,8 +92,8 @@ describe("splittableIds", () => {
       },
     });
     const found = await splittableIds(library.runtime);
-    expect(found).toHaveLength(1_200);
-    expect(new Set(found).size).toBe(1_200);
+    expect(found).toHaveLength(1200);
+    expect(new Set(found).size).toBe(1200);
     expect(pages).toEqual([null, "save-0500", "save-1000"]);
   });
 
@@ -107,13 +119,6 @@ describe("splittableIds", () => {
   });
 
   it("keeps only posts that reach their source's minimum", async () => {
-    const sized = (id: string, source: Source, count: number) => ({
-      id,
-      source,
-      files: Array.from({ length: count }, (_, i) =>
-        file("image", `${id}-${i + 1}.jpg`),
-      ),
-    });
     const library = fakeRuntime(
       [
         sized("x-pair", "twitter", 2),
@@ -154,8 +159,12 @@ describe("runSplitAll", () => {
       ["a", "b", "c", "d"].map((id) => candidate(id)),
       {
         async split(id) {
-          if (id === "b") throw new Error("disk full");
-          if (id === "c") return { ok: false, reason: "single" };
+          if (id === "b") {
+            throw new Error("disk full");
+          }
+          if (id === "c") {
+            return { ok: false, reason: "single" };
+          }
           return { ok: true, created: [`${id}-2`, `${id}-3`] };
         },
       },
@@ -190,11 +199,11 @@ describe("runSplitAll", () => {
 
 describe("startSplitAll", () => {
   it("runs one split at a time", async () => {
-    let release = () => {};
+    let release: () => void = noop;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const calls: string[] = [];
+    const calls: Array<string> = [];
     const library = fakeRuntime([candidate("a")], {
       async split(id) {
         calls.push(id);
@@ -241,14 +250,20 @@ function carouselLibrary(count: number) {
   const runtime: SplitSaveRuntime = {
     read: async (id) => rows.get(id) ?? null,
     async findSlide(row) {
-      for (const save of rows.values())
-        if (save.source === row.source && save.sourceId === row.sourceId)
+      for (const save of rows.values()) {
+        if (save.source === row.source && save.sourceId === row.sourceId) {
           return save.id;
+        }
+      }
       return null;
     },
     async create(row) {
-      if (quit()) throw new Error("Pond quit");
-      if (!row.id) throw new Error("Slides arrive with an ID");
+      if (quit()) {
+        throw new Error("Pond quit");
+      }
+      if (!row.id) {
+        throw new Error("Slides arrive with an ID");
+      }
       rows.set(row.id, {
         ...carousel(),
         ...row,
@@ -259,32 +274,44 @@ function carouselLibrary(count: number) {
     },
     async copyFiles(_from, to, files) {
       copies += 1;
-      if (quit()) throw new Error("Pond quit");
+      if (quit()) {
+        throw new Error("Pond quit");
+      }
       const slide = rows.get(to);
-      if (slide)
+      if (slide) {
         rows.set(to, { ...slide, files: [...files], status: "complete" });
+      }
       return files.length;
     },
     async copyMemberships() {},
     async discard(fresh) {
-      if (quit()) return;
-      for (const id of fresh) rows.delete(id);
+      if (quit()) {
+        return;
+      }
+      for (const id of fresh) {
+        rows.delete(id);
+      }
     },
     async updateOriginal(id, { patch }) {
       const save = rows.get(id);
-      if (save)
+      if (save) {
         rows.set(id, {
           ...save,
           files: patch.files ?? save.files,
           rawJson: patch.rawJson ?? save.rawJson,
         });
+      }
     },
     async refresh() {},
     newId: () => `slide-${String(++next).padStart(4, "0")}`,
   };
   const page: SplitAllRuntime["page"] = async (after, limit) =>
     [...rows.values()]
-      .filter((save) => save.status === "complete" && save.deletedAt == null)
+      .filter(
+        (save) =>
+          save.status === "complete" &&
+          (save.deletedAt === null || save.deletedAt === undefined),
+      )
       .sort((a, b) => a.id.localeCompare(b.id))
       .filter((save) => after === null || save.id > after)
       .slice(0, limit)
@@ -313,10 +340,10 @@ function carouselLibrary(count: number) {
   };
 }
 
-function slideFiles(files: readonly SaveFile[]): string[] {
-  return files
-    .filter((entry) => entry.kind === "image" || entry.kind === "video")
-    .map((entry) => entry.path);
+function slideFiles(files: ReadonlyArray<SaveFile>): Array<string> {
+  return files.flatMap((entry) =>
+    entry.kind === "image" || entry.kind === "video" ? [entry.path] : [],
+  );
 }
 
 describe("split all after a quit", () => {
@@ -336,6 +363,8 @@ describe("split all after a quit", () => {
     expect(saves).toHaveLength(75);
     const keys = saves.map((save) => `${save.source} ${save.sourceId}`);
     expect(new Set(keys).size).toBe(75);
-    for (const save of saves) expect(slideFiles(save.files)).toHaveLength(1);
+    for (const save of saves) {
+      expect(slideFiles(save.files)).toHaveLength(1);
+    }
   });
 });

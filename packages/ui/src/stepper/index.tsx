@@ -10,14 +10,20 @@ function clamp(
   max: number,
   fallback: number,
 ): number {
-  if (!Number.isFinite(value)) return fallback;
+  if (!Number.isFinite(value)) {
+    return fallback;
+  }
   return Math.max(min, Math.min(max, Math.round(value)));
 }
 
 /** Native number stepping snaps to `min`, so arrows step from the shown value like the buttons do. */
 function stepDirection(key: string) {
-  if (key === "ArrowUp") return 1;
-  if (key === "ArrowDown") return -1;
+  if (key === "ArrowUp") {
+    return 1;
+  }
+  if (key === "ArrowDown") {
+    return -1;
+  }
   return 0;
 }
 
@@ -92,7 +98,9 @@ export function Stepper({
         onChange={(e) => set(Number(e.target.value) || fallback)}
         onKeyDown={(event) => {
           const delta = stepDirection(event.key);
-          if (delta === 0) return;
+          if (delta === 0) {
+            return;
+          }
           event.preventDefault();
           set(safe + delta * step);
         }}

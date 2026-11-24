@@ -31,8 +31,8 @@ export interface TableSort<Id extends string> {
 }
 
 export interface TableColumnLayout<Id extends string> {
-  order: Id[];
-  hidden: Id[];
+  order: Array<Id>;
+  hidden: Array<Id>;
   sort: TableSort<Id> | null;
 }
 
@@ -40,15 +40,15 @@ export interface TableColumnLayoutController<Id extends string> {
   snapshot(): TableColumnLayout<Id>;
   setHidden(id: Id, hidden: boolean): void;
   setSort(sort: TableSort<Id> | null): void;
-  applyVisibleOrder(visibleOrder: readonly string[]): void;
+  applyVisibleOrder(visibleOrder: ReadonlyArray<string>): void;
   reset(): void;
   useLayout(): TableColumnLayout<Id>;
   normalize(value: StoredTableColumnLayout): TableColumnLayout<Id>;
   mergeVisibleOrder(
-    order: readonly Id[],
-    hidden: readonly Id[],
-    visibleOrder: readonly string[],
-  ): Id[];
+    order: ReadonlyArray<Id>,
+    hidden: ReadonlyArray<Id>,
+    visibleOrder: ReadonlyArray<string>,
+  ): Array<Id>;
   defaultLayout(): TableColumnLayout<Id>;
 }
 
@@ -60,10 +60,10 @@ export function createTableColumnLayout<Id extends string>({
   defaultHidden = [],
 }: {
   storageKey: string;
-  columns: readonly TableColumnSpec<Id>[];
+  columns: ReadonlyArray<TableColumnSpec<Id>>;
   lockedId: Id;
   defaultSort?: TableSort<Id> | null;
-  defaultHidden?: readonly Id[];
+  defaultHidden?: ReadonlyArray<Id>;
 }): TableColumnLayoutController<Id> {
   const columnIds = columns.map((column) => column.id);
 
@@ -82,14 +82,16 @@ export function createTableColumnLayout<Id extends string>({
   }
 
   function mergeVisibleOrder(
-    order: readonly Id[],
-    hidden: readonly Id[],
-    visibleOrder: readonly string[],
-  ): Id[] {
+    order: ReadonlyArray<Id>,
+    hidden: ReadonlyArray<Id>,
+    visibleOrder: ReadonlyArray<string>,
+  ): Array<Id> {
     const concealed = new Set(hidden);
     let index = 0;
     return order.map((id) => {
-      if (concealed.has(id)) return id;
+      if (concealed.has(id)) {
+        return id;
+      }
       const next = visibleOrder[index++];
       return isColumnId(next) ? next : id;
     });
@@ -97,14 +99,18 @@ export function createTableColumnLayout<Id extends string>({
 
   function normalize(value: StoredTableColumnLayout): TableColumnLayout<Id> {
     const seen = new Set<Id>();
-    const order: Id[] = [];
+    const order: Array<Id> = [];
     for (const id of value.order ?? []) {
-      if (!isColumnId(id) || seen.has(id)) continue;
+      if (!isColumnId(id) || seen.has(id)) {
+        continue;
+      }
       seen.add(id);
       order.push(id);
     }
     for (const id of columnIds) {
-      if (!seen.has(id)) order.push(id);
+      if (!seen.has(id)) {
+        order.push(id);
+      }
     }
     const hidden = (value.hidden ?? defaultHidden).filter(
       (id): id is Id => isColumnId(id) && id !== lockedId && order.includes(id),
@@ -124,7 +130,9 @@ export function createTableColumnLayout<Id extends string>({
   function readLayout(): TableColumnLayout<Id> {
     try {
       const raw = localStorage.getItem(key());
-      if (!raw) return defaultLayout();
+      if (!raw) {
+        return defaultLayout();
+      }
       return normalize(StoredTableColumnLayoutSchema.parse(JSON.parse(raw)));
     } catch {
       return defaultLayout();
@@ -145,11 +153,16 @@ export function createTableColumnLayout<Id extends string>({
   return {
     snapshot: () => store.state,
     setHidden(id, hidden) {
-      if (id === lockedId) return;
+      if (id === lockedId) {
+        return;
+      }
       store.setState((state) => {
         const next = new Set(state.hidden);
-        if (hidden) next.add(id);
-        else next.delete(id);
+        if (hidden) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
         return writeLayout({
           ...state,
           hidden: state.order.filter((columnId) => next.has(columnId)),

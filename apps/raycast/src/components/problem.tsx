@@ -3,7 +3,6 @@ import {
   ActionPanel,
   Grid,
   Icon,
-  type Image,
   Keyboard,
   List,
   open,
@@ -11,7 +10,9 @@ import {
   showToast,
   Toast,
 } from "@raycast/api";
-import { type PondProblem, type ProblemKind, problemCopy, problemOf } from "../api/problems";
+import type { Image } from "@raycast/api";
+import { problemCopy, problemOf } from "../api/problems";
+import type { PondProblem, ProblemKind } from "../api/problems";
 import { DOWNLOAD_URL, LIBRARY_LINK, TOKEN_SETTINGS_LINK } from "../lib/links";
 
 const ICONS = {
@@ -104,21 +105,43 @@ export function failToast(toast: Toast, error: Error, title: string): void {
   toast.title = problem.kind === "failed" ? title : copy.title;
   toast.message = copy.description;
   const action = toastAction(problem.kind);
-  if (action) toast.primaryAction = action;
+  if (action) {
+    toast.primaryAction = action;
+  }
 }
 
 function toastAction(kind: ProblemKind): Toast.ActionOptions | undefined {
   switch (kind) {
     case "not-installed":
     case "outdated":
-      return { title: kind === "outdated" ? "Update Pond" : "Get Pond", onAction: () => open(DOWNLOAD_URL) };
+      return {
+        title: kind === "outdated" ? "Update Pond" : "Get Pond",
+        onAction: () => {
+          void open(DOWNLOAD_URL);
+        },
+      };
     case "not-running":
     case "failed":
-      return { title: "Open Pond", onAction: () => open(LIBRARY_LINK) };
+      return {
+        title: "Open Pond",
+        onAction: () => {
+          void open(LIBRARY_LINK);
+        },
+      };
     case "unauthorized":
-      return { title: "Copy Token in Pond", onAction: () => open(TOKEN_SETTINGS_LINK) };
+      return {
+        title: "Copy Token in Pond",
+        onAction: () => {
+          void open(TOKEN_SETTINGS_LINK);
+        },
+      };
     case "misconfigured":
-      return { title: "Open Extension Preferences", onAction: openExtensionPreferences };
+      return {
+        title: "Open Extension Preferences",
+        onAction: () => {
+          void openExtensionPreferences();
+        },
+      };
   }
 }
 

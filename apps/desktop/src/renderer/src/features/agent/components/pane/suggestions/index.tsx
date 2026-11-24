@@ -5,7 +5,7 @@ export function Suggestions({
   suggestions,
   onPick,
 }: {
-  suggestions: string[];
+  suggestions: Array<string>;
   onPick: (suggestion: string) => void;
 }) {
   return (

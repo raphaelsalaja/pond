@@ -6,9 +6,9 @@ import {
   readUpdateDialog,
   readUpdateNotice,
   requestUpdateCheck,
-  type UpdateCheckClient,
   updateNoticeStore,
 } from "./session";
+import type { UpdateCheckClient } from "./session";
 
 const current = { version: "1.0.0" };
 
@@ -101,7 +101,7 @@ describe("requestUpdateCheck", () => {
 
   it("ignores a second check while the first is still running", async () => {
     let checks = 0;
-    let release: (value: { ok: true; version: string }) => void = () => {};
+    let release: (value: { ok: true; version: string }) => void = noop;
     const pending = new Promise<{ ok: true; version: string }>((resolve) => {
       release = resolve;
     });
@@ -124,7 +124,7 @@ describe("requestUpdateCheck", () => {
   });
 
   it("does not reopen after the check is dismissed", async () => {
-    let release: (value: { ok: true; version: string }) => void = () => {};
+    let release: (value: { ok: true; version: string }) => void = noop;
     const pending = new Promise<{ ok: true; version: string }>((resolve) => {
       release = resolve;
     });
@@ -203,5 +203,9 @@ describe("openUpdateOverlay", () => {
 });
 
 function viWait(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 }
+
+function noop() {}

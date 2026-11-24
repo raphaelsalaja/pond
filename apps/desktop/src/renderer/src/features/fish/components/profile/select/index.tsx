@@ -4,9 +4,9 @@ import styles from "./styles.module.css";
 interface MultiProps {
   label: string;
   empty: string;
-  value: string[];
-  items: { value: string; label: string }[];
-  onChange: (value: string[]) => void;
+  value: Array<string>;
+  items: Array<{ value: string; label: string }>;
+  onChange: (value: Array<string>) => void;
 }
 
 function Multi({ label, empty, value, items, onChange }: MultiProps) {
@@ -23,7 +23,7 @@ function Multi({ label, empty, value, items, onChange }: MultiProps) {
         <Select.Label>{label}</Select.Label>
         <Select.Trigger width="full">
           <Select.Value>
-            {(selected: string[]) =>
+            {(selected: Array<string>) =>
               selected.length === 0
                 ? empty
                 : selected.length === 1

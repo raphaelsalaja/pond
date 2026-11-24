@@ -14,20 +14,20 @@ import {
   SKIP_DOM_SELECTION_TAG,
 } from "lexical";
 import {
-  type Ref,
-  type RefObject,
   useEffect,
+  useEffectEvent,
   useImperativeHandle,
   useRef,
   useState,
 } from "react";
+import type { Ref, RefObject } from "react";
 import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";
 import { ComposerDrop } from "./drop";
 import { ComposerEditing } from "./editing";
 import { createComposerExtension } from "./editor-extension";
 import { ComposerMentions } from "./mention";
-import styles from "./styles.module.css";
 import { ComposerSuggestions } from "./suggestions";
+import styles from "./styles.module.css";
 
 export interface ComposerEditorHandle {
   focus: () => void;
@@ -40,15 +40,15 @@ export interface ComposerEditorProps {
   disabled: boolean;
   running: boolean;
   placeholder: string;
-  attachments: AssistantSource[];
+  attachments: Array<AssistantSource>;
   anchorRef: RefObject<HTMLDivElement | null>;
   ref?: Ref<ComposerEditorHandle>;
   onChange: (markdown: string) => void;
   onSend: (markdown: string) => void;
   onQueue?: (markdown: string) => void;
-  onAttach: (saves: AssistantSource[]) => void;
+  onAttach: (saves: Array<AssistantSource>) => void;
   onRemove: (id: string) => void;
-  onDropIds: (ids: string[]) => void;
+  onDropIds: (ids: Array<string>) => void;
 }
 
 export function ComposerEditor(props: ComposerEditorProps) {
@@ -97,8 +97,7 @@ function ComposerDraft({
 }: ComposerEditorProps) {
   const [editor] = useLexicalComposerContext();
   const published = useRef(value);
-  const change = useRef(onChange);
-  change.current = onChange;
+  const change = useEffectEvent(onChange);
   useImperativeHandle(
     ref,
     () => ({
@@ -124,7 +123,9 @@ function ComposerDraft({
     editor.setEditable(!disabled);
   }, [editor, disabled]);
   useEffect(() => {
-    if (value === published.current) return;
+    if (value === published.current) {
+      return;
+    }
     published.current = value;
     editor.update(
       () => {
@@ -147,17 +148,18 @@ function ComposerDraft({
           if (
             tags.has("external-draft") ||
             (!dirtyElements.size && !dirtyLeaves.size)
-          )
+          ) {
             return;
+          }
           const markdown = editorState.read(() => $convertToMarkdownString(), {
             editor,
           });
-          if (markdown.length > 32000) {
+          if (markdown.length > 32_000) {
             editor.setEditorState(prevEditorState, { tag: "external-draft" });
             return;
           }
           published.current = markdown;
-          change.current(markdown);
+          change(markdown);
         },
       ),
     [editor],

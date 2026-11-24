@@ -1,8 +1,5 @@
-import {
-  EXTERNAL_SOURCE_IDS,
-  type ExternalSource,
-  sourceLabel,
-} from "@pond/schema/sources";
+import { EXTERNAL_SOURCE_IDS, sourceLabel } from "@pond/schema/sources";
+import type { ExternalSource } from "@pond/schema/sources";
 import { Button, Settings } from "@pond/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -72,7 +69,9 @@ export function MissingVideos({ source }: { source?: ExternalSource }) {
             ? queuedVideosTitle(result.queued)
             : "Couldn't download videos",
         });
-        if (result.ok && result.queued > 0) setQueued(true);
+        if (result.ok && result.queued > 0) {
+          setQueued(true);
+        }
       })
       .catch(() =>
         notify({

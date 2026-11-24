@@ -18,8 +18,8 @@ import {
   pickProducedPoster,
   pickSubtitleFiles,
   readCompletedFiles,
-  type SubtitleFile,
 } from "./yt-dlp-output";
+import type { SubtitleFile } from "./yt-dlp-output";
 import { runWithTimeout } from "./yt-dlp-process";
 import { createYtdlpProgressReporter } from "./yt-dlp-progress";
 import { ensureYtDlp } from "./yt-dlp-updater";
@@ -44,11 +44,11 @@ export interface DownloadedVideoItem {
   infoJson: RawYtdlp | null;
   posterPath: string | null;
   posterMimeType: string | null;
-  subtitles: SubtitleFile[];
+  subtitles: Array<SubtitleFile>;
 }
 
 interface DownloadedVideos {
-  items: DownloadedVideoItem[];
+  items: Array<DownloadedVideoItem>;
   cleanup: () => Promise<void>;
 }
 
@@ -76,14 +76,18 @@ export async function downloadVideo(
   let attemptDir: string | null = null;
   let cleanupCalled = false;
   const cleanup = async () => {
-    if (cleanupCalled) return;
+    if (cleanupCalled) {
+      return;
+    }
     cleanupCalled = true;
-    if (cookies) await cookies.cleanup();
+    if (cookies) {
+      await cookies.cleanup();
+    }
     if (attemptDir) {
       try {
         await rm(attemptDir, { recursive: true, force: true });
-      } catch (err) {
-        log.warn("[pond yt-dlp] tmpdir cleanup failed", attemptDir, err);
+      } catch (error) {
+        log.warn("[pond yt-dlp] tmpdir cleanup failed", attemptDir, error);
       }
     }
   };
@@ -115,7 +119,9 @@ export async function downloadVideo(
       completed: ReadonlySet<string> | undefined;
     } | null = null;
     for (const withCookies of cookieAttempts(args.source, cookies.count)) {
-      if (attemptDir) await rm(attemptDir, { recursive: true, force: true });
+      if (attemptDir) {
+        await rm(attemptDir, { recursive: true, force: true });
+      }
       attemptDir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
       const mediaDir = join(attemptDir, "media");
       const manifest = join(attemptDir, "completed.txt");
@@ -169,7 +175,9 @@ export async function downloadVideo(
         outcome = { mediaDir, completed };
         break;
       }
-      if (args.signal?.aborted) break;
+      if (args.signal?.aborted) {
+        break;
+      }
     }
     if (!outcome) {
       await cleanup();
@@ -193,10 +201,12 @@ export async function downloadVideo(
       prefs.subtitles === "download" && args.request?.mode !== "audio"
         ? await pickSubtitleFiles(mediaDir)
         : [];
-    const items: DownloadedVideoItem[] = [];
+    const items: Array<DownloadedVideoItem> = [];
     for (let i = 0; i < produced.length; i++) {
       const file = produced[i];
-      if (!file) continue;
+      if (!file) {
+        continue;
+      }
       const poster = wantPoster
         ? await pickProducedPoster(mediaDir, file.path)
         : null;
@@ -216,8 +226,8 @@ export async function downloadVideo(
       return null;
     }
     return { items, cleanup };
-  } catch (err) {
-    log.warn("[pond yt-dlp] unexpected error", args.url, err);
+  } catch (error) {
+    log.warn("[pond yt-dlp] unexpected error", args.url, error);
     await cleanup();
     return null;
   }

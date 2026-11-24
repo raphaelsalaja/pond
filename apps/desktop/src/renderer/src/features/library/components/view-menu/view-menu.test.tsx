@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { libraryHeader } from "@/features/library/state/library-header";
@@ -15,7 +16,9 @@ import { ViewMenu } from "./";
 
 function query<T extends Element>(selector: string): T {
   const node = document.querySelector<T>(selector);
-  if (!node) throw new Error(`Missing ${selector}`);
+  if (!node) {
+    throw new Error(`Missing ${selector}`);
+  }
   return node;
 }
 
@@ -27,7 +30,9 @@ function button(label: string): HTMLButtonElement {
       node.getAttribute("aria-label") === label ||
       node.textContent?.trim() === label,
   );
-  if (!match) throw new Error(`Missing button ${label}`);
+  if (!match) {
+    throw new Error(`Missing button ${label}`);
+  }
   return match;
 }
 
@@ -37,19 +42,19 @@ function toggle(label: string): HTMLElement {
   );
 }
 
+function reset() {
+  libraryHeader.closePopover();
+  setLayout("justified");
+  setZoom(130);
+  setLibrarySaveGap(16);
+  setSort({ key: "savedAt", dir: "desc" });
+  setDisplayPref("source", true);
+  setDisplayPref("fileCount", true);
+}
+
 describe("view menu", () => {
   let root: Root;
   let host: HTMLDivElement;
-
-  function reset() {
-    libraryHeader.closePopover();
-    setLayout("justified");
-    setZoom(130);
-    setLibrarySaveGap(16);
-    setSort({ key: "savedAt", dir: "desc" });
-    setDisplayPref("source", true);
-    setDisplayPref("fileCount", true);
-  }
 
   async function open() {
     await act(async () => root.render(<ViewMenu />));

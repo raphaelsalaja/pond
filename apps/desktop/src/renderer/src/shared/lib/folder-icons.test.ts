@@ -11,7 +11,7 @@ import {
   searchFolderIcons,
 } from "./folder-icons";
 
-function ids(query: string): string[] {
+function ids(query: string): Array<string> {
   return searchFolderIcons(query).map((icon) => icon.id);
 }
 
@@ -32,7 +32,9 @@ describe("folder icons", () => {
   });
 
   it("gives every icon search keywords", () => {
-    for (const icon of FOLDER_ICONS) expect(icon.keywords.trim()).not.toBe("");
+    for (const icon of FOLDER_ICONS) {
+      expect(icon.keywords.trim()).not.toBe("");
+    }
   });
 });
 

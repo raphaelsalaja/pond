@@ -6,13 +6,19 @@ export function WheelBridge() {
   const [prefs] = usePrefs("viewer");
   const { actions, meta, state } = useVideo();
   const volume = useRef(state.volume);
-  volume.current = state.volume;
+  useEffect(() => {
+    volume.current = state.volume;
+  }, [state.volume]);
 
   useEffect(() => {
     const video = meta.videoRef.current;
-    if (!video || prefs.videoWheelBehavior === "none") return;
+    if (!video || prefs.videoWheelBehavior === "none") {
+      return;
+    }
     const onWheel = (event: WheelEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       const direction = event.deltaY > 0 ? -1 : 1;

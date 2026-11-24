@@ -17,7 +17,7 @@ type Cluster =
 type Classification = SavesReadQueryResults["saves.classifyLabels"];
 
 interface SmartCollectionReviewProps {
-  scopeIds: string[] | null;
+  scopeIds: Array<string> | null;
   onClose: () => void;
   open?: boolean;
 }
@@ -44,9 +44,9 @@ export function SmartCollectionReview({
   onClose,
   open = true,
 }: SmartCollectionReviewProps) {
-  const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [unclustered, setUnclustered] = useState<string[]>([]);
-  const [previewIds, setPreviewIds] = useState<string[]>([]);
+  const [clusters, setClusters] = useState<Array<Cluster>>([]);
+  const [unclustered, setUnclustered] = useState<Array<string>>([]);
+  const [previewIds, setPreviewIds] = useState<Array<string>>([]);
   const [representatives, setRepresentatives] = useState(
     new Map<string, string>(),
   );
@@ -75,7 +75,7 @@ export function SmartCollectionReview({
 
   useEffect(() => {
     let active = true;
-    const limit = Math.max(3, Math.min(2_000, scopeIds?.length ?? 2_000));
+    const limit = Math.max(3, Math.min(2000, scopeIds?.length ?? 2000));
     void window.pond
       .query("saves.semanticClusters", {
         saveIds: scopeIds ?? undefined,
@@ -83,7 +83,9 @@ export function SmartCollectionReview({
         limit,
       })
       .then(async (preview) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setClusters(preview.clusters);
         setUnclustered(preview.unclustered);
         setPreviewIds([
@@ -99,18 +101,20 @@ export function SmartCollectionReview({
           const saves = await window.pond.query("saves.getMany", {
             ids: representativeIds,
           });
-          if (!active) return;
+          if (!active) {
+            return;
+          }
           setRepresentatives(
             new Map(saves.map((save) => [save.id, save.title || save.id])),
           );
         }
         setLoading(false);
       })
-      .catch((reason) => {
-        if (!active) return;
-        setError(
-          errorCopy(reason, "Couldn't preview organization. Try again."),
-        );
+      .catch((cause: unknown) => {
+        if (!active) {
+          return;
+        }
+        setError(errorCopy(cause, "Couldn't preview organization. Try again."));
         setLoading(false);
       });
     return () => {
@@ -127,14 +131,18 @@ export function SmartCollectionReview({
     [cluster, representatives],
   );
   const classificationSummary = useMemo(() => {
-    if (!classification) return [];
+    if (!classification) {
+      return [];
+    }
     const summaries = new Map<
       string,
       { label: string; count: number; totalScore: number }
     >();
     for (const item of classification.items) {
       const top = item.scores[0];
-      if (!top) continue;
+      if (!top) {
+        continue;
+      }
       const current = summaries.get(top.label) ?? {
         label: top.label,
         count: 0,
@@ -157,7 +165,9 @@ export function SmartCollectionReview({
   }
 
   async function createFolder(): Promise<void> {
-    if (!cluster) return;
+    if (!cluster) {
+      return;
+    }
     if (!name.trim()) {
       setNameInvalid(true);
       nameField.current?.focus();
@@ -173,23 +183,23 @@ export function SmartCollectionReview({
       });
       skip();
       await folders.refresh();
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't create the folder. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't create the folder. Try again."));
     } finally {
       setBusy(false);
     }
   }
 
-  function classificationIds(): string[] {
-    return [...new Set(scopeIds ?? previewIds)].slice(0, 2_000);
+  function classificationIds(): Array<string> {
+    return [...new Set(scopeIds ?? previewIds)].slice(0, 2000);
   }
 
-  function classificationLabels(): string[] {
+  function classificationLabels(): Array<string> {
     return [
       ...new Set(
         labelsText
           .split(/[,\n]/)
-          .map((label) => label.replace(/\s+/g, " ").trim())
+          .map((label) => label.replaceAll(/\s+/g, " ").trim())
           .filter(Boolean),
       ),
     ].slice(0, 50);
@@ -203,26 +213,32 @@ export function SmartCollectionReview({
       labelsField.current?.focus();
       return;
     }
-    if (saveIds.length === 0) return;
+    if (saveIds.length === 0) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       setClassification(
         await window.pond.query("saves.classifyLabels", { saveIds, labels }),
       );
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't preview labels. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't preview labels. Try again."));
     } finally {
       setBusy(false);
     }
   }
 
   async function applyLabels(): Promise<void> {
-    if (!classification) return;
-    const assignments = new Map<string, string[]>();
+    if (!classification) {
+      return;
+    }
+    const assignments = new Map<string, Array<string>>();
     for (const item of classification.items) {
       const label = item.scores[0]?.label;
-      if (!label) continue;
+      if (!label) {
+        continue;
+      }
       const ids = assignments.get(label) ?? [];
       ids.push(item.id);
       assignments.set(label, ids);
@@ -238,8 +254,8 @@ export function SmartCollectionReview({
         });
       }
       setClassification(null);
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't apply labels. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't apply labels. Try again."));
     } finally {
       setBusy(false);
     }
@@ -249,8 +265,11 @@ export function SmartCollectionReview({
     <Dialog.Root
       open={open}
       onOpenChange={(open, details) => {
-        if (busy) details.cancel();
-        else if (!open) onClose();
+        if (busy) {
+          details.cancel();
+        } else if (!open) {
+          onClose();
+        }
       }}
     >
       <Dialog.Portal>
@@ -298,7 +317,9 @@ export function SmartCollectionReview({
                               value={name}
                               onValueChange={(value) => {
                                 setName(value);
-                                if (value.trim()) setNameInvalid(false);
+                                if (value.trim()) {
+                                  setNameInvalid(false);
+                                }
                               }}
                               disabled={busy}
                             />
@@ -399,7 +420,8 @@ export function SmartCollectionReview({
                       {classification.excludedIds.length > 0 ? (
                         <p className={styles.meta}>
                           {formatNumber(classification.excludedIds.length)}{" "}
-                          Saves skipped because they haven't been analyzed yet.
+                          Saves skipped because they haven&apos;t been analyzed
+                          yet.
                         </p>
                       ) : null}
                     </>

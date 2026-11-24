@@ -1,17 +1,12 @@
 import { IconEyeSlash } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { typeLabelForPath } from "@shared/file-format";
-import {
-  type CSSProperties,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  type StageEntry,
-  type StageRole,
-  useHeldStage,
+import { useCallback, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import { useHeldStage } from "@/features/saves/hooks/use-held-stage";
+import type {
+  StageEntry,
+  StageRole,
 } from "@/features/saves/hooks/use-held-stage";
 import { useImageDecoded } from "@/features/saves/hooks/use-image-decoded";
 import {
@@ -46,7 +41,7 @@ function inspectorFormat(save: Save): string {
   );
 }
 
-function entries(saves: readonly Save[]) {
+function entries(saves: ReadonlyArray<Save>) {
   const next = saves.map((save) => ({
     save,
     url: detailsPreviewUrl(pickCardUnit(save)),
@@ -64,10 +59,12 @@ export interface Card {
 /** Cards kept mounted after the top card, so the next ones slide in instead of popping. */
 const STACK_DEPTH = 3;
 
-export function stackCards(save: Save): Card[] {
+export function stackCards(save: Save): Array<Card> {
   return buildOriginalMediaUnits(save).flatMap((unit) => {
     const url = detailsPreviewUrl(unit);
-    if (!url) return [];
+    if (!url) {
+      return [];
+    }
     const { w, h } = aspectDimsFor(save, {}, unit);
     return [{ key: unit.key, url, aspect: w && h ? clampRatio(w, h) : 1 }];
   });
@@ -162,7 +159,7 @@ function Preview({
 interface Entry {
   save: Save;
   url: string | null;
-  stack: Card[];
+  stack: Array<Card>;
 }
 
 function Layer({
@@ -183,7 +180,9 @@ function Layer({
   const found = value.stack.findIndex((card) => card.key === activePath);
   /** The file index is shared across Saves, so a held layer keeps its last card instead of reading the next Save's. */
   const [last, setLast] = useState(Math.max(0, found));
-  if (found >= 0 && found !== last) setLast(found);
+  if (found >= 0 && found !== last) {
+    setLast(found);
+  }
   const top = found >= 0 ? found : last;
   return (
     <div
@@ -197,7 +196,9 @@ function Layer({
         {stacked ? (
           value.stack.map((card, index) => {
             const slot = index - top;
-            if (slot < -1 || slot > STACK_DEPTH + 1) return null;
+            if (slot < -1 || slot > STACK_DEPTH + 1) {
+              return null;
+            }
             return (
               <Preview
                 key={card.key}
@@ -222,7 +223,7 @@ export function SavePreviews({
   fileIndex = null,
   activeKey = null,
 }: {
-  saves: readonly Save[];
+  saves: ReadonlyArray<Save>;
   fileIndex?: number | null;
   /** A stack card to show on top when the viewer isn't driving `fileIndex`. */
   activeKey?: string | null;
@@ -233,7 +234,9 @@ export function SavePreviews({
     activeKey ??
     (fileIndex === null ? null : (single?.files[fileIndex]?.path ?? null));
   const target = useMemo<StageEntry<Entry> | null>(() => {
-    if (!single) return null;
+    if (!single) {
+      return null;
+    }
     const stack = stackCards(single);
     return {
       key: `${single.id}:${url}:${stack.map((card) => card.url).join("\0")}`,
@@ -260,7 +263,9 @@ export function SavePreviews({
   }
 
   const previews = entries(saves);
-  if (previews.length === 0) return null;
+  if (previews.length === 0) {
+    return null;
+  }
   return (
     <div className={styles.list} data-multiple={saves.length > 1 || undefined}>
       {previews.map(({ save, url }) => (

@@ -1,7 +1,7 @@
 import { IconDots, IconXmark } from "@pond/icons";
+import { Pane } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Pane } from ".";
 
 export const docs: ComponentDocs = {
   slug: "pane-header",

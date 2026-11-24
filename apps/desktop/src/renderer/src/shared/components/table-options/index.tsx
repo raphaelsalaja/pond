@@ -20,7 +20,7 @@ export function TableOptionsMenu<Id extends string>({
   onHiddenChange,
   onSortChange,
 }: {
-  columns: readonly TableColumnSpec<Id>[];
+  columns: ReadonlyArray<TableColumnSpec<Id>>;
   lockedId: Id;
   layout: TableColumnLayout<Id>;
   onHiddenChange: (id: Id, hidden: boolean) => void;
@@ -56,7 +56,9 @@ export function TableOptionsMenu<Id extends string>({
               value={layout.sort?.id ?? null}
               onValueChange={(value) => {
                 const column = columns.find((item) => item.id === value);
-                if (!column) return;
+                if (!column) {
+                  return;
+                }
                 onSortChange({
                   id: column.id,
                   desc: layout.sort?.desc ?? false,
@@ -73,7 +75,9 @@ export function TableOptionsMenu<Id extends string>({
                     disabled={!layout.sort}
                     aria-label="Toggle Sort Direction"
                     onClick={() => {
-                      if (!layout.sort) return;
+                      if (!layout.sort) {
+                        return;
+                      }
                       onSortChange({
                         id: layout.sort.id,
                         desc: !layout.sort.desc,

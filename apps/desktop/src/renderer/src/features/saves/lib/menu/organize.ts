@@ -33,11 +33,16 @@ import { notify } from "@/shared/lib/toast";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 
-function buildFolderItems(ids: string[], batch: boolean): MenuItemSpec[] {
+function buildFolderItems(
+  ids: Array<string>,
+  batch: boolean,
+): Array<MenuItemSpec> {
   const counts = new Map<string, number>();
-  for (const id of ids)
-    for (const folder of saveLibraryBridge.foldersForSave(id))
+  for (const id of ids) {
+    for (const folder of saveLibraryBridge.foldersForSave(id)) {
       counts.set(folder.id, (counts.get(folder.id) ?? 0) + 1);
+    }
+  }
   return [
     ...buildFolderTreeMenu(
       saveLibraryBridge.foldersSnapshot(),
@@ -65,7 +70,7 @@ function buildFolderItems(ids: string[], batch: boolean): MenuItemSpec[] {
   ];
 }
 
-export function buildCanvasItems(ids: string[]): MenuItemSpec[] {
+export function buildCanvasItems(ids: Array<string>): Array<MenuItemSpec> {
   return [
     ...saveLibraryBridge.canvasesSnapshot().map((canvas): MenuItemSpec => {
       const onCanvas = new Set(canvas.saveIds);
@@ -89,7 +94,10 @@ export function buildCanvasItems(ids: string[]): MenuItemSpec[] {
   ];
 }
 
-function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
+function buildAddItems(
+  ids: Array<string>,
+  batch: boolean,
+): Array<MenuItemSpec> {
   const lastFolderId = saveLibraryBridge.lastUsedFolderId();
   const lastFolder = lastFolderId
     ? (saveLibraryBridge
@@ -112,7 +120,9 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
       hidden: !lastFolder,
       shortcut: shortcutGlyphs("save.add-to-last-folder"),
       onClick: () => {
-        if (lastFolder) void assignSavesToFolder(ids, lastFolder);
+        if (lastFolder) {
+          void assignSavesToFolder(ids, lastFolder);
+        }
       },
     },
     {
@@ -140,17 +150,18 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
         void window.pond
           .query("saves.copyToLibrary", { ids })
           .then((result) => {
-            if (result.ok)
+            if (result.ok) {
               notify({
                 id: "library-copy",
                 title: "Saves copied to library",
                 description: `${result.imported ?? 0} copied, ${result.skipped ?? 0} already in this library.`,
               });
-            else if (result.reason !== "cancelled")
+            } else if (result.reason !== "cancelled") {
               notify({
                 id: "library-copy",
                 title: result.error || "Couldn't copy saves",
               });
+            }
           })
           .catch(() =>
             notify({ id: "library-copy", title: "Couldn't copy saves" }),
@@ -161,8 +172,8 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
 }
 
 export interface OrganizeMenuItems {
-  destinations: MenuItemSpec[];
-  editing: MenuItemSpec[];
+  destinations: Array<MenuItemSpec>;
+  editing: Array<MenuItemSpec>;
 }
 
 export function buildOrganizeItems(
@@ -210,8 +221,11 @@ export function buildOrganizeItems(
         disabled: clipboardEmpty,
         shortcut: shortcutGlyphs("save.paste-tags"),
         onClick: () => {
-          if (batch) void pasteTagsForSelection(ids);
-          else void pasteTags(save);
+          if (batch) {
+            void pasteTagsForSelection(ids);
+          } else {
+            void pasteTags(save);
+          }
         },
       },
       {
@@ -219,7 +233,9 @@ export function buildOrganizeItems(
         icon: glyph(IconPinTack),
         hidden: !inFolder || batch,
         onClick: () => {
-          if (!resolvedFolderId) return;
+          if (!resolvedFolderId) {
+            return;
+          }
           const next = isPinned
             ? resolvedPinned.filter((id) => id !== save.id)
             : [save.id, ...resolvedPinned.filter((id) => id !== save.id)];
@@ -233,7 +249,9 @@ export function buildOrganizeItems(
         icon: glyph(IconImage),
         hidden: !inFolder || batch,
         onClick: () => {
-          if (!resolvedFolderId) return;
+          if (!resolvedFolderId) {
+            return;
+          }
           void saveLibraryBridge.saveFolderPresentation(resolvedFolderId, {
             coverSaveId: isCover ? null : save.id,
           });

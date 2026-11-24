@@ -1,8 +1,7 @@
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
 import { findEaglePreviewOriginal } from "./library-integrity";
 
@@ -11,14 +10,18 @@ function nativeAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
 
-const opened: Database.Database[] = [];
+const opened: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of opened.splice(0)) db.close();
+  for (const db of opened.splice(0)) {
+    db.close();
+  }
 });
 
 const INSERT =
@@ -37,7 +40,7 @@ function library(
   opened.push(raw);
   initializePondSchema(raw, () => false);
   const insert = raw.prepare(INSERT);
-  for (const row of rows)
+  for (const row of rows) {
     insert.run(
       row.id,
       row.id,
@@ -46,9 +49,13 @@ function library(
       row.mediaType ?? "image",
       row.deletedAt ?? null,
     );
-  return Object.assign(drizzle(raw, { schema: { ...schema, ...events } }), {
-    $raw: raw,
-  });
+  }
+  return Object.assign(
+    drizzle(raw, { schema: { ...libraryTables, ...eventTables } }),
+    {
+      $raw: raw,
+    },
+  );
 }
 
 describe.skipIf(!nativeAvailable())("findEaglePreviewOriginal", () => {

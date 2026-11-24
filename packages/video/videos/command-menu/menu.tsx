@@ -9,12 +9,12 @@ import {
   IconMagnifier,
   IconTrashXmark,
 } from "@pond/icons";
-import {
-  type MatchRange,
-  type PaletteEntry,
-  type PaletteRow,
-  type PaletteState,
-  PaletteThumb,
+import { PaletteThumb } from "@pond/video";
+import type {
+  MatchRange,
+  PaletteEntry,
+  PaletteRow,
+  PaletteState,
 } from "@pond/video";
 import {
   MIN_SCORE,
@@ -23,15 +23,14 @@ import {
 import {
   APPLY_VIEW,
   COMMANDS,
-  type Command,
   FOLDERS,
   media,
   RECENT,
   SAVES,
-  type Shot,
   VIEWS,
   WICKER,
 } from "./data";
+import type { Command, Shot } from "./data";
 import { CUES } from "./timeline";
 
 interface Item extends PaletteEntry {
@@ -44,7 +43,7 @@ interface Item extends PaletteEntry {
 interface Ranked {
   item: Item;
   score: number;
-  ranges: readonly MatchRange[];
+  ranges: ReadonlyArray<MatchRange>;
 }
 
 const KEYWORD_SAVE_WEIGHT = 0.95;
@@ -75,14 +74,14 @@ function command(spec: Command): Item {
 
 const COMMAND_ITEMS = [...COMMANDS.map(command), command(APPLY_VIEW)];
 
-const FOLDER_ITEMS: Item[] = FOLDERS.map((folder) => ({
+const FOLDER_ITEMS: Array<Item> = FOLDERS.map((folder) => ({
   id: `folder:${folder.name}`,
   group: "Folders",
   label: folder.name,
   icon: <IconFolder aria-hidden />,
 }));
 
-const VIEW_ITEMS: Item[] = VIEWS.map((name) => ({
+const VIEW_ITEMS: Array<Item> = VIEWS.map((name) => ({
   id: `view:${name}`,
   group: "Saved Views",
   label: name,
@@ -106,9 +105,11 @@ function save(shot: Shot, id: string, group: string, rank = 0): Item {
 const fold = (text: string) => text.toLowerCase();
 
 /** Keyword hits as the library's full-text search returns them: titles with a word that starts with the query. */
-function keywordHits(query: string): Item[] {
+function keywordHits(query: string): Array<Item> {
   const q = fold(query.trim());
-  if (q.length < 2) return [];
+  if (q.length < 2) {
+    return [];
+  }
   return SAVES.filter((shot) =>
     fold(shot.title)
       .split(/[\s,]+/)
@@ -119,17 +120,21 @@ function keywordHits(query: string): Item[] {
 }
 
 /** `rank.ts` `rankEntries`. */
-function rank(items: readonly Item[], query: string): Ranked[] {
+function rank(items: ReadonlyArray<Item>, query: string): Array<Ranked> {
   const trimmed = query.trim();
-  if (!trimmed) return items.map((item) => ({ item, score: 1, ranges: [] }));
-  const ranked: Ranked[] = [];
+  if (!trimmed) {
+    return items.map((item) => ({ item, score: 1, ranges: [] }));
+  }
+  const ranked: Array<Ranked> = [];
   for (const item of items) {
     const match = matchItem(item, trimmed);
     const weight = item.scoreWeight ?? 1;
     const matched =
       !match || weight === 0 ? 0 : match.score === 1 ? 1 : match.score * weight;
     const score = Math.max(matched, item.scoreFloor ?? 0);
-    if (score < MIN_SCORE) continue;
+    if (score < MIN_SCORE) {
+      continue;
+    }
     ranked.push({ item, score, ranges: match?.ranges ?? [] });
   }
   return ranked;
@@ -137,25 +142,32 @@ function rank(items: readonly Item[], query: string): Ranked[] {
 
 /** `rank.ts` `buildModel`, without the status row. */
 function rows(
-  ranked: readonly Ranked[],
+  ranked: ReadonlyArray<Ranked>,
   byScore: boolean,
   limits: Record<string, number> = {},
-): PaletteRow[] {
-  const groups = new Map<string, Ranked[]>();
+): Array<PaletteRow> {
+  const groups = new Map<string, Array<Ranked>>();
   for (const entry of ranked) {
     const list = groups.get(entry.item.group);
-    if (list) list.push(entry);
-    else groups.set(entry.item.group, [entry]);
+    if (list) {
+      list.push(entry);
+    } else {
+      groups.set(entry.item.group, [entry]);
+    }
   }
   const ordered = [...groups];
   if (byScore) {
-    for (const [, list] of ordered) list.sort((a, b) => b.score - a.score);
+    for (const [, list] of ordered) {
+      list.sort((a, b) => b.score - a.score);
+    }
     ordered.sort(([, a], [, b]) => (b[0]?.score ?? 0) - (a[0]?.score ?? 0));
   }
-  const out: PaletteRow[] = [];
+  const out: Array<PaletteRow> = [];
   let index = 0;
   for (const [label, list] of ordered) {
-    if (label) out.push({ kind: "group", label, divided: out.length > 0 });
+    if (label) {
+      out.push({ kind: "group", label, divided: out.length > 0 });
+    }
     for (const entry of list.slice(0, limits[label] ?? list.length)) {
       out.push({
         kind: "entry",
@@ -209,7 +221,7 @@ const action = (
 });
 
 /** `save-actions.tsx` for a web save with a file on disk. */
-const ACTIONS: Item[] = [
+const ACTIONS: Array<Item> = [
   action("Open Save", "view show", <IconArrowUpRight aria-hidden />),
   action("Reveal in Finder", "show file disk", <IconFolderOpen aria-hidden />),
   action("Open in Browser", "link website", <IconExternalLink aria-hidden />),
@@ -239,7 +251,7 @@ function actions(at: number, query: string): PaletteState {
   };
 }
 
-const ADD_ITEMS: Item[] = FOLDERS.map((folder) => ({
+const ADD_ITEMS: Array<Item> = FOLDERS.map((folder) => ({
   id: `add:${folder.name}`,
   group: "",
   label: folder.name,
@@ -266,10 +278,12 @@ function typed(
   step: number,
   make: (at: number, query: string) => PaletteState,
 ) {
-  return [...text].map((_, i) => make(start + i * step, text.slice(0, i + 1)));
+  return Array.from(text).map((_, i) =>
+    make(start + i * step, text.slice(0, i + 1)),
+  );
 }
 
-export const STATES: PaletteState[] = [
+export const STATES: Array<PaletteState> = [
   root(CUES.menuOpen, ""),
   ...typed("setings", CUES.typoType, CUES.letter, root),
   root(CUES.selectAll, "setings", { selected: true }),

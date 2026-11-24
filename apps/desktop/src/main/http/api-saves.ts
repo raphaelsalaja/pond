@@ -2,15 +2,8 @@ import type { ApiSave } from "@pond/schema/api";
 import { saveFolders, saves } from "@pond/schema/db";
 import { durationProjection } from "@pond/schema/filters/fields";
 import { pickCardFile } from "@shared/save-file-names";
-import {
-  and,
-  desc,
-  inArray,
-  isNull,
-  type SQL,
-  type SQLWrapper,
-  sql,
-} from "drizzle-orm";
+import { and, desc, inArray, isNull, sql } from "drizzle-orm";
+import type { SQL, SQLWrapper } from "drizzle-orm";
 import { PondError } from "../lib/pond-error";
 import type { ApiRuntime } from "./api-runtime";
 
@@ -51,10 +44,14 @@ interface Selection {
   offset?: number;
 }
 
-async function folderMap(runtime: ApiRuntime, ids: readonly string[]) {
-  const map = new Map<string, string[]>();
-  if (!ids.length) return map;
-  const rows = await (await runtime.getDb())
+async function folderMap(runtime: ApiRuntime, ids: ReadonlyArray<string>) {
+  const map = new Map<string, Array<string>>();
+  if (!ids.length) {
+    return map;
+  }
+  const rows = await (
+    await runtime.getDb()
+  )
     .select({ saveId: saveFolders.saveId, folderId: saveFolders.folderId })
     .from(saveFolders)
     .where(inArray(saveFolders.saveId, [...ids]));
@@ -67,7 +64,7 @@ async function folderMap(runtime: ApiRuntime, ids: readonly string[]) {
 export async function selectApiSaves(
   runtime: ApiRuntime,
   selection: Selection,
-): Promise<ApiSave[]> {
+): Promise<Array<ApiSave>> {
   const db = await runtime.getDb();
   const base = db
     .select(COLUMNS)
@@ -120,10 +117,12 @@ export async function selectApiSaves(
 /** Hydrates saves in the order of `ids`, skipping ones that no longer exist. */
 export async function apiSavesByIds(
   runtime: ApiRuntime,
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   options: { includeDeleted?: boolean } = {},
-): Promise<ApiSave[]> {
-  if (!ids.length) return [];
+): Promise<Array<ApiSave>> {
+  if (!ids.length) {
+    return [];
+  }
   const rows = await selectApiSaves(runtime, {
     where: and(
       inArray(saves.id, [...ids]),
@@ -137,18 +136,21 @@ export async function apiSavesByIds(
 /** Throws `save_not_found` naming every id that doesn't exist. */
 export async function requireSaves(
   runtime: ApiRuntime,
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   const unique = [...new Set(ids)];
-  const rows = await (await runtime.getDb())
+  const rows = await (
+    await runtime.getDb()
+  )
     .select({ id: saves.id })
     .from(saves)
     .where(inArray(saves.id, unique));
   const found = new Set(rows.map((row) => row.id));
   const missing = unique.filter((id) => !found.has(id));
-  if (missing.length)
+  if (missing.length) {
     throw new PondError(
       "save_not_found",
       `No Save has the id ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? ` and ${missing.length - 5} more` : ""}.`,
     );
+  }
 }

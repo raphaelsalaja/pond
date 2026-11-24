@@ -32,16 +32,22 @@ async function renderDialog(
     configurable: true,
   });
   vi.resetModules();
-  const calls: string[] = [];
+  const calls: Array<string> = [];
   vi.stubGlobal("pond", {
     async query(name: string) {
       calls.push(name);
       if (name === "extension.safariStatus") {
-        if (!status) throw new Error("status unavailable");
+        if (!status) {
+          throw new Error("status unavailable");
+        }
         return status;
       }
-      if (name === "extension.openSafariSettings") return settingsResult;
-      if (name === "extension.openSafari") return { ok: true };
+      if (name === "extension.openSafariSettings") {
+        return settingsResult;
+      }
+      if (name === "extension.openSafari") {
+        return { ok: true };
+      }
       throw new Error(`Unexpected query: ${name}`);
     },
     async openExternal() {
@@ -66,7 +72,9 @@ async function renderDialog(
       const button = [...document.body.querySelectorAll("button")].find(
         (candidate) => candidate.textContent?.trim() === label,
       );
-      if (!button) throw new Error(`No button labelled ${label}`);
+      if (!button) {
+        throw new Error(`No button labelled ${label}`);
+      }
       await act(async () => button.click());
     },
     async cleanup() {

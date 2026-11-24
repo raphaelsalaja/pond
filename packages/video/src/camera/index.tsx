@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { type Key, keyed } from "../motion";
+import { keyed } from "../motion";
+import type { Key } from "../motion";
 import { WIDTH } from "../video";
 import styles from "./styles.module.css";
 
@@ -14,7 +15,7 @@ export const WHOLE: Crop = { x: 0, y: 0, width: WIDTH };
 
 interface CameraProps {
   t: number;
-  keys: readonly Key<Crop>[];
+  keys: ReadonlyArray<Key<Crop>>;
   opacity?: number;
   children: ReactNode;
 }

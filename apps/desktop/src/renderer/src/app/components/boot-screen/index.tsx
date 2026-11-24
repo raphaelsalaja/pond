@@ -16,7 +16,9 @@ export function BootScreen() {
   const ready = savesReady && foldersReady && prefsReady && !libraryPending;
 
   useEffect(() => {
-    if (!ready) return;
+    if (!ready) {
+      return;
+    }
     dismissBootCover();
   }, [ready]);
 

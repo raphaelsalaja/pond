@@ -1,6 +1,9 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, type ReactNode } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SourceActivity } from "./activity";
 import { SourceSchedule } from "./schedule";
@@ -33,7 +36,9 @@ async function render(node: ReactNode) {
 
 it("pauses scheduled fetches for one source", async () => {
   const query = vi.fn(async (name: string) => {
-    if (name === "sources.setSchedule") return { ok: true };
+    if (name === "sources.setSchedule") {
+      return { ok: true };
+    }
     throw new Error(name);
   });
   vi.stubGlobal("pond", { query });
@@ -47,7 +52,9 @@ it("pauses scheduled fetches for one source", async () => {
     />,
   );
   const toggle = host.querySelector('[aria-label="Automatic Fetching"]');
-  if (!(toggle instanceof HTMLElement)) throw new Error("Missing switch");
+  if (!isHTMLElement(toggle)) {
+    throw new Error("Missing switch");
+  }
   expect(toggle.getAttribute("aria-checked")).toBe("true");
   expect(host.textContent).toContain("Every 6 Hours");
   await act(async () => toggle.click());
@@ -64,7 +71,9 @@ it("pauses scheduled fetches for one source", async () => {
 it("lists each fetch with what it found", async () => {
   vi.stubGlobal("pond", {
     query: async (name: string) => {
-      if (name !== "sync.history") throw new Error(name);
+      if (name !== "sync.history") {
+        throw new Error(name);
+      }
       return {
         runs: [
           {
@@ -74,7 +83,7 @@ it("lists each fetch with what it found", async () => {
             accountId: "acc-1",
             trigger: "cron",
             outcome: "ok",
-            durationMs: 4_000,
+            durationMs: 4000,
             harvest: { seen: 40, fresh: 12, recovery: 0 },
             enqueue: { succeeded: 12, failed: 0 },
             error: null,

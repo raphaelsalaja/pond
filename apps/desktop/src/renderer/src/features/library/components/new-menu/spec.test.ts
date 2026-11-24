@@ -9,7 +9,7 @@ import {
 } from "@/shared/test/menu-labels";
 import { buildNewMenuItems } from "./spec";
 
-function rows(items: MenuItemSpec[]): string[] {
+function rows(items: Array<MenuItemSpec>): Array<string> {
   return items.map((item) =>
     "label" in item
       ? [...("breadcrumb" in item ? (item.breadcrumb ?? []) : []), item.label]
@@ -130,7 +130,9 @@ describe("new menu spec", () => {
     const [newMenu] = buildNewMenuItems(["excel"], {
       excel: "data:image/png;base64,excel",
     });
-    if (newMenu?.type !== "submenu") throw new Error("Missing New submenu");
+    if (newMenu?.type !== "submenu") {
+      throw new Error("Missing New submenu");
+    }
     const excel = newMenu.items.find(
       (item) => "id" in item && item.id === "excel",
     );

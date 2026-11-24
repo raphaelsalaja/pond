@@ -1,8 +1,8 @@
 import { MotionConfig } from "motion/react";
 import type { ReactNode } from "react";
+import { Prompt } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Prompt } from ".";
 
 function Frame({ children }: { children: ReactNode }) {
   return (
@@ -110,7 +110,8 @@ export const docs: ComponentDocs = {
             <Prompt.Body>
               <Prompt.Title>Empty Trash?</Prompt.Title>
               <Prompt.Description>
-                Every save in Trash is deleted for good. You can't undo this.
+                Every save in Trash is deleted for good. You can&apos;t undo
+                this.
               </Prompt.Description>
             </Prompt.Body>
             <Prompt.Footer>

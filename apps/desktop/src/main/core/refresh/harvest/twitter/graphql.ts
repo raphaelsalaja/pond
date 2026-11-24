@@ -290,7 +290,7 @@ export interface RichTweet {
   bookmarkedAt?: string;
   fullText: string;
   author: { handle: string; name: string; avatarUrl?: string };
-  media: RichTweetMedia[];
+  media: Array<RichTweetMedia>;
   metrics: RichTweetMetrics;
   quoted?: RichTweet;
   replyTo?: { tweetId: string; url: string; handle: string };
@@ -299,15 +299,15 @@ export interface RichTweet {
 }
 
 export function parseBookmarksResponses(
-  captures: BookmarksCapture[],
+  captures: Array<BookmarksCapture>,
 ): Map<string, RichTweet> {
   const out = new Map<string, RichTweet>();
   for (const cap of captures) {
     let json: unknown;
     try {
       json = JSON.parse(cap.body);
-    } catch (err) {
-      log.warn("[pond bookmarks] capture body not JSON", cap.url, err);
+    } catch (error) {
+      log.warn("[pond bookmarks] capture body not JSON", cap.url, error);
       continue;
     }
     const env = bookmarksEnvelope.safeParse(json);
@@ -326,10 +326,14 @@ export function parseBookmarksResponses(
       data?.bookmark_collection_timeline?.timeline?.instructions ??
       user?.timeline_v2?.timeline?.instructions ??
       user?.timeline?.timeline?.instructions;
-    if (!instructions) continue;
+    if (!instructions) {
+      continue;
+    }
     for (const entry of iterateAddedEntries(instructions)) {
       const tweet = extractEntryTweet(entry);
-      if (!tweet) continue;
+      if (!tweet) {
+        continue;
+      }
       out.set(tweet.tweetId, tweet);
     }
   }
@@ -337,13 +341,19 @@ export function parseBookmarksResponses(
 }
 
 function* iterateAddedEntries(
-  instructions: TimelineInstruction[],
+  instructions: Array<TimelineInstruction>,
 ): Generator<TimelineEntry> {
   for (const ix of instructions) {
-    if (ix.type !== "TimelineAddEntries") continue;
+    if (ix.type !== "TimelineAddEntries") {
+      continue;
+    }
     for (const entry of ix.entries ?? []) {
-      if (entry.content?.entryType !== "TimelineTimelineItem") continue;
-      if (!entry.entryId?.startsWith("tweet-")) continue;
+      if (entry.content?.entryType !== "TimelineTimelineItem") {
+        continue;
+      }
+      if (!entry.entryId?.startsWith("tweet-")) {
+        continue;
+      }
       yield entry;
     }
   }
@@ -351,14 +361,20 @@ function* iterateAddedEntries(
 
 function extractEntryTweet(entry: TimelineEntry): RichTweet | null {
   const itemContent = entry.content?.itemContent;
-  if (itemContent?.__typename !== "TimelineTweet") return null;
+  if (itemContent?.__typename !== "TimelineTweet") {
+    return null;
+  }
   return resolveTweet(itemContent.tweet_results?.result);
 }
 
 function resolveTweet(raw: NestedNode): RichTweet | null {
-  if (raw === undefined || raw === null) return null;
+  if (raw === undefined || raw === null) {
+    return null;
+  }
   const node = TweetNodeSchema.parse(raw);
-  if (node.__typename === "Tweet") return richTweetFromNode(node);
+  if (node.__typename === "Tweet") {
+    return richTweetFromNode(node);
+  }
   if (node.__typename === "TweetWithVisibilityResults") {
     return richTweetFromNode(TweetNodeSchema.parse(node.tweet ?? {}));
   }
@@ -366,7 +382,9 @@ function resolveTweet(raw: NestedNode): RichTweet | null {
 }
 
 function richTweetFromNode(tweet: TweetNode): RichTweet | null {
-  if (!tweet?.legacy?.id_str) return null;
+  if (!tweet?.legacy?.id_str) {
+    return null;
+  }
   const tweetId = tweet.legacy.id_str;
   const handle = pickAuthorHandle(tweet);
   const avatarUrl = pickAuthorAvatar(tweet);
@@ -376,7 +394,9 @@ function richTweetFromNode(tweet: TweetNode): RichTweet | null {
     handle: handle ?? "",
     name: pickAuthorName(tweet) ?? handle ?? "",
   };
-  if (avatarUrl) author.avatarUrl = avatarUrl;
+  if (avatarUrl) {
+    author.avatarUrl = avatarUrl;
+  }
 
   const rich: RichTweet = {
     tweetId,
@@ -392,7 +412,9 @@ function richTweetFromNode(tweet: TweetNode): RichTweet | null {
       : undefined,
     raw: tweet,
   };
-  if (card) rich.card = card;
+  if (card) {
+    rich.card = card;
+  }
   const replyId = tweet.legacy.in_reply_to_status_id_str;
   const replyHandle = tweet.legacy.in_reply_to_screen_name ?? "";
   if (replyId) {
@@ -411,11 +433,15 @@ function cardBindings(raw: BindingValues): Map<string, CardBinding> {
   const map = new Map<string, CardBinding>();
   if (Array.isArray(raw)) {
     for (const entry of raw) {
-      if (entry.key && entry.value) map.set(entry.key, entry.value);
+      if (entry.key && entry.value) {
+        map.set(entry.key, entry.value);
+      }
     }
   } else if (raw) {
     for (const [key, value] of Object.entries(raw)) {
-      if (value) map.set(key, value);
+      if (value) {
+        map.set(key, value);
+      }
     }
   }
   return map;
@@ -425,19 +451,30 @@ function pickCardImage(map: Map<string, CardBinding>): string | undefined {
   let best: { url: string; score: number } | null = null;
   for (const [key, value] of map) {
     const url = value.image_value?.url;
-    if (url === undefined || url.length === 0) continue;
-    if (!/image/i.test(key)) continue;
+    if (url === undefined || url.length === 0) {
+      continue;
+    }
+    if (!/image/i.test(key)) {
+      continue;
+    }
     let score = value.image_value?.width ?? 0;
-    if (/original/i.test(key)) score += 100_000;
-    else if (/large/i.test(key)) score += 50_000;
-    if (!best || score > best.score) best = { url, score };
+    if (/original/i.test(key)) {
+      score += 100_000;
+    } else if (/large/i.test(key)) {
+      score += 50_000;
+    }
+    if (!best || score > best.score) {
+      best = { url, score };
+    }
   }
   return best?.url;
 }
 
 function pickCard(tweet: TweetNode): RichTweetCard | undefined {
   const legacy = tweet.card?.legacy;
-  if (!legacy) return undefined;
+  if (!legacy) {
+    return undefined;
+  }
   const map = cardBindings(legacy.binding_values);
   const str = (k: string): string | undefined => {
     const v = map.get(k)?.string_value;
@@ -450,14 +487,28 @@ function pickCard(tweet: TweetNode): RichTweetCard | undefined {
   const imageUrl = pickCardImage(map);
   const large = legacy.name === "summary_large_image";
 
-  if (!title && !imageUrl && !url) return undefined;
+  if (!title && !imageUrl && !url) {
+    return undefined;
+  }
   const card: RichTweetCard = {};
-  if (url) card.url = url;
-  if (domain) card.domain = domain;
-  if (title) card.title = title;
-  if (description) card.description = description;
-  if (imageUrl) card.imageUrl = imageUrl;
-  if (large) card.large = large;
+  if (url) {
+    card.url = url;
+  }
+  if (domain) {
+    card.domain = domain;
+  }
+  if (title) {
+    card.title = title;
+  }
+  if (description) {
+    card.description = description;
+  }
+  if (imageUrl) {
+    card.imageUrl = imageUrl;
+  }
+  if (large) {
+    card.large = large;
+  }
   return card;
 }
 
@@ -482,7 +533,9 @@ function expandShortUrls(
   const quotedShortUrl = tweet.legacy?.quoted_status_permalink?.url;
   let out = text;
   for (const { url, expanded_url } of urls ?? []) {
-    if (!url || !expanded_url || url === quotedShortUrl) continue;
+    if (!url || !expanded_url || url === quotedShortUrl) {
+      continue;
+    }
     out = out.replaceAll(url, expanded_url);
   }
   return out;
@@ -501,21 +554,27 @@ function pickAuthorName(tweet: TweetNode): string | null {
 function pickAuthorAvatar(tweet: TweetNode): string | null {
   const user = tweet.core?.user_results?.result;
   const raw = user?.avatar?.image_url ?? user?.legacy?.profile_image_url_https;
-  if (raw === undefined || raw.length === 0) return null;
+  if (raw === undefined || raw.length === 0) {
+    return null;
+  }
   return raw.replace(/_normal(\.(?:jpg|jpeg|png|webp))/i, "_400x400$1");
 }
 
-function pickMedia(tweet: TweetNode): RichTweetMedia[] {
+function pickMedia(tweet: TweetNode): Array<RichTweetMedia> {
   const list =
     tweet.legacy?.extended_entities?.media ??
     tweet.legacy?.entities?.media ??
     [];
-  const out: RichTweetMedia[] = [];
+  const out: Array<RichTweetMedia> = [];
   const seen = new Set<string>();
   for (const item of list) {
     const mapped = mapMedia(item);
-    if (!mapped) continue;
-    if (seen.has(mapped.url)) continue;
+    if (!mapped) {
+      continue;
+    }
+    if (seen.has(mapped.url)) {
+      continue;
+    }
     seen.add(mapped.url);
     out.push(mapped);
   }
@@ -525,7 +584,9 @@ function pickMedia(tweet: TweetNode): RichTweetMedia[] {
 type MediaEntry = z.infer<typeof MediaEntrySchema>;
 
 function mapMedia(item: MediaEntry): RichTweetMedia | null {
-  if (!item.media_url_https) return null;
+  if (!item.media_url_https) {
+    return null;
+  }
   const dims = pickDims(item);
   if (item.type === "video" || item.type === "animated_gif") {
     const best = pickBestVariant(item.video_info?.variants);
@@ -540,7 +601,9 @@ function mapMedia(item: MediaEntry): RichTweetMedia | null {
       media.width = dims.width;
       media.height = dims.height;
     }
-    if (ms !== undefined && ms > 0) media.durationSec = ms / 1000;
+    if (ms !== undefined && ms > 0) {
+      media.durationSec = ms / 1000;
+    }
     return media;
   }
   const image: RichTweetMedia = {
@@ -574,11 +637,17 @@ function pickDims(
 function pickBestVariant(
   variants: Array<{ bitrate?: number; url?: string }> | undefined,
 ): string | null {
-  if (!variants || variants.length === 0) return null;
+  if (!variants || variants.length === 0) {
+    return null;
+  }
   let best: { bitrate?: number; url?: string } | null = null;
   for (const v of variants) {
-    if (!v.url) continue;
-    if (!best || (v.bitrate ?? 0) > (best.bitrate ?? 0)) best = v;
+    if (!v.url) {
+      continue;
+    }
+    if (!best || (v.bitrate ?? 0) > (best.bitrate ?? 0)) {
+      best = v;
+    }
   }
   return best?.url ?? null;
 }
@@ -590,7 +659,9 @@ function upgradeTwimg(url: string): string {
       u.searchParams.set("name", "orig");
       return u.toString();
     }
-  } catch {}
+  } catch {
+    /** An unparseable URL is kept as given. */
+  }
   return url;
 }
 

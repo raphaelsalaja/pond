@@ -1,6 +1,7 @@
 import { Dialog } from "@pond/ui";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ChatActions } from "./chat-actions";
 
@@ -48,7 +49,9 @@ async function render(disabled = false, chatId: string | null = "chat") {
 }
 async function openMenu() {
   const trigger = item("Fish Actions");
-  if (!trigger) throw new Error("Missing Fish Actions");
+  if (!trigger) {
+    throw new Error("Missing Fish Actions");
+  }
   await act(async () => trigger.click());
 }
 function item(label: string) {
@@ -88,8 +91,9 @@ it.each([true, false])(
       "Copy Conversation",
       "Export Markdown",
       "Clear Conversation",
-    ])
+    ]) {
       expect(menuItem(label)?.hasAttribute("data-disabled")).toBe(true);
+    }
   },
 );
 it("requires confirmation before deleting and supports cancellation", async () => {

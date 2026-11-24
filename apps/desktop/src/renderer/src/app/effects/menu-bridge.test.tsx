@@ -1,7 +1,8 @@
 import { PrefsSchema } from "@pond/schema";
 import type { MenuActionEvent } from "@shared/constants";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import { libraryChrome } from "@/features/library/state/library-chrome";

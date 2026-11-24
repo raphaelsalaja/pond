@@ -1,5 +1,6 @@
 import { Badge, Toggle, Tooltip } from "@pond/ui";
-import { type ReactNode, useRef } from "react";
+import { useRef } from "react";
+import type { ReactNode } from "react";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import type { ShortcutId } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
@@ -44,7 +45,9 @@ export function Item({
         aria-current={current ? "page" : undefined}
         onPointerDown={(event) => {
           /** Switching on press hides the press-to-release gap; Control-click opens the context menu on macOS. */
-          if (event.button !== 0 || event.ctrlKey) return;
+          if (event.button !== 0 || event.ctrlKey) {
+            return;
+          }
           pressed.current = true;
           onSelect();
         }}
@@ -53,7 +56,9 @@ export function Item({
         }}
         onClick={() => {
           /** Keyboard and accessibility activation click without a pointer press first. */
-          if (!pressed.current) onSelect();
+          if (!pressed.current) {
+            onSelect();
+          }
           pressed.current = false;
         }}
       >

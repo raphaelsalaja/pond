@@ -5,7 +5,7 @@ const ICON_HEIGHT = 76;
 const ICON_SCALE = 2;
 
 export function saveDragIconSvg(
-  thumbnailDataUrls: readonly (string | null)[],
+  thumbnailDataUrls: ReadonlyArray<string | null>,
   count: number,
 ): string {
   const thumbnails = thumbnailDataUrls.slice(0, 3);
@@ -38,7 +38,9 @@ export function saveDragIconSvg(
 }
 
 async function previewDataUrl(path: string | null): Promise<string | null> {
-  if (!path) return null;
+  if (!path) {
+    return null;
+  }
   try {
     const png = await sharp(path, { failOn: "none", pages: 1 })
       .rotate()
@@ -53,11 +55,13 @@ async function previewDataUrl(path: string | null): Promise<string | null> {
 
 /** Returns a PNG at 2x, or null when sharp can't rasterize, so the caller falls back to the file's icon. */
 export async function renderSaveDragIcon(
-  previews: readonly (string | null)[],
+  previews: ReadonlyArray<string | null>,
   count: number,
 ): Promise<Buffer | null> {
   const dataUrls = await Promise.all(previews.slice(0, 3).map(previewDataUrl));
-  if (count <= 1 && !dataUrls[0]) return null;
+  if (count <= 1 && !dataUrls[0]) {
+    return null;
+  }
   try {
     return await sharp(Buffer.from(saveDragIconSvg(dataUrls, count)), {
       density: 72 * ICON_SCALE,

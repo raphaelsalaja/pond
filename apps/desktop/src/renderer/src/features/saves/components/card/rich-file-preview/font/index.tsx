@@ -12,7 +12,7 @@ export function FontCardPreview({
   view?: LibraryCardView;
 }) {
   const family = useMemo(
-    () => `pond-card-${saveId.replace(/[^a-zA-Z0-9_-]/g, "")}`,
+    () => `pond-card-${saveId.replaceAll(/[^a-zA-Z0-9_-]/g, "")}`,
     [saveId],
   );
   const [loaded, setLoaded] = useState(false);
@@ -23,7 +23,9 @@ export function FontCardPreview({
     void face
       .load()
       .then((font) => {
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         document.fonts.add(font);
         setLoaded(true);
       })

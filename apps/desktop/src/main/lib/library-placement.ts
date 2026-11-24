@@ -28,8 +28,12 @@ export function classifyLibraryPlacement(
   open: LibraryAnchor,
   observed: LibraryObservation,
 ): LibraryPlacement {
-  if (!observed.rootExists || observed.metadataId == null) return "missing";
-  if (observed.metadataId !== open.libraryId) return "replaced";
+  if (!observed.rootExists || observed.metadataId === null) {
+    return "missing";
+  }
+  if (observed.metadataId !== open.libraryId) {
+    return "replaced";
+  }
   return "present";
 }
 
@@ -41,7 +45,7 @@ export function observeLibrarySync(root: string): LibraryObservation {
   } catch {
     return { rootExists: false, metadataId: null };
   }
-  let metadataId: string | null = null;
+  let metadataId: string | null;
   try {
     metadataId = readLibraryId(root);
   } catch {
@@ -56,7 +60,9 @@ export function currentLibraryAnchor(): LibraryAnchor | null {
 
 export function pinOpenLibrary(root: string, libraryId: string): void {
   const observed = observeLibrarySync(root);
-  if (!observed.rootExists || observed.metadataId !== libraryId) return;
+  if (!observed.rootExists || observed.metadataId !== libraryId) {
+    return;
+  }
   anchor = { root, libraryId };
   displacedRoot = null;
 }
@@ -77,7 +83,9 @@ export function resetLibraryPlacement(): void {
 export function refreshLibraryPlacement(
   root: string,
 ): LibraryPlacement | "unpinned" {
-  if (!anchor || !isSamePath(anchor.root, root)) return "unpinned";
+  if (!anchor || !isSamePath(anchor.root, root)) {
+    return "unpinned";
+  }
   const placement = classifyLibraryPlacement(anchor, observeLibrarySync(root));
   if (placement === "present") {
     displacedRoot = null;
@@ -89,16 +97,22 @@ export function refreshLibraryPlacement(
 
 export function libraryWriteBlock(root: string): string | null {
   const placement = refreshLibraryPlacement(root);
-  if (placement === "present" || placement === "unpinned") return null;
+  if (placement === "present" || placement === "unpinned") {
+    return null;
+  }
   return placement === "replaced" ? REPLACED_LIBRARY : MISSING_LIBRARY;
 }
 
 function noteDisplaced(root: string): void {
-  if (displacedRoot != null && isSamePath(displacedRoot, root)) return;
+  if (displacedRoot !== null && isSamePath(displacedRoot, root)) {
+    return;
+  }
   displacedRoot = root;
   const current = [...listeners];
   /** Defer so a save already inside the mutation queue can finish before rows are retired. */
   setImmediate(() => {
-    for (const listener of current) listener(root);
+    for (const listener of current) {
+      listener(root);
+    }
   });
 }

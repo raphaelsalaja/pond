@@ -13,7 +13,7 @@ export interface PondOperation {
 }
 
 export interface OperationCatalog {
-  operations: readonly PondOperation[];
+  operations: ReadonlyArray<PondOperation>;
   libraryId: () => string;
 }
 
@@ -21,8 +21,9 @@ let registered: OperationCatalog = { operations: [], libraryId: () => "" };
 
 export function registerPondOperations(catalog: OperationCatalog): void {
   const names = new Set(catalog.operations.map((operation) => operation.name));
-  if (names.size !== catalog.operations.length)
+  if (names.size !== catalog.operations.length) {
     throw new Error("Duplicate Pond operation names.");
+  }
   registered = catalog;
 }
 
@@ -30,11 +31,11 @@ export function pondOperationCatalog(): OperationCatalog {
   return registered;
 }
 
-let external: () => readonly PondOperation[] = () => [];
+let external: () => ReadonlyArray<PondOperation> = () => [];
 
 /** MCP tools join only the Fish catalog; the Local API's `/operations` keeps the base catalog. */
 export function registerExternalOperations(
-  source: () => readonly PondOperation[],
+  source: () => ReadonlyArray<PondOperation>,
 ): void {
   external = source;
 }
@@ -52,11 +53,12 @@ export function fishOperationCatalog(): OperationCatalog {
 
 function findOperation(name: string, catalog: OperationCatalog) {
   const operation = catalog.operations.find((entry) => entry.name === name);
-  if (!operation)
+  if (!operation) {
     throw new PondError(
       "operation_not_found",
       `Pond operation unavailable: ${name}`,
     );
+  }
   return operation;
 }
 
@@ -64,11 +66,12 @@ export async function applyPondOperation(
   request: AgentOperationRequest,
   catalog = fishOperationCatalog(),
 ): Promise<JsonValue> {
-  if (catalog.libraryId() !== request.libraryId)
+  if (catalog.libraryId() !== request.libraryId) {
     throw new PondError(
       "library_mismatch",
       "The Library changed. Request this operation again.",
     );
+  }
   const operation = findOperation(request.operation, catalog);
   operation.inputSchema.parse(request.arguments);
   const result = await operation.execute(request.arguments);
@@ -79,13 +82,14 @@ export async function applyPondOperation(
       reason: z.string().optional(),
     })
     .safeParse(result);
-  if (failure.success)
+  if (failure.success) {
     throw new PondError(
       "operation_failed",
       failure.data.error ??
         failure.data.reason ??
         "The operation did not finish.",
     );
+  }
   return result;
 }
 
@@ -98,7 +102,7 @@ const describeInput = z.object({ operation: z.string().min(1) });
 const resultInput = z.object({
   resultId: z.string().min(1),
   offset: z.number().int().min(0).default(0),
-  limit: z.number().int().min(1).max(16_000).default(8_000),
+  limit: z.number().int().min(1).max(16_000).default(8000),
 });
 
 export function summarizeOperationResult(result: JsonValue): JsonValue {
@@ -134,7 +138,7 @@ export function pondOperationTools(
     ) => string;
   },
   catalog?: OperationCatalog,
-): ToolSpec[] {
+): Array<ToolSpec> {
   const current = () => catalog ?? fishOperationCatalog();
   const origin = current().libraryId();
   const results = new Map<string, string>();
@@ -206,8 +210,9 @@ export function pondOperationTools(
       schema: runInput,
       execute: async (args) => {
         input.signal.throwIfAborted();
-        if (current().libraryId() !== origin)
+        if (current().libraryId() !== origin) {
           throw new Error("The Library changed. Start a new request.");
+        }
         const parsed = runInput.parse(args);
         const operation = findOperation(parsed.operation, current());
         operation.inputSchema.parse(parsed.arguments);
@@ -229,12 +234,16 @@ export function pondOperationTools(
         const result = await applyPondOperation(request, current());
         input.signal.throwIfAborted();
         const text = JSON.stringify(result);
-        if (text.length <= 16_000) return { status: "complete", result };
+        if (text.length <= 16_000) {
+          return { status: "complete", result };
+        }
         const resultId = `result-${++resultSequence}`;
         results.set(resultId, text);
         if (results.size > 4) {
           const oldest = results.keys().next().value;
-          if (oldest) results.delete(oldest);
+          if (oldest) {
+            results.delete(oldest);
+          }
         }
         return {
           status: "complete",
@@ -257,14 +266,16 @@ export function pondOperationTools(
       schema: resultInput,
       execute: async (args) => {
         input.signal.throwIfAborted();
-        if (current().libraryId() !== origin)
+        if (current().libraryId() !== origin) {
           throw new Error("The Library changed. Start a new request.");
+        }
         const { resultId, offset, limit } = resultInput.parse(args);
         const text = results.get(resultId);
-        if (text === undefined)
+        if (text === undefined) {
           throw new Error(
             "This result is no longer available. Use a narrower read query.",
           );
+        }
         return {
           resultId,
           text: text.slice(offset, offset + limit),

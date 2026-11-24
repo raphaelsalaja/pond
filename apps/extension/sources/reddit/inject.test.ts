@@ -93,7 +93,9 @@ describe("isSaveClick", () => {
     document.body.innerHTML =
       '<shreddit-post permalink="/r/test/comments/abc123/title/"><button aria-label="Save"><span>Save</span><svg icon-name="save-outline"></svg></button></shreddit-post>';
     const span = document.querySelector("span");
-    if (!span) throw new Error("missing save label");
+    if (!span) {
+      throw new Error("missing save label");
+    }
     expect(clickIsSave(span)).toBe(true);
   });
 
@@ -101,7 +103,9 @@ describe("isSaveClick", () => {
     document.body.innerHTML =
       '<shreddit-post permalink="/r/test/comments/abc123/title/"><button aria-label="Save"><span>Save</span><svg icon-name="save-fill"></svg></button></shreddit-post>';
     const span = document.querySelector("span");
-    if (!span) throw new Error("missing save label");
+    if (!span) {
+      throw new Error("missing save label");
+    }
     expect(clickIsSave(span)).toBe(false);
   });
 
@@ -109,7 +113,9 @@ describe("isSaveClick", () => {
     document.body.innerHTML =
       '<button aria-label="Save"><svg icon-name="saved"></svg></button>';
     const icon = document.querySelector("svg");
-    if (!icon) throw new Error("missing save icon");
+    if (!icon) {
+      throw new Error("missing save icon");
+    }
     expect(clickIsSave(icon)).toBe(false);
   });
 
@@ -117,7 +123,9 @@ describe("isSaveClick", () => {
     document.body.innerHTML =
       '<shreddit-post saved permalink="/r/test/comments/abc123/title/"><button aria-label="Save"><span>Save</span><svg icon-name="save-outline"></svg></button></shreddit-post>';
     const span = document.querySelector("span");
-    if (!span) throw new Error("missing save label");
+    if (!span) {
+      throw new Error("missing save label");
+    }
     expect(clickIsSave(span)).toBe(false);
   });
 
@@ -125,13 +133,17 @@ describe("isSaveClick", () => {
     document.body.innerHTML =
       '<button aria-label="Save" aria-pressed="true"><span>Remove from saved</span></button>';
     const span = document.querySelector("span");
-    if (!span) throw new Error("missing unsave label");
+    if (!span) {
+      throw new Error("missing unsave label");
+    }
     expect(clickIsSave(span)).toBe(false);
 
     document.body.innerHTML =
       '<button aria-label="Save" aria-pressed="true">Save</button>';
     const pressed = document.querySelector("button");
-    if (!pressed) throw new Error("missing pressed save button");
+    if (!pressed) {
+      throw new Error("missing pressed save button");
+    }
     expect(clickIsSave(pressed)).toBe(false);
   });
 
@@ -143,7 +155,9 @@ describe("isSaveClick", () => {
     root.append(item);
     document.body.append(host);
     const span = item.querySelector("span");
-    if (!span) throw new Error("missing shadow save label");
+    if (!span) {
+      throw new Error("missing shadow save label");
+    }
     expect(clickIsSave(span)).toBe(false);
   });
 });

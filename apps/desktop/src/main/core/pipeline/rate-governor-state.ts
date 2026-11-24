@@ -1,7 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { SOURCES, type Source } from "@pond/schema/db";
-import { type RateProfile, syncConfigFor } from "@pond/schema/sources";
+import { SOURCES } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
+import { syncConfigFor } from "@pond/schema/sources";
+import type { RateProfile } from "@pond/schema/sources";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -45,7 +47,7 @@ export const MULTIPLIER_DECREASE = 0.1;
 
 export const AT_RISK_PARK_MS = 30 * 60_000;
 
-const PERSIST_DEBOUNCE_MS = 3_000;
+const PERSIST_DEBOUNCE_MS = 3000;
 
 const PersistedStateSchema = z.object({
   cooldownUntil: z.record(z.string(), z.number()).catch({}),
@@ -60,7 +62,7 @@ interface PersistedState {
   cooldownUntil: Partial<Record<Source, number>>;
   breakerUntil: Partial<Record<Source, number>>;
   atRisk: Partial<Record<Source, AtRiskState>>;
-  requestLog: Partial<Record<Source, number[]>>;
+  requestLog: Partial<Record<Source, Array<number>>>;
   allPausedUntil: number;
 }
 
@@ -75,7 +77,7 @@ export const breakerCounters = new Map<
   { count: number; firstAt: number }
 >();
 export const atRisk = new Map<Source, AtRiskState>();
-export const requestLog = new Map<Source, number[]>();
+export const requestLog = new Map<Source, Array<number>>();
 export const lastRequestAt = new Map<Source, number>();
 export const multiplier = new Map<Source, number>();
 export const manualPaused = new Set<Source>();
@@ -96,12 +98,14 @@ function statePath(): string {
 }
 
 export function loadState(): void {
-  if (loaded) return;
+  if (loaded) {
+    return;
+  }
   loaded = true;
   let parsed: z.infer<typeof PersistedStateSchema>;
   try {
     parsed = PersistedStateSchema.parse(
-      JSON.parse(readFileSync(statePath(), "utf-8")),
+      JSON.parse(readFileSync(statePath(), "utf8")),
     );
   } catch {
     return;
@@ -110,21 +114,31 @@ export function loadState(): void {
   const t = now();
   for (const [key, until] of Object.entries(parsed.cooldownUntil)) {
     const source = toSource(key);
-    if (source && until > t) cooldownUntil.set(source, until);
+    if (source && until > t) {
+      cooldownUntil.set(source, until);
+    }
   }
   for (const [key, until] of Object.entries(parsed.breakerUntil)) {
     const source = toSource(key);
-    if (source && until > t) breakerUntil.set(source, until);
+    if (source && until > t) {
+      breakerUntil.set(source, until);
+    }
   }
   for (const [key, state] of Object.entries(parsed.atRisk)) {
     const source = toSource(key);
-    if (source) atRisk.set(source, state);
+    if (source) {
+      atRisk.set(source, state);
+    }
   }
   for (const [key, entries] of Object.entries(parsed.requestLog)) {
     const source = toSource(key);
-    if (source) requestLog.set(source, entries.slice(-500));
+    if (source) {
+      requestLog.set(source, entries.slice(-500));
+    }
   }
-  if (parsed.allPausedUntil > t) allPaused = true;
+  if (parsed.allPausedUntil > t) {
+    allPaused = true;
+  }
 
   log.info("[pond governor] loaded persisted state", {
     cooldowns: cooldownUntil.size,
@@ -141,7 +155,9 @@ export function schedulePersist(immediate = false): void {
     writeState();
     return;
   }
-  if (persistTimer) return;
+  if (persistTimer) {
+    return;
+  }
   persistTimer = setTimeout(() => {
     persistTimer = null;
     writeState();
@@ -159,11 +175,12 @@ function writeState(): void {
       allPausedUntil: allPaused ? now() + 365 * 24 * 60 * 60_000 : 0,
     };
     const file = statePath();
-    if (!existsSync(dirname(file)))
+    if (!existsSync(dirname(file))) {
       mkdirSync(dirname(file), { recursive: true });
+    }
     writeFileSync(file, JSON.stringify(body));
-  } catch (err) {
-    log.warn("[pond governor] failed to persist state", err);
+  } catch (error) {
+    log.warn("[pond governor] failed to persist state", error);
   }
 }
 
@@ -191,7 +208,9 @@ export function pauseAll(): void {
     );
     db.$raw
       .transaction(() => {
-        for (const source of SOURCES) upsert.run(source, at);
+        for (const source of SOURCES) {
+          upsert.run(source, at);
+        }
       })
       .immediate();
   });
@@ -233,7 +252,7 @@ export function isAllPaused(): boolean {
   return allPaused;
 }
 
-export function snapshotSourceGate(): PausedState[] {
+export function snapshotSourceGate(): Array<PausedState> {
   loadState();
   const t = now();
   const out = new Map<Source, PausedState>();
@@ -242,14 +261,25 @@ export function snapshotSourceGate(): PausedState[] {
     until: number,
     reason: PausedReason,
   ): void => {
-    if (until <= t) return;
+    if (until <= t) {
+      return;
+    }
     const prev = out.get(source);
-    if (!prev || until > prev.until) out.set(source, { source, until, reason });
+    if (!prev || until > prev.until) {
+      out.set(source, { source, until, reason });
+    }
   };
-  for (const [s, until] of cooldownUntil) consider(s, until, "cooldown");
-  for (const [s, until] of breakerUntil) consider(s, until, "breaker");
-  for (const [s, st] of atRisk)
+  for (const [s, until] of cooldownUntil) {
+    consider(s, until, "cooldown");
+  }
+  for (const [s, until] of breakerUntil) {
+    consider(s, until, "breaker");
+  }
+  for (const [s, st] of atRisk) {
     consider(s, st.since + AT_RISK_PARK_MS, "at_risk");
-  for (const s of manualPaused) consider(s, Number.MAX_SAFE_INTEGER, "manual");
+  }
+  for (const s of manualPaused) {
+    consider(s, Number.MAX_SAFE_INTEGER, "manual");
+  }
   return [...out.values()];
 }

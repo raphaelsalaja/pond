@@ -21,16 +21,22 @@ const entries = new Map<string, ViewerMemory>();
 let loaded = false;
 
 function load() {
-  if (loaded) return;
+  if (loaded) {
+    return;
+  }
   loaded = true;
   try {
     const parsed = z
       .array(z.tuple([z.string(), entrySchema]))
       .safeParse(JSON.parse(window.localStorage.getItem(storageKey) ?? "[]"));
-    if (parsed.success)
-      for (const [key, value] of parsed.data.slice(-200))
+    if (parsed.success) {
+      for (const [key, value] of parsed.data.slice(-200)) {
         entries.set(key, value);
-  } catch {}
+      }
+    }
+  } catch {
+    /** Unreadable stored memory starts empty; the next write replaces it. */
+  }
 }
 
 function set(key: string, patch: ViewerMemory) {
@@ -40,11 +46,15 @@ function set(key: string, patch: ViewerMemory) {
   entries.set(key, { ...previous, ...patch });
   while (entries.size > 200) {
     const oldest = entries.keys().next().value;
-    if (oldest !== undefined) entries.delete(oldest);
+    if (oldest !== undefined) {
+      entries.delete(oldest);
+    }
   }
   try {
     window.localStorage.setItem(storageKey, JSON.stringify([...entries]));
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked; the memory still applies for this session. */
+  }
 }
 
 export const viewerMemory = {
@@ -71,8 +81,9 @@ export const viewerMemory = {
     set(key, { loop: range });
   },
   setPlayback(key: string, seconds: number): void {
-    if (Number.isFinite(seconds) && seconds >= 0)
+    if (Number.isFinite(seconds) && seconds >= 0) {
       set(key, { playback: seconds });
+    }
   },
 };
 
@@ -99,9 +110,15 @@ export function viewerWheelIntent(event: {
   metaKey: boolean;
   wheelBehavior: ViewerWheelBehavior;
 }): ViewerWheelIntent {
-  if (event.ctrlKey || event.altKey || event.metaKey) return "zoom";
-  if (event.wheelBehavior === "zoom") return "zoom";
-  if (event.wheelBehavior === "navigate") return "navigate";
+  if (event.ctrlKey || event.altKey || event.metaKey) {
+    return "zoom";
+  }
+  if (event.wheelBehavior === "zoom") {
+    return "zoom";
+  }
+  if (event.wheelBehavior === "navigate") {
+    return "navigate";
+  }
   return "pan";
 }
 

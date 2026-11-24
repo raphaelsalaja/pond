@@ -1,9 +1,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { posix } from "node:path";
-
-const { dirname, isAbsolute, join } = posix;
+import { dirname, isAbsolute, join } from "node:path/posix";
 
 const AUTOSTART_FILENAME = "pond.desktop";
 
@@ -20,13 +18,15 @@ export function linuxAutostartPath(
 export function desktopExecArgument(value: string): string {
   /** A literal `%` must be doubled so it is not read as a field code. */
   const escaped = value.replaceAll("%", "%%");
-  if (!/[\s"'\\`$]/.test(escaped)) return escaped;
-  return `"${escaped.replace(/(["`$\\])/g, "\\$1")}"`;
+  if (!/[\s"'\\`$]/.test(escaped)) {
+    return escaped;
+  }
+  return `"${escaped.replaceAll(/(["`$\\])/g, String.raw`\$1`)}"`;
 }
 
 export function linuxAutostartEntry(input: {
   execPath: string;
-  args?: readonly string[];
+  args?: ReadonlyArray<string>;
 }): string {
   const command = [input.execPath, ...(input.args ?? [])]
     .map(desktopExecArgument)
@@ -46,7 +46,7 @@ export function linuxAutostartEntry(input: {
 interface SetLinuxAutostartInput {
   enabled: boolean;
   execPath: string;
-  args?: readonly string[];
+  args?: ReadonlyArray<string>;
   env?: NodeJS.ProcessEnv;
   home?: string;
   path?: string;
@@ -76,7 +76,9 @@ export async function setLinuxAutostart(
     input.path ?? linuxAutostartPath(input.env ?? process.env, input.home);
   const isPresent = input.exists ?? existsSync;
   if (!input.enabled) {
-    if (!isPresent(path)) return;
+    if (!isPresent(path)) {
+      return;
+    }
     await (input.removeFile ?? removeAutostartFile)(path);
     return;
   }

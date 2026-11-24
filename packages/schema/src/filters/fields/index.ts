@@ -41,11 +41,7 @@ import { transcript } from "./transcript";
 import { typeField } from "./type";
 import { url } from "./url";
 
-export type {
-  FieldDescriptor,
-  FieldGroup,
-  FieldPreset,
-} from "./descriptor";
+export type { FieldDescriptor, FieldGroup, FieldPreset } from "./descriptor";
 export { aspectFromDims, orientationFromDims } from "./dims";
 export { fileExtension } from "./format";
 export {

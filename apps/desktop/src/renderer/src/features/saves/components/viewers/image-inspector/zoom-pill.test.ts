@@ -14,7 +14,9 @@ describe("zoom ratio menu", () => {
     const ratio = items.find(
       (item) => "label" in item && item.label === "200%",
     );
-    if (ratio?.type !== "checkbox") throw new Error("Missing zoom ratio");
+    if (ratio?.type !== "checkbox") {
+      throw new Error("Missing zoom ratio");
+    }
     ratio.onCheckedChange?.(true);
     expect(onRatio).toHaveBeenCalledWith(2);
   });

@@ -1,14 +1,15 @@
-import {
-  createTableColumnLayout,
-  type StoredTableColumnLayout,
-  type TableColumnLayout,
+import { createTableColumnLayout } from "@/shared/lib/table-column-layout";
+import type {
+  StoredTableColumnLayout,
+  TableColumnLayout,
+  TableSort,
 } from "@/shared/lib/table-column-layout";
 import {
   DEFAULT_HIDDEN_DOWNLOAD_COLUMNS,
   DOWNLOAD_COLUMN_CATALOG,
-  type DownloadColumnId,
   LOCKED_DOWNLOAD_COLUMN,
 } from "../lib/download-columns";
+import type { DownloadColumnId } from "../lib/download-columns";
 
 export type DownloadsColumnLayout = TableColumnLayout<DownloadColumnId>;
 
@@ -26,19 +27,22 @@ export function normalizeDownloadsColumnLayout(
 }
 
 export function mergeVisibleColumnOrder(
-  order: readonly DownloadColumnId[],
-  hidden: readonly DownloadColumnId[],
-  visibleOrder: readonly string[],
-): DownloadColumnId[] {
+  order: ReadonlyArray<DownloadColumnId>,
+  hidden: ReadonlyArray<DownloadColumnId>,
+  visibleOrder: ReadonlyArray<string>,
+): Array<DownloadColumnId> {
   return layout.mergeVisibleOrder(order, hidden, visibleOrder);
 }
 
 export const downloadsColumnsLayout = {
-  snapshot: layout.snapshot,
-  setHidden: layout.setHidden,
-  setSort: layout.setSort,
-  applyVisibleOrder: layout.applyVisibleOrder,
-  reset: layout.reset,
+  snapshot: (): DownloadsColumnLayout => layout.snapshot(),
+  setHidden: (id: DownloadColumnId, hidden: boolean): void =>
+    layout.setHidden(id, hidden),
+  setSort: (sort: TableSort<DownloadColumnId> | null): void =>
+    layout.setSort(sort),
+  applyVisibleOrder: (visibleOrder: ReadonlyArray<string>): void =>
+    layout.applyVisibleOrder(visibleOrder),
+  reset: (): void => layout.reset(),
 };
 
 export function useDownloadsColumnLayout(): DownloadsColumnLayout {

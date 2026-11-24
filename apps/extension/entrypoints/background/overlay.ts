@@ -1,9 +1,6 @@
 import type { CaptureStatus } from "@/utils/outcome";
-import {
-  type OverlayRequest,
-  type OverlayToast,
-  sendOverlayMessage,
-} from "@/utils/overlay-messaging";
+import { sendOverlayMessage } from "@/utils/overlay-messaging";
+import type { OverlayRequest, OverlayToast } from "@/utils/overlay-messaging";
 import { getSettings } from "@/utils/settings";
 import { overlayAppearance } from "./library";
 
@@ -42,7 +39,11 @@ export async function hideOverlay(tabId: number): Promise<void> {
     { request: { view: "clear" }, appearance: { theme: null, mode: null } },
     tabId,
   ).catch(() => false);
-  if (hidden) await new Promise((resolve) => setTimeout(resolve, 80));
+  if (hidden) {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 80);
+    });
+  }
 }
 
 /** The badge is drawn by the browser outside Pond's theme, so it carries its own colors. */
@@ -58,7 +59,9 @@ const BADGES = {
 const BADGE_TEXT = "#ffffff";
 
 export function flashBadge(tabId: number | undefined, status: CaptureStatus) {
-  if (!browser.action || status === "sending") return;
+  if (!browser.action || status === "sending") {
+    return;
+  }
   const { text, color } = BADGES[status];
   void browser.action
     .setBadgeBackgroundColor(tabId === undefined ? { color } : { color, tabId })
@@ -82,7 +85,9 @@ export function flashBadge(tabId: number | undefined, status: CaptureStatus) {
 }
 
 export function clearBadge(): void {
-  if (!browser.action) return;
+  if (!browser.action) {
+    return;
+  }
   browser.action.setBadgeText({ text: "" }).catch(() => {});
 }
 

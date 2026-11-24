@@ -3,7 +3,8 @@ import {
   ApiOperationRequestSchema,
   ApiOperationRunSchema,
 } from "@pond/schema/api";
-import { type Context, Hono } from "hono";
+import { Hono } from "hono";
+import type { Context } from "hono";
 import { z } from "zod";
 import {
   applyPondOperation,
@@ -31,7 +32,9 @@ function operationNotFound(c: Context, name: string): Response {
 
 function prunePreviews(now = Date.now()): void {
   for (const [token, preview] of previews) {
-    if (preview.expiresAt <= now) previews.delete(token);
+    if (preview.expiresAt <= now) {
+      previews.delete(token);
+    }
   }
 }
 
@@ -55,9 +58,13 @@ export function operationRoutes(): Hono {
 
   routes.post("/preview", async (c) => {
     const parsed = ApiOperationRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) return invalidRequest(c, parsed.error);
+    if (!parsed.success) {
+      return invalidRequest(c, parsed.error);
+    }
     const selected = operation(parsed.data.operation);
-    if (!selected) return operationNotFound(c, parsed.data.operation);
+    if (!selected) {
+      return operationNotFound(c, parsed.data.operation);
+    }
     selected.inputSchema.parse(parsed.data.arguments);
     const libraryId = pondOperationCatalog().libraryId();
     const token = randomUUID();
@@ -77,28 +84,35 @@ export function operationRoutes(): Hono {
 
   routes.post("/run", async (c) => {
     const parsed = ApiOperationRunSchema.safeParse(await c.req.json());
-    if (!parsed.success) return invalidRequest(c, parsed.error);
+    if (!parsed.success) {
+      return invalidRequest(c, parsed.error);
+    }
     const selected = operation(parsed.data.operation);
-    if (!selected) return operationNotFound(c, parsed.data.operation);
+    if (!selected) {
+      return operationNotFound(c, parsed.data.operation);
+    }
     selected.inputSchema.parse(parsed.data.arguments);
     const libraryId = pondOperationCatalog().libraryId();
     if (selected.access === "review") {
       const preview = parsed.data.token
         ? previews.get(parsed.data.token)
         : undefined;
-      if (parsed.data.token) previews.delete(parsed.data.token);
+      if (parsed.data.token) {
+        previews.delete(parsed.data.token);
+      }
       if (
         !preview ||
         preview.expiresAt <= Date.now() ||
         preview.operation !== selected.name ||
         preview.libraryId !== libraryId ||
         preview.arguments !== JSON.stringify(parsed.data.arguments)
-      )
+      ) {
         return apiError(
           c,
           "stale_preview",
           "The preview expired or changed. Preview the operation again.",
         );
+      }
     }
     const result = await applyPondOperation(
       {

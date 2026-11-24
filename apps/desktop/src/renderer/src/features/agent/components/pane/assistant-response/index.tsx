@@ -1,17 +1,8 @@
 import type { AssistantSource } from "@shared/assistant";
-import {
-  Children,
-  createContext,
-  isValidElement,
-  type ReactNode,
-  useContext,
-} from "react";
-import {
-  type AnimateOptions,
-  type Components,
-  defaultRemarkPlugins,
-  Streamdown,
-} from "streamdown";
+import { Children, createContext, isValidElement, useContext } from "react";
+import type { ReactNode } from "react";
+import { defaultRemarkPlugins, Streamdown } from "streamdown";
+import type { AnimateOptions, Components } from "streamdown";
 import { CodeBlock } from "../../code-block";
 import { parseSaveMentionHref, SaveMentionChip } from "../../composer/mention";
 import { remarkSaveCitations } from "../remark-save-citations";
@@ -19,7 +10,7 @@ import { SaveCitation } from "../save-preview";
 import styles from "./styles.module.css";
 
 interface ResponseRenderContext {
-  sources: AssistantSource[];
+  sources: Array<AssistantSource>;
   onOpenSave: (id: string) => void;
 }
 
@@ -27,14 +18,18 @@ const ResponseContext = createContext<ResponseRenderContext | null>(null);
 
 function useResponseContext() {
   const value = useContext(ResponseContext);
-  if (!value) throw new Error("Response renderers require ResponseContext");
+  if (!value) {
+    throw new Error("Response renderers require ResponseContext");
+  }
   return value;
 }
 
 function textContent(children: ReactNode): string {
   const parts = Children.toArray(children);
   const value = parts.length === 1 ? parts[0] : null;
-  return value != null && !isValidElement(value) ? String(value) : "";
+  return value !== null && value !== undefined && !isValidElement(value)
+    ? String(value)
+    : "";
 }
 
 function ResponseLink({
@@ -107,7 +102,9 @@ const responseComponents: Components = {
     const code = node?.children.find(
       (child) => child.type === "element" && child.tagName === "code",
     );
-    if (code?.type !== "element") return <pre>{children}</pre>;
+    if (code?.type !== "element") {
+      return <pre>{children}</pre>;
+    }
     const value = code.children
       .flatMap((child) => (child.type === "text" ? child.value : []))
       .join("");
@@ -123,7 +120,7 @@ const responseComponents: Components = {
     <section
       className={styles.table}
       data-scroll-fade="horizontal"
-      // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard users need to scroll wide tables in the side pane.
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard users need to scroll wide tables in the side pane
       tabIndex={0}
       aria-label="Response table"
     >
@@ -134,15 +131,19 @@ const responseComponents: Components = {
 
 interface MarkdownParent {
   type: string;
-  children?: MarkdownParent[];
+  children?: Array<MarkdownParent>;
 }
 
 /** Model HTML is dropped outright; `safeResponseUrl` already gates every link. */
 function remarkDropHtml() {
   const prune = (node: MarkdownParent) => {
-    if (!node.children) return;
+    if (!node.children) {
+      return;
+    }
     node.children = node.children.filter((child) => child.type !== "html");
-    for (const child of node.children) prune(child);
+    for (const child of node.children) {
+      prune(child);
+    }
   };
   return prune;
 }
@@ -154,17 +155,24 @@ const wordReveal: AnimateOptions = {
 };
 
 export function safeResponseUrl(url: string): string {
-  if (/^#save-[1-9]\d*$/.test(url)) return url;
-  if (parseSaveMentionHref(url)) return url;
+  if (/^#save-[1-9]\d*$/.test(url)) {
+    return url;
+  }
+  if (parseSaveMentionHref(url)) {
+    return url;
+  }
   try {
     const parsed = new URL(url);
     if (
       (parsed.protocol === "https:" || parsed.protocol === "http:") &&
       !parsed.username &&
       !parsed.password
-    )
+    ) {
       return parsed.href;
-  } catch {}
+    }
+  } catch {
+    /** An unparseable URL falls through to the blocked empty href. */
+  }
   return "";
 }
 
@@ -175,7 +183,7 @@ export function AssistantResponse({
   onOpenSave,
 }: {
   content: string;
-  sources?: AssistantSource[];
+  sources?: Array<AssistantSource>;
   streaming?: boolean;
   onOpenSave: (id: string) => void;
 }) {

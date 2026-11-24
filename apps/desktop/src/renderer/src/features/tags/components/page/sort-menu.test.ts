@@ -19,7 +19,9 @@ describe("tag sort menu", () => {
     ]);
     expect(items[2]).toMatchObject({ checked: true });
     const least = items[3];
-    if (least?.type !== "checkbox") throw new Error("Missing tag order");
+    if (least?.type !== "checkbox") {
+      throw new Error("Missing tag order");
+    }
     least.onCheckedChange?.(true);
     expect(onChange).toHaveBeenCalledWith("count", "asc");
   });

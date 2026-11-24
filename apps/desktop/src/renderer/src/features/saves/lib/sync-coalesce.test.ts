@@ -2,7 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import { applyActionCoalesced } from "./sync-coalesce";
 
-const frame = () => new Promise((r) => setTimeout(r, 20));
+const frame = () =>
+  new Promise((r) => {
+    setTimeout(r, 20);
+  });
 
 describe("applyActionCoalesced", () => {
   it("ignores an update for a save it has never seen", async () => {

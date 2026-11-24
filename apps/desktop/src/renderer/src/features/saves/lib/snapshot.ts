@@ -1,8 +1,7 @@
 import { debounce } from "@tanstack/pacer";
-import {
-  type SavePatch,
-  SavePatchesSchema,
-} from "@/features/saves/lib/reconcile";
+import log from "electron-log/renderer";
+import { SavePatchesSchema } from "@/features/saves/lib/reconcile";
+import type { SavePatch } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
@@ -15,7 +14,9 @@ const SNAPSHOT_LIMIT = 250;
 let dbPromise: Promise<IDBDatabase> | null = null;
 
 function openDb(): Promise<IDBDatabase> {
-  if (dbPromise) return dbPromise;
+  if (dbPromise) {
+    return dbPromise;
+  }
   dbPromise = new Promise((resolve, reject) => {
     try {
       /** An unscoped snapshot can hold another Library's Saves, so it is never read. */
@@ -30,8 +31,8 @@ function openDb(): Promise<IDBDatabase> {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
       req.onblocked = () => reject(new Error("indexedDB blocked"));
-    } catch (err) {
-      reject(err);
+    } catch (error) {
+      reject(error);
     }
   });
   return dbPromise;
@@ -47,8 +48,8 @@ export async function readSnapshot(): Promise<Array<SavePatch | null>> {
       req.onsuccess = () => resolve(SavePatchesSchema.parse(req.result ?? []));
       req.onerror = () => reject(req.error);
     });
-  } catch (err) {
-    console.warn("[pond pool] snapshot read failed", err);
+  } catch (error) {
+    log.warn("[pond pool] snapshot read failed", error);
     return [];
   }
 }
@@ -72,9 +73,11 @@ async function writeSnapshot(saves: ReadonlyArray<Save>): Promise<void> {
       tx.onabort = () => reject(tx.error);
       const store = tx.objectStore(STORE);
       store.clear();
-      for (const save of saves) store.put(save);
+      for (const save of saves) {
+        store.put(save);
+      }
     });
-  } catch (err) {
-    console.warn("[pond pool] snapshot write failed", err);
+  } catch (error) {
+    log.warn("[pond pool] snapshot write failed", error);
   }
 }

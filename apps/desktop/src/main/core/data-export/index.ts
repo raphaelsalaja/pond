@@ -3,26 +3,23 @@ import { mergeListKinds } from "@pond/schema/list-kinds";
 import type { OkFailure, OkSuccess } from "@shared/query-contracts-shared";
 import type { SavesImportCounts } from "@shared/saves-contracts-shared";
 import type { DataExportImportCounts } from "@shared/saves-import-contracts";
-import {
-  type Bookmark,
-  type BookmarkFile,
-  type BookmarkFolder,
-  importBookmarkFile,
-} from "../bookmarks";
+import { importBookmarkFile } from "../bookmarks";
+import type { Bookmark, BookmarkFile, BookmarkFolder } from "../bookmarks";
 import { addSavesToFolder, importFolderTree } from "../folders";
 import { persistSave } from "../persist-save";
 import { enqueue } from "../pipeline/enqueue";
 import { classifyUrlToSource } from "../pipeline/extractors";
 import { listAccounts } from "../sync/accounts";
 import { instagramParser } from "./instagram";
-import { type ExportReader, openExportReader } from "./reader";
+import { openExportReader } from "./reader";
+import type { ExportReader } from "./reader";
 import { redditParser } from "./reddit";
 import { tiktokParser } from "./tiktok";
 import type { ExportEntry, ExportParser } from "./types";
 import { xParser } from "./x";
 import { youtubeParser } from "./youtube";
 
-const PARSERS: readonly ExportParser[] = [
+const PARSERS: ReadonlyArray<ExportParser> = [
   xParser,
   instagramParser,
   tiktokParser,
@@ -59,9 +56,9 @@ const defaultDependencies: DataExportDependencies = {
 };
 
 export function entriesToBookmarkFile(
-  entries: readonly ExportEntry[],
+  entries: ReadonlyArray<ExportEntry>,
 ): BookmarkFile {
-  const folders: BookmarkFolder[] = [];
+  const folders: Array<BookmarkFolder> = [];
   const folderIds = new Map<string, string>();
   const byUrl = new Map<string, Bookmark>();
   for (const entry of entries) {
@@ -89,22 +86,24 @@ export function entriesToBookmarkFile(
       });
       continue;
     }
-    if (folderId && !existing.folderIds.includes(folderId))
+    if (folderId && !existing.folderIds.includes(folderId)) {
       existing.folderIds.push(folderId);
+    }
     existing.listKinds = mergeListKinds(existing.listKinds, entry.listKind);
     if (
       entry.savedAt &&
       (!existing.addedAt || entry.savedAt < existing.addedAt)
-    )
+    ) {
       existing.addedAt = entry.savedAt;
+    }
   }
   return { bookmarks: [...byUrl.values()], folders };
 }
 
 async function readEntries(
   reader: ExportReader,
-): Promise<{ entries: ExportEntry[]; platforms: string[] }> {
-  const entries: ExportEntry[] = [];
+): Promise<{ entries: Array<ExportEntry>; platforms: Array<string> }> {
+  const entries: Array<ExportEntry> = [];
   const platforms = new Set<string>();
   for (const parser of PARSERS) {
     for (const path of reader.paths.filter(parser.matches)) {
@@ -115,7 +114,9 @@ async function readEntries(
         continue;
       }
       const parsed = parser.parse(path, text);
-      if (parsed.length > 0) platforms.add(parser.label);
+      if (parsed.length > 0) {
+        platforms.add(parser.label);
+      }
       entries.push(...parsed);
     }
   }
@@ -128,13 +129,19 @@ const CAPTURES_SIGNED_OUT = new Set<Source>(["youtube", "reddit"]);
 function unconnectedSources(
   file: BookmarkFile,
   connected: ReadonlySet<Source>,
-): Source[] {
+): Array<Source> {
   const sources = new Set<Source>();
   for (const bookmark of file.bookmarks) {
     const { source } = classifyUrlToSource(bookmark.url);
-    if (!source || source === "web" || source === "local") continue;
-    if (CAPTURES_SIGNED_OUT.has(source)) continue;
-    if (!connected.has(source)) sources.add(source);
+    if (!source || source === "web" || source === "local") {
+      continue;
+    }
+    if (CAPTURES_SIGNED_OUT.has(source)) {
+      continue;
+    }
+    if (!connected.has(source)) {
+      sources.add(source);
+    }
   }
   return [...sources];
 }
@@ -156,7 +163,9 @@ export async function importDataExport(
   }
   try {
     const { entries, platforms } = await readEntries(reader);
-    if (entries.length === 0) return { ok: false, error: UNREADABLE };
+    if (entries.length === 0) {
+      return { ok: false, error: UNREADABLE };
+    }
     const file = entriesToBookmarkFile(entries);
     const counts = await dependencies.importFile(file);
     const connect = unconnectedSources(

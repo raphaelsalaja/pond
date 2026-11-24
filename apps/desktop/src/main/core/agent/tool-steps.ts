@@ -32,9 +32,9 @@ const labels = new Map<string, string>(
 
 export function createToolTracker(
   signal: AbortSignal,
-  onSteps?: (steps: AssistantToolStep[]) => void,
+  onSteps?: (steps: Array<AssistantToolStep>) => void,
 ) {
-  let steps: AssistantToolStep[] = [];
+  let steps: Array<AssistantToolStep> = [];
   const update = (id: string, value: Partial<AssistantToolStep>) => {
     steps = steps.map((step) =>
       step.id === id ? { ...step, ...value } : step,
@@ -53,7 +53,9 @@ export function createToolTracker(
     signal.throwIfAborted();
     const toolName = event.toolCall.toolName;
     const label = labels.get(toolName);
-    if (!label) return;
+    if (!label) {
+      return;
+    }
     const args = z
       .object({ query: z.string().catch("Recent Saves") })
       .catch({ query: "Recent Saves" })

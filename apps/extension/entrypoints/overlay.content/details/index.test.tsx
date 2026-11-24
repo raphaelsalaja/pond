@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type {
   DetailsDraft,
@@ -40,6 +41,20 @@ let layer: HTMLDivElement;
 let root: Root;
 const boundingRect = HTMLElement.prototype.getBoundingClientRect;
 
+function getBoundingClientRect() {
+  return {
+    x: 0,
+    y: 0,
+    width: 240,
+    height: 28,
+    top: 0,
+    right: 240,
+    bottom: 28,
+    left: 0,
+    toJSON() {},
+  };
+}
+
 beforeEach(() => {
   vi.stubGlobal(
     "ResizeObserver",
@@ -57,20 +72,7 @@ beforeEach(() => {
       disconnect() {}
     },
   );
-  HTMLElement.prototype.getBoundingClientRect =
-    function getBoundingClientRect() {
-      return {
-        x: 0,
-        y: 0,
-        width: 240,
-        height: 28,
-        top: 0,
-        right: 240,
-        bottom: 28,
-        left: 0,
-        toJSON() {},
-      };
-    };
+  HTMLElement.prototype.getBoundingClientRect = getBoundingClientRect;
   if (!Element.prototype.hasPointerCapture) {
     Element.prototype.hasPointerCapture = () => false;
     Element.prototype.setPointerCapture = () => {};
@@ -102,7 +104,9 @@ function option(label: string): HTMLElement {
     ...searchRoot().querySelectorAll<HTMLElement>('[role="option"]'),
     ...document.querySelectorAll<HTMLElement>('[role="option"]'),
   ].find((item) => item.textContent?.includes(label));
-  if (!match) throw new Error(`Missing tag option: ${label}`);
+  if (!match) {
+    throw new Error(`Missing tag option: ${label}`);
+  }
   return match;
 }
 
@@ -156,7 +160,9 @@ it("lets overlay tags be selected and created from the shadow dialog", async () 
   const input = searchRoot().querySelector<HTMLInputElement>(
     '[aria-label="Tags"]',
   );
-  if (!input) throw new Error("Missing tags field");
+  if (!input) {
+    throw new Error("Missing tags field");
+  }
   await press(input);
   await type(input, "Lo");
   await vi.waitFor(() => option("Logos"), { timeout: OPEN_TIMEOUT });

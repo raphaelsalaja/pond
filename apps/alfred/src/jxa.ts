@@ -1,4 +1,5 @@
-import { type CurlResult, parseCurl } from "./api";
+import { parseCurl } from "./api";
+import type { CurlResult } from "./api";
 
 /** `doShellScript` throws on a non-zero exit, which for curl means Pond isn't listening. */
 function shell(command: string): string | null {
@@ -14,5 +15,5 @@ function shell(command: string): string | null {
 /** `doShellScript` turns `\n` into `\r`, which would hide the status line from `parseCurl`. */
 export function request(command: string): CurlResult | null {
   const output = shell(command);
-  return output === null ? null : parseCurl(output.replace(/\r/g, "\n"));
+  return output === null ? null : parseCurl(output.replaceAll("\r", "\n"));
 }

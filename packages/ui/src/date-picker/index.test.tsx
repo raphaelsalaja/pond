@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 
 import { act, useRef } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { DatePicker, DatePopover } from ".";
 
@@ -46,7 +47,9 @@ async function openPicker(props: {
   return vi.waitFor(
     () => {
       const grid = document.querySelector<HTMLElement>("table");
-      if (!grid) throw new Error("Calendar did not open");
+      if (!grid) {
+        throw new Error("Calendar did not open");
+      }
       return grid;
     },
     { timeout: OPEN_TIMEOUT },
@@ -81,7 +84,9 @@ function Anchored({
 
 function day(value: string): HTMLElement {
   const found = document.querySelector<HTMLElement>(`[data-day="${value}"]`);
-  if (!found) throw new Error(`Missing day ${value}`);
+  if (!found) {
+    throw new Error(`Missing day ${value}`);
+  }
   return found;
 }
 
@@ -140,8 +145,9 @@ it("opens beside its anchor and picks a day inside its range", async () => {
   );
   await vi.waitFor(
     () => {
-      if (!document.querySelector('[aria-label="Choose Date"] table'))
+      if (!document.querySelector('[aria-label="Choose Date"] table')) {
         throw new Error("Calendar did not open");
+      }
     },
     { timeout: OPEN_TIMEOUT },
   );

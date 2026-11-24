@@ -1,11 +1,10 @@
-import * as schema from "@pond/schema/db";
-import * as eventsSchema from "@pond/schema/events";
+import { savedViews, saves } from "@pond/schema/db";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { wrapSqlite } from "../database/client";
 import { initializePondSchema } from "../db";
 import {
   createView,
@@ -22,46 +21,48 @@ function nativeSqliteAvailable(): boolean {
     probe.close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
 
-const databases: Database.Database[] = [];
+const databases: Array<Database.Database> = [];
 
 afterEach(() => {
-  for (const db of databases.splice(0)) db.close();
+  for (const db of databases.splice(0)) {
+    db.close();
+  }
 });
 
 function setup() {
   const sqlite = new Database(":memory:");
   databases.push(sqlite);
   initializePondSchema(sqlite, () => false);
-  const db = Object.assign(
-    drizzle(sqlite, { schema: { ...schema, ...eventsSchema } }),
-    { $raw: sqlite },
-  );
-  const batches: Transaction[][] = [];
+  const db = wrapSqlite(sqlite);
+  const batches: Array<Array<Transaction>> = [];
   const runtime = {
     getDb: async () => db,
-    async commit(transactions: Transaction[]) {
+    async commit(transactions: Array<Transaction>) {
       sqlite.transaction(() => {
         for (const transaction of transactions) {
-          if (transaction.model !== "saved_view")
+          if (transaction.model !== "saved_view") {
             throw new Error("Unexpected model");
+          }
           switch (transaction.kind) {
             case "create":
-              db.insert(schema.savedViews).values(transaction.data).run();
+              db.insert(savedViews).values(transaction.data).run();
               break;
             case "update":
-              db.update(schema.savedViews)
+              db.update(savedViews)
                 .set(transaction.patch)
-                .where(eq(schema.savedViews.id, transaction.id))
+                .where(eq(savedViews.id, transaction.id))
                 .run();
               break;
             case "delete":
-              db.delete(schema.savedViews)
-                .where(eq(schema.savedViews.id, transaction.id))
+              db.delete(savedViews)
+                .where(eq(savedViews.id, transaction.id))
                 .run();
               break;
           }
@@ -72,7 +73,9 @@ function setup() {
   };
   async function create(input: Parameters<typeof createView>[0]) {
     const result = await createView(input, runtime);
-    if (!result.ok || !result.id) throw new Error("Fixture create failed");
+    if (!result.ok || !result.id) {
+      throw new Error("Fixture create failed");
+    }
     return result.id;
   }
   return { db, sqlite, runtime, batches, create };
@@ -107,7 +110,9 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
       createView({ name: "Reference", parentId: group }, runtime),
       deleteView(group, runtime),
     ]);
-    if (!created.ok) throw new Error(created.error);
+    if (!created.ok) {
+      throw new Error(created.error);
+    }
     expect(deleted.ok).toBe(true);
     expect(await listViews(runtime)).toEqual([
       expect.objectContaining({ id: created.id, parentId: null }),
@@ -248,7 +253,7 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
       kind: "smart_folder",
       parentId: childGroup,
     });
-    db.insert(schema.saves)
+    db.insert(saves)
       .values({
         id: "kept",
         source: "web",
@@ -276,9 +281,9 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
       }),
       expect.objectContaining({ kind: "delete", id: group }),
     ]);
-    expect(db.select({ id: schema.saves.id }).from(schema.saves).all()).toEqual(
-      [{ id: "kept" }],
-    );
+    expect(db.select({ id: saves.id }).from(saves).all()).toEqual([
+      { id: "kept" },
+    ]);
     expect(await deleteView(root, runtime)).toEqual({ ok: true });
     expect(
       (await listViews(runtime)).find((row) => row.id === childGroup)?.parentId,

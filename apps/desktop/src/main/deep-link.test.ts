@@ -11,7 +11,7 @@ describe("deepLinkArg", () => {
   it("finds a Windows protocol launch argument", () => {
     expect(
       deepLinkArg([
-        "C:\\Program Files\\Pond\\Pond.exe",
+        String.raw`C:\Program Files\Pond\Pond.exe`,
         "pond://settings/general",
       ]),
     ).toBe("pond://settings/general");

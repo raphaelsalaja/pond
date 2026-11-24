@@ -9,9 +9,14 @@ export function fishPresence(fishId: string): FishPresence {
 }
 
 export function setFishPresence(fishId: string, activity: FishPresence): void {
-  if (fishPresence(fishId) === activity) return;
-  if (activity) activities.set(fishId, activity);
-  else activities.delete(fishId);
+  if (fishPresence(fishId) === activity) {
+    return;
+  }
+  if (activity) {
+    activities.set(fishId, activity);
+  } else {
+    activities.delete(fishId);
+  }
   broadcast<FishEvent>(IPC.fish, { kind: "presence", fishId, activity });
 }
 

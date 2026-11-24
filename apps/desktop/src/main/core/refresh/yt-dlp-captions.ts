@@ -8,11 +8,8 @@ import { partitionForIngest } from "../sync/accounts";
 import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
 import { cookieAttempts } from "./yt-dlp-format";
-import {
-  pickSubtitleFiles,
-  readSidecars,
-  type SubtitleFile,
-} from "./yt-dlp-output";
+import { pickSubtitleFiles, readSidecars } from "./yt-dlp-output";
+import type { SubtitleFile } from "./yt-dlp-output";
 import { runWithTimeout } from "./yt-dlp-process";
 import { ensureYtDlp } from "./yt-dlp-updater";
 
@@ -37,7 +34,9 @@ export async function downloadCaptions(args: {
 }): Promise<DownloadedCaptions | null> {
   await ensureYtDlp();
   const { ytdlp, ffmpeg } = binariesAvailable();
-  if (!ytdlp) return null;
+  if (!ytdlp) {
+    return null;
+  }
 
   const partition = args.source
     ? await partitionForIngest(args.source, args.accountId)
@@ -46,12 +45,16 @@ export async function downloadCaptions(args: {
   let dir: string | null = null;
   const cleanup = async () => {
     await cookies.cleanup();
-    if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
+    if (dir) {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
   };
 
   try {
     for (const withCookies of cookieAttempts(args.source, cookies.count)) {
-      if (dir) await rm(dir, { recursive: true, force: true });
+      if (dir) {
+        await rm(dir, { recursive: true, force: true });
+      }
       dir = await mkdtemp(join(tmpdir(), "pond-captions-"));
       const argv = [
         "--skip-download",
@@ -99,10 +102,12 @@ export async function downloadCaptions(args: {
         };
       }
       log.info("[pond yt-dlp] no captions", args.url, code, stderr.slice(-300));
-      if (args.signal?.aborted) break;
+      if (args.signal?.aborted) {
+        break;
+      }
     }
-  } catch (err) {
-    log.warn("[pond yt-dlp] captions failed", args.url, err);
+  } catch (error) {
+    log.warn("[pond yt-dlp] captions failed", args.url, error);
   }
   await cleanup();
   return null;

@@ -1,12 +1,10 @@
 import type { SavedView } from "@pond/schema/db";
 import { matches } from "@pond/schema/filters/match";
-import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  currentLocation,
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/app/test/library-router";
+import { currentLocation, openLibraryAt } from "@/app/test/library-router";
+import type { LibraryTestRouter } from "@/app/test/library-router";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
 import { combineQueries } from "../lib/smart-folders";
 import { savedViews } from "./saved-views";
@@ -54,13 +52,17 @@ interface ViewCommand extends Partial<SavedView> {
 }
 
 describe("saved smart folder operations", () => {
-  let records: SavedView[];
+  let records: Array<SavedView>;
   let failMutation: boolean;
   let router: LibraryTestRouter;
   let stopUrlSync: () => void;
   const query = vi.fn(async (name: string, input: ViewCommand) => {
-    if (name === "savedViews.list") return records;
-    if (failMutation) return { ok: false };
+    if (name === "savedViews.list") {
+      return records;
+    }
+    if (failMutation) {
+      return { ok: false };
+    }
     if (name === "savedViews.create") {
       const created = { ...view("new", null, "saved_view"), ...input };
       records = [...records, created];

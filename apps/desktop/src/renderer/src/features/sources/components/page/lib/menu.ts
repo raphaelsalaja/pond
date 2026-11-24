@@ -2,13 +2,15 @@ import type { MenuItemSpec } from "@pond/ui";
 import {
   accountMenuTarget,
   buildSourceActionMenu,
-  type SourceMenuOptions,
   watchMenuTarget,
 } from "@/features/sources/lib/source-menu";
+import type { SourceMenuOptions } from "@/features/sources/lib/source-menu";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
 import type { SourceTableRow } from "./helpers";
 
-export function contextMenuSources(clicked: SourceTableRow): SourceTableRow[] {
+export function contextMenuSources(
+  clicked: SourceTableRow,
+): Array<SourceTableRow> {
   const selected = sourcesSelection.snapshot();
   if (selected.some((row) => row.id === clicked.id) && selected.length > 1) {
     return [...selected];
@@ -16,11 +18,17 @@ export function contextMenuSources(clicked: SourceTableRow): SourceTableRow[] {
   return [clicked];
 }
 
+function isRowList(
+  value: SourceTableRow | ReadonlyArray<SourceTableRow>,
+): value is ReadonlyArray<SourceTableRow> {
+  return Array.isArray(value);
+}
+
 export function buildSourceMenu(
-  rowOrRows: SourceTableRow | readonly SourceTableRow[],
+  rowOrRows: SourceTableRow | ReadonlyArray<SourceTableRow>,
   options: SourceMenuOptions = {},
-): MenuItemSpec[] {
-  const rows = Array.isArray(rowOrRows) ? rowOrRows : [rowOrRows];
+): Array<MenuItemSpec> {
+  const rows = isRowList(rowOrRows) ? rowOrRows : [rowOrRows];
   return buildSourceActionMenu(
     rows.flatMap((row) => {
       if (row.entry.kind === "account") {

@@ -20,7 +20,7 @@ function file(path: string, mimeType: string, kind = "media"): SaveFile {
   };
 }
 
-function saveWith(files: SaveFile[]): Save {
+function saveWith(files: Array<SaveFile>): Save {
   return {
     id: "s",
     source: "web",
@@ -76,12 +76,12 @@ describe("saveImageUrls", () => {
 });
 
 describe("preloadImage", () => {
-  let fail: (src: string) => void = () => {};
+  const rejects = new Map<string, () => void>();
+  const fail = (src: string) => rejects.get(src)?.();
 
   /** jsdom never decodes, so pending decodes model originals still loading. */
   beforeEach(() => {
-    const rejects = new Map<string, () => void>();
-    fail = (src) => rejects.get(src)?.();
+    rejects.clear();
     Object.defineProperty(HTMLImageElement.prototype, "decode", {
       configurable: true,
       value(this: HTMLImageElement) {
@@ -93,12 +93,16 @@ describe("preloadImage", () => {
   });
 
   afterEach(() => {
-    for (const url of heldImageUrls()) cancelPreload(url);
+    for (const url of heldImageUrls()) {
+      cancelPreload(url);
+    }
     Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
   });
 
   it("holds the most recent originals and drops the oldest", () => {
-    for (const name of ["1", "2", "3", "4"]) preloadImage(`pond://p/${name}`);
+    for (const name of ["1", "2", "3", "4"]) {
+      preloadImage(`pond://p/${name}`);
+    }
     preloadImage("pond://p/2");
     preloadImage("pond://p/5");
 

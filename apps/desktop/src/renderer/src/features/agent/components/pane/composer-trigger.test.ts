@@ -33,7 +33,9 @@ describe("composer triggers", () => {
     const value = "Compare @film with my notes";
     const trigger = findComposerTrigger(value, 13);
     expect(trigger).toEqual({ kind: "@", query: "film", start: 8, end: 13 });
-    if (!trigger) throw new Error("Expected a mention");
+    if (!trigger) {
+      throw new Error("Expected a mention");
+    }
     expect(replaceComposerTrigger(value, trigger, "")).toEqual({
       value: "Compare  with my notes",
       cursor: 8,
@@ -42,7 +44,9 @@ describe("composer triggers", () => {
   it("inserts an action without overwriting the rest of the draft", () => {
     const value = "/sum Focus on lighting.";
     const trigger = findComposerTrigger(value, 4);
-    if (!trigger) throw new Error("Expected an action");
+    if (!trigger) {
+      throw new Error("Expected an action");
+    }
     expect(
       replaceComposerTrigger(value, trigger, "Summarize these Saves."),
     ).toEqual({

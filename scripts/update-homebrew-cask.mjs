@@ -54,4 +54,6 @@ if (
   throw new Error(`Could not update ${caskPath}`);
 }
 
-if (updated !== current) writeFileSync(caskPath, updated);
+if (updated !== current) {
+  writeFileSync(caskPath, updated);
+}

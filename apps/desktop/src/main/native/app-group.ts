@@ -19,17 +19,34 @@ interface AppGroupDeps {
   module?: AppGroupModule | null;
 }
 
+function isAppGroupModule(value: unknown): value is AppGroupModule {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "containerPath" in value &&
+    typeof value.containerPath === "function"
+  );
+}
+
 function loadAppGroupModule(
   resources: string | undefined,
 ): AppGroupModule | null {
-  if (!resources) return null;
+  if (!resources) {
+    return null;
+  }
   const path = join(resources, "app-group.node");
-  if (!existsSync(path)) return null;
+  if (!existsSync(path)) {
+    return null;
+  }
   try {
-    /** SAFETY: app-group.m exports exactly `containerPath(identifier): string | null`. */
-    return requireNative(path) as AppGroupModule;
-  } catch (cause) {
-    log.warn("[pond native] could not load the app group module", path, cause);
+    const loaded: unknown = requireNative(path);
+    if (!isAppGroupModule(loaded)) {
+      log.warn("[pond native] app group module has no containerPath", path);
+      return null;
+    }
+    return loaded;
+  } catch (error) {
+    log.warn("[pond native] could not load the app group module", path, error);
     return null;
   }
 }

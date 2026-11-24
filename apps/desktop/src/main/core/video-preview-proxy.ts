@@ -16,7 +16,7 @@ const inFlight = new Map<string, Promise<string | null>>();
 export function buildVideoPreviewArguments(
   source: string,
   output: string,
-): string[] {
+): Array<string> {
   return [
     "-nostdin",
     "-hide_banner",
@@ -57,7 +57,9 @@ export async function ensureVideoPreviewProxy(
   src: string,
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const resolved = resolvePondSavePath(src);
-  if (!resolved) return { ok: false, error: "The video file is unavailable." };
+  if (!resolved) {
+    return { ok: false, error: "The video file is unavailable." };
+  }
   const ffmpeg = binariesAvailable().ffmpeg;
   if (!ffmpeg) {
     return {
@@ -126,7 +128,9 @@ async function createVideoPreviewProxy(input: {
       buildVideoPreviewArguments(input.source, temporary),
     );
     const output = await stat(temporary);
-    if (output.size === 0) throw new Error("FFmpeg wrote an empty preview.");
+    if (output.size === 0) {
+      throw new Error("FFmpeg wrote an empty preview.");
+    }
     await rename(temporary, input.destination);
     return input.destination;
   } finally {
@@ -134,7 +138,7 @@ async function createVideoPreviewProxy(input: {
   }
 }
 
-function runFfmpeg(path: string, args: string[]): Promise<void> {
+function runFfmpeg(path: string, args: Array<string>): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(path, args, {
       stdio: ["ignore", "ignore", "pipe"],
@@ -143,7 +147,7 @@ function runFfmpeg(path: string, args: string[]): Promise<void> {
     trackChildProcess(child);
     let stderr = "";
     child.stderr.on("data", (chunk: Buffer) => {
-      stderr = `${stderr}${chunk.toString("utf8")}`.slice(-2_000);
+      stderr = `${stderr}${chunk.toString("utf8")}`.slice(-2000);
     });
     const timer = setTimeout(() => {
       killProcessTree(child, "SIGKILL");
@@ -155,8 +159,11 @@ function runFfmpeg(path: string, args: string[]): Promise<void> {
     });
     child.once("close", (code) => {
       clearTimeout(timer);
-      if (code === 0) resolve();
-      else reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`));
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`));
+      }
     });
   });
 }

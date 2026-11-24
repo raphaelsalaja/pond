@@ -1,6 +1,7 @@
 import type { JsonValue } from "@pond/schema/json";
 import { describe, expect, it } from "vitest";
-import { type BookmarkPage, readBlueskyBookmarks } from "./bookmarks";
+import { readBlueskyBookmarks } from "./bookmarks";
+import type { BookmarkPage } from "./bookmarks";
 
 const AUTHOR = "did:plc:t2dnigzpoovty4qcxzgv73fu";
 
@@ -25,7 +26,9 @@ function pages(bodies: Array<{ status?: number; body: JsonValue }>) {
   const page: BookmarkPage = async (cursor) => {
     cursors.push(cursor);
     const next = bodies[cursors.length - 1];
-    if (!next) return null;
+    if (!next) {
+      return null;
+    }
     return { status: next.status ?? 200, body: next.body };
   };
   return { page, cursors };
@@ -45,7 +48,9 @@ describe("readBlueskyBookmarks", () => {
     const result = await readBlueskyBookmarks({ knownIds: [] }, page);
     expect(cursors).toEqual([undefined, "c1"]);
     expect(result).toMatchObject({ ok: true, reachedEnd: true });
-    if (!result.ok) return;
+    if (!result.ok) {
+      return;
+    }
     expect(
       result.entries.map((e) => [e.sourceId, e.savedAt, e.listKinds]),
     ).toEqual([

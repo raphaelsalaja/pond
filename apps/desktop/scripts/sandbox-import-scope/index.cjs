@@ -11,23 +11,26 @@ const {
 } = require("node:fs");
 const { createConnection } = require("node:net");
 const { tmpdir } = require("node:os");
-const { join } = require("node:path");
+const path = require("node:path");
 const { SIGN_IN, STEPS } = require("./steps.cjs");
 
 const args = new Set(process.argv.slice(2));
 const selfTest = args.has("--self-test");
 const sandbox = selfTest
-  ? mkdtempSync(join(tmpdir(), "pond-import-scope-self-test-"))
-  : (process.env.POND_SANDBOX ?? join(tmpdir(), "pond-import-scope-sandbox"));
-if (args.has("--fresh")) rmSync(sandbox, { recursive: true, force: true });
+  ? mkdtempSync(path.join(tmpdir(), "pond-import-scope-self-test-"))
+  : (process.env.POND_SANDBOX ??
+    path.join(tmpdir(), "pond-import-scope-sandbox"));
+if (args.has("--fresh")) {
+  rmSync(sandbox, { recursive: true, force: true });
+}
 if (selfTest) {
   process.once("exit", () => rmSync(sandbox, { recursive: true, force: true }));
 }
 mkdirSync(sandbox, { recursive: true });
 process.env.POND_SANDBOX = sandbox;
 
-const resultsJson = join(sandbox, "import-scope-results.json");
-const resultsMd = join(sandbox, "import-scope-results.md");
+const resultsJson = path.join(sandbox, "import-scope-results.json");
+const resultsMd = path.join(sandbox, "import-scope-results.md");
 const results = existsSync(resultsJson)
   ? JSON.parse(readFileSync(resultsJson, "utf8"))
   : {};
@@ -41,10 +44,17 @@ function writeResults() {
   const lines = ["# Import scope sandbox results", ""];
   for (const step of STEPS) {
     const result = results[step.id];
-    if (!step.source) continue;
-    lines.push(`## ${step.title}`, "");
-    lines.push(`Result: ${result?.verdict ?? "not run"}`);
-    if (result?.note) lines.push("", result.note);
+    if (!step.source) {
+      continue;
+    }
+    lines.push(
+      `## ${step.title}`,
+      "",
+      `Result: ${result?.verdict ?? "not run"}`,
+    );
+    if (result?.note) {
+      lines.push("", result.note);
+    }
     for (const check of result?.checks ?? []) {
       const mark = check.ok === null ? "-" : check.ok ? "[x]" : "[ ]";
       lines.push(`- ${mark} ${check.label}`);
@@ -69,18 +79,22 @@ async function accountFor(source) {
 }
 
 function indexDbPath() {
-  const dir = join(sandbox, "app-data", "indexes");
-  if (!existsSync(dir)) return null;
+  const dir = path.join(sandbox, "app-data", "indexes");
+  if (!existsSync(dir)) {
+    return null;
+  }
   const files = readdirSync(dir)
     .filter((name) => name.endsWith(".db"))
-    .map((name) => join(dir, name))
+    .map((name) => path.join(dir, name))
     .sort((a, b) => statSync(b).mtimeMs - statSync(a).mtimeMs);
   return files[0] ?? null;
 }
 
 function sinceStartMs(since) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(since ?? "");
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   return new Date(
     Number(match[1]),
     Number(match[2]) - 1,
@@ -103,7 +117,9 @@ function readSaves(accountId, since) {
     recent: [],
   };
   const file = indexDbPath();
-  if (!accountId || !file) return empty;
+  if (!accountId || !file) {
+    return empty;
+  }
   const Database = require("better-sqlite3");
   const db = new Database(file, { readonly: true, fileMustExist: true });
   try {
@@ -116,8 +132,12 @@ function readSaves(accountId, since) {
       )
       .all(accountId)) {
       saves.total += row.n;
-      if (row.status in saves) saves[row.status] += row.n;
-      if (row.filter in saves.filtered) saves.filtered[row.filter] += row.n;
+      if (row.status in saves) {
+        saves[row.status] += row.n;
+      }
+      if (row.filter in saves.filtered) {
+        saves.filtered[row.filter] += row.n;
+      }
     }
     const listKinds = { saved: 0, liked: 0, both: 0 };
     for (const row of db
@@ -129,8 +149,11 @@ function readSaves(accountId, since) {
       const kinds = JSON.parse(row.kinds ?? "[]");
       if (kinds.includes("saved") && kinds.includes("liked")) {
         listKinds.both += row.n;
-      } else if (kinds.includes("saved")) listKinds.saved += row.n;
-      else if (kinds.includes("liked")) listKinds.liked += row.n;
+      } else if (kinds.includes("saved")) {
+        listKinds.saved += row.n;
+      } else if (kinds.includes("liked")) {
+        listKinds.liked += row.n;
+      }
     }
     saves.listKinds = listKinds;
     saves.completeText = db
@@ -195,7 +218,7 @@ async function evidence(source) {
 
 function nativeCall(message) {
   return new Promise((resolve, reject) => {
-    const socket = createConnection(join(sandbox, "native.sock"));
+    const socket = createConnection(path.join(sandbox, "native.sock"));
     const chunks = [];
     socket.on("connect", () => {
       const payload = Buffer.from(JSON.stringify(message), "utf8");
@@ -229,7 +252,9 @@ function openSignIn(source) {
     return;
   }
   const jar = session.fromPartition(signInPartition(source));
-  const userAgent = jar.getUserAgent().replace(/ (Electron|pond)\/\S+/gi, "");
+  const userAgent = jar
+    .getUserAgent()
+    .replaceAll(/ (Electron|pond)\/\S+/gi, "");
   const win = new BrowserWindow({
     width: 980,
     height: 760,
@@ -275,7 +300,9 @@ async function importSession(source) {
     source,
     cookies,
   });
-  if (!response.ok) return { ok: false, message: response.error };
+  if (!response.ok) {
+    return { ok: false, message: response.error };
+  }
   const data = response.data;
   if (!data.connected) {
     return {
@@ -305,7 +332,9 @@ function registerGuideIpc() {
   ipcMain.handle("guide:import-session", (_, source) => importSession(source));
   ipcMain.handle("guide:sync-now", async (_, source) => {
     const account = await accountFor(source);
-    if (!account) return { ok: false, message: "Connect the Account first." };
+    if (!account) {
+      return { ok: false, message: "Connect the Account first." };
+    }
     await pondQuery(`window.pond.syncRunNow(${JSON.stringify(account.id)})`);
     return { ok: true, message: "Sync started." };
   });
@@ -333,19 +362,19 @@ function openGuide() {
     title: "Import Scope Sandbox",
     alwaysOnTop: !selfTest,
     webPreferences: {
-      preload: join(__dirname, "preload.cjs"),
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       sandbox: true,
     },
   });
-  void guide.loadFile(join(__dirname, "guide.html"));
+  void guide.loadFile(path.join(__dirname, "guide.html"));
   return guide;
 }
 
 async function runSelfTest() {
-  await new Promise((resolve) =>
-    guide.webContents.once("did-finish-load", resolve),
-  );
+  await new Promise((resolve) => {
+    guide.webContents.once("did-finish-load", resolve);
+  });
   const rendered = await guide.webContents.executeJavaScript(
     `new Promise((resolve) => setTimeout(() => resolve(document.querySelectorAll("[data-step]").length), 500))`,
   );
@@ -355,11 +384,15 @@ async function runSelfTest() {
   await guide.webContents.executeJavaScript(
     `document.querySelector('[data-step="x-folders"]').click()`,
   );
-  await new Promise((resolve) => setTimeout(resolve, 300));
-  const shot = join(tmpdir(), "pond-import-scope-guide.png");
+  await new Promise((resolve) => {
+    setTimeout(resolve, 300);
+  });
+  const shot = path.join(tmpdir(), "pond-import-scope-guide.png");
   writeFileSync(shot, (await guide.webContents.capturePage()).toPNG());
   const hello = await nativeCall({ type: "hello" });
-  if (!hello.ok) throw new Error("Sandbox socket didn't answer");
+  if (!hello.ok) {
+    throw new Error("Sandbox socket didn't answer");
+  }
   const found = await evidence("twitter");
   if (found.account !== null || found.saves.total !== 0) {
     throw new Error("A fresh sandbox should have no X Account");
@@ -374,33 +407,39 @@ registerGuideIpc();
 let started = false;
 app.on("web-contents-created", (_, contents) => {
   contents.on("did-finish-load", () => {
-    if (started || !contents.getURL().includes("index.html")) return;
-    if (guide && contents === guide.webContents) return;
+    if (started || !contents.getURL().includes("index.html")) {
+      return;
+    }
+    if (guide && contents === guide.webContents) {
+      return;
+    }
     started = true;
     pondContents = contents;
     openGuide();
     console.log(`Import scope sandbox: ${sandbox}`);
     console.log(`Results: ${resultsMd}`);
-    if (!selfTest) return;
+    if (!selfTest) {
+      return;
+    }
     const timer = setTimeout(() => {
       console.error("SANDBOX_SELF_TEST_FAILED: timed out");
       app.exit(1);
-    }, 30000);
-    runSelfTest().then(
-      () => {
-        clearTimeout(timer);
-        app.exit(0);
-      },
-      (error) => {
-        clearTimeout(timer);
-        console.error("SANDBOX_SELF_TEST_FAILED", error);
-        app.exit(1);
-      },
-    );
+    }, 30_000);
+    const failSelfTest = (error) => {
+      clearTimeout(timer);
+      console.error("SANDBOX_SELF_TEST_FAILED", error);
+      app.exit(1);
+    };
+    runSelfTest().then(() => {
+      clearTimeout(timer);
+      app.exit(0);
+    }, failSelfTest);
   });
 });
 
-import("../../out/main/index.js").catch((error) => {
+function fail(error) {
   console.error("SANDBOX_FAILED", error);
   app.exit(1);
-});
+}
+
+import("../../out/main/index.js").catch(fail);

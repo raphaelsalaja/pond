@@ -46,7 +46,7 @@ const rotated = [
 ];
 
 interface Pond {
-  accounts: ConnectedAccount[];
+  accounts: Array<ConnectedAccount>;
   /** The `SID` each Account's partition holds. */
   held: Map<string, string>;
   connected: Set<string>;

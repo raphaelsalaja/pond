@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  createUpdaterCoordinator,
-  type UpdaterDependencies,
-  type UpdaterPort,
-} from "./updater-coordinator";
+import { createUpdaterCoordinator } from "./updater-coordinator";
+import type { UpdaterDependencies, UpdaterPort } from "./updater-coordinator";
 
 interface UpdaterListeners {
   available?: (version: string) => void;
@@ -12,6 +9,8 @@ interface UpdaterListeners {
   downloaded?: (version: string) => void;
   progress?: (percent: number) => void;
 }
+
+function noop() {}
 
 function setup() {
   const listeners: UpdaterListeners = {};
@@ -133,7 +132,7 @@ describe("updater coordinator", () => {
     const { coordinator, dependencies, listeners, updater } = setup();
     await coordinator.start();
     listeners.available?.("1.2.0");
-    let fail = (_error: Error): void => {};
+    let fail: (error: Error) => void = noop;
     vi.mocked(updater.download).mockImplementationOnce(
       () =>
         new Promise<void>((_resolve, reject) => {
@@ -170,7 +169,7 @@ describe("updater coordinator", () => {
 
   it("reports install success only after the handoff releases the caller", async () => {
     const { coordinator, updater } = setup();
-    let release = (): void => {};
+    let release: () => void = noop;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });

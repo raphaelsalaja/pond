@@ -8,8 +8,12 @@ const topLevelCommands =
   "status doctor version completion config auth libraries saves folders tags sources sync downloads conversions agent mcp skill library trash schema";
 
 export function completionScript(shell: string): string {
-  if (shell === "fish") return `complete -c pond -f -a '${topLevelCommands}'`;
-  if (shell === "bash") return `complete -W '${topLevelCommands}' pond`;
+  if (shell === "fish") {
+    return `complete -c pond -f -a '${topLevelCommands}'`;
+  }
+  if (shell === "bash") {
+    return `complete -W '${topLevelCommands}' pond`;
+  }
   return `#compdef pond\n_arguments '1:command:(${topLevelCommands})'`;
 }
 
@@ -56,7 +60,9 @@ export function registerCoreCommands(program: Command, version: string): void {
   action(program, config.command("path"), async () => configPath());
   action(program, config.command("get").argument("[key]"), async (key) => {
     const value = await readConfig();
-    if (key === undefined) return value;
+    if (key === undefined) {
+      return value;
+    }
     const parsedKey = z.enum(["baseUrl", "token", "timeout"]).parse(key);
     return value[parsedKey] ?? null;
   });
@@ -65,8 +71,9 @@ export function registerCoreCommands(program: Command, version: string): void {
     config.command("set").argument("<key>").argument("<value>"),
     async (key, value) => {
       const parsedKey = z.enum(["baseUrl", "token", "timeout"]).safeParse(key);
-      if (!parsedKey.success)
+      if (!parsedKey.success) {
         throw new Error("Config key must be baseUrl, token, or timeout.");
+      }
       const parsedValue = StringSchema.parse(value);
       const current = await readConfig();
       if (parsedKey.data === "timeout") {
@@ -81,7 +88,9 @@ export function registerCoreCommands(program: Command, version: string): void {
   const auth = program.command("auth");
   action(program, auth.command("status"), async () => {
     const { api, config: settings } = await commandContext(program);
-    if (!settings.token) return { authorized: false };
+    if (!settings.token) {
+      return { authorized: false };
+    }
     return api
       .operations()
       .then(() => ({ authorized: true }))

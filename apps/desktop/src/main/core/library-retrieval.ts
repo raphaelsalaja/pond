@@ -1,25 +1,22 @@
-import {
-  MEDIA_TYPES,
-  type MediaType,
-  SOURCES,
-  type Source,
-  saves,
-} from "@pond/schema/db";
-import { buildWhere, type Query } from "@pond/schema/filters";
-import { and, desc, eq, inArray, isNull, ne, type SQL, sql } from "drizzle-orm";
+import { MEDIA_TYPES, SOURCES, saves } from "@pond/schema/db";
+import type { MediaType, Source } from "@pond/schema/db";
+import { buildWhere } from "@pond/schema/filters";
+import type { Query } from "@pond/schema/filters";
+import { and, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import type { LibraryQueryRequest } from "../../shared/library-query";
-import { type Db, getDb } from "../db";
+import { getDb } from "../db";
+import type { Db } from "../db";
 import { compileKeywordWhere, toFtsMatchQuery } from "./keyword-query";
 import { libraryQueryWhere } from "./library-query";
 import {
   EMBEDDING_QUERY_TASKS,
   encodeQueryEmbeddings,
-  type QueryEmbeddings,
   reciprocalRankFusion,
-  type VersionedVector,
 } from "./query-embeddings";
+import type { QueryEmbeddings, VersionedVector } from "./query-embeddings";
 import { knnVec, parseJsonVector } from "./vec-index";
 
 const mediaProbe = z.discriminatedUnion("kind", [
@@ -51,7 +48,7 @@ export const libraryRetrievalInput = z.object({
 export type LibraryRetrievalInput = z.infer<typeof libraryRetrievalInput>;
 
 export interface LibraryRetrievalScope {
-  saveIds?: string[];
+  saveIds?: Array<string>;
   folderId?: string;
   libraryQuery?: LibraryQueryRequest;
   filter?: Query;
@@ -70,11 +67,11 @@ export interface LibraryRetrievalHit {
   mediaType: MediaType | null;
   savedAt: Date;
   score: number;
-  channels: RetrievalChannel[];
+  channels: Array<RetrievalChannel>;
 }
 
 export interface LibraryRetrievalResult {
-  hits: LibraryRetrievalHit[];
+  hits: Array<LibraryRetrievalHit>;
   saves: Array<
     Pick<
       LibraryRetrievalHit,
@@ -85,48 +82,61 @@ export interface LibraryRetrievalResult {
 
 export { toFtsMatchQuery } from "./keyword-query";
 
-export function normalizeMedia(media: MediaType[] | undefined): MediaType[] {
+export function normalizeMedia(
+  media: Array<MediaType> | undefined,
+): Array<MediaType> {
   return [...new Set(media ?? [])];
 }
 
-export function libraryScopeClauses(scope: LibraryRetrievalScope): SQL[] {
+export function libraryScopeClauses(scope: LibraryRetrievalScope): Array<SQL> {
   const scoped = scope.libraryQuery
     ? libraryQueryWhere(scope.libraryQuery)
     : undefined;
-  const clauses: SQL[] = scoped ? [scoped] : [isNull(saves.deletedAt)];
-  if (scope.saveIds) clauses.push(inArray(saves.id, scope.saveIds));
+  const clauses: Array<SQL> = scoped ? [scoped] : [isNull(saves.deletedAt)];
+  if (scope.saveIds) {
+    clauses.push(inArray(saves.id, scope.saveIds));
+  }
   if (scope.folderId) {
     const compiled = buildWhere({
       combinator: "and",
       rules: [{ field: "folder", operator: "some", value: [scope.folderId] }],
     });
-    if (compiled) clauses.push(compiled);
+    if (compiled) {
+      clauses.push(compiled);
+    }
   }
   if (scope.filter) {
     const compiled = buildWhere(scope.filter);
-    if (compiled) clauses.push(compiled);
+    if (compiled) {
+      clauses.push(compiled);
+    }
   }
   return clauses;
 }
 
-function inputClauses(input: LibraryRetrievalInput): SQL[] {
-  const clauses: SQL[] = [];
-  if (input.source) clauses.push(eq(saves.source, input.source));
+function inputClauses(input: LibraryRetrievalInput): Array<SQL> {
+  const clauses: Array<SQL> = [];
+  if (input.source) {
+    clauses.push(eq(saves.source, input.source));
+  }
   if (input.folderId) {
     const folderQuery: Query = {
       combinator: "and",
       rules: [{ field: "folder", operator: "some", value: [input.folderId] }],
     };
     const compiled = buildWhere(folderQuery);
-    if (compiled) clauses.push(compiled);
+    if (compiled) {
+      clauses.push(compiled);
+    }
   }
   const media = normalizeMedia(input.media);
   if (media.length) {
     const projectedType = sql<string>`case when ${saves.source} = 'web' then 'link' else lower(coalesce(${saves.mediaType}, '')) end`;
     clauses.push(inArray(projectedType, media));
   }
-  if (input.untagged)
+  if (input.untagged) {
     clauses.push(sql`json_array_length(coalesce(${saves.tags}, '[]')) = 0`);
+  }
   return clauses;
 }
 
@@ -143,7 +153,7 @@ const projection = {
 };
 
 function publicSaves(
-  hits: LibraryRetrievalHit[],
+  hits: Array<LibraryRetrievalHit>,
 ): LibraryRetrievalResult["saves"] {
   return hits.map(({ id, title, url, author, source, notes, description }) => ({
     id,
@@ -165,7 +175,7 @@ export interface RetrievalStore {
   records(
     condition: SQL | undefined,
     recentLimit?: number,
-  ): Promise<RetrievalRecord[]>;
+  ): Promise<Array<RetrievalRecord>>;
   admittedIds(condition: SQL | undefined): Promise<Array<{ id: string }>>;
   lexicalCandidates(
     query: string,
@@ -174,7 +184,7 @@ export interface RetrievalStore {
   ): Array<{ id: string; rank: number }>;
   neighbors(
     kind: "text" | "media",
-    vector: number[],
+    vector: Array<number>,
     limit: number,
     condition?: SQL,
   ): Array<{ id: string; distance: number }>;
@@ -254,9 +264,9 @@ async function denseChannel(
   store: RetrievalStore,
   kind: "text" | "media",
   vector: VersionedVector,
-  clauses: SQL[],
+  clauses: Array<SQL>,
   limit: number,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const ids = store
     .neighbors(
       kind,
@@ -271,7 +281,9 @@ async function denseChannel(
       ),
     )
     .map((hit) => hit.id);
-  if (!ids.length) return [];
+  if (!ids.length) {
+    return [];
+  }
   const modelColumn = kind === "text" ? saves.embeddingModel : saves.clipModel;
   const rows = await store.admittedIds(
     and(...clauses, eq(modelColumn, vector.model), inArray(saves.id, ids)),
@@ -284,7 +296,9 @@ async function resolveMediaProbe(
   db: Db,
   probe: z.infer<typeof mediaProbe> | undefined,
 ): Promise<VersionedVector | undefined> {
-  if (!probe) return undefined;
+  if (!probe) {
+    return undefined;
+  }
   if (probe.kind === "vector") {
     return { model: probe.model, vector: probe.values };
   }
@@ -298,7 +312,9 @@ async function resolveMediaProbe(
     .limit(1);
   const row = rows[0];
   const vector = parseJsonVector(row?.clipEmbedding);
-  if (!vector || !row?.clipModel) return undefined;
+  if (!vector || !row?.clipModel) {
+    return undefined;
+  }
   return { model: row.clipModel, vector };
 }
 
@@ -325,7 +341,9 @@ export async function retrieveLibraryWithStore(
   const limit = input.limit ?? 12;
   const clauses = [...libraryScopeClauses(scope), ...inputClauses(input)];
   const excludedId = input.visual?.kind === "saveId" ? input.visual.id : null;
-  if (excludedId) clauses.push(ne(saves.id, excludedId));
+  if (excludedId) {
+    clauses.push(ne(saves.id, excludedId));
+  }
   const query = input.query?.trim() ?? "";
   const match = compileKeywordWhere(query);
   const hasDense = Boolean(queryEmbeddings.text || queryEmbeddings.media);
@@ -342,7 +360,7 @@ export async function retrieveLibraryWithStore(
     return { hits, saves: publicSaves(hits) };
   }
 
-  const ranked: Array<{ channel: RetrievalChannel; ids: string[] }> = [];
+  const ranked: Array<{ channel: RetrievalChannel; ids: Array<string> }> = [];
   if (match) {
     const candidates = store.lexicalCandidates(
       query,
@@ -377,7 +395,9 @@ export async function retrieveLibraryWithStore(
       clauses,
       limit,
     );
-    if (ids.length) ranked.push({ channel: "text", ids });
+    if (ids.length) {
+      ranked.push({ channel: "text", ids });
+    }
   }
   if (queryEmbeddings.media) {
     const ids = await denseChannel(
@@ -387,21 +407,27 @@ export async function retrieveLibraryWithStore(
       clauses,
       limit,
     );
-    if (ids.length) ranked.push({ channel: "media", ids });
+    if (ids.length) {
+      ranked.push({ channel: "media", ids });
+    }
   }
 
-  const channelById = new Map<string, RetrievalChannel[]>();
+  const channelById = new Map<string, Array<RetrievalChannel>>();
   for (const list of ranked) {
     for (const id of list.ids) {
       const channels = channelById.get(id) ?? [];
-      if (!channels.includes(list.channel)) channels.push(list.channel);
+      if (!channels.includes(list.channel)) {
+        channels.push(list.channel);
+      }
       channelById.set(id, channels);
     }
   }
   const fused = reciprocalRankFusion(ranked.map((list) => list.ids))
     .filter((row) => row.id !== excludedId)
     .slice(0, Math.max(limit * 4, 50));
-  if (!fused.length) return { hits: [], saves: [] };
+  if (!fused.length) {
+    return { hits: [], saves: [] };
+  }
   const rows = await store.records(
     and(
       ...clauses,
@@ -451,7 +477,9 @@ export async function retrieveLibrary(
   }
   try {
     const media = await resolveMediaProbe(db, input.visual);
-    if (media) embeddings = { ...embeddings, media };
+    if (media) {
+      embeddings = { ...embeddings, media };
+    }
   } catch (error) {
     log.warn("[pond retrieval] media probe unavailable", {
       error: error instanceof Error ? error.message : "unknown error",

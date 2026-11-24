@@ -12,8 +12,12 @@ export const MCP_ACCESS_OFF = {
 } satisfies Record<McpAccessGroup, string>;
 
 export function mcpAccessAllowed(prefs: Prefs, group: McpAccessGroup): boolean {
-  if (group === "search") return prefs.agent.mcpSearch;
-  if (group === "open") return prefs.agent.mcpOpen;
+  if (group === "search") {
+    return prefs.agent.mcpSearch;
+  }
+  if (group === "open") {
+    return prefs.agent.mcpOpen;
+  }
   return prefs.agent.mcpExport;
 }
 

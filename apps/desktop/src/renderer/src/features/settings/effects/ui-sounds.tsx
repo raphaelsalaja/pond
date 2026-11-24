@@ -1,3 +1,4 @@
+import { isElement, isHTMLTag, isNode } from "@pond/ui/dom";
 import { useEffect } from "react";
 import {
   playUiSoft,
@@ -35,8 +36,10 @@ const TEXT_FIELD_SELECTOR = "input, textarea, select, [contenteditable]";
 const SOFT_VARIANTS = new Set(["ghost", "tertiary", "link"]);
 
 function asElement(target: EventTarget | null): Element | null {
-  if (!(target instanceof Node)) return null;
-  return target instanceof Element ? target : target.parentElement;
+  if (!isNode(target)) {
+    return null;
+  }
+  return isElement(target) ? target : target.parentElement;
 }
 
 function closestControl(el: Element | null): Element | null {
@@ -44,8 +47,12 @@ function closestControl(el: Element | null): Element | null {
 }
 
 function shouldSkip(control: Element, from: Element): boolean {
-  if (from.closest('[data-sound="none"]')) return true;
-  if (control.closest('[data-sound="none"]')) return true;
+  if (from.closest('[data-sound="none"]')) {
+    return true;
+  }
+  if (control.closest('[data-sound="none"]')) {
+    return true;
+  }
   if (from.closest(TEXT_FIELD_SELECTOR) && !control.matches(TOGGLE_SELECTOR)) {
     return true;
   }
@@ -56,15 +63,19 @@ function shouldSkip(control: Element, from: Element): boolean {
     return true;
   }
   if (
-    control instanceof HTMLButtonElement ||
-    control instanceof HTMLInputElement ||
-    control instanceof HTMLSelectElement ||
-    control instanceof HTMLTextAreaElement ||
-    control instanceof HTMLOptionElement
+    isHTMLTag(control, "button") ||
+    isHTMLTag(control, "input") ||
+    isHTMLTag(control, "select") ||
+    isHTMLTag(control, "textarea") ||
+    isHTMLTag(control, "option")
   ) {
-    if (control.disabled) return true;
+    if (control.disabled) {
+      return true;
+    }
   }
-  if (control.getAttribute("aria-disabled") === "true") return true;
+  if (control.getAttribute("aria-disabled") === "true") {
+    return true;
+  }
   return false;
 }
 
@@ -82,35 +93,56 @@ function isToggle(control: Element): boolean {
  * afterwards, so a capture listener still reads the value the control is leaving.
  */
 export function toggleTurnsOn(control: Element): boolean {
-  if (control instanceof HTMLInputElement && control.type === "checkbox") {
+  if (isHTMLTag(control, "input") && control.type === "checkbox") {
     return control.checked;
   }
   const pressed = control.getAttribute("aria-pressed");
-  if (pressed !== null) return pressed !== "true";
+  if (pressed !== null) {
+    return pressed !== "true";
+  }
   const checked = control.getAttribute("aria-checked");
-  if (checked !== null) return checked !== "true";
+  if (checked !== null) {
+    return checked !== "true";
+  }
   return false;
 }
 
 export function UiSounds() {
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0) return;
+      if (event.button !== 0) {
+        return;
+      }
       const from = asElement(event.target);
-      if (!from) return;
+      if (!from) {
+        return;
+      }
       const control = closestControl(from);
-      if (!control || shouldSkip(control, from)) return;
-      if (isToggle(control)) return;
-      if (isSoft(control)) playUiSoft();
-      else playUiTap();
+      if (!control || shouldSkip(control, from)) {
+        return;
+      }
+      if (isToggle(control)) {
+        return;
+      }
+      if (isSoft(control)) {
+        playUiSoft();
+      } else {
+        playUiTap();
+      }
     };
 
     const onClick = (event: MouseEvent) => {
-      if (event.button !== 0) return;
+      if (event.button !== 0) {
+        return;
+      }
       const from = asElement(event.target);
-      if (!from) return;
+      if (!from) {
+        return;
+      }
       const control = from.closest(TOGGLE_SELECTOR) ?? closestControl(from);
-      if (!control || !isToggle(control) || shouldSkip(control, from)) return;
+      if (!control || !isToggle(control) || shouldSkip(control, from)) {
+        return;
+      }
       playUiToggle(toggleTurnsOn(control));
     };
 
@@ -125,7 +157,9 @@ export function UiSounds() {
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("click", onClick, true);
       clearTimeout(warm);
-      if (idle !== undefined) cancelIdleCallback(idle);
+      if (idle !== undefined) {
+        cancelIdleCallback(idle);
+      }
     };
   }, []);
 

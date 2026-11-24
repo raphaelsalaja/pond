@@ -1,7 +1,8 @@
 import type { LibraryMarkSource } from "@shared/library-mark";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { LibraryCustomizeDialog } from ".";
 
@@ -27,7 +28,9 @@ beforeEach(() => {
       if (name === "library.identity.pickIcon") {
         return { ok: true, image: { src: SOURCE, width: 400, height: 200 } };
       }
-      if (name === "library.identity.cropIcon") return { ok: true, icon: LOGO };
+      if (name === "library.identity.cropIcon") {
+        return { ok: true, icon: LOGO };
+      }
       if (name === "library.identity.pondLogo") {
         return { ok: true, icon: POND_LOGO };
       }
@@ -66,10 +69,12 @@ function render(mark: LibraryMarkSource | null = null): Promise<void> {
 }
 
 function menuItem(label: string): HTMLElement {
-  const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-    (entry) => entry.textContent?.includes(label),
-  );
-  if (!(item instanceof HTMLElement)) throw new Error(`Missing ${label}`);
+  const item = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ].find((entry) => entry.textContent?.includes(label));
+  if (!item) {
+    throw new Error(`Missing ${label}`);
+  }
   return item;
 }
 
@@ -77,7 +82,9 @@ async function openLogoMenu(): Promise<void> {
   const trigger = document.querySelector<HTMLButtonElement>(
     'button[aria-label="Edit Logo"]',
   );
-  if (!trigger) throw new Error("Missing Edit Logo trigger");
+  if (!trigger) {
+    throw new Error("Missing Edit Logo trigger");
+  }
   await act(async () => trigger.click());
 }
 
@@ -107,7 +114,9 @@ function pondTint(label: string): HTMLButtonElement {
   const button = document.querySelector<HTMLButtonElement>(
     `[aria-label="Choose Pond Logo"] button[aria-label="${label}"]`,
   );
-  if (!button) throw new Error(`Missing ${label}`);
+  if (!button) {
+    throw new Error(`Missing ${label}`);
+  }
   return button;
 }
 
@@ -205,10 +214,12 @@ it("reopens a mark with a retired shade on its hue", async () => {
 });
 
 function cropDialog(): HTMLElement {
-  const dialog = [...document.querySelectorAll('[role="dialog"]')].find(
-    (entry) => entry.textContent?.includes("Crop Logo"),
-  );
-  if (!(dialog instanceof HTMLElement)) throw new Error("Missing Crop Logo");
+  const dialog = [
+    ...document.querySelectorAll<HTMLElement>('[role="dialog"]'),
+  ].find((entry) => entry.textContent?.includes("Crop Logo"));
+  if (!dialog) {
+    throw new Error("Missing Crop Logo");
+  }
   return dialog;
 }
 
@@ -216,7 +227,9 @@ function cropButton(label: string): HTMLButtonElement {
   const button = [...cropDialog().querySelectorAll("button")].find(
     (candidate) => candidate.textContent?.trim() === label,
   );
-  if (!button) throw new Error(`Missing ${label}`);
+  if (!button) {
+    throw new Error(`Missing ${label}`);
+  }
   return button;
 }
 
@@ -251,7 +264,9 @@ it("moves the crop with the arrow keys", async () => {
   const viewport = cropDialog().querySelector<HTMLElement>(
     '[role="application"]',
   );
-  if (!viewport) throw new Error("Missing crop area");
+  if (!viewport) {
+    throw new Error("Missing crop area");
+  }
   await act(async () =>
     viewport.dispatchEvent(
       new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
@@ -288,7 +303,9 @@ it("renames the library bundle when the name changes", async () => {
   const input = document.querySelector<HTMLInputElement>(
     'input[maxlength="255"]',
   );
-  if (!input) throw new Error("Missing name field");
+  if (!input) {
+    throw new Error("Missing name field");
+  }
   await act(async () => {
     Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,

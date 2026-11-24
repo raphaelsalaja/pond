@@ -9,7 +9,9 @@ export function Mark() {
 }
 
 export function Owner({ profile, library }: StepProps) {
-  if (profile === "new") return null;
+  if (profile === "new") {
+    return null;
+  }
   return (
     <p className={styles.owner}>
       <IconAlbum2 size={14} aria-hidden />

@@ -20,7 +20,7 @@ it("keeps every missed Source when a cookie changes during startup", async () =>
   const firstRequest = new Promise<void>((resolve) => {
     releaseFirst = resolve;
   });
-  const requests: Source[] = [];
+  const requests: Array<Source> = [];
   vi.spyOn(fakeBrowser.cookies, "getAll").mockImplementation(async () => []);
   vi.spyOn(fakeBrowser.cookies.onChanged, "addListener").mockImplementation(
     (listener: CookieListener) => {
@@ -34,7 +34,9 @@ it("keeps every missed Source when a cookie changes during startup", async () =>
         throw new Error("Unexpected native request");
       }
       requests.push(request.source);
-      if (requests.length === 1) await firstRequest;
+      if (requests.length === 1) {
+        await firstRequest;
+      }
       return { ok: false, error: "offline" };
     },
   );
@@ -42,7 +44,9 @@ it("keeps every missed Source when a cookie changes during startup", async () =>
   startSessionFollow();
   await vi.advanceTimersByTimeAsync(0);
   expect(requests).toEqual(["twitter"]);
-  if (!cookieListener) throw new Error("Cookie listener was not registered");
+  if (!cookieListener) {
+    throw new Error("Cookie listener was not registered");
+  }
   cookieListener({
     removed: false,
     cause: "explicit",
@@ -59,7 +63,7 @@ it("keeps every missed Source when a cookie changes during startup", async () =>
       storeId: "0",
     },
   });
-  await vi.advanceTimersByTimeAsync(5_000);
+  await vi.advanceTimersByTimeAsync(5000);
   expect(requests).toEqual(["twitter"]);
 
   releaseFirst?.();
@@ -80,7 +84,7 @@ it("keeps a newly connected Source tracked during a pending refresh", async () =
   const firstRequest = new Promise<void>((resolve) => {
     releaseFirst = resolve;
   });
-  const refreshed: Source[] = [];
+  const refreshed: Array<Source> = [];
   const imported = vi.fn();
   const connected = vi.fn();
   vi.spyOn(fakeBrowser.cookies, "getAll").mockImplementation(async () => []);
@@ -104,7 +108,9 @@ it("keeps a newly connected Source tracked during a pending refresh", async () =
         throw new Error("Unexpected native request");
       }
       refreshed.push(request.source);
-      if (request.source === "twitter") await firstRequest;
+      if (request.source === "twitter") {
+        await firstRequest;
+      }
       return { ok: true, data: { tracked: true, refreshed: true } };
     },
   );

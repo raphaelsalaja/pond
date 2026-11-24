@@ -1,11 +1,11 @@
 import { FIELD_DESCRIPTORS } from "@pond/schema/filters/fields";
-import {
-  type ComparatorId,
-  type FieldId,
-  isGroup,
-  type Predicate,
-  type PredicateValue,
-  type Query,
+import { isGroup } from "@pond/schema/filters/types";
+import type {
+  ComparatorId,
+  FieldId,
+  Predicate,
+  PredicateValue,
+  Query,
 } from "@pond/schema/filters/types";
 import { z } from "zod";
 import {
@@ -21,11 +21,21 @@ const RELATIVE_DATE_PATTERN = /^-P\d+[DWMY]$/;
 const ASPECT_PATTERN = /^\d+(\.\d+)?:\d+(\.\d+)?$/;
 
 export function defaultRuleValue(operator: ComparatorId): PredicateValue {
-  if (operator === "empty") return null;
-  if (operator === "exists") return true;
-  if (operator === "between") return ["", ""];
-  if (listOperators.has(operator)) return [];
-  if (operator === "near") return { hex: "#808080", tolerance: 12 };
+  if (operator === "empty") {
+    return null;
+  }
+  if (operator === "exists") {
+    return true;
+  }
+  if (operator === "between") {
+    return ["", ""];
+  }
+  if (listOperators.has(operator)) {
+    return [];
+  }
+  if (operator === "near") {
+    return { hex: "#808080", tolerance: 12 };
+  }
   return "";
 }
 
@@ -55,14 +65,23 @@ export function editableQuery(query: Query): Query {
 }
 
 export function ruleQueryReady(query: Query): boolean {
-  if (query.rules.length === 0) return !query.not;
+  if (query.rules.length === 0) {
+    return !query.not;
+  }
   return query.rules.every((rule) => {
-    if (isGroup(rule)) return rule.rules.length > 0 && ruleQueryReady(rule);
+    if (isGroup(rule)) {
+      return rule.rules.length > 0 && ruleQueryReady(rule);
+    }
     const field = FIELD_DESCRIPTORS[rule.field];
-    if (!field.comparators.includes(rule.operator)) return false;
-    if (rule.operator === "empty") return true;
-    if (rule.operator === "exists")
+    if (!field.comparators.includes(rule.operator)) {
+      return false;
+    }
+    if (rule.operator === "empty") {
+      return true;
+    }
+    if (rule.operator === "exists") {
       return z.boolean().safeParse(rule.value).success;
+    }
     if (rule.operator === "near") {
       const color = colorValueSchema.safeParse(rule.value);
       return color.success
@@ -73,31 +92,41 @@ export function ruleQueryReady(query: Query): boolean {
       listOperators.has(rule.operator) || rule.operator === "between"
         ? listValueSchema.safeParse(rule.value)
         : textValueSchema.transform((value) => [value]).safeParse(rule.value);
-    if (!values.success || values.data.length === 0) return false;
-    if (rule.operator === "between" && values.data.length !== 2) return false;
-    if (values.data.some((value) => !String(value).trim())) return false;
+    if (!values.success || values.data.length === 0) {
+      return false;
+    }
+    if (rule.operator === "between" && values.data.length !== 2) {
+      return false;
+    }
+    if (values.data.some((value) => !String(value).trim())) {
+      return false;
+    }
     if (field.type === "number") {
       if (
         (rule.field === "fileCount" || rule.field === "rating") &&
         values.data.some((value) => !Number.isInteger(Number(value)))
-      )
+      ) {
         return false;
+      }
       if (
         rule.field === "rating" &&
         values.data.some((value) => Number(value) > 5)
-      )
+      ) {
         return false;
+      }
       if (
         values.data.some(
           (value) => !Number.isFinite(Number(value)) || Number(value) < 0,
         )
-      )
+      ) {
         return false;
+      }
       if (
         rule.operator === "between" &&
         Number(values.data[0]) > Number(values.data[1])
-      )
+      ) {
         return false;
+      }
     }
     if (field.type === "date") {
       if (
@@ -106,14 +135,16 @@ export function ruleQueryReady(query: Query): boolean {
             !RELATIVE_DATE_PATTERN.test(String(value)) &&
             !Number.isFinite(new Date(value).getTime()),
         )
-      )
+      ) {
         return false;
+      }
       if (
         rule.operator === "between" &&
         new Date(values.data[0] ?? "").getTime() >
           new Date(values.data[1] ?? "").getTime()
-      )
+      ) {
         return false;
+      }
     }
     if (
       rule.field === "aspect" &&
@@ -124,8 +155,9 @@ export function ruleQueryReady(query: Query): boolean {
             .split(":")
             .some((part) => Number(part) <= 0),
       )
-    )
+    ) {
       return false;
+    }
     return true;
   });
 }
@@ -134,13 +166,17 @@ export function compileRuleQuery(query: Query): Query {
   return {
     ...query,
     rules: query.rules.map((rule) => {
-      if (isGroup(rule)) return compileRuleQuery(rule);
+      if (isGroup(rule)) {
+        return compileRuleQuery(rule);
+      }
       const field = FIELD_DESCRIPTORS[rule.field];
       const normalize = (
         value: string | number,
         upper: boolean,
       ): string | number => {
-        if (field.type === "number") return Number(value);
+        if (field.type === "number") {
+          return Number(value);
+        }
         if (field.type === "date" && DATE_PATTERN.test(String(value))) {
           const date = new Date(`${value}T00:00:00`);
           if (upper) {

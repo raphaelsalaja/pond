@@ -1,19 +1,21 @@
 import type { Folder } from "@pond/schema/db";
 import { Popover } from "@pond/ui";
-import { type ReactElement, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { ReactElement } from "react";
 import { recentFolderIds } from "@/features/library/lib/recent-folders";
 import { REVIEW_FOLDER_SLOTS } from "@/features/library/lib/review-queue";
 import {
   useFolderMemberships,
   useFolders,
 } from "@/features/library/state/folders";
-import { FolderMenu, type FolderMenuItem } from "@/features/saves";
+import { FolderMenu } from "@/features/saves";
+import type { FolderMenuItem } from "@/features/saves";
 import { usePrefs } from "@/shared/state/prefs";
 
 export type FolderChoice = Pick<Folder, "id" | "name">;
 
 /** Recent folders are read once per Review, so the number keys never move while you file. */
-export function useReviewFolders(): Folder[] {
+export function useReviewFolders(): Array<Folder> {
   const folders = useFolders();
   const [recent] = useState(recentFolderIds);
   return useMemo(() => {
@@ -43,7 +45,7 @@ export function ReviewFolderPicker({
   const memberships = useFolderMemberships();
   const [folderViews] = usePrefs("folderViews");
   const current = saveId ? (memberships[saveId] ?? []) : [];
-  const items: FolderMenuItem[] = folders.map((folder) => ({
+  const items: Array<FolderMenuItem> = folders.map((folder) => ({
     id: folder.id,
     name: folder.name,
     parentId: folder.parentId,

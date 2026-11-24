@@ -1,7 +1,6 @@
-import bubble from "./chat-bubble.mjs";
 import dot from "./parts/dot.mjs";
 
-export default ({ poly }, s) => {
+const bubble = ({ poly }, s) => {
   const [x0, , x1] = s.keylines.square;
   const top = 3;
   const base = 13;
@@ -29,6 +28,8 @@ export default ({ poly }, s) => {
     },
   );
 };
+
+export default bubble;
 
 export const open = (h, s) => [
   bubble(h, s),

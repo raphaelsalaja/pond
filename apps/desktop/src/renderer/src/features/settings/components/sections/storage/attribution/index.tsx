@@ -19,7 +19,9 @@ interface Share {
 
 function labelForSourceIdentity(identity: string): string {
   const source = getSourceDefForIdentity(identity);
-  if (source?.source === "local") return "Local Files";
+  if (source?.source === "local") {
+    return "Local Files";
+  }
   return source?.label ?? identity;
 }
 
@@ -62,7 +64,7 @@ function shareRows(data: StorageAttributionResult) {
       saves: row.saves,
       open: () => showFolderInLibrary(row.id),
     })),
-  } satisfies Record<string, Share[]>;
+  } satisfies Record<string, Array<Share>>;
 }
 
 function ShareList({
@@ -72,7 +74,7 @@ function ShareList({
   emptyTitle,
 }: {
   label: string;
-  rows: Share[];
+  rows: Array<Share>;
   total: number;
   emptyTitle: string;
 }) {

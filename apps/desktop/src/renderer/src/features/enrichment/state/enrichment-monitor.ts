@@ -18,8 +18,8 @@ interface EnrichmentStatus {
   inflight: number;
   activeKeys: ReadonlySet<string>;
   failedKeys: ReadonlySet<string>;
-  failures: readonly EnrichmentFailure[];
-  missingOriginals: readonly MissingOriginal[];
+  failures: ReadonlyArray<EnrichmentFailure>;
+  missingOriginals: ReadonlyArray<MissingOriginal>;
 }
 
 const store = new Store<EnrichmentStatus>({

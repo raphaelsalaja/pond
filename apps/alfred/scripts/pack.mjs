@@ -2,10 +2,9 @@
 
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(import.meta.dirname, "..");
 const stage = resolve(root, ".pack");
 const out = resolve(root, "dist/Pond.alfredworkflow");
 

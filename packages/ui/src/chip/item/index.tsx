@@ -1,7 +1,8 @@
 import { IconXmark } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
-import { Button, type ButtonProps } from "../../button";
+import { Button } from "../../button";
+import type { ButtonProps } from "../../button";
 import styles from "./styles.module.css";
 
 export type ChipTone =
@@ -45,7 +46,9 @@ export function Action({
 }: ActionProps) {
   return (
     <button
-      type={type}
+      type={
+        type === "submit" ? "submit" : type === "reset" ? "reset" : "button"
+      }
       className={cn(styles.action, className)}
       data-tone={tone}
       data-icon={icon || undefined}
@@ -64,7 +67,7 @@ export function Link({ className, tone = "file", ...props }: LinkProps) {
   );
 }
 
-interface ClearProps extends Omit<ButtonProps, "icon"> {}
+type ClearProps = Omit<ButtonProps, "icon">;
 
 export function Clear({
   className,

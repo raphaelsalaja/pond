@@ -1,7 +1,8 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 
 interface BlueskyPostPage {
@@ -23,12 +24,20 @@ async function inPageBlueskyHarvest(): Promise<BlueskyPostPage | null> {
       ?.trim() ?? "";
   const description = meta("og:description");
   const image = meta("og:image");
-  if (!description && !image) return null;
+  if (!description && !image) {
+    return null;
+  }
   const page: BlueskyPostPage = { mediaUrls: [], meta: {} };
-  if (description) page.description = description;
-  if (image) page.mediaUrls.push({ url: image, type: "image" });
+  if (description) {
+    page.description = description;
+  }
+  if (image) {
+    page.mediaUrls.push({ url: image, type: "image" });
+  }
   const published = meta("article:published_time");
-  if (published) page.meta.publishedAt = published;
+  if (published) {
+    page.meta.publishedAt = published;
+  }
   return page;
 }
 

@@ -1,7 +1,5 @@
-import {
-  type SaveFolderReference,
-  saveLibraryBridge,
-} from "@/features/saves/lib/library-bridge";
+import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import type { SaveFolderReference } from "@/features/saves/lib/library-bridge";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
@@ -14,7 +12,7 @@ function saveCount(count: number): string {
 export interface FolderMembershipChange {
   kind: "add" | "remove";
   saveCount: number;
-  folders: readonly Pick<SaveFolderReference, "name">[];
+  folders: ReadonlyArray<Pick<SaveFolderReference, "name">>;
 }
 
 function folderChangeTitle(change: FolderMembershipChange): string {
@@ -67,18 +65,22 @@ export function notifyFolderMembershipChange(
 
 /** Applies one immediate folder delta to the Saves and confirms it with a scoped Undo. */
 export async function changeSaveFolders(input: {
-  saveIds: readonly string[];
-  add: readonly SaveFolderReference[];
-  remove: readonly SaveFolderReference[];
+  saveIds: ReadonlyArray<string>;
+  add: ReadonlyArray<SaveFolderReference>;
+  remove: ReadonlyArray<SaveFolderReference>;
 }): Promise<void> {
-  if (input.saveIds.length === 0) return;
+  if (input.saveIds.length === 0) {
+    return;
+  }
   const addIds = input.add.map((folder) => folder.id);
   const result = await window.pond.query("folders.assign", {
     saveIds: [...input.saveIds],
     addIds,
     removeIds: input.remove.map((folder) => folder.id),
   });
-  if (addIds.length) saveLibraryBridge.rememberFolderDestinations(addIds);
+  if (addIds.length) {
+    saveLibraryBridge.rememberFolderDestinations(addIds);
+  }
   await saveLibraryBridge.refreshFolders();
   const adding = input.add.length > 0;
   notifyFolderMembershipChange(
@@ -92,11 +94,13 @@ export async function changeSaveFolders(input: {
 }
 
 export async function assignSavesToFolder(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   folder: SaveFolderReference,
   onUndo?: () => void,
 ): Promise<boolean> {
-  if (ids.length === 0) return false;
+  if (ids.length === 0) {
+    return false;
+  }
   try {
     const result = await window.pond.query("folders.addSaves", {
       folderId: folder.id,
@@ -120,7 +124,7 @@ export async function assignSavesToFolder(
   }
 }
 
-export function createFolderWithSaves(ids: readonly string[]): void {
+export function createFolderWithSaves(ids: ReadonlyArray<string>): void {
   void (async () => {
     try {
       const folder = await window.pond.query("folders.createWithSaves", {
@@ -148,10 +152,12 @@ export function createFolderWithSaves(ids: readonly string[]): void {
 }
 
 export async function removeSavesFromFolder(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   folder: SaveFolderReference,
 ): Promise<void> {
-  if (ids.length === 0) return;
+  if (ids.length === 0) {
+    return;
+  }
   try {
     await changeSaveFolders({ saveIds: ids, add: [], remove: [folder] });
   } catch (error) {
@@ -164,7 +170,7 @@ export async function removeSavesFromFolder(
 }
 
 export async function addSavesToLastUsedFolder(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   const folderId = saveLibraryBridge.lastUsedFolderId();
   const folder = folderId

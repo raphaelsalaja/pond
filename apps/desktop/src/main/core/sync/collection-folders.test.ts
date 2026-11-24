@@ -1,10 +1,8 @@
 import type { Folder, SourceSyncPrefs } from "@pond/schema/db";
 import { sourceLabel } from "@pond/schema/sources";
 import { describe, expect, it, vi } from "vitest";
-import {
-  type CollectionFolderStore,
-  fileCollectionSaves,
-} from "./collection-folders";
+import { fileCollectionSaves } from "./collection-folders";
+import type { CollectionFolderStore } from "./collection-folders";
 
 function folder(id: string, name: string, parentId: string | null): Folder {
   return {
@@ -17,9 +15,9 @@ function folder(id: string, name: string, parentId: string | null): Folder {
   };
 }
 
-function fakeStore(initial: Folder[], saves: Record<string, string>) {
+function fakeStore(initial: Array<Folder>, saves: Record<string, string>) {
   const folders = [...initial];
-  const memberships = new Map<string, string[]>();
+  const memberships = new Map<string, Array<string>>();
   let next = 0;
   const store = {
     listFolders: vi.fn(async () => [...folders]),
@@ -29,7 +27,7 @@ function fakeStore(initial: Folder[], saves: Record<string, string>) {
       return created;
     }),
     saveIds: vi.fn(
-      async (_source: string, sourceIds: string[]) =>
+      async (_source: string, sourceIds: Array<string>) =>
         new Map(
           sourceIds.flatMap((id) => {
             const saveId = saves[id];
@@ -39,7 +37,9 @@ function fakeStore(initial: Folder[], saves: Record<string, string>) {
     ),
     folderIds: vi.fn(async () => memberships),
     assign: vi.fn(
-      async (assignments: Array<{ saveId: string; folderIds: string[] }>) => {
+      async (
+        assignments: Array<{ saveId: string; folderIds: Array<string> }>,
+      ) => {
         for (const { saveId, folderIds } of assignments) {
           memberships.set(saveId, folderIds);
         }

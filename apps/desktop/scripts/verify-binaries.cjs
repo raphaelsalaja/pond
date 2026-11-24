@@ -1,7 +1,7 @@
 const { spawnSync } = require("node:child_process");
 const { existsSync, readdirSync, rmSync, statSync } = require("node:fs");
 const { createRequire } = require("node:module");
-const { join, sep } = require("node:path");
+const nodePath = require("node:path");
 const { z } = require("zod");
 const { verifyRuntimePackages } = require("./verify-runtime-packages.cjs");
 
@@ -18,14 +18,26 @@ async function verify(
   pruneOnnxRuntime(resourcesDir, platform, arch);
   pruneBetterSqlitePrebuilds(resourcesDir, platform, arch);
   await verifyRuntimePackages(resourcesDir);
-  if (platform === "darwin") verifySharpRuntime(resourcesDir, arch);
-  if (platform === "linux") verifySharpLinuxRuntime(resourcesDir, arch);
-  if (platform === "win32") verifySharpWindowsRuntime(resourcesDir, arch);
-  if (platform === "win32" || platform === "linux") assertAppIcon(context);
+  if (platform === "darwin") {
+    verifySharpRuntime(resourcesDir, arch);
+  }
+  if (platform === "linux") {
+    verifySharpLinuxRuntime(resourcesDir, arch);
+  }
+  if (platform === "win32") {
+    verifySharpWindowsRuntime(resourcesDir, arch);
+  }
+  if (platform === "win32" || platform === "linux") {
+    assertAppIcon(context);
+  }
   assertTintIcons(resourcesDir);
   const onnxShipped = verifyOnnxRuntime(resourcesDir, platform, arch);
-  const ffmpegPath = join(resourcesDir, "bin", ffmpegName(platform));
-  const nativeHostPath = join(resourcesDir, "bin", nativeHostName(platform));
+  const ffmpegPath = nodePath.join(resourcesDir, "bin", ffmpegName(platform));
+  const nativeHostPath = nodePath.join(
+    resourcesDir,
+    "bin",
+    nativeHostName(platform),
+  );
 
   assertPresent(ffmpegPath, "ffmpeg");
   // Another OS can't run it, and Rosetta's first launch of another arch outlasts
@@ -77,9 +89,11 @@ const MAC_SLICES = new Map([
 /** One runner packages both Mac builds, so each helper must carry the packed arch's slice. */
 function verifyMacSlices(resourcesDir, arch, readArchs = lipoArchs) {
   const wanted = MAC_SLICES.get(arch);
-  if (!wanted) return;
+  if (!wanted) {
+    return;
+  }
   for (const name of ["ffmpeg", "pond-native-host"]) {
-    const path = join(resourcesDir, "bin", name);
+    const path = nodePath.join(resourcesDir, "bin", name);
     const archs = readArchs(path);
     const missing = wanted.filter((slice) => !archs.includes(slice));
     if (missing.length > 0) {
@@ -108,7 +122,7 @@ function assertAppIcon(context) {
   const buildResources = context.packager.info.buildResourcesDir;
   if (
     !["icon.ico", "icon.png"].some((name) =>
-      existsSync(join(buildResources, name)),
+      existsSync(nodePath.join(buildResources, name)),
     )
   ) {
     throw new Error(
@@ -119,10 +133,10 @@ function assertAppIcon(context) {
 }
 
 function assertTintIcons(resourcesDir) {
-  const dir = join(resourcesDir, "app-icons");
+  const dir = nodePath.join(resourcesDir, "app-icons");
   const tints = existsSync(dir)
     ? readdirSync(dir).filter((tint) =>
-        existsSync(join(dir, tint, "default.png")),
+        existsSync(nodePath.join(dir, tint, "default.png")),
       )
     : [];
   if (tints.length === 0) {
@@ -157,7 +171,7 @@ const UNUSED_ONNX_FILES = {
 };
 
 function onnxPackageDir(resourcesDir) {
-  return join(
+  return nodePath.join(
     resourcesDir,
     "app.asar.unpacked",
     "node_modules",
@@ -166,24 +180,32 @@ function onnxPackageDir(resourcesDir) {
 }
 
 function pruneOnnxRuntime(resourcesDir, platform, arch) {
-  const runtimeRoot = join(onnxPackageDir(resourcesDir), "bin", "napi-v6");
-  if (!existsSync(runtimeRoot)) return;
+  const runtimeRoot = nodePath.join(
+    onnxPackageDir(resourcesDir),
+    "bin",
+    "napi-v6",
+  );
+  if (!existsSync(runtimeRoot)) {
+    return;
+  }
 
   for (const platformName of readdirSync(runtimeRoot)) {
-    const platformDir = join(runtimeRoot, platformName);
+    const platformDir = nodePath.join(runtimeRoot, platformName);
     if (platformName !== platform) {
       rmSync(platformDir, { recursive: true, force: true });
       continue;
     }
     for (const archName of readdirSync(platformDir)) {
-      const archDir = join(platformDir, archName);
+      const archDir = nodePath.join(platformDir, archName);
       if (arch && arch !== "universal" && archName !== arch) {
         rmSync(archDir, { recursive: true, force: true });
         continue;
       }
       const unused = UNUSED_ONNX_FILES[platform];
       for (const file of readdirSync(archDir)) {
-        if (unused?.test(file)) rmSync(join(archDir, file), { force: true });
+        if (unused?.test(file)) {
+          rmSync(nodePath.join(archDir, file), { force: true });
+        }
       }
     }
   }
@@ -199,11 +221,11 @@ function runOnnxSmoke(packageDir) {
   const common = requireOnnx.resolve("onnxruntime-common");
   const nodePath = common.slice(
     0,
-    common.lastIndexOf(`${sep}onnxruntime-common${sep}`),
+    common.lastIndexOf(`${nodePath.sep}onnxruntime-common${nodePath.sep}`),
   );
   return spawnSync(
     process.execPath,
-    [join(__dirname, "onnx-cpu-smoke.cjs"), packageDir],
+    [nodePath.join(__dirname, "onnx-cpu-smoke.cjs"), packageDir],
     {
       encoding: "utf8",
       env: { ...process.env, NODE_PATH: nodePath },
@@ -214,24 +236,31 @@ function runOnnxSmoke(packageDir) {
 }
 
 function pruneBetterSqlitePrebuilds(resourcesDir, platform, arch) {
-  if (arch === "universal") return;
-  const prebuilds = join(
+  if (arch === "universal") {
+    return;
+  }
+  const prebuilds = nodePath.join(
     resourcesDir,
     "app.asar.unpacked",
     "node_modules",
     "better-sqlite3",
     "prebuilds",
   );
-  if (!existsSync(prebuilds)) return;
+  if (!existsSync(prebuilds)) {
+    return;
+  }
   const expected = `${platform}-${arch}.node`;
   for (const filename of readdirSync(prebuilds)) {
-    if (filename !== expected)
-      rmSync(join(prebuilds, filename), { force: true });
+    if (filename !== expected) {
+      rmSync(nodePath.join(prebuilds, filename), { force: true });
+    }
   }
 }
 
 function normalizePlatform(electronPlatformName) {
-  if (electronPlatformName === "mas") return "darwin";
+  if (electronPlatformName === "mas") {
+    return "darwin";
+  }
   return electronPlatformName;
 }
 
@@ -244,7 +273,7 @@ function nativeHostName(platform) {
 }
 
 function betterSqlitePath(resourcesDir, platform, arch) {
-  return join(
+  return nodePath.join(
     resourcesDir,
     "app.asar.unpacked",
     "node_modules",
@@ -258,7 +287,7 @@ function sqliteVecPath(resourcesDir, platform, arch) {
   const os = platform === "win32" ? "windows" : platform;
   const extension =
     platform === "win32" ? "dll" : platform === "darwin" ? "dylib" : "so";
-  return join(
+  return nodePath.join(
     resourcesDir,
     "app.asar.unpacked",
     "node_modules",
@@ -270,31 +299,35 @@ function sqliteVecPath(resourcesDir, platform, arch) {
 function resolveResourcesDir(context, platform) {
   if (platform === "darwin") {
     const productFilename = context.packager.appInfo.productFilename;
-    return join(
+    return nodePath.join(
       context.appOutDir,
       `${productFilename}.app`,
       "Contents",
       "Resources",
     );
   }
-  return join(context.appOutDir, "resources");
+  return nodePath.join(context.appOutDir, "resources");
 }
 
 function verifySharpRuntime(resourcesDir, arch) {
-  if (arch !== "arm64" && arch !== "x64") return;
-  const unpacked = join(resourcesDir, "app.asar.unpacked");
+  if (arch !== "arm64" && arch !== "x64") {
+    return;
+  }
+  const unpacked = nodePath.join(resourcesDir, "app.asar.unpacked");
   const other = arch === "arm64" ? "x64" : "arm64";
   removeSharpPackages(unpacked, other);
   const files = listFiles(unpacked);
   const runtime = files.find(
     (file) =>
-      file.includes(`${sep}@img${sep}sharp-darwin-${arch}${sep}`) &&
-      file.endsWith(".node"),
+      file.includes(
+        `${nodePath.sep}@img${nodePath.sep}sharp-darwin-${arch}${nodePath.sep}`,
+      ) && file.endsWith(".node"),
   );
   const libvips = files.find(
     (file) =>
-      file.includes(`${sep}@img${sep}sharp-libvips-darwin-${arch}${sep}`) &&
-      file.endsWith(".dylib"),
+      file.includes(
+        `${nodePath.sep}@img${nodePath.sep}sharp-libvips-darwin-${arch}${nodePath.sep}`,
+      ) && file.endsWith(".dylib"),
   );
   if (!runtime || !libvips) {
     throw new Error(
@@ -305,18 +338,22 @@ function verifySharpRuntime(resourcesDir, arch) {
 }
 
 function verifySharpLinuxRuntime(resourcesDir, arch) {
-  if (arch !== "arm64" && arch !== "x64") return;
-  const unpacked = join(resourcesDir, "app.asar.unpacked");
+  if (arch !== "arm64" && arch !== "x64") {
+    return;
+  }
+  const unpacked = nodePath.join(resourcesDir, "app.asar.unpacked");
   const files = listFiles(unpacked);
   const runtime = files.find(
     (file) =>
-      file.includes(`${sep}@img${sep}sharp-linux-${arch}${sep}`) &&
-      file.endsWith(".node"),
+      file.includes(
+        `${nodePath.sep}@img${nodePath.sep}sharp-linux-${arch}${nodePath.sep}`,
+      ) && file.endsWith(".node"),
   );
   const libvips = files.find(
     (file) =>
-      file.includes(`${sep}@img${sep}sharp-libvips-linux-${arch}${sep}`) &&
-      file.includes(`${sep}libvips-cpp.so`),
+      file.includes(
+        `${nodePath.sep}@img${nodePath.sep}sharp-libvips-linux-${arch}${nodePath.sep}`,
+      ) && file.includes(`${nodePath.sep}libvips-cpp.so`),
   );
   if (!runtime || !libvips) {
     throw new Error(
@@ -327,8 +364,10 @@ function verifySharpLinuxRuntime(resourcesDir, arch) {
 }
 
 function verifySharpWindowsRuntime(resourcesDir, arch) {
-  if (arch !== "arm64" && arch !== "x64") return;
-  const lib = join(
+  if (arch !== "arm64" && arch !== "x64") {
+    return;
+  }
+  const lib = nodePath.join(
     resourcesDir,
     "app.asar.unpacked",
     "node_modules",
@@ -359,9 +398,13 @@ const ONNX_LIBRARY = {
 const UNPUBLISHED_ONNX_TARGETS = new Set(["darwin-x64"]);
 
 function verifyOnnxRuntime(resourcesDir, platform, arch) {
-  if (arch === "universal" || !ONNX_LIBRARY[platform]) return false;
-  if (UNPUBLISHED_ONNX_TARGETS.has(`${platform}-${arch}`)) return false;
-  const directory = join(
+  if (arch === "universal" || !ONNX_LIBRARY[platform]) {
+    return false;
+  }
+  if (UNPUBLISHED_ONNX_TARGETS.has(`${platform}-${arch}`)) {
+    return false;
+  }
+  const directory = nodePath.join(
     onnxPackageDir(resourcesDir),
     "bin",
     "napi-v6",
@@ -369,22 +412,27 @@ function verifyOnnxRuntime(resourcesDir, platform, arch) {
     arch,
   );
   for (const file of ["onnxruntime_binding.node", ONNX_LIBRARY[platform]]) {
-    assertPresent(join(directory, file), `onnxruntime ${file}`);
+    assertPresent(nodePath.join(directory, file), `onnxruntime ${file}`);
   }
   return true;
 }
 
 function removeSharpPackages(root, arch) {
-  const imagePackages = join(root, "node_modules", "@img");
+  const imagePackages = nodePath.join(root, "node_modules", "@img");
   for (const name of [`sharp-darwin-${arch}`, `sharp-libvips-darwin-${arch}`]) {
-    rmSync(join(imagePackages, name), { recursive: true, force: true });
+    rmSync(nodePath.join(imagePackages, name), {
+      recursive: true,
+      force: true,
+    });
   }
 }
 
 function listFiles(root) {
-  if (!existsSync(root)) return [];
+  if (!existsSync(root)) {
+    return [];
+  }
   return readdirSync(root, { recursive: true }).map((entry) =>
-    join(root, String(entry)),
+    nodePath.join(root, String(entry)),
   );
 }
 

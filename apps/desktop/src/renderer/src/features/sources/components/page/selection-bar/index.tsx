@@ -20,7 +20,7 @@ export function SourceSelectionBar() {
     <SelectionBar.Root
       label="Selected Sources"
       count={rows.length}
-      onClear={sourcesSelection.clear}
+      onClear={() => sourcesSelection.clear()}
     >
       <SelectionBar.Action
         label="Show Saved Items"
@@ -33,7 +33,9 @@ export function SourceSelectionBar() {
         label="Fetch New Saves"
         disabled={fetchable.length === 0}
         onClick={() => {
-          for (const row of fetchable) void window.pond.syncRunNow(row.id);
+          for (const row of fetchable) {
+            void window.pond.syncRunNow(row.id);
+          }
         }}
       >
         <IconRefresh />

@@ -27,16 +27,21 @@ const normalize = {
   pickLargestSrcset: () => undefined,
 };
 
+type Build = (tweetId: string, helpers: typeof normalize) => object;
+
+function isBuild(value: unknown): value is Build {
+  return Object.prototype.toString.call(value) === "[object Function]";
+}
+
 function runHarvest(html: string) {
   const dom = new JSDOM(html, {
     runScripts: "outside-only",
     url: "https://x.com/alice/status/2",
   });
-  // SAFETY: harvestSource returns the source of the controlled in-page function exercised by this fixture.
-  const build = dom.window.eval(`(${harvestSource()})`) as (
-    tweetId: string,
-    helpers: typeof normalize,
-  ) => object;
+  const build = dom.window.eval(`(${harvestSource()})`);
+  if (!isBuild(build)) {
+    throw new Error("harvestSource did not evaluate to a function");
+  }
   return ResultSchema.parse(build("2", normalize));
 }
 

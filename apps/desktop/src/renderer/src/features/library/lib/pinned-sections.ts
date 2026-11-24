@@ -4,7 +4,9 @@ export function splitPinned<T extends { id: string }>(
 ) {
   const rank = new Map(pinnedIds.map((id, index) => [id, index]));
   const pinned = saves.filter((save) => rank.has(save.id));
-  if (pinned.length === 0) return { pinned, contents: saves };
+  if (pinned.length === 0) {
+    return { pinned, contents: saves };
+  }
   pinned.sort((a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0));
   return {
     pinned,

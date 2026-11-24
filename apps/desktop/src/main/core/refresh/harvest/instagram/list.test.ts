@@ -14,17 +14,19 @@ const PAGES = new Map<string, FeedPage>([
   ["c3", page(["c1"])],
 ]);
 
-function page(codes: string[], next?: string): FeedPage {
+function page(codes: Array<string>, next?: string): FeedPage {
   const feed: FeedPage = {
     items: codes.map((code) => ({ media: { code, media_type: 1 } })),
     more_available: next !== undefined,
   };
-  if (next) feed.next_max_id = next;
+  if (next) {
+    feed.next_max_id = next;
+  }
   return feed;
 }
 
 function harness(opts: { rejectCursor?: string; abortAfter?: number } = {}) {
-  const requested: string[] = [];
+  const requested: Array<string> = [];
   const context = {
     location: { pathname: "/", href: "https://www.instagram.com/" },
     document: { querySelector: () => null, documentElement: { lang: "en" } },
@@ -55,7 +57,9 @@ function harness(opts: { rejectCursor?: string; abortAfter?: number } = {}) {
   return { context, requested };
 }
 
-function codes(result: { entries?: Array<{ sourceId: string }> }): string[] {
+function codes(result: {
+  entries?: Array<{ sourceId: string }>;
+}): Array<string> {
   return (result.entries ?? []).map((e) => e.sourceId);
 }
 

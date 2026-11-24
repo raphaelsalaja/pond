@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { inverse, type Transaction } from "@pond/schema/tx";
+import { inverse } from "@pond/schema/tx";
+import type { Transaction } from "@pond/schema/tx";
 import type { UndoLatestResult, UndoStepOutcome } from "@shared/wire";
 import log from "electron-log/main.js";
 import { executeBatch } from "./executor";
@@ -14,7 +15,7 @@ export interface UndoEffects {
 
 interface UndoStep {
   id: string;
-  transactions: Transaction[];
+  transactions: Array<Transaction>;
   effects?: UndoEffects;
 }
 
@@ -30,11 +31,11 @@ async function runEffect(
 }
 
 export function createUndoHistory(
-  commit: (transactions: Transaction[]) => Promise<void>,
+  commit: (transactions: Array<Transaction>) => Promise<void>,
   createId: () => string = randomUUID,
 ) {
-  const undoStack: UndoStep[] = [];
-  const redoStack: UndoStep[] = [];
+  const undoStack: Array<UndoStep> = [];
+  const redoStack: Array<UndoStep> = [];
   let epoch = 0;
   let commandTail = Promise.resolve();
   function serialize<T>(operation: () => Promise<T>): Promise<T> {
@@ -58,11 +59,15 @@ export function createUndoHistory(
         }),
       );
       await runEffect(step.effects?.undo);
-      if (epoch === started) redoStack.push(step);
+      if (epoch === started) {
+        redoStack.push(step);
+      }
       return true;
     } catch (error) {
       log.warn("[pond undo] failed", error);
-      if (epoch === started) undoStack.push(step);
+      if (epoch === started) {
+        undoStack.push(step);
+      }
       return false;
     }
   }
@@ -76,80 +81,97 @@ export function createUndoHistory(
         })),
       );
       await runEffect(step.effects?.redo);
-      if (epoch === started) undoStack.push(step);
+      if (epoch === started) {
+        undoStack.push(step);
+      }
       return true;
     } catch (error) {
       log.warn("[pond redo] failed", error);
-      if (epoch === started) redoStack.push(step);
+      if (epoch === started) {
+        redoStack.push(step);
+      }
       return false;
     }
   }
   function undoLatest(): Promise<UndoLatestResult> {
     return serialize(async () => {
       const step = undoStack.pop();
-      if (!step) return { ok: false, step: null };
+      if (!step) {
+        return { ok: false, step: null };
+      }
       return { ok: await revert(step), step: step.id };
     });
   }
   function redoLatest(): Promise<UndoLatestResult> {
     return serialize(async () => {
       const step = redoStack.pop();
-      if (!step) return { ok: false, step: null };
+      if (!step) {
+        return { ok: false, step: null };
+      }
       return { ok: await reapply(step), step: step.id };
     });
   }
   return {
-    record(transactions: Transaction[], effects?: UndoEffects): string | null {
-      if (!transactions.length) return null;
+    record(
+      transactions: Array<Transaction>,
+      effects?: UndoEffects,
+    ): string | null {
+      if (!transactions.length) {
+        return null;
+      }
       const id = createId();
       undoStack.push({
         id,
         transactions: structuredClone(transactions),
         effects,
       });
-      if (undoStack.length > MAX_HISTORY) undoStack.shift();
+      if (undoStack.length > MAX_HISTORY) {
+        undoStack.shift();
+      }
       redoStack.length = 0;
       return id;
     },
-    clear(): void {
+    clear: (): void => {
       epoch++;
       undoStack.length = 0;
       redoStack.length = 0;
     },
     undoLatest,
     redoLatest,
-    async undo(): Promise<boolean> {
-      return (await undoLatest()).ok;
-    },
-    async redo(): Promise<boolean> {
-      return (await redoLatest()).ok;
-    },
+    undo: async (): Promise<boolean> => (await undoLatest()).ok,
+    redo: async (): Promise<boolean> => (await redoLatest()).ok,
     /** Reverses one recorded step only while it is still the latest change; an already-undone step reports `done`. */
-    undoStep(id: string): Promise<UndoStepOutcome> {
-      return serialize(async () => {
-        if (redoStack.at(-1)?.id === id) return "done";
-        if (undoStack.at(-1)?.id !== id) return "stale";
+    undoStep: (id: string): Promise<UndoStepOutcome> =>
+      serialize(async () => {
+        if (redoStack.at(-1)?.id === id) {
+          return "done";
+        }
+        if (undoStack.at(-1)?.id !== id) {
+          return "stale";
+        }
         const step = undoStack.pop();
-        if (!step) return "stale";
+        if (!step) {
+          return "stale";
+        }
         return (await revert(step)) ? "done" : "failed";
-      });
-    },
+      }),
     /** Reapplies one undone step only while it is still the latest undo; an already-redone step reports `done`. */
-    redoStep(id: string): Promise<UndoStepOutcome> {
-      return serialize(async () => {
-        if (undoStack.at(-1)?.id === id) return "done";
-        if (redoStack.at(-1)?.id !== id) return "stale";
+    redoStep: (id: string): Promise<UndoStepOutcome> =>
+      serialize(async () => {
+        if (undoStack.at(-1)?.id === id) {
+          return "done";
+        }
+        if (redoStack.at(-1)?.id !== id) {
+          return "stale";
+        }
         const step = redoStack.pop();
-        if (!step) return "stale";
+        if (!step) {
+          return "stale";
+        }
         return (await reapply(step)) ? "done" : "failed";
-      });
-    },
-    canUndo(): boolean {
-      return undoStack.length > 0;
-    },
-    canRedo(): boolean {
-      return redoStack.length > 0;
-    },
+      }),
+    canUndo: (): boolean => undoStack.length > 0,
+    canRedo: (): boolean => redoStack.length > 0,
   };
 }
 const history = createUndoHistory(async (transactions) => {
@@ -159,7 +181,7 @@ export function recordForUndo(transaction: Transaction): string | null {
   return history.record([transaction]);
 }
 export function recordBatchForUndo(
-  transactions: Transaction[],
+  transactions: Array<Transaction>,
   effects?: UndoEffects,
 ): string | null {
   return history.record(transactions, effects);

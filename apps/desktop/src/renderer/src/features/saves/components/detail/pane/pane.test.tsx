@@ -2,7 +2,8 @@ import "@/app/effects/save-library-bridge";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { currentLocation, openLibraryAt } from "@/app/test/library-router";
@@ -23,11 +24,11 @@ let root: Root;
 let stopViewUrlSync: (() => void) | undefined;
 const requests: Array<{
   name: string;
-  input: Record<string, string | string[] | number>;
+  input: Record<string, string | Array<string> | number>;
 }> = [];
 async function stubQuery(
   name: string,
-  input: Record<string, string | string[] | number>,
+  input: Record<string, string | Array<string> | number>,
 ) {
   requests.push({ name, input });
   if (
@@ -35,15 +36,19 @@ async function stubQuery(
     name === "folders.memberships" ||
     name === "tags.list" ||
     name === "tagGroups.list"
-  )
+  ) {
     return [];
-  if (name === "folders.create") return { id: "created" };
-  if (name === "saves.rawJson")
+  }
+  if (name === "folders.create") {
+    return { id: "created" };
+  }
+  if (name === "saves.rawJson") {
     return {
       rawJson:
         pool.get(z.object({ id: z.string() }).parse(input).id)?.rawJson ?? null,
     };
-  if (name === "saves.getMany")
+  }
+  if (name === "saves.getMany") {
     return [
       SavePatchSchema.parse({
         id: "cold",
@@ -54,6 +59,7 @@ async function stubQuery(
         fileSize: 2048,
       }),
     ];
+  }
   return { changed: 2 };
 }
 
@@ -83,7 +89,9 @@ beforeEach(() => {
       fileSize: 1024,
     }),
   );
-  if (!save) throw new Error("Invalid Save fixture");
+  if (!save) {
+    throw new Error("Invalid Save fixture");
+  }
   pool.upsert(save);
 });
 afterEach(async () => {
@@ -148,7 +156,9 @@ it("uses available thumbnails for the multi-selection stack before title fallbac
       files: [],
     }),
   );
-  if (!missing) throw new Error("Invalid missing preview fixture");
+  if (!missing) {
+    throw new Error("Invalid missing preview fixture");
+  }
   pool.upsert(missing);
 
   const ids = [missing.id];
@@ -169,7 +179,9 @@ it("uses available thumbnails for the multi-selection stack before title fallbac
         ],
       }),
     );
-    if (!save) throw new Error(`Invalid preview ${index} fixture`);
+    if (!save) {
+      throw new Error(`Invalid preview ${index} fixture`);
+    }
     pool.upsert(save);
     ids.push(save.id);
   }
@@ -184,7 +196,9 @@ it("uses available thumbnails for the multi-selection stack before title fallbac
 
 it("shows the title, note, and property cards in one column", async () => {
   const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
+  if (!current) {
+    throw new Error("Missing Save fixture");
+  }
   pool.upsert({
     ...current,
     source: "twitter",
@@ -256,7 +270,9 @@ it("shows the title, note, and property cards in one column", async () => {
 
 it("hides empty read-only sections and keeps empty addable sections", async () => {
   const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
+  if (!current) {
+    throw new Error("Missing Save fixture");
+  }
   pool.upsert({
     ...current,
     tags: [],
@@ -303,7 +319,9 @@ it("removes only the clicked folder immediately for every selected Save", async 
 
 it("leaves Inbox processing to the Inbox", async () => {
   const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
+  if (!current) {
+    throw new Error("Missing Save fixture");
+  }
   pool.upsert({ ...current, inboxState: "review" });
   await act(async () => root.render(<SaveInspector saveId="a" />));
   expect(host.textContent).not.toContain("Mark Processed");
@@ -312,7 +330,9 @@ it("leaves Inbox processing to the Inbox", async () => {
 
 it("hides Modified when it shows the same date as Added", async () => {
   const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
+  if (!current) {
+    throw new Error("Missing Save fixture");
+  }
   const day = Date.UTC(2026, 0, 1, 12);
   pool.upsert({ ...current, savedAt: day, createdAt: day + 60_000 });
   await act(async () => root.render(<SaveInspector saveId="a" />));
@@ -323,7 +343,9 @@ it("hides Modified when it shows the same date as Added", async () => {
 
 it("shows enrichment output and suggested tags", async () => {
   const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
+  if (!current) {
+    throw new Error("Missing Save fixture");
+  }
   pool.upsert({
     ...current,
     caption: "A dashboard with charts",
@@ -344,7 +366,9 @@ it("shows enrichment output and suggested tags", async () => {
   const trigger = host.querySelector<HTMLButtonElement>(
     '[aria-label="Add Tag"]',
   );
-  if (!trigger) throw new Error("Missing Add Tag");
+  if (!trigger) {
+    throw new Error("Missing Add Tag");
+  }
   await act(async () => trigger.click());
   const rows = [
     ...document.querySelectorAll<HTMLElement>(
@@ -362,7 +386,9 @@ it("toggles Favorite from the inspector without touching the rating", async () =
   const favorite = host.querySelector<HTMLButtonElement>(
     '[aria-label="Favorite"]',
   );
-  if (!favorite) throw new Error("Missing Favorite toggle");
+  if (!favorite) {
+    throw new Error("Missing Favorite toggle");
+  }
   expect(favorite.getAttribute("aria-pressed")).toBe("false");
   await act(async () => favorite.click());
 
@@ -385,7 +411,9 @@ it("leaves focus where it was when Favorite is pressed", async () => {
   const favorite = host.querySelector<HTMLButtonElement>(
     '[aria-label="Favorite"]',
   );
-  if (!favorite) throw new Error("Missing Favorite toggle");
+  if (!favorite) {
+    throw new Error("Missing Favorite toggle");
+  }
   const press = new MouseEvent("mousedown", {
     bubbles: true,
     cancelable: true,
@@ -397,7 +425,9 @@ it("leaves focus where it was when Favorite is pressed", async () => {
 
 it("clears a sensitive flag from the Sensitivity property", async () => {
   const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
+  if (!current) {
+    throw new Error("Missing Save fixture");
+  }
   pool.upsert({
     ...current,
     sensitiveScore: 0.99,
@@ -407,7 +437,9 @@ it("clears a sensitive flag from the Sensitivity property", async () => {
   const flag = [...host.querySelectorAll<HTMLElement>("span")].find(
     (node) => node.textContent === "Sensitivity" && node.children.length === 0,
   )?.parentElement;
-  if (!flag) throw new Error("Missing sensitive flag");
+  if (!flag) {
+    throw new Error("Missing sensitive flag");
+  }
   await act(async () => {
     flag.dispatchEvent(
       new MouseEvent("contextmenu", {
@@ -422,7 +454,9 @@ it("clears a sensitive flag from the Sensitivity property", async () => {
   const action = [
     ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
   ].find((item) => item.textContent?.includes("Sensitive Content"));
-  if (!action) throw new Error("Missing Sensitive Content action");
+  if (!action) {
+    throw new Error("Missing Sensitive Content action");
+  }
   expect(action.getAttribute("aria-checked")).toBe("true");
   await act(async () => action.click());
   expect(pool.get("a")?.sensitiveScore).toBe(0);
@@ -452,12 +486,16 @@ it("assigns a mixed folder immediately from the inspector menu", async () => {
   const trigger = host.querySelector<HTMLButtonElement>(
     '[aria-label="Add Folder"]',
   );
-  if (!trigger) throw new Error("Missing Add Folder");
+  if (!trigger) {
+    throw new Error("Missing Add Folder");
+  }
   await act(async () => trigger.click());
   const checkbox = document.querySelector<HTMLElement>(
     '[role="menuitemcheckbox"]',
   );
-  if (!checkbox) throw new Error("Missing folder checkbox");
+  if (!checkbox) {
+    throw new Error("Missing folder checkbox");
+  }
   expect(checkbox.dataset.selection).toBe("mixed");
   expect(checkbox.getAttribute("aria-description")).toBe("Some selected");
   await act(async () => checkbox.click());
@@ -482,13 +520,17 @@ it("adds each folder you tick while the menu stays open", async () => {
   const trigger = host.querySelector<HTMLButtonElement>(
     '[aria-label="Add Folder"]',
   );
-  if (!trigger) throw new Error("Missing Add Folder");
+  if (!trigger) {
+    throw new Error("Missing Add Folder");
+  }
   await act(async () => trigger.click());
   for (const name of ["Inspiration", "Reference"]) {
     const row = [
       ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
     ].find((item) => item.textContent?.includes(name));
-    if (!row) throw new Error(`Missing ${name}`);
+    if (!row) {
+      throw new Error(`Missing ${name}`);
+    }
     await act(async () => row.click());
   }
 
@@ -519,17 +561,23 @@ it("assigns a folder created from the folder search", async () => {
   const trigger = host.querySelector<HTMLButtonElement>(
     '[aria-label="Add Folder"]',
   );
-  if (!trigger) throw new Error("Missing Add Folder");
+  if (!trigger) {
+    throw new Error("Missing Add Folder");
+  }
   await act(async () => trigger.click());
   const search = document.querySelector<HTMLInputElement>(
     '[aria-label="Search Folders"]',
   );
-  if (!search) throw new Error("Missing folder search");
+  if (!search) {
+    throw new Error("Missing folder search");
+  }
   await act(async () => setInput(search, "Moodboard"));
   const create = [
     ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
   ].find((item) => item.textContent === "Create “Moodboard”");
-  if (!create) throw new Error("Missing create row");
+  if (!create) {
+    throw new Error("Missing create row");
+  }
   await act(async () => create.click());
 
   expect(requests).toContainEqual({
@@ -567,6 +615,10 @@ it("shows an assigned nested folder as one breadcrumb with its full path", async
   ).not.toBeNull();
 });
 
+const folderRows = () => [
+  ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
+];
+
 it("lists folders with their parent as a breadcrumb and filters by search", async () => {
   await act(async () =>
     root.render(
@@ -588,20 +640,21 @@ it("lists folders with their parent as a breadcrumb and filters by search", asyn
   const trigger = host.querySelector<HTMLButtonElement>(
     '[aria-label="Add Folder"]',
   );
-  if (!trigger) throw new Error("Missing Add Folder");
+  if (!trigger) {
+    throw new Error("Missing Add Folder");
+  }
   await act(async () => trigger.click());
-  const rows = () => [
-    ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
-  ];
-  expect(rows()).toHaveLength(3);
+  expect(folderRows()).toHaveLength(3);
 
   const search = document.querySelector<HTMLInputElement>(
     '[aria-label="Search Folders"]',
   );
-  if (!search) throw new Error("Missing folder search");
+  if (!search) {
+    throw new Error("Missing folder search");
+  }
   await act(async () => setInput(search, "collection"));
-  expect(rows()).toHaveLength(1);
-  expect(rows()[0]?.querySelector("[title]")?.getAttribute("title")).toBe(
+  expect(folderRows()).toHaveLength(1);
+  expect(folderRows()[0]?.querySelector("[title]")?.getAttribute("title")).toBe(
     "Reference › A very long collection name that needs truncation",
   );
 });
@@ -618,17 +671,23 @@ it("creates a folder from the search text", async () => {
   const trigger = host.querySelector<HTMLButtonElement>(
     '[aria-label="Add Folder"]',
   );
-  if (!trigger) throw new Error("Missing Add Folder");
+  if (!trigger) {
+    throw new Error("Missing Add Folder");
+  }
   await act(async () => trigger.click());
   const search = document.querySelector<HTMLInputElement>(
     '[aria-label="Search Folders"]',
   );
-  if (!search) throw new Error("Missing folder search");
+  if (!search) {
+    throw new Error("Missing folder search");
+  }
   await act(async () => setInput(search, "Moodboard"));
   const create = [
     ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
   ].find((item) => item.textContent === "Create “Moodboard”");
-  if (!create) throw new Error("Missing create row");
+  if (!create) {
+    throw new Error("Missing create row");
+  }
   await act(async () => create.click());
   expect(requests).toContainEqual({
     name: "folders.create",
@@ -641,7 +700,9 @@ it("explains why Related is empty before the save is indexed", async () => {
   const tab = [
     ...host.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
   ].find((entry) => entry.textContent === "Related");
-  if (!tab) throw new Error("Missing Related tab");
+  if (!tab) {
+    throw new Error("Missing Related tab");
+  }
   await act(async () => tab.click());
   expect(host.textContent).toContain("Not Indexed Yet");
   expect(requests.some((request) => request.name === "saves.related")).toBe(
@@ -651,10 +712,15 @@ it("explains why Related is empty before the save is indexed", async () => {
 
 it("loads Related Saves only when its tab opens and opens a selected Save", async () => {
   const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
+  if (!current) {
+    throw new Error("Missing Save fixture");
+  }
   pool.upsert({ ...current, clipModel: mediaEmbeddingVersion() });
   const query = vi.fn(
-    async (name: string, input: Record<string, string | string[] | number>) => {
+    async (
+      name: string,
+      input: Record<string, string | Array<string> | number>,
+    ) => {
       requests.push({ name, input });
       if (name === "saves.related") {
         return {
@@ -687,7 +753,9 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
           }),
         ];
       }
-      if (name === "saves.rawJson") return { rawJson: null };
+      if (name === "saves.rawJson") {
+        return { rawJson: null };
+      }
       return [];
     },
   );
@@ -699,7 +767,9 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
   const trigger = [
     ...host.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
   ].find((tab) => tab.textContent === "Related");
-  if (!trigger) throw new Error("Missing Related tab");
+  if (!trigger) {
+    throw new Error("Missing Related tab");
+  }
   expect(trigger.getAttribute("aria-selected")).toBe("false");
   await act(async () => trigger.click());
   expect(trigger.getAttribute("aria-selected")).toBe("true");
@@ -736,7 +806,9 @@ it("opens tagged saves from a tag chip without removing the tag", async () => {
   const tag = [...host.querySelectorAll("span")].find(
     (node) => node.textContent === "One" && node.children.length === 0,
   );
-  if (!remove || !tag) throw new Error("Missing tag One");
+  if (!remove || !tag) {
+    throw new Error("Missing tag One");
+  }
 
   await act(async () => remove.click());
   expect(requests).toContainEqual({

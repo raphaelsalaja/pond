@@ -11,8 +11,12 @@ export function isFreshHarvest(
   rawJson: HarvestedRawJson | null,
   now = Date.now(),
 ): boolean {
-  if (!rawJson?.extractedAt || !rawJson.capture) return false;
+  if (!rawJson?.extractedAt || !rawJson.capture) {
+    return false;
+  }
   const ms = Date.parse(rawJson.extractedAt);
-  if (!Number.isFinite(ms)) return false;
+  if (!Number.isFinite(ms)) {
+    return false;
+  }
   return now - ms < HARVEST_FRESH_MS;
 }

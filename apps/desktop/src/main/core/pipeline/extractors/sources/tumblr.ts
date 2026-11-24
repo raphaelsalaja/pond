@@ -51,11 +51,15 @@ export class TumblrPostExtractor implements Extractor {
     return name === "sid" && (value === undefined || value.length > 0);
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
-    if (segments.length !== 1 || !first) return null;
+    if (segments.length !== 1 || !first) {
+      return null;
+    }
     const blog = first.toLowerCase();
-    if (TUMBLR_RESERVED.has(blog)) return null;
+    if (TUMBLR_RESERVED.has(blog)) {
+      return null;
+    }
     return /^[a-z0-9-]{1,32}$/.test(blog) ? blog : null;
   }
 
@@ -84,7 +88,9 @@ export class TumblrPostExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("tumblr", input.url.href);
-    if (!sourceId) throw new TerminalError("could not parse tumblr post");
+    if (!sourceId) {
+      throw new TerminalError("could not parse tumblr post");
+    }
     const blog = blogFromUrl(input.url.href);
     /** Blog subdomains sit behind a bot wall, so the window fallback reads the `www` permalink instead. */
     const url = blog

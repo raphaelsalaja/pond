@@ -40,8 +40,12 @@ async function inPagePinterestList(
       try {
         const u = new URL(a.href, location.origin);
         id = u.pathname.match(/\/pin\/(\d+)/)?.[1] ?? null;
-      } catch {}
-      if (!id || seen.has(id)) continue;
+      } catch {
+        /** An unparseable href is skipped like any other non-pin link. */
+      }
+      if (!id || seen.has(id)) {
+        continue;
+      }
       seen.add(id);
       out.push({
         sourceId: id,

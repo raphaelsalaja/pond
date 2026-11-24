@@ -16,43 +16,43 @@ function Root({ className, containerClassName, ...props }: RootProps) {
   );
 }
 
-interface HeaderProps extends React.ComponentPropsWithoutRef<"thead"> {}
+type HeaderProps = React.ComponentPropsWithoutRef<"thead">;
 
 function Header({ className, ...props }: HeaderProps) {
   return <thead className={cn(styles.header, className)} {...props} />;
 }
 
-interface BodyProps extends React.ComponentPropsWithoutRef<"tbody"> {}
+type BodyProps = React.ComponentPropsWithoutRef<"tbody">;
 
 function Body({ className, ...props }: BodyProps) {
   return <tbody className={cn(styles.body, className)} {...props} />;
 }
 
-interface FooterProps extends React.ComponentPropsWithoutRef<"tfoot"> {}
+type FooterProps = React.ComponentPropsWithoutRef<"tfoot">;
 
 function Footer({ className, ...props }: FooterProps) {
   return <tfoot className={cn(styles.footer, className)} {...props} />;
 }
 
-interface RowProps extends React.ComponentPropsWithoutRef<"tr"> {}
+type RowProps = React.ComponentPropsWithoutRef<"tr">;
 
 function Row({ className, ...props }: RowProps) {
   return <tr className={cn(styles.row, className)} {...props} />;
 }
 
-interface HeadProps extends React.ComponentPropsWithoutRef<"th"> {}
+type HeadProps = React.ComponentPropsWithoutRef<"th">;
 
 function Head({ className, ...props }: HeadProps) {
   return <th className={cn(styles.head, className)} {...props} />;
 }
 
-interface CellProps extends React.ComponentPropsWithoutRef<"td"> {}
+type CellProps = React.ComponentPropsWithoutRef<"td">;
 
 function Cell({ className, ...props }: CellProps) {
   return <td className={cn(styles.cell, className)} {...props} />;
 }
 
-interface CaptionProps extends React.ComponentPropsWithoutRef<"caption"> {}
+type CaptionProps = React.ComponentPropsWithoutRef<"caption">;
 
 function Caption({ className, ...props }: CaptionProps) {
   return <caption className={cn(styles.caption, className)} {...props} />;

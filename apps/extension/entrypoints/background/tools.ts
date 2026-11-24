@@ -25,10 +25,9 @@ import {
   captureFullPage,
   captureRegion,
   captureVisible,
-  type Screenshot,
   ScreenshotError,
-  type ScreenshotOptions,
 } from "./screenshot";
+import type { Screenshot, ScreenshotOptions } from "./screenshot";
 import { cookiesForUrl } from "./session";
 import { syncSettings } from "./settings";
 import { toolbarSkipsDetails } from "./toolbar";
@@ -75,10 +74,15 @@ export async function runTool(
   await syncSettings();
   if (tool === "page") {
     const draft = pageDraft(tab);
-    if (!draft) return { ok: false, message: "Pond can only save web pages." };
+    if (!draft) {
+      return { ok: false, message: "Pond can only save web pages." };
+    }
     const { toolbar } = await getSettings();
-    if (toolbarSkipsDetails(toolbar)) void saveDraft(draft, tabId);
-    else void offerDraft(draft, tabId);
+    if (toolbarSkipsDetails(toolbar)) {
+      void saveDraft(draft, tabId);
+    } else {
+      void offerDraft(draft, tabId);
+    }
     return { ok: true };
   }
   if (tool === "region") {
@@ -105,7 +109,9 @@ export async function runTool(
 
 async function saveRegion(tab: chrome.tabs.Tab, region: CaptureRegion) {
   const { id: tabId, windowId } = tab;
-  if (tabId === undefined || windowId === undefined) return;
+  if (tabId === undefined || windowId === undefined) {
+    return;
+  }
   await screenshot(tab, (options) =>
     captureRegion(tabId, windowId, region, options),
   );
@@ -145,14 +151,18 @@ export async function handleOverlayResult(
   result: OverlayResult,
   tab: chrome.tabs.Tab | undefined,
 ): Promise<void> {
-  if (!tab) return;
+  if (!tab) {
+    return;
+  }
   if (result.kind === "region") {
     await saveRegion(tab, result.region);
     return;
   }
   if (result.kind === "details") {
     const parsed = detailsSchema.safeParse(result);
-    if (!parsed.success) return;
+    if (!parsed.success) {
+      return;
+    }
     const { draft, metadata } = parsed.data;
     await saveDraft(
       { ...draft, preview: null },
@@ -170,7 +180,9 @@ export async function handleOverlayResult(
   }
   const pageUrl = isWebUrl(tab.url) ? tab.url : undefined;
   const urls = result.urls.filter((url) => isWebUrl(url));
-  if (urls.length === 0) return;
+  if (urls.length === 0) {
+    return;
+  }
   await submitCapture({
     items: urls.map((url) => ({ kind: "asset", url })),
     title:
@@ -189,8 +201,12 @@ export async function handleGesture(
   gesture: Gesture,
   tab: chrome.tabs.Tab | undefined,
 ): Promise<void> {
-  if (tab?.id === undefined) return;
+  if (tab?.id === undefined) {
+    return;
+  }
   await syncSettings();
-  if (!(await getSettings()).altClick) return;
+  if (!(await getSettings()).altClick) {
+    return;
+  }
   await offerDraft(draftFromItem(gesture.item, tab), tab.id);
 }

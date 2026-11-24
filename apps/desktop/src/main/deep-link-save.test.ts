@@ -24,18 +24,18 @@ describe("parseSaveLink", () => {
   });
 });
 
-describe("createSaveLinkHandler", () => {
-  function deps() {
-    return {
-      enqueue: vi.fn(async () => ({ id: "s1", created: true })),
-      addTags: vi.fn(async () => 1),
-      addToFolder: vi.fn(async () => ({ ok: true })),
-      notify: vi.fn(),
-      now: vi.fn(() => 0),
-      ready: vi.fn(async () => {}),
-    };
-  }
+function deps() {
+  return {
+    enqueue: vi.fn(async () => ({ id: "s1", created: true })),
+    addTags: vi.fn(async () => 1),
+    addToFolder: vi.fn(async () => ({ ok: true })),
+    notify: vi.fn(),
+    now: vi.fn(() => 0),
+    ready: vi.fn(async () => {}),
+  };
+}
 
+describe("createSaveLinkHandler", () => {
   it("waits for the Library before saving", async () => {
     const d = deps();
     const gate = Promise.withResolvers<void>();
@@ -75,16 +75,18 @@ describe("createSaveLinkHandler", () => {
   it("stops after 20 saves a minute", async () => {
     const d = deps();
     const handle = createSaveLinkHandler(d);
-    for (let i = 0; i < 21; i++)
+    for (let i = 0; i < 21; i++) {
       await handle({ url: `https://e.com/${i}`, tags: [], folderId: null });
+    }
     expect(d.enqueue).toHaveBeenCalledTimes(20);
   });
 
   it("accepts saves again once the minute has passed", async () => {
     const d = deps();
     const handle = createSaveLinkHandler(d);
-    for (let i = 0; i < 20; i++)
+    for (let i = 0; i < 20; i++) {
       await handle({ url: `https://e.com/${i}`, tags: [], folderId: null });
+    }
     d.now.mockReturnValue(60_000);
     await handle({ url: "https://e.com/late", tags: [], folderId: null });
     expect(d.enqueue).toHaveBeenCalledTimes(21);

@@ -38,9 +38,9 @@ import { SourcesContextMenu } from "./context-menu";
 import {
   matchesSourceFilters,
   SOURCE_STATUS_OPTIONS,
-  type SourceFilters,
   sourceFiltersActive,
 } from "./lib/filters";
+import type { SourceFilters } from "./lib/filters";
 import type { SourceEntry, SourceTableRow } from "./lib/helpers";
 import { SourcesLoading } from "./loading";
 import { SourceOptionsMenu } from "./options";
@@ -48,9 +48,13 @@ import { SourceSelectionBar } from "./selection-bar";
 import styles from "./styles.module.css";
 
 function openEntry(entry: SourceEntry): void {
-  if (entry.kind === "account") sourceDetail.openAccount(entry.row.id);
-  else if (entry.kind === "watch") sourceDetail.openWatch(entry.row.id);
-  else sourceDetail.openFolder(entry.row.path);
+  if (entry.kind === "account") {
+    sourceDetail.openAccount(entry.row.id);
+  } else if (entry.kind === "watch") {
+    sourceDetail.openWatch(entry.row.id);
+  } else {
+    sourceDetail.openFolder(entry.row.path);
+  }
 }
 
 function SourcesMatchesEmpty({
@@ -65,7 +69,7 @@ function SourcesMatchesEmpty({
       query={filters.q}
       filtered={sourceFiltersActive(filters)}
       hidden={formatPlural(total, { one: "source", other: "sources" })}
-      onReset={sourcesFilters.reset}
+      onReset={() => sourcesFilters.reset()}
     />
   );
 }
@@ -123,19 +127,25 @@ export function SourcesPage() {
 
   const rowsById = useMemo(() => {
     const next = new Map<string, SourceTableRow>();
-    for (const row of rows) next.set(row.id, row);
+    for (const row of rows) {
+      next.set(row.id, row);
+    }
     return next;
   }, [rows]);
 
   useEffect(() => {
-    if (!addedWatchId) return;
+    if (!addedWatchId) {
+      return;
+    }
     void refetchWatches();
     sourceDetail.openWatch(addedWatchId);
     watchFlow.consumeAdded();
   }, [addedWatchId, refetchWatches]);
 
   useEffect(() => {
-    if (detailRevision === 0) return;
+    if (detailRevision === 0) {
+      return;
+    }
     void refetch();
     void refetchWatches();
   }, [detailRevision, refetch, refetchWatches]);
@@ -146,7 +156,9 @@ export function SourcesPage() {
     openEntry(row.entry);
   }, []);
   const fetchAll = useCallback(async () => {
-    if (fetchingAllRef.current) return;
+    if (fetchingAllRef.current) {
+      return;
+    }
     fetchingAllRef.current = true;
     setFetchingAll(true);
     const notificationId = notify({
@@ -184,7 +196,9 @@ export function SourcesPage() {
       setFetchingAll(false);
     }
   }, []);
-  if (loaded && tableRows.length === 0) return <SourcesIntro />;
+  if (loaded && tableRows.length === 0) {
+    return <SourcesIntro />;
+  }
 
   const toolbar = (
     <SearchChrome.Root
@@ -222,21 +236,21 @@ export function SourcesPage() {
             icon={<IconCircleCheck />}
             options={SOURCE_STATUS_OPTIONS}
             selected={filters.statuses}
-            onChange={sourcesFilters.setStatuses}
+            onChange={(next) => sourcesFilters.setStatuses(next)}
           />
           <TableFilterChip
             name="Source"
             icon={<IconLink2 />}
             options={sourceOptions}
             selected={filters.sources}
-            onChange={sourcesFilters.setSources}
+            onChange={(next) => sourcesFilters.setSources(next)}
           />
           <TableFilterChip
             name="Type"
             icon={<IconFile />}
             options={typeOptions}
             selected={filters.types}
-            onChange={sourcesFilters.setTypes}
+            onChange={(next) => sourcesFilters.setTypes(next)}
           />
         </TableFilterBar>
       }
@@ -275,7 +289,7 @@ export function SourcesPage() {
         sourcesSelection.set(
           ids
             .map((id) => rowsById.get(id))
-            .filter((row): row is SourceTableRow => row != null),
+            .filter((row): row is SourceTableRow => row !== undefined),
         );
       }}
       height={

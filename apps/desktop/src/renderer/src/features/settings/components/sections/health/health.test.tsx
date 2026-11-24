@@ -4,10 +4,13 @@ import type {
 } from "@shared/library-health-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MotionConfig } from "motion/react";
-import { act, type ReactNode } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { buildHealthCategories, type HealthCategory } from "./categories";
+import { buildHealthCategories } from "./categories";
+import type { HealthCategory } from "./categories";
 import { HealthDrilldown } from "./drilldown";
 import { HealthOverview } from "./overview";
 
@@ -116,7 +119,9 @@ afterEach(async () => {
 
 async function settle() {
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 }
 
@@ -136,7 +141,9 @@ function button(label: string) {
     (node) =>
       node.textContent === label || node.getAttribute("aria-label") === label,
   );
-  if (!found) throw new Error(`Missing button ${label}`);
+  if (!found) {
+    throw new Error(`Missing button ${label}`);
+  }
   return found;
 }
 
@@ -170,7 +177,9 @@ it("drills into a category and rechecks only the Saves you filter to", async () 
     device: "this Mac",
   });
   const originals = categories.find((item) => item.id === "originals");
-  if (!originals) throw new Error("Missing originals");
+  if (!originals) {
+    throw new Error("Missing originals");
+  }
 
   await render(<Drilldown category={originals} />);
 

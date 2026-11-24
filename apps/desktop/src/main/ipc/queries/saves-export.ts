@@ -21,13 +21,8 @@ import { toCsv } from "../../lib/csv";
 import { showNativeShareMenu } from "../../lib/native-share";
 import { libraryRoot } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
-import {
-  FileIndexParam,
-  type QueryHandlerMap,
-  query,
-  StringListParam,
-  StringParam,
-} from "./params";
+import { FileIndexParam, query, StringListParam, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const IdListParams = z.object({ ids: StringListParam });
 
@@ -40,8 +35,9 @@ export const savesExportQueries = {
         defaultPath: "Saves.eaglepack",
         buttonLabel: "Export",
       });
-      if (picked.canceled || !picked.filePath)
+      if (picked.canceled || !picked.filePath) {
         return { ok: false, reason: "cancelled" };
+      }
       try {
         const destination = picked.filePath.endsWith(".eaglepack")
           ? picked.filePath
@@ -78,8 +74,9 @@ export const savesExportQueries = {
         defaultPath: "Saves.pondpack",
         buttonLabel: "Export",
       });
-      if (picked.canceled || !picked.filePath)
+      if (picked.canceled || !picked.filePath) {
         return { ok: false, reason: "cancelled" };
+      }
       try {
         const destination = picked.filePath.endsWith(".pondpack")
           ? picked.filePath
@@ -105,17 +102,21 @@ export const savesExportQueries = {
     z.object({ id: StringParam, fileIndex: FileIndexParam }),
     async (params): Promise<QueryResult<"saves.exportFile">> => {
       const id = params.id;
-      if (!id) return { ok: false, reason: "not_found" };
+      if (!id) {
+        return { ok: false, reason: "not_found" };
+      }
       const target = await resolveSaveFilePath(id, params.fileIndex);
-      if (!target.ok) return target;
+      if (!target.ok) {
+        return target;
+      }
 
       const db = await getDb();
       const rows = await db.select().from(saves).where(eq(saves.id, id));
       const row = rows[0];
       const ext = extname(target.path);
       const base = (row?.title ?? row?.id ?? "save")
-        .replace(/[\\/:*?"<>|]+/g, " ")
-        .replace(/\s+/g, " ")
+        .replaceAll(/[\\/:*?"<>|]+/g, " ")
+        .replaceAll(/\s+/g, " ")
         .trim()
         .slice(0, 120);
       const defaultName = `${base || "save"}${ext}`;
@@ -133,8 +134,8 @@ export const savesExportQueries = {
           basename(result.filePath),
         );
         return { ok: true, path };
-      } catch (err) {
-        log.warn("[pond ipc] saves.exportFile failed", err);
+      } catch (error) {
+        log.warn("[pond ipc] saves.exportFile failed", error);
         return { ok: false, reason: "internal_error" };
       }
     },
@@ -170,8 +171,9 @@ export const savesExportQueries = {
     }),
     async (params): Promise<QueryResult<"saves.exportFiles">> => {
       const ids = params.ids.filter(Boolean);
-      if (ids.length === 0)
+      if (ids.length === 0) {
         return { ok: false, error: "Choose Saves to export." };
+      }
 
       const picked = await dialog.showOpenDialog({
         title: params.zip ? "Export Files as ZIP" : "Export Files",
@@ -204,8 +206,9 @@ export const savesExportQueries = {
     IdListParams,
     async (params): Promise<QueryResult<"saves.exportWebp">> => {
       const ids = params.ids.filter(Boolean);
-      if (ids.length === 0)
+      if (ids.length === 0) {
         return { ok: false, error: "Choose Saves to export." };
+      }
       const picked = await dialog.showOpenDialog({
         properties: ["openDirectory", "createDirectory"],
       });
@@ -216,15 +219,17 @@ export const savesExportQueries = {
       let exported = 0;
       for (const id of ids) {
         const target = await resolveSaveFilePath(id, 0);
-        if (!target.ok) continue;
+        if (!target.ok) {
+          continue;
+        }
         try {
           const bytes = await sharp(target.path)
             .webp({ quality: 80 })
             .toBuffer();
           await writeExportFile(dir, `${id}.webp`, bytes);
           exported += 1;
-        } catch (err) {
-          log.warn("[pond ipc] exportWebp failed", id, err);
+        } catch (error) {
+          log.warn("[pond ipc] exportWebp failed", id, error);
         }
       }
       return { ok: true, exported, dir };

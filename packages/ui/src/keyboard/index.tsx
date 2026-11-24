@@ -7,15 +7,15 @@ const THEN_KEYS = new Set([",", ".", "/", ";", "=", "-", "[", "]", "\\"]);
 type Density = "default" | "inline" | "flat";
 
 interface ClusterProps {
-  keys: string[];
+  keys: Array<string>;
   separator?: string;
   density?: Density;
   className?: string;
 }
 
-function clusterSeparator(keys: string[]): string {
+function clusterSeparator(keys: Array<string>): string {
   const last = keys.at(-1);
-  return last != null && THEN_KEYS.has(last) ? "then" : "";
+  return last !== undefined && THEN_KEYS.has(last) ? "then" : "";
 }
 
 function Cluster({
@@ -32,12 +32,15 @@ function Cluster({
       aria-hidden
     >
       {keys.map((k, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: short, immutable lists; duplicate keys are valid (e.g. `⌘ ⌘`)
+        // oxlint-disable-next-line react/no-array-index-key -- short, immutable lists; duplicate keys are valid (e.g. `⌘ ⌘`)
         <span key={`${i}-${k}`} className={styles.row}>
           {i > 0 && gap ? (
             <span className={styles.separator}>{gap}</span>
           ) : null}
-          <Key density={density} data-glyph={[...k].length === 1 || undefined}>
+          <Key
+            density={density}
+            data-glyph={Array.from(k).length === 1 || undefined}
+          >
             {k}
           </Key>
         </span>
@@ -60,9 +63,11 @@ function Key({ density = "default", className, ...props }: KeyProps) {
   );
 }
 
-export interface ShortcutProps
-  extends Omit<React.ComponentPropsWithoutRef<"span">, "children"> {
-  children?: string | string[];
+export interface ShortcutProps extends Omit<
+  React.ComponentPropsWithoutRef<"span">,
+  "children"
+> {
+  children?: string | Array<string>;
   density?: Density;
 }
 

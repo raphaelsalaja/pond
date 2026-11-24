@@ -13,34 +13,40 @@ const ALLOWED = new Set([
 
 function plainOf(value: string): string {
   return value
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|li)>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\n{3,}/g, "\n\n")
+    .replaceAll(/<br\s*\/?>/gi, "\n")
+    .replaceAll(/<\/(p|li)>/gi, "\n")
+    .replaceAll(/<[^>]+>/g, "")
+    .replaceAll("&nbsp;", " ")
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll(/\n{3,}/g, "\n\n")
     .trim();
 }
 
 /** Keeps bold, italic, underline, and lists. Anything else comes back as plain text. */
 export function richNote(value: string): string {
   const normalized = value
-    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, "")
-    .replace(/<div>/gi, "<br>")
-    .replace(/<\/div>/gi, "")
+    .replaceAll(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, "")
+    .replaceAll(/<div>/gi, "<br>")
+    .replaceAll(/<\/div>/gi, "")
     .replace(/^(<br\s*\/?>)+/i, "");
-  const clean = normalized.replace(
+  const clean = normalized.replaceAll(
     /<\/?([a-z0-9]+)(?:\s[^>]*)?\/?>/gi,
     (tag, name: string) => {
       const lower = name.toLowerCase();
-      if (!ALLOWED.has(lower)) return "";
-      if (lower === "br") return "<br>";
+      if (!ALLOWED.has(lower)) {
+        return "";
+      }
+      if (lower === "br") {
+        return "<br>";
+      }
       return tag.startsWith("</") ? `</${lower}>` : `<${lower}>`;
     },
   );
-  if (!/<(b|strong|i|em|u|ul|ol|li|p)\b/i.test(clean)) return plainOf(clean);
+  if (!/<(b|strong|i|em|u|ul|ol|li|p)\b/i.test(clean)) {
+    return plainOf(clean);
+  }
   return clean;
 }
 

@@ -1,18 +1,12 @@
-import type { Capture, RawJson } from "@pond/schema/raw";
+import type { RawJson } from "@pond/schema/raw";
+import { storedAsRawJson } from "@pond/schema/raw-schema";
+import type { StoredRawJsonInput } from "@pond/schema/raw-schema";
 import { describe, expect, it } from "vitest";
 import { countCaptureVideos, expectedVideoDownloads, planOps } from "./specs";
 
-interface StoredCapture {
-  id?: string;
-  source?: Capture["source"];
-  url?: string;
-  media?: Capture["media"];
-  quoted?: StoredCapture;
-}
-
-function storedRawJson(value: { capture?: StoredCapture }): RawJson {
-  /** SAFETY: older rows really do hold partial captures; tolerating them is the promise under test. */
-  return value as RawJson;
+/** Older stored rows hold partial captures; tolerating them is the promise under test. */
+function storedRawJson(value: StoredRawJsonInput): RawJson {
+  return storedAsRawJson(structuredClone(value));
 }
 
 describe("planOps", () => {

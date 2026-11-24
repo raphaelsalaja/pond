@@ -6,11 +6,10 @@
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import sharp from "sharp";
 
-const here = dirname(fileURLToPath(import.meta.url));
+const here = import.meta.dirname;
 const outDir = join(here, "..", "public", "icons");
 const svgPath = resolve(here, "../../../packages/icons/brand/icon.svg");
 
@@ -35,4 +34,6 @@ async function write(size) {
   console.log(`wrote ${out} (${size}×${size}, ${png.length} bytes)`);
 }
 
-for (const size of [16, 32, 48, 128]) await write(size);
+for (const size of [16, 32, 48, 128]) {
+  await write(size);
+}

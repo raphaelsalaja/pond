@@ -20,7 +20,9 @@ export function SourcesContextMenu({ row, children }: SourcesContextMenuProps) {
   return (
     <SpecContextMenu
       onOpen={() => {
-        if (selectionStore.state.selectedIds.has(row.id)) return;
+        if (selectionStore.state.selectedIds.has(row.id)) {
+          return;
+        }
         actions.replaceSelection([row.id]);
       }}
       buildItems={() =>

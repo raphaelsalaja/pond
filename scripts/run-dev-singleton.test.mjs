@@ -24,7 +24,7 @@ afterEach(async () => {
   );
 });
 
-test("reports an active runtime instead of acquiring a second lock", async () => {
+void test("reports an active runtime instead of acquiring a second lock", async () => {
   const lockDirectory = await createTestLockDirectory("active");
   const first = await acquireDevRuntime({
     command: ["pnpm", "dev"],
@@ -45,7 +45,7 @@ test("reports an active runtime instead of acquiring a second lock", async () =>
   await assert.rejects(access(lockDirectory));
 });
 
-test("recovers a lock whose owner is no longer running", async () => {
+void test("recovers a lock whose owner is no longer running", async () => {
   const lockDirectory = await createTestLockDirectory("stale");
   await mkdir(lockDirectory);
   await writeFile(
@@ -70,7 +70,7 @@ test("recovers a lock whose owner is no longer running", async () => {
   await releaseDevRuntime(acquisition);
 });
 
-test("does not remove a lock that is still being initialized", async () => {
+void test("does not remove a lock that is still being initialized", async () => {
   const lockDirectory = await createTestLockDirectory("initializing");
   await mkdir(lockDirectory);
 

@@ -60,7 +60,7 @@ export function styled(e: Envelope, transform = "") {
 
 /** A stable 0 to 1 value per index. */
 export const scatter = (index: number) => {
-  const x = Math.sin(index * 12.9898 + 78.233) * 43758.5453;
+  const x = Math.sin(index * 12.9898 + 78.233) * 43_758.5453;
   return x - Math.floor(x);
 };
 
@@ -69,18 +69,26 @@ export type Key<T> = T & { at: number; move?: number };
 /** Piecewise path through keyed points, easing into each over `move` ms so it arrives at `at`. */
 export function keyed<T extends Record<keyof T, number>>(
   t: number,
-  keys: readonly Key<T>[],
+  keys: ReadonlyArray<Key<T>>,
 ): T {
-  if (!keys.length) throw new Error("keyed: no keys");
+  const [first] = keys;
+  if (!first) {
+    throw new Error("keyed: no keys");
+  }
   const value = new Map<string, number>();
   for (const key of keys) {
     const move = key.move ?? 600;
     const k = ease.inOut(progress(t, key.at - move, move));
     for (const [name, target] of Object.entries<number | undefined>(key)) {
-      if (name === "at" || name === "move" || target === undefined) continue;
+      if (name === "at" || name === "move" || target === undefined) {
+        continue;
+      }
       value.set(name, mix(value.get(name) ?? target, target, k));
     }
   }
-  /** SAFETY: every field of `T` is a number present on the first key, so the map holds exactly `T`'s fields. */
-  return Object.fromEntries(value) as T;
+  /** Every field of `T` is a number present on the first key, so its shape carries `T` once `at` and `move` are dropped. */
+  const result: T = { ...first, ...Object.fromEntries(value) };
+  Reflect.deleteProperty(result, "at");
+  Reflect.deleteProperty(result, "move");
+  return result;
 }

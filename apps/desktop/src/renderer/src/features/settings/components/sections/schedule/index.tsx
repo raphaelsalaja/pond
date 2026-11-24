@@ -141,10 +141,14 @@ export function ScheduleEditor({
     pendingSave.current = pendingSave.current
       .then(() => onSave(schedule))
       .then(() => {
-        if (revision.current === currentRevision) setStatus("idle");
+        if (revision.current === currentRevision) {
+          setStatus("idle");
+        }
       })
       .catch(() => {
-        if (revision.current === currentRevision) setStatus("error");
+        if (revision.current === currentRevision) {
+          setStatus("error");
+        }
       });
   };
   return (
@@ -278,7 +282,7 @@ export function ScheduleEditor({
       ) : null}
       {status === "error" ? (
         <p className={styles.error} role="alert">
-          Couldn't save your schedule. Change a setting to try again.
+          Couldn&apos;t save your schedule. Change a setting to try again.
         </p>
       ) : null}
     </div>
@@ -293,7 +297,7 @@ function ScheduleSelect<Value extends string>({
 }: {
   label: string;
   value: Value;
-  items: { value: Value; label: string }[];
+  items: Array<{ value: Value; label: string }>;
   onChange: (value: Value) => void;
 }) {
   return (
@@ -301,7 +305,9 @@ function ScheduleSelect<Value extends string>({
       value={value}
       items={items}
       onValueChange={(next) => {
-        if (next !== null) onChange(next);
+        if (next !== null) {
+          onChange(next);
+        }
       }}
     >
       <Select.Trigger size="sm" aria-label={label}>

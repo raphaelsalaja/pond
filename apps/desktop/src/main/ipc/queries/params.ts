@@ -1,5 +1,6 @@
 import { SOURCES } from "@pond/schema/db";
-import { type Query, QuerySchema } from "@pond/schema/filters";
+import { QuerySchema } from "@pond/schema/filters";
+import type { Query } from "@pond/schema/filters";
 import type { IpcMainInvokeEvent } from "electron";
 import { z } from "zod";
 import type { QueryName, QueryResult } from "../../../shared/query-contracts";
@@ -42,7 +43,7 @@ export const OptionalNumberParam = z.coerce
   .catch(Number.NaN);
 
 export const FileIndexParam = OptionalNumberParam.transform((value) =>
-  value != null && Number.isFinite(value) ? value : 0,
+  value !== null && value !== undefined && Number.isFinite(value) ? value : 0,
 );
 
 export const NonEmptyTextParam = z

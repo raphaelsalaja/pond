@@ -27,7 +27,7 @@ import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { ViewerPreload } from "@/features/saves/effects/viewer-preload";
 import { openSave, useOpenSaveId } from "@/features/saves/lib/save-nav";
 import { SourceFlowHost } from "@/features/sources/components/flow";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import { settingsHref } from "@/shared/lib/open-settings";
 import { useRouteMeta } from "@/shared/lib/route-meta";
 
@@ -50,8 +50,12 @@ const DownloadDialogHost = lazy(() =>
 function DownloadDialogSlot() {
   const { open } = useDownloadDialog();
   const [loaded, setLoaded] = useState(open);
-  if (open && !loaded) setLoaded(true);
-  if (!loaded) return null;
+  if (open && !loaded) {
+    setLoaded(true);
+  }
+  if (!loaded) {
+    return null;
+  }
   return (
     <Suspense fallback={null}>
       <DownloadDialogHost />
@@ -95,9 +99,7 @@ function useMainProcessNavigation() {
         openSave(decodeURIComponent(saveId));
         return;
       }
-      getAppRouter()?.history.push(
-        pathname === "/settings" ? settingsHref() : path,
-      );
+      getAppHistory()?.push(pathname === "/settings" ? settingsHref() : path);
     });
   }, []);
 }

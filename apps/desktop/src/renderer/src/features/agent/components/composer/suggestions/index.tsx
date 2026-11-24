@@ -3,8 +3,8 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import {
   LexicalTypeaheadMenuPlugin,
   MenuOption,
-  type MenuTextMatch,
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
+import type { MenuTextMatch } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import { $findMatchingParent } from "@lexical/utils";
 import {
   IconBlockquote,
@@ -20,29 +20,21 @@ import {
 } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { Menu, Popover } from "@pond/ui";
-import { type AssistantSource, assistantSources } from "@shared/assistant";
+import { assistantSources } from "@shared/assistant";
+import type { AssistantSource } from "@shared/assistant";
 import {
   $getSelection,
   $isRangeSelection,
   COMMAND_PRIORITY_NORMAL,
   KEY_ESCAPE_COMMAND,
 } from "lexical";
-import {
-  type ReactNode,
-  type RefObject,
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 import { z } from "zod";
 import { IS_MAC } from "@/shared/lib/platform";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
-import {
-  $applyMarkdownBlock,
-  type MarkdownBlock,
-} from "@/shared/markdown-editor/blocks";
+import { $applyMarkdownBlock } from "@/shared/markdown-editor/blocks";
+import type { MarkdownBlock } from "@/shared/markdown-editor/blocks";
 import { findComposerTrigger } from "../../pane/composer-trigger";
 import { SourceThumbnail } from "../../pane/save-preview";
 import { $insertSaveMention } from "../mention";
@@ -57,7 +49,7 @@ export interface ComposerFormattingOption {
   label: string;
   glyph: IconComponent;
   block: MarkdownBlock;
-  shortcut?: string[];
+  shortcut?: Array<string>;
 }
 
 class ComposerOption extends MenuOption {
@@ -66,12 +58,12 @@ class ComposerOption extends MenuOption {
     public label: string,
     public glyph: IconComponent,
     public command: ComposerCommand,
-    public shortcut?: string[],
+    public shortcut?: Array<string>,
   ) {
     super(key);
   }
 }
-const COMPOSER_FORMATTING: ComposerFormattingOption[] = [
+const COMPOSER_FORMATTING: Array<ComposerFormattingOption> = [
   {
     key: "bullet",
     label: "Bulleted List",
@@ -155,37 +147,41 @@ export function ComposerSuggestions({
   anchorRef,
   onAttach,
 }: {
-  attachments: AssistantSource[];
+  attachments: Array<AssistantSource>;
   anchorRef: RefObject<HTMLDivElement | null>;
-  onAttach: (saves: AssistantSource[]) => void;
+  onAttach: (saves: Array<AssistantSource>) => void;
 }) {
   const [editor] = useLexicalComposerContext();
   const listId = useId();
   const [query, setQuery] = useState<string | null>(null);
   const [result, setResult] = useState<{
     query: string;
-    saves: AssistantSource[];
+    saves: Array<AssistantSource>;
     error?: string;
   } | null>(null);
   const mention = query?.startsWith("@") ?? false;
   const term = query?.slice(1).trim() ?? "";
   useEffect(() => {
-    if (!mention) return;
+    if (!mention) {
+      return;
+    }
     let active = true;
     const timer = setTimeout(() => {
       void window.pond
         .query("agent.searchSaves", { query: term, limit: 12 })
         .then((data) => {
-          if (active)
+          if (active) {
             setResult({ query: term, saves: searchSchema.parse(data).saves });
+          }
         })
         .catch(() => {
-          if (active)
+          if (active) {
             setResult({
               query: term,
               saves: [],
               error: "Could not search Saves. Type to try again.",
             });
+          }
         });
     }, 150);
     return () => {
@@ -194,7 +190,7 @@ export function ComposerSuggestions({
     };
   }, [mention, term]);
   const groups = useMemo(() => {
-    if (mention)
+    if (mention) {
       return [
         {
           label: "Saves",
@@ -217,16 +213,15 @@ export function ComposerSuggestions({
             ),
         },
       ];
-    return [{ label: "Formatting", options: FORMATTING }]
-      .map((group) => ({
-        ...group,
-        options: group.options.filter((option) =>
-          `${option.label} ${option.key}`
-            .toLowerCase()
-            .includes(term.toLowerCase()),
-        ),
-      }))
-      .filter((group) => group.options.length);
+    }
+    return [{ label: "Formatting", options: FORMATTING }].flatMap((group) => {
+      const matching = group.options.filter((option) =>
+        `${option.label} ${option.key}`
+          .toLowerCase()
+          .includes(term.toLowerCase()),
+      );
+      return matching.length ? [{ ...group, options: matching }] : [];
+    });
   }, [mention, term, result, attachments]);
   const options = useMemo(
     () => groups.flatMap((group) => group.options),
@@ -240,8 +235,9 @@ export function ComposerSuggestions({
         editor.isComposing() ||
         !$isRangeSelection(selection) ||
         $findMatchingParent(selection.anchor.getNode(), $isCodeNode)
-      )
+      ) {
         return null;
+      }
       const match = findComposerTrigger(text, text.length);
       return match
         ? {
@@ -263,16 +259,20 @@ export function ComposerSuggestions({
       onSelectOption={(option, node, close) => {
         editor.update(() => {
           node?.remove();
-          if (option.command.kind === "block")
+          if (option.command.kind === "block") {
             $applyMarkdownBlock(option.command.block);
-          if (option.command.kind === "save")
+          }
+          if (option.command.kind === "save") {
             $insertSaveMention(
               option.command.save.id,
               option.command.save.title || "Untitled",
             );
+          }
         });
         close();
-        if (option.command.kind === "save") onAttach([option.command.save]);
+        if (option.command.kind === "save") {
+          onAttach([option.command.save]);
+        }
       }}
       menuRenderFn={(
         anchor,
@@ -288,11 +288,12 @@ export function ComposerSuggestions({
             open
             modal={false}
             onOpenChange={(open) => {
-              if (!open)
+              if (!open) {
                 editor.dispatchCommand(
                   KEY_ESCAPE_COMMAND,
                   new KeyboardEvent("keydown", { key: "Escape" }),
                 );
+              }
             }}
           >
             <Popover.Portal>
@@ -315,7 +316,7 @@ export function ComposerSuggestions({
                           return (
                             <Menu.Row
                               key={option.key}
-                              ref={option.setRefElement}
+                              ref={(element) => option.setRefElement(element)}
                               id={`typeahead-item-${index}`}
                               role="option"
                               tabIndex={-1}

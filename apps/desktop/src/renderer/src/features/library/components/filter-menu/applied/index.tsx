@@ -11,21 +11,36 @@ import {
 } from "@/features/library/state/view-store";
 import { FieldSubmenu, OverlaySubmenu } from "../add";
 import { FilterPopup } from "../chip";
-import { type FilterOption, presetOptions } from "../options";
+import { presetOptions } from "../options";
+import type { FilterOption } from "../options";
 import { filterSummary } from "../summary";
 import type { FilterChipId } from "../toolbar-state";
 import { clearFilters, saveFilterView, saveViewLabel } from "../view-actions";
 import styles from "./styles.module.css";
 
 interface AppliedFiltersProps {
-  choices: Partial<Record<FieldId, FilterOption[]>>;
-  rows: Predicate[];
-  onChange: (rows: Predicate[]) => void;
-  applied: readonly FilterChipId[];
+  choices: Partial<Record<FieldId, Array<FilterOption>>>;
+  rows: Array<Predicate>;
+  onChange: (rows: Array<Predicate>) => void;
+  applied: ReadonlyArray<FilterChipId>;
 }
 
 function inField(row: Predicate, field: FieldId): boolean {
   return row.field === field || (field === "width" && row.field === "height");
+}
+
+function removeItem(onRemove: () => void) {
+  return (
+    <>
+      <Menu.Separator />
+      <Menu.Item onClick={onRemove}>
+        <Menu.ItemIcon>
+          <IconFilterOff />
+        </Menu.ItemIcon>
+        <Menu.ItemLabel>Remove Filter</Menu.ItemLabel>
+      </Menu.Item>
+    </>
+  );
 }
 
 export function AppliedFilters({
@@ -39,21 +54,12 @@ export function AppliedFilters({
   const activeViewId = useActiveViewId();
   const label = applied.length === 1 ? "1 Filter" : `${applied.length} Filters`;
   const optionsFor = (field: FieldId) => choices[field] ?? presetOptions(field);
-  const removeItem = (onRemove: () => void) => (
-    <>
-      <Menu.Separator />
-      <Menu.Item onClick={onRemove}>
-        <Menu.ItemIcon>
-          <IconFilterOff />
-        </Menu.ItemIcon>
-        <Menu.ItemLabel>Remove Filter</Menu.ItemLabel>
-      </Menu.Item>
-    </>
-  );
   return (
     <Menu.Root
       onOpenChange={(next) => {
-        if (next) libraryHeader.closePopover();
+        if (next) {
+          libraryHeader.closePopover();
+        }
       }}
     >
       <Menu.Trigger render={<SplitButton.Action />}>{label}</Menu.Trigger>

@@ -31,7 +31,9 @@ export async function startArticleBackfill(): Promise<{
     )
     .all()
     .filter((row) => !row.files.some((file) => file.kind === ARTICLE_KIND));
-  if (rows.length === 0) return { ok: true, harvested: 0 };
+  if (rows.length === 0) {
+    return { ok: true, harvested: 0 };
+  }
 
   const marked = new Set(
     db
@@ -55,7 +57,9 @@ export async function startArticleBackfill(): Promise<{
 
   let harvested = 0;
   for (const { id } of rows) {
-    if (marked.has(id)) continue;
+    if (marked.has(id)) {
+      continue;
+    }
     try {
       await runHarvestMetadata(id, { force: true });
       db.update(tasks)
@@ -63,8 +67,8 @@ export async function startArticleBackfill(): Promise<{
         .where(and(eq(tasks.saveId, id), eq(tasks.op, "harvest_metadata")))
         .run();
       harvested += 1;
-    } catch (err) {
-      log.warn("[pond article-backfill] harvest failed", id, err);
+    } catch (error) {
+      log.warn("[pond article-backfill] harvest failed", id, error);
     }
   }
 

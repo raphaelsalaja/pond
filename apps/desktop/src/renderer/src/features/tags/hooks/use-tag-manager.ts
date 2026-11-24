@@ -1,15 +1,11 @@
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { useSaves } from "@/features/saves/pool";
-import {
-  type TagGroupRow,
-  useTagGroups,
-} from "@/features/tags/state/tag-groups";
-import { type TagRow, useTags } from "@/features/tags/state/tags";
-import {
-  EMPTY_STATS,
-  type GroupStats,
-  type TagsRowData,
-} from "../components/manager/lib/types";
+import { useTagGroups } from "@/features/tags/state/tag-groups";
+import type { TagGroupRow } from "@/features/tags/state/tag-groups";
+import { useTags } from "@/features/tags/state/tags";
+import type { TagRow } from "@/features/tags/state/tags";
+import { EMPTY_STATS } from "../components/manager/lib/types";
+import type { GroupStats, TagsRowData } from "../components/manager/lib/types";
 
 export function useTagsData() {
   const tags = useTags();
@@ -23,7 +19,9 @@ export function useTagsData() {
   const counts = useMemo(() => {
     const c = new Map<string, number>();
     for (const s of saves) {
-      if (s.deletedAt) continue;
+      if (s.deletedAt) {
+        continue;
+      }
       for (const t of s.tags) {
         const k = t.toLowerCase();
         c.set(k, (c.get(k) ?? 0) + 1);
@@ -39,13 +37,19 @@ export function useTagsData() {
 
   const tagsById = useMemo(() => {
     const m = new Map<string, TagRow>();
-    for (const t of tags) m.set(t.id, t);
+    for (const t of tags) {
+      m.set(t.id, t);
+    }
     return m;
   }, [tags]);
 
   const taggedIds = useMemo(() => {
     const set = new Set<string>();
-    for (const g of groups) for (const id of g.tagIds) set.add(id);
+    for (const g of groups) {
+      for (const id of g.tagIds) {
+        set.add(id);
+      }
+    }
     return set;
   }, [groups]);
 
@@ -74,8 +78,8 @@ export function useTagsData() {
   const starredTotal = tags.filter((tag) => tag.starred).length;
   const needle = deferredQ.trim().toLowerCase();
 
-  const data = useMemo<TagsRowData[]>(() => {
-    const groupRows: TagsRowData[] = groups
+  const data = useMemo<Array<TagsRowData>>(() => {
+    const groupRows: Array<TagsRowData> = groups
       .map((group) => {
         const stats = groupStats.get(group.id) ?? EMPTY_STATS;
         const children = stats.members
@@ -90,7 +94,9 @@ export function useTagsData() {
             saves: countFor(tag.name),
           }))
           .sort((a, b) => {
-            if (a.kind !== "tag" || b.kind !== "tag") return 0;
+            if (a.kind !== "tag" || b.kind !== "tag") {
+              return 0;
+            }
             return a.tag.name.localeCompare(b.tag.name, undefined, {
               sensitivity: "base",
             });
@@ -104,9 +110,15 @@ export function useTagsData() {
         };
       })
       .filter((row) => {
-        if (row.kind !== "group") return true;
-        if (!needle) return true;
-        if (row.group.name.toLowerCase().includes(needle)) return true;
+        if (row.kind !== "group") {
+          return true;
+        }
+        if (!needle) {
+          return true;
+        }
+        if (row.group.name.toLowerCase().includes(needle)) {
+          return true;
+        }
         return row.group.tagNames.some((n) => n.toLowerCase().includes(needle));
       })
       .sort((a, b) =>
@@ -117,7 +129,7 @@ export function useTagsData() {
           : 0,
       );
 
-    const tagRows: TagsRowData[] = tags
+    const tagRows: Array<TagsRowData> = tags
       .filter((t) => !taggedIds.has(t.id))
       .filter((t) => (needle ? t.name.toLowerCase().includes(needle) : true))
       .map((tag) => ({
@@ -142,15 +154,19 @@ export function useTagsData() {
     [toggles],
   );
 
-  const expandedIds = useMemo<string[]>(() => {
-    if (needle) return groups.map((g) => g.id);
+  const expandedIds = useMemo<Array<string>>(() => {
+    if (needle) {
+      return groups.map((g) => g.id);
+    }
     return groups.filter((g) => isExpanded(g)).map((g) => g.id);
   }, [needle, groups, isExpanded]);
 
   const onToggleExpand = useCallback(
     (id: string, next: boolean) => {
       const g = groups.find((x) => x.id === id);
-      if (!g) return;
+      if (!g) {
+        return;
+      }
       setToggles((prev) => new Map(prev).set(id, next));
       void window.pond.query("tagGroups.update", {
         name: g.name,
@@ -163,20 +179,27 @@ export function useTagsData() {
   const tagNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const row of data) {
-      if (row.kind === "tag") m.set(row.id, row.tag.name);
-      else
-        for (const child of row.children)
-          if (child.kind === "tag") m.set(child.id, child.tag.name);
+      if (row.kind === "tag") {
+        m.set(row.id, row.tag.name);
+      } else {
+        for (const child of row.children) {
+          if (child.kind === "tag") {
+            m.set(child.id, child.tag.name);
+          }
+        }
+      }
     }
     return m;
   }, [data]);
 
   const namesFromIds = useCallback(
-    (ids: string[]) => {
+    (ids: Array<string>) => {
       const set = new Set<string>();
       for (const id of ids) {
         const name = tagNameById.get(id);
-        if (name) set.add(name);
+        if (name) {
+          set.add(name);
+        }
       }
       return [...set];
     },

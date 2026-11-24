@@ -53,7 +53,7 @@ async function inPageDribbbleLikes(
   }
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   const resumed = Number(args.resumeCursor);
   const firstPage = Number.isInteger(resumed) && resumed > 1 ? resumed : 1;
@@ -110,12 +110,18 @@ async function inPageDribbbleLikes(
         },
       );
       if (res.status === 202) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise((resolve) => {
+          setTimeout(resolve, delay);
+        });
         delay += 400;
         continue;
       }
-      if (res.status === 401 || res.status === 403) return "auth";
-      if (res.status === 429) return "rate_limited";
+      if (res.status === 401 || res.status === 403) {
+        return "auth";
+      }
+      if (res.status === 429) {
+        return "rate_limited";
+      }
       return res.ok ? res.text() : null;
     }
     return "rate_limited";
@@ -123,7 +129,9 @@ async function inPageDribbbleLikes(
 
   function readShot(li: HTMLLIElement): ListEntry | null {
     const id = li.dataset.thumbnailId;
-    if (!id || !/^\d+$/.test(id)) return null;
+    if (!id || !/^\d+$/.test(id)) {
+      return null;
+    }
     const href = li
       .querySelector("a.shot-thumbnail-link")
       ?.getAttribute("href");
@@ -139,11 +147,15 @@ async function inPageDribbbleLikes(
         .querySelector("a.shot-thumbnail-link .accessibility-text")
         ?.textContent?.trim()
         .replace(/^View\s+/, "");
-    if (title) entry.title = title;
+    if (title) {
+      entry.title = title;
+    }
     const author = li
       .querySelector(".user-information .display-name")
       ?.textContent?.trim();
-    if (author) entry.author = author;
+    if (author) {
+      entry.author = author;
+    }
     const img = li.querySelector<HTMLImageElement>("figure img");
     const raw = img?.getAttribute("data-src") || img?.getAttribute("src") || "";
     const still = raw && !raw.startsWith("data:") ? original(raw) : "";
@@ -178,9 +190,13 @@ async function inPageDribbbleLikes(
       return unfinished(page);
     }
     const html = await fetchPage(page);
-    if (html === "auth") return { ok: false, reason: "auth_required" };
+    if (html === "auth") {
+      return { ok: false, reason: "auth_required" };
+    }
     if (html === "rate_limited" || html === null) {
-      if (page > firstPage) return unfinished(page);
+      if (page > firstPage) {
+        return unfinished(page);
+      }
       return { ok: false, reason: html ?? "unknown" };
     }
     const doc = new DOMParser().parseFromString(
@@ -193,7 +209,9 @@ async function inPageDribbbleLikes(
     let pageFresh = 0;
     for (const li of items) {
       const entry = readShot(li);
-      if (!entry || seen.has(entry.sourceId)) continue;
+      if (!entry || seen.has(entry.sourceId)) {
+        continue;
+      }
       seen.add(entry.sourceId);
       if (!known.has(entry.sourceId)) {
         fresh += 1;
@@ -222,9 +240,9 @@ async function inPageDribbbleLikes(
     if (items.length < args.perPage) {
       return { ok: true, entries, reachedEnd: true, seen: entries.length };
     }
-    await new Promise((resolve) =>
-      setTimeout(resolve, 900 + Math.random() * 400),
-    );
+    await new Promise((resolve) => {
+      setTimeout(resolve, 900 + Math.random() * 400);
+    });
   }
   return unfinished(firstPage + args.maxPages);
 }

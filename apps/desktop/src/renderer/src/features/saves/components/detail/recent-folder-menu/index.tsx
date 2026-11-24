@@ -1,11 +1,6 @@
 import { Button, Keyboard, PickerPanel } from "@pond/ui";
-import {
-  type CSSProperties,
-  type KeyboardEvent,
-  useEffect,
-  useId,
-  useState,
-} from "react";
+import { useEffect, useId, useState } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
 import { FolderIcon, folderColorCss } from "@/shared/lib/folder-icons";
 import type { FolderMenuItem } from "../folder-menu";
 import styles from "./styles.module.css";
@@ -14,10 +9,10 @@ import styles from "./styles.module.css";
 const RECENT_FOLDER_LIMIT = 9;
 
 interface RecentFolderMenuProps {
-  folders: readonly FolderMenuItem[];
+  folders: ReadonlyArray<FolderMenuItem>;
   selectionSize: number;
-  onPick(folder: FolderMenuItem): void;
-  onShowAll(): void;
+  onPick: (folder: FolderMenuItem) => void;
+  onShowAll: () => void;
 }
 
 function iconStyle(
@@ -45,11 +40,15 @@ export function RecentFolderMenu({
   }, [listId]);
 
   function pick(folder: FolderMenuItem | undefined) {
-    if (folder && folder.count !== selectionSize) onPick(folder);
+    if (folder && folder.count !== selectionSize) {
+      onPick(folder);
+    }
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+      return;
+    }
     const digit = /^[1-9]$/.test(event.key) ? Number(event.key) : null;
     if (digit !== null) {
       event.preventDefault();
@@ -60,7 +59,9 @@ export function RecentFolderMenu({
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       event.stopPropagation();
-      if (!shown.length) return;
+      if (!shown.length) {
+        return;
+      }
       const step = event.key === "ArrowDown" ? 1 : -1;
       setActive((activeIndex + step + shown.length) % shown.length);
       return;
@@ -71,7 +72,9 @@ export function RecentFolderMenu({
       pick(shown[activeIndex]);
       return;
     }
-    if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
+    if (event.key !== "Escape" && event.key !== "Tab") {
+      event.stopPropagation();
+    }
   }
 
   return (

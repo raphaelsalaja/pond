@@ -11,7 +11,7 @@ interface ArenaBlockPageMedia {
 interface ArenaBlockPageMeta {
   authorUrl?: string;
   sourceUrl?: string;
-  connectedChannels?: string[];
+  connectedChannels?: Array<string>;
   lang?: string;
 }
 
@@ -21,7 +21,7 @@ export interface ArenaBlockPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: ArenaBlockPageMedia[];
+  mediaUrls?: Array<ArenaBlockPageMedia>;
   mediaType?: MediaType;
   meta?: ArenaBlockPageMeta;
 }
@@ -44,7 +44,9 @@ export function inPageArenaNormalize() {
       "[class*='BlockTitle'], [class*='block__title'], h1, h2",
     );
     const title = titleEl?.textContent?.trim();
-    if (title) out.title = title;
+    if (title) {
+      out.title = title;
+    }
 
     const descEl = document.querySelector<HTMLElement>(
       "[class*='BlockDescription'], [class*='block__description'], [class*='description']",
@@ -70,19 +72,25 @@ export function inPageArenaNormalize() {
     const sourceLink = document.querySelector<HTMLAnchorElement>(
       "[class*='BlockSource'] a, a[class*='source']",
     );
-    if (sourceLink?.href) meta.sourceUrl = sourceLink.href;
+    if (sourceLink?.href) {
+      meta.sourceUrl = sourceLink.href;
+    }
 
     const channelLinks = Array.from(
       document.querySelectorAll<HTMLAnchorElement>(
         "[class*='BlockConnections'] a, [class*='connected'] a",
       ),
     );
-    const channels: string[] = [];
+    const channels: Array<string> = [];
     for (const a of channelLinks) {
       const text = a.textContent?.trim();
-      if (text) channels.push(text);
+      if (text) {
+        channels.push(text);
+      }
     }
-    if (channels.length > 0) meta.connectedChannels = channels;
+    if (channels.length > 0) {
+      meta.connectedChannels = channels;
+    }
 
     const mainImg = document.querySelector<HTMLImageElement>(
       "[class*='BlockImage'] img, [class*='block__image'] img, main img",
@@ -99,7 +107,9 @@ export function inPageArenaNormalize() {
       const poster = video.poster || imgSrc || undefined;
       out.mediaUrl = poster || video.src;
       const entry: ArenaBlockPageMedia = { url: video.src, type: "video" };
-      if (poster) entry.poster = poster;
+      if (poster) {
+        entry.poster = poster;
+      }
       out.mediaUrls = [entry];
       out.mediaType = "video";
     }
@@ -118,8 +128,12 @@ export function inPageArenaNormalize() {
       meta.lang = lang;
     }
 
-    if (Object.keys(meta).length > 0) out.meta = meta;
-    if (!out.title && !out.description && !out.mediaUrl) return null;
+    if (Object.keys(meta).length > 0) {
+      out.meta = meta;
+    }
+    if (!out.title && !out.description && !out.mediaUrl) {
+      return null;
+    }
     return out;
   }
 

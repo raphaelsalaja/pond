@@ -1,13 +1,7 @@
 import { useId } from "react";
 import { scatter } from "../../motion";
-import {
-  EYE_PATHS,
-  type FishFace,
-  type FishSpecies,
-  HEART_PATH,
-  SPECIES_ART,
-  type SpeciesArt,
-} from "./art";
+import { EYE_PATHS, HEART_PATH, SPECIES_ART } from "./art";
+import type { FishFace, FishSpecies, SpeciesArt } from "./art";
 import styles from "./styles.module.css";
 
 export type { FishFace, FishSpecies } from "./art";
@@ -50,7 +44,7 @@ export function Fish({
   pleased = false,
   seed = 0,
 }: FishProps) {
-  const clip = `fish-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const clip = `fish-${useId().replaceAll(/[^a-zA-Z0-9_-]/g, "")}`;
   const art: SpeciesArt = SPECIES_ART[species];
   const phase = scatter(seed) * Math.PI * 2;
   const float = wave(t, 3600, phase) * -0.6;

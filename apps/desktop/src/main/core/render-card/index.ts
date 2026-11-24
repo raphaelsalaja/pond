@@ -1,8 +1,10 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Capture } from "@pond/schema/raw";
 import type { SearchCardData } from "@shared/search-card";
-import { buildTextCardData, type TextCardData } from "@shared/text-card";
-import { buildTweetCardData, type TweetCardData } from "@shared/tweet-card";
+import { buildTextCardData } from "@shared/text-card";
+import type { TextCardData } from "@shared/text-card";
+import { buildTweetCardData } from "@shared/tweet-card";
+import type { TweetCardData } from "@shared/tweet-card";
 import { BrowserWindow, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
@@ -33,9 +35,9 @@ const TWEET_RADIUS_CSS = 16;
 const READY_TIMEOUT_MS = 12_000;
 const LOAD_TIMEOUT_MS = 15_000;
 /** A hidden window that never commits a frame must cost seconds, not block the Save for half a minute. */
-const CAPTURE_TIMEOUT_MS = 6_000;
+const CAPTURE_TIMEOUT_MS = 6000;
 /** Offscreen frames arrive on the paint event; wait this long for one before retrying a capture. */
-const PAINT_WAIT_MS = 1_500;
+const PAINT_WAIT_MS = 1500;
 const RENDER_TIMEOUT_MS = 24_000;
 const IDLE_DISPOSE_MS = 60_000;
 
@@ -71,7 +73,9 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
 }
 
 function ensureWindow(): BrowserWindow {
-  if (win && !win.isDestroyed()) return win;
+  if (win && !win.isDestroyed()) {
+    return win;
+  }
   win = new BrowserWindow({
     show: false,
     width: CARD_WIDTH + 2,
@@ -159,13 +163,15 @@ async function readCardRect(
     const r = el.getBoundingClientRect();
     return { x: r.x, y: r.y, width: r.width, height: r.height };
   })()`;
-  const raw = await withTimeout(
+  const raw = await withTimeout<unknown>(
     target.webContents.executeJavaScript(expr, true),
     READY_TIMEOUT_MS + 2000,
     "card rect",
   );
   const parsed = CardRectSchema.safeParse(raw);
-  if (!parsed.success) return null;
+  if (!parsed.success) {
+    return null;
+  }
   const r = parsed.data;
   if (r.width < 8 || r.height < 8) {
     return null;
@@ -198,7 +204,7 @@ async function captureAtScale(
     scale: SCALE,
   };
   const shoot = async (): Promise<Electron.NativeImage | null> => {
-    const raw = await withTimeout(
+    const raw = await withTimeout<unknown>(
       dbg.sendCommand("Page.captureScreenshot", {
         format: "png",
         captureBeyondViewport: true,
@@ -208,7 +214,9 @@ async function captureAtScale(
       "captureScreenshot",
     );
     const parsed = ScreenshotSchema.safeParse(raw);
-    if (!parsed.success) return null;
+    if (!parsed.success) {
+      return null;
+    }
     return nativeImage.createFromBuffer(
       Buffer.from(parsed.data.data, "base64"),
     );
@@ -216,9 +224,9 @@ async function captureAtScale(
   try {
     try {
       return await shoot();
-    } catch (err) {
+    } catch (error) {
       /** The first shot lands before the offscreen surface has a frame to read. */
-      log.debug("[pond render-card] first capture missed", err);
+      log.debug("[pond render-card] first capture missed", error);
     }
     await nextPaint(target);
     return await shoot();
@@ -226,17 +234,23 @@ async function captureAtScale(
     if (attached) {
       try {
         dbg.detach();
-      } catch {}
+      } catch {
+        /** The window may already be destroyed, which detaches the debugger. */
+      }
     }
   }
 }
 
 async function roundCorners(bytes: Buffer, radiusPx: number): Promise<Buffer> {
-  if (radiusPx <= 0) return bytes;
+  if (radiusPx <= 0) {
+    return bytes;
+  }
   const meta = await sharp(bytes).metadata();
   const width = meta.width ?? 0;
   const height = meta.height ?? 0;
-  if (width < 2 || height < 2) return bytes;
+  if (width < 2 || height < 2) {
+    return bytes;
+  }
   const r = Math.min(radiusPx, Math.floor(Math.min(width, height) / 2));
   const mask = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="${width}" height="${height}" rx="${r}" ry="${r}" fill="#fff"/></svg>`,
@@ -312,9 +326,13 @@ async function renderOne(
   }
 
   const image = await captureAtScale(target, rect);
-  if (!image || image.getSize().width === 0) return null;
+  if (!image || image.getSize().width === 0) {
+    return null;
+  }
   const raw = image.toPNG();
-  if (raw.byteLength === 0) return null;
+  if (raw.byteLength === 0) {
+    return null;
+  }
   return pad(raw, scheme, padCss, radiusCss);
 }
 
@@ -333,8 +351,8 @@ async function enqueueRender(
         RENDER_TIMEOUT_MS,
         "render",
       );
-    } catch (err) {
-      log.warn("[pond render-card] render failed", kind, scheme, err);
+    } catch (error) {
+      log.warn("[pond render-card] render failed", kind, scheme, error);
       disposeRenderCardWindow();
       return null;
     } finally {
@@ -355,7 +373,9 @@ export async function renderTweetCardPng(
     return null;
   }
   const native = await renderXPostPng(capture, fallbackAuthor, scheme);
-  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
+  if (native) {
+    return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
+  }
   return enqueueRender("tweet", data, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
 }
 
@@ -369,7 +389,9 @@ export async function renderThreadsCardPng(
     return null;
   }
   const native = await renderThreadsPostPng(data, scheme);
-  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
+  if (native) {
+    return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
+  }
   return enqueueRender(
     "threads",
     data,
@@ -396,7 +418,9 @@ export async function renderTextCardPng(
   scheme: "light" | "dark",
 ): Promise<RenderedCard | null> {
   const data = buildTextCardData(text);
-  if (!data) return null;
+  if (!data) {
+    return null;
+  }
   return enqueueRender("text", data, scheme, 0);
 }
 
@@ -409,6 +433,8 @@ export function renderSearchCardPng(
 
 export function disposeRenderCardWindow(): void {
   clearIdleDispose();
-  if (win && !win.isDestroyed()) win.destroy();
+  if (win && !win.isDestroyed()) {
+    win.destroy();
+  }
   win = null;
 }

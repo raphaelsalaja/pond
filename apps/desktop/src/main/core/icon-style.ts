@@ -23,11 +23,15 @@ export function classifyIconStyle(input: {
   theme: string;
   interface: string;
 }): AppIconStyle {
-  if (input.theme.startsWith("Clear") || input.theme.startsWith("Tinted"))
+  if (input.theme.startsWith("Clear") || input.theme.startsWith("Tinted")) {
     return "monochrome";
-  if (input.theme.endsWith("Dark")) return "dark";
-  if (input.theme.endsWith("Automatic") && input.interface === "Dark")
+  }
+  if (input.theme.endsWith("Dark")) {
     return "dark";
+  }
+  if (input.theme.endsWith("Automatic") && input.interface === "Dark") {
+    return "dark";
+  }
   return "light";
 }
 
@@ -54,15 +58,18 @@ export function macosMajor(
   platform: NodeJS.Platform,
   systemVersion: string,
 ): number | null {
-  if (platform !== "darwin") return null;
+  if (platform !== "darwin") {
+    return null;
+  }
   const major = Number.parseInt(systemVersion, 10);
   return Number.isNaN(major) ? null : major;
 }
 
 /** Reads the current icon style once, for showing previews that match it. */
 export function readIconStyle(): AppIconStyle | null {
-  if (!supportsIconStyles(process.platform, process.getSystemVersion()))
+  if (!supportsIconStyles(process.platform, process.getSystemVersion())) {
     return null;
+  }
   return classifyIconStyle({
     theme: systemPreferences.getUserDefault(
       "AppleIconAppearanceTheme",
@@ -79,8 +86,9 @@ function helperPath(): string | null {
   if (
     !app.isPackaged ||
     !supportsIconStyles(process.platform, process.getSystemVersion())
-  )
+  ) {
     return null;
+  }
   const path = join(process.resourcesPath, "bin", HELPER);
   return existsSync(path) ? path : null;
 }
@@ -94,13 +102,17 @@ export function watchIconStyle(
   onStyle: (style: AppIconStyle) => void,
 ): IconStyleWatch | null {
   const path = helperPath();
-  if (!path) return null;
+  if (!path) {
+    return null;
+  }
   const child = spawn(path, [], { stdio: ["pipe", "pipe", "ignore"] });
   child.on("error", (err) => log.warn("[pond] icon style helper failed", err));
   if (child.stdout) {
     createInterface({ input: child.stdout }).on("line", (line) => {
       const style = parseIconStyleLine(line);
-      if (style) onStyle(style);
+      if (style) {
+        onStyle(style);
+      }
     });
   }
   return {

@@ -2,10 +2,8 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createFishMcpManager,
-  type McpConnection,
-} from "../../core/agent/fish-mcp/client";
+import { createFishMcpManager } from "../../core/agent/fish-mcp/client";
+import type { McpConnection } from "../../core/agent/fish-mcp/client";
 import { createFishMcpStore } from "../../core/agent/fish-mcp/store";
 import { createFishMcpQueries } from "./fish-mcp";
 

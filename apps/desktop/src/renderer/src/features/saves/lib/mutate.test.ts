@@ -14,7 +14,9 @@ beforeEach(() => {
       tags: ["original"],
     }),
   );
-  if (!save) throw new Error("Fixture must produce a save");
+  if (!save) {
+    throw new Error("Fixture must produce a save");
+  }
   pool.upsert(save);
 });
 afterEach(() => {
@@ -109,7 +111,7 @@ it("clears loaded tags optimistically for a replace operation", async () => {
   });
 });
 
-const operations: BulkEdit["operation"][] = [
+const operations: Array<BulkEdit["operation"]> = [
   { kind: "trash" },
   { kind: "untrash" },
   { kind: "purge" },
@@ -135,12 +137,14 @@ for (const operation of operations) {
           rating: 2,
           notes: "Before",
         });
-        if (!save) throw new Error("Invalid fixture");
+        if (!save) {
+          throw new Error("Invalid fixture");
+        }
         return save;
       });
       pool.bulkUpsert(before);
-      const dirty: string[] = [];
-      const batches: string[][] = [];
+      const dirty: Array<string> = [];
+      const batches: Array<Array<string>> = [];
       let publications = 0;
       const subscription = savesStore.subscribe(() => {
         publications++;
@@ -159,22 +163,29 @@ for (const operation of operations) {
       try {
         const mutation = bulkMutation(["2", "cold", "0", "1", "2"], operation);
         const optimistic = before.map((save) => {
-          if (operation.kind === "trash")
+          if (operation.kind === "trash") {
             return { ...save, deletedAt: pool.get(save.id)?.deletedAt };
-          if (operation.kind === "untrash") return { ...save, deletedAt: null };
-          if (operation.kind === "rating" && !save.deletedAt)
+          }
+          if (operation.kind === "untrash") {
+            return { ...save, deletedAt: null };
+          }
+          if (operation.kind === "rating" && !save.deletedAt) {
             return { ...save, rating: operation.rating || null };
-          if (operation.kind === "notes")
+          }
+          if (operation.kind === "notes") {
             return { ...save, notes: operation.notes };
-          if (operation.kind === "tags" && operation.mode === "replace")
+          }
+          if (operation.kind === "tags" && operation.mode === "replace") {
             return { ...save, tags: operation.tags };
+          }
           return save;
         });
         expect(pool.snapshot()).toEqual(
           operation.kind === "purge" ? [] : optimistic,
         );
-        for (const save of pool.snapshot())
+        for (const save of pool.snapshot()) {
           expect(pool.get(save.id)).toEqual(save);
+        }
         const changes =
           (operation.kind === "tags" && operation.mode !== "replace") ||
           operation.kind === "suggested-tags"
@@ -198,7 +209,9 @@ for (const operation of operations) {
           pending.reject(new Error("Synthetic rejection"));
           await rejected;
           expect(pool.snapshot()).toEqual(before);
-          for (const save of before) expect(pool.get(save.id)).toEqual(save);
+          for (const save of before) {
+            expect(pool.get(save.id)).toEqual(save);
+          }
           expect(dirty.slice(changes.length)).toEqual(changes);
           expect(publications).toBe(changes.length ? 2 : 0);
           expect(batches).toEqual(changes.length ? [changes, changes] : []);
@@ -218,7 +231,9 @@ it("keeps surviving tied Saves ahead of restored Saves after rejected purge", as
   pool.clear();
   const before = ["selected", "survivor"].map((id) => {
     const save = normalise({ id, savedAt: 20, createdAt: 1 });
-    if (!save) throw new Error("Invalid fixture");
+    if (!save) {
+      throw new Error("Invalid fixture");
+    }
     return save;
   });
   pool.bulkUpsert(before);
@@ -233,7 +248,9 @@ it("keeps surviving tied Saves ahead of restored Saves after rejected purge", as
     "survivor",
     "selected",
   ]);
-  for (const save of before) expect(pool.get(save.id)).toEqual(save);
+  for (const save of before) {
+    expect(pool.get(save.id)).toEqual(save);
+  }
 });
 
 for (const ids of [[], ["cold"], ["trashed", "cold"]]) {
@@ -244,7 +261,9 @@ for (const ids of [[], ["cold"], ["trashed", "cold"]]) {
       createdAt: 1,
       deletedAt: 1,
     });
-    if (!trashed) throw new Error("Invalid fixture");
+    if (!trashed) {
+      throw new Error("Invalid fixture");
+    }
     pool.upsert(trashed);
     const before = pool.snapshot();
     const pending = Promise.withResolvers<{ changed: number }>();
@@ -254,7 +273,7 @@ for (const ids of [[], ["cold"], ["trashed", "cold"]]) {
     const subscription = savesStore.subscribe(() => {
       publications++;
     });
-    const dirty: string[][] = [];
+    const dirty: Array<Array<string>> = [];
     const detach = onPoolDirty((changed) => dirty.push([...changed]));
     try {
       const mutation = bulkMutation(ids, { kind: "rating", rating: 3 });

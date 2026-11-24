@@ -24,8 +24,8 @@ export function registerRefreshHandlers(): void {
   safeHandle(IPC.refreshSave, async (_, id: string) => {
     try {
       return await refreshSave(String(id));
-    } catch (err) {
-      log.error("[pond ipc] refreshSave failed", err);
+    } catch (error) {
+      log.error("[pond ipc] refreshSave failed", error);
       return { ok: false as const, reason: "internal_error" as const };
     }
   });
@@ -47,8 +47,8 @@ export function registerRefreshHandlers(): void {
           onlyMissing: Boolean(opts?.onlyMissing),
           overwrite: Boolean(opts?.overwrite),
         });
-      } catch (err) {
-        log.error("[pond ipc] refreshBackfillStart failed", err);
+      } catch (error) {
+        log.error("[pond ipc] refreshBackfillStart failed", error);
         return { ok: false as const, reason: "already_running" as const };
       }
     },
@@ -62,8 +62,8 @@ export function registerRefreshHandlers(): void {
   safeHandle(IPC.archiveBackfillStart, async () => {
     try {
       return await startArchiveBackfill();
-    } catch (err) {
-      log.error("[pond ipc] archiveBackfillStart failed", err);
+    } catch (error) {
+      log.error("[pond ipc] archiveBackfillStart failed", error);
       return { ok: true as const, queued: 0 };
     }
   });
@@ -71,22 +71,24 @@ export function registerRefreshHandlers(): void {
   safeHandle(IPC.archiveSite, async (_, id: string) => {
     try {
       return await archiveSiteForSave(String(id));
-    } catch (err) {
-      log.error("[pond ipc] archiveSite failed", err);
+    } catch (error) {
+      log.error("[pond ipc] archiveSite failed", error);
       return { ok: false as const };
     }
   });
 
   safeHandle(IPC.sourceConnect, async (_, source: string) => {
     try {
-      if (!isSource(source)) return { ok: false as const, mode: "external" };
+      if (!isSource(source)) {
+        return { ok: false as const, mode: "external" };
+      }
       if (connectsByHandle(source)) {
         return { ok: true as const, mode: "external" as const };
       }
       setPendingSessionSource(source);
       return await signInToSource(source);
-    } catch (err) {
-      log.warn("[pond ipc] sourceConnect failed", err);
+    } catch (error) {
+      log.warn("[pond ipc] sourceConnect failed", error);
       return { ok: false as const, mode: "external" };
     }
   });
@@ -98,12 +100,11 @@ export function registerRefreshHandlers(): void {
         if (source !== "bluesky") {
           return { ok: false as const, reason: "invalid" as const };
         }
-        const { connectByHandle, liveConnectDeps } = await import(
-          "../../core/refresh/harvest/bluesky/connect"
-        );
+        const { connectByHandle, liveConnectDeps } =
+          await import("../../core/refresh/harvest/bluesky/connect");
         return await connectByHandle(String(handle), liveConnectDeps());
-      } catch (err) {
-        log.warn("[pond ipc] sourceConnectHandle failed", err);
+      } catch (error) {
+        log.warn("[pond ipc] sourceConnectHandle failed", error);
         return { ok: false as const, reason: "unavailable" as const };
       }
     },
@@ -115,8 +116,8 @@ export function registerRefreshHandlers(): void {
         ? await isSourceConnected(source)
         : false;
       return { ok: true as const, connected };
-    } catch (err) {
-      log.warn("[pond ipc] sourceStatus failed", err);
+    } catch (error) {
+      log.warn("[pond ipc] sourceStatus failed", error);
       return { ok: false as const, connected: false };
     }
   });

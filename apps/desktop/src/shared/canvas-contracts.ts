@@ -171,7 +171,7 @@ export const CanvasItemSchema = z.discriminatedUnion("kind", [
     ...frame,
     kind: z.literal("table"),
     rows: z
-      .array(z.array(z.string().max(2_000)).min(1).max(30))
+      .array(z.array(z.string().max(2000)).min(1).max(30))
       .min(1)
       .max(100),
     color: CanvasColorSchema,
@@ -236,7 +236,7 @@ export const CanvasViewportSchema = z.object({
 });
 export type CanvasViewport = z.infer<typeof CanvasViewportSchema>;
 
-export const CANVAS_ITEM_LIMIT = 5_000;
+export const CANVAS_ITEM_LIMIT = 5000;
 
 /** Save grids stay roughly square, so a large folder doesn't land as one tall strip. */
 export function saveGridColumns(count: number): number {
@@ -256,24 +256,26 @@ export const CanvasClipSchema = z.object({
 });
 
 function checkReferences(
-  content: { items: CanvasItem[]; connectors: CanvasConnector[] },
+  content: { items: Array<CanvasItem>; connectors: Array<CanvasConnector> },
   context: z.RefinementCtx,
 ): void {
   const ids = new Set<string>();
   for (const item of content.items) {
-    if (ids.has(item.id))
+    if (ids.has(item.id)) {
       context.addIssue({
         code: "custom",
         message: `Duplicate item ${item.id}`,
       });
+    }
     ids.add(item.id);
   }
   for (const connector of content.connectors) {
-    if (!ids.has(connector.from) || !ids.has(connector.to))
+    if (!ids.has(connector.from) || !ids.has(connector.to)) {
       context.addIssue({
         code: "custom",
         message: `Connector ${connector.id} points at a missing item`,
       });
+    }
   }
 }
 
@@ -300,16 +302,16 @@ export interface CanvasSummary {
   createdAt: number;
   updatedAt: number;
   itemCount: number;
-  saveIds: string[];
+  saveIds: Array<string>;
 }
 
 export interface CanvasQueryInputs {
   "canvases.list": Record<string, never>;
   "canvases.get": { id: string };
-  "canvases.create": { name?: string; saveIds?: string[] };
+  "canvases.create": { name?: string; saveIds?: Array<string> };
   "canvases.rename": { id: string; name: string };
   "canvases.update": { id: string; content: CanvasContent };
-  "canvases.addSaves": { id: string; saveIds: string[] };
+  "canvases.addSaves": { id: string; saveIds: Array<string> };
   "canvases.delete": { id: string };
   "canvases.capture": { x: number; y: number; width: number; height: number };
   "canvases.export": {
@@ -322,7 +324,7 @@ export interface CanvasQueryInputs {
 }
 
 export interface CanvasQueryResults {
-  "canvases.list": CanvasSummary[];
+  "canvases.list": Array<CanvasSummary>;
   "canvases.get": Canvas | null;
   "canvases.create": Canvas;
   "canvases.rename": { ok: true };

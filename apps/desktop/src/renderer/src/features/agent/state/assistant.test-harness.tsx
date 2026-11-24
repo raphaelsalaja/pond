@@ -1,14 +1,16 @@
 import type { AgentStreamEvent } from "@shared/agent-stream";
-import { type AgentStreamRequest, agentStreamRequest } from "@shared/assistant";
+import { agentStreamRequest } from "@shared/assistant";
+import type { AgentStreamRequest } from "@shared/assistant";
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { vi } from "vitest";
-import { type AssistantState, useAssistant } from "./assistant";
+import { useAssistant } from "./assistant";
+import type { AssistantState } from "./assistant";
 
 export interface StreamReply {
   error?: string;
-  text?: string | string[];
+  text?: string | Array<string>;
   waitForTextChunk?: () => Promise<void>;
 }
 
@@ -43,7 +45,9 @@ export function agentStreamBridge(
                   id: "text",
                   delta: text[index] ?? "",
                 });
-                if (index < text.length - 1) await result.waitForTextChunk?.();
+                if (index < text.length - 1) {
+                  await result.waitForTextChunk?.();
+                }
               }
               writer.write({ type: "text-end", id: "text" });
             }
@@ -57,12 +61,16 @@ export function agentStreamBridge(
         try {
           while (!closed && reader) {
             const { done, value } = await reader.read();
-            if (done) break;
+            if (done) {
+              break;
+            }
             receive({ type: "data", data: Array.from(value) });
           }
-          if (!closed) receive({ type: "end" });
+          if (!closed) {
+            receive({ type: "end" });
+          }
         } catch (error) {
-          if (!closed)
+          if (!closed) {
             receive({
               type: "error",
               error:
@@ -70,6 +78,7 @@ export function agentStreamBridge(
                   ? error.message
                   : "Could not read this reply.",
             });
+          }
         }
       })();
       return () => {

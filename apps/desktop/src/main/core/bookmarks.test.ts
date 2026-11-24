@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  type BookmarkFile,
-  type BookmarkImportDependencies,
   importBookmarkFile,
   parseBookmarkFile,
   parseChromiumBookmarks,
   parseNetscapeBookmarks,
 } from "./bookmarks";
+import type { BookmarkFile, BookmarkImportDependencies } from "./bookmarks";
 
 describe("parseNetscapeBookmarks", () => {
   it("reads http(s) links from a Netscape bookmark file", () => {
@@ -76,10 +75,10 @@ describe("parseNetscapeBookmarks", () => {
   });
 });
 
-describe("parseChromiumBookmarks", () => {
-  const microsSince1601 = (ms: number) =>
-    String((BigInt(ms) + 11_644_473_600_000n) * 1000n);
+const microsSince1601 = (ms: number) =>
+  String((BigInt(ms) + 11_644_473_600_000n) * 1000n);
 
+describe("parseChromiumBookmarks", () => {
   it("walks every root and converts WebKit timestamps", () => {
     const json = JSON.stringify({
       checksum: "x",
@@ -150,23 +149,23 @@ describe("parseChromiumBookmarks", () => {
   });
 });
 
-describe("importBookmarkFile", () => {
-  function dependencies(existing: string[] = []) {
-    let next = 0;
-    return {
-      enqueueLink: vi.fn(async (url: string) => ({
-        id: `save-${next++}`,
-        created: !existing.includes(url),
-      })),
-      persistImported: vi.fn(async () => {}),
-      importFolders: vi.fn(
-        async (folders: BookmarkFile["folders"]) =>
-          new Map(folders.map((folder) => [folder.id, `pond-${folder.id}`])),
-      ),
-      addToFolder: vi.fn(async () => ({ ok: true as const })),
-    } satisfies BookmarkImportDependencies;
-  }
+function dependencies(existing: Array<string> = []) {
+  let next = 0;
+  return {
+    enqueueLink: vi.fn(async (url: string) => ({
+      id: `save-${next++}`,
+      created: !existing.includes(url),
+    })),
+    persistImported: vi.fn(async () => {}),
+    importFolders: vi.fn(
+      async (folders: BookmarkFile["folders"]) =>
+        new Map(folders.map((folder) => [folder.id, `pond-${folder.id}`])),
+    ),
+    addToFolder: vi.fn(async () => ({ ok: true as const })),
+  } satisfies BookmarkImportDependencies;
+}
 
+describe("importBookmarkFile", () => {
   const file: BookmarkFile = {
     folders: [
       { id: "design", name: "Design", parentId: null, sortOrder: 0 },

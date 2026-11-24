@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
-import { API_TOKEN_SCOPE_LABELS, type ApiTokenInfo } from "@pond/schema/api";
+import { API_TOKEN_SCOPE_LABELS } from "@pond/schema/api";
+import type { ApiTokenInfo } from "@pond/schema/api";
 import log from "electron-log/main.js";
 import type { Context, MiddlewareHandler } from "hono";
 import { apiError } from "./errors";
@@ -8,9 +9,10 @@ import { routeAccess } from "./scopes";
 const AUTH_WINDOW_MS = 5 * 60_000;
 const AUTH_MAX_FAILURES = 10;
 
+const digest = (value: string) => createHash("sha256").update(value).digest();
+
 /** Constant-time comparison; hashing first hides the token length. */
 export function tokensMatch(expected: string, presented: string): boolean {
-  const digest = (value: string) => createHash("sha256").update(value).digest();
   return timingSafeEqual(digest(expected), digest(presented));
 }
 

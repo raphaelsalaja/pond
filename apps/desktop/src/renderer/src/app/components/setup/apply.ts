@@ -4,12 +4,8 @@ import { addedProvidersWith } from "@/features/settings/components/sections/agen
 import { keyRowsSchema } from "@/features/settings/components/sections/agent/types";
 import { loadPrefs, savePrefsSection } from "@/shared/state/prefs";
 import type { SetupProfile } from "@/shared/state/setup";
-import {
-  AI_OPTION_IDS,
-  type LibraryFacts,
-  SETUP_VERSION,
-  type SetupChoices,
-} from "./model";
+import { AI_OPTION_IDS, SETUP_VERSION } from "./model";
+import type { LibraryFacts, SetupChoices } from "./model";
 
 function failure(cause: unknown, fallback: string): string {
   return cause instanceof Error && cause.message ? cause.message : fallback;
@@ -17,14 +13,20 @@ function failure(cause: unknown, fallback: string): string {
 
 function endpointPatch(choices: SetupChoices): Partial<Prefs["agent"]> {
   const endpoint = choices.endpoint.trim();
-  if (choices.provider === "ollama") return { ollamaBaseUrl: endpoint };
-  if (choices.provider === "lmstudio") return { lmstudioBaseUrl: endpoint };
+  if (choices.provider === "ollama") {
+    return { ollamaBaseUrl: endpoint };
+  }
+  if (choices.provider === "lmstudio") {
+    return { lmstudioBaseUrl: endpoint };
+  }
   return {};
 }
 
 /** Connects the chosen provider through the same checks as Settings; resolves to an error message, or "" once connected. */
 export async function connectAssistant(choices: SetupChoices): Promise<string> {
-  if (choices.assistant === "later") return "";
+  if (choices.assistant === "later") {
+    return "";
+  }
   const { provider } = choices;
   const group = providerGroup(provider);
   const key = choices.apiKey.trim();
@@ -33,28 +35,35 @@ export async function connectAssistant(choices: SetupChoices): Promise<string> {
     const connected = keys.some(
       (row) => row.provider === provider && row.hasKey,
     );
-    if (group === "cloud" && !key && !connected)
+    if (group === "cloud" && !key && !connected) {
       return "Enter an API key to connect, or choose Not Now.";
-    if (group === "local" && provider !== "apple" && !choices.endpoint.trim())
+    }
+    if (group === "local" && provider !== "apple" && !choices.endpoint.trim()) {
       return "Enter the address of your model server.";
-    if (group === "local")
+    }
+    if (group === "local") {
       await savePrefsSection("agent", endpointPatch(choices));
+    }
     if (!(connected && !key)) {
       const result = await window.pond.query("agent.saveKey", {
         provider,
         key,
       });
-      if (!result.ok) return result.error;
+      if (!result.ok) {
+        return result.error;
+      }
     }
     const { agent } = await loadPrefs();
     const agentPatch: Partial<Prefs["agent"]> = {
       addedProviders: addedProvidersWith(agent.addedProviders, keys, provider),
     };
-    if (!agent.languageModel) agentPatch.languageModel = provider;
+    if (!agent.languageModel) {
+      agentPatch.languageModel = provider;
+    }
     await savePrefsSection("agent", agentPatch);
     return "";
-  } catch (cause) {
-    return failure(cause, "Couldn't connect. Check the details and try again.");
+  } catch (error) {
+    return failure(error, "Couldn't connect. Check the details and try again.");
   }
 }
 
@@ -64,7 +73,9 @@ async function savePreferences(
 ): Promise<void> {
   const { options } = choices;
   const ai: Partial<Prefs["ai"]> = {};
-  for (const id of AI_OPTION_IDS) ai[id] = options[id];
+  for (const id of AI_OPTION_IDS) {
+    ai[id] = options[id];
+  }
   await savePrefsSection("ai", ai);
   const preferences: Partial<Prefs["preferences"]> = {
     appearance: choices.appearance,
@@ -152,7 +163,9 @@ async function saveLibrary(
       const identity = await window.pond.query("library.identity.update", {
         name,
       });
-      if (!identity.ok) return identity.error;
+      if (!identity.ok) {
+        return identity.error;
+      }
     }
     const target = renamed ? name : bundleName(library.path);
     const result = await window.pond.query("library.move", {
@@ -160,7 +173,9 @@ async function saveLibrary(
     });
     return result.ok ? "" : moveError(result);
   }
-  if (!renamed) return "";
+  if (!renamed) {
+    return "";
+  }
   const result = await window.pond.query("library.rename", { name });
   return result.ok ? "" : result.error;
 }
@@ -172,16 +187,20 @@ async function saveLibrary(
 export async function openExistingLibrary(): Promise<string | null> {
   try {
     const picked = await window.pond.query("library.pickExisting", {});
-    if (!picked.ok || !picked.path) return null;
+    if (!picked.ok || !picked.path) {
+      return null;
+    }
     const result = await window.pond.query("library.switchTo", {
       path: picked.path,
     });
-    if (result.ok) return "";
+    if (result.ok) {
+      return "";
+    }
     return (
       result.error ?? "Couldn't open that Library. Choose a .pond Library."
     );
-  } catch (cause) {
-    return failure(cause, "Couldn't open that Library. Try again.");
+  } catch (error) {
+    return failure(error, "Couldn't open that Library. Try again.");
   }
 }
 
@@ -195,14 +214,14 @@ export async function finishSetup(
   try {
     await savePreferences(choices, initial);
     await savePrefsSection("setup", { version: SETUP_VERSION });
-  } catch (cause) {
-    return failure(cause, "Couldn't save your choices. Try again.");
+  } catch (error) {
+    return failure(error, "Couldn't save your choices. Try again.");
   }
   try {
     return await saveLibrary(choices, library, profile);
-  } catch (cause) {
+  } catch (error) {
     return failure(
-      cause,
+      error,
       "Couldn't update the library. Try again from Settings.",
     );
   }

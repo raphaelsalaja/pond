@@ -1,14 +1,11 @@
 import { createHash } from "node:crypto";
-import {
-  type ImageCrop,
-  type NewSave,
-  type SaveFile,
-  saves,
-} from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { ImageCrop, NewSave, SaveFile } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { canDestructivelyEditImage } from "@shared/file-format";
 import { eq } from "drizzle-orm";
-import sharp, { type OutputInfo } from "sharp";
+import sharp from "sharp";
+import type { OutputInfo } from "sharp";
 import { getDb } from "../db";
 import { saveFile } from "../paths";
 import { executeTransaction } from "./executor";
@@ -67,9 +64,15 @@ export async function transformImageBytes(
     );
     pipeline = pipeline.extract({ left, top, width, height });
   }
-  if (input.rotate) pipeline = pipeline.rotate(input.rotate);
-  if (input.flipX) pipeline = pipeline.flop();
-  if (input.flipY) pipeline = pipeline.flip();
+  if (input.rotate) {
+    pipeline = pipeline.rotate(input.rotate);
+  }
+  if (input.flipX) {
+    pipeline = pipeline.flop();
+  }
+  if (input.flipY) {
+    pipeline = pipeline.flip();
+  }
   const result = await pipeline.toBuffer({ resolveWithObject: true });
   return { bytes: result.data, info: result.info };
 }
@@ -79,9 +82,13 @@ export async function applyImageTransformToFile(
 ): Promise<{ ok: true }> {
   const db = await getDb();
   const save = db.select().from(saves).where(eq(saves.id, input.id)).get();
-  if (!save) throw new Error("The Save no longer exists.");
+  if (!save) {
+    throw new Error("The Save no longer exists.");
+  }
   const file = save.files[input.fileIndex];
-  if (!file) throw new Error("The image no longer exists.");
+  if (!file) {
+    throw new Error("The image no longer exists.");
+  }
   if (!canDestructivelyEditImage(file.path)) {
     throw new Error("This image format can't be edited in place.");
   }
@@ -91,7 +98,9 @@ export async function applyImageTransformToFile(
   const files = [...save.files];
   files[input.fileIndex] = transformedFile(file, bytes, info);
   const transformed = files[input.fileIndex];
-  if (!transformed) throw new Error("The transformed image is unavailable.");
+  if (!transformed) {
+    throw new Error("The transformed image is unavailable.");
+  }
   const isCover = input.fileIndex === save.coverIndex;
   const patch = {
     files,

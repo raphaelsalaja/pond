@@ -1,6 +1,8 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import type { SyncSchedule } from "@shared/sync-schedule";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { LaunchFetchControl, ScheduleEditor } from "./";
 
@@ -30,18 +32,23 @@ async function choose(label: string, optionLabel: string) {
   const trigger = host.querySelector<HTMLButtonElement>(
     `button[aria-label="${label}"]`,
   );
-  if (!trigger) throw new Error(`Missing ${label} selector`);
+  if (!trigger) {
+    throw new Error(`Missing ${label} selector`);
+  }
   await act(async () => trigger.click());
   const option = [...document.querySelectorAll('[role="option"]')].find(
     (item) => item.textContent === optionLabel,
   );
-  if (!(option instanceof HTMLElement))
+  if (!isHTMLElement(option)) {
     throw new Error(`Missing ${optionLabel} option`);
+  }
   await act(async () => option.click());
 }
 async function toggleSchedule() {
   const toggle = host.querySelector<HTMLButtonElement>('[role="switch"]');
-  if (!toggle) throw new Error("Missing schedule switch");
+  if (!toggle) {
+    throw new Error("Missing schedule switch");
+  }
   await act(async () => toggle.click());
 }
 it("saves edits automatically without saving on mount", async () => {

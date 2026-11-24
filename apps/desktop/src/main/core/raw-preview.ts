@@ -11,9 +11,13 @@ export function extractRawPreviewJpeg(container: Buffer): Buffer | null {
       continue;
     }
     const end = findJpegEnd(container, index + 3);
-    if (end < 0) continue;
+    if (end < 0) {
+      continue;
+    }
     const jpeg = container.subarray(index, end + 2);
-    if (jpeg.length >= MIN_JPEG_BYTES) last = jpeg;
+    if (jpeg.length >= MIN_JPEG_BYTES) {
+      last = jpeg;
+    }
     index = end + 1;
   }
   return last;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, cn } from "@pond/ui";
+import { Button, cn, cssVars } from "@pond/ui";
 import { useState } from "react";
 import { Code } from "../code";
 import { useTokenValues } from "../token-values";
@@ -19,7 +19,7 @@ const DURATIONS = [
 
 const TOKENS = DURATIONS.map(({ token }) => token);
 
-interface DurationsProps extends React.ComponentPropsWithoutRef<"div"> {}
+type DurationsProps = React.ComponentPropsWithoutRef<"div">;
 
 export function Durations({ className, ...props }: DurationsProps) {
   const [ref, values] = useTokenValues<HTMLDivElement>(TOKENS);
@@ -44,13 +44,10 @@ export function Durations({ className, ...props }: DurationsProps) {
               className={styles.track}
               data-played={played || undefined}
               title={easing}
-              style={
-                /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
-                {
-                  "--duration": `var(${token})`,
-                  "--easing": `var(${easing})`,
-                } as React.CSSProperties
-              }
+              style={cssVars({
+                "--duration": `var(${token})`,
+                "--easing": `var(${easing})`,
+              })}
             >
               <span className={styles.runner}>
                 <span className={styles.dot} />

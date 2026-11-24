@@ -13,8 +13,8 @@ import {
 import { notify } from "@/shared/lib/toast";
 
 export type PasteImport =
-  | { kind: "files"; paths: string[] }
-  | { kind: "urls"; urls: string[] }
+  | { kind: "files"; paths: Array<string> }
+  | { kind: "urls"; urls: Array<string> }
   | { kind: "clipboard" };
 
 const ImportReplySchema = z
@@ -37,7 +37,7 @@ interface FolderInput {
 }
 
 interface PlanResult {
-  ids: string[];
+  ids: Array<string>;
   failed: number;
 }
 
@@ -51,7 +51,7 @@ function replyResult(
   return { ids: reply.ids ?? [], failed: reply.failedPaths?.length ?? 0 };
 }
 
-function filePaths(data: DataTransfer): string[] {
+function filePaths(data: DataTransfer): Array<string> {
   return Array.from(data.files ?? [])
     .map((file) => {
       try {
@@ -66,13 +66,19 @@ function filePaths(data: DataTransfer): string[] {
 /** Reads what a paste or drop would import, without importing it. */
 export function pasteImportOf(data: DataTransfer): PasteImport | null {
   const paths = filePaths(data);
-  if (paths.length) return { kind: "files", paths };
+  if (paths.length) {
+    return { kind: "files", paths };
+  }
   const text = data.getData("text/uri-list") || data.getData("text/plain");
   const textPaths = filePathsFromText(text);
-  if (textPaths.length) return { kind: "files", paths: textPaths };
+  if (textPaths.length) {
+    return { kind: "files", paths: textPaths };
+  }
   /** Browsers often advertise a `Files` type for copied links; prefer URL text before image import. */
   const urls = asUrlList(text);
-  if (urls) return { kind: "urls", urls };
+  if (urls) {
+    return { kind: "urls", urls };
+  }
   const types = Array.from(data.types ?? []);
   /** Finder paste often exposes `Files` with an empty FileList; main reads the native pasteboard. */
   if (
@@ -81,19 +87,22 @@ export function pasteImportOf(data: DataTransfer): PasteImport | null {
       file.type.startsWith("image/"),
     ) ||
     types.some((type) => type.startsWith("image/"))
-  )
+  ) {
     return { kind: "clipboard" };
+  }
   return null;
 }
 
 interface FilesInput {
-  paths: string[];
-  folderIds?: string[];
+  paths: Array<string>;
+  folderIds?: Array<string>;
 }
 
-function filesInput(paths: string[], folderId: string | undefined) {
+function filesInput(paths: Array<string>, folderId: string | undefined) {
   const input: FilesInput = { paths };
-  if (folderId) input.folderIds = [folderId];
+  if (folderId) {
+    input.folderIds = [folderId];
+  }
   return input;
 }
 
@@ -102,7 +111,9 @@ async function importPlan(
   folderId: string | undefined,
 ): Promise<PlanResult> {
   const into: FolderInput = {};
-  if (folderId) into.folderId = folderId;
+  if (folderId) {
+    into.folderId = folderId;
+  }
   switch (plan.kind) {
     case "files": {
       const reply = ImportReplySchema.parse(
@@ -116,8 +127,11 @@ async function importPlan(
         const reply = ImportReplySchema.parse(
           await window.pond.query("saves.quickAdd", { ...into, url }),
         );
-        if (reply.ok && reply.id) result.ids.push(reply.id);
-        else result.failed += 1;
+        if (reply.ok && reply.id) {
+          result.ids.push(reply.id);
+        } else {
+          result.failed += 1;
+        }
       }
       return result;
     }
@@ -136,7 +150,7 @@ async function importPlan(
 export async function runPasteImport(
   plan: PasteImport,
   target?: PasteImportTarget,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const { ids, failed } = await importPlan(plan, target?.id);
   const toast = importToast({
     kind: plan.kind,
@@ -144,7 +158,7 @@ export async function runPasteImport(
     failed,
     folderName: target?.name,
   });
-  if (toast)
+  if (toast) {
     notify({
       id: "paste-import",
       ...toast,
@@ -152,6 +166,7 @@ export async function runPasteImport(
         saveLibraryBridge.showSaves(shown, target?.id),
       ),
     });
+  }
   return ids;
 }
 

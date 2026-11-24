@@ -1,3 +1,4 @@
+import { isJsonValue } from "@pond/schema/json";
 import type { JsonValue } from "@pond/schema/json";
 import { z } from "zod";
 
@@ -138,9 +139,13 @@ export type BlueskyViewRecord = z.infer<typeof ViewRecordSchema>;
 
 /** A TID packs microseconds since the epoch above a 10-bit clock id, in a sortable base32. */
 export function tidToDate(tid: string): string | undefined {
-  if (!/^[2-7a-z]{13}$/.test(tid)) return undefined;
+  if (!/^[2-7a-z]{13}$/.test(tid)) {
+    return undefined;
+  }
   let n = 0n;
-  for (const ch of tid) n = n * 32n + BigInt(TID_ALPHABET.indexOf(ch));
+  for (const ch of tid) {
+    n = n * 32n + BigInt(TID_ALPHABET.indexOf(ch));
+  }
   return new Date(Number((n >> 10n) / 1000n)).toISOString();
 }
 
@@ -154,9 +159,11 @@ export async function readJson(
 ): Promise<{ status: number; body: JsonValue } | null> {
   try {
     const res = await get(url);
-    if (!res.ok) return { status: res.status, body: null };
-    const body: JsonValue = await res.json();
-    return { status: res.status, body };
+    if (!res.ok) {
+      return { status: res.status, body: null };
+    }
+    const body: unknown = await res.json();
+    return { status: res.status, body: isJsonValue(body) ? body : null };
   } catch {
     return null;
   }
@@ -166,7 +173,9 @@ export async function resolveHandle(
   get: AtGet,
   handle: string,
 ): Promise<string | null> {
-  if (handle.startsWith("did:")) return handle;
+  if (handle.startsWith("did:")) {
+    return handle;
+  }
   const res = await readJson(
     get,
     `${APPVIEW}/com.atproto.identity.resolveHandle?handle=${encodeURIComponent(handle)}`,
@@ -182,7 +191,9 @@ export async function pdsFor(get: AtGet, did: string): Promise<string | null> {
     : did.startsWith("did:web:")
       ? `https://${did.slice("did:web:".length)}/.well-known/did.json`
       : null;
-  if (!docUrl) return null;
+  if (!docUrl) {
+    return null;
+  }
   const res = await readJson(get, docUrl);
   const doc = DidDocSchema.safeParse(res?.body);
   const service = doc.success

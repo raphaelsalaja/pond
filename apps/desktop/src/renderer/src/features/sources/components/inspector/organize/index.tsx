@@ -31,7 +31,9 @@ export function SourceOrganize({
   const folders = useFolders();
   const tags = useTags();
   useEffect(() => {
-    if (folderStore.snapshot().length === 0) void folderStore.refresh();
+    if (folderStore.snapshot().length === 0) {
+      void folderStore.refresh();
+    }
   }, []);
   const [draft, setDraft] = useState({
     folderId: incoming?.folderId ?? null,
@@ -51,7 +53,9 @@ export function SourceOrganize({
   }, [folders]);
   const tagNames = useMemo(() => {
     const names = new Set(tags.map((tag) => tag.name));
-    for (const name of draft.tags) names.add(name);
+    for (const name of draft.tags) {
+      names.add(name);
+    }
     return [...names].sort((a, b) => a.localeCompare(b));
   }, [tags, draft.tags]);
   const save = async (next: typeof draft) => {
@@ -88,7 +92,9 @@ export function SourceOrganize({
           <Select.Root
             value={folderValue}
             onValueChange={(next) => {
-              if (!next) return;
+              if (!next) {
+                return;
+              }
               void save({ ...draft, folderId: next === NONE ? null : next });
             }}
           >

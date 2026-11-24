@@ -1,13 +1,15 @@
 import { Action, ActionPanel, Icon, List, useNavigation } from "@raycast/api";
 import { createDeeplink, useCachedPromise, useCachedState } from "@raycast/utils";
 import type { ApiCursor, ApiLibraryQueryInput, ApiSave, ApiSearchRequest } from "pond-api";
-import { type ReactNode, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { pond } from "../api/client";
 import { toError } from "../api/problems";
 import { sectionsBySavedDay } from "../lib/display";
 import { saveEditor } from "../lib/edits";
 import { useQuickLook } from "../lib/files";
-import { ALL_SAVES, decodeFilter, encodeFilter, type Filter, groupsByDay, queryFor } from "../lib/filters";
+import { ALL_SAVES, decodeFilter, encodeFilter, groupsByDay, queryFor } from "../lib/filters";
+import type { Filter } from "../lib/filters";
 import { useLookups, useSources, useViews } from "../lib/library";
 import { LIBRARY_LINK, searchLink } from "../lib/links";
 import { uniqueById } from "../lib/pages";
@@ -20,7 +22,7 @@ import { SaveItem } from "./save-item";
 const PAGE_SIZE = 50;
 const MEANING_LIMIT = 50;
 const RECENT_PREFIX = "recent:";
-const NONE: ApiSave[] = [];
+const NONE: Array<ApiSave> = [];
 
 /** Search by meaning narrows by source, folder and type only; other filters fall back to keywords. */
 function meaningScope(filter: Filter): Omit<ApiSearchRequest, "query"> | null {
@@ -40,8 +42,12 @@ function meaningScope(filter: Filter): Omit<ApiSearchRequest, "query"> | null {
 
 function loadSaves(input: ApiLibraryQueryInput | null, meaning: ApiSearchRequest | null) {
   return async ({ cursor }: { cursor?: ApiCursor | null }) => {
-    if (meaning) return { data: (await pond().search(meaning)).saves, hasMore: false };
-    if (!input) return { data: NONE, hasMore: false };
+    if (meaning) {
+      return { data: (await pond().search(meaning)).saves, hasMore: false };
+    }
+    if (!input) {
+      return { data: NONE, hasMore: false };
+    }
     const page = await pond().query({ ...input, limit: PAGE_SIZE, cursor });
     return { data: page.saves ?? [], hasMore: page.nextCursor !== null, cursor: page.nextCursor };
   };
@@ -72,7 +78,8 @@ export function SavesList({ filter: pinned, navigationTitle, searchText: initial
   const meaning = byMeaning && keywords && scope ? { ...scope, query: keywords, limit: MEANING_LIMIT } : null;
   const input = queryFor(filter, keywords, views.data);
 
-  const saves = useCachedPromise(loadSaves, [input, meaning], {
+  const [now] = useState(() => new Date());
+  const saves = useCachedPromise<typeof loadSaves, Array<ApiSave>>(loadSaves, [input, meaning], {
     keepPreviousData: true,
     execute: input !== null || meaning !== null,
   });
@@ -98,21 +105,25 @@ export function SavesList({ filter: pinned, navigationTitle, searchText: initial
 
   function refresh() {
     saves.revalidate();
-    if (showRecents) recents.revalidate();
+    if (showRecents) {
+      recents.revalidate();
+    }
     lookups.revalidate();
     views.revalidate();
     sources.revalidate();
   }
 
   function applyFilter(next: Filter) {
-    if (pinned) return push(<SavesList filter={next} navigationTitle={filterTitle(next, lookups, views.data)} />);
+    if (pinned) {
+      return push(<SavesList filter={next} navigationTitle={filterTitle(next, lookups, views.data)} />);
+    }
     setStored(encodeFilter(next));
   }
 
   const sections = meaning
     ? [{ title: "Best Matches", items: data }]
     : input && groupsByDay(input)
-      ? sectionsBySavedDay(data, new Date())
+      ? sectionsBySavedDay(data, now)
       : [{ title: filterTitle(filter, lookups, views.data), items: data }];
 
   const searchActions = (

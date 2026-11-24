@@ -8,10 +8,13 @@ const cache = new Map<number, Twiddles>();
 
 function twiddles(size: number): Twiddles {
   const cached = cache.get(size);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   const bits = Math.log2(size);
-  if (!Number.isInteger(bits))
+  if (!Number.isInteger(bits)) {
     throw new Error("FFT size must be a power of two");
+  }
   const cos = new Float64Array(size / 2);
   const sin = new Float64Array(size / 2);
   for (let index = 0; index < size / 2; index++) {
@@ -21,8 +24,9 @@ function twiddles(size: number): Twiddles {
   const reverse = new Uint32Array(size);
   for (let index = 0; index < size; index++) {
     let value = 0;
-    for (let bit = 0; bit < bits; bit++)
+    for (let bit = 0; bit < bits; bit++) {
       value |= ((index >>> bit) & 1) << (bits - 1 - bit);
+    }
     reverse[index] = value;
   }
   const table = { cos, sin, reverse };
@@ -36,7 +40,9 @@ export function fft(real: Float64Array, imag: Float64Array): void {
   const { cos, sin, reverse } = twiddles(size);
   for (let index = 0; index < size; index++) {
     const swap = reverse[index] ?? 0;
-    if (swap <= index) continue;
+    if (swap <= index) {
+      continue;
+    }
     const r = real[index] ?? 0;
     real[index] = real[swap] ?? 0;
     real[swap] = r;

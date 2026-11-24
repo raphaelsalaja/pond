@@ -6,8 +6,10 @@ import { useSave } from "@/features/saves/hooks/use-saves";
 import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
 
-interface SaveTileProps
-  extends Omit<React.ComponentPropsWithoutRef<"button">, "title"> {
+interface SaveTileProps extends Omit<
+  React.ComponentPropsWithoutRef<"button">,
+  "title"
+> {
   saveId?: string | null;
   selected?: boolean;
   dimmed?: boolean;

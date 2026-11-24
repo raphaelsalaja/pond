@@ -5,11 +5,13 @@ import { assistant } from "./assistant";
 import { createAssistantHarness } from "./assistant.test-harness";
 
 it("keeps the current conversation visible until the next chat is ready", async () => {
-  const next = Promise.withResolvers<AssistantMessage[]>();
+  const next = Promise.withResolvers<Array<AssistantMessage>>();
   vi.stubGlobal("pond", {
     query: (name: string, args: { chatId?: string }) => {
-      if (name !== "agent.messages") return Promise.resolve([]);
-      if (args.chatId === "current")
+      if (name !== "agent.messages") {
+        return Promise.resolve([]);
+      }
+      if (args.chatId === "current") {
         return Promise.resolve([
           {
             id: "current-message",
@@ -18,7 +20,8 @@ it("keeps the current conversation visible until the next chat is ready", async 
             content: "Keep this conversation visible",
             metadata: null,
           },
-        ] satisfies AssistantMessage[]);
+        ] satisfies Array<AssistantMessage>);
+      }
       return next.promise;
     },
     onAgentChunk: () => () => {},
@@ -67,8 +70,8 @@ it("keeps the current conversation visible until the next chat is ready", async 
 });
 
 it("ignores old history that arrives after switching chats", async () => {
-  const first = Promise.withResolvers<AssistantMessage[]>();
-  const second = Promise.withResolvers<AssistantMessage[]>();
+  const first = Promise.withResolvers<Array<AssistantMessage>>();
+  const second = Promise.withResolvers<Array<AssistantMessage>>();
   vi.stubGlobal("pond", {
     query: (name: string, args: { chatId?: string }) =>
       name === "agent.messages"
@@ -185,8 +188,12 @@ it("deletes chats while preserving another chat's draft", async () => {
   ];
   vi.stubGlobal("pond", {
     query: async (name: string, params?: { chatId?: string }) => {
-      if (name === "agent.chats") return chats;
-      if (name === "agent.messages") return [];
+      if (name === "agent.chats") {
+        return chats;
+      }
+      if (name === "agent.messages") {
+        return [];
+      }
       if (name === "agent.deleteChat") {
         chats = chats.filter((chat) => chat.id !== params?.chatId);
         return { ok: true };

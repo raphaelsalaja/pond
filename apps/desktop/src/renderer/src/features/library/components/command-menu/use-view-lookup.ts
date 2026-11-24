@@ -1,4 +1,6 @@
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import { LibraryQueryRequestSchema } from "@shared/library-query";
+import log from "electron-log/renderer";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { keywordScopesFromPrefs } from "@/features/search";
@@ -13,14 +15,14 @@ const PageSchema = z
   .catch({ ids: [] });
 
 interface ViewLookup {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   searching: boolean;
 }
 
 interface LookupState {
   key: string;
   query: string;
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
 }
 
 const IDLE: ViewLookup = { ids: [], searching: false };
@@ -42,7 +44,9 @@ export function useViewLookup(
   const [state, setState] = useState<LookupState | null>(null);
 
   useEffect(() => {
-    if (!key) return;
+    if (!key) {
+      return;
+    }
     let cancelled = false;
     const timer = setTimeout(() => {
       void window.pond
@@ -50,16 +54,20 @@ export function useViewLookup(
           query: EMPTY_QUERY,
           keywords: trimmed,
           keywordScopes,
-          scope: JSON.parse(request),
+          scope: LibraryQueryRequestSchema.shape.scope.parse(
+            JSON.parse(request),
+          ),
           limit: LIMIT,
         })
         .then((page) => PageSchema.parse(page).ids)
-        .catch((error) => {
-          console.warn("[pond search] view lookup failed", error);
+        .catch((cause: unknown) => {
+          log.warn("[pond search] view lookup failed", cause);
           return [];
         })
         .then((ids) => {
-          if (!cancelled) setState({ key, query: trimmed, ids });
+          if (!cancelled) {
+            setState({ key, query: trimmed, ids });
+          }
         });
     }, DELAY_MS);
     return () => {
@@ -68,12 +76,17 @@ export function useViewLookup(
     };
   }, [key, trimmed, request, keywordScopes]);
 
-  if (!key) return IDLE;
-  if (state?.key === key) return { ids: state.ids, searching: false };
+  if (!key) {
+    return IDLE;
+  }
+  if (state?.key === key) {
+    return { ids: state.ids, searching: false };
+  }
   if (
     state?.key.startsWith(`${request}\n${scopes}\n`) &&
     (trimmed.startsWith(state.query) || state.query.startsWith(trimmed))
-  )
+  ) {
     return { ids: state.ids, searching: true };
+  }
   return { ids: [], searching: true };
 }

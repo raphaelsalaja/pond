@@ -1,7 +1,8 @@
 import { IconCheck } from "@pond/icons";
 import { Shimmer } from "@pond/ui";
 import { AnimatePresence, motion } from "motion/react";
-import { POP, type STEPS, SWAP } from "../script";
+import { POP, SWAP } from "../script";
+import type { STEPS } from "../script";
 import styles from "./styles.module.css";
 
 export function Step({

@@ -1,7 +1,16 @@
 import { act } from "react";
 import { expect, it, vi } from "vitest";
+import { z } from "zod";
 import { assistant } from "./assistant";
 import { createAssistantHarness } from "./assistant.test-harness";
+
+const ShownSchema = z
+  .object({
+    chatId: z.string().nullable(),
+    draft: z.string(),
+    loading: z.boolean(),
+  })
+  .partial();
 
 const chats = new Map([
   [
@@ -38,7 +47,8 @@ it("opens each fish on its one conversation and keeps its draft", async () => {
     draft: state.draft,
     loading: state.loading,
   }));
-  const shown = () => JSON.parse(harness.host.textContent || "{}");
+  const shown = () =>
+    ShownSchema.parse(JSON.parse(harness.host.textContent || "{}"));
   const open = async (fishId: string) => {
     await act(async () => assistant.selectFish(fishId));
     await vi.waitFor(async () => {

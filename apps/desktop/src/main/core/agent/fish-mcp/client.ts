@@ -31,7 +31,7 @@ export interface McpCallOptions {
 export interface McpConnection {
   listTools(
     cursor?: string,
-  ): Promise<{ tools: McpTool[]; nextCursor?: string }>;
+  ): Promise<{ tools: Array<McpTool>; nextCursor?: string }>;
   callTool(
     name: string,
     args: JsonObject,
@@ -45,7 +45,7 @@ export type McpToolResult =
   | { text: string; structured: JsonObject };
 
 interface ManagerDeps {
-  list(): Promise<FishMcpServerConfig[]>;
+  list(): Promise<Array<FishMcpServerConfig>>;
   secrets(id: string): Promise<Record<string, string>>;
   connect(
     server: FishMcpServerConfig,
@@ -60,7 +60,7 @@ interface Entry {
   state: FishMcpServerState;
   error?: string;
   client?: McpConnection;
-  tools: McpTool[];
+  tools: Array<McpTool>;
   usedAt: number;
 }
 
@@ -80,8 +80,8 @@ function messageOf(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
 
-async function listAll(client: McpConnection): Promise<McpTool[]> {
-  const tools: McpTool[] = [];
+async function listAll(client: McpConnection): Promise<Array<McpTool>> {
+  const tools: Array<McpTool> = [];
   let cursor: string | undefined;
   do {
     const page = await client.listTools(cursor);
@@ -97,8 +97,9 @@ function toolResult(server: string, result: McpCallResult): McpToolResult {
       part.type === "text" ? (part.text ?? "") : `[${part.type}]`,
     )
     .join("\n");
-  if (result.isError === true)
+  if (result.isError === true) {
     throw new Error(`${server}: ${text || "the tool failed."}`);
+  }
   return result.structuredContent === undefined
     ? { text }
     : { text, structured: result.structuredContent };
@@ -116,8 +117,9 @@ export function createFishMcpManager(deps: ManagerDeps) {
       usedAt: deps.now(),
     };
     const onClose = () => {
-      if (entries.get(server.id) !== entry || entry.state !== "connected")
+      if (entries.get(server.id) !== entry || entry.state !== "connected") {
         return;
+      }
       Object.assign(entry, {
         state: "failed",
         error: `${server.name} stopped.`,
@@ -138,17 +140,19 @@ export function createFishMcpManager(deps: ManagerDeps) {
         `${server.name} didn't start within 10 seconds.`,
       );
       Object.assign(entry, { client, tools, state: "connected" });
-    } catch (cause) {
+    } catch (error) {
       void connecting.then((client) => client.close()).catch(() => {});
-      log.warn("[pond fish-mcp] connect failed", server.name, cause);
-      Object.assign(entry, { state: "failed", error: messageOf(cause) });
+      log.warn("[pond fish-mcp] connect failed", server.name, error);
+      Object.assign(entry, { state: "failed", error: messageOf(error) });
     }
     return entry;
   }
 
   function opening(server: FishMcpServerConfig): Promise<void> {
     const existing = pending.get(server.id);
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
     const run: Promise<void> = open(server).then(async (entry) => {
       if (pending.get(server.id) !== run) {
         await entry.client?.close().catch(() => {});
@@ -172,7 +176,7 @@ export function createFishMcpManager(deps: ManagerDeps) {
     const servers = await deps.list();
     const ids = new Set(servers.map((server) => server.id));
     await Promise.all(
-      [...entries.keys()].filter((id) => !ids.has(id)).map(reset),
+      [...entries.keys()].flatMap((id) => (ids.has(id) ? [] : [reset(id)])),
     );
     await Promise.all(
       servers.map(async (server) => {
@@ -221,8 +225,9 @@ export function createFishMcpManager(deps: ManagerDeps) {
     signal?: AbortSignal,
   ): Promise<McpToolResult> {
     const entry = entries.get(serverId);
-    if (!entry?.client)
+    if (!entry?.client) {
       throw new Error("That MCP server isn't connected. Try again.");
+    }
     entry.usedAt = deps.now();
     const result = await entry.client.callTool(tool, args, {
       signal,
@@ -235,12 +240,11 @@ export function createFishMcpManager(deps: ManagerDeps) {
   async function sweep(): Promise<void> {
     const now = deps.now();
     await Promise.all(
-      [...entries]
-        .filter(
-          ([, entry]) =>
-            entry.state === "connected" && now - entry.usedAt >= IDLE_MS,
-        )
-        .map(([id]) => reset(id)),
+      [...entries].flatMap(([id, entry]) =>
+        entry.state === "connected" && now - entry.usedAt >= IDLE_MS
+          ? [reset(id)]
+          : [],
+      ),
     );
   }
 

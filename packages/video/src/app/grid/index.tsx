@@ -40,7 +40,7 @@ const METRICS = {
 } as const;
 
 /** Each card's thumbnail rect within the grid, filling the shortest column first. */
-function layout(tiles: readonly Pick<Tile, "aspect">[], look: Look) {
+function layout(tiles: ReadonlyArray<Pick<Tile, "aspect">>, look: Look) {
   const { width, padding, offset, gap, meta } = METRICS[look];
   const column = (width - padding * 2 - gap * (COLUMNS - 1)) / COLUMNS;
   const heights = Array.from({ length: COLUMNS }, (): number => offset);
@@ -60,7 +60,7 @@ function layout(tiles: readonly Pick<Tile, "aspect">[], look: Look) {
 
 /** A tile's thumbnail in app coordinates, for pointing at it or flying it out. */
 export function tileRect(
-  tiles: readonly Pick<Tile, "aspect">[],
+  tiles: ReadonlyArray<Pick<Tile, "aspect">>,
   index: number,
   look: Look = "1.0",
 ) {
@@ -76,7 +76,7 @@ export function tileRect(
 
 interface GridProps {
   t: number;
-  tiles: Tile[];
+  tiles: Array<Tile>;
   look?: Look;
   /** Rings this tile as selected. */
   selected?: string;
@@ -95,7 +95,9 @@ export function Grid({ t, tiles, look = "1.0", selected }: GridProps) {
       {tiles.map((tile, i) => {
         const rect = rects[i];
         const k = ease.outQuint(progress(t, tile.at, 560));
-        if (!rect || k <= 0) return null;
+        if (!rect || k <= 0) {
+          return null;
+        }
         return (
           <figure
             key={tile.key}

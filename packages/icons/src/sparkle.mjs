@@ -1,8 +1,8 @@
-import sparkle from "./sparkle.mjs";
-
 /** Four points with concave sides, pulled 0.5 in from the square keyline so it weighs like a filled shape. */
-export default () =>
+const sparkle = () =>
   "M 9 2.875 Q 9.75 8.25 15.125 9 Q 9.75 9.75 9 15.125 Q 8.25 9.75 2.875 9 Q 8.25 8.25 9 2.875 Z";
+
+export default sparkle;
 
 /** A small solid twinkle fills the empty top right corner. */
 export const open = (h, s) => {

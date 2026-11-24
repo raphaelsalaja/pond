@@ -9,10 +9,14 @@ const epubCache = new Map<
 
 function loadEpubCover(url: string) {
   const existing = epubCache.get(url);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   const request = Promise.all([
     fetch(url).then((response) => {
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
       return response.arrayBuffer();
     }),
     import("../epub-cover"),
@@ -39,7 +43,9 @@ export function EpubCardPreview({
     let alive = true;
     let objectUrl: string | null = null;
     void loadEpubCover(url).then((cover) => {
-      if (!alive || !cover) return;
+      if (!alive || !cover) {
+        return;
+      }
       const bytes = new Uint8Array(cover.bytes).buffer;
       objectUrl = URL.createObjectURL(
         new Blob([bytes], { type: cover.mimeType }),
@@ -48,7 +54,9 @@ export function EpubCardPreview({
     });
     return () => {
       alive = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
     };
   }, [url]);
 

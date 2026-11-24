@@ -18,7 +18,9 @@ const { verifyMacSlices, verifySharpRuntime } = createRequire(import.meta.url)(
 const roots = [];
 
 afterEach(() => {
-  for (const root of roots) rmSync(root, { recursive: true, force: true });
+  for (const root of roots) {
+    rmSync(root, { recursive: true, force: true });
+  }
   roots.length = 0;
 });
 
@@ -40,8 +42,8 @@ function writePackage(unpacked, name, file) {
   writeFileSync(join(dir, file), "binary");
 }
 
-describe("verifySharpRuntime", () => {
-  it("keeps the packaged architecture and removes the other", () => {
+void describe("verifySharpRuntime", () => {
+  void it("keeps the packaged architecture and removes the other", () => {
     const root = runtimeTree();
     verifySharpRuntime(root, "x64");
     const unpacked = join(root, "app.asar.unpacked");
@@ -52,7 +54,7 @@ describe("verifySharpRuntime", () => {
     ]);
   });
 
-  it("fails when the Intel runtime was not packaged", () => {
+  void it("fails when the Intel runtime was not packaged", () => {
     const root = runtimeTree();
     rmSync(
       join(
@@ -78,10 +80,12 @@ describe("verifySharpRuntime", () => {
   });
 });
 
-describe("verifyMacSlices", () => {
-  const slices = (map) => (path) => map[path.split(sep).at(-1)] ?? [];
+function slices(map) {
+  return (path) => map[path.split(sep).at(-1)] ?? [];
+}
 
-  it("accepts universal and matching helpers", () => {
+void describe("verifyMacSlices", () => {
+  void it("accepts universal and matching helpers", () => {
     const read = slices({
       ffmpeg: ["x86_64"],
       "pond-native-host": ["x86_64", "arm64"],
@@ -89,7 +93,7 @@ describe("verifyMacSlices", () => {
     assert.doesNotThrow(() => verifyMacSlices("/res", "x64", read));
   });
 
-  it("fails an Intel build that ships an Apple silicon native host", () => {
+  void it("fails an Intel build that ships an Apple silicon native host", () => {
     const read = slices({
       ffmpeg: ["x86_64"],
       "pond-native-host": ["arm64"],
@@ -100,7 +104,7 @@ describe("verifyMacSlices", () => {
     );
   });
 
-  it("fails an Intel build that ships Apple silicon ffmpeg", () => {
+  void it("fails an Intel build that ships Apple silicon ffmpeg", () => {
     const read = slices({
       ffmpeg: ["arm64"],
       "pond-native-host": ["x86_64", "arm64"],

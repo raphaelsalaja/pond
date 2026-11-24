@@ -29,7 +29,9 @@ function shouldRetry(
   attempt: number,
   platform: NodeJS.Platform,
 ): boolean {
-  if (platform !== "win32" || attempt >= ATTEMPTS) return false;
+  if (platform !== "win32" || attempt >= ATTEMPTS) {
+    return false;
+  }
   return code !== undefined && RETRYABLE_CODES.has(code);
 }
 
@@ -60,8 +62,9 @@ export async function renameWithRetry(
           attempt,
           platform,
         )
-      )
+      ) {
         throw error;
+      }
       await sleep(delayFor(attempt));
     }
   }
@@ -93,8 +96,9 @@ export function renameSyncWithRetry(
           attempt,
           platform,
         )
-      )
+      ) {
         throw error;
+      }
       sleep(delayFor(attempt));
     }
   }

@@ -1,5 +1,6 @@
 import { act, Suspense } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { lazyWithPreload } from "./lazy-with-preload";
 
@@ -37,10 +38,8 @@ it("renders a preloaded module on the first commit without a fallback", async ()
 });
 
 it("suspends until the module loads when nothing preloaded it", async () => {
-  let resolve: (component: typeof Greeting) => void = () => {};
-  const Lazy = lazyWithPreload(
-    () => new Promise<typeof Greeting>((done) => (resolve = done)),
-  );
+  const { promise, resolve } = Promise.withResolvers<typeof Greeting>();
+  const Lazy = lazyWithPreload(() => promise);
   act(() =>
     root.render(
       <Suspense fallback={<p>Loading</p>}>

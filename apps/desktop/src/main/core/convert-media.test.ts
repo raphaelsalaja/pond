@@ -87,7 +87,9 @@ it.skipIf(!ffmpegPath)(
   "converts a local video clip into a correctly sized animated GIF",
   async () => {
     const ffmpeg = ffmpegPath;
-    if (!ffmpeg) throw new Error("FFmpeg unavailable");
+    if (!ffmpeg) {
+      throw new Error("FFmpeg unavailable");
+    }
     const directory = await mkdtemp(join(tmpdir(), "pond-gif-test-"));
     try {
       const source = join(directory, "clip.mp4");
@@ -135,7 +137,9 @@ it.skipIf(!ffmpegPath)(
   "exports installed professional still-image formats through FFmpeg",
   async () => {
     const ffmpeg = ffmpegPath;
-    if (!ffmpeg) throw new Error("FFmpeg unavailable");
+    if (!ffmpeg) {
+      throw new Error("FFmpeg unavailable");
+    }
     const directory = await mkdtemp(join(tmpdir(), "pond-pro-format-test-"));
     try {
       const source = join(directory, "source.png");
@@ -183,7 +187,9 @@ it.skipIf(!ffmpegPath)(
   "rejects professional formats that fail runtime validation",
   async () => {
     const ffmpeg = ffmpegPath;
-    if (!ffmpeg) throw new Error("FFmpeg unavailable");
+    if (!ffmpeg) {
+      throw new Error("FFmpeg unavailable");
+    }
     const directory = await mkdtemp(join(tmpdir(), "pond-pro-gate-test-"));
     try {
       const source = join(directory, "source.png");

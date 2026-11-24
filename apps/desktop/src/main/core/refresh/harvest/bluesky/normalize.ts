@@ -1,12 +1,12 @@
 import type { Capture, CaptureFacet, CaptureMedia } from "@pond/schema/raw";
 import type { ListEntry } from "../list-types";
-import {
-  type BlueskyAuthor,
-  type BlueskyEmbed,
-  type BlueskyPost,
-  type BlueskyRecord,
-  type BlueskyViewRecord,
-  rkeyOf,
+import { rkeyOf } from "./atproto";
+import type {
+  BlueskyAuthor,
+  BlueskyEmbed,
+  BlueskyPost,
+  BlueskyRecord,
+  BlueskyViewRecord,
 } from "./atproto";
 
 const WEB = "https://bsky.app";
@@ -33,8 +33,10 @@ function sized(
 /** A quote with media nests the media one level down; the quoted post's own media stays with the quote. */
 export function postMedia(
   embed: (BlueskyEmbed & { media?: BlueskyEmbed }) | undefined,
-): PostMedia[] {
-  if (!embed) return [];
+): Array<PostMedia> {
+  if (!embed) {
+    return [];
+  }
   switch (embed.$type) {
     case "app.bsky.embed.images#view":
       return (embed.images ?? []).map((i) =>
@@ -45,7 +47,9 @@ export function postMedia(
         sized({ url: i.fullsize, type: "image" }, i.aspectRatio),
       );
     case "app.bsky.embed.video#view":
-      if (!embed.playlist) return [];
+      if (!embed.playlist) {
+        return [];
+      }
       return [
         sized(
           embed.thumbnail
@@ -75,8 +79,12 @@ export function postEntry(
     author: `@${post.author.handle}`,
     listKinds: ["liked"],
   };
-  if (likedAt) entry.savedAt = likedAt;
-  if (post.record.text) entry.description = post.record.text;
+  if (likedAt) {
+    entry.savedAt = likedAt;
+  }
+  if (post.record.text) {
+    entry.description = post.record.text;
+  }
   const media = postMedia(post.embed);
   const [first] = media;
   if (first) {
@@ -91,8 +99,8 @@ export function postEntry(
   return entry;
 }
 
-function facetsOf(record: BlueskyRecord): CaptureFacet[] {
-  const out: CaptureFacet[] = [];
+function facetsOf(record: BlueskyRecord): Array<CaptureFacet> {
+  const out: Array<CaptureFacet> = [];
   for (const facet of record.facets ?? []) {
     const feature = facet.features[0]?.$type ?? "";
     const type = feature.endsWith("#link")
@@ -117,7 +125,7 @@ function captureOf(
   author: BlueskyAuthor,
   uri: string,
   record: BlueskyRecord,
-  media: PostMedia[],
+  media: Array<PostMedia>,
 ): Capture {
   const capture: Capture = {
     id: rkeyOf(uri) ?? uri,
@@ -130,7 +138,9 @@ function captureOf(
     },
     media: media.map((m) => {
       const item: CaptureMedia = { url: m.url, type: m.type };
-      if (m.poster) item.posterUrl = m.poster;
+      if (m.poster) {
+        item.posterUrl = m.poster;
+      }
       if (m.width && m.height) {
         item.width = m.width;
         item.height = m.height;
@@ -138,20 +148,30 @@ function captureOf(
       return item;
     }),
   };
-  if (author.avatar && capture.author) capture.author.avatarUrl = author.avatar;
+  if (author.avatar && capture.author) {
+    capture.author.avatarUrl = author.avatar;
+  }
   if (author.verification?.verifiedStatus === "valid" && capture.author) {
     capture.author.verified = true;
   }
-  if (record.text) capture.description = record.text;
-  if (record.createdAt) capture.publishedAt = record.createdAt;
+  if (record.text) {
+    capture.description = record.text;
+  }
+  if (record.createdAt) {
+    capture.publishedAt = record.createdAt;
+  }
   const facets = facetsOf(record);
-  if (facets.length > 0) capture.extras = { facets };
+  if (facets.length > 0) {
+    capture.extras = { facets };
+  }
   return capture;
 }
 
 function quotedOf(embed: BlueskyPost["embed"]): BlueskyViewRecord | undefined {
   const record = embed?.record;
-  if (!record) return undefined;
+  if (!record) {
+    return undefined;
+  }
   return "uri" in record ? record : record.record;
 }
 
@@ -164,15 +184,29 @@ export function captureFromPost(post: BlueskyPost): Capture {
     postMedia(post.embed),
   );
   const metrics: NonNullable<Capture["metrics"]> = {};
-  if (post.likeCount !== undefined) metrics.likes = post.likeCount;
-  if (post.replyCount !== undefined) metrics.replies = post.replyCount;
-  if (post.repostCount !== undefined) metrics.retweets = post.repostCount;
-  if (post.quoteCount !== undefined) metrics.quotes = post.quoteCount;
-  if (post.bookmarkCount !== undefined) metrics.bookmarks = post.bookmarkCount;
-  if (Object.keys(metrics).length > 0) capture.metrics = metrics;
+  if (post.likeCount !== undefined) {
+    metrics.likes = post.likeCount;
+  }
+  if (post.replyCount !== undefined) {
+    metrics.replies = post.replyCount;
+  }
+  if (post.repostCount !== undefined) {
+    metrics.retweets = post.repostCount;
+  }
+  if (post.quoteCount !== undefined) {
+    metrics.quotes = post.quoteCount;
+  }
+  if (post.bookmarkCount !== undefined) {
+    metrics.bookmarks = post.bookmarkCount;
+  }
+  if (Object.keys(metrics).length > 0) {
+    capture.metrics = metrics;
+  }
 
   const card = cardOf(post.embed);
-  if (card) capture.card = card;
+  if (card) {
+    capture.card = card;
+  }
 
   const quoted = quotedOf(post.embed);
   if (quoted) {
@@ -183,7 +217,9 @@ export function captureFromPost(post: BlueskyPost): Capture {
       postMedia(quoted.embeds?.[0]),
     );
     const quotedCard = cardOf(quoted.embeds?.[0]);
-    if (quotedCard) capture.quoted.card = quotedCard;
+    if (quotedCard) {
+      capture.quoted.card = quotedCard;
+    }
   }
   return capture;
 }
@@ -196,9 +232,17 @@ function cardOf(embed: BlueskyEmbed | undefined): Capture["card"] {
   const card: NonNullable<Capture["card"]> = { url: external.uri };
   try {
     card.domain = new URL(external.uri).hostname.replace(/^www\./, "");
-  } catch {}
-  if (external.title) card.title = external.title;
-  if (external.description) card.description = external.description;
-  if (external.thumb) card.imageUrl = external.thumb;
+  } catch {
+    /** A card with an unparseable link keeps its URL and goes without a domain. */
+  }
+  if (external.title) {
+    card.title = external.title;
+  }
+  if (external.description) {
+    card.description = external.description;
+  }
+  if (external.thumb) {
+    card.imageUrl = external.thumb;
+  }
   return card;
 }

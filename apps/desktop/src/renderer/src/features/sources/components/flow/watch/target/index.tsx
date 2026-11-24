@@ -2,14 +2,8 @@ import { IconCircleCheck } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
 import { WATCH_NEEDS_SESSION, watchSourceLabel } from "@pond/schema/watches";
 import { Button, Dialog } from "@pond/ui";
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { z } from "zod";
 import { ConnectionVisual } from "@/features/sources/components/flow/connection-visual";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
@@ -18,8 +12,8 @@ import { sourceFlow } from "@/features/sources/state/source-flow";
 import { useWatchSource, watchFlow } from "@/features/sources/state/watch-flow";
 import { WatchTargetField } from "../target-field";
 import { watchInputSource } from "./input-source";
-import styles from "./styles.module.css";
 import { watchTargets } from "./targets";
+import styles from "./styles.module.css";
 
 const FORM_ID = "watch-target";
 /** Long enough for the merge into the check to settle before the dialog closes. */
@@ -35,7 +29,7 @@ type AddWatchResult = z.infer<typeof AddWatchResultSchema>;
 
 interface WatchTargetProviderProps {
   source: Source;
-  connectedSources: readonly Source[];
+  connectedSources: ReadonlyArray<Source>;
   addWatch: (source: Source, input: string) => Promise<AddWatchResult>;
   onAdded: (id: string) => void;
   children: ReactNode;
@@ -49,8 +43,9 @@ function watchErrorMessage(reason: string | undefined, source: Source): string {
     case "needs_account":
       return `Connect an account on ${label} first.`;
     case "invalid":
-      if (source === "web")
+      if (source === "web") {
         return "No RSS or Atom feed was found. Check the feed URL.";
+      }
       return `Couldn't find that profile on ${label}. Check the link or handle.`;
     default:
       return "Couldn't start watching. Try again.";
@@ -93,7 +88,9 @@ function useWatchTargetState({
   };
 
   const submit = async () => {
-    if (!canSubmit || submitting.current) return;
+    if (!canSubmit || submitting.current) {
+      return;
+    }
     if (!input || mismatch) {
       setMissing(!input);
       inputRef.current?.focus();
@@ -145,7 +142,9 @@ const WatchTargetContext = createContext<ReturnType<
 
 function useWatchTarget() {
   const state = useContext(WatchTargetContext);
-  if (!state) throw new Error("WatchTarget parts need a WatchTargetProvider");
+  if (!state) {
+    throw new Error("WatchTarget parts need a WatchTargetProvider");
+  }
   return state;
 }
 
@@ -172,8 +171,12 @@ export function WatchTargetRoot({ children }: { children: ReactNode }) {
   const { accounts } = useAccounts();
   const [source, setSource] = useState(activeSource);
   /** The flow clears its source on close, before the popup finishes animating out. */
-  if (activeSource && activeSource !== source) setSource(activeSource);
-  if (!source) return children;
+  if (activeSource && activeSource !== source) {
+    setSource(activeSource);
+  }
+  if (!source) {
+    return children;
+  }
   const connectedSources = accounts
     .filter((account) => account.connected)
     .map((account) => account.source);

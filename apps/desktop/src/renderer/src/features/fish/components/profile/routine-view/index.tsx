@@ -10,7 +10,7 @@ import {
   setRoutinePaused,
 } from "../../../lib/menu";
 import { rowTime } from "../../../lib/row";
-import { nextRunValue } from "../../../lib/runs";
+import { nextRunValue, useRunClock } from "../../../lib/runs";
 import styles from "./styles.module.css";
 
 interface RoutineViewProps {
@@ -31,7 +31,7 @@ export function RoutineView({
 }: RoutineViewProps) {
   const run = routine.lastRun;
   const working = Boolean(fish.activity);
-  const now = new Date();
+  const now = useRunClock();
   const nextAt = routine.paused
     ? null
     : nextRun(routine.when, run?.at ?? routine.createdAt, now.getTime());
@@ -89,9 +89,7 @@ export function RoutineView({
               </PropertyList.Row>
               <PropertyList.Row>
                 <PropertyList.Label>Ran</PropertyList.Label>
-                <PropertyList.Value>
-                  {rowTime(run.at, new Date())}
-                </PropertyList.Value>
+                <PropertyList.Value>{rowTime(run.at, now)}</PropertyList.Value>
               </PropertyList.Row>
               <PropertyList.Row>
                 <PropertyList.Label>Changes</PropertyList.Label>

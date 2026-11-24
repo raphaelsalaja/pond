@@ -1,10 +1,10 @@
 import type { ImportableCookie } from "../refresh/harvest-window/session";
 
-const stash = new Map<string, ImportableCookie[]>();
+const stash = new Map<string, Array<ImportableCookie>>();
 
 export function stashPageCookies(
   saveId: string,
-  cookies: ImportableCookie[],
+  cookies: Array<ImportableCookie>,
 ): void {
   if (cookies.length === 0) {
     stash.delete(saveId);
@@ -13,7 +13,9 @@ export function stashPageCookies(
   stash.set(saveId, cookies);
 }
 
-export function peekPageCookies(saveId: string): ImportableCookie[] | null {
+export function peekPageCookies(
+  saveId: string,
+): Array<ImportableCookie> | null {
   return stash.get(saveId) ?? null;
 }
 

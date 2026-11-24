@@ -1,13 +1,14 @@
 import { Button, Dialog } from "@pond/ui";
-import {
-  type DownloadFileProbe,
-  type DownloadPostProbe,
-  type DownloadProbeResult,
-  type DownloadRequest,
-  type DownloadSingleProbe,
-  extractLinks,
+import { extractLinks } from "@shared/downloader-contracts";
+import type {
+  DownloadFileProbe,
+  DownloadPostProbe,
+  DownloadProbeResult,
+  DownloadRequest,
+  DownloadSingleProbe,
 } from "@shared/downloader-contracts";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import {
   downloadDialog,
   useDownloadDialog,
@@ -21,11 +22,13 @@ import type {
 import { FilePage } from "./file-page";
 import { estimateByDuration } from "./lib/estimate";
 import { exportFiles, startLinks } from "./lib/start";
-import { type LinkError, LinkPage } from "./link-page";
-import { ListPage, type ListRow } from "./list-page";
+import { LinkPage } from "./link-page";
+import type { LinkError } from "./link-page";
+import { ListPage } from "./list-page";
+import type { ListRow } from "./list-page";
 import { PostPage } from "./post-page";
-import styles from "./styles.module.css";
 import { VideoPage } from "./video-page";
+import styles from "./styles.module.css";
 
 const PROBE_CONCURRENCY = 3;
 const READ_FAILED = "Pond couldn't read this link. Check it and try again.";
@@ -82,9 +85,12 @@ async function probe(url: string): Promise<DownloadProbeResult> {
 }
 
 function failureOf(result: DownloadProbeResult, retry: () => void): LinkError {
-  if (result.ok) return { message: READ_FAILED };
-  if (result.reason !== "sign-in" || !result.source)
+  if (result.ok) {
+    return { message: READ_FAILED };
+  }
+  if (result.reason !== "sign-in" || !result.source) {
     return { message: result.message };
+  }
   const source = result.source;
   const label = getSourceDef(source).label;
   return {
@@ -96,13 +102,29 @@ function failureOf(result: DownloadProbeResult, retry: () => void): LinkError {
   };
 }
 
+function downloadFile(
+  found: DownloadFileProbe,
+  destination: ExportDestination,
+) {
+  downloadDialog.close();
+  void exportFiles({
+    url: found.url,
+    title: null,
+    files: [found.url],
+    destination,
+    label: found.name,
+  });
+}
+
 export function DownloadDialogHost() {
   const { open, session, links } = useDownloadDialog();
   return (
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) downloadDialog.close();
+        if (!next) {
+          downloadDialog.close();
+        }
       }}
     >
       <Dialog.Portal>
@@ -122,12 +144,12 @@ export interface DownloadFlowState {
   post: DownloadPostProbe | null;
   file: DownloadFileProbe | null;
   listTitle: string | null;
-  rows: ListRow[];
+  rows: Array<ListRow>;
   request: DownloadRequest;
 }
 
 interface DownloadFlowProps {
-  links: string[];
+  links: Array<string>;
   initial?: Partial<DownloadFlowState>;
   initialSettings?: Partial<ExportSettings>;
 }
@@ -153,7 +175,7 @@ export function DownloadFlow({
   const [listTitle, setListTitle] = useState<string | null>(
     initial?.listTitle ?? null,
   );
-  const [rows, setRows] = useState<ListRow[]>(initial?.rows ?? []);
+  const [rows, setRows] = useState<Array<ListRow>>(initial?.rows ?? []);
   const [request, setRequest] = useState<DownloadRequest>(
     initial?.request ??
       (initial?.single ? singleRequest(initial.single) : LIST_REQUEST),
@@ -167,9 +189,13 @@ export function DownloadFlow({
   /** One read per link, so retyping a link or going back to it reuses the result. */
   const probeOnce = (url: string) => {
     const known = reads.current.get(url);
-    if (known) return known;
+    if (known) {
+      return known;
+    }
     const next = probe(url).then((result) => {
-      if (!result.ok) reads.current.delete(url);
+      if (!result.ok) {
+        reads.current.delete(url);
+      }
       return result;
     });
     reads.current.set(url, next);
@@ -179,7 +205,7 @@ export function DownloadFlow({
   const patchRequest = (patch: Partial<DownloadRequest>) =>
     setRequest((current) => ({ ...current, ...patch }));
 
-  const openList = (urls: string[], title: string | null = null) => {
+  const openList = (urls: Array<string>, title: string | null = null) => {
     attempt.current += 1;
     const id = attempt.current;
     setListTitle(title);
@@ -192,14 +218,19 @@ export function DownloadFlow({
     const work = async () => {
       for (let url = queue.shift(); url; url = queue.shift()) {
         const result = await probeOnce(url);
-        if (attempt.current !== id) return;
+        if (attempt.current !== id) {
+          return;
+        }
         setRows((current) =>
-          current.flatMap((row): ListRow[] => {
-            if (row.url !== url) return [row];
-            if (!result.ok)
+          current.flatMap((row): Array<ListRow> => {
+            if (row.url !== url) {
+              return [row];
+            }
+            if (!result.ok) {
               return [{ ...row, state: "failed", message: result.message }];
+            }
             const found = result.probe;
-            if (found.kind === "playlist")
+            if (found.kind === "playlist") {
               return found.entries
                 .filter((entry) => !current.some((it) => it.url === entry.url))
                 .map((entry) => ({
@@ -208,7 +239,8 @@ export function DownloadFlow({
                   state: "ready",
                   selected: true,
                 }));
-            if (found.kind === "post")
+            }
+            if (found.kind === "post") {
               return [
                 {
                   ...row,
@@ -218,7 +250,8 @@ export function DownloadFlow({
                   state: "ready",
                 },
               ];
-            if (found.kind === "file")
+            }
+            if (found.kind === "file") {
               return [
                 {
                   ...row,
@@ -230,6 +263,7 @@ export function DownloadFlow({
                   state: "ready",
                 },
               ];
+            }
             return [
               {
                 ...row,
@@ -243,11 +277,12 @@ export function DownloadFlow({
         );
       }
     };
-    for (let i = 0; i < Math.min(PROBE_CONCURRENCY, urls.length); i++)
+    for (let i = 0; i < Math.min(PROBE_CONCURRENCY, urls.length); i++) {
       void work();
+    }
   };
 
-  const read = async (urls: string[]) => {
+  const read = async (urls: Array<string>) => {
     if (urls.length === 0) {
       setError({
         message:
@@ -265,7 +300,9 @@ export function DownloadFlow({
     setBusy(true);
     setError(null);
     const result = await probeOnce(urls[0] ?? "");
-    if (attempt.current !== id) return;
+    if (attempt.current !== id) {
+      return;
+    }
     setBusy(false);
     if (!result.ok) {
       readKey.current = "";
@@ -310,9 +347,13 @@ export function DownloadFlow({
     setError(null);
     clearTimeout(typing.current);
     const urls = extractLinks(value);
-    if (urls.join(" ") === readKey.current) return;
+    if (urls.join(" ") === readKey.current) {
+      return;
+    }
     if (urls.length === 0) {
-      if (value.trim() !== "") return;
+      if (value.trim() !== "") {
+        return;
+      }
       attempt.current += 1;
       readKey.current = "";
       setBusy(false);
@@ -325,30 +366,48 @@ export function DownloadFlow({
     );
   };
 
-  const opened = useRef<string[] | null>(null);
-  useEffect(() => {
-    if (opened.current === links) return;
-    opened.current = links;
+  const [shownLinks, setShownLinks] = useState<Array<string> | null>(null);
+  if (shownLinks !== links) {
+    setShownLinks(links);
     if (links.length > 0) {
       setInput(links.join(" "));
-      void read(links);
+    }
+  }
+
+  const opened = useRef<Array<string> | null>(null);
+  const openLinks = useEffectEvent((next: Array<string>) => {
+    if (opened.current === next) {
       return;
     }
-    if (initial) return;
+    opened.current = next;
+    if (next.length > 0) {
+      void read(next);
+      return;
+    }
+    if (initial) {
+      return;
+    }
     void window.pond
       .query("downloader.clipboardLinks", {})
       .then(({ urls }) => {
         const [url] = urls;
-        if (urls.length !== 1 || !url || readKey.current !== "") return;
+        if (urls.length !== 1 || !url || readKey.current !== "") {
+          return;
+        }
         setInput(url);
         void read([url]);
       })
       .catch(() => {});
   });
+  useEffect(() => {
+    openLinks(links);
+  }, [links]);
 
   const start = () => {
     const picked = rows.filter((row) => row.selected && row.state === "ready");
-    if (picked.length === 0) return;
+    if (picked.length === 0) {
+      return;
+    }
     downloadDialog.close();
     void startLinks({
       media: picked.filter((row) => row.kind === "media").map((row) => row.url),
@@ -383,20 +442,6 @@ export function DownloadFlow({
     });
   };
 
-  const downloadFile = (
-    found: DownloadFileProbe,
-    destination: ExportDestination,
-  ) => {
-    downloadDialog.close();
-    void exportFiles({
-      url: found.url,
-      title: null,
-      files: [found.url],
-      destination,
-      label: found.name,
-    });
-  };
-
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (page === "list") {
@@ -405,8 +450,9 @@ export function DownloadFlow({
     }
     clearTimeout(typing.current);
     const urls = extractLinks(input);
-    if (urls.length === 0 || urls.join(" ") !== readKey.current)
+    if (urls.length === 0 || urls.join(" ") !== readKey.current) {
       void read(urls);
+    }
   };
 
   const back = () => {

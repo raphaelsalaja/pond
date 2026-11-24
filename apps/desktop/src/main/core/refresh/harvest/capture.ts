@@ -8,17 +8,10 @@ import {
   TransientError,
 } from "../../pipeline/extractors/errors";
 import { partitionForIngest } from "../../sync/accounts";
-import {
-  type HarvestArgs,
-  type HarvestResult,
-  harvestUrl,
-} from "../harvest-window/harvest";
-import {
-  fetchPinterestCapture,
-  type PinterestCaptureResult,
-  type PinterestGet,
-  pinterestSessionGet,
-} from "./pinterest/api";
+import { harvestUrl } from "../harvest-window/harvest";
+import type { HarvestArgs, HarvestResult } from "../harvest-window/harvest";
+import { fetchPinterestCapture, pinterestSessionGet } from "./pinterest/api";
+import type { PinterestCaptureResult, PinterestGet } from "./pinterest/api";
 
 interface CaptureArgs {
   url: string;
@@ -56,7 +49,9 @@ export async function captureFromSource(
 
   if (args.source === "pinterest" && args.sourceId) {
     const recovered = await capturePinterestPin(args, deps, harvest, fetchPin);
-    if (recovered) return recovered;
+    if (recovered) {
+      return recovered;
+    }
   }
 
   if (args.source === "arena" && args.sourceId) {
@@ -65,11 +60,15 @@ export async function captureFromSource(
       sourceId: args.sourceId,
       signal: args.signal,
     });
-    if (result.ok) return result.capture;
+    if (result.ok) {
+      return result.capture;
+    }
     /** A Link block's Save URL is the page it links to; the page harvest reads the block. */
     const blockUrl = `https://www.are.na/block/${args.sourceId}`;
     const fallback = await harvest({ ...args, url: blockUrl });
-    if (fallback.ok && fallback.capture) return fallback.capture;
+    if (fallback.ok && fallback.capture) {
+      return fallback.capture;
+    }
     throw harvestFailure(args.source, fallback.reason);
   }
 
@@ -79,7 +78,9 @@ export async function captureFromSource(
       sourceId: args.sourceId,
       accountId: args.accountId ?? null,
     });
-    if (result.ok) return result.capture;
+    if (result.ok) {
+      return result.capture;
+    }
   }
 
   if (args.source === "tumblr" && args.sourceId) {
@@ -89,7 +90,9 @@ export async function captureFromSource(
       url: args.url,
       accountId: args.accountId ?? null,
     });
-    if (result.ok) return result.capture;
+    if (result.ok) {
+      return result.capture;
+    }
   }
 
   if (args.source === "savee" && args.sourceId) {
@@ -98,7 +101,9 @@ export async function captureFromSource(
       sourceId: args.sourceId,
       accountId: args.accountId ?? null,
     });
-    if (result.ok) return result.capture;
+    if (result.ok) {
+      return result.capture;
+    }
   }
 
   if (args.source === "vimeo" && args.sourceId) {
@@ -107,7 +112,9 @@ export async function captureFromSource(
       sourceId: args.sourceId,
       accountId: args.accountId ?? null,
     });
-    if (result.ok) return result.capture;
+    if (result.ok) {
+      return result.capture;
+    }
     if (result.reason === "not_found") {
       throw new TerminalError("vimeo video is gone or blocked in your region");
     }
@@ -120,14 +127,18 @@ export async function captureFromSource(
       sourceId: args.sourceId,
       url: args.url,
     });
-    if (result.ok) return result.capture;
+    if (result.ok) {
+      return result.capture;
+    }
     if (result.reason === "not_found") {
       throw new TerminalError("bluesky post was deleted or hidden");
     }
   }
 
   const result = await harvest(args);
-  if (result.ok && result.capture) return result.capture;
+  if (result.ok && result.capture) {
+    return result.capture;
+  }
   throw harvestFailure(args.source, result.reason);
 }
 
@@ -142,10 +153,14 @@ async function capturePinterestPin(
   }) => Promise<PinterestCaptureResult>,
 ): Promise<Capture | null> {
   const sourceId = args.sourceId;
-  if (!sourceId) return null;
+  if (!sourceId) {
+    return null;
+  }
 
   const anonymous = await fetchPin({ sourceId, get: deps.anonymousGet });
-  if (anonymous.ok && hasMedia(anonymous.capture)) return anonymous.capture;
+  if (anonymous.ok && hasMedia(anonymous.capture)) {
+    return anonymous.capture;
+  }
 
   const partition =
     deps.partition ?? (await partitionForIngest("pinterest", args.accountId));
@@ -159,7 +174,9 @@ async function capturePinterestPin(
       sourceId,
       get: deps.signedGet ?? pinterestSessionGet(partition),
     });
-    if (signed.ok && hasMedia(signed.capture)) return signed.capture;
+    if (signed.ok && hasMedia(signed.capture)) {
+      return signed.capture;
+    }
   }
 
   const result = await harvest(args);

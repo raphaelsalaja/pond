@@ -5,12 +5,15 @@ import { DEFAULT_VIDEO_DOWNLOAD } from "@pond/schema/db";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import type { DownloadRequest } from "@shared/downloader-contracts";
 import { describe, expect, it, vi } from "vitest";
-import type { DownloadedVideoItem } from "../../refresh/yt-dlp";
+import type { persistSave as persistSaveImpl } from "../../persist-save";
+import type {
+  DownloadedVideoItem,
+  downloadVideo as downloadVideoImpl,
+} from "../../refresh/yt-dlp";
+import type { downloadCaptions as downloadCaptionsImpl } from "../../refresh/yt-dlp-captions";
 import { TerminalError, TransientError } from "../extractors/errors";
-import {
-  runFetchVideoYtdlp,
-  type VideoDownloadSave,
-} from "./fetch-video-ytdlp";
+import { runFetchVideoYtdlp } from "./fetch-video-ytdlp";
+import type { VideoDownloadSave } from "./fetch-video-ytdlp";
 
 const videoSave: VideoDownloadSave = {
   source: "youtube",
@@ -49,15 +52,9 @@ async function producedFile(name: string): Promise<string> {
 }
 
 function setup(autoDownload: boolean, save: VideoDownloadSave = videoSave) {
-  const downloadVideo = vi.fn<
-    typeof import("../../refresh/yt-dlp").downloadVideo
-  >(async () => null);
-  const downloadCaptions = vi.fn<
-    typeof import("../../refresh/yt-dlp-captions").downloadCaptions
-  >(async () => null);
-  const persistSave = vi.fn<typeof import("../../persist-save").persistSave>(
-    async () => null,
-  );
+  const downloadVideo = vi.fn<typeof downloadVideoImpl>(async () => null);
+  const downloadCaptions = vi.fn<typeof downloadCaptionsImpl>(async () => null);
+  const persistSave = vi.fn<typeof persistSaveImpl>(async () => null);
   const getVideoDownloadPrefs = vi.fn(async () => ({
     ...DEFAULT_VIDEO_DOWNLOAD,
     autoDownload,
@@ -72,7 +69,7 @@ function setup(autoDownload: boolean, save: VideoDownloadSave = videoSave) {
     transcodeItems: async ({
       items,
     }: {
-      items: readonly DownloadedVideoItem[];
+      items: ReadonlyArray<DownloadedVideoItem>;
     }) => ({
       items: [...items],
       cleanup: async () => {},
@@ -142,7 +139,7 @@ describe("fetch_video_ytdlp requested downloads", () => {
   const cleanup = vi.fn(async () => {});
 
   it("recomputes the save size after a video is downloaded onto an existing save", async () => {
-    const posterSize = 2_560;
+    const posterSize = 2560;
     const subtitleSize = 400;
     const saved: VideoDownloadSave = {
       ...videoSave,

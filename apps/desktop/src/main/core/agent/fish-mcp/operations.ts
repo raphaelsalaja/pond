@@ -7,7 +7,7 @@ import type { McpTool } from "./client";
 const PREFIX = "mcp.";
 
 export function operationName(server: string, tool: string): string {
-  return `${PREFIX}${server}.${tool.replace(/[^A-Za-z0-9_-]/g, "_")}`;
+  return `${PREFIX}${server}.${tool.replaceAll(/[^A-Za-z0-9_-]/g, "_")}`;
 }
 
 export function isMcpOperation(name: string): boolean {
@@ -21,7 +21,7 @@ function convert(tool: McpTool): z.ZodType {
   try {
     const schema = z.fromJSONSchema(
       /** SAFETY: a JSON object is the input `fromJSONSchema` reads; anything it can't represent throws and falls back below. */
-      tool.inputSchema as z.core.JSONSchema.JSONSchema,
+      tool.inputSchema,
     );
     z.toJSONSchema(schema, { io: "input", unrepresentable: "any" });
     return schema;
@@ -32,7 +32,9 @@ function convert(tool: McpTool): z.ZodType {
 
 function inputSchemaFor(tool: McpTool): z.ZodType {
   const cached = schemas.get(tool);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   const schema = convert(tool);
   schemas.set(tool, schema);
   return schema;
@@ -45,15 +47,17 @@ export function mcpOperations(
     tool: string,
     args: JsonObject,
   ) => Promise<JsonValue>,
-): PondOperation[] {
+): Array<PondOperation> {
   const seen = new Set<string>();
   return tools.flatMap(({ server, tool }) => {
     const access = server.toolAccess[tool.name] ?? "review";
     const name = operationName(server.name, tool.name);
-    if (access === "off" || seen.has(name)) return [];
+    if (access === "off" || seen.has(name)) {
+      return [];
+    }
     seen.add(name);
     const summary =
-      tool.description?.trim().slice(0, 1_000).replace(/\.$/, "") || tool.name;
+      tool.description?.trim().slice(0, 1000).replace(/\.$/, "") || tool.name;
     return [
       {
         name,

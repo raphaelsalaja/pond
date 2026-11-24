@@ -15,10 +15,14 @@ const actions = {
   onMenuAction: vi.fn(),
 };
 
-function labelsOf(items: ReturnType<typeof buildTrayTemplate>): string[] {
+function labelsOf(items: ReturnType<typeof buildTrayTemplate>): Array<string> {
   return items.flatMap((item) => {
-    if (item.label == null) return [];
-    if (item.submenu) return [item.label, ...labelsOf(item.submenu)];
+    if (item.label === undefined) {
+      return [];
+    }
+    if (item.submenu) {
+      return [item.label, ...labelsOf(item.submenu)];
+    }
     return [item.label];
   });
 }
@@ -28,9 +32,13 @@ function findByLabel(
   label: string,
 ): ReturnType<typeof buildTrayTemplate>[number] | undefined {
   for (const item of items) {
-    if (item.label === label) return item;
+    if (item.label === label) {
+      return item;
+    }
     const nested = item.submenu && findByLabel(item.submenu, label);
-    if (nested) return nested;
+    if (nested) {
+      return nested;
+    }
   }
 }
 
@@ -81,7 +89,7 @@ describe("buildTrayTemplate", () => {
     );
 
     expect(
-      template.flatMap((item) => (item.label == null ? [] : item.label)),
+      template.flatMap((item) => (item.label === undefined ? [] : item.label)),
     ).toEqual([
       "Pond · 1200 saves",
       "Saving 4 of 248 items",

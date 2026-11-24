@@ -2,7 +2,8 @@ import { PrefsSchema } from "@pond/schema";
 import type { LibraryQueryRequest } from "@shared/library-query";
 import { createRoute, RouterProvider } from "@tanstack/react-router";
 import { act, useSyncExternalStore } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
 import { createLibraryTestRouter } from "@/app/test/library-router";
@@ -15,12 +16,16 @@ import type { SaveHit, SaveLookup } from "@/features/search";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();
-let viewIds: string[] = [];
-const viewRequests: (LibraryQueryRequest | undefined)[] = [];
+let viewIds: Array<string> = [];
+const viewRequests: Array<LibraryQueryRequest | undefined> = [];
 
 async function query(method: string, request?: LibraryQueryRequest) {
-  if (method === "tags.list") return [{ id: "tag-poster", name: "poster" }];
-  if (method === "tagGroups.list") return [];
+  if (method === "tags.list") {
+    return [{ id: "tag-poster", name: "poster" }];
+  }
+  if (method === "tagGroups.list") {
+    return [];
+  }
   if (method === "saves.queryPage") {
     viewRequests.push(request);
     return { ids: viewIds, total: viewIds.length };
@@ -29,7 +34,12 @@ async function query(method: string, request?: LibraryQueryRequest) {
 }
 
 function wait(ms: number) {
-  return act(() => new Promise((resolve) => setTimeout(resolve, ms)));
+  return act(
+    () =>
+      new Promise((resolve) => {
+        setTimeout(resolve, ms);
+      }),
+  );
 }
 
 function Registered() {
@@ -47,7 +57,7 @@ function RecentVisit({ saveId }: { saveId: string }) {
 function addSave(
   id: string,
   title: string,
-  tags: string[] = [],
+  tags: Array<string> = [],
   deletedAt: number | null = null,
 ) {
   const save = normalise({
@@ -60,13 +70,15 @@ function addSave(
     tags,
     deletedAt,
   });
-  if (!save) throw new Error("Invalid save fixture");
+  if (!save) {
+    throw new Error("Invalid save fixture");
+  }
   pool.upsert(save);
   return save;
 }
 
 const lookups = {
-  hits: new Map<string, readonly SaveHit[]>(),
+  hits: new Map<string, ReadonlyArray<SaveHit>>(),
   pending: new Set<string>(),
   version: 0,
   listeners: new Set<() => void>(),
@@ -74,10 +86,12 @@ const lookups = {
 
 function publish(): void {
   lookups.version += 1;
-  for (const listener of lookups.listeners) listener();
+  for (const listener of lookups.listeners) {
+    listener();
+  }
 }
 
-function resolveLookup(query: string, hits: readonly SaveHit[]): void {
+function resolveLookup(query: string, hits: ReadonlyArray<SaveHit>): void {
   lookups.pending.delete(query);
   lookups.hits.set(query, hits);
   publish();
@@ -91,7 +105,9 @@ function useLookup(query: string): SaveLookup {
     },
     () => lookups.version,
   );
-  if (!query) return { query, hits: [], searching: false };
+  if (!query) {
+    return { query, hits: [], searching: false };
+  }
   return {
     query,
     hits: lookups.hits.get(query) ?? [],
@@ -103,7 +119,9 @@ function input(): HTMLInputElement {
   const element = document.querySelector<HTMLInputElement>(
     '[role="dialog"] input[role="combobox"]',
   );
-  if (!element) throw new Error("Missing command input");
+  if (!element) {
+    throw new Error("Missing command input");
+  }
   return element;
 }
 
@@ -111,7 +129,7 @@ function active(): string | null {
   return input().getAttribute("aria-activedescendant");
 }
 
-function optionIds(): string[] {
+function optionIds(): Array<string> {
   return [...document.querySelectorAll('[role="option"]')].map((el) => el.id);
 }
 
@@ -382,7 +400,9 @@ describe("command menu", () => {
     await open();
     const first = active();
     const target = document.querySelectorAll<HTMLElement>('[role="option"]')[2];
-    if (!target) throw new Error("Missing option");
+    if (!target) {
+      throw new Error("Missing option");
+    }
     const move = (clientX: number, movementX: number) =>
       act(async () => {
         target.dispatchEvent(

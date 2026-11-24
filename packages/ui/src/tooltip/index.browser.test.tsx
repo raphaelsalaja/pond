@@ -1,10 +1,10 @@
 import { IconFolderPlus, IconTrash } from "@pond/icons";
 import { describe, expect, it } from "vitest";
-import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { page, userEvent } from "vitest/browser";
+import { Tooltip } from ".";
 import { expectAccessible } from "../../test/axe";
 import { Button } from "../button";
-import { Tooltip } from ".";
 
 describe("Tooltip keyboard", () => {
   it("shows on keyboard focus and hides with Escape", async () => {

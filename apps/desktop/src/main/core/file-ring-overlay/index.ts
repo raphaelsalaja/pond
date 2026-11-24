@@ -1,8 +1,5 @@
-import {
-  BrowserWindow,
-  type BrowserWindowConstructorOptions,
-  screen,
-} from "electron";
+import { BrowserWindow, screen } from "electron";
+import type { BrowserWindowConstructorOptions } from "electron";
 import type { FileRingOverlaySnapshot } from "../../../shared/file-ring-overlay-contracts";
 import { lockRendererZoom } from "../../lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "../../lib/resolve-preload";
@@ -29,7 +26,9 @@ export function closeFileRingOverlay(): void {
   const win = overlay;
   overlay = null;
   snapshot = null;
-  if (win && !win.isDestroyed()) win.close();
+  if (win && !win.isDestroyed()) {
+    win.close();
+  }
 }
 
 function placement() {
@@ -50,7 +49,9 @@ export async function openFileRingOverlay(
 ): Promise<void> {
   closeFileRingOverlay();
   const { behavior, bounds } = placement();
-  if (!bounds) return;
+  if (!bounds) {
+    return;
+  }
   const options: BrowserWindowConstructorOptions = {
     ...bounds,
     title: "File To",
@@ -73,7 +74,9 @@ export async function openFileRingOverlay(
       nodeIntegration: false,
     },
   };
-  if (behavior.panel) options.type = "panel";
+  if (behavior.panel) {
+    options.type = "panel";
+  }
   const win = new BrowserWindow(options);
   overlay = win;
   snapshot = next;
@@ -82,26 +85,35 @@ export async function openFileRingOverlay(
   win.webContents.on("will-navigate", (event) => event.preventDefault());
   win.setAlwaysOnTop(true, "pop-up-menu");
   /** Skipping the process type change keeps the Dock icon from blinking each time the ring opens. */
-  if (behavior.allWorkspaces)
+  if (behavior.allWorkspaces) {
     win.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
       skipTransformProcessType: true,
     });
+  }
   win.on("blur", () => {
-    if (overlay === win) closeFileRingOverlay();
+    if (overlay === win) {
+      closeFileRingOverlay();
+    }
   });
   win.once("closed", () => {
-    if (overlay !== win) return;
+    if (overlay !== win) {
+      return;
+    }
     overlay = null;
     snapshot = null;
   });
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   try {
-    if (devUrl)
+    if (devUrl) {
       await win.loadURL(new URL("file-ring.html", `${devUrl}/`).toString());
-    else await win.loadFile(resolveMainOut("../renderer/file-ring.html"));
+    } else {
+      await win.loadFile(resolveMainOut("../renderer/file-ring.html"));
+    }
   } catch (error) {
-    if (!win.isDestroyed()) win.destroy();
+    if (!win.isDestroyed()) {
+      win.destroy();
+    }
     throw error;
   }
 }
@@ -109,7 +121,9 @@ export async function openFileRingOverlay(
 /** Shown only after the renderer paints the ring, so it never flashes an empty window. */
 export function presentFileRingOverlay(): void {
   const win = overlay;
-  if (!win || win.isDestroyed() || win.isVisible()) return;
+  if (!win || win.isDestroyed() || win.isVisible()) {
+    return;
+  }
   win.showInactive();
   win.focus();
 }

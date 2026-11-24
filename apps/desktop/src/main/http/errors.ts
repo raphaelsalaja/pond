@@ -37,11 +37,20 @@ export function invalidRequest(c: Context, error: z.ZodError): Response {
   return apiError(c, "invalid_request", z.prettifyError(error));
 }
 
+function isZodError(error: Error): error is z.ZodError {
+  return "issues" in error && Array.isArray(error.issues);
+}
+
 export function handleApiError(error: Error, c: Context): Response {
-  if (error instanceof PondError) return apiError(c, error.code, error.message);
-  if (error instanceof SyntaxError)
+  if (error instanceof PondError) {
+    return apiError(c, error.code, error.message);
+  }
+  if (error instanceof SyntaxError) {
     return apiError(c, "invalid_json", "The request body isn't valid JSON.");
-  if (error instanceof z.ZodError) return invalidRequest(c, error);
+  }
+  if (isZodError(error)) {
+    return invalidRequest(c, error);
+  }
   log.error("[pond http] unhandled error", error);
   return apiError(
     c,

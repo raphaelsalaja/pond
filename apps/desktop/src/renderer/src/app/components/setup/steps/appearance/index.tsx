@@ -9,10 +9,11 @@ import { useId } from "react";
 import { ThemePresetSelect } from "@/features/settings";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { Demo } from "../../demo";
-import { type Appearance, previewThemes, type StepProps } from "../../model";
+import { previewThemes } from "../../model";
+import type { Appearance, StepProps } from "../../model";
 import styles from "./styles.module.css";
 
-const MODES: readonly { value: Appearance; label: string }[] = [
+const MODES: ReadonlyArray<{ value: Appearance; label: string }> = [
   { value: "system", label: "System" },
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
@@ -35,7 +36,9 @@ export function ThemeOptions({ choices, update }: StepProps) {
             value={[choices.appearance]}
             onValueChange={(value) => {
               const next = MODES.find((item) => item.value === value[0]);
-              if (next) update({ appearance: next.value });
+              if (next) {
+                update({ appearance: next.value });
+              }
             }}
           >
             {MODES.map(({ value, label }) => (
@@ -66,7 +69,9 @@ export function ThemeOptions({ choices, update }: StepProps) {
             disabled={choices.appearance === "dark"}
             onChange={(lightPreset) => {
               const preset = getPreset(lightPreset);
-              if (preset) update({ lightPreset, lightTheme: preset.def });
+              if (preset) {
+                update({ lightPreset, lightTheme: preset.def });
+              }
             }}
           />
         </Settings.ItemControl>
@@ -91,7 +96,9 @@ export function ThemeOptions({ choices, update }: StepProps) {
             disabled={choices.appearance === "light"}
             onChange={(darkPreset) => {
               const preset = getPreset(darkPreset);
-              if (preset) update({ darkPreset, darkTheme: preset.def });
+              if (preset) {
+                update({ darkPreset, darkTheme: preset.def });
+              }
             }}
           />
         </Settings.ItemControl>

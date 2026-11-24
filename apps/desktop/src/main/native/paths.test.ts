@@ -8,6 +8,8 @@ import {
   windowsNativePipePath,
 } from "./paths";
 
+const sid = async () => "S-1-5-21-10-20-30-1001";
+
 describe("nativeSocketPath", () => {
   it("uses the host contract's named pipe on Windows", async () => {
     await expect(
@@ -18,16 +20,19 @@ describe("nativeSocketPath", () => {
   });
 
   it("keeps a sandbox off the installed app's Windows pipe", async () => {
-    const sid = async () => "S-1-5-21-10-20-30-1001";
     const real = await nativeSocketPath("win32", sid, undefined);
-    const sandbox = await nativeSocketPath("win32", sid, "C:\\Temp\\sandbox-a");
+    const sandbox = await nativeSocketPath(
+      "win32",
+      sid,
+      String.raw`C:\Temp\sandbox-a`,
+    );
     expect(sandbox).not.toBe(real);
     expect(sandbox.startsWith(`${real}-sandbox-`)).toBe(true);
     await expect(
-      nativeSocketPath("win32", sid, "C:\\Temp\\sandbox-b"),
+      nativeSocketPath("win32", sid, String.raw`C:\Temp\sandbox-b`),
     ).resolves.not.toBe(sandbox);
     await expect(
-      nativeSocketPath("win32", sid, "C:\\Temp\\sandbox-a"),
+      nativeSocketPath("win32", sid, String.raw`C:\Temp\sandbox-a`),
     ).resolves.toBe(sandbox);
   });
 
@@ -35,9 +40,9 @@ describe("nativeSocketPath", () => {
     expect(
       parseWindowsUserSid('"DESKTOP\\Person","S-1-5-21-10-20-30-1001"\r\n'),
     ).toBe("S-1-5-21-10-20-30-1001");
-    expect(() => parseWindowsUserSid('"DESKTOP\\Person","not-a-sid"')).toThrow(
-      "current Windows user SID",
-    );
+    expect(() =>
+      parseWindowsUserSid(String.raw`"DESKTOP\Person","not-a-sid"`),
+    ).toThrow("current Windows user SID");
   });
 
   it("isolates native pipes by Windows user SID", () => {
@@ -86,7 +91,7 @@ describe("nativeSocketPath", () => {
 
   it("bounds the operating-system SID lookup", () => {
     expect(WINDOWS_SID_LOOKUP_TIMEOUT_MS).toBeGreaterThan(0);
-    expect(WINDOWS_SID_LOOKUP_TIMEOUT_MS).toBeLessThanOrEqual(5_000);
+    expect(WINDOWS_SID_LOOKUP_TIMEOUT_MS).toBeLessThanOrEqual(5000);
   });
 
   it("keeps the macOS Application Support socket", async () => {

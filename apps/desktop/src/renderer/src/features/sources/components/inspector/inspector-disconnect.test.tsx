@@ -1,6 +1,7 @@
 import { Dialog } from "@pond/ui";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SourceDetail } from "@/features/sources/components/inspector";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
@@ -54,9 +55,15 @@ beforeEach(() => {
   }));
   vi.stubGlobal("pond", {
     query: async (name: string) => {
-      if (name === "accounts.list") return { accounts: [account] };
-      if (name === "accounts.disconnect") return { ok: true };
-      if (name === "watches.list") return { watches: [] };
+      if (name === "accounts.list") {
+        return { accounts: [account] };
+      }
+      if (name === "accounts.disconnect") {
+        return { ok: true };
+      }
+      if (name === "watches.list") {
+        return { watches: [] };
+      }
       throw new Error(name);
     },
   });
@@ -78,9 +85,15 @@ afterEach(async () => {
 
 it("disconnects from a confirm dialog on the connection page", async () => {
   const query = vi.fn(async (name: string) => {
-    if (name === "accounts.list") return { accounts: [account] };
-    if (name === "accounts.disconnect") return { ok: true };
-    if (name === "watches.list") return { watches: [] };
+    if (name === "accounts.list") {
+      return { accounts: [account] };
+    }
+    if (name === "accounts.disconnect") {
+      return { ok: true };
+    }
+    if (name === "watches.list") {
+      return { watches: [] };
+    }
     throw new Error(name);
   });
   vi.stubGlobal("pond", { query });
@@ -98,7 +111,9 @@ it("disconnects from a confirm dialog on the connection page", async () => {
   const disconnect = Array.from(
     document.querySelectorAll<HTMLButtonElement>("button"),
   ).find((button) => button.textContent === "Disconnect");
-  if (!disconnect) throw new Error("Missing Disconnect");
+  if (!disconnect) {
+    throw new Error("Missing Disconnect");
+  }
   await act(async () => {
     disconnect.click();
   });
@@ -110,7 +125,9 @@ it("disconnects from a confirm dialog on the connection page", async () => {
   const confirm = Array.from(
     document.querySelectorAll<HTMLButtonElement>('[role="alertdialog"] button'),
   ).find((button) => button.textContent === "Disconnect");
-  if (!confirm) throw new Error("Missing confirm Disconnect");
+  if (!confirm) {
+    throw new Error("Missing confirm Disconnect");
+  }
   await act(async () => {
     confirm.click();
   });

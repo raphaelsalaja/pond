@@ -1,22 +1,22 @@
 import type { DownloadRequest } from "@shared/downloader-contracts";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import {
-  type NotifyOptions,
   notify,
   TOAST_TIMEOUT_MS,
   updateNotification,
 } from "@/shared/lib/toast";
+import type { NotifyOptions } from "@/shared/lib/toast";
 import type { ExportDestination } from "../export-options/settings";
 
 const EXPORT_FAILED = "Pond couldn't download these files. Try again.";
 
 interface StartInput {
   /** Links yt-dlp downloads with `request`. */
-  media: string[];
+  media: Array<string>;
   /** Posts and pages Pond's importer saves as they are. */
-  posts: string[];
+  posts: Array<string>;
   /** Links straight to a file, saved as a new save. */
-  files: string[];
+  files: Array<string>;
   request: DownloadRequest;
   label: string | null;
 }
@@ -45,10 +45,12 @@ async function saveFile(url: string): Promise<boolean> {
 }
 
 async function startMedia(
-  urls: string[],
+  urls: Array<string>,
   request: DownloadRequest,
 ): Promise<{ started: number; failed: number }> {
-  if (urls.length === 0) return { started: 0, failed: 0 };
+  if (urls.length === 0) {
+    return { started: 0, failed: 0 };
+  }
   try {
     const { ids, failed } = await window.pond.query("downloader.start", {
       urls,
@@ -94,7 +96,7 @@ export async function startLinks({
         : {}),
     action: {
       label: "Show Downloads",
-      onClick: () => getAppRouter()?.history.push("/downloads"),
+      onClick: () => getAppHistory()?.push("/downloads"),
     },
   });
 }
@@ -107,7 +109,7 @@ interface ExportFilesInput {
   /** The page the files came from. */
   url: string;
   title: string | null;
-  files: string[];
+  files: Array<string>;
   destination: ExportDestination;
   label: string;
 }
@@ -155,11 +157,12 @@ export async function exportFiles({
           : label,
     timeout: TOAST_TIMEOUT_MS,
   };
-  if (destination === "file" && first)
+  if (destination === "file" && first) {
     done.action = {
       label: "Show in Finder",
       onClick: () =>
         void window.pond.query("downloader.reveal", { path: first }),
     };
+  }
   updateNotification(done);
 }

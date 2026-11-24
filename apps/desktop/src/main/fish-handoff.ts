@@ -34,17 +34,25 @@ export function createFishHandoff(deps: FishHandoffDeps) {
     },
     async complete(receipt: CaptureReceipt): Promise<void> {
       const fishId = pending.get(receipt.id);
-      if (!fishId) return;
+      if (!fishId) {
+        return;
+      }
       pending.delete(receipt.id);
-      if (!receipt.saveIds.length || !(await deps.fishExists(fishId))) return;
+      if (!receipt.saveIds.length || !(await deps.fishExists(fishId))) {
+        return;
+      }
       deps.activate?.();
       const win = await deps.openMainWindow();
-      if (!win || win.isDestroyed()) return;
+      if (!win || win.isDestroyed()) {
+        return;
+      }
       const payload: FishOpen = { fishId, saveIds: receipt.saveIds };
       const send = () => win.webContents.send(IPC.fishOpen, payload);
-      if (win.webContents.isLoading())
+      if (win.webContents.isLoading()) {
         win.webContents.once("did-finish-load", send);
-      else send();
+      } else {
+        send();
+      }
     },
   };
 }

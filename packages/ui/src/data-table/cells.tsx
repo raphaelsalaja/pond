@@ -1,6 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import type { Store } from "@tanstack/store";
-import { type MouseEvent as ReactMouseEvent, useRef } from "react";
+import { useRef } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { Checkbox } from "../checkbox";
 import type { SelectionState } from "./context";
 import styles from "./styles.module.css";
@@ -48,7 +49,7 @@ export function SelectAllCell({
   onToggleAll,
 }: {
   store: Store<SelectionState>;
-  rowIds: readonly string[];
+  rowIds: ReadonlyArray<string>;
   onToggleAll: (next: boolean) => void;
 }) {
   const selectedCount = useSelector(

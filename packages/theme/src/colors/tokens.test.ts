@@ -5,12 +5,8 @@ import {
 } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_THEMES } from "./ramps";
-import {
-  buildThemeTokens,
-  type Gamut,
-  solveScales,
-  type ThemeTokens,
-} from "./tokens";
+import { buildThemeTokens, solveScales } from "./tokens";
+import type { Gamut, ThemeTokens } from "./tokens";
 
 type Rgb = [number, number, number];
 
@@ -22,10 +18,13 @@ interface Painted {
 }
 
 const CONTRASTS = [0, 25, 50, 75, 100];
-const GAMUTS: Gamut[] = ["srgb", "p3"];
+const GAMUTS: Array<Gamut> = ["srgb", "p3"];
 
 const toLinear = (c: number) =>
   c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+
+const toGamma = (v: number) =>
+  v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055;
 
 /** Linear Display P3 to linear sRGB, from the CSS Color 4 sample code. */
 function p3ToSrgb([r, g, b]: Rgb): Rgb {
@@ -85,6 +84,22 @@ function linearOf({ encoded, space }: Painted): Rgb {
   return space === "srgb" ? lin : p3ToSrgb(lin);
 }
 
+/** Linear sRGB to linear Display P3, from the CSS Color 4 sample code. */
+function inSpace(p: Painted, space: Gamut): Rgb {
+  if (p.space === space) {
+    return p.encoded;
+  }
+  const [r, g, b] = linearOf(p);
+  if (space === "srgb") {
+    return [toGamma(r), toGamma(g), toGamma(b)];
+  }
+  return [
+    toGamma(0.8224621 * r + 0.1775379 * g),
+    toGamma(0.0331942 * r + 0.9668058 * g),
+    toGamma(0.0170826 * r + 0.0723974 * g + 0.91052 * b),
+  ];
+}
+
 const luminance = ([r, g, b]: Rgb) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
 
 function ratio(a: string, b: string): number {
@@ -95,7 +110,9 @@ function ratio(a: string, b: string): number {
 
 function token(theme: ThemeTokens, name: string): string {
   const value = theme.tokens[`--ds-${name}`];
-  if (value === undefined) throw new Error(`missing --ds-${name}`);
+  if (value === undefined) {
+    throw new Error(`missing --ds-${name}`);
+  }
   return value;
 }
 
@@ -110,9 +127,13 @@ function build(
 ) {
   const key = `${solve.name} ${presetId} ${contrast} ${gamut}`;
   const hit = solved.get(key);
-  if (hit) return hit;
+  if (hit) {
+    return hit;
+  }
   const preset = THEME_PRESETS.find((p) => p.id === presetId);
-  if (!preset) throw new Error(`missing preset ${presetId}`);
+  if (!preset) {
+    throw new Error(`missing preset ${presetId}`);
+  }
   const tokens = solve({ ...preset.def, contrast }, gamut);
   solved.set(key, tokens);
   return tokens;
@@ -177,7 +198,9 @@ describe("solveScales", () => {
       const t = build(id, contrast, gamut);
       for (const value of Object.values(t.tokens)) {
         const { encoded, space } = paint(value);
-        if (gamut === "srgb") expect(space).toBe("srgb");
+        if (gamut === "srgb") {
+          expect(space).toBe("srgb");
+        }
         for (const channel of encoded) {
           expect(channel).toBeGreaterThanOrEqual(0);
           expect(channel).toBeLessThanOrEqual(1);
@@ -190,21 +213,6 @@ describe("solveScales", () => {
     "$id at contrast $contrast in $gamut composites alphas onto their solids",
     ({ id, gamut, contrast }) => {
       const t = build(id, contrast, gamut);
-      const toGamma = (v: number) =>
-        v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055;
-      /** Linear sRGB to linear Display P3, from the CSS Color 4 sample code. */
-      const inSpace = (p: Painted, space: Gamut): Rgb => {
-        if (p.space === space) return p.encoded;
-        const [r, g, b] = linearOf(p);
-        if (space === "srgb") {
-          return [toGamma(r), toGamma(g), toGamma(b)];
-        }
-        return [
-          toGamma(0.8224621 * r + 0.1775379 * g),
-          toGamma(0.0331942 * r + 0.9668058 * g),
-          toGamma(0.0170826 * r + 0.0723974 * g + 0.91052 * b),
-        ];
-      };
       for (const scale of ["gray", "accent"]) {
         for (let step = 1; step <= 12; step++) {
           const overlay = paint(token(t, `${scale}-a${step}`));

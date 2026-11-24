@@ -4,13 +4,23 @@ import type { Save } from "@/features/saves/types";
 import { rotationSwapsAxes } from "./image-orientation";
 
 export function mediaTransformStyle(save: Save): CSSProperties {
-  const parts: string[] = [];
-  if (save.rotate) parts.push(`rotate(${save.rotate}deg)`);
-  if (save.flipX) parts.push("scaleX(-1)");
-  if (save.flipY) parts.push("scaleY(-1)");
+  const parts: Array<string> = [];
+  if (save.rotate) {
+    parts.push(`rotate(${save.rotate}deg)`);
+  }
+  if (save.flipX) {
+    parts.push("scaleX(-1)");
+  }
+  if (save.flipY) {
+    parts.push("scaleY(-1)");
+  }
   const style: CSSProperties = {};
-  if (parts.length > 0) style.transform = parts.join(" ");
-  if (save.crop) style.clipPath = cropClip(save.crop);
+  if (parts.length > 0) {
+    style.transform = parts.join(" ");
+  }
+  if (save.crop) {
+    style.clipPath = cropClip(save.crop);
+  }
   return style;
 }
 
@@ -29,7 +39,7 @@ export function orientedThumbStyle(
   const style = mediaTransformStyle(save);
   if (
     !rotationSwapsAxes(save.rotate) ||
-    pixelAspect == null ||
+    pixelAspect === null ||
     !(pixelAspect > 0)
   ) {
     return style;

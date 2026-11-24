@@ -44,8 +44,8 @@ function root(): string {
 
 function fileName(save: ApiSave, extension: string): string {
   const base = saveTitle(save)
-    .replace(/[/\\:*?"<>|\n\r\t]/g, " ")
-    .replace(/\s+/g, " ")
+    .replaceAll(/[/\\:*?"<>|\n\r\t]/g, " ")
+    .replaceAll(/\s+/g, " ")
     .trim()
     .slice(0, 60);
   return `${base || "Pond Save"}.${extension}`;
@@ -63,10 +63,14 @@ async function prune(): Promise<void> {
 }
 
 export async function downloadFile(save: ApiSave, index = 0): Promise<LocalFile> {
-  if (save.media.files === 0) throw new Error("This save has no file. Open it in Pond to see what was captured.");
+  if (save.media.files === 0) {
+    throw new Error("This save has no file. Open it in Pond to see what was captured.");
+  }
   const folder = join(root(), `${thumbnailKey(save)}-${index}`);
   const existing = await readdir(folder).catch(() => []);
-  if (existing[0]) return { path: join(folder, existing[0]), name: existing[0] };
+  if (existing[0]) {
+    return { path: join(folder, existing[0]), name: existing[0] };
+  }
   const file = await pond().file(save.id, index);
   const name = fileName(save, EXTENSIONS.get(file.type.replace(/;.*$/, "")) ?? "bin");
   await mkdir(folder, { recursive: true });
@@ -77,13 +81,17 @@ export async function downloadFile(save: ApiSave, index = 0): Promise<LocalFile>
 }
 
 async function quickLookFile(save: ApiSave | undefined): Promise<LocalFile | null> {
-  if (!save) return null;
+  if (!save) {
+    return null;
+  }
   if (save.kind === "image" && save.thumbnail) {
     const path = await downloadThumbnail(save, "large");
     return path ? { path, name: saveTitle(save) } : null;
   }
   const small = save.media.bytes !== null && save.media.bytes <= QUICK_LOOK_LIMIT;
-  if (save.kind && PREVIEWABLE.has(save.kind) && save.media.files > 0 && small) return downloadFile(save);
+  if (save.kind && PREVIEWABLE.has(save.kind) && save.media.files > 0 && small) {
+    return downloadFile(save);
+  }
   return null;
 }
 

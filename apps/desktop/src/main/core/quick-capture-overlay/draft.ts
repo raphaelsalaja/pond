@@ -6,11 +6,13 @@ export interface QuickCapturePlan {
   /** Null when everything dropped is a Save already. */
   draft: CaptureDraft | null;
   /** Saves dragged out of Pond, filed instead of imported again. */
-  saveIds: string[];
+  saveIds: Array<string>;
 }
 
 function webUrl(line: string): string | null {
-  if (/\s/.test(line)) return null;
+  if (/\s/.test(line)) {
+    return null;
+  }
   try {
     const url = new URL(line);
     return url.protocol === "http:" || url.protocol === "https:"
@@ -40,30 +42,42 @@ export function quickCapturePlan(
   saveIdFor: (path: string) => string | null,
 ): QuickCapturePlan {
   const items: CaptureDraft["items"] = [];
-  const saveIds: string[] = [];
+  const saveIds: Array<string> = [];
   const lines = input.text
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean);
   const urls = lines.map(webUrl).filter((url) => url !== null);
-  if (lines.length && urls.length === lines.length)
-    for (const url of urls) items.push({ kind: "url", url });
-  else if (input.text.trim()) items.push({ kind: "note", text: input.text });
+  if (lines.length && urls.length === lines.length) {
+    for (const url of urls) {
+      items.push({ kind: "url", url });
+    }
+  } else if (input.text.trim()) {
+    items.push({ kind: "note", text: input.text });
+  }
   for (const path of input.paths) {
     const saveId = saveIdFor(path);
-    if (!saveId) items.push({ kind: "file", path });
-    else if (!saveIds.includes(saveId)) saveIds.push(saveId);
+    if (!saveId) {
+      items.push({ kind: "file", path });
+    } else if (!saveIds.includes(saveId)) {
+      saveIds.push(saveId);
+    }
   }
-  if (!items.length && !saveIds.length)
+  if (!items.length && !saveIds.length) {
     throw userError("Add a link, some text, or a file.");
-  if (!items.length) return { draft: null, saveIds };
+  }
+  if (!items.length) {
+    return { draft: null, saveIds };
+  }
   const metadata: CaptureDraft["metadata"] = {
     tags: [],
     folderIds: input.folderId ? [input.folderId] : [],
   };
   const title = input.title?.trim();
   /** Metadata titles are locked, so a link's fetched title can't replace the typed one. */
-  if (title && items.length === 1 && !saveIds.length) metadata.title = title;
+  if (title && items.length === 1 && !saveIds.length) {
+    metadata.title = title;
+  }
   return {
     draft: { id, trigger: "quick-capture", items, metadata },
     saveIds,

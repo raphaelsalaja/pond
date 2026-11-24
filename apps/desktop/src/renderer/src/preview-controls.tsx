@@ -19,25 +19,25 @@ import type { PreviewWindowState } from "../../shared/preview-window-contracts";
 import { FramelessWindowChrome } from "./shared/components/frameless-window-chrome";
 
 export interface PreviewControlActions {
-  close(): void;
-  cycleOpacity(): void;
-  next(): void;
-  openOriginal(): void;
-  previous(): void;
-  toggleFullscreen(): void;
-  toggleGrayscale(): void;
-  toggleMirror(): void;
-  togglePin(): void;
-  toggleSize(): void;
-  toggleSlideshow(): void;
-  rotate(): void;
-  exportOriginal(): void;
+  close: () => void;
+  cycleOpacity: () => void;
+  next: () => void;
+  openOriginal: () => void;
+  previous: () => void;
+  toggleFullscreen: () => void;
+  toggleGrayscale: () => void;
+  toggleMirror: () => void;
+  togglePin: () => void;
+  toggleSize: () => void;
+  toggleSlideshow: () => void;
+  rotate: () => void;
+  exportOriginal: () => void;
 }
 
 interface PreviewToolProps {
   children: ReactElement;
   label: string;
-  onClick(): void;
+  onClick: () => void;
   pressed?: boolean;
   side: "top" | "bottom";
 }

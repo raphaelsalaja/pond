@@ -13,7 +13,7 @@ const PageImagesSchema = z
   .nullable();
 
 export function pickPageImages(
-  images: { src: string; width: number; height: number }[],
+  images: Array<{ src: string; width: number; height: number }>,
   minEdge = MIN_EDGE,
   maxAssets = MAX_ASSETS,
 ) {
@@ -30,7 +30,7 @@ export function pickPageImages(
 export function pageAssetsDraft(input: {
   id: string;
   originUrl: string;
-  images: { src: string; width: number; height: number }[];
+  images: Array<{ src: string; width: number; height: number }>;
 }) {
   return {
     id: input.id,
@@ -76,12 +76,12 @@ export async function extractPageAssets(
         }))`,
           true,
         ),
-        new Promise<null>((resolve) =>
-          setTimeout(() => resolve(null), LOAD_MS),
-        ),
+        new Promise<null>((resolve) => {
+          setTimeout(() => resolve(null), LOAD_MS);
+        }),
       ]),
     );
-    if (!images)
+    if (!images) {
       return {
         ok: false,
         imported: 0,
@@ -89,14 +89,16 @@ export async function extractPageAssets(
         queued: 0,
         error: "timeout",
       };
+    }
     const draft = pageAssetsDraft({
       id: randomUUID(),
       originUrl: href,
       images,
     });
     const skipped = images.length - draft.items.length;
-    if (draft.items.length === 0)
+    if (draft.items.length === 0) {
       return { ok: true, imported: 0, skipped, queued: 0 };
+    }
     const { captures } = await import("./captures");
     await captures.accept(draft);
     return {
@@ -105,8 +107,8 @@ export async function extractPageAssets(
       skipped,
       queued: draft.items.length,
     };
-  } catch (err) {
-    log.warn("[pond page-extract] failed", href, err);
+  } catch (error) {
+    log.warn("[pond page-extract] failed", href, error);
     return {
       ok: false,
       imported: 0,
@@ -115,6 +117,8 @@ export async function extractPageAssets(
       error: "extract_failed",
     };
   } finally {
-    if (!win.isDestroyed()) win.destroy();
+    if (!win.isDestroyed()) {
+      win.destroy();
+    }
   }
 }

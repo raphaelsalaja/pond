@@ -11,7 +11,9 @@ export function useExportFolder() {
   });
   const choose = async () => {
     const picked = await window.pond.query("downloader.pickExportFolder", {});
-    if (picked) queryClient.setQueryData(FOLDER_KEY, picked);
+    if (picked) {
+      queryClient.setQueryData(FOLDER_KEY, picked);
+    }
     return picked;
   };
   return { name: folder.data?.name ?? null, choose };

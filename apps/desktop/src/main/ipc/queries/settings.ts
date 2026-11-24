@@ -25,7 +25,8 @@ import {
 import { getGlobalDb } from "../../db";
 import { getIngestToken, rotateIngestToken } from "../../keychain";
 import { syncShellChrome } from "../../window";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const ExternalSourceParam = z.enum(EXTERNAL_SOURCE_IDS);
 
@@ -102,8 +103,7 @@ export const settingsQueries = {
     if (rows[0]) {
       return { ...rows[0], ...downloads };
     }
-    await db
-      .insert(settingsTable)
+    db.insert(settingsTable)
       .values({
         id: "singleton",
         videoDownload: DEFAULT_VIDEO_DOWNLOAD,
@@ -162,13 +162,11 @@ export const settingsQueries = {
 
   async "settings.setOnboarded"() {
     const db = await getGlobalDb();
-    await db
-      .insert(settingsTable)
+    db.insert(settingsTable)
       .values({ id: "singleton" })
       .onConflictDoNothing()
       .run();
-    await db
-      .update(settingsTable)
+    db.update(settingsTable)
       .set({ onboarded: true, updatedAt: new Date() })
       .where(eq(settingsTable.id, "singleton"))
       .run();
@@ -194,7 +192,9 @@ export const settingsQueries = {
     PrefsPatchParamsSchema,
     async (params): Promise<QueryResult<"settings.setPrefs">> => {
       const next = await setPrefs(params);
-      if ("preferences" in params) await syncShellChrome();
+      if ("preferences" in params) {
+        await syncShellChrome();
+      }
       if (
         params.window &&
         ("appIcon" in params.window || "appIconMatchesLibrary" in params.window)

@@ -1,4 +1,5 @@
-import { act, type ComponentProps, useState } from "react";
+import { act, useState } from "react";
+import type { ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { Navigator } from "./";
@@ -46,7 +47,9 @@ it("pans with arrows, clamps to the image, and centers with keyboard activation"
       ),
     );
     const button = host.querySelector("button");
-    if (!button) throw new Error("Missing navigator");
+    if (!button) {
+      throw new Error("Missing navigator");
+    }
     await act(async () =>
       button.dispatchEvent(
         new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
@@ -54,7 +57,7 @@ it("pans with arrows, clamps to the image, and centers with keyboard activation"
     );
     expect(observed.x).toBeCloseTo(-40);
     expect(globalKey).not.toHaveBeenCalled();
-    for (let index = 0; index < 10; index++)
+    for (let index = 0; index < 10; index++) {
       await act(async () =>
         button.dispatchEvent(
           new KeyboardEvent("keydown", {
@@ -64,6 +67,7 @@ it("pans with arrows, clamps to the image, and centers with keyboard activation"
           }),
         ),
       );
+    }
     expect(observed.y).toBeCloseTo(-250);
     await act(async () => button.click());
     expect(observed).toEqual({ zoom: 2, x: 0, y: 0 });

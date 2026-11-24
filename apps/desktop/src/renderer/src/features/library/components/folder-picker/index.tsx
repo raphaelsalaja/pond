@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { recentFolderIds } from "@/features/library/lib/recent-folders";
 import {
   closeFolderPicker,
-  type FolderPickerState,
   folderPickerStore,
 } from "@/features/library/state/folder-picker";
+import type { FolderPickerState } from "@/features/library/state/folder-picker";
 import {
   folders,
   useFolderMemberships,
@@ -15,9 +15,9 @@ import {
 import {
   changeSaveFolders,
   FolderMenu,
-  type FolderMenuItem,
   RecentFolderMenu,
 } from "@/features/saves";
+import type { FolderMenuItem } from "@/features/saves";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
@@ -47,7 +47,7 @@ function FolderPicker({ ids, mode: initialMode }: FolderPickerState) {
   const [staged, setStaged] = useState<ReadonlySet<string>>(() => new Set());
   const [applying, setApplying] = useState(false);
   const [recent] = useState(recentFolderIds);
-  const items: FolderMenuItem[] = rows.map((folder) => ({
+  const items: Array<FolderMenuItem> = rows.map((folder) => ({
     id: folder.id,
     name: folder.name,
     parentId: folder.parentId,
@@ -83,8 +83,9 @@ function FolderPicker({ ids, mode: initialMode }: FolderPickerState) {
   }
 
   function stopStaging() {
-    if (initialMode === "multiple") closeFolderPicker();
-    else {
+    if (initialMode === "multiple") {
+      closeFolderPicker();
+    } else {
       setStaged(new Set());
       setMode("all");
     }
@@ -93,14 +94,19 @@ function FolderPicker({ ids, mode: initialMode }: FolderPickerState) {
   function toggleStaged(folder: FolderMenuItem) {
     setStaged((current) => {
       const next = new Set(current);
-      if (next.has(folder.id)) next.delete(folder.id);
-      else next.add(folder.id);
+      if (next.has(folder.id)) {
+        next.delete(folder.id);
+      } else {
+        next.add(folder.id);
+      }
       return next;
     });
   }
 
   function applyStaged() {
-    if (!staged.size || applying) return;
+    if (!staged.size || applying) {
+      return;
+    }
     setApplying(true);
     void run(async () => {
       await changeSaveFolders({
@@ -119,7 +125,9 @@ function FolderPicker({ ids, mode: initialMode }: FolderPickerState) {
     <Dialog.Root
       open
       onOpenChange={(open, details) => {
-        if (open) return;
+        if (open) {
+          return;
+        }
         if (details.reason === "escape-key" && mode === "multiple") {
           details.cancel();
           stopStaging();

@@ -49,13 +49,14 @@ it("rejects an ICO file whose entry points past the end", async () => {
   expect(await isReadableImage(ico(bytes, bytes.length + 100))).toBe(false);
 });
 
+const challenge = () =>
+  new Response("<html>challenge</html>", {
+    status: 429,
+    headers: { "x-vercel-mitigated": "challenge" },
+  });
+
 describe("bot challenges", () => {
   const url = "https://site.example/_next/image?url=%2Fa.png&w=3840";
-  const challenge = () =>
-    new Response("<html>challenge</html>", {
-      status: 429,
-      headers: { "x-vercel-mitigated": "challenge" },
-    });
 
   afterEach(() => {
     vi.unstubAllGlobals();

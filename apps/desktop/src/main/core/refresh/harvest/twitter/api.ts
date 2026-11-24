@@ -30,11 +30,11 @@ interface TimelineEntry {
 
 interface TimelineInstruction {
   type?: string;
-  entries?: TimelineEntry[];
+  entries?: Array<TimelineEntry>;
 }
 
 interface Timeline {
-  timeline?: { instructions?: TimelineInstruction[] };
+  timeline?: { instructions?: Array<TimelineInstruction> };
 }
 
 interface BookmarksResponse {
@@ -125,13 +125,21 @@ async function inPageBookmarksApi(
   }
 
   const sleep = (ms: number): Promise<void> =>
-    new Promise((r) => setTimeout(r, ms));
+    new Promise((r) => {
+      setTimeout(r, ms);
+    });
+  const isVariables = (value: unknown): value is BookmarksVariables =>
+    Object(value) === value;
+  const isResponse = (value: unknown): value is BookmarksResponse =>
+    Object(value) === value;
 
   const retryAfterFromHeaders = (res: Response): number | null => {
     const retryAfter = res.headers.get("retry-after");
     if (retryAfter) {
       const n = Number(retryAfter);
-      if (Number.isFinite(n)) return Math.max(0, n);
+      if (Number.isFinite(n)) {
+        return Math.max(0, n);
+      }
       const when = Date.parse(retryAfter);
       if (Number.isFinite(when)) {
         return Math.max(0, Math.round((when - Date.now()) / 1000));
@@ -162,11 +170,13 @@ async function inPageBookmarksApi(
   const waitDeadline = Date.now() + 20_000;
   let nudged = false;
   while (!template && Date.now() < waitDeadline) {
-    if (!nudged && Date.now() - (waitDeadline - 20_000) > 4_000) {
+    if (!nudged && Date.now() - (waitDeadline - 20_000) > 4000) {
       nudged = true;
       try {
         window.scrollBy({ top: 600, behavior: "instant" });
-      } catch {}
+      } catch {
+        /** The nudge only hurries the page's own request; waiting still works without it. */
+      }
     }
     await sleep(250);
     template = getRequest();
@@ -185,33 +195,47 @@ async function inPageBookmarksApi(
   let baseVariables: BookmarksVariables = {};
   try {
     const raw = base.searchParams.get("variables");
-    if (raw) baseVariables = JSON.parse(raw);
-  } catch {}
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw);
+      if (isVariables(parsed)) {
+        baseVariables = parsed;
+      }
+    }
+  } catch {
+    /** Unparseable variables start the walk from the first page. */
+  }
 
   const headers: Record<string, string> = {};
   for (const [k, v] of Object.entries(template.headers ?? {})) {
     headers[k] = v;
   }
-  if (!("accept" in headers)) headers.accept = "*/*";
+  if (!("accept" in headers)) {
+    headers.accept = "*/*";
+  }
 
   const buildUrl = (cursor: string | null): string => {
     const vars = { ...baseVariables };
-    if (cursor) vars.cursor = cursor;
-    else delete vars.cursor;
+    if (cursor) {
+      vars.cursor = cursor;
+    } else {
+      delete vars.cursor;
+    }
     const u = new URL(base.toString());
     u.searchParams.set("variables", JSON.stringify(vars));
     return u.toString();
   };
 
-  const addedEntries = (json: BookmarksResponse): TimelineEntry[] => {
+  const addedEntries = (json: BookmarksResponse): Array<TimelineEntry> => {
     const user = json.data?.user?.result;
     const ins =
       json.data?.bookmark_timeline_v2?.timeline?.instructions ??
       json.data?.bookmark_collection_timeline?.timeline?.instructions ??
       user?.timeline_v2?.timeline?.instructions ??
       user?.timeline?.timeline?.instructions;
-    if (!Array.isArray(ins)) return [];
-    const out: TimelineEntry[] = [];
+    if (!Array.isArray(ins)) {
+      return [];
+    }
+    const out: Array<TimelineEntry> = [];
     for (const ix of ins) {
       if (ix.type !== "TimelineAddEntries" || !Array.isArray(ix.entries)) {
         continue;
@@ -222,13 +246,17 @@ async function inPageBookmarksApi(
   };
   const extractCursor = (json: BookmarksResponse): string | null => {
     for (const e of addedEntries(json)) {
-      if (!e.entryId?.startsWith("cursor-bottom")) continue;
-      if (e.content?.value !== undefined) return e.content.value;
+      if (!e.entryId?.startsWith("cursor-bottom")) {
+        continue;
+      }
+      if (e.content?.value !== undefined) {
+        return e.content.value;
+      }
     }
     return null;
   };
-  const pageTweetIds = (json: BookmarksResponse): string[] => {
-    const ids: string[] = [];
+  const pageTweetIds = (json: BookmarksResponse): Array<string> => {
+    const ids: Array<string> = [];
     for (const e of addedEntries(json)) {
       if (e.entryId?.startsWith("tweet-")) {
         ids.push(e.entryId.slice("tweet-".length));
@@ -248,7 +276,7 @@ async function inPageBookmarksApi(
   };
   globalThis.__pondHarvestStats = stats;
 
-  const captures: BookmarksCapture[] = [];
+  const captures: Array<BookmarksCapture> = [];
   const deadline = Date.now() + args.deadlineMs;
   const known = new Set<string>((args.knownIds ?? []).map(String));
   const earlyStopEnabled = known.size > 0;
@@ -277,7 +305,9 @@ async function inPageBookmarksApi(
       reason = "http_error";
       break;
     }
-    if (pages === 0) firstStatus = res.status;
+    if (pages === 0) {
+      firstStatus = res.status;
+    }
     if (!res.ok) {
       if (res.status === 429) {
         return {
@@ -300,7 +330,8 @@ async function inPageBookmarksApi(
     const body = await res.text();
     let json: BookmarksResponse;
     try {
-      json = JSON.parse(body);
+      const parsed: unknown = JSON.parse(body);
+      json = isResponse(parsed) ? parsed : {};
     } catch {
       if (pages === 0) {
         return { ok: false, reason: "fallback", detail: "parse_error" };
@@ -347,7 +378,9 @@ async function inPageBookmarksApi(
     await sleep(args.throttleMs + Math.random() * 150);
   }
 
-  if (Date.now() >= deadline) reason = "deadline";
+  if (Date.now() >= deadline) {
+    reason = "deadline";
+  }
 
   if (pages === 1 && tweetTotal === 0) {
     return { ok: false, reason: "fallback", detail: "empty_first_page" };

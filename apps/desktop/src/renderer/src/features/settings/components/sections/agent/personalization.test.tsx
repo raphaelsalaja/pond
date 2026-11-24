@@ -25,7 +25,7 @@ function Harness({ onSave }: { onSave: (patch: Partial<AgentPrefs>) => void }) {
 
 it("saves on blur, retains edits after a failed save, and retries", async () => {
   let rejectSave = true;
-  const saved: Partial<AgentPrefs>[] = [];
+  const saved: Array<Partial<AgentPrefs>> = [];
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -34,14 +34,18 @@ it("saves on blur, retains edits after a failed save, and retries", async () => 
       root.render(
         <Harness
           onSave={(patch) => {
-            if (rejectSave) throw new Error("Disk unavailable");
+            if (rejectSave) {
+              throw new Error("Disk unavailable");
+            }
             saved.push(patch);
           }}
         />,
       ),
     );
     const profile = host.querySelector<HTMLTextAreaElement>("#agent-profile");
-    if (!profile) throw new Error("Missing profile field");
+    if (!profile) {
+      throw new Error("Missing profile field");
+    }
     expect(host.querySelector('button[type="submit"]')).toBeNull();
     await act(async () => {
       Object.getOwnPropertyDescriptor(

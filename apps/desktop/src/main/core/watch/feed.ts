@@ -77,7 +77,7 @@ type FeedResult =
 function decodeFeed(body: Uint8Array, contentType: string | null): string {
   const prefix = Buffer.from(body.subarray(0, 4)).toString("hex");
   const bom = prefix.startsWith("efbbbf")
-    ? "utf-8"
+    ? "utf8"
     : prefix.startsWith("feff")
       ? "utf-16be"
       : prefix.startsWith("fffe")
@@ -103,7 +103,7 @@ function decodeFeed(body: Uint8Array, contentType: string | null): string {
     charset?.[3] ??
     signature ??
     /^<\?xml\s[^?]*\bencoding\s*=\s*(["'])([^"']+)\1/.exec(declaration)?.[2] ??
-    "utf-8";
+    "utf8";
   return new TextDecoder(encoding, { fatal: true }).decode(body);
 }
 
@@ -113,7 +113,9 @@ export async function readFeed(
   signal?: AbortSignal,
 ): Promise<FeedResult> {
   const address = normalizeFeedUrl(url);
-  if (!address) return { ok: false, reason: "not_found" };
+  if (!address) {
+    return { ok: false, reason: "not_found" };
+  }
   const timeout = AbortSignal.timeout(15_000);
   const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
   try {
@@ -125,18 +127,27 @@ export async function readFeed(
       },
       signal: requestSignal,
     });
-    if (response.status === 404 || response.status === 410)
+    if (response.status === 404 || response.status === 410) {
       return { ok: false, reason: "not_found" };
-    if (response.status === 401 || response.status === 403)
+    }
+    if (response.status === 401 || response.status === 403) {
       return { ok: false, reason: "auth_required" };
-    if (response.status === 429) return { ok: false, reason: "rate_limited" };
-    if (!response.ok) return { ok: false, reason: "unavailable" };
+    }
+    if (response.status === 429) {
+      return { ok: false, reason: "rate_limited" };
+    }
+    if (!response.ok) {
+      return { ok: false, reason: "unavailable" };
+    }
     const body = await readResponseBodyWithinBudget(response, 5 * 1024 * 1024);
-    if (!body) return { ok: false, reason: "unavailable" };
+    if (!body) {
+      return { ok: false, reason: "unavailable" };
+    }
     const xml = decodeFeed(body, response.headers.get("content-type"));
     const { XMLParser, XMLValidator } = await import("fast-xml-parser");
-    if (DECLARES_ENTITIES.test(xml) || XMLValidator.validate(xml) !== true)
+    if (DECLARES_ENTITIES.test(xml) || XMLValidator.validate(xml) !== true) {
       return { ok: false, reason: "not_found" };
+    }
     const parser = new XMLParser({
       ignoreAttributes: false,
       attributeNamePrefix: "@",
@@ -145,7 +156,9 @@ export async function readFeed(
       isArray: (name) => ["item", "entry", "link"].includes(name),
     });
     const parsed = FeedSchema.safeParse(parser.parse(xml));
-    if (!parsed.success) return { ok: false, reason: "not_found" };
+    if (!parsed.success) {
+      return { ok: false, reason: "not_found" };
+    }
     const feed = parsed.data;
     const responseUrl = response.url || address;
     const base = feed.base

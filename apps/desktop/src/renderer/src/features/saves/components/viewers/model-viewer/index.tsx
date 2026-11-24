@@ -2,7 +2,8 @@ import {
   IconArrowRotateAnticlockwise,
   IconGroundPlaneDetection,
 } from "@pond/icons";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import {
   AnimationMixer,
   Box3,
@@ -11,14 +12,12 @@ import {
   DirectionalLight,
   GridHelper,
   HemisphereLight,
-  type Material,
-  Mesh,
   PerspectiveCamera,
   Scene,
-  Texture,
   Vector3,
   WebGLRenderer,
 } from "three";
+import type { Material, Mesh, Object3D, Texture } from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
@@ -50,7 +49,9 @@ export function ModelViewer({
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) return;
+    if (!root) {
+      return;
+    }
 
     let alive = true;
     let frame = 0;
@@ -58,7 +59,7 @@ export function ModelViewer({
     let loadedObject: Awaited<ReturnType<typeof loadModel>>["object"] | null =
       null;
     const scene = new Scene();
-    scene.background = new Color(0x17191d);
+    scene.background = new Color(0x17_19_1d);
     const camera = new PerspectiveCamera(38, 1, 0.01, 100_000);
     const renderer = new WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2));
@@ -81,28 +82,32 @@ export function ModelViewer({
       () => resetRef.current?.(),
     );
 
-    const hemisphere = new HemisphereLight(0xffffff, 0x334155, 2.4);
+    const hemisphere = new HemisphereLight(0xff_ff_ff, 0x33_41_55, 2.4);
     scene.add(hemisphere);
-    const key = new DirectionalLight(0xffffff, 3.2);
+    const key = new DirectionalLight(0xff_ff_ff, 3.2);
     key.position.set(4, 7, 5);
     scene.add(key);
-    const fill = new DirectionalLight(0x93c5fd, 1.4);
+    const fill = new DirectionalLight(0x93_c5_fd, 1.4);
     fill.position.set(-5, 2, -4);
     scene.add(fill);
-    const grid = new GridHelper(10, 20, 0x6b7280, 0x374151);
+    const grid = new GridHelper(10, 20, 0x6b_72_80, 0x37_41_51);
     gridRef.current = grid;
     scene.add(grid);
 
     const frameObject = (object: typeof loadedObject) => {
-      if (!object) return;
+      if (!object) {
+        return;
+      }
       const box = new Box3().setFromObject(object);
-      if (box.isEmpty()) return;
+      if (box.isEmpty()) {
+        return;
+      }
       const size = box.getSize(new Vector3());
       const center = box.getCenter(new Vector3());
       object.position.sub(center);
       const radius = Math.max(size.x, size.y, size.z, 0.01) * 0.5;
       const distance = radius / Math.tan((camera.fov * Math.PI) / 360);
-      camera.near = Math.max(radius / 1_000, 0.001);
+      camera.near = Math.max(radius / 1000, 0.001);
       camera.far = Math.max(distance * 20, 100);
       camera.position.set(distance * 0.9, distance * 0.65, distance * 1.15);
       camera.updateProjectionMatrix();
@@ -126,7 +131,9 @@ export function ModelViewer({
 
     const clock = new Clock();
     const render = () => {
-      if (!alive) return;
+      if (!alive) {
+        return;
+      }
       frame = requestAnimationFrame(render);
       mixer?.update(clock.getDelta());
       controls.update();
@@ -144,13 +151,17 @@ export function ModelViewer({
         scene.add(result.object);
         if (result.animations.length > 0) {
           mixer = new AnimationMixer(result.object);
-          for (const clip of result.animations) mixer.clipAction(clip).play();
+          for (const clip of result.animations) {
+            mixer.clipAction(clip).play();
+          }
         }
         frameObject(result.object);
         setLoading(false);
       })
       .catch(() => {
-        if (alive) onUnavailable();
+        if (alive) {
+          onUnavailable();
+        }
       });
 
     return () => {
@@ -162,14 +173,18 @@ export function ModelViewer({
       mixer?.stopAllAction();
       unbindKeys();
       controls.dispose();
-      if (loadedObject) disposeObject(loadedObject);
+      if (loadedObject) {
+        disposeObject(loadedObject);
+      }
       renderer.dispose();
       renderer.domElement.remove();
     };
   }, [onUnavailable, path, url]);
 
   useEffect(() => {
-    if (gridRef.current) gridRef.current.visible = gridVisible;
+    if (gridRef.current) {
+      gridRef.current.visible = gridVisible;
+    }
   }, [gridVisible]);
 
   return (
@@ -216,18 +231,36 @@ function disposeObject(
   object: Awaited<ReturnType<typeof loadModel>>["object"],
 ) {
   object.traverse((child) => {
-    if (!(child instanceof Mesh)) return;
+    if (!isMesh(child)) {
+      return;
+    }
     child.geometry.dispose();
     const materials = Array.isArray(child.material)
       ? child.material
       : [child.material];
-    for (const material of materials) disposeMaterial(material);
+    for (const material of materials) {
+      disposeMaterial(material);
+    }
   });
 }
 
+function isMesh(object: Object3D): object is Mesh {
+  return "isMesh" in object && object.isMesh === true;
+}
+
+function isTexture(value: unknown): value is Texture {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "isTexture" in value &&
+    value.isTexture === true
+  );
+}
+
 function disposeMaterial(material: Material) {
-  for (const value of Object.values(material)) {
-    if (value instanceof Texture) {
+  const values: Array<unknown> = Object.values(material);
+  for (const value of values) {
+    if (isTexture(value)) {
       value.dispose();
     }
   }

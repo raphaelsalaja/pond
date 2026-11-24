@@ -22,10 +22,8 @@ import {
   skipDownloadRows,
   trashDownloadRows,
 } from "@/features/downloads/components/lib/actions";
-import {
-  type DownloadRow,
-  statusFeed,
-} from "@/features/downloads/lib/status-feed";
+import { statusFeed } from "@/features/downloads/lib/status-feed";
+import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { humanizeError } from "@/features/downloads/lib/status-feed/queue";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { openSave } from "@/features/saves/navigation";
@@ -33,7 +31,9 @@ import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import type { DownloadViewRow } from "./columns";
 
 export function openDownloadSave(row: DownloadRow): void {
-  if (row.status === "complete") openSave(row.saveId);
+  if (row.status === "complete") {
+    openSave(row.saveId);
+  }
 }
 
 function copyText(text: string): void {
@@ -44,7 +44,9 @@ const WEB_LINK = /^https?:\/\//i;
 
 function openLink(url: string): void {
   void window.pond.openExternal(url).then((result) => {
-    if (result.ok) return;
+    if (result.ok) {
+      return;
+    }
     statusFeed.error(
       "Open link",
       "Couldn't open the link. Copy it and paste it into your browser.",
@@ -54,18 +56,20 @@ function openLink(url: string): void {
 
 function downloadErrorText(row: DownloadRow): string {
   const error = row.error?.trim();
-  if (error) return error;
+  if (error) {
+    return error;
+  }
   return row.lastError?.trim() ? humanizeError(row.lastError) : "";
 }
 
-function menuTargets(row: DownloadRow): readonly DownloadRow[] {
+function menuTargets(row: DownloadRow): ReadonlyArray<DownloadRow> {
   const selected = downloadsSelection.snapshot();
   return selected.some((item) => item.id === row.id) ? selected : [row];
 }
 
 export function buildDownloadMenuItems(
-  rows: readonly DownloadRow[],
-): MenuItemSpec[] {
+  rows: ReadonlyArray<DownloadRow>,
+): Array<MenuItemSpec> {
   const plural = rows.length > 1;
   const single = plural ? undefined : rows[0];
   const url = single?.url.trim() ?? "";
@@ -80,7 +84,9 @@ export function buildDownloadMenuItems(
       icon: <IconWindowShare />,
       hidden: single?.status !== "complete",
       onClick: () => {
-        if (single) openDownloadSave(single);
+        if (single) {
+          openDownloadSave(single);
+        }
       },
     },
     { type: "separator" },
@@ -133,7 +139,7 @@ export function buildDownloadMenuItems(
     {
       label: "Clear Selection",
       icon: <IconCircleXmark />,
-      onClick: downloadsSelection.clear,
+      onClick: () => downloadsSelection.clear(),
     },
   ];
 }
@@ -149,7 +155,9 @@ export function DownloadContextMenu({
   return (
     <SpecContextMenu
       onOpen={() => {
-        if (selectionStore.state.selectedIds.has(row.id)) return;
+        if (selectionStore.state.selectedIds.has(row.id)) {
+          return;
+        }
         actions.replaceSelection([row.id]);
         downloadsSelection.set([row]);
       }}

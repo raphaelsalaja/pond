@@ -2,12 +2,13 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { type AppGroupModule, openAppGroupContainer } from "./app-group";
+import { openAppGroupContainer } from "./app-group";
+import type { AppGroupModule } from "./app-group";
 
 const GROUP = "7VFLYD5292.so.pond";
 const CONTAINER = `/Users/someone/Library/Group Containers/${GROUP}`;
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 /** A `Contents/Resources` folder holding these bytes as `app-group.node`, when given. */
 function resources(moduleBytes?: string): string {
@@ -21,7 +22,7 @@ function resources(moduleBytes?: string): string {
 
 /** Stands in for app-group.node: answers every request with this container, or null. */
 function appGroupModule(container: string | null) {
-  const requests: string[] = [];
+  const requests: Array<string> = [];
   const module: AppGroupModule = {
     containerPath(identifier) {
       requests.push(identifier);

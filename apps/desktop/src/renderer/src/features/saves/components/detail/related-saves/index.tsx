@@ -1,13 +1,11 @@
 import { Button } from "@pond/ui";
-import { type CSSProperties, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { CardThumb } from "@/features/saves/components/card/media";
 import { Card } from "@/features/saves/components/card/parts";
 import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
-import {
-  loadRelated,
-  peekRelated,
-  type RelatedItem,
-} from "@/features/saves/lib/related";
+import { loadRelated, peekRelated } from "@/features/saves/lib/related";
+import type { RelatedItem } from "@/features/saves/lib/related";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { displayTitleForSave } from "@/features/saves/lib/text";
 import { layoutAspectFor } from "@/features/saves/state/aspect";
@@ -52,35 +50,45 @@ const LOADING_DELAY_MS = 400;
 
 export function RelatedSaves({ saveId }: { saveId: string }) {
   const saves = useSaves();
-  const [result, setResult] = useState(() => ({
-    saveId,
-    items: peekRelated(saveId),
-  }));
-  const [failed, setFailed] = useState(false);
-  const [slow, setSlow] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const items = result.saveId === saveId ? result.items : peekRelated(saveId);
+  const request = `${attempt}:${saveId}`;
+  const [result, setResult] = useState<{
+    request: string;
+    items: Array<RelatedItem>;
+  } | null>(null);
+  const [failedRequest, setFailedRequest] = useState<string | null>(null);
+  const [slowRequest, setSlowRequest] = useState<string | null>(null);
+  const failed = failedRequest === request;
+  const slow = slowRequest === request;
+  const items =
+    result?.request === request
+      ? result.items
+      : attempt === 0
+        ? peekRelated(saveId)
+        : null;
   useRetainedSaves(items?.map((item) => item.id) ?? []);
 
   useEffect(() => {
     let active = true;
-    setFailed(false);
-    setSlow(false);
-    const cached = attempt === 0 ? peekRelated(saveId) : null;
-    if (cached) {
-      setResult({ saveId, items: cached });
+    const current = `${attempt}:${saveId}`;
+    if (attempt === 0 && peekRelated(saveId)) {
       return;
     }
-    setResult({ saveId, items: null });
     const timer = window.setTimeout(() => {
-      if (active) setSlow(true);
+      if (active) {
+        setSlowRequest(current);
+      }
     }, LOADING_DELAY_MS);
     void loadRelated(saveId, attempt > 0)
       .then((loaded) => {
-        if (active) setResult({ saveId, items: loaded });
+        if (active) {
+          setResult({ request: current, items: loaded });
+        }
       })
       .catch(() => {
-        if (active) setFailed(true);
+        if (active) {
+          setFailedRequest(current);
+        }
       });
     return () => {
       active = false;
@@ -91,7 +99,7 @@ export function RelatedSaves({ saveId }: { saveId: string }) {
   if (failed) {
     return (
       <div className={styles.message} role="alert">
-        <span>Couldn't load related Saves.</span>
+        <span>Couldn&apos;t load related Saves.</span>
         <Button
           size="xs"
           variant="ghost"
@@ -102,14 +110,16 @@ export function RelatedSaves({ saveId }: { saveId: string }) {
       </div>
     );
   }
-  if (items === null)
+  if (items === null) {
     return slow ? (
       <p className={styles.message} role="status">
         Finding related Saves
       </p>
     ) : null;
-  if (items.length === 0)
+  }
+  if (items.length === 0) {
     return <p className={styles.message}>No related Saves found.</p>;
+  }
 
   const byId = new Map(saves.map((save) => [save.id, save]));
   return (

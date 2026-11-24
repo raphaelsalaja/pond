@@ -32,7 +32,9 @@ export function InlineNameEditor({
   }, []);
 
   async function commit() {
-    if (settled.current) return;
+    if (settled.current) {
+      return;
+    }
     settled.current = true;
     const trimmed = input.current?.value.trim() ?? "";
     const next = trimmed || (empty === "keep" ? name : "");
@@ -41,7 +43,9 @@ export function InlineNameEditor({
       return;
     }
     try {
-      if (next !== name) await onSave(next);
+      if (next !== name) {
+        await onSave(next);
+      }
       onFinish();
     } catch {
       settled.current = false;
@@ -67,7 +71,9 @@ export function InlineNameEditor({
         onBlur={() => void commit()}
         onKeyDown={(event) => {
           event.stopPropagation();
-          if (event.nativeEvent.isComposing) return;
+          if (event.nativeEvent.isComposing) {
+            return;
+          }
           if (event.key === "Enter") {
             event.preventDefault();
             void commit();

@@ -9,15 +9,25 @@ import {
 } from "../pdf-render-window";
 import type { ViewerProps } from "../types";
 import { PdfPage } from "./page";
-import styles from "./styles.module.css";
 import { PdfThumbnail } from "./thumbnail";
-import { type PdfFitMode, PdfToolbar } from "./toolbar";
+import { PdfToolbar } from "./toolbar";
+import type { PdfFitMode } from "./toolbar";
+import styles from "./styles.module.css";
 
 export function PdfViewer(props: ViewerProps & { url: string }) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollFrameRef = useRef<number | null>(null);
-  const [document, setDocument] = useState<PDFDocumentProxy | null>(null);
+  const [scrollRoot, setScrollRoot] = useState<HTMLDivElement | null>(null);
+  const attachScroll = useCallback((node: HTMLDivElement | null) => {
+    scrollRef.current = node;
+    setScrollRoot(node);
+  }, []);
+  const [opened, setOpened] = useState<{
+    url: string;
+    document: PDFDocumentProxy;
+  } | null>(null);
+  const document = opened?.url === props.url ? opened.document : null;
   const [pagesToRender, setPagesToRender] = useState<Set<number>>(new Set());
   const [viewport, setViewport] = useState({ width: 800, height: 600 });
   const [pageAspectRatio, setPageAspectRatio] = useState(8.5 / 11);
@@ -27,21 +37,23 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
   const [thumbnailsOpen, setThumbnailsOpen] = useState(false);
   const [thumbnailRoot, setThumbnailRoot] = useState<HTMLElement | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [error, setError] = useState(false);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const error = failedUrl === props.url;
 
   useEffect(() => {
     let task: PDFDocumentLoadingTask | undefined;
     let active = true;
-    setDocument(null);
-    setError(false);
+    const url = props.url;
     void import("pdfjs-dist")
       .then(async (pdf) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         pdf.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-        task = pdf.getDocument({ url: props.url });
+        task = pdf.getDocument({ url });
         const next = await task.promise;
         if (active) {
-          setDocument(next);
+          setOpened({ url, document: next });
           setPagesToRender(addPdfRenderWindow(new Set(), 1, next.numPages));
           const firstPage = await next.getPage(1);
           if (active) {
@@ -51,7 +63,9 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
         }
       })
       .catch(() => {
-        if (active) setError(true);
+        if (active) {
+          setFailedUrl(url);
+        }
       });
     return () => {
       active = false;
@@ -61,7 +75,9 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
 
   const schedulePage = useCallback(
     (pageNumber: number) => {
-      if (!document) return;
+      if (!document) {
+        return;
+      }
       setPagesToRender((current) =>
         addPdfRenderWindow(current, pageNumber, document.numPages),
       );
@@ -71,7 +87,9 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
 
   useEffect(() => {
     const root = bodyRef.current;
-    if (!root) return;
+    if (!root) {
+      return;
+    }
     const update = () =>
       setViewport({ width: root.clientWidth, height: root.clientHeight });
     update();
@@ -82,8 +100,9 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
 
   useEffect(
     () => () => {
-      if (scrollFrameRef.current !== null)
+      if (scrollFrameRef.current !== null) {
         cancelAnimationFrame(scrollFrameRef.current);
+      }
     },
     [],
   );
@@ -100,7 +119,9 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
 
   const goToPage = useCallback(
     (pageNumber: number) => {
-      if (!document) return;
+      if (!document) {
+        return;
+      }
       const page = Math.min(document.numPages, Math.max(1, pageNumber));
       setCurrentPage(page);
       setPagesToRender((current) =>
@@ -121,11 +142,15 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
   );
 
   const syncCurrentPage = useCallback(() => {
-    if (scrollFrameRef.current !== null) return;
+    if (scrollFrameRef.current !== null) {
+      return;
+    }
     scrollFrameRef.current = requestAnimationFrame(() => {
       scrollFrameRef.current = null;
       const root = scrollRef.current;
-      if (!root) return;
+      if (!root) {
+        return;
+      }
       const rootTop = root.getBoundingClientRect().top;
       let nearestPage = currentPage;
       let nearestDistance = Number.POSITIVE_INFINITY;
@@ -141,7 +166,9 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
           nearestPage = pageNumber;
         }
       }
-      if (Number.isFinite(nearestPage)) setCurrentPage(nearestPage);
+      if (Number.isFinite(nearestPage)) {
+        setCurrentPage(nearestPage);
+      }
     });
   }, [currentPage]);
 
@@ -171,7 +198,7 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
           </nav>
         ) : null}
         <div
-          ref={scrollRef}
+          ref={attachScroll}
           className={styles.scroll}
           data-scroll-fade="vertical"
           onScroll={syncCurrentPage}
@@ -196,7 +223,7 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
                   width={width}
                   rotation={rotation}
                   render={pagesToRender.has(pageNumber)}
-                  scrollRoot={scrollRef.current}
+                  scrollRoot={scrollRoot}
                   onNear={schedulePage}
                 />
               ))

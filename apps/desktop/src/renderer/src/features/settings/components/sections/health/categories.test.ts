@@ -10,11 +10,13 @@ import type {
 } from "@/features/downloads/health";
 import {
   buildHealthCategories,
-  type HealthCategory,
-  type HealthCategoryId,
-  type HealthInput,
   healthTotals,
   STATUS_LABELS,
+} from "./categories";
+import type {
+  HealthCategory,
+  HealthCategoryId,
+  HealthInput,
 } from "./categories";
 
 const MEDIA: MediaWarmSnapshot = {
@@ -138,11 +140,13 @@ function input(overrides: Partial<HealthInput> = {}): HealthInput {
 }
 
 function category(
-  categories: readonly HealthCategory[],
+  categories: ReadonlyArray<HealthCategory>,
   id: HealthCategoryId,
 ): HealthCategory {
   const found = categories.find((item) => item.id === id);
-  if (!found) throw new Error(`Missing ${id}`);
+  if (!found) {
+    throw new Error(`Missing ${id}`);
+  }
   return found;
 }
 

@@ -10,9 +10,15 @@ const POLL_MS = 1500;
 const POLL_LIMIT_MS = 120_000;
 
 function statusTag(state: ApiSaveState | null, timedOut: boolean) {
-  if (state?.status === "failed") return { text: "Failed", color: Color.Red };
-  if (state && state.pendingTasks === 0) return { text: "Done", color: Color.Green };
-  if (timedOut) return { text: "Still capturing in Pond", color: Color.Orange };
+  if (state?.status === "failed") {
+    return { text: "Failed", color: Color.Red };
+  }
+  if (state && state.pendingTasks === 0) {
+    return { text: "Done", color: Color.Green };
+  }
+  if (timedOut) {
+    return { text: "Still capturing in Pond", color: Color.Orange };
+  }
   return { text: "Capturing", color: Color.Orange };
 }
 
@@ -28,12 +34,22 @@ export function CaptureProgress({ result, url, title }: { result: EnqueueResult;
       const [next] = await pond()
         .status([result.id])
         .catch(() => []);
-      if (!active) return;
-      if (next) setState(next);
+      if (!active) {
+        return;
+      }
+      if (next) {
+        setState(next);
+      }
       const settled = next && (next.pendingTasks === 0 || next.status === "failed");
-      if (settled) return;
-      if (Date.now() - started > POLL_LIMIT_MS) return setTimedOut(true);
-      timer = setTimeout(poll, POLL_MS);
+      if (settled) {
+        return;
+      }
+      if (Date.now() - started > POLL_LIMIT_MS) {
+        return setTimedOut(true);
+      }
+      timer = setTimeout(() => {
+        void poll();
+      }, POLL_MS);
     }
     void poll();
     return () => {

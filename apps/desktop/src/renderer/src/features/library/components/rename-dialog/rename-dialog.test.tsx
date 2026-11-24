@@ -1,5 +1,7 @@
+import { isHTMLTag } from "@pond/ui/dom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   closeRenameDialog,
@@ -10,8 +12,10 @@ import { RenameDialogHost } from "./host";
 let root: Root;
 let host: HTMLDivElement;
 const query = vi.fn(async (name: string) => {
-  if (name === "saves.batchRename") return { ok: true, renamed: 2 };
-  if (name === "saves.getMany")
+  if (name === "saves.batchRename") {
+    return { ok: true, renamed: 2 };
+  }
+  if (name === "saves.getMany") {
     return ["IMG_2041", "IMG_2042"].map((title) => ({
       id: `save-${title}`,
       source: "local",
@@ -20,6 +24,7 @@ const query = vi.fn(async (name: string) => {
       title,
       status: "complete",
     }));
+  }
   return [];
 });
 
@@ -40,7 +45,7 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  await act(() => {
+  await act(async () => {
     closeRenameDialog();
     root.unmount();
   });
@@ -67,7 +72,9 @@ function button(label: string) {
   const match = [...document.querySelectorAll("button")].find(
     (node) => node.textContent === label || node.ariaLabel === label,
   );
-  if (!match) throw new Error(`Missing ${label} button`);
+  if (!match) {
+    throw new Error(`Missing ${label} button`);
+  }
   return match;
 }
 
@@ -84,7 +91,9 @@ async function fill(label: string, value: string) {
   const input = labelNode?.htmlFor
     ? document.getElementById(labelNode.htmlFor)
     : null;
-  if (!(input instanceof HTMLInputElement)) throw new Error(`Missing ${label}`);
+  if (!isHTMLTag(input, "input")) {
+    throw new Error(`Missing ${label}`);
+  }
   await act(async () => {
     Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,

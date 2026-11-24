@@ -8,7 +8,9 @@ const FilePath = z.object({ path: z.string() });
 export function fileExtension(path: string): string | null {
   const name = path.split(/[\\/]/).at(-1)?.split(/[?#]/, 1)[0] ?? "";
   const dot = name.lastIndexOf(".");
-  if (dot <= 0 || dot === name.length - 1) return null;
+  if (dot <= 0 || dot === name.length - 1) {
+    return null;
+  }
   return name.slice(dot + 1).toLowerCase();
 }
 

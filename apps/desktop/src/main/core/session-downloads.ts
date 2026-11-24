@@ -1,12 +1,8 @@
 import { createHash } from "node:crypto";
-import {
-  CANCEL_REASON,
-  type ConnectedAccount,
-  queueGenerations,
-  saves,
-  tasks,
-} from "@pond/schema/db";
-import { type ExtensionCookie, ROTATING_SESSIONS } from "@pond/schema/session";
+import { CANCEL_REASON, queueGenerations, saves, tasks } from "@pond/schema/db";
+import type { ConnectedAccount } from "@pond/schema/db";
+import { ROTATING_SESSIONS } from "@pond/schema/session";
+import type { ExtensionCookie } from "@pond/schema/session";
 import { and, eq, inArray, isNull, like, notExists, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { getDb } from "../db";
@@ -25,17 +21,22 @@ const seenCredentials = new Map<string, string>();
 
 function credentialDigest(
   account: ConnectedAccount,
-  cookies: readonly ExtensionCookie[],
+  cookies: ReadonlyArray<ExtensionCookie>,
 ): string {
   const rotating = ROTATING_SESSIONS.get(account.source);
   const values = cookies
-    .filter(
-      (cookie) =>
-        isAuthCookieName(account.source, cookie.name, cookie.value) ||
-        rotating?.rotates.includes(cookie.name),
-    )
-    .map((cookie) =>
-      JSON.stringify([cookie.name, cookie.domain, cookie.path, cookie.value]),
+    .flatMap((cookie) =>
+      isAuthCookieName(account.source, cookie.name, cookie.value) ||
+      rotating?.rotates.includes(cookie.name)
+        ? [
+            JSON.stringify([
+              cookie.name,
+              cookie.domain,
+              cookie.path,
+              cookie.value,
+            ]),
+          ]
+        : [],
     )
     .sort();
   return createHash("sha256").update(JSON.stringify(values)).digest("hex");
@@ -43,13 +44,15 @@ function credentialDigest(
 
 export async function resumeSessionDownloads(
   account: ConnectedAccount,
-  cookies?: readonly ExtensionCookie[],
+  cookies?: ReadonlyArray<ExtensionCookie>,
 ): Promise<number> {
   const credentialKey = `${currentLibraryId()}:${account.id}`;
   const digest = cookies ? credentialDigest(account, cookies) : null;
   /** Replaying the credentials that hit the sign-in wall would only hit it again. */
   if (digest === null || seenCredentials.get(credentialKey) !== digest) {
-    if (digest !== null) seenCredentials.set(credentialKey, digest);
+    if (digest !== null) {
+      seenCredentials.set(credentialKey, digest);
+    }
     await liftSourceAuthStop(account.source);
   }
   const accounts = await listAccountsForSource(account.source);
@@ -112,7 +115,9 @@ export async function resumeSessionDownloads(
       ),
     )
     .all();
-  if (rows.length === 0) return 0;
+  if (rows.length === 0) {
+    return 0;
+  }
   let credentials: { digest: string; saveIds: Set<string> } | undefined;
   if (digest !== null) {
     const previous = resumedCredentials.get(credentialKey);
@@ -122,19 +127,27 @@ export async function resumeSessionDownloads(
   const ids = rows
     .map((row) => row.id)
     .filter((id) => !credentials?.saveIds.has(id));
-  if (ids.length === 0) return 0;
+  if (ids.length === 0) {
+    return 0;
+  }
   if (credentials) {
-    for (const id of ids) credentials.saveIds.add(id);
+    for (const id of ids) {
+      credentials.saveIds.add(id);
+    }
     resumedCredentials.set(credentialKey, credentials);
   }
   try {
     const queued = await retryFailedSaves(ids, { liftAuthStop: false });
     if (queued === 0) {
-      for (const id of ids) credentials?.saveIds.delete(id);
+      for (const id of ids) {
+        credentials?.saveIds.delete(id);
+      }
     }
     return queued;
   } catch (error) {
-    for (const id of ids) credentials?.saveIds.delete(id);
+    for (const id of ids) {
+      credentials?.saveIds.delete(id);
+    }
     throw error;
   }
 }

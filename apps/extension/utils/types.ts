@@ -1,7 +1,9 @@
 import type { ExtensionSettings } from "@pond/schema/browser-extension";
 import type { SessionImportResponse } from "@pond/schema/session";
-import { SOURCES, type Source } from "@pond/schema/source-ids";
-import { at, isRecord, type JsonValue } from "./json";
+import { SOURCES } from "@pond/schema/source-ids";
+import type { Source } from "@pond/schema/source-ids";
+import { at, isRecord } from "./json";
+import type { JsonValue } from "./json";
 
 export const POND_EVENT = "pond:capture";
 
@@ -93,7 +95,7 @@ export const DEFAULT_SETTINGS: PondSettings = {
   theme: "library",
 };
 
-const THEMES: readonly ThemePreference[] = [
+const THEMES: ReadonlyArray<ThemePreference> = [
   "library",
   "system",
   "light",
@@ -106,9 +108,13 @@ function readTheme(value: JsonValue | undefined): ThemePreference {
 
 function readFlags(value: JsonValue | undefined, fallback: SourceFlags) {
   const flags = { ...fallback };
-  if (!isRecord(value)) return flags;
+  if (!isRecord(value)) {
+    return flags;
+  }
   for (const source of SOURCES) {
-    if (source in value) flags[source] = Boolean(value[source]);
+    if (source in value) {
+      flags[source] = Boolean(value[source]);
+    }
   }
   return flags;
 }
@@ -120,7 +126,9 @@ function flagsFromPond(
   const next = { ...fallback };
   for (const source of SOURCES) {
     const flag = flags[source];
-    if (flag !== undefined) next[source] = flag;
+    if (flag !== undefined) {
+      next[source] = flag;
+    }
   }
   return next;
 }

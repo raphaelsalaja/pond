@@ -1,4 +1,5 @@
-import { type SVGProps, useId } from "react";
+import { useId } from "react";
+import type { SVGProps } from "react";
 
 export function IconBrandInstagram(props: SVGProps<SVGSVGElement>) {
   const gradientId = `ig${useId().replaceAll(":", "")}`;

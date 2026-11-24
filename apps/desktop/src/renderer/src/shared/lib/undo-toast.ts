@@ -33,7 +33,9 @@ let latest: string | null = null;
 let live: LiveUndo | null = null;
 
 function replaceLatest(): void {
-  if (latest) closeNotification(latest);
+  if (latest) {
+    closeNotification(latest);
+  }
   latest = null;
   live = null;
 }
@@ -61,7 +63,9 @@ function present(
     title: options.title,
     action: { label: "Undo", onClick: () => void run("undo") },
     onClose: () => {
-      if (latest !== id) return;
+      if (latest !== id) {
+        return;
+      }
       latest = null;
       live = null;
     },
@@ -90,7 +94,9 @@ function present(
 
   let busy = false;
   async function run(direction: Direction) {
-    if (busy) return;
+    if (busy) {
+      return;
+    }
     busy = true;
     const current = direction === "undo" ? options.title : options.undoneTitle;
     show(current, direction, { pending: true });
@@ -106,11 +112,13 @@ function present(
     } finally {
       busy = false;
     }
-    if (outcome === "stale")
+    if (outcome === "stale") {
       show(`Can't ${direction} ${options.subject}`, null, {
         description: "Other changes came after it.",
       });
-    else await settle(direction, outcome === "done");
+    } else {
+      await settle(direction, outcome === "done");
+    }
   }
 
   async function settle(direction: Direction, done: boolean) {
@@ -124,7 +132,9 @@ function present(
       direction === "undo" ? options.undoneTitle : options.title,
       direction === "undo" ? "redo" : "undo",
     );
-    if (direction === "undo") options.onUndo?.();
+    if (direction === "undo") {
+      options.onUndo?.();
+    }
     await options.onChange?.();
   }
 

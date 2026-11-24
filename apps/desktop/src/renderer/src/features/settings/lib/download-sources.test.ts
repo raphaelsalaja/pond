@@ -10,8 +10,8 @@ import {
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_VIDEO_DOWNLOAD,
-  type DownloadSettings,
 } from "./section-types";
+import type { DownloadSettings } from "./section-types";
 
 const settings: DownloadSettings = {
   videoDownload: { ...DEFAULT_VIDEO_DOWNLOAD, maxHeight: 720 },

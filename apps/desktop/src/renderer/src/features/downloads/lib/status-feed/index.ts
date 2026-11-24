@@ -1,9 +1,5 @@
 export { statusFeed } from "./activity";
-export type {
-  DownloadRow,
-  HistoryCursor,
-  StatusFilter,
-} from "./downloads";
+export type { DownloadRow, HistoryCursor, StatusFilter } from "./downloads";
 export {
   defaultDownloadFilters,
   downloadFiltersActive,

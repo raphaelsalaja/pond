@@ -20,7 +20,7 @@ export function TranscriptPlayer() {
         <span className={styles.wave}>
           {WAVE.map((height, index) => (
             <span
-              // biome-ignore lint/suspicious/noArrayIndexKey: static decorative bars
+              // oxlint-disable-next-line react/no-array-index-key -- static decorative bars
               key={index}
               style={{ height }}
               data-played={index < 7 || undefined}

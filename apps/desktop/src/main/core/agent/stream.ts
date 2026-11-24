@@ -6,17 +6,16 @@ import {
 } from "ai";
 import { z } from "zod";
 import {
-  type AgentStreamRequest,
-  type AssistantEvent,
-  type AssistantSendResult,
   assistantMetadata,
   assistantQuestion,
 } from "../../../shared/assistant";
-import {
-  type ChatDependencies,
-  defaultChatDependencies,
-  sendMessage,
-} from "./chat";
+import type {
+  AgentStreamRequest,
+  AssistantEvent,
+  AssistantSendResult,
+} from "../../../shared/assistant";
+import { defaultChatDependencies, sendMessage } from "./chat";
+import type { ChatDependencies } from "./chat";
 import { listMessages } from "./persist";
 
 const userText = z.object({
@@ -27,7 +26,9 @@ const userText = z.object({
 export function latestUserText(messages: AgentStreamRequest["messages"]) {
   for (let index = messages.length - 1; index >= 0; index--) {
     const message = messages[index];
-    if (message?.role !== "user") continue;
+    if (message?.role !== "user") {
+      continue;
+    }
     const text = message.parts
       .flatMap((part) => {
         const parsed = userText.safeParse(part);
@@ -35,7 +36,9 @@ export function latestUserText(messages: AgentStreamRequest["messages"]) {
       })
       .join("")
       .trim();
-    if (text) return text;
+    if (text) {
+      return text;
+    }
   }
   return "";
 }
@@ -63,11 +66,14 @@ export async function streamAgentTurn(
   const validated = await safeValidateUIMessages({
     messages: input.messages,
   });
-  if (!validated.success)
+  if (!validated.success) {
     throw new Error("This conversation could not be sent. Try again.");
+  }
   await convertToModelMessages(validated.data);
   const content = latestUserText(input.messages);
-  if (!content) throw new Error("Write a message before sending.");
+  if (!content) {
+    throw new Error("Write a message before sending.");
+  }
   const stream = createUIMessageStream({
     originalMessages: validated.data,
     execute: async ({ writer }) => {
@@ -105,7 +111,9 @@ export async function streamAgentTurn(
         deps.chat,
         onEvent,
       );
-      if (textOpen) writer.write({ type: "text-end", id: "text-1" });
+      if (textOpen) {
+        writer.write({ type: "text-end", id: "text-1" });
+      }
       const rows =
         result.accepted === false ? [] : await deps.listMessages(result.chatId);
       const last = rows.at(-1);
@@ -125,8 +133,9 @@ export async function streamAgentTurn(
             suggestions: saved.data.suggestions,
           },
         });
-        if (saved.data.steps?.length)
+        if (saved.data.steps?.length) {
           writer.write({ type: "data-pond-steps", data: saved.data.steps });
+        }
       }
       if (result.error) {
         writer.write({ type: "error", errorText: result.error });
@@ -138,16 +147,18 @@ export async function streamAgentTurn(
           changes: z.array(z.unknown()).optional(),
         })
         .safeParse(last?.metadata);
-      if (metadata.success && metadata.data.question)
+      if (metadata.success && metadata.data.question) {
         writer.write({
           type: "data-pond-question",
           data: metadata.data.question,
         });
-      if (metadata.success && metadata.data.changes?.length)
+      }
+      if (metadata.success && metadata.data.changes?.length) {
         writer.write({
           type: "data-pond-review",
           data: { changes: metadata.data.changes },
         });
+      }
       writer.write({
         type: "finish",
         finishReason: result.stopped ? "other" : "stop",

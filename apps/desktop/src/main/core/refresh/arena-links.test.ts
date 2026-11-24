@@ -3,27 +3,31 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ArenaLinkConversionProgress } from "../../../shared/arena-link-contracts";
 import { initializePondSchema } from "../../db";
 import {
-  type ArenaLinkJobDeps,
   convertArenaLinks,
   convertedArenaLinks,
   countIngesting,
   listUnconvertedArenaLinks,
   restoreLinkedPageHarvests,
 } from "./arena-links";
+import type { ArenaLinkJobDeps } from "./arena-links";
 
 function nativeAvailable() {
   try {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
 
-const opened: Database.Database[] = [];
+const opened: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of opened.splice(0)) db.close();
+  for (const db of opened.splice(0)) {
+    db.close();
+  }
 });
 
 function openDb() {
@@ -63,7 +67,7 @@ function insertSave(db: ReturnType<typeof openDb>, row: SaveRow): void {
       row.status ?? "complete",
       row.deletedAt ?? null,
       JSON.stringify({ capture, extractorId: "arena", extractedAt: "" }),
-      Number(row.id.replace(/\D/g, "") || 0),
+      Number(row.id.replaceAll(/\D/g, "") || 0),
     );
 }
 
@@ -175,11 +179,14 @@ describe.skipIf(!nativeAvailable())("Are.na Link selection", () => {
   });
 });
 
-function fakeLibrary(ids: string[], options: { failing?: string[] } = {}) {
+function fakeLibrary(
+  ids: Array<string>,
+  options: { failing?: Array<string> } = {},
+) {
   const converted = new Set<string>();
   const ingesting = new Set<string>();
-  const queued: string[] = [];
-  const settled: string[][] = [];
+  const queued: Array<string> = [];
+  const settled: Array<Array<string>> = [];
   let interruptAfter = Number.POSITIVE_INFINITY;
   const deps: ArenaLinkJobDeps = {
     batchSize: 2,
@@ -187,12 +194,16 @@ function fakeLibrary(ids: string[], options: { failing?: string[] } = {}) {
       ids.filter((id) => !converted.has(id) && !ingesting.has(id)),
     queue: async (id) => {
       queued.push(id);
-      if (options.failing?.includes(id)) return false;
+      if (options.failing?.includes(id)) {
+        return false;
+      }
       ingesting.add(id);
       return true;
     },
     settle: async (batch) => {
-      if (settled.length >= interruptAfter) throw new Error("quit");
+      if (settled.length >= interruptAfter) {
+        throw new Error("quit");
+      }
       settled.push([...batch]);
       for (const id of batch) {
         ingesting.delete(id);
@@ -212,7 +223,9 @@ function fakeLibrary(ids: string[], options: { failing?: string[] } = {}) {
     },
     /** The durable queue finishes what was in flight when the app quit. */
     relaunch() {
-      for (const id of ingesting) converted.add(id);
+      for (const id of ingesting) {
+        converted.add(id);
+      }
       ingesting.clear();
       interruptAfter = Number.POSITIVE_INFINITY;
     },
@@ -222,7 +235,7 @@ function fakeLibrary(ids: string[], options: { failing?: string[] } = {}) {
 describe("Are.na Link conversion", () => {
   it("queues bounded batches and waits for each to settle before the next", async () => {
     const library = fakeLibrary(["a", "b", "c", "d", "e"]);
-    const progress: ArenaLinkConversionProgress[] = [];
+    const progress: Array<ArenaLinkConversionProgress> = [];
 
     const result = await convertArenaLinks(
       (update) => progress.push(update),

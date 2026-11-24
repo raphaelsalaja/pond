@@ -1,9 +1,7 @@
 import { join } from "node:path";
 import { z } from "zod";
-import {
-  DUPLICATE_RELATIONS,
-  type DuplicateDismissal,
-} from "../../../shared/duplicate-contracts";
+import { DUPLICATE_RELATIONS } from "../../../shared/duplicate-contracts";
+import type { DuplicateDismissal } from "../../../shared/duplicate-contracts";
 import { readBundleJson, writeBundleJson } from "../../lib/library-config";
 import { resolvePaths } from "../../paths";
 import { orderIds, pairKey } from "./types";
@@ -22,9 +20,13 @@ export function dismissalsFile(
   return join(libraryRoot, "duplicates", "dismissed.json");
 }
 
-export function readDismissals(file = dismissalsFile()): DuplicateDismissal[] {
-  const stored = readBundleJson<unknown>(file);
-  if (!stored) return [];
+export function readDismissals(
+  file = dismissalsFile(),
+): Array<DuplicateDismissal> {
+  const stored = readBundleJson(file);
+  if (!stored) {
+    return [];
+  }
   return StoredSchema.parse(stored.data).flatMap((item) => {
     const parsed = DismissalSchema.safeParse(item);
     return parsed.success ? [parsed.data] : [];
@@ -32,7 +34,7 @@ export function readDismissals(file = dismissalsFile()): DuplicateDismissal[] {
 }
 
 export function addDismissals(
-  pairs: readonly DuplicateDismissal[],
+  pairs: ReadonlyArray<DuplicateDismissal>,
   file = dismissalsFile(),
 ): number {
   const byPair = new Map(
@@ -43,14 +45,20 @@ export function addDismissals(
   );
   let added = 0;
   for (const pair of pairs) {
-    if (pair.ids[0] === pair.ids[1]) continue;
+    if (pair.ids[0] === pair.ids[1]) {
+      continue;
+    }
     const ids = orderIds(pair.ids[0], pair.ids[1]);
     const key = pairKey(ids[0], ids[1]);
     const current = byPair.get(key);
-    if (current?.relation === pair.relation) continue;
+    if (current?.relation === pair.relation) {
+      continue;
+    }
     byPair.set(key, { ids, relation: pair.relation });
     added += 1;
   }
-  if (added > 0) writeBundleJson(file, [...byPair.values()]);
+  if (added > 0) {
+    writeBundleJson(file, [...byPair.values()]);
+  }
   return added;
 }

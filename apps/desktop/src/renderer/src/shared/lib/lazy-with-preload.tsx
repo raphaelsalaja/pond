@@ -1,4 +1,5 @@
-import { type ComponentType, lazy, useState } from "react";
+import { lazy, useState } from "react";
+import type { ComponentType } from "react";
 
 type Preload = () => Promise<void>;
 
@@ -20,7 +21,6 @@ export function lazyWithPreload<P extends object>(
     loadOnce().then((component) => ({ default: component })),
   );
 
-  // biome-ignore lint/correctness/noComponentHookFactories: lazyWithPreload runs once per module, like React.lazy.
   function Preloadable(props: P) {
     const [Loaded] = useState(() => loaded);
     return Loaded ? <Loaded {...props} /> : <Lazy {...props} />;
@@ -30,9 +30,11 @@ export function lazyWithPreload<P extends object>(
 }
 
 /** Warms chunks after the current frame settles, without competing with input. */
-export function preloadWhenIdle(...preloads: Preload[]) {
+export function preloadWhenIdle(...preloads: Array<Preload>) {
   const run = () => {
-    for (const preload of preloads) void preload().catch(() => {});
+    for (const preload of preloads) {
+      void preload().catch(() => {});
+    }
   };
   if (globalThis.requestIdleCallback) {
     const id = globalThis.requestIdleCallback(run, { timeout: 2000 });

@@ -24,10 +24,14 @@ export function PdfThumbnail({
 
   useEffect(() => {
     const button = buttonRef.current;
-    if (visible || !button || !root) return;
+    if (visible || !button || !root) {
+      return;
+    }
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) setVisible(true);
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisible(true);
+        }
       },
       { root, rootMargin: "100% 0px" },
     );
@@ -36,13 +40,17 @@ export function PdfThumbnail({
   }, [root, visible]);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      return;
+    }
     let activeRender = true;
     let renderTask: ReturnType<
       Awaited<ReturnType<typeof document.getPage>>["render"]
     > | null = null;
     void document.getPage(pageNumber).then((page) => {
-      if (!activeRender || !canvasRef.current) return;
+      if (!activeRender || !canvasRef.current) {
+        return;
+      }
       const base = page.getViewport({ scale: 1, rotation });
       const pixelRatio = Math.min(globalThis.devicePixelRatio || 1, 2);
       const viewport = page.getViewport({
@@ -51,7 +59,9 @@ export function PdfThumbnail({
       });
       const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
-      if (!context) return;
+      if (!context) {
+        return;
+      }
       canvas.width = Math.ceil(viewport.width);
       canvas.height = Math.ceil(viewport.height);
       canvas.style.width = "96px";

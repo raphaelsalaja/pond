@@ -7,12 +7,13 @@ import {
 } from "@pond/icons";
 import {
   isLockedSidebarDestination,
-  type Prefs,
   SIDEBAR_DESTINATIONS,
   SIDEBAR_SECTIONS,
 } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
 import type { MenuItemSpec } from "@pond/ui";
-import { type ReactElement, useState } from "react";
+import { useState } from "react";
+import type { ReactElement } from "react";
 import {
   newFolder,
   newSmartFolder,
@@ -36,13 +37,13 @@ export function sidebarMenuItems({
   sidebar: SidebarPrefs;
   patch: (next: Partial<SidebarPrefs>) => void;
   customize: () => void;
-}): MenuItemSpec[] {
+}): Array<MenuItemSpec> {
   const hidden = SIDEBAR_DESTINATIONS.filter(
     (destination) =>
       !isLockedSidebarDestination(destination) &&
       !sidebar.destinations[destination],
   );
-  const show = (destinations: readonly (typeof hidden)[number][]) =>
+  const show = (destinations: ReadonlyArray<(typeof hidden)[number]>) =>
     patch({
       destinations: {
         ...sidebar.destinations,
@@ -76,12 +77,10 @@ export function sidebarMenuItems({
       icon: <IconEye />,
       disabled: hidden.length === 0,
       items: [
-        ...hidden.map(
-          (destination): MenuItemSpec => ({
-            label: SIDEBAR_DESTINATION_LABELS[destination],
-            onClick: () => show([destination]),
-          }),
-        ),
+        ...hidden.map((destination): MenuItemSpec => ({
+          label: SIDEBAR_DESTINATION_LABELS[destination],
+          onClick: () => show([destination]),
+        })),
         ...(hidden.length > 1
           ? [
               { type: "separator" as const },

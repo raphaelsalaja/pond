@@ -22,18 +22,18 @@ import {
 } from "@pond/ui";
 import type { CombineImagesOptions } from "@shared/combine-images-contracts";
 import type { CombineLayout } from "@shared/combine-images-layout";
-import { type ReactNode, useId, useState } from "react";
+import { useId, useState } from "react";
+import type { ReactNode } from "react";
 import { clamp } from "@/shared/lib/math";
 import {
-  type Highlight,
   LIMITS,
   QUALITIES,
-  type SizeKey,
   sizeKeys,
   supportsTransparency,
   withDirection,
   withSize,
 } from "../options";
+import type { Highlight, SizeKey } from "../options";
 import styles from "./styles.module.css";
 
 const OUTPUTS = [
@@ -138,7 +138,9 @@ export function CombineSettings({
             value={[options.output]}
             onValueChange={(value) => {
               const next = OUTPUTS.find((item) => item.value === value[0]);
-              if (next) update("output", next.value);
+              if (next) {
+                update("output", next.value);
+              }
             }}
           >
             {OUTPUTS.map((item) => (
@@ -302,7 +304,7 @@ function IconToggles<const Value extends string>({
   onChange,
 }: {
   label: string;
-  items: readonly { value: Value; label: string; icon: ReactNode }[];
+  items: ReadonlyArray<{ value: Value; label: string; icon: ReactNode }>;
   value: Value;
   onChange: (value: Value) => void;
 }) {
@@ -313,7 +315,9 @@ function IconToggles<const Value extends string>({
       value={[value]}
       onValueChange={(next) => {
         const match = items.find((item) => item.value === next[0]);
-        if (match) onChange(match.value);
+        if (match) {
+          onChange(match.value);
+        }
       }}
     >
       {items.map((item) => (
@@ -362,8 +366,9 @@ function PixelField({
         onValueChange={(next) => {
           setDraft(next);
           const parsed = Number(next);
-          if (next.trim() !== "" && Number.isFinite(parsed))
+          if (next.trim() !== "" && Number.isFinite(parsed)) {
             onCommit(clamp(Math.round(parsed), ...limits));
+          }
         }}
       />
       <Input.Suffix>px</Input.Suffix>
@@ -378,7 +383,7 @@ function ValueSelect<const Value extends string | number>({
   onChange,
 }: {
   label: string;
-  items: readonly { value: Value; label: string }[];
+  items: ReadonlyArray<{ value: Value; label: string }>;
   value: Value;
   onChange: (value: Value) => void;
 }) {
@@ -388,7 +393,9 @@ function ValueSelect<const Value extends string | number>({
       value={value}
       onValueChange={(next) => {
         const match = items.find((item) => item.value === next);
-        if (match) onChange(match.value);
+        if (match) {
+          onChange(match.value);
+        }
       }}
     >
       <Select.Trigger aria-label={label} size="sm" width="full">

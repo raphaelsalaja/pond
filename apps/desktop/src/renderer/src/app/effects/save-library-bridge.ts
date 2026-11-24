@@ -22,12 +22,12 @@ import {
 } from "@/features/library/state/view-store";
 import { registerSaveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { closeSave } from "@/features/saves/lib/save-nav";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
 
 registerSaveLibraryBridge({
   getNav: getLibraryNav,
-  showNav: (nav) => getAppRouter()?.history.push(pathForLibraryNav(nav)),
+  showNav: (nav) => getAppHistory()?.push(pathForLibraryNav(nav)),
   resetFilters,
   openTaggedItems: (name) => selectLibraryNav({ kind: "tag", name }),
   showPost: (key) => selectLibraryNav({ kind: "post", key }),
@@ -52,7 +52,9 @@ registerSaveLibraryBridge({
   showLibrary: (nav, predicate) => {
     resetFilters();
     selectLibraryNav(nav);
-    if (predicate) setQuery({ combinator: "and", rules: [predicate] });
+    if (predicate) {
+      setQuery({ combinator: "and", rules: [predicate] });
+    }
   },
   setVisualProbe: ({ id, label }) =>
     setVisualProbe({ kind: "saveId", id, label }),

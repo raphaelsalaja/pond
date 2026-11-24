@@ -103,7 +103,9 @@ function specialist(kind: SpecialistViewerKind): ViewerCapability {
 }
 
 export function viewerCapabilityFor(file: SaveFile): ViewerCapability {
-  if (file.kind === ARTICLE_KIND) return specialist("article");
+  if (file.kind === ARTICLE_KIND) {
+    return specialist("article");
+  }
   const format = classifyLibraryFile(file.path, file.mimeType);
 
   switch (format.previewKind) {
@@ -121,17 +123,28 @@ export function viewerCapabilityFor(file: SaveFile): ViewerCapability {
       return specialist("font");
     case "text":
       return specialist("text");
+    case "generic":
+      break;
   }
 
-  if (format.extension === "epub") return specialist("epub");
-  if (format.extension === "livp") return specialist("live-photo");
-  if (INTERACTIVE_MODELS.has(format.extension)) return specialist("model");
+  if (format.extension === "epub") {
+    return specialist("epub");
+  }
+  if (format.extension === "livp") {
+    return specialist("live-photo");
+  }
+  if (INTERACTIVE_MODELS.has(format.extension)) {
+    return specialist("model");
+  }
   if (["zip", "rar", "7z", "lottie"].includes(format.extension)) {
     return specialist("archive");
   }
-  if (["html", "mhtml", "mht"].includes(format.extension))
+  if (["html", "mhtml", "mht"].includes(format.extension)) {
     return specialist("safe-web");
-  if (format.mediaType === "video") return temporal();
+  }
+  if (format.mediaType === "video") {
+    return temporal();
+  }
   if (
     canRequestNativeThumbnail(file.path) &&
     format.mimeType !== "application/octet-stream"

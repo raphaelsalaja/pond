@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
-import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
-import { expectAccessible } from "../../test/axe";
+import { page, userEvent } from "vitest/browser";
 import { DatePicker } from ".";
+import { expectAccessible } from "../../test/axe";
 
 function Harness({ initial }: { initial: string }) {
   const [value, setValue] = useState(initial);

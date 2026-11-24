@@ -8,6 +8,8 @@ export default defineContentScript({
   globalName: false,
   main() {
     const source = hookSourceForUrl(location.href);
-    if (source) INJECTORS[source]?.();
+    if (source) {
+      INJECTORS[source]?.();
+    }
   },
 });

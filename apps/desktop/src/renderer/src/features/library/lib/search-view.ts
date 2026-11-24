@@ -49,7 +49,7 @@ export function canSearchAllSaves(view: SearchView): boolean {
 
 export function searchViewName(
   view: SearchView,
-  folders: readonly Pick<Folder, "id" | "name">[],
+  folders: ReadonlyArray<Pick<Folder, "id" | "name">>,
 ): string {
   switch (view.kind) {
     case "library":

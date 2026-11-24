@@ -1,10 +1,11 @@
 import { IconFolderBan, IconTagSlash } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { FIELD_META } from "@pond/schema/filters/meta";
+import { isPredicateList } from "@pond/schema/filters/types";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
 import { useState } from "react";
-import { fieldIcon } from "@/features/search/query";
+import { FIELD_ICONS } from "@/features/search/query";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { choiceIsSearchable } from "../layout";
 import type { FilterOption } from "../options";
@@ -25,10 +26,10 @@ const NOUNS = new Map<FieldId, readonly [string, string]>([
   ["account", ["account", "accounts"]],
 ]);
 
-const EMPTY_ICONS = new Map<FieldId, IconComponent>([
-  ["tags", IconTagSlash],
-  ["folder", IconFolderBan],
-]);
+const EMPTY_ICONS: Partial<Record<FieldId, IconComponent>> = {
+  tags: IconTagSlash,
+  folder: IconFolderBan,
+};
 
 /** Preset values read in a deliberate order; values that come from saves sort by name. */
 const PRESET_ORDER = new Set<FieldId>([
@@ -42,7 +43,7 @@ const PRESET_ORDER = new Set<FieldId>([
 const COLLAPSE_MIN = 10;
 
 function optionValue(option: FilterOption): string {
-  const raw = Array.isArray(option.predicate.value)
+  const raw = isPredicateList(option.predicate.value)
     ? option.predicate.value[0]
     : option.predicate.value;
   return String(raw).toLowerCase();
@@ -61,18 +62,18 @@ export function ChoiceFilter({
   onChange,
 }: {
   field: FieldId;
-  options: FilterOption[];
+  options: Array<FilterOption>;
   matching?: "any" | "all";
-  rows: Predicate[];
+  rows: Array<Predicate>;
   search: string;
-  onChange: (rows: Predicate[]) => void;
+  onChange: (rows: Array<Predicate>) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const meta = FIELD_META[field];
   const { counts, empty } = useChoiceCounts(field);
   const needle = search.trim().toLowerCase();
-  const FieldIcon = fieldIcon(field);
-  const EmptyIcon = EMPTY_ICONS.get(field) ?? FieldIcon;
+  const FieldIcon = FIELD_ICONS[field];
+  const EmptyIcon = EMPTY_ICONS[field] ?? FieldIcon;
   const emptyLabel = emptyChoiceLabel(field);
   const showEmpty =
     meta.type === "stringArray" && emptyLabel.toLowerCase().includes(needle);
@@ -92,7 +93,7 @@ export function ChoiceFilter({
         row.operator,
       ),
   )) {
-    for (const value of Array.isArray(row.value) ? row.value : [row.value]) {
+    for (const value of isPredicateList(row.value) ? row.value : [row.value]) {
       if (
         allOptions.some((option) =>
           isChoiceSelected(
@@ -101,8 +102,9 @@ export function ChoiceFilter({
             "any",
           ),
         )
-      )
+      ) {
         continue;
+      }
       allOptions.push({
         label: String(value),
         predicate: {
@@ -123,8 +125,9 @@ export function ChoiceFilter({
       option.label.toLowerCase().includes(needle) ||
       option.crumb?.toLowerCase().includes(needle),
   );
-  if (!PRESET_ORDER.has(field))
+  if (!PRESET_ORDER.has(field)) {
     matches.sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+  }
   const unused = matches.filter(
     (option) => countOf(option) === 0 && !selected(option),
   );

@@ -7,7 +7,11 @@ interface Piece {
   start: number;
 }
 
-function locate(pieces: Piece[], offset: number): [Text, number] | null {
+function isText(node: Node): node is Text {
+  return node.nodeType === Node.TEXT_NODE;
+}
+
+function locate(pieces: Array<Piece>, offset: number): [Text, number] | null {
   for (const piece of pieces) {
     if (offset <= piece.start + piece.node.length) {
       return [piece.node, offset - piece.start];
@@ -19,8 +23,10 @@ function locate(pieces: Piece[], offset: number): [Text, number] | null {
 /** The run of text a citation closes: from the last sentence end or earlier citation in its block, up to the citation. */
 export function citedSentence(citation: Element): Range | null {
   const block = citation.closest(BLOCK);
-  if (!block) return null;
-  const pieces: Piece[] = [];
+  if (!block) {
+    return null;
+  }
+  const pieces: Array<Piece> = [];
   let text = "";
   let afterCitation = 0;
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
@@ -35,13 +41,16 @@ export function citedSentence(citation: Element): Range | null {
       break;
     }
     if (node.parentElement?.closest("[data-citation]")) {
-      if (text.slice(afterCitation).trim()) afterCitation = text.length;
+      if (text.slice(afterCitation).trim()) {
+        afterCitation = text.length;
+      }
       continue;
     }
-    /** SAFETY: the walker only visits nodes `SHOW_TEXT` lets through, which are all Text. */
-    const textNode = node as Text;
-    pieces.push({ node: textNode, start: text.length });
-    text += textNode.data;
+    if (!isText(node)) {
+      continue;
+    }
+    pieces.push({ node, start: text.length });
+    text += node.data;
   }
   const end = text.trimEnd().length;
   const base = text.slice(afterCitation, end).trim() ? afterCitation : 0;
@@ -49,11 +58,17 @@ export function citedSentence(citation: Element): Range | null {
   for (const match of text.slice(base, end).matchAll(SENTENCE_END)) {
     start = base + match.index + match[0].length;
   }
-  while (start < end && /\s/.test(text.charAt(start))) start += 1;
-  if (start >= end) return null;
+  while (start < end && /\s/.test(text.charAt(start))) {
+    start += 1;
+  }
+  if (start >= end) {
+    return null;
+  }
   const from = locate(pieces, start);
   const to = locate(pieces, end);
-  if (!from || !to) return null;
+  if (!from || !to) {
+    return null;
+  }
   const range = document.createRange();
   range.setStart(...from);
   range.setEnd(...to);
@@ -61,12 +76,19 @@ export function citedSentence(citation: Element): Range | null {
 }
 
 export function showCitedSentence(citation: Element) {
-  if (!("Highlight" in globalThis) || !CSS.highlights) return;
+  if (!("Highlight" in globalThis) || !CSS.highlights) {
+    return;
+  }
   const range = citedSentence(citation);
-  if (range) CSS.highlights.set(HIGHLIGHT, new Highlight(range));
-  else CSS.highlights.delete(HIGHLIGHT);
+  if (range) {
+    CSS.highlights.set(HIGHLIGHT, new Highlight(range));
+  } else {
+    CSS.highlights.delete(HIGHLIGHT);
+  }
 }
 
 export function hideCitedSentence() {
-  if ("CSS" in globalThis) CSS.highlights?.delete(HIGHLIGHT);
+  if ("CSS" in globalThis) {
+    CSS.highlights?.delete(HIGHLIGHT);
+  }
 }

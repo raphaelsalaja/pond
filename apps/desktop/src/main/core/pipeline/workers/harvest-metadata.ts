@@ -1,4 +1,5 @@
-import { type NewSave, type Source, tasks } from "@pond/schema/db";
+import { tasks } from "@pond/schema/db";
+import type { NewSave, Source } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
 import { walkCaptureMedia } from "@pond/schema/raw";
@@ -8,9 +9,9 @@ import { ulid } from "ulid";
 import { getDb } from "../../../db";
 import type { TransferOptions } from "../../../lib/download-transfer";
 import { persistSave } from "../../persist-save";
+import { isPartitionSignedIn } from "../../refresh/harvest-window/session";
 import { withLinkedPageCapture } from "../../refresh/harvest/arena/api";
 import { captureFromSource } from "../../refresh/harvest/capture";
-import { isPartitionSignedIn } from "../../refresh/harvest-window/session";
 import { narrowToSplit, postSourceId } from "../../split-save-plan";
 import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
@@ -34,7 +35,9 @@ export async function runHarvestMetadata(
   ctx: TransferOptions = {},
 ): Promise<void> {
   const save = await readSave(saveId);
-  if (!save) return;
+  if (!save) {
+    return;
+  }
 
   if (!payload.force && isFreshHarvest(save.rawJson)) {
     log.debug(
@@ -44,7 +47,9 @@ export async function runHarvestMetadata(
     await applyImportFilter(save);
     return;
   }
-  if (await applyListFilter(save)) return;
+  if (await applyListFilter(save)) {
+    return;
+  }
 
   const extractor = extractorFor(save.source) ?? resolveExtractor(save.url);
   const stored = save.rawJson?.capture;
@@ -74,13 +79,19 @@ export async function runHarvestMetadata(
     extractorId: extractor.id,
     extractedAt: new Date().toISOString(),
   };
-  if (save.rawJson?.ytdlp) harvestedRaw.ytdlp = save.rawJson.ytdlp;
+  if (save.rawJson?.ytdlp) {
+    harvestedRaw.ytdlp = save.rawJson.ytdlp;
+  }
   const rawJson = narrowToSplit(harvestedRaw, save.rawJson?.split);
 
   const pageUrl = arenaLinkUrl(rawJson.capture) ?? save.url;
   const patch = buildSavePatch(rawJson.capture, rawJson, pageUrl, save.source);
-  if (pageUrl !== save.url) patch.url = pageUrl;
-  if (keepsCurrentTitle(save.title, rawJson.capture)) delete patch.title;
+  if (pageUrl !== save.url) {
+    patch.url = pageUrl;
+  }
+  if (keepsCurrentTitle(save.title, rawJson.capture)) {
+    delete patch.title;
+  }
   const updated = await persistSave(saveId, patch, {
     actorReason: `harvest:${extractor.id}`,
     ...files,
@@ -93,7 +104,9 @@ export async function runHarvestMetadata(
     extractor: extractor.id,
     media: walkCaptureMedia(rawJson.capture).length,
   });
-  if (updated) await applyImportFilter(updated);
+  if (updated) {
+    await applyImportFilter(updated);
+  }
 }
 
 /** Charged to the web budget: the archive loads the linked site, so its failures must not trip the harvesting Source's breaker. */

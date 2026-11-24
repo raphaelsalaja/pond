@@ -4,22 +4,25 @@ import {
   $insertNodeToNearestRoot,
   mergeRegister,
 } from "@lexical/utils";
+import { isHTMLTag } from "@pond/ui/dom";
 import {
   $applyNodeReplacement,
   $createParagraphNode,
   $getSelection,
   $isElementNode,
   $isRangeSelection,
-  type DOMConversionMap,
-  type DOMConversionOutput,
-  type EditorConfig,
   ElementNode,
-  type LexicalEditor,
-  type LexicalNode,
-  type NodeKey,
-  type RangeSelection,
-  type SerializedElementNode,
-  type Spread,
+} from "lexical";
+import type {
+  DOMConversionMap,
+  DOMConversionOutput,
+  EditorConfig,
+  LexicalEditor,
+  LexicalNode,
+  NodeKey,
+  RangeSelection,
+  SerializedElementNode,
+  Spread,
 } from "lexical";
 import { useEffect } from "react";
 import styles from "./styles.module.css";
@@ -77,15 +80,21 @@ export class CollapsibleContainerNode extends ElementNode {
       const open = details.open;
       editor.update(() => {
         const latest = this.getLatest();
-        if (latest.getOpen() !== open) latest.setOpen(open);
+        if (latest.getOpen() !== open) {
+          latest.setOpen(open);
+        }
       });
     });
     return details;
   }
 
   updateDOM(prev: this, dom: HTMLElement): boolean {
-    if (!(dom instanceof HTMLDetailsElement)) return true;
-    if (prev.__open !== this.__open) dom.open = this.__open;
+    if (!isHTMLTag(dom, "details")) {
+      return true;
+    }
+    if (prev.__open !== this.__open) {
+      dom.open = this.__open;
+    }
     return false;
   }
 
@@ -94,9 +103,11 @@ export class CollapsibleContainerNode extends ElementNode {
   }
 
   collapseAtStart(): boolean {
-    const children: LexicalNode[] = [];
+    const children: Array<LexicalNode> = [];
     for (const child of this.getChildren()) {
-      if ($isElementNode(child)) children.push(...child.getChildren());
+      if ($isElementNode(child)) {
+        children.push(...child.getChildren());
+      }
     }
     const paragraph = $createParagraphNode();
     paragraph.append(...children);
@@ -120,7 +131,9 @@ export class CollapsibleContainerNode extends ElementNode {
 }
 
 function $convertDetails(element: HTMLElement): DOMConversionOutput | null {
-  if (!(element instanceof HTMLDetailsElement)) return null;
+  if (!isHTMLTag(element, "details")) {
+    return null;
+  }
   return {
     node: $createCollapsibleContainerNode(element.open),
   };
@@ -135,7 +148,7 @@ export function $createCollapsibleContainerNode(
 export function $isCollapsibleContainerNode(
   node: LexicalNode | null | undefined,
 ): node is CollapsibleContainerNode {
-  return node instanceof CollapsibleContainerNode;
+  return node?.getType() === CollapsibleContainerNode.getType();
 }
 
 export class CollapsibleTitleNode extends ElementNode {
@@ -181,7 +194,9 @@ export class CollapsibleTitleNode extends ElementNode {
       const content = this.getNextSibling();
       if ($isCollapsibleContentNode(content)) {
         const first = content.getFirstChild();
-        if ($isElementNode(first)) return first;
+        if ($isElementNode(first)) {
+          return first;
+        }
         const paragraph = $createParagraphNode();
         content.append(paragraph);
         return paragraph;
@@ -200,7 +215,7 @@ export function $createCollapsibleTitleNode(): CollapsibleTitleNode {
 export function $isCollapsibleTitleNode(
   node: LexicalNode | null | undefined,
 ): node is CollapsibleTitleNode {
-  return node instanceof CollapsibleTitleNode;
+  return node?.getType() === CollapsibleTitleNode.getType();
 }
 
 export class CollapsibleContentNode extends ElementNode {
@@ -234,7 +249,7 @@ export function $createCollapsibleContentNode(): CollapsibleContentNode {
 export function $isCollapsibleContentNode(
   node: LexicalNode | null | undefined,
 ): node is CollapsibleContentNode {
-  return node instanceof CollapsibleContentNode;
+  return node?.getType() === CollapsibleContentNode.getType();
 }
 
 export const COLLAPSE_NODES = [
@@ -245,7 +260,9 @@ export const COLLAPSE_NODES = [
 
 export function $inCollapsible(): boolean {
   const selection = $getSelection();
-  if (!$isRangeSelection(selection)) return false;
+  if (!$isRangeSelection(selection)) {
+    return false;
+  }
   return Boolean(
     $findMatchingParent(
       selection.anchor.getNode(),
@@ -272,7 +289,9 @@ export function CollapsiblePlugin() {
       editor.registerNodeTransform(CollapsibleContentNode, (node) => {
         const parent = node.getParent();
         if (!$isCollapsibleContainerNode(parent)) {
-          for (const child of node.getChildren()) node.insertBefore(child);
+          for (const child of node.getChildren()) {
+            node.insertBefore(child);
+          }
           node.remove();
         } else if (node.isEmpty()) {
           node.append($createParagraphNode());
@@ -291,7 +310,9 @@ export function CollapsiblePlugin() {
           !$isCollapsibleTitleNode(children[0]) ||
           !$isCollapsibleContentNode(children[1])
         ) {
-          for (const child of children) node.insertBefore(child);
+          for (const child of children) {
+            node.insertBefore(child);
+          }
           node.remove();
         }
       }),

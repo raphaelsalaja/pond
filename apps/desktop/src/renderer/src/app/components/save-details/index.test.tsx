@@ -1,8 +1,10 @@
 import "@/app/effects/save-library-bridge";
 import { PrefsSchema } from "@pond/schema";
 import { RouterProvider } from "@tanstack/react-router";
-import { act, type ReactNode } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openLibraryAt } from "@/app/test/library-router";
 import { folders } from "@/features/library/state/folders";
@@ -75,11 +77,18 @@ describe("SaveDetails", () => {
   beforeEach(async () => {
     vi.stubGlobal("pond", {
       query: async (name: string) => {
-        if (name === "settings.getPrefs") return PrefsSchema.parse({});
-        if (name === "folders.list" || name === "folders.memberships")
+        if (name === "settings.getPrefs") {
+          return PrefsSchema.parse({});
+        }
+        if (name === "folders.list" || name === "folders.memberships") {
           return [];
-        if (name === "tags.list" || name === "tagGroups.list") return [];
-        if (name === "saves.getMany") return [];
+        }
+        if (name === "tags.list" || name === "tagGroups.list") {
+          return [];
+        }
+        if (name === "saves.getMany") {
+          return [];
+        }
         return [];
       },
       onSyncAction: () => () => {},
@@ -95,15 +104,17 @@ describe("SaveDetails", () => {
       source: "local",
       tags: ["One"],
     });
-    if (!save) throw new Error("Invalid save fixture");
+    if (!save) {
+      throw new Error("Invalid save fixture");
+    }
     pool.upsert(save);
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
   });
 
-  afterEach(async () => {
-    await act(() => root.unmount());
+  afterEach(() => {
+    act(() => root.unmount());
     host.remove();
     selection.clear();
     primarySelection.set(null);
@@ -131,7 +142,9 @@ describe("SaveDetails", () => {
     await import("@/features/saves/components/detail/pane");
     await mount("/");
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
     });
     expect(host.textContent).toContain("One");
   });
@@ -144,14 +157,18 @@ describe("SaveDetails", () => {
       source: "local",
       tags: ["Two"],
     });
-    if (!extra) throw new Error("Invalid save fixture");
+    if (!extra) {
+      throw new Error("Invalid save fixture");
+    }
     pool.upsert(extra);
     selection.set(["demo", "other"]);
     primarySelection.set("demo");
     await import("@/features/saves/components/detail/pane");
     await mount("/");
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
     });
     expect(host.textContent).toContain("One1/2");
     expect(host.textContent).toContain("Two1/2");
@@ -165,14 +182,18 @@ describe("SaveDetails", () => {
       source: "local",
       tags: ["Two"],
     });
-    if (!extra) throw new Error("Invalid save fixture");
+    if (!extra) {
+      throw new Error("Invalid save fixture");
+    }
     pool.upsert(extra);
     selection.set(["other"]);
     primarySelection.set("other");
     await import("@/features/saves/components/detail/pane");
     await mount("/?save=demo");
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
     });
     expect(host.textContent).toContain("One");
     expect(host.textContent).not.toContain("Two");

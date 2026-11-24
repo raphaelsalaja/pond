@@ -1,9 +1,5 @@
-import {
-  buildThemeTokens,
-  type Gamut,
-  type ThemeInput,
-  type ThemeMode,
-} from "@pond/theme/tokens";
+import { buildThemeTokens } from "@pond/theme/tokens";
+import type { Gamut, ThemeInput, ThemeMode } from "@pond/theme/tokens";
 
 export function displayGamut(): Gamut {
   return window.matchMedia("(color-gamut: p3)").matches ? "p3" : "srgb";
@@ -15,7 +11,9 @@ let painted: { key: string; mode: ThemeMode } | null = null;
 export function paintTheme(input: ThemeInput, gamut: Gamut): ThemeMode {
   const { background, foreground, accent, contrast } = input;
   const key = JSON.stringify([background, foreground, accent, contrast, gamut]);
-  if (painted?.key === key) return painted.mode;
+  if (painted?.key === key) {
+    return painted.mode;
+  }
   const { mode, tokens } = buildThemeTokens(input, gamut);
   const root = document.documentElement;
   for (const [name, value] of Object.entries(tokens)) {

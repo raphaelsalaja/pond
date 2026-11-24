@@ -9,7 +9,7 @@ it("associates setting titles and descriptions with controls rather than their v
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  const fields: FieldItem[] = [
+  const fields: Array<FieldItem> = [
     {
       key: "startup",
       title: "Startup behavior",

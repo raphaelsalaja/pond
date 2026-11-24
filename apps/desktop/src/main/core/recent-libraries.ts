@@ -18,7 +18,9 @@ const RecentLibrariesSchema = z.array(
 );
 
 function readHistory(file: string) {
-  if (!existsSync(file)) return [];
+  if (!existsSync(file)) {
+    return [];
+  }
   return RecentLibrariesSchema.parse(JSON.parse(readFileSync(file, "utf8")));
 }
 
@@ -122,8 +124,9 @@ export function renameRecentLibrary(
 export async function listRecentLibraries(file: string, activePath: string) {
   const active = resolve(activePath);
   const history = readHistory(file);
-  if (!history.some((entry) => entry.path === active))
+  if (!history.some((entry) => entry.path === active)) {
     history.unshift({ path: active, lastOpened: 0 });
+  }
   return Promise.all(
     history
       .filter((entry) => !entry.hidden)

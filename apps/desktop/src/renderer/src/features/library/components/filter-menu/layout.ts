@@ -21,10 +21,18 @@ export function filterLayout(
   optionCount: number,
 ): FilterLayout {
   const type = FIELD_META[field].type;
-  if (type === "color") return "color";
-  if (type === "optional" || type === "string") return "content";
-  if (type === "number" || type === "date") return "range";
-  if (SEARCHABLE_FIELDS.has(field) || optionCount > 8) return "searchable";
+  if (type === "color") {
+    return "color";
+  }
+  if (type === "optional" || type === "string") {
+    return "content";
+  }
+  if (type === "number" || type === "date") {
+    return "range";
+  }
+  if (SEARCHABLE_FIELDS.has(field) || optionCount > 8) {
+    return "searchable";
+  }
   return "compact";
 }
 
@@ -40,7 +48,9 @@ export function editorIsSearchable(
   optionCount: number,
 ): boolean {
   const type = FIELD_META[field].type;
-  if (type === "optional" || type === "string") return true;
+  if (type === "optional" || type === "string") {
+    return true;
+  }
   return (
     (type === "enum" || type === "stringArray") &&
     choiceIsSearchable(field, optionCount)

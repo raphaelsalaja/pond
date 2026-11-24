@@ -1,7 +1,8 @@
 import { PrefsSchema } from "@pond/schema";
 import type { SaveFile } from "@pond/schema/db";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
@@ -19,7 +20,7 @@ function imageFile(path: string, mimeType = "image/jpeg"): SaveFile {
   };
 }
 
-function saveWith(id: string, files: SaveFile[]): Save {
+function saveWith(id: string, files: Array<SaveFile>): Save {
   return {
     id,
     source: "web",
@@ -43,7 +44,9 @@ describe("current image thumbnail", () => {
   let host: HTMLDivElement;
   let root: Root;
   const query = vi.fn(async (name: string) => {
-    if (name === "settings.getPrefs") return PrefsSchema.parse({});
+    if (name === "settings.getPrefs") {
+      return PrefsSchema.parse({});
+    }
     return { ok: true };
   });
 
@@ -68,7 +71,9 @@ describe("current image thumbnail", () => {
   async function render(save: Save, fileIndex: number) {
     pool.upsert(save);
     const file = save.files[fileIndex];
-    if (!file) throw new Error("Missing carousel file");
+    if (!file) {
+      throw new Error("Missing carousel file");
+    }
     await act(async () => {
       root.render(
         <ImageInspector

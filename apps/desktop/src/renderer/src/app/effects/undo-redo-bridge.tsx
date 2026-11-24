@@ -18,16 +18,26 @@ async function runHistory(direction: "undo" | "redo"): Promise<void> {
 export function UndoRedoBridge() {
   useEffect(() => {
     const offUndo = window.pond.onEditUndoRequested(() => {
-      if (isEditableTarget()) return;
+      if (isEditableTarget()) {
+        return;
+      }
       const owner = currentUndoOwner();
-      if (owner) owner.undo();
-      else void runHistory("undo");
+      if (owner) {
+        owner.undo();
+      } else {
+        void runHistory("undo");
+      }
     });
     const offRedo = window.pond.onEditRedoRequested(() => {
-      if (isEditableTarget()) return;
+      if (isEditableTarget()) {
+        return;
+      }
       const owner = currentUndoOwner();
-      if (owner) owner.redo();
-      else void runHistory("redo");
+      if (owner) {
+        owner.redo();
+      } else {
+        void runHistory("redo");
+      }
     });
     return () => {
       offUndo();

@@ -1,16 +1,7 @@
-import {
-  OPS,
-  type Op,
-  SOURCES,
-  type Source,
-  saves,
-  tasks,
-} from "@pond/schema/db";
-import {
-  type PipelineEventRow,
-  pipelineEvents,
-  type SaveIngestEvent,
-} from "@pond/schema/events";
+import { OPS, SOURCES, saves, tasks } from "@pond/schema/db";
+import type { Op, Source } from "@pond/schema/db";
+import { pipelineEvents } from "@pond/schema/events";
+import type { PipelineEventRow, SaveIngestEvent } from "@pond/schema/events";
 import {
   and,
   desc,
@@ -31,7 +22,8 @@ import { pipelineSnapshot } from "../../core/pipeline/reconciler-client";
 import { recordBatchForUndo } from "../../core/undo";
 import { getDb } from "../../db";
 import { cursorFor } from "./downloads-page";
-import { type QueryHandlerMap, query, TrimmedTextParam } from "./params";
+import { query, TrimmedTextParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const PAGE_MAX = 200;
 const PAGE_DEFAULT = 50;
@@ -55,7 +47,7 @@ const LimitParam = z.coerce
   .nullish()
   .catch(Number.NaN)
   .transform((value) =>
-    value != null && Number.isFinite(value)
+    value !== null && value !== undefined && Number.isFinite(value)
       ? Math.min(Math.max(Math.trunc(value), 1), PAGE_MAX)
       : PAGE_DEFAULT,
   );
@@ -86,9 +78,13 @@ type HistoryRow = Pick<
 
 function toHistoryRow(row: HistoryRow): DownloadHistoryRow | null {
   const payload = row.payload;
-  if (payload.kind !== "save.ingest.completed") return null;
+  if (payload.kind !== "save.ingest.completed") {
+    return null;
+  }
   const saveId = payload.saveId ?? row.saveId;
-  if (!saveId) return null;
+  if (!saveId) {
+    return null;
+  }
   return {
     id: row.id,
     saveId,
@@ -174,7 +170,9 @@ export const downloadsQueries = {
             lt(pipelineEvents.id, cursor.id),
           ),
         );
-        if (older) clauses.push(older);
+        if (older) {
+          clauses.push(older);
+        }
       }
       if (q) {
         const pattern = `%${q.replaceAll("%", "").replaceAll("_", "")}%`;
@@ -184,7 +182,9 @@ export const downloadsQueries = {
           like(pipelineEvents.errorMessage, pattern),
           sql`json_extract(${pipelineEvents.payload}, '$.url') like ${pattern}`,
         );
-        if (match) clauses.push(match);
+        if (match) {
+          clauses.push(match);
+        }
       }
 
       const raw = db
@@ -206,7 +206,7 @@ export const downloadsQueries = {
 
       const mapped = raw
         .map(toHistoryRow)
-        .filter((row): row is DownloadHistoryRow => row != null);
+        .filter((row): row is DownloadHistoryRow => row !== null);
       const hasMore = mapped.length > limit;
       const rows = hasMore ? mapped.slice(0, limit) : mapped;
       return {

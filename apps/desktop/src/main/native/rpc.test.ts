@@ -2,7 +2,8 @@ import { ExtensionSettingsSchema } from "@pond/schema/browser-extension";
 import { nativeRequestSchema } from "@pond/schema/native";
 import { describe, expect, it, vi } from "vitest";
 import { UnsupportedError } from "../core/pipeline/extractors/errors";
-import { dispatchNative, type NativePorts } from "./rpc";
+import { dispatchNative } from "./rpc";
+import type { NativePorts } from "./rpc";
 
 function ports(overrides: Partial<NativePorts> = {}): NativePorts {
   return {

@@ -8,7 +8,9 @@ interface InspectState {
 }
 
 function readNavigator(): boolean {
-  if (!globalThis.window) return false;
+  if (!globalThis.window) {
+    return false;
+  }
   try {
     return window.localStorage.getItem("pond.viewer.showNavigator") === "1";
   } catch {
@@ -42,7 +44,9 @@ export const inspect = {
           "pond.viewer.showNavigator",
           showNavigator ? "1" : "0",
         );
-      } catch {}
+      } catch {
+        /** Storage can be full or blocked; the toggle still applies for this session. */
+      }
     }
     store.setState((state) =>
       state.showNavigator === showNavigator

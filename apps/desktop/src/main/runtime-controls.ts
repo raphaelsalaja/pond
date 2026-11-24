@@ -38,10 +38,10 @@ export function createRuntimeControls(deps: RuntimeDependencies) {
     if (httpServer) {
       try {
         await httpServer.close();
-      } catch (err) {
+      } catch (error) {
         deps.warn(
           "[pond] http close failed",
-          err instanceof Error ? err : new Error(String(err)),
+          error instanceof Error ? error : new Error(String(error)),
         );
       }
     }

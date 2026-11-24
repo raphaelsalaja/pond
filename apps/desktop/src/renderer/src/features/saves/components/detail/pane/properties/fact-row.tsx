@@ -1,5 +1,6 @@
 import type { IconComponent } from "@pond/icons/types";
-import { BrandTile, Button, type MenuItemSpec } from "@pond/ui";
+import { BrandTile, Button } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useState } from "react";
 import { pickAuthorColor } from "@/features/saves/lib/presentation";
 import { PropertyList } from "@/shared/components/property-list";
@@ -12,7 +13,7 @@ interface FactRowProps {
   icon?: React.ReactNode;
   title?: string;
   onClick?: () => void;
-  menu: () => MenuItemSpec[];
+  menu: () => Array<MenuItemSpec>;
   children: React.ReactNode;
 }
 
@@ -60,7 +61,7 @@ export function ControlRow({
   children,
 }: {
   label: string;
-  menu?: () => MenuItemSpec[];
+  menu?: () => Array<MenuItemSpec>;
   children: React.ReactNode;
 }) {
   const row = (
@@ -114,7 +115,9 @@ export function SourceMark({
   logo: string | null;
   Icon: IconComponent | null;
 }) {
-  if (logo) return <img className={styles.logo} src={logo} alt="" />;
+  if (logo) {
+    return <img className={styles.logo} src={logo} alt="" />;
+  }
   return Icon ? (
     <BrandTile size={16} rounding="full">
       <Icon />

@@ -18,12 +18,14 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
 
-async function folderIds(saveId: string): Promise<string[]> {
+async function folderIds(saveId: string): Promise<Array<string>> {
   const db = await getDb();
   const rows = await db
     .select({ folderId: saveFolders.folderId })
@@ -43,14 +45,16 @@ describe.skipIf(!nativeSqliteAvailable())("incoming folder assignment", () => {
   });
 
   afterAll(async () => {
-    await closeDb();
+    closeDb();
     vi.restoreAllMocks();
     invalidatePaths();
     try {
       rmSync(dir, { recursive: true, force: true });
     } catch (error) {
       /** Windows keeps the closed SQLite files locked until the process exits. */
-      if (process.platform !== "win32") throw error;
+      if (process.platform !== "win32") {
+        throw error;
+      }
     }
   });
 

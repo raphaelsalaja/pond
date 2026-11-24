@@ -43,8 +43,8 @@ describe("parentFolder", () => {
     expect(parentFolder("/Users/ada/Pond/My Pond.pond")).toBe(
       "/Users/ada/Pond",
     );
-    expect(parentFolder("C:\\Users\\ada\\Pond\\My Pond.pond")).toBe(
-      "C:\\Users\\ada\\Pond",
+    expect(parentFolder(String.raw`C:\Users\ada\Pond\My Pond.pond`)).toBe(
+      String.raw`C:\Users\ada\Pond`,
     );
   });
 });

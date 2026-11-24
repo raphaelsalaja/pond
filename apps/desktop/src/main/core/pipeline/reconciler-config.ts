@@ -5,7 +5,7 @@ import { DownloadRequestSchema } from "@shared/downloader-contracts";
 import { z } from "zod";
 import { TaskPayloadSchema } from "./priority";
 
-export const POLL_INTERVAL_MS = 5_000;
+export const POLL_INTERVAL_MS = 5000;
 export const MAX_GLOBAL_INFLIGHT = 4;
 export const MAX_BACKGROUND_INFLIGHT = 3;
 export const MAX_INTERACTIVE_INFLIGHT = 4;

@@ -12,12 +12,12 @@ import type {
 } from "../../../shared/fish-contracts";
 import { isRoutineDue } from "../../../shared/fish-routine";
 import {
-  type RoutineDependencies,
   runDueRoutines,
   runFishRoutine,
   runInboxRoutines,
   runNewSaveRoutines,
 } from "./routines";
+import type { RoutineDependencies } from "./routines";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -55,18 +55,18 @@ const curator: Fish = {
 };
 
 function pond(
-  school: Fish[],
+  school: Array<Fish>,
   reply: (input: AssistantSend) => AssistantSendResult = (input) => ({
     chatId: input.chatId,
     accepted: true,
   }),
 ) {
   const runs: Array<[string, FishRun]> = [];
-  const sent: AssistantSend[] = [];
-  const chats: string[] = [];
-  const deleted: string[] = [];
+  const sent: Array<AssistantSend> = [];
+  const chats: Array<string> = [];
+  const deleted: Array<string> = [];
   let announcements = 0;
-  const messages: AssistantMessage[] = [
+  const messages: Array<AssistantMessage> = [
     {
       id: "reply",
       chatId: "chat-1",
@@ -316,7 +316,7 @@ it("asks Inbox routines for suggestions on Saves still waiting for review", asyn
     routines: [triage, tagging],
   };
   const fake = pond([sorter]);
-  const asked: boolean[] = [];
+  const asked: Array<boolean> = [];
   fake.deps.savesInScope = async (ids, _fish, inInbox) => {
     asked.push(inInbox === true);
     return ids.filter((id) => id !== "processed");

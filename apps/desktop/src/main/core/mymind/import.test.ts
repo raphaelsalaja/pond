@@ -1,7 +1,8 @@
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { type MymindObject, MymindObjectSchema } from "./client";
+import { MymindObjectSchema } from "./client";
+import type { MymindObject } from "./client";
 import { importMymindObject, mergeMymindMetadata } from "./import";
 import { createMymindSyncState } from "./state";
 
@@ -123,7 +124,7 @@ describe("mymind card import", () => {
     const { input, dependencies } = fixture({
       source: { url: "https://www.youtube.com/watch?v=example" },
     });
-    const savedStates: boolean[] = [];
+    const savedStates: Array<boolean> = [];
     input.persist.mockImplementation(async () => {
       savedStates.push(input.state.imports.card?.complete ?? false);
     });
@@ -215,7 +216,7 @@ describe("mymind card import", () => {
 
   it("streams a file and removes its temporary copy after import", async () => {
     const { input, dependencies } = fixture({
-      blob: { name: "..\\photo.png" },
+      blob: { name: String.raw`..\photo.png` },
       source: { url: "https://example.com/source" },
     });
     const bytes = new TextEncoder().encode("file bytes");
@@ -274,7 +275,9 @@ describe("mymind card import", () => {
       return new Response("file bytes");
     });
     input.beforeWrite.mockImplementation(() => {
-      if (switched) throw new Error("The library changed.");
+      if (switched) {
+        throw new Error("The library changed.");
+      }
     });
     await expect(importMymindObject(input, dependencies)).rejects.toThrow(
       "The library changed.",

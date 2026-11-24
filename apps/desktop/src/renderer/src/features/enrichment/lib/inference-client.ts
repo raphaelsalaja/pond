@@ -1,4 +1,5 @@
 import type { RawImage } from "@huggingface/transformers";
+import log from "electron-log/renderer";
 import { z } from "zod";
 import type { FlorenceTask } from "./inference-core";
 import type {
@@ -45,7 +46,7 @@ export interface VideoEmbeddingFrame {
 
 interface PreparedRequest<T extends RequestBody> {
   request: T;
-  transfer: Transferable[];
+  transfer: Array<Transferable>;
 }
 
 export function createAudioEmbeddingRequest(
@@ -68,11 +69,11 @@ export function createAudioEmbeddingRequest(
 }
 
 export function createVideoEmbeddingRequest(
-  frames: VideoEmbeddingFrame[],
+  frames: Array<VideoEmbeddingFrame>,
   duration: number,
 ): PreparedRequest<{
   op: "embedVideoFrames";
-  frames: SerializedVideoFrame[];
+  frames: Array<SerializedVideoFrame>;
   duration: number;
 }> {
   if (frames.length === 0 || frames.length > MAX_EMBEDDING_VIDEO_FRAMES) {
@@ -125,12 +126,18 @@ let releaseWhenIdle = false;
 
 export function releaseIdleInferenceWorker(): void {
   releaseWhenIdle = true;
-  if (pending.size > 0) return;
-  if (idleTimer) clearTimeout(idleTimer);
+  if (pending.size > 0) {
+    return;
+  }
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+  }
   idleTimer = null;
   releaseWhenIdle = false;
   const current = worker;
-  if (!current) return;
+  if (!current) {
+    return;
+  }
   const id = nextId++;
   const finish = (): void => {
     if (pending.size === 0 && worker === current) {
@@ -149,8 +156,12 @@ export function releaseIdleInferenceWorker(): void {
 }
 
 function scheduleIdleRelease(): void {
-  if (pending.size > 0 || !worker) return;
-  if (idleTimer) clearTimeout(idleTimer);
+  if (pending.size > 0 || !worker) {
+    return;
+  }
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+  }
   idleTimer = setTimeout(
     releaseIdleInferenceWorker,
     releaseWhenIdle ? 0 : 15_000,
@@ -158,13 +169,19 @@ function scheduleIdleRelease(): void {
 }
 
 function failAllPending(error: Error): void {
-  for (const p of pending.values()) p.reject(error);
+  for (const p of pending.values()) {
+    p.reject(error);
+  }
   pending.clear();
 }
 
 function ensureWorker(): Worker | null {
-  if (workerBroken) return null;
-  if (worker) return worker;
+  if (workerBroken) {
+    return null;
+  }
+  if (worker) {
+    return worker;
+  }
   try {
     const w = new Worker(new URL("./inference-worker.ts", import.meta.url), {
       type: "module",
@@ -172,28 +189,35 @@ function ensureWorker(): Worker | null {
     w.onmessage = (event: MessageEvent<InferenceResponse>) => {
       const msg = event.data;
       const p = pending.get(msg.id);
-      if (!p) return;
+      if (!p) {
+        return;
+      }
       pending.delete(msg.id);
-      if (msg.ok) p.resolve(msg.result);
-      else p.reject(new Error(msg.error));
+      if (msg.ok) {
+        p.resolve(msg.result);
+      } else {
+        p.reject(new Error(msg.error));
+      }
       scheduleIdleRelease();
     };
     w.onerror = (event) => {
-      console.error("[inference] worker crashed", event.message);
+      log.error("[inference] worker crashed", event.message);
       workerBroken = true;
       worker?.terminate();
       worker = null;
       failAllPending(new Error("inference worker crashed"));
-      if (idleTimer) clearTimeout(idleTimer);
+      if (idleTimer) {
+        clearTimeout(idleTimer);
+      }
       idleTimer = null;
     };
     worker = w;
     workerEverStarted = true;
     return w;
-  } catch (err) {
-    console.error(
+  } catch (error) {
+    log.error(
       "[inference] failed to start worker; using in-thread inference",
-      err,
+      error,
     );
     workerBroken = true;
     return null;
@@ -209,12 +233,16 @@ const VectorsSchema = z.array(VectorSchema);
 function callWorker<T extends InferenceResult>(
   result: z.ZodType<T>,
   msg: RequestBody,
-  transfer: Transferable[],
+  transfer: Array<Transferable>,
 ): Promise<T> {
-  if (idleTimer) clearTimeout(idleTimer);
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+  }
   idleTimer = null;
   const w = ensureWorker();
-  if (!w) return Promise.reject(new Error("inference worker unavailable"));
+  if (!w) {
+    return Promise.reject(new Error("inference worker unavailable"));
+  }
   const id = nextId++;
   return new Promise<T>((resolve, reject) => {
     pending.set(id, {
@@ -244,15 +272,21 @@ async function viaWorker<T>(
   fallback: () => Promise<T>,
 ): Promise<T> {
   if (workerBroken) {
-    if (workerEverStarted) throw new Error("inference worker crashed");
+    if (workerEverStarted) {
+      throw new Error("inference worker crashed");
+    }
     return fallback();
   }
   try {
     return await run();
-  } catch (err) {
-    if (workerBroken && workerEverStarted) throw err;
-    if (workerBroken) return fallback();
-    throw err;
+  } catch (error) {
+    if (workerBroken && workerEverStarted) {
+      throw error;
+    }
+    if (workerBroken) {
+      return fallback();
+    }
+    throw error;
   }
 }
 
@@ -285,8 +319,8 @@ export function inferClipImage(image: RawImage): Promise<Float32Array> {
 
 export function inferClipAesthetic(
   image: RawImage,
-  labels: string[],
-): Promise<string[]> {
+  labels: Array<string>,
+): Promise<Array<string>> {
   return viaWorker(
     () => {
       const img = serializeImage(image);
@@ -301,7 +335,9 @@ export function inferClipAesthetic(
   );
 }
 
-export function inferSensitiveContent(images: RawImage[]): Promise<number[]> {
+export function inferSensitiveContent(
+  images: Array<RawImage>,
+): Promise<Array<number>> {
   return viaWorker(
     () => {
       const serialized = images.map(serializeImage);
@@ -322,7 +358,9 @@ export function inferEmbedText(text: string): Promise<Float32Array> {
   );
 }
 
-export function inferEmbedTexts(texts: string[]): Promise<Float32Array[]> {
+export function inferEmbedTexts(
+  texts: Array<string>,
+): Promise<Array<Float32Array>> {
   return viaWorker(
     () => callWorker(VectorsSchema, { op: "embedTexts", texts }, []),
     async () => (await import("./inference-core")).coreEmbedTexts(texts),
@@ -339,7 +377,7 @@ export function inferEmbedAudio(audio: Float32Array): Promise<Float32Array> {
 }
 
 export function inferEmbedVideoFrames(
-  frames: VideoEmbeddingFrame[],
+  frames: Array<VideoEmbeddingFrame>,
   duration: number,
 ): Promise<Float32Array> {
   const prepared = createVideoEmbeddingRequest(frames, duration);

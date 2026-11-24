@@ -26,7 +26,9 @@ export function isCombinableImage(
   path: string,
 ): boolean {
   const mime = mimeType?.trim().toLowerCase() ?? "";
-  if (COMBINABLE_TYPES.has(mime)) return true;
+  if (COMBINABLE_TYPES.has(mime)) {
+    return true;
+  }
   const lower = path.toLowerCase();
   return COMBINABLE_EXTENSIONS.some((extension) => lower.endsWith(extension));
 }
@@ -46,7 +48,7 @@ export interface CombinePlacement {
 export interface CombineLayout {
   width: number;
   height: number;
-  items: CombinePlacement[];
+  items: Array<CombinePlacement>;
 }
 
 export type CombineLayoutOptions = Pick<
@@ -59,7 +61,7 @@ export type CombineLayoutOptions = Pick<
  * @remarks The cross axis wins when both are set. Margin and spacing never scale.
  */
 export function layoutCombinedImages(
-  sources: readonly CombineSource[],
+  sources: ReadonlyArray<CombineSource>,
   options: CombineLayoutOptions,
 ): CombineLayout {
   const horizontal = options.direction === "horizontal";

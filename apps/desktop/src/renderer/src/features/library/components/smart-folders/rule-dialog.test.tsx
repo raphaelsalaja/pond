@@ -1,8 +1,11 @@
-import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RuleDialog, type RuleDialogProps } from "./rule-dialog";
+import { RuleDialog } from "./rule-dialog";
+import type { RuleDialogProps } from "./rule-dialog";
 import {
   compileRuleQuery,
   editableQuery,
@@ -14,6 +17,43 @@ const nameQuery = (name: string): Query => ({
   combinator: "or",
   rules: [{ field: "title", operator: "contains", value: name }],
 });
+
+function button(label: string): HTMLButtonElement {
+  const found = [...document.querySelectorAll("button")].find(
+    (node) =>
+      node.textContent === label || node.getAttribute("aria-label") === label,
+  );
+  if (!found) {
+    throw new Error(`Missing button ${label}`);
+  }
+  return found;
+}
+
+async function fill(label: string, value: string) {
+  const field = [...document.querySelectorAll("input")].find(
+    (node) =>
+      node.getAttribute("aria-label") === label ||
+      document.querySelector(`label[for="${node.id}"]`)?.textContent === label,
+  );
+  if (!field) {
+    throw new Error(`Missing input ${label}`);
+  }
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set?.call(field, value);
+    field.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+
+async function settle() {
+  await act(async () => {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 250);
+    });
+  });
+}
 
 describe("smart folder rule dialog", () => {
   let root: Root;
@@ -52,37 +92,9 @@ describe("smart folder rule dialog", () => {
       ),
     );
   }
-  function button(label: string): HTMLButtonElement {
-    const found = [...document.querySelectorAll("button")].find(
-      (node) =>
-        node.textContent === label || node.getAttribute("aria-label") === label,
-    );
-    if (!found) throw new Error(`Missing button ${label}`);
-    return found;
-  }
-  async function fill(label: string, value: string) {
-    const field = [...document.querySelectorAll("input")].find(
-      (node) =>
-        node.getAttribute("aria-label") === label ||
-        document.querySelector(`label[for="${node.id}"]`)?.textContent ===
-          label,
-    );
-    if (!field) throw new Error(`Missing input ${label}`);
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(
-        HTMLInputElement.prototype,
-        "value",
-      )?.set?.call(field, value);
-      field.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-  }
-  async function settle() {
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 250)));
-  }
-
   it("keeps incomplete drafts out of preview and persists only local rules", async () => {
-    const previews: Query[] = [];
-    const saved: { name: string; query: Query }[] = [];
+    const previews: Array<Query> = [];
+    const saved: Array<{ name: string; query: Query }> = [];
     let closed = false;
     await render({
       inheritedQuery: {
@@ -125,7 +137,7 @@ describe("smart folder rule dialog", () => {
   });
 
   it("explains a missing name beside the field and focuses it", async () => {
-    const saved: string[] = [];
+    const saved: Array<string> = [];
     await render({
       query: nameQuery("forest"),
       onSave: async (name) => {
@@ -156,11 +168,14 @@ describe("smart folder rule dialog", () => {
   });
 
   it("ignores a late result for a previous rule draft", async () => {
-    const complete: ((count: number) => void)[] = [];
+    const complete: Array<(count: number) => void> = [];
     await render({
       name: "Landscape",
       query: nameQuery("forest"),
-      count: () => new Promise((resolve) => complete.push(resolve)),
+      count: () =>
+        new Promise((resolve) => {
+          complete.push(resolve);
+        }),
     });
     await settle();
     await fill("Name Value", "lake");
@@ -206,7 +221,7 @@ describe("smart folder rule dialog", () => {
   });
 
   it("lists folders and tags with their parent or group, in the same order as the other pickers", async () => {
-    const saved: Query[] = [];
+    const saved: Array<Query> = [];
     await render({
       name: "Food",
       query: {
@@ -239,13 +254,16 @@ describe("smart folder rule dialog", () => {
       { crumb: null, label: "YouTube" },
       { crumb: "YouTube", label: "Food" },
     ]);
-    const nested = [...document.querySelectorAll('[role="option"]')].find(
+    const nested = [
+      ...document.querySelectorAll<HTMLElement>('[role="option"]'),
+    ].find(
       (node) =>
         node.querySelector("[data-menu-breadcrumb]")?.textContent ===
         "Instagram",
     );
-    if (!(nested instanceof HTMLElement))
+    if (!nested) {
       throw new Error("Missing Instagram Food option");
+    }
     await act(async () => nested.click());
     await act(async () => button("Folders Values").click());
     await act(async () => button("Tags Values").click());
@@ -260,7 +278,7 @@ describe("smart folder rule dialog", () => {
   });
 });
 
-function choiceRows(): { crumb: string | null; label: string | null }[] {
+function choiceRows(): Array<{ crumb: string | null; label: string | null }> {
   const popup = [...document.querySelectorAll("[data-open]")]
     .filter((node) => node.querySelector('[role="option"]'))
     .at(-1);
@@ -316,13 +334,14 @@ describe("rule draft persistence", () => {
       [10, 2],
       ["", 2],
       ["bad", 3],
-    ])
+    ]) {
       expect(
         ruleQueryReady({
           combinator: "and",
           rules: [{ field: "width", operator: "between", value }],
         }),
       ).toBe(false);
+    }
     expect(
       ruleQueryReady({
         combinator: "and",

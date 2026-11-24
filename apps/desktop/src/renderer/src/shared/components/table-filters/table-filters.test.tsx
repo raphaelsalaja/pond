@@ -1,6 +1,7 @@
 import { Tooltip } from "@pond/ui";
 import { act, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { TableFilterBar, TableFilterChip, TableFilterToggle } from "./index";
 
@@ -64,7 +65,9 @@ function button(label: string) {
     (node) =>
       node.getAttribute("aria-label") === label || node.textContent === label,
   );
-  if (!match) throw new Error(`Missing button ${label}`);
+  if (!match) {
+    throw new Error(`Missing button ${label}`);
+  }
   return match;
 }
 
@@ -78,7 +81,9 @@ it("reveals chips and keeps a chosen filter after the menu closes", async () => 
   const failed = [
     ...document.querySelectorAll('[role="menuitemcheckbox"]'),
   ].find((node) => node.textContent === "Failed");
-  if (!failed) throw new Error("Missing Failed option");
+  if (!failed) {
+    throw new Error("Missing Failed option");
+  }
   await act(async () =>
     failed.dispatchEvent(new MouseEvent("click", { bubbles: true })),
   );

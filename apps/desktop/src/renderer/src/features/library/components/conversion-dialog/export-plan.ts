@@ -26,9 +26,15 @@ export interface Dimensions {
 }
 
 export function sizeModeFor({ width, height }: Box): SizeMode {
-  if (width === null && height === null) return "original";
-  if (height === null) return "width";
-  if (width === null) return "height";
+  if (width === null && height === null) {
+    return "original";
+  }
+  if (height === null) {
+    return "width";
+  }
+  if (width === null) {
+    return "height";
+  }
   return width === height ? "long-edge" : "box";
 }
 
@@ -67,7 +73,9 @@ export function canConvert(
   capability: ConversionCapability | undefined,
 ): boolean {
   const { mediaType } = classifyLibraryFile(file.path, file.mimeType);
-  if (mediaType === "image") return true;
+  if (mediaType === "image") {
+    return true;
+  }
   return mediaType === "video" && capability?.adapter === "ffmpeg";
 }
 

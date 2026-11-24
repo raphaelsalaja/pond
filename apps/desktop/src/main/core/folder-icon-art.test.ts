@@ -16,9 +16,15 @@ const markSvg = readFileSync(
 function hueOf(r: number, g: number, b: number): number {
   const max = Math.max(r, g, b);
   const delta = max - Math.min(r, g, b);
-  if (delta === 0) return 0;
-  if (max === r) return (((g - b) / delta + 6) % 6) * 60;
-  if (max === g) return ((b - r) / delta + 2) * 60;
+  if (delta === 0) {
+    return 0;
+  }
+  if (max === r) {
+    return (((g - b) / delta + 6) % 6) * 60;
+  }
+  if (max === g) {
+    return ((b - r) / delta + 2) * 60;
+  }
   return ((r - g) / delta + 4) * 60;
 }
 

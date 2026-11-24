@@ -8,7 +8,7 @@ import { saveTitle } from "./display";
 /** Matches `mutate` from both paginated and plain `useCachedPromise` lists of saves. */
 export type SavesMutate = (
   update: Promise<{ changed: number }>,
-  options: { optimisticUpdate: (data: ApiSave[] | undefined) => ApiSave[] },
+  options: { optimisticUpdate: (data: Array<ApiSave> | undefined) => Array<ApiSave> },
 ) => Promise<{ changed: number }>;
 
 interface Edit {
@@ -23,7 +23,7 @@ interface Edit {
 
 export interface SaveEditor {
   toggleTag(save: ApiSave, tag: string): Promise<void>;
-  addTags(save: ApiSave, tags: string[]): Promise<void>;
+  addTags(save: ApiSave, tags: Array<string>): Promise<void>;
   toggleFolder(save: ApiSave, folder: { id: string; name: string }): Promise<void>;
   setNote(save: ApiSave, note: string): Promise<void>;
   setRating(save: ApiSave, rating: number): Promise<void>;
@@ -47,7 +47,7 @@ export function saveEditor(mutate: SavesMutate, options: { inTrash?: boolean } =
     }
   }
 
-  function editTags(save: ApiSave, add: string[], remove: string[]) {
+  function editTags(save: ApiSave, add: Array<string>, remove: Array<string>) {
     const removed = new Set(remove.map((tag) => tag.toLowerCase()));
     const kept = save.tags.filter((tag) => !removed.has(tag.toLowerCase()));
     const tags = [...kept, ...add.filter((tag) => !kept.some((item) => item.toLowerCase() === tag.toLowerCase()))];
@@ -117,7 +117,9 @@ export function saveEditor(mutate: SavesMutate, options: { inTrash?: boolean } =
         icon: Icon.Trash,
         primaryAction: { title: "Move to Trash", style: Alert.ActionStyle.Destructive },
       });
-      if (!confirmed) return;
+      if (!confirmed) {
+        return;
+      }
       return apply({
         save,
         busy: "Moving to Trash",

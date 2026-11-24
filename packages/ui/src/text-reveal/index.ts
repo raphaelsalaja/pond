@@ -8,18 +8,25 @@ export function useTextReveal(
 ) {
   const reduced = useReducedMotionConfig();
   const [visible, setVisible] = useState(() => (animate ? "" : content));
+  const [started, setStarted] = useState(animate);
   const current = useRef(visible);
   const target = useRef(content);
-  target.current = content;
-  const started = useRef(animate);
+  const settled = Boolean(reduced) || finish;
+  if (animate && !started) {
+    setStarted(true);
+  }
+  if (settled && visible !== content) {
+    setVisible(content);
+  }
   useEffect(() => {
-    if (animate) started.current = true;
-    if (reduced || finish) {
+    target.current = content;
+    if (settled) {
       current.current = content;
-      setVisible(content);
       return;
     }
-    if (!started.current) return;
+    if (!started) {
+      return;
+    }
     let frame = 0;
     let previous = performance.now();
     const tick = (now: number) => {
@@ -30,7 +37,9 @@ export function useTextReveal(
         return;
       }
       const remaining = Array.from(next.slice(current.current.length));
-      if (!remaining.length) return;
+      if (!remaining.length) {
+        return;
+      }
       const elapsed = Math.min(64, now - previous);
       const count = Math.min(
         remaining.length,
@@ -43,14 +52,14 @@ export function useTextReveal(
       previous = now;
       current.current += remaining.slice(0, count).join("");
       setVisible(current.current);
-      if (current.current !== next) frame = requestAnimationFrame(tick);
+      if (current.current !== next) {
+        frame = requestAnimationFrame(tick);
+      }
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [content, animate, reduced, finish]);
+  }, [content, settled, started]);
   const text =
-    !reduced && !finish && started.current && content.startsWith(visible)
-      ? visible
-      : content;
+    !settled && started && content.startsWith(visible) ? visible : content;
   return { text, pending: text !== content };
 }

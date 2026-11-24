@@ -21,17 +21,17 @@ interface Reply {
 interface Walk {
   args?: Partial<ListHarvestArgs>;
   replies?: Map<string, Reply>;
-  resources?: string[];
+  resources?: Array<string>;
   html?: string;
   url?: string;
 }
 
-function page(ids: string[], start: number, total: number): Reply {
+function page(ids: Array<string>, start: number, total: number): Reply {
   const reply = clusterReply(ids.map(savedPost), { start, count: 10, total });
   return { status: 200, body: reply };
 }
 
-function postIds(prefix: string, count: number): string[] {
+function postIds(prefix: string, count: number): Array<string> {
   return Array.from({ length: count }, (_, i) => `${prefix}${100 + i}`);
 }
 
@@ -47,8 +47,8 @@ async function walk({
     runScripts: "outside-only",
   });
   dom.window.document.cookie = 'JSESSIONID="ajax:5551234"';
-  const requested: string[] = [];
-  const tokens: string[] = [];
+  const requested: Array<string> = [];
+  const tokens: Array<string> = [];
   Object.defineProperty(dom.window, "performance", {
     configurable: true,
     value: {
@@ -79,7 +79,7 @@ async function walk({
   return { result, requested, tokens };
 }
 
-function ids(result: ListHarvestResult): string[] {
+function ids(result: ListHarvestResult): Array<string> {
   return result.ok ? result.entries.map((entry) => entry.sourceId) : [];
 }
 

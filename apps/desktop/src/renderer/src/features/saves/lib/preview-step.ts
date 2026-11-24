@@ -1,4 +1,5 @@
-import { matchesBinding, type ShortcutBindings } from "@/shared/lib/shortcuts";
+import { matchesBinding } from "@/shared/lib/shortcuts";
+import type { ShortcutBindings } from "@/shared/lib/shortcuts";
 
 export type PreviewStepBinding = "step" | "video-step";
 
@@ -18,8 +19,12 @@ export function previewStepRuns({
   const seeks =
     matchesBinding(event, bindings, "viewer.seek-back") ||
     matchesBinding(event, bindings, "viewer.seek-forward");
-  if (videoShown && seeks) return false;
-  if (binding === "step") return true;
+  if (videoShown && seeks) {
+    return false;
+  }
+  if (binding === "step") {
+    return true;
+  }
   const steps =
     matchesBinding(event, bindings, "viewer.step-prev") ||
     matchesBinding(event, bindings, "viewer.step-next");

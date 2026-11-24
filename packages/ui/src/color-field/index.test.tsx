@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 
 import { act, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { ColorField } from ".";
 
@@ -25,7 +26,9 @@ function hexInput(): HTMLInputElement {
   const input = host.querySelector<HTMLInputElement>(
     '[aria-label="Background hex"]',
   );
-  if (!input) throw new Error("Missing background hex input");
+  if (!input) {
+    throw new Error("Missing background hex input");
+  }
   return input;
 }
 
@@ -33,13 +36,17 @@ function swatchStyle(): string {
   const swatch = host.querySelector<HTMLElement>(
     '[aria-label="Background picker"]',
   );
-  if (!swatch) throw new Error("Missing background swatch");
+  if (!swatch) {
+    throw new Error("Missing background swatch");
+  }
   return swatch.getAttribute("style") ?? "";
 }
 
 function appliedColor(): string {
   const node = host.querySelector("[data-applied]");
-  if (!node) throw new Error("Missing applied color");
+  if (!node) {
+    throw new Error("Missing applied color");
+  }
   return node.getAttribute("data-applied") ?? "";
 }
 
@@ -120,7 +127,7 @@ it("does not paint a theme from a partial background hex", async () => {
 });
 
 it("lets a background hex be selected and replaced before the applied color echoes", async () => {
-  const commits: string[] = [];
+  const commits: Array<string> = [];
   let value = "#FCFBF8";
   await renderField(value, (hex) => {
     commits.push(hex);
@@ -146,7 +153,7 @@ it("lets a background hex be selected and replaced before the applied color echo
 });
 
 it("shows an externally applied background instead of an in-progress draft", async () => {
-  const commits: string[] = [];
+  const commits: Array<string> = [];
   await renderField("#FCFBF8", (hex) => commits.push(hex));
   await typeHex("#FC");
   expect(hexInput().value).toBe("#FC");
@@ -157,7 +164,7 @@ it("shows an externally applied background instead of an in-progress draft", asy
 });
 
 it("restores the applied background when an unfinished edit is left", async () => {
-  const commits: string[] = [];
+  const commits: Array<string> = [];
   await renderField("#FCFBF8", (hex) => commits.push(hex));
 
   await typeHex("#FCF");

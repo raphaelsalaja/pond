@@ -13,11 +13,22 @@ export type JsonValue =
   | number
   | boolean
   | null
-  | JsonValue[]
+  | Array<JsonValue>
   | JsonRecord;
 
 export function isRecord(value: JsonValue | undefined): value is JsonRecord {
-  return value instanceof Object && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** JSON.parse only yields JSON values, so a shallow check narrows without walking the payload. */
+export function isJsonValue(value: unknown): value is JsonValue {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "object"
+  );
 }
 
 export function asText(value: JsonValue | undefined): string | undefined {
@@ -32,11 +43,13 @@ export function asNumber(value: JsonValue | undefined): number | undefined {
 
 export function at(
   value: JsonValue | undefined,
-  ...path: string[]
+  ...path: Array<string>
 ): JsonValue | undefined {
   let current = value;
   for (const key of path) {
-    if (!isRecord(current)) return undefined;
+    if (!isRecord(current)) {
+      return undefined;
+    }
     current = current[key];
   }
   return current;
@@ -44,10 +57,12 @@ export function at(
 
 /** Page hooks must never throw, so a body that is not JSON reads as absent. */
 export function parseJsonValue(text: string | null): JsonValue | null {
-  if (!text) return null;
+  if (!text) {
+    return null;
+  }
   try {
-    /** SAFETY: JSON.parse only yields JSON values; re-validating that walks the whole payload for nothing. */
-    return JSON.parse(text) as JsonValue;
+    const parsed: unknown = JSON.parse(text);
+    return isJsonValue(parsed) ? parsed : null;
   } catch {
     return null;
   }

@@ -1,14 +1,16 @@
 import {
-  type ChangeDetails,
   createChange,
   createResize,
   definePrimitive,
   dragThreshold,
   isComposing,
   live,
-  type ResizeDraft,
-  type ResizeHandle,
-  type ResizeReason,
+} from "@ui-sdk/core";
+import type {
+  ChangeDetails,
+  ResizeDraft,
+  ResizeHandle,
+  ResizeReason,
 } from "@ui-sdk/core";
 
 export type WindowSide = "left" | "right";
@@ -117,7 +119,9 @@ export const windowHandle = definePrimitive({
 
     context.onOptions((options) => {
       const next = startWidth(options);
-      if (next === resolved) return;
+      if (next === resolved) {
+        return;
+      }
       resolved = next;
       store.set({ width: next });
     });
@@ -137,18 +141,27 @@ export const windowHandle = definePrimitive({
     const writeTrack = (value: string) => {
       const { root } = elements();
       const name = trackOf(store.get().edge);
-      if (value) root?.style.setProperty(name, value);
-      else root?.style.removeProperty(name);
+      if (value) {
+        root?.style.setProperty(name, value);
+      } else {
+        root?.style.removeProperty(name);
+      }
     };
 
     const commit = (
       width: number,
       details: { reason: ResizeReason; event?: Event },
     ) => {
-      if (press?.collapsed) return false;
+      if (press?.collapsed) {
+        return false;
+      }
       const next = clampWidth(width, store.get());
-      if (!change("width", next, details)) return false;
-      if (press) press.committed = true;
+      if (!change("width", next, details)) {
+        return false;
+      }
+      if (press) {
+        press.committed = true;
+      }
       writeTrack(`${next}px`);
       return true;
     };
@@ -156,7 +169,9 @@ export const windowHandle = definePrimitive({
     const startDrag = () => {
       const { root, pane } = elements();
       const body = root?.ownerDocument.body;
-      if (!root || !pane || !body) return;
+      if (!root || !pane || !body) {
+        return;
+      }
       const { cursor, userSelect } = body.style;
       pane.dataset.resizing = "";
       root.dataset.resizing = store.get().edge;
@@ -196,18 +211,24 @@ export const windowHandle = definePrimitive({
 
     const followDraft = () => {
       const { draft, minWidth } = store.get();
-      if (draft === shown) return;
+      if (draft === shown) {
+        return;
+      }
       const previous = shown;
       shown = draft;
       if (!draft) {
-        if (!previous) return;
+        if (!previous) {
+          return;
+        }
         endDrag();
         if (press && !press.committed && !press.collapsed) {
           writeTrack(press.track);
         }
         return;
       }
-      if (!press || press.collapsed) return;
+      if (!press || press.collapsed) {
+        return;
+      }
       if (!previous) {
         press.dragged = true;
         startDrag();
@@ -229,7 +250,9 @@ export const windowHandle = definePrimitive({
       resize,
       setWidth: (width: number) => commit(width, { reason: "imperative" }),
       pointerdown(event: PointerEvent, el: HTMLElement) {
-        if (event.button !== 0) return;
+        if (event.button !== 0) {
+          return;
+        }
         const { root, pane } = elements();
         pointer = true;
         press = {
@@ -241,23 +264,35 @@ export const windowHandle = definePrimitive({
           committed: false,
         };
         const measured = pane?.getBoundingClientRect().width;
-        if (measured) store.set({ width: measured });
+        if (measured) {
+          store.set({ width: measured });
+        }
         resize.pointerdown(event, PANE, compassOf(store.get().edge), el);
         event.preventDefault();
         event.stopPropagation();
       },
       pointerup(event: PointerEvent) {
         const current = press;
-        if (event.button !== 0 || !current) return;
-        if (current.dragged || current.collapsed) return;
-        if (Math.abs(event.clientX - current.x) > dragThreshold) return;
-        if (event.timeStamp - current.time >= CLICK_MAX_MS) return;
+        if (event.button !== 0 || !current) {
+          return;
+        }
+        if (current.dragged || current.collapsed) {
+          return;
+        }
+        if (Math.abs(event.clientX - current.x) > dragThreshold) {
+          return;
+        }
+        if (event.timeStamp - current.time >= CLICK_MAX_MS) {
+          return;
+        }
         current.collapsed = true;
         context.options().onCollapse?.();
       },
       keydown(event: KeyboardEvent) {
         const state = store.get();
-        if (state.draft) return;
+        if (state.draft) {
+          return;
+        }
         pointer = false;
         press = null;
         if (
@@ -270,7 +305,9 @@ export const windowHandle = definePrimitive({
         }
         const { onCollapse } = context.options();
         if (event.key === "Enter") {
-          if (!onCollapse) return;
+          if (!onCollapse) {
+            return;
+          }
           event.preventDefault();
           event.stopPropagation();
           const center = elements().root?.querySelector<HTMLElement>(
@@ -322,11 +359,15 @@ export const windowHandle = definePrimitive({
       on: {
         keydown: (event, { api }) => api.keydown(event),
         pointerdown: (event, { el, api }) => {
-          if (el) api.pointerdown(event, el);
+          if (el) {
+            api.pointerdown(event, el);
+          }
         },
         pointerup: (event, { api }) => api.pointerup(event),
         pointermove: (event, { el }) => {
-          if (el) trackPointer(event, el);
+          if (el) {
+            trackPointer(event, el);
+          }
         },
         /** UI SDK ends a drag on `pointercancel` only, so a capture lost mid-drag, like a window blur, cancels it the same way. */
         lostpointercapture: (event, { el }) => {

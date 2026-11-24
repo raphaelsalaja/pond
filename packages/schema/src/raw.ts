@@ -56,8 +56,8 @@ export interface RawYtdlp {
   release_year?: number;
 
   language?: string;
-  tags?: string[];
-  categories?: string[];
+  tags?: Array<string>;
+  categories?: Array<string>;
   chapters?: Array<{
     start_time?: number;
     end_time?: number;
@@ -143,7 +143,7 @@ export interface CaptureExtras {
   clusters?: unknown;
   dominantColor?: string;
   externalLink?: string;
-  facets?: CaptureFacet[];
+  facets?: Array<CaptureFacet>;
   faviconUrl?: string;
   /** The web page sells a product, book, album or magazine issue. */
   product?: boolean;
@@ -165,7 +165,7 @@ export interface Capture {
   author?: CaptureAuthor;
   publishedAt?: string;
   lang?: string;
-  media: CaptureMedia[];
+  media: Array<CaptureMedia>;
   metrics?: CaptureMetrics;
   duration?: number;
   upstream?: CaptureUpstream;
@@ -185,7 +185,7 @@ export interface RawSplit {
   /** The post's own Source ID, which sync and harvest use in place of the save's. */
   sourceId: string;
   /** Positions in `walkCaptureMedia` order that this save keeps when the post is harvested again. */
-  media: number[];
+  media: Array<number>;
 }
 
 export interface RawJson {
@@ -202,23 +202,31 @@ export interface RawJson {
 
 export function walkCaptureMedia(
   capture: Capture | undefined | null,
-): CaptureMedia[] {
-  if (!capture) return [];
-  const out: CaptureMedia[] = [];
+): Array<CaptureMedia> {
+  if (!capture) {
+    return [];
+  }
+  const out: Array<CaptureMedia> = [];
   const seen = new Set<string>();
-  const pending: Capture[] = [capture];
+  const pending: Array<Capture> = [capture];
   let depth = 0;
   while (pending.length > 0 && depth <= QUOTE_DEPTH_CAP) {
     const level = pending.splice(0, pending.length);
     depth += 1;
     for (const current of level) {
       for (const m of current.media ?? []) {
-        if (seen.has(m.url)) continue;
+        if (seen.has(m.url)) {
+          continue;
+        }
         seen.add(m.url);
         out.push(m);
       }
-      if (current.quoted) pending.push(current.quoted);
-      if (current.replyTo) pending.push(current.replyTo);
+      if (current.quoted) {
+        pending.push(current.quoted);
+      }
+      if (current.replyTo) {
+        pending.push(current.replyTo);
+      }
     }
   }
   return out;

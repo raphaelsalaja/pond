@@ -20,14 +20,18 @@ const Progress = z.object({
 export function createYtdlpProgressReporter(report: ReportDownloadActivity) {
   const streams = new Map<string, { id: string; startedAt: number }>();
   return (line: string) => {
-    if (!line.startsWith(PREFIX)) return;
+    if (!line.startsWith(PREFIX)) {
+      return;
+    }
     let parsed: ReturnType<typeof Progress.safeParse>;
     try {
       parsed = Progress.safeParse(JSON.parse(line.slice(PREFIX.length)));
     } catch {
       return;
     }
-    if (!parsed.success) return;
+    if (!parsed.success) {
+      return;
+    }
     const progress = parsed.data;
     const fileIndex = progress.index ?? 1;
     const at = Date.now();
@@ -52,7 +56,8 @@ export function createYtdlpProgressReporter(report: ReportDownloadActivity) {
         updatedAt: at,
         receivedBytes: progress.received,
         totalBytes:
-          progress.total != null && progress.total >= (progress.received ?? 0)
+          progress.total !== undefined &&
+          progress.total >= (progress.received ?? 0)
             ? progress.total
             : undefined,
         bytesPerSecond: complete ? undefined : progress.speed,

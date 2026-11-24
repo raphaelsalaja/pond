@@ -1,24 +1,15 @@
 import { z } from "zod";
 import { FIELD_IDS } from "./meta";
-import {
-  COMPARATORS_BY_TYPE,
-  type ComparatorId,
-  type FieldId,
-  type Predicate,
-  type Query,
-} from "./types";
+import { COMPARATORS_BY_TYPE } from "./types";
+import type { ComparatorId, Predicate, Query } from "./types";
 
-/** SAFETY: FIELD_IDS is derived from the non-empty FIELD_DESCRIPTORS registry. */
-const fieldIds = FIELD_IDS as readonly [FieldId, ...FieldId[]];
-/** SAFETY: COMPARATORS_BY_TYPE declares at least one comparator. */
-const operatorIds = [...new Set(Object.values(COMPARATORS_BY_TYPE).flat())] as [
-  ComparatorId,
-  ...ComparatorId[],
+const operatorIds: Array<ComparatorId> = [
+  ...new Set(Object.values(COMPARATORS_BY_TYPE).flat()),
 ];
 
 export const PredicateSchema: z.ZodType<Predicate> = z.object({
   id: z.string().optional(),
-  field: z.enum(fieldIds),
+  field: z.enum(FIELD_IDS),
   operator: z.enum(operatorIds),
   value: z.union([
     z.string(),

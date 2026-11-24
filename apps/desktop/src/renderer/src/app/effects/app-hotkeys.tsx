@@ -1,3 +1,4 @@
+import { isElement } from "@pond/ui/dom";
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { useEffect } from "react";
 import { CANVASES_PATH, canvases } from "@/features/canvas";
@@ -34,7 +35,7 @@ import {
 } from "@/features/saves/lib/keyboard-owner";
 import { inspect } from "@/features/saves/state/inspect";
 import { openSources } from "@/features/sources/lib/open";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import {
   appHotkeyBlockedByEditable,
   isEditableTarget,
@@ -56,12 +57,14 @@ import { handleNativeMenuAction } from "./native-menu-actions";
 function scrollActiveViewport(position: "top" | "bottom"): void {
   const active = document.activeElement;
   const target =
-    active instanceof Element &&
+    isElement(active) &&
     active !== document.body &&
     active !== document.documentElement
       ? active.closest<HTMLElement>("[data-scroll-viewport]")
       : document.querySelector<HTMLElement>("[data-scroll-viewport]");
-  if (!target) return;
+  if (!target) {
+    return;
+  }
   const motion = getPrefsSnapshot()?.preferences.reduceMotion ?? "system";
   const reduceMotion =
     motion === "always" ||
@@ -74,7 +77,7 @@ function scrollActiveViewport(position: "top" | "bottom"): void {
 }
 
 function go(path: string): void {
-  getAppRouter()?.history.push(path);
+  getAppHistory()?.push(path);
 }
 
 function cycleAppearance(): void {
@@ -82,22 +85,28 @@ function cycleAppearance(): void {
   const order = ["system", "light", "dark"] as const;
   const idx = order.indexOf(current);
   const next = order[(idx < 0 ? 0 : idx + 1) % order.length] ?? "system";
-  patchPrefsSection("preferences", { appearance: next });
+  void patchPrefsSection("preferences", { appearance: next });
 }
 
 function slideNavActive(): boolean {
-  return document.querySelector("[data-slide-nav]") != null;
+  return document.querySelector("[data-slide-nav]") !== null;
 }
 
 export function AppHotkeys() {
   const [preferences, , loaded] = usePrefs("shortcuts");
   useEffect(() => {
-    if (loaded) configureShortcuts(preferences);
+    if (loaded) {
+      configureShortcuts(preferences);
+    }
   }, [preferences, loaded]);
   useEffect(() => {
     return window.pond.onShortcutAction((id) => {
-      if (isEditableTarget()) return;
-      if (id === "view.layout-cycle") cycleLayout();
+      if (isEditableTarget()) {
+        return;
+      }
+      if (id === "view.layout-cycle") {
+        cycleLayout();
+      }
     });
   }, []);
   const shortcuts = useShortcutBindings();
@@ -125,7 +134,9 @@ export function AppHotkeys() {
         sequence: [...bindingSequence(shortcuts, "nav.canvases")],
         callback: () => {
           showSidebarPanel("canvases");
-          if (!canvases.snapshot().length) go(CANVASES_PATH);
+          if (!canvases.snapshot().length) {
+            go(CANVASES_PATH);
+          }
         },
       },
       {
@@ -153,12 +164,15 @@ export function AppHotkeys() {
     ].map((binding) => ({
       ...binding,
       callback: () => {
-        if (isEditableTarget()) return;
+        if (isEditableTarget()) {
+          return;
+        }
         if (
           document.activeElement !== document.body &&
           !collectionOwnsKeyboard()
-        )
+        ) {
           return;
+        }
         binding.callback();
       },
     })),
@@ -170,7 +184,9 @@ export function AppHotkeys() {
       {
         hotkey: bindingKeys(shortcuts, "library.search"),
         callback: (event: KeyboardEvent) => {
-          if (event.defaultPrevented) return;
+          if (event.defaultPrevented) {
+            return;
+          }
           event.preventDefault();
           commandMenu.toggle();
         },
@@ -188,12 +204,12 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "nav.back"),
-        callback: () => getAppRouter()?.history.back(),
+        callback: () => getAppHistory()?.back(),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "nav.forward"),
-        callback: () => getAppRouter()?.history.forward(),
+        callback: () => getAppHistory()?.forward(),
         options: { ignoreInputs: true },
       },
       {
@@ -260,7 +276,9 @@ export function AppHotkeys() {
       {
         hotkey: bindingKeys(shortcuts, "view.sidebar"),
         callback: () => {
-          if (slideNavActive()) return;
+          if (slideNavActive()) {
+            return;
+          }
           libraryChrome.toggleSidebar();
         },
         options: { ignoreInputs: true, conflictBehavior: "allow" as const },
@@ -362,8 +380,12 @@ export function AppHotkeys() {
     ].map((binding) => ({
       ...binding,
       callback: (event: KeyboardEvent) => {
-        if (event.defaultPrevented || event.isComposing) return;
-        if (appHotkeyBlockedByEditable(event)) return;
+        if (event.defaultPrevented || event.isComposing) {
+          return;
+        }
+        if (appHotkeyBlockedByEditable(event)) {
+          return;
+        }
         const active = document.activeElement;
         const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
         if (
@@ -371,14 +393,16 @@ export function AppHotkeys() {
           active !== document.body &&
           !collectionOwnsKeyboard() &&
           !saveOwnsKeyboard(event)
-        )
+        ) {
           return;
+        }
         binding.callback(event);
         if (
           !("preventDefault" in binding.options) ||
           binding.options.preventDefault !== false
-        )
+        ) {
           event.preventDefault();
+        }
       },
       options: { ...binding.options, preventDefault: false },
     })),

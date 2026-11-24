@@ -3,7 +3,6 @@ import {
   FOLDER_DRAG_TYPE,
   FOLDER_NEST_DWELL_MS,
   FOLDER_ROOT_DROP_ID,
-  type FolderDropTarget,
   folderDropKind,
   isFolderDrag,
   pickFolderDropZone,
@@ -11,6 +10,7 @@ import {
   planFolderSidebarDrop,
   resolveFolderDropTarget,
 } from "./folder-drop";
+import type { FolderDropTarget } from "./folder-drop";
 
 const travel = { id: "travel", parentId: null };
 const tickets = { id: "tickets", parentId: "travel" };

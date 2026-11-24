@@ -2,8 +2,8 @@
   display: grid;
   flex: none;
   place-items: center;
-  width: 32;
-  height: 32;
+  width: 32px;
+  height: 32px;
 }
 
 .thumb {

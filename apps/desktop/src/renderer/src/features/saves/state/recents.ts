@@ -8,7 +8,7 @@ import { loadPrefs, patchPrefsSection } from "@/shared/state/prefs";
 
 const RECENTS_CAP = 20;
 
-const store = new Store<RecentSaveVisit[]>([]);
+const store = new Store<Array<RecentSaveVisit>>([]);
 
 protectSaves(() => store.state.map((entry) => entry.saveId));
 
@@ -21,7 +21,9 @@ const RecentsSchema = z.array(
 
 let hydrated = false;
 function hydrate(): void {
-  if (hydrated) return;
+  if (hydrated) {
+    return;
+  }
   hydrated = true;
   void loadPrefs()
     .then((prefs) => {
@@ -50,21 +52,23 @@ function recordVisit(saveId: string): void {
       ...state.filter((e) => e.saveId !== saveId),
     ].slice(0, RECENTS_CAP);
   });
-  patchPrefsSection("saveRecents", { entries: store.state });
+  void patchPrefsSection("saveRecents", { entries: store.state });
 }
 
 export function clearRecents(): void {
   store.setState(() => []);
-  patchPrefsSection("saveRecents", { entries: [] });
+  void patchPrefsSection("saveRecents", { entries: [] });
 }
 
-export function useRecents(): RecentSaveVisit[] {
+export function useRecents(): Array<RecentSaveVisit> {
   return useSelector(store, (s) => s);
 }
 
 export function useTrackVisit(saveId: string | null | undefined): void {
   useEffect(() => {
-    if (!saveId) return;
+    if (!saveId) {
+      return;
+    }
     recordVisit(saveId);
   }, [saveId]);
 }

@@ -1,9 +1,11 @@
 import { Input } from "@pond/ui";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { z } from "zod";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { formatBytes, formatPlural } from "@/shared/lib/format";
 import { archiveSafety } from "./archive";
 import styles from "./styles.module.css";
@@ -40,26 +42,36 @@ export function ArchiveFileViewer({
   toolbarStart,
   toolbarActions,
 }: ArchiveFileViewerProps) {
-  const [entries, setEntries] = useState<ArchiveEntry[] | null>(null);
+  const [entries, setEntries] = useState<Array<ArchiveEntry> | null>(null);
   const [query, setQuery] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [inspectError, setInspectError] = useState<string | null>(null);
+  const readable = /\.(zip|lottie|livp)$/i.test(path);
+  const sourceSafety = archiveSafety({
+    entries: 0,
+    compressed: size,
+    uncompressed: 0,
+  });
+  const error =
+    readable && !sourceSafety.safe
+      ? `Preview blocked: ${sourceSafety.reason}.`
+      : inspectError;
+  const sourceSafe = sourceSafety.safe;
 
   useEffect(() => {
-    if (!/\.(zip|lottie|livp)$/i.test(path)) {
+    if (!readable) {
       onUnavailable();
       return;
     }
-    const sourceSafety = archiveSafety({
-      entries: 0,
-      compressed: size,
-      uncompressed: 0,
-    });
-    if (!sourceSafety.safe) {
-      setError(`Preview blocked: ${sourceSafety.reason}.`);
+    if (!sourceSafe) {
       return;
     }
 
     let alive = true;
+    const fail = (reason: string) => {
+      if (alive) {
+        setInspectError(`This archive could not be inspected: ${reason}`);
+      }
+    };
     void Promise.all([
       fetch(url).then((response) => response.arrayBuffer()),
       import("jszip"),
@@ -83,25 +95,27 @@ export function ArchiveFileViewer({
             0,
           ),
         });
-        if (!bounds.safe) throw new Error(bounds.reason ?? "unsafe archive");
-        if (alive) setEntries(next.slice(0, 2_000));
+        if (!bounds.safe) {
+          fail(bounds.reason ?? "unsafe archive");
+          return;
+        }
+        if (alive) {
+          setEntries(next.slice(0, 2000));
+        }
       })
-      .catch((reason: Error) => {
-        if (!alive) return;
-        setError(
-          `This archive could not be inspected: ${
-            reason instanceof Error ? reason.message : "unknown error"
-          }`,
-        );
+      .catch((cause: unknown) => {
+        fail(errorCopy(cause, "unknown error"));
       });
     return () => {
       alive = false;
     };
-  }, [onUnavailable, path, size, url]);
+  }, [onUnavailable, readable, size, sourceSafe, url]);
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!entries || !needle) return entries ?? [];
+    if (!entries || !needle) {
+      return entries ?? [];
+    }
     return entries.filter((entry) => entry.name.toLowerCase().includes(needle));
   }, [entries, query]);
 

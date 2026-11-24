@@ -1,13 +1,12 @@
 import { Dialog } from "@pond/ui";
 import {
-  type KeyboardEvent,
-  type RefObject,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import type { KeyboardEvent, RefObject } from "react";
 import {
   commandMenu,
   useCommandMenuOpen,
@@ -19,10 +18,10 @@ import { formatPlural } from "@/shared/lib/format";
 import { usePrefs } from "@/shared/state/prefs";
 import { ResultsList } from "./results-list";
 import { SearchField } from "./search-field";
-import styles from "./styles.module.css";
 import type { MenuEntry, MenuPage } from "./types";
 import { useKeyboardMode } from "./use-keyboard-mode";
 import { useMenuModel } from "./use-menu-model";
+import styles from "./styles.module.css";
 
 const PAGE_STEP = 8;
 
@@ -62,8 +61,12 @@ function actionsPage(entry: MenuEntry): MenuPage | null {
 }
 
 function resultsAnnouncement(query: string, count: number): string {
-  if (!query) return "";
-  if (count === 0) return "No results found";
+  if (!query) {
+    return "";
+  }
+  if (count === 0) {
+    return "No results found";
+  }
   return formatPlural(count, { one: "result", other: "results" });
 }
 
@@ -75,7 +78,7 @@ function CommandMenu({
   const inputRef = useRef<HTMLInputElement>(null);
   const keyboard = useKeyboardMode();
   const [query, setQuery] = useState("");
-  const [stack, setStack] = useState<readonly Frame[]>([]);
+  const [stack, setStack] = useState<ReadonlyArray<Frame>>([]);
   const [direction, setDirection] = useState<"forward" | "back">();
   const [activeId, setActiveId] = useState<string>();
   const [focused, setFocused] = useState(true);
@@ -112,7 +115,9 @@ function CommandMenu({
 
   function back(): boolean {
     const frame = stack.at(-1);
-    if (!frame) return false;
+    if (!frame) {
+      return false;
+    }
     setStack(stack.slice(0, -1));
     setQuery(frame.query);
     setActiveId(frame.activeId);
@@ -122,27 +127,38 @@ function CommandMenu({
 
   function execute(index: number): void {
     const entry = entries[index]?.entry;
-    if (!entry) return;
+    if (!entry) {
+      return;
+    }
     const next = entry.page?.();
-    if (next) openPage(next);
-    else if (entry.run) runAfterClose(entry.run);
+    if (next) {
+      openPage(next);
+    } else if (entry.run) {
+      runAfterClose(entry.run);
+    }
   }
 
   function openActions(): boolean {
     const next = active && actionsPage(active);
-    if (!next) return false;
+    if (!next) {
+      return false;
+    }
     openPage(next);
     return true;
   }
 
   function moveTo(index: number): void {
     const entry = entries[index]?.entry;
-    if (entry) setActiveId(entry.id);
+    if (entry) {
+      setActiveId(entry.id);
+    }
   }
 
   function move(delta: number): void {
     const count = entries.length;
-    if (count > 0) moveTo((activeIndex + delta + count) % count);
+    if (count > 0) {
+      moveTo((activeIndex + delta + count) % count);
+    }
   }
 
   function jump(delta: number): void {
@@ -178,7 +194,9 @@ function CommandMenu({
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
     const { nativeEvent, key, metaKey, ctrlKey, shiftKey, altKey } = event;
-    if (nativeEvent.isComposing || nativeEvent.keyCode === 229) return;
+    if (nativeEvent.isComposing || nativeEvent.keyCode === 229) {
+      return;
+    }
     const input = event.currentTarget;
     const collapsed = input.selectionStart === input.selectionEnd;
     const atStart = collapsed && input.selectionStart === 0;
@@ -186,25 +204,42 @@ function CommandMenu({
     const chord = ctrlKey && !metaKey && !altKey && !shiftKey;
 
     let handled = true;
-    if (key === "ArrowDown" && metaKey) jump(entries.length);
-    else if (key === "ArrowUp" && metaKey) jump(-entries.length);
-    else if (key === "ArrowDown" || (chord && (key === "n" || key === "j")))
+    if (key === "ArrowDown" && metaKey) {
+      jump(entries.length);
+    } else if (key === "ArrowUp" && metaKey) {
+      jump(-entries.length);
+    } else if (key === "ArrowDown" || (chord && (key === "n" || key === "j"))) {
       move(1);
-    else if (key === "ArrowUp" || (chord && (key === "p" || key === "k")))
+    } else if (key === "ArrowUp" || (chord && (key === "p" || key === "k"))) {
       move(-1);
-    else if (key === "Home") jump(-entries.length);
-    else if (key === "End") jump(entries.length);
-    else if (key === "PageDown") jump(PAGE_STEP);
-    else if (key === "PageUp") jump(-PAGE_STEP);
-    else if (key === "Enter" && metaKey) openActions();
-    else if (key === "Enter") execute(activeIndex);
-    else if (key === "Tab" && shiftKey) back();
-    else if (key === "Tab") openActions();
-    else if (key === "ArrowRight" && atEnd) handled = openActions();
-    else if (key === "ArrowLeft" && atStart) handled = back();
-    else if (key === "Backspace" && query === "") handled = back();
-    else handled = false;
-    if (handled) event.preventDefault();
+    } else if (key === "Home") {
+      jump(-entries.length);
+    } else if (key === "End") {
+      jump(entries.length);
+    } else if (key === "PageDown") {
+      jump(PAGE_STEP);
+    } else if (key === "PageUp") {
+      jump(-PAGE_STEP);
+    } else if (key === "Enter" && metaKey) {
+      openActions();
+    } else if (key === "Enter") {
+      execute(activeIndex);
+    } else if (key === "Tab" && shiftKey) {
+      back();
+    } else if (key === "Tab") {
+      openActions();
+    } else if (key === "ArrowRight" && atEnd) {
+      handled = openActions();
+    } else if (key === "ArrowLeft" && atStart) {
+      handled = back();
+    } else if (key === "Backspace" && query === "") {
+      handled = back();
+    } else {
+      handled = false;
+    }
+    if (handled) {
+      event.preventDefault();
+    }
   }
 
   return (
@@ -260,7 +295,9 @@ export function CommandMenuHost({
     <Dialog.Root
       open={open}
       onOpenChange={(nextOpen, details) => {
-        if (nextOpen) return;
+        if (nextOpen) {
+          return;
+        }
         if (details.reason === "escape-key" && backRef.current?.()) {
           details.cancel();
           return;

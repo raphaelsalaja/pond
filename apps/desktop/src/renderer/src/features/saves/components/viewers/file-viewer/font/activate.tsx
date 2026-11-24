@@ -12,7 +12,9 @@ export function FontActivate({ save }: { save: Save }) {
     void window.pond
       .query("saves.fontStatus", { id: save.id })
       .then((status) => {
-        if (active) setActivated(status.activated);
+        if (active) {
+          setActivated(status.activated);
+        }
       });
     return () => {
       active = false;
@@ -25,7 +27,9 @@ export function FontActivate({ save }: { save: Save }) {
       pressed={activated}
       onClick={() => {
         void setFontActivation(save.id, !activated).then((ok) => {
-          if (ok) setActivated(!activated);
+          if (ok) {
+            setActivated(!activated);
+          }
         });
       }}
     >

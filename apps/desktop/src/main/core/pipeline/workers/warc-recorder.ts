@@ -1,5 +1,6 @@
 import { once } from "node:events";
-import { createWriteStream, type WriteStream } from "node:fs";
+import { createWriteStream } from "node:fs";
+import type { WriteStream } from "node:fs";
 import type { JsonValue } from "@pond/schema/json";
 import type { WebContents } from "electron";
 import log from "electron-log/main.js";
@@ -90,10 +91,12 @@ const DROPPED_HEADERS = new Set([
 function toHttpHeaders(
   raw: Record<string, string>,
   bodyLength: number,
-): [string, string][] {
-  const entries: [string, string][] = [];
+): Array<[string, string]> {
+  const entries: Array<[string, string]> = [];
   for (const [name, value] of Object.entries(raw)) {
-    if (DROPPED_HEADERS.has(name.toLowerCase())) continue;
+    if (DROPPED_HEADERS.has(name.toLowerCase())) {
+      continue;
+    }
     /** CDP folds duplicate headers into one \n-joined value. */
     for (const part of value.split("\n")) {
       entries.push([name, part]);
@@ -124,7 +127,9 @@ export class WarcRecorder {
   static async start(wc: WebContents, filePath: string): Promise<WarcRecorder> {
     const recorder = new WarcRecorder(wc, filePath);
     const dbg = wc.debugger;
-    if (!dbg.isAttached()) dbg.attach("1.3");
+    if (!dbg.isAttached()) {
+      dbg.attach("1.3");
+    }
     recorder.attached = true;
     dbg.on("message", recorder.onMessage);
     try {
@@ -154,14 +159,16 @@ export class WarcRecorder {
         }),
         CDP_TIMEOUT_MS,
       );
-    } catch (err) {
+    } catch (error) {
       dbg.off("message", recorder.onMessage);
       try {
         dbg.detach();
-      } catch {}
+      } catch {
+        /** The debugger may already be detached; the original error is what gets thrown. */
+      }
       recorder.attached = false;
       recorder.stream.destroy();
-      throw err;
+      throw error;
     }
     return recorder;
   }
@@ -177,7 +184,9 @@ export class WarcRecorder {
       }
       if (method === "Network.responseReceived") {
         const p = ResponseReceivedSchema.parse(params);
-        if (!isArchivableUrl(p.response.url)) return;
+        if (!isArchivableUrl(p.response.url)) {
+          return;
+        }
         /** A range response holds one slice of the file; replaying that slice alone leaves media undecodable. */
         if (p.response.status === 206) {
           this.partialUrls.add(p.response.url);
@@ -196,11 +205,15 @@ export class WarcRecorder {
       if (method === "Network.loadingFinished") {
         const p = RequestIdSchema.parse(params);
         const meta = this.responses.get(p.requestId);
-        if (!meta) return;
+        if (!meta) {
+          return;
+        }
         this.responses.delete(p.requestId);
-        const task = this.captureBody(p.requestId, meta).catch((err) => {
-          log.debug("[pond warc] body capture failed", meta.url, err);
-        });
+        const task = this.captureBody(p.requestId, meta).catch(
+          (cause: unknown) => {
+            log.debug("[pond warc] body capture failed", meta.url, cause);
+          },
+        );
         this.pending.add(task);
         void task.finally(() => this.pending.delete(task));
         return;
@@ -212,14 +225,14 @@ export class WarcRecorder {
       }
       if (method === "Fetch.requestPaused") {
         const p = FetchRequestPausedSchema.parse(params);
-        const task = this.capturePausedResponse(p).catch((err) => {
-          log.debug("[pond warc] paused capture failed", p.request.url, err);
+        const task = this.capturePausedResponse(p).catch((cause: unknown) => {
+          log.debug("[pond warc] paused capture failed", p.request.url, cause);
         });
         this.pending.add(task);
         void task.finally(() => this.pending.delete(task));
       }
-    } catch (err) {
-      log.debug("[pond warc] event handling failed", method, err);
+    } catch (error) {
+      log.debug("[pond warc] event handling failed", method, error);
     }
   };
 
@@ -228,7 +241,7 @@ export class WarcRecorder {
     try {
       const status = p.responseStatusCode;
       if (
-        status != null &&
+        status !== undefined &&
         (status < 300 || status >= 400) &&
         isArchivableUrl(p.request.url) &&
         !this.writtenUrls.has(p.request.url)
@@ -269,7 +282,9 @@ export class WarcRecorder {
           }),
           CDP_TIMEOUT_MS,
         );
-      } catch {}
+      } catch {
+        /** A request whose page already closed has nothing left to resume. */
+      }
     }
   }
 
@@ -277,7 +292,9 @@ export class WarcRecorder {
     requestId: string,
     meta: CdpResponse,
   ): Promise<void> {
-    if (this.writtenUrls.has(meta.url)) return;
+    if (this.writtenUrls.has(meta.url)) {
+      return;
+    }
     let body = new Uint8Array(0);
     let bodyRetrieved = false;
     try {
@@ -293,11 +310,15 @@ export class WarcRecorder {
         ? new Uint8Array(Buffer.from(res.body, "base64"))
         : new Uint8Array(Buffer.from(res.body, "utf8"));
       bodyRetrieved = true;
-    } catch {}
+    } catch {
+      /** Evicted bodies stay unretrieved; `expectsBody` decides whether to record the empty response. */
+    }
     if ((!bodyRetrieved || body.byteLength === 0) && this.expectsBody(meta)) {
       return;
     }
-    if (body.byteLength > MAX_BODY_BYTES) return;
+    if (body.byteLength > MAX_BODY_BYTES) {
+      return;
+    }
     this.enqueueWrite(meta, body);
   }
 
@@ -314,8 +335,12 @@ export class WarcRecorder {
   }
 
   private enqueueWrite(meta: CdpResponse, body: Uint8Array): void {
-    if (this.writtenUrls.has(meta.url)) return;
-    if (body.byteLength > this.remainingCaptureBudget()) return;
+    if (this.writtenUrls.has(meta.url)) {
+      return;
+    }
+    if (body.byteLength > this.remainingCaptureBudget()) {
+      return;
+    }
     this.writtenUrls.add(meta.url);
     this.reservedBytes += body.byteLength;
     const task = this.writeChain.then(async () => {
@@ -332,7 +357,9 @@ export class WarcRecorder {
           [body],
         );
         const bytes = await WARCSerializer.serialize(record, { gzip: true });
-        if (bytes.byteLength > MAX_TOTAL_BYTES - this.totalBytes) return;
+        if (bytes.byteLength > MAX_TOTAL_BYTES - this.totalBytes) {
+          return;
+        }
         this.totalBytes += bytes.byteLength;
         if (!this.stream.write(bytes)) {
           await once(this.stream, "drain");
@@ -341,23 +368,25 @@ export class WarcRecorder {
         this.reservedBytes -= body.byteLength;
       }
     });
-    this.writeChain = task.catch((err) => {
-      log.warn("[pond warc] record write failed", meta.url, err);
+    this.writeChain = task.catch((cause: unknown) => {
+      log.warn("[pond warc] record write failed", meta.url, cause);
     });
     this.pending.add(task);
     void task.catch(() => {}).finally(() => this.pending.delete(task));
   }
 
   /** Refetches range-loaded and DOM-referenced media through the page's session so each URL is stored whole. */
-  async captureFullBodies(extraUrls: readonly string[] = []): Promise<void> {
+  async captureFullBodies(
+    extraUrls: ReadonlyArray<string> = [],
+  ): Promise<void> {
     const queue = [...new Set([...this.partialUrls, ...extraUrls])].filter(
       (url) => isArchivableUrl(url) && !this.writtenUrls.has(url),
     );
     this.partialUrls.clear();
     const worker = async (): Promise<void> => {
       for (let url = queue.shift(); url; url = queue.shift()) {
-        await this.captureFullBody(url).catch((err) => {
-          log.debug("[pond warc] full body capture failed", url, err);
+        await this.captureFullBody(url).catch((cause: unknown) => {
+          log.debug("[pond warc] full body capture failed", url, cause);
         });
       }
     };
@@ -370,8 +399,9 @@ export class WarcRecorder {
   }
 
   private async captureFullBody(url: string): Promise<void> {
-    if (this.writtenUrls.has(url) || this.remainingCaptureBudget() === 0)
+    if (this.writtenUrls.has(url) || this.remainingCaptureBudget() === 0) {
       return;
+    }
     const res = await this.wc.session.fetch(url, {
       signal: AbortSignal.timeout(FULL_BODY_TIMEOUT_MS),
     });
@@ -383,7 +413,9 @@ export class WarcRecorder {
       res,
       this.remainingCaptureBudget(),
     );
-    if (!body) return;
+    if (!body) {
+      return;
+    }
     const headers: Record<string, string> = {};
     res.headers.forEach((value, name) => {
       headers[name] = headers[name] ? `${headers[name]}\n${value}` : value;
@@ -399,8 +431,12 @@ export class WarcRecorder {
     const deadline = Date.now() + budgetMs;
     while (Date.now() < deadline) {
       const quietFor = Date.now() - this.lastNetworkActivity;
-      if (quietFor >= quietMs && this.responses.size === 0) return;
-      await new Promise((r) => setTimeout(r, Math.min(250, quietMs)));
+      if (quietFor >= quietMs && this.responses.size === 0) {
+        return;
+      }
+      await new Promise((r) => {
+        setTimeout(r, Math.min(250, quietMs));
+      });
     }
   }
 
@@ -410,7 +446,9 @@ export class WarcRecorder {
       const remaining = deadline - Date.now();
       await Promise.race([
         Promise.allSettled(this.pending),
-        new Promise((r) => setTimeout(r, remaining)),
+        new Promise((r) => {
+          setTimeout(r, remaining);
+        }),
       ]);
     }
   }
@@ -431,10 +469,14 @@ export class WarcRecorder {
           })(),
           CDP_TIMEOUT_MS,
         );
-      } catch {}
+      } catch {
+        /** The page may be gone already; detaching below still releases the debugger. */
+      }
       try {
         dbg.detach();
-      } catch {}
+      } catch {
+        /** The debugger detaches itself when its page closes. */
+      }
       this.attached = false;
     }
     await new Promise<void>((resolvePromise, reject) => {

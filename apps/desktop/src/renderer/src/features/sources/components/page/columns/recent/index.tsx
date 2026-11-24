@@ -14,7 +14,7 @@ import styles from "./styles.module.css";
 const COUNT = 8;
 const THUMB_PX = 80;
 
-function useRecentIds(row: SourceTableRow): string[] {
+function useRecentIds(row: SourceTableRow): Array<string> {
   const overview = useSourceOverview(row.id);
   const ids = useMemo(
     () => (overview.data?.recent ?? []).slice(0, COUNT),
@@ -22,7 +22,9 @@ function useRecentIds(row: SourceTableRow): string[] {
   );
   const key = ids.join(",");
   useEffect(() => {
-    if (key) void ensureSaves(key.split(",")).catch(() => undefined);
+    if (key) {
+      void ensureSaves(key.split(",")).catch(() => undefined);
+    }
   }, [key]);
   useRetainedSaves(ids);
   return ids;
@@ -33,7 +35,9 @@ function Thumb({ id }: { id: string }) {
   useAspectVersion(Boolean(save));
   const ratio = save ? layoutAspectFor(save) : 16 / 10;
   const src = useMemo(() => {
-    if (!save) return undefined;
+    if (!save) {
+      return undefined;
+    }
     const unit = pickCardUnit(save);
     const candidate = unit?.isVideo ? unit.posterUrl : unit?.url;
     return candidate?.startsWith("pond://")
@@ -62,7 +66,9 @@ function Thumb({ id }: { id: string }) {
 /** Newest saves at a shared height and their true widths. */
 export function RecentCell({ row }: { row: SourceTableRow }) {
   const ids = useRecentIds(row);
-  if (ids.length === 0) return null;
+  if (ids.length === 0) {
+    return null;
+  }
   return (
     <span className={styles.strip}>
       {ids.map((id) => (

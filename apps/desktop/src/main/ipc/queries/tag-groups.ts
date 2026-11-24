@@ -2,11 +2,11 @@ import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
 import {
   NonEmptyTextParam,
-  type QueryHandlerMap,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 type MergeGroupOperation = (
   from: string,

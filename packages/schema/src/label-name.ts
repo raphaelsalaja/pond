@@ -7,8 +7,8 @@ export function normalizeLabelName(raw: string): string {
     .normalize("NFC")
     .trim()
     .replace(/^#+/, "")
-    .replace(/\s+/g, " ")
-    .replace(/[^\p{L}\p{M}0-9 /:.-]/gu, "")
+    .replaceAll(/\s+/g, " ")
+    .replaceAll(/[^\p{L}\p{M}0-9 /:.-]/gu, "")
     .trim();
 }
 

@@ -1,23 +1,25 @@
-import { type ConnectedAccount, type Source, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { accountImportScope } from "../../../shared/import-scope";
 import { getDb } from "../../db";
-import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
+import { enqueue } from "../pipeline/enqueue";
+import type { EnqueueItem } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
-import { addCollectionEntry } from "../refresh/harvest/collection-entries";
-import type {
-  BookmarksHarvestArgs,
-  BookmarksHarvestResult,
-} from "../refresh/harvest/twitter";
 import {
   harvestTwitterBookmarkFolder,
   harvestTwitterBookmarks,
   harvestTwitterLikes,
   listSourceCollections,
 } from "../refresh/harvest-window";
+import { addCollectionEntry } from "../refresh/harvest/collection-entries";
+import type {
+  BookmarksHarvestArgs,
+  BookmarksHarvestResult,
+} from "../refresh/harvest/twitter";
 import { getAccount, partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
 import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
@@ -79,7 +81,9 @@ export async function syncTwitter(
     !baseline.full &&
     (repairLinks || (checkCollections && plan.collections))
   ) {
-    for (const id of await loadAllKnownIds(account)) knownIds.add(id);
+    for (const id of await loadAllKnownIds(account)) {
+      knownIds.add(id);
+    }
   }
   const bookmarkArgs = {
     knownIds: readAll ? [] : Array.from(knownIds),
@@ -90,7 +94,9 @@ export async function syncTwitter(
   const harvestOpts = {
     partition: partitionForAccount(accountId),
     onProgress: (p: { phase: "hydrate" | "scroll"; fresh: number }) => {
-      if (signal.aborted) return;
+      if (signal.aborted) {
+        return;
+      }
       const message =
         p.phase === "hydrate" ? "Loading" : p.fresh > 0 ? "Found" : "Scanning";
       emit({ accountId, source, state: "running", message });
@@ -160,7 +166,7 @@ export async function syncTwitter(
     },
     { harvestTwitterLikes },
   );
-  const gaps: string[] = [];
+  const gaps: Array<string> = [];
   if (likes && !likes.ok) {
     log.warn(`[pond sync:twitter] likes harvest failed: ${likes.reason}`);
     gaps.push(listGapNote("Likes", likes.reason));
@@ -195,7 +201,9 @@ export async function syncTwitter(
         },
       })
     : NO_COLLECTION_PASS;
-  if (collectionPass.gap) gaps.push(collectionPass.gap);
+  if (collectionPass.gap) {
+    gaps.push(collectionPass.gap);
+  }
 
   const relisted = await mergeListKindsOntoExisting(
     source,
@@ -204,7 +212,9 @@ export async function syncTwitter(
       listKinds: e.listKinds,
     })),
   );
-  for (const id of relisted) knownIds.delete(id);
+  for (const id of relisted) {
+    knownIds.delete(id);
+  }
 
   if (repairLinks) {
     const repaired = await repairTweetLinks(entries);
@@ -278,8 +288,12 @@ export async function syncTwitter(
     queue.map((entry) => {
       const item: EnqueueItem = { url: entry.url };
       const seed = buildTwitterBookmarkSeed(entry);
-      if (seed) item.seed = seed;
-      if (entry.listKinds) item.listKinds = entry.listKinds;
+      if (seed) {
+        item.seed = seed;
+      }
+      if (entry.listKinds) {
+        item.listKinds = entry.listKinds;
+      }
       return item;
     }),
     { trigger: "sync:twitter", accountId, generationId },
@@ -322,7 +336,7 @@ export async function syncTwitter(
 
 /** Walks folders one at a time; a missing folder is skipped, while a sign-out or rate limit stops the run. */
 async function harvestFolders(
-  folders: readonly { id: string }[],
+  folders: ReadonlyArray<{ id: string }>,
   args: BookmarksHarvestArgs,
   opts: Parameters<typeof harvestTwitterBookmarkFolder>[2],
 ): Promise<BookmarksHarvestResult> {
@@ -356,6 +370,8 @@ async function harvestFolders(
     captures.push(...result.captures);
     reachedEnd &&= result.reachedEnd;
   }
-  if (failed && entries.size === 0) return failed;
+  if (failed && entries.size === 0) {
+    return failed;
+  }
   return { ok: true, entries: [...entries.values()], captures, reachedEnd };
 }

@@ -12,7 +12,8 @@ import {
 import { libraryViewContext } from "@/features/saves";
 import { selection } from "@/features/saves/navigation";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
-import { createNewActions, type NewActionServices } from "./actions";
+import { createNewActions } from "./actions";
+import type { NewActionServices } from "./actions";
 
 let notificationSequence = 0;
 const notify = vi.fn<NewActionServices["notify"]>(

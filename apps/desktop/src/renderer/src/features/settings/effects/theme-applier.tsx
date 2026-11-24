@@ -1,5 +1,6 @@
 import { normalizeTheme, resolveActiveTheme } from "@pond/schema/db";
-import { type ShellHint, ShellHintSchema } from "@shared/shell-hint";
+import { ShellHintSchema } from "@shared/shell-hint";
+import type { ShellHint } from "@shared/shell-hint";
 import { useEffect } from "react";
 import { useMediaMatch } from "rooks";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
@@ -21,7 +22,9 @@ function persistShell(patch: ShellHint) {
       SHELL_KEY,
       JSON.stringify({ ...readShell(), ...patch }),
     );
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked, and the shell hint is only a startup cache. */
+  }
 }
 
 export function ThemeApplier() {
@@ -51,8 +54,11 @@ export function ThemeApplier() {
   useEffect(() => {
     const root = document.documentElement;
     const setReduce = (reduce: boolean) => {
-      if (reduce) root.setAttribute("data-reduce-motion", "true");
-      else root.removeAttribute("data-reduce-motion");
+      if (reduce) {
+        root.setAttribute("data-reduce-motion", "true");
+      } else {
+        root.removeAttribute("data-reduce-motion");
+      }
     };
     if (prefs.reduceMotion === "always") {
       setReduce(true);
@@ -72,9 +78,11 @@ export function ThemeApplier() {
       "--ds-font-optical-size",
       String(prefs.fontOpticalSize),
     );
-    if (prefs.fontOpticalSizeAuto)
+    if (prefs.fontOpticalSizeAuto) {
       root.removeAttribute("data-font-optical-size");
-    else root.setAttribute("data-font-optical-size", "fixed");
+    } else {
+      root.setAttribute("data-font-optical-size", "fixed");
+    }
   }, [prefs.fontRoundness, prefs.fontOpticalSizeAuto, prefs.fontOpticalSize]);
 
   return null;

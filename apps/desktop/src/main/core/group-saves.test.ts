@@ -1,13 +1,10 @@
 import { MANUAL_LIKELY_SENSITIVE_MODEL } from "@pond/schema/content-safety";
 import type { NewSave, Save } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
-import { type GroupSavesRuntime, runGroupSaves } from "./group-saves";
-import {
-  canGroupMember,
-  type GroupFile,
-  groupFiles,
-  planGroup,
-} from "./group-saves-plan";
+import { runGroupSaves } from "./group-saves";
+import type { GroupSavesRuntime } from "./group-saves";
+import { canGroupMember, groupFiles, planGroup } from "./group-saves-plan";
+import type { GroupFile } from "./group-saves-plan";
 import { carousel, file } from "./split-save.fixtures";
 
 function photo(id: string, overrides: Partial<Save> = {}): Save {
@@ -38,7 +35,7 @@ function reel(): Save {
   });
 }
 
-function names(files: readonly GroupFile[]): string[] {
+function names(files: ReadonlyArray<GroupFile>): Array<string> {
   return files.map((entry) => entry.filename);
 }
 
@@ -190,11 +187,11 @@ describe("planGroup", () => {
   });
 });
 
-function fakeLibrary(rows: Save[]) {
-  const events: string[] = [];
-  const created: NewSave[] = [];
-  const copies: GroupFile[][] = [];
-  const memberships = new Map<string, string[]>();
+function fakeLibrary(rows: Array<Save>) {
+  const events: Array<string> = [];
+  const created: Array<NewSave> = [];
+  const copies: Array<Array<GroupFile>> = [];
+  const memberships = new Map<string, Array<string>>();
   let failCopy = false;
   const runtime: GroupSavesRuntime = {
     async read(ids) {

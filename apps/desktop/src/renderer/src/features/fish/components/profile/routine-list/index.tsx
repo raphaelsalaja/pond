@@ -2,12 +2,14 @@ import { Badge, Button, HoverHighlight, Switch } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { describeWhen, isRoutineDue, nextRun } from "@shared/fish-routine";
 import { setRoutinePaused } from "../../../lib/menu";
-import { lastRunText, nextRunText } from "../../../lib/runs";
+import { lastRunText, nextRunText, useRunClock } from "../../../lib/runs";
 import { fish as fishStore } from "../../../state/fish";
 import styles from "./styles.module.css";
 
 function scheduleText(routine: FishRoutine, now: Date) {
-  if (routine.paused) return "Paused";
+  if (routine.paused) {
+    return "Paused";
+  }
   const next = nextRunText(
     nextRun(
       routine.when,
@@ -32,7 +34,9 @@ function RunLine({
   const running =
     Boolean(fish.activity) && isRoutineDue(routine, now.getTime());
   const run = routine.lastRun;
-  if (!running && !run) return null;
+  if (!running && !run) {
+    return null;
+  }
   return (
     <span className={styles.run}>
       <Badge.Dot
@@ -47,9 +51,10 @@ function RunLine({
 }
 
 export function RoutineList({ fish }: { fish: FishSummary }) {
-  const now = new Date();
-  if (!fish.routines.length)
+  const now = useRunClock();
+  if (!fish.routines.length) {
     return <p className={styles.empty}>Ask in chat to set a routine.</p>;
+  }
   return (
     <ul className={styles.list}>
       {fish.routines.map((routine) => (

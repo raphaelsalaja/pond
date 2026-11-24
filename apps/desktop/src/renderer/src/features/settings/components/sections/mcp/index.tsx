@@ -1,5 +1,6 @@
 import { Settings, Switch } from "@pond/ui";
-import { MCP_HOST_CATALOG, type McpHostDefinition } from "@shared/mcp-hosts";
+import { MCP_HOST_CATALOG } from "@shared/mcp-hosts";
+import type { McpHostDefinition } from "@shared/mcp-hosts";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { usePrefs } from "@/shared/state/prefs";

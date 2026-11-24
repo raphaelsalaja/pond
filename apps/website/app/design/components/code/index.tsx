@@ -1,7 +1,7 @@
 import { cn } from "@pond/ui";
 import styles from "./styles.module.css";
 
-interface InlineProps extends React.ComponentPropsWithoutRef<"code"> {}
+type InlineProps = React.ComponentPropsWithoutRef<"code">;
 
 function Inline({ className, ...props }: InlineProps) {
   return <code className={cn(styles.code, className)} {...props} />;
@@ -19,8 +19,12 @@ function Text({ children }: TextProps) {
   return segments.map((segment, index) => {
     const start = offset;
     offset += segment.length + 1;
-    if (index % 2 === 0) return segment;
-    if (!closed && index === segments.length - 1) return `\`${segment}`;
+    if (index % 2 === 0) {
+      return segment;
+    }
+    if (!closed && index === segments.length - 1) {
+      return `\`${segment}`;
+    }
     return <Inline key={start}>{segment}</Inline>;
   });
 }

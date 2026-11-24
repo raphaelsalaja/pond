@@ -1,7 +1,8 @@
 import { Dialog } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { connectFlow } from "@/features/sources/state/connect-flow";
@@ -115,8 +116,9 @@ it("marks the wait screen connected when an existing account is reimported", asy
   });
   expect(host.textContent).toContain("Sign in to Twitter in your browser.");
   const sessionImported = imported;
-  if (!sessionImported)
+  if (!sessionImported) {
     throw new Error("session import listener was not attached");
+  }
   await act(async () => {
     sessionImported({ source: "twitter", accountId: "acc-twitter" });
   });
@@ -178,8 +180,9 @@ it("keeps waiting when a signed-out browser profile sends its session", async ()
 
   const notifyImportFailed = importFailed;
   const notifyImported = imported;
-  if (!notifyImportFailed || !notifyImported)
+  if (!notifyImportFailed || !notifyImported) {
     throw new Error("session import listeners were not attached");
+  }
   await act(async () => {
     notifyImportFailed({
       source: "twitter",
@@ -321,7 +324,9 @@ async function connectByHandle(
     );
   });
   const input = host.querySelector("input");
-  if (!input) throw new Error("handle field did not render");
+  if (!input) {
+    throw new Error("handle field did not render");
+  }
   await act(async () => {
     Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,

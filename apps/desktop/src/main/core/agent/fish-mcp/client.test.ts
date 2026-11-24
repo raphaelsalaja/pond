@@ -1,11 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FishMcpServerConfig } from "../../../../shared/fish-mcp-contracts";
-import {
-  createFishMcpManager,
-  type McpCallResult,
-  type McpConnection,
-  type McpTool,
-} from "./client";
+import { createFishMcpManager } from "./client";
+import type { McpCallResult, McpConnection, McpTool } from "./client";
 
 const server: FishMcpServerConfig = {
   id: "s1",
@@ -18,16 +14,16 @@ const server: FishMcpServerConfig = {
   toolAccess: {},
 };
 
+function pendingConnect() {}
+
 function fakeClient(tools: Array<Omit<McpTool, "inputSchema">>) {
   return {
     listTools: vi.fn(async () => ({
       tools: tools.map((t) => ({ inputSchema: { type: "object" }, ...t })),
     })),
-    callTool: vi.fn(
-      async (): Promise<McpCallResult> => ({
-        content: [{ type: "text", text: "done" }],
-      }),
-    ),
+    callTool: vi.fn(async (): Promise<McpCallResult> => ({
+      content: [{ type: "text", text: "done" }],
+    })),
     close: vi.fn(async () => {}),
   } satisfies McpConnection;
 }
@@ -106,7 +102,7 @@ describe("fish MCP manager", () => {
   it("gives up after 10 seconds and closes a connection that arrives late", async () => {
     vi.useFakeTimers();
     const { client, deps, manager: m } = manager();
-    let resolveConnect: (value: McpConnection) => void = () => {};
+    let resolveConnect: (value: McpConnection) => void = pendingConnect;
     deps.connect.mockReturnValue(
       new Promise<McpConnection>((resolve) => {
         resolveConnect = resolve;

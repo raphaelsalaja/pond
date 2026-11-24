@@ -1,23 +1,12 @@
 import type { MenuItemSpec } from "@pond/ui";
 import { Dialog } from "@pond/ui";
-import {
-  createContext,
-  type ReactNode,
-  type RefObject,
-  use,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, use, useEffect, useRef, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 import { enterAll, selectLibraryNav } from "@/features/library";
-import {
-  buildTagMenuItems,
-  type TagMenuActions,
-} from "@/features/tags/components/context-menu";
-import {
-  buildTagGroupMenuItems,
-  type TagGroupMenuActions,
-} from "@/features/tags/components/group-context-menu";
+import { buildTagMenuItems } from "@/features/tags/components/context-menu";
+import type { TagMenuActions } from "@/features/tags/components/context-menu";
+import { buildTagGroupMenuItems } from "@/features/tags/components/group-context-menu";
+import type { TagGroupMenuActions } from "@/features/tags/components/group-context-menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
 import { eventFromEditable } from "@/shared/lib/editable-target";
 import { matchesShortcut } from "@/shared/lib/shortcuts";
@@ -31,7 +20,7 @@ interface TagRowContextValue {
   startRename: () => void;
   saveRename: (name: string) => Promise<void>;
   finishRename: () => void;
-  buildMenuItems: () => MenuItemSpec[];
+  buildMenuItems: () => Array<MenuItemSpec>;
   openTagItems: () => void;
 }
 
@@ -39,7 +28,9 @@ const TagRowContext = createContext<TagRowContextValue | null>(null);
 
 export function useTagRow(): TagRowContextValue {
   const ctx = use(TagRowContext);
-  if (!ctx) throw new Error("Tag cell must be used within TagRowContext");
+  if (!ctx) {
+    throw new Error("Tag cell must be used within TagRowContext");
+  }
   return ctx;
 }
 
@@ -72,10 +63,13 @@ export function TagRowProvider({
   /** A plain listener, since useHotkey copies every registration per render and freezes an index of thousands of tags. */
   useEffect(() => {
     const element = rowRef.current;
-    if (!element || renaming) return;
+    if (!element || renaming) {
+      return;
+    }
     function onKeyDown(event: KeyboardEvent) {
-      if (eventFromEditable(event) || !matchesShortcut(event, "tags.rename"))
+      if (eventFromEditable(event) || !matchesShortcut(event, "tags.rename")) {
         return;
+      }
       event.preventDefault();
       setRenaming(true);
     }
@@ -84,7 +78,9 @@ export function TagRowProvider({
   }, [renaming]);
 
   function openTagItems() {
-    if (isGroup) return;
+    if (isGroup) {
+      return;
+    }
     selectLibraryNav({ kind: "tag", name });
   }
 
@@ -101,14 +97,16 @@ export function TagRowProvider({
     });
   }
 
-  function buildMenuItems(): MenuItemSpec[] {
+  function buildMenuItems(): Array<MenuItemSpec> {
     if (isGroup) {
       const actions: TagGroupMenuActions = {
         color: row.group.color,
         tagCount: row.group.tagNames.length,
         onFilter: () => {
           const names = row.group.tagNames;
-          if (names.length === 0) return;
+          if (names.length === 0) {
+            return;
+          }
           enterAll({
             combinator: "and",
             rules: [{ field: "tags", operator: "some", value: names }],
@@ -146,11 +144,15 @@ export function TagRowProvider({
       onAddToGroup: (g) =>
         void window.pond.query("tagGroups.addTags", { tags: [name], group: g }),
       onMoveToGroup: (g) => {
-        if (!inGroup || inGroup === g) return;
+        if (!inGroup || inGroup === g) {
+          return;
+        }
         void tagOperations.moveToGroup(name, inGroup, g);
       },
       onRemoveFromGroup: () => {
-        if (!inGroup) return;
+        if (!inGroup) {
+          return;
+        }
         void window.pond.query("tagGroups.removeTag", {
           tag: name,
           group: inGroup,

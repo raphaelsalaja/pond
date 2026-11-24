@@ -7,12 +7,12 @@ export type ReviewAction = "apply" | "undo" | "dismiss";
 
 export type ReviewPerform = (
   messageId: string,
-  changeIds: string[],
+  changeIds: Array<string>,
   action: ReviewAction,
 ) => Promise<void>;
 
 interface ReviewState {
-  working: string[];
+  working: Array<string>;
   error: { messageId: string; text: string } | null;
 }
 
@@ -24,14 +24,19 @@ const store = new Store<ReviewState>({
 const patch = (value: Partial<ReviewState>) =>
   store.setState((state) => ({ ...state, ...value }));
 
+const performReview: ReviewPerform = (messageId, changeIds, action) =>
+  assistant.review(messageId, changeIds, action);
+
 export const review = {
   async run(
     messageId: string,
-    changes: AssistantChange[],
+    changes: Array<AssistantChange>,
     action: ReviewAction,
-    perform: ReviewPerform = assistant.review,
+    perform: ReviewPerform = performReview,
   ) {
-    if (!changes.length || store.state.working.length) return;
+    if (!changes.length || store.state.working.length) {
+      return;
+    }
     patch({ working: changes.map((change) => change.id), error: null });
     try {
       await perform(

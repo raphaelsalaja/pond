@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { app, BrowserWindow, clipboard, dialog, shell } from "electron";
+import log from "electron-log/main.js";
 import { z } from "zod";
 import {
   DownloadExportFilesInputSchema,
@@ -36,7 +37,13 @@ function loadExports(): Promise<ReturnType<typeof createDownloadExports>> {
         transcodeItems: transcode.transcodeItems,
         defaultFolder: () => app.getPath("downloads"),
         clipboardFolder: () => join(app.getPath("temp"), "pond-clipboard"),
-        writeClipboardText: (text) => clipboard.writeText(text),
+        writeClipboardText: (text) => {
+          void clipboard
+            .writeText(text)
+            .catch((cause: unknown) =>
+              log.warn("[pond downloader] clipboard write failed", cause),
+            );
+        },
         writeClipboardFiles: writeFileRefsToClipboard,
         fetchFile: files.fetchFile,
         saveFiles: ({ url, title, files: fetched, sourceUrls }) =>
@@ -94,7 +101,9 @@ export const downloaderQueries = {
     return picked.canceled || !path ? null : downloads.choose(path);
   }),
   "downloader.reveal": query(DownloadRevealInputSchema, async ({ path }) => {
-    if (!(await loadExports()).owns(path)) return { ok: false };
+    if (!(await loadExports()).owns(path)) {
+      return { ok: false };
+    }
     shell.showItemInFolder(path);
     return { ok: true };
   }),

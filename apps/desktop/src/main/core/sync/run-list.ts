@@ -6,14 +6,13 @@ import {
   accountImportScope,
   savedSinceStart,
 } from "../../../shared/import-scope";
-import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
+import { enqueue } from "../pipeline/enqueue";
+import type { EnqueueItem } from "../pipeline/enqueue";
 import {
   dropMissingListKind,
   mergeListKindsOntoExisting,
 } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
-import type { ListHarvestResult } from "../refresh/harvest/list-types";
-import { harvestSubstackSubscriptions } from "../refresh/harvest/substack/api";
 import {
   harvestInstagramLikedList,
   harvestSourceCollections,
@@ -21,6 +20,8 @@ import {
   harvestYoutubeLikedList,
   listSourceCollections,
 } from "../refresh/harvest-window";
+import type { ListHarvestResult } from "../refresh/harvest/list-types";
+import { harvestSubstackSubscriptions } from "../refresh/harvest/substack/api";
 import { resolveAccountHandle } from "./account-key";
 import { getAccountSync, partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
@@ -141,7 +142,9 @@ export async function syncListSource(
   const checkCollections = collectionCheckDue(plan, accountSync, baseline.full);
   /** Reading picked collections to the end reaches saves older than the recent window, which must count as known. */
   if (checkCollections && plan.collections && !baseline.full) {
-    for (const id of await loadAllKnownIds(account)) knownIds.add(id);
+    for (const id of await loadAllKnownIds(account)) {
+      knownIds.add(id);
+    }
   }
   const collectionEarlyStop = !(baseline.full || checkCollections);
   const listArgs: Parameters<typeof harvestSourceList>[1] = {
@@ -149,10 +152,16 @@ export async function syncListSource(
     earlyStop: !baseline.full,
     accountKey,
   };
-  if (resuming && resumeCursor) listArgs.resumeCursor = resumeCursor;
-  if (plan.listKinds.length > 0) listArgs.listKinds = plan.listKinds;
+  if (resuming && resumeCursor) {
+    listArgs.resumeCursor = resumeCursor;
+  }
+  if (plan.listKinds.length > 0) {
+    listArgs.listKinds = plan.listKinds;
+  }
   const savedSince = savedSinceStart(source, scope);
-  if (savedSince) listArgs.savedSince = savedSince.toISOString();
+  if (savedSince) {
+    listArgs.savedSince = savedSince.toISOString();
+  }
   const harvest: ListHarvestResult = plan.collections
     ? await harvestSourceCollections(
         source,
@@ -221,7 +230,7 @@ export async function syncListSource(
     return;
   }
 
-  const gaps: string[] = [];
+  const gaps: Array<string> = [];
   const dualHarvest = COMBINED_LISTS.has(source);
   let combined =
     dualHarvest && !plan.collections
@@ -322,7 +331,9 @@ export async function syncListSource(
           ),
       })
     : NO_COLLECTION_PASS;
-  if (collectionPass.gap) gaps.push(collectionPass.gap);
+  if (collectionPass.gap) {
+    gaps.push(collectionPass.gap);
+  }
   const filing = [...combined, ...collectionPass.entries];
 
   for (const id of await mergeListKindsOntoExisting(source, combined)) {
@@ -405,7 +416,9 @@ export async function syncListSource(
   const bulk = await enqueue(
     fresh.map((entry) => {
       const item: EnqueueItem = { url: entry.url };
-      if (entry.listKinds) item.listKinds = entry.listKinds;
+      if (entry.listKinds) {
+        item.listKinds = entry.listKinds;
+      }
       return item;
     }),
     { trigger: `sync:${source}`, accountId, generationId },

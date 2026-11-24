@@ -1,4 +1,5 @@
 import { DEFAULT_PREFS } from "@pond/schema";
+import { isHTMLTag } from "@pond/ui/dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -14,12 +15,14 @@ function buttonNamed(host: ParentNode, name: string) {
 it.each([true, false])(
   "connects a local provider from Save, success=%s",
   async (ok) => {
-    const operations: string[] = [];
+    const operations: Array<string> = [];
     let refreshed = false;
     vi.stubGlobal("pond", {
       query: async (name: string) => {
         operations.push(name);
-        if (name === "agent.listModels") return { ok: true, models: [] };
+        if (name === "agent.listModels") {
+          return { ok: true, models: [] };
+        }
         return { ok, error: ok ? undefined : "Connection refused" };
       },
     });
@@ -47,7 +50,9 @@ it.each([true, false])(
       expect(host.querySelector('[aria-label="Connected"]')).toBeNull();
       expect(host.querySelector('[aria-label="Custom model ID"]')).toBeNull();
       const save = buttonNamed(host, "Save");
-      if (!(save instanceof HTMLButtonElement)) throw new Error("Missing Save");
+      if (!isHTMLTag(save, "button")) {
+        throw new Error("Missing Save");
+      }
       await act(async () => save.click());
       expect(operations).toContain("agent.saveKey");
       expect(refreshed).toBe(ok);
@@ -106,7 +111,9 @@ it("hides a saved credential until Edit reopens the form", async () => {
     expect(host.querySelector('[aria-label="Search models"]')).toBeNull();
     expect(host.querySelector('[aria-label="Enable OpenAI"]')).not.toBeNull();
     const edit = host.querySelector('[aria-label="Edit OpenAI"]');
-    if (!(edit instanceof HTMLButtonElement)) throw new Error("Missing Edit");
+    if (!isHTMLTag(edit, "button")) {
+      throw new Error("Missing Edit");
+    }
     await act(async () => edit.click());
     expect(
       host.querySelector('input[type="password"]')?.getAttribute("placeholder"),
@@ -119,7 +126,7 @@ it("hides a saved credential until Edit reopens the form", async () => {
 });
 
 it("opens the provider API keys page from the card", async () => {
-  const opened: string[] = [];
+  const opened: Array<string> = [];
   vi.stubGlobal("pond", {
     openExternal: async (url: string) => {
       opened.push(url);
@@ -149,7 +156,9 @@ it("opens the provider API keys page from the card", async () => {
       ),
     );
     const open = host.querySelector('[aria-label="Open OpenAI"]');
-    if (!(open instanceof HTMLButtonElement)) throw new Error("Missing Open");
+    if (!isHTMLTag(open, "button")) {
+      throw new Error("Missing Open");
+    }
     await act(async () => open.click());
     expect(opened).toEqual(["https://platform.openai.com/api-keys"]);
   } finally {

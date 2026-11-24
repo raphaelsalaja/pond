@@ -16,10 +16,8 @@ import {
   navigateWithTimeout,
 } from "../../refresh/harvest-window/navigation";
 import { leaseWindow } from "../../refresh/harvest-window/pool";
-import {
-  type ImportableCookie,
-  writePartitionCookies,
-} from "../../refresh/harvest-window/session";
+import { writePartitionCookies } from "../../refresh/harvest-window/session";
+import type { ImportableCookie } from "../../refresh/harvest-window/session";
 import { readLibraryMedia } from "../../storage/library-media-storage";
 import { TransientError } from "../extractors/errors";
 import {
@@ -33,9 +31,9 @@ import { WarcRecorder, withTimeout } from "./warc-recorder";
 
 const ARCHIVE_MAX_PAGES = 25;
 const ARCHIVE_MAX_DEPTH = 2;
-const SETTLE_MS = 2_000;
+const SETTLE_MS = 2000;
 /** Runtime data fetches (pricing APIs, deferred JSON) can trail the load event; the capture waits for this quiet gap so they land in the WARC. */
-const NETWORK_QUIET_MS = 1_500;
+const NETWORK_QUIET_MS = 1500;
 const NETWORK_IDLE_BUDGET_MS = 10_000;
 const MAX_PRELOAD_IMAGES = 400;
 const MAX_MEDIA_PER_PAGE = 60;
@@ -72,11 +70,11 @@ interface ArchiveManifest {
   rootUrl: string;
   archivedAt: string;
   scope: ArchiveScope;
-  pages: ArchiveManifestPage[];
+  pages: Array<ArchiveManifestPage>;
 }
 
 export function hasWarcArchive(
-  files: readonly { kind: string; path: string }[] | null | undefined,
+  files: ReadonlyArray<{ kind: string; path: string }> | null | undefined,
 ): boolean {
   return (files ?? []).some(
     (f) => f.kind === ARCHIVE_KIND && f.path.endsWith(".warc.gz"),
@@ -94,11 +92,14 @@ interface ArchivePageRuntime {
     signal: AbortSignal,
     opts?: {
       partition?: string;
-      cookies?: ImportableCookie[] | null;
+      cookies?: Array<ImportableCookie> | null;
       reportActivity?: TransferOptions["reportActivity"];
     },
   ) => Promise<CrawlResult>;
-  persistArchive: (saveId: string, files: WriteFileArgs[]) => Promise<void>;
+  persistArchive: (
+    saveId: string,
+    files: Array<WriteFileArgs>,
+  ) => Promise<void>;
 }
 
 async function autoArchiveFromPrefs(): Promise<boolean> {
@@ -107,7 +108,7 @@ async function autoArchiveFromPrefs(): Promise<boolean> {
 
 async function persistArchive(
   saveId: string,
-  newFiles: WriteFileArgs[],
+  newFiles: Array<WriteFileArgs>,
 ): Promise<void> {
   await persistSave(
     saveId,
@@ -231,7 +232,7 @@ export async function runArchivePage(
     pages: result.pages.length,
     bytes: result.warcBytes.byteLength,
   });
-  const newFiles: WriteFileArgs[] = [
+  const newFiles: Array<WriteFileArgs> = [
     {
       kind: ARCHIVE_MANIFEST_KIND,
       filename: ARCHIVE_MANIFEST_FILENAME,
@@ -257,7 +258,7 @@ export async function runArchivePage(
 }
 
 interface CrawlResult {
-  pages: ArchiveManifestPage[];
+  pages: Array<ArchiveManifestPage>;
   warcBytes: Buffer;
   /** The root page redirected to a login screen, so no page can be archived. */
   authWalled: boolean;
@@ -269,7 +270,7 @@ async function crawlSite(
   signal: AbortSignal,
   opts: {
     partition?: string;
-    cookies?: ImportableCookie[] | null;
+    cookies?: Array<ImportableCookie> | null;
     reportActivity?: TransferOptions["reportActivity"];
   } = {},
 ): Promise<CrawlResult> {
@@ -287,12 +288,14 @@ async function crawlSite(
     signal,
     reportActivity: opts.reportActivity,
   };
-  if (opts.partition) leaseOptions.partition = opts.partition;
+  if (opts.partition) {
+    leaseOptions.partition = opts.partition;
+  }
   const lease = await leaseWindow("web", leaseOptions);
   log.info("[pond pipeline:archive-page] window leased", { ms: elapsed() });
   const tmpDir = await mkdtemp(join(tmpdir(), "pond-archive-"));
   const warcPath = join(tmpDir, ARCHIVE_WARC_FILENAME);
-  const pages: ArchiveManifestPage[] = [];
+  const pages: Array<ArchiveManifestPage> = [];
   const capturedKeys = new Set<string>();
   const queued = new Set<string>([dedupeKey(rootUrl.href)]);
   const queue: Array<{ url: string; depth: number }> = [
@@ -334,14 +337,24 @@ async function crawlSite(
     });
 
     while (queue.length > 0 && pages.length < maxPages) {
-      if (signal.aborted) break;
-      if (navAttempts >= MAX_NAV_ATTEMPTS) break;
-      if (Date.now() >= deadline) break;
+      if (signal.aborted) {
+        break;
+      }
+      if (navAttempts >= MAX_NAV_ATTEMPTS) {
+        break;
+      }
+      if (Date.now() >= deadline) {
+        break;
+      }
       const next = queue.shift();
-      if (!next) break;
+      if (!next) {
+        break;
+      }
 
       navAttempts += 1;
-      if (pages.length > 0) await sleep(PAGE_GAP_MS);
+      if (pages.length > 0) {
+        await sleep(PAGE_GAP_MS);
+      }
       const navOk = await navigateWithTimeout(
         lease.win,
         next.url,
@@ -369,9 +382,13 @@ async function crawlSite(
       const wc = lease.win.webContents;
       const finalUrl = wc.getURL();
       const finalKey = dedupeKey(finalUrl);
-      if (capturedKeys.has(finalKey)) continue;
+      if (capturedKeys.has(finalKey)) {
+        continue;
+      }
       if (looksLikeAuthWall(finalUrl)) {
-        if (next.depth === 0) authWalled = true;
+        if (next.depth === 0) {
+          authWalled = true;
+        }
         log.info("[pond pipeline:archive-page] login wall", {
           url: finalUrl,
           ms: elapsed(),
@@ -396,12 +413,18 @@ async function crawlSite(
         ms: elapsed(),
       });
 
-      if (next.depth >= maxDepth) continue;
+      if (next.depth >= maxDepth) {
+        continue;
+      }
       for (const href of harvest.links) {
         const normalized = normalizeLink(href, rootUrl);
-        if (!normalized) continue;
+        if (!normalized) {
+          continue;
+        }
         const key = dedupeKey(normalized);
-        if (queued.has(key)) continue;
+        if (queued.has(key)) {
+          continue;
+        }
         queued.add(key);
         queue.push({ url: normalized, depth: next.depth + 1 });
       }
@@ -410,8 +433,8 @@ async function crawlSite(
     if (recorder) {
       try {
         await recorder.stop();
-      } catch (err) {
-        log.warn("[pond pipeline:archive-page] recorder stop failed", err);
+      } catch (error) {
+        log.warn("[pond pipeline:archive-page] recorder stop failed", error);
       }
     }
     lease.release();
@@ -426,6 +449,7 @@ async function crawlSite(
   try {
     warcBytes = await readFile(warcPath);
   } catch {
+    /** A crawl that recorded nothing leaves no WARC; the empty buffer stands in. */
   } finally {
     void rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   }
@@ -489,7 +513,9 @@ async function preloadImages(wc: WebContents): Promise<void> {
       wc.executeJavaScript(expr, true),
       IMAGE_PRELOAD_BUDGET_MS,
     );
-  } catch {}
+  } catch {
+    /** Preloading is best effort; the archive still records whatever images loaded. */
+  }
 }
 
 const MediaUrlsSchema = z
@@ -499,7 +525,7 @@ const MediaUrlsSchema = z
   )
   .catch([]);
 
-async function collectMediaUrls(wc: WebContents): Promise<string[]> {
+async function collectMediaUrls(wc: WebContents): Promise<Array<string>> {
   const expr = `(() => {
     const urls = new Set();
     for (const el of document.querySelectorAll("video, audio, video source, audio source")) {
@@ -529,7 +555,9 @@ async function autoScroll(wc: WebContents): Promise<void> {
   })()`;
   try {
     await withTimeout(wc.executeJavaScript(expr, true), HARVEST_TIMEOUT_MS);
-  } catch {}
+  } catch {
+    /** Scrolling only triggers lazy content; a page that won't scroll is archived as it stands. */
+  }
 }
 
 const PageHarvestSchema = z.object({
@@ -555,7 +583,7 @@ async function harvestPage(wc: WebContents): Promise<PageHarvest | null> {
     };
   })()`;
   try {
-    const raw = await withTimeout(
+    const raw: unknown = await withTimeout(
       wc.executeJavaScript(expr, true),
       HARVEST_TIMEOUT_MS,
     );
@@ -603,12 +631,18 @@ function normalizeLink(href: string, rootUrl: URL): string | null {
   } catch {
     return null;
   }
-  if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-  if (u.hostname !== rootUrl.hostname) return null;
+  if (u.protocol !== "http:" && u.protocol !== "https:") {
+    return null;
+  }
+  if (u.hostname !== rootUrl.hostname) {
+    return null;
+  }
   u.hash = "";
   const path = u.pathname.toLowerCase();
   const dot = path.lastIndexOf(".");
-  if (dot !== -1 && NON_PAGE_EXTENSIONS.has(path.slice(dot))) return null;
+  if (dot !== -1 && NON_PAGE_EXTENSIONS.has(path.slice(dot))) {
+    return null;
+  }
   return u.href;
 }
 

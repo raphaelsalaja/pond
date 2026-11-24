@@ -1,6 +1,9 @@
-import { Menu, type MenuItemSpec } from "@pond/ui";
+import { Menu } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { isHTMLElement, isHTMLTag } from "@pond/ui/dom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecMenu } from ".";
 
@@ -45,7 +48,7 @@ describe("spec menu search", () => {
   });
 
   async function open(
-    items: MenuItemSpec[] = [
+    items: Array<MenuItemSpec> = [
       { label: "Open Save", onClick: () => {} },
       { label: "Reveal in Finder", onClick: () => {} },
     ],
@@ -58,7 +61,9 @@ describe("spec menu search", () => {
       ),
     );
     const trigger = document.querySelector("button");
-    if (!(trigger instanceof HTMLElement)) throw new Error("Missing trigger");
+    if (!isHTMLElement(trigger)) {
+      throw new Error("Missing trigger");
+    }
     await act(async () => trigger.click());
   }
 
@@ -67,19 +72,17 @@ describe("spec menu search", () => {
     const body = document.querySelector("[data-menu-body]");
     expect(body?.getAttribute("data-sized")).toBe("true");
     expect(
-      body instanceof HTMLElement
-        ? body.style.getPropertyValue("--body-height")
-        : "",
+      isHTMLElement(body) ? body.style.getPropertyValue("--body-height") : "",
     ).toBe("240px");
     const popup = body?.parentElement;
     expect(
-      popup instanceof HTMLElement
+      isHTMLElement(popup)
         ? popup.style.getPropertyValue("--popup-locked-width")
         : "",
     ).toBe("280px");
     const positioner = popup?.parentElement;
     expect(
-      positioner instanceof HTMLElement
+      isHTMLElement(positioner)
         ? positioner.style.getPropertyValue("--ds-popup-min-width")
         : "",
     ).toBe("280px");
@@ -88,8 +91,9 @@ describe("spec menu search", () => {
   it("renders a plain full-width filter input", async () => {
     await open();
     const search = document.querySelector('[aria-label="Search operations"]');
-    if (!(search instanceof HTMLInputElement))
+    if (!isHTMLTag(search, "input")) {
       throw new Error("Missing search");
+    }
 
     expect({
       type: search.type,
@@ -115,8 +119,9 @@ describe("spec menu search", () => {
       },
     ]);
     const search = document.querySelector('[aria-label="Search operations"]');
-    if (!(search instanceof HTMLInputElement))
+    if (!isHTMLTag(search, "input")) {
       throw new Error("Missing search");
+    }
     await act(async () => {
       search.focus();
       Object.getOwnPropertyDescriptor(
@@ -139,8 +144,9 @@ describe("spec menu search", () => {
   it("keeps a sized height when the query matches nothing", async () => {
     await open();
     const search = document.querySelector('[aria-label="Search operations"]');
-    if (!(search instanceof HTMLInputElement))
+    if (!isHTMLTag(search, "input")) {
       throw new Error("Missing search");
+    }
     await act(async () => {
       search.focus();
       Object.getOwnPropertyDescriptor(
@@ -153,13 +159,11 @@ describe("spec menu search", () => {
     const body = document.querySelector("[data-menu-body]");
     expect(body?.getAttribute("data-sized")).toBe("true");
     expect(
-      body instanceof HTMLElement
-        ? body.style.getPropertyValue("--body-height")
-        : "",
+      isHTMLElement(body) ? body.style.getPropertyValue("--body-height") : "",
     ).toBe("240px");
     const popup = body?.parentElement;
     expect(
-      popup instanceof HTMLElement
+      isHTMLElement(popup)
         ? popup.style.getPropertyValue("--popup-locked-width")
         : "",
     ).toBe("280px");

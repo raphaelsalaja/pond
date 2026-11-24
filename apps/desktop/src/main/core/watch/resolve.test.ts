@@ -9,7 +9,7 @@ it("does not guess an Are.na kind when the lookup is unavailable", async () => {
 });
 
 it("resolves an Are.na account after ruling out a channel", async () => {
-  const paths: string[] = [];
+  const paths: Array<string> = [];
   vi.stubGlobal("fetch", async (url: string) => {
     paths.push(new URL(url).pathname);
     return new Response(null, { status: url.includes("/users/") ? 200 : 404 });

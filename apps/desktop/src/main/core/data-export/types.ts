@@ -12,5 +12,5 @@ export interface ExportParser {
   id: "x" | "instagram" | "tiktok" | "youtube" | "reddit";
   label: string;
   matches: (path: string) => boolean;
-  parse: (path: string, text: string) => ExportEntry[];
+  parse: (path: string, text: string) => Array<ExportEntry>;
 }

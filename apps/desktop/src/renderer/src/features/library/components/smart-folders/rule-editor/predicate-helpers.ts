@@ -49,9 +49,13 @@ export function scalarValue(value: PredicateValue): string {
 export function choicesFor(
   field: FieldDescriptor,
   choices: RuleChoices,
-): readonly RuleChoice[] {
-  if (field.id === "folder") return choices.folders;
-  if (field.id === "tags") return choices.tags;
+): ReadonlyArray<RuleChoice> {
+  if (field.id === "folder") {
+    return choices.folders;
+  }
+  if (field.id === "tags") {
+    return choices.tags;
+  }
   return (field.presets ?? []).flatMap((preset) => {
     const value = textValueSchema.safeParse(preset.value);
     return value.success

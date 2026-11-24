@@ -10,6 +10,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { isHTMLElement } from "../dom";
 import styles from "./styles.module.css";
 
 type Orientation = "horizontal" | "vertical";
@@ -21,8 +22,10 @@ interface PillContextValue {
 
 const PillContext = createContext<PillContextValue | null>(null);
 
-interface PillProps
-  extends Omit<Toolbar.Root.Props, "className" | "render" | "orientation"> {
+interface PillProps extends Omit<
+  Toolbar.Root.Props,
+  "className" | "render" | "orientation"
+> {
   className?: string;
   orientation?: Orientation;
   /** `plain` drops the surface for a pill that sits in a bar instead of floating. */
@@ -34,16 +37,21 @@ interface PillProps
  * @remarks Ignores `defaultPrevented`: a focusable disabled item prevents every key but Tab.
  */
 function focusEdgeItem(event: React.KeyboardEvent<HTMLDivElement>) {
-  if (event.key !== "Home" && event.key !== "End") return;
+  if (event.key !== "Home" && event.key !== "End") {
+    return;
+  }
   const pill = event.currentTarget;
   const target = event.target;
-  if (!(target instanceof HTMLElement) || !target.matches(`.${styles.item}`))
+  if (!isHTMLElement(target) || !target.matches(`.${styles.item}`)) {
     return;
+  }
   const items = Array.from(
     pill.querySelectorAll<HTMLElement>(`.${styles.item}:not([disabled])`),
   ).filter((item) => item.parentElement?.closest(`.${styles.pill}`) === pill);
   const item = event.key === "Home" ? items[0] : items.at(-1);
-  if (!item) return;
+  if (!item) {
+    return;
+  }
   event.preventDefault();
   item.focus();
 }
@@ -129,8 +137,10 @@ function Indicator({
   });
 }
 
-interface SeparatorProps
-  extends Omit<SeparatorBase.Props, "className" | "orientation"> {
+interface SeparatorProps extends Omit<
+  SeparatorBase.Props,
+  "className" | "orientation"
+> {
   className?: string;
 }
 

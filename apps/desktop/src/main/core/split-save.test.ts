@@ -1,8 +1,8 @@
 import { MANUAL_LIKELY_SENSITIVE_MODEL } from "@pond/schema/content-safety";
 import type { NewSave, Save, SaveFile } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
-import { runSplitSave, type SplitSaveRuntime } from "./split-save";
-import { capture, carousel, file } from "./split-save.fixtures";
+import { runSplitSave } from "./split-save";
+import type { SplitSaveRuntime } from "./split-save";
 import {
   buildOriginalPatch,
   buildSlideRows,
@@ -13,6 +13,7 @@ import {
   slideSourceIds,
   splitsOnImport,
 } from "./split-save-plan";
+import { capture, carousel, file } from "./split-save.fixtures";
 
 function imageCarousel(): Save {
   const save = carousel();
@@ -31,7 +32,7 @@ function sequentialIds() {
   return () => `slide-${++next}`;
 }
 
-function paths(files: readonly SaveFile[] | undefined): string[] {
+function paths(files: ReadonlyArray<SaveFile> | undefined): Array<string> {
   return (files ?? []).map((entry) => entry.path);
 }
 
@@ -107,7 +108,9 @@ describe("planSaveSplit", () => {
 describe("slide Source IDs", () => {
   it("never equals the post's Source ID, so sync dedupe still finds the original", () => {
     const plan = planSaveSplit(carousel());
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const ids = slideSourceIds(plan);
     expect(ids).toHaveLength(2);
     for (const id of ids) {
@@ -127,7 +130,9 @@ describe("slide Source IDs", () => {
         file("image", "media-3.jpg", { sha256: "same" }),
       ],
     });
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const ids = slideSourceIds(plan);
     expect(new Set(ids).size).toBe(2);
   });
@@ -167,7 +172,9 @@ describe("capture narrowing", () => {
 
   it("narrows a fresh harvest to a slide's media and keeps its provenance", () => {
     const save = carousel();
-    if (!save.rawJson) throw new Error("Expected raw JSON.");
+    if (!save.rawJson) {
+      throw new Error("Expected raw JSON.");
+    }
     const split = { sourceId: "post-1", media: [2] };
     const narrowed = narrowToSplit(save.rawJson, split);
     expect(narrowed.capture.media.map((entry) => entry.url)).toEqual([
@@ -182,7 +189,9 @@ describe("buildSlideRows", () => {
   it("copies the post's metadata and starts each slide unenriched", () => {
     const save = carousel();
     const plan = planSaveSplit(save);
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const [image, video] = buildSlideRows(save, plan, sequentialIds());
     expect(image).toMatchObject({
       id: "slide-1",
@@ -212,7 +221,9 @@ describe("buildSlideRows", () => {
   it("sorts slides right after the original in Date Saved order", () => {
     const save = carousel();
     const plan = planSaveSplit(save);
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const rows = buildSlideRows(save, plan, sequentialIds());
     const times = rows.map((row) => row.savedAt?.getTime() ?? 0);
     expect(times[0]).toBeLessThan(save.savedAt.getTime());
@@ -223,7 +234,9 @@ describe("buildSlideRows", () => {
   it("keeps a model's sensitive score until the slide is scored on its own", () => {
     const save = carousel();
     const plan = planSaveSplit(save);
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const [row] = buildSlideRows(save, plan, sequentialIds());
     expect(row).toMatchObject({ sensitiveScore: 0.9, sensitiveModel: null });
     const manual = { ...save, sensitiveModel: MANUAL_LIKELY_SENSITIVE_MODEL };
@@ -239,7 +252,9 @@ describe("buildSlideRows", () => {
       rawJson: null,
     });
     const plan = planSaveSplit(save);
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const [row] = buildSlideRows(save, plan, sequentialIds());
     expect(row?.url).toBe("pond:local/slide-1");
     expect(row?.rawJson?.split).toEqual({ sourceId: "original", media: [] });
@@ -254,7 +269,9 @@ describe("buildOriginalPatch", () => {
   it("drops moved files and keeps the kept slide's thumbnail", () => {
     const save = imageCarousel();
     const plan = planSaveSplit(save);
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const { patch, removed } = buildOriginalPatch(save, plan);
     expect(paths(removed)).toEqual(["media-2.jpg"]);
     expect(paths(patch.files)).toEqual([
@@ -270,7 +287,9 @@ describe("buildOriginalPatch", () => {
   it("resets media enrichments when the save's primary video moves out", () => {
     const save = carousel();
     const plan = planSaveSplit(save);
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const { patch } = buildOriginalPatch(save, plan);
     expect(patch).toMatchObject({
       mediaType: "image",
@@ -290,7 +309,9 @@ describe("buildOriginalPatch", () => {
     );
     const moved = { ...save, files };
     const plan = planSaveSplit(moved);
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const { patch, removed } = buildOriginalPatch(moved, plan);
     expect(paths(removed)).toEqual([
       "media-2.jpg",
@@ -307,7 +328,9 @@ describe("buildOriginalPatch", () => {
         : entry,
     );
     const plan = planSaveSplit({ ...save, files });
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const { removed } = buildOriginalPatch({ ...save, files }, plan);
     expect(paths(removed)).toEqual(["media-2.jpg"]);
   });
@@ -339,25 +362,32 @@ describe("splitsOnImport", () => {
 function fakeLibrary(initial: Save) {
   const library = { original: initial };
   const slides = new Map<string, NewSave>();
-  const copies = new Map<string, string[]>();
-  const memberships: string[] = [];
-  const discarded: string[] = [];
-  const updates: string[] = [];
+  const copies = new Map<string, Array<string>>();
+  const memberships: Array<string> = [];
+  const discarded: Array<string> = [];
+  const updates: Array<string> = [];
   let failCopyOn: string | null = null;
   const runtime: SplitSaveRuntime = {
     async read(id) {
       return id === library.original.id ? library.original : null;
     },
     async findSlide(row) {
-      for (const [id, existing] of slides)
-        if (existing.sourceId === row.sourceId) return id;
+      for (const [id, existing] of slides) {
+        if (existing.sourceId === row.sourceId) {
+          return id;
+        }
+      }
       return null;
     },
     async create(row) {
-      if (row.id) slides.set(row.id, row);
+      if (row.id) {
+        slides.set(row.id, row);
+      }
     },
     async copyFiles(_from, to, files) {
-      if (to === failCopyOn) return 0;
+      if (to === failCopyOn) {
+        return 0;
+      }
       copies.set(to, paths(files));
       return files.length;
     },
@@ -366,7 +396,9 @@ function fakeLibrary(initial: Save) {
     },
     async discard(ids) {
       discarded.push(...ids);
-      for (const id of ids) slides.delete(id);
+      for (const id of ids) {
+        slides.delete(id);
+      }
     },
     async updateOriginal(id, { patch }) {
       updates.push(id);
@@ -427,9 +459,13 @@ describe("runSplitSave", () => {
   it("reuses a slide a failed split already created", async () => {
     const library = fakeLibrary(carousel());
     const plan = planSaveSplit(carousel());
-    if (!plan) throw new Error("Expected a plan.");
+    if (!plan) {
+      throw new Error("Expected a plan.");
+    }
     const [leftover] = buildSlideRows(carousel(), plan, () => "leftover");
-    if (!leftover) throw new Error("Expected a slide.");
+    if (!leftover) {
+      throw new Error("Expected a slide.");
+    }
     library.slides.set("leftover", leftover);
     const result = await runSplitSave("original", "user", library.runtime);
     expect(result.ok && result.created).toEqual(["leftover", "slide-2"]);

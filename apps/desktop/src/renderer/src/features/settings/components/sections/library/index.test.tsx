@@ -1,6 +1,8 @@
+import { isHTMLTag } from "@pond/ui/dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LibrarySettings } from ".";
 
@@ -25,8 +27,12 @@ const query = vi.fn(
     name: string,
     params: { name?: string; icon?: string | null } = {},
   ) => {
-    if (name === "library.info") return libraryInfo;
-    if (name === "library.recent") return [];
+    if (name === "library.info") {
+      return libraryInfo;
+    }
+    if (name === "library.recent") {
+      return [];
+    }
     if (name === "library.identity.pickIcon") {
       return {
         ok: true,
@@ -77,10 +83,8 @@ describe("library settings", () => {
     await vi.waitFor(() => {
       const choose = host.querySelector('[aria-label="Choose Logo"]');
       const name = host.querySelector('[aria-label="Library Name"]');
-      expect(choose instanceof HTMLButtonElement && choose.disabled).toBe(
-        false,
-      );
-      expect(name instanceof HTMLInputElement && name.disabled).toBe(false);
+      expect(isHTMLTag(choose, "button") && choose.disabled).toBe(false);
+      expect(isHTMLTag(name, "input") && name.disabled).toBe(false);
     });
   });
 
@@ -100,8 +104,9 @@ describe("library settings", () => {
 
   it("chooses and resets a logo", async () => {
     const choose = host.querySelector('[aria-label="Choose Logo"]');
-    if (!(choose instanceof HTMLButtonElement))
+    if (!isHTMLTag(choose, "button")) {
       throw new Error("Missing Choose Logo button");
+    }
     await act(async () => choose.click());
     const crop = await vi.waitFor(() => {
       const button = [
@@ -109,7 +114,9 @@ describe("library settings", () => {
           '[role="dialog"] button',
         ),
       ].find((candidate) => candidate.textContent?.trim() === "Crop");
-      if (!button) throw new Error("Missing Crop button");
+      if (!button) {
+        throw new Error("Missing Crop button");
+      }
       return button;
     });
     await act(async () => crop.click());
@@ -126,7 +133,9 @@ describe("library settings", () => {
     const reset = [...host.querySelectorAll("button")].find(
       (button) => button.textContent === "Reset",
     );
-    if (!reset) throw new Error("Missing Reset button");
+    if (!reset) {
+      throw new Error("Missing Reset button");
+    }
     await act(async () => reset.click());
     await vi.waitFor(() =>
       expect(query).toHaveBeenCalledWith("library.identity.update", {
@@ -137,8 +146,9 @@ describe("library settings", () => {
 
   it("renames the library when the name field loses focus", async () => {
     const field = host.querySelector('[aria-label="Library Name"]');
-    if (!(field instanceof HTMLInputElement))
+    if (!isHTMLTag(field, "input")) {
       throw new Error("Missing Library Name field");
+    }
     await act(async () => {
       Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,

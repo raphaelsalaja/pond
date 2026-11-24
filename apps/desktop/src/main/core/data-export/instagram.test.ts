@@ -8,7 +8,7 @@ const SAVED = JSON.stringify({
       string_map_data: {
         "Saved on": {
           href: "https://www.instagram.com/p/C1aBcDeFgHi/",
-          timestamp: 1700000000,
+          timestamp: 1_700_000_000,
         },
       },
     },
@@ -17,7 +17,7 @@ const SAVED = JSON.stringify({
       string_map_data: {
         "Saved on": {
           href: "https://www.instagram.com/reel/C2xYz/",
-          timestamp: 1700000100,
+          timestamp: 1_700_000_100,
         },
       },
     },
@@ -41,7 +41,7 @@ const LIKED = JSON.stringify({
         {
           href: "https://www.instagram.com/p/C3Lk/",
           value: "👍",
-          timestamp: 1700000200,
+          timestamp: 1_700_000_200,
         },
       ],
     },
@@ -62,19 +62,19 @@ describe("instagramParser", () => {
       {
         url: "https://www.instagram.com/p/C1aBcDeFgHi/",
         listKind: "saved",
-        savedAt: new Date(1700000000 * 1000),
+        savedAt: new Date(1_700_000_000 * 1000),
       },
       {
         url: "https://www.instagram.com/reel/C2xYz/",
         listKind: "saved",
-        savedAt: new Date(1700000100 * 1000),
+        savedAt: new Date(1_700_000_100 * 1000),
       },
     ]);
     expect(instagramParser.parse("likes/liked_posts.json", LIKED)).toEqual([
       {
         url: "https://www.instagram.com/p/C3Lk/",
         listKind: "liked",
-        savedAt: new Date(1700000200 * 1000),
+        savedAt: new Date(1_700_000_200 * 1000),
       },
     ]);
   });

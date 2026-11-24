@@ -1,9 +1,11 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { inPagePinterestNormalize, type PinterestPinPage } from "./normalize";
+import { inPagePinterestNormalize } from "./normalize";
+import type { PinterestPinPage } from "./normalize";
 
 export function buildExpression(pinId: string): string {
   return buildItemExpression(
@@ -23,9 +25,12 @@ async function inPagePinterestHarvest(
       document.querySelector(
         '[data-test-id="pin-closeup-image"], [data-test-id="pinImg"], img[src*="pinimg.com"]',
       )
-    )
+    ) {
       break;
-    await new Promise((r) => setTimeout(r, 250));
+    }
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   return norm.extractPinPageMeta();
 }

@@ -9,8 +9,18 @@ export type PredicateValue =
   | ReadonlyArray<string | number>
   | Readonly<{ hex: string; tolerance: number }>;
 
-export interface Predicate
-  extends RuleType<FieldId, ComparatorId, PredicateValue> {
+/** `Array.isArray` narrows a `ReadonlyArray` to `any[]`; this keeps the element type. */
+export function isPredicateList(
+  value: PredicateValue | undefined,
+): value is ReadonlyArray<string | number> {
+  return Array.isArray(value);
+}
+
+export interface Predicate extends RuleType<
+  FieldId,
+  ComparatorId,
+  PredicateValue
+> {
   negate?: boolean;
 }
 
@@ -23,7 +33,9 @@ export type Query = Group;
 export const EMPTY_QUERY: Query = { combinator: "and", rules: [] };
 
 export function isEmptyQuery(q: Query | null | undefined): boolean {
-  if (!q) return true;
+  if (!q) {
+    return true;
+  }
   return q.rules.length === 0;
 }
 
@@ -75,7 +87,7 @@ export const COMPARATORS_BY_TYPE = {
   date: ["lt", "lte", "gt", "gte", "between"],
   optional: ["exists", "contains"],
   color: ["near"],
-} satisfies Record<FieldTypeId, readonly ComparatorId[]>;
+} satisfies Record<FieldTypeId, ReadonlyArray<ComparatorId>>;
 
 export type FieldId =
   | "title"

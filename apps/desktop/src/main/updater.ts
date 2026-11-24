@@ -4,10 +4,8 @@ import { IPC } from "../shared/constants";
 import type { OkResult, ReasonFailure } from "../shared/query-contracts-shared";
 import type { UpdateNotice } from "../shared/update-notice";
 import { getPrefs } from "./core/prefs";
-import {
-  createUpdaterCoordinator,
-  type UpdaterPort,
-} from "./core/updater-coordinator";
+import { createUpdaterCoordinator } from "./core/updater-coordinator";
+import type { UpdaterPort } from "./core/updater-coordinator";
 import { broadcast } from "./lib/broadcast";
 import {
   prepareApplicationForUpdateInstall,
@@ -19,7 +17,9 @@ let wired = false;
 let installHandoff: Promise<void> | null = null;
 
 function handoffDownloadedUpdate(install: () => void): Promise<void> {
-  if (installHandoff) return installHandoff;
+  if (installHandoff) {
+    return installHandoff;
+  }
   const handoff = runUpdateRestart({
     armWatchdog: () => {
       setTimeout(() => {
@@ -38,10 +38,10 @@ function handoffDownloadedUpdate(install: () => void): Promise<void> {
         log.warn("[pond updater] quitAndInstall failed", error);
       }
     },
-  }).catch((error) => {
+  }).catch((cause: unknown) => {
     installHandoff = null;
-    throw error instanceof Error
-      ? error
+    throw cause instanceof Error
+      ? cause
       : new Error("Couldn't install the update.");
   });
   installHandoff = handoff;
@@ -110,15 +110,17 @@ const updater = createUpdaterCoordinator({
 });
 
 export function registerAutoUpdater(): void {
-  if (wired) return;
+  if (wired) {
+    return;
+  }
   if (!app.isPackaged) {
     log.info("[pond updater] skipped (dev build)");
     return;
   }
   wired = true;
-  void updater.start().catch((error) => {
+  void updater.start().catch((cause: unknown) => {
     wired = false;
-    log.warn("[pond updater] setup failed", error);
+    log.warn("[pond updater] setup failed", cause);
   });
 }
 

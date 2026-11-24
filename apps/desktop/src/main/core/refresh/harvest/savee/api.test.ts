@@ -1,6 +1,8 @@
 import type { JsonValue } from "@pond/schema/json";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readSaveeCapture, readSaveeItems, type SaveePost } from "./api";
+import { z } from "zod";
+import { readSaveeCapture, readSaveeItems } from "./api";
+import type { SaveePost } from "./api";
 
 const post = vi.fn<SaveePost>();
 
@@ -22,7 +24,7 @@ function item(shortID: string, createdAt: string) {
 
 const VIEWER = { data: { auth: { user: { _id: "u1", username: "me" } } } };
 
-function page(items: JsonValue[], nextCursor: string | null) {
+function page(items: Array<JsonValue>, nextCursor: string | null) {
   return {
     data: {
       userByUsername: {
@@ -32,19 +34,27 @@ function page(items: JsonValue[], nextCursor: string | null) {
   };
 }
 
-interface GraphqlCall {
-  query: string;
-  variables: { username?: string; cursor?: string; shortID?: string };
-}
+const GraphqlCallSchema = z.looseObject({
+  query: z.string(),
+  variables: z.looseObject({
+    username: z.string().optional(),
+    cursor: z.string().optional(),
+    shortID: z.string().optional(),
+  }),
+});
+
+type GraphqlCall = z.infer<typeof GraphqlCallSchema>;
 
 function call(body: string): GraphqlCall {
-  return JSON.parse(body);
+  return GraphqlCallSchema.parse(JSON.parse(body));
 }
 
 function serve(pages: Record<string, JsonValue>, viewer: JsonValue = VIEWER) {
   post.mockImplementation(async (body) => {
     const { query, variables } = call(body);
-    if (query.startsWith("query PondViewer")) return json(viewer);
+    if (query.startsWith("query PondViewer")) {
+      return json(viewer);
+    }
     if (query.startsWith("query PondUserItems")) {
       const cursor = variables.cursor ?? "first";
       return json(pages[cursor] ?? page([], null));

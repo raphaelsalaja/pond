@@ -22,7 +22,7 @@ export function ListEmpty({
   if (query.isError) {
     return (
       <Empty.Root role="alert">
-        <Empty.Title>Couldn't Load {noun}</Empty.Title>
+        <Empty.Title>Couldn&apos;t Load {noun}</Empty.Title>
         <Empty.Description>
           Check that the Library is available, then try again.
         </Empty.Description>

@@ -4,12 +4,8 @@ import { pickPrimaryFile } from "@/features/saves/media";
 import { useSave } from "@/features/saves/pool";
 import { getSourceDefForIdentity } from "@/features/sources";
 import { formatAbsolute } from "@/shared/lib/format";
-import {
-  fileType,
-  type ReferenceItem,
-  SavePreview,
-  toReferenceItems,
-} from "../consulted-saves";
+import { fileType, SavePreview, toReferenceItems } from "../consulted-saves";
+import type { ReferenceItem } from "../consulted-saves";
 import { SourceThumbnail, useSourceCovers } from "../save-preview";
 import styles from "./styles.module.css";
 
@@ -28,7 +24,9 @@ function Origin({ source }: { source: AssistantSource }) {
     def && def.source !== "web"
       ? def.label
       : (hostOf(source.url) ?? def?.label);
-  if (!label) return null;
+  if (!label) {
+    return null;
+  }
   return (
     <span className={styles.origin}>
       {Icon ? <Icon width={14} height={14} /> : null}
@@ -53,11 +51,11 @@ export function SaveCards({
   onOpenSave,
   onAttach,
 }: {
-  sources: AssistantSource[];
-  saveIds?: string[];
-  attachedIds?: string[];
+  sources: Array<AssistantSource>;
+  saveIds?: Array<string>;
+  attachedIds?: Array<string>;
   onOpenSave: (id: string) => void;
-  onAttach: (sources: AssistantSource[]) => void;
+  onAttach: (sources: Array<AssistantSource>) => void;
 }) {
   const items = toReferenceItems(
     saveIds ?? sources.map((source) => source.id),
@@ -65,7 +63,9 @@ export function SaveCards({
     (source) => <SourceThumbnail id={source.id} source={source} visual />,
   );
   useSourceCovers(items.map((item) => item.id));
-  if (!items.length) return null;
+  if (!items.length) {
+    return null;
+  }
   const byId = new Map(sources.map((source) => [source.id, source]));
   return (
     <section

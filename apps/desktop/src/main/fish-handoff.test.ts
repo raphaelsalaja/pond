@@ -18,7 +18,7 @@ function receipt(overrides: Partial<CaptureReceipt> = {}): CaptureReceipt {
 }
 
 function fakeWindow(loading = false) {
-  const sent: [string, FishOpen][] = [];
+  const sent: Array<[string, FishOpen]> = [];
   let onLoad: (() => void) | null = null;
   return {
     sent,

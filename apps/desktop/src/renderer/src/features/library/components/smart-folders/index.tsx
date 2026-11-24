@@ -6,10 +6,11 @@ import {
 } from "@dnd-kit/sortable";
 import { IconPlus } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
-import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import { Menu, Sidebar } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   combineQueries,
   inheritedQueryFor,
@@ -59,10 +60,15 @@ export function SmartFoldersSection({ active = true }: { active?: boolean }) {
   );
   const setGroupOpen = (id: string, next: boolean) => {
     setClosedGroups((current) => {
-      if (current.has(id) === !next) return current;
+      if (current.has(id) === !next) {
+        return current;
+      }
       const groups = new Set(current);
-      if (next) groups.delete(id);
-      else groups.add(id);
+      if (next) {
+        groups.delete(id);
+      } else {
+        groups.add(id);
+      }
       return groups;
     });
   };
@@ -70,31 +76,28 @@ export function SmartFoldersSection({ active = true }: { active?: boolean }) {
   const editingViewId = useEditingSavedViewId();
   useRevealSidebarSection("smartFolders", editingViewId !== null);
   const editorRequest = useSavedViewEditorRequest();
-  const handledEditorRequest = useRef(0);
-  useEffect(() => {
-    if (
-      editorRequest.token === 0 ||
-      editorRequest.token === handledEditorRequest.current
-    )
-      return;
-    handledEditorRequest.current = editorRequest.token;
+  const [handledEditorToken, setHandledEditorToken] = useState(0);
+  if (editorRequest.token !== 0 && editorRequest.token !== handledEditorToken) {
+    setHandledEditorToken(editorRequest.token);
     if (editorRequest.mode === "edit") {
       const view = views.find((entry) => entry.id === editorRequest.viewId);
-      if (view) setEditor({ mode: "edit", view });
-      return;
+      if (view) {
+        setEditor({ mode: "edit", view });
+      }
+    } else {
+      setOpen(true);
+      setEditor({
+        mode: "create",
+        kind: editorRequest.kind,
+        parentId: editorRequest.parentId,
+      });
     }
-    setOpen(true);
-    setEditor({
-      mode: "create",
-      kind: editorRequest.kind,
-      parentId: editorRequest.parentId,
-    });
-  }, [editorRequest, views]);
+  }
   const childrenByParent = useMemo(() => {
     const groups = new Set(
       views.filter((view) => view.kind === "group").map((view) => view.id),
     );
-    const children = new Map<string | null, SavedView[]>();
+    const children = new Map<string | null, Array<SavedView>>();
     for (const view of views) {
       const parentId =
         view.parentId && groups.has(view.parentId) ? view.parentId : null;
@@ -104,7 +107,7 @@ export function SmartFoldersSection({ active = true }: { active?: boolean }) {
     }
     return children;
   }, [views]);
-  const organization = useOrganizationTree(
+  const { root: treeRoot, ...organization } = useOrganizationTree(
     views,
     (ids) => {
       if (ids.length === 1 && ids[0]) {
@@ -142,7 +145,7 @@ export function SmartFoldersSection({ active = true }: { active?: boolean }) {
       null,
       () => setOpen(true),
       setEditor,
-      savedViews.startEditing,
+      (id) => savedViews.startEditing(id),
     );
 
   const editorDialog = editor ? (
@@ -153,7 +156,9 @@ export function SmartFoldersSection({ active = true }: { active?: boolean }) {
     />
   ) : null;
 
-  if (!sidebar.sections.smartFolders) return editorDialog;
+  if (!sidebar.sections.smartFolders) {
+    return editorDialog;
+  }
 
   return (
     <>
@@ -212,7 +217,7 @@ export function SmartFoldersSection({ active = true }: { active?: boolean }) {
             strategy={verticalListSortingStrategy}
           >
             <Sidebar.CollapsibleGroupContent
-              ref={organization.root}
+              ref={treeRoot}
               role="tree"
               aria-label="Smart Folders"
               aria-multiselectable
@@ -230,7 +235,7 @@ export function SmartFoldersSection({ active = true }: { active?: boolean }) {
                   depth={0}
                   editingViewId={editingViewId}
                   onFinishRenaming={() => savedViews.finishEditing()}
-                  onStartRenaming={savedViews.startEditing}
+                  onStartRenaming={(id) => savedViews.startEditing(id)}
                   openEditor={setEditor}
                   presentations={presentations}
                   quickAccessIds={quickAccessIds}
@@ -269,7 +274,7 @@ function SmartFolderEditor({
   onClose,
 }: {
   request: EditorRequest;
-  views: SavedView[];
+  views: Array<SavedView>;
   onClose: () => void;
 }) {
   const libraryRevision = useSelector(savesStore, (state) => state.revision);
@@ -309,9 +314,9 @@ function SmartFolderEditor({
       count={countMatches}
       onClose={onClose}
       onSave={async (name, query) => {
-        if (request.mode === "edit")
+        if (request.mode === "edit") {
           await savedViews.edit(request.view.id, name, query);
-        else {
+        } else {
           await savedViews.create({
             name,
             query,

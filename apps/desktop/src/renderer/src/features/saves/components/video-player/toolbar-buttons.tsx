@@ -32,7 +32,9 @@ function LoopButton({
       label="Loop"
       pressed={looped}
       onClick={() => {
-        if (range) onRangeChange(null);
+        if (range) {
+          onRangeChange(null);
+        }
         onOverrideChange(!looped);
       }}
     >
@@ -88,7 +90,9 @@ function PauseIcon() {
 
 function FullscreenButton() {
   const { state, actions } = useVideo();
-  if (!state.fullscreenSupported) return null;
+  if (!state.fullscreenSupported) {
+    return null;
+  }
   return (
     <ViewerHud.Pill>
       <ViewerHud.Tool

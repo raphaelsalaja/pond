@@ -59,13 +59,21 @@ export function imageDownloadValues(
 }
 
 export function missingVideosDescription(count: number): string {
-  if (count === 0) return "All video saves have a video file.";
-  if (count === 1) return "1 video save doesn't have a video file.";
+  if (count === 0) {
+    return "All video saves have a video file.";
+  }
+  if (count === 1) {
+    return "1 video save doesn't have a video file.";
+  }
   return `${count} video saves don't have a video file.`;
 }
 
 export function queuedVideosTitle(queued: number): string {
-  if (queued === 0) return "No videos to download";
-  if (queued === 1) return "Downloading 1 video";
+  if (queued === 0) {
+    return "No videos to download";
+  }
+  if (queued === 1) {
+    return "Downloading 1 video";
+  }
   return `Downloading ${queued} videos`;
 }

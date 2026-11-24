@@ -3,10 +3,10 @@ import { scenes } from "@pond/video";
 export const { start, end } = scenes({
   hook: [0, 3100],
   menu: [3100, 5400],
-  eagle: [5400, 10400],
-  detail: [10400, 13500],
-  mymind: [13500, 17900],
-  outro: [17900, 22400],
+  eagle: [5400, 10_400],
+  detail: [10_400, 13_500],
+  mymind: [13_500, 17_900],
+  outro: [17_900, 22_400],
 });
 
 export const DURATION = end("outro");
@@ -21,9 +21,9 @@ export const CUES = {
   folderStep: 190,
   smartLand: 7250,
   eagleDone: 8900,
-  detailRow: 11100,
+  detailRow: 11_100,
   detailStep: 170,
-  csvRow: 14700,
+  csvRow: 14_700,
   csvStep: 700,
-  logo: 18000,
+  logo: 18_000,
 } as const;

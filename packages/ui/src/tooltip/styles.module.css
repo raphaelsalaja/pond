@@ -11,8 +11,8 @@
   font-size: var(--ds-text-small);
   font-weight: var(--ds-weight-medium);
   line-height: var(--ds-leading-small);
-  text-align: center;
   color: var(--ds-foreground-secondary);
+  text-align: center;
   background: var(--ds-background-elevated);
   border-radius: var(--ds-radius-md);
   /* A tooltip is a label, not a layer you work in, so it stays as flat as a card in the page. */
@@ -164,8 +164,8 @@
   width: 16px;
   height: 16px;
   padding: 0;
-  color: var(--ds-foreground-tertiary);
   vertical-align: middle;
+  color: var(--ds-foreground-tertiary);
   cursor: var(--ds-cursor-interactive, pointer);
   background: var(--ds-surface-primary);
   border: 0;

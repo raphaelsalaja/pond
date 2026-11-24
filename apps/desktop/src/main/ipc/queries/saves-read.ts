@@ -1,4 +1,5 @@
-import { saves, type Task, tasks } from "@pond/schema/db";
+import { saves, tasks } from "@pond/schema/db";
+import type { Task } from "@pond/schema/db";
 import { buildWhere, isEmptyQuery } from "@pond/schema/filters";
 import type { RawJson } from "@pond/schema/raw";
 import {
@@ -11,9 +12,9 @@ import {
   inArray,
   isNotNull,
   isNull,
-  type SQL,
   sql,
 } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { LibraryQueryRequestSchema as LibraryQueryParams } from "../../../shared/library-query";
@@ -30,37 +31,50 @@ import { querySplitPosts } from "../../core/split-posts";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
 import { resolveSaveFilePath } from "../helpers";
-import { type SaveListRow, toWireSaves } from "../wire";
+import { toWireSaves } from "../wire";
+import type { SaveListRow } from "../wire";
 import {
   FileIndexParam,
   FlagParam,
   OptionalNumberParam,
-  type QueryHandlerMap,
   QueryParam,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 import { cursorFor } from "./saves-page";
 
 function isHttpUrl(u: string | undefined | null): u is string {
-  if (!u) return false;
+  if (!u) {
+    return false;
+  }
   return u.startsWith("http://") || u.startsWith("https://");
 }
 
 const OpenGraphImageSchema = z.object({ "og:image": z.string() });
 
 function derivePublicImageUrl(raw: RawJson | null): string | null {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   const media = raw.capture?.media ?? [];
   const image = media.find((m) => m.type === "image" && isHttpUrl(m.url));
-  if (image) return image.url;
+  if (image) {
+    return image.url;
+  }
   const video = media.find((m) => m.type === "video" && isHttpUrl(m.posterUrl));
-  if (video?.posterUrl) return video.posterUrl;
+  if (video?.posterUrl) {
+    return video.posterUrl;
+  }
   const ytdlpThumb = raw.ytdlp?.thumbnail;
-  if (isHttpUrl(ytdlpThumb)) return ytdlpThumb;
+  if (isHttpUrl(ytdlpThumb)) {
+    return ytdlpThumb;
+  }
   const cardImage = raw.capture?.card?.imageUrl;
-  if (isHttpUrl(cardImage)) return cardImage;
+  if (isHttpUrl(cardImage)) {
+    return cardImage;
+  }
   const extras = OpenGraphImageSchema.safeParse(raw.capture?.extras);
   if (extras.success && isHttpUrl(extras.data["og:image"])) {
     return extras.data["og:image"];
@@ -73,10 +87,12 @@ const TASK_ID_CHUNK = 10_000;
 
 async function loadTasksFor(
   db: Db,
-  ids: string[],
-): Promise<Map<string, Task[]>> {
-  if (ids.length === 0) return new Map();
-  const grouped = new Map<string, Task[]>();
+  ids: Array<string>,
+): Promise<Map<string, Array<Task>>> {
+  if (ids.length === 0) {
+    return new Map();
+  }
+  const grouped = new Map<string, Array<Task>>();
   for (let i = 0; i < ids.length; i += TASK_ID_CHUNK) {
     const slice = ids.slice(i, i + TASK_ID_CHUNK);
     const rows = await db
@@ -85,8 +101,11 @@ async function loadTasksFor(
       .where(inArray(tasks.saveId, slice));
     for (const t of rows) {
       const existing = grouped.get(t.saveId);
-      if (existing) existing.push(t);
-      else grouped.set(t.saveId, [t]);
+      if (existing) {
+        existing.push(t);
+      } else {
+        grouped.set(t.saveId, [t]);
+      }
     }
   }
   return grouped;
@@ -135,7 +154,9 @@ export const savesReadQueries = {
     return querySplitPosts(await getDb());
   },
   "saves.get": query(z.object({ id: StringParam }), async (params) => {
-    if (!params.id) return null;
+    if (!params.id) {
+      return null;
+    }
     const db = await getDb();
 
     const rows = await db
@@ -143,7 +164,9 @@ export const savesReadQueries = {
       .from(saves)
       .where(eq(saves.id, params.id));
     const row = rows[0];
-    if (!row) return null;
+    if (!row) {
+      return null;
+    }
     const grouped = await loadTasksFor(db, [row.id]);
     const { rawSlim, ...rest } = row;
     return toWireSaves([{ ...rest, rawJson: rawSlim }], grouped)[0] ?? null;
@@ -159,7 +182,7 @@ export const savesReadQueries = {
         .from(saves)
         .orderBy(desc(saves.savedAt));
       const rows =
-        params.limit != null
+        params.limit !== null && params.limit !== undefined
           ? await baseQuery.limit(Math.min(params.limit, 100_000))
           : await baseQuery;
       const grouped = await loadTasksFor(
@@ -239,7 +262,9 @@ export const savesReadQueries = {
     }),
     async (params) => {
       const q = params.q.trim();
-      if (!q) return { ids: [], scores: {} };
+      if (!q) {
+        return { ids: [], scores: {} };
+      }
       const limit = Math.min(Math.max(1, params.limit || 10_000), 10_000);
       const db = await getDb();
       const rows = await db
@@ -279,19 +304,18 @@ export const savesReadQueries = {
       limit: z.number().int().min(1).max(100).optional(),
     }),
     async (params) => {
-      const { relatedSaves } = await import(
-        "../../core/semantic-recommendations"
-      );
+      const { relatedSaves } =
+        await import("../../core/semantic-recommendations");
       return await relatedSaves(await getDb(), params);
     },
   ),
 
   "saves.semanticClusters": query(
     z.object({
-      saveIds: z.array(z.string().trim().min(1)).max(2_000).optional(),
+      saveIds: z.array(z.string().trim().min(1)).max(2000).optional(),
       folderId: z.string().trim().min(1).optional(),
       distance: z.number().finite().min(0).max(2),
-      limit: z.number().int().min(3).max(2_000),
+      limit: z.number().int().min(3).max(2000),
     }),
     async (params) => {
       const { semanticClusters } = await import("../../core/semantic-clusters");
@@ -301,13 +325,12 @@ export const savesReadQueries = {
 
   "saves.classifyLabels": query(
     z.object({
-      saveIds: z.array(z.string().trim().min(1)).min(1).max(2_000),
+      saveIds: z.array(z.string().trim().min(1)).min(1).max(2000),
       labels: z.array(z.string().trim().min(1).max(80)).min(1).max(50),
     }),
     async (params) => {
-      const { classifyLabels } = await import(
-        "../../core/semantic-classification"
-      );
+      const { classifyLabels } =
+        await import("../../core/semantic-classification");
       return await classifyLabels(await getDb(), params);
     },
   ),
@@ -321,7 +344,9 @@ export const savesReadQueries = {
       limit: OptionalNumberParam,
     }),
     async (params) => {
-      if (!params.query || isEmptyQuery(params.query)) return { ids: [] };
+      if (!params.query || isEmptyQuery(params.query)) {
+        return { ids: [] };
+      }
       const compiled = buildWhere(params.query);
       const trash: SQL = params.deletedOnly
         ? isNotNull(saves.deletedAt)
@@ -330,7 +355,7 @@ export const savesReadQueries = {
       const orderCol = librarySortColumn(params.sortKey);
       const order = params.sortDir === "asc" ? asc(orderCol) : desc(orderCol);
       const limit =
-        params.limit != null
+        params.limit !== null && params.limit !== undefined
           ? Math.min(Math.max(1, params.limit || 1), 100_000)
           : null;
       const db = await getDb();
@@ -339,17 +364,19 @@ export const savesReadQueries = {
         .from(saves)
         .where(where)
         .orderBy(asc(sql`${orderCol} is null`), order, desc(saves.id));
-      const rows = limit != null ? await base.limit(limit) : await base;
+      const rows = limit !== null ? await base.limit(limit) : await base;
       return { ids: rows.map((r) => r.id) };
     },
   ),
 
   "saves.getMany": query(z.object({ ids: StringListParam }), async (params) => {
     const ids = params.ids.filter(Boolean);
-    if (ids.length === 0) return [];
+    if (ids.length === 0) {
+      return [];
+    }
     const db = await getDb();
-    const out: SaveListRow[] = [];
-    const groupedAll = new Map<string, Task[]>();
+    const out: Array<SaveListRow> = [];
+    const groupedAll = new Map<string, Array<Task>>();
     for (let i = 0; i < ids.length; i += TASK_ID_CHUNK) {
       const slice = ids.slice(i, i + TASK_ID_CHUNK);
       const rows = await db
@@ -360,7 +387,9 @@ export const savesReadQueries = {
         db,
         rows.map((r) => r.id),
       );
-      for (const [k, v] of grouped) groupedAll.set(k, v);
+      for (const [k, v] of grouped) {
+        groupedAll.set(k, v);
+      }
       for (const { rawSlim, ...rest } of rows) {
         out.push({ ...rest, rawJson: rawSlim });
       }
@@ -371,7 +400,9 @@ export const savesReadQueries = {
   "saves.rawJson": query(IdParams, async (params) => {
     const db = await getDb();
     const id = params.id;
-    if (!id) return { id: "", rawJson: null };
+    if (!id) {
+      return { id: "", rawJson: null };
+    }
     const rows = await db
       .select({ rawJson: saves.rawJson })
       .from(saves)
@@ -380,7 +411,9 @@ export const savesReadQueries = {
   }),
 
   "saves.filePath": query(FileParams, async (params) => {
-    if (!params.id) return { ok: false as const, reason: "not_found" as const };
+    if (!params.id) {
+      return { ok: false as const, reason: "not_found" as const };
+    }
     const result = await resolveSaveFilePath(params.id, params.fileIndex);
     return result.ok
       ? {
@@ -418,7 +451,9 @@ export const savesReadQueries = {
       .where(eq(saves.id, params.id))
       .limit(1);
     const row = rows[0];
-    if (!row) return { id: params.id, embedding: null, embeddingModel: null };
+    if (!row) {
+      return { id: params.id, embedding: null, embeddingModel: null };
+    }
     return {
       id: row.id,
       embedding: row.embedding ?? null,
@@ -443,11 +478,15 @@ export const savesReadQueries = {
   },
 
   "saves.publicImageUrl": query(IdParams, async (params) => {
-    if (!params.id) return { ok: false as const, error: "Save not found." };
+    if (!params.id) {
+      return { ok: false as const, error: "Save not found." };
+    }
     const db = await getDb();
     const rows = await db.select().from(saves).where(eq(saves.id, params.id));
     const row = rows[0];
-    if (!row) return { ok: false as const, error: "Save not found." };
+    if (!row) {
+      return { ok: false as const, error: "Save not found." };
+    }
     return { ok: true as const, url: derivePublicImageUrl(row.rawJson) };
   }),
 } satisfies QueryHandlerMap;

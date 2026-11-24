@@ -49,10 +49,13 @@ export function useWatchedFolder() {
     refetchOnWindowFocus: true,
   });
 
+  const { refetch } = query;
   useEffect(() => {
-    if (revision === 0) return;
-    void query.refetch();
-  }, [query.refetch, revision]);
+    if (revision === 0) {
+      return;
+    }
+    void refetch();
+  }, [refetch, revision]);
 
   return query;
 }

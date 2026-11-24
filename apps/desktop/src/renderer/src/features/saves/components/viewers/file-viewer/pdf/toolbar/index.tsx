@@ -12,7 +12,7 @@ import {
 } from "@pond/icons";
 import { Input } from "@pond/ui";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { printPdf } from "../print-pdf";
 import { usePdfSearch } from "../use-pdf-search";
@@ -56,9 +56,12 @@ export function PdfToolbar({
     runSearch,
     stepSearchResult,
   } = usePdfSearch(document, goToPage);
-  const [pageEntry, setPageEntry] = useState("1");
-
-  useEffect(() => setPageEntry(String(currentPage)), [currentPage]);
+  const [pageEntry, setPageEntry] = useState(() => String(currentPage));
+  const [entryPage, setEntryPage] = useState(currentPage);
+  if (entryPage !== currentPage) {
+    setEntryPage(currentPage);
+    setPageEntry(String(currentPage));
+  }
 
   return (
     <>
@@ -132,7 +135,9 @@ export function PdfToolbar({
         onSubmit={(event) => {
           event.preventDefault();
           const next = Number.parseInt(pageEntry, 10);
-          if (Number.isFinite(next)) goToPage(next);
+          if (Number.isFinite(next)) {
+            goToPage(next);
+          }
         }}
       >
         <Input.Root size="sm" variant="secondary">
@@ -144,8 +149,11 @@ export function PdfToolbar({
             onChange={(event) => setPageEntry(event.target.value)}
             onBlur={() => {
               const next = Number.parseInt(pageEntry, 10);
-              if (Number.isFinite(next)) goToPage(next);
-              else setPageEntry(String(currentPage));
+              if (Number.isFinite(next)) {
+                goToPage(next);
+              } else {
+                setPageEntry(String(currentPage));
+              }
             }}
           />
         </Input.Root>

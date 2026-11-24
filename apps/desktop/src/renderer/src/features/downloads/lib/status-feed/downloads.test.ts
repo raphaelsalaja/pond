@@ -7,10 +7,10 @@ import {
   matchesDownloadFilters,
   mergeDownloadRows,
   projectLiveDownloads,
-  type StatusFilter,
   showsCompletedDownloads,
   statusBucket,
 } from "./downloads";
+import type { StatusFilter } from "./downloads";
 
 function save(partial: Partial<Save> & Pick<Save, "id" | "status">): Save {
   return {
@@ -138,11 +138,11 @@ describe("projectLiveDownloads", () => {
 
   it("puts work in flight above the queue no matter how old it is", () => {
     const rows = projectLiveDownloads([
-      save({ id: "fresh", status: "ingesting", savedAt: 5_000 }),
+      save({ id: "fresh", status: "ingesting", savedAt: 5000 }),
       save({
         id: "old-runner",
         status: "ingesting",
-        savedAt: 1_000,
+        savedAt: 1000,
         tasks: [
           {
             op: "fetch_blobs",
@@ -187,7 +187,9 @@ describe("matchesDownloadFilters", () => {
     save({ id: "a", status: "failed", title: "Clip" }),
   ]);
   const row = rows[0];
-  if (!row) throw new Error("expected a row");
+  if (!row) {
+    throw new Error("expected a row");
+  }
 
   it("hides only completed downloads by default", () => {
     const filters = defaultDownloadFilters();
@@ -237,7 +239,9 @@ describe("matchesDownloadFilters", () => {
         url: "https://www.youtube.com/watch?v=abc",
       }),
     ]);
-    if (!webRow) throw new Error("expected a row");
+    if (!webRow) {
+      throw new Error("expected a row");
+    }
     expect(
       matchesDownloadFilters(webRow, {
         ...defaultDownloadFilters(),

@@ -22,7 +22,9 @@ type ErrorClass =
 
 /** Main records task errors as `${error.name}: ${error.message}`, so the class name is the error's kind. */
 function errorClass(raw: string | null | undefined): ErrorClass | null {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   switch (/^([A-Za-z]+Error):/.exec(raw)?.[1]) {
     case "AuthRequiredError":
       return "auth";
@@ -44,7 +46,7 @@ const NETWORK =
   /network|fetch failed|navigate failed|ECONN|ENOTFOUND|EAI_AGAIN|socket hang up/i;
 const SERVER = /\b5\d\d\b/;
 
-const EXPLANATIONS: readonly (readonly [RegExp, string])[] = [
+const EXPLANATIONS: ReadonlyArray<readonly [RegExp, string]> = [
   [/region/i, "This isn't available in your region."],
   [
     /\b(404|410)\b|page not found|no longer exists|was deleted|is gone/i,
@@ -70,27 +72,47 @@ function sentence(text: string): string {
 
 function explainError(raw: string): string {
   for (const [pattern, text] of EXPLANATIONS) {
-    if (pattern.test(raw)) return text;
+    if (pattern.test(raw)) {
+      return text;
+    }
   }
   return sentence(humanizeError(raw));
 }
 
 function retryCause(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  if (errorClass(raw) === "rate_limit") return "a rate limit";
-  if (TIMEOUT.test(raw)) return "a timeout";
-  if (NETWORK.test(raw)) return "a network error";
-  if (SERVER.test(raw)) return "a server error";
+  if (!raw) {
+    return null;
+  }
+  if (errorClass(raw) === "rate_limit") {
+    return "a rate limit";
+  }
+  if (TIMEOUT.test(raw)) {
+    return "a timeout";
+  }
+  if (NETWORK.test(raw)) {
+    return "a network error";
+  }
+  if (SERVER.test(raw)) {
+    return "a server error";
+  }
   return null;
 }
 
 function until(at: number | null | undefined, now: number): string | null {
-  if (at == null || at >= Number.MAX_SAFE_INTEGER) return null;
-  const seconds = Math.ceil((at - now) / 1_000);
-  if (seconds <= 0) return "shortly";
-  if (seconds < 60) return `in ${seconds}s`;
+  if (at === null || at === undefined || at >= Number.MAX_SAFE_INTEGER) {
+    return null;
+  }
+  const seconds = Math.ceil((at - now) / 1000);
+  if (seconds <= 0) {
+    return "shortly";
+  }
+  if (seconds < 60) {
+    return `in ${seconds}s`;
+  }
   const minutes = Math.ceil(seconds / 60);
-  if (minutes < 60) return `in ${minutes} min`;
+  if (minutes < 60) {
+    return `in ${minutes} min`;
+  }
   const hours = Math.max(1, Math.round(minutes / 60));
   return `in ${formatPlural(hours, { one: "hour", other: "hours" })}`;
 }
@@ -112,12 +134,14 @@ function nextAttempt(row: DownloadRow): string | null {
   return `Attempt ${task.attempts + 1} of ${task.maxAttempts}.`;
 }
 
-function joined(...parts: (string | null)[]): string {
+function joined(...parts: Array<string | null>): string {
   return parts.filter(Boolean).join(" ");
 }
 
 function runningReason(row: DownloadRow): string | null {
-  if (!row.stage) return null;
+  if (!row.stage) {
+    return null;
+  }
   return joined(sentence(row.stage), nextAttempt(row));
 }
 
@@ -221,7 +245,9 @@ function blockedReason(row: DownloadRow, source: string): string {
 
 function deadReason(row: DownloadRow): string {
   const raw = row.lastError;
-  if (!raw) return "Pond couldn't finish this save.";
+  if (!raw) {
+    return "Pond couldn't finish this save.";
+  }
   switch (errorClass(raw)) {
     case "geo":
       return "This isn't available in your region.";
@@ -229,7 +255,9 @@ function deadReason(row: DownloadRow): string {
       return "Pond can't download this link.";
     case "other": {
       const attempts = row.task?.attempts ?? row.attempts;
-      if (attempts <= 1) return explainError(raw);
+      if (attempts <= 1) {
+        return explainError(raw);
+      }
       const tries = formatPlural(attempts, {
         one: "attempt",
         other: "attempts",
@@ -242,7 +270,9 @@ function deadReason(row: DownloadRow): string {
 }
 
 function skippedReason(row: DownloadRow): string {
-  if (row.lastError === SKIP_REASON) return "You skipped this download.";
+  if (row.lastError === SKIP_REASON) {
+    return "You skipped this download.";
+  }
   if (row.lastError?.includes("import filter")) {
     return "Your import settings for this account leave it out.";
   }

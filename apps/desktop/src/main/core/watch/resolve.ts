@@ -14,7 +14,7 @@ export interface WatchTarget {
   avatarUrl?: string;
 }
 
-const ARENA_PROBE_TIMEOUT_MS = 8_000;
+const ARENA_PROBE_TIMEOUT_MS = 8000;
 
 const ARENA_USER_TABS = new Set([
   "channels",
@@ -31,7 +31,9 @@ function parseUrl(input: string): URL | null {
     : /^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(input)
       ? `https://${input}`
       : null;
-  if (!candidate) return null;
+  if (!candidate) {
+    return null;
+  }
   try {
     return new URL(candidate);
   } catch {
@@ -39,11 +41,11 @@ function parseUrl(input: string): URL | null {
   }
 }
 
-function segmentsOf(url: URL): string[] {
+function segmentsOf(url: URL): Array<string> {
   return url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
 }
 
-function hostIs(url: URL, ...domains: string[]): boolean {
+function hostIs(url: URL, ...domains: Array<string>): boolean {
   const host = url.hostname.toLowerCase();
   return domains.some((d) => host === d || host.endsWith(`.${d}`));
 }
@@ -67,10 +69,14 @@ export async function resolveWatchTarget(
 ): Promise<WatchTarget | null> {
   if (source === "web") {
     const url = normalizeFeedUrl(rawInput);
-    if (!url) return null;
+    if (!url) {
+      return null;
+    }
     const feed = await readFeed(url, fetchPage);
     if (!feed.ok) {
-      if (feed.reason === "not_found") return null;
+      if (feed.reason === "not_found") {
+        return null;
+      }
       throw new Error("The feed could not be checked.");
     }
     return target("feed", url, feed.title ?? url);
@@ -87,7 +93,9 @@ async function parseWatchTarget(
   fetchPage: FetchWatchPage,
 ): Promise<WatchTarget | null> {
   const input = rawInput.trim();
-  if (!input) return null;
+  if (!input) {
+    return null;
+  }
   const url = parseUrl(input);
 
   switch (source) {
@@ -116,10 +124,14 @@ async function resolveArena(
   fetchPage: FetchWatchPage,
 ): Promise<WatchTarget | null> {
   if (url) {
-    if (!hostIs(url, "are.na")) return null;
+    if (!hostIs(url, "are.na")) {
+      return null;
+    }
     const segs = segmentsOf(url);
     const first = segs[0];
-    if (!first) return null;
+    if (!first) {
+      return null;
+    }
     const second = segs[1];
     if (second && !ARENA_USER_TABS.has(second.toLowerCase())) {
       return probeArena(second, ["channel"], fetchPage);
@@ -127,7 +139,9 @@ async function resolveArena(
     return probeArena(first, ["user", "group", "channel"], fetchPage);
   }
   const slug = cleanHandle(input);
-  if (!/^[\w.-]+$/.test(slug)) return null;
+  if (!/^[\w.-]+$/.test(slug)) {
+    return null;
+  }
   return probeArena(slug, ["channel", "user", "group"], fetchPage);
 }
 
@@ -155,13 +169,15 @@ async function probeArena(
           signal: AbortSignal.timeout(ARENA_PROBE_TIMEOUT_MS),
         },
       );
-      if (res.ok) return target(kind, slug);
+      if (res.ok) {
+        return target(kind, slug);
+      }
       if (res.status !== 404) {
         throw new Error("Are.na could not be checked.");
       }
-    } catch (err) {
-      log.warn("[pond watch:resolve] arena probe failed", slug, err);
-      throw err;
+    } catch (error) {
+      log.warn("[pond watch:resolve] arena probe failed", slug, error);
+      throw error;
     }
   }
   return null;
@@ -169,13 +185,19 @@ async function probeArena(
 
 function resolveYoutube(input: string, url: URL | null): WatchTarget | null {
   if (url) {
-    if (!hostIs(url, "youtube.com", "youtu.be")) return null;
+    if (!hostIs(url, "youtube.com", "youtu.be")) {
+      return null;
+    }
     const list = url.searchParams.get("list");
-    if (list) return target("playlist", list);
+    if (list) {
+      return target("playlist", list);
+    }
     const segs = segmentsOf(url);
     const first = segs[0];
     const second = segs[1];
-    if (!first) return null;
+    if (!first) {
+      return null;
+    }
     if (first.startsWith("@")) {
       const handle = first.slice(1);
       const tab = second?.toLowerCase();
@@ -190,19 +212,25 @@ function resolveYoutube(input: string, url: URL | null): WatchTarget | null {
     return null;
   }
   const handle = cleanHandle(input);
-  if (!/^[\w.-]+(\/(shorts|streams))?$/i.test(handle)) return null;
+  if (!/^[\w.-]+(\/(shorts|streams))?$/i.test(handle)) {
+    return null;
+  }
   return target("channel", handle, `@${handle}`);
 }
 
 function resolveSimpleUser(
   input: string,
   url: URL | null,
-  domains: string[],
+  domains: Array<string>,
 ): WatchTarget | null {
   if (url) {
-    if (!hostIs(url, ...domains)) return null;
+    if (!hostIs(url, ...domains)) {
+      return null;
+    }
     const first = segmentsOf(url)[0];
-    if (!first) return null;
+    if (!first) {
+      return null;
+    }
     const handle = cleanHandle(first);
     return /^[\w.-]+$/.test(handle)
       ? target("user", handle, `@${handle}`)
@@ -214,7 +242,9 @@ function resolveSimpleUser(
 
 function resolveTwitter(input: string, url: URL | null): WatchTarget | null {
   if (url) {
-    if (!hostIs(url, "x.com", "twitter.com")) return null;
+    if (!hostIs(url, "x.com", "twitter.com")) {
+      return null;
+    }
     const segs = segmentsOf(url);
     const listId = segs[2];
     if (
@@ -226,7 +256,9 @@ function resolveTwitter(input: string, url: URL | null): WatchTarget | null {
       return target("list", listId);
     }
     const first = segs[0];
-    if (!first || first === "i") return null;
+    if (!first || first === "i") {
+      return null;
+    }
     const handle = cleanHandle(first);
     return /^\w+$/.test(handle) ? target("user", handle, `@${handle}`) : null;
   }
@@ -241,8 +273,9 @@ function resolvePinterest(input: string, url: URL | null): WatchTarget | null {
     }
     const segs = segmentsOf(url);
     const first = segs[0];
-    if (!first || PINTEREST_RESERVED_ROOTS.has(first.toLowerCase()))
+    if (!first || PINTEREST_RESERVED_ROOTS.has(first.toLowerCase())) {
       return null;
+    }
     const board = segs[1];
     if (board && !board.startsWith("_") && board !== "feed.rss") {
       return target("board", `${first}/${board}`);
@@ -252,7 +285,9 @@ function resolvePinterest(input: string, url: URL | null): WatchTarget | null {
   const slug = cleanHandle(input);
   const m = /^([\w.-]+)(?:\/([\w-]+))?$/.exec(slug);
   const user = m?.[1];
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
   return m[2]
     ? target("board", `${user}/${m[2]}`)
     : target("user", user, `@${user}`);
@@ -260,10 +295,14 @@ function resolvePinterest(input: string, url: URL | null): WatchTarget | null {
 
 function resolveCosmos(input: string, url: URL | null): WatchTarget | null {
   if (url) {
-    if (!hostIs(url, "cosmos.so")) return null;
+    if (!hostIs(url, "cosmos.so")) {
+      return null;
+    }
     const segs = segmentsOf(url);
     const first = segs[0];
-    if (!first || COSMOS_RESERVED_ROOTS.has(first.toLowerCase())) return null;
+    if (!first || COSMOS_RESERVED_ROOTS.has(first.toLowerCase())) {
+      return null;
+    }
     return segs[1]
       ? target("cluster", `${first}/${segs[1]}`)
       : target("user", first, `@${first}`);
@@ -271,7 +310,9 @@ function resolveCosmos(input: string, url: URL | null): WatchTarget | null {
   const slug = cleanHandle(input);
   const m = /^([\w.-]+)(?:\/([\w-]+))?$/.exec(slug);
   const user = m?.[1];
-  if (!user) return null;
+  if (!user) {
+    return null;
+  }
   return m[2]
     ? target("cluster", `${user}/${m[2]}`)
     : target("user", user, `@${user}`);

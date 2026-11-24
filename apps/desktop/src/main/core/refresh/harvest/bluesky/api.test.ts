@@ -26,7 +26,9 @@ function like(rkey: string, subject: string, createdAt?: string) {
     $type: "app.bsky.feed.like",
     subject: { cid: "bafy", uri: subject },
   };
-  if (createdAt) value.createdAt = createdAt;
+  if (createdAt) {
+    value.createdAt = createdAt;
+  }
   return { uri: `at://${ME}/app.bsky.feed.like/${rkey}`, value };
 }
 
@@ -47,7 +49,7 @@ interface Route {
 
 interface Transport {
   get: AtGet;
-  urls: URL[];
+  urls: Array<URL>;
 }
 
 interface LikesBody {
@@ -55,13 +57,15 @@ interface LikesBody {
   cursor?: string;
 }
 
-function transport(routes: Route[]): Transport {
-  const urls: URL[] = [];
+function transport(routes: Array<Route>): Transport {
+  const urls: Array<URL> = [];
   const get: AtGet = async (raw) => {
     const url = new URL(raw);
     urls.push(url);
     const route = routes.find((r) => r.match(url));
-    if (!route) return new Response("{}", { status: 404 });
+    if (!route) {
+      return new Response("{}", { status: 404 });
+    }
     return new Response(JSON.stringify(route.body), {
       status: route.status ?? 200,
     });
@@ -122,7 +126,9 @@ describe("Bluesky likes", () => {
     const result = await readBlueskyLikes({ knownIds: [] }, get, ME);
 
     expect(result).toMatchObject({ ok: true, reachedEnd: true });
-    if (!result.ok) return;
+    if (!result.ok) {
+      return;
+    }
     expect(result.entries.map((e) => e.sourceId)).toEqual([
       "3aaaaaaaaaaaa",
       "3bbbbbbbbbbbb",

@@ -1,24 +1,23 @@
 import { useReactFlow, useStore, ViewportPortal } from "@xyflow/react";
-import { type PointerEvent, useRef } from "react";
+import { useRef } from "react";
+import type { PointerEvent } from "react";
 import { turnOf } from "../../lib/edit";
 import {
-  type Box,
   CORNERS,
-  type Corner,
   cornerAt,
   cursorFor,
   resizeTurned,
-  type Size,
 } from "../../lib/transform";
+import type { Box, Corner, Size } from "../../lib/transform";
 import styles from "./styles.module.css";
 
 interface AffordanceProps {
   frame: Box;
   rotation: number | undefined;
   min: Size;
-  onStart(): void;
-  onRotate(rotation: number | undefined): void;
-  onResize(frame: Box): void;
+  onStart: () => void;
+  onRotate: (rotation: number | undefined) => void;
+  onResize: (frame: Box) => void;
 }
 
 type Grab =
@@ -53,7 +52,9 @@ export function Affordance({
     return (Math.atan2(point.y - center.y, point.x - center.x) * 180) / Math.PI;
   };
   const begin = (event: PointerEvent<HTMLElement>, next: Grab) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0) {
+      return;
+    }
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     grab.current = next;
@@ -61,7 +62,9 @@ export function Affordance({
   };
   const move = (event: PointerEvent) => {
     const current = grab.current;
-    if (!current) return;
+    if (!current) {
+      return;
+    }
     if (!started.current) {
       started.current = true;
       onStart();

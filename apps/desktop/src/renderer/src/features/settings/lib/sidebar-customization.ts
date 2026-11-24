@@ -19,7 +19,9 @@ export function setSidebarSectionVisible(
   visible: boolean,
 ): void {
   const sections = getPrefsSnapshot()?.sidebar.sections;
-  if (!sections || sections[section] === visible) return;
+  if (!sections || sections[section] === visible) {
+    return;
+  }
   void patchPrefsSection("sidebar", {
     sections: { ...sections, [section]: visible },
   });
@@ -31,7 +33,9 @@ export function useRevealSidebarSection(
   editing: boolean,
 ): void {
   useEffect(() => {
-    if (editing) setSidebarSectionVisible(section, true);
+    if (editing) {
+      setSidebarSectionVisible(section, true);
+    }
   }, [section, editing]);
 }
 
@@ -57,11 +61,11 @@ export const SIDEBAR_DESTINATION_GROUPS = [
     heading: true,
     destinations: ["sources", "downloads"],
   },
-] as const satisfies readonly {
+] as const satisfies ReadonlyArray<{
   label: string;
   heading: boolean;
-  destinations: readonly SidebarDestination[];
-}[];
+  destinations: ReadonlyArray<SidebarDestination>;
+}>;
 
 export const SIDEBAR_DESTINATION_LABELS = {
   all: "All",
@@ -79,18 +83,20 @@ export const SIDEBAR_DESTINATION_LABELS = {
 } as const satisfies Record<SidebarDestination, string>;
 
 export function moveVisibleSidebarDestination(
-  order: readonly SidebarDestination[],
-  group: readonly SidebarDestination[],
-  visible: readonly SidebarDestination[],
+  order: ReadonlyArray<SidebarDestination>,
+  group: ReadonlyArray<SidebarDestination>,
+  visible: ReadonlyArray<SidebarDestination>,
   destination: SidebarDestination,
   over: SidebarDestination,
-): SidebarDestination[] {
+): Array<SidebarDestination> {
   const visibleOrder = order.filter(
     (item) => group.includes(item) && visible.includes(item),
   );
   const sourceIndex = visibleOrder.indexOf(destination);
   const targetIndex = visibleOrder.indexOf(over);
-  if (sourceIndex < 0 || targetIndex < 0) return [...order];
+  if (sourceIndex < 0 || targetIndex < 0) {
+    return [...order];
+  }
   visibleOrder.splice(sourceIndex, 1);
   visibleOrder.splice(targetIndex, 0, destination);
 
@@ -108,7 +114,9 @@ export function resolveSidebarBadgeStyle(
 ): SidebarBadgeStyle {
   if (destination) {
     const override = sidebar.badgeOverrides[destination];
-    if (override) return override;
+    if (override) {
+      return override;
+    }
   }
   return sidebar.badgeStyle;
 }

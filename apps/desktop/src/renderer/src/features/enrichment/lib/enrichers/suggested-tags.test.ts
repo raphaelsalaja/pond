@@ -4,8 +4,8 @@ import type { Save } from "@/features/saves/types";
 import {
   createSuggestedTagsEnricher,
   SUGGESTED_TAGS_VOCAB_RETRY_MS,
-  type SuggestedTagsDependencies,
 } from "./suggested-tags";
+import type { SuggestedTagsDependencies } from "./suggested-tags";
 
 function save(overrides: Partial<Save> = {}): Save {
   return {
@@ -117,7 +117,7 @@ describe("suggested tags vocab", () => {
 
   it("rebuilds a successful vocab when tags are added", async () => {
     let tags = [{ name: "ceramic" }];
-    const embedSearchQueries = vi.fn(async (texts: string[]) =>
+    const embedSearchQueries = vi.fn(async (texts: Array<string>) =>
       texts.map(() => unit(0)),
     );
     const enricher = createSuggestedTagsEnricher(

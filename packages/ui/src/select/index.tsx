@@ -1,7 +1,8 @@
 import { Select as Base } from "@base-ui/react/select";
 import { IconCheck as Check, IconChevronDown as Expand } from "@pond/icons";
 import { clsx as cn } from "clsx";
-import { renderSelectSpec, type SelectItemSpec } from "./items";
+import { renderSelectSpec } from "./items";
+import type { SelectItemSpec } from "./items";
 import styles from "./styles.module.css";
 
 export type { SelectItemSpec } from "./items";
@@ -143,7 +144,11 @@ function Separator({ className, ...props }: Base.Separator.Props) {
   );
 }
 
-function Items<Value>({ items }: { items: readonly SelectItemSpec<Value>[] }) {
+function Items<Value>({
+  items,
+}: {
+  items: ReadonlyArray<SelectItemSpec<Value>>;
+}) {
   return (
     <List>
       {renderSelectSpec(items, {

@@ -11,7 +11,7 @@ import {
   withoutBundleFlag,
 } from "./bundle-icon";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(() => {
   for (const root of roots.splice(0)) {
@@ -62,33 +62,29 @@ function finderInfo(flags: number): Buffer {
 
 describe("withoutBundleFlag", () => {
   it("clears the bundle flag and keeps the custom icon flag", () => {
-    expect(withoutBundleFlag(finderInfo(0x2400))).toEqual(finderInfo(0x0400));
+    expect(withoutBundleFlag(finderInfo(0x24_00))).toEqual(finderInfo(0x04_00));
   });
 
   it("leaves Finder info without the bundle flag alone", () => {
-    expect(withoutBundleFlag(finderInfo(0x0400))).toBeNull();
+    expect(withoutBundleFlag(finderInfo(0x04_00))).toBeNull();
     expect(withoutBundleFlag(Buffer.alloc(4))).toBeNull();
   });
 });
 
-describe.skipIf(process.platform !== "darwin")("clearBundleFlag", () => {
-  function flagsOf(folder: string): string {
-    return execFileSync("/usr/bin/xattr", [
-      "-px",
-      "com.apple.FinderInfo",
-      folder,
-    ])
-      .toString()
-      .replace(/\s/g, "")
-      .slice(16, 20);
-  }
+function flagsOf(folder: string): string {
+  return execFileSync("/usr/bin/xattr", ["-px", "com.apple.FinderInfo", folder])
+    .toString()
+    .replaceAll(/\s/g, "")
+    .slice(16, 20);
+}
 
+describe.skipIf(process.platform !== "darwin")("clearBundleFlag", () => {
   it("turns a folder synced as a package back into a folder", async () => {
     const folder = fakeBundle();
     execFileSync("/usr/bin/xattr", [
       "-wx",
       "com.apple.FinderInfo",
-      finderInfo(0x2400).toString("hex"),
+      finderInfo(0x24_00).toString("hex"),
       folder,
     ]);
 

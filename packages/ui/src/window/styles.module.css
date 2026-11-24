@@ -194,8 +194,7 @@
 .center > .bar {
   margin-inline: max(
       0px,
-      var(--window-leading-width) -
-      var(--window-left-width)
+      var(--window-leading-width) - var(--window-left-width)
     )
     max(0px, var(--window-trailing-width) - var(--window-right-width));
 }

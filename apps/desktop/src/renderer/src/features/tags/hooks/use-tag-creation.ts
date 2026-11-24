@@ -23,7 +23,9 @@ export function useTagCreation(
   }
 
   async function saveCreate(name: string) {
-    if (!creating || committed.current) return;
+    if (!creating || committed.current) {
+      return;
+    }
     committed.current = true;
     try {
       await operations.create(creating, name);

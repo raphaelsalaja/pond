@@ -13,10 +13,12 @@ import type {
 } from "../../../shared/media-index";
 import { getDb } from "../../db";
 import { runEnsurePoster } from "../pipeline/workers/ensure-poster";
-import { type MediaWarmCandidate, mediaWarmCandidates } from "./candidates";
-import { mediaWarmPauseReason, type ThermalState } from "./policy";
+import { mediaWarmCandidates } from "./candidates";
+import type { MediaWarmCandidate } from "./candidates";
+import { mediaWarmPauseReason } from "./policy";
+import type { ThermalState } from "./policy";
 
-const PAUSE_POLL_MS = 1_000;
+const PAUSE_POLL_MS = 1000;
 const MAX_INFLIGHT = 2;
 const SCAN_PAGE_SIZE = 100;
 const initialStatus: MediaIndexStatus = {
@@ -29,7 +31,7 @@ const initialStatus: MediaIndexStatus = {
 };
 
 let status = initialStatus;
-let candidates: MediaWarmCandidate[] = [];
+let candidates: Array<MediaWarmCandidate> = [];
 let timer: NodeJS.Timeout | null = null;
 let started = false;
 let stopped = false;
@@ -45,7 +47,9 @@ let scanGeneration = 0;
 
 function publish(patch: Partial<MediaIndexStatus>): void {
   const next = { ...status, ...patch };
-  if (JSON.stringify(next) === JSON.stringify(status)) return;
+  if (JSON.stringify(next) === JSON.stringify(status)) {
+    return;
+  }
   status = next;
 }
 
@@ -69,7 +73,9 @@ async function startMediaIndex(): Promise<void> {
 }
 
 export function startMediaWarmer(): void {
-  if (started) return;
+  if (started) {
+    return;
+  }
   started = true;
   stopped = false;
   thermal = currentThermalState();
@@ -79,7 +85,7 @@ export function startMediaWarmer(): void {
   if (process.platform === "darwin") {
     powerMonitor.on("thermal-state-change", onThermalStateChange);
   }
-  void startMediaIndex().catch((err) => fail(err));
+  void startMediaIndex().catch((cause: unknown) => fail(cause));
 }
 
 export function stopMediaWarmer(): void {
@@ -100,21 +106,29 @@ function onThermalStateChange(event: { state: ThermalState }): void {
 }
 
 function currentThermalState(): ThermalState {
-  if (process.platform !== "darwin") return "unknown";
+  if (process.platform !== "darwin") {
+    return "unknown";
+  }
   return powerMonitor.getCurrentThermalState();
 }
 
 function kick(): void {
-  if (!scanComplete || candidates.length > 0) schedule(0);
+  if (!scanComplete || candidates.length > 0) {
+    schedule(0);
+  }
 }
 
 function clearScheduled(): void {
-  if (timer) clearTimeout(timer);
+  if (timer) {
+    clearTimeout(timer);
+  }
   timer = null;
 }
 
 function schedule(delay: number): void {
-  if (stopped || timer) return;
+  if (stopped || timer) {
+    return;
+  }
   timer = setTimeout(() => {
     timer = null;
     void tick();
@@ -132,7 +146,9 @@ function systemPauseReason(): MediaIndexPauseReason | null {
 }
 
 async function tick(): Promise<void> {
-  if (stopped) return;
+  if (stopped) {
+    return;
+  }
   const reason = systemPauseReason();
   if (reason) {
     publish({
@@ -145,18 +161,22 @@ async function tick(): Promise<void> {
   }
 
   if (candidates.length === 0 && !scanComplete) {
-    if (loadingPage) return;
+    if (loadingPage) {
+      return;
+    }
     loadingPage = true;
     const generation = scanGeneration;
     try {
       await loadCandidatePage(generation);
-    } catch (err) {
-      fail(err);
+    } catch (error) {
+      fail(error);
       return;
     } finally {
       loadingPage = false;
     }
-    if (stopped) return;
+    if (stopped) {
+      return;
+    }
     if (generation !== scanGeneration) {
       schedule(0);
       return;
@@ -168,7 +188,9 @@ async function tick(): Promise<void> {
   }
 
   if (candidates.length === 0) {
-    if (activeJobs > 0) return;
+    if (activeJobs > 0) {
+      return;
+    }
     publish({
       state: failed.size > 0 ? "error" : "complete",
       currentTitle: null,
@@ -180,7 +202,9 @@ async function tick(): Promise<void> {
 
   while (activeJobs < MAX_INFLIGHT) {
     const candidate = candidates.shift();
-    if (!candidate) break;
+    if (!candidate) {
+      break;
+    }
     activeJobs += 1;
     void processOne(candidate);
   }
@@ -199,9 +223,9 @@ async function processOne(candidate: MediaWarmCandidate): Promise<void> {
       remaining: Math.max(0, status.remaining - 1),
       currentTitle: activeJobs <= 1 ? null : status.currentTitle,
     });
-  } catch (err) {
+  } catch (error) {
     publish({
-      lastError: err instanceof Error ? err.message : String(err),
+      lastError: error instanceof Error ? error.message : String(error),
       remaining: Math.max(0, status.remaining - 1),
       currentTitle: activeJobs <= 1 ? null : status.currentTitle,
     });
@@ -220,16 +244,16 @@ async function attempt(candidate: MediaWarmCandidate): Promise<void> {
   try {
     await processCandidate(candidate);
     failed.delete(failureKey(candidate));
-  } catch (err) {
-    log.warn("[pond media-index] candidate failed", candidate.saveId, err);
+  } catch (error) {
+    log.warn("[pond media-index] candidate failed", candidate.saveId, error);
     failed.set(failureKey(candidate), {
       saveId: candidate.saveId,
       title: candidate.title,
       kind: candidate.kind,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
       at: Date.now(),
     });
-    throw err;
+    throw error;
   } finally {
     active.delete(failureKey(candidate));
   }
@@ -247,14 +271,18 @@ export function mediaWarmSnapshot(): MediaWarmSnapshot {
 
 /** Runs outside idle-time pacing because it answers an explicit request. */
 export async function retryMediaWarm(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<number> {
-  const queued: MediaWarmCandidate[] = [];
+  const queued: Array<MediaWarmCandidate> = [];
   for (const saveId of new Set(saveIds)) {
     const save = await readCandidateSave(saveId);
-    if (!save) continue;
+    if (!save) {
+      continue;
+    }
     for (const [key, failure] of failed) {
-      if (failure.saveId === saveId) failed.delete(key);
+      if (failure.saveId === saveId) {
+        failed.delete(key);
+      }
     }
     candidates = candidates.filter((c) => c.saveId !== saveId);
     queued.push(...mediaWarmCandidates(save));
@@ -272,7 +300,9 @@ async function processCandidate(candidate: MediaWarmCandidate): Promise<void> {
   if (candidate.kind === "poster") {
     await runEnsurePoster(candidate.saveId);
     const refreshed = await readCandidateSave(candidate.saveId);
-    if (!refreshed) return;
+    if (!refreshed) {
+      return;
+    }
     const next = mediaWarmCandidates(refreshed);
     if (next.length > 0) {
       candidates.unshift(...next);
@@ -281,7 +311,9 @@ async function processCandidate(candidate: MediaWarmCandidate): Promise<void> {
     return;
   }
   const save = await readCandidateSave(candidate.saveId);
-  if (!save) return;
+  if (!save) {
+    return;
+  }
   const { writeSaveBlurhash } = await import("../save-blurhash");
   await writeSaveBlurhash(save);
 }
@@ -307,7 +339,9 @@ async function loadCandidatePage(generation: number): Promise<void> {
     .where(after)
     .orderBy(desc(saves.savedAt), desc(saves.id))
     .limit(SCAN_PAGE_SIZE + 1);
-  if (generation !== scanGeneration) return;
+  if (generation !== scanGeneration) {
+    return;
+  }
   const page = rows.slice(0, SCAN_PAGE_SIZE);
   const last = page.at(-1);
   scanCursor = last
@@ -336,7 +370,7 @@ async function readCandidateSave(
 > | null> {
   const db = await getDb();
   return (
-    (await db
+    db
       .select({
         id: saves.id,
         title: saves.title,
@@ -349,7 +383,7 @@ async function readCandidateSave(
       })
       .from(saves)
       .where(eq(saves.id, saveId))
-      .get()) ?? null
+      .get() ?? null
   );
 }
 

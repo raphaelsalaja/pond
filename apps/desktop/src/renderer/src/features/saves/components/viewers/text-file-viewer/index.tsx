@@ -3,7 +3,8 @@ import {
   IconCopy,
   IconFileExport,
 } from "@pond/icons";
-import { decodeTextBytes, type TextEncoding } from "@shared/text-encoding";
+import { decodeTextBytes } from "@shared/text-encoding";
+import type { TextEncoding } from "@shared/text-encoding";
 import { useEffect, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
@@ -27,13 +28,14 @@ export function TextFileViewer({
   active?: boolean;
 }) {
   const [text, setText] = useState("");
-  const [encoding, setEncoding] = useState<TextEncoding>("utf-8");
-  const [failed, setFailed] = useState(false);
+  const [encoding, setEncoding] = useState<TextEncoding>("utf8");
+  const source = `${file.path}\n${url}`;
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  const failed = failedSource === source;
   const [converting, setConverting] = useState(false);
 
   useEffect(() => {
     const abort = new AbortController();
-    setFailed(false);
     void fetch(url, { signal: abort.signal })
       .then((response) => response.arrayBuffer())
       .then((buffer) => {
@@ -43,12 +45,16 @@ export function TextFileViewer({
           try {
             setText(JSON.stringify(JSON.parse(decoded.text), null, 2));
             return;
-          } catch {}
+          } catch {
+            /** Invalid JSON falls through and shows the raw text. */
+          }
         }
         setText(decoded.text);
       })
       .catch(() => {
-        if (!abort.signal.aborted) setFailed(true);
+        if (!abort.signal.aborted) {
+          setFailedSource(`${file.path}\n${url}`);
+        }
       });
     return () => abort.abort();
   }, [file.path, url]);
@@ -60,8 +66,10 @@ export function TextFileViewer({
         id: save.id,
         fileIndex,
       });
-      if (!result.ok) throw new Error();
-      setEncoding("utf-8");
+      if (!result.ok) {
+        throw new Error();
+      }
+      setEncoding("utf8");
       notify({ id: "text-encoding", title: "Converted to UTF-8" });
     } catch {
       notify({
@@ -78,12 +86,13 @@ export function TextFileViewer({
       id: save.id,
       fileIndex,
     });
-    if (!result.ok && result.reason !== "cancelled")
+    if (!result.ok && result.reason !== "cancelled") {
       notify({
         id: "dotlottie-export",
         title: "Couldn't export dotLottie",
         description: result.error,
       });
+    }
   };
 
   return (
@@ -96,7 +105,7 @@ export function TextFileViewer({
             <ViewerToolbarGroups
               controls={
                 <>
-                  {encoding !== "utf-8" ? (
+                  {encoding !== "utf8" ? (
                     <ViewerHud.Tool
                       label={
                         converting ? "Converting to UTF-8" : "Convert to UTF-8"
@@ -132,7 +141,9 @@ export function TextFileViewer({
       </ChromePortal>
       <div className={styles.scroll} data-scroll-fade="vertical">
         {failed ? (
-          <p className={styles.status}>Pond couldn't read this text file.</p>
+          <p className={styles.status}>
+            Pond couldn&apos;t read this text file.
+          </p>
         ) : (
           <pre>{text}</pre>
         )}

@@ -3,7 +3,8 @@
 import type { JsonValue } from "@pond/schema/json";
 import type { Capture } from "@pond/schema/raw";
 import { z } from "zod";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { selectRepositoryPreview } from "./open-graph";
 
@@ -44,12 +45,18 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
   const readme = (): HTMLElement | null =>
     document.querySelector<HTMLElement>("article.markdown-body");
   while (Date.now() < deadline) {
-    if (readme() || aboutHeading()) break;
-    await new Promise((r) => setTimeout(r, 250));
+    if (readme() || aboutHeading()) {
+      break;
+    }
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   /** A missing or private repo serves a 404 page without the repo meta. */
   const name = meta("octolytics-dimension-repository_nwo");
-  if (!name.includes("/")) return null;
+  if (!name.includes("/")) {
+    return null;
+  }
   const owner = name.split("/")[0] ?? "";
 
   const section = aboutHeading()?.parentElement;
@@ -79,7 +86,6 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
   const text = [
     about,
     topics.length > 0 ? `Topics: ${topics.join(", ")}` : "",
-    // biome-ignore lint/performance/useDomNodeTextContent: the saved text needs rendered line breaks between README blocks.
     body?.innerText?.trim() ?? "",
   ]
     .filter(Boolean)
@@ -88,8 +94,12 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
     page.description =
       text.length > TEXT_LIMIT ? `${text.slice(0, TEXT_LIMIT)}…` : text;
   }
-  if (homepage) page.homepage = homepage;
-  if (body) page.readme = readmeHtml(body);
+  if (homepage) {
+    page.homepage = homepage;
+  }
+  if (body) {
+    page.readme = readmeHtml(body);
+  }
 
   for (const url of openGraphImages()) {
     page.mediaUrls.push({ url, type: "image" });
@@ -99,7 +109,9 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
   /** Resolves links and images against the page, and moves heading anchors onto their headings. */
   function readmeHtml(source: HTMLElement): string {
     const copy = source.cloneNode(true);
-    if (!(copy instanceof HTMLElement)) return "";
+    if (!isElementNode(copy)) {
+      return "";
+    }
     for (const chrome of copy.querySelectorAll(
       ".zeroclipboard-container, clipboard-copy",
     )) {
@@ -109,7 +121,9 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
       const heading = anchor.parentElement?.querySelector(
         "h1, h2, h3, h4, h5, h6",
       );
-      if (heading && anchor.id && !heading.id) heading.id = anchor.id;
+      if (heading && anchor.id && !heading.id) {
+        heading.id = anchor.id;
+      }
       anchor.remove();
     }
     const ids = new Set(
@@ -119,7 +133,9 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
       const href = link.getAttribute("href") ?? "";
       if (href.startsWith("#")) {
         const target = `user-content-${href.slice(1)}`;
-        if (ids.has(target)) link.setAttribute("href", `#${target}`);
+        if (ids.has(target)) {
+          link.setAttribute("href", `#${target}`);
+        }
         continue;
       }
       link.setAttribute("href", link.href);
@@ -130,7 +146,11 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
     return copy.innerHTML;
   }
 
-  function openGraphImages(): string[] {
+  function isElementNode(node: Node): node is Element {
+    return node.nodeType === Node.ELEMENT_NODE;
+  }
+
+  function openGraphImages(): Array<string> {
     return Array.from(
       document.querySelectorAll(
         'meta[property="og:image"], meta[name="og:image"]',
@@ -143,10 +163,16 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
 
 export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
   const capture = captureFromPageDom(raw, ctx);
-  if (!capture) return null;
+  if (!capture) {
+    return null;
+  }
   capture.media = selectRepositoryPreview(capture.media);
   const { homepage, readme } = RepoExtrasSchema.parse(raw);
-  if (homepage) capture.extras = { ...capture.extras, externalLink: homepage };
-  if (readme) capture.article = { html: readme };
+  if (homepage) {
+    capture.extras = { ...capture.extras, externalLink: homepage };
+  }
+  if (readme) {
+    capture.article = { html: readme };
+  }
   return capture;
 }

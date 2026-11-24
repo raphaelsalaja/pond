@@ -16,7 +16,7 @@ const apiSave = {
   rating: 4,
   kind: "image",
   status: "complete",
-  savedAt: 1761091200000,
+  savedAt: 1_761_091_200_000,
   publishedAt: null,
   deletedAt: null,
   media: { files: 1, width: 1200, height: 1600, duration: null, bytes: 1 },

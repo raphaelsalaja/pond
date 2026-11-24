@@ -1,6 +1,8 @@
+import { isHTMLTag } from "@pond/ui/dom";
 import { MotionConfig } from "motion/react";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Thread } from "../thread";
 
@@ -26,7 +28,9 @@ afterEach(async () => {
 });
 
 const frame = () =>
-  new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
 
 async function render(reducedMotion: "always" | "never" = "never") {
   await act(async () => {
@@ -39,8 +43,9 @@ async function render(reducedMotion: "always" | "never" = "never") {
     );
   });
   const viewport = host.querySelector('[data-scroll-fade="vertical"]');
-  if (!(viewport instanceof HTMLDivElement))
+  if (!isHTMLTag(viewport, "div")) {
     throw new Error("Missing conversation viewport");
+  }
   Object.defineProperties(viewport, {
     scrollHeight: { configurable: true, value: 600 },
     clientHeight: { configurable: true, value: 200 },
@@ -53,7 +58,9 @@ async function scrollTo(viewport: HTMLElement, top: number) {
   await act(async () => {
     viewport.scrollTop = top;
     viewport.dispatchEvent(new Event("scroll"));
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5);
+    });
   });
 }
 
@@ -66,8 +73,9 @@ it("offers the icon-only latest response control once you scroll up", async () =
 
   await scrollTo(viewport, 100);
   const button = latest();
-  if (!(button instanceof HTMLButtonElement))
+  if (!isHTMLTag(button, "button")) {
     throw new Error("Missing latest response control");
+  }
   expect(button.textContent).toBe("");
 
   await act(async () => button.click());
@@ -81,14 +89,18 @@ it.each(["always", "never"] as const)(
     await scrollTo(viewport, 399);
     await scrollTo(viewport, 100);
     const button = latest();
-    if (!(button instanceof HTMLButtonElement))
+    if (!isHTMLTag(button, "button")) {
       throw new Error("Missing latest response control");
+    }
 
     await act(async () => {
       button.click();
       await frame();
     });
-    if (reducedMotion === "always") expect(viewport.scrollTop).toBe(399);
-    else expect(viewport.scrollTop).toBeLessThan(399);
+    if (reducedMotion === "always") {
+      expect(viewport.scrollTop).toBe(399);
+    } else {
+      expect(viewport.scrollTop).toBeLessThan(399);
+    }
   },
 );

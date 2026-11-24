@@ -14,7 +14,9 @@ export const Route = createFileRoute("/_library/sources_/$kind/$id")({
   staticData: { details: null },
   validateSearch: SourceDetailSearchSchema,
   beforeLoad: ({ params }) => {
-    if (!isSourceDetailsKind(params.kind)) throw redirect({ to: "/sources" });
+    if (!isSourceDetailsKind(params.kind)) {
+      redirect({ to: "/sources", throw: true });
+    }
   },
   component: SourceDetailRoute,
 });
@@ -22,6 +24,8 @@ export const Route = createFileRoute("/_library/sources_/$kind/$id")({
 function SourceDetailRoute() {
   const { kind, id } = Route.useParams();
   const { page } = Route.useSearch();
-  if (!isSourceDetailsKind(kind)) return null;
+  if (!isSourceDetailsKind(kind)) {
+    return null;
+  }
   return <SourceDetail key={`${kind}:${id}`} kind={kind} id={id} page={page} />;
 }

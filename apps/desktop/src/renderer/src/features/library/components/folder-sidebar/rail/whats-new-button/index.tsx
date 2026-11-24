@@ -5,7 +5,9 @@ import styles from "./styles.module.css";
 
 export function WhatsNewButton() {
   const offered = useWhatsNewOffered();
-  if (!offered) return null;
+  if (!offered) {
+    return null;
+  }
 
   return (
     <Tooltip label="What's New" side="right">

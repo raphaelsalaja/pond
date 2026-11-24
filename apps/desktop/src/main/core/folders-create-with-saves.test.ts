@@ -1,14 +1,12 @@
 import type { Folder } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { expect, it } from "vitest";
-import {
-  type CreateFolderWithSavesRuntime,
-  createFolderWithSaves,
-} from "./folders";
+import { createFolderWithSaves } from "./folders";
+import type { CreateFolderWithSavesRuntime } from "./folders";
 
 it("creates a folder and assigns Saves in one Undo batch", async () => {
-  const executed: Transaction[][] = [];
-  const recorded: Transaction[][] = [];
+  const executed: Array<Array<Transaction>> = [];
+  const recorded: Array<Array<Transaction>> = [];
   const createdAt = new Date("2026-09-24T00:00:00.000Z");
   const existing: Folder = {
     id: "existing",
@@ -28,15 +26,13 @@ it("creates a folder and assigns Saves in one Undo batch", async () => {
         "existing",
         "new-folder",
       ]);
-      return assignments.map(
-        ({ saveId, folderIds }): Transaction => ({
-          kind: "update",
-          model: "save_folder",
-          id: saveId,
-          patch: { folderIds },
-          before: { folderIds: saveId === "save-a" ? ["existing"] : [] },
-        }),
-      );
+      return assignments.map(({ saveId, folderIds }): Transaction => ({
+        kind: "update",
+        model: "save_folder",
+        id: saveId,
+        patch: { folderIds },
+        before: { folderIds: saveId === "save-a" ? ["existing"] : [] },
+      }));
     },
     execute: async (transactions) => {
       executed.push(transactions);

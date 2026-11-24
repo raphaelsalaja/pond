@@ -4,13 +4,15 @@ import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
 import styles from "./styles.module.css";
 
-export function ExtensionField({ ids }: { ids: string[] }) {
+export function ExtensionField({ ids }: { ids: Array<string> }) {
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
 
   async function submit() {
     const extension = value.trim().replace(/^\./, "");
-    if (!extension || busy) return;
+    if (!extension || busy) {
+      return;
+    }
     setBusy(true);
     try {
       const result = await window.pond.query("saves.batchEditExtension", {

@@ -9,12 +9,23 @@ const processingItems = () =>
     "items" in group ? (group.items ?? []) : [],
   );
 
+function switchItem(key: string) {
+  const found = processingItems().find((i) => i?.key === key);
+  if (found?.control !== "switch") {
+    throw new Error(`Missing ${key}`);
+  }
+  expect(found.visible).toBeUndefined();
+  return found;
+}
+
 describe("sensitive-content processing settings", () => {
   it("keeps blur visible but disabled until classification is enabled", () => {
     const blur = processingItems().find(
       (item) => item?.key === "blurSensitiveThumbnails",
     );
-    if (blur?.control !== "switch") throw new Error("Missing blur switch");
+    if (blur?.control !== "switch") {
+      throw new Error("Missing blur switch");
+    }
     expect(blur.visible).toBeUndefined();
     expect(blur.disabled?.(DEFAULT_PREFS.ai)).toBe(true);
     expect(
@@ -26,12 +37,6 @@ describe("sensitive-content processing settings", () => {
   });
 
   it("dims nested details until their parent switch is on", () => {
-    const item = (key: string) => {
-      const found = processingItems().find((i) => i?.key === key);
-      if (found?.control !== "switch") throw new Error(`Missing ${key}`);
-      expect(found.visible).toBeUndefined();
-      return found;
-    };
     const off = {
       ...DEFAULT_PREFS.ai,
       enableClip: false,
@@ -39,17 +44,20 @@ describe("sensitive-content processing settings", () => {
       enableOcr: false,
       semanticSearch: false,
     };
-    expect(item("enableAesthetic").disabled?.(off)).toBe(true);
+    expect(switchItem("enableAesthetic").disabled?.(off)).toBe(true);
     expect(
-      item("enableAesthetic").disabled?.({ ...off, enableClip: true }),
+      switchItem("enableAesthetic").disabled?.({ ...off, enableClip: true }),
     ).toBe(false);
-    expect(item("enableAutoTitle").disabled?.(off)).toBe(true);
+    expect(switchItem("enableAutoTitle").disabled?.(off)).toBe(true);
     expect(
-      item("enableAutoTitle").disabled?.({ ...off, enableOcr: true }),
+      switchItem("enableAutoTitle").disabled?.({ ...off, enableOcr: true }),
     ).toBe(false);
-    expect(item("enableSuggestedTags").disabled?.(off)).toBe(true);
+    expect(switchItem("enableSuggestedTags").disabled?.(off)).toBe(true);
     expect(
-      item("enableSuggestedTags").disabled?.({ ...off, semanticSearch: true }),
+      switchItem("enableSuggestedTags").disabled?.({
+        ...off,
+        semanticSearch: true,
+      }),
     ).toBe(false);
   });
 
@@ -104,8 +112,9 @@ describe("sensitive-content processing settings", () => {
     const model = processingItems().find(
       (item) => item?.key === "media-understanding-model-id",
     );
-    if (model?.control !== "custom")
+    if (model?.control !== "custom") {
       throw new Error("Missing local model ID control");
+    }
     const patch = vi.fn();
     const host = document.createElement("div");
     document.body.append(host);
@@ -121,7 +130,9 @@ describe("sensitive-content processing settings", () => {
         ),
       );
       const input = host.querySelector("input");
-      if (!input) throw new Error("Missing local model ID input");
+      if (!input) {
+        throw new Error("Missing local model ID input");
+      }
       await act(async () => {
         Object.getOwnPropertyDescriptor(
           HTMLInputElement.prototype,

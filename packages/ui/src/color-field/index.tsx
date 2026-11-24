@@ -6,13 +6,8 @@ import {
   ColorPickerSliderThumb,
 } from "@ui-sdk/react/color-picker";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentPropsWithoutRef,
-  createContext,
-  type ReactNode,
-  use,
-  useState,
-} from "react";
+import { createContext, use, useState } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { Input } from "../input";
 import { Popover } from "../popover";
 import styles from "./styles.module.css";
@@ -36,11 +31,10 @@ function sameHex(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-interface RootProps
-  extends Omit<
-    ComponentPropsWithoutRef<"div">,
-    "onChange" | "aria-label" | "aria-describedby"
-  > {
+interface RootProps extends Omit<
+  ComponentPropsWithoutRef<"div">,
+  "onChange" | "aria-label" | "aria-describedby"
+> {
   value: string;
   onChange: (hex: string) => void;
   "aria-label": string;
@@ -67,7 +61,9 @@ function Root({
   if (value !== seen) {
     setSeen(value);
     const committed = normalize(draft);
-    if (!committed || !sameHex(committed, value)) setDraft(value);
+    if (!committed || !sameHex(committed, value)) {
+      setDraft(value);
+    }
   }
 
   const applied = normalize(value);
@@ -75,12 +71,16 @@ function Root({
   const commit = (next: string, display: string) => {
     setDraft(display);
     const normalized = normalize(next);
-    if (normalized && !sameHex(normalized, value)) onChange(normalized);
+    if (normalized && !sameHex(normalized, value)) {
+      onChange(normalized);
+    }
   };
 
   const handleBlur = () => {
     const normalized = normalize(draft);
-    if (!normalized || sameHex(normalized, value)) setDraft(value);
+    if (!normalized || sameHex(normalized, value)) {
+      setDraft(value);
+    }
   };
 
   return (
@@ -135,11 +135,10 @@ function useLabel(): string {
   return label;
 }
 
-interface PickerRootProps
-  extends Omit<
-    ComponentPropsWithoutRef<"div">,
-    "onChange" | "onSelect" | "defaultValue" | "children"
-  > {
+interface PickerRootProps extends Omit<
+  ComponentPropsWithoutRef<"div">,
+  "onChange" | "onSelect" | "defaultValue" | "children"
+> {
   value: string;
   ariaLabel: string;
   onChange: (hex: string) => void;

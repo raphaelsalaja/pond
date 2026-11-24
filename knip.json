@@ -62,7 +62,8 @@
       "ignoreDependencies": ["zod"]
     },
     ".": {
-      "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.{ts,mjs}"]
+      "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.ts"],
+      "ignoreDependencies": ["tsrs"]
     }
   },
   "ignoreExportsUsedInFile": {

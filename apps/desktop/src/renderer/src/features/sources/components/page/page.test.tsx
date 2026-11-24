@@ -1,7 +1,9 @@
 import { Tooltip } from "@pond/ui";
+import { isHTMLTag } from "@pond/ui/dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { sourceFlow } from "@/features/sources/state/source-flow";
@@ -30,20 +32,20 @@ function account(id: string, source: string, handle: string) {
   };
 }
 
-function selectedIds(): string[] {
+function selectedIds(): Array<string> {
   return sourcesSelection
     .snapshot()
     .map((row) => row.id)
     .toSorted();
 }
 
-function selectedRows(): HTMLElement[] {
+function selectedRows(): Array<HTMLElement> {
   return [...document.querySelectorAll<HTMLElement>('[role="row"]')].filter(
     (row) => row.getAttribute("aria-selected") === "true",
   );
 }
 
-function bodyRows(): HTMLElement[] {
+function bodyRows(): Array<HTMLElement> {
   return [...document.querySelectorAll<HTMLElement>('[role="row"]')].filter(
     (row) => row.hasAttribute("aria-selected"),
   );
@@ -51,8 +53,31 @@ function bodyRows(): HTMLElement[] {
 
 function rowWith(text: string): HTMLElement {
   const row = bodyRows().find((item) => item.textContent?.includes(text));
-  if (!row) throw new Error(`Missing source row for ${text}`);
+  if (!row) {
+    throw new Error(`Missing source row for ${text}`);
+  }
   return row;
+}
+
+async function click(row: HTMLElement, init?: MouseEventInit) {
+  await act(async () => {
+    row.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true, ...init }),
+    );
+  });
+}
+
+async function press(key: string, init?: KeyboardEventInit) {
+  await act(async () => {
+    (document.activeElement ?? document).dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key,
+        bubbles: true,
+        cancelable: true,
+        ...init,
+      }),
+    );
+  });
 }
 
 describe("Sources page selection", () => {
@@ -76,8 +101,12 @@ describe("Sources page selection", () => {
       removeEventListener() {},
     }));
     query.mockImplementation(async (name: string) => {
-      if (name === "accounts.list") return { accounts };
-      if (name === "watches.list") return { watches: [] };
+      if (name === "accounts.list") {
+        return { accounts };
+      }
+      if (name === "watches.list") {
+        return { watches: [] };
+      }
       return { ok: true };
     });
     vi.stubGlobal("pond", { query });
@@ -98,8 +127,12 @@ describe("Sources page selection", () => {
 
   afterEach(async () => {
     query.mockImplementation(async (name: string) => {
-      if (name === "accounts.list") return { accounts: [] };
-      if (name === "watches.list") return { watches: [] };
+      if (name === "accounts.list") {
+        return { accounts: [] };
+      }
+      if (name === "watches.list") {
+        return { watches: [] };
+      }
       return { ok: true };
     });
     await refetchAccounts();
@@ -131,25 +164,10 @@ describe("Sources page selection", () => {
     });
   }
 
-  async function click(row: HTMLElement, init?: MouseEventInit) {
-    await act(async () => {
-      row.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true, ...init }),
-      );
-    });
-  }
-
-  async function press(key: string, init?: KeyboardEventInit) {
-    await act(async () => {
-      (document.activeElement ?? document).dispatchEvent(
-        new KeyboardEvent("keydown", {
-          key,
-          bubbles: true,
-          cancelable: true,
-          ...init,
-        }),
-      );
-    });
+  function toolbar() {
+    return host.querySelector(
+      '[role="toolbar"][aria-label="Selected Sources"]',
+    );
   }
 
   it("selects a source on click and replaces the selection on the next click", async () => {
@@ -171,7 +189,7 @@ describe("Sources page selection", () => {
     const checkboxes = bodyRows().map((row) =>
       row.querySelector<HTMLElement>('[role="checkbox"]'),
     );
-    expect(checkboxes.every((checkbox) => checkbox != null)).toBe(true);
+    expect(checkboxes.every((checkbox) => checkbox !== null)).toBe(true);
     expect(
       host
         .querySelector('[role="grid"][aria-label="Sources"]')
@@ -193,8 +211,6 @@ describe("Sources page selection", () => {
     const syncRunNow = vi.fn(async (_id: string) => ({ ok: true }));
     vi.stubGlobal("pond", { query, syncRunNow });
     await render();
-    const toolbar = () =>
-      host.querySelector('[role="toolbar"][aria-label="Selected Sources"]');
     expect(toolbar()).toBeNull();
 
     for (const handle of ["@oluwa.rafa", "@pond"]) {
@@ -234,7 +250,9 @@ describe("Sources page selection", () => {
     const fetch = host.querySelector<HTMLButtonElement>(
       'button[aria-label="Fetch All"]',
     );
-    if (!fetch) throw new Error("Missing Fetch All");
+    if (!fetch) {
+      throw new Error("Missing Fetch All");
+    }
     await act(async () => fetch.click());
     await act(async () => fetch.click());
 
@@ -265,8 +283,12 @@ describe("Sources page selection", () => {
     const grid = host.querySelector<HTMLElement>(
       '[role="grid"][aria-label="Sources"]',
     );
-    if (!grid) throw new Error("Missing Sources grid");
-    await act(() => grid.focus());
+    if (!grid) {
+      throw new Error("Missing Sources grid");
+    }
+    act(() => {
+      grid.focus();
+    });
     await press("a", { metaKey: true });
     expect(selectedIds()).toEqual(["ig", "tw", "yt"]);
     expect(selectedRows()).toHaveLength(3);
@@ -282,7 +304,7 @@ describe("Sources page selection", () => {
     expect(selectedIds()).toEqual(["ig"]);
 
     const search = host.querySelector('input[aria-label="Search Sources"]');
-    if (!(search instanceof HTMLInputElement)) {
+    if (!isHTMLTag(search, "input")) {
       throw new Error("Missing sources search");
     }
     await act(async () => {
@@ -300,7 +322,7 @@ describe("Sources page selection", () => {
     await render();
     await click(rowWith("@oluwa.rafa"));
     const header = host.querySelector('button[aria-label="Sort by Name"]');
-    if (!(header instanceof HTMLButtonElement)) {
+    if (!isHTMLTag(header, "button")) {
       throw new Error("Missing name header");
     }
     await act(async () => {
@@ -314,7 +336,7 @@ describe("Sources page selection", () => {
   it("leaves Cmd+A to the search field while typing", async () => {
     await render();
     const search = host.querySelector('input[aria-label="Search Sources"]');
-    if (!(search instanceof HTMLInputElement)) {
+    if (!isHTMLTag(search, "input")) {
       throw new Error("Missing sources search");
     }
     search.focus();
@@ -350,7 +372,9 @@ describe("Sources page selection", () => {
     const youtube = [
       ...document.querySelectorAll('[role="menuitemcheckbox"]'),
     ].find((node) => node.textContent === "YouTube");
-    if (!youtube) throw new Error("Missing YouTube filter");
+    if (!youtube) {
+      throw new Error("Missing YouTube filter");
+    }
     await act(async () => {
       youtube.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
@@ -360,8 +384,12 @@ describe("Sources page selection", () => {
 
   it("lists the watched folder as a Local source", async () => {
     query.mockImplementation(async (name: string) => {
-      if (name === "accounts.list") return { accounts };
-      if (name === "watches.list") return { watches: [] };
+      if (name === "accounts.list") {
+        return { accounts };
+      }
+      if (name === "watches.list") {
+        return { watches: [] };
+      }
       if (name === "autoImport.status") {
         return {
           enabled: false,

@@ -49,7 +49,7 @@ describe("fileProbeOf", () => {
       site: "example.com",
       name: "a.pdf",
       mimeType: "application/pdf",
-      size: 20480,
+      size: 20_480,
       existingSaveId: null,
     });
   });

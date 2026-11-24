@@ -10,8 +10,9 @@ function remap(d, fn, flip = false) {
   const put = (p) => fn(p).map(snap).join(" ");
   while (i < tokens.length) {
     const cmd = tokens[i++];
-    if (cmd === "Z") out.push("Z");
-    else if (cmd === "M" || cmd === "L") {
+    if (cmd === "Z") {
+      out.push("Z");
+    } else if (cmd === "M" || cmd === "L") {
       cur = [num(), num()];
       out.push(`${cmd} ${put(cur)}`);
     } else if (cmd === "H" || cmd === "V") {

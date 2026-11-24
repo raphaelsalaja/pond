@@ -1,7 +1,7 @@
 const { existsSync } = require("node:fs");
 const { mkdtemp, rm } = require("node:fs/promises");
 const { tmpdir } = require("node:os");
-const { basename, join } = require("node:path");
+const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 
 const WINDOW = { width: 720, height: 440, x: 400, y: 160 };
@@ -11,17 +11,21 @@ const SECTORS_PER_MB = 2048;
 const FORMAT = "ULFO";
 
 exports.default = async function fixDmgWindows(buildResult) {
-  if (process.platform !== "darwin") return;
+  if (process.platform !== "darwin") {
+    return;
+  }
   for (const file of buildResult.artifactPaths) {
-    if (file.endsWith(".dmg")) await bakeFinderLayout(file);
+    if (file.endsWith(".dmg")) {
+      await bakeFinderLayout(file);
+    }
   }
 };
 
 async function bakeFinderLayout(dmgPath) {
   waitUntilUnmounted();
-  const work = await mkdtemp(join(tmpdir(), "pond-dmg-"));
-  const rw = join(work, "rw.dmg");
-  const out = join(work, basename(dmgPath));
+  const work = await mkdtemp(path.join(tmpdir(), "pond-dmg-"));
+  const rw = path.join(work, "rw.dmg");
+  const out = path.join(work, path.basename(dmgPath));
   try {
     execFileSync("hdiutil", ["convert", dmgPath, "-format", "UDRW", "-o", rw], {
       stdio: "pipe",
@@ -38,7 +42,9 @@ async function bakeFinderLayout(dmgPath) {
       stdio: "pipe",
     });
     execFileSync("cp", [out, dmgPath]);
-    console.log(`[pond dmg] baked Finder layout into ${basename(dmgPath)}`);
+    console.log(
+      `[pond dmg] baked Finder layout into ${path.basename(dmgPath)}`,
+    );
   } finally {
     await rm(work, { recursive: true, force: true });
   }
@@ -69,10 +75,14 @@ function waitUntilUnmounted() {
   for (const mount of ["/Volumes/Pond", "/Volumes/Pond 1"]) {
     try {
       execFileSync("hdiutil", ["detach", mount, "-quiet"], { stdio: "pipe" });
-    } catch {}
+    } catch {
+      /** The volume is usually not mounted, so detach fails. */
+    }
   }
   for (let i = 0; i < 20; i++) {
-    if (!existsSync("/Volumes/Pond") && !existsSync("/Volumes/Pond 1")) return;
+    if (!existsSync("/Volumes/Pond") && !existsSync("/Volumes/Pond 1")) {
+      return;
+    }
     execFileSync("sleep", ["0.25"]);
   }
 }
@@ -92,7 +102,9 @@ function attachRw(image) {
 
 function waitForVolume() {
   for (let i = 0; i < 20; i++) {
-    if (existsSync("/Volumes/Pond")) return "/Volumes/Pond";
+    if (existsSync("/Volumes/Pond")) {
+      return "/Volumes/Pond";
+    }
     execFileSync("sleep", ["0.25"]);
   }
   throw new Error("Pond volume did not appear after attach");

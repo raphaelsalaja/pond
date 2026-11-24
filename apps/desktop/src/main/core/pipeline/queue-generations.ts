@@ -1,9 +1,8 @@
-import {
-  CANCEL_REASON,
-  type QueueGenerationKind,
-  type QueueGenerationStatus,
-  SOURCES,
-  type Source,
+import { CANCEL_REASON, SOURCES } from "@pond/schema/db";
+import type {
+  QueueGenerationKind,
+  QueueGenerationStatus,
+  Source,
 } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
 import { ulid } from "ulid";
@@ -64,7 +63,7 @@ export interface RetryGenerationResult {
 }
 
 export async function createRetryGeneration(
-  ids?: readonly string[],
+  ids?: ReadonlyArray<string>,
   { liftAuthStop = true }: { liftAuthStop?: boolean } = {},
 ): Promise<RetryGenerationResult> {
   const db = await getDb();
@@ -72,7 +71,7 @@ export async function createRetryGeneration(
   const generationId = ulid();
   return db.$raw
     .transaction(() => {
-      const scoped = ids != null && ids.length > 0;
+      const scoped = ids !== undefined && ids.length > 0;
       const rows = z.array(RetryCandidateSchema).parse(
         db.$raw
           .prepare(
@@ -210,7 +209,7 @@ export async function setQueueGenerationPaused(
 
 export async function cancelQueueGeneration(
   generationId: string,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const db = await getDb();
   const at = Date.now();
   return db.$raw
@@ -234,7 +233,9 @@ export async function cancelQueueGeneration(
           WHERE id = ? AND status IN ('active', 'paused', 'cancelling')`,
         )
         .run(at, at, generationId);
-      if (generation.changes !== 1) return [];
+      if (generation.changes !== 1) {
+        return [];
+      }
       db.$raw
         .prepare(
           `UPDATE tasks
@@ -279,7 +280,9 @@ export async function cancelQueueGeneration(
 export async function completeQueueGenerationIfSettled(
   generationId: string | null,
 ): Promise<void> {
-  if (!generationId) return;
+  if (!generationId) {
+    return;
+  }
   const db = await getDb();
   const at = Date.now();
   db.$raw
@@ -300,7 +303,7 @@ export async function completeQueueGenerationIfSettled(
 }
 
 export async function listQueueGenerations(): Promise<
-  QueueGenerationProgress[]
+  Array<QueueGenerationProgress>
 > {
   const db = await getDb();
   const rows = z.array(GenerationRowSchema).parse(

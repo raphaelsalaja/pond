@@ -1,8 +1,8 @@
 import { IconCircleCheck } from "@pond/icons";
 import { Button, Dialog } from "@pond/ui";
 import { supportDialog, useSupportDialogOpen } from "@/shared/state/support";
-import styles from "./styles.module.css";
 import { SupportVisual } from "./visual";
+import styles from "./styles.module.css";
 
 const BUY_ME_A_COFFEE = "https://buymeacoffee.com/raphaelsalaja";
 const GITHUB = "https://github.com/raphaelsalaja/pond";
@@ -14,19 +14,21 @@ const PROMISES = [
   "Free of ads and tracking",
 ] as const;
 
+function visit(url: string) {
+  void window.pond.openExternal(url);
+  supportDialog.close();
+}
+
 export function SupportDialog() {
   const open = useSupportDialogOpen();
-
-  function visit(url: string) {
-    void window.pond.openExternal(url);
-    supportDialog.close();
-  }
 
   return (
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) supportDialog.close();
+        if (!next) {
+          supportDialog.close();
+        }
       }}
     >
       <Dialog.Portal>

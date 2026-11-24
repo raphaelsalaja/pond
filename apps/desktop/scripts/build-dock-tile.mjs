@@ -5,9 +5,8 @@ import { spawnSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(import.meta.dirname, "..");
 const source = resolve(root, "dock-tile/main.swift");
 const plugin = resolve(root, "resources/DockTile/PondDockTile.docktileplugin");
 const binary = join(plugin, "Contents/MacOS/PondDockTile");
@@ -22,10 +21,14 @@ function fail(message) {
   process.exit(1);
 }
 
-if (process.platform !== "darwin") skip("Dock tiles are macOS only");
+if (process.platform !== "darwin") {
+  skip("Dock tiles are macOS only");
+}
 const sdk = spawnSync("xcrun", ["--show-sdk-path"], { encoding: "utf8" });
 if (sdk.status !== 0) {
-  if (process.env.CI) fail("the macOS SDK is required");
+  if (process.env.CI) {
+    fail("the macOS SDK is required");
+  }
   skip("the macOS SDK is not installed");
 }
 
@@ -51,7 +54,9 @@ try {
       ],
       { stdio: "inherit" },
     );
-    if (result.status !== 0) fail(`swiftc failed for ${arch}`);
+    if (result.status !== 0) {
+      fail(`swiftc failed for ${arch}`);
+    }
     return slice;
   });
   rmSync(plugin, { recursive: true, force: true });
@@ -63,7 +68,9 @@ try {
   const lipo = spawnSync("lipo", ["-create", ...slices, "-output", binary], {
     stdio: "inherit",
   });
-  if (lipo.status !== 0) fail("lipo failed");
+  if (lipo.status !== 0) {
+    fail("lipo failed");
+  }
   console.log(`[pond dock-tile] built ${plugin}`);
 } finally {
   rmSync(work, { recursive: true, force: true });

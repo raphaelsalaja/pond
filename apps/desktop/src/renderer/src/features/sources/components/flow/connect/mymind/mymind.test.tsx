@@ -1,8 +1,10 @@
 import { DEFAULT_SOURCE_SYNC_PREFS } from "@pond/schema/db";
 import { Dialog } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
-import { act, type ComponentProps } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ComponentProps } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { startConnect } from "@/features/sources/lib/create";
 import { mymindConnectFlow } from "@/features/sources/state/mymind-connect-flow";
@@ -77,7 +79,9 @@ function button(label: string) {
   const result = Array.from(document.querySelectorAll("button")).find(
     (candidate) => candidate.textContent === label,
   );
-  if (!result) throw new Error(`Missing button: ${label}`);
+  if (!result) {
+    throw new Error(`Missing button: ${label}`);
+  }
   return result;
 }
 

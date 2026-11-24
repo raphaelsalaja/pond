@@ -2,11 +2,8 @@ import { browserValidationSource } from "../lib/browser-validation-source";
 /// <reference lib="dom" />
 
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
-import {
-  type InstagramEntry,
-  type InstagramMediaNode,
-  inPageInstagramNormalize,
-} from "./normalize";
+import { inPageInstagramNormalize } from "./normalize";
+import type { InstagramEntry, InstagramMediaNode } from "./normalize";
 
 declare global {
   var __pondHarvestAbort: boolean | undefined;
@@ -19,8 +16,8 @@ type FeedItem = InstagramMediaNode & {
 };
 
 interface SavedFeedPage {
-  items?: FeedItem[];
-  feed_items?: FeedItem[];
+  items?: Array<FeedItem>;
+  feed_items?: Array<FeedItem>;
   more_available?: boolean;
   next_max_id?: string | number;
   require_login?: boolean;
@@ -74,6 +71,8 @@ async function inPageInstagramList(
   args: InstagramListArgs,
   norm: ReturnType<typeof inPageInstagramNormalize>,
 ): Promise<ListHarvestResult> {
+  const isFeedPage = (value: unknown): value is SavedFeedPage =>
+    Object(value) === value;
   if (
     location.pathname.startsWith("/accounts/login") ||
     location.pathname.startsWith("/login")
@@ -82,8 +81,12 @@ async function inPageInstagramList(
   }
 
   const apiResult = await fetchSavedViaApi();
-  if (apiResult) return apiResult;
-  if (args.collectionId) return { ok: false, reason: "no_match" };
+  if (apiResult) {
+    return apiResult;
+  }
+  if (args.collectionId) {
+    return { ok: false, reason: "no_match" };
+  }
   return await fallbackDomScroll();
 
   async function fetchSavedViaApi(): Promise<ListHarvestResult | null> {
@@ -93,7 +96,7 @@ async function inPageInstagramList(
     let path = collection
       ? `${collection}/posts/`
       : "/api/v1/feed/saved/posts/";
-    const entries: InstagramEntry[] = [];
+    const entries: Array<InstagramEntry> = [];
     let cursor = args.resumeCursor;
     let resuming = cursor !== undefined;
     let pagesRead = 0;
@@ -135,7 +138,9 @@ async function inPageInstagramList(
 
     /** A stored cursor can expire between runs; read the list from the top instead. */
     function restartFromTop(): boolean {
-      if (!resuming || pagesRead > 0) return false;
+      if (!resuming || pagesRead > 0) {
+        return false;
+      }
       resuming = false;
       cursor = undefined;
       globalThis.__pondHarvestCursor = null;
@@ -155,7 +160,7 @@ async function inPageInstagramList(
 
       reportProgress("api_fetch", { page, cursor: cursor ?? null, path });
 
-      let json: SavedFeedPage;
+      let json: SavedFeedPage | null;
       try {
         const res = await fetch(url, {
           method: "GET",
@@ -180,7 +185,9 @@ async function inPageInstagramList(
             ok: false,
             reason: "rate_limited",
           };
-          if (Number.isFinite(n)) limited.retryAfterSec = Math.max(0, n);
+          if (Number.isFinite(n)) {
+            limited.retryAfterSec = Math.max(0, n);
+          }
           return limited;
         }
         if (!res.ok) {
@@ -190,17 +197,22 @@ async function inPageInstagramList(
             path = `${collection}/`;
             continue;
           }
-          if (restartFromTop()) continue;
+          if (restartFromTop()) {
+            continue;
+          }
           return null;
         }
 
-        json = await res.json();
-      } catch (err) {
+        const body: unknown = await res.json();
+        json = isFeedPage(body) ? body : null;
+      } catch (error) {
         reportProgress("api_error", {
           page,
-          error: err instanceof Error ? err.name : "error",
+          error: error instanceof Error ? error.name : "error",
         });
-        if (restartFromTop()) continue;
+        if (restartFromTop()) {
+          continue;
+        }
         return null;
       }
 
@@ -211,7 +223,9 @@ async function inPageInstagramList(
       const items = json?.items ?? json?.feed_items ?? [];
       if (items.length === 0 && pagesRead === 0) {
         reportProgress("api_empty", { page, path });
-        if (restartFromTop()) continue;
+        if (restartFromTop()) {
+          continue;
+        }
         return null;
       }
       pagesRead += 1;
@@ -222,7 +236,9 @@ async function inPageInstagramList(
         const entry = norm.normalizeMediaNode(item.media ?? item, {
           savedTimestamp: item.timestamp,
         });
-        if (!entry) continue;
+        if (!entry) {
+          continue;
+        }
         pageNorm += 1;
         if (!known.has(entry.sourceId)) {
           pageFresh += 1;
@@ -260,7 +276,9 @@ async function inPageInstagramList(
 
       cursor = String(nextCursor);
       globalThis.__pondHarvestCursor = cursor;
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => {
+        setTimeout(r, 250);
+      });
     }
 
     reportProgress("done", { page: 199, capped: true });
@@ -285,8 +303,8 @@ async function inPageInstagramList(
       listKinds?: Array<"liked" | "saved">;
     };
 
-    function collect(): StubEntry[] {
-      const out: StubEntry[] = [];
+    function collect(): Array<StubEntry> {
+      const out: Array<StubEntry> = [];
       const seen = new Set<string>();
       const links = Array.from(
         document.querySelectorAll<HTMLAnchorElement>(
@@ -303,8 +321,12 @@ async function inPageInstagramList(
             kind = m[1];
             id = m[2];
           }
-        } catch {}
-        if (!id || seen.has(id)) continue;
+        } catch {
+          /** An unparseable href is skipped like any other non-post link. */
+        }
+        if (!id || seen.has(id)) {
+          continue;
+        }
         seen.add(id);
         out.push({
           sourceId: id,
@@ -323,13 +345,17 @@ async function inPageInstagramList(
       ) {
         break;
       }
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => {
+        setTimeout(r, 250);
+      });
     }
 
     const collected = new Map<string, StubEntry>();
-    function ingestRows(rows: StubEntry[]): void {
+    function ingestRows(rows: Array<StubEntry>): void {
       for (const r of rows) {
-        if (!collected.has(r.sourceId)) collected.set(r.sourceId, r);
+        if (!collected.has(r.sourceId)) {
+          collected.set(r.sourceId, r);
+        }
       }
     }
 
@@ -340,7 +366,9 @@ async function inPageInstagramList(
     let stable = 0;
     while (Date.now() < scrollDeadline) {
       window.scrollBy({ top: window.innerHeight * 0.9, behavior: "instant" });
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => {
+        setTimeout(r, 700);
+      });
       ingestRows(collect());
       const sh = document.documentElement.scrollHeight;
       if (sh === lastHeight) {

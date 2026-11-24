@@ -1,7 +1,14 @@
 import { splitPostPredicate } from "@pond/schema/filters/fields";
 import type { LibraryQueryRequest } from "@shared/library-query";
 import { recentlyAddedSince } from "@shared/recently-added";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { searchViewFor } from "@/features/library/lib/search-view";
 import { combineQueries } from "@/features/library/lib/smart-folders";
 import {
@@ -12,8 +19,10 @@ import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
   cachedQueryPage,
   createQuerySession,
-  type QuerySessionRuntime,
-  type QuerySessionState,
+} from "@/features/library/state/query-session";
+import type {
+  QuerySessionRuntime,
+  QuerySessionState,
 } from "@/features/library/state/query-session";
 import {
   activateFolderPresentation,
@@ -35,7 +44,8 @@ import {
 import type { Save } from "@/features/saves/types";
 import { keywordScopesFromPrefs, useRetrievalOverlay } from "@/features/search";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
-import { inboxScope, type LibraryNav } from "@/shared/lib/library-nav";
+import { inboxScope } from "@/shared/lib/library-nav";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { useRetainedTagPickerSaves } from "./retain-tag-picker-saves";
 
@@ -80,14 +90,18 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   // again when a Save opens would change the query, clear the page, and the
   // preview would read that empty page as the Save leaving.
   const [addedSince, setAddedSince] = useState<number | null>(null);
-  if (recentlyAdded && addedSince === null) setAddedSince(recentlyAddedSince());
-  else if (!recentlyAdded && addedSince !== null) setAddedSince(null);
+  if (recentlyAdded && addedSince === null) {
+    setAddedSince(recentlyAddedSince());
+  } else if (!recentlyAdded && addedSince !== null) {
+    setAddedSince(null);
+  }
   useEffect(() => {
-    if (viewsReady)
+    if (viewsReady) {
       activateFolderPresentation(
         folderId,
         folderId ? folderViews[folderId] : undefined,
       );
+    }
   }, [folderId, folderViews, viewsReady]);
   const request = useMemo<LibraryQueryRequest>(
     () => ({
@@ -171,7 +185,9 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = window.pond.onSyncAction(() => {
-      if (timer) return;
+      if (timer) {
+        return;
+      }
       timer = setTimeout(() => {
         timer = undefined;
         void session.load();
@@ -185,8 +201,9 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const manualOrder = folderId ? folderViews[folderId]?.manualOrder : undefined;
   const previousOrder = useRef(manualOrder);
   useEffect(() => {
-    if (previousOrder.current !== manualOrder && sortKey === "manual")
+    if (previousOrder.current !== manualOrder && sortKey === "manual") {
       void session.load();
+    }
     previousOrder.current = manualOrder;
   }, [manualOrder, sortKey, session]);
   const pinScope = request.orderFolderId;
@@ -196,17 +213,20 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const previousPins = useRef({ scope: pinScope, ids: pinnedIds });
   useEffect(() => {
     const previous = previousPins.current;
-    if (previous.scope === pinScope && previous.ids !== pinnedIds)
+    if (previous.scope === pinScope && previous.ids !== pinnedIds) {
       void session.load();
+    }
     previousPins.current = { scope: pinScope, ids: pinnedIds };
   }, [pinScope, pinnedIds, session]);
   const { page, loading, error } = state;
   const filtered = useMemo(() => {
-    const rows: Save[] = [];
+    const rows: Array<Save> = [];
     const byId = new Map(saves.map((save) => [save.id, save]));
     for (const id of page?.ids ?? []) {
       const save = byId.get(id);
-      if (save) rows.push({ ...save, folderIds: memberships[id] ?? [] });
+      if (save) {
+        rows.push({ ...save, folderIds: memberships[id] ?? [] });
+      }
     }
     if (mode === "recents") {
       const order = new Map(
@@ -221,7 +241,9 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const retained = useRetainedTagPickerSaves(ranked, heldIds);
   const departedKey = retained.departedIds.join("\0");
   const departedRef = useRef(retained.departedIds);
-  departedRef.current = retained.departedIds;
+  useLayoutEffect(() => {
+    departedRef.current = retained.departedIds;
+  });
   useEffect(() => {
     const ids = departedKey.length === 0 ? [] : departedKey.split("\0");
     syncDepartingSaveIds(ids);
@@ -238,7 +260,9 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
     loadedIds: () => {
       const pageIds = session.snapshot().page?.ids ?? [];
       const extra = departedRef.current;
-      if (extra.length === 0) return pageIds;
+      if (extra.length === 0) {
+        return pageIds;
+      }
       const seen = new Set(pageIds);
       const missing = extra.filter((id) => !seen.has(id));
       return missing.length === 0 ? pageIds : [...pageIds, ...missing];

@@ -94,7 +94,9 @@ export function ColorFilter({
         onSubmit={(event) => {
           event.preventDefault();
           const next = readColorMatch(text);
-          if (next) apply(next.hex);
+          if (next) {
+            apply(next.hex);
+          }
         }}
       >
         <Input.Root size="sm" variant="secondary" className={styles.input}>
@@ -116,12 +118,16 @@ export function ColorFilter({
             autoCorrect="off"
             aria-invalid={!!text && !readColorMatch(text)}
             onBlur={() => {
-              if (!readColorMatch(text)) setText(match?.hex ?? "");
+              if (!readColorMatch(text)) {
+                setText(match?.hex ?? "");
+              }
             }}
             onValueChange={(value) => {
               setText(value);
               const next = readColorMatch(value);
-              if (next) apply(next.hex);
+              if (next) {
+                apply(next.hex);
+              }
             }}
           />
           <Input.Action className={styles["native-picker"]}>
@@ -146,7 +152,9 @@ export function ColorFilter({
         value={150 - tolerance}
         onValueChange={(value) => {
           const next = z.number().safeParse(value);
-          if (next.success) apply(hex, 150 - next.data);
+          if (next.success) {
+            apply(hex, 150 - next.data);
+          }
         }}
       >
         <Slider.Label className={styles.label}>Accuracy</Slider.Label>

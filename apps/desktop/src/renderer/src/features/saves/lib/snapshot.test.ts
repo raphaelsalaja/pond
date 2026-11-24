@@ -42,7 +42,9 @@ function createIndexedDb(databases: Map<string, Rows>) {
         const rows = databases.get(name) ?? new Map();
         databases.set(name, rows);
         request.result = database(rows);
-        if (created) request.onupgradeneeded?.();
+        if (created) {
+          request.onupgradeneeded?.();
+        }
         request.onsuccess?.();
       });
       return request;

@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "useTabs": false,
+  "tabWidth": 2,
+  "printWidth": 80,
+  "singleQuote": false,
+  "jsxSingleQuote": false,
+  "quoteProps": "as-needed",
+  "trailingComma": "all",
+  "semi": true,
+  "arrowParens": "always",
+  "bracketSameLine": false,
+  "bracketSpacing": true,
+  "sortPackageJson": false,
+  "sortImports": {
+    "partitionByNewline": true,
+    "newlinesBetween": false
+  },
+  "ignorePatterns": [
+    "**/*.html",
+    "**/*.md",
+    "**/*.mdc",
+    "**/*.toml",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/dist",
+    "branding",
+    ".mobbin",
+    ".impeccable",
+    "apps/desktop/src/renderer/src/prototypes",
+    "packages/icons/lab",
+    "packages/icons/next",
+    "packages/icons/seed",
+    "packages/icons/svg/manifest.json",
+    "packages/ui/lab",
+    "packages/theme/src/colors/palette.css",
+    "packages/theme/src/colors/scale.css",
+    "tools/oxlint/anti-slop"
+  ],
+  "overrides": [
+    {
+      "files": ["apps/raycast/**"],
+      "options": { "printWidth": 120 }
+    }
+  ]
+}

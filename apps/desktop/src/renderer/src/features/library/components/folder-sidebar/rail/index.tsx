@@ -10,7 +10,8 @@ import { ToggleGroup, Tooltip } from "@pond/ui";
 import { FISH_COLORS, FISH_SPECIES } from "@shared/fish-contracts";
 import { QueueSummarySchema } from "@shared/queue-contracts";
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useEffect } from "react";
+import { useEffect } from "react";
+import type { ReactNode } from "react";
 import { FishMark, useFishList } from "@/features/fish";
 import { WorkspaceMenu } from "@/features/library/components/workspace-menu";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
@@ -22,15 +23,15 @@ import { usePrefs } from "@/shared/state/prefs";
 import { preloadLibraryNav, selectLibraryNav } from "../navigation";
 import { HelpMenu } from "./help-menu";
 import { Item } from "./item";
-import styles from "./styles.module.css";
 import { WhatsNewButton } from "./whats-new-button";
+import styles from "./styles.module.css";
 
 export type RailSection = "library" | "fish" | "canvases";
 export type RailPage = "inbox" | "tags" | "sources" | "downloads";
 export type RailItem = RailSection | RailPage;
 
-const SECTIONS: RailSection[] = ["fish", "library", "canvases"];
-const PAGES: RailPage[] = ["inbox", "tags", "sources", "downloads"];
+const SECTIONS: Array<RailSection> = ["fish", "library", "canvases"];
+const PAGES: Array<RailPage> = ["inbox", "tags", "sources", "downloads"];
 
 const LABELS = {
   library: "Library",
@@ -57,7 +58,7 @@ export function isRailPage(kind: string): kind is RailPage {
 
 interface RailProps {
   value: RailItem | null;
-  sections: readonly RailSection[];
+  sections: ReadonlyArray<RailSection>;
   onSectionChange: (section: RailSection) => void;
 }
 
@@ -98,7 +99,7 @@ export function Rail({ value, sections, onSectionChange }: RailProps) {
     queryKey: ["queue.summary"],
     queryFn: async () =>
       QueueSummarySchema.parse(await window.pond.query("queue.summary", {})),
-    refetchInterval: 2_000,
+    refetchInterval: 2000,
     enabled: sidebar.destinations.downloads,
   });
   const badges = new Map<RailPage, number | undefined>([
@@ -146,19 +147,23 @@ export function Rail({ value, sections, onSectionChange }: RailProps) {
           aria-label="Section"
           value={value ? [value] : []}
         >
-          {SECTIONS.filter((section) => sections.includes(section)).map(
-            (section) => (
-              <Item
-                key={section}
-                value={section}
-                label={LABELS[section]}
-                icon={icon(section)}
-                shortcut={SHORTCUTS.get(section)}
-                onSelect={() => onSectionChange(section)}
-              />
-            ),
+          {SECTIONS.flatMap((section) =>
+            sections.includes(section)
+              ? [
+                  <Item
+                    key={section}
+                    value={section}
+                    label={LABELS[section]}
+                    icon={icon(section)}
+                    shortcut={SHORTCUTS.get(section)}
+                    onSelect={() => onSectionChange(section)}
+                  />,
+                ]
+              : [],
           )}
-          {PAGES.filter((kind) => sidebar.destinations[kind]).map(page)}
+          {PAGES.flatMap((kind) =>
+            sidebar.destinations[kind] ? [page(kind)] : [],
+          )}
           <span className={styles.spacer} aria-hidden />
           <UpdateButton />
           <WhatsNewButton />

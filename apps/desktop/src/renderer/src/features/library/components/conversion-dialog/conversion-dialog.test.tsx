@@ -1,3 +1,4 @@
+import { isHTMLElement, isHTMLTag } from "@pond/ui/dom";
 import type { ConversionJob } from "@shared/conversion-contracts";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -7,6 +8,16 @@ import {
   openConversionDialog,
 } from "@/features/library/state/conversion-dialog";
 import { ConversionDialogHost } from "./host";
+
+function button(label: string) {
+  const element = [...document.querySelectorAll("button")].find(
+    (button) => button.textContent === label,
+  );
+  if (!element) {
+    throw new Error(`Missing ${label}`);
+  }
+  return element;
+}
 
 it("opens the consolidated export dialog on original files without conversion fields", async () => {
   vi.stubGlobal(
@@ -38,7 +49,7 @@ it("opens the consolidated export dialog on original files without conversion fi
     expect(document.body.textContent).not.toContain("Quality");
     expect(document.body.textContent).toContain("Export");
   } finally {
-    await act(() => {
+    act(() => {
       closeConversionDialog();
       root.unmount();
     });
@@ -56,11 +67,15 @@ it("saves a preset from a popover inside the export dialog", async () => {
       disconnect() {}
     },
   );
-  const saved: unknown[] = [];
+  const saved: Array<unknown> = [];
   vi.stubGlobal("pond", {
     query: async (name: string, input: { preset?: unknown }) => {
-      if (name === "conversion.presets") return [];
-      if (name === "conversion.capabilities") return [];
+      if (name === "conversion.presets") {
+        return [];
+      }
+      if (name === "conversion.capabilities") {
+        return [];
+      }
       if (name === "conversion.savePreset") {
         saved.push(input.preset);
         return input.preset;
@@ -82,7 +97,9 @@ it("saves a preset from a popover inside the export dialog", async () => {
         const element = [...document.querySelectorAll("button")].find(
           (button) => button.textContent === "Save Preset",
         );
-        if (!element) throw new Error("Missing Save Preset");
+        if (!element) {
+          throw new Error("Missing Save Preset");
+        }
         return element;
       },
       { timeout: 5000 },
@@ -95,12 +112,15 @@ it("saves a preset from a popover inside the export dialog", async () => {
       const input = label?.htmlFor
         ? document.getElementById(label.htmlFor)
         : null;
-      if (!(input instanceof HTMLInputElement))
+      if (!isHTMLTag(input, "input")) {
         throw new Error("Missing preset name field");
+      }
       return input;
     });
     const form = field.form;
-    if (!form) throw new Error("Missing preset form");
+    if (!form) {
+      throw new Error("Missing preset form");
+    }
     await act(async () => {
       const setValue = Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,
@@ -123,7 +143,7 @@ it("saves a preset from a popover inside the export dialog", async () => {
     await act(async () => form.requestSubmit());
     expect(saved).toEqual([expect.objectContaining({ name: "Thumbnails" })]);
   } finally {
-    await act(() => {
+    act(() => {
       closeConversionDialog();
       root.unmount();
     });
@@ -158,12 +178,14 @@ it("shows conversion progress and cancellation while preserving completed output
     bytesAfter: 0,
     error: null,
   };
-  const calls: string[] = [];
+  const calls: Array<string> = [];
   vi.stubGlobal("pond", {
     query: async (name: string) => {
       calls.push(name);
-      if (name === "conversion.presets") return [];
-      if (name === "conversion.capabilities")
+      if (name === "conversion.presets") {
+        return [];
+      }
+      if (name === "conversion.capabilities") {
         return [
           {
             format: "webp",
@@ -176,22 +198,19 @@ it("shows conversion progress and cancellation while preserving completed output
             supportsLossless: true,
           },
         ];
-      if (name === "conversion.start" || name === "conversion.status")
+      }
+      if (name === "conversion.start" || name === "conversion.status") {
         return job;
-      if (name === "conversion.cancel") return { ...job, status: "cancelled" };
+      }
+      if (name === "conversion.cancel") {
+        return { ...job, status: "cancelled" };
+      }
       throw new Error(`Unexpected ${name}`);
     },
   });
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
-  function button(label: string) {
-    const element = [...document.querySelectorAll("button")].find(
-      (button) => button.textContent === label,
-    );
-    if (!element) throw new Error(`Missing ${label}`);
-    return element;
-  }
   try {
     await act(async () => {
       openConversionDialog(["a", "b"]);
@@ -205,8 +224,9 @@ it("shows conversion progress and cancellation while preserving completed output
       { timeout: 5000 },
     );
     const lossless = document.querySelector('[role="checkbox"]');
-    if (!(lossless instanceof HTMLElement))
+    if (!isHTMLElement(lossless)) {
       throw new Error("Missing lossless checkbox");
+    }
     expect(lossless.getAttribute("aria-checked")).toBe("false");
     await act(async () => lossless.click());
     expect(lossless.getAttribute("aria-checked")).toBe("true");
@@ -224,7 +244,7 @@ it("shows conversion progress and cancellation while preserving completed output
     expect(document.body.textContent).toContain("Completed files remain");
     expect(calls).toContain("conversion.cancel");
   } finally {
-    await act(() => {
+    act(() => {
       closeConversionDialog();
       root.unmount();
     });

@@ -24,18 +24,26 @@ const EmptySaveInspector = lazy(async () => {
 /** The open Save stays singular; the library inspector follows the current selection. */
 export function inspectorSaveIds(input: {
   routeId: string | null;
-  selected: readonly string[];
+  selected: ReadonlyArray<string>;
   primary: string | null;
   cursor: string | null;
-}): string[] {
-  if (input.routeId) return [input.routeId];
-  if (input.selected.length > 0) return [...input.selected];
-  if (input.primary) return [input.primary];
-  if (input.cursor) return [input.cursor];
+}): Array<string> {
+  if (input.routeId) {
+    return [input.routeId];
+  }
+  if (input.selected.length > 0) {
+    return [...input.selected];
+  }
+  if (input.primary) {
+    return [input.primary];
+  }
+  if (input.cursor) {
+    return [input.cursor];
+  }
   return [];
 }
 
-function useInspectorSaveIds(): string[] {
+function useInspectorSaveIds(): Array<string> {
   const routeId = useOpenSaveId();
   const selected = useSelectedIds();
   const primary = usePrimarySelection();
@@ -55,12 +63,13 @@ export function SaveDetails() {
   const folders = useFolders();
   const [folderViews] = usePrefs("folderViews");
   return useMemo(() => {
-    if (!saveId)
+    if (!saveId) {
       return (
         <Suspense fallback={null}>
           <EmptySaveInspector />
         </Suspense>
       );
+    }
     return (
       <Suspense fallback={null}>
         <SaveInspector

@@ -4,12 +4,14 @@ import {
   IconInbox,
   IconTrash,
 } from "@pond/icons";
-import { Button, Keyboard, Menu, type MenuItemSpec, Tooltip } from "@pond/ui";
+import { Button, Keyboard, Menu, Tooltip } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import type {
   InboxNotification,
   NotificationTarget,
 } from "@shared/notification-contracts";
-import { createElement, type KeyboardEvent, useEffect, useRef } from "react";
+import { createElement, useEffect, useRef } from "react";
+import type { KeyboardEvent } from "react";
 import { openSave } from "@/features/saves/navigation";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { openSettings } from "@/shared/lib/open-settings";
@@ -49,19 +51,17 @@ function PrimaryAction({ target }: { target: NotificationTarget | undefined }) {
 function snoozeItems(
   notification: InboxNotification,
   onLeave: () => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const snooze = (until: number | null) => {
     onLeave();
     notifications.snooze([notification.id], until);
   };
-  const items = snoozeOptions().map(
-    (option): MenuItemSpec => ({
-      label: option.label,
-      icon: createElement(IconCircleDashedClock),
-      onClick: () => snooze(option.until),
-    }),
-  );
-  if (isSnoozed(notification))
+  const items = snoozeOptions().map((option): MenuItemSpec => ({
+    label: option.label,
+    icon: createElement(IconCircleDashedClock),
+    onClick: () => snooze(option.until),
+  }));
+  if (isSnoozed(notification)) {
     items.push(
       { type: "separator" },
       {
@@ -70,6 +70,7 @@ function snoozeItems(
         onClick: () => snooze(null),
       },
     );
+  }
   return items;
 }
 
@@ -96,7 +97,9 @@ export function NotificationDetail({
   useEffect(() => {
     ref.current?.focus({ preventScroll: true });
     const item = notifications.find(id);
-    if (item && isUnread(item)) notifications.markRead([id], true);
+    if (item && isUnread(item)) {
+      notifications.markRead([id], true);
+    }
   }, [id]);
 
   function remove() {
@@ -105,12 +108,17 @@ export function NotificationDetail({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (ignoresKey(event)) return;
+    if (ignoresKey(event)) {
+      return;
+    }
     const handled = (() => {
       switch (event.code) {
         case "KeyU":
-          if (event.altKey) notifications.markAllRead();
-          else notifications.markRead([id], unread);
+          if (event.altKey) {
+            notifications.markAllRead();
+          } else {
+            notifications.markRead([id], unread);
+          }
           return true;
         case "KeyH":
           snoozeRef.current?.click();
@@ -118,15 +126,21 @@ export function NotificationDetail({
         case "Backspace":
         case "Delete":
           if (event.shiftKey) {
-            if (!unread) onLeave();
+            if (!unread) {
+              onLeave();
+            }
             notifications.removeRead();
-          } else remove();
+          } else {
+            remove();
+          }
           return true;
         default:
           return navigationKey(event, onStep, onClose);
       }
     })();
-    if (handled) event.preventDefault();
+    if (handled) {
+      event.preventDefault();
+    }
   }
 
   return (

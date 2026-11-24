@@ -11,17 +11,21 @@ const describeLibrary = LIBRARY_PATH ? describe : describe.skip;
 
 describeLibrary("live library media units", () => {
   it("keeps image covers visible and gives every video a resting poster", async () => {
-    if (!LIBRARY_PATH) return;
+    if (!LIBRARY_PATH) {
+      return;
+    }
     const itemsDir = join(LIBRARY_PATH, "items");
     const entries = await readdir(itemsDir, { withFileTypes: true });
-    const missingImageCovers: string[] = [];
-    const videosWithoutPosters: string[] = [];
+    const missingImageCovers: Array<string> = [];
+    const videosWithoutPosters: Array<string> = [];
     let saveCount = 0;
     let imageCoverCount = 0;
     let videoCount = 0;
 
     for (const entry of entries) {
-      if (!entry.isDirectory() || !entry.name.endsWith(".info")) continue;
+      if (!entry.isDirectory() || !entry.name.endsWith(".info")) {
+        continue;
+      }
       let save: Save | null;
       try {
         const raw = await readFile(
@@ -32,7 +36,9 @@ describeLibrary("live library media units", () => {
       } catch {
         continue;
       }
-      if (!save) continue;
+      if (!save) {
+        continue;
+      }
       saveCount += 1;
 
       const files = save.files ?? [];
@@ -53,12 +59,17 @@ describeLibrary("live library media units", () => {
       }
 
       for (const unit of units) {
-        if (!unit.isVideo) continue;
+        if (!unit.isVideo) {
+          continue;
+        }
         videoCount += 1;
-        if (!unit.posterUrl) videosWithoutPosters.push(save.id);
+        if (!unit.posterUrl) {
+          videosWithoutPosters.push(save.id);
+        }
       }
     }
 
+    // oxlint-disable-next-line no-console -- the audit prints its library counts to the vitest output, where no app logger runs
     console.info(
       JSON.stringify({ saveCount, imageCoverCount, videoCount }, null, 2),
     );

@@ -1,14 +1,13 @@
-import { ContextMenu, Menu, type MenuItemSpec } from "@pond/ui";
-import {
-  type ComponentProps,
-  type CSSProperties,
-  type ReactElement,
-  type ReactNode,
-  type RefObject,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
+import { ContextMenu, Menu } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { isElement } from "@pond/ui/dom";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type {
+  ComponentProps,
+  CSSProperties,
+  ReactElement,
+  ReactNode,
+  RefObject,
 } from "react";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
 import { filterMenuItems } from "./filter";
@@ -28,12 +27,14 @@ const DEFAULT_POPUP_STYLE: PopupStyle = {
 };
 
 function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
-  return target.closest('input, textarea, [contenteditable="true"]') != null;
+  if (!isElement(target)) {
+    return false;
+  }
+  return target.closest('input, textarea, [contenteditable="true"]') !== null;
 }
 
 export interface SpecMenuChromeProps {
-  buildItems: () => MenuItemSpec[];
+  buildItems: () => Array<MenuItemSpec>;
   search?: boolean;
   searchLabel?: string;
   onOpen?: (eventDetails: OpenChangeDetails) => void;
@@ -54,9 +55,13 @@ function useMenuBodyHeight<LayoutKey>(
     void layoutKey;
     const content = contentRef.current;
     const body = bodyRef.current;
-    if (!content || !body) return;
+    if (!content || !body) {
+      return;
+    }
     const popup = body.parentElement;
-    if (!popup) return;
+    if (!popup) {
+      return;
+    }
 
     const measure = () => {
       const cap = Number.parseFloat(getComputedStyle(popup).maxHeight);
@@ -69,10 +74,14 @@ function useMenuBodyHeight<LayoutKey>(
         natural,
         Number.isFinite(cap) && cap > 0 ? cap : natural,
       );
-      if (next <= 0) return;
+      if (next <= 0) {
+        return;
+      }
       setHeight((prev) => (prev === next ? prev : next));
       const width = popup.offsetWidth;
-      if (width <= 0) return;
+      if (width <= 0) {
+        return;
+      }
       const locked = Number.parseFloat(
         popup.style.getPropertyValue("--popup-locked-width"),
       );
@@ -91,13 +100,17 @@ function useMenuBodyHeight<LayoutKey>(
   }, [bodyRef, layoutKey]);
 
   useEffect(() => {
-    if (height == null) return;
+    if (height === null) {
+      return;
+    }
     const id = requestAnimationFrame(() => setSized(true));
     return () => cancelAnimationFrame(id);
   }, [height]);
 
   const style: CSSProperties & { "--body-height"?: string } = {};
-  if (height != null) style["--body-height"] = `${height}px`;
+  if (height !== null) {
+    style["--body-height"] = `${height}px`;
+  }
   return { contentRef, sized, style };
 }
 
@@ -105,7 +118,7 @@ function SearchResults({
   items,
   Items,
 }: {
-  items: MenuItemSpec[];
+  items: Array<MenuItemSpec>;
   Items: typeof ContextMenu.Items;
 }) {
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -138,7 +151,9 @@ function SearchFilter({
   onValueChange: FilterProviderProps["onValueChange"];
   children: ReactNode;
 }) {
-  if (!search) return children;
+  if (!search) {
+    return children;
+  }
   return (
     <Menu.FilterProvider
       filter={null}
@@ -171,7 +186,9 @@ export function SpecContextMenu({
     <SearchFilter search={search} query={query} onValueChange={onValueChange}>
       <ContextMenu.Root
         onOpenChange={(open, eventDetails) => {
-          if (!open) return;
+          if (!open) {
+            return;
+          }
           if (isEditableTarget(eventDetails.event?.target ?? null)) {
             eventDetails.cancel();
             return;
@@ -181,7 +198,9 @@ export function SpecContextMenu({
           onOpen?.(eventDetails);
         }}
         onOpenChangeComplete={(open) => {
-          if (!open) setMounted(false);
+          if (!open) {
+            setMounted(false);
+          }
         }}
       >
         <ContextMenu.Trigger render={children} />
@@ -211,7 +230,7 @@ export function SpecContextMenu({
 }
 
 interface SpecMenuProps {
-  buildItems: () => MenuItemSpec[];
+  buildItems: () => Array<MenuItemSpec>;
   search?: boolean;
   searchLabel?: string;
   onOpen?: () => void;
@@ -242,13 +261,17 @@ export function SpecMenu({
     <SearchFilter search={search} query={query} onValueChange={onValueChange}>
       <Menu.Root
         onOpenChange={(next) => {
-          if (!next) return;
+          if (!next) {
+            return;
+          }
           reset();
           setMounted(true);
           onOpen?.();
         }}
         onOpenChangeComplete={(next) => {
-          if (!next) setMounted(false);
+          if (!next) {
+            setMounted(false);
+          }
         }}
       >
         {children}

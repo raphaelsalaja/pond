@@ -66,7 +66,8 @@ export function TagsSection() {
     (row): row is Extract<TagsRowData, { kind: "tag" }> => row.kind === "tag",
   );
 
-  const hasList = creating != null || groups.length > 0 || ungrouped.length > 0;
+  const hasList =
+    creating !== null || groups.length > 0 || ungrouped.length > 0;
 
   return (
     <DataTable.Provider
@@ -144,7 +145,9 @@ export function TagsSection() {
                       for (const group of groups) {
                         const was = expandedIds.includes(group.id);
                         const now = open.has(group.id);
-                        if (was !== now) onToggleExpand(group.id, now);
+                        if (was !== now) {
+                          onToggleExpand(group.id, now);
+                        }
                       }
                     }}
                     className={styles.groups}

@@ -2,11 +2,8 @@ import { IMPORT_ORIGIN_LABELS } from "@pond/schema/import-origin";
 import { collectInfoRows } from "@/features/saves/lib/info-rows";
 import { getSourceLabel } from "@/features/saves/lib/source-labels";
 import type { Save } from "@/features/saves/types";
-import {
-  type AccountRef,
-  accountDisplayName,
-  findAccountRef,
-} from "@/features/search/query";
+import { accountDisplayName, findAccountRef } from "@/features/search/query";
+import type { AccountRef } from "@/features/search/query";
 
 type RowKind = "author" | "account" | "platform" | "text";
 
@@ -70,12 +67,14 @@ const DETAIL_GROUPS = [
 
 export interface DetailGroup {
   title: string;
-  rows: DetailRow[];
+  rows: Array<DetailRow>;
 }
 
 function asHttpUrl(value: string | undefined): string | null {
   const trimmed = (value ?? "").trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    return null;
+  }
   try {
     const parsed = new URL(trimmed);
     if (parsed.protocol === "http:" || parsed.protocol === "https:") {
@@ -89,23 +88,57 @@ function asHttpUrl(value: string | undefined): string | null {
 
 function profileUrlFromHandle(source: string, handle: string): string | null {
   const h = encodeURIComponent(handle.replace(/^@/, ""));
-  if (!h) return null;
-  if (source === "instagram") return `https://www.instagram.com/${h}/`;
-  if (source === "twitter") return `https://x.com/${h}`;
-  if (source === "threads") return `https://www.threads.com/@${h}`;
-  if (source === "reddit") return `https://www.reddit.com/user/${h}/`;
-  if (source === "tiktok") return `https://www.tiktok.com/@${h}`;
-  if (source === "pinterest") return `https://www.pinterest.com/${h}/`;
-  if (source === "arena") return `https://www.are.na/${h}`;
-  if (source === "youtube") return `https://www.youtube.com/@${h}`;
-  if (source === "tumblr") return `https://www.tumblr.com/${h}`;
-  if (source === "savee") return `https://savee.com/${h}/`;
-  if (source === "behance") return `https://www.behance.net/${h}`;
-  if (source === "vimeo") return `https://vimeo.com/${h}`;
-  if (source === "dribbble") return `https://dribbble.com/${h}`;
-  if (source === "unsplash") return `https://unsplash.com/@${h}`;
-  if (source === "linkedin") return `https://www.linkedin.com/in/${h}/`;
-  if (source === "bluesky") return `https://bsky.app/profile/${h}`;
+  if (!h) {
+    return null;
+  }
+  if (source === "instagram") {
+    return `https://www.instagram.com/${h}/`;
+  }
+  if (source === "twitter") {
+    return `https://x.com/${h}`;
+  }
+  if (source === "threads") {
+    return `https://www.threads.com/@${h}`;
+  }
+  if (source === "reddit") {
+    return `https://www.reddit.com/user/${h}/`;
+  }
+  if (source === "tiktok") {
+    return `https://www.tiktok.com/@${h}`;
+  }
+  if (source === "pinterest") {
+    return `https://www.pinterest.com/${h}/`;
+  }
+  if (source === "arena") {
+    return `https://www.are.na/${h}`;
+  }
+  if (source === "youtube") {
+    return `https://www.youtube.com/@${h}`;
+  }
+  if (source === "tumblr") {
+    return `https://www.tumblr.com/${h}`;
+  }
+  if (source === "savee") {
+    return `https://savee.com/${h}/`;
+  }
+  if (source === "behance") {
+    return `https://www.behance.net/${h}`;
+  }
+  if (source === "vimeo") {
+    return `https://vimeo.com/${h}`;
+  }
+  if (source === "dribbble") {
+    return `https://dribbble.com/${h}`;
+  }
+  if (source === "unsplash") {
+    return `https://unsplash.com/@${h}`;
+  }
+  if (source === "linkedin") {
+    return `https://www.linkedin.com/in/${h}/`;
+  }
+  if (source === "bluesky") {
+    return `https://bsky.app/profile/${h}`;
+  }
   return null;
 }
 
@@ -114,26 +147,36 @@ export function pickAuthorProfileUrl(
 ): string | null {
   const capture = save.rawJson?.capture;
   const fromCapture = asHttpUrl(capture?.author?.profileUrl);
-  if (fromCapture) return fromCapture;
+  if (fromCapture) {
+    return fromCapture;
+  }
 
   const fromYtdlp =
     asHttpUrl(save.rawJson?.ytdlp?.channel_url) ??
     asHttpUrl(save.rawJson?.ytdlp?.uploader_url);
-  if (fromYtdlp) return fromYtdlp;
+  if (fromYtdlp) {
+    return fromYtdlp;
+  }
 
   const handle = capture?.author?.handle?.trim();
-  if (!handle) return null;
+  if (!handle) {
+    return null;
+  }
   return profileUrlFromHandle(save.source, handle);
 }
 
 function pickFromRow(
   save: Pick<Save, "accountId">,
-  refs: readonly AccountRef[],
+  refs: ReadonlyArray<AccountRef>,
 ): DetailRow | null {
   const id = save.accountId?.trim();
-  if (!id) return null;
+  if (!id) {
+    return null;
+  }
   const ref = findAccountRef(id, refs);
-  if (!ref) return null;
+  if (!ref) {
+    return null;
+  }
   const row: DetailRow = {
     id: "from",
     label: ref.watch ? "Watch" : "Account",
@@ -141,16 +184,20 @@ function pickFromRow(
     kind: "account",
     accountId: ref.id,
   };
-  if (ref.avatarUrl) row.avatarUrl = ref.avatarUrl;
-  if (ref.watch) row.watch = true;
+  if (ref.avatarUrl) {
+    row.avatarUrl = ref.avatarUrl;
+  }
+  if (ref.watch) {
+    row.watch = true;
+  }
   return row;
 }
 
 export function collectIdentityRows(
   save: Save,
-  refs: readonly AccountRef[] = [],
-): DetailRow[] {
-  const rows: DetailRow[] = [
+  refs: ReadonlyArray<AccountRef> = [],
+): Array<DetailRow> {
+  const rows: Array<DetailRow> = [
     { id: "id", label: "ID", value: save.id, kind: "text" },
   ];
   if (save.author) {
@@ -161,11 +208,15 @@ export function collectIdentityRows(
       kind: "author",
     };
     const href = pickAuthorProfileUrl(save);
-    if (href) author.href = href;
+    if (href) {
+      author.href = href;
+    }
     rows.push(author);
   }
   const from = pickFromRow(save, refs);
-  if (from) rows.push(from);
+  if (from) {
+    rows.push(from);
+  }
   rows.push({
     id: "platform",
     label: "Source",
@@ -186,27 +237,34 @@ export function collectIdentityRows(
   return rows;
 }
 
-export function groupDetailRows(rows: DetailRow[]): DetailGroup[] {
+export function groupDetailRows(rows: Array<DetailRow>): Array<DetailGroup> {
   const byId = new Map(rows.map((row) => [row.id, row]));
   const placed = new Set<string>();
-  const groups: DetailGroup[] = [];
+  const groups: Array<DetailGroup> = [];
 
   for (const group of DETAIL_GROUPS) {
     const next = group.ids.flatMap((id) => {
       const row = byId.get(id);
-      if (!row) return [];
+      if (!row) {
+        return [];
+      }
       placed.add(id);
       return [row];
     });
-    if (next.length === 0) continue;
+    if (next.length === 0) {
+      continue;
+    }
     groups.push({ title: group.title, rows: next });
   }
 
   const leftover = rows.filter((row) => !placed.has(row.id));
   if (leftover.length > 0) {
     const file = groups.find((group) => group.title === "File");
-    if (file) file.rows.push(...leftover);
-    else groups.push({ title: "File", rows: leftover });
+    if (file) {
+      file.rows.push(...leftover);
+    } else {
+      groups.push({ title: "File", rows: leftover });
+    }
   }
 
   return groups;
@@ -214,8 +272,8 @@ export function groupDetailRows(rows: DetailRow[]): DetailGroup[] {
 
 function normalizeForCompare(text: string): string {
   return text
-    .replace(/https?:\/\/\S+/gi, "")
-    .replace(/\s+/g, " ")
+    .replaceAll(/https?:\/\/\S+/gi, "")
+    .replaceAll(/\s+/g, " ")
     .trim()
     .toLowerCase();
 }

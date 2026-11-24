@@ -11,9 +11,9 @@ import {
   endSaveDrag,
   isLibrarySaveDrag,
   SAVE_DRAG_TYPE,
-  type SaveDragDataTransfer,
   saveDropIds,
 } from "./start-drag";
+import type { SaveDragDataTransfer } from "./start-drag";
 
 afterEach(() => {
   selection.clear();
@@ -49,12 +49,14 @@ function seedImage(id: string) {
       ],
     }),
   );
-  if (!save) throw new Error("Invalid image fixture");
+  if (!save) {
+    throw new Error("Invalid image fixture");
+  }
   pool.upsert(save);
 }
 
 function transfer(
-  types: string[] = [],
+  types: Array<string> = [],
   data: Record<string, string> = {},
 ): TestSaveDragDataTransfer {
   let dragImage: Element | null = null;
@@ -66,7 +68,9 @@ function transfer(
     },
     setData(type: string, value: string) {
       data[type] = value;
-      if (!types.includes(type)) types.push(type);
+      if (!types.includes(type)) {
+        types.push(type);
+      }
     },
     getData(type: string) {
       return data[type] ?? "";
@@ -116,7 +120,9 @@ it("creates a counted drag proxy and clears the entire drag session", () => {
   expect(draggingSaveIds()).toEqual([]);
   expect(document.body.dataset.saveDragging).toBeUndefined();
   expect(document.querySelector("[data-save-drag-preview]")).toBeNull();
-  for (const node of document.querySelectorAll("[data-save-id]")) node.remove();
+  for (const node of document.querySelectorAll("[data-save-id]")) {
+    node.remove();
+  }
 });
 
 it("clears the drag session when the browser dispatches dragend", () => {
@@ -191,13 +197,24 @@ it("ends a native drag on the next click or Escape", () => {
   expect(draggingSaveIds()).toEqual([]);
 });
 
+function hasTitle(detail: unknown): detail is { title: string } {
+  return (
+    typeof detail === "object" &&
+    detail !== null &&
+    "title" in detail &&
+    typeof detail.title === "string"
+  );
+}
+
 it("ends the drag and explains why when Pond can't start it", async () => {
   vi.stubGlobal("pond", {
     query: vi.fn(async () => ({ ok: false, error: "No preview" })),
   });
-  const titles: string[] = [];
+  const titles: Array<string> = [];
   const onNotification = (event: Event) => {
-    if (event instanceof CustomEvent) titles.push(event.detail.title);
+    if ("detail" in event && hasTitle(event.detail)) {
+      titles.push(event.detail.title);
+    }
   };
   window.addEventListener("pond:notification", onNotification);
   seedImage("photo");

@@ -36,9 +36,11 @@ export class LinkedInPostExtractor implements Extractor {
     return name === "li_at" && (value === undefined || value.length > 0);
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const [first, vanity] = segments;
-    if (segments.length !== 2 || first !== "in" || !vanity) return null;
+    if (segments.length !== 2 || first !== "in" || !vanity) {
+      return null;
+    }
     return /^[A-Za-z0-9_-]{2,100}$/.test(vanity) ? vanity : null;
   }
 
@@ -76,7 +78,9 @@ export class LinkedInPostExtractor implements Extractor {
   /** Ingests the URL as saved: a ugcPost id cannot be rewritten into an activity URL. */
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("linkedin", input.url.href);
-    if (!sourceId) throw new TerminalError("could not parse linkedin post");
+    if (!sourceId) {
+      throw new TerminalError("could not parse linkedin post");
+    }
     return captureFromSource({
       url: input.url.href,
       source: "linkedin",

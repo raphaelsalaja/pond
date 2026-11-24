@@ -1,14 +1,16 @@
-import { type ConnectedAccount, type Source, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { accountImportScope } from "../../../shared/import-scope";
 import { getDb } from "../../db";
-import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
+import { enqueue } from "../pipeline/enqueue";
+import type { EnqueueItem } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
-import type { ThreadsListKind } from "../refresh/harvest/threads/list";
 import { harvestThreadsList } from "../refresh/harvest-window";
+import type { ThreadsListKind } from "../refresh/harvest/threads/list";
 import { partitionForAccount } from "./accounts";
 import { listHarvestPlan } from "./import-scope";
 import { fileIncomingSaves } from "./incoming";
@@ -71,7 +73,9 @@ export async function syncThreads(
       harvestThreadsList(kind, args, {
         partition,
         onProgress: (p) => {
-          if (signal.aborted) return;
+          if (signal.aborted) {
+            return;
+          }
           const message =
             p.phase === "hydrate"
               ? "Loading"
@@ -144,7 +148,9 @@ export async function syncThreads(
       listKinds: e.listKinds,
     })),
   );
-  for (const id of relisted) knownIds.delete(id);
+  for (const id of relisted) {
+    knownIds.delete(id);
+  }
 
   const allFresh = entries.filter((e) => !knownIds.has(e.postId));
   const recovery = entries.filter((e) => failedSourceIds.has(e.postId));
@@ -201,8 +207,12 @@ export async function syncThreads(
     queue.map((entry) => {
       const item: EnqueueItem = { url: entry.url };
       const seed = buildThreadsSavedSeed(entry);
-      if (seed) item.seed = seed;
-      if (entry.listKinds) item.listKinds = entry.listKinds;
+      if (seed) {
+        item.seed = seed;
+      }
+      if (entry.listKinds) {
+        item.listKinds = entry.listKinds;
+      }
       return item;
     }),
     { trigger: "sync:threads", accountId, generationId },

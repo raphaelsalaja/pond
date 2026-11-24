@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createIdleResource } from "./idle-resource";
 
+function noop() {}
+
 function harness(options: { failLoad?: boolean } = {}) {
   const timers: Array<{ run: () => void; cancelled: boolean }> = [];
   let loads = 0;
@@ -8,7 +10,9 @@ function harness(options: { failLoad?: boolean } = {}) {
   const resource = createIdleResource({
     load: async () => {
       loads += 1;
-      if (options.failLoad) throw new Error("load failed");
+      if (options.failLoad) {
+        throw new Error("load failed");
+      }
       return {
         id: loads,
         dispose: () => {
@@ -16,7 +20,7 @@ function harness(options: { failLoad?: boolean } = {}) {
         },
       };
     },
-    idleMs: 1_000,
+    idleMs: 1000,
     schedule: (run) => {
       const timer = { run, cancelled: false };
       timers.push(timer);
@@ -27,7 +31,9 @@ function harness(options: { failLoad?: boolean } = {}) {
   });
   const fireIdle = async () => {
     for (const timer of timers.splice(0)) {
-      if (!timer.cancelled) timer.run();
+      if (!timer.cancelled) {
+        timer.run();
+      }
     }
     await Promise.resolve();
     await Promise.resolve();
@@ -61,7 +67,7 @@ describe("createIdleResource", () => {
 
   it("keeps the value while a use is still running", async () => {
     const h = harness();
-    let finish: () => void = () => undefined;
+    let finish: () => void = noop;
     const slow = h.resource.use(
       () =>
         new Promise<void>((resolve) => {

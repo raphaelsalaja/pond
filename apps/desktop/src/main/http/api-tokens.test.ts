@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { type ApiTokenStorage, createApiTokenStore } from "./api-tokens";
+import { createApiTokenStore } from "./api-tokens";
+import type { ApiTokenStorage } from "./api-tokens";
 
 function memoryStorage(initial: string | null = null) {
   const state = { value: initial, writes: 0 };
@@ -13,17 +14,23 @@ function memoryStorage(initial: string | null = null) {
   return { state, storage };
 }
 
+function settle() {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
+}
+
 describe("createApiTokenStore", () => {
   it("authenticates a created token and never stores it in plain text", async () => {
     const { state, storage } = memoryStorage();
-    const store = createApiTokenStore(storage, () => 1_000);
+    const store = createApiTokenStore(storage, () => 1000);
     const { token, info } = await store.create("Alfred", ["search", "search"]);
 
     expect(token).toMatch(/^pond_[0-9a-f]{48}$/);
     expect(info).toMatchObject({
       name: "Alfred",
       scopes: ["search"],
-      createdAt: 1_000,
+      createdAt: 1000,
       lastUsedAt: null,
     });
     expect(state.value).not.toContain(token);
@@ -57,16 +64,15 @@ describe("createApiTokenStore", () => {
     const { state, storage } = memoryStorage();
     const store = createApiTokenStore(storage, () => time);
     const { token } = await store.create("Script", ["search"]);
-    const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-    time = 5_000;
+    time = 5000;
     await store.authenticate(token);
     await settle();
     time = 30_000;
     await store.authenticate(token);
     await settle();
     expect(state.writes).toBe(2);
-    expect((await store.list())[0]?.lastUsedAt).toBe(5_000);
+    expect((await store.list())[0]?.lastUsedAt).toBe(5000);
 
     time = 70_000;
     await store.authenticate(token);

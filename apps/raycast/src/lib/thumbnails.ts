@@ -42,11 +42,17 @@ async function cached(size: ApiThumbnailSize): Promise<Map<string, string>> {
 }
 
 export async function downloadThumbnail(save: Keyed, size: ApiThumbnailSize): Promise<string | null> {
-  if (!save.thumbnail || !SAFE_ID.test(save.id) || !SAFE_ID.test(save.libraryId)) return null;
+  if (!save.thumbnail || !SAFE_ID.test(save.id) || !SAFE_ID.test(save.libraryId)) {
+    return null;
+  }
   const thumbnail = await pond().thumbnail(save.id, size);
-  if (!thumbnail) return null;
+  if (!thumbnail) {
+    return null;
+  }
   const extension = EXTENSIONS.get(thumbnail.type.replace(/;.*$/, ""));
-  if (!extension) return null;
+  if (!extension) {
+    return null;
+  }
   const folder = directory(size);
   await mkdir(folder, { recursive: true });
   const path = join(folder, `${thumbnailKey(save)}.${extension}`);
@@ -55,7 +61,7 @@ export async function downloadThumbnail(save: Keyed, size: ApiThumbnailSize): Pr
 }
 
 /** Maps thumbnail keys to a cached path, `null` for no image, or nothing while loading. */
-export function useThumbnails(saves: readonly Keyed[], size: ApiThumbnailSize): ReadonlyMap<string, string | null> {
+export function useThumbnails(saves: ReadonlyArray<Keyed>, size: ApiThumbnailSize): ReadonlyMap<string, string | null> {
   const [paths, setPaths] = useState<ReadonlyMap<string, string | null> | null>(null);
   const requested = useRef(new Set<string>());
 
@@ -64,7 +70,9 @@ export function useThumbnails(saves: readonly Keyed[], size: ApiThumbnailSize): 
     void cached(size)
       .catch(() => new Map<string, string>())
       .then((found) => {
-        if (active) setPaths(found);
+        if (active) {
+          setPaths(found);
+        }
       });
     return () => {
       active = false;
@@ -72,12 +80,16 @@ export function useThumbnails(saves: readonly Keyed[], size: ApiThumbnailSize): 
   }, [size]);
 
   useEffect(() => {
-    if (!paths) return;
+    if (!paths) {
+      return;
+    }
     const queue = saves.filter((save) => {
       const key = thumbnailKey(save);
       return save.thumbnail && !paths.has(key) && !requested.current.has(key);
     });
-    for (const save of queue) requested.current.add(thumbnailKey(save));
+    for (const save of queue) {
+      requested.current.add(thumbnailKey(save));
+    }
 
     async function work() {
       for (let save = queue.shift(); save !== undefined; save = queue.shift()) {
@@ -86,7 +98,9 @@ export function useThumbnails(saves: readonly Keyed[], size: ApiThumbnailSize): 
         setPaths((current) => new Map(current ?? []).set(thumbnailKey(target), path));
       }
     }
-    for (let worker = 0; worker < CONCURRENCY; worker += 1) void work();
+    for (let worker = 0; worker < CONCURRENCY; worker += 1) {
+      void work();
+    }
   }, [saves, paths, size]);
 
   return paths ?? new Map();

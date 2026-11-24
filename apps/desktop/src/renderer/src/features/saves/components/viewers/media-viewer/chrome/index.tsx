@@ -1,12 +1,12 @@
 import {
   createContext,
-  type ReactNode,
   use,
   useCallback,
   useEffect,
   useLayoutEffect,
   useState,
 } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   HudBarVariant,
@@ -43,8 +43,12 @@ export function ChromePortal({
   children: ReactNode;
 }) {
   const chrome = use(ChromeContext);
-  if (chrome?.enabled === false) return null;
-  if (chrome) return createPortal(children, chrome[slot]);
+  if (chrome?.enabled === false) {
+    return null;
+  }
+  if (chrome) {
+    return createPortal(children, chrome[slot]);
+  }
   return (
     <div className={styles.fallback} data-slot={slot}>
       {children}
@@ -61,12 +65,16 @@ function useSlots() {
   const attach = useCallback(
     (firstBar: HTMLDivElement | null) => {
       const root = firstBar?.parentElement;
-      if (!root) return;
+      if (!root) {
+        return;
+      }
       for (const slot of [slots.top, slots.bottom]) {
         const bar = root.querySelector(
           `:scope > [data-bar="${slot.dataset.slot}"]`,
         );
-        if (bar && slot.parentElement !== bar) bar.append(slot);
+        if (bar && slot.parentElement !== bar) {
+          bar.append(slot);
+        }
       }
     },
     [slots],
@@ -91,7 +99,9 @@ function useLiftTopSlot(
   const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
-    if (!root) return;
+    if (!root) {
+      return;
+    }
     const sync = () => setFullscreen(document.fullscreenElement === root);
     document.addEventListener("fullscreenchange", sync);
     return () => document.removeEventListener("fullscreenchange", sync);
@@ -103,12 +113,17 @@ function useLiftTopSlot(
       : null;
 
   useLayoutEffect(() => {
-    if (!lifted || !root) return;
+    if (!lifted || !root) {
+      return;
+    }
     const home = root.querySelector(':scope > [data-bar="top"]');
     lifted.append(top);
     return () => {
-      if (home?.isConnected) home.append(top);
-      else top.remove();
+      if (home?.isConnected) {
+        home.append(top);
+      } else {
+        top.remove();
+      }
     };
   }, [lifted, root, top]);
 

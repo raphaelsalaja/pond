@@ -159,8 +159,9 @@ const TASK_GLANCES = {
 } satisfies Partial<Record<Mood, Glances>>;
 
 function glancesFor(mood: Mood): Glances | undefined {
-  if (mood === "thinking" || mood === "reading" || mood === "writing")
+  if (mood === "thinking" || mood === "reading" || mood === "writing") {
     return TASK_GLANCES[mood];
+  }
   return undefined;
 }
 
@@ -269,10 +270,15 @@ export function faceFor(task: Task | null): Mood {
 
 /** Milliseconds between frames; drift and sleep read the same at lower rates, and every display refresh wakes the GPU process. */
 export function frameGap(mood: Mood, pointerResting = false): number {
-  if (mood === "idle" || (mood === "attentive" && pointerResting))
+  if (mood === "idle" || (mood === "attentive" && pointerResting)) {
     return 1000 / 30;
-  if (mood === "sleepy") return 1000 / 20;
-  if (mood === "asleep") return 1000 / 8;
+  }
+  if (mood === "sleepy") {
+    return 1000 / 20;
+  }
+  if (mood === "asleep") {
+    return 1000 / 8;
+  }
   return 0;
 }
 
@@ -289,14 +295,18 @@ export function restingEyes(head: Head, mood: Mood = "idle") {
 
 function blinkLid(since: number): number {
   const r = since / TIMING.blink;
-  if (r < 0 || r > 1) return 1;
+  if (r < 0 || r > 1) {
+    return 1;
+  }
   const close = TIMING.blinkClose;
   return r < close ? 1 - r / close : (r - close) / (1 - close);
 }
 
 /** Anticipation squash, airborne stretch, then a settling wobble; y is in head radii, negative is up. */
 function hop(since: number) {
-  if (since < 0 || since > TIMING.hop) return { y: 0, sx: 1, sy: 1 };
+  if (since < 0 || since > TIMING.hop) {
+    return { y: 0, sx: 1, sy: 1 };
+  }
   if (since < 0.08) {
     const k = Math.sin((since / 0.08) * (Math.PI / 2));
     return { y: 0, sx: 1 + 0.08 * k, sy: 1 - 0.12 * k };
@@ -359,12 +369,24 @@ export function createAvatar({
   let stroke = span(0, TAU);
 
   const mood = (): Mood => {
-    if (t < happyUntil) return "happy";
-    if (task) return TASK_FACE[task];
-    if (overAction) return "excited";
-    if (inside) return "attentive";
-    if (quiet > TIMING.asleep) return "asleep";
-    if (quiet > TIMING.sleepy) return "sleepy";
+    if (t < happyUntil) {
+      return "happy";
+    }
+    if (task) {
+      return TASK_FACE[task];
+    }
+    if (overAction) {
+      return "excited";
+    }
+    if (inside) {
+      return "attentive";
+    }
+    if (quiet > TIMING.asleep) {
+      return "asleep";
+    }
+    if (quiet > TIMING.sleepy) {
+      return "sleepy";
+    }
     return "idle";
   };
 
@@ -392,13 +414,17 @@ export function createAvatar({
       glance.until = glance.next;
       return;
     }
-    if (current !== "idle") return;
+    if (current !== "idle") {
+      return;
+    }
     const wide = random() < TIMING.wideGlance;
     glance.yaw = wide ? span(-40, 30) : span(-10, 10);
     glance.pitch = wide ? span(-25, 12) : span(-6, 6);
     glance.until = t + between(TIMING.glanceHold);
     glance.next = glance.until + between(TIMING.glanceGap);
-    if (Math.abs(glance.yaw) > 25) blinkAt = t;
+    if (Math.abs(glance.yaw) > 25) {
+      blinkAt = t;
+    }
   };
 
   return {
@@ -406,8 +432,12 @@ export function createAvatar({
       return mood();
     },
     task(next: Task | null) {
-      if (next === task) return;
-      if (next === "pleased") hopAt = t;
+      if (next === task) {
+        return;
+      }
+      if (next === "pleased") {
+        hopAt = t;
+      }
       task = next;
       quiet = 0;
       glance.next = t;
@@ -439,9 +469,13 @@ export function createAvatar({
       const dt = Math.min(seconds, TIMING.maxStep);
       t += dt;
       const current = mood();
-      if (!inside && !task) quiet += dt;
+      if (!inside && !task) {
+        quiet += dt;
+      }
 
-      if (t > glance.next) pickGlance(current);
+      if (t > glance.next) {
+        pickGlance(current);
+      }
       if (t > glance.until) {
         glance.yaw = 0;
         glance.pitch = 0;
@@ -450,7 +484,9 @@ export function createAvatar({
       if (t > nextBlink && current !== "asleep") {
         blinkAt = t;
         nextBlink = t + between(TIMING.blinkGap);
-        if (random() < TIMING.doubleBlink) nextBlink = t + 0.24;
+        if (random() < TIMING.doubleBlink) {
+          nextBlink = t + 0.24;
+        }
       }
 
       const target = FACES[current];
@@ -458,15 +494,17 @@ export function createAvatar({
       face.split = lerp(face.split, target.split, morph);
       face.fin.period = lerp(face.fin.period, target.fin.period, morph);
       face.fin.swing = lerp(face.fin.swing, target.fin.swing, morph);
-      for (const key of AXES)
+      for (const key of AXES) {
         face.gaze[key] = lerp(face.gaze[key], target.gaze[key], morph);
+      }
       face.eyes.forEach((eye, index) => {
-        for (const key of EYE)
+        for (const key of EYE) {
           eye[key] = lerp(
             eye[key],
             target.eyes[index]?.[key] ?? eye[key],
             morph,
           );
+        }
       });
 
       const aim =
@@ -478,8 +516,9 @@ export function createAvatar({
               roll: REST.roll,
             };
       const snap = ease(dt, TIMING.eyes);
-      for (const key of AXES)
+      for (const key of AXES) {
         gaze[key] = lerp(gaze[key], aim[key] + face.gaze[key], snap);
+      }
 
       const at = t + phase;
       const drift = pointer ? 0.35 : current === "asleep" ? 0 : 1;

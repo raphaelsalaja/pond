@@ -1,11 +1,5 @@
-import {
-  type MediaType,
-  type NewSave,
-  type Save,
-  saves,
-  syncActions,
-  tasks,
-} from "@pond/schema/db";
+import { saves, syncActions, tasks } from "@pond/schema/db";
+import type { MediaType, NewSave, Save } from "@pond/schema/db";
 import type { Capture, CaptureAuthor, RawJson } from "@pond/schema/raw";
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
@@ -25,13 +19,27 @@ export interface EnqueueSeed {
 
 export function seedToInsertColumns(seed: EnqueueSeed): Partial<NewSave> {
   const out: Partial<NewSave> = { rawJson: seed.rawJson };
-  if (seed.title !== undefined) out.title = seed.title;
-  if (seed.description !== undefined) out.description = seed.description;
-  if (seed.author !== undefined) out.author = seed.author;
-  if (seed.mediaUrl !== undefined) out.mediaUrl = seed.mediaUrl;
-  if (seed.mediaType !== undefined) out.mediaType = seed.mediaType;
-  if (seed.publishedAt !== undefined) out.publishedAt = seed.publishedAt;
-  if (seed.lang !== undefined) out.lang = seed.lang;
+  if (seed.title !== undefined) {
+    out.title = seed.title;
+  }
+  if (seed.description !== undefined) {
+    out.description = seed.description;
+  }
+  if (seed.author !== undefined) {
+    out.author = seed.author;
+  }
+  if (seed.mediaUrl !== undefined) {
+    out.mediaUrl = seed.mediaUrl;
+  }
+  if (seed.mediaType !== undefined) {
+    out.mediaType = seed.mediaType;
+  }
+  if (seed.publishedAt !== undefined) {
+    out.publishedAt = seed.publishedAt;
+  }
+  if (seed.lang !== undefined) {
+    out.lang = seed.lang;
+  }
   return out;
 }
 
@@ -55,12 +63,14 @@ export async function applySeedToExistingSave(
     })
     .returning()
     .all()[0];
-  if (inserted) broadcastSyncAction(inserted);
+  if (inserted) {
+    broadcastSyncAction(inserted);
+  }
 }
 
 interface SeedMerge {
   changed: boolean;
-  filled: string[];
+  filled: Array<string>;
   didFillAvatarUrl: boolean;
   rawJson: RawJson | null;
 }
@@ -77,7 +87,7 @@ export function mergeSeedIntoExistingSave(
   const existingAuthor: CaptureAuthor = existingCapture?.author ?? {};
   const seedAuthor: CaptureAuthor = seedCapture?.author ?? {};
   const nextAuthor: CaptureAuthor = { ...existingAuthor };
-  const filled: string[] = [];
+  const filled: Array<string> = [];
   let didFillAvatarUrl = false;
   for (const key of [
     "name",
@@ -88,10 +98,16 @@ export function mergeSeedIntoExistingSave(
   ] as const) {
     const have = nextAuthor[key];
     const fresh = seedAuthor[key];
-    if ((have === undefined || have === null || have === "") && fresh != null) {
+    if (
+      (have === undefined || have === null || have === "") &&
+      fresh !== null &&
+      fresh !== undefined
+    ) {
       Object.assign(nextAuthor, { [key]: fresh });
       filled.push(`capture.author.${key}`);
-      if (key === "avatarUrl") didFillAvatarUrl = true;
+      if (key === "avatarUrl") {
+        didFillAvatarUrl = true;
+      }
     }
   }
 
@@ -122,8 +138,12 @@ export function mergeSeedIntoExistingSave(
   const baseRaw = existingRaw ?? seedRaw;
   const baseCapture = existingCapture ?? seedCapture;
   const nextCapture: Capture = { ...baseCapture, author: nextAuthor };
-  if (nextMetrics) nextCapture.metrics = nextMetrics;
-  if (nextCard) nextCapture.card = nextCard;
+  if (nextMetrics) {
+    nextCapture.metrics = nextMetrics;
+  }
+  if (nextCard) {
+    nextCapture.card = nextCard;
+  }
   const nextRaw: RawJson = { ...baseRaw, capture: nextCapture };
 
   return { changed: true, filled, didFillAvatarUrl, rawJson: nextRaw };
@@ -133,7 +153,9 @@ export async function persistEnrichment(
   saveId: string,
   merge: SeedMerge,
 ): Promise<void> {
-  if (!merge.changed || !merge.rawJson) return;
+  if (!merge.changed || !merge.rawJson) {
+    return;
+  }
   const db = await getDb();
   const patch: Partial<NewSave> = { rawJson: merge.rawJson };
   db.update(saves).set(patch).where(eq(saves.id, saveId)).run();
@@ -150,7 +172,9 @@ export async function persistEnrichment(
     })
     .returning()
     .all()[0];
-  if (inserted) broadcastSyncAction(inserted);
+  if (inserted) {
+    broadcastSyncAction(inserted);
+  }
 }
 
 export async function rependFetchAvatar(saveId: string): Promise<void> {

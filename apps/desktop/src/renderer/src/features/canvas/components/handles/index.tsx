@@ -12,7 +12,7 @@ const SIDES: ReadonlyArray<[CanvasSide, Position]> = [
 
 interface HandlesProps {
   /** A click adds a connected copy on that side; a drag still draws a connector. */
-  onCreate?(side: CanvasSide): void;
+  onCreate?: (side: CanvasSide) => void;
 }
 
 /** Every side is a source; the board connects in loose mode so any side can link to any other. */

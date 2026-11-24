@@ -15,7 +15,7 @@ import { useRecents } from "@/features/saves";
 import { useOpenSaveId } from "@/features/saves/navigation";
 import type { Save } from "@/features/saves/types";
 import type { SaveLookup } from "@/features/search";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
 import { COMMANDS } from "./commands";
 import { useContextEntries } from "./context-entries";
 import { buildModel, rankEntries } from "./rank";
@@ -26,7 +26,8 @@ import { saveDetail, saveLabel } from "./search";
 import type { MenuEntry, MenuPage } from "./types";
 import { useSavesById } from "./use-saves-by-id";
 import { useViewLookup } from "./use-view-lookup";
-import { useViewScope, type ViewScope } from "./use-view-scope";
+import { useViewScope } from "./use-view-scope";
+import type { ViewScope } from "./use-view-scope";
 
 const RECENT_LIMIT = 5;
 const ROOT_LIMITS = { Folders: 5, "Saved Views": 5 };
@@ -43,7 +44,7 @@ const VIEWS_PAGE: MenuPage = {
   title: "Apply Saved View",
 };
 
-const COMMAND_ENTRIES: readonly MenuEntry[] = COMMANDS.map((command) => {
+const COMMAND_ENTRIES: ReadonlyArray<MenuEntry> = COMMANDS.map((command) => {
   const Icon = command.icon;
   return {
     id: `command:${command.id}`,
@@ -104,9 +105,10 @@ function searchLibraryEntry(query: string, scope: ViewScope | null): MenuEntry {
         setSearchInput([], query, query);
       } else {
         const router = getAppRouter();
-        router?.history.push(
-          `/${router.options.stringifySearch({ q: query })}`,
-        );
+        const history = getAppHistory();
+        if (router && history) {
+          history.push(`/${router.options.stringifySearch({ q: query })}`);
+        }
       }
       libraryHeader.focusSearch();
     },
@@ -146,7 +148,7 @@ export function useMenuModel({
   const hitIds = useMemo(() => lookup.hits.map((hit) => hit.id), [lookup.hits]);
   const hitSaves = useSavesById(hitIds);
 
-  const folderEntries = useMemo<MenuEntry[]>(
+  const folderEntries = useMemo<Array<MenuEntry>>(
     () =>
       folderRows.map((folder) => ({
         id: `folder:${folder.id}`,
@@ -158,7 +160,7 @@ export function useMenuModel({
     [folderRows],
   );
 
-  const viewEntries = useMemo<MenuEntry[]>(
+  const viewEntries = useMemo<Array<MenuEntry>>(
     () =>
       views
         .filter((view) => view.kind !== "group")
@@ -172,7 +174,7 @@ export function useMenuModel({
     [views],
   );
 
-  const saveEntries = useMemo<MenuEntry[]>(() => {
+  const saveEntries = useMemo<Array<MenuEntry>>(() => {
     const via = new Map(lookup.hits.map((hit) => [hit.id, hit.via]));
     const local = new Map(
       [...viewSaves, ...(scope?.pick(hitSaves) ?? [])].map((save) => [
@@ -202,7 +204,7 @@ export function useMenuModel({
     ];
   }, [hitSaves, viewSaves, lookup.hits, openId, onOpenSave, scope]);
 
-  const recentEntries = useMemo<MenuEntry[]>(
+  const recentEntries = useMemo<Array<MenuEntry>>(
     () =>
       recentSaves.slice(0, RECENT_LIMIT).map((save) =>
         saveEntry(save, {
@@ -215,9 +217,13 @@ export function useMenuModel({
     [recentSaves, openId, onOpenSave],
   );
 
-  const pageEntries = useMemo<MenuEntry[]>(() => {
-    if (!page) return [];
-    if (page.kind === "actions") return [...page.entries];
+  const pageEntries = useMemo<Array<MenuEntry>>(() => {
+    if (!page) {
+      return [];
+    }
+    if (page.kind === "actions") {
+      return [...page.entries];
+    }
     return viewEntries.map((entry) => ({ ...entry, group: "" }));
   }, [page, viewEntries]);
 
@@ -232,7 +238,7 @@ export function useMenuModel({
       });
     }
     const hasViews = viewEntries.length > 0;
-    const entries: MenuEntry[] = query
+    const entries: Array<MenuEntry> = query
       ? [
           ...contextEntries,
           ...COMMAND_ENTRIES,

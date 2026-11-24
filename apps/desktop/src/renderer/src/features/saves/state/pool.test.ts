@@ -14,14 +14,16 @@ import {
 import { resultNavigation } from "./result-navigation";
 import { selection } from "./selection";
 
-function rows(count: number): Save[] {
+function rows(count: number): Array<Save> {
   return Array.from({ length: count }, (_, index) => {
     const save = normalise({
       id: `row-${index}`,
       savedAt: index,
       createdAt: 1,
     });
-    if (!save) throw new Error("Invalid fixture");
+    if (!save) {
+      throw new Error("Invalid fixture");
+    }
     return save;
   });
 }
@@ -40,7 +42,9 @@ beforeEach(() => {
         savedAt: Number(savedAt),
         createdAt: 1,
       });
-      if (!save) throw new Error("Invalid fixture");
+      if (!save) {
+        throw new Error("Invalid fixture");
+      }
       return save;
     }),
   );
@@ -50,15 +54,17 @@ afterEach(() => pool.clear());
 it("deletes present IDs once, preserving survivor order and consistency", () => {
   const before = pool.snapshot();
   const revision = savesStore.state.revision;
-  const publications: string[][] = [];
-  const dirty: string[][] = [];
+  const publications: Array<Array<string>> = [];
+  const dirty: Array<Array<string>> = [];
   const subscription = savesStore.subscribe(() =>
     publications.push(pool.snapshot().map((save) => save.id)),
   );
   const detach = onPoolDirty((ids) => {
     // Notification is after publication; all deleted rows are already gone.
     expect(publications).toHaveLength(1);
-    for (const id of ids) expect(pool.get(id)).toBeUndefined();
+    for (const id of ids) {
+      expect(pool.get(id)).toBeUndefined();
+    }
     dirty.push([...ids]);
   });
   try {
@@ -68,7 +74,9 @@ it("deletes present IDs once, preserving survivor order and consistency", () => 
     expect(savesStore.state.revision).toBe(revision + 1);
     expect(pool.snapshot()).toEqual(before.slice(1, 3));
     expect([...pool.ids()]).toEqual(["tie-a", "tie-b"]);
-    for (const save of pool.snapshot()) expect(pool.get(save.id)).toBe(save);
+    for (const save of pool.snapshot()) {
+      expect(pool.get(save.id)).toBe(save);
+    }
   } finally {
     subscription.unsubscribe();
     detach();
@@ -78,7 +86,7 @@ it("deletes present IDs once, preserving survivor order and consistency", () => 
 it("does not publish or notify for empty and all-missing deletions", () => {
   const state = savesStore.state;
   let publications = 0;
-  const dirty: string[][] = [];
+  const dirty: Array<Array<string>> = [];
   const subscription = savesStore.subscribe(() => {
     publications++;
   });
@@ -99,10 +107,14 @@ it("matches single upserts when incoming Saves tie the existing head", () => {
   const before = pool.snapshot();
   const incoming = ["new-a", "new-b"].map((id) => {
     const save = normalise({ id, savedAt: 30, createdAt: 1 });
-    if (!save) throw new Error("Invalid fixture");
+    if (!save) {
+      throw new Error("Invalid fixture");
+    }
     return save;
   });
-  for (const save of incoming) pool.upsert(save);
+  for (const save of incoming) {
+    pool.upsert(save);
+  }
   const expected = pool.snapshot();
   pool.clear();
   pool.bulkUpsert(before);
@@ -116,7 +128,9 @@ it("matches single upserts when incoming Saves tie the existing head", () => {
     "tie-b",
     "last",
   ]);
-  for (const save of pool.snapshot()) expect(pool.get(save.id)).toBe(save);
+  for (const save of pool.snapshot()) {
+    expect(pool.get(save.id)).toBe(save);
+  }
 });
 
 it("keeps tied update order and prepends strictly newer Saves", () => {
@@ -127,7 +141,9 @@ it("keeps tied update order and prepends strictly newer Saves", () => {
     before.map((save) => save.id),
   );
   const newest = normalise({ id: "newest", savedAt: 40, createdAt: 1 });
-  if (!newest) throw new Error("Invalid fixture");
+  if (!newest) {
+    throw new Error("Invalid fixture");
+  }
   pool.bulkUpsert([newest]);
   expect(pool.snapshot()).toEqual([newest, ...incoming]);
 });
@@ -136,7 +152,7 @@ it("keeps held rows and stays quiet when a refetch returns them unchanged", () =
   const before = pool.snapshot();
   const state = savesStore.state;
   let publications = 0;
-  const dirty: string[][] = [];
+  const dirty: Array<Array<string>> = [];
   const subscription = savesStore.subscribe(() => {
     publications++;
   });
@@ -146,10 +162,14 @@ it("keeps held rows and stays quiet when a refetch returns them unchanged", () =
     expect(savesStore.state).toBe(state);
     expect(publications).toBe(0);
     expect(dirty).toEqual([]);
-    for (const save of before) expect(pool.get(save.id)).toBe(save);
+    for (const save of before) {
+      expect(pool.get(save.id)).toBe(save);
+    }
 
     const target = before[1];
-    if (!target) throw new Error("Invalid fixture");
+    if (!target) {
+      throw new Error("Invalid fixture");
+    }
     const retitled = { ...structuredClone(target), title: "Updated" };
     pool.bulkUpsert([...before.map((save) => structuredClone(save)), retitled]);
     expect(publications).toBe(1);
@@ -199,8 +219,8 @@ describe("bounded pool", () => {
     pool.bulkUpsert(saves);
     pool.get("row-0");
     const revision = savesStore.state.revision;
-    const publications: number[] = [];
-    const dirty: string[][] = [];
+    const publications: Array<number> = [];
+    const dirty: Array<Array<string>> = [];
     const subscription = savesStore.subscribe(() =>
       publications.push(pool.snapshot().length),
     );
@@ -217,7 +237,9 @@ describe("bounded pool", () => {
       expect(new Set(pool.ids())).toEqual(
         new Set(kept.map((save) => save?.id)),
       );
-      for (const save of pool.snapshot()) expect(pool.get(save.id)).toBe(save);
+      for (const save of pool.snapshot()) {
+        expect(pool.get(save.id)).toBe(save);
+      }
       expect(trimPool()).toBe(0);
     } finally {
       subscription.unsubscribe();
@@ -236,8 +258,9 @@ describe("bounded pool", () => {
     } finally {
       release();
     }
-    for (let index = 0; index < 6; index++)
+    for (let index = 0; index < 6; index++) {
       expect(pool.get(`row-${index}`)).toBeDefined();
+    }
     expect(pool.get("row-6")).toBeUndefined();
     expect(pool.snapshot()).toHaveLength(POOL_TRIM_TARGET);
   });
@@ -256,7 +279,7 @@ describe("bounded pool", () => {
     pool.bulkUpsert(rows(overCap));
     trimPool();
     expect(pool.get("row-0")).toBeUndefined();
-    const query = vi.fn(async (_name: string, input: { ids: string[] }) =>
+    const query = vi.fn(async (_name: string, input: { ids: Array<string> }) =>
       input.ids.map((id) => ({ id, savedAt: 0, createdAt: 1 })),
     );
     vi.stubGlobal("window", { pond: { query } });

@@ -11,20 +11,22 @@ import {
   SelectBlockExtension,
   SelectionAlwaysOnDisplayExtension,
 } from "@lexical/extension";
+import { isElement, isHTMLTag } from "@pond/ui/dom";
+import log from "electron-log/renderer";
 import {
   CLICK_COMMAND,
   COMMAND_PRIORITY_LOW,
   configExtension,
   defineExtension,
-  type LexicalEditor,
 } from "lexical";
+import type { LexicalEditor } from "lexical";
 import { markdownEditorExtension } from "@/shared/markdown-editor/extension";
 import { COLLAPSE_NODES } from "./collapsible";
 import { FileNode } from "./file-node";
 import { ImageNode } from "./image-node";
 import { $writeMarkdown, pondMdastExtension } from "./markdown";
-import styles from "./styles.module.css";
 import { YouTubeNode } from "./youtube-node";
+import styles from "./styles.module.css";
 
 const NOTE_THEME = {
   paragraph: styles.p,
@@ -64,10 +66,16 @@ function registerOpenExternal(editor: LexicalEditor): () => void {
     CLICK_COMMAND,
     (event) => {
       const target = event.target;
-      if (!(target instanceof Element)) return false;
+      if (!isElement(target)) {
+        return false;
+      }
       const anchor = target.closest("a");
-      if (!(anchor instanceof HTMLAnchorElement) || !anchor.href) return false;
-      if (editor.isEditable() && !event.metaKey && !event.ctrlKey) return false;
+      if (!isHTMLTag(anchor, "a") || !anchor.href) {
+        return false;
+      }
+      if (editor.isEditable() && !event.metaKey && !event.ctrlKey) {
+        return false;
+      }
       event.preventDefault();
       void window.pond.openExternal(anchor.href);
       return true;
@@ -90,7 +98,7 @@ export function createNoteExtension(opts: {
       $writeMarkdown(opts.markdown);
     },
     onError: (error: Error) => {
-      console.error("[pond note]", error);
+      log.error("[pond note]", error);
     },
     dependencies: [
       markdownEditorExtension,

@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   RING_SIZE,
   RING_SLOTS,
-  type RingSlot,
   ringHit,
   ringHitAt,
   sectorPath,
   slotAnchor,
 } from "./geometry";
+import type { RingSlot } from "./geometry";
 
 const CENTER = RING_SIZE / 2;
 const MIDDLE_RADIUS = 123;
@@ -25,7 +25,7 @@ function middleOf(slot: RingSlot): number {
 }
 
 function pathPoints(path: string) {
-  const points: { x: number; y: number }[] = [];
+  const points: Array<{ x: number; y: number }> = [];
   const commands = path.matchAll(/([MLQAZ])([^MLQAZ]*)/g);
   for (const [, command = "", args = ""] of commands) {
     const values = args.trim().split(/\s+/).filter(Boolean).map(Number);

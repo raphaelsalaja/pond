@@ -15,9 +15,13 @@ function toHsv(r: number, g: number, b: number): Hsv {
   const delta = max - Math.min(r, g, b);
   let hue = 0;
   if (delta > 0) {
-    if (max === r) hue = ((g - b) / delta) % 6;
-    else if (max === g) hue = (b - r) / delta + 2;
-    else hue = (r - g) / delta + 4;
+    if (max === r) {
+      hue = ((g - b) / delta) % 6;
+    } else if (max === g) {
+      hue = (b - r) / delta + 2;
+    } else {
+      hue = (r - g) / delta + 4;
+    }
     hue = (hue / 6 + 1) % 1;
   }
   return [hue, max === 0 ? 0 : delta / max, max];
@@ -59,7 +63,9 @@ export function tintFolderPixels(pixels: Uint8Array, width: number): void {
     faceSaturation > 0 ? POND_BLUE.saturation / faceSaturation : 1;
   const valueScale = faceValue > 0 ? POND_BLUE.value / faceValue : 1;
   for (let i = 0; i < pixels.length; i += 4) {
-    if (pixels[i + 3] === 0) continue;
+    if (pixels[i + 3] === 0) {
+      continue;
+    }
     const [hue, saturation, value] = hsvAt(pixels, i);
     const [r, g, b] = toRgb(
       (hue + hueShift + 1) % 1,
@@ -76,7 +82,9 @@ export function tintFolderPixels(pixels: Uint8Array, width: number): void {
 export function markOverlay(markSvg: string): string {
   const path = /\sd="([^"]+)"/.exec(markSvg)?.[1];
   const box = /viewBox="0 0 ([\d.]+) [\d.]+"/.exec(markSvg)?.[1];
-  if (!path || !box) throw new Error("The Pond mark SVG has no path to draw.");
+  if (!path || !box) {
+    throw new Error("The Pond mark SVG has no path to draw.");
+  }
   const scale = MARK_SIDE / Number(box);
   const x = MARK_CENTER.x - MARK_SIDE / 2;
   const y = MARK_CENTER.y - MARK_SIDE / 2;

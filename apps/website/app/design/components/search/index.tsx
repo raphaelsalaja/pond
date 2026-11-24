@@ -14,7 +14,7 @@ interface Entry {
   group?: string;
 }
 
-function entries(): Entry[] {
+function entries(): Array<Entry> {
   return [
     INTRODUCTION,
     TOKENS,
@@ -30,11 +30,13 @@ export function Search() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
-  const all = useMemo(entries, []);
+  const all = useMemo(() => entries(), []);
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return all;
+    if (!needle) {
+      return all;
+    }
     return all.filter(
       (entry) =>
         entry.name.toLowerCase().includes(needle) ||
@@ -44,8 +46,12 @@ export function Search() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== "k") return;
-      if (!(event.metaKey || event.ctrlKey)) return;
+      if (event.key.toLowerCase() !== "k") {
+        return;
+      }
+      if (!(event.metaKey || event.ctrlKey)) {
+        return;
+      }
       event.preventDefault();
       setOpen((current) => !current);
     };
@@ -60,7 +66,9 @@ export function Search() {
   };
 
   const go = (entry: Entry | undefined) => {
-    if (!entry) return;
+    if (!entry) {
+      return;
+    }
     close();
     router.push(entry.href, { scroll: false });
     reveal(entry.href);

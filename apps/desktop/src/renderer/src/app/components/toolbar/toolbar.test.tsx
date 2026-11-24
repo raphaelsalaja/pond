@@ -1,13 +1,13 @@
 import { PrefsSchema } from "@pond/schema";
+import { isHTMLElement } from "@pond/ui/dom";
 import type { NavigationDirection } from "@shared/constants";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  type AnyRoute,
-  createRoute,
-  RouterProvider,
-} from "@tanstack/react-router";
-import { act, type ReactNode } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoute, RouterProvider } from "@tanstack/react-router";
+import type { AnyRoute } from "@tanstack/react-router";
+import { act } from "react";
+import type { ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { openLibraryAt } from "@/app/test/library-router";
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
@@ -23,7 +23,7 @@ import { pool } from "@/features/saves/state/pool";
 import { libraryViewContext } from "@/features/saves/state/view-context";
 import { Toolbar } from "./";
 
-function pages(parent: AnyRoute): AnyRoute[] {
+function pages(parent: AnyRoute): Array<AnyRoute> {
   return [
     createRoute({
       getParentRoute: () => parent,
@@ -36,6 +36,29 @@ function pages(parent: AnyRoute): AnyRoute[] {
       staticData: { details: null },
     }),
   ];
+}
+
+function button(name: string): HTMLButtonElement {
+  const match = [...document.querySelectorAll("button")].find(
+    (node) =>
+      (node.getAttribute("aria-label") ?? node.textContent)?.trim() === name,
+  );
+  if (!match) {
+    throw new Error(`Missing button: ${name}`);
+  }
+  return match;
+}
+
+function sideButton(button: number) {
+  return act(async () => {
+    window.dispatchEvent(
+      new MouseEvent("mouseup", {
+        bubbles: true,
+        cancelable: true,
+        button,
+      }),
+    );
+  });
 }
 
 function Shell({ children }: { children: ReactNode }) {
@@ -67,8 +90,10 @@ describe("breadcrumb toolbar", () => {
     vi.stubGlobal("pond", {
       onSyncAction: () => () => {},
       query: async (name: string) => {
-        if (name === "settings.getPrefs") return PrefsSchema.parse({});
-        if (name === "folders.list")
+        if (name === "settings.getPrefs") {
+          return PrefsSchema.parse({});
+        }
+        if (name === "folders.list") {
           return [
             { id: "parent", name: "Design", parentId: null },
             { id: "child", name: "Interfaces", parentId: "parent" },
@@ -79,6 +104,7 @@ describe("breadcrumb toolbar", () => {
             sortOrder: 0,
             createdAt: new Date(),
           }));
+        }
         return [];
       },
       onAgentChunk: () => () => {},
@@ -96,7 +122,9 @@ describe("breadcrumb toolbar", () => {
       url: "https://example.com",
       source: "local",
     });
-    if (!save) throw new Error("Invalid save fixture");
+    if (!save) {
+      throw new Error("Invalid save fixture");
+    }
     pool.upsert(save);
     libraryViewContext.set([], "library");
     host = document.createElement("div");
@@ -104,19 +132,16 @@ describe("breadcrumb toolbar", () => {
     root = createRoot(host);
   });
 
-  afterEach(async () => {
-    await act(() => root.unmount());
+  afterEach(() => {
+    act(() => root.unmount());
     host.remove();
     vi.unstubAllGlobals();
   });
 
-  function button(name: string): HTMLButtonElement {
-    const match = [...document.querySelectorAll("button")].find(
-      (node) =>
-        (node.getAttribute("aria-label") ?? node.textContent)?.trim() === name,
+  function labels() {
+    return [...host.querySelectorAll("button")].map((node) =>
+      node.getAttribute("aria-label"),
     );
-    if (!match) throw new Error(`Missing button: ${name}`);
-    return match;
   }
 
   async function mount(path = "/") {
@@ -185,7 +210,7 @@ describe("breadcrumb toolbar", () => {
     expect(
       host.querySelector('nav[aria-label="Breadcrumb"]')?.textContent,
     ).toBe("All/Search results (0)");
-    await act(() => libraryViewContext.set(["one", "two"], "library"));
+    await act(async () => libraryViewContext.set(["one", "two"], "library"));
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
       "Search results (2)",
     );
@@ -219,8 +244,9 @@ describe("breadcrumb toolbar", () => {
     const parent = [...document.querySelectorAll('[role="menuitem"]')].find(
       (node) => node.textContent === "Design",
     );
-    if (!(parent instanceof HTMLElement))
+    if (!isHTMLElement(parent)) {
       throw new Error("Missing parent folder");
+    }
     await act(async () => parent.click());
     expect(router.state.location.pathname).toBe("/folders/parent");
   });
@@ -228,8 +254,9 @@ describe("breadcrumb toolbar", () => {
   it("opens folder operations from a breadcrumb context-menu event", async () => {
     await mount("/folders/child");
     const crumb = host.querySelector('[aria-current="page"]');
-    if (!(crumb instanceof HTMLElement))
+    if (!isHTMLElement(crumb)) {
       throw new Error("Missing current folder breadcrumb");
+    }
     await act(async () => {
       crumb.dispatchEvent(
         new MouseEvent("contextmenu", {
@@ -274,16 +301,6 @@ describe("breadcrumb toolbar", () => {
   });
 
   it("follows the mouse back and forward side buttons", async () => {
-    const sideButton = (button: number) =>
-      act(async () => {
-        window.dispatchEvent(
-          new MouseEvent("mouseup", {
-            bubbles: true,
-            cancelable: true,
-            button,
-          }),
-        );
-      });
     const router = await mount("/");
     await act(async () => router.history.push("/folders/parent"));
     await act(async () => router.history.push("/folders/parent?save=demo"));
@@ -303,7 +320,9 @@ describe("breadcrumb toolbar", () => {
   it("follows back and forward swipes from the main process", async () => {
     const swipe = (direction: NavigationDirection) =>
       act(async () => {
-        for (const listener of swipeListeners) listener(direction);
+        for (const listener of swipeListeners) {
+          listener(direction);
+        }
       });
     const router = await mount("/");
     await act(async () => router.history.push("/sources"));
@@ -311,7 +330,7 @@ describe("breadcrumb toolbar", () => {
     expect(router.state.location.pathname).toBe("/");
     await swipe("forward");
     expect(router.state.location.pathname).toBe("/sources");
-    await act(() => root.unmount());
+    act(() => root.unmount());
     expect(swipeListeners.size).toBe(0);
     root = createRoot(host);
   });
@@ -353,10 +372,6 @@ describe("breadcrumb toolbar", () => {
   });
 
   it("offers the details toggle only on pages with a Details column", async () => {
-    const labels = () =>
-      [...host.querySelectorAll("button")].map((node) =>
-        node.getAttribute("aria-label"),
-      );
     const router = await mount("/");
     expect(labels()).toContain("Toggle Details");
     await act(async () => router.history.push("/?save=demo"));

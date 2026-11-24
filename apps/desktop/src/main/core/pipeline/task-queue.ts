@@ -1,11 +1,5 @@
-import {
-  type NewTask,
-  OPS,
-  queueGenerations,
-  SOURCES,
-  saves,
-  tasks,
-} from "@pond/schema/db";
+import { OPS, queueGenerations, SOURCES, saves, tasks } from "@pond/schema/db";
+import type { NewTask } from "@pond/schema/db";
 import type Database from "better-sqlite3";
 import { and, eq, inArray, isNull, ne, notExists, or } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -42,7 +36,7 @@ export interface ClaimDueTasksOptions {
 
 export async function claimDueTasks(
   options: ClaimDueTasksOptions,
-): Promise<DueTask[]> {
+): Promise<Array<DueTask>> {
   const db = await getDb();
   const at = Date.now();
   const leaseExpiresAt = at + TASK_LEASE_MS;
@@ -123,11 +117,13 @@ export async function claimDueTasks(
       );
       const ordered = fairCandidates(candidates);
       const available = { ...options.availableByOp };
-      const claimed: string[] = [];
+      const claimed: Array<string> = [];
       let claimedInteractive = 0;
       let claimedBackground = 0;
       for (const candidate of ordered) {
-        if (claimed.length >= options.limit) break;
+        if (claimed.length >= options.limit) {
+          break;
+        }
         const interactive = isCandidateInteractive(candidate);
         if (
           interactive
@@ -138,7 +134,9 @@ export async function claimDueTasks(
         }
         const op = candidate.op;
         const room = available[op] ?? 0;
-        if (room <= 0) continue;
+        if (room <= 0) {
+          continue;
+        }
         const leaseToken = ulid();
         if (isSourceTask(op)) {
           const admission = inspectSourceAdmission(
@@ -190,7 +188,9 @@ export async function claimDueTasks(
             at,
             candidate.cancellationFence,
           );
-        if (result.changes !== 1) continue;
+        if (result.changes !== 1) {
+          continue;
+        }
         if (isSourceTask(op)) {
           const admission = inspectSourceAdmission(
             db.$raw,
@@ -227,8 +227,11 @@ export async function claimDueTasks(
           }
         }
         available[op] = room - 1;
-        if (interactive) claimedInteractive += 1;
-        else claimedBackground += 1;
+        if (interactive) {
+          claimedInteractive += 1;
+        } else {
+          claimedBackground += 1;
+        }
         if (candidate.generationId) {
           db.$raw
             .prepare(
@@ -247,7 +250,9 @@ export async function claimDueTasks(
     })
     .immediate();
 
-  if (claimedIds.length === 0) return [];
+  if (claimedIds.length === 0) {
+    return [];
+  }
   const rows = db
     .select()
     .from(tasks)
@@ -263,34 +268,42 @@ export async function claimDueTasks(
 type ClaimCandidate = z.infer<typeof ClaimCandidateSchema>;
 
 function fairCandidates(
-  candidates: readonly ClaimCandidate[],
-): ClaimCandidate[] {
-  const interactive: ClaimCandidate[] = [];
-  const background: ClaimCandidate[] = [];
+  candidates: ReadonlyArray<ClaimCandidate>,
+): Array<ClaimCandidate> {
+  const interactive: Array<ClaimCandidate> = [];
+  const background: Array<ClaimCandidate> = [];
   for (const candidate of candidates) {
-    if (isCandidateInteractive(candidate)) interactive.push(candidate);
-    else background.push(candidate);
+    if (isCandidateInteractive(candidate)) {
+      interactive.push(candidate);
+    } else {
+      background.push(candidate);
+    }
   }
   return [...roundRobinLanes(interactive), ...roundRobinLanes(background)];
 }
 
 function roundRobinLanes(
-  candidates: readonly ClaimCandidate[],
-): ClaimCandidate[] {
-  const lanes = new Map<string, ClaimCandidate[]>();
+  candidates: ReadonlyArray<ClaimCandidate>,
+): Array<ClaimCandidate> {
+  const lanes = new Map<string, Array<ClaimCandidate>>();
   for (const candidate of candidates) {
     const key = `${candidate.source}:${candidate.op}`;
     const lane = lanes.get(key);
-    if (lane) lane.push(candidate);
-    else lanes.set(key, [candidate]);
+    if (lane) {
+      lane.push(candidate);
+    } else {
+      lanes.set(key, [candidate]);
+    }
   }
-  const ordered: ClaimCandidate[] = [];
+  const ordered: Array<ClaimCandidate> = [];
   let found = true;
   while (found) {
     found = false;
     for (const lane of lanes.values()) {
       const candidate = lane.shift();
-      if (!candidate) continue;
+      if (!candidate) {
+        continue;
+      }
       ordered.push(candidate);
       found = true;
     }
@@ -299,7 +312,9 @@ function roundRobinLanes(
 }
 
 function isCandidateInteractive(candidate: ClaimCandidate): boolean {
-  if (!candidate.payload) return false;
+  if (!candidate.payload) {
+    return false;
+  }
   try {
     return (
       TaskPayloadSchema.parse(JSON.parse(candidate.payload)).priority ===
@@ -368,7 +383,9 @@ export function extendOwnedLeasesSync(
 }
 
 export async function heartbeatTaskLease(task: DueTask): Promise<boolean> {
-  if (!task.leaseToken) return false;
+  if (!task.leaseToken) {
+    return false;
+  }
   const db = await getDb();
   const at = Date.now();
   const result = db.$raw
@@ -402,7 +419,9 @@ const LeaseRowSchema = z.object({
 export async function ingestLeaseStillRunnable(
   task: DueTask,
 ): Promise<boolean> {
-  if (!task.leaseToken) return false;
+  if (!task.leaseToken) {
+    return false;
+  }
   const db = await getDb();
   const row = LeaseRowSchema.nullable().parse(
     db.$raw
@@ -422,7 +441,7 @@ export async function ingestLeaseStillRunnable(
     row?.status === "running" &&
     row.leaseToken === task.leaseToken &&
     row.cancellationFence === task.cancellationFence &&
-    row.deletedAt == null
+    row.deletedAt === null
   );
 }
 
@@ -436,36 +455,51 @@ function isBlockedBySourceCooldown(row: DueTask, sourceUntil: number): boolean {
 
 const DISPATCH_BATCH = 20;
 
-export function scheduleDueTasks(rows: readonly DueTask[]): DueTask[] {
-  const interactive: DueTask[] = [];
-  const background: DueTask[] = [];
+export function scheduleDueTasks(rows: ReadonlyArray<DueTask>): Array<DueTask> {
+  const interactive: Array<DueTask> = [];
+  const background: Array<DueTask> = [];
   for (const row of rows) {
-    if (isInteractiveTask(row)) interactive.push(row);
-    else background.push(row);
+    if (isInteractiveTask(row)) {
+      interactive.push(row);
+    } else {
+      background.push(row);
+    }
   }
   const head = interleaveBySave(interactive, DISPATCH_BATCH);
-  if (head.length >= DISPATCH_BATCH) return head;
+  if (head.length >= DISPATCH_BATCH) {
+    return head;
+  }
   return [
     ...head,
     ...interleaveBySave(background, DISPATCH_BATCH - head.length),
   ];
 }
 
-function interleaveBySave(rows: readonly DueTask[], limit: number): DueTask[] {
-  const buckets = new Map<string, DueTask[]>();
+function interleaveBySave(
+  rows: ReadonlyArray<DueTask>,
+  limit: number,
+): Array<DueTask> {
+  const buckets = new Map<string, Array<DueTask>>();
   for (const row of rows) {
     const bucket = buckets.get(row.saveId);
-    if (bucket) bucket.push(row);
-    else buckets.set(row.saveId, [row]);
+    if (bucket) {
+      bucket.push(row);
+    } else {
+      buckets.set(row.saveId, [row]);
+    }
   }
-  const interleaved: DueTask[] = [];
+  const interleaved: Array<DueTask> = [];
   let progress = true;
   while (progress && interleaved.length < limit) {
     progress = false;
     for (const bucket of buckets.values()) {
-      if (interleaved.length >= limit) break;
+      if (interleaved.length >= limit) {
+        break;
+      }
       const next = bucket.shift();
-      if (!next) continue;
+      if (!next) {
+        continue;
+      }
       interleaved.push(next);
       progress = true;
     }
@@ -502,7 +536,9 @@ export async function sweepOrphanTasks(): Promise<void> {
       ),
     )
     .all();
-  if (orphans.length === 0) return;
+  if (orphans.length === 0) {
+    return;
+  }
   db.update(tasks)
     .set({
       status: "dead",
@@ -541,7 +577,9 @@ export async function sweepTasklessIngestingSaves(): Promise<void> {
       ),
     )
     .all();
-  if (stuck.length === 0) return;
+  if (stuck.length === 0) {
+    return;
+  }
 
   const now = new Date();
   for (const { id, source } of stuck) {
@@ -554,7 +592,7 @@ export async function sweepTasklessIngestingSaves(): Promise<void> {
       );
       continue;
     }
-    const taskRows: NewTask[] = ops.map((op) => ({
+    const taskRows: Array<NewTask> = ops.map((op) => ({
       id: ulid(),
       saveId: id,
       source,

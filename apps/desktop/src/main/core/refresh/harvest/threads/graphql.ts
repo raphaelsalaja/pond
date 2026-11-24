@@ -1,3 +1,4 @@
+import { isJsonValue } from "@pond/schema/json";
 import type { JsonObject, JsonValue } from "@pond/schema/json";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -52,7 +53,7 @@ export interface RichThread {
   url: string;
   fullText: string;
   author: RichThreadAuthor;
-  media: RichThreadMedia[];
+  media: Array<RichThreadMedia>;
   metrics: RichThreadMetrics;
   quoted?: RichThread;
   card?: RichThreadCard;
@@ -70,7 +71,7 @@ const OptionalCount = z
   .catch(undefined);
 
 const JsonObjectSchema = z.custom<JsonObject>(
-  (value) => value instanceof Object && !Array.isArray(value),
+  (value) => Object(value) === value && !Array.isArray(value),
 );
 
 const MediaVersionSchema = z
@@ -190,18 +191,18 @@ const ThreadPostSchema = MediaNodeSchema.extend({
 type ThreadPost = z.infer<typeof ThreadPostSchema>;
 
 export function parseSavedResponses(
-  captures: SavedCapture[],
+  captures: Array<SavedCapture>,
 ): Map<string, RichThread> {
   const out = new Map<string, RichThread>();
   for (const cap of captures) {
     let json: JsonValue;
     try {
       json = parseGraphqlBody(cap.body);
-    } catch (err) {
-      log.warn("[pond threads-saved] capture body not JSON", cap.url, err);
+    } catch (error) {
+      log.warn("[pond threads-saved] capture body not JSON", cap.url, error);
       continue;
     }
-    if (json == null) {
+    if (json === null) {
       log.warn("[pond threads-saved] capture body not JSON", cap.url);
       continue;
     }
@@ -216,7 +217,9 @@ export function parseSavedResponses(
     }
     for (const node of collectThreadPosts(json)) {
       const thread = richThreadFromNode(node);
-      if (thread) out.set(thread.postId, thread);
+      if (thread) {
+        out.set(thread.postId, thread);
+      }
     }
   }
   return out;
@@ -224,29 +227,35 @@ export function parseSavedResponses(
 
 function parseGraphqlBody(body: string): JsonValue {
   let s = body.trim();
-  if (s.startsWith("for (;;);")) s = s.slice("for (;;);".length).trim();
+  if (s.startsWith("for (;;);")) {
+    s = s.slice("for (;;);".length).trim();
+  }
   if (s.startsWith(")]}'")) {
     const nl = s.indexOf("\n");
     s = (nl === -1 ? s.replace(/^\)\]\}'/, "") : s.slice(nl + 1)).trim();
   }
-  return JSON.parse(s);
+  const parsed: unknown = JSON.parse(s);
+  return isJsonValue(parsed) ? parsed : null;
 }
 
 /** Walks a GraphQL payload for post nodes; skips quoted/reposted children so they stay nested on the parent. */
-function collectThreadPosts(json: JsonValue): JsonObject[] {
-  const out: JsonObject[] = [];
+function collectThreadPosts(json: JsonValue): Array<JsonObject> {
+  const out: Array<JsonObject> = [];
   const seen = new Set<string>();
   walk(json, false, (node) => {
     const code = OptionalText.parse(node.code);
-    if (!code || seen.has(code)) return;
+    if (!code || seen.has(code)) {
+      return;
+    }
     if (
       !node.text_post_app_info &&
       !node.user &&
       !node.owner &&
       !node.caption &&
       !node.image_versions2
-    )
+    ) {
       return;
+    }
     seen.add(code);
     out.push(node);
   });
@@ -254,7 +263,7 @@ function collectThreadPosts(json: JsonValue): JsonObject[] {
 }
 
 function isJsonObject(value: JsonValue): value is JsonObject {
-  return value instanceof Object && !Array.isArray(value);
+  return Object(value) === value && !Array.isArray(value);
 }
 
 function walk(
@@ -263,11 +272,17 @@ function walk(
   visit: (node: JsonObject) => void,
 ): void {
   if (Array.isArray(value)) {
-    for (const item of value) walk(item, skipCollect, visit);
+    for (const item of value) {
+      walk(item, skipCollect, visit);
+    }
     return;
   }
-  if (!isJsonObject(value)) return;
-  if (!skipCollect) visit(value);
+  if (!isJsonObject(value)) {
+    return;
+  }
+  if (!skipCollect) {
+    visit(value);
+  }
   for (const [key, child] of Object.entries(value)) {
     const nestedSkip =
       skipCollect ||
@@ -281,7 +296,9 @@ function walk(
 export function richThreadFromNode(raw: JsonObject): RichThread | null {
   const node = ThreadPostSchema.parse(raw);
   const postId = node.code;
-  if (!postId) return null;
+  if (!postId) {
+    return null;
+  }
 
   const user = node.user ?? node.owner;
   const handle = user?.username ?? "";
@@ -299,15 +316,21 @@ export function richThreadFromNode(raw: JsonObject): RichThread | null {
   const card = pickCard(info);
 
   const author: RichThreadAuthor = { handle, name: user?.full_name ?? handle };
-  if (user?.profile_pic_url) author.avatarUrl = user.profile_pic_url;
-  if (user?.is_verified === true) author.verified = true;
+  if (user?.profile_pic_url) {
+    author.avatarUrl = user.profile_pic_url;
+  }
+  if (user?.is_verified === true) {
+    author.verified = true;
+  }
 
   const metrics: RichThreadMetrics = {
     likes: node.like_count ?? 0,
     retweets: info?.repost_count ?? 0,
     replies: info?.direct_reply_count ?? node.comment_count ?? 0,
   };
-  if (info?.quote_count != null) metrics.quotes = info.quote_count;
+  if (info?.quote_count !== undefined) {
+    metrics.quotes = info.quote_count;
+  }
 
   const thread: RichThread = {
     postId,
@@ -318,20 +341,26 @@ export function richThreadFromNode(raw: JsonObject): RichThread | null {
     metrics,
     raw,
   };
-  if (quoted) thread.quoted = quoted;
-  if (card) thread.card = card;
-  if (info?.is_reply === true) thread.isReply = true;
+  if (quoted) {
+    thread.quoted = quoted;
+  }
+  if (card) {
+    thread.card = card;
+  }
+  if (info?.is_reply === true) {
+    thread.isReply = true;
+  }
   if (info?.reply_to_author?.username) {
     thread.replyingTo = info.reply_to_author.username;
   }
-  if (node.taken_at != null) {
+  if (node.taken_at !== undefined) {
     thread.publishedAt = new Date(node.taken_at * 1000).toISOString();
   }
   return thread;
 }
 
-function collectNodeMedia(node: ThreadPost): RichThreadMedia[] {
-  const media: RichThreadMedia[] = [];
+function collectNodeMedia(node: ThreadPost): Array<RichThreadMedia> {
+  const media: Array<RichThreadMedia> = [];
   const seen = new Set<string>();
   const push = (entry: RichThreadMedia | null) => {
     if (!entry || seen.has(entry.url) || isThreadsLandingMedia(entry.url)) {
@@ -360,18 +389,34 @@ function mediaFromVersions(node: MediaNode): RichThreadMedia | null {
   const dur = node.video_duration;
   if (node.media_type === 2 || video) {
     const src = video ?? img;
-    if (!src) return null;
+    if (!src) {
+      return null;
+    }
     const entry: RichThreadMedia = { url: src.url, type: "video" };
-    if (img) entry.poster = img.url;
-    if (width) entry.width = width;
-    if (height) entry.height = height;
-    if (dur != null) entry.durationSec = Math.round(dur);
+    if (img) {
+      entry.poster = img.url;
+    }
+    if (width) {
+      entry.width = width;
+    }
+    if (height) {
+      entry.height = height;
+    }
+    if (dur !== undefined) {
+      entry.durationSec = Math.round(dur);
+    }
     return entry;
   }
-  if (!img) return null;
+  if (!img) {
+    return null;
+  }
   const entry: RichThreadMedia = { url: img.url, type: "image" };
-  if (width) entry.width = width;
-  if (height) entry.height = height;
+  if (width) {
+    entry.width = width;
+  }
+  if (height) {
+    entry.height = height;
+  }
   return entry;
 }
 
@@ -388,32 +433,46 @@ interface PickedVideo {
 }
 
 function pickBestImage(iv2: ImageVersions): PickedImage | null {
-  if (!iv2) return null;
+  if (!iv2) {
+    return null;
+  }
   const cands = iv2.candidates ?? [];
   let best: PickedImage | null = null;
   for (const c of cands) {
     const url = c.url;
-    if (!url) continue;
+    if (!url) {
+      continue;
+    }
     const w = c.width ?? 0;
     const h = c.height;
     if (!best || w > best.width) {
       best = { url, width: w };
-      if (h) best.height = h;
+      if (h) {
+        best.height = h;
+      }
     }
   }
   return best;
 }
 
 function pickBestVideo(
-  versions: MediaVersion[] | undefined,
+  versions: Array<MediaVersion> | undefined,
 ): PickedVideo | null {
-  if (!versions) return null;
+  if (!versions) {
+    return null;
+  }
   for (const v of versions) {
     const url = v.url;
-    if (!url) continue;
+    if (!url) {
+      continue;
+    }
     const picked: PickedVideo = { url };
-    if (v.width) picked.width = v.width;
-    if (v.height) picked.height = v.height;
+    if (v.width) {
+      picked.width = v.width;
+    }
+    if (v.height) {
+      picked.height = v.height;
+    }
     return picked;
   }
   return null;
@@ -423,13 +482,17 @@ function pickCard(
   info: ThreadPostInfo | undefined,
 ): RichThreadCard | undefined {
   const att = info?.link_preview_attachment ?? info?.link_preview_response;
-  if (!att) return undefined;
+  if (!att) {
+    return undefined;
+  }
   const url = att.url ?? att.display_url;
   const title = att.title;
   const description = att.description;
   const image = att.image;
   const imageUrl = att.image_url ?? image?.url ?? image?.uri;
-  if (!url && !title && !imageUrl) return undefined;
+  if (!url && !title && !imageUrl) {
+    return undefined;
+  }
   let domain = att.display_url;
   if (url) {
     try {
@@ -438,12 +501,24 @@ function pickCard(
       /** Keep display_url when the href isn't absolute. */
     }
   }
-  if (domain) domain = domain.replace(/^www\./, "").split("/")[0];
+  if (domain) {
+    domain = domain.replace(/^www\./, "").split("/")[0];
+  }
   const card: RichThreadCard = {};
-  if (url) card.url = url;
-  if (domain) card.domain = domain;
-  if (title) card.title = title;
-  if (description) card.description = description;
-  if (imageUrl) card.imageUrl = imageUrl;
+  if (url) {
+    card.url = url;
+  }
+  if (domain) {
+    card.domain = domain;
+  }
+  if (title) {
+    card.title = title;
+  }
+  if (description) {
+    card.description = description;
+  }
+  if (imageUrl) {
+    card.imageUrl = imageUrl;
+  }
   return card;
 }

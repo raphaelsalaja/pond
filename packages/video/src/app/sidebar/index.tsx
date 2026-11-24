@@ -45,7 +45,7 @@ export const libraryPlaces = (
   all: number,
   tags: number,
   allActive = true,
-): Place[] => [
+): Array<Place> => [
   { label: "All", icon: <IconAlbum2 />, count: all, active: allActive },
   { label: "Uncategorized", icon: <IconFolderBan />, count: 0 },
   { label: "Untagged", icon: <IconTagSlash />, count: 0 },
@@ -63,7 +63,9 @@ interface RowProps extends Omit<TreeRow, "label"> {
 /** A tree row that grows into place as it lands, so rows below slide instead of jumping. */
 function Row({ t, at, icon, label, count, depth = 0, color, pulse }: RowProps) {
   const k = ease.outQuint(progress(t, at, 520));
-  if (k <= 0) return null;
+  if (k <= 0) {
+    return null;
+  }
   const again =
     pulse === undefined || t < pulse
       ? 0
@@ -96,7 +98,7 @@ function Row({ t, at, icon, label, count, depth = 0, color, pulse }: RowProps) {
   );
 }
 
-function Places({ rows }: { rows: Place[] }) {
+function Places({ rows }: { rows: Array<Place> }) {
   return (
     <div className={styles.group}>
       {rows.map((row) => (
@@ -116,14 +118,14 @@ function Places({ rows }: { rows: Place[] }) {
 
 interface SidebarProps {
   t: number;
-  places: Place[];
+  places: Array<Place>;
   /** The Harvesting group; omitted when not passed. */
-  harvesting?: Place[];
+  harvesting?: Array<Place>;
   /** The Fish group; omitted when not passed. */
-  fish?: Place[];
-  smart?: TreeRow[];
-  canvases?: CanvasRow[];
-  folders?: TreeRow[];
+  fish?: Array<Place>;
+  smart?: Array<TreeRow>;
+  canvases?: Array<CanvasRow>;
+  folders?: Array<TreeRow>;
   workspace?: string;
   plusPressed?: boolean;
   /** `2.0` is the wider sidebar with 16px icons and quieter rows. */

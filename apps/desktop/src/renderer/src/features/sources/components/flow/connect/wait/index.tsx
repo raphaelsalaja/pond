@@ -4,10 +4,8 @@ import { Button, Dialog } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { HandleForm } from "@/features/sources/components/flow/connect/handle";
 import { ConnectionVisual } from "@/features/sources/components/flow/connection-visual";
-import {
-  type AccountRow,
-  useAccounts,
-} from "@/features/sources/hooks/use-accounts";
+import { useAccounts } from "@/features/sources/hooks/use-accounts";
+import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import { openSources } from "@/features/sources/lib/open";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
@@ -31,7 +29,9 @@ export function ConnectWaitSection() {
   const problem = useConnectProblem();
   const account = useConnectedAccount();
   useConnectArrival();
-  if (!source) return null;
+  if (!source) {
+    return null;
+  }
   const label = getSourceDef(source).label;
   const byHandle = connectsByHandle(source);
   const step = completed ? "connected" : (problem ?? "waiting");
@@ -90,7 +90,8 @@ export function ConnectWaitSection() {
               )
             ) : step === "signed_out" ? (
               <>
-                Pond's extension found a browser profile signed out of {label}.
+                Pond&apos;s extension found a browser profile signed out of{" "}
+                {label}.
                 <br />
                 Sign in there, or add the extension to the profile you use.
               </>
@@ -153,8 +154,8 @@ function ConnectPromises({
         <>
           {byHandle ? null : <ExtensionNote />}
           <p className={styles.note}>
-            You're responsible for following {label}'s terms while Pond syncs
-            your account.{" "}
+            You&apos;re responsible for following {label}&apos;s terms while
+            Pond syncs your account.{" "}
             <Button
               variant="link"
               size="xs"
@@ -171,23 +172,31 @@ function ConnectPromises({
 
 /** The extension pushes cookies as soon as a sign-in page finishes loading, so this long without a message means it can't reach Pond. */
 const EXTENSION_SILENT_MS = 20_000;
-const EXTENSION_POLL_MS = 3_000;
+const EXTENSION_POLL_MS = 3000;
 
 function useExtensionSilent(): boolean {
   const waiting = useConnectWaiting();
   const problem = useConnectProblem();
   const [silent, setSilent] = useState(false);
+  const [watched, setWatched] = useState({ waiting, problem });
+  if (watched.waiting !== waiting || watched.problem !== problem) {
+    setWatched({ waiting, problem });
+    setSilent(false);
+  }
 
   useEffect(() => {
-    setSilent(false);
-    if (!waiting || problem) return;
+    if (!waiting || problem) {
+      return;
+    }
     const startedAt = Date.now();
     let cancelled = false;
     const check = async () => {
       const result = await window.pond
         .query("sources.extensionLastSeen", {})
         .catch(() => null);
-      if (cancelled || !result) return;
+      if (cancelled || !result) {
+        return;
+      }
       const heard = result.at !== null && result.at >= startedAt;
       setSilent(!heard && Date.now() - startedAt >= EXTENSION_SILENT_MS);
     };
@@ -221,7 +230,7 @@ export function ConnectActions() {
   const completed = useConnectCompleted();
   const problem = useConnectProblem();
   const account = useConnectedAccount();
-  if (completed && account)
+  if (completed && account) {
     return (
       <Dialog.Confirm
         onClick={() => {
@@ -233,6 +242,7 @@ export function ConnectActions() {
         Continue
       </Dialog.Confirm>
     );
+  }
   return (
     <>
       <Dialog.Cancel />
@@ -255,7 +265,9 @@ function useConnectArrival(): void {
   const { refetch } = useAccounts();
 
   useEffect(() => {
-    if (!waiting) return;
+    if (!waiting) {
+      return;
+    }
     const source = waiting;
     let cancelled = false;
     let arrivedOnce = false;
@@ -264,15 +276,21 @@ function useConnectArrival(): void {
     let importedAccountId: string | null = null;
 
     const finish = (account: AccountRow) => {
-      if (cancelled || arrivedOnce) return;
+      if (cancelled || arrivedOnce) {
+        return;
+      }
       arrivedOnce = true;
       syncMonitor.seed(account.id, source, { connected: true });
-      if (!account.sync.importPending) void window.pond.syncRunNow(account.id);
+      if (!account.sync.importPending) {
+        void window.pond.syncRunNow(account.id);
+      }
       connectFlow.complete(account);
     };
 
     const tick = () => {
-      if (cancelled || arrivedOnce) return;
+      if (cancelled || arrivedOnce) {
+        return;
+      }
       if (inflight) {
         pending = true;
         return;
@@ -281,16 +299,21 @@ function useConnectArrival(): void {
       void (async () => {
         try {
           const list = await refetch();
-          if (cancelled || arrivedOnce) return;
+          if (cancelled || arrivedOnce) {
+            return;
+          }
           const arrived = findArrivedAccount(
             list,
             source,
             connectedBefore,
             importedAccountId,
           );
-          if (!arrived) return;
+          if (!arrived) {
+            return;
+          }
           finish(arrived);
         } catch {
+          /** A failed refetch is retried on the next tick. */
         } finally {
           inflight = false;
           if (pending) {
@@ -302,12 +325,16 @@ function useConnectArrival(): void {
     };
 
     const stopListen = window.pond.onSessionImported((payload) => {
-      if (payload.source !== source) return;
+      if (payload.source !== source) {
+        return;
+      }
       importedAccountId = payload.accountId;
       tick();
     });
     const stopFailureListen = window.pond.onSessionImportFailed((payload) => {
-      if (payload.source !== source) return;
+      if (payload.source !== source) {
+        return;
+      }
       connectFlow.rejectSession(source, payload.reason);
     });
 

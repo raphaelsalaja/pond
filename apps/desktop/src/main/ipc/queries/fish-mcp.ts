@@ -1,17 +1,16 @@
 import { z } from "zod";
 import {
   FishMcpSaveInput,
-  type FishMcpServerStatus,
   FishMcpToolAccess,
 } from "../../../shared/fish-mcp-contracts";
+import type { FishMcpServerStatus } from "../../../shared/fish-mcp-contracts";
 import { userError } from "../../../shared/user-error";
 import type { FishMcpManager } from "../../core/agent/fish-mcp/client";
 import { fishMcp } from "../../core/agent/fish-mcp/live";
-import {
-  type FishMcpStore,
-  getFishMcpStore,
-} from "../../core/agent/fish-mcp/store";
-import { type QueryHandlerMap, query } from "./params";
+import { getFishMcpStore } from "../../core/agent/fish-mcp/store";
+import type { FishMcpStore } from "../../core/agent/fish-mcp/store";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const ServerId = z.object({ id: z.string().min(1) });
 
@@ -19,7 +18,7 @@ export function createFishMcpQueries(
   store: () => FishMcpStore,
   manager: Pick<FishMcpManager, "status" | "reset" | "ensure">,
 ) {
-  async function statuses(): Promise<FishMcpServerStatus[]> {
+  async function statuses(): Promise<Array<FishMcpServerStatus>> {
     const servers = await store().list();
     const live = new Map(manager.status().map((s) => [s.server.id, s]));
     return servers.map((server) => {
@@ -40,7 +39,9 @@ export function createFishMcpQueries(
 
   async function statusFor(id: string): Promise<FishMcpServerStatus> {
     const found = (await statuses()).find((s) => s.server.id === id);
-    if (!found) throw userError("That server no longer exists.");
+    if (!found) {
+      throw userError("That server no longer exists.");
+    }
     return found;
   }
 

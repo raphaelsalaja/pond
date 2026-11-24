@@ -30,7 +30,9 @@ export function sharperThumbUrlFor(
   cssWidth: number | undefined,
 ): string {
   const width = thumbnailWidth(cssWidth);
-  if (!width) return url;
+  if (!width) {
+    return url;
+  }
   const sharper = SHARPER_BUCKETS.find((bucket) => bucket > width) ?? width;
   return withThumbWidth(url, sharper);
 }
@@ -52,14 +54,18 @@ export function previewThumbUrlFor(
 }
 
 function thumbnailWidth(cssWidth: number | undefined): number | null {
-  if (!cssWidth || cssWidth <= 0) return null;
+  if (!cssWidth || cssWidth <= 0) {
+    return null;
+  }
   const wanted = cssWidth * (globalThis.devicePixelRatio || 1);
   return THUMB_BUCKETS.find((bucket) => bucket >= wanted) ?? THUMB_MAX;
 }
 
 export function pickAuthorAvatarUrl(save: Save): string | null {
   const local = (save.files ?? []).find((f) => f.kind === "avatar");
-  if (local) return buildPondUrl(save.id, local);
+  if (local) {
+    return buildPondUrl(save.id, local);
+  }
 
   const url = save.rawJson?.capture?.author?.avatarUrl;
   return url && url.trim().length > 0 ? url : null;
@@ -67,7 +73,9 @@ export function pickAuthorAvatarUrl(save: Save): string | null {
 
 export function pickSourceIconUrl(save: Save): string | null {
   const local = (save.files ?? []).find((f) => f.kind === "source_icon");
-  if (local) return buildPondUrl(save.id, local);
+  if (local) {
+    return buildPondUrl(save.id, local);
+  }
 
   const url = save.rawJson?.capture?.extras?.faviconUrl;
   return url && url.trim().length > 0 ? url : null;

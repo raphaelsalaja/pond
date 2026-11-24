@@ -12,8 +12,12 @@ type NavigatorWithHints = Navigator & {
 
 function detectPlatform(navigator: NavigatorWithHints): Platform {
   const name = navigator.userAgentData?.platform || navigator.userAgent;
-  if (/windows|win32|win64/i.test(name)) return "windows";
-  if (/linux|x11/i.test(name)) return "linux";
+  if (/windows|win32|win64/i.test(name)) {
+    return "windows";
+  }
+  if (/linux|x11/i.test(name)) {
+    return "linux";
+  }
   return FALLBACK;
 }
 

@@ -33,11 +33,17 @@ export function toVecBlob(vector: ArrayLike<number>): Buffer {
   return Buffer.from(Float32Array.from(vector).buffer);
 }
 
-export function parseJsonVector(raw: JsonValue | undefined): number[] | null {
+export function parseJsonVector(
+  raw: JsonValue | undefined,
+): Array<number> | null {
   const direct = VectorSchema.safeParse(raw);
-  if (direct.success) return direct.data;
+  if (direct.success) {
+    return direct.data;
+  }
   const text = z.string().safeParse(raw);
-  if (!text.success || !text.data) return null;
+  if (!text.success || !text.data) {
+    return null;
+  }
   try {
     const decoded = VectorSchema.safeParse(JSON.parse(text.data));
     return decoded.success ? decoded.data : null;
@@ -71,7 +77,9 @@ export function loadSqliteVec(db: Database.Database): boolean {
 
 function unpackedExtensionPath(): string | null {
   const resourcesPath = process.resourcesPath;
-  if (!resourcesPath) return null;
+  if (!resourcesPath) {
+    return null;
+  }
   const ext =
     platform === "darwin" ? "dylib" : platform === "win32" ? "dll" : "so";
   const os = platform === "win32" ? "windows" : platform;
@@ -107,7 +115,9 @@ function ensureVecDim(
   kind: VecKind,
   dimensions: number,
 ): void {
-  if (dimensions < 1) return;
+  if (dimensions < 1) {
+    return;
+  }
   ensureKind(db, kind, dimensions);
 }
 
@@ -148,7 +158,9 @@ export function upsertVec(
   saveId: string,
   vector: ArrayLike<number>,
 ): boolean {
-  if (!saveId || vector.length < 1) return false;
+  if (!saveId || vector.length < 1) {
+    return false;
+  }
   ensureVecDim(db, kind, vector.length);
   const table = TABLES[kind];
   const blob = toVecBlob(vector);
@@ -168,7 +180,9 @@ export function knnVec(
 ): Array<{ id: string; distance: number }> {
   try {
     const dimensions = currentVecDim(db, kind);
-    if (!dimensions || vector.length !== dimensions || k < 1) return [];
+    if (!dimensions || vector.length !== dimensions || k < 1) {
+      return [];
+    }
     const table = TABLES[kind];
     return NeighborRowsSchema.parse(
       db

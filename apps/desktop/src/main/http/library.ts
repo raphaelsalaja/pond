@@ -22,7 +22,8 @@ import {
   libraryViews,
   searchSaves,
 } from "./api-library";
-import { type ApiRuntime, apiRuntime } from "./api-runtime";
+import { apiRuntime } from "./api-runtime";
+import type { ApiRuntime } from "./api-runtime";
 import { apiSavesByIds } from "./api-saves";
 import { handleApiError, invalidRequest } from "./errors";
 
@@ -36,7 +37,9 @@ export function libraryRoutes(runtime: ApiRuntime = apiRuntime) {
   );
   routes.post("/conversion/presets", async (c) => {
     const parsed = ConversionPresetSchema.safeParse(await c.req.json());
-    if (!parsed.success) return invalidRequest(c, parsed.error);
+    if (!parsed.success) {
+      return invalidRequest(c, parsed.error);
+    }
     return c.json({
       status: "success",
       data: saveConversionPreset(parsed.data),
@@ -44,7 +47,9 @@ export function libraryRoutes(runtime: ApiRuntime = apiRuntime) {
   });
   routes.post("/conversion/start", async (c) => {
     const parsed = ConversionApiRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) return invalidRequest(c, parsed.error);
+    if (!parsed.success) {
+      return invalidRequest(c, parsed.error);
+    }
     return c.json({
       status: "success",
       data: conversionJobs.start(parsed.data),
@@ -52,7 +57,9 @@ export function libraryRoutes(runtime: ApiRuntime = apiRuntime) {
   });
   routes.post("/conversion/compress", async (c) => {
     const parsed = ImageCompressionRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) return invalidRequest(c, parsed.error);
+    if (!parsed.success) {
+      return invalidRequest(c, parsed.error);
+    }
     return c.json({
       status: "success",
       data: conversionJobs.startCompression(parsed.data),
@@ -60,7 +67,9 @@ export function libraryRoutes(runtime: ApiRuntime = apiRuntime) {
   });
   routes.post("/conversion/compress-videos", async (c) => {
     const parsed = VideoCompressionRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) return invalidRequest(c, parsed.error);
+    if (!parsed.success) {
+      return invalidRequest(c, parsed.error);
+    }
     return c.json({
       status: "success",
       data: conversionJobs.startVideoCompression(parsed.data),
@@ -80,7 +89,9 @@ export function libraryRoutes(runtime: ApiRuntime = apiRuntime) {
   );
   routes.post("/query", async (c) => {
     const parsed = LibraryQueryRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) return invalidRequest(c, parsed.error);
+    if (!parsed.success) {
+      return invalidRequest(c, parsed.error);
+    }
     const page = await queryActiveLibraryPage(parsed.data);
     const data = parsed.data.include?.includes("saves")
       ? {
@@ -109,7 +120,9 @@ export function libraryRoutes(runtime: ApiRuntime = apiRuntime) {
   );
   routes.post("/search", async (c) => {
     const parsed = ApiSearchRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) return invalidRequest(c, parsed.error);
+    if (!parsed.success) {
+      return invalidRequest(c, parsed.error);
+    }
     return c.json({
       status: "success",
       data: await searchSaves(runtime, parsed.data),

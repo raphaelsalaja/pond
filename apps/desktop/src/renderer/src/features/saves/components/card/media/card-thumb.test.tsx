@@ -1,6 +1,9 @@
-import { type Prefs, PrefsSchema } from "@pond/schema";
+import { PrefsSchema } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
+import { isHTMLElement } from "@pond/ui/dom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { MediaUnit } from "@/features/saves/lib/media/units";
 import { cardThumbnailFor } from "@/features/saves/state/card-thumbnails";
@@ -26,9 +29,12 @@ beforeEach(() => {
       return () => listeners.delete(listener);
     },
     query: async (name: string) => {
-      if (name === "settings.getPrefs") return currentPrefs();
-      if (name === "settings.setPrefs")
+      if (name === "settings.getPrefs") {
+        return currentPrefs();
+      }
+      if (name === "settings.setPrefs") {
         return { ok: true, prefs: currentPrefs() };
+      }
       return { ok: true };
     },
   });
@@ -79,14 +85,16 @@ const save: Save = {
   deletedAt: null,
 };
 
-const slides: MediaUnit[] = [
+const slides: Array<MediaUnit> = [
   { key: "first.jpg", url: "pond://gallery/first.jpg", isVideo: false },
   { key: "second.jpg", url: "pond://gallery/second.jpg", isVideo: false },
 ];
 
 async function renderThumb(): Promise<HTMLElement> {
   await loadPrefs();
-  for (const listener of listeners) listener(currentPrefs());
+  for (const listener of listeners) {
+    listener(currentPrefs());
+  }
   await act(async () => {
     root.render(
       <PreparedCardThumb
@@ -99,7 +107,9 @@ async function renderThumb(): Promise<HTMLElement> {
     );
   });
   const thumb = host.firstElementChild;
-  if (!(thumb instanceof HTMLElement)) throw new Error("Missing card thumb");
+  if (!isHTMLElement(thumb)) {
+    throw new Error("Missing card thumb");
+  }
   vi.spyOn(thumb, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 200, 100),
   );

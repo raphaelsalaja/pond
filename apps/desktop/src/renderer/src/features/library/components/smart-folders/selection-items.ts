@@ -10,9 +10,9 @@ import { exportSelectionCsv, exportSelectionFiles } from "@/features/saves";
 import { runAction, saveIdsForView } from "./menu-items";
 
 async function saveIdsForViews(
-  selected: SavedView[],
-  views: SavedView[],
-): Promise<string[]> {
+  selected: Array<SavedView>,
+  views: Array<SavedView>,
+): Promise<Array<string>> {
   return [
     ...new Set(
       (
@@ -23,9 +23,9 @@ async function saveIdsForViews(
 }
 
 export function selectionItems(
-  selected: string[],
-  views: SavedView[],
-): MenuItemSpec[] {
+  selected: Array<string>,
+  views: Array<SavedView>,
+): Array<MenuItemSpec> {
   const selectedViews = views.filter((entry) => selected.includes(entry.id));
   const moveRoots = selectedViewRoots(selected, views);
   return [
@@ -41,28 +41,31 @@ export function selectionItems(
           label: "Smart Folders",
           onClick: () =>
             void runAction(async () => {
-              for (const entry of moveRoots)
+              for (const entry of moveRoots) {
                 await savedViews.move(entry.id, null);
+              }
             }),
         },
-        ...views
-          .filter(
-            (group) =>
-              group.kind === "group" &&
-              selectedViews.every((entry) =>
-                groupMoveChoices(entry.id, views).some(
-                  (choice) => choice.id === group.id,
-                ),
-              ),
+        ...views.flatMap((group) =>
+          group.kind === "group" &&
+          selectedViews.every((entry) =>
+            groupMoveChoices(entry.id, views).some(
+              (choice) => choice.id === group.id,
+            ),
           )
-          .map((group) => ({
-            label: group.name,
-            onClick: () =>
-              void runAction(async () => {
-                for (const entry of moveRoots)
-                  await savedViews.move(entry.id, group.id);
-              }),
-          })),
+            ? [
+                {
+                  label: group.name,
+                  onClick: () =>
+                    void runAction(async () => {
+                      for (const entry of moveRoots) {
+                        await savedViews.move(entry.id, group.id);
+                      }
+                    }),
+                },
+              ]
+            : [],
+        ),
       ],
     },
     {
@@ -88,8 +91,9 @@ export function selectionItems(
         void (async () => {
           for (const entry of selectedViews.toSorted(
             (a, b) => Number(a.kind === "group") - Number(b.kind === "group"),
-          ))
+          )) {
             await savedViews.remove(entry.id);
+          }
         })();
       },
     },

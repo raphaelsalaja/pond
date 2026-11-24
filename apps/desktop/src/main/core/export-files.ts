@@ -62,7 +62,7 @@ export type ExportFolder = Pick<Folder, "id" | "name" | "parentId"> &
 export interface ExportItem {
   save: ExportSave;
   directory: string;
-  folderIds: string[];
+  folderIds: Array<string>;
 }
 
 export function safeName(value: string): string {
@@ -70,9 +70,10 @@ export function safeName(value: string): string {
     character.charCodeAt(0) < 32 ? "_" : character,
   )
     .join("")
-    .replace(/[/\\?%*:|"<>]/g, "_")
+    .replaceAll(/[/\\?%*:|"<>]/g, "_")
     .trim();
-  const name = cleaned.replace(/^\.+$|[. ]+$/g, "").slice(0, 120) || "Untitled";
+  const name =
+    cleaned.replaceAll(/^\.+$|[. ]+$/g, "").slice(0, 120) || "Untitled";
   return /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name)
     ? `_${name}`
     : name;
@@ -84,6 +85,8 @@ function isCollision(error: Error): boolean {
 
 const destinationQueues = new Map<string, Promise<void>>();
 
+function noop(): void {}
+
 async function reserveOutput(
   directory: string,
   filename: string,
@@ -91,7 +94,7 @@ async function reserveOutput(
 ): Promise<string> {
   const root = await realpath(directory);
   const prior = destinationQueues.get(root) ?? Promise.resolve();
-  let release = () => {};
+  let release: () => void = noop;
   const pending = new Promise<void>((done) => {
     release = done;
   });
@@ -109,19 +112,25 @@ async function reserveOutput(
     for (;;) {
       const name = suffix === 0 ? cleaned : `${stem}-${suffix}${extension}`;
       suffix += 1;
-      if (used.has(name.toLowerCase())) continue;
+      if (used.has(name.toLowerCase())) {
+        continue;
+      }
       const path = join(root, name);
       try {
         await write(path);
         return path;
       } catch (error) {
-        if (!(error instanceof Error) || !isCollision(error)) throw error;
+        if (!(error instanceof Error) || !isCollision(error)) {
+          throw error;
+        }
         used.add(name.toLowerCase());
       }
     }
   } finally {
     release();
-    if (destinationQueues.get(root) === tail) destinationQueues.delete(root);
+    if (destinationQueues.get(root) === tail) {
+      destinationQueues.delete(root);
+    }
   }
 }
 
@@ -145,7 +154,9 @@ export async function writeExportFile(
   );
 }
 
-function folderPaths(folders: readonly ExportFolder[]): Map<string, string[]> {
+function folderPaths(
+  folders: ReadonlyArray<ExportFolder>,
+): Map<string, Array<string>> {
   const byId = new Map(folders.map((folder) => [folder.id, folder]));
   const names = new Map<string, string>();
   const siblings = new Map<string | null, Set<string>>();
@@ -154,19 +165,22 @@ function folderPaths(folders: readonly ExportFolder[]): Map<string, string[]> {
     const base = safeName(folder.name);
     let name = base;
     let suffix = 1;
-    while (used.has(name.toLowerCase())) name = `${base}-${suffix++}`;
+    while (used.has(name.toLowerCase())) {
+      name = `${base}-${suffix++}`;
+    }
     used.add(name.toLowerCase());
     siblings.set(folder.parentId, used);
     names.set(folder.id, name);
   }
-  const paths = new Map<string, string[]>();
+  const paths = new Map<string, Array<string>>();
   for (const folder of folders) {
-    const parts: string[] = [];
+    const parts: Array<string> = [];
     const visited = new Set<string>();
     let current: ExportFolder | undefined = folder;
     while (current) {
-      if (visited.has(current.id))
+      if (visited.has(current.id)) {
         throw new Error("Cannot export a folder cycle.");
+      }
       visited.add(current.id);
       parts.unshift(names.get(current.id) ?? "Untitled");
       current = current.parentId ? byId.get(current.parentId) : undefined;
@@ -178,11 +192,13 @@ function folderPaths(folders: readonly ExportFolder[]): Map<string, string[]> {
 
 function itemDestinations(
   item: ExportItem,
-  paths: ReadonlyMap<string, string[]>,
-): string[][] {
+  paths: ReadonlyMap<string, Array<string>>,
+): Array<Array<string>> {
   const destinations = [...new Set(item.folderIds)].map((id) => {
     const parts = paths.get(id);
-    if (!parts) throw new Error(`Cannot export missing folder ${id}.`);
+    if (!parts) {
+      throw new Error(`Cannot export missing folder ${id}.`);
+    }
     return parts;
   });
   return destinations.length > 0 ? destinations : [[]];
@@ -190,11 +206,11 @@ function itemDestinations(
 
 /** The folder path every exported file shares, so an export can start at the exported folder instead of the Library root. */
 export function sharedFolderPath(
-  items: readonly ExportItem[],
-  folders: readonly ExportFolder[],
-): string[] {
+  items: ReadonlyArray<ExportItem>,
+  folders: ReadonlyArray<ExportFolder>,
+): Array<string> {
   const paths = folderPaths(folders);
-  let shared: string[] | null = null;
+  let shared: Array<string> | null = null;
   for (const item of items) {
     for (const parts of itemDestinations(item, paths)) {
       if (!shared) {
@@ -206,15 +222,16 @@ export function sharedFolderPath(
         length < shared.length &&
         length < parts.length &&
         shared[length] === parts[length]
-      )
+      ) {
         length += 1;
+      }
       shared = shared.slice(0, length);
     }
   }
   return shared ?? [];
 }
 
-async function exportDirectory(root: string, parts: readonly string[]) {
+async function exportDirectory(root: string, parts: ReadonlyArray<string>) {
   let directory = root;
   for (const part of parts) {
     directory = join(directory, part);
@@ -230,8 +247,8 @@ async function exportDirectory(root: string, parts: readonly string[]) {
 
 export async function exportFiles(input: {
   directory: string;
-  items: readonly ExportItem[];
-  folders?: readonly ExportFolder[];
+  items: ReadonlyArray<ExportItem>;
+  folders?: ReadonlyArray<ExportFolder>;
   includeDerived?: boolean;
   organization?: PackageOrganization;
   startAtSharedFolder?: boolean;
@@ -271,8 +288,9 @@ export async function exportFiles(input: {
       for (const [index, file] of originals.entries()) {
         checkTransferCancellation();
         const source = await realpath(resolve(sourceRoot, file.path));
-        if (!source.startsWith(`${sourceRoot}${sep}`))
+        if (!source.startsWith(`${sourceRoot}${sep}`)) {
           throw new Error("Original file resolves outside its Save.");
+        }
         const extension = extname(file.path);
         const title = safeName(item.save.title || item.save.id);
         const name =
@@ -300,13 +318,14 @@ export async function exportFiles(input: {
         const path = reusable
           ? checkpoint.path
           : await copyExportFile(source, directory, name);
-        if (!reusable)
+        if (!reusable) {
           await recordTransferCopy({
             key,
             path,
             size: file.size,
             sha256: file.sha256,
           });
+        }
         await transferProgress(path, file.size);
         exportedFiles.push({
           saveId: item.save.id,
@@ -381,9 +400,7 @@ export async function exportFiles(input: {
 }
 
 async function hasUserTitle(directory: string): Promise<boolean> {
-  const value = readBundleJson<{ locked: boolean }>(
-    join(directory, "user-title.json"),
-  );
+  const value = readBundleJson(join(directory, "user-title.json"));
   return value
     ? z.object({ locked: z.boolean() }).parse(value.data).locked
     : false;
@@ -396,14 +413,22 @@ async function verifiedCheckpoint(
   sha256: string,
 ): Promise<boolean> {
   const actual = await realpath(path).catch(() => null);
-  if (!actual?.startsWith(`${directory}${sep}`)) return false;
+  if (!actual?.startsWith(`${directory}${sep}`)) {
+    return false;
+  }
   const file = await stat(actual);
-  if (!file.isFile() || file.size !== size) return false;
-  if (!sha256) return false;
+  if (!file.isFile() || file.size !== size) {
+    return false;
+  }
+  if (!sha256) {
+    return false;
+  }
   const hash = createHash("sha256");
   for await (const bytes of createReadStream(actual)) {
     checkTransferCancellation();
-    hash.update(bytes);
+    if (Buffer.isBuffer(bytes)) {
+      hash.update(bytes);
+    }
   }
   return hash.digest("hex") === sha256;
 }

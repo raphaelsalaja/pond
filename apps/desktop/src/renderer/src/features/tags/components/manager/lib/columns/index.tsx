@@ -1,7 +1,7 @@
 import type { TableColumn } from "@pond/ui/data-table";
 import type { TagsRowData } from "../types";
 
-export const tagsColumns: TableColumn<TagsRowData>[] = [
+export const tagsColumns: Array<TableColumn<TagsRowData>> = [
   {
     id: "name",
     sortLabel: "Name",

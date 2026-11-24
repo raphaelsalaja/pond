@@ -3,9 +3,9 @@ import type { Source } from "@pond/schema/db";
 import { Button, Empty, EmptyPreview, Loader, Settings } from "@pond/ui";
 import {
   runFreshCount,
-  type SourceRun,
   useSourceHistory,
 } from "@/features/sources/hooks/use-source-activity";
+import type { SourceRun } from "@/features/sources/hooks/use-source-activity";
 import { formatPlural } from "@/shared/lib/format";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import { notify } from "@/shared/lib/toast";
@@ -20,7 +20,9 @@ function outcomeLabel(run: SourceRun): string {
     case "ok":
     case "noop": {
       const fresh = runFreshCount(run);
-      if (fresh === 0) return "No new saves";
+      if (fresh === 0) {
+        return "No new saves";
+      }
       return formatPlural(fresh, { one: "new save", other: "new saves" });
     }
     case "auth_required":
@@ -36,8 +38,12 @@ function outcomeLabel(run: SourceRun): string {
 
 function durationLabel(ms: number): string {
   const seconds = Math.round(ms / 1000);
-  if (seconds < 1) return "under a second";
-  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 1) {
+    return "under a second";
+  }
+  if (seconds < 60) {
+    return `${seconds}s`;
+  }
   const minutes = Math.floor(seconds / 60);
   return `${minutes}m ${seconds % 60}s`;
 }

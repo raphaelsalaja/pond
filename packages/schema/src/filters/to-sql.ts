@@ -1,10 +1,5 @@
-import {
-  and as drizzleAnd,
-  or as drizzleOr,
-  type SQL,
-  type SQLWrapper,
-  sql,
-} from "drizzle-orm";
+import { and as drizzleAnd, or as drizzleOr, sql } from "drizzle-orm";
+import type { SQL, SQLWrapper } from "drizzle-orm";
 import { z } from "zod";
 import { saves } from "../db";
 import { readColorMatch } from "./color";
@@ -29,14 +24,18 @@ import type {
 import { isGroup } from "./types";
 
 export function buildWhere(query: Query): SQL | undefined {
-  if (query.rules.length === 0 && !query.not) return undefined;
+  if (query.rules.length === 0 && !query.not) {
+    return undefined;
+  }
   return compileClause(query);
 }
 
 function compileClause(c: Clause): SQL {
   if (isGroup(c)) {
     const parts = c.rules.map(compileClause);
-    if (parts.length === 0) return c.not ? sql`0` : sql`1`;
+    if (parts.length === 0) {
+      return c.not ? sql`0` : sql`1`;
+    }
     const combined =
       c.combinator === "or" ? drizzleOr(...parts) : drizzleAnd(...parts);
     return c.not ? sql`not (${combined})` : (combined ?? sql`1`);
@@ -49,7 +48,9 @@ function compilePredicate(p: Predicate): SQL {
     throw new Error(`Unsupported filter: ${p.field} ${p.operator}`);
   }
   const sqlExpr = compileForField(p.field, p.operator, p.value);
-  if (!sqlExpr) throw new Error(`Invalid filter: ${p.field} ${p.operator}`);
+  if (!sqlExpr) {
+    throw new Error(`Invalid filter: ${p.field} ${p.operator}`);
+  }
   const boolean = p.field === "post" ? sqlExpr : sql`coalesce((${sqlExpr}), 0)`;
   return p.negate ? sql`not (${boolean})` : boolean;
 }
@@ -65,33 +66,52 @@ function compileForField(
       ? sql`pond_color_near(${saves.dominantColors}, ${color.hex}, ${color.tolerance}) = 1`
       : null;
   }
-  if (field === "aspect") return aspectClause(operator, raw);
-  if (field === "tags") return jsonArrayClause(saves.tags, operator, raw);
-  if (field === "folder") return folderClause(operator, raw);
-  if (field === "list") return jsonArrayClause(saves.listKinds, operator, raw);
-  if (field === "format") return fileFormatClause(operator, raw);
-  if (field === "post") return splitPostClause(operator, raw);
+  if (field === "aspect") {
+    return aspectClause(operator, raw);
+  }
+  if (field === "tags") {
+    return jsonArrayClause(saves.tags, operator, raw);
+  }
+  if (field === "folder") {
+    return folderClause(operator, raw);
+  }
+  if (field === "list") {
+    return jsonArrayClause(saves.listKinds, operator, raw);
+  }
+  if (field === "format") {
+    return fileFormatClause(operator, raw);
+  }
+  if (field === "post") {
+    return splitPostClause(operator, raw);
+  }
 
   const column = FIELD_DESCRIPTORS[field].sqlProjection?.() ?? null;
-  if (!column) return null;
+  if (!column) {
+    return null;
+  }
 
   return scalarClause(column, field, operator, raw);
 }
 
 function folderClause(operator: ComparatorId, raw: PredicateValue): SQL | null {
-  if (operator === "empty") return folderExists([]);
-  if (!Array.isArray(raw)) return null;
+  if (operator === "empty") {
+    return folderExists([]);
+  }
+  if (!Array.isArray(raw)) {
+    return null;
+  }
   const ids = [
     ...new Set(
       raw.map((v) => String(v).toLowerCase()).filter((v) => v.length > 0),
     ),
   ];
-  if (ids.length === 0)
+  if (ids.length === 0) {
     return operator === "exact"
       ? folderExists([])
       : operator === "some"
         ? sql`0`
         : sql`1`;
+  }
   const matches = sql`(
     select count(distinct lower(folder_id)) from save_folders
     where save_id = ${saves.id} and lower(folder_id) in (${sql.join(
@@ -120,8 +140,12 @@ function fileFormatClause(
   operator: ComparatorId,
   raw: PredicateValue,
 ): SQL | null {
-  if (operator === "empty") return sql`json_array_length(${saves.files}) = 0`;
-  if (!Array.isArray(raw) || raw.length === 0) return null;
+  if (operator === "empty") {
+    return sql`json_array_length(${saves.files}) = 0`;
+  }
+  if (!Array.isArray(raw) || raw.length === 0) {
+    return null;
+  }
   const extensions = [
     ...new Set(
       raw
@@ -129,7 +153,9 @@ function fileFormatClause(
         .filter((value) => /^[a-z0-9][a-z0-9+_-]*$/.test(value)),
     ),
   ];
-  if (extensions.length === 0) return null;
+  if (extensions.length === 0) {
+    return null;
+  }
   const matches = extensions.map(
     (extension) =>
       sql`exists (
@@ -138,10 +164,18 @@ function fileFormatClause(
       )`,
   );
   const any = drizzleOr(...matches);
-  if (!any) return null;
-  if (operator === "some") return any;
-  if (operator === "every") return drizzleAnd(...matches) ?? null;
-  if (operator === "none") return sql`not (${any})`;
+  if (!any) {
+    return null;
+  }
+  if (operator === "some") {
+    return any;
+  }
+  if (operator === "every") {
+    return drizzleAnd(...matches) ?? null;
+  }
+  if (operator === "none") {
+    return sql`not (${any})`;
+  }
   return null;
 }
 
@@ -150,8 +184,12 @@ function jsonArrayClause(
   operator: ComparatorId,
   raw: PredicateValue,
 ): SQL | null {
-  if (operator === "empty") return jsonArrayEmpty(column);
-  if (!Array.isArray(raw)) return null;
+  if (operator === "empty") {
+    return jsonArrayEmpty(column);
+  }
+  if (!Array.isArray(raw)) {
+    return null;
+  }
   const lowered = [
     ...new Set(
       raw.map((v) => String(v).toLowerCase()).filter((v) => v.length > 0),
@@ -189,7 +227,9 @@ function aspectClause(operator: ComparatorId, raw: PredicateValue): SQL | null {
     const parsed = z.string().safeParse(value);
     return parsed.success ? parseAspectRatio(parsed.data) : null;
   });
-  if (!ratios.length || ratios.some((ratio) => ratio === null)) return null;
+  if (!ratios.length || ratios.some((ratio) => ratio === null)) {
+    return null;
+  }
   const comparisons = ratios.map(
     (ratio) =>
       sql`abs((cast(${saves.width} as real) / ${saves.height}) - ${ratio}) / ${ratio} <= ${ASPECT_TOLERANCE}`,
@@ -209,20 +249,28 @@ function scalarClause(
   switch (operator) {
     case "eq": {
       const v = scalarValue(field, raw);
-      if (v === null) return null;
+      if (v === null) {
+        return null;
+      }
       return sql`${column} = ${v}`;
     }
     case "neq": {
       const v = scalarValue(field, raw);
-      if (v === null) return null;
+      if (v === null) {
+        return null;
+      }
       return sql`(${column} is null or ${column} <> ${v})`;
     }
     case "in": {
-      if (!Array.isArray(raw)) return null;
+      if (!isValueList(raw)) {
+        return null;
+      }
       const values = raw
         .map((v) => scalarValue(field, v))
         .filter((v): v is string | number => v !== null);
-      if (values.length === 0) return null;
+      if (values.length === 0) {
+        return null;
+      }
       const inList = sql.join(
         values.map((v) => sql`${v}`),
         sql`, `,
@@ -230,11 +278,15 @@ function scalarClause(
       return sql`${column} in (${inList})`;
     }
     case "nin": {
-      if (!Array.isArray(raw)) return null;
+      if (!isValueList(raw)) {
+        return null;
+      }
       const values = raw
         .map((v) => scalarValue(field, v))
         .filter((v): v is string | number => v !== null);
-      if (values.length === 0) return null;
+      if (values.length === 0) {
+        return null;
+      }
       const inList = sql.join(
         values.map((v) => sql`${v}`),
         sql`, `,
@@ -246,7 +298,9 @@ function scalarClause(
     case "gt":
     case "gte": {
       const v = numericValue(field, raw);
-      if (v === null) return null;
+      if (v === null) {
+        return null;
+      }
       const op = sql.raw(
         operator === "lt"
           ? "<"
@@ -259,25 +313,35 @@ function scalarClause(
       return sql`${column} ${op} ${v}`;
     }
     case "between": {
-      if (!Array.isArray(raw) || raw.length !== 2) return null;
-      const lo = numericValue(field, raw[0]);
-      const hi = numericValue(field, raw[1]);
-      if (lo === null || hi === null) return null;
+      if (!isValueList(raw) || raw.length !== 2) {
+        return null;
+      }
+      const lo = numericValue(field, raw[0] ?? null);
+      const hi = numericValue(field, raw[1] ?? null);
+      if (lo === null || hi === null) {
+        return null;
+      }
       return sql`${column} between ${lo} and ${hi}`;
     }
     case "contains": {
       const v = stringValue(raw);
-      if (!v) return null;
+      if (!v) {
+        return null;
+      }
       return sql`${column} like ${`%${escapeLike(v)}%`} escape '\\'`;
     }
     case "startsWith": {
       const v = stringValue(raw);
-      if (!v) return null;
+      if (!v) {
+        return null;
+      }
       return sql`${column} like ${`${escapeLike(v)}%`} escape '\\'`;
     }
     case "endsWith": {
       const v = stringValue(raw);
-      if (!v) return null;
+      if (!v) {
+        return null;
+      }
       return sql`${column} like ${`%${escapeLike(v)}`} escape '\\'`;
     }
     case "exists":
@@ -293,28 +357,46 @@ const FiniteNumber = z.number().refine(Number.isFinite);
 const Flag = z.boolean();
 const Text = z.string();
 
+function isValueList(
+  raw: PredicateValue,
+): raw is ReadonlyArray<string | number> {
+  return Array.isArray(raw);
+}
+
 function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, "\\$&");
+  return value.replaceAll(/[\\%_]/g, String.raw`\$&`);
 }
 
 function scalarValue(
   field: FieldId,
   raw: PredicateValue,
 ): string | number | null {
-  if (raw == null) return null;
+  if (raw === null) {
+    return null;
+  }
   const flag = Flag.safeParse(raw);
-  if (flag.success) return flag.data ? 1 : 0;
-  if (isDateField(field)) return numericValue(field, raw);
+  if (flag.success) {
+    return flag.data ? 1 : 0;
+  }
+  if (isDateField(field)) {
+    return numericValue(field, raw);
+  }
   const num = FiniteNumber.safeParse(raw);
-  if (num.success) return num.data;
+  if (num.success) {
+    return num.data;
+  }
   return stringValue(raw);
 }
 
 function numericValue(field: FieldId, raw: PredicateValue): number | null {
   const num = FiniteNumber.safeParse(raw);
-  if (num.success) return num.data;
+  if (num.success) {
+    return num.data;
+  }
   const text = Text.safeParse(raw);
-  if (!text.success) return null;
+  if (!text.success) {
+    return null;
+  }
 
   if (!isDateField(field)) {
     const parsed = Number.parseFloat(text.data);
@@ -340,7 +422,9 @@ function numericValue(field: FieldId, raw: PredicateValue): number | null {
 
 function stringValue(raw: PredicateValue): string | null {
   const text = Text.safeParse(raw);
-  if (!text.success) return null;
+  if (!text.success) {
+    return null;
+  }
   const trimmed = text.data.trim();
   return trimmed ? trimmed.toLowerCase() : null;
 }

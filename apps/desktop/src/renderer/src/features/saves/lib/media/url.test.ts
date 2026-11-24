@@ -51,9 +51,12 @@ describe("buildPondUrl", () => {
   });
 });
 
+function widthOf(url: string) {
+  return new URL(url).searchParams.get("tw");
+}
+
 describe("thumbnail widths", () => {
   const original = "pond://01ABC/photo.png?v=abcdef123456";
-  const widthOf = (url: string) => new URL(url).searchParams.get("tw");
 
   afterEach(() => {
     vi.unstubAllGlobals();

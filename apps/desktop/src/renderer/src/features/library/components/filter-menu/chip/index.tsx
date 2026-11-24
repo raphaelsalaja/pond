@@ -14,7 +14,9 @@ export function FilterChip({ onOpen, ...props }: FilterChipProps) {
   return (
     <Chip.Filter
       onOpenChange={(open) => {
-        if (!open) return;
+        if (!open) {
+          return;
+        }
         libraryHeader.closePopover();
         onOpen?.();
       }}
@@ -28,7 +30,7 @@ export function FilterIcons({
   className,
   ...props
 }: Omit<ComponentProps<"span">, "children"> & {
-  icons: readonly { key: string; icon: ReactNode }[];
+  icons: ReadonlyArray<{ key: string; icon: ReactNode }>;
 }) {
   return (
     <span className={cn(styles.icons, className)} {...props}>

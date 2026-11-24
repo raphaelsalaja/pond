@@ -40,7 +40,7 @@ function openAllSaves(): void {
 
 function fileLocationItems(
   entries: ReadonlyArray<{ id: string; name: string }>,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     {
       label: "All",
@@ -66,7 +66,7 @@ export function buildOpenItems({
   openWithApps,
   hasHttpUrl,
   targetFile,
-}: SaveMenuContext): MenuItemSpec[] {
+}: SaveMenuContext): Array<MenuItemSpec> {
   const openWithItems = hasFiles
     ? openWithMenuItems(ids, fileIndex, openWithApps)
     : [];
@@ -85,7 +85,9 @@ export function buildOpenItems({
       hidden: batch || !targetFile || previewMediaType(targetFile) === null,
       onClick: () => {
         const index = resolveFileIndex(save, fileIndex);
-        if (index !== null) openReferenceWindow(save.id, index);
+        if (index !== null) {
+          openReferenceWindow(save.id, index);
+        }
       },
     },
     {
@@ -94,8 +96,11 @@ export function buildOpenItems({
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.open"),
       onClick: () => {
-        if (batch) void openDefaultAppForSelection(ids);
-        else void openDefaultApp(save, fileIndex);
+        if (batch) {
+          void openDefaultAppForSelection(ids);
+        } else {
+          void openDefaultApp(save, fileIndex);
+        }
       },
     },
     {
@@ -113,8 +118,11 @@ export function buildOpenItems({
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.reveal"),
       onClick: () => {
-        if (batch) void revealFilesForSelection(ids);
-        else void revealFile(save, fileIndex);
+        if (batch) {
+          void revealFilesForSelection(ids);
+        } else {
+          void revealFile(save, fileIndex);
+        }
       },
     },
     {

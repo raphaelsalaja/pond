@@ -43,17 +43,26 @@ export interface AutoImportWorkerOptions {
 
 async function digest(path: string): Promise<string> {
   const hash = createHash("sha256");
-  for await (const chunk of createReadStream(path)) hash.update(chunk);
+  for await (const chunk of createReadStream(path)) {
+    if (Buffer.isBuffer(chunk)) {
+      hash.update(chunk);
+    }
+  }
   return hash.digest("hex");
 }
 
-async function filesUnder(directory: string): Promise<string[]> {
-  const files: string[] = [];
+async function filesUnder(directory: string): Promise<Array<string>> {
+  const files: Array<string> = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.name.startsWith(".")) continue;
+    if (entry.name.startsWith(".")) {
+      continue;
+    }
     const path = join(directory, entry.name);
-    if (entry.isDirectory()) files.push(...(await filesUnder(path)));
-    else if (entry.isFile()) files.push(path);
+    if (entry.isDirectory()) {
+      files.push(...(await filesUnder(path)));
+    } else if (entry.isFile()) {
+      files.push(path);
+    }
   }
   return files;
 }
@@ -63,8 +72,9 @@ async function readCheckpoints(path: string): Promise<ImportCheckpoints> {
   try {
     raw = await readFile(path, "utf8");
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT")
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return {};
+    }
     throw error;
   }
   return Checkpoints.parse(JSON.parse(raw));
@@ -78,20 +88,29 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
   let active: Promise<void> = Promise.resolve();
 
   async function scan() {
-    if (stopped) return;
-    let paths: string[];
+    if (stopped) {
+      return;
+    }
+    let paths: Array<string>;
     try {
       paths = await filesUnder(options.directory);
     } catch {
       return;
     }
     const present = new Set(paths);
-    for (const path of observations.keys())
-      if (!present.has(path)) observations.delete(path);
+    for (const path of observations.keys()) {
+      if (!present.has(path)) {
+        observations.delete(path);
+      }
+    }
     for (const path of paths) {
-      if (stopped) return;
+      if (stopped) {
+        return;
+      }
       const details = await stat(path).catch(() => null);
-      if (!details?.isFile() || details.size === 0) continue;
+      if (!details?.isFile() || details.size === 0) {
+        continue;
+      }
       const previous = observations.get(path);
       if (
         !previous ||
@@ -112,8 +131,9 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
         previous.completed ||
         now() - previous.since < (options.stableMs ?? 1500) ||
         now() < previous.retryAt
-      )
+      ) {
         continue;
+      }
       let staging: string | undefined;
       try {
         const hash = await digest(path);
@@ -123,8 +143,9 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
             if (
               current.size === details.size &&
               current.mtimeMs === details.mtimeMs
-            )
+            ) {
               await options.trash(path);
+            }
           }
           previous.completed = true;
           continue;
@@ -141,11 +162,14 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
           observations.delete(path);
           continue;
         }
-        if (stopped) return;
+        if (stopped) {
+          return;
+        }
         const sourceId = `auto:${createHash("sha256").update(`${path}\0${hash}`).digest("hex")}`;
         const result = await options.ingest({ path: snapshot, sourceId });
-        if (!result.ok || !result.id)
+        if (!result.ok || !result.id) {
           throw new Error("File import did not complete.");
+        }
         const next = { ...checkpoints, [path]: hash };
         await mkdir(dirname(options.checkpointPath), { recursive: true });
         const temporary = `${options.checkpointPath}.tmp`;
@@ -158,8 +182,9 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
             current?.size === details.size &&
             current.mtimeMs === details.mtimeMs &&
             (await digest(path)) === hash
-          )
+          ) {
             await options.trash(path);
+          }
         }
         previous.failures = 0;
         previous.completed = true;
@@ -175,7 +200,9 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
           Math.min(60_000, 1000 * 2 ** Math.min(previous.failures - 1, 6));
         await options.report?.({ name: basename(path), ok: false });
       } finally {
-        if (staging) await rm(staging, { recursive: true, force: true });
+        if (staging) {
+          await rm(staging, { recursive: true, force: true });
+        }
       }
     }
   }

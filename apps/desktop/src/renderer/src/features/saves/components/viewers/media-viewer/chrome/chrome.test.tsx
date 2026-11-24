@@ -1,14 +1,15 @@
 import { PrefsSchema } from "@pond/schema";
 import { act, useLayoutEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { libraryViewContext } from "@/features/saves/state/view-context";
 import type { Save } from "@/features/saves/types";
-import { MediaViewer } from "..";
 import { ChromePortal, ViewerChrome } from ".";
+import { MediaViewer } from "..";
 
 const save: Save = {
   id: "chrome-save",
@@ -103,13 +104,19 @@ it("places image inspector controls in the integrated top toolbar", async () => 
   expect(topSlot?.parentElement?.parentElement).toBe(viewerRoot);
 });
 
-function Stage({ bars }: { bars: Record<string, Element | null | undefined> }) {
+function Stage({
+  onMeasure,
+}: {
+  onMeasure: (slot: string, bar: Element | null | undefined) => void;
+}) {
   useLayoutEffect(() => {
     for (const probe of host.querySelectorAll("[data-probe]")) {
-      bars[probe.getAttribute("data-probe") ?? ""] =
-        probe.closest("[data-slot]")?.parentElement;
+      onMeasure(
+        probe.getAttribute("data-probe") ?? "",
+        probe.closest("[data-slot]")?.parentElement,
+      );
     }
-  }, [bars]);
+  }, [onMeasure]);
   return (
     <>
       <ChromePortal slot="top">
@@ -128,7 +135,11 @@ it("mounts toolbars in the chrome bar before stage layout effects measure", asyn
   await act(async () => {
     root.render(
       <ViewerChrome>
-        <Stage bars={bars} />
+        <Stage
+          onMeasure={(slot, bar) => {
+            bars[slot] = bar;
+          }}
+        />
       </ViewerChrome>,
     );
   });
@@ -177,7 +188,9 @@ it("suppresses portal toolbars and direct HUD overlays when controls are disable
 
 it("leaves slide arrows out of a gallery's top bar", async () => {
   const first = save.files[0];
-  if (!first) throw new Error("Missing fixture file");
+  if (!first) {
+    throw new Error("Missing fixture file");
+  }
   const gallery: Save = {
     ...save,
     id: "gallery-save",

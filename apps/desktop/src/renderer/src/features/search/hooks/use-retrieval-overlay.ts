@@ -1,10 +1,8 @@
 import type { LibraryQueryRequest } from "@shared/library-query";
+import log from "electron-log/renderer";
 import { useEffect, useState } from "react";
-import {
-  useSemanticQuery,
-  useVisualProbe,
-  type VisualProbe,
-} from "@/features/library";
+import { useSemanticQuery, useVisualProbe } from "@/features/library";
+import type { VisualProbe } from "@/features/library";
 import { ensureSaves, pool } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { retrieveSaveIds } from "@/features/search/lib/retrieve-client";
@@ -33,19 +31,37 @@ export function useRetrievalOverlay(
   const visualProbe = useVisualProbe();
   const semantic = ai?.semanticSearch === true ? semanticQuery : null;
   const visual = ai?.enableClip === true ? visualProbe : null;
-  const [ranked, setRanked] = useState<Save[] | null>(null);
-  const [searching, setSearching] = useState(false);
+  const [ranked, setRanked] = useState<Array<Save> | null>(null);
+  const [searching, setSearching] = useState(() => Boolean(semantic || visual));
+  const [inputs, setInputs] = useState({
+    semantic,
+    visual,
+    saves,
+    libraryQuery,
+  });
   const _scopeKey = saves.map((save) => save.id).join("\n");
+
+  if (
+    inputs.semantic !== semantic ||
+    inputs.visual !== visual ||
+    inputs.saves !== saves ||
+    inputs.libraryQuery !== libraryQuery
+  ) {
+    setInputs({ semantic, visual, saves, libraryQuery });
+    if (semantic || visual) {
+      setSearching(true);
+    } else {
+      setRanked(null);
+      setSearching(false);
+    }
+  }
 
   useEffect(() => {
     if (!semantic && !visual) {
-      setRanked(null);
-      setSearching(false);
       return;
     }
     const scoped = saves.slice(0, SCOPE_CAP);
     const byId = new Map(scoped.map((save) => [save.id, save] as const));
-    setSearching(true);
     let cancelled = false;
     void (async () => {
       try {
@@ -56,9 +72,13 @@ export function useRetrievalOverlay(
           libraryQuery,
           limit: LIMIT,
         });
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         await ensureSaves(ids);
-        if (cancelled) return;
+        if (cancelled) {
+          return;
+        }
         setRanked(
           ids.flatMap((id) => {
             const save = libraryQuery ? pool.get(id) : byId.get(id);
@@ -66,9 +86,13 @@ export function useRetrievalOverlay(
           }),
         );
       } catch (error) {
-        if (!cancelled) console.warn("[pond overlay] retrieval failed", error);
+        if (!cancelled) {
+          log.warn("[pond overlay] retrieval failed", error);
+        }
       } finally {
-        if (!cancelled) setSearching(false);
+        if (!cancelled) {
+          setSearching(false);
+        }
       }
     })();
     return () => {
@@ -77,7 +101,11 @@ export function useRetrievalOverlay(
   }, [semantic, visual, saves, libraryQuery]);
 
   const settled = useStableById(ranked ?? saves);
-  if (!semantic && !visual) return saves;
-  if (searching && ranked == null) return saves;
+  if (!semantic && !visual) {
+    return saves;
+  }
+  if (searching && ranked === null) {
+    return saves;
+  }
   return settled;
 }

@@ -1,9 +1,11 @@
 import { DEFAULT_PREFS } from "@pond/schema";
 import { Tooltip } from "@pond/ui";
+import { isHTMLTag } from "@pond/ui/dom";
 import { ASSISTANT_MODELS } from "@shared/assistant";
 import { modelsForChooser } from "@shared/provider-models";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, type ComponentProps, type ReactNode, useState } from "react";
+import { act, useState } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ModelCatalogTable, ModelsSection } from "./index";
@@ -24,9 +26,9 @@ function CatalogHarness({
   onSave,
 }: {
   models: ComponentProps<typeof ModelCatalogTable>["models"];
-  onSave: (next: Record<string, string[]>) => void;
+  onSave: (next: Record<string, Array<string>>) => void;
 }) {
-  const [ids, setIds] = useState<Record<string, string[]>>({});
+  const [ids, setIds] = useState<Record<string, Array<string>>>({});
   return (
     <ModelCatalogTable
       models={models}
@@ -65,14 +67,17 @@ afterEach(() => {
 it("lists local models in the catalog without install suggestions", async () => {
   vi.stubGlobal("pond", {
     query: async (name: string) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
       if (name === "agent.keys") {
         return [
           { provider: "ollama", hasKey: true, enabled: true, masked: "local" },
         ];
       }
-      if (name === "agent.listModels")
+      if (name === "agent.listModels") {
         return { ok: true, models: [{ id: "gemma4:e2b", name: "gemma4:e2b" }] };
+      }
       throw new Error(`Unexpected query: ${name}`);
     },
   });
@@ -98,7 +103,7 @@ it("persists visibility, preserves it after rejection, and restores all models",
       name: "Alpha",
       provider: "openai" as const,
       providerName: "OpenAI",
-      contextWindow: 200000,
+      contextWindow: 200_000,
       maxOutputTokens: 8192,
       pricing: { input: "0.000002", output: "0.000008" },
     },
@@ -110,7 +115,7 @@ it("persists visibility, preserves it after rejection, and restores all models",
     },
   ];
   let reject = false;
-  let saved: Record<string, string[]> | undefined;
+  let saved: Record<string, Array<string>> | undefined;
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -121,7 +126,9 @@ it("persists visibility, preserves it after rejection, and restores all models",
           <CatalogHarness
             models={models}
             onSave={(next) => {
-              if (reject) throw new Error("Disk unavailable");
+              if (reject) {
+                throw new Error("Disk unavailable");
+              }
               saved = next;
             }}
           />,
@@ -131,7 +138,9 @@ it("persists visibility, preserves it after rejection, and restores all models",
     const alpha = host.querySelector<HTMLButtonElement>(
       '[aria-label="Show Alpha in model pickers"]',
     );
-    if (!alpha) throw new Error("Missing model checkbox");
+    if (!alpha) {
+      throw new Error("Missing model checkbox");
+    }
     expect(host.textContent).toContain("200K");
     expect(host.textContent).toContain("OpenAI");
     expect(host.textContent).not.toContain("Max Output");
@@ -283,7 +292,9 @@ it("collapses providers independently and reveals search matches", async () => {
     const anthropic = host.querySelector<HTMLButtonElement>(
       'h2 button[aria-label="Anthropic"]',
     );
-    if (!anthropic) throw new Error("Missing provider toggle");
+    if (!anthropic) {
+      throw new Error("Missing provider toggle");
+    }
     expect(anthropic.getAttribute("aria-expanded")).toBe("true");
     await act(async () => anthropic.click());
     expect(anthropic.getAttribute("aria-expanded")).toBe("false");
@@ -296,8 +307,9 @@ it("collapses providers independently and reveals search matches", async () => {
     expect(host.textContent).toContain("Claude Sonnet 4");
     await act(async () => anthropic.click());
     const search = host.querySelector('[aria-label="Search models"]');
-    if (!(search instanceof HTMLInputElement))
+    if (!isHTMLTag(search, "input")) {
       throw new Error("Missing search field");
+    }
     await act(async () => {
       search.focus();
       Object.getOwnPropertyDescriptor(
@@ -349,8 +361,12 @@ it("shows a retryable unavailable state when the catalog fails to load", async (
   let listCalls = 0;
   vi.stubGlobal("pond", {
     query: async (name: string) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
+      if (name === "agent.keys") {
+        return connectedProviders;
+      }
       if (name === "agent.listModels") {
         listCalls++;
         throw new Error("offline");
@@ -385,8 +401,12 @@ it("shows a retryable unavailable state when the catalog fails to load", async (
 it("keeps loaded models when some providers fail", async () => {
   vi.stubGlobal("pond", {
     query: async (name: string, params?: { provider?: string }) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
+      if (name === "agent.keys") {
+        return connectedProviders;
+      }
       if (name === "agent.listModels") {
         if (params?.provider === "openai") {
           return {
@@ -427,10 +447,16 @@ it("shows ready providers while another provider is still loading", async () => 
   const slow = Promise.withResolvers<{ ok: true; models: [] }>();
   vi.stubGlobal("pond", {
     query: async (name: string, params?: { provider?: string }) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
+      if (name === "agent.keys") {
+        return connectedProviders;
+      }
       if (name === "agent.listModels") {
-        if (params?.provider === "lmstudio") return slow.promise;
+        if (params?.provider === "lmstudio") {
+          return slow.promise;
+        }
         return {
           ok: true,
           models:
@@ -465,16 +491,24 @@ it("keeps cached models across page visits and refreshes stale data in place", a
   let offline = false;
   const refresh = Promise.withResolvers<{
     ok: true;
-    models: { id: string; name: string }[];
+    models: Array<{ id: string; name: string }>;
   }>();
   vi.stubGlobal("pond", {
     query: async (name: string, params?: { provider?: string }) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
+      if (name === "agent.keys") {
+        return connectedProviders;
+      }
       if (name === "agent.listModels") {
         calls++;
-        if (offline) throw new Error("offline");
-        if (waiting && params?.provider === "openai") return refresh.promise;
+        if (offline) {
+          throw new Error("offline");
+        }
+        if (waiting && params?.provider === "openai") {
+          return refresh.promise;
+        }
         return {
           ok: true,
           models:
@@ -548,8 +582,12 @@ it("shows an accessible loading placeholder only before the first catalog arrive
   const ready = Promise.withResolvers<void>();
   vi.stubGlobal("pond", {
     query: async (name: string) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
+      if (name === "agent.keys") {
+        return connectedProviders;
+      }
       if (name === "agent.listModels") {
         await ready.promise;
         return { ok: true, models: [] };
@@ -589,11 +627,15 @@ it("only requests connected enabled providers and hides disconnected cached mode
     { provider: "lmstudio", hasKey: false, enabled: true, masked: null },
     { provider: "gemini", hasKey: true, enabled: false, masked: null },
   ];
-  const requested: string[] = [];
+  const requested: Array<string> = [];
   vi.stubGlobal("pond", {
     query: async (name: string, params?: { provider?: string }) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connections;
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
+      if (name === "agent.keys") {
+        return connections;
+      }
       if (name === "agent.listModels" && params?.provider) {
         requested.push(params.provider);
         return { ok: true, models: [{ id: "live-model", name: "Live model" }] };

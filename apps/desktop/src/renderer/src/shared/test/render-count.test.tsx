@@ -1,5 +1,6 @@
-import { act, createContext, memo, use, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act, createContext, memo, use, useEffect, useState } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { recordRenders } from "./render-count";
 
@@ -45,7 +46,9 @@ let bump = () => {};
 
 function Parent() {
   const [value, setValue] = useState(0);
-  bump = () => setValue((current) => current + 1);
+  useEffect(() => {
+    bump = () => setValue((current) => current + 1);
+  }, []);
   return (
     <Value value={value}>
       <Leaf />

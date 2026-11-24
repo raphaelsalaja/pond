@@ -107,8 +107,7 @@
       [data-icon-start]:not([data-variant="link"], [data-variant="bare"])
     ):has(> svg:first-child, > .spinner:first-child + svg) {
     padding-inline-start: calc(
-      var(--button-padding) -
-      var(--button-icon-offset)
+      var(--button-padding) - var(--button-icon-offset)
     );
   }
 
@@ -184,10 +183,10 @@
   }
 
   &:where(
-      [data-variant="primary"],
-      [data-variant="accent"],
-      [data-variant="destructive"]
-    ) {
+    [data-variant="primary"],
+    [data-variant="accent"],
+    [data-variant="destructive"]
+  ) {
     background-color: var(--button-solid);
     background-image: var(--ds-gloss);
     box-shadow:

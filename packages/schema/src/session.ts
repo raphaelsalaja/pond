@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { SOURCES, type Source } from "./source-ids";
+import { SOURCES } from "./source-ids";
+import type { Source } from "./source-ids";
 
 interface RotatingSession {
   domain: string;
   /** Cookies the browser reissues each time it rotates the session. */
-  rotates: readonly string[];
+  rotates: ReadonlyArray<string>;
   /** Stays the same across rotations, so Pond can tell which Account holds the session. */
   sessionId: string;
 }

@@ -1,4 +1,5 @@
-import { type ExternalSource, sourceLabel } from "@pond/schema/sources";
+import { sourceLabel } from "@pond/schema/sources";
+import type { ExternalSource } from "@pond/schema/sources";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { useSourceCustomBinding } from "@/features/settings/components/sections/downloads";
 import { imageDownloadGroups } from "@/features/settings/lib/config-images";
@@ -7,7 +8,6 @@ import { group } from "@/features/settings/lib/engine-types";
 
 export function sourceDownloadsSection(source: ExternalSource): SectionConfig {
   const label = sourceLabel(source);
-  // biome-ignore lint/correctness/noComponentHookFactories: settings configs are built once at module load, so the hook identity is stable.
   const useCustom = () => useSourceCustomBinding(source);
   return {
     title: label,

@@ -34,32 +34,42 @@ export type ListKindInput =
   | string
   | null
   | undefined
-  | readonly ListKindInput[];
+  | ReadonlyArray<ListKindInput>;
 
 export function canonicalListKind(raw: string): ListKind | null {
   return ALIASES.get(raw.trim().toLowerCase()) ?? null;
 }
 
-function isKindList(value: ListKindInput): value is readonly ListKindInput[] {
+function isKindList(
+  value: ListKindInput,
+): value is ReadonlyArray<ListKindInput> {
   return Array.isArray(value);
 }
 
-export function normalizeListKinds(raw: ListKindInput): ListKind[] {
+export function normalizeListKinds(raw: ListKindInput): Array<ListKind> {
   const found = new Set<ListKind>();
   const visit = (value: ListKindInput): void => {
     if (isKindList(value)) {
-      for (const item of value) visit(item);
+      for (const item of value) {
+        visit(item);
+      }
       return;
     }
-    if (!value) return;
+    if (!value) {
+      return;
+    }
     const kind = canonicalListKind(value);
-    if (kind) found.add(kind);
+    if (kind) {
+      found.add(kind);
+    }
   };
   visit(raw);
   return LIST_KINDS.filter((kind) => found.has(kind));
 }
 
-export function mergeListKinds(...parts: ListKindInput[]): ListKind[] {
+export function mergeListKinds(
+  ...parts: Array<ListKindInput>
+): Array<ListKind> {
   return normalizeListKinds(parts);
 }
 
@@ -73,6 +83,8 @@ export function listKindsEqual(a: ListKindInput, b: ListKindInput): boolean {
 
 export function formatListKinds(raw: ListKindInput): string | null {
   const kinds = normalizeListKinds(raw);
-  if (kinds.length === 0) return null;
+  if (kinds.length === 0) {
+    return null;
+  }
   return kinds.map((kind) => LIST_KIND_LABELS[kind]).join(", ");
 }

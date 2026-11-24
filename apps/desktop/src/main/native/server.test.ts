@@ -30,12 +30,14 @@ async function readFrame(
   request: NativeMessage,
 ): Promise<JsonValue> {
   const socket = createConnection(path);
-  const chunks: Buffer[] = [];
+  const chunks: Array<Buffer> = [];
   const done = new Promise<JsonValue>((resolve, reject) => {
     socket.on("data", (chunk) => {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       const decoded = tryDecodeFrame(Buffer.concat(chunks));
-      if (decoded.status === "need-more") return;
+      if (decoded.status === "need-more") {
+        return;
+      }
       if (decoded.status === "invalid") {
         reject(new Error(decoded.error));
         return;
@@ -48,11 +50,25 @@ async function readFrame(
   return done;
 }
 
+/** A running Pond owns the per-user pipe; connecting proves it is taken. */
+function pipeInUse(path: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = createConnection(path);
+    socket.once("connect", () => {
+      socket.destroy();
+      resolve(true);
+    });
+    socket.once("error", () => resolve(false));
+  });
+}
+
 describe("native server", () => {
   let dir: string | null = null;
 
   afterEach(async () => {
-    if (dir) await rm(dir, { recursive: true, force: true });
+    if (dir) {
+      await rm(dir, { recursive: true, force: true });
+    }
     dir = null;
   });
 
@@ -82,11 +98,13 @@ describe("native server", () => {
     const { path } = endpoint;
     const server = await startNativeServer({ path, dispatch: vi.fn() });
     const client = createConnection(path);
-    await new Promise<void>((resolve) => client.once("connect", resolve));
+    await new Promise<void>((resolve) => {
+      client.once("connect", resolve);
+    });
     client.write(Buffer.from([1, 0]));
-    const clientClosed = new Promise<void>((resolve) =>
-      client.once("close", () => resolve()),
-    );
+    const clientClosed = new Promise<void>((resolve) => {
+      client.once("close", () => resolve());
+    });
     client.on("error", () => {});
 
     await stopNativeServer(server);
@@ -118,17 +136,6 @@ describe("native server", () => {
     "bin",
     "pond-native-host.exe",
   );
-  /** A running Pond owns the per-user pipe; connecting proves it is taken. */
-  function pipeInUse(path: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      const socket = createConnection(path);
-      socket.once("connect", () => {
-        socket.destroy();
-        resolve(true);
-      });
-      socket.once("error", () => resolve(false));
-    });
-  }
 
   it.skipIf(process.platform !== "win32" || !existsSync(windowsHost))(
     "matches the SID-qualified pipe used by the Windows native host",
@@ -208,7 +215,7 @@ async function runNativeHost(
   request: NativeMessage,
 ): Promise<JsonValue> {
   const child = spawn(executable, [], { stdio: ["pipe", "pipe", "ignore"] });
-  const chunks: Buffer[] = [];
+  const chunks: Array<Buffer> = [];
   child.stdout.on("data", (chunk) => {
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   });
@@ -233,12 +240,14 @@ async function runNativeHost(
 
 async function readFrameRaw(path: string, bytes: Buffer): Promise<JsonValue> {
   const socket = createConnection(path);
-  const chunks: Buffer[] = [];
+  const chunks: Array<Buffer> = [];
   const done = new Promise<JsonValue>((resolve, reject) => {
     socket.on("data", (chunk) => {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       const decoded = tryDecodeFrame(Buffer.concat(chunks));
-      if (decoded.status === "need-more") return;
+      if (decoded.status === "need-more") {
+        return;
+      }
       if (decoded.status === "invalid") {
         reject(new Error(decoded.error));
         return;

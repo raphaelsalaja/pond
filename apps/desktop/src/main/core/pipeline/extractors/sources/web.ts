@@ -47,7 +47,9 @@ function resolveHttpUrl(
   base: string,
 ): string | undefined {
   const picked = pickString(src);
-  if (!picked) return undefined;
+  if (!picked) {
+    return undefined;
+  }
   try {
     const resolved = new URL(picked, base);
     return resolved.protocol === "http:" || resolved.protocol === "https:"
@@ -89,7 +91,9 @@ const jsonLdProductImage: metascraper.Rules = {
       for (const product of productsFromJsonLd($(script).text())) {
         for (const src of [product.image].flat()) {
           const resolved = resolveHttpUrl(src, url);
-          if (resolved) return resolved;
+          if (resolved) {
+            return resolved;
+          }
         }
       }
     }
@@ -125,25 +129,32 @@ const pageMarkupProduct: metascraper.Rules = {
   },
 };
 
-function productsFromJsonLd(text: string): z.infer<typeof JsonLdProduct>[] {
-  const parsed = z.json().safeParse(safeJsonParse(text));
-  if (!parsed.success) return [];
-  const roots = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
+function productsFromJsonLd(
+  text: string,
+): Array<z.infer<typeof JsonLdProduct>> {
+  const data = parseJson(text);
+  if (data === undefined) {
+    return [];
+  }
+  const roots = Array.isArray(data) ? data : [data];
   const nodes = roots.flatMap((root) => {
     const graph = JsonLdGraph.safeParse(root);
     return graph.success ? [root, ...graph.data["@graph"]] : [root];
   });
   return nodes.flatMap((node) => {
     const product = JsonLdProduct.safeParse(node);
-    if (!product.success) return [];
+    if (!product.success) {
+      return [];
+    }
     const types = [product.data["@type"]].flat();
     return types.some((type) => PRODUCT_TYPES.has(type)) ? [product.data] : [];
   });
 }
 
-function safeJsonParse(text: string) {
+function parseJson(text: string) {
   try {
-    return JSON.parse(text);
+    const parsed = z.json().safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : undefined;
   } catch {
     return undefined;
   }
@@ -176,7 +187,7 @@ const defaultDependencies: WebPageExtractorDependencies = {
 export class WebPageExtractor implements Extractor {
   readonly id = "web-page";
   readonly source = "web" as const;
-  readonly validUrl: readonly RegExp[] = [];
+  readonly validUrl: ReadonlyArray<RegExp> = [];
   readonly cookieDomain = null;
 
   constructor(
@@ -204,7 +215,7 @@ export class WebPageExtractor implements Extractor {
     const coverUrl = search
       ? undefined
       : (pickString(meta.image) ?? faviconUrl);
-    const media: CaptureMedia[] = coverUrl
+    const media: Array<CaptureMedia> = coverUrl
       ? [{ url: coverUrl, type: "image" }]
       : [];
 
@@ -215,10 +226,18 @@ export class WebPageExtractor implements Extractor {
     const publisher = search?.engine ?? pickString(meta.publisher);
 
     const extras: WebExtras = {};
-    if (publisher) extras.publisher = publisher;
-    if (faviconUrl) extras.faviconUrl = faviconUrl;
-    if (meta.product === PRODUCT_FLAG) extras.product = true;
-    if (search) extras.search = search;
+    if (publisher) {
+      extras.publisher = publisher;
+    }
+    if (faviconUrl) {
+      extras.faviconUrl = faviconUrl;
+    }
+    if (meta.product === PRODUCT_FLAG) {
+      extras.product = true;
+    }
+    if (search) {
+      extras.search = search;
+    }
 
     const title = search?.query ?? pickString(meta.title);
     /** A results page's description is boilerplate, and one would open the Save as text instead of the page. */
@@ -229,11 +248,21 @@ export class WebPageExtractor implements Extractor {
       url: canonical,
       media,
     };
-    if (title) capture.title = title;
-    if (description) capture.description = description;
-    if (author) capture.author = author;
-    if (publishedAt) capture.publishedAt = publishedAt;
-    if (Object.keys(extras).length > 0) capture.extras = extras;
+    if (title) {
+      capture.title = title;
+    }
+    if (description) {
+      capture.description = description;
+    }
+    if (author) {
+      capture.author = author;
+    }
+    if (publishedAt) {
+      capture.publishedAt = publishedAt;
+    }
+    if (Object.keys(extras).length > 0) {
+      capture.extras = extras;
+    }
     return capture;
   }
 }
@@ -241,10 +270,12 @@ export class WebPageExtractor implements Extractor {
 async function renderHtml(url: string, signal?: AbortSignal): Promise<string> {
   const rendered = await renderPageHtml(url, signal);
   if (!rendered.ok) {
-    if (rendered.reason === "navigation")
+    if (rendered.reason === "navigation") {
       throw new TransientError("web render: navigation failed");
-    if (rendered.reason === "read-timeout")
+    }
+    if (rendered.reason === "read-timeout") {
       throw new TransientError("web render: read timed out");
+    }
     throw new TerminalError("web render returned empty document");
   }
   assertPageStatus(rendered.status, "web render");
@@ -252,7 +283,9 @@ async function renderHtml(url: string, signal?: AbortSignal): Promise<string> {
 }
 
 function assertPageStatus(status: number, label: string): void {
-  if (status < 400) return;
+  if (status < 400) {
+    return;
+  }
   if (status >= 500 || status === 429) {
     throw new TransientError(`${label} ${status}`);
   }
@@ -260,7 +293,9 @@ function assertPageStatus(status: number, label: string): void {
 }
 
 function pickString(value: string | null | undefined): string | undefined {
-  if (value == null) return undefined;
+  if (value === null || value === undefined) {
+    return undefined;
+  }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 }

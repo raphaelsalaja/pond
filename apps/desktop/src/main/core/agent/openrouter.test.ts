@@ -2,6 +2,12 @@ import type { LanguageModel } from "ai";
 import { describe, expect, it } from "vitest";
 import { createOpenRouterModel } from "./openrouter";
 
+function isModelInstance(
+  model: LanguageModel,
+): model is Exclude<LanguageModel, string> {
+  return typeof model !== "string";
+}
+
 describe("OpenRouter routing", () => {
   it("uses chat completions with current attribution headers", async () => {
     const requests: Array<{ url: string; headers: Headers }> = [];
@@ -19,10 +25,11 @@ describe("OpenRouter routing", () => {
         });
       },
     );
-    /** SAFETY: this factory constructs an SDK model instance and never returns a registry model ID. */
-    const runnableModel = model as Exclude<LanguageModel, string>;
+    if (!isModelInstance(model)) {
+      throw new Error("Expected an SDK model instance");
+    }
     await expect(
-      runnableModel.doGenerate({
+      model.doGenerate({
         prompt: [{ role: "user", content: [{ type: "text", text: "Hello" }] }],
       }),
     ).rejects.toThrow();

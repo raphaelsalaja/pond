@@ -10,8 +10,12 @@ export function shouldStayResident(input: {
   closeToTray: boolean;
   hasTray: boolean;
 }): boolean {
-  if (input.platform === "darwin") return true;
-  if (input.platform === "win32") return input.closeToTray && input.hasTray;
+  if (input.platform === "darwin") {
+    return true;
+  }
+  if (input.platform === "win32") {
+    return input.closeToTray && input.hasTray;
+  }
   return input.hasTray;
 }
 
@@ -30,9 +34,13 @@ export function protocolRegistration(input: {
   sandboxed: boolean;
   defaultApp: boolean;
 }): "none" | "development" | "packaged" {
-  if (input.sandboxed) return "none";
+  if (input.sandboxed) {
+    return "none";
+  }
   if (input.platform === "win32") {
-    if (!input.hasInstanceLock || input.defaultApp) return "none";
+    if (!input.hasInstanceLock || input.defaultApp) {
+      return "none";
+    }
     return "packaged";
   }
   return input.defaultApp ? "development" : "packaged";
@@ -47,7 +55,9 @@ export function resolveLaunchHidden(input: {
   requested: boolean;
   trayEnabled: boolean;
 }): boolean {
-  if (input.platform === "darwin") return input.requested;
+  if (input.platform === "darwin") {
+    return input.requested;
+  }
   return input.requested && input.trayEnabled;
 }
 
@@ -56,6 +66,6 @@ export function resolveLaunchHidden(input: {
  * The log console transport prints to stdout and must be off from the first
  * log line, not only once the server starts.
  */
-export function consoleLoggingEnabled(argv: readonly string[]): boolean {
+export function consoleLoggingEnabled(argv: ReadonlyArray<string>): boolean {
   return !argv.includes("--mcp");
 }

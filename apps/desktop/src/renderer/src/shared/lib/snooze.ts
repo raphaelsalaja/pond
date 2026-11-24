@@ -18,24 +18,26 @@ function morning(from: Date, days: number): number {
 }
 
 /** Days snooze to a morning so a Save comes back at the start of the day, not at the hour it was snoozed. */
-export function snoozeOptions(now = new Date()): SnoozeOption[] {
-  const options: SnoozeOption[] = [];
+export function snoozeOptions(now = new Date()): Array<SnoozeOption> {
+  const options: Array<SnoozeOption> = [];
   const later = new Date(now);
   later.setHours(later.getHours() + LATER_TODAY_HOURS, 0, 0, 0);
-  if (later.getDate() === now.getDate())
+  if (later.getDate() === now.getDate()) {
     options.push({
       id: "later-today",
       label: "Later Today",
       until: later.getTime(),
     });
+  }
   options.push({ id: "tomorrow", label: "Tomorrow", until: morning(now, 1) });
   const weekday = now.getDay();
-  if (weekday >= 1 && weekday <= 4)
+  if (weekday >= 1 && weekday <= 4) {
     options.push({
       id: "weekend",
       label: "This Weekend",
       until: morning(now, 6 - weekday),
     });
+  }
   options.push({
     id: "next-week",
     label: "Next Week",
@@ -52,7 +54,9 @@ export function snoozeUntil(
 ): number | null {
   const date = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
   const clock = /^(\d{2}):(\d{2})$/.exec(time);
-  if (!date || !clock) return null;
+  if (!date || !clock) {
+    return null;
+  }
   const until = new Date(
     Number(date[1]),
     Number(date[2]) - 1,

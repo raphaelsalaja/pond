@@ -1,4 +1,5 @@
-import { type Source, sourceLabel } from "@pond/schema";
+import { sourceLabel } from "@pond/schema";
+import type { Source } from "@pond/schema";
 
 export interface PromptSave {
   source: Source;
@@ -7,7 +8,7 @@ export interface PromptSave {
   author: string | null;
   description: string | null;
   notes: string | null;
-  tags: readonly string[];
+  tags: ReadonlyArray<string>;
   caption?: string | null;
   ocrText?: string | null;
   transcript?: string | null;
@@ -16,7 +17,7 @@ export interface PromptSave {
 export interface PromptEntry {
   save: PromptSave;
   link: string;
-  files: readonly string[];
+  files: ReadonlyArray<string>;
 }
 
 function section(heading: string, body: string | null | undefined) {
@@ -42,12 +43,10 @@ function savePrompt({ save, link, files }: PromptEntry): string {
       section("Caption", save.caption),
       section("Text in Image", save.ocrText),
       section("Transcript", save.transcript),
-    ]
-      .filter((block) => block.length)
-      .map((block) => block.join("\n")),
+    ].flatMap((block) => (block.length ? [block.join("\n")] : [])),
   ].join("\n\n");
 }
 
-export function savesPrompt(entries: readonly PromptEntry[]): string {
+export function savesPrompt(entries: ReadonlyArray<PromptEntry>): string {
   return entries.map(savePrompt).join("\n\n");
 }

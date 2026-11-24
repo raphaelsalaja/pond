@@ -81,36 +81,47 @@ export async function listCosmosWatch(
   const lease = await leaseWindow("cosmos", { partition: PUBLIC_PARTITION });
   try {
     const navOk = await navigateWithTimeout(lease.win, target, NAV_TIMEOUT_MS);
-    if (!navOk) return { ok: false, reason: "timeout" };
+    if (!navOk) {
+      return { ok: false, reason: "timeout" };
+    }
     const landed = new URL(lease.win.webContents.getURL());
     const landedFirst = landed.pathname.split("/").filter(Boolean)[0] ?? "";
     const wantedFirst = handle.split("/")[0] ?? handle;
     if (landedFirst.toLowerCase() !== wantedFirst.toLowerCase()) {
       return { ok: false, reason: "not_found" };
     }
-    const raw = await Promise.race([
+    const raw = await Promise.race<unknown>([
       lease.win.webContents.executeJavaScript(COLLECTOR, true),
-      new Promise<string>((resolve) =>
-        setTimeout(() => resolve("__pond_watch_timeout__"), COLLECT_TIMEOUT_MS),
-      ),
+      new Promise<string>((resolve) => {
+        setTimeout(() => resolve("__pond_watch_timeout__"), COLLECT_TIMEOUT_MS);
+      }),
     ]);
-    if (raw === "__pond_watch_timeout__")
+    if (raw === "__pond_watch_timeout__") {
       return { ok: false, reason: "timeout" };
+    }
     const page = CosmosPageSchema.safeParse(raw);
-    if (!page.success) return { ok: false, reason: "unknown" };
-    if (page.data.authWall) return { ok: false, reason: "auth_required" };
-    if (page.data.notFound) return { ok: false, reason: "not_found" };
-    const entries: WatchEntry[] = [];
+    if (!page.success) {
+      return { ok: false, reason: "unknown" };
+    }
+    if (page.data.authWall) {
+      return { ok: false, reason: "auth_required" };
+    }
+    if (page.data.notFound) {
+      return { ok: false, reason: "not_found" };
+    }
+    const entries: Array<WatchEntry> = [];
     const seen = new Set<string>();
     for (const link of page.data.links) {
       const sourceId = sourceIdFromUrl("cosmos", link);
-      if (!sourceId || seen.has(sourceId)) continue;
+      if (!sourceId || seen.has(sourceId)) {
+        continue;
+      }
       seen.add(sourceId);
       entries.push({ url: link, sourceId });
     }
     return { ok: true, entries };
-  } catch (err) {
-    log.warn("[pond watch:cosmos]", handle, "unexpected error", err);
+  } catch (error) {
+    log.warn("[pond watch:cosmos]", handle, "unexpected error", error);
     return { ok: false, reason: "unknown" };
   } finally {
     lease.release();

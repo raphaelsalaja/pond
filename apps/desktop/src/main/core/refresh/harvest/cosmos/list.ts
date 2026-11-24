@@ -9,7 +9,13 @@ interface JsonRecord {
   [key: string]: JsonValue;
 }
 
-type JsonValue = string | number | boolean | null | JsonValue[] | JsonRecord;
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<JsonValue>
+  | JsonRecord;
 
 export const COSMOS_LIST_URL = "https://www.cosmos.so/library";
 
@@ -52,13 +58,15 @@ async function inPageCosmosList(
     description?: string;
     author?: string;
     mediaUrl?: string;
-    mediaUrls?: CosmosEntryMedia[];
+    mediaUrls?: Array<CosmosEntryMedia>;
     mediaType?: MediaType;
     savedAt?: string;
   }
 
-  const isRecord = (value: JsonValue | undefined): value is JsonRecord =>
+  const isRecord = (value: unknown): value is JsonRecord =>
     validators.object.safeParse(value).success;
+  const isWalkable = (value: unknown): value is JsonValue =>
+    Array.isArray(value) || isRecord(value);
   const asText = (value: JsonValue | undefined): string | undefined =>
     validators.text.safeParse(value).data;
   const asNumber = (value: JsonValue | undefined): number | undefined =>
@@ -70,8 +78,12 @@ async function inPageCosmosList(
   const upgradeCosmosImage = (src: string): string => {
     try {
       const u = new URL(src, location.origin);
-      if (!/(^|\.)cosmos\.so$/i.test(u.hostname)) return src;
-      if (!u.hostname.startsWith("cdn.")) return src;
+      if (!/(^|\.)cosmos\.so$/i.test(u.hostname)) {
+        return src;
+      }
+      if (!u.hostname.startsWith("cdn.")) {
+        return src;
+      }
       for (const key of [
         "w",
         "h",
@@ -93,11 +105,13 @@ async function inPageCosmosList(
 
   const pickString = (
     record: JsonRecord,
-    keys: string[],
+    keys: Array<string>,
   ): string | undefined => {
     for (const k of keys) {
       const v = asText(record[k]);
-      if (v !== undefined && v.trim().length > 0) return v.trim();
+      if (v !== undefined && v.trim().length > 0) {
+        return v.trim();
+      }
     }
     return undefined;
   };
@@ -115,7 +129,9 @@ async function inPageCosmosList(
         return String(numeric);
       }
       const text = asText(c);
-      if (text !== undefined && /^\d+$/.test(text) && text !== "0") return text;
+      if (text !== undefined && /^\d+$/.test(text) && text !== "0") {
+        return text;
+      }
     }
     return null;
   };
@@ -123,8 +139,12 @@ async function inPageCosmosList(
   const detectMediaTypeFromUrl = (
     url: string,
   ): "image" | "video" | undefined => {
-    if (/\.(mp4|webm|mov|m3u8)(\?|$)/i.test(url)) return "video";
-    if (/\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(url)) return "image";
+    if (/\.(mp4|webm|mov|m3u8)(\?|$)/i.test(url)) {
+      return "video";
+    }
+    if (/\.(jpe?g|png|gif|webp|avif)(\?|$)/i.test(url)) {
+      return "image";
+    }
     return undefined;
   };
 
@@ -181,9 +201,13 @@ async function inPageCosmosList(
 
   const authorFromTile = (tile: JsonRecord): TileAuthor => {
     const source = tile.source;
-    if (!isRecord(source)) return {};
+    if (!isRecord(source)) {
+      return {};
+    }
     const author = source.author;
-    if (!isRecord(author)) return {};
+    if (!isRecord(author)) {
+      return {};
+    }
     const username = pickString(author, ["username"]);
     const fullName = pickString(author, ["fullName"]);
     const profileUrl = pickString(author, ["profileUrl"]);
@@ -194,29 +218,41 @@ async function inPageCosmosList(
         : `@${username}`
       : fullName;
     const out: TileAuthor = {};
-    if (name) out.author = name;
-    if (profileUrl) out.authorUrl = profileUrl;
-    if (avatarUrl) out.avatarUrl = avatarUrl;
+    if (name) {
+      out.author = name;
+    }
+    if (profileUrl) {
+      out.authorUrl = profileUrl;
+    }
+    if (avatarUrl) {
+      out.avatarUrl = avatarUrl;
+    }
     return out;
   };
 
   const titleFromTile = (tile: JsonRecord): string | undefined => {
     const websiteTitle = pickString(tile, ["websiteTitle"]);
-    if (websiteTitle) return websiteTitle;
+    if (websiteTitle) {
+      return websiteTitle;
+    }
     const cap = isRecord(tile.generatedCaption)
       ? tile.generatedCaption
       : undefined;
     const capText = cap ? pickString(cap, ["text"]) : undefined;
     if (capText) {
-      const cleaned = capText.replace(/<\/?n>/g, "").trim();
-      if (cleaned.length > 0) return cleaned;
+      const cleaned = capText.replaceAll(/<\/?n>/g, "").trim();
+      if (cleaned.length > 0) {
+        return cleaned;
+      }
     }
     return undefined;
   };
 
   const descriptionFromTile = (tile: JsonRecord): string | undefined => {
     const websiteDescription = pickString(tile, ["websiteDescription"]);
-    if (!websiteDescription) return undefined;
+    if (!websiteDescription) {
+      return undefined;
+    }
     return websiteDescription.length > 4000
       ? `${websiteDescription.slice(0, 4000)}…`
       : websiteDescription;
@@ -232,7 +268,9 @@ async function inPageCosmosList(
       return null;
     }
     const id = readElementId(tile);
-    if (!id) return null;
+    if (!id) {
+      return null;
+    }
 
     const shareUrl = asText(tile.shareUrl) || `https://www.cosmos.so/e/${id}`;
 
@@ -245,9 +283,15 @@ async function inPageCosmosList(
       sourceId: id,
       url: shareUrl,
     };
-    if (title) entry.title = title;
-    if (description) entry.description = description;
-    if (author.author) entry.author = author.author;
+    if (title) {
+      entry.title = title;
+    }
+    if (description) {
+      entry.description = description;
+    }
+    if (author.author) {
+      entry.author = author.author;
+    }
     if (media.mediaUrl) {
       const url =
         media.type === "image"
@@ -258,14 +302,18 @@ async function inPageCosmosList(
         : undefined;
       entry.mediaUrl = url;
       const mediaEntry: CosmosEntryMedia = { url, type: media.type };
-      if (poster) mediaEntry.poster = poster;
+      if (poster) {
+        mediaEntry.poster = poster;
+      }
       entry.mediaUrls = [mediaEntry];
       entry.mediaType = media.type;
     } else {
       entry.mediaType = "link";
     }
     const createdAt = asText(tile.createdAt);
-    if (createdAt !== undefined) entry.savedAt = createdAt;
+    if (createdAt !== undefined) {
+      entry.savedAt = createdAt;
+    }
     return entry;
   };
 
@@ -275,17 +323,23 @@ async function inPageCosmosList(
 
   const walk = (root: JsonValue): IngestResult => {
     let added = 0;
-    const stack: JsonValue[] = [root];
+    const stack: Array<JsonValue> = [root];
     let safety = 250_000;
     while (stack.length > 0 && safety > 0) {
       safety -= 1;
       const node = stack.pop();
-      if (node === null || node === undefined) continue;
-      if (Array.isArray(node)) {
-        for (const child of node) stack.push(child);
+      if (node === null || node === undefined) {
         continue;
       }
-      if (!isRecord(node)) continue;
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          stack.push(child);
+        }
+        continue;
+      }
+      if (!isRecord(node)) {
+        continue;
+      }
       const entry = entryFromTile(node);
       if (entry && !collected.has(entry.sourceId)) {
         collected.set(entry.sourceId, entry);
@@ -294,8 +348,9 @@ async function inPageCosmosList(
       }
       for (const key of Object.keys(node)) {
         const child = node[key];
-        if (child !== undefined && (Array.isArray(child) || isRecord(child)))
+        if (child !== undefined && (Array.isArray(child) || isRecord(child))) {
           stack.push(child);
+        }
       }
     }
     return { added };
@@ -305,14 +360,17 @@ async function inPageCosmosList(
     cache?: { extract?: () => JsonValue };
   }
 
+  const isApolloClient = (value: unknown): value is ApolloDevtoolsClient =>
+    isRecord(value);
+
   const readApolloSSR = (): JsonValue | null => {
     try {
       const sym = Symbol.for("ApolloSSRDataTransport");
-      const transport: JsonValue | undefined = Object.getOwnPropertyDescriptor(
+      const transport: unknown = Object.getOwnPropertyDescriptor(
         globalThis,
         sym,
       )?.value;
-      return transport ?? null;
+      return isWalkable(transport) ? transport : null;
     } catch {
       return null;
     }
@@ -320,9 +378,13 @@ async function inPageCosmosList(
 
   const readApolloCache = (): JsonValue | null => {
     try {
-      const ac: ApolloDevtoolsClient | undefined =
-        Object.getOwnPropertyDescriptor(globalThis, "__APOLLO_CLIENT__")?.value;
-      const extracted = ac?.cache?.extract?.();
+      const client: unknown = Object.getOwnPropertyDescriptor(
+        globalThis,
+        "__APOLLO_CLIENT__",
+      )?.value;
+      const extracted = isApolloClient(client)
+        ? client.cache?.extract?.()
+        : undefined;
       return extracted ?? null;
     } catch {
       return null;
@@ -339,9 +401,15 @@ async function inPageCosmosList(
       try {
         const u = new URL(a.href, location.origin);
         id = u.pathname.match(/\/e\/(\d+)/)?.[1] ?? null;
-      } catch {}
-      if (!id) continue;
-      if (collected.has(id)) continue;
+      } catch {
+        /** A malformed link leaves `id` null and is skipped. */
+      }
+      if (!id) {
+        continue;
+      }
+      if (collected.has(id)) {
+        continue;
+      }
 
       const card =
         a.closest("article, li, [class*='Tile'], [class*='tile']") ?? a;
@@ -358,7 +426,9 @@ async function inPageCosmosList(
         sourceId: id,
         url: `https://www.cosmos.so/e/${id}`,
       };
-      if (title) entry.title = title;
+      if (title) {
+        entry.title = title;
+      }
       if (mediaUrl) {
         entry.mediaUrl = mediaUrl;
         entry.mediaUrls = [{ url: mediaUrl, type: "image" }];
@@ -374,16 +444,22 @@ async function inPageCosmosList(
 
   const ingestAll = (): void => {
     const ssr = readApolloSSR();
-    if (ssr) walk(ssr);
+    if (ssr) {
+      walk(ssr);
+    }
     const cache = readApolloCache();
-    if (cache) walk(cache);
+    if (cache) {
+      walk(cache);
+    }
     collectFromDom();
   };
 
-  const freshEntries = (): CosmosEntry[] => {
-    const out: CosmosEntry[] = [];
+  const freshEntries = (): Array<CosmosEntry> => {
+    const out: Array<CosmosEntry> = [];
     for (const [id, e] of collected) {
-      if (known.has(id)) continue;
+      if (known.has(id)) {
+        continue;
+      }
       out.push(e);
     }
     return out;
@@ -409,7 +485,11 @@ async function inPageCosmosList(
     stats.phase = phase;
     stats.collected = collected.size;
     let fresh = 0;
-    for (const id of collected.keys()) if (!known.has(id)) fresh += 1;
+    for (const id of collected.keys()) {
+      if (!known.has(id)) {
+        fresh += 1;
+      }
+    }
     stats.fresh = fresh;
     stats.updatedAt = Date.now();
   };
@@ -424,14 +504,20 @@ async function inPageCosmosList(
       break;
     }
     publishStats("hydrate");
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   ingestAll();
   publishStats("scroll");
 
   const countFresh = (): number => {
     let n = 0;
-    for (const id of collected.keys()) if (!known.has(id)) n += 1;
+    for (const id of collected.keys()) {
+      if (!known.has(id)) {
+        n += 1;
+      }
+    }
     return n;
   };
 
@@ -448,7 +534,9 @@ async function inPageCosmosList(
       top: window.innerHeight * 0.9,
       behavior: "instant",
     });
-    await new Promise((r) => setTimeout(r, 700 + Math.random() * 300));
+    await new Promise((r) => {
+      setTimeout(r, 700 + Math.random() * 300);
+    });
     stats.scrolls += 1;
     ingestAll();
     publishStats("scroll");

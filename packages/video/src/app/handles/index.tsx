@@ -2,7 +2,7 @@ import styles from "./styles.module.css";
 
 export type Side = "top" | "right" | "bottom" | "left";
 
-const SIDES: Side[] = ["top", "right", "bottom", "left"];
+const SIDES: Array<Side> = ["top", "right", "bottom", "left"];
 
 interface HandlesProps {
   opacity: number;
@@ -12,7 +12,9 @@ interface HandlesProps {
 
 /** The four connection dots a canvas item shows on hover, floating just off each edge. */
 export function Handles({ opacity, active }: HandlesProps) {
-  if (opacity <= 0.002) return null;
+  if (opacity <= 0.002) {
+    return null;
+  }
   return SIDES.map((side) => (
     <span
       key={side}

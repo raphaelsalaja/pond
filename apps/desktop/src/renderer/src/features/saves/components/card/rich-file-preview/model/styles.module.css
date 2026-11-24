@@ -35,7 +35,11 @@
   justify-items: center;
   background:
     linear-gradient(var(--ds-media-surface-primary) 1px, transparent 1px),
-    linear-gradient(90deg, var(--ds-media-surface-primary) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      var(--ds-media-surface-primary) 1px,
+      transparent 1px
+    ),
     var(--model-stage);
   background-size: 22px 22px;
 }

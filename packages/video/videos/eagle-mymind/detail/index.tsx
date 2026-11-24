@@ -16,7 +16,7 @@ interface Property {
   value: ReactNode;
 }
 
-const PROPERTIES: Property[] = [
+const PROPERTIES: Array<Property> = [
   {
     label: "Folder",
     value: (
@@ -84,7 +84,9 @@ const PROPERTIES: Property[] = [
 export function Detail({ t }: { t: number }) {
   const enter = start("detail") + 150;
   const exit = end("detail") - 300;
-  if (t < enter - 50 || t > exit + 400) return null;
+  if (t < enter - 50 || t > exit + 400) {
+    return null;
+  }
   const e = envelope(t, enter, exit, { duration: 800, rise: 40 });
   return (
     <div className={styles.panel} style={styled(e)}>

@@ -35,7 +35,7 @@ function Root({
   );
 }
 
-interface MediaProps extends React.ComponentPropsWithoutRef<"div"> {}
+type MediaProps = React.ComponentPropsWithoutRef<"div">;
 
 function Media({ className, ...props }: MediaProps) {
   return (
@@ -47,19 +47,19 @@ function Media({ className, ...props }: MediaProps) {
   );
 }
 
-interface TitleProps extends React.ComponentPropsWithoutRef<"h2"> {}
+type TitleProps = React.ComponentPropsWithoutRef<"h2">;
 
 function Title({ className, ...props }: TitleProps) {
   return <h2 className={cn(styles.title, className)} {...props} />;
 }
 
-interface DescriptionProps extends React.ComponentPropsWithoutRef<"p"> {}
+type DescriptionProps = React.ComponentPropsWithoutRef<"p">;
 
 function Description({ className, ...props }: DescriptionProps) {
   return <p className={cn(styles.description, className)} {...props} />;
 }
 
-interface ActionProps extends React.ComponentPropsWithoutRef<"div"> {}
+type ActionProps = React.ComponentPropsWithoutRef<"div">;
 
 function Action({ className, ...props }: ActionProps) {
   return <div className={cn(styles.action, className)} {...props} />;

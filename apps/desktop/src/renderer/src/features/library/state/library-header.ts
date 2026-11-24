@@ -31,7 +31,9 @@ export const libraryHeader = {
   },
   closePopover(popover?: ViewPopover): void {
     store.setState((s) => {
-      if (s.popover === null || (popover && s.popover !== popover)) return s;
+      if (s.popover === null || (popover && s.popover !== popover)) {
+        return s;
+      }
       return { ...s, popover: null };
     });
   },

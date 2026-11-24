@@ -7,14 +7,16 @@ import { splitsOnImport } from "./split-save-plan";
 /** Splits before the save turns complete, so enrichment never scores the whole post first. */
 export async function splitNewPost(save: Save): Promise<Save | null> {
   const prefs = await getImageDownloadPrefs(save.source);
-  if (!splitsOnImport(save, prefs)) return save;
+  if (!splitsOnImport(save, prefs)) {
+    return save;
+  }
   const { splitSave } = await import("./split-save");
   try {
     await splitSave(save.id, "system");
-  } catch (err) {
+  } catch (error) {
     log.warn("[pond pipeline:finalize] split failed, keeping one save", {
       saveId: save.id,
-      err,
+      error,
     });
   }
   return readSave(save.id);

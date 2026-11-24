@@ -10,7 +10,9 @@ export function useFirstFrame(src: string): boolean {
   const [frameSource, setFrameSource] = useState<string | null>(null);
   useEffect(() => {
     const video = meta.videoRef.current;
-    if (!video) return;
+    if (!video) {
+      return;
+    }
     const reveal = () => setFrameSource(src);
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       reveal();

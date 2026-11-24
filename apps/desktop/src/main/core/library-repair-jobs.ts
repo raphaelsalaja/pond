@@ -16,7 +16,7 @@ const MAX_RETAINED_JOBS = 100;
 
 export function startLibraryRepairPreview(
   kind: LibraryRepairKind,
-  saveIds?: readonly string[],
+  saveIds?: ReadonlyArray<string>,
 ): LibraryRepairJob {
   const record = createJob("preview", kind);
   void runPreview(record, saveIds);
@@ -25,7 +25,9 @@ export function startLibraryRepairPreview(
 
 export function startLibraryRepairApply(token: string): LibraryRepairJob {
   const kind = libraryRepairService.kindForToken(token);
-  if (!kind) throw new Error("This repair preview expired. Preview again.");
+  if (!kind) {
+    throw new Error("This repair preview expired. Preview again.");
+  }
   const record = createJob("apply", kind);
   void runApply(record, token);
   return copyJob(record.job);
@@ -33,7 +35,9 @@ export function startLibraryRepairApply(token: string): LibraryRepairJob {
 
 export function cancelLibraryRepairJob(id: string): LibraryRepairJob | null {
   const record = jobs.get(id);
-  if (!record) return null;
+  if (!record) {
+    return null;
+  }
   if (record.job.status === "queued" || record.job.status === "running") {
     record.controller.abort();
     record.job.status = "cancelled";
@@ -70,7 +74,7 @@ function createJob(
 
 async function runPreview(
   record: RepairJobRecord,
-  saveIds: readonly string[] | undefined,
+  saveIds: ReadonlyArray<string> | undefined,
 ): Promise<void> {
   record.job.status = "running";
   try {
@@ -134,7 +138,9 @@ function settleFailure(record: RepairJobRecord, error: Error): void {
 }
 
 function pruneJobs(): void {
-  if (jobs.size < MAX_RETAINED_JOBS) return;
+  if (jobs.size < MAX_RETAINED_JOBS) {
+    return;
+  }
   const removable = [...jobs.values()]
     .filter(
       (record) =>
@@ -143,7 +149,9 @@ function pruneJobs(): void {
     .sort((a, b) => a.createdAt - b.createdAt);
   while (jobs.size >= MAX_RETAINED_JOBS) {
     const record = removable.shift();
-    if (!record) return;
+    if (!record) {
+      return;
+    }
     jobs.delete(record.job.id);
   }
 }

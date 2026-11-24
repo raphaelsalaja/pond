@@ -62,9 +62,18 @@ it("rejects and closes a cluster preview without writing to the Library", async 
   }
 });
 
+function button(label: string) {
+  return [...document.querySelectorAll<HTMLButtonElement>("button")].find(
+    (candidate) => candidate.textContent?.trim() === label,
+  );
+}
+
 it("applies accepted labels as add-only tag edits", async () => {
   const query = vi.fn(
-    async (name: string, input: { saveIds?: string[]; ids?: string[] }) => {
+    async (
+      name: string,
+      input: { saveIds?: Array<string>; ids?: Array<string> },
+    ) => {
       if (name === "saves.semanticClusters") {
         return { clusters: [], unclustered: ["save-a", "save-b"] };
       }
@@ -89,7 +98,9 @@ it("applies accepted labels as add-only tag edits", async () => {
           excludedIds: [],
         };
       }
-      if (name === "saves.bulkEdit") return { changed: input.ids?.length ?? 0 };
+      if (name === "saves.bulkEdit") {
+        return { changed: input.ids?.length ?? 0 };
+      }
       throw new Error(`Unexpected query: ${name}`);
     },
   );
@@ -114,7 +125,9 @@ it("applies accepted labels as add-only tag edits", async () => {
           `#${CSS.escape(label.htmlFor)}`,
         )
       : null;
-    if (!input) throw new Error("Missing labels field");
+    if (!input) {
+      throw new Error("Missing labels field");
+    }
     await act(async () => {
       Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,
@@ -122,10 +135,6 @@ it("applies accepted labels as add-only tag edits", async () => {
       )?.set?.call(input, "Design, Research");
       input.dispatchEvent(new InputEvent("input", { bubbles: true }));
     });
-    const button = (label: string) =>
-      [...document.querySelectorAll<HTMLButtonElement>("button")].find(
-        (candidate) => candidate.textContent?.trim() === label,
-      );
     await act(async () => button("Preview Labels")?.click());
     await act(async () => button("Apply Labels")?.click());
 
@@ -165,11 +174,15 @@ it("creates a folder only after the cluster is accepted", async () => {
         unclustered: [],
       };
     }
-    if (name === "saves.getMany") return [];
+    if (name === "saves.getMany") {
+      return [];
+    }
     if (name === "folders.createWithSaves") {
       return { id: "folder-design", name: "Design Systems" };
     }
-    if (name === "folders.list" || name === "folders.memberships") return [];
+    if (name === "folders.list" || name === "folders.memberships") {
+      return [];
+    }
     throw new Error(`Unexpected query: ${name}`);
   });
   vi.stubGlobal("pond", { query });

@@ -1,5 +1,7 @@
 import { cssVars, Input } from "@pond/ui";
-import { type NodeProps, NodeResizer } from "@xyflow/react";
+import { isElement, isNode } from "@pond/ui/dom";
+import { NodeResizer } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
 import { clsx as cn } from "clsx";
 import { useEffect, useRef } from "react";
 import { FIGURE_EDGE, NOTE_FILL } from "../../lib/colors";
@@ -10,11 +12,11 @@ import { Handles } from "../handles";
 import styles from "./styles.module.css";
 
 function withCell(
-  rows: readonly string[][],
+  rows: ReadonlyArray<Array<string>>,
   row: number,
   column: number,
   text: string,
-): string[][] {
+): Array<Array<string>> {
   return rows.map((cells, r) =>
     r === row ? cells.map((cell, c) => (c === column ? text : cell)) : cells,
   );
@@ -33,11 +35,17 @@ export function TableItem({
 
   useEffect(() => {
     const table = grid.current;
-    if (!table) return;
+    if (!table) {
+      return;
+    }
     const remember = (event: MouseEvent) => {
-      if (!(event.target instanceof Element)) return;
+      if (!isElement(event.target)) {
+        return;
+      }
       const cell = event.target.closest<HTMLElement>("[data-cell]");
-      if (cell?.dataset.cell) target.current = cell.dataset.cell;
+      if (cell?.dataset.cell) {
+        target.current = cell.dataset.cell;
+      }
     };
     table.addEventListener("dblclick", remember, { capture: true });
     return () =>
@@ -45,7 +53,9 @@ export function TableItem({
   }, []);
 
   useEffect(() => {
-    if (!editing) return;
+    if (!editing) {
+      return;
+    }
     grid.current
       ?.querySelector<HTMLTextAreaElement>(
         `textarea[data-cell="${target.current}"]`,
@@ -85,7 +95,7 @@ export function TableItem({
         >
           <tbody>
             {data.rows.map((cells, row) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: rows have no identity beyond their position
+              // oxlint-disable-next-line react/no-array-index-key -- rows have no identity beyond their position
               <tr key={row}>
                 {cells.map((cell, column) => {
                   const key = `${row}-${column}`;
@@ -118,17 +128,16 @@ export function TableItem({
                           }
                           onBlur={(event) => {
                             const next = event.relatedTarget;
-                            if (
-                              next instanceof Node &&
-                              grid.current?.contains(next)
-                            )
+                            if (isNode(next) && grid.current?.contains(next)) {
                               return;
+                            }
                             board.finishEditing(id);
                           }}
                           onKeyDown={(event) => {
                             event.stopPropagation();
-                            if (event.key === "Escape")
+                            if (event.key === "Escape") {
                               event.currentTarget.blur();
+                            }
                           }}
                         />
                       ) : (

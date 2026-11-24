@@ -3,7 +3,8 @@ import {
   menuLabels as labels,
   menuLabelsWithoutIcons,
 } from "@/shared/test/menu-labels";
-import { buildFolderMenuItems, type FolderMenuActions } from ".";
+import { buildFolderMenuItems } from ".";
+import type { FolderMenuActions } from ".";
 
 function actions(
   overrides: Partial<FolderMenuActions> = {},
@@ -133,8 +134,9 @@ describe("folder context menu", () => {
       (candidate) =>
         "label" in candidate && candidate.label === "Customize Folder",
     );
-    if (!item || !("onClick" in item))
+    if (!item || !("onClick" in item)) {
       throw new Error("Missing customize action");
+    }
     item.onClick?.();
     expect(onCustomize).toHaveBeenCalledOnce();
   });
@@ -145,8 +147,9 @@ describe("folder context menu", () => {
       (candidate) =>
         "label" in candidate && candidate.label === "Create Canvas from Folder",
     );
-    if (!item || !("onClick" in item))
+    if (!item || !("onClick" in item)) {
       throw new Error("Missing create canvas action");
+    }
     item.onClick?.();
     expect(onCreateCanvas).toHaveBeenCalledOnce();
   });

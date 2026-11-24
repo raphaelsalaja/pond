@@ -79,7 +79,9 @@ export function SplitPostsPage() {
   useEffect(
     () =>
       window.pond.onSyncAction((event) => {
-        if (event.modelName === "save") void refetch();
+        if (event.modelName === "save") {
+          void refetch();
+        }
       }),
     [refetch],
   );
@@ -87,7 +89,9 @@ export function SplitPostsPage() {
   const visible = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const all = posts.data ?? [];
-    if (!needle) return all;
+    if (!needle) {
+      return all;
+    }
     return all.filter((post) =>
       `${postTitle(post)} ${getSourceLabel(post.source)}`
         .toLowerCase()
@@ -95,7 +99,9 @@ export function SplitPostsPage() {
     );
   }, [posts.data, q]);
 
-  if (posts.isSuccess && posts.data.length === 0) return <SplitPostsIntro />;
+  if (posts.isSuccess && posts.data.length === 0) {
+    return <SplitPostsIntro />;
+  }
 
   return (
     <div className={styles.page}>
@@ -122,7 +128,7 @@ export function SplitPostsPage() {
                 </EmptyPreview.Column>
               </EmptyPreview.Root>
             </Empty.Media>
-            <Empty.Title>Couldn't Load Split Posts</Empty.Title>
+            <Empty.Title>Couldn&apos;t Load Split Posts</Empty.Title>
             <Empty.Description>Try again in a moment.</Empty.Description>
             <Empty.Action>
               <Button

@@ -13,7 +13,9 @@ const { packageName, runtimePackages, verifyRuntimePackages } = createRequire(
 const roots = [];
 
 afterEach(() => {
-  for (const root of roots) rmSync(root, { recursive: true, force: true });
+  for (const root of roots) {
+    rmSync(root, { recursive: true, force: true });
+  }
   roots.length = 0;
 });
 
@@ -62,19 +64,19 @@ function packagedResources(files, unpacked = {}) {
   return resources;
 }
 
-describe("verifyRuntimePackages", () => {
+void describe("verifyRuntimePackages", () => {
   const main = {
     "out/main/index.js": 'import sharp from "sharp";\nrequire("re2");',
   };
 
-  it("fails when main loads a package app.asar does not ship", async () => {
+  void it("fails when main loads a package app.asar does not ship", async () => {
     await assert.rejects(
       verifyRuntimePackages(packagedResources(main)),
       /missing packages .*sharp \(out\/main\/index\.js\)/,
     );
   });
 
-  it("passes when the package ships packed or unpacked, and skips optional loads", async () => {
+  void it("passes when the package ships packed or unpacked, and skips optional loads", async () => {
     await verifyRuntimePackages(
       packagedResources({ ...main, "node_modules/sharp/package.json": "{}" }),
     );
@@ -83,7 +85,7 @@ describe("verifyRuntimePackages", () => {
     );
   });
 
-  it("fails when an unpacked package was pruned after packing", async () => {
+  void it("fails when an unpacked package was pruned after packing", async () => {
     const resources = packagedResources(main, {
       "node_modules/sharp/package.json": "{}",
     });
@@ -91,7 +93,7 @@ describe("verifyRuntimePackages", () => {
     await assert.rejects(verifyRuntimePackages(resources), /sharp/);
   });
 
-  it("fails when a shipped package's own dependency is missing", async () => {
+  void it("fails when a shipped package's own dependency is missing", async () => {
     const sharp = JSON.stringify({
       dependencies: { "detect-libc": "^2", "node-addon-api": "^8" },
     });
@@ -106,7 +108,7 @@ describe("verifyRuntimePackages", () => {
     );
   });
 
-  it("resolves dependencies nested or hoisted and skips install-only ones", async () => {
+  void it("resolves dependencies nested or hoisted and skips install-only ones", async () => {
     const sharp = JSON.stringify({
       dependencies: {
         "detect-libc": "^2",
@@ -128,11 +130,13 @@ describe("verifyRuntimePackages", () => {
 });
 
 function packagesIn(code) {
-  return [...runtimePackages(parseSync("chunk.js", code).program)].sort();
+  return [...runtimePackages(parseSync("chunk.js", code).program)].sort(
+    (a, b) => (a < b ? -1 : a > b ? 1 : 0),
+  );
 }
 
-describe("runtimePackages", () => {
-  it("collects static, dynamic, and require-like loads", () => {
+void describe("runtimePackages", () => {
+  void it("collects static, dynamic, and require-like loads", () => {
     const code = [
       'import sharp from "sharp";',
       'export { load } from "sqlite-vec";',
@@ -153,7 +157,7 @@ describe("runtimePackages", () => {
     ]);
   });
 
-  it("ignores builtins, relative chunks, comments, and code-generation strings", () => {
+  void it("ignores builtins, relative chunks, comments, and code-generation strings", () => {
     const code = [
       'import { join } from "node:path";',
       'import fs from "fs";',
@@ -167,8 +171,8 @@ describe("runtimePackages", () => {
   });
 });
 
-describe("packageName", () => {
-  it("keeps the scope and drops subpaths", () => {
+void describe("packageName", () => {
+  void it("keeps the scope and drops subpaths", () => {
     assert.equal(
       packageName("@huggingface/transformers/dist/x.js"),
       "@huggingface/transformers",

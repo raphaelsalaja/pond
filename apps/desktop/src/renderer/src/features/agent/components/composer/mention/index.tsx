@@ -1,9 +1,9 @@
-import {
-  type MdastExportRule,
-  MdastImportExtension,
-  type MdastImportRule,
-  type MdastNode,
-  type MdastParent,
+import { MdastImportExtension } from "@lexical/mdast";
+import type {
+  MdastExportRule,
+  MdastImportRule,
+  MdastNode,
+  MdastParent,
 } from "@lexical/mdast";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { Chip } from "@pond/ui";
@@ -17,13 +17,16 @@ import {
   $isRangeSelection,
   configExtension,
   DecoratorNode,
-  type EditorConfig,
-  type LexicalNode,
-  type NodeKey,
-  type SerializedLexicalNode,
-  type Spread,
 } from "lexical";
-import { type JSX, useEffect, useRef } from "react";
+import type {
+  EditorConfig,
+  LexicalNode,
+  NodeKey,
+  SerializedLexicalNode,
+  Spread,
+} from "lexical";
+import { useEffect, useEffectEvent, useRef } from "react";
+import type { JSX } from "react";
 import { SourceThumbnail, useSourceCovers } from "../../pane/save-preview";
 import styles from "./styles.module.css";
 
@@ -107,7 +110,7 @@ function $createSaveMentionNode(id: string, title: string): SaveMentionNode {
 function $isSaveMentionNode(
   node: LexicalNode | null | undefined,
 ): node is SaveMentionNode {
-  return node instanceof SaveMentionNode;
+  return node?.getType() === SaveMentionNode.getType();
 }
 
 export function $insertSaveMention(id: string, title: string): void {
@@ -120,15 +123,21 @@ export function $insertSaveMention(id: string, title: string): void {
   }
   $getRoot().selectEnd();
   const end = $getSelection();
-  if ($isRangeSelection(end)) end.insertNodes([mention, space]);
+  if ($isRangeSelection(end)) {
+    end.insertNodes([mention, space]);
+  }
 }
 
-function $saveMentionIds(): string[] {
-  const ids: string[] = [];
+function $saveMentionIds(): Array<string> {
+  const ids: Array<string> = [];
   const walk = (node: LexicalNode) => {
-    if ($isSaveMentionNode(node)) ids.push(node.getSaveId());
+    if ($isSaveMentionNode(node)) {
+      ids.push(node.getSaveId());
+    }
     if ($isElementNode(node)) {
-      for (const child of node.getChildren()) walk(child);
+      for (const child of node.getChildren()) {
+        walk(child);
+      }
     }
   };
   walk($getRoot());
@@ -140,7 +149,9 @@ function saveMentionHref(id: string): string {
 }
 
 export function parseSaveMentionHref(href: string): string | null {
-  if (!href.startsWith("pond-save:")) return null;
+  if (!href.startsWith("pond-save:")) {
+    return null;
+  }
   try {
     return decodeURIComponent(href.slice("pond-save:".length)) || null;
   } catch {
@@ -156,12 +167,16 @@ function mentionLabel(node: MdastParent): string {
 
 function $importSaveMention(node: MdastParent & { url?: string }) {
   const id = parseSaveMentionHref(node.url ?? "");
-  if (!id) return null;
+  if (!id) {
+    return null;
+  }
   return $createSaveMentionNode(id, mentionLabel(node) || "Untitled");
 }
 
 function $exportSaveMention(node: LexicalNode): MdastNode | null {
-  if (!$isSaveMentionNode(node)) return null;
+  if (!$isSaveMentionNode(node)) {
+    return null;
+  }
   return {
     type: "link",
     url: saveMentionHref(node.getSaveId()),
@@ -169,11 +184,11 @@ function $exportSaveMention(node: LexicalNode): MdastNode | null {
   };
 }
 
-const importRules: MdastImportRule[] = [
+const importRules: Array<MdastImportRule> = [
   { type: "link", $import: $importSaveMention },
 ];
 
-const exportRules: MdastExportRule[] = [
+const exportRules: Array<MdastExportRule> = [
   { type: "save-mention", $export: $exportSaveMention },
 ];
 
@@ -227,23 +242,25 @@ export function ComposerMentions({
   attachments,
   onRemove,
 }: {
-  attachments: AssistantSource[];
+  attachments: Array<AssistantSource>;
   onRemove: (id: string) => void;
 }) {
   const [editor] = useLexicalComposerContext();
-  const remove = useRef(onRemove);
+  const remove = useEffectEvent(onRemove);
   const seen = useRef(new Set<string>());
   const previous = useRef(new Set<string>());
-  remove.current = onRemove;
   useEffect(() => {
     const added = attachments.filter((save) => !seen.current.has(save.id));
     seen.current = new Set(attachments.map((save) => save.id));
-    if (!added.length) return;
+    if (!added.length) {
+      return;
+    }
     editor.update(() => {
       const present = new Set($saveMentionIds());
       for (const save of added) {
-        if (!present.has(save.id))
+        if (!present.has(save.id)) {
           $insertSaveMention(save.id, save.title || "Untitled");
+        }
       }
     });
   }, [attachments, editor]);
@@ -253,7 +270,9 @@ export function ComposerMentions({
         const ids = new Set(editorState.read(() => $saveMentionIds()));
         if (!tags.has("external-draft")) {
           for (const id of previous.current) {
-            if (!ids.has(id)) remove.current(id);
+            if (!ids.has(id)) {
+              remove(id);
+            }
           }
         }
         previous.current = ids;

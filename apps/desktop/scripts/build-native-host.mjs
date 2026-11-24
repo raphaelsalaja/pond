@@ -3,10 +3,9 @@
 import { spawnSync } from "node:child_process";
 import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(import.meta.dirname, "..");
 const outDir = resolve(root, "resources/bin");
 const src = resolve(root, "native-host/pond-native-host.c");
 const out = resolve(
@@ -26,7 +25,9 @@ if (result.error || result.status !== 0) {
   );
   process.exit(1);
 }
-if (process.platform !== "win32") chmodSync(out, 0o755);
+if (process.platform !== "win32") {
+  chmodSync(out, 0o755);
+}
 
 console.log(`[pond] native host ok (${out})`);
 
@@ -57,7 +58,9 @@ function buildWindowsHost() {
     }
 
     const direct = spawnSync("cl", compilerArgs, { stdio: "inherit" });
-    if (direct.error?.code !== "ENOENT") return direct;
+    if (direct.error?.code !== "ENOENT") {
+      return direct;
+    }
 
     const vcvars = findVisualStudioEnvironment();
     if (!vcvars) {
@@ -93,12 +96,16 @@ function buildWindowsHost() {
 
 function findVisualStudioEnvironment() {
   const programFilesX86 = process.env["ProgramFiles(x86)"];
-  if (!programFilesX86) return null;
+  if (!programFilesX86) {
+    return null;
+  }
   const vswhere = resolve(
     programFilesX86,
     "Microsoft Visual Studio/Installer/vswhere.exe",
   );
-  if (!existsSync(vswhere)) return null;
+  if (!existsSync(vswhere)) {
+    return null;
+  }
   const discovery = spawnSync(
     vswhere,
     [
@@ -113,7 +120,9 @@ function findVisualStudioEnvironment() {
     { encoding: "utf8" },
   );
   const installation = discovery.stdout?.trim();
-  if (discovery.status !== 0 || !installation) return null;
+  if (discovery.status !== 0 || !installation) {
+    return null;
+  }
   const vcvars = resolve(installation, "VC/Auxiliary/Build/vcvars64.bat");
   return existsSync(vcvars) ? vcvars : null;
 }

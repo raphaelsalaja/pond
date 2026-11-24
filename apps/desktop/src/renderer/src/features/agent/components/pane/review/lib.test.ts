@@ -103,7 +103,7 @@ describe("reviewSummary", () => {
         change("pending"),
         change("pending"),
         { ...change("pending"), field: "title", before: "A", after: "B" },
-      ] satisfies AssistantChange[]),
+      ] satisfies Array<AssistantChange>),
     ).toBe("Retags 2 Saves, renames 1 Save");
   });
 

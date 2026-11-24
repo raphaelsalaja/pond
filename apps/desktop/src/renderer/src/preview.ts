@@ -3,10 +3,8 @@ import { createRoot } from "react-dom/client";
 import type { PondPreviewApi } from "../../preload/preview";
 import type { PreviewWindowState } from "../../shared/preview-window-contracts";
 import "./app/boot-shell";
-import {
-  type PreviewControlActions,
-  PreviewControls,
-} from "./preview-controls";
+import { PreviewControls } from "./preview-controls";
+import type { PreviewControlActions } from "./preview-controls";
 import { createPreviewMedia } from "./preview-media";
 import "./preview.css";
 
@@ -22,8 +20,9 @@ const video = document.querySelector<HTMLVideoElement>("#video");
 const error = document.querySelector<HTMLElement>("#media-error");
 const retry = document.querySelector<HTMLButtonElement>("#retry");
 const previewUi = document.querySelector<HTMLElement>("#preview-ui");
-if (!image || !preview || !video || !error || !retry || !previewUi)
+if (!image || !preview || !video || !error || !retry || !previewUi) {
   throw new Error("Preview surface is missing.");
+}
 
 const uiRoot = createRoot(previewUi);
 
@@ -44,12 +43,16 @@ const NEXT_ROTATION = {
 function configure(
   patch: Omit<Parameters<PondPreviewApi["configure"]>[0], "windowId">,
 ): void {
-  if (!state) return;
+  if (!state) {
+    return;
+  }
   void window.pondPreview.configure({ windowId: state.windowId, ...patch });
 }
 
 function requestNeighbor(delta: -1 | 1): void {
-  if (!state) return;
+  if (!state) {
+    return;
+  }
   void window.pondPreview.requestNeighbor({
     windowId: state.windowId,
     saveId: state.saveId,
@@ -59,16 +62,22 @@ function requestNeighbor(delta: -1 | 1): void {
 }
 
 function runFileAction(action: "open" | "export"): void {
-  if (!state) return;
+  if (!state) {
+    return;
+  }
   void window.pondPreview.fileAction({ windowId: state.windowId, action });
 }
 
 const actions: PreviewControlActions = {
   close: () => {
-    if (state) void window.pondPreview.close(state.windowId);
+    if (state) {
+      void window.pondPreview.close(state.windowId);
+    }
   },
   cycleOpacity: () => {
-    if (!state) return;
+    if (!state) {
+      return;
+    }
     configure({ opacity: state.opacity <= 0.4 ? 1 : state.opacity - 0.2 });
   },
   next: () => requestNeighbor(1),
@@ -90,19 +99,25 @@ const actions: PreviewControlActions = {
     refreshSlideshow();
   },
   rotate: () => {
-    if (state?.mediaType !== "image") return;
+    if (state?.mediaType !== "image") {
+      return;
+    }
     configure({ rotation: NEXT_ROTATION[state.rotation] });
   },
   exportOriginal: () => runFileAction("export"),
 };
 
 function renderPreviewUi(): void {
-  if (!state) return;
+  if (!state) {
+    return;
+  }
   uiRoot.render(createElement(PreviewControls, { actions, slideshow, state }));
 }
 
 function refreshImageSize(): void {
-  if (!state || !image) return;
+  if (!state || !image) {
+    return;
+  }
   image.dataset.size = state.zoom === null ? "fit" : "actual";
   image.style.width =
     state.zoom !== null && image.naturalWidth
@@ -112,12 +127,16 @@ function refreshImageSize(): void {
 }
 
 function refreshVideoSize(): void {
-  if (!state || !video) return;
+  if (!state || !video) {
+    return;
+  }
   video.dataset.size = state.size === "fill" ? "fill" : "fit";
 }
 
 function refreshSlideshow(): void {
-  if (slideshowTimer) clearInterval(slideshowTimer);
+  if (slideshowTimer) {
+    clearInterval(slideshowTimer);
+  }
   slideshowTimer = null;
   if (slideshow && state?.kind === "presentation" && !document.hidden) {
     slideshowTimer = setInterval(() => requestNeighbor(1), 5000);
@@ -131,7 +150,9 @@ const media = createPreviewMedia({
   error,
   retry,
   onMuted(muted) {
-    if (state?.mediaType !== "video" || state.videoMuted === muted) return;
+    if (state?.mediaType !== "video" || state.videoMuted === muted) {
+      return;
+    }
     configure({ videoMuted: muted });
   },
 });
@@ -141,7 +162,9 @@ const unsubscribe = window.pondPreview.onState((next) => {
   const title = `${next.title} · Pond`;
   document.title = title;
   media.show(next);
-  if (next.mediaType === "video") media.setMuted(next.videoMuted);
+  if (next.mediaType === "video") {
+    media.setMuted(next.videoMuted);
+  }
   preview.dataset.mediaType = next.mediaType;
   document.body.dataset.mediaType = next.mediaType;
   document.body.dataset.reduceMotion = next.reduceMotion;
@@ -164,14 +187,19 @@ window.addEventListener("keydown", (event) => {
     return;
   }
   if (event.key === "Escape" && state && !document.fullscreenElement) {
-    if (state.fullscreen) configure({ fullscreen: false });
-    else void window.pondPreview.close(state.windowId);
+    if (state.fullscreen) {
+      configure({ fullscreen: false });
+    } else {
+      void window.pondPreview.close(state.windowId);
+    }
   }
 });
 
 window.addEventListener("beforeunload", () => {
   unsubscribe();
-  if (slideshowTimer) clearInterval(slideshowTimer);
+  if (slideshowTimer) {
+    clearInterval(slideshowTimer);
+  }
   media.dispose();
   uiRoot.unmount();
 });

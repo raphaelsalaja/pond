@@ -50,8 +50,9 @@ describe("viewer continuity", () => {
     );
   });
   it("bounds persistent viewing history", () => {
-    for (let index = 0; index < 205; index += 1)
+    for (let index = 0; index < 205; index += 1) {
       viewerMemory.setPlayback(`bounded-${index}`, index);
+    }
     expect(viewerMemory.playback("bounded-1")).toBe(0);
     expect(viewerMemory.playback("bounded-204")).toBe(204);
     expect(

@@ -124,10 +124,14 @@ export interface CosmosViewer {
 
 export function viewerFromMeData(data: CosmosMeData): CosmosViewer | null {
   const me = data.me;
-  if (!me) return null;
+  if (!me) {
+    return null;
+  }
   const userId = me.id === undefined ? null : String(me.id);
   const handle = handleFromUsername(me.username);
-  if (!userId || !handle) return null;
+  if (!userId || !handle) {
+    return null;
+  }
   const avatar = me.avatarUrl;
   return {
     userId,
@@ -142,7 +146,7 @@ export function handleFromMeData(data: CosmosMeData): string | null {
 }
 
 export interface LibraryPage {
-  entries: ListEntry[];
+  entries: Array<ListEntry>;
   nextPageCursor: string | null;
 }
 
@@ -155,23 +159,27 @@ export interface CosmosCollection {
 }
 
 export interface ClustersPage {
-  collections: CosmosCollection[];
+  collections: Array<CosmosCollection>;
   nextPageCursor: string | null;
 }
 
 function entryFromTile(tile: CosmosTile | null | undefined): ListEntry | null {
-  if (tile?.id === undefined) return null;
+  if (tile?.id === undefined) {
+    return null;
+  }
   const sourceId = String(tile.id);
   const entry: ListEntry = {
     sourceId,
     url: tile.shareUrl ?? `https://www.cosmos.so/e/${sourceId}`,
   };
-  if (tile.createdAt !== undefined) entry.savedAt = tile.createdAt;
+  if (tile.createdAt !== undefined) {
+    entry.savedAt = tile.createdAt;
+  }
   return entry;
 }
 
 function libraryPage(
-  tiles: readonly (CosmosTile | null | undefined)[],
+  tiles: ReadonlyArray<CosmosTile | null | undefined>,
   nextPageCursor: string | undefined,
 ): LibraryPage {
   return {
@@ -197,15 +205,16 @@ export function pageFromClusterConnections(
 
 export function pageFromClusters(data: CosmosClustersData): ClustersPage {
   const list = data.userClusters;
-  const collections: CosmosCollection[] = [];
+  const collections: Array<CosmosCollection> = [];
   for (const cluster of list?.items ?? []) {
     /** Cosmos addresses a collection by slug, so one without a slug cannot be read. */
     if (
       cluster.id === undefined ||
       cluster.name === undefined ||
       cluster.slug === undefined
-    )
+    ) {
       continue;
+    }
     const collection: CosmosCollection = {
       id: String(cluster.id),
       name: cluster.name,
@@ -213,7 +222,9 @@ export function pageFromClusters(data: CosmosClustersData): ClustersPage {
       itemCount: cluster.numberOfElements ?? null,
     };
     const owner = cluster.owner?.username;
-    if (owner) collection.ownerUsername = owner;
+    if (owner) {
+      collection.ownerUsername = owner;
+    }
     collections.push(collection);
   }
   return {
@@ -223,8 +234,12 @@ export function pageFromClusters(data: CosmosClustersData): ClustersPage {
 }
 
 function handleFromUsername(value: string | undefined): string | null {
-  if (value === undefined) return null;
+  if (value === undefined) {
+    return null;
+  }
   const handle = value.replace(/^@/, "").trim();
-  if (!/^[A-Za-z0-9_-]{2,40}$/.test(handle)) return null;
+  if (!/^[A-Za-z0-9_-]{2,40}$/.test(handle)) {
+    return null;
+  }
   return handle;
 }

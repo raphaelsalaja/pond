@@ -27,14 +27,18 @@ export function fileRingItemKey(item: FileRingItem): string {
 }
 
 /** Drops entries this build doesn't know, so one retired action never resets the rest of the ring. */
-function knownItems(items: readonly unknown[]): FileRingItem[] {
+function knownItems(items: ReadonlyArray<unknown>): Array<FileRingItem> {
   const seen = new Set<string>();
   return items
     .flatMap((item) => {
       const parsed = FileRingItemSchema.safeParse(item);
-      if (!parsed.success) return [];
+      if (!parsed.success) {
+        return [];
+      }
       const key = fileRingItemKey(parsed.data);
-      if (seen.has(key)) return [];
+      if (seen.has(key)) {
+        return [];
+      }
       seen.add(key);
       return [parsed.data];
     })

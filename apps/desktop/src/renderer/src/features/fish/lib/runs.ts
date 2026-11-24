@@ -1,17 +1,31 @@
 import type { Fish, FishRun } from "@shared/fish-contracts";
+import { useEffect, useState } from "react";
 import { formatPlural } from "@/shared/lib/format";
 
 export type RunGroup = "failed" | "review" | "done";
 
+/** Ticks each minute so run times and day labels stay true while the view stays open. */
+export function useRunClock(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
+}
+
 export function runGroup(run: FishRun): RunGroup {
-  if (run.status === "failed") return "failed";
+  if (run.status === "failed") {
+    return "failed";
+  }
   return run.changes > 0 ? "review" : "done";
 }
 
 export function runSentence(run: FishRun): string {
   const name = run.routineName ?? null;
-  if (run.status === "failed")
+  if (run.status === "failed") {
     return name ? `${name} failed` : "A routine failed";
+  }
   const ran = name ? `Ran ${name}` : "Ran a routine";
   return run.changes > 0
     ? `${ran}, ${formatPlural(run.changes, { one: "change", other: "changes" })}`
@@ -19,18 +33,20 @@ export function runSentence(run: FishRun): string {
 }
 
 /** Fish written before run history only carry `lastRun`. */
-export function fishRuns(fish: Pick<Fish, "runs" | "lastRun">): FishRun[] {
-  if (fish.runs?.length) return fish.runs;
+export function fishRuns(fish: Pick<Fish, "runs" | "lastRun">): Array<FishRun> {
+  if (fish.runs?.length) {
+    return fish.runs;
+  }
   return fish.lastRun ? [fish.lastRun] : [];
 }
 
 export function runsByDay(
-  runs: readonly FishRun[],
+  runs: ReadonlyArray<FishRun>,
   now = new Date(),
-): { day: string; runs: FishRun[] }[] {
+): Array<{ day: string; runs: Array<FishRun> }> {
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
-  const groups = new Map<string, FishRun[]>();
+  const groups = new Map<string, Array<FishRun>>();
   for (const run of runs) {
     const at = new Date(run.at);
     const start = new Date(at);
@@ -69,11 +85,18 @@ function relativeMoment(at: number, now = new Date()): string {
   const days = Math.round(
     (startOfDay(at) - startOfDay(now.getTime())) / 86_400_000,
   );
-  if (days === 0) return `today at ${time}`;
-  if (days === 1) return `tomorrow at ${time}`;
-  if (days === -1) return `yesterday at ${time}`;
-  if (Math.abs(days) < 7)
+  if (days === 0) {
+    return `today at ${time}`;
+  }
+  if (days === 1) {
+    return `tomorrow at ${time}`;
+  }
+  if (days === -1) {
+    return `yesterday at ${time}`;
+  }
+  if (Math.abs(days) < 7) {
     return `on ${date.toLocaleDateString(undefined, { weekday: "long" })}`;
+  }
   return `on ${date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
@@ -85,21 +108,29 @@ export function nextRunText(
   at: number | null,
   now = new Date(),
 ): string | null {
-  if (at === null) return null;
-  if (at <= now.getTime()) return "Next run soon";
+  if (at === null) {
+    return null;
+  }
+  if (at <= now.getTime()) {
+    return "Next run soon";
+  }
   return `Next ${relativeMoment(at, now)}`;
 }
 
 /** The same moment as `nextRunText`, as a standalone value: "Today at 9:00 AM". */
 export function nextRunValue(at: number, now = new Date()): string {
-  if (at <= now.getTime()) return "Soon";
+  if (at <= now.getTime()) {
+    return "Soon";
+  }
   const moment = relativeMoment(at, now);
   return moment.charAt(0).toUpperCase() + moment.slice(1);
 }
 
 export function lastRunText(run: FishRun, now = new Date()): string {
   const when = relativeMoment(run.at, now);
-  if (run.status === "failed") return `Failed ${when}`;
+  if (run.status === "failed") {
+    return `Failed ${when}`;
+  }
   return run.changes > 0
     ? `Ran ${when}, ${formatPlural(run.changes, { one: "change", other: "changes" })}`
     : `Ran ${when}`;

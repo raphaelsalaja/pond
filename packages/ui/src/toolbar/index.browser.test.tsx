@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
-import { Button } from "../button";
+import { userEvent } from "vitest/browser";
 import { Toolbar } from ".";
+import { Button } from "../button";
 
 async function setup() {
   const screen = await render(

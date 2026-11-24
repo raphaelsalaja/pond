@@ -1,15 +1,10 @@
-import { app, BrowserWindow, shell, type WebContents } from "electron";
+import { app, BrowserWindow, shell } from "electron";
+import type { WebContents } from "electron";
 import log from "electron-log/main.js";
-import {
-  IPC,
-  type MenuActionEvent,
-  type MenuActionId,
-} from "../../shared/constants";
-import {
-  resolveShortcuts,
-  type ShortcutId,
-  type ShortcutPreferences,
-} from "../../shared/shortcuts";
+import { IPC } from "../../shared/constants";
+import type { MenuActionEvent, MenuActionId } from "../../shared/constants";
+import { resolveShortcuts } from "../../shared/shortcuts";
+import type { ShortcutId, ShortcutPreferences } from "../../shared/shortcuts";
 import { routeCombineImagesZoom } from "../core/combine-images-window";
 import { reconcileLibrary } from "../core/scan";
 import { menuAccelerator } from "../lib/menu-accelerator";
@@ -33,7 +28,9 @@ function withFocusedWebContents(
 ): () => void {
   return () => {
     const win = BrowserWindow.getFocusedWindow();
-    if (!win || win.isDestroyed()) return;
+    if (!win || win.isDestroyed()) {
+      return;
+    }
     run(win.webContents);
   };
 }
@@ -47,11 +44,15 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
   };
   const sendMenuAction: AppMenuContext["sendMenuAction"] =
     (id: MenuActionId) => async (_item, _window, event) => {
-      if (routeCombineImagesZoom(id)) return;
+      if (routeCombineImagesZoom(id)) {
+        return;
+      }
       const source = menuActionSourceFromClick(event);
       if (!shouldOpenLibraryForMenuAction(source)) {
         const focused = BrowserWindow.getFocusedWindow();
-        if (!focused || focused.isDestroyed()) return;
+        if (!focused || focused.isDestroyed()) {
+          return;
+        }
         const action: MenuActionEvent = { id, source };
         focused.webContents.send(IPC.menuAction, action);
         return;
@@ -97,8 +98,8 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
       deps.focusedOrMain()?.webContents.send(IPC.menuOpenSave, id);
     },
     rescanLibrary: () => {
-      void reconcileLibrary().catch((error) =>
-        log.warn("[pond menu] rescan failed", error),
+      void reconcileLibrary().catch((cause: unknown) =>
+        log.warn("[pond menu] rescan failed", cause),
       );
     },
     reloadLibrary: () => {
@@ -111,13 +112,17 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
     showLogs: () => {
       void shell.openPath(app.getPath("logs"));
     },
-    verifyLibrary: async () => {
-      try {
-        const { verifyLibraryIntegrity } = await import("../core/library-ops");
-        await verifyLibraryIntegrity();
-      } catch (error) {
-        log.warn("[pond menu] verify failed", error);
-      }
+    verifyLibrary: () => {
+      void verifyLibrary();
     },
   };
+}
+
+async function verifyLibrary() {
+  try {
+    const { verifyLibraryIntegrity } = await import("../core/library-ops");
+    await verifyLibraryIntegrity();
+  } catch (error) {
+    log.warn("[pond menu] verify failed", error);
+  }
 }

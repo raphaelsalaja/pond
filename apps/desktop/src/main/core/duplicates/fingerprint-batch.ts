@@ -2,12 +2,8 @@ import { stat } from "node:fs/promises";
 import type Database from "better-sqlite3";
 import { classifyPendingAssets } from "./asset-index";
 import type { FingerprintOutcome } from "./fingerprint-compute";
-import {
-  type FingerprintAlgorithm,
-  type FingerprintJob,
-  nextFingerprintJobs,
-  recordFingerprint,
-} from "./fingerprints";
+import { nextFingerprintJobs, recordFingerprint } from "./fingerprints";
+import type { FingerprintAlgorithm, FingerprintJob } from "./fingerprints";
 
 const FINGERPRINT_BATCH_SIZE = 25;
 
@@ -91,12 +87,18 @@ export async function runFingerprintBatch(
   limit = FINGERPRINT_BATCH_SIZE,
 ): Promise<FingerprintBatchResult> {
   const classified = classifyPendingAssets(sqlite);
-  if (classified > 0) return { state: "classified", count: classified };
+  if (classified > 0) {
+    return { state: "classified", count: classified };
+  }
   const jobs = nextFingerprintJobs(sqlite, limit, deps.now?.() ?? Date.now());
-  if (jobs.length === 0) return { state: "idle" };
+  if (jobs.length === 0) {
+    return { state: "idle" };
+  }
   let count = 0;
   for (const job of jobs) {
-    if (deps.shouldStop?.()) return { state: "stopped", count };
+    if (deps.shouldStop?.()) {
+      return { state: "stopped", count };
+    }
     await runJob(sqlite, job, deps);
     count += 1;
   }

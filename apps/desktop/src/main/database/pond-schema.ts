@@ -36,7 +36,9 @@ export function initializePondSchema(
       const color = z.string().safeParse(hex);
       const distance = z.number().safeParse(tolerance);
       const encoded = z.string().safeParse(palette);
-      if (!color.success || !distance.success || !encoded.success) return 0;
+      if (!color.success || !distance.success || !encoded.success) {
+        return 0;
+      }
       try {
         const colors = z.array(z.string()).parse(JSON.parse(encoded.data));
         return colorNear(color.data, colors, distance.data) ? 1 : 0;
@@ -60,12 +62,16 @@ export function initializePondSchema(
       : null,
   );
   const vectorEnabled = loadVectorExtension(sqlite);
-  if (vectorEnabled) ensureVecTables(sqlite);
+  if (vectorEnabled) {
+    ensureVecTables(sqlite);
+  }
   migratePond(sqlite);
   ensureAssetIndex(sqlite);
   sqlite.exec(
     "CREATE TABLE IF NOT EXISTS mutation_commits (batch_id TEXT PRIMARY KEY)",
   );
-  if (vectorEnabled) ensureVecDeleteTrigger(sqlite);
+  if (vectorEnabled) {
+    ensureVecDeleteTrigger(sqlite);
+  }
   return vectorEnabled;
 }

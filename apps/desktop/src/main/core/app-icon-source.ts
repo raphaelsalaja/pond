@@ -21,13 +21,18 @@ export function chooseAppIconSource(input: {
   lightImage: string;
   darkImage: string | null;
 }): AppIconSource {
-  if (input.platform !== "darwin")
+  if (input.platform !== "darwin") {
     return { kind: "image", path: input.lightImage };
-  if (input.packaged && input.isDefault) return { kind: "builtin" };
-  // Clear and Tinted drop the color, so every color looks like the built-in icon.
-  if (input.adaptiveBuiltin && input.style === "monochrome")
+  }
+  if (input.packaged && input.isDefault) {
     return { kind: "builtin" };
-  if (input.style === "dark" && input.darkImage)
+  }
+  // Clear and Tinted drop the color, so every color looks like the built-in icon.
+  if (input.adaptiveBuiltin && input.style === "monochrome") {
+    return { kind: "builtin" };
+  }
+  if (input.style === "dark" && input.darkImage) {
     return { kind: "image", path: input.darkImage };
+  }
   return { kind: "image", path: input.lightImage };
 }

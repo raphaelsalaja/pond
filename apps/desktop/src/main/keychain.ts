@@ -53,18 +53,20 @@ async function readAll(port: KeychainPort): Promise<SecretMap | null> {
     const buf = await readFile(secretsPath(port), "utf8");
     const parsed = SecretMapSchema.safeParse(JSON.parse(buf));
     return parsed.success ? parsed.data : null;
-  } catch (cause) {
-    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") {
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return {};
     }
-    log.warn("[pond] failed to read secrets file", cause);
+    log.warn("[pond] failed to read secrets file", error);
     return null;
   }
 }
 
 async function readForUpdate(port: KeychainPort): Promise<SecretMap> {
   const map = await readAll(port);
-  if (map) return map;
+  if (map) {
+    return map;
+  }
   const aside = `${secretsPath(port)}.damaged-${Date.now()}`;
   await rename(secretsPath(port), aside);
   log.error("[pond] secrets file was unreadable; kept a copy at", aside);
@@ -88,7 +90,9 @@ function encrypt(port: KeychainPort, plain: string): string {
     return `enc:${port.protect(plain).toString("base64")}`;
   }
   /** Windows has no plaintext fallback: file modes do nothing on NTFS, so refuse rather than store a reversible copy. */
-  if (port.platform === "win32") throw new KeychainUnavailableError();
+  if (port.platform === "win32") {
+    throw new KeychainUnavailableError();
+  }
   /** No keychain backend (Linux/first-run); tag the value so reads don't decrypt plaintext. */
   log.warn(
     "[pond] safeStorage encryption unavailable, persisting secret in plaintext",
@@ -99,15 +103,17 @@ function encrypt(port: KeychainPort, plain: string): string {
 function decrypt(port: KeychainPort, value: string): string | null {
   try {
     if (value.startsWith("enc:")) {
-      if (!port.encryptionAvailable()) return null;
+      if (!port.encryptionAvailable()) {
+        return null;
+      }
       return port.unprotect(Buffer.from(value.slice(4), "base64"));
     }
     if (value.startsWith("raw:")) {
       return Buffer.from(value.slice(4), "base64").toString("utf8");
     }
     return null;
-  } catch (err) {
-    log.warn("[pond] failed to decrypt secret", err);
+  } catch (error) {
+    log.warn("[pond] failed to decrypt secret", error);
     return null;
   }
 }
@@ -119,7 +125,7 @@ export function createKeychain(port: KeychainPort) {
   }
 
   async function getSecrets(
-    accounts: string[],
+    accounts: Array<string>,
   ): Promise<Record<string, string | null>> {
     const all = (await readAll(port)) ?? {};
     const out: Record<string, string | null> = {};
@@ -165,7 +171,9 @@ export function createKeychain(port: KeychainPort) {
 
   async function ensureIngestToken(): Promise<string> {
     const existing = await getIngestToken();
-    if (existing) return existing;
+    if (existing) {
+      return existing;
+    }
     /** Pond's own local token, not a provider credential: an undecryptable one is replaced, and update() leaves every other entry untouched. */
     const token = randomBytes(24).toString("hex");
     await setIngestToken(token);

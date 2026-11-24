@@ -11,14 +11,10 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { isWindowsSymlinkPrivilegeError } from "../test/symlink";
-import {
-  copyExportFile,
-  type ExportItem,
-  exportFiles,
-  sharedFolderPath,
-} from "./export-files";
+import { copyExportFile, exportFiles, sharedFolderPath } from "./export-files";
+import type { ExportItem } from "./export-files";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),

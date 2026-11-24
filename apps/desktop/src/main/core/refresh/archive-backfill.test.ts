@@ -1,9 +1,9 @@
-import * as schema from "@pond/schema/db";
-import * as eventsSchema from "@pond/schema/events";
+import { CANCEL_REASON, queueGenerations, saves, tasks } from "@pond/schema/db";
+import type { NewSave, NewTask } from "@pond/schema/db";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { wrapSqlite } from "../../database/client";
 import { initializePondSchema } from "../../db";
 import { createPendingTasks } from "../pipeline/enqueue-scheduling";
 import { archiveSiteForSave, startArchiveBackfill } from "./archive-backfill";
@@ -26,35 +26,36 @@ function nativeSqliteAvailable(): boolean {
     probe.close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
 
-const databases: Database.Database[] = [];
+const databases: Array<Database.Database> = [];
 
 afterEach(() => {
-  for (const db of databases.splice(0)) db.close();
+  for (const db of databases.splice(0)) {
+    db.close();
+  }
 });
 
 function setup() {
   const sqlite = new Database(":memory:");
   databases.push(sqlite);
   initializePondSchema(sqlite, () => false);
-  const db = Object.assign(
-    drizzle(sqlite, { schema: { ...schema, ...eventsSchema } }),
-    { $raw: sqlite },
-  );
+  const db = wrapSqlite(sqlite);
   const runtime = {
     getDb: async () => db,
     kickReconciler: vi.fn(),
-    async persistSave(id: string, patch: Partial<schema.NewSave>) {
-      db.update(schema.saves).set(patch).where(eq(schema.saves.id, id)).run();
+    async persistSave(id: string, patch: Partial<NewSave>) {
+      db.update(saves).set(patch).where(eq(saves.id, id)).run();
       return null;
     },
   };
   const saveId = "archive-save";
-  db.insert(schema.saves)
+  db.insert(saves)
     .values({
       id: saveId,
       source: "web",
@@ -63,10 +64,10 @@ function setup() {
       status: "complete",
     })
     .run();
-  db.insert(schema.tasks)
+  db.insert(tasks)
     .values(
       createPendingTasks(saveId, "web", new Date(1), undefined).map(
-        (task): schema.NewTask => ({
+        (task): NewTask => ({
           ...task,
           status: task.op === "fetch_blobs" ? "dead" : "done",
         }),
@@ -86,15 +87,10 @@ describe.skipIf(!nativeSqliteAvailable())("archive task recovery", () => {
     });
     expect(runtime.kickReconciler).not.toHaveBeenCalled();
     expect(
-      db.select().from(schema.saves).where(eq(schema.saves.id, saveId)).get()
-        ?.status,
+      db.select().from(saves).where(eq(saves.id, saveId)).get()?.status,
     ).toBe("complete");
     expect(
-      db
-        .select()
-        .from(schema.tasks)
-        .where(eq(schema.tasks.op, "archive_page"))
-        .get()?.status,
+      db.select().from(tasks).where(eq(tasks.op, "archive_page")).get()?.status,
     ).toBe("done");
   });
 
@@ -105,26 +101,25 @@ describe.skipIf(!nativeSqliteAvailable())("archive task recovery", () => {
     { op: "archive_page", status: "dead" },
   ] as const)("preserves user cancellation of $op ($status)", async (task) => {
     const { db, runtime, saveId } = setup();
-    db.update(schema.saves)
+    db.update(saves)
       .set({ status: "failed" })
-      .where(eq(schema.saves.id, saveId))
+      .where(eq(saves.id, saveId))
       .run();
-    db.update(schema.tasks).set({ status: "done" }).run();
-    db.update(schema.tasks)
-      .set({ status: task.status, lastError: schema.CANCEL_REASON })
-      .where(eq(schema.tasks.op, task.op))
+    db.update(tasks).set({ status: "done" }).run();
+    db.update(tasks)
+      .set({ status: task.status, lastError: CANCEL_REASON })
+      .where(eq(tasks.op, task.op))
       .run();
-    const before = db.select().from(schema.tasks).all();
+    const before = db.select().from(tasks).all();
 
     expect(await startArchiveBackfill(async () => true, runtime)).toEqual({
       ok: true,
       queued: 0,
     });
     expect(runtime.kickReconciler).not.toHaveBeenCalled();
-    expect(db.select().from(schema.tasks).all()).toEqual(before);
+    expect(db.select().from(tasks).all()).toEqual(before);
     expect(
-      db.select().from(schema.saves).where(eq(schema.saves.id, saveId)).get()
-        ?.status,
+      db.select().from(saves).where(eq(saves.id, saveId)).get()?.status,
     ).toBe("failed");
   });
 
@@ -137,29 +132,28 @@ describe.skipIf(!nativeSqliteAvailable())("archive task recovery", () => {
     "preserves $taskStatus archive work in a $generationStatus batch",
     async ({ generationStatus, taskStatus }) => {
       const { db, runtime, saveId } = setup();
-      db.update(schema.saves)
+      db.update(saves)
         .set({ status: "failed" })
-        .where(eq(schema.saves.id, saveId))
+        .where(eq(saves.id, saveId))
         .run();
-      db.insert(schema.queueGenerations)
+      db.insert(queueGenerations)
         .values({ id: "retry", kind: "retry", status: generationStatus })
         .run();
-      db.update(schema.tasks).set({ status: "done" }).run();
-      db.update(schema.tasks)
+      db.update(tasks).set({ status: "done" }).run();
+      db.update(tasks)
         .set({ status: taskStatus, generationId: "retry" })
-        .where(eq(schema.tasks.op, "archive_page"))
+        .where(eq(tasks.op, "archive_page"))
         .run();
-      const before = db.select().from(schema.tasks).all();
+      const before = db.select().from(tasks).all();
 
       expect(await startArchiveBackfill(async () => true, runtime)).toEqual({
         ok: true,
         queued: 0,
       });
       expect(runtime.kickReconciler).not.toHaveBeenCalled();
-      expect(db.select().from(schema.tasks).all()).toEqual(before);
+      expect(db.select().from(tasks).all()).toEqual(before);
       expect(
-        db.select().from(schema.saves).where(eq(schema.saves.id, saveId)).get()
-          ?.status,
+        db.select().from(saves).where(eq(saves.id, saveId)).get()?.status,
       ).toBe("failed");
     },
   );
@@ -167,8 +161,8 @@ describe.skipIf(!nativeSqliteAvailable())("archive task recovery", () => {
   it("preserves a cancellation made while another Save is persisted", async () => {
     const { db, runtime, saveId } = setup();
     const laterSaveId = "later-save";
-    db.update(schema.tasks).set({ status: "done" }).run();
-    db.insert(schema.saves)
+    db.update(tasks).set({ status: "done" }).run();
+    db.insert(saves)
       .values({
         id: laterSaveId,
         source: "web",
@@ -177,23 +171,23 @@ describe.skipIf(!nativeSqliteAvailable())("archive task recovery", () => {
         status: "complete",
       })
       .run();
-    db.insert(schema.tasks)
+    db.insert(tasks)
       .values(
         createPendingTasks(laterSaveId, "web", new Date(1), undefined).map(
-          (task): schema.NewTask => ({ ...task, status: "done" }),
+          (task): NewTask => ({ ...task, status: "done" }),
         ),
       )
       .run();
     const persist = runtime.persistSave;
-    const persisted: string[] = [];
+    const persisted: Array<string> = [];
     let cancelledSaveId = "";
     runtime.persistSave = async (id, patch) => {
       persisted.push(id);
       const result = await persist(id, patch);
       cancelledSaveId = id === saveId ? laterSaveId : saveId;
-      db.update(schema.tasks)
-        .set({ status: "cancelled", lastError: schema.CANCEL_REASON })
-        .where(eq(schema.tasks.saveId, cancelledSaveId))
+      db.update(tasks)
+        .set({ status: "cancelled", lastError: CANCEL_REASON })
+        .where(eq(tasks.saveId, cancelledSaveId))
         .run();
       return result;
     };
@@ -205,19 +199,16 @@ describe.skipIf(!nativeSqliteAvailable())("archive task recovery", () => {
     expect(persisted).toHaveLength(1);
     const cancelledTasks = db
       .select()
-      .from(schema.tasks)
-      .where(eq(schema.tasks.saveId, cancelledSaveId))
+      .from(tasks)
+      .where(eq(tasks.saveId, cancelledSaveId))
       .all();
     expect(cancelledTasks).toHaveLength(5);
     expect(cancelledTasks.every((task) => task.status === "cancelled")).toBe(
       true,
     );
     expect(
-      db
-        .select()
-        .from(schema.saves)
-        .where(eq(schema.saves.id, cancelledSaveId))
-        .get()?.status,
+      db.select().from(saves).where(eq(saves.id, cancelledSaveId)).get()
+        ?.status,
     ).toBe("complete");
   });
 
@@ -227,10 +218,9 @@ describe.skipIf(!nativeSqliteAvailable())("archive task recovery", () => {
     expect(await archiveSiteForSave(saveId, runtime)).toEqual({ ok: true });
     expect(runtime.kickReconciler).toHaveBeenCalledOnce();
     expect(
-      db.select().from(schema.saves).where(eq(schema.saves.id, saveId)).get()
-        ?.status,
+      db.select().from(saves).where(eq(saves.id, saveId)).get()?.status,
     ).toBe("ingesting");
-    const rows = db.select().from(schema.tasks).all();
+    const rows = db.select().from(tasks).all();
     expect(rows.find((task) => task.op === "fetch_blobs")?.status).toBe(
       "pending",
     );

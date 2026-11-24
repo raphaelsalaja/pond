@@ -23,14 +23,14 @@
   --popup-separator-space: var(--ds-space-sm);
   display: flex;
   flex-direction: column;
-  min-width: var(--ds-popup-min-width);
+  gap: var(--popup-gap);
   width: var(--ds-popup-width);
+  min-width: var(--ds-popup-min-width);
   max-width: max(
     var(--ds-popup-min-width),
     min(var(--ds-popup-max-width), var(--available-width))
   );
   padding: var(--popup-padding-block) var(--popup-padding-inline);
-  gap: var(--popup-gap);
   outline: none;
   background: var(--ds-background-elevated);
   border-radius: var(--ds-radius-xl);

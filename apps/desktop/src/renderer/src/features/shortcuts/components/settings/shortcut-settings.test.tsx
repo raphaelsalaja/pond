@@ -5,8 +5,19 @@ import { expect, it, vi } from "vitest";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 import { ShortcutSettings } from "./";
 
+async function settle() {
+  for (let tick = 0; tick < 5; tick++) {
+    await act(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        }),
+    );
+  }
+}
+
 it("shows editable shortcuts without profile controls or explanatory copy", async () => {
-  const writes: string[] = [];
+  const writes: Array<string> = [];
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -16,9 +27,12 @@ it("shows editable shortcuts without profile controls or explanatory copy", asyn
   );
   vi.stubGlobal("pond", {
     async query(name: string) {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "settings.globalShortcutStatus")
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
+      if (name === "settings.globalShortcutStatus") {
         return { enabled: true, errors: ["Show Pond is unavailable."] };
+      }
       writes.push(name);
       throw new Error(
         "Show Pond is unavailable. Your shortcuts were not changed.",
@@ -42,7 +56,9 @@ it("shows editable shortcuts without profile controls or explanatory copy", asyn
     const control = host.querySelector<HTMLInputElement>(
       'input[aria-label="Change Show Pond shortcut"]',
     );
-    if (!control) throw Error("Missing summon shortcut control");
+    if (!control) {
+      throw Error("Missing summon shortcut control");
+    }
     await act(async () => control.click());
     await act(async () =>
       control.dispatchEvent(
@@ -70,7 +86,7 @@ it("shows editable shortcuts without profile controls or explanatory copy", asyn
 
 it("records keys for the unbound ring shortcut and clears it back to unbound", async () => {
   let prefs = DEFAULT_PREFS;
-  const saved: Record<string, string>[] = [];
+  const saved: Array<Record<string, string>> = [];
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -83,9 +99,12 @@ it("records keys for the unbound ring shortcut and clears it back to unbound", a
       name: string,
       input: { shortcuts?: { overrides: Record<string, string> } },
     ) {
-      if (name === "settings.getPrefs") return prefs;
-      if (name === "settings.globalShortcutStatus")
+      if (name === "settings.getPrefs") {
+        return prefs;
+      }
+      if (name === "settings.globalShortcutStatus") {
         return { enabled: true, errors: [] };
+      }
       const overrides = input.shortcuts?.overrides ?? {};
       saved.push(overrides);
       prefs = { ...prefs, shortcuts: { ...prefs.shortcuts, overrides } };
@@ -103,10 +122,6 @@ it("records keys for the unbound ring shortcut and clears it back to unbound", a
     host.querySelector<HTMLButtonElement>(
       'button[aria-label="Clear Open File To Ring shortcut"]',
     );
-  const settle = async () => {
-    for (let tick = 0; tick < 5; tick++)
-      await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
-  };
   try {
     await act(async () => root.render(<ShortcutSettings />));
     expect(

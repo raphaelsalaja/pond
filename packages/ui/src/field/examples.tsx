@@ -1,6 +1,6 @@
+import { Field } from ".";
 import { Input } from "../input";
 import type { ComponentDocs } from "../shared/docs";
-import { Field } from ".";
 
 export const docs: ComponentDocs = {
   slug: "field",

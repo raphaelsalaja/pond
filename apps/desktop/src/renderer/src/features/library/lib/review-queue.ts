@@ -1,7 +1,7 @@
 export type ReviewOutcome = "keep" | "trash" | "collection" | "skip";
 
 export interface ReviewQueue {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   index: number;
   outcomes: Readonly<Record<string, ReviewOutcome>>;
 }
@@ -19,7 +19,7 @@ type ReviewKey =
 
 export const REVIEW_FOLDER_SLOTS = 4;
 
-export function startQueue(ids: readonly string[]): ReviewQueue {
+export function startQueue(ids: ReadonlyArray<string>): ReviewQueue {
   return { ids: [...new Set(ids)], index: 0, outcomes: {} };
 }
 
@@ -32,7 +32,9 @@ export function advanceQueue(
   outcome: ReviewOutcome,
 ): ReviewQueue {
   const id = currentReviewId(queue);
-  if (!id) return queue;
+  if (!id) {
+    return queue;
+  }
   return {
     ...queue,
     index: queue.index + 1,
@@ -43,7 +45,9 @@ export function advanceQueue(
 /** Undo restores a Save's earlier state, so its card comes back with no outcome recorded. */
 export function rewindQueue(queue: ReviewQueue, id: string): ReviewQueue {
   const index = queue.ids.indexOf(id);
-  if (index < 0) return queue;
+  if (index < 0) {
+    return queue;
+  }
   const outcomes = Object.fromEntries(
     Object.entries(queue.outcomes).filter(([saveId]) => saveId !== id),
   );
@@ -60,7 +64,9 @@ export function jumpQueue(queue: ReviewQueue, index: number): ReviewQueue {
 
 export function countOutcomes(queue: ReviewQueue) {
   const counts = { keep: 0, trash: 0, collection: 0, skip: 0 };
-  for (const outcome of Object.values(queue.outcomes)) counts[outcome] += 1;
+  for (const outcome of Object.values(queue.outcomes)) {
+    counts[outcome] += 1;
+  }
   return counts;
 }
 
@@ -72,12 +78,19 @@ export function reviewKey(
   >,
   options: { fromButton: boolean },
 ): ReviewKey | null {
-  if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey)
+  if (
+    event.defaultPrevented ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey
+  ) {
     return null;
+  }
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   const slot = Number.parseInt(key, 10);
-  if (slot >= 1 && slot <= REVIEW_FOLDER_SLOTS)
+  if (slot >= 1 && slot <= REVIEW_FOLDER_SLOTS) {
     return { kind: "folder", slot: slot - 1 };
+  }
   switch (key) {
     case "ArrowLeft":
     case "Backspace":

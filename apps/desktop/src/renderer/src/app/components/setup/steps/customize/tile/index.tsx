@@ -1,5 +1,6 @@
 import { Switch } from "@pond/ui";
-import { type ReactNode, useId } from "react";
+import { useId } from "react";
+import type { ReactNode } from "react";
 import type { OptionId, StepProps } from "../../../model";
 import styles from "./styles.module.css";
 

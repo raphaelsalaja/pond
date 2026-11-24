@@ -1,4 +1,5 @@
 import type { MenuItemSpec } from "@pond/ui";
+import { isElement } from "@pond/ui/dom";
 import type { ReactElement } from "react";
 import { createContext, useContext, useState } from "react";
 import { useSave } from "@/features/saves/hooks/use-saves";
@@ -6,10 +7,10 @@ import {
   buildSaveMenu,
   contextMenuSaves,
   loadOpenWithApps,
-  type OpenWithApp,
   openWithKind,
   peekOpenWithApps,
 } from "@/features/saves/lib/menu";
+import type { OpenWithApp } from "@/features/saves/lib/menu";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
@@ -23,10 +24,12 @@ const SAVE_MENU_SEARCH_LABEL = "Search save operations";
 const HostedContext = createContext(false);
 
 function useSaveMenu() {
-  const [openWithApps, setOpenWithApps] = useState<OpenWithApp[]>([]);
+  const [openWithApps, setOpenWithApps] = useState<Array<OpenWithApp>>([]);
   return {
     open(save: Save) {
-      if (!selection.has(save.id)) selectOnlySave(save.id);
+      if (!selection.has(save.id)) {
+        selectOnlySave(save.id);
+      }
       const targets = contextMenuSaves(save);
       const kind = openWithKind(targets[0] ?? save);
       void loadOpenWithApps({
@@ -53,7 +56,9 @@ interface SaveContextMenuProps {
 
 export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
   const menu = useSaveMenu();
-  if (useContext(HostedContext)) return children;
+  if (useContext(HostedContext)) {
+    return children;
+  }
   return (
     <SpecContextMenu
       search
@@ -68,13 +73,15 @@ export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
 }
 
 function cardSaveId(target: EventTarget | null): string | null {
-  if (!(target instanceof Element)) return null;
+  if (!isElement(target)) {
+    return null;
+  }
   const card = target.closest<HTMLElement>("[data-library-card][data-save-id]");
   return card?.dataset.saveId ?? null;
 }
 
 interface SaveCollectionContextMenuProps {
-  buildBackgroundItems: () => MenuItemSpec[];
+  buildBackgroundItems: () => Array<MenuItemSpec>;
   acceptsBackground: (target: EventTarget | null) => boolean;
   children: ReactElement;
 }
@@ -99,8 +106,11 @@ export function SaveCollectionContextMenu({
           const id = cardSaveId(element);
           const save = id ? pool.get(id) : undefined;
           setTargetId(save ? save.id : null);
-          if (save) menu.open(save);
-          else if (!acceptsBackground(element)) eventDetails.cancel();
+          if (save) {
+            menu.open(save);
+          } else if (!acceptsBackground(element)) {
+            eventDetails.cancel();
+          }
         }}
         buildItems={() =>
           target ? menu.items(target) : buildBackgroundItems()

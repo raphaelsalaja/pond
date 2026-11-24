@@ -5,8 +5,10 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { act, type ReactNode } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FolderEmpty } from "./";
 
@@ -60,8 +62,12 @@ describe("FolderEmpty", () => {
 
   it("picks files into the open folder", async () => {
     const query = vi.fn(async (name: string) => {
-      if (name === "saves.pickImportPaths") return { paths: ["/tmp/a.png"] };
-      if (name === "saves.reviewImportDuplicates") return { candidates: [] };
+      if (name === "saves.pickImportPaths") {
+        return { paths: ["/tmp/a.png"] };
+      }
+      if (name === "saves.reviewImportDuplicates") {
+        return { candidates: [] };
+      }
       return { ok: true, ids: ["a"] };
     });
     vi.stubGlobal("pond", { query });

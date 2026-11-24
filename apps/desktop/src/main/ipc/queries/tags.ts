@@ -2,11 +2,11 @@ import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
 import {
   NullableStringParam,
-  type QueryHandlerMap,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const NameParams = z.object({ name: StringParam });
 const RenameParams = z.object({ from: StringParam, to: StringParam });
@@ -45,7 +45,9 @@ export const tagsQueries = {
     async (params) => {
       const { updateTag } = await import("../../core/tags");
       const patch: Parameters<typeof updateTag>[1] = {};
-      if ("starred" in params.patch) patch.starred = params.patch.starred;
+      if ("starred" in params.patch) {
+        patch.starred = params.patch.starred;
+      }
       if ("description" in params.patch) {
         patch.description = params.patch.description;
       }
@@ -64,9 +66,13 @@ export const tagsQueries = {
       const { createGroup } = await import("../../core/tag-groups");
       const { deleteTag } = await import("../../core/tags");
       const name = params.name.trim();
-      if (!name) return { ok: false, error: "Enter a tag name." };
+      if (!name) {
+        return { ok: false, error: "Enter a tag name." };
+      }
       const created = await createGroup({ name });
-      if (!created.ok) return created;
+      if (!created.ok) {
+        return created;
+      }
       await deleteTag(name);
       return { ok: true };
     },

@@ -11,17 +11,18 @@ export interface ActivityEntry {
   readonly startedAt: number;
 }
 
-const store = new Store<{ entries: readonly ActivityEntry[] }>({
+const store = new Store<{ entries: ReadonlyArray<ActivityEntry> }>({
   entries: [],
 });
 let nextId = 1;
 
 function settle(id: number): ActivityEntry | null {
   const entry = store.state.entries.find((item) => item.id === id) ?? null;
-  if (entry)
+  if (entry) {
     store.setState((s) => ({
       entries: s.entries.filter((item) => item.id !== id),
     }));
+  }
   return entry;
 }
 
@@ -56,11 +57,15 @@ export const statusFeed = {
   },
   done(id: number, message?: string): void {
     const entry = settle(id);
-    if (entry) finished(entry.label, message);
+    if (entry) {
+      finished(entry.label, message);
+    }
   },
   fail(id: number, message: string): void {
     const entry = settle(id);
-    if (entry) failed(entry.label, message);
+    if (entry) {
+      failed(entry.label, message);
+    }
   },
   dismiss(id: number): void {
     settle(id);
@@ -70,6 +75,6 @@ export const statusFeed = {
   },
 };
 
-export function useStatusFeed(): readonly ActivityEntry[] {
+export function useStatusFeed(): ReadonlyArray<ActivityEntry> {
   return useSelector(store, (s) => s.entries);
 }

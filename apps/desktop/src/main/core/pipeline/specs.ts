@@ -1,8 +1,10 @@
-import { OPS, type Op, type Save, type Source } from "@pond/schema/db";
-import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
+import { OPS } from "@pond/schema/db";
+import type { Op, Save, Source } from "@pond/schema/db";
+import { walkCaptureMedia } from "@pond/schema/raw";
+import type { RawJson } from "@pond/schema/raw";
 import { rendersPostCard } from "@shared/save-file-names";
 
-const UNIVERSAL_SPEC: readonly Op[] = OPS;
+const UNIVERSAL_SPEC: ReadonlyArray<Op> = OPS;
 
 const MAX_ATTEMPTS = {
   harvest_metadata: 5,
@@ -20,8 +22,10 @@ export function maxAttemptsFor(op: Op): number {
   return MAX_ATTEMPTS[op];
 }
 
-export function planOps(source: Source): readonly Op[] {
-  if (source === "local") return [];
+export function planOps(source: Source): ReadonlyArray<Op> {
+  if (source === "local") {
+    return [];
+  }
   if (source === "web") {
     return [
       "harvest_metadata",
@@ -71,8 +75,8 @@ export type CaptureField =
   | "capture.upstream.url";
 
 interface CaptureExpectation {
-  required: readonly CaptureField[];
-  recommended: readonly CaptureField[];
+  required: ReadonlyArray<CaptureField>;
+  recommended: ReadonlyArray<CaptureField>;
 }
 
 export const CAPTURE_EXPECTATIONS = {
@@ -221,8 +225,12 @@ export function resolveYtDlpTarget(
   save: Pick<Save, "rawJson" | "source" | "url">,
 ): string | null {
   const upstreamUrl = save.rawJson?.capture?.upstream?.url;
-  if (upstreamUrl) return upstreamUrl;
-  if (save.source === "pinterest") return null;
+  if (upstreamUrl) {
+    return upstreamUrl;
+  }
+  if (save.source === "pinterest") {
+    return null;
+  }
   return save.url;
 }
 
@@ -235,6 +243,8 @@ export function expectedVideoDownloads(
   save: Pick<Save, "mediaType" | "rawJson">,
 ): number {
   const fromCapture = countCaptureVideos(save.rawJson);
-  if (fromCapture > 0) return fromCapture;
+  if (fromCapture > 0) {
+    return fromCapture;
+  }
   return save.mediaType === "video" ? 1 : 0;
 }

@@ -2,11 +2,8 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  createKeychain,
-  type KeychainPort,
-  KeychainUnavailableError,
-} from "./keychain";
+import { createKeychain, KeychainUnavailableError } from "./keychain";
+import type { KeychainPort } from "./keychain";
 
 let userData = "";
 let port: TestKeychainPort;
@@ -28,15 +25,20 @@ class TestKeychainPort implements KeychainPort {
   }
 
   protect(value: string): Buffer {
-    if (!this.encryptionEnabled) throw new Error("Encryption unavailable.");
+    if (!this.encryptionEnabled) {
+      throw new Error("Encryption unavailable.");
+    }
     return Buffer.from(`protected:${value}`, "utf8");
   }
 
   unprotect(value: Buffer): string {
-    if (!this.decryptionEnabled) throw new Error("Decryption unavailable.");
+    if (!this.decryptionEnabled) {
+      throw new Error("Decryption unavailable.");
+    }
     const protectedValue = value.toString("utf8");
-    if (!protectedValue.startsWith("protected:"))
+    if (!protectedValue.startsWith("protected:")) {
       throw new Error("Invalid protected value.");
+    }
     return protectedValue.slice("protected:".length);
   }
 }

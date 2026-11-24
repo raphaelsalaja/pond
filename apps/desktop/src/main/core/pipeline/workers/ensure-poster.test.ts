@@ -2,7 +2,8 @@ import type { SaveFile } from "@pond/schema/db";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import sharp from "sharp";
 import { describe, expect, it, vi } from "vitest";
-import { ensureRemotePoster, type RemotePosterSave } from "./ensure-poster";
+import { ensureRemotePoster } from "./ensure-poster";
+import type { RemotePosterSave } from "./ensure-poster";
 
 const POSTER_URL = "https://cdn.test/poster.jpg";
 
@@ -116,8 +117,12 @@ describe("ensureRemotePoster", () => {
     const oar2 = `https://i.ytimg.com/vi/${id}/oar2.jpg`;
     const oardefault = `https://i.ytimg.com/vi/${id}/oardefault.jpg`;
     const fetchAvatarToTxFile = vi.fn(async (url: string) => {
-      if (url === oar2) return image(landscape);
-      if (url === oardefault) return image(portrait);
+      if (url === oar2) {
+        return image(landscape);
+      }
+      if (url === oardefault) {
+        return image(portrait);
+      }
       return { miss: "permanent" as const };
     });
     const persistSave = vi.fn(async () => null);

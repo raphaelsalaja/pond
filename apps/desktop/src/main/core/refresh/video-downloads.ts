@@ -1,10 +1,5 @@
-import {
-  type NewTask,
-  type Op,
-  type Source,
-  saves,
-  tasks,
-} from "@pond/schema/db";
+import { saves, tasks } from "@pond/schema/db";
+import type { NewTask, Op, Source } from "@pond/schema/db";
 import type { DownloadRequest } from "@shared/downloader-contracts";
 import { isVideoFile } from "@shared/media-index";
 import { and, eq, inArray, isNull, ne, notInArray } from "drizzle-orm";
@@ -14,10 +9,10 @@ import type { Db } from "../../db";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import {
-  type TaskPayload,
   TaskPayloadSchema,
   withInteractivePriority,
 } from "../pipeline/priority";
+import type { TaskPayload } from "../pipeline/priority";
 import { kickReconciler } from "../pipeline/reconciler-client";
 import { expectedVideoDownloads, maxAttemptsFor } from "../pipeline/specs";
 import { runEnsurePoster } from "../pipeline/workers/ensure-poster";
@@ -59,7 +54,7 @@ interface SaveRef {
 export async function findSavesMissingVideo(
   source?: Source,
   runtime: VideoDownloadRuntime = defaultRuntime,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const db = await runtime.getDb();
   const rows = db
     .select({
@@ -87,11 +82,13 @@ export async function findSavesMissingVideo(
 }
 
 export async function queueVideoDownloads(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   options: QueueVideoDownloadOptions,
   runtime: VideoDownloadRuntime = defaultRuntime,
 ): Promise<number> {
-  if (saveIds.length === 0) return 0;
+  if (saveIds.length === 0) {
+    return 0;
+  }
   const db = await runtime.getDb();
   const now = new Date();
   let queued = 0;
@@ -99,12 +96,14 @@ export async function queueVideoDownloads(
     queued += requestIngestingDownloads(db, batch, options, now);
     queued += await reopenSettledSaves(db, batch, options, now, runtime);
   }
-  if (queued > 0) runtime.kickReconciler();
+  if (queued > 0) {
+    runtime.kickReconciler();
+  }
   return queued;
 }
 
 export async function removeVideos(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   runtime: VideoDownloadRuntime = defaultRuntime,
 ): Promise<number> {
   const db = await runtime.getDb();
@@ -123,7 +122,9 @@ export async function removeVideos(
       .all();
     for (const row of rows) {
       const files = row.files ?? [];
-      if (!files.some((file) => file.kind === "video")) continue;
+      if (!files.some((file) => file.kind === "video")) {
+        continue;
+      }
       await runtime.persistSave(
         row.id,
         {},
@@ -133,9 +134,11 @@ export async function removeVideos(
         },
       );
       removed += 1;
-      if (files.some((file) => file.kind === "poster")) continue;
-      void runtime.ensurePoster(row.id).catch((error) => {
-        log.warn("[pond video-downloads] poster fetch failed", row.id, error);
+      if (files.some((file) => file.kind === "poster")) {
+        continue;
+      }
+      void runtime.ensurePoster(row.id).catch((cause: unknown) => {
+        log.warn("[pond video-downloads] poster fetch failed", row.id, cause);
       });
     }
   }
@@ -144,7 +147,7 @@ export async function removeVideos(
 
 function requestIngestingDownloads(
   db: Db,
-  saveIds: string[],
+  saveIds: Array<string>,
   options: QueueVideoDownloadOptions,
   now: Date,
 ): number {
@@ -161,7 +164,9 @@ function requestIngestingDownloads(
           ),
         )
         .all();
-      if (ingesting.length === 0) return 0;
+      if (ingesting.length === 0) {
+        return 0;
+      }
       const followUps = db
         .select({
           id: tasks.id,
@@ -199,10 +204,16 @@ function requestIngestingDownloads(
           requested += 1;
           continue;
         }
-        if (video && video.status !== "done") continue;
+        if (video && video.status !== "done") {
+          continue;
+        }
         /** Only finalize settles an ingesting save, and a running one would orphan the reset download. */
-        if (!own.some((task) => task.op === "finalize")) continue;
-        if (own.some((task) => task.status === "running")) continue;
+        if (!own.some((task) => task.op === "finalize")) {
+          continue;
+        }
+        if (own.some((task) => task.status === "running")) {
+          continue;
+        }
         requestTask(
           db,
           save,
@@ -212,8 +223,9 @@ function requestIngestingDownloads(
           now,
         );
         for (const task of own) {
-          if (task.op === "fetch_video_ytdlp" || task.status !== "done")
+          if (task.op === "fetch_video_ytdlp" || task.status !== "done") {
             continue;
+          }
           requestTask(db, save, task.op, task.id, undefined, now);
         }
         requested += 1;
@@ -225,7 +237,7 @@ function requestIngestingDownloads(
 
 async function reopenSettledSaves(
   db: Db,
-  saveIds: string[],
+  saveIds: Array<string>,
   options: QueueVideoDownloadOptions,
   now: Date,
   runtime: VideoDownloadRuntime,
@@ -242,7 +254,9 @@ async function reopenSettledSaves(
       ),
     )
     .all();
-  if (settled.length === 0) return 0;
+  if (settled.length === 0) {
+    return 0;
+  }
   const settledIds = settled.map((row) => row.id);
   /** A non-done earlier task holds the sequential gate, so the download would never run. */
   const blocked = new Set(
@@ -260,7 +274,9 @@ async function reopenSettledSaves(
       .map((row) => row.saveId),
   );
   const rows = settled.filter((row) => !blocked.has(row.id));
-  if (rows.length === 0) return 0;
+  if (rows.length === 0) {
+    return 0;
+  }
   const existing = new Map(
     db
       .select({ id: tasks.id, saveId: tasks.saveId, op: tasks.op })
@@ -350,8 +366,8 @@ function requestTask(
   db.insert(tasks).values(task).onConflictDoNothing().run();
 }
 
-function batches(ids: readonly string[]): string[][] {
-  const out: string[][] = [];
+function batches(ids: ReadonlyArray<string>): Array<Array<string>> {
+  const out: Array<Array<string>> = [];
   for (let start = 0; start < ids.length; start += ID_BATCH) {
     out.push(ids.slice(start, start + ID_BATCH));
   }

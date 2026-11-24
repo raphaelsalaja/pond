@@ -9,7 +9,7 @@ export interface ProcOutcome {
 
 export function runWithTimeout(
   bin: string,
-  argv: string[],
+  argv: Array<string>,
   timeoutMs: number,
   signal?: AbortSignal,
   onLine?: (line: string) => void,
@@ -33,12 +33,14 @@ export function runWithTimeout(
     let settled = false;
     let stdoutPending = "";
     let stderrPending = "";
-    const stallEnabled = maxMs != null;
+    const stallEnabled = maxMs !== undefined;
     let stallTimer: NodeJS.Timeout | undefined;
     let maxTimer: NodeJS.Timeout | undefined;
 
     function finish(code: number, extra = "") {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       clearTimeout(stallTimer);
       clearTimeout(maxTimer);
@@ -53,12 +55,16 @@ export function runWithTimeout(
     function killWith(code: number, extra: string) {
       try {
         killProcessTree(child, "SIGKILL");
-      } catch {}
+      } catch {
+        /** The run settles with this code whether or not the kill lands. */
+      }
       finish(code, extra);
     }
 
     function armStall() {
-      if (!stallEnabled) return;
+      if (!stallEnabled) {
+        return;
+      }
       clearTimeout(stallTimer);
       stallTimer = setTimeout(
         () => killWith(124, "\n[pond yt-dlp] timeout"),
@@ -70,7 +76,9 @@ export function runWithTimeout(
       const lines = pending.split(/\r?\n/);
       const remainder = lines.pop() ?? "";
       for (const line of lines) {
-        if (stallEnabled) armStall();
+        if (stallEnabled) {
+          armStall();
+        }
         onLine?.(line);
       }
       return remainder.slice(-16_000);
@@ -102,24 +110,38 @@ export function runWithTimeout(
     }
 
     child.stdout?.on("data", (chunk: Buffer) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       stdoutPending = consumeLines(stdoutPending + chunk.toString("utf8"));
       stdout += chunk.toString("utf8");
-      if (stdout.length > 1_000_000) stdout = stdout.slice(-1_000_000);
+      if (stdout.length > 1_000_000) {
+        stdout = stdout.slice(-1_000_000);
+      }
     });
     child.stderr?.on("data", (chunk: Buffer) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       stderrPending = consumeLines(stderrPending + chunk.toString("utf8"));
       stderr += chunk.toString("utf8");
-      if (stderr.length > 64_000) stderr = stderr.slice(-64_000);
+      if (stderr.length > 64_000) {
+        stderr = stderr.slice(-64_000);
+      }
     });
     child.on("error", (err) => {
       finish(-1, String(err));
     });
     child.on("close", (code) => {
-      if (settled) return;
-      if (stdoutPending) onLine?.(stdoutPending);
-      if (stderrPending) onLine?.(stderrPending);
+      if (settled) {
+        return;
+      }
+      if (stdoutPending) {
+        onLine?.(stdoutPending);
+      }
+      if (stderrPending) {
+        onLine?.(stderrPending);
+      }
       finish(code ?? -1);
     });
   });

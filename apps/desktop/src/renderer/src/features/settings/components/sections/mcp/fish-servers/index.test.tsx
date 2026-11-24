@@ -23,12 +23,16 @@ const github: FishMcpServerConfig = {
 
 const calls: Array<[string, JsonValue]> = [];
 
-function stubPond(list: FishMcpServerStatus[]) {
+function stubPond(list: Array<FishMcpServerStatus>) {
   vi.stubGlobal("pond", {
     async query(name: string, params: JsonValue) {
       calls.push([name, params]);
-      if (name === "fishMcp.list") return list;
-      if (name === "fishMcp.save") return list[0];
+      if (name === "fishMcp.list") {
+        return list;
+      }
+      if (name === "fishMcp.save") {
+        return list[0];
+      }
       throw new Error(`Unexpected query: ${name}`);
     },
   });
@@ -46,7 +50,12 @@ async function render(node: React.ReactNode) {
       <QueryClientProvider client={client}>{node}</QueryClientProvider>,
     ),
   );
-  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  await act(
+    () =>
+      new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      }),
+  );
   return {
     host,
     async unmount() {
@@ -119,7 +128,9 @@ it("turns a server off without sending secrets", async () => {
   const view = await render(<FishServersSection />);
   try {
     const toggle = view.host.querySelector<HTMLElement>('[role="switch"]');
-    if (!toggle) throw new Error("Missing server switch");
+    if (!toggle) {
+      throw new Error("Missing server switch");
+    }
     await act(async () => toggle.click());
     expect(calls).toContainEqual([
       "fishMcp.save",
@@ -137,7 +148,9 @@ it("explains an invalid name instead of saving", async () => {
   );
   try {
     const form = document.querySelector("form");
-    if (!form) throw new Error("Missing server form");
+    if (!form) {
+      throw new Error("Missing server form");
+    }
     await act(async () => form.requestSubmit());
     expect(document.body.textContent).toContain(
       "Use lowercase letters, numbers, and dashes.",

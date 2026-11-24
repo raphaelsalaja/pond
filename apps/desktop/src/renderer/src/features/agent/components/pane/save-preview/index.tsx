@@ -20,10 +20,20 @@ interface ThumbnailStyle extends CSSProperties {
   "--thumbnail-width-scale": number;
 }
 
-export function useSourceCovers(ids: string[]) {
+function isIdList(value: unknown): value is Array<string> {
+  return (
+    Array.isArray(value) &&
+    value.every((id): id is string => typeof id === "string")
+  );
+}
+
+export function useSourceCovers(ids: Array<string>) {
   const key = JSON.stringify(ids);
   useEffect(() => {
-    if (key !== "[]") void ensureSaves(JSON.parse(key)).catch(() => undefined);
+    const parsed: unknown = JSON.parse(key);
+    if (key !== "[]" && isIdList(parsed)) {
+      void ensureSaves(parsed).catch(() => undefined);
+    }
   }, [key]);
 }
 

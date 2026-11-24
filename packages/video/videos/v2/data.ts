@@ -14,7 +14,8 @@ import {
   IconOllama,
   IconOpenAI,
 } from "@pond/icons/social-media";
-import { type FishColor, type FishSpecies, scatter } from "@pond/video";
+import { scatter } from "@pond/video";
+import type { FishColor, FishSpecies } from "@pond/video";
 import type { ComponentType, SVGProps } from "react";
 
 export const media = (id: string) => `/media/${id}.jpg`;
@@ -29,7 +30,7 @@ export interface Source {
 }
 
 /** The nine sources 2.0 syncs. */
-export const SOURCES: Source[] = [
+export const SOURCES: Array<Source> = [
   { name: "Tumblr", color: "#001935", Icon: IconBrandTumblr },
   { name: "Savee", color: "#000000", Icon: IconBrandSavee },
   { name: "Behance", color: "#1769ff", Icon: IconBrandBehance },
@@ -44,7 +45,7 @@ export const SOURCES: Source[] = [
 export const SUBSTACK = SOURCES.length - 1;
 
 /** Models a fish can run on, ending on the one that needs no key or host. */
-export const MODELS: Source[] = [
+export const MODELS: Array<Source> = [
   { name: "OpenAI", color: "#000000", Icon: IconOpenAI, tile: "#000" },
   {
     name: "Anthropic",
@@ -84,7 +85,7 @@ export interface Member {
   depth: number;
 }
 
-const SPECIES: FishSpecies[] = [
+const SPECIES: Array<FishSpecies> = [
   "goldfish",
   "puffer",
   "clownfish",
@@ -94,7 +95,7 @@ const SPECIES: FishSpecies[] = [
   "anglerfish",
   "sunfish",
 ];
-const COLORS: FishColor[] = [
+const COLORS: Array<FishColor> = [
   "gold",
   "teal",
   "red",
@@ -109,7 +110,7 @@ const COLORS: FishColor[] = [
 export const KOI_SPOT = { x: 960, y: 430 };
 
 /** A jittered grid of fish across the frame, clear of Koi. */
-export const SCHOOL: Member[] = Array.from({ length: 15 * 9 }, (_, i) => {
+export const SCHOOL: Array<Member> = Array.from({ length: 15 * 9 }, (_, i) => {
   const column = i % 15;
   const row = Math.floor(i / 15);
   return {
@@ -147,7 +148,7 @@ const CABIN: Shot = {
 };
 
 /** The library grid, in the order cards fill the columns. */
-export const LIBRARY: Shot[] = [
+export const LIBRARY: Array<Shot> = [
   {
     id: "01M1Z5EJM0DK2SN3NBPY1SKNYD",
     title: "Lemaire AW25, look 28",

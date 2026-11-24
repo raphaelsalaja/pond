@@ -1,7 +1,7 @@
 /** Runs each user journey in scripts/journeys against the built desktop app, in file order, in one throwaway Library. */
 const { app } = require("electron");
 const { existsSync, readdirSync } = require("node:fs");
-const { join } = require("node:path");
+const path = require("node:path");
 const {
   createSandbox,
   driver,
@@ -15,13 +15,13 @@ const {
 const only = process.argv
   .find((a) => a.startsWith("--only="))
   ?.slice("--only=".length);
-const directory = join(__dirname, "journeys");
+const directory = path.join(__dirname, "journeys");
 const files = readdirSync(directory)
   .filter((name) => name.endsWith(".cjs"))
   .filter((name) => !only || name.includes(only))
   .sort();
 
-if (!existsSync(join(__dirname, "../out/main/index.js"))) {
+if (!existsSync(path.join(__dirname, "../out/main/index.js"))) {
   console.error(
     "journeys: out/main/index.js is missing. Run `pnpm --filter @pond/desktop build` first.",
   );
@@ -42,7 +42,7 @@ const onStep = (name) => {
 };
 const deadline = setTimeout(
   () => fail(new Error("Timed out after 300000 ms")),
-  300000,
+  300_000,
 );
 
 function fail(error) {
@@ -62,13 +62,13 @@ async function main() {
   await seedLibrary(ctx);
   const failed = [];
   for (const file of files) {
-    const journey = require(join(directory, file));
+    const journey = require(path.join(directory, file));
     const started = Date.now();
     step = "start";
     try {
       await ctx.key("Escape");
       await ctx.navigate("/");
-      await within(60000, journey.run(ctx), file);
+      await within(60_000, journey.run(ctx), file);
       console.log(`JOURNEY_PASSED ${file} ${Date.now() - started}ms`);
     } catch (error) {
       failed.push(file);

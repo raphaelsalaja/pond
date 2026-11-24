@@ -40,7 +40,9 @@ export function predictGridWidth(
 }
 
 function fallbackWidth(): number {
-  if (!globalThis.window) return 0;
+  if (!globalThis.window) {
+    return 0;
+  }
   return Math.max(0, window.innerWidth - 64);
 }
 
@@ -75,7 +77,9 @@ function useGridWidth(): number {
     const viewport = document.querySelector<HTMLElement>(
       "[data-library-grid-viewport]",
     );
-    if (!viewport) return;
+    if (!viewport) {
+      return;
+    }
 
     return observeSettledSize(
       viewport,

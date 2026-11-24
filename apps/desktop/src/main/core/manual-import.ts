@@ -1,20 +1,20 @@
 import { open, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
-import {
-  type MediaType,
-  type NewSave,
-  type Save,
-  type SaveFile,
-  type Source,
-  saves,
+import { saves } from "@pond/schema/db";
+import type {
+  MediaType,
+  NewSave,
+  Save,
+  SaveFile,
+  Source,
 } from "@pond/schema/db";
 import type { ImportOrigin } from "@pond/schema/import-origin";
 import type { InboxChannel } from "@pond/schema/inbox";
 import {
   classifyLibraryFileFromHeader,
-  type LibraryFileFormat,
   libraryFilename,
 } from "@shared/file-format";
+import type { LibraryFileFormat } from "@shared/file-format";
 import { isAuxiliaryKind, THUMBNAIL_KIND } from "@shared/save-file-names";
 import type {
   ImportFileFailure,
@@ -29,11 +29,8 @@ import { writeSaveInfo } from "../lib/library";
 import { saveDir } from "../paths";
 import { executeBatch, withMutationScope } from "./executor";
 import { extractFontMetadata, metadataFromOpenType } from "./font-metadata";
-import {
-  extractImageKeywords,
-  extractImageMetadata,
-  type ImageMetadata,
-} from "./image-metadata";
+import { extractImageKeywords, extractImageMetadata } from "./image-metadata";
+import type { ImageMetadata } from "./image-metadata";
 import { newSaveInbox } from "./inbox";
 import { extractMediaMetadata } from "./media-metadata";
 import { persistSave } from "./persist-save";
@@ -49,10 +46,10 @@ export interface ManualSaveInput {
   title?: string | null;
   url?: string | null;
   note?: string | null;
-  tags?: string[];
-  filePaths?: string[];
-  memoryFiles?: ManualSaveMemoryFile[];
-  fileSourceUrls?: string[];
+  tags?: Array<string>;
+  filePaths?: Array<string>;
+  memoryFiles?: Array<ManualSaveMemoryFile>;
+  fileSourceUrls?: Array<string>;
   /** Optional preview supplied by an external library such as Eagle. */
   thumbnailPath?: string | null;
   sourceId?: string | null;
@@ -65,7 +62,7 @@ export interface ManualSaveInput {
   width?: number;
   height?: number;
   rating?: number | null;
-  dominantColors?: string[];
+  dominantColors?: Array<string>;
   mediaType?: MediaType | null;
   /** Omitted for Saves derived from another, like crop copies, which never enter the Inbox. */
   inboxChannel?: InboxChannel;
@@ -85,11 +82,11 @@ interface ReadableImport {
   body?: string;
   width?: number;
   height?: number;
-  keywords?: string[];
+  keywords?: Array<string>;
   metadata?: ImageMetadata;
 }
 
-const MEDIA_TYPE_PRIORITY: readonly MediaType[] = [
+const MEDIA_TYPE_PRIORITY: ReadonlyArray<MediaType> = [
   "image",
   "video",
   "audio",
@@ -99,9 +96,11 @@ const MEDIA_TYPE_PRIORITY: readonly MediaType[] = [
   "file",
 ];
 export function mediaTypeForImportedFiles(
-  formats: readonly LibraryFileFormat[],
+  formats: ReadonlyArray<LibraryFileFormat>,
 ): MediaType | null {
-  if (formats.length === 0) return null;
+  if (formats.length === 0) {
+    return null;
+  }
   const counts = new Map<MediaType, number>();
   for (const item of formats) {
     counts.set(item.mediaType, (counts.get(item.mediaType) ?? 0) + 1);
@@ -164,7 +163,9 @@ export function storageKindForImport(
 ): SaveFile["kind"] {
   switch (format.mediaType) {
     case "image":
-      if (format.previewKind === "generic") return "file";
+      if (format.previewKind === "generic") {
+        return "file";
+      }
       return "image";
     case "video":
       return "video";
@@ -220,13 +221,14 @@ async function importManualSave(
           saveDir(existing.id),
           requestedFileCount,
         ))
-      )
+      ) {
         return {
           ok: true,
           id: existing.id,
           skipped: true,
-          trashed: existing.deletedAt != null,
+          trashed: existing.deletedAt !== null,
         };
+      }
       id = existing.id;
       recovering = true;
     }
@@ -257,9 +259,13 @@ async function importManualSave(
       : null);
 
   const importedText = readable
-    .filter((item) => item.format.mediaType === "text")
-    .map((item) => item.body?.trim())
-    .filter((body): body is string => Boolean(body))
+    .flatMap((item) => {
+      if (item.format.mediaType !== "text") {
+        return [];
+      }
+      const body = item.body?.trim();
+      return body ? [body] : [];
+    })
     .join("\n\n")
     .trim();
 
@@ -283,7 +289,9 @@ async function importManualSave(
       readable.map((item) => item.format),
     ),
   });
-  if (!classified.ok) return { ok: false, error: classified.error };
+  if (!classified.ok) {
+    return { ok: false, error: classified.error };
+  }
 
   const { isTextSave, mediaType } = classified;
 
@@ -311,15 +319,28 @@ async function importManualSave(
     publishedAt: input.publishedAt,
     ...(await newSaveInbox(input.inboxChannel)),
   };
-  if (input.width != null) insertValues.width = input.width;
-  if (input.height != null) insertValues.height = input.height;
-  if (input.rating != null) insertValues.rating = input.rating;
-  if (input.dominantColors) insertValues.dominantColors = input.dominantColors;
+  if (input.width !== undefined) {
+    insertValues.width = input.width;
+  }
+  if (input.height !== undefined) {
+    insertValues.height = input.height;
+  }
+  if (input.rating !== null && input.rating !== undefined) {
+    insertValues.rating = input.rating;
+  }
+  if (input.dominantColors) {
+    insertValues.dominantColors = input.dominantColors;
+  }
   const primaryMetadata = readable[0]?.metadata;
-  if (primaryMetadata) Object.assign(insertValues, primaryMetadata);
-  if (!insertValues.container && readable[0])
+  if (primaryMetadata) {
+    Object.assign(insertValues, primaryMetadata);
+  }
+  if (!insertValues.container && readable[0]) {
     insertValues.container = readable[0].format.extension;
-  if (readable.length > 0) insertValues.metadataVersion = 1;
+  }
+  if (readable.length > 0) {
+    insertValues.metadataVersion = 1;
+  }
   const registry = await prepareTagRegistryUpdates(tags);
   if (!recovering) {
     await executeBatch([
@@ -337,7 +358,7 @@ async function importManualSave(
   }
 
   if (storesFiles) {
-    const newFiles: WriteFileArgs[] = readable.map((item) => {
+    const newFiles: Array<WriteFileArgs> = readable.map((item) => {
       const kind = storageKindForImport(item.format);
       const metadata = {
         kind,
@@ -414,7 +435,9 @@ async function importManualSave(
         ];
         const nextTags = normalizeTagList([...tags, ...automaticTags]);
         const fontRegistry = await prepareTagRegistryUpdates(nextTags);
-        if (fontRegistry.length) await executeBatch(fontRegistry);
+        if (fontRegistry.length) {
+          await executeBatch(fontRegistry);
+        }
         const files = completed.files.map((file, index) =>
           index === 0
             ? {
@@ -434,15 +457,17 @@ async function importManualSave(
     await ensureSaveThumbnail(id, completed);
   } else {
     const finalRow = (await db.select().from(saves).where(eq(saves.id, id)))[0];
-    if (finalRow) await writeSaveInfo(finalRow);
+    if (finalRow) {
+      await writeSaveInfo(finalRow);
+    }
   }
 
   return { ok: true, id, failedFiles };
 }
 
-async function inspectImportPaths(paths: readonly string[]): Promise<{
-  items: ReadableImport[];
-  failures: ImportFileFailure[];
+async function inspectImportPaths(paths: ReadonlyArray<string>): Promise<{
+  items: Array<ReadableImport>;
+  failures: Array<ImportFileFailure>;
 }> {
   const limit = pLimit(4);
   const results = await Promise.all(
@@ -454,8 +479,9 @@ async function inspectImportPaths(paths: readonly string[]): Promise<{
         }> => {
           try {
             return { item: await inspectImportPath(path) };
-          } catch (err) {
-            const error = err instanceof Error ? err.message : String(err);
+          } catch (error_) {
+            const error =
+              error_ instanceof Error ? error_.message : String(error_);
             return { failure: { path, error } };
           }
         },
@@ -474,7 +500,9 @@ async function inspectImportPath(
   path: string,
 ): Promise<ReadableImport | undefined> {
   const info = await stat(path);
-  if (!info.isFile() || info.size === 0) return undefined;
+  if (!info.isFile() || info.size === 0) {
+    return undefined;
+  }
   const detectedMime = mime.lookup(path) || null;
   const format = classifyLibraryFileFromHeader(
     path,
@@ -496,21 +524,28 @@ async function inspectImportPath(
       extractImageKeywords(path),
     ]);
     item.metadata = metadata;
-    if (metadata.width) item.width = metadata.width;
-    if (metadata.height) item.height = metadata.height;
+    if (metadata.width) {
+      item.width = metadata.width;
+    }
+    if (metadata.height) {
+      item.height = metadata.height;
+    }
     item.keywords = keywords;
   }
-  if (format.mediaType === "video" || format.mediaType === "audio")
+  if (format.mediaType === "video" || format.mediaType === "audio") {
     item.metadata = await extractMediaMetadata(path);
+  }
   return item;
 }
 
 async function inspectMemoryFiles(
-  files: readonly ManualSaveMemoryFile[],
-): Promise<ReadableImport[]> {
-  const out: ReadableImport[] = [];
+  files: ReadonlyArray<ManualSaveMemoryFile>,
+): Promise<Array<ReadableImport>> {
+  const out: Array<ReadableImport> = [];
   for (const file of files) {
-    if (file.bytes.byteLength === 0) continue;
+    if (file.bytes.byteLength === 0) {
+      continue;
+    }
     const format = classifyLibraryFileFromHeader(
       file.filename,
       file.mimeType,
@@ -524,8 +559,12 @@ async function inspectMemoryFiles(
     };
     if (format.mediaType === "image") {
       item.metadata = await extractImageMetadata(file.bytes);
-      if (item.metadata.width) item.width = item.metadata.width;
-      if (item.metadata.height) item.height = item.metadata.height;
+      if (item.metadata.width) {
+        item.width = item.metadata.width;
+      }
+      if (item.metadata.height) {
+        item.height = item.metadata.height;
+      }
       item.keywords = await extractImageKeywords(file.bytes);
     }
     out.push(item);
@@ -572,12 +611,16 @@ export async function importedFilesComplete(
   const originals = (save.files ?? []).filter(
     (file) => !isAuxiliaryKind(file.kind),
   );
-  if (save.status !== "complete" || originals.length < expected) return false;
+  if (save.status !== "complete" || originals.length < expected) {
+    return false;
+  }
   for (const file of originals) {
     const actual = await libraryMediaMetadata(join(directory, file.path)).catch(
       () => null,
     );
-    if (!actual || actual.originalSize !== file.size) return false;
+    if (!actual || actual.originalSize !== file.size) {
+      return false;
+    }
   }
   return true;
 }

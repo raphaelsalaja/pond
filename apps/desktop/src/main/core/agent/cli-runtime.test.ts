@@ -20,25 +20,27 @@ function errno(code: string) {
   return Object.assign(new Error(code), { code });
 }
 
-describe("prepareCodexRuntime credential isolation", () => {
-  async function run(platform: NodeJS.Platform, code: string) {
-    const directory = await mkdtemp(join(tmpdir(), "pond-codex-test-"));
+async function run(platform: NodeJS.Platform, code: string) {
+  const directory = await mkdtemp(join(tmpdir(), "pond-codex-test-"));
+  try {
+    let failure: Error | undefined;
     try {
-      let failure: Error | undefined;
-      try {
-        await prepareCodexRuntime(directory, "default", undefined, {
-          symlink: () => Promise.reject(errno(code)),
-          platform,
-        });
-      } catch (error) {
-        if (error instanceof Error) failure = error;
+      await prepareCodexRuntime(directory, "default", undefined, {
+        symlink: () => Promise.reject(errno(code)),
+        platform,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        failure = error;
       }
-      return { failure, entries: await readdir(join(directory, "codex-home")) };
-    } finally {
-      await rm(directory, { recursive: true, force: true });
     }
+    return { failure, entries: await readdir(join(directory, "codex-home")) };
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
+}
 
+describe("prepareCodexRuntime credential isolation", () => {
   it("fails with an actionable error and copies nothing when Windows refuses the symlink", async () => {
     const source = await mkdtemp(join(tmpdir(), "pond-codex-source-"));
     const original = process.env.CODEX_HOME;
@@ -50,8 +52,11 @@ describe("prepareCodexRuntime credential isolation", () => {
       expect(String(failure)).toMatch(/Developer Mode/);
       expect(entries).toEqual([]);
     } finally {
-      if (original === undefined) delete process.env.CODEX_HOME;
-      else process.env.CODEX_HOME = original;
+      if (original === undefined) {
+        delete process.env.CODEX_HOME;
+      } else {
+        process.env.CODEX_HOME = original;
+      }
       await rm(source, { recursive: true, force: true });
     }
   });

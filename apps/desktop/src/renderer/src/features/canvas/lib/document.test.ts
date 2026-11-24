@@ -1,14 +1,11 @@
-import { CanvasContentSchema, type CanvasItem } from "@shared/canvas-contracts";
+import { CanvasContentSchema } from "@shared/canvas-contracts";
+import type { CanvasItem } from "@shared/canvas-contracts";
 import type { NodeChange } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
 import {
   alignFrames,
-  type Bounds,
   branchOf,
-  type CanvasNode,
-  type CanvasSnapshot,
   CONNECTOR_STYLE,
-  type ConnectorEdge,
   capsOf,
   clipOf,
   clipText,
@@ -38,8 +35,14 @@ import {
   withGroup,
   withLock,
 } from "./document";
+import type {
+  Bounds,
+  CanvasNode,
+  CanvasSnapshot,
+  ConnectorEdge,
+} from "./document";
 
-const items: CanvasItem[] = [
+const items: Array<CanvasItem> = [
   {
     kind: "save",
     id: "card",
@@ -74,8 +77,20 @@ const items: CanvasItem[] = [
 
 function itemAt(index: number): CanvasItem {
   const item = items[index];
-  if (!item) throw new Error(`No item at ${index}`);
+  if (!item) {
+    throw new Error(`No item at ${index}`);
+  }
   return item;
+}
+
+function idsOf(entries: Array<{ id: string }>) {
+  return entries.map(({ id }) => id);
+}
+
+function selectionsOf(changes: Array<NodeChange<CanvasNode>>) {
+  return changes.flatMap((change) =>
+    change.type === "select" ? [[change.id, change.selected]] : [],
+  );
 }
 
 describe("canvas document", () => {
@@ -122,7 +137,7 @@ describe("canvas document", () => {
 
   it("drops connectors whose ends were removed", () => {
     const nodes = items.slice(0, 1).map(toNode);
-    const edges: ConnectorEdge[] = [
+    const edges: Array<ConnectorEdge> = [
       { id: "link", source: "card", target: "note" },
     ];
     expect(snapshotOf(nodes, edges).connectors).toEqual([]);
@@ -169,8 +184,9 @@ describe("canvas document", () => {
       outline: "ellipse",
       text: "",
     });
-    for (const value of [note.x, note.y, text.x, text.y, figure.x, figure.y])
+    for (const value of [note.x, note.y, text.x, text.y, figure.x, figure.y]) {
       expect(Math.abs(value % GRID)).toBe(0);
+    }
   });
 
   it("stores stroke points relative to the drawing frame", () => {
@@ -205,7 +221,9 @@ describe("canvas document", () => {
       "blue",
       4,
     );
-    if (!drawing) throw new Error("expected a drawing");
+    if (!drawing) {
+      throw new Error("expected a drawing");
+    }
     const resized = withBox(toNode(drawing), {
       x: 0,
       y: 0,
@@ -358,7 +376,7 @@ describe("canvas document", () => {
     });
   });
 
-  const frames: Bounds[] = [
+  const frames: Array<Bounds> = [
     { id: "a", x: 0, y: 0, width: 100, height: 50 },
     { id: "b", x: 300, y: 40, width: 60, height: 100 },
     { id: "c", x: 120, y: 200, width: 40, height: 20 },
@@ -406,12 +424,16 @@ describe("canvas document", () => {
 
   it("moves picked entries through the paint order", () => {
     const list = ["a", "b", "c", "d"].map((id) => ({ id }));
-    const ids = (entries: { id: string }[]) => entries.map(({ id }) => id);
     const picked = new Set(["a", "c"]);
-    expect(ids(reorder(list, picked, "front"))).toEqual(["b", "d", "a", "c"]);
-    expect(ids(reorder(list, picked, "back"))).toEqual(["a", "c", "b", "d"]);
-    expect(ids(reorder(list, picked, "forward"))).toEqual(["b", "a", "d", "c"]);
-    expect(ids(reorder(list, new Set(["b", "c"]), "backward"))).toEqual([
+    expect(idsOf(reorder(list, picked, "front"))).toEqual(["b", "d", "a", "c"]);
+    expect(idsOf(reorder(list, picked, "back"))).toEqual(["a", "c", "b", "d"]);
+    expect(idsOf(reorder(list, picked, "forward"))).toEqual([
+      "b",
+      "a",
+      "d",
+      "c",
+    ]);
+    expect(idsOf(reorder(list, new Set(["b", "c"]), "backward"))).toEqual([
       "b",
       "c",
       "a",
@@ -423,7 +445,7 @@ describe("canvas document", () => {
     const history = createHistory(2);
     const first = snapshotOf(items.slice(0, 1).map(toNode), []);
     const second = snapshotOf(items.map(toNode), []);
-    const third = snapshotOf([] satisfies CanvasNode[], []);
+    const third = snapshotOf([] satisfies Array<CanvasNode>, []);
     history.record(first);
     history.record(second);
     expect(history.undo(third)).toBe(second);
@@ -435,7 +457,7 @@ describe("canvas document", () => {
   });
 
   it("round-trips sections, tables, code, topics, groups, and text styles", () => {
-    const extra: CanvasItem[] = [
+    const extra: Array<CanvasItem> = [
       {
         kind: "section",
         id: "area",
@@ -496,12 +518,8 @@ describe("canvas document", () => {
       withGroup(toNode(itemAt(1)), "g"),
       toNode(itemAt(2)),
     ];
-    const picked = (changes: NodeChange<CanvasNode>[]) =>
-      changes.flatMap((change) =>
-        change.type === "select" ? [[change.id, change.selected]] : [],
-      );
     expect(
-      picked(
+      selectionsOf(
         groupChanges(nodes, [{ type: "select", id: "card", selected: true }]),
       ),
     ).toEqual([
@@ -509,7 +527,7 @@ describe("canvas document", () => {
       ["note", true],
     ]);
     expect(
-      picked(
+      selectionsOf(
         groupChanges(nodes, [
           { type: "select", id: "note", selected: false },
           { type: "select", id: "step", selected: true },
@@ -602,9 +620,13 @@ describe("canvas document", () => {
       color: "blue",
     };
     const first = branchOf({ items: [root], connectors: [] }, "root", "child");
-    if (!first) throw new Error("No branch");
+    if (!first) {
+      throw new Error("No branch");
+    }
     const second = branchOf(first.snapshot, first.created, "sibling");
-    if (!second) throw new Error("No sibling");
+    if (!second) {
+      throw new Error("No sibling");
+    }
     const { items: placed, connectors } = second.snapshot;
     expect(connectors.map((connector) => connector.from)).toEqual([
       "root",

@@ -1,3 +1,4 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 
@@ -11,19 +12,24 @@ const ARROW_WIDGET =
 
 export function controlKeepsKey(event: KeyboardEvent): boolean {
   const target = event.target;
-  if (!(target instanceof HTMLElement)) return false;
-  if (event.key === "Enter" || event.key === " ")
-    return target.closest("button") != null;
-  return target.closest(ARROW_WIDGET) != null;
+  if (!isHTMLElement(target)) {
+    return false;
+  }
+  if (event.key === "Enter" || event.key === " ") {
+    return target.closest("button") !== null;
+  }
+  return target.closest(ARROW_WIDGET) !== null;
 }
 
 export function collectionOwnsKeyboard(): boolean {
   const active = document.activeElement;
-  if (document.querySelector(OVERLAY)) return false;
+  if (document.querySelector(OVERLAY)) {
+    return false;
+  }
   return (
-    active instanceof HTMLElement &&
+    isHTMLElement(active) &&
     !isEditableTarget(active) &&
-    active.closest("[data-save-collection]") != null
+    active.closest("[data-save-collection]") !== null
   );
 }
 
@@ -32,14 +38,20 @@ export function saveOwnsKeyboard(event: KeyboardEvent): boolean {
     event.defaultPrevented ||
     event.isComposing ||
     isEditableTarget(event.target)
-  )
+  ) {
     return false;
+  }
   const active = document.activeElement;
-  if (!(active instanceof HTMLElement) || isEditableTarget(active))
+  if (!isHTMLElement(active) || isEditableTarget(active)) {
     return false;
+  }
   const overlay = active.closest(OVERLAY);
-  if (overlay && !overlay.matches("[data-quick-preview]")) return false;
-  if (!overlay && document.querySelector(OVERLAY)) return false;
+  if (overlay && !overlay.matches("[data-quick-preview]")) {
+    return false;
+  }
+  if (!overlay && document.querySelector(OVERLAY)) {
+    return false;
+  }
   const inspector = active.closest<HTMLElement>("[data-save-inspector]");
   if (inspector) {
     const id = inspector.dataset.saveInspector;
@@ -49,11 +61,12 @@ export function saveOwnsKeyboard(event: KeyboardEvent): boolean {
     );
   }
   /** Focus falls back to body when the focused control unmounts; the open save still owns its keys. */
-  if (active === document.body)
-    return document.querySelector("[data-save-details]") != null;
+  if (active === document.body) {
+    return document.querySelector("[data-save-details]") !== null;
+  }
   return (
     active.closest(
       "[data-save-collection], [data-save-details], [data-quick-preview]",
-    ) != null
+    ) !== null
   );
 }

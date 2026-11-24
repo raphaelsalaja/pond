@@ -52,7 +52,9 @@ export const fishQueries = {
     Id,
     async ({ id }): Promise<QueryResult<"fish.delete">> => {
       const result = deleteFish(id);
-      if (!result.ok) return result;
+      if (!result.ok) {
+        return result;
+      }
       const { deleteFishChats } = await import("../../core/agent/persist");
       await deleteFishChats(id);
       announceFishChanged();
@@ -68,12 +70,16 @@ export const fishQueries = {
     RoutineId,
     async ({ id, routineId }): Promise<QueryResult<"fish.run">> => {
       const fish = readFish(id);
-      if (!fish) return { ok: false, error: "This fish no longer exists." };
+      if (!fish) {
+        return { ok: false, error: "This fish no longer exists." };
+      }
       const routine = fish.routines.find((entry) => entry.id === routineId);
-      if (!routine)
+      if (!routine) {
         return { ok: false, error: "This routine no longer exists." };
-      if (fishPresence(id))
+      }
+      if (fishPresence(id)) {
         return { ok: false, error: `${fish.name} is already working.` };
+      }
       const { runFishRoutine } = await import("../../core/fish/routines");
       void runFishRoutine(fish, routine, { kind: "manual" });
       return { ok: true };

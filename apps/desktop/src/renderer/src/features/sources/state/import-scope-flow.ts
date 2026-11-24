@@ -13,10 +13,8 @@ import {
 } from "@shared/import-scope";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import {
-  type SincePreset,
-  sinceForPreset,
-} from "@/features/sources/lib/import-scope";
+import { sinceForPreset } from "@/features/sources/lib/import-scope";
+import type { SincePreset } from "@/features/sources/lib/import-scope";
 
 export interface ImportScopeAccount {
   id: string;
@@ -33,13 +31,13 @@ interface ImportScopeFlowState {
   source: Source | null;
   /** A pending Account saves each change but fetches nothing until Start Import. */
   starts: boolean;
-  listKinds: readonly ListKind[];
+  listKinds: ReadonlyArray<ListKind>;
   /** Empty imports the whole saved list. */
-  collections: readonly ImportCollection[];
+  collections: ReadonlyArray<ImportCollection>;
   /** Unset follows the default: picked collections file, and none picked doesn't. */
   addToFolders: boolean | undefined;
   /** Empty imports every kind. */
-  mediaKinds: readonly ImportMediaKind[];
+  mediaKinds: ReadonlyArray<ImportMediaKind>;
   /** Local `YYYY-MM-DD`; empty imports every date. */
   since: string;
   sincePreset: SincePreset;
@@ -71,7 +69,9 @@ const EMPTY: ImportScopeFlowState = {
 
 function filingKey(source: Source, scope: ImportScope | undefined): string {
   const filing = collectionFiling(source, scope);
-  if (filing !== "picked") return filing === "every" ? "every" : "";
+  if (filing !== "picked") {
+    return filing === "every" ? "every" : "";
+  }
   const ids = (scope?.collections ?? []).map((c) => c.id).sort();
   return `picked:${ids.join(",")}`;
 }
@@ -122,13 +122,13 @@ function createImportScopeFlow() {
           : s.listKinds.filter((k) => k !== kind),
       }));
     },
-    setCollections(collections: readonly ImportCollection[]): void {
+    setCollections(collections: ReadonlyArray<ImportCollection>): void {
       store.setState((s) => ({ ...s, collections, error: null }));
     },
     setAddToFolders(addToFolders: boolean): void {
       store.setState((s) => ({ ...s, addToFolders, error: null }));
     },
-    setMediaKinds(mediaKinds: readonly ImportMediaKind[]): void {
+    setMediaKinds(mediaKinds: ReadonlyArray<ImportMediaKind>): void {
       store.setState((s) => ({ ...s, mediaKinds, error: null }));
     },
     setSincePreset(sincePreset: SincePreset): void {
@@ -197,20 +197,28 @@ export function draftImportScope(
     | "since"
   >,
 ): ImportScope | null {
-  if (!state.source) return null;
+  if (!state.source) {
+    return null;
+  }
   const options = importScopeOptions(state.source);
   const scope: ImportScope = {};
-  if (options.listKinds.length > 0) scope.listKinds = [...state.listKinds];
+  if (options.listKinds.length > 0) {
+    scope.listKinds = [...state.listKinds];
+  }
   if (options.collections && state.collections.length > 0) {
     scope.collections = [...state.collections];
-    if (!draftFiles(state)) scope.addToFolders = false;
+    if (!draftFiles(state)) {
+      scope.addToFolders = false;
+    }
   } else if (draftFiles(state)) {
     scope.addToFolders = true;
   }
   if (options.mediaKinds.length > 0 && state.mediaKinds.length > 0) {
     scope.mediaKinds = [...state.mediaKinds];
   }
-  if (options.since && state.since) scope.since = state.since;
+  if (options.since && state.since) {
+    scope.since = state.since;
+  }
   const normalized = normalizeImportScope(state.source, scope);
   return normalized.ok ? normalized.scope : null;
 }

@@ -3,13 +3,15 @@ import { Store } from "@tanstack/store";
 
 interface SnoozeDialogState {
   id: string;
-  saveIds: string[];
+  saveIds: Array<string>;
 }
 
 const store = new Store<SnoozeDialogState | null>(null);
 
-export function openSnoozeDialog(saveIds: readonly string[]): void {
-  if (saveIds.length === 0) return;
+export function openSnoozeDialog(saveIds: ReadonlyArray<string>): void {
+  if (saveIds.length === 0) {
+    return;
+  }
   store.setState(() => ({ id: crypto.randomUUID(), saveIds: [...saveIds] }));
 }
 

@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useImageReady } from "./use-image-ready";
 
@@ -15,22 +16,29 @@ function Probe({
   onReady: () => void;
   onBroken: () => void;
 }) {
-  const ready = useImageReady(src, onReady, onBroken);
+  const {
+    ref: imageRef,
+    loaded,
+    onLoad,
+    onError,
+  } = useImageReady(src, onReady, onBroken);
   return (
     <img
-      ref={ready.ref}
+      ref={imageRef}
       src={src}
       alt=""
-      data-loaded={ready.loaded ? "true" : "false"}
-      onLoad={ready.onLoad}
-      onError={ready.onError}
+      data-loaded={loaded ? "true" : "false"}
+      onLoad={onLoad}
+      onError={onError}
     />
   );
 }
 
 function image(): HTMLImageElement {
   const image = host.querySelector("img");
-  if (!image) throw new Error("expected image");
+  if (!image) {
+    throw new Error("expected image");
+  }
   return image;
 }
 

@@ -1,4 +1,5 @@
-import { deletedSourceIds, type Source } from "@pond/schema/db";
+import { deletedSourceIds } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "../../db";
 import { enqueueCandidateKey } from "../pipeline/enqueue-input";
@@ -7,8 +8,8 @@ import type { WatchEntry } from "./types";
 /** SQLite binds a limited number of variables in one statement. */
 const SOURCE_ID_CHUNK = 400;
 
-function chunk(ids: readonly string[], size: number): string[][] {
-  const out: string[][] = [];
+function chunk(ids: ReadonlyArray<string>, size: number): Array<Array<string>> {
+  const out: Array<Array<string>> = [];
   for (let index = 0; index < ids.length; index += size) {
     out.push(ids.slice(index, index + size));
   }
@@ -20,18 +21,23 @@ function chunk(ids: readonly string[], size: number): string[][] {
  * The Source ID stays in `deleted_source_ids`, so a later check must treat it as already seen.
  */
 async function purgedSourceKeys(
-  entries: readonly WatchEntry[],
+  entries: ReadonlyArray<WatchEntry>,
   fallback: Source,
 ): Promise<Set<string>> {
-  const idsBySource = new Map<Source, string[]>();
+  const idsBySource = new Map<Source, Array<string>>();
   for (const entry of entries) {
     const source = entry.source ?? fallback;
     const ids = idsBySource.get(source);
-    if (ids) ids.push(entry.sourceId);
-    else idsBySource.set(source, [entry.sourceId]);
+    if (ids) {
+      ids.push(entry.sourceId);
+    } else {
+      idsBySource.set(source, [entry.sourceId]);
+    }
   }
   const keys = new Set<string>();
-  if (idsBySource.size === 0) return keys;
+  if (idsBySource.size === 0) {
+    return keys;
+  }
 
   const db = await getDb();
   for (const [source, ids] of idsBySource) {
@@ -55,10 +61,10 @@ async function purgedSourceKeys(
 
 /** Posts a Watch should queue. Rows still in the library, including Trash, are already known. */
 export async function freshWatchEntries(input: {
-  entries: readonly WatchEntry[];
+  entries: ReadonlyArray<WatchEntry>;
   fallback: Source;
   present: ReadonlyArray<{ source: Source; sourceId: string }>;
-}): Promise<WatchEntry[]> {
+}): Promise<Array<WatchEntry>> {
   const knownIds = new Set(
     input.present.map((row) => enqueueCandidateKey(row)),
   );

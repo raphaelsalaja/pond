@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { lstat, readFile } from "node:fs/promises";
 import { basename, extname, join, relative, resolve, sep } from "node:path";
-import { type Save, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { Save } from "@pond/schema/db";
 import {
   isAuxiliaryKind,
   isOriginalImageKind,
@@ -42,7 +43,7 @@ export type RepairSave = IntegritySave & Pick<Save, "deletedAt">;
 
 export interface IntegrityEvidence {
   originals: HealthOriginals;
-  files: HealthFileCheck[];
+  files: Array<HealthFileCheck>;
 }
 
 export interface InternalLibraryRepairIssue extends LibraryRepairIssue {
@@ -65,7 +66,7 @@ export interface InternalLibraryRepairIssue extends LibraryRepairIssue {
 
 export interface LibraryIntegrityRuntime {
   root(): string;
-  listSaves(): Promise<IntegritySave[]>;
+  listSaves(): Promise<Array<IntegritySave>>;
   getSave(id: string): Promise<RepairSave | null>;
   inspectPayload(path: string, expected: SaveFile): Promise<PayloadInspection>;
   canRenderThumbnail(path: string): Promise<boolean>;
@@ -89,7 +90,9 @@ async function thumbnailMatchesSource(
     readLibraryMedia(thumbnailPath).catch(() => null),
     readLibraryMedia(sourcePath).catch(() => null),
   ]);
-  if (!thumbnail || !source) return null;
+  if (!thumbnail || !source) {
+    return null;
+  }
   return thumbnailLooksLikeSource(thumbnail, source);
 }
 
@@ -144,8 +147,13 @@ const defaultRuntime: LibraryIntegrityRuntime = {
     try {
       decoded = await readFile(path);
     } catch (error) {
-      if (error instanceof Error && "code" in error && error.code === "ENOENT")
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        error.code === "ENOENT"
+      ) {
         return { status: "missing" };
+      }
       return { status: "unreadable" };
     }
     const fingerprint = createHash("sha256").update(decoded).digest("hex");
@@ -166,16 +174,16 @@ const defaultRuntime: LibraryIntegrityRuntime = {
 
 export async function scanLibraryIntegrity(input: {
   kind: LibraryRepairKind;
-  saveIds?: readonly string[];
+  saveIds?: ReadonlyArray<string>;
   signal?: AbortSignal;
   onProgress?: (processed: number, total: number) => void;
   runtime?: LibraryIntegrityRuntime;
-}): Promise<InternalLibraryRepairIssue[]> {
+}): Promise<Array<InternalLibraryRepairIssue>> {
   const runtime = input.runtime ?? defaultRuntime;
   const rows = input.saveIds
     ? await scopedSaves(input.saveIds, runtime)
     : await runtime.listSaves();
-  const issues: InternalLibraryRepairIssue[] = [];
+  const issues: Array<InternalLibraryRepairIssue> = [];
   for (const [index, row] of rows.entries()) {
     throwIfAborted(input.signal);
     const issue = await inspectSaveIntegrity({
@@ -183,20 +191,24 @@ export async function scanLibraryIntegrity(input: {
       row,
       runtime,
     });
-    if (issue) issues.push(issue);
+    if (issue) {
+      issues.push(issue);
+    }
     input.onProgress?.(index + 1, rows.length);
   }
   return issues;
 }
 
 async function scopedSaves(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   runtime: LibraryIntegrityRuntime,
-): Promise<IntegritySave[]> {
-  const rows: IntegritySave[] = [];
+): Promise<Array<IntegritySave>> {
+  const rows: Array<IntegritySave> = [];
   for (const id of new Set(saveIds)) {
     const row = await runtime.getSave(id);
-    if (row && !row.deletedAt) rows.push(row);
+    if (row && !row.deletedAt) {
+      rows.push(row);
+    }
   }
   return rows;
 }
@@ -208,7 +220,9 @@ export async function inspectCurrentSaveIntegrity(input: {
 }): Promise<InternalLibraryRepairIssue | null> {
   const runtime = input.runtime ?? defaultRuntime;
   const row = await runtime.getSave(input.saveId);
-  if (!row) return null;
+  if (!row) {
+    return null;
+  }
   return inspectSaveIntegrity({ kind: input.kind, row, runtime });
 }
 
@@ -241,10 +255,13 @@ export function findEaglePreviewOriginal(
     row.deletedAt ||
     row.importedFrom !== "eagle" ||
     row.mediaType !== "image"
-  )
+  ) {
     return null;
+  }
   const name = eaglePreviewName(row.title);
-  if (!name) return null;
+  if (!name) {
+    return null;
+  }
   return (
     db
       .select({ id: saves.id, title: saves.title })
@@ -270,10 +287,13 @@ async function inspectEaglePreview(
   row: IntegritySave,
   runtime: LibraryIntegrityRuntime,
 ): Promise<InternalLibraryRepairIssue | null> {
-  if (!eaglePreviewName(row.title) || !runtime.eaglePreviewOriginal)
+  if (!eaglePreviewName(row.title) || !runtime.eaglePreviewOriginal) {
     return null;
+  }
   const original = await runtime.eaglePreviewOriginal(row.id);
-  if (!original) return null;
+  if (!original) {
+    return null;
+  }
   return issue({
     kind: "eagle-previews",
     row,
@@ -291,32 +311,43 @@ async function inspectThumbnail(
 ): Promise<InternalLibraryRepairIssue | null> {
   const directory = saveDirIn(runtime.root(), row.id);
   const thumbnails = row.files.filter((file) => isThumbnailKind(file.kind));
-  const healthy: SaveFile[] = [];
+  const healthy: Array<SaveFile> = [];
   const inspections = new Map<SaveFile, PayloadInspection>();
   const findings = new Map<SaveFile, HealthFileFinding>();
   for (const thumbnail of thumbnails) {
     const path = safePayloadPath(directory, thumbnail.path);
     const inspection = await runtime.inspectPayload(path, thumbnail);
     inspections.set(thumbnail, inspection);
-    if (!inspection.ok) findings.set(thumbnail, inspection.reason);
-    else if (await runtime.canRenderThumbnail(path)) healthy.push(thumbnail);
-    else findings.set(thumbnail, "undecodable");
+    if (!inspection.ok) {
+      findings.set(thumbnail, inspection.reason);
+    } else if (await runtime.canRenderThumbnail(path)) {
+      healthy.push(thumbnail);
+    } else {
+      findings.set(thumbnail, "undecodable");
+    }
   }
   const sourceCandidate = thumbnailSource(row.files);
-  if (!sourceCandidate) return null;
+  if (!sourceCandidate) {
+    return null;
+  }
   const source = row.files.find(
     (file) =>
       file.path === sourceCandidate.path && file.kind === sourceCandidate.kind,
   );
-  if (!source) return null;
+  if (!source) {
+    return null;
+  }
   const sourcePath = safePayloadPath(directory, source.path);
   const mismatched =
     healthy.length > 0 &&
     (await thumbnailsMismatch(healthy, source, sourcePath, directory, runtime));
-  if (healthy.length > 0 && !mismatched) return null;
-  const sourceInspection = await runtime.inspectPayload(sourcePath, source);
-  if (!sourceInspection.ok || !(await runtime.canRenderThumbnail(sourcePath)))
+  if (healthy.length > 0 && !mismatched) {
     return null;
+  }
+  const sourceInspection = await runtime.inspectPayload(sourcePath, source);
+  if (!sourceInspection.ok || !(await runtime.canRenderThumbnail(sourcePath))) {
+    return null;
+  }
   const destination = thumbnailFilename(source.path);
   const thumbnailInspections = thumbnails.map(
     (file) => inspections.get(file) ?? failedPayload("error"),
@@ -327,7 +358,7 @@ async function inspectThumbnail(
     thumbnails: thumbnailInspections,
     destination,
   };
-  const thumbnailChecks: HealthFileCheck[] =
+  const thumbnailChecks: Array<HealthFileCheck> =
     thumbnails.length === 0
       ? [
           {
@@ -374,23 +405,29 @@ function isVisualMedia(file: SaveFile): boolean {
 
 /** A text card only renders for saves without visual media, so one beside a poster or image is stale. */
 async function thumbnailsMismatch(
-  thumbnails: SaveFile[],
+  thumbnails: Array<SaveFile>,
   source: SaveFile,
   sourcePath: string,
   directory: string,
   runtime: LibraryIntegrityRuntime,
 ): Promise<boolean> {
   for (const thumbnail of thumbnails) {
-    if (thumbnail.custom) return false;
+    if (thumbnail.custom) {
+      return false;
+    }
     if (isTextCardThumbnailPath(thumbnail.path)) {
-      if (isVisualMedia(source)) return true;
+      if (isVisualMedia(source)) {
+        return true;
+      }
       continue;
     }
     const matches = await runtime.thumbnailMatchesSource?.(
       safePayloadPath(directory, thumbnail.path),
       sourcePath,
     );
-    if (matches === false) return true;
+    if (matches === false) {
+      return true;
+    }
   }
   return false;
 }
@@ -406,15 +443,18 @@ async function inspectPhysicalNames(
     to: string;
     payload: PayloadInspection;
   }> = [];
-  const checks: HealthFileCheck[] = [];
+  const checks: Array<HealthFileCheck> = [];
   for (const file of row.files) {
-    if (file.path !== basename(file.path) || validPhysicalName(file.path))
+    if (file.path !== basename(file.path) || validPhysicalName(file.path)) {
       continue;
+    }
     const payload = await runtime.inspectPayload(
       safePayloadPath(directory, file.path),
       file,
     );
-    if (!payload.ok) continue;
+    if (!payload.ok) {
+      continue;
+    }
     const to = availablePhysicalName(file.path, occupied);
     occupied.add(to.toLowerCase());
     changes.push({ from: file.path, to, payload });
@@ -424,7 +464,9 @@ async function inspectPhysicalNames(
       renameTo: to,
     });
   }
-  if (changes.length === 0) return null;
+  if (changes.length === 0) {
+    return null;
+  }
   return issue({
     kind: "physical-file-names",
     row,
@@ -453,7 +495,9 @@ async function inspectInvalidContent(
       runtime.inspectPayload(safePayloadPath(directory, file.path), file),
     ),
   );
-  if (payloads.some((payload) => payload.ok)) return null;
+  if (payloads.some((payload) => payload.ok)) {
+    return null;
+  }
   return issue({
     kind: "invalid-content",
     row,
@@ -477,16 +521,22 @@ async function inspectSaveMetadata(
   row: IntegritySave,
   runtime: LibraryIntegrityRuntime,
 ): Promise<InternalLibraryRepairIssue | null> {
-  if (row.files.length === 0) return null;
+  if (row.files.length === 0) {
+    return null;
+  }
   const directory = saveDirIn(runtime.root(), row.id);
   const payloads = await Promise.all(
     row.files.map((file) =>
       runtime.inspectPayload(safePayloadPath(directory, file.path), file),
     ),
   );
-  if (payloads.some((payload) => !payload.ok)) return null;
+  if (payloads.some((payload) => !payload.ok)) {
+    return null;
+  }
   const info = await runtime.readInfo(join(directory, "info.json"));
-  if (info.status === "valid" && metadataMatches(row, info.value)) return null;
+  if (info.status === "valid" && metadataMatches(row, info.value)) {
+    return null;
+  }
   return issue({
     kind: "save-metadata",
     row,
@@ -520,19 +570,25 @@ async function inspectPayload(
     if (
       !resolved.startsWith(`${itemRoot}${sep}`) &&
       resolved !== join(itemRoot, basename(path))
-    )
+    ) {
       return failedPayload("unsafe");
+    }
     const file = await lstat(path);
-    if (!file.isFile() || file.isSymbolicLink()) return failedPayload("unsafe");
+    if (!file.isFile() || file.isSymbolicLink()) {
+      return failedPayload("unsafe");
+    }
     const metadata = await libraryMediaMetadata(path);
-    if (metadata.originalSize === 0) return failedPayload("empty");
-    if (metadata.originalSize !== expected.size)
+    if (metadata.originalSize === 0) {
+      return failedPayload("empty");
+    }
+    if (metadata.originalSize !== expected.size) {
       return {
         ok: false,
         size: metadata.originalSize,
         sha256: null,
         reason: "size",
       };
+    }
     const hash = createHash("sha256");
     for await (const chunk of readLibraryMediaRange({
       path,
@@ -550,8 +606,9 @@ async function inspectPayload(
       reason: !expected.sha256 || sha256 === expected.sha256 ? "ok" : "hash",
     };
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT")
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return failedPayload("missing");
+    }
     return failedPayload("error");
   }
 }
@@ -559,8 +616,9 @@ async function inspectPayload(
 function safePayloadPath(directory: string, path: string): string {
   const target = resolve(directory, path);
   const rel = relative(resolve(directory), target);
-  if (!path || rel === ".." || rel.startsWith(`..${sep}`))
+  if (!path || rel === ".." || rel.startsWith(`..${sep}`)) {
     return join(directory, "__unsafe_payload__");
+  }
   return target;
 }
 
@@ -595,13 +653,18 @@ function reservedName(stem: string): boolean {
 
 function validPhysicalName(name: string): boolean {
   const stem = name.replace(/[. ]+$/u, "");
-  if (!stem || [...name].some(invalidPhysicalCharacter) || stem !== name)
+  if (
+    !stem ||
+    Array.from(name).some(invalidPhysicalCharacter) ||
+    stem !== name
+  ) {
     return false;
+  }
   return !reservedName(stem);
 }
 
 function availablePhysicalName(name: string, occupied: Set<string>): string {
-  const extension = [...extname(name)]
+  const extension = Array.from(extname(name))
     .filter((character) => !invalidPhysicalCharacter(character))
     .join("")
     .replace(/[. ]+$/u, "");
@@ -611,11 +674,15 @@ function availablePhysicalName(name: string, occupied: Set<string>): string {
     .split("")
     .map((character) => (invalidPhysicalCharacter(character) ? "-" : character))
     .join("")
-    .replace(/-+/gu, "-")
-    .replace(/[. ]+$/gu, "")
+    .replaceAll(/-+/gu, "-")
+    .replaceAll(/[. ]+$/gu, "")
     .slice(0, 180);
-  if (!stem) stem = "file";
-  if (reservedName(stem)) stem = `file-${stem}`;
+  if (!stem) {
+    stem = "file";
+  }
+  if (reservedName(stem)) {
+    stem = `file-${stem}`;
+  }
   let candidate = `${stem}${extension}`;
   let suffix = 2;
   while (occupied.has(candidate.toLowerCase())) {
@@ -626,10 +693,12 @@ function availablePhysicalName(name: string, occupied: Set<string>): string {
 }
 
 function invalidPhysicalCharacter(character: string): boolean {
-  return character.charCodeAt(0) <= 31 || '<>:"/\\|?*'.includes(character);
+  return (
+    character.charCodeAt(0) <= 31 || String.raw`<>:"/\|?*`.includes(character)
+  );
 }
 
-function fileFacts(files: readonly SaveFile[]) {
+function fileFacts(files: ReadonlyArray<SaveFile>) {
   return files.map((file) => ({
     kind: file.kind,
     path: file.path,
@@ -690,7 +759,9 @@ function issue(input: {
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) throw new DOMException("Repair canceled.", "AbortError");
+  if (signal?.aborted) {
+    throw new DOMException("Repair canceled.", "AbortError");
+  }
 }
 
 export const libraryIntegrityRuntime = defaultRuntime;

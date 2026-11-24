@@ -23,12 +23,52 @@ function currentPredicate(
     : draft;
 }
 
+function dimensionRow(
+  label: string,
+  minimum: string,
+  maximum: string,
+  setMinimum: (value: string) => void,
+  setMaximum: (value: string) => void,
+) {
+  return (
+    <div className={styles.dimension}>
+      <span className={styles.label}>{label}</span>
+      <Input.Root size="sm">
+        <Input.Field
+          type="number"
+          min={0}
+          step={1}
+          value={minimum}
+          onValueChange={setMinimum}
+          placeholder="Min"
+          aria-label={`${label === "W" ? "Width" : "Height"} Minimum`}
+        />
+      </Input.Root>
+      <span className={styles.separator} aria-hidden>
+        –
+      </span>
+      <Input.Root size="sm">
+        <Input.Field
+          type="number"
+          min={0}
+          step={1}
+          value={maximum}
+          onValueChange={setMaximum}
+          placeholder="Max"
+          aria-label={`${label === "W" ? "Width" : "Height"} Maximum`}
+        />
+      </Input.Root>
+      <span className={styles.suffix}>px</span>
+    </div>
+  );
+}
+
 export function DimensionsFilter({
   rows,
   onChange,
 }: {
-  rows: Predicate[];
-  onChange: (rows: Predicate[]) => void;
+  rows: Array<Predicate>;
+  onChange: (rows: Array<Predicate>) => void;
 }) {
   const width = rows.find((row) => row.field === "width");
   const height = rows.find((row) => row.field === "height");
@@ -82,43 +122,6 @@ export function DimensionsFilter({
             ]),
     );
   };
-  const dimensionRow = (
-    label: string,
-    minimum: string,
-    maximum: string,
-    setMinimum: (value: string) => void,
-    setMaximum: (value: string) => void,
-  ) => (
-    <div className={styles.dimension}>
-      <span className={styles.label}>{label}</span>
-      <Input.Root size="sm">
-        <Input.Field
-          type="number"
-          min={0}
-          step={1}
-          value={minimum}
-          onValueChange={setMinimum}
-          placeholder="Min"
-          aria-label={`${label === "W" ? "Width" : "Height"} Minimum`}
-        />
-      </Input.Root>
-      <span className={styles.separator} aria-hidden>
-        –
-      </span>
-      <Input.Root size="sm">
-        <Input.Field
-          type="number"
-          min={0}
-          step={1}
-          value={maximum}
-          onValueChange={setMaximum}
-          placeholder="Max"
-          aria-label={`${label === "W" ? "Width" : "Height"} Maximum`}
-        />
-      </Input.Root>
-      <span className={styles.suffix}>px</span>
-    </div>
-  );
 
   return (
     <form
@@ -127,7 +130,9 @@ export function DimensionsFilter({
       onSubmit={(event) => {
         event.preventDefault();
         schedule();
-        if (!valid) return;
+        if (!valid) {
+          return;
+        }
         onChange([
           ...rows.filter(
             (row) => row.field !== "width" && row.field !== "height",

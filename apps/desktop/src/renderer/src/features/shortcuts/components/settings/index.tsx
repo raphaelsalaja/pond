@@ -1,6 +1,7 @@
 import { IconMagnifier } from "@pond/icons";
 import { Button, Empty, EmptyPreview, Input, Settings } from "@pond/ui";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import {
   chordGlyphs,
@@ -8,9 +9,9 @@ import {
   isShortcutId,
   isValidShortcut,
   resolveShortcuts,
-  type ShortcutId,
   shortcutConflict,
 } from "@/shared/lib/shortcuts";
+import type { ShortcutId } from "@/shared/lib/shortcuts";
 import { savePrefsSection, usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
@@ -19,7 +20,7 @@ export function ShortcutSettings({
   disabled = false,
   renderList,
 }: {
-  only?: readonly ShortcutId[];
+  only?: ReadonlyArray<ShortcutId>;
   disabled?: boolean;
   renderList?: (rows: ReactNode) => ReactNode;
 } = {}) {
@@ -27,7 +28,7 @@ export function ShortcutSettings({
   const [search, setSearch] = useState("");
   const [recording, setRecording] = useState<ShortcutId | null>(null);
   const [error, setError] = useState("");
-  const [nativeErrors, setNativeErrors] = useState<string[]>([]);
+  const [nativeErrors, setNativeErrors] = useState<Array<string>>([]);
   const [pending, setPending] = useState(false);
   const pendingRef = useRef(false);
 
@@ -36,7 +37,9 @@ export function ShortcutSettings({
     void window.pond
       .query("settings.globalShortcutStatus", {})
       .then((status) => {
-        if (active) setNativeErrors(status.errors);
+        if (active) {
+          setNativeErrors(status.errors);
+        }
       })
       .catch(() => {});
     return () => {
@@ -45,7 +48,9 @@ export function ShortcutSettings({
   }, []);
 
   const patch = async (delta: Partial<typeof preferences>) => {
-    if (pendingRef.current) return;
+    if (pendingRef.current) {
+      return;
+    }
     pendingRef.current = true;
     setPending(true);
     setError("");
@@ -60,10 +65,10 @@ export function ShortcutSettings({
             "Couldn't check global shortcut availability. Reopen Hotkeys to retry.",
           ]);
         });
-    } catch (reason) {
+    } catch (error_) {
       setError(
         errorCopy(
-          reason,
+          error_,
           "Couldn't change this shortcut. Your previous shortcut is unchanged.",
         ),
       );
@@ -87,7 +92,7 @@ export function ShortcutSettings({
           .toLowerCase()
           .includes(search.toLowerCase()),
     );
-  const groups = new Map<string, ShortcutId[]>();
+  const groups = new Map<string, Array<ShortcutId>>();
   for (const id of matching) {
     const group = bindings[id].group;
     const ids = groups.get(group) ?? [];
@@ -95,7 +100,7 @@ export function ShortcutSettings({
     groups.set(group, ids);
   }
 
-  const renderRows = (ids: ShortcutId[]) =>
+  const renderRows = (ids: Array<ShortcutId>) =>
     ids.map((id) => (
       <Settings.Item
         className={styles.row}
@@ -126,15 +131,18 @@ export function ShortcutSettings({
                 setError("");
               }}
               onKeyDown={(event) => {
-                if (recording !== id || pendingRef.current) return;
+                if (recording !== id || pendingRef.current) {
+                  return;
+                }
                 event.preventDefault();
                 event.stopPropagation();
                 if (event.key === "Escape") {
                   setRecording(null);
                   return;
                 }
-                if (["Meta", "Control", "Alt", "Shift"].includes(event.key))
+                if (["Meta", "Control", "Alt", "Shift"].includes(event.key)) {
                   return;
+                }
                 const key = event.code.startsWith("Digit")
                   ? event.code.slice(5)
                   : event.code.startsWith("Key")

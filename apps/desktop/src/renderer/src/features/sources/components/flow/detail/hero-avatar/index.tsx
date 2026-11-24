@@ -31,7 +31,9 @@ export function HeroAvatar({
         <BrandTile source={source} size={size} />
       </span>
     );
-    if (!ring) return tile;
+    if (!ring) {
+      return tile;
+    }
     return <span className={styles.wavatar}>{tile}</span>;
   }
 

@@ -4,6 +4,32 @@ import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { TagMenu, TagMenuView } from "./";
 
+function tag(id: string, name: string) {
+  return {
+    id,
+    name,
+    starred: false,
+    description: null,
+    lastUsedAt: null,
+    usageCount: 0,
+    createdAt: null,
+  };
+}
+
+function treeItems(): Array<string> {
+  return Array.from(document.querySelectorAll('[role="treeitem"]')).map(
+    (item) =>
+      `${item.getAttribute("aria-level")}:${item.getAttribute("aria-label")}`,
+  );
+}
+
+function listOptions(): Array<string> {
+  return [...document.querySelectorAll('[role="listbox"] [role="option"]')].map(
+    (option) =>
+      option.getAttribute("aria-label") ?? option.textContent?.trim() ?? "",
+  );
+}
+
 it("keeps an inline tag draft after a failed create and applies it only after retry succeeds", async () => {
   vi.stubGlobal(
     "ResizeObserver",
@@ -14,7 +40,7 @@ it("keeps an inline tag draft after a failed create and applies it only after re
     },
   );
   let fail = true;
-  const created: string[] = [];
+  const created: Array<string> = [];
   vi.stubGlobal("pond", {
     onSyncAction: () => () => {},
     query: async (name: string, input: { name?: string }) => {
@@ -55,14 +81,16 @@ it("keeps an inline tag draft after a failed create and applies it only after re
         ];
       }
       if (name === "tags.create") {
-        if (fail) throw new Error("Library unavailable");
+        if (fail) {
+          throw new Error("Library unavailable");
+        }
         created.push(input.name ?? "");
         return { id: "new", name: input.name };
       }
       throw new Error(`Unexpected query ${name}`);
     },
   });
-  const applied: string[] = [];
+  const applied: Array<string> = [];
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -89,7 +117,9 @@ it("keeps an inline tag draft after a failed create and applies it only after re
     const others = Array.from(document.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("Others (1)"),
     );
-    if (!others) throw new Error("Missing collapsible section");
+    if (!others) {
+      throw new Error("Missing collapsible section");
+    }
     expect(document.body.textContent).toContain("Other Tag");
     expect(document.querySelector('[role="radiogroup"]')).toBeNull();
     expect(document.querySelector('[data-layout="grid"]')).not.toBeNull();
@@ -102,7 +132,9 @@ it("keeps an inline tag draft after a failed create and applies it only after re
     expect(document.body.textContent).toContain("Other Tag");
 
     const input = document.querySelector("input");
-    if (!input) throw new Error("Missing tag search");
+    if (!input) {
+      throw new Error("Missing tag search");
+    }
     const initialActive = input.getAttribute("aria-activedescendant");
     await act(async () =>
       input.dispatchEvent(
@@ -138,7 +170,9 @@ it("keeps an inline tag draft after a failed create and applies it only after re
     expect(applied).toEqual(["New Tag"]);
     expect(input.value).toBe("");
   } finally {
-    await act(() => root.unmount());
+    act(() => {
+      root.unmount();
+    });
     host.remove();
     vi.unstubAllGlobals();
   }
@@ -153,15 +187,6 @@ it("lists tag groups as expandable parents with their tags nested under them", a
       disconnect() {}
     },
   );
-  const tag = (id: string, name: string) => ({
-    id,
-    name,
-    starred: false,
-    description: null,
-    lastUsedAt: null,
-    usageCount: 0,
-    createdAt: null,
-  });
   const tags = [tag("sunset", "Sunset"), tag("loose", "Loose")];
   const groups = [
     {
@@ -175,7 +200,7 @@ it("lists tag groups as expandable parents with their tags nested under them", a
       tagNames: ["Sunset"],
     },
   ];
-  const applied: string[] = [];
+  const applied: Array<string> = [];
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -200,13 +225,8 @@ it("lists tag groups as expandable parents with their tags nested under them", a
         </PickerPanel.Root>,
       ),
     );
-    const items = () =>
-      Array.from(document.querySelectorAll('[role="treeitem"]')).map(
-        (item) =>
-          `${item.getAttribute("aria-level")}:${item.getAttribute("aria-label")}`,
-      );
     expect(document.querySelector('[role="tree"]')).not.toBeNull();
-    expect(items()).toEqual(["1:Mood", "2:Sunset", "1:Loose"]);
+    expect(treeItems()).toEqual(["1:Mood", "2:Sunset", "1:Loose"]);
     expect(
       document
         .querySelector('[aria-label="Sunset"]')
@@ -215,14 +235,16 @@ it("lists tag groups as expandable parents with their tags nested under them", a
 
     const group = document.querySelector<HTMLElement>('[aria-label="Mood"]');
     await act(async () => group?.click());
-    expect(items()).toEqual(["1:Mood", "1:Loose"]);
+    expect(treeItems()).toEqual(["1:Mood", "1:Loose"]);
     expect(applied).toEqual([]);
 
     const loose = document.querySelector<HTMLElement>('[aria-label="Loose"]');
     await act(async () => loose?.click());
     expect(applied).toEqual(["Loose"]);
   } finally {
-    await act(() => root.unmount());
+    act(() => {
+      root.unmount();
+    });
     host.remove();
     vi.unstubAllGlobals();
   }
@@ -237,7 +259,7 @@ it("puts Create after matching tags and keeps Enter on the first match", async (
       disconnect() {}
     },
   );
-  const created: string[] = [];
+  const created: Array<string> = [];
   vi.stubGlobal("pond", {
     onSyncAction: () => () => {},
     query: async (name: string, input: { name?: string }) => {
@@ -248,16 +270,7 @@ it("puts Create after matching tags and keeps Enter on the first match", async (
       throw new Error(`Unexpected query ${name}`);
     },
   });
-  const tag = (id: string, name: string) => ({
-    id,
-    name,
-    starred: false,
-    description: null,
-    lastUsedAt: null,
-    usageCount: 0,
-    createdAt: null,
-  });
-  const applied: string[] = [];
+  const applied: Array<string> = [];
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -283,7 +296,9 @@ it("puts Create after matching tags and keeps Enter on the first match", async (
       ),
     );
     const input = document.querySelector("input");
-    if (!input) throw new Error("Missing tag search");
+    if (!input) {
+      throw new Error("Missing tag search");
+    }
     const setQuery = (value: string) => {
       Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,
@@ -291,18 +306,13 @@ it("puts Create after matching tags and keeps Enter on the first match", async (
       )?.set?.call(input, value);
       input.dispatchEvent(new Event("input", { bubbles: true }));
     };
-    const options = () =>
-      [...document.querySelectorAll('[role="listbox"] [role="option"]')].map(
-        (option) =>
-          option.getAttribute("aria-label") ?? option.textContent?.trim() ?? "",
-      );
     const active = () => {
       const id = input.getAttribute("aria-activedescendant");
       return id ? document.getElementById(id) : null;
     };
 
     await act(async () => setQuery("de"));
-    expect(options()).toEqual(["Design", "Desk", "Create “de”"]);
+    expect(listOptions()).toEqual(["Design", "Desk", "Create “de”"]);
     expect(active()?.getAttribute("aria-label")).toBe("Design");
     expect(active()?.hasAttribute("data-create")).toBe(false);
     await act(async () =>
@@ -314,7 +324,7 @@ it("puts Create after matching tags and keeps Enter on the first match", async (
     expect(created).toEqual([]);
 
     await act(async () => setQuery("Quartz"));
-    expect(options()).toEqual(["Create “Quartz”"]);
+    expect(listOptions()).toEqual(["Create “Quartz”"]);
     expect(active()?.hasAttribute("data-create")).toBe(true);
     await act(async () =>
       input.dispatchEvent(
@@ -324,7 +334,9 @@ it("puts Create after matching tags and keeps Enter on the first match", async (
     expect(created).toEqual(["Quartz"]);
     expect(applied).toEqual(["Design", "Quartz"]);
   } finally {
-    await act(() => root.unmount());
+    act(() => {
+      root.unmount();
+    });
     host.remove();
     vi.unstubAllGlobals();
   }

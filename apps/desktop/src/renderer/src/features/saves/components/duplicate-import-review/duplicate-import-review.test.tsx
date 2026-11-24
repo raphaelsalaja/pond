@@ -1,7 +1,8 @@
 import "@/app/effects/save-library-bridge";
 import type { WireJson } from "@shared/wire";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import {
   closeDuplicateImportReview,
@@ -16,7 +17,7 @@ const first = "/Users/you/Downloads/a.png";
 const second = "/Users/you/Downloads/b.png";
 const paths = [first, second];
 const query = vi.fn(async (name: string, _args?: WireJson) => {
-  if (name === "saves.reviewImportDuplicates")
+  if (name === "saves.reviewImportDuplicates") {
     return {
       candidates: paths.map((path) => ({
         path,
@@ -26,7 +27,8 @@ const query = vi.fn(async (name: string, _args?: WireJson) => {
         inTrash: path === second,
       })),
     };
-  if (name === "saves.getMany")
+  }
+  if (name === "saves.getMany") {
     return [
       {
         id: "save-sunset",
@@ -48,8 +50,13 @@ const query = vi.fn(async (name: string, _args?: WireJson) => {
         ],
       },
     ];
-  if (name === "saves.stageClipboard") return { ok: true, paths };
-  if (name === "saves.importFiles") return { ok: true, ids: [] };
+  }
+  if (name === "saves.stageClipboard") {
+    return { ok: true, paths };
+  }
+  if (name === "saves.importFiles") {
+    return { ok: true, ids: [] };
+  }
   return [];
 });
 
@@ -69,8 +76,8 @@ beforeEach(() => {
   root = createRoot(host);
 });
 
-afterEach(async () => {
-  await act(() => {
+afterEach(() => {
+  act(() => {
     closeDuplicateImportReview();
     root.unmount();
   });
@@ -80,7 +87,9 @@ afterEach(async () => {
 
 function dialog() {
   const element = document.querySelector<HTMLElement>('[role="dialog"]');
-  if (!element) throw new Error("Missing dialog");
+  if (!element) {
+    throw new Error("Missing dialog");
+  }
   return element;
 }
 
@@ -92,13 +101,13 @@ function buttons(name: string) {
 
 function button(name: string) {
   const match = buttons(name).at(-1);
-  if (!match) throw new Error(`Missing button ${name}`);
+  if (!match) {
+    throw new Error(`Missing button ${name}`);
+  }
   return match;
 }
 
-type ReviewedImport =
-  | ReturnType<typeof importFilesWithDuplicateReview>
-  | ReturnType<typeof importClipboardWithDuplicateReview>;
+type ReviewedImport = ReturnType<typeof importFilesWithDuplicateReview>;
 
 async function startImport(
   start: () => ReviewedImport = () => importFilesWithDuplicateReview({ paths }),

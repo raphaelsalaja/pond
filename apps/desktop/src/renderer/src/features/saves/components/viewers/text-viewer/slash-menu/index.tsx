@@ -2,8 +2,8 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import {
   LexicalTypeaheadMenuPlugin,
   MenuOption,
-  type MenuTextMatch,
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
+import type { MenuTextMatch } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import {
   IconBlockquote,
   IconBulletList,
@@ -23,30 +23,25 @@ import {
   IconVideo,
 } from "@pond/icons";
 import { Menu } from "@pond/ui";
-import { COMMAND_PRIORITY_NORMAL, type TextNode } from "lexical";
-import {
-  type ComponentType,
-  type MouseEvent as ReactMouseEvent,
-  type ReactNode,
-  useCallback,
-  useMemo,
-  useState,
+import { COMMAND_PRIORITY_NORMAL } from "lexical";
+import type { TextNode } from "lexical";
+import { useCallback, useMemo, useState } from "react";
+import type {
+  ComponentType,
+  MouseEvent as ReactMouseEvent,
+  ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
-import {
-  $applyNoteBlock,
-  insertNoteFiles,
-  type NoteBlock,
-  promptYouTube,
-} from "../commands";
+import { $applyNoteBlock, insertNoteFiles, promptYouTube } from "../commands";
+import type { NoteBlock } from "../commands";
 import styles from "./styles.module.css";
 
 type SlashKind = NoteBlock | "media" | "gif" | "files" | "youtube";
 
 class SlashOption extends MenuOption {
   label: string;
-  shortcut: string[] | undefined;
+  shortcut: Array<string> | undefined;
   glyph: ComponentType;
   kind: SlashKind;
   keywords: string;
@@ -54,7 +49,7 @@ class SlashOption extends MenuOption {
   constructor(opts: {
     key: string;
     label: string;
-    shortcut?: string[];
+    shortcut?: Array<string>;
     glyph: ComponentType;
     kind: SlashKind;
     keywords?: string;
@@ -68,7 +63,7 @@ class SlashOption extends MenuOption {
   }
 }
 
-const GROUPS: SlashOption[][] = [
+const GROUPS: Array<Array<SlashOption>> = [
   [
     new SlashOption({
       key: "h1",
@@ -201,7 +196,9 @@ const GROUPS: SlashOption[][] = [
 
 function slashTrigger(text: string): MenuTextMatch | null {
   const match = /(?:^|\s)\/([^\s/]*)$/.exec(text);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   const query = match[1] ?? "";
   return {
     leadOffset: match.index + match[0].length - query.length - 1,
@@ -211,7 +208,9 @@ function slashTrigger(text: string): MenuTextMatch | null {
 }
 
 function matchesQuery(item: SlashOption, term: string): boolean {
-  if (!term) return true;
+  if (!term) {
+    return true;
+  }
   return (
     item.label.toLowerCase().includes(term) ||
     item.keywords.toLowerCase().includes(term) ||
@@ -224,11 +223,14 @@ export function SlashMenu() {
   const [editor] = useLexicalComposerContext();
   const [query, setQuery] = useState<string | null>(null);
   const groups = useMemo(() => {
-    if (query === null) return [];
+    if (query === null) {
+      return [];
+    }
     const term = query.toLowerCase();
-    return GROUPS.map((group) =>
-      group.filter((item) => matchesQuery(item, term)),
-    ).filter((group) => group.length > 0);
+    return GROUPS.flatMap((group) => {
+      const items = group.filter((item) => matchesQuery(item, term));
+      return items.length > 0 ? [items] : [];
+    });
   }, [query]);
   const options = useMemo(() => groups.flat(), [groups]);
 
@@ -255,6 +257,9 @@ export function SlashMenu() {
           return;
         case "youtube":
           promptYouTube(editor);
+          break;
+        default:
+          break;
       }
     },
     [editor],
@@ -285,7 +290,7 @@ export function SlashMenu() {
                         <Menu.Row
                           key={option.key}
                           id={`note-slash-${option.key}`}
-                          ref={option.setRefElement}
+                          ref={(element) => option.setRefElement(element)}
                           role="option"
                           aria-selected={active}
                           tabIndex={-1}

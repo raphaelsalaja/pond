@@ -2,7 +2,8 @@ import { IconCheck, IconFolderPlus } from "@pond/icons";
 import { Calligraph } from "calligraph";
 import { AnimatePresence, motion } from "motion/react";
 import { Art } from "../../../../demo";
-import { type Phase, POP, REPLY, SPRING, SWAP, WORD_S } from "../script";
+import { POP, REPLY, SPRING, SWAP, WORD_S } from "../script";
+import type { Phase } from "../script";
 import styles from "./styles.module.css";
 
 export function Review({ phase }: { phase: Phase }) {

@@ -26,8 +26,9 @@ describe("inbox intake", () => {
       inboxState: "review",
       inboxUntil: null,
     });
-    for (const channel of ["sync", "watches", "imports"] as const)
+    for (const channel of ["sync", "watches", "imports"] as const) {
       expect(inboxEntry(channel, DEFAULT_PREFS).inboxState).toBeNull();
+    }
     expect(inboxEntry(undefined, DEFAULT_PREFS).inboxState).toBeNull();
   });
 

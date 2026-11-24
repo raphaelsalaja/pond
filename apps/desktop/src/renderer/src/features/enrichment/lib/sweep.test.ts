@@ -1,4 +1,5 @@
-import { DEFAULT_PREFS, type Prefs } from "@pond/schema";
+import { DEFAULT_PREFS } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
 import { describe, expect, it, vi } from "vitest";
 import type { Save } from "@/features/saves/types";
 import {
@@ -99,7 +100,9 @@ describe("enrichment sweep preferences", () => {
       refresh,
     });
     const publish = (): void => {
-      for (const listener of listeners) listener();
+      for (const listener of listeners) {
+        listener();
+      }
     };
 
     current = { ...current, ai: { ...current.ai, enableCaption: true } };

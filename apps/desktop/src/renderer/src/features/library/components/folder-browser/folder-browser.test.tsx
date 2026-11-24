@@ -1,7 +1,8 @@
 import { DEFAULT_PREFS } from "@pond/schema";
 import { RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createLibraryTestRouter,
@@ -31,26 +32,35 @@ const folderRows = [
   },
 ];
 
+async function queryImpl(name: string) {
+  if (name === "folders.list") {
+    return folderRows;
+  }
+  if (name === "folders.memberships") {
+    return [];
+  }
+  if (name === "settings.getPrefs") {
+    return DEFAULT_PREFS;
+  }
+  if (name === "folders.summaries") {
+    return [
+      {
+        id: "child",
+        directSaveCount: 3,
+        childFolderCount: 1,
+        previewSaveIds: ["preview-a", "preview-b", "preview-c", "preview-d"],
+      },
+    ];
+  }
+  if (name === "saves.getMany") {
+    return [];
+  }
+  return null;
+}
+
 describe("folder browser", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const queryImpl = async (name: string) => {
-    if (name === "folders.list") return folderRows;
-    if (name === "folders.memberships") return [];
-    if (name === "settings.getPrefs") return DEFAULT_PREFS;
-    if (name === "folders.summaries") {
-      return [
-        {
-          id: "child",
-          directSaveCount: 3,
-          childFolderCount: 1,
-          previewSaveIds: ["preview-a", "preview-b", "preview-c", "preview-d"],
-        },
-      ];
-    }
-    if (name === "saves.getMany") return [];
-    return null;
-  };
   const query = vi.fn<(name: string) => Promise<object | null>>(queryImpl);
 
   beforeEach(async () => {
@@ -96,9 +106,15 @@ describe("folder browser", () => {
 
   it("shows up to four item previews, including files that need a generated thumbnail", async () => {
     query.mockImplementation(async (name: string) => {
-      if (name === "folders.list") return folderRows;
-      if (name === "folders.memberships") return [];
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "folders.list") {
+        return folderRows;
+      }
+      if (name === "folders.memberships") {
+        return [];
+      }
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
       if (name === "folders.summaries") {
         return [
           {
@@ -185,8 +201,12 @@ describe("folder browser", () => {
           },
         ];
       }
-      if (name === "folders.memberships") return [];
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "folders.memberships") {
+        return [];
+      }
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
       if (name === "folders.summaries") {
         return [
           {
@@ -197,7 +217,9 @@ describe("folder browser", () => {
           },
         ];
       }
-      if (name === "saves.getMany") return [];
+      if (name === "saves.getMany") {
+        return [];
+      }
       return null;
     });
     await folders.refresh();
@@ -231,8 +253,12 @@ describe("folder browser", () => {
           },
         ];
       }
-      if (name === "folders.memberships") return [];
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
+      if (name === "folders.memberships") {
+        return [];
+      }
+      if (name === "settings.getPrefs") {
+        return DEFAULT_PREFS;
+      }
       if (name === "folders.summaries") {
         return [
           {
@@ -244,7 +270,9 @@ describe("folder browser", () => {
           },
         ];
       }
-      if (name === "saves.getMany") return [];
+      if (name === "saves.getMany") {
+        return [];
+      }
       return null;
     });
     await folders.refresh();
@@ -362,7 +390,9 @@ describe("folder browser", () => {
       expect(candidate).not.toBeNull();
       return candidate;
     });
-    if (!button) throw new Error("Missing folder card");
+    if (!button) {
+      throw new Error("Missing folder card");
+    }
     await act(async () => button.click());
     expect(currentLocation(router).pathname).toBe("/folders/child");
   });
@@ -378,7 +408,9 @@ describe("folder browser", () => {
       expect(candidate).not.toBeNull();
       return candidate;
     });
-    if (!button) throw new Error("Missing folder card");
+    if (!button) {
+      throw new Error("Missing folder card");
+    }
     await act(async () => {
       button.dispatchEvent(
         new MouseEvent("contextmenu", {

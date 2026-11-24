@@ -35,7 +35,9 @@ function shareImage(): string | null {
     'meta[property="og:image"], meta[name="twitter:image"]',
   );
   const content = meta?.content;
-  if (!content) return null;
+  if (!content) {
+    return null;
+  }
   try {
     const url = new URL(content, location.href);
     return url.protocol === "https:" || url.protocol === "http:"
@@ -47,8 +49,12 @@ function shareImage(): string | null {
 }
 
 function previewSource(draft: DetailsDraft): string | null {
-  if (draft.preview) return draft.preview.src;
-  if (draft.kind === "page" && draft.url === location.href) return shareImage();
+  if (draft.preview) {
+    return draft.preview.src;
+  }
+  if (draft.kind === "page" && draft.url === location.href) {
+    return shareImage();
+  }
   return null;
 }
 
@@ -71,10 +77,14 @@ function Preview({ draft }: { draft: DetailsDraft }) {
           alt=""
           onError={() => setFailed(true)}
           onLoad={(event) => {
-            if (!media || size) return;
+            if (!media || size) {
+              return;
+            }
             const { naturalWidth: width, naturalHeight: height } =
               event.currentTarget;
-            if (width && height) setSize({ width, height });
+            if (width && height) {
+              setSize({ width, height });
+            }
           }}
         />
       ) : (
@@ -98,8 +108,8 @@ export function Details({ draft, library, container, onFinish }: DetailsProps) {
   const [title, setTitle] = useState(draft.title);
   const [notes, setNotes] = useState("");
   const [rating, setRating] = useState(0);
-  const [tags, setTags] = useState<string[]>([]);
-  const [folderIds, setFolderIds] = useState<string[]>([]);
+  const [tags, setTags] = useState<Array<string>>([]);
+  const [folderIds, setFolderIds] = useState<Array<string>>([]);
   const [fishId, setFishId] = useState<string | null>(null);
   const name = useRef<HTMLInputElement>(null);
 
@@ -117,7 +127,9 @@ export function Details({ draft, library, container, onFinish }: DetailsProps) {
       modal="trap-focus"
       disablePointerDismissal
       onOpenChange={(open) => {
-        if (!open) onFinish(null);
+        if (!open) {
+          onFinish(null);
+        }
       }}
     >
       <Dialog.Portal container={container}>
@@ -129,8 +141,9 @@ export function Details({ draft, library, container, onFinish }: DetailsProps) {
             return name.current;
           }}
           onKeyDown={(event) => {
-            if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey))
+            if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) {
               return;
+            }
             event.preventDefault();
             save();
           }}

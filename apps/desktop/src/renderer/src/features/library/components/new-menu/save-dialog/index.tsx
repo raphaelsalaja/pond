@@ -19,7 +19,9 @@ export function SaveDialog({
   const field = useRef<HTMLTextAreaElement>(null);
 
   async function submit() {
-    if (submitting.current) return;
+    if (submitting.current) {
+      return;
+    }
     if (!text.trim()) {
       setError("Add at least one link.");
       field.current?.focus();
@@ -38,8 +40,8 @@ export function SaveDialog({
         return;
       }
       onClose();
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't save. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't save. Try again."));
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -50,7 +52,9 @@ export function SaveDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(open) => {
-        if (!open && !submitting.current) onClose();
+        if (!open && !submitting.current) {
+          onClose();
+        }
       }}
     >
       <Dialog.Portal>

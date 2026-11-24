@@ -18,7 +18,7 @@ describe("folder sidebar navigation", () => {
   beforeEach(() => harness.setup());
   afterEach(() => harness.cleanup());
 
-  function current(): Element[] {
+  function current(): Array<Element> {
     return [...harness.host.querySelectorAll('[aria-current="page"]')];
   }
 
@@ -166,7 +166,7 @@ describe("folder sidebar navigation", () => {
   );
 
   /** Rail pages swap the sidebar to their own filter list, whose rows mark the open filter with `aria-current="true"`. */
-  function highlighted(): string[] {
+  function highlighted(): Array<string> {
     const labels = [
       ...harness.host.querySelectorAll(
         'button[aria-current="page"], button[aria-selected="true"]',

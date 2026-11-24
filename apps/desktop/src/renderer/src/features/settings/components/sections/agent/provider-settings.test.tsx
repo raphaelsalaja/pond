@@ -1,5 +1,7 @@
 import { DEFAULT_PREFS } from "@pond/schema";
-import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
+import { isHTMLTag } from "@pond/ui/dom";
+import { ASSISTANT_MODELS } from "@shared/assistant";
+import type { AssistantProvider } from "@shared/assistant";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -65,7 +67,7 @@ afterEach(() => {
 });
 
 it("hides unadded providers from Cloud and Local lists", async () => {
-  const added: AssistantProvider[] = [];
+  const added: Array<AssistantProvider> = [];
   const host = document.createElement("div");
   document.body.append(host);
   const { root, render } = renderSettings(host, {
@@ -277,8 +279,9 @@ it("filters the Add Provider menu", async () => {
     );
     await act(async () => add?.click());
     const search = document.querySelector('[aria-label="Search Providers"]');
-    if (!(search instanceof HTMLInputElement))
+    if (!isHTMLTag(search, "input")) {
       throw new Error("Missing search");
+    }
     await act(async () => {
       search.focus();
       Object.getOwnPropertyDescriptor(

@@ -6,24 +6,33 @@ import { SOUND_PATCH, UI_SOUND_NAMES } from ".";
 const HertzSchema = z.number();
 const SweepSchema = z.object({ start: z.number(), end: z.number() });
 
-function layersOf(sound: SoundDefinition | undefined): Layer[] {
-  if (!sound) return [];
+function layersOf(sound: SoundDefinition | undefined): Array<Layer> {
+  if (!sound) {
+    return [];
+  }
   return "layers" in sound ? sound.layers : [sound];
 }
 
-function frequencies(layer: Layer): number[] {
-  const values: number[] = [];
+function frequencies(layer: Layer): Array<number> {
+  const values: Array<number> = [];
   const source = layer.source;
   const freq = "frequency" in source ? source.frequency : undefined;
   const hertz = HertzSchema.safeParse(freq);
   const sweep = SweepSchema.safeParse(freq);
-  if (hertz.success) values.push(hertz.data);
-  else if (sweep.success) values.push(sweep.data.start, sweep.data.end);
+  if (hertz.success) {
+    values.push(hertz.data);
+  } else if (sweep.success) {
+    values.push(sweep.data.start, sweep.data.end);
+  }
   const filters = [layer.filter ?? []].flat();
   for (const filter of filters) {
-    if ("frequency" in filter) values.push(filter.frequency);
+    if ("frequency" in filter) {
+      values.push(filter.frequency);
+    }
     const peak = "envelope" in filter ? filter.envelope?.peak : undefined;
-    if (peak !== undefined) values.push(peak);
+    if (peak !== undefined) {
+      values.push(peak);
+    }
   }
   return values;
 }
@@ -50,6 +59,10 @@ function durationMs(layer: Layer): number {
 
 describe("interface sounds", () => {
   const patch = SOUND_PATCH.toJSON();
+  const tone = (name: (typeof UI_SOUND_NAMES)[number]) =>
+    gainOf(patch.sounds?.[name], false);
+  const noise = (name: (typeof UI_SOUND_NAMES)[number]) =>
+    gainOf(patch.sounds?.[name], true);
 
   it("exposes every production cue", () => {
     expect(patch.sounds).toBeDefined();
@@ -68,7 +81,9 @@ describe("interface sounds", () => {
         if ((layer.envelope?.sustain ?? 0) > 0) {
           expect(layer.envelope?.release ?? 0).toBeGreaterThan(0);
         }
-        if (isNoise(layer)) expect(layer.gain ?? 0.5).toBeLessThanOrEqual(0.5);
+        if (isNoise(layer)) {
+          expect(layer.gain ?? 0.5).toBeLessThanOrEqual(0.5);
+        }
         longest = Math.max(longest, durationMs(layer));
         for (const hz of frequencies(layer)) {
           expect(hz).toBeGreaterThanOrEqual(20);
@@ -95,10 +110,6 @@ describe("interface sounds", () => {
   });
 
   it("keeps frequent cues quieter than rare ones", () => {
-    const tone = (name: (typeof UI_SOUND_NAMES)[number]) =>
-      gainOf(patch.sounds?.[name], false);
-    const noise = (name: (typeof UI_SOUND_NAMES)[number]) =>
-      gainOf(patch.sounds?.[name], true);
     expect(tone("tap")).toBeLessThan(tone("success"));
     expect(tone("soft")).toBeLessThan(tone("tap"));
     expect(noise("soft")).toBeLessThan(noise("tap"));

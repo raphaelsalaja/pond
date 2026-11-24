@@ -1,5 +1,6 @@
 import { cn, cssVars, Window } from "@pond/ui";
-import { type ComponentPropsWithoutRef, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import {
   DETAILS_WIDTH_DEFAULT,
   DETAILS_WIDTH_MAX,
@@ -11,10 +12,8 @@ import {
   useDetailsWidth,
   useSidebarWidth,
 } from "@/features/library/state/library-chrome";
-import {
-  type ShellDetails,
-  useShellLayout,
-} from "@/features/library/state/shell-layout";
+import { useShellLayout } from "@/features/library/state/shell-layout";
+import type { ShellDetails } from "@/features/library/state/shell-layout";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import styles from "./styles.module.css";
 
@@ -36,7 +35,9 @@ function useInstantOnChange(
   }
 
   useEffect(() => {
-    if (!instant) return;
+    if (!instant) {
+      return;
+    }
     const id = requestAnimationFrame(() => setInstant(false));
     return () => cancelAnimationFrame(id);
   }, [instant]);
@@ -44,7 +45,7 @@ function useInstantOnChange(
   return instant;
 }
 
-interface RootProps extends ComponentPropsWithoutRef<"div"> {}
+type RootProps = ComponentPropsWithoutRef<"div">;
 
 function Root({ className, style, ...props }: RootProps) {
   const { details, railOnly, sidebarHidden, leftOpen, rightOpen } =
@@ -72,7 +73,7 @@ function Root({ className, style, ...props }: RootProps) {
   );
 }
 
-interface ColumnProps extends ComponentPropsWithoutRef<"aside"> {}
+type ColumnProps = ComponentPropsWithoutRef<"aside">;
 
 function Sidebar(props: ColumnProps) {
   const width = useSidebarWidth();
@@ -86,8 +87,8 @@ function Sidebar(props: ColumnProps) {
       width={width}
       resizable={!railOnly}
       collapseShortcut={<ShortcutKeys id="view.sidebar" />}
-      onResize={libraryChrome.setSidebarWidth}
-      onCollapse={libraryChrome.toggleSidebar}
+      onResize={(next) => libraryChrome.setSidebarWidth(next)}
+      onCollapse={() => libraryChrome.toggleSidebar()}
       {...props}
     />
   );
@@ -104,14 +105,14 @@ function Details(props: ColumnProps) {
       width={width}
       resizeLabel="Resize Details"
       collapseShortcut={<ShortcutKeys id="view.inspector" />}
-      onResize={libraryChrome.setDetailsWidth}
+      onResize={(next) => libraryChrome.setDetailsWidth(next)}
       onCollapse={() => libraryChrome.setDetailsOpen(false)}
       {...props}
     />
   );
 }
 
-interface ContentProps extends ComponentPropsWithoutRef<"div"> {}
+type ContentProps = ComponentPropsWithoutRef<"div">;
 
 function Content({ className, ...props }: ContentProps) {
   return <div className={cn(styles.content, className)} {...props} />;

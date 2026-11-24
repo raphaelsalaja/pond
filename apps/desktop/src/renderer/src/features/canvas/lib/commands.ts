@@ -1,5 +1,6 @@
 import type { CanvasSide } from "@shared/canvas-contracts";
-import { type AlignEdge, type Axis, GRID, type LayerMove } from "./document";
+import { GRID } from "./document";
+import type { AlignEdge, Axis, LayerMove } from "./document";
 
 export type CanvasCommand =
   | { type: "select-all" }
@@ -168,12 +169,14 @@ export function commandForKey(event: KeyChord): CanvasCommand | null {
 }
 
 /** Mac glyphs in the platform's modifier order; menus pass them through `platformGlyphs`. */
-export function glyphsFor(command: CanvasCommand): string[] | undefined {
+export function glyphsFor(command: CanvasCommand): Array<string> | undefined {
   const key = JSON.stringify(command);
   const binding = BINDINGS.find(
     ([, candidate]) => JSON.stringify(candidate) === key,
   );
-  if (!binding) return undefined;
+  if (!binding) {
+    return undefined;
+  }
   const [chord] = binding;
   return [
     ...(chord.control ? ["⌃"] : []),

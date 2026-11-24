@@ -9,7 +9,9 @@ export function setPendingSessionSource(source: Source): void {
 }
 
 export function getPendingSessionSource(): Source | null {
-  if (!pending) return null;
+  if (!pending) {
+    return null;
+  }
   if (Date.now() - pending.setAt > TIMEOUT_MS) {
     pending = null;
     return null;
@@ -18,7 +20,9 @@ export function getPendingSessionSource(): Source | null {
 }
 
 export function clearPendingSessionSource(source?: Source): void {
-  if (!pending) return;
+  if (!pending) {
+    return;
+  }
   if (source === undefined || pending.source === source) {
     pending = null;
   }

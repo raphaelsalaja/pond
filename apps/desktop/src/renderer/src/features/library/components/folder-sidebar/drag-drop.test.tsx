@@ -40,7 +40,9 @@ function toastText(): string {
 
 function folderRow(host: HTMLElement, id: string): HTMLElement {
   const row = host.querySelector<HTMLElement>(`[data-folder-sortable="${id}"]`);
-  if (!row) throw new Error(`Missing folder row: ${id}`);
+  if (!row) {
+    throw new Error(`Missing folder row: ${id}`);
+  }
   return row;
 }
 
@@ -54,7 +56,9 @@ function layoutFolderRows(host: HTMLElement): void {
     );
   });
   const rootDrop = host.querySelector<HTMLElement>("[data-folder-root-drop]");
-  if (!rootDrop) throw new Error("Missing top-level drop space");
+  if (!rootDrop) {
+    throw new Error("Missing top-level drop space");
+  }
   vi.spyOn(rootDrop, "getBoundingClientRect").mockReturnValue(
     DOMRect.fromRect({ x: 0, y: rows.length * 40, width: 220, height: 120 }),
   );
@@ -63,7 +67,7 @@ function layoutFolderRows(host: HTMLElement): void {
 describe("folder sidebar drag and drop", () => {
   const harness = createFolderSidebarHarness();
 
-  async function drag(label: string, startY: number, moves: number[]) {
+  async function drag(label: string, startY: number, moves: Array<number>) {
     await act(async () => {
       harness.button(label).dispatchEvent(pointer("pointerdown", startY));
     });
@@ -91,9 +95,9 @@ describe("folder sidebar drag and drop", () => {
     expect(travel.hasAttribute("data-drop")).toBe(false);
 
     await act(async () => {
-      await new Promise((resolve) =>
-        setTimeout(resolve, FOLDER_NEST_DWELL_MS + 20),
-      );
+      await new Promise((resolve) => {
+        setTimeout(resolve, FOLDER_NEST_DWELL_MS + 20);
+      });
     });
     expect(travel.getAttribute("data-drop")).toBe("into");
 

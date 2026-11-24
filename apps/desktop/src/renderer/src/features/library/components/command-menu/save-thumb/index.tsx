@@ -1,5 +1,6 @@
 import { IconFile, IconImage, IconLink2 } from "@pond/icons";
-import { type CSSProperties, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { BlurHash } from "@/features/saves";
 import {
   aspectFor,
@@ -22,8 +23,12 @@ interface SlotStyle extends CSSProperties {
 }
 
 function SaveIcon({ save }: { save: Save }) {
-  if (save.mediaType === "image") return <IconImage size={12} aria-hidden />;
-  if (save.mediaType === "link") return <IconLink2 size={12} aria-hidden />;
+  if (save.mediaType === "image") {
+    return <IconImage size={12} aria-hidden />;
+  }
+  if (save.mediaType === "link") {
+    return <IconLink2 size={12} aria-hidden />;
+  }
   return <IconFile size={12} aria-hidden />;
 }
 

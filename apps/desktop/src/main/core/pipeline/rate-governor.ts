@@ -4,7 +4,6 @@ import log from "electron-log/main.js";
 import { AuthRequiredError } from "./extractors/errors";
 import {
   AT_RISK_PARK_MS,
-  type AtRiskKind,
   allPaused,
   atRisk,
   BREAKER_THRESHOLD,
@@ -26,7 +25,9 @@ import {
   requestLog,
   schedulePersist,
 } from "./rate-governor-state";
-import { type HeaderBag, parseRateSignal } from "./rate-headers";
+import type { AtRiskKind } from "./rate-governor-state";
+import { parseRateSignal } from "./rate-headers";
+import type { HeaderBag } from "./rate-headers";
 import {
   liftSourceAuthStop,
   noteDurableSourceFailure,
@@ -48,18 +49,28 @@ export {
 
 export function sourcePausedUntil(source: Source): number {
   loadState();
-  if (allPaused) return Number.MAX_SAFE_INTEGER;
-  if (manualPaused.has(source)) return Number.MAX_SAFE_INTEGER;
+  if (allPaused) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+  if (manualPaused.has(source)) {
+    return Number.MAX_SAFE_INTEGER;
+  }
   const t = now();
   let until = 0;
   const cd = cooldownUntil.get(source) ?? 0;
-  if (cd > until) until = cd;
+  if (cd > until) {
+    until = cd;
+  }
   const br = breakerUntil.get(source) ?? 0;
-  if (br > until) until = br;
+  if (br > until) {
+    until = br;
+  }
   const ar = atRisk.get(source);
   if (ar) {
     const parkUntil = ar.since + AT_RISK_PARK_MS;
-    if (parkUntil > until) until = parkUntil;
+    if (parkUntil > until) {
+      until = parkUntil;
+    }
   }
   const budget = budgetUntil(source);
   if (budget > until) {
@@ -72,7 +83,9 @@ export function sourcePausedUntil(source: Source): number {
 const budgetParkLogged = new Map<Source, number>();
 
 function noteBudgetPark(source: Source, until: number): void {
-  if (until <= now() || budgetParkLogged.get(source) === until) return;
+  if (until <= now() || budgetParkLogged.get(source) === until) {
+    return;
+  }
   budgetParkLogged.set(source, until);
   const p = profile(source);
   log.warn(
@@ -81,11 +94,15 @@ function noteBudgetPark(source: Source, until: number): void {
 }
 
 export function setSourceCooldown(source: Source, ms: number): void {
-  if (ms <= 0) return;
+  if (ms <= 0) {
+    return;
+  }
   loadState();
   const until = now() + ms;
   const prev = cooldownUntil.get(source) ?? 0;
-  if (until <= prev) return;
+  if (until <= prev) {
+    return;
+  }
   cooldownUntil.set(source, until);
   log.info("[pond governor] cooldown set", { source, ms });
   void transitionSourceGate({
@@ -195,19 +212,21 @@ function effectiveDelay(source: Source, firstSync: boolean): number {
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
 
-function pruneLog(source: Source): number[] {
+function pruneLog(source: Source): Array<number> {
   const cutoff = now() - DAY_MS;
   const log_ = (requestLog.get(source) ?? []).filter((ts) => ts >= cutoff);
   requestLog.set(source, log_);
   return log_;
 }
 
-function recentCount(log_: number[], windowMs: number): number {
+function recentCount(log_: Array<number>, windowMs: number): number {
   const cutoff = now() - windowMs;
   let count = 0;
   for (let i = log_.length - 1; i >= 0; i--) {
     const ts = log_[i];
-    if (ts === undefined || ts < cutoff) break;
+    if (ts === undefined || ts < cutoff) {
+      break;
+    }
     count += 1;
   }
   return count;
@@ -221,10 +240,14 @@ function budgetUntil(source: Source): number {
     [HOUR_MS, p.maxPerHour],
     [DAY_MS, p.maxPerDay],
   ] as const) {
-    if (recentCount(log_, windowMs) < max) continue;
+    if (recentCount(log_, windowMs) < max) {
+      continue;
+    }
     const oldest = log_[Math.max(0, log_.length - max)] ?? now();
     const free = oldest + windowMs;
-    if (free > until) until = free;
+    if (free > until) {
+      until = free;
+    }
   }
   return until;
 }
@@ -244,7 +267,10 @@ class GovernorAbortError extends Error {
 
 const wait = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
-    if (signal?.aborted) return reject(new GovernorAbortError());
+    if (signal?.aborted) {
+      reject(new GovernorAbortError());
+      return;
+    }
     const id = setTimeout(() => {
       signal?.removeEventListener("abort", onAbort);
       resolve();
@@ -262,45 +288,63 @@ export async function acquire(
 ): Promise<void> {
   loadState();
   const deadline =
-    opts.maxWaitMs != null ? now() + opts.maxWaitMs : Number.MAX_SAFE_INTEGER;
+    opts.maxWaitMs !== undefined
+      ? now() + opts.maxWaitMs
+      : Number.MAX_SAFE_INTEGER;
 
   for (;;) {
-    if (opts.signal?.aborted) throw new GovernorAbortError();
+    if (opts.signal?.aborted) {
+      throw new GovernorAbortError();
+    }
     const until = sourcePausedUntil(source);
-    if (until === 0) break;
+    if (until === 0) {
+      break;
+    }
     if (until >= Number.MAX_SAFE_INTEGER) {
-      const slice = Math.min(2_000, deadline - now());
-      if (slice <= 0) throw new GovernorAbortError();
+      const slice = Math.min(2000, deadline - now());
+      if (slice <= 0) {
+        throw new GovernorAbortError();
+      }
       await wait(slice, opts.signal);
       continue;
     }
     const sleepMs = Math.min(until - now(), deadline - now());
-    if (sleepMs <= 0) throw new GovernorAbortError();
-    await wait(Math.min(sleepMs, 5_000), opts.signal);
+    if (sleepMs <= 0) {
+      throw new GovernorAbortError();
+    }
+    await wait(Math.min(sleepMs, 5000), opts.signal);
   }
 
   const p = profile(source);
   for (;;) {
     const log_ = pruneLog(source);
     const inWindow = recentCount(log_, p.windowMs);
-    if (inWindow < p.maxPerWindow) break;
+    if (inWindow < p.maxPerWindow) {
+      break;
+    }
     const oldest = log_[log_.length - inWindow] ?? now();
     const waitMs = Math.min(oldest + p.windowMs - now(), deadline - now());
-    if (waitMs <= 0 && deadline <= now()) throw new GovernorAbortError();
-    await wait(Math.max(50, Math.min(waitMs, 5_000)), opts.signal);
+    if (waitMs <= 0 && deadline <= now()) {
+      throw new GovernorAbortError();
+    }
+    await wait(Math.max(50, Math.min(waitMs, 5000)), opts.signal);
   }
 
   const last = lastRequestAt.get(source) ?? 0;
   const gap = effectiveDelay(source, opts.firstSync ?? false);
   const spacingWait = last + gap - now();
   if (spacingWait > 0) {
-    if (now() + spacingWait > deadline) throw new GovernorAbortError();
+    if (now() + spacingWait > deadline) {
+      throw new GovernorAbortError();
+    }
     await wait(spacingWait, opts.signal);
   }
 
   for (;;) {
     const admission = await recordSourceRequest(source);
-    if (admission.admitted) break;
+    if (admission.admitted) {
+      break;
+    }
     if (admission.reason === "auth_required") {
       throw new AuthRequiredError(
         `Connect ${sourceLabel(source)} with the Pond extension`,
@@ -308,11 +352,13 @@ export async function acquire(
       );
     }
     const remaining = deadline - now();
-    if (remaining <= 0) throw new GovernorAbortError();
+    if (remaining <= 0) {
+      throw new GovernorAbortError();
+    }
     const gateWait =
       admission.nextRunAt >= Number.MAX_SAFE_INTEGER
-        ? Math.min(2_000, remaining)
-        : Math.min(Math.max(50, admission.nextRunAt - now()), 5_000, remaining);
+        ? Math.min(2000, remaining)
+        : Math.min(Math.max(50, admission.nextRunAt - now()), 5000, remaining);
     await wait(gateWait, opts.signal);
   }
 
@@ -348,15 +394,16 @@ export function report(source: Source, input: ReportInput): ReportResult {
       signal?.retryAfterSec ??
       Math.min(900, 60 * (multiplier.get(source) ?? 1));
     bumpMultiplier(source);
-    const ms = Math.max(1_000, sec * 1000);
+    const ms = Math.max(1000, sec * 1000);
     setSourceCooldown(source, ms);
     return { cooldownMs: ms };
   }
 
   if (
-    signal?.remaining != null &&
+    signal !== null &&
+    signal.remaining !== null &&
     signal.remaining <= 2 &&
-    signal.retryAfterSec != null &&
+    signal.retryAfterSec !== null &&
     signal.retryAfterSec > 0
   ) {
     const ms = signal.retryAfterSec * 1000;
@@ -364,7 +411,9 @@ export function report(source: Source, input: ReportInput): ReportResult {
     return { cooldownMs: ms };
   }
 
-  if (input.ok) noteSuccess(source);
+  if (input.ok) {
+    noteSuccess(source);
+  }
   return { cooldownMs: 0 };
 }
 

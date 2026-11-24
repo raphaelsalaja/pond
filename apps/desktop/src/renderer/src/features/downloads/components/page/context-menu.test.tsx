@@ -24,7 +24,7 @@ function row(
   };
 }
 
-function visible(rows: DownloadRow[]) {
+function visible(rows: Array<DownloadRow>) {
   return buildDownloadMenuItems(rows).flatMap((item) =>
     "label" in item && !item.hidden ? [item] : [],
   );
@@ -80,9 +80,11 @@ it("keeps download actions in the row context menu", () => {
   ]);
 });
 
-function click(rows: DownloadRow[], label: string) {
+function click(rows: Array<DownloadRow>, label: string) {
   const item = visible(rows).find((entry) => entry.label === label);
-  if (item && "onClick" in item) item.onClick?.();
+  if (item && "onClick" in item) {
+    item.onClick?.();
+  }
 }
 
 it("offers Copy Error whenever the download recorded an error", () => {
@@ -114,15 +116,16 @@ it("opens the source link in the browser", () => {
   expect(visible([local]).map((item) => item.label)).not.toContain("Open Link");
 });
 
-it("retries downloads that ran out of attempts but not canceled ones", () => {
-  const actionStates = (status: DownloadRow["status"]) =>
-    Object.fromEntries(
-      visible([row(status)]).map((item) => [
-        item.label,
-        "disabled" in item ? (item.disabled ?? false) : false,
-      ]),
-    );
+function actionStates(status: DownloadRow["status"]) {
+  return Object.fromEntries(
+    visible([row(status)]).map((item): [string, boolean] => [
+      item.label,
+      "disabled" in item ? (item.disabled ?? false) : false,
+    ]),
+  );
+}
 
+it("retries downloads that ran out of attempts but not canceled ones", () => {
   expect(actionStates("dead")).toMatchObject({
     "Retry Download": false,
     "Cancel Download": true,

@@ -4,6 +4,7 @@ import type {
   PreTrainedTokenizer,
 } from "@huggingface/transformers";
 import type { MediaType, Prefs } from "@pond/schema/db";
+import { z } from "zod";
 import {
   embeddingCodeQuery,
   embeddingFactClaim,
@@ -20,7 +21,7 @@ import { getPrefs } from "./prefs";
 
 export interface VersionedVector {
   model: string;
-  vector: number[];
+  vector: Array<number>;
 }
 
 export interface QueryEmbeddings {
@@ -101,9 +102,28 @@ async function loadEmbeddingTextBundle(): Promise<EmbeddingTextBundle> {
   };
 }
 
+type TensorData = ArrayLike<number> & {
+  slice(start: number, end: number): ArrayLike<number>;
+};
+
+const TensorDataSchema = z.custom<TensorData>(
+  (value) =>
+    ArrayBuffer.isView(value) &&
+    Object.prototype.toString.call(value) !== "[object DataView]",
+);
+
+const SentenceEmbeddingOutputSchema = z.object({
+  sentence_embedding: z
+    .object({
+      dims: z.array(z.number()).optional(),
+      data: TensorDataSchema.optional(),
+    })
+    .optional(),
+});
+
 function sentenceVector(output: {
   sentence_embedding?: { data?: ArrayLike<number> };
-}): number[] {
+}): Array<number> {
   const data = output.sentence_embedding?.data;
   if (!data) {
     throw new Error("[embedding-gemma] model returned no sentence embedding");
@@ -115,7 +135,9 @@ export function cosineSimilarity(
   left: ArrayLike<number>,
   right: ArrayLike<number>,
 ): number | null {
-  if (!left.length || left.length !== right.length) return null;
+  if (!left.length || left.length !== right.length) {
+    return null;
+  }
   let dot = 0;
   let leftMagnitude = 0;
   let rightMagnitude = 0;
@@ -126,12 +148,14 @@ export function cosineSimilarity(
     leftMagnitude += a * a;
     rightMagnitude += b * b;
   }
-  if (!leftMagnitude || !rightMagnitude) return null;
+  if (!leftMagnitude || !rightMagnitude) {
+    return null;
+  }
   return dot / Math.sqrt(leftMagnitude * rightMagnitude);
 }
 
 export function reciprocalRankFusion(
-  rankedLists: string[][],
+  rankedLists: Array<Array<string>>,
   k = 60,
 ): Array<{ id: string; score: number }> {
   const scores = new Map<string, number>();
@@ -154,7 +178,7 @@ interface QueryEmbeddingChannels {
 }
 
 export function queryEmbeddingChannels(
-  media: MediaType[],
+  media: Array<MediaType>,
   prefs: Pick<Prefs["ai"], "semanticSearch" | "enableClip">,
 ): QueryEmbeddingChannels {
   const hasMediaScope =
@@ -170,22 +194,28 @@ export function queryEmbeddingChannels(
 
 export async function encodeQueryEmbeddings(
   query: string,
-  media: MediaType[],
+  media: Array<MediaType>,
   prefs?: Pick<Prefs, "ai">,
   task: EmbeddingQueryTask = "search",
 ): Promise<QueryEmbeddings> {
   const trimmed = query.trim();
-  if (!trimmed) return {};
+  if (!trimmed) {
+    return {};
+  }
   const resolvedPrefs = prefs ?? (await getPrefs());
   const channels = queryEmbeddingChannels(media, resolvedPrefs.ai);
-  if (!channels.text && !channels.media) return {};
+  if (!channels.text && !channels.media) {
+    return {};
+  }
 
   const vector = await embeddingText.use(async ({ model, tokenizer }) => {
     const inputs = tokenizeEmbeddingTexts(
       (batch, options) => tokenizer(batch, options),
       [embeddingQueryText(task, trimmed)],
     );
-    return sentenceVector(await model(inputs));
+    return sentenceVector(
+      SentenceEmbeddingOutputSchema.parse(await model(inputs)),
+    );
   });
   const result: QueryEmbeddings = {};
   if (channels.text) {
@@ -198,26 +228,27 @@ export async function encodeQueryEmbeddings(
 }
 
 export async function encodeClassificationLabelEmbeddings(
-  texts: string[],
-): Promise<number[][]> {
-  if (texts.length === 0) return [];
+  texts: Array<string>,
+): Promise<Array<Array<number>>> {
+  if (texts.length === 0) {
+    return [];
+  }
   const output = await embeddingText.use(async ({ model, tokenizer }) => {
     const inputs = tokenizeEmbeddingTexts(
       (batch, options) => tokenizer(batch, options),
       texts,
     );
-    return model(inputs);
+    return SentenceEmbeddingOutputSchema.parse(await model(inputs));
   });
-  const tensor = output.sentence_embedding;
-  if (tensor?.dims.length !== 2 || tensor.dims[0] !== texts.length) {
+  const dims = output.sentence_embedding?.dims;
+  const data = output.sentence_embedding?.data;
+  if (dims?.length !== 2 || dims[0] !== texts.length || !data) {
     throw new Error(
       "[embedding-gemma] model returned invalid label embeddings",
     );
   }
-  const width = tensor.dims[1] ?? 0;
+  const width = dims[1] ?? 0;
   return Array.from({ length: texts.length }, (_, index) =>
-    normalizedEmbeddingVector(
-      tensor.data.slice(index * width, (index + 1) * width),
-    ),
+    normalizedEmbeddingVector(data.slice(index * width, (index + 1) * width)),
   );
 }

@@ -1,18 +1,18 @@
-import { type NewTask, type Source, saves, tasks } from "@pond/schema/db";
+import { saves, tasks } from "@pond/schema/db";
+import type { NewTask, Source } from "@pond/schema/db";
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
-import { type Db, getDb } from "../../db";
+import { getDb } from "../../db";
+import type { Db } from "../../db";
 import { persistSave } from "../persist-save";
 import {
   isInteractiveTrigger,
   TaskPayloadSchema,
   withInteractivePriority,
 } from "./priority";
-import {
-  createRetryGeneration,
-  type RetryGenerationResult,
-} from "./queue-generations";
+import { createRetryGeneration } from "./queue-generations";
+import type { RetryGenerationResult } from "./queue-generations";
 import { kickReconciler } from "./reconciler-client";
 import { maxAttemptsFor, planOps } from "./specs";
 
@@ -23,7 +23,7 @@ export function createPendingTasks(
   trigger: string | undefined,
   createId: () => string = ulid,
   generationId?: string | null,
-): NewTask[] {
+): Array<NewTask> {
   const interactive = isInteractiveTrigger(trigger);
   return planOps(source).map((op) => {
     const row: NewTask = {
@@ -39,7 +39,9 @@ export function createPendingTasks(
       createdAt: now,
       updatedAt: now,
     };
-    if (interactive) row.payload = withInteractivePriority();
+    if (interactive) {
+      row.payload = withInteractivePriority();
+    }
     return row;
   });
 }
@@ -73,7 +75,9 @@ export async function promoteInteractiveSaveTasks(
 export async function rependArchiveForCookies(saveId: string): Promise<void> {
   const db = await getDb();
   const now = new Date();
-  if (!rependArchiveTasks(db, saveId, now)) return;
+  if (!rependArchiveTasks(db, saveId, now)) {
+    return;
+  }
   await persistSave(
     saveId,
     { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
@@ -87,7 +91,9 @@ export function rependArchiveTasks(db: Db, saveId: string, now: Date): boolean {
     .from(tasks)
     .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "running")))
     .get();
-  if (running) return false;
+  if (running) {
+    return false;
+  }
   db.update(tasks)
     .set({
       status: "pending",
@@ -150,12 +156,14 @@ export async function resetTasksForSave(
     .set({ status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null })
     .where(eq(saves.id, saveId))
     .run();
-  if (isInteractiveTrigger(reason)) await promoteInteractiveTasks(saveId);
+  if (isInteractiveTrigger(reason)) {
+    await promoteInteractiveTasks(saveId);
+  }
   log.info("[pond pipeline:enqueue] reset tasks", { saveId, reason });
 }
 
 export async function retryFailedSaves(
-  ids?: readonly string[],
+  ids?: ReadonlyArray<string>,
   options?: Parameters<typeof createRetryGeneration>[1],
 ): Promise<number> {
   const result = await retryFailedSavesGeneration(ids, options);
@@ -163,15 +171,17 @@ export async function retryFailedSaves(
 }
 
 async function retryFailedSavesGeneration(
-  ids?: readonly string[],
+  ids?: ReadonlyArray<string>,
   options?: Parameters<typeof createRetryGeneration>[1],
 ): Promise<RetryGenerationResult> {
   const result = await createRetryGeneration(ids, options);
   log.info("[pond pipeline:enqueue] retry failed generation", {
     generationId: result.generationId,
     requeued: result.queued,
-    scoped: ids != null && ids.length > 0,
+    scoped: ids !== undefined && ids.length > 0,
   });
-  if (result.queued > 0) kickReconciler();
+  if (result.queued > 0) {
+    kickReconciler();
+  }
   return result;
 }

@@ -14,8 +14,9 @@ export async function cropImage(
     crop.h <= 0 ||
     crop.x + crop.w > 1.000001 ||
     crop.y + crop.h > 1.000001
-  )
+  ) {
     throw new Error("Select a crop inside the image.");
+  }
   const { data, info } = await sharp(source, { pages: 1, page: frameIndex })
     .autoOrient()
     .toBuffer({ resolveWithObject: true });

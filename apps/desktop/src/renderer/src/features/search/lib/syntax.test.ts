@@ -15,7 +15,9 @@ describe("sensitive search syntax", () => {
       text: "",
     });
     const predicate = parsed.predicates[0];
-    if (!predicate) throw new Error("Expected a sensitive predicate");
+    if (!predicate) {
+      throw new Error("Expected a sensitive predicate");
+    }
     expect(serializePredicate(predicate)).toBe("sensitive:likely-sensitive");
   });
 });
@@ -28,7 +30,9 @@ describe("split post search syntax", () => {
       { field: "post", operator: "neq", value: "x:9" },
     ]);
     const [kept, dropped] = parsed.predicates;
-    if (!kept || !dropped) throw new Error("Expected two post predicates");
+    if (!kept || !dropped) {
+      throw new Error("Expected two post predicates");
+    }
     expect(serializePredicate(kept)).toBe("post:instagram:DAbC12");
     expect(serializePredicate(dropped)).toBe("-post:x:9");
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { server } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { server } from "vitest/browser";
 import { expectAccessible } from "../test/axe";
 import { COMPONENT_DOCS } from "./docs";
 
@@ -9,11 +9,11 @@ const THEMES = ["light", "dark"] as const;
 /** Font rendering differs per OS; baselines are recorded on Linux CI only. */
 const VISUAL = server.platform === "linux";
 
-function screenshotName(...parts: readonly string[]): string {
+function screenshotName(...parts: ReadonlyArray<string>): string {
   return parts
     .join("-")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-");
+    .replaceAll(/[^a-z0-9]+/g, "-");
 }
 
 describe.each(COMPONENT_DOCS)("$name", (docs) => {

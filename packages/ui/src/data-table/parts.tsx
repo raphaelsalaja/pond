@@ -1,15 +1,8 @@
 import { useSelector } from "@tanstack/react-store";
 import type { RowData } from "@tanstack/react-table";
 import { clsx as cn } from "clsx";
-import {
-  Children,
-  type FunctionComponent,
-  isValidElement,
-  type ReactNode,
-  type RefObject,
-  useLayoutEffect,
-  useState,
-} from "react";
+import { Children, isValidElement, useLayoutEffect, useState } from "react";
+import type { FunctionComponent, ReactNode, RefObject } from "react";
 import { cssVars } from "../css-vars";
 import { HoverHighlight } from "../hover-highlight";
 import { DataTableBody } from "./body";
@@ -33,7 +26,9 @@ function useStickyHeaderOffset(
       setOffset((current) => (current === next ? current : next));
     };
     measure();
-    if (!globalThis.ResizeObserver) return;
+    if (!globalThis.ResizeObserver) {
+      return;
+    }
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();
@@ -44,10 +39,15 @@ function useStickyHeaderOffset(
 function useHorizontalScrollFlag(scrollRef: RefObject<HTMLDivElement | null>) {
   useLayoutEffect(() => {
     const node = scrollRef.current;
-    if (!node) return;
+    if (!node) {
+      return;
+    }
     const update = () => {
-      if (node.scrollLeft > 0) node.dataset.scrolledX = "";
-      else delete node.dataset.scrolledX;
+      if (node.scrollLeft > 0) {
+        node.dataset.scrolledX = "";
+      } else {
+        delete node.dataset.scrolledX;
+      }
     };
     update();
     node.addEventListener("scroll", update, { passive: true });
@@ -84,40 +84,54 @@ export function DataTableRoot<T extends RowData>({
       !cursorId ||
       meta.rows.some((row) => row.id === cursorId) ||
       document.activeElement !== meta.gridRef.current
-    )
+    ) {
       return;
+    }
     const first = meta.rows[0];
-    if (first) actions.focusRow(first.id);
+    if (first) {
+      actions.focusRow(first.id);
+    }
   }, [cursorId, meta.rows, meta.gridRef, actions]);
 
   let extraRow: ReactNode = null;
   let emptyState: ReactNode = null;
   Children.forEach(children, (child) => {
-    if (!isValidElement<SlotProps>(child)) return;
-    if (child.type === DataTableExtraRow) extraRow = child.props.children;
-    else if (child.type === DataTableEmpty) emptyState = child.props.children;
+    if (!isValidElement<SlotProps>(child)) {
+      return;
+    }
+    if (child.type === DataTableExtraRow) {
+      extraRow = child.props.children;
+    } else if (child.type === DataTableEmpty) {
+      emptyState = child.props.children;
+    }
   });
 
-  const hasRows = meta.rows.length > 0 || extraRow != null;
+  const hasRows =
+    meta.rows.length > 0 || (extraRow !== null && extraRow !== undefined);
   const showHeader = variant !== "list" && hasRows;
   const sized = meta.height !== undefined;
+  const { gridRef, scrollRef } = meta;
   const scrollMargin = useStickyHeaderOffset(meta.headerRef, showHeader);
-  useHorizontalScrollFlag(meta.scrollRef);
+  useHorizontalScrollFlag(scrollRef);
 
   return (
     <div
       className={cn(styles.container, className)}
-      ref={meta.gridRef}
+      ref={gridRef}
       role="grid"
       tabIndex={0}
       onFocus={(event) => {
-        if (event.target !== event.currentTarget) return;
+        if (event.target !== event.currentTarget) {
+          return;
+        }
         const cursor = selectionStore.state.cursorId;
         const id =
           cursor && meta.rows.some((row) => row.id === cursor)
             ? cursor
             : meta.rows[0]?.id;
-        if (!id) return;
+        if (!id) {
+          return;
+        }
         actions.focusRow(id);
         meta.revealRow.current?.(id);
       }}
@@ -144,7 +158,7 @@ export function DataTableRoot<T extends RowData>({
       data-selecting={selecting || undefined}
     >
       <div
-        ref={meta.scrollRef}
+        ref={scrollRef}
         className={styles.viewport}
         data-viewport=""
         data-scroll-fade="vertical"

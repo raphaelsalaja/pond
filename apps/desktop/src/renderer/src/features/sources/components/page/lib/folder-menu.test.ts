@@ -9,6 +9,17 @@ import {
 import { menuLabels } from "@/shared/test/menu-labels";
 import { buildFolderMenu, buildFolderRows } from "./folder-menu";
 
+function noop() {}
+
+function deleteCheckbox(mode: "copy" | "move") {
+  return buildFolderMenu(
+    { name: "PNG", imported: 200, watching: true, mode },
+    noop,
+  )
+    .flatMap((item) => (item.type === "group" ? item.items : []))
+    .find((item) => item.type === "checkbox");
+}
+
 describe("buildFolderMenu", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -43,7 +54,9 @@ describe("buildFolderMenu", () => {
     )
       .flatMap((item) => (item.type === "group" ? item.items : []))
       .find((item) => "label" in item && item.label === "Pause Watching");
-    if (!pause || !("onClick" in pause)) throw new Error("Missing pause");
+    if (!pause || !("onClick" in pause)) {
+      throw new Error("Missing pause");
+    }
     pause.onClick?.();
     await vi.waitFor(() => expect(onChanged).toHaveBeenCalled());
     expect(query).toHaveBeenCalledWith("autoImport.set", { enabled: false });
@@ -51,16 +64,11 @@ describe("buildFolderMenu", () => {
 
   it("checks delete after import in move mode and confirms turning it on", () => {
     const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
-    const find = (mode: "copy" | "move") =>
-      buildFolderMenu(
-        { name: "PNG", imported: 200, watching: true, mode },
-        () => {},
-      )
-        .flatMap((item) => (item.type === "group" ? item.items : []))
-        .find((item) => item.type === "checkbox");
-    expect(find("move")).toMatchObject({ checked: true });
-    const item = find("copy");
-    if (item?.type !== "checkbox") throw new Error("Missing checkbox");
+    expect(deleteCheckbox("move")).toMatchObject({ checked: true });
+    const item = deleteCheckbox("copy");
+    if (item?.type !== "checkbox") {
+      throw new Error("Missing checkbox");
+    }
     expect(item.checked).toBe(false);
     item.onCheckedChange?.(true);
     expect(confirm).toHaveBeenCalledWith(
@@ -82,7 +90,9 @@ describe("buildFolderRows", () => {
     const row = buildFolderRows({ ...target, mode }, onChanged).profile.find(
       (item) => item.id === "delete-after-import",
     );
-    if (!row) throw new Error("Missing delete after import row");
+    if (!row) {
+      throw new Error("Missing delete after import row");
+    }
     return row;
   }
 
@@ -107,7 +117,9 @@ describe("buildFolderRows", () => {
     deleteAfterImport("copy", onChanged).toggle?.onCheckedChange(true);
     expect(query).not.toHaveBeenCalled();
     const options = confirm.mock.calls[0]?.[0];
-    if (!options) throw new Error("Missing confirmation");
+    if (!options) {
+      throw new Error("Missing confirmation");
+    }
     await options.onConfirm({ checked: false });
     expect(query).toHaveBeenCalledWith("autoImport.set", { mode: "move" });
     expect(onChanged).toHaveBeenCalled();

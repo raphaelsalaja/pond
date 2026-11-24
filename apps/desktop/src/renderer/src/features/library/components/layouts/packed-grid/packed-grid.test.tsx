@@ -1,5 +1,6 @@
 import { act, useCallback } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   recallScroll,
@@ -15,10 +16,18 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
+function isScrollToOptions(
+  value: ScrollToOptions | number | undefined,
+): value is ScrollToOptions {
+  return typeof value === "object";
+}
+
 function stubScrollTo(node: HTMLElement): void {
   node.scrollTo = (optionsOrX?: ScrollToOptions | number, y?: number) => {
-    const top = optionsOrX instanceof Object ? optionsOrX.top : y;
-    if (top != null) node.scrollTop = top;
+    const top = isScrollToOptions(optionsOrX) ? optionsOrX.top : y;
+    if (top !== undefined) {
+      node.scrollTop = top;
+    }
   };
 }
 
@@ -32,10 +41,13 @@ function RestorationHarness({
   const restoration = useScrollRestoration(
     detail ? "live-tab:/save/example" : "live-tab:/",
   );
+  const { ref: scrollerRef } = restoration;
   const attachScroller = useCallback(
     (node: HTMLDivElement | null) => {
-      restoration.ref.current = node;
-      if (!node) return;
+      scrollerRef.current = node;
+      if (!node) {
+        return;
+      }
       Object.defineProperty(node, "offsetHeight", {
         configurable: true,
         value: 600,
@@ -46,10 +58,12 @@ function RestorationHarness({
       });
       stubScrollTo(node);
     },
-    [restoration],
+    [scrollerRef],
   );
 
-  if (detail) return <div data-detail />;
+  if (detail) {
+    return <div data-detail />;
+  }
   return (
     <ScrollRestorationContext.Provider value={restoration}>
       <div ref={attachScroller} data-restoration-scroller>
@@ -240,7 +254,9 @@ describe("PackedGrid", () => {
 
     expect(container.scrollTop).toBe(2500);
     await act(async () => {
-      if (!container) return;
+      if (!container) {
+        return;
+      }
       container.scrollTop = 3200;
       container.dispatchEvent(new Event("scroll"));
       await new Promise(requestAnimationFrame);
@@ -262,7 +278,9 @@ describe("PackedGrid", () => {
     expect(firstScroller).not.toBeNull();
 
     await act(async () => {
-      if (!firstScroller) return;
+      if (!firstScroller) {
+        return;
+      }
       firstScroller.scrollTop = 2500;
       firstScroller.dispatchEvent(new Event("scroll"));
       await new Promise(requestAnimationFrame);
@@ -303,7 +321,9 @@ describe("PackedGrid", () => {
     );
 
     await act(async () => {
-      if (!firstScroller) return;
+      if (!firstScroller) {
+        return;
+      }
       firstScroller.scrollTop = 2500;
       firstScroller.dispatchEvent(new Event("scroll"));
       await new Promise(requestAnimationFrame);

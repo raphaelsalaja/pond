@@ -45,7 +45,7 @@ const SUGGESTED = new Set([
   "Move to Trash",
 ]);
 
-function sameSaves(a: readonly Save[], b: readonly Save[]): boolean {
+function sameSaves(a: ReadonlyArray<Save>, b: ReadonlyArray<Save>): boolean {
   return a.length === b.length && a.every((save, i) => save === b[i]);
 }
 
@@ -66,11 +66,13 @@ function useFocusedSaves() {
 }
 
 function saveEntries(
-  saves: readonly Save[],
+  saves: ReadonlyArray<Save>,
   opened: boolean,
   searching: boolean,
-): MenuEntry[] {
-  if (saves.length === 0) return [];
+): Array<MenuEntry> {
+  if (saves.length === 0) {
+    return [];
+  }
   const group = opened ? "Current Save" : `${saves.length} Selected`;
   const items = buildSaveMenu(saves, {
     clipboardEmpty: tagClipboard.get().length === 0,
@@ -87,18 +89,20 @@ function saveEntries(
 
 function folderEntries(
   folder: Folder,
-  rows: readonly Folder[],
+  rows: ReadonlyArray<Folder>,
   includeSubfolders: boolean,
-): MenuEntry[] {
+): Array<MenuEntry> {
   const group = "Current Folder";
   const hasChildren = rows.some((row) => row.parentId === folder.id);
-  const entries: MenuEntry[] = [
+  const entries: Array<MenuEntry> = [
     {
       id: "folder:new-subfolder",
       group,
       label: "New Subfolder",
       icon: <IconFolder aria-hidden />,
-      run: () => newFolder(folder.id),
+      run: () => {
+        void newFolder(folder.id);
+      },
     },
   ];
   if (hasChildren) {
@@ -149,7 +153,7 @@ function folderEntries(
 export function useContextEntries(
   pathname: string,
   searching: boolean,
-): MenuEntry[] {
+): Array<MenuEntry> {
   const nav = useLibraryNav();
   const { saves, opened } = useFocusedSaves();
   const onCollection = useOnCollection(pathname);
@@ -161,11 +165,14 @@ export function useContextEntries(
   return useMemo(() => {
     const entries = saveEntries(saves, opened, searching);
     entries.push(...pageEntries);
-    if (!onCollection || !nav) return entries;
+    if (!onCollection || !nav) {
+      return entries;
+    }
     if (nav.kind === "folder") {
       const folder = folderRows.find((row) => row.id === nav.id);
-      if (folder)
+      if (folder) {
         entries.push(...folderEntries(folder, folderRows, includeSubfolders));
+      }
     } else if (nav.kind === "trash") {
       entries.push(
         ...specEntries(buildTrashMenuItems(trashCount > 0), "Trash", "trash"),

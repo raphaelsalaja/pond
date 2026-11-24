@@ -6,8 +6,9 @@ import { extractFontFamily, renameWithFamily } from "./font-metadata";
 
 function utf16be(value: string): Buffer {
   const bytes = Buffer.alloc(value.length * 2);
-  for (let i = 0; i < value.length; i += 1)
+  for (let i = 0; i < value.length; i += 1) {
     bytes.writeUInt16BE(value.charCodeAt(i), i * 2);
+  }
   return bytes;
 }
 
@@ -21,13 +22,13 @@ function nameTableFont(family: string): Buffer {
   table.writeUInt16BE(stringOffset, 4);
   table.writeUInt16BE(3, 6);
   table.writeUInt16BE(1, 8);
-  table.writeUInt16BE(0x0409, 10);
+  table.writeUInt16BE(0x04_09, 10);
   table.writeUInt16BE(1, 12);
   table.writeUInt16BE(name.length, 14);
   table.writeUInt16BE(0, 16);
   name.copy(table, stringOffset);
   const offsetTable = Buffer.alloc(12);
-  offsetTable.writeUInt32BE(0x00010000, 0);
+  offsetTable.writeUInt32BE(0x00_01_00_00, 0);
   offsetTable.writeUInt16BE(1, 4);
   const records = Buffer.alloc(16);
   records.write("name", 0, 4, "ascii");

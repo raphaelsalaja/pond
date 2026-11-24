@@ -6,12 +6,16 @@ export const setupResume = {
   mark(): void {
     try {
       localStorage.setItem(RESUME_KEY, "import");
-    } catch {}
+    } catch {
+      /** Storage can be full or disabled; setup then opens on its first step. */
+    }
   },
   clear(): void {
     try {
       localStorage.removeItem(RESUME_KEY);
-    } catch {}
+    } catch {
+      /** Storage can be disabled; there is nothing to clear then. */
+    }
   },
   take(): boolean {
     try {

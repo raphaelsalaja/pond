@@ -1,33 +1,33 @@
 import { basename, dirname, extname } from "node:path";
-import { type SaveFile, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { SaveFile } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
-import {
-  BrowserWindow,
-  type BrowserWindowConstructorOptions,
-  dialog,
-  type IpcMain,
-  type IpcMainInvokeEvent,
-  Menu,
-  type MenuItemConstructorOptions,
-  shell,
+import { BrowserWindow, dialog, Menu, shell } from "electron";
+import type {
+  BrowserWindowConstructorOptions,
+  IpcMain,
+  IpcMainInvokeEvent,
+  MenuItemConstructorOptions,
 } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { IPC } from "../../shared/constants";
 import {
-  type PreviewFileAction,
-  type PreviewFileActionResult,
   PreviewFileActionSchema,
-  type PreviewNeighborRequest,
   PreviewNeighborRequestSchema,
-  type PreviewWindowConfigure,
   PreviewWindowConfigureSchema,
-  type PreviewWindowNavigate,
   PreviewWindowNavigateSchema,
-  type PreviewWindowOpen,
   PreviewWindowOpenSchema,
-  type PreviewWindowState,
   previewMediaProfile,
+} from "../../shared/preview-window-contracts";
+import type {
+  PreviewFileAction,
+  PreviewFileActionResult,
+  PreviewNeighborRequest,
+  PreviewWindowConfigure,
+  PreviewWindowNavigate,
+  PreviewWindowOpen,
+  PreviewWindowState,
 } from "../../shared/preview-window-contracts";
 import { userError } from "../../shared/user-error";
 import { getDb } from "../db";
@@ -68,20 +68,18 @@ export type PreviewContextMenuItem =
 
 export function buildPreviewContextMenuItems(
   state: PreviewWindowState,
-): PreviewContextMenuItem[] {
-  const imageItems: PreviewContextMenuItem[] = [
+): Array<PreviewContextMenuItem> {
+  const imageItems: Array<PreviewContextMenuItem> = [
     {
       label: "Fit",
       checked: state.zoom === null,
       action: { kind: "zoom", zoom: null },
     },
-    ...PREVIEW_ZOOM_RATIOS.map(
-      (percent): PreviewContextMenuItem => ({
-        label: `${percent}%`,
-        checked: Math.round((state.zoom ?? 0) * 100) === percent,
-        action: { kind: "zoom", zoom: percent / 100 },
-      }),
-    ),
+    ...PREVIEW_ZOOM_RATIOS.map((percent): PreviewContextMenuItem => ({
+      label: `${percent}%`,
+      checked: Math.round((state.zoom ?? 0) * 100) === percent,
+      action: { kind: "zoom", zoom: percent / 100 },
+    })),
     { type: "separator" },
     {
       label: "Mirror",
@@ -100,7 +98,7 @@ export function buildPreviewContextMenuItems(
       },
     },
   ];
-  const videoItems: PreviewContextMenuItem[] = [
+  const videoItems: Array<PreviewContextMenuItem> = [
     {
       label: "Fit",
       checked: state.size === "fit",
@@ -170,7 +168,7 @@ export function previewTargetForFile(input: {
   }
   return {
     title: input.title || input.file.path,
-    url: `pond://${input.saveId}/${encodeURIComponent(input.file.path).replace(/%2F/gi, "/")}`,
+    url: `pond://${input.saveId}/${encodeURIComponent(input.file.path).replaceAll(/%2F/gi, "/")}`,
     originalPath: input.file.path,
     ...profile,
   };
@@ -183,20 +181,27 @@ async function resolvePreviewTarget(
 ): Promise<PreviewTarget> {
   const db = await getDb();
   const row = db.select().from(saves).where(eq(saves.id, saveId)).get();
-  if (!row) throw userError("The Save no longer exists.");
+  if (!row) {
+    throw userError("The Save no longer exists.");
+  }
   const save = toWireSave(row);
   const file = save.files[fileIndex];
-  if (!file) throw userError("The file no longer exists.");
+  if (!file) {
+    throw userError("The file no longer exists.");
+  }
   const previewTarget = previewTargetForFile({
     saveId,
     title: save.title,
     file,
     kind,
   });
-  if (!previewTarget)
+  if (!previewTarget) {
     throw userError("This file cannot open in a preview window.");
+  }
   const target = await resolveSaveFilePath(saveId, fileIndex);
-  if (!target.ok) throw userError("The original file is unavailable.");
+  if (!target.ok) {
+    throw userError("The original file is unavailable.");
+  }
   return previewTarget;
 }
 
@@ -216,7 +221,9 @@ async function createPreviewWindow(
     input.kind,
   );
   const prefs = await getPrefs();
-  if (generation !== libraryGeneration) throw userError("The Library changed.");
+  if (generation !== libraryGeneration) {
+    throw userError("The Library changed.");
+  }
   const presentation = input.kind === "presentation";
   const options: BrowserWindowConstructorOptions = {
     title: detachedWindowTitle(target.title),
@@ -238,7 +245,9 @@ async function createPreviewWindow(
       backgroundThrottling: false,
     },
   };
-  if (!presentation) Object.assign(options, detachedWindowChrome());
+  if (!presentation) {
+    Object.assign(options, detachedWindowChrome());
+  }
   const window = new BrowserWindow(options);
   const state: PreviewWindowState = {
     windowId: window.id,
@@ -271,7 +280,9 @@ async function createPreviewWindow(
   window.on("enter-full-screen", updateFullscreen);
   window.on("leave-full-screen", updateFullscreen);
   window.once("ready-to-show", () => {
-    if (presentation) window.setFullScreen(true);
+    if (presentation) {
+      window.setFullScreen(true);
+    }
     window.show();
   });
   followInterfaceZoom(window.webContents, { getPrefs, subscribePrefs });
@@ -283,28 +294,37 @@ async function createPreviewWindow(
 
   try {
     const devUrl = process.env.ELECTRON_RENDERER_URL;
-    if (devUrl)
+    if (devUrl) {
       await window.loadURL(`${devUrl.replace(/\/$/, "")}/preview.html`);
-    else await window.loadFile(resolveMainOut("../renderer/preview.html"));
+    } else {
+      await window.loadFile(resolveMainOut("../renderer/preview.html"));
+    }
     return { windowId: window.id };
   } catch (error) {
-    if (!window.isDestroyed()) window.destroy();
+    if (!window.isDestroyed()) {
+      window.destroy();
+    }
     throw error;
   }
 }
 
 function configurePreviewWindow(input: PreviewWindowConfigure): void {
   const entry = entries.get(input.windowId);
-  if (!entry || entry.window.isDestroyed())
+  if (!entry || entry.window.isDestroyed()) {
     throw userError("The preview window closed.");
+  }
   const { videoMuted, ...appearance } = input;
   const previousMuted = entry.state.videoMuted;
   entry.state = { ...entry.state, ...appearance };
-  if (input.fullscreen !== undefined)
+  if (input.fullscreen !== undefined) {
     entry.window.setFullScreen(input.fullscreen);
-  if (input.opacity !== undefined) entry.window.setOpacity(input.opacity);
-  if (input.alwaysOnTop !== undefined)
+  }
+  if (input.opacity !== undefined) {
+    entry.window.setOpacity(input.opacity);
+  }
+  if (input.alwaysOnTop !== undefined) {
     entry.window.setAlwaysOnTop(input.alwaysOnTop);
+  }
   if (input.zoom !== undefined) {
     entry.state.size = input.zoom === null ? "fit" : "actual";
   }
@@ -362,15 +382,17 @@ async function navigatePreviewWindow(
   input: PreviewWindowNavigate,
 ): Promise<void> {
   const entry = entries.get(input.windowId);
-  if (!entry || entry.window.isDestroyed())
+  if (!entry || entry.window.isDestroyed()) {
     throw userError("The preview window closed.");
+  }
   const target = await resolvePreviewTarget(
     input.saveId,
     input.fileIndex,
     entry.state.kind,
   );
-  if (entries.get(input.windowId) !== entry || entry.window.isDestroyed())
+  if (entries.get(input.windowId) !== entry || entry.window.isDestroyed()) {
     return;
+  }
   entry.state = {
     ...entry.state,
     saveId: input.saveId,
@@ -421,15 +443,16 @@ async function runPreviewFileAction(
   const base = (
     entry.state.title || basename(entry.state.originalPath, extension)
   )
-    .replace(/[\\/:*?"<>|]+/g, " ")
-    .replace(/\s+/g, " ")
+    .replaceAll(/[\\/:*?"<>|]+/g, " ")
+    .replaceAll(/\s+/g, " ")
     .trim()
     .slice(0, 120);
   const picked = await dialog.showSaveDialog(entry.window, {
     defaultPath: `${base || "save"}${extension}`,
   });
-  if (picked.canceled || !picked.filePath)
+  if (picked.canceled || !picked.filePath) {
     return { ok: false, reason: "cancelled" };
+  }
   try {
     await copyExportFile(
       target.path,
@@ -455,8 +478,9 @@ function requestPreviewNeighbor(
     !entry ||
     entry.window.isDestroyed() ||
     event.sender.id !== entry.window.webContents.id
-  )
+  ) {
     throw userError("The preview window closed.");
+  }
   mainWindowState.current?.webContents.send(IPC.previewNeighborRequest, {
     ...input,
     saveId: entry.state.saveId,
@@ -475,7 +499,9 @@ export function openPreviewWindowCount(): number {
 export function closePreviewWindows(): void {
   libraryGeneration++;
   for (const entry of entries.values()) {
-    if (!entry.window.isDestroyed()) entry.window.close();
+    if (!entry.window.isDestroyed()) {
+      entry.window.close();
+    }
   }
   entries.clear();
 }
@@ -483,7 +509,9 @@ export function closePreviewWindows(): void {
 export function registerPreviewWindowHandlers(bus: IpcMain): void {
   subscribePrefs((prefs) => {
     for (const entry of entries.values()) {
-      if (entry.window.isDestroyed()) continue;
+      if (entry.window.isDestroyed()) {
+        continue;
+      }
       entry.state = {
         ...entry.state,
         reduceMotion: prefs.preferences.reduceMotion,
@@ -493,27 +521,39 @@ export function registerPreviewWindowHandlers(bus: IpcMain): void {
     }
   });
   bus.handle(IPC.previewOpen, (event, raw) => {
-    if (!isTrustedSender(event)) throw new Error("untrusted sender");
+    if (!isTrustedSender(event)) {
+      throw new Error("untrusted sender");
+    }
     return createPreviewWindow(PreviewWindowOpenSchema.parse(raw));
   });
   bus.handle(IPC.previewConfigure, (event, raw) => {
-    if (!isTrustedSender(event)) throw new Error("untrusted sender");
+    if (!isTrustedSender(event)) {
+      throw new Error("untrusted sender");
+    }
     configurePreviewWindow(PreviewWindowConfigureSchema.parse(raw));
   });
   bus.handle(IPC.previewNavigate, (event, raw) => {
-    if (!isTrustedSender(event)) throw new Error("untrusted sender");
+    if (!isTrustedSender(event)) {
+      throw new Error("untrusted sender");
+    }
     return navigatePreviewWindow(PreviewWindowNavigateSchema.parse(raw));
   });
   bus.handle(IPC.previewNeighborRequest, (event, raw) => {
-    if (!isTrustedSender(event)) throw new Error("untrusted sender");
+    if (!isTrustedSender(event)) {
+      throw new Error("untrusted sender");
+    }
     requestPreviewNeighbor(event, PreviewNeighborRequestSchema.parse(raw));
   });
   bus.handle(IPC.previewFileAction, (event, raw) => {
-    if (!isTrustedSender(event)) throw new Error("untrusted sender");
+    if (!isTrustedSender(event)) {
+      throw new Error("untrusted sender");
+    }
     return runPreviewFileAction(event, PreviewFileActionSchema.parse(raw));
   });
   bus.handle(IPC.previewClose, (event, raw) => {
-    if (!isTrustedSender(event)) throw new Error("untrusted sender");
+    if (!isTrustedSender(event)) {
+      throw new Error("untrusted sender");
+    }
     closePreviewWindow(PreviewWindowIdSchema.parse(raw));
   });
 }

@@ -18,16 +18,16 @@ const TaskIdSchema = z.object({
 
 export interface ReleasedIngest {
   cancelled: number;
-  generationIds: string[];
+  generationIds: Array<string>;
 }
 
-function scopeArgs(saveIds: readonly string[] | null): [number, string] {
-  return [saveIds == null ? 0 : 1, JSON.stringify(saveIds ?? [])];
+function scopeArgs(saveIds: ReadonlyArray<string> | null): [number, string] {
+  return [saveIds === null ? 0 : 1, JSON.stringify(saveIds ?? [])];
 }
 
 export function releaseTrashedIngestSync(
   sqlite: Database.Database,
-  saveIds: readonly string[] | null,
+  saveIds: ReadonlyArray<string> | null,
   at: number,
 ): ReleasedIngest {
   const [scoped, ids] = scopeArgs(saveIds);
@@ -72,7 +72,9 @@ export function releaseTrashedIngestSync(
         )`,
     )
     .run(TRASHED_INGEST_REASON, at, at, scoped, ids).changes;
-  for (const task of open) abortRunningIngest(task.id);
+  for (const task of open) {
+    abortRunningIngest(task.id);
+  }
   return {
     cancelled,
     generationIds: [
@@ -85,10 +87,12 @@ export function releaseTrashedIngestSync(
 
 export function resumeTrashedIngestSync(
   sqlite: Database.Database,
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   at: number,
 ): number {
-  if (saveIds.length === 0) return 0;
+  if (saveIds.length === 0) {
+    return 0;
+  }
   return sqlite
     .prepare(
       `UPDATE tasks

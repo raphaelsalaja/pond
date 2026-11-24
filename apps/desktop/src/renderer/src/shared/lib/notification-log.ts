@@ -6,7 +6,9 @@ function bridged(): boolean {
 }
 
 export function postNotification(post: NotificationPost): void {
-  if (!bridged()) return;
+  if (!bridged()) {
+    return;
+  }
   void window.pond.query("notifications.post", post).catch(() => {});
 }
 

@@ -8,6 +8,7 @@ import type { SaveFile } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import ffmpegPath from "ffmpeg-static";
 import { afterEach, expect, it } from "vitest";
+import { z } from "zod";
 import { saveDirIn } from "../paths";
 import { runFfmpeg } from "./convert-media";
 import {
@@ -19,12 +20,13 @@ import {
   isSafeSource,
   parseDuration,
   parseVideoProbe,
-  type VideoCompressionRuntime,
-  type VideoProbe,
 } from "./video-compression";
+import type { VideoCompressionRuntime, VideoProbe } from "./video-compression";
+
+const StderrSchema = z.object({ stderr: z.string().optional() });
 
 const run = promisify(execFile);
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
@@ -52,9 +54,9 @@ const posterFile: SaveFile = {
 
 interface FakeLibrary {
   runtime: VideoCompressionRuntime;
-  commits: Transaction[];
-  encodes: string[];
-  failures: string[];
+  commits: Array<Transaction>;
+  encodes: Array<string>;
+  failures: Array<string>;
 }
 
 type FakeSaves = Awaited<ReturnType<VideoCompressionRuntime["load"]>>["saves"];
@@ -66,14 +68,14 @@ function fakeLibrary(input: {
   encoded: VideoProbe;
   outputSize: number;
   /** Source paths whose encode fails. */
-  failing?: readonly string[];
+  failing?: ReadonlyArray<string>;
   /** The Saves as they read once encoding finishes. */
   current?: FakeSaves;
 }): FakeLibrary {
   const written = new Map<string, number>();
-  const commits: Transaction[] = [];
-  const encodes: string[] = [];
-  const failures: string[] = [];
+  const commits: Array<Transaction> = [];
+  const encodes: Array<string> = [];
+  const failures: Array<string> = [];
   let workspaces = 0;
   let loads = 0;
   return {
@@ -89,8 +91,9 @@ function fakeLibrary(input: {
       probe: async (path) => (written.has(path) ? input.encoded : input.source),
       encode: async ({ source, output }) => {
         encodes.push(source);
-        if (input.failing?.includes(source))
+        if (input.failing?.includes(source)) {
           throw new Error("FFmpeg stopped after 600 seconds.");
+        }
         written.set(output, input.outputSize);
       },
       workspace: async () => {
@@ -100,7 +103,9 @@ function fakeLibrary(input: {
       hash: async () => encodedSha,
       size: async (path) => {
         const size = written.get(path);
-        if (size === undefined) throw new Error(`No file at ${path}`);
+        if (size === undefined) {
+          throw new Error(`No file at ${path}`);
+        }
         return size;
       },
       commit: async (transaction) => {
@@ -158,8 +163,9 @@ it("replaces H.264 videos with smaller HEVC copies and updates the Save", async 
     bytesAfter: 400,
   });
   const [transaction] = library.commits;
-  if (transaction?.kind !== "update" || transaction.model !== "save")
+  if (transaction?.kind !== "update" || transaction.model !== "save") {
     throw new Error("Expected one Save update.");
+  }
   expect(transaction.patch).toMatchObject({
     fileSize: 400,
     videoCodec: "hevc",
@@ -205,8 +211,9 @@ it("keeps Save-level fields that describe a different file", async () => {
   );
 
   const [transaction] = library.commits;
-  if (transaction?.kind !== "update" || transaction.model !== "save")
+  if (transaction?.kind !== "update" || transaction.model !== "save") {
     throw new Error("Expected one Save update.");
+  }
   expect(transaction.patch).not.toHaveProperty("fileSize");
   expect(transaction.patch).not.toHaveProperty("videoCodec");
   expect(transaction.patch.files?.[0]).toMatchObject({ size: 400 });
@@ -234,8 +241,9 @@ it("renames MOV sources to MP4 after re-encoding them", async () => {
   );
 
   const [transaction] = library.commits;
-  if (transaction?.kind !== "update" || transaction.model !== "save")
+  if (transaction?.kind !== "update" || transaction.model !== "save") {
     throw new Error("Expected one Save update.");
+  }
   expect(transaction.fileRenames).toEqual([
     { from: "clip.mov", to: "clip.mp4" },
   ]);
@@ -271,8 +279,9 @@ it("keeps an uppercase MP4 name instead of renaming it by case", async () => {
   );
 
   const [transaction] = library.commits;
-  if (transaction?.kind !== "update" || transaction.model !== "save")
+  if (transaction?.kind !== "update" || transaction.model !== "save") {
     throw new Error("Expected one Save update.");
+  }
   expect(transaction.fileRenames).toBeUndefined();
   expect(transaction.fileMoves?.map((file) => file.filename)).toEqual([
     "CLIP.MP4",
@@ -477,8 +486,9 @@ it("commits against the Save as it reads once encoding finishes", async () => {
   );
 
   const [transaction] = library.commits;
-  if (transaction?.kind !== "update" || transaction.model !== "save")
+  if (transaction?.kind !== "update" || transaction.model !== "save") {
     throw new Error("Expected one Save update.");
+  }
   expect(transaction.before.files?.[1]).toEqual(retitledPoster);
   expect(transaction.patch.files?.[0]).toMatchObject({ sha256: encodedSha });
   expect(transaction.patch.files?.[1]).toEqual(retitledPoster);
@@ -624,7 +634,9 @@ it.skipIf(!ffmpegPath)(
   "re-encodes a real H.264 file into a smaller, playable HEVC file",
   async () => {
     const ffmpeg = ffmpegPath;
-    if (!ffmpeg) throw new Error("FFmpeg unavailable");
+    if (!ffmpeg) {
+      throw new Error("FFmpeg unavailable");
+    }
     const root = await mkdtemp(join(tmpdir(), "pond-video-compression-"));
     roots.push(root);
     const saveDirectory = saveDirIn(root, "save-1");
@@ -656,11 +668,11 @@ it.skipIf(!ffmpegPath)(
     const probe = async (path: string): Promise<VideoProbe> => {
       const output = await run(ffmpeg, ["-hide_banner", "-i", path]).then(
         () => "",
-        (error: { stderr?: string }) => error.stderr ?? "",
+        (cause: unknown) => StderrSchema.safeParse(cause).data?.stderr ?? "",
       );
       return parseVideoProbe(output);
     };
-    const commits: Transaction[] = [];
+    const commits: Array<Transaction> = [];
     const encodedPath = join(root, "encoded.mp4");
     const before = (await stat(source)).size;
 
@@ -700,10 +712,13 @@ it.skipIf(!ffmpegPath)(
         size: async (path) => (await stat(path)).size,
         commit: async (transaction) => {
           commits.push(transaction);
-          if (transaction.kind !== "update" || transaction.model !== "save")
+          if (transaction.kind !== "update" || transaction.model !== "save") {
             return;
+          }
           const moved = transaction.fileMoves?.[0];
-          if (moved) await copyFile(moved.sourcePath, encodedPath);
+          if (moved) {
+            await copyFile(moved.sourcePath, encodedPath);
+          }
         },
         reportFailure: (_id, reason) => {
           throw new Error(reason);
@@ -714,8 +729,9 @@ it.skipIf(!ffmpegPath)(
     expect(result.changed).toBe(1);
     expect(result.bytesAfter).toBeLessThan(before * 0.9);
     const [transaction] = commits;
-    if (transaction?.kind !== "update" || transaction.model !== "save")
+    if (transaction?.kind !== "update" || transaction.model !== "save") {
       throw new Error("Expected one Save update.");
+    }
     expect(transaction.fileMoves?.map((file) => file.filename)).toEqual([
       "video-1.mp4",
     ]);

@@ -10,39 +10,53 @@ function linearize(channel: number): number {
     : ((channel + 0.055) / 1.055) ** 2.4;
 }
 
-function weigh([r, g, b]: number[], weights: Weights, encoded = true): number {
+function weigh(
+  [r, g, b]: Array<number>,
+  weights: Weights,
+  encoded = true,
+): number {
   const [wr, wg, wb] = weights;
   const lin = encoded ? linearize : (c: number) => c;
   return wr * lin(r ?? 0) + wg * lin(g ?? 0) + wb * lin(b ?? 0);
 }
 
-function components(body: string, max: number): number[] | null {
+function components(body: string, max: number): Array<number> | null {
   const tokens = body.split(/[\s,/]+/).filter(Boolean);
-  if (tokens.length < 3 || tokens.length > 4) return null;
+  if (tokens.length < 3 || tokens.length > 4) {
+    return null;
+  }
   const values = tokens.map((token, index) => {
-    if (token === "none") return 0;
+    if (token === "none") {
+      return 0;
+    }
     const value = Number.parseFloat(token);
-    if (token.endsWith("%")) return value / 100;
+    if (token.endsWith("%")) {
+      return value / 100;
+    }
     return index < 3 ? value / max : value;
   });
   return values.some(Number.isNaN) ? null : values;
 }
 
-function hex(value: string): number[] | null {
+function hex(value: string): Array<number> | null {
   const digits = value.slice(1);
   const size = digits.length <= 4 ? 1 : 2;
-  if (![3, 4, 6, 8].includes(digits.length)) return null;
-  const values: number[] = [];
+  if (![3, 4, 6, 8].includes(digits.length)) {
+    return null;
+  }
+  const values: Array<number> = [];
   for (let i = 0; i < digits.length; i += size) {
     const pair = digits.slice(i, i + size);
     const parsed = Number.parseInt(size === 1 ? pair + pair : pair, 16);
-    if (Number.isNaN(parsed)) return null;
+    if (Number.isNaN(parsed)) {
+      return null;
+    }
     values.push(parsed / 255);
   }
   return values;
 }
 
-function opaque(values: number[]): boolean {
+function opaque(values: Array<number>): boolean {
   return (values[3] ?? 1) >= 0.999;
 }
 
@@ -64,10 +78,18 @@ export function luminance(color: string): number | null {
   const fn = /^color\(\s*([\w-]+)\s+(.+)\)$/.exec(value);
   if (fn?.[1] && fn[2]) {
     const values = components(fn[2], 1);
-    if (!values || !opaque(values)) return null;
-    if (fn[1] === "srgb") return weigh(values, SRGB_Y);
-    if (fn[1] === "srgb-linear") return weigh(values, SRGB_Y, false);
-    if (fn[1] === "display-p3") return weigh(values, P3_Y);
+    if (!values || !opaque(values)) {
+      return null;
+    }
+    if (fn[1] === "srgb") {
+      return weigh(values, SRGB_Y);
+    }
+    if (fn[1] === "srgb-linear") {
+      return weigh(values, SRGB_Y, false);
+    }
+    if (fn[1] === "display-p3") {
+      return weigh(values, P3_Y);
+    }
   }
 
   return null;

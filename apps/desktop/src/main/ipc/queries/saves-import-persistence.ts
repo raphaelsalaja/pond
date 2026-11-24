@@ -3,7 +3,8 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { promisify } from "node:util";
-import { resolveAppearance, type Save, saves } from "@pond/schema/db";
+import { resolveAppearance, saves } from "@pond/schema/db";
+import type { Save } from "@pond/schema/db";
 import { isVideoFile } from "@shared/media-index";
 import { POSTER_KIND } from "@shared/save-file-names";
 import { eq } from "drizzle-orm";
@@ -38,11 +39,11 @@ import { saveFile } from "../../paths";
 import { resolvePondSavePath } from "../helpers";
 import {
   NullableStringParam,
-  type QueryHandlerMap,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 import { readClipboardImage } from "./saves-import-clipboard";
 import {
   CreateManualParamsSchema,
@@ -82,7 +83,9 @@ async function readBundleIcon(path: string) {
       { timeout: 3000 },
     );
     const configured = basename(stdout.trim());
-    if (!configured) return null;
+    if (!configured) {
+      return null;
+    }
     const filename = configured.endsWith(".icns")
       ? configured
       : `${configured}.icns`;
@@ -122,7 +125,9 @@ async function loadBlankDocumentIcon(path: string): Promise<string | null> {
 /** Menus refresh concurrently at launch; share the in-flight lookup so each app spawns plutil and sips once. */
 function blankDocumentIcon(path: string): Promise<string | null> {
   const cached = blankDocumentIconCache.get(path);
-  if (cached) return cached;
+  if (cached) {
+    return cached;
+  }
   const pending = loadBlankDocumentIcon(path);
   blankDocumentIconCache.set(path, pending);
   return pending;
@@ -138,7 +143,7 @@ async function listBlankDocuments() {
   );
   return {
     kinds: documents.map((document) => document.kind),
-    icons: Object.fromEntries(iconEntries.filter((entry) => entry != null)),
+    icons: Object.fromEntries(iconEntries.filter((entry) => entry !== null)),
   };
 }
 
@@ -175,7 +180,9 @@ export const savesImportPersistenceQueries = {
         ? await dialog.showOpenDialog(win, options)
         : await dialog.showOpenDialog(options);
       const path = result.filePaths[0];
-      if (result.canceled || !path) return { ok: false, reason: "cancelled" };
+      if (result.canceled || !path) {
+        return { ok: false, reason: "cancelled" };
+      }
       const format = classifyLibraryFile(path, mime.lookup(path) || null);
       if (format.mediaType !== "image") {
         return { ok: false, error: "not_an_image" };
@@ -185,7 +192,9 @@ export const savesImportPersistenceQueries = {
         return { ok: false, error: "empty_file" };
       }
       const bytes = await renderThumbnail(await readFile(path));
-      if (!bytes) return { ok: false, error: "not_an_image" };
+      if (!bytes) {
+        return { ok: false, error: "not_an_image" };
+      }
       const updated = await persistSaveThumbnail(
         params.id,
         bytes,
@@ -199,9 +208,13 @@ export const savesImportPersistenceQueries = {
     z.object({ id: StringParam }),
     async ({ id }): Promise<QueryResult<"saves.setThumbnailFromClipboard">> => {
       const image = await readClipboardImage();
-      if (image.isEmpty()) return { ok: false, error: "clipboard_empty" };
+      if (image.isEmpty()) {
+        return { ok: false, error: "clipboard_empty" };
+      }
       const bytes = await renderThumbnail(image.toPNG());
-      if (!bytes) return { ok: false, error: "not_an_image" };
+      if (!bytes) {
+        return { ok: false, error: "not_an_image" };
+      }
       const updated = await persistSaveThumbnail(
         id,
         bytes,
@@ -254,7 +267,9 @@ export const savesImportPersistenceQueries = {
       const rendered = await renderThumbnail(
         await readLibraryMedia(resolved.path),
       );
-      if (!rendered) return { ok: false, error: "not_an_image" };
+      if (!rendered) {
+        return { ok: false, error: "not_an_image" };
+      }
       const updated = await persistSaveThumbnail(
         params.id,
         rendered,
@@ -277,7 +292,9 @@ export const savesImportPersistenceQueries = {
         ? await dialog.showOpenDialog(win, options)
         : await dialog.showOpenDialog(options);
       const path = result.filePaths[0];
-      if (result.canceled || !path) return { ok: false, reason: "cancelled" };
+      if (result.canceled || !path) {
+        return { ok: false, reason: "cancelled" };
+      }
       const raw = await readFile(path, "utf8");
       const vtt = srtToVtt(raw);
       const updated = await persistSave(
@@ -312,7 +329,9 @@ export const savesImportPersistenceQueries = {
         ? await dialog.showOpenDialog(win, options)
         : await dialog.showOpenDialog(options);
       const path = picked.filePaths[0];
-      if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
+      if (picked.canceled || !path) {
+        return { ok: false, reason: "cancelled" };
+      }
       const { replaceSaveFile } = await import("../../core/replace-file");
       return replaceSaveFile({ id: params.id, sourcePath: path });
     },
@@ -327,8 +346,9 @@ export const savesImportPersistenceQueries = {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
       const file = row?.files[fileIndex];
-      if (!row || !file || !/\.json$/i.test(file.path))
+      if (!row || !file || !/\.json$/i.test(file.path)) {
         return { ok: false, error: "Choose a Lottie JSON file." };
+      }
       const bytes = await readLibraryMedia(saveFile(id, file.path));
       let source: unknown;
       try {
@@ -337,11 +357,12 @@ export const savesImportPersistenceQueries = {
         return { ok: false, error: "This file does not contain valid JSON." };
       }
       const animation = LottieAnimationSchema.safeParse(source);
-      if (!animation.success)
+      if (!animation.success) {
         return {
           ok: false,
           error: "This JSON file is not a Lottie animation.",
         };
+      }
       const defaultName = `${basename(
         row.title?.trim() || file.path,
         extname(row.title?.trim() || file.path),
@@ -351,8 +372,9 @@ export const savesImportPersistenceQueries = {
         defaultPath: defaultName,
         filters: [{ name: "dotLottie", extensions: ["lottie"] }],
       });
-      if (picked.canceled || !picked.filePath)
+      if (picked.canceled || !picked.filePath) {
         return { ok: false, reason: "cancelled" };
+      }
       const { default: JSZip } = await import("jszip");
       const archive = new JSZip();
       archive.file(
@@ -386,7 +408,9 @@ export const savesImportPersistenceQueries = {
           replaceFilesWithKind: THUMBNAIL_REPLACE_KINDS,
         },
       );
-      if (!updated) return SAVE_NOT_FOUND;
+      if (!updated) {
+        return SAVE_NOT_FOUND;
+      }
       await resetSaveThumbnail(params.id, updated);
       return { ok: true };
     },
@@ -409,16 +433,20 @@ export const savesImportPersistenceQueries = {
       folderId: NullableStringParam,
     }),
     async (params): Promise<QueryResult<"saves.createBlankDocument">> => {
-      if (!isBlankDocumentKind(params.kind))
+      if (!isBlankDocumentKind(params.kind)) {
         return { ok: false, error: "Choose a document type." };
+      }
       const path = await writeBlankDocumentFile(params.kind);
-      if (!path)
+      if (!path) {
         return { ok: false, error: "The document app is not installed." };
+      }
       const created = await createManualSave({
         title: null,
         filePaths: [path],
       });
-      if (!created.ok) return created;
+      if (!created.ok) {
+        return created;
+      }
       if (params.folderId) {
         const { addSavesToFolder } = await import("../../core/folders");
         await addSavesToFolder(params.folderId, [created.id]);
@@ -452,8 +480,9 @@ export const savesImportPersistenceQueries = {
         const picked = owner
           ? await dialog.showSaveDialog(owner, saveOptions)
           : await dialog.showSaveDialog(saveOptions);
-        if (picked.canceled || !picked.filePath)
+        if (picked.canceled || !picked.filePath) {
           return { ok: false, reason: "cancelled" };
+        }
         options.outputPath = picked.filePath;
       }
       const prefs = await getPrefs();

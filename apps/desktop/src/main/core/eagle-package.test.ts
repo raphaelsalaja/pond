@@ -15,14 +15,13 @@ import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { isWindowsSymlinkPrivilegeError } from "../test/symlink";
-import {
-  type EaglePackageExportInput,
-  type EaglePackageImportRuntime,
-  exportEaglePackage,
-  importEaglePackage,
+import { exportEaglePackage, importEaglePackage } from "./eagle-package";
+import type {
+  EaglePackageExportInput,
+  EaglePackageImportRuntime,
 } from "./eagle-package";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
@@ -97,16 +96,16 @@ async function exportFixture() {
 
 interface ImportedItem {
   eagleId: string;
-  media: string[];
+  media: Array<string>;
   thumbnail: Buffer | null;
-  folderIds: string[];
-  tags: string[];
+  folderIds: Array<string>;
+  tags: Array<string>;
 }
 
 function fakeRuntime(options: { failId?: string } = {}) {
   const imported = new Map<string, ImportedItem>();
-  const rolledBack: string[][] = [];
-  const folders: string[][] = [];
+  const rolledBack: Array<Array<string>> = [];
+  const folders: Array<Array<string>> = [];
   const runtime: EaglePackageImportRuntime = {
     async folders(nodes) {
       folders.push(nodes.map((node) => node.name));
@@ -119,8 +118,9 @@ function fakeRuntime(options: { failId?: string } = {}) {
       return imported.has(eagleId) ? `imported-${eagleId}` : null;
     },
     async importItem(item, folderIds) {
-      if (item.metadata.id === options.failId)
+      if (item.metadata.id === options.failId) {
         return { ok: false, error: "synthetic failure" };
+      }
       imported.set(item.metadata.id, {
         eagleId: item.metadata.id,
         media: await Promise.all(
@@ -136,7 +136,9 @@ function fakeRuntime(options: { failId?: string } = {}) {
     },
     async rollback(saveIds, folderIds) {
       rolledBack.push([...saveIds, ...folderIds]);
-      for (const id of saveIds) imported.delete(id.replace(/^imported-/, ""));
+      for (const id of saveIds) {
+        imported.delete(id.replace(/^imported-/, ""));
+      }
     },
   };
   return { runtime, imported, rolledBack, folders };
@@ -188,7 +190,9 @@ describe("Eagle package transfer", () => {
     expect(exported).toEqual({ path: destination, exported: 2 });
     const archive = await JSZip.loadAsync(await readFile(destination));
     const packFile = archive.file("pack.json");
-    if (!packFile) throw new Error("Missing pack.json");
+    if (!packFile) {
+      throw new Error("Missing pack.json");
+    }
     const pack = z
       .object({
         folder: z.object({ id: z.string(), name: z.string() }).optional(),
@@ -197,7 +201,9 @@ describe("Eagle package transfer", () => {
       .passthrough()
       .parse(JSON.parse(await packFile.async("string")));
     const thumbnailFile = archive.file("save-1.info/photo.jpg_thumbnail.png");
-    if (!thumbnailFile) throw new Error("Missing exported thumbnail");
+    if (!thumbnailFile) {
+      throw new Error("Missing exported thumbnail");
+    }
     expect(
       (await sharp(await thumbnailFile.async("nodebuffer")).metadata()).format,
     ).toBe("png");
@@ -216,7 +222,9 @@ describe("Eagle package transfer", () => {
       tags: ["Print", "Layout"],
     });
     const importedThumbnail = target.imported.get("save-1")?.thumbnail;
-    if (!importedThumbnail) throw new Error("Missing imported thumbnail");
+    if (!importedThumbnail) {
+      throw new Error("Missing imported thumbnail");
+    }
     expect((await sharp(importedThumbnail).metadata()).format).toBe("png");
     await expect(
       importEaglePackage(destination, target.runtime),
@@ -268,8 +276,9 @@ describe("Eagle package transfer", () => {
         join(directory, "metadata.json"),
         JSON.stringify({ ...metadata, name }),
       );
-      for (const [file, body] of Object.entries(files))
+      for (const [file, body] of Object.entries(files)) {
         await writeFile(join(directory, file), body);
+      }
     };
     await writeItem("png-parent", "Poster", {
       "Poster.jpg": "body-png-parent",
@@ -337,7 +346,7 @@ describe("Eagle package transfer", () => {
 
     const symlinkPath = join(root, "symlink.eaglepack");
     const linked = new JSZip();
-    linked.file("linked", "outside", { unixPermissions: 0o120777 });
+    linked.file("linked", "outside", { unixPermissions: 0o12_0777 });
     await writeFile(
       symlinkPath,
       await linked.generateAsync({ type: "nodebuffer", platform: "UNIX" }),

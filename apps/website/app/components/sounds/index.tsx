@@ -1,6 +1,8 @@
 "use client";
 
-import { SOUND_PATCH, type UiSoundName } from "@pond/ui/sounds";
+import { isElement } from "@pond/ui/dom";
+import { SOUND_PATCH } from "@pond/ui/sounds";
+import type { UiSoundName } from "@pond/ui/sounds";
 import { ensureReady } from "@web-kits/audio";
 import { useEffect } from "react";
 
@@ -19,13 +21,21 @@ export function Sounds() {
     let last = 0;
 
     const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0 || reduce.matches) return;
-      if (!(event.target instanceof Element)) return;
+      if (event.button !== 0 || reduce.matches) {
+        return;
+      }
+      if (!isElement(event.target)) {
+        return;
+      }
       const control = event.target.closest(CONTROL);
-      if (!control) return;
+      if (!control) {
+        return;
+      }
 
       const now = performance.now();
-      if (now - last < RATE_MS) return;
+      if (now - last < RATE_MS) {
+        return;
+      }
       const volume = now - last < RAPID_MS ? 0.7 : 1;
       last = now;
 

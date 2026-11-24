@@ -1,19 +1,23 @@
 import "./global.css";
-import { video } from "virtual:video";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
+import { video } from "virtual:video";
 import { FPS } from "../src/video";
 
 const element = document.getElementById("stage");
-if (!element) throw new Error("#stage element missing");
+if (!element) {
+  throw new Error("#stage element missing");
+}
 document.title = video.title;
 const root = createRoot(element);
 const render = (t: number) =>
   flushSync(() => root.render(<video.Composition t={t} />));
 
-const held: HTMLImageElement[] = [];
+const held: Array<HTMLImageElement> = [];
 const nextFrame = () =>
-  new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
 
 /** The seek API that `cli/capture.cjs` drives, one frame at a time. */
 Object.assign(window, {

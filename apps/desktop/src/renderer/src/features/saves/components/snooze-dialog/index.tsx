@@ -39,11 +39,12 @@ function SnoozeDialog({
   saveIds,
 }: {
   open: boolean;
-  saveIds: readonly string[];
+  saveIds: ReadonlyArray<string>;
 }) {
   const [day, setDay] = useState(defaultDay);
   const [time, setTime] = useState("09:00");
   const [presets] = useState(() => snoozeOptions());
+  const [today] = useState(() => localDay(Date.now()));
   const until = snoozeUntil(day, time);
 
   function snooze(at: number) {
@@ -55,7 +56,9 @@ function SnoozeDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) closeSnoozeDialog();
+        if (!next) {
+          closeSnoozeDialog();
+        }
       }}
     >
       <Dialog.Portal>
@@ -87,7 +90,7 @@ function SnoozeDialog({
                 <Field.Label>Date</Field.Label>
                 <DatePicker
                   value={day}
-                  min={localDay(Date.now())}
+                  min={today}
                   onValueChange={setDay}
                   aria-label="Date"
                 />
@@ -114,7 +117,9 @@ function SnoozeDialog({
             <Dialog.Confirm
               disabled={until === null}
               onClick={() => {
-                if (until !== null) snooze(until);
+                if (until !== null) {
+                  snooze(until);
+                }
               }}
             >
               Snooze

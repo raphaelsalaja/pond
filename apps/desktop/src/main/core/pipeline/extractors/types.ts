@@ -18,12 +18,12 @@ interface ExtractorTest {
 export interface Extractor {
   readonly id: string;
   readonly source: Source;
-  readonly validUrl: readonly RegExp[];
+  readonly validUrl: ReadonlyArray<RegExp>;
   readonly cookieDomain: string | null;
   authCookies(name: string, value?: string): boolean;
-  handleFromPath?(segments: string[]): string | null;
+  handleFromPath?(segments: Array<string>): string | null;
   readonly probeExpression?: string;
-  readonly tests?: readonly ExtractorTest[];
+  readonly tests?: ReadonlyArray<ExtractorTest>;
   suitable(url: URL): boolean;
   extract(input: ExtractInput): Promise<Capture>;
 }

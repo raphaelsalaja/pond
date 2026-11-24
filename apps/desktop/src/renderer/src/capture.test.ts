@@ -1,24 +1,25 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const directory = dirname(fileURLToPath(import.meta.url));
+const directory = import.meta.dirname;
 const theme = resolve(directory, "../../../../../packages/theme/src");
 const cards = resolve(directory, "features/captures/components");
 const CARD_DIRS = ["tweet", "threads", "text-card"];
 
-function cssFiles(dir: string): string[] {
+function cssFiles(dir: string): Array<string> {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
-    if (entry.isDirectory()) return cssFiles(path);
+    if (entry.isDirectory()) {
+      return cssFiles(path);
+    }
     return entry.name.endsWith(".css") ? [path] : [];
   });
 }
 
 function importedThemeCss(path: string): string {
   const css = readFileSync(path, "utf8");
-  return css.replace(/@import "\.\/([^"]+)";/g, (_, file: string) =>
+  return css.replaceAll(/@import "\.\/([^"]+)";/g, (_, file: string) =>
     importedThemeCss(join(dirname(path), file)),
   );
 }

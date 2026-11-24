@@ -1,10 +1,11 @@
 import type { WireSyncAction } from "@shared/wire";
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import {
   normalise,
-  type SavePatch,
   SyncActionEventSchema,
 } from "@/features/saves/lib/reconcile";
+import type { SavePatch } from "@/features/saves/lib/reconcile";
 import { bulkUpsertSaves, deleteSave, pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import type { readSnapshot } from "../lib/snapshot";
@@ -41,9 +42,51 @@ export interface PagingState {
   readonly hasMore: boolean;
 }
 
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (cause: unknown) => {
+        clearTimeout(timer);
+        reject(cause);
+      },
+    );
+  });
+}
+
+function applyListRows(
+  rows: Array<SavePatch | null>,
+  opts: { pruneMissing?: boolean } = {},
+): Array<Save> {
+  const fresh = rows.flatMap((row) => {
+    const save = normalise(row);
+    return save === null ? [] : [save];
+  });
+  if (opts.pruneMissing) {
+    const freshIds = new Set(fresh.map((save) => save.id));
+    for (const id of pool.ids()) {
+      if (!freshIds.has(id)) {
+        deleteSave(id);
+      }
+    }
+  }
+  bulkUpsertSaves(fresh);
+  return fresh;
+}
+
 export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
-  const SNAPSHOT_TIMEOUT_MS = 2_000;
-  const FIRST_PAGE_TIMEOUT_MS = 4_000;
+  const SNAPSHOT_TIMEOUT_MS = 2000;
+  const FIRST_PAGE_TIMEOUT_MS = 4000;
 
   const pagingStore = new Store<PagingState>({
     ready: false,
@@ -54,28 +97,6 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
     hasMore: true,
   });
 
-  function withTimeout<T>(
-    promise: Promise<T>,
-    ms: number,
-    label: string,
-  ): Promise<T> {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        reject(new Error(`${label} timed out after ${ms}ms`));
-      }, ms);
-      promise.then(
-        (value) => {
-          clearTimeout(timer);
-          resolve(value);
-        },
-        (err) => {
-          clearTimeout(timer);
-          reject(err);
-        },
-      );
-    });
-  }
-
   const PAGE_SIZE = 250;
 
   let started = false;
@@ -84,15 +105,19 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
   let fullPoolInflight: Promise<void> | null = null;
 
   function bootPool(): Promise<void> {
-    if (bootPromise) return bootPromise;
-    if (started) return Promise.resolve();
+    if (bootPromise) {
+      return bootPromise;
+    }
+    if (started) {
+      return Promise.resolve();
+    }
     started = true;
 
     bootPromise = (async () => {
       try {
         subscribeToSyncActions();
-      } catch (err) {
-        console.warn("[pond pool] sync subscribe failed", err);
+      } catch (error) {
+        log.warn("[pond pool] sync subscribe failed", error);
       }
       try {
         await withTimeout(
@@ -100,8 +125,8 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
           SNAPSHOT_TIMEOUT_MS,
           "snapshot prime",
         );
-      } catch (err) {
-        console.warn("[pond pool] snapshot prime failed", err);
+      } catch (error) {
+        log.warn("[pond pool] snapshot prime failed", error);
       }
 
       try {
@@ -110,8 +135,8 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
           FIRST_PAGE_TIMEOUT_MS,
           "initial page hydrate",
         );
-      } catch (err) {
-        console.warn("[pond pool] initial page hydrate failed", err);
+      } catch (error) {
+        log.warn("[pond pool] initial page hydrate failed", error);
       }
       dependencies.scheduleSnapshotWrite();
       pagingStore.setState((state) => ({ ...state, ready: true }));
@@ -128,9 +153,15 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
   }
 
   function loadNextPage(): Promise<void> {
-    if (fullPoolInflight) return fullPoolInflight;
-    if (pageInflight) return pageInflight;
-    if (!pagingStore.state.hasMore) return Promise.resolve();
+    if (fullPoolInflight) {
+      return fullPoolInflight;
+    }
+    if (pageInflight) {
+      return pageInflight;
+    }
+    if (!pagingStore.state.hasMore) {
+      return Promise.resolve();
+    }
 
     pageInflight = fetchPage(pagingStore.state.nextCursor).finally(() => {
       pageInflight = null;
@@ -139,15 +170,21 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
   }
 
   function hydrateFullPool(): Promise<void> {
-    if (fullPoolInflight) return fullPoolInflight;
-    if (!pagingStore.state.hasMore) return Promise.resolve();
+    if (fullPoolInflight) {
+      return fullPoolInflight;
+    }
+    if (!pagingStore.state.hasMore) {
+      return Promise.resolve();
+    }
 
     fullPoolInflight = (async () => {
       const activePage = pageInflight;
       if (activePage) {
         try {
           await activePage;
-        } catch {}
+        } catch {
+          /** A failed page doesn't block the full load, which fetches every row anyway. */
+        }
       }
 
       pagingStore.setState((state) => ({ ...state, loading: true }));
@@ -182,7 +219,9 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
         ...state,
         loaded: state.loaded + fresh.length,
         total:
-          page.total != null && Number.isFinite(page.total)
+          page.total !== undefined &&
+          page.total !== null &&
+          Number.isFinite(page.total)
             ? page.total
             : state.total,
         nextCursor,
@@ -193,34 +232,21 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
     }
   }
 
-  function applyListRows(
-    rows: Array<SavePatch | null>,
-    opts: { pruneMissing?: boolean } = {},
-  ): Save[] {
-    const fresh = rows
-      .map((row) => normalise(row))
-      .filter((r): r is Save => r !== null);
-    if (opts.pruneMissing) {
-      const freshIds = new Set(fresh.map((save) => save.id));
-      for (const id of pool.ids()) {
-        if (!freshIds.has(id)) deleteSave(id);
-      }
-    }
-    bulkUpsertSaves(fresh);
-    return fresh;
-  }
-
   let subscribedToSync = false;
 
   function subscribeToSyncActions(): void {
-    if (subscribedToSync) return;
+    if (subscribedToSync) {
+      return;
+    }
     dependencies.onSyncAction((raw) => {
       try {
         const event = SyncActionEventSchema.safeParse(raw);
-        if (event.success) dependencies.applyActionCoalesced(event.data);
+        if (event.success) {
+          dependencies.applyActionCoalesced(event.data);
+        }
         dependencies.scheduleSnapshotWrite();
-      } catch (err) {
-        console.warn("[pond pool] applyAction failed", err, raw);
+      } catch (error) {
+        log.warn("[pond pool] applyAction failed", error, raw);
       }
     });
     subscribedToSync = true;

@@ -1,13 +1,8 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  CANCEL_REASON,
-  type ConnectedAccount,
-  type Save,
-  type Source,
-  type Task,
-} from "@pond/schema/db";
+import { CANCEL_REASON } from "@pond/schema/db";
+import type { ConnectedAccount, Save, Source, Task } from "@pond/schema/db";
 import type { ExtensionCookie } from "@pond/schema/session";
 import Database from "better-sqlite3";
 import { app } from "electron";
@@ -43,8 +38,14 @@ function cookie(
   };
 }
 
-function credentials(value: string): ExtensionCookie[] {
+function credentials(value: string): Array<ExtensionCookie> {
   return [cookie("auth_token", value)];
+}
+
+async function taskStates() {
+  return (await getDb()).$raw
+    .prepare("SELECT save_id, status FROM tasks ORDER BY save_id")
+    .all();
 }
 
 function nativeSqliteAvailable(): boolean {
@@ -52,7 +53,9 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
@@ -126,12 +129,6 @@ describe.skipIf(!nativeSqliteAvailable())("session download recovery", () => {
         input.taskStatus ?? "blocked",
         input.error ?? "AuthRequiredError: Connect Twitter",
       );
-  }
-
-  async function taskStates() {
-    return (await getDb()).$raw
-      .prepare("SELECT save_id, status FROM tasks ORDER BY save_id")
-      .all();
   }
 
   it("resumes only matching authentication blocks and the first account's unassigned Saves", async () => {

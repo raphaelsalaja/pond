@@ -1,7 +1,6 @@
 import { existsSync } from "node:fs";
 import { stat } from "node:fs/promises";
 import { extname, join, resolve } from "node:path";
-import { Readable } from "node:stream";
 import { app, net, protocol } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
@@ -15,6 +14,7 @@ import { VIDEO_CACHE_HOST } from "./core/video-preview-proxy";
 import { isPathInside } from "./lib/path-identity";
 import { canonicalPondSaveId } from "./lib/pond-url";
 import { clampThumbWidth } from "./lib/thumbnail";
+import { webByteStream } from "./lib/web-stream";
 import { libraryRoot, resolvePaths, saveFile } from "./paths";
 
 const ONE_YEAR_SECONDS = 31_536_000;
@@ -36,7 +36,9 @@ function replayAssetsDir(): string | null {
     join(app.getAppPath(), "resources", "replay"),
   ].filter(Boolean);
   for (const root of roots) {
-    if (existsSync(join(root, "index.html"))) return root;
+    if (existsSync(join(root, "index.html"))) {
+      return root;
+    }
   }
   return null;
 }
@@ -166,13 +168,13 @@ export function registerProtocol() {
         status: 200,
         headers,
       });
-    } catch (err) {
+    } catch (error) {
       const isMissing =
-        err instanceof Error && /ENOENT/.test(err.message ?? "");
+        error instanceof Error && /ENOENT/.test(error.message ?? "");
       if (isMissing) {
         log.debug("[pond://] not found", request.url);
       } else {
-        log.warn("[pond://] resolve failed", request.url, err);
+        log.warn("[pond://] resolve failed", request.url, error);
       }
       return new Response("not found", { status: 404 });
     }
@@ -195,10 +197,7 @@ function fileBody(path: string, range?: { start: number; end: number }) {
           endExclusive: metadata.originalSize,
         });
       })();
-  /** SAFETY: `bounded` yields only byte buffers, while `Readable.toWeb` omits that specialization. */
-  return Readable.toWeb(Readable.from(bounded)) as ReadableStream<
-    Uint8Array<ArrayBufferLike>
-  >;
+  return webByteStream(bounded);
 }
 
 interface ProtocolTarget {

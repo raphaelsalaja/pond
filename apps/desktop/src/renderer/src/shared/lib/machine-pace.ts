@@ -1,10 +1,9 @@
 import {
-  type MachinePace,
   MachinePaceWireSchema,
   motionPaused,
   THERMAL_RELIEF_MS,
-  type ThermalState,
 } from "@shared/machine-pace";
+import type { MachinePace, ThermalState } from "@shared/machine-pace";
 
 const idle = (): MachinePace => ({
   hidden: false,
@@ -42,7 +41,7 @@ function publish(next: MachinePace): void {
     clearTimeout(reliefTimer);
     reliefTimer = null;
   }
-  if (pace.reliefAt != null) {
+  if (pace.reliefAt !== null) {
     const delay = THERMAL_RELIEF_MS - (Date.now() - pace.reliefAt);
     if (delay > 0) {
       reliefTimer = setTimeout(() => {
@@ -56,10 +55,15 @@ function publish(next: MachinePace): void {
   motionHold = motionPaused(pace, Date.now());
   if ("document" in globalThis) {
     const root = document.documentElement;
-    if (motionHold) root.setAttribute("data-motion-paused", "true");
-    else root.removeAttribute("data-motion-paused");
+    if (motionHold) {
+      root.setAttribute("data-motion-paused", "true");
+    } else {
+      root.removeAttribute("data-motion-paused");
+    }
   }
-  for (const listener of listeners) listener();
+  for (const listener of listeners) {
+    listener();
+  }
 }
 
 function patch(partial: Partial<MachinePace>): void {
@@ -67,7 +71,9 @@ function patch(partial: Partial<MachinePace>): void {
 }
 
 function readFocus() {
-  if (!("document" in globalThis)) return { hidden: false, focused: true };
+  if (!("document" in globalThis)) {
+    return { hidden: false, focused: true };
+  }
   return { hidden: document.hidden, focused: document.hasFocus() };
 }
 
@@ -78,20 +84,31 @@ function bindHost(
     memoryPressure?: MachinePace["memoryPressure"];
   }) => void,
 ): () => void {
-  if (!("window" in globalThis) || !("pond" in window)) return () => {};
-  const { machinePace, onMachinePace } = window.pond;
-  if (!machinePace || !onMachinePace) return () => {};
+  if (!("window" in globalThis) || !("pond" in window)) {
+    return () => {};
+  }
+  const api = window.pond;
+  if (!api.machinePace || !api.onMachinePace) {
+    return () => {};
+  }
   let cancelled = false;
-  void machinePace()
+  void api
+    .machinePace()
     .then((wire) => {
-      if (cancelled) return;
+      if (cancelled) {
+        return;
+      }
       const parsed = MachinePaceWireSchema.safeParse(wire);
-      if (parsed.success) onHost(parsed.data);
+      if (parsed.success) {
+        onHost(parsed.data);
+      }
     })
     .catch(() => {});
-  const detach = onMachinePace((wire) => {
+  const detach = api.onMachinePace((wire) => {
     const parsed = MachinePaceWireSchema.safeParse(wire);
-    if (parsed.success) onHost(parsed.data);
+    if (parsed.success) {
+      onHost(parsed.data);
+    }
   });
   return () => {
     cancelled = true;
@@ -99,11 +116,20 @@ function bindHost(
   };
 }
 
+function onVisibility(): void {
+  patch(readFocus());
+}
+
+function onFocus(): void {
+  patch({ focused: true });
+}
+
+function onBlur(): void {
+  patch({ focused: false });
+}
+
 function listen(): () => void {
   publish({ ...pace, ...readFocus() });
-  const onVisibility = (): void => patch(readFocus());
-  const onFocus = (): void => patch({ focused: true });
-  const onBlur = (): void => patch({ focused: false });
   document.addEventListener("visibilitychange", onVisibility);
   window.addEventListener("focus", onFocus);
   window.addEventListener("blur", onBlur);
@@ -111,8 +137,11 @@ function listen(): () => void {
     const wasHot = pace.thermal === "serious" || pace.thermal === "critical";
     const nowHot = host.thermal === "serious" || host.thermal === "critical";
     let reliefAt = pace.reliefAt;
-    if (nowHot) reliefAt = null;
-    else if (wasHot) reliefAt = Date.now();
+    if (nowHot) {
+      reliefAt = null;
+    } else if (wasHot) {
+      reliefAt = Date.now();
+    }
     patch({
       onBattery: host.onBattery,
       thermal: host.thermal,
@@ -130,13 +159,19 @@ function listen(): () => void {
 
 export function retainMachinePace(): () => void {
   users += 1;
-  if (users === 1) stopListening = listen();
+  if (users === 1) {
+    stopListening = listen();
+  }
   return () => {
     users -= 1;
-    if (users > 0) return;
+    if (users > 0) {
+      return;
+    }
     stopListening();
     stopListening = () => {};
-    if (reliefTimer) clearTimeout(reliefTimer);
+    if (reliefTimer) {
+      clearTimeout(reliefTimer);
+    }
     reliefTimer = null;
     pace = idle();
     motionHold = false;

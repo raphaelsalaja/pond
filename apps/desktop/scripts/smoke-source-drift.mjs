@@ -17,7 +17,9 @@ const source = (path) => readFile(`${HARVEST}${path}`, "utf8");
 
 function match(text, pattern, label) {
   const found = pattern.exec(text)?.[1];
-  if (!found) throw new Error(`Couldn't find ${label} in Pond's source`);
+  if (!found) {
+    throw new Error(`Couldn't find ${label} in Pond's source`);
+  }
   return found;
 }
 
@@ -38,25 +40,35 @@ async function fetchText(url, init = {}) {
     signal: AbortSignal.timeout(20_000),
     ...init,
   });
-  if (!response.ok) throw new Error(`${url} answered ${response.status}`);
+  if (!response.ok) {
+    throw new Error(`${url} answered ${response.status}`);
+  }
   return response.text();
 }
 
 /** Reads the JSON object that starts right after `marker`, honoring strings so braces inside them don't count. */
 function jsonAfter(text, marker) {
   const start = text.indexOf("{", text.indexOf(marker) + marker.length);
-  if (text.indexOf(marker) < 0 || start < 0) return null;
+  if (text.indexOf(marker) < 0 || start < 0) {
+    return null;
+  }
   let depth = 0;
   let quoted = false;
   for (let index = start; index < text.length; index += 1) {
     const character = text[index];
     if (quoted) {
-      if (character === "\\") index += 1;
-      else if (character === '"') quoted = false;
-    } else if (character === '"') quoted = true;
-    else if (character === "{") depth += 1;
-    else if (character === "}" && --depth === 0)
+      if (character === "\\") {
+        index += 1;
+      } else if (character === '"') {
+        quoted = false;
+      }
+    } else if (character === '"') {
+      quoted = true;
+    } else if (character === "{") {
+      depth += 1;
+    } else if (character === "}" && --depth === 0) {
       return JSON.parse(text.slice(start, index + 1));
+    }
   }
   return null;
 }
@@ -69,7 +81,9 @@ function scriptJson(html, id) {
 }
 
 function assert(condition, message) {
-  if (!condition) throw new Error(message);
+  if (!condition) {
+    throw new Error(message);
+  }
 }
 
 async function cosmosSchema() {
@@ -157,8 +171,9 @@ async function tiktokVideo() {
   assert(item.author?.uniqueId, "itemStruct.author.uniqueId is missing");
   assert(item.video?.cover, "itemStruct.video.cover is missing");
   const integers = { createTime: item.createTime, ...item.stats };
-  for (const [key, value] of Object.entries(integers))
+  for (const [key, value] of Object.entries(integers)) {
     assert(/^\d+$/.test(String(value)), `${key} is ${JSON.stringify(value)}`);
+  }
   return "itemStruct has author, cover, createTime, and stats as integers";
 }
 

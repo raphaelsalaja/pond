@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  type RenderTextCoverRuntime,
-  runRenderTextCover,
-  type TextCoverSave,
+import { runRenderTextCover } from "./render-text-cover";
+import type {
+  RenderTextCoverRuntime,
+  TextCoverSave,
 } from "./render-text-cover";
 
 const save: TextCoverSave = {

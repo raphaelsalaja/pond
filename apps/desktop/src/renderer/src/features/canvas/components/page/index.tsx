@@ -19,13 +19,17 @@ export function CanvasPage({ id }: { id: string }) {
     let live = true;
     canvases.load(id).then(
       (canvas) => {
-        if (!live) return;
+        if (!live) {
+          return;
+        }
         setLoaded(
           canvas ? { id, status: "ready", canvas } : { id, status: "missing" },
         );
       },
       () => {
-        if (live) setLoaded({ id, status: "failed" });
+        if (live) {
+          setLoaded({ id, status: "failed" });
+        }
       },
     );
     return () => {

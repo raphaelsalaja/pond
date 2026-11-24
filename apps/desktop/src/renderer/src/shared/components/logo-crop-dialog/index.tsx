@@ -4,21 +4,21 @@ import {
   centeredFrame,
   cropPlacement,
   cropRect,
-  type LogoCrop,
-  type LogoSource,
   MAX_LOGO_ZOOM,
   panFrame,
   zoomFrame,
 } from "@shared/logo-crop";
-import {
-  type KeyboardEvent,
-  type PointerEvent,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import type { LogoCrop, LogoSource } from "@shared/logo-crop";
+import { useId, useRef, useState } from "react";
+import type { KeyboardEvent, PointerEvent } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import styles from "./styles.module.css";
+
+function isValueList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return Array.isArray(value);
+}
 
 const VIEWPORT = 224;
 const PREVIEWS = [88, 28] as const;
@@ -64,7 +64,9 @@ export function LogoCropDialog({
   }
 
   function startDrag(event: PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0 || busy) return;
+    if (event.button !== 0 || busy) {
+      return;
+    }
     event.currentTarget.setPointerCapture(event.pointerId);
     pointer.current = { x: event.clientX, y: event.clientY };
     setDragging(true);
@@ -72,7 +74,9 @@ export function LogoCropDialog({
 
   function drag(event: PointerEvent<HTMLDivElement>) {
     const last = pointer.current;
-    if (!last) return;
+    if (!last) {
+      return;
+    }
     pointer.current = { x: event.clientX, y: event.clientY };
     pan({ x: event.clientX - last.x, y: event.clientY - last.y });
   }
@@ -83,7 +87,9 @@ export function LogoCropDialog({
   }
 
   function nudge(event: KeyboardEvent<HTMLDivElement>) {
-    if (busy || event.nativeEvent.isComposing) return;
+    if (busy || event.nativeEvent.isComposing) {
+      return;
+    }
     const direction = PAN_KEYS.get(event.key);
     if (direction) {
       event.preventDefault();
@@ -106,10 +112,13 @@ export function LogoCropDialog({
         src: source.src,
         crop,
       });
-      if (result.ok) onCrop(result.icon);
-      else setError("Couldn't crop the image. Try again.");
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't crop the image. Try again."));
+      if (result.ok) {
+        onCrop(result.icon);
+      } else {
+        setError("Couldn't crop the image. Try again.");
+      }
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't crop the image. Try again."));
     } finally {
       setBusy(false);
     }
@@ -119,8 +128,11 @@ export function LogoCropDialog({
     <Dialog.Root
       open
       onOpenChange={(open, details) => {
-        if (busy) details.cancel();
-        else if (!open) onClose();
+        if (busy) {
+          details.cancel();
+        } else if (!open) {
+          onClose();
+        }
       }}
     >
       <Dialog.Portal>
@@ -140,7 +152,7 @@ export function LogoCropDialog({
                 role="application"
                 aria-label="Logo Crop"
                 aria-describedby={instructionsId}
-                // biome-ignore lint/a11y/noNoninteractiveTabindex: Keyboard users pan and zoom the crop from this frame.
+                // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- keyboard users pan and zoom the crop from this frame
                 tabIndex={0}
                 data-dragging={dragging || undefined}
                 style={cssVars({ "--crop-size": `${VIEWPORT}px` })}
@@ -150,7 +162,9 @@ export function LogoCropDialog({
                 onPointerCancel={endDrag}
                 onKeyDown={nudge}
                 onWheel={(event) => {
-                  if (!busy) zoomBy(Math.exp(-event.deltaY / 200));
+                  if (!busy) {
+                    zoomBy(Math.exp(-event.deltaY / 200));
+                  }
                 }}
               >
                 <CropImage source={source} crop={crop} size={VIEWPORT} />
@@ -176,7 +190,7 @@ export function LogoCropDialog({
               value={frame.zoom}
               disabled={busy}
               onValueChange={(zoom) =>
-                zoomTo(Array.isArray(zoom) ? (zoom[0] ?? 1) : zoom)
+                zoomTo(isValueList(zoom) ? (zoom[0] ?? 1) : zoom)
               }
             >
               <IconImage size={12} />

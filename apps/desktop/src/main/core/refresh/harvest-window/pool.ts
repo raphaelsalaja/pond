@@ -1,4 +1,5 @@
-import { SOURCES, type Source } from "@pond/schema/db";
+import { SOURCES } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
 import type { ReportDownloadActivity } from "@shared/download-activity";
 import { BrowserWindow, session } from "electron";
 import { resolvePreload } from "../../../lib/resolve-preload";
@@ -50,7 +51,7 @@ interface Waiter {
   resolve: (slot: PoolSlot) => void;
 }
 
-const pool: PoolSlot[] = [];
+const pool: Array<PoolSlot> = [];
 const busyBySource = {
   twitter: 0,
   instagram: 0,
@@ -76,13 +77,15 @@ const busyBySource = {
   web: 0,
   local: 0,
 } satisfies Record<Source, number>;
-const waitQueues = new Map<Source, Waiter[]>();
+const waitQueues = new Map<Source, Array<Waiter>>();
 let roundRobinCursor = 0;
 
-function queueFor(source: Source): Waiter[] {
+function queueFor(source: Source): Array<Waiter> {
   const existing = waitQueues.get(source);
-  if (existing) return existing;
-  const created: Waiter[] = [];
+  if (existing) {
+    return existing;
+  }
+  const created: Array<Waiter> = [];
   waitQueues.set(source, created);
   return created;
 }
@@ -96,7 +99,9 @@ const heldRotation = new WeakSet<Electron.Session>();
 
 /** Pond borrows your browser's session, so only the browser rotates it and the extension forwards each rotation. */
 function holdSessionRotation(persistent: Electron.Session): void {
-  if (heldRotation.has(persistent)) return;
+  if (heldRotation.has(persistent)) {
+    return;
+  }
   heldRotation.add(persistent);
   persistent.webRequest.onBeforeRequest(
     { urls: SESSION_ROTATION_URLS },
@@ -128,7 +133,9 @@ function createHiddenWindow(partition: string): BrowserWindow {
   win.webContents.setAudioMuted(true);
   win.on("closed", () => {
     const idx = pool.findIndex((s) => s.win === win);
-    if (idx !== -1) pool.splice(idx, 1);
+    if (idx !== -1) {
+      pool.splice(idx, 1);
+    }
   });
   return win;
 }
@@ -147,11 +154,15 @@ function cancelEviction(slot: PoolSlot): void {
 
 function blankAndScheduleEviction(slot: PoolSlot): void {
   cancelEviction(slot);
-  if (slot.win.isDestroyed()) return;
+  if (slot.win.isDestroyed()) {
+    return;
+  }
   void slot.win.loadURL("about:blank").catch(() => {});
   slot.evictTimer = setTimeout(() => {
     slot.evictTimer = null;
-    if (!slot.busy && !slot.win.isDestroyed()) slot.win.destroy();
+    if (!slot.busy && !slot.win.isDestroyed()) {
+      slot.win.destroy();
+    }
   }, IDLE_EVICT_MS);
   slot.evictTimer.unref?.();
 }
@@ -165,13 +176,17 @@ function claimSlot(slot: PoolSlot, source: Source): Lease {
   return {
     win: slot.win,
     release: () => {
-      if (released) return;
+      if (released) {
+        return;
+      }
       released = true;
       slot.busy = false;
       slot.source = null;
       busyBySource[source] = Math.max(0, busyBySource[source] - 1);
       drainQueues();
-      if (!slot.busy) blankAndScheduleEviction(slot);
+      if (!slot.busy) {
+        blankAndScheduleEviction(slot);
+      }
     },
   };
 }
@@ -184,11 +199,15 @@ interface LeaseOptions {
 }
 
 function retargetSlot(slot: PoolSlot, partition: string): void {
-  if (slot.partition === partition) return;
+  if (slot.partition === partition) {
+    return;
+  }
   const old = slot.win;
   slot.win = createHiddenWindow(partition);
   slot.partition = partition;
-  if (!old.isDestroyed()) old.destroy();
+  if (!old.isDestroyed()) {
+    old.destroy();
+  }
 }
 
 function enqueueWaiter(
@@ -207,7 +226,9 @@ function enqueueWaiter(
     const onAbort = (): void => {
       const queue = queueFor(source);
       const idx = queue.indexOf(waiter);
-      if (idx !== -1) queue.splice(idx, 1);
+      if (idx !== -1) {
+        queue.splice(idx, 1);
+      }
       reject(new Error("window lease wait aborted"));
     };
     if (signal?.aborted) {
@@ -260,18 +281,28 @@ function drainQueues(): void {
     progress = false;
     for (let i = 0; i < SOURCES.length; i += 1) {
       const source = SOURCES[(roundRobinCursor + i) % SOURCES.length];
-      if (!source) continue;
+      if (!source) {
+        continue;
+      }
       const queue = queueFor(source);
-      if (queue.length === 0) continue;
-      if (busyBySource[source] >= PER_SOURCE_CAP[source]) continue;
+      if (queue.length === 0) {
+        continue;
+      }
+      if (busyBySource[source] >= PER_SOURCE_CAP[source]) {
+        continue;
+      }
       const next = queue[0];
-      if (!next) continue;
+      if (!next) {
+        continue;
+      }
       const idle =
         pool.find(
           (s) =>
             !s.busy && !s.win.isDestroyed() && s.partition === next.partition,
         ) ?? pool.find((s) => !s.busy && !s.win.isDestroyed());
-      if (!idle) return;
+      if (!idle) {
+        return;
+      }
       queue.shift();
       retargetSlot(idle, next.partition);
       next.resolve(idle);
@@ -284,7 +315,9 @@ function drainQueues(): void {
 export function disposeHiddenWindow(): void {
   for (const slot of pool) {
     cancelEviction(slot);
-    if (!slot.win.isDestroyed()) slot.win.destroy();
+    if (!slot.win.isDestroyed()) {
+      slot.win.destroy();
+    }
   }
   pool.length = 0;
   for (const source of SOURCES) {

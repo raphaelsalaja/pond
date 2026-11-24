@@ -42,8 +42,8 @@ export function buildCopyItems({
   hasUrl,
   hasTags,
   allTrashed,
-}: SaveMenuContext): MenuItemSpec[] {
-  const more: MenuItemSpec[] = [
+}: SaveMenuContext): Array<MenuItemSpec> {
+  const more: Array<MenuItemSpec> = [
     {
       label: "Copy Thumbnail",
       icon: glyph(IconImage),
@@ -83,7 +83,9 @@ export function buildCopyItems({
           void copyUrlsForSelection(ids).then(notifyCopy);
           return;
         }
-        if (save.url) void copyUrl(save.url);
+        if (save.url) {
+          void copyUrl(save.url);
+        }
       },
     },
   ];
@@ -93,8 +95,11 @@ export function buildCopyItems({
       label: "Copy Name",
       icon: glyph(IconText),
       onClick: () => {
-        if (batch) void copyNamesForSelection(ids).then(notifyCopy);
-        else void copyName(save);
+        if (batch) {
+          void copyNamesForSelection(ids).then(notifyCopy);
+        } else {
+          void copyName(save);
+        }
       },
     },
     {
@@ -104,8 +109,11 @@ export function buildCopyItems({
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.copy-image"),
       onClick: () => {
-        if (batch) void copyFilesForSelection(ids);
-        else void copyPrimaryMedia(save, fileIndex);
+        if (batch) {
+          void copyFilesForSelection(ids);
+        } else {
+          void copyPrimaryMedia(save, fileIndex);
+        }
       },
     },
     {
@@ -152,8 +160,11 @@ export function buildCopyItems({
       hidden: !hasTags,
       shortcut: shortcutGlyphs("save.copy-tags"),
       onClick: () => {
-        if (batch) copyTagsForSelection(ids);
-        else copyTags(save);
+        if (batch) {
+          void copyTagsForSelection(ids);
+        } else {
+          copyTags(save);
+        }
       },
     },
   ];

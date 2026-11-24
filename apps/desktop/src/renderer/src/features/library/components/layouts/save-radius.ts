@@ -12,11 +12,15 @@ function clamp(radius: number): number {
 }
 
 function readRadius(): number {
-  if (!globalThis.window) return LIBRARY_SAVE_RADIUS;
+  if (!globalThis.window) {
+    return LIBRARY_SAVE_RADIUS;
+  }
   try {
     const raw = window.localStorage.getItem(RADIUS_KEY);
     const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
-    if (!Number.isFinite(parsed)) return LIBRARY_SAVE_RADIUS;
+    if (!Number.isFinite(parsed)) {
+      return LIBRARY_SAVE_RADIUS;
+    }
     return clamp(parsed);
   } catch {
     return LIBRARY_SAVE_RADIUS;
@@ -34,7 +38,9 @@ export function setLibrarySaveRadius(radius: number): void {
   if (globalThis.window) {
     try {
       window.localStorage.setItem(RADIUS_KEY, String(next));
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the in-memory radius still applies. */
+    }
   }
   store.setState(() => next);
 }

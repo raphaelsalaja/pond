@@ -13,7 +13,7 @@ interface SharedDocument {
 
 /** The capture window is one document. A hash-only load leaves the previous card up. */
 function shootBatch(
-  payloads: readonly string[],
+  payloads: ReadonlyArray<string>,
   scheme = "light",
 ): Array<string | null> {
   let document: SharedDocument | null = null;

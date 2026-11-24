@@ -7,17 +7,13 @@ import type {
 } from "@shared/fish-contracts";
 import { clsx as cn } from "clsx";
 import { useEffect, useId, useRef, useState } from "react";
-import { SPECIES_ART, type SpeciesArt } from "./art";
-import {
-  type Avatar,
-  createAvatar,
-  faceFor,
-  type Pose,
-  restingEyes,
-  type Task,
-} from "./face";
+import { SPECIES_ART } from "./art";
+import type { SpeciesArt } from "./art";
+import { createAvatar, faceFor, restingEyes } from "./face";
+import type { Avatar, Pose, Task } from "./face";
+import { animate, reducedMotion } from "./ticker";
+import type { Rig } from "./ticker";
 import styles from "./styles.module.css";
-import { animate, type Rig, reducedMotion } from "./ticker";
 
 export { SPECIES_LABELS } from "./art";
 
@@ -26,8 +22,12 @@ export type FishMood = "calm" | "busy" | "worried" | "pleased";
 export function fishMood(
   fish: Pick<FishSummary, "activity" | "lastRun">,
 ): FishMood {
-  if (fish.activity) return "busy";
-  if (!fish.lastRun || fish.lastRun.seen) return "calm";
+  if (fish.activity) {
+    return "busy";
+  }
+  if (!fish.lastRun || fish.lastRun.seen) {
+    return "calm";
+  }
   return fish.lastRun.status === "failed" ? "worried" : "pleased";
 }
 
@@ -51,8 +51,12 @@ export function fishAccent(color: FishColor) {
 }
 
 function taskOf(activity: FishPresence, mood: FishMood): Task | null {
-  if (mood === "worried" || mood === "pleased") return mood;
-  if (activity === "searching") return "reading";
+  if (mood === "worried" || mood === "pleased") {
+    return mood;
+  }
+  if (activity === "searching") {
+    return "reading";
+  }
   return activity;
 }
 
@@ -70,7 +74,7 @@ function partTransform(
 
 function Stage({ art, task }: { art: SpeciesArt; task: Task | null }) {
   const id = useId();
-  const clipId = `fish-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const clipId = `fish-${id.replaceAll(/[^a-zA-Z0-9_-]/g, "")}`;
   const [rest] = useState(() => restingEyes(art.head, faceFor(task)));
   const svgRef = useRef<SVGSVGElement>(null);
   const bodyRef = useRef<SVGGElement>(null);
@@ -84,13 +88,17 @@ function Stage({ art, task }: { art: SpeciesArt; task: Task | null }) {
 
   useEffect(() => {
     const svg = svgRef.current;
-    if (!svg) return;
+    if (!svg) {
+      return;
+    }
     const avatar = createAvatar({ head: art.head, pivot: art.pivot });
     avatar.task(taskRef.current);
     const writeEyes = (eyes: Pose["eyes"]) => {
       [backEyeRef.current, frontEyeRef.current].forEach((node, index) => {
         const eye = eyes[index];
-        if (!node || !eye) return;
+        if (!node || !eye) {
+          return;
+        }
         node.setAttribute("d", eye.d);
         node.setAttribute("transform", eye.transform);
         node.setAttribute("opacity", String(eye.opacity));
@@ -130,7 +138,9 @@ function Stage({ art, task }: { art: SpeciesArt; task: Task | null }) {
     const enter = () => avatar.hover(true);
     const leave = () => avatar.hover(false);
     const press = (event: Event) => {
-      if ("button" in event && event.button === 0) avatar.press();
+      if ("button" in event && event.button === 0) {
+        avatar.press();
+      }
     };
     host.addEventListener("pointerenter", enter);
     host.addEventListener("pointerleave", leave);
@@ -149,7 +159,9 @@ function Stage({ art, task }: { art: SpeciesArt; task: Task | null }) {
   useEffect(() => {
     taskRef.current = task;
     avatarRef.current?.task(task);
-    if (reducedMotion()) rigRef.current?.rest();
+    if (reducedMotion()) {
+      rigRef.current?.rest();
+    }
   }, [task]);
 
   const [back, front] = rest;

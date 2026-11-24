@@ -22,13 +22,17 @@ export function searchCardFromSave(save: {
   const parsed = StoredSearchSchema.safeParse(
     save.rawJson?.capture?.extras?.search,
   );
-  if (!parsed.success) return null;
+  if (!parsed.success) {
+    return null;
+  }
   const card: SearchCardData = { ...parsed.data };
   try {
     const host = new URL(save.url).hostname;
     if (host) {
       card.iconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
     }
-  } catch {}
+  } catch {
+    /** A Save URL that doesn't parse keeps the card without a favicon. */
+  }
   return card;
 }

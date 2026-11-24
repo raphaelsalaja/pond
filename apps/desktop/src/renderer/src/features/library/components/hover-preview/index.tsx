@@ -1,14 +1,15 @@
 import { IconMinus, IconPlus } from "@pond/icons";
 import { Button, cssVars, Dialog } from "@pond/ui";
+import { isHTMLElement } from "@pond/ui/dom";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import {
-  type CSSProperties,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import type { CSSProperties } from "react";
 import {
   activeVideoShown,
   CardThumb,
@@ -18,7 +19,6 @@ import {
   inspect,
   MediaViewer,
   onQuickPreviewRequest,
-  type PreviewStepBinding,
   previewFileIndex,
   previewStepRuns,
   runViewerAction,
@@ -26,8 +26,11 @@ import {
   selectOnlySave,
   storedFileViewerKind,
   useInspect,
-  type ViewerNav,
-  type ViewerPosition,
+} from "@/features/saves";
+import type {
+  PreviewStepBinding,
+  ViewerNav,
+  ViewerPosition,
 } from "@/features/saves";
 import { pickPrimaryFile } from "@/features/saves/media";
 import {
@@ -43,8 +46,8 @@ import { isEditableTarget } from "@/shared/lib/editable-target";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 import { usePrefs } from "@/shared/state/prefs";
 import { Compare } from "./compare";
-import styles from "./styles.module.css";
 import { PreviewBar } from "./title-bar";
+import styles from "./styles.module.css";
 
 export function HoverPreview() {
   const [open, setOpen] = useState(false);
@@ -70,31 +73,39 @@ export function HoverPreview() {
   const peekSave = useSave(open || compare ? null : hoverId);
   const compareA = useSave(compareIds[0] ?? null);
   const compareB = useSave(compareIds[1] ?? null);
-  useEffect(() => {
-    if (!compare) setCompareZoom(1);
-  }, [compare]);
+  if (!compare && compareZoom !== 1) {
+    setCompareZoom(1);
+  }
 
   useHotkey(
     bindingKeys(shortcuts, "grid.preview"),
     (event) => {
-      if (event.isComposing || event.repeat || isEditableTarget(event.target))
+      if (event.isComposing || event.repeat || isEditableTarget(event.target)) {
         return;
+      }
       if (open) {
         event.preventDefault();
         heldKey.current = null;
         setOpen(false);
         return;
       }
-      if (event.defaultPrevented || !collectionOwnsKeyboard()) return;
-      if (openSaveId()) return;
+      if (event.defaultPrevented || !collectionOwnsKeyboard()) {
+        return;
+      }
+      if (openSaveId()) {
+        return;
+      }
       const selected = selection.getCursor();
-      if (!selected) return;
+      if (!selected) {
+        return;
+      }
       if (
-        event.target instanceof HTMLElement &&
+        isHTMLElement(event.target) &&
         event.target.closest("button") &&
         !event.target.closest("[data-save-id]")
-      )
+      ) {
         return;
+      }
       event.preventDefault();
       heldKey.current = event.code;
       if (prefs.spaceAction !== "preview") {
@@ -125,11 +136,15 @@ export function HoverPreview() {
     () =>
       window.pond.onPreviewNeighborRequested((request) => {
         void (async () => {
-          if (request.windowId === null) return;
+          if (request.windowId === null) {
+            return;
+          }
           let current = request.saveId;
           for (let checked = 0; checked < 50; checked++) {
             const saveId = await resultNavigation.next(current, request.delta);
-            if (!saveId) return;
+            if (!saveId) {
+              return;
+            }
             await ensureSaves([saveId]);
             const fileIndex = previewFileIndex(saveId, request.kind);
             if (fileIndex !== null) {
@@ -148,13 +163,19 @@ export function HoverPreview() {
   );
 
   const step = (delta: number, withinSave: boolean) => {
-    if (withinSave && viewerNav.current?.step(delta)) return;
+    if (withinSave && viewerNav.current?.step(delta)) {
+      return;
+    }
     navigation.current = navigation.current
       .then(async () => {
         const id = selection.getCursor();
-        if (!id) return;
+        if (!id) {
+          return;
+        }
         const next = await resultNavigation.next(id, delta);
-        if (next) await showSave(next);
+        if (next) {
+          await showSave(next);
+        }
       })
       .catch(() => {});
   };
@@ -167,8 +188,9 @@ export function HoverPreview() {
           bindings: shortcuts,
           videoShown: activeVideoShown(),
         })
-      )
+      ) {
         return;
+      }
       event.preventDefault();
       step(delta, true);
     };
@@ -214,24 +236,34 @@ export function HoverPreview() {
         event.metaKey ||
         event.ctrlKey ||
         event.altKey
-      )
+      ) {
         return;
-      if (event.key.toLowerCase() === "z" && !open && collectionOwnsKeyboard())
+      }
+      if (
+        event.key.toLowerCase() === "z" &&
+        !open &&
+        collectionOwnsKeyboard()
+      ) {
         setHoverId(selection.getCursor());
+      }
     };
     const up = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() === "z") setHoverId(null);
+      if (event.key.toLowerCase() === "z") {
+        setHoverId(null);
+      }
       if (
         event.code === heldKey.current &&
         prefs.spaceAction === "preview" &&
         prefs.spaceBehavior === "hold"
-      )
+      ) {
         setOpen(false);
+      }
     };
     const blur = () => {
       setHoverId(null);
-      if (prefs.spaceAction === "preview" && prefs.spaceBehavior === "hold")
+      if (prefs.spaceAction === "preview" && prefs.spaceBehavior === "hold") {
         setOpen(false);
+      }
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -246,20 +278,26 @@ export function HoverPreview() {
   const saveId = save?.id ?? null;
   const onPositionChange = useCallback(
     (next: ViewerPosition | null) => {
-      if (saveId) setPosition({ saveId, position: next });
+      if (saveId) {
+        setPosition({ saveId, position: next });
+      }
     },
     [saveId],
   );
   const attachPopup = useCallback(
     (node: HTMLDivElement | null) => {
       popupRef.current = node;
-      if (node && !compare) zoomToCard(node, selection.getCursor());
+      if (node && !compare) {
+        zoomToCard(node, selection.getCursor());
+      }
     },
     [compare],
   );
   useLayoutEffect(() => {
     const node = popupRef.current;
-    if (!open && node && !compare) zoomToCard(node, selection.getCursor());
+    if (!open && node && !compare) {
+      zoomToCard(node, selection.getCursor());
+    }
   }, [open, compare]);
 
   const close = () => {
@@ -308,7 +346,9 @@ export function HoverPreview() {
       modal={false}
       disablePointerDismissal={!peek || compare}
       onOpenChange={(next) => {
-        if (!next) close();
+        if (!next) {
+          close();
+        }
       }}
     >
       <Dialog.Portal>
@@ -325,8 +365,9 @@ export function HoverPreview() {
           data-quick-preview
           onKeyDown={(event) => {
             /** Base UI stops arrow keys at the popup, so they'd never reach the step hotkeys. */
-            if (!controlKeepsKey(event.nativeEvent))
+            if (!controlKeepsKey(event.nativeEvent)) {
               event.preventBaseUIHandler();
+            }
           }}
         >
           <PreviewBar.Bar
@@ -423,7 +464,9 @@ function mediaFit(
   ...sources: ReadonlyArray<Pick<SaveFile, "width" | "height"> | null>
 ): CSSProperties | undefined {
   const size = sources.find((source) => source?.width && source.height);
-  if (!size?.width || !size.height) return undefined;
+  if (!size?.width || !size.height) {
+    return undefined;
+  }
   return cssVars({
     "--ratio": size.width / size.height,
     "--natural-width": `${size.width}px`,
@@ -434,7 +477,9 @@ function mediaFit(
 function zoomToCard(popup: HTMLElement, saveId: string | null): void {
   /** Measuring resolves the dialog's own starting scale first, so hold transitions until the card-sized start replaces it. */
   const opening = popup.hasAttribute("data-starting-style");
-  if (opening) popup.style.transition = "none";
+  if (opening) {
+    popup.style.transition = "none";
+  }
   const thumb = saveId
     ? document.querySelector(
         `[data-library-card][data-save-id="${CSS.escape(saveId)}"] [data-card-thumb]`,

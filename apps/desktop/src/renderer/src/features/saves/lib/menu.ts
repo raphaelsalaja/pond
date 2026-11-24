@@ -37,11 +37,13 @@ export {
 export { contextMenuSaves } from "./menu/context";
 
 export function buildSaveMenu(
-  saveOrSaves: Save | readonly Save[],
+  saveOrSaves: Save | ReadonlyArray<Save>,
   options: BuildSaveMenuOptions,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const context = createSaveMenuContext(saveOrSaves, options);
-  if (!context) return [];
+  if (!context) {
+    return [];
+  }
 
   const openItems = buildOpenItems(context);
   const organizeItems = buildOrganizeItems(context);
@@ -111,16 +113,16 @@ export function buildSaveMenu(
 }
 
 function itemWithLabel(
-  items: MenuItemSpec[],
+  items: Array<MenuItemSpec>,
   label: string,
 ): MenuItemSpec | null {
   return items.find((item) => "label" in item && item.label === label) ?? null;
 }
 
 function detailOpenItems(
-  items: MenuItemSpec[],
+  items: Array<MenuItemSpec>,
   defaultAppPath: string | null,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const openInNewWindow = itemWithLabel(items, "Open in New Window");
   const openWithDefault = itemWithLabel(items, "Open with Default App");
   const openWith = itemWithLabel(items, "Open With");
@@ -148,7 +150,9 @@ function detailOpenItems(
   );
 }
 
-function replaceSubmenusWithGroups(items: MenuItemSpec[]): MenuItemSpec[] {
+function replaceSubmenusWithGroups(
+  items: Array<MenuItemSpec>,
+): Array<MenuItemSpec> {
   return items.map((item) => {
     if (item.type === "submenu") {
       return {
@@ -168,9 +172,11 @@ function replaceSubmenusWithGroups(items: MenuItemSpec[]): MenuItemSpec[] {
 export function buildSaveDetailMenu(
   save: Save,
   options: BuildSaveMenuOptions,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const context = createSaveMenuContext(save, options);
-  if (!context) return [];
+  if (!context) {
+    return [];
+  }
 
   const openItems = buildOpenItems(context);
   const copyItems = buildCopyItems(context);
@@ -214,9 +220,9 @@ export function buildSaveDetailMenu(
 }
 
 export function buildSaveExportPopup(
-  saveOrSaves: Save | readonly Save[],
+  saveOrSaves: Save | ReadonlyArray<Save>,
   options: BuildSaveMenuOptions,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const context = createSaveMenuContext(saveOrSaves, options);
   return context ? buildExportPopupItems(context) : [];
 }

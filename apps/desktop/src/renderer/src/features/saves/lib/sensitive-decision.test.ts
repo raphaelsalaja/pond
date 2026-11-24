@@ -13,7 +13,9 @@ function save(sensitiveScore: number) {
       sensitiveModel: "model@revision",
     }),
   );
-  if (!row) throw new Error("Fixture must produce a save");
+  if (!row) {
+    throw new Error("Fixture must produce a save");
+  }
   return row;
 }
 

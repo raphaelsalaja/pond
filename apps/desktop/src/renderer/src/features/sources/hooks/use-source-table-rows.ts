@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import {
-  type SourceTableRow,
   toFolderTableRow,
   toSourceTableRow,
 } from "@/features/sources/components/page/lib/helpers";
+import type { SourceTableRow } from "@/features/sources/components/page/lib/helpers";
 import { cardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import { useAccounts } from "@/features/sources/hooks/use-accounts";
 import { useWatchedFolder } from "@/features/sources/hooks/use-watched-folder";
@@ -24,8 +24,8 @@ export function useSourceTableRows() {
   const watchedFolder = useWatchedFolder();
   const byAccount = useSyncByAccount();
 
-  const rows = useMemo<SourceTableRow[]>(() => {
-    const next: SourceTableRow[] = [];
+  const rows = useMemo<Array<SourceTableRow>>(() => {
+    const next: Array<SourceTableRow> = [];
     for (const row of accounts) {
       next.push(
         toSourceTableRow(
@@ -42,7 +42,9 @@ export function useSourceTableRows() {
     const folder = watchedFolder.data
       ? toFolderTableRow(watchedFolder.data)
       : null;
-    if (folder) next.push(folder);
+    if (folder) {
+      next.push(folder);
+    }
     return next;
   }, [accounts, watches, watchedFolder.data, byAccount]);
 

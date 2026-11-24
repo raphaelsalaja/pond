@@ -1,9 +1,7 @@
 import { mutateSave } from "@/features/saves/lib/mutate";
 import type { Save } from "@/features/saves/types";
-import {
-  type InspectorDrafts,
-  InspectorTextField,
-} from "@/shared/components/inspector-text-field";
+import { InspectorTextField } from "@/shared/components/inspector-text-field";
+import type { InspectorDrafts } from "@/shared/components/inspector-text-field";
 import styles from "./styles.module.css";
 
 export function SaveIdentity({
@@ -29,7 +27,9 @@ export function SaveIdentity({
       placeholder="Untitled"
       mixedPlaceholder="Multiple titles"
       commit={async (value) => {
-        if (!save) return;
+        if (!save) {
+          return;
+        }
         await mutateSave(
           save.id,
           { title: value.trim() || null },

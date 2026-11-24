@@ -9,11 +9,14 @@ import {
   getNearestEditorFromDOMNode,
   UNDO_COMMAND,
 } from "lexical";
-import { act, createRef, type Ref, useRef, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act, createRef, useRef, useState } from "react";
+import type { Ref } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ComposerView } from "../composer-view";
-import { ComposerEditor, type ComposerEditorHandle } from "./";
+import { ComposerEditor } from "./";
+import type { ComposerEditorHandle } from "./";
 
 const send = vi.fn();
 const search = vi.fn();
@@ -35,13 +38,15 @@ function Harness({
   handle?: Ref<ComposerEditorHandle>;
 }) {
   const [value, setValue] = useState(initial);
-  const [attachments, setAttachments] = useState<AssistantSource[]>([]);
+  const [attachments, setAttachments] = useState<Array<AssistantSource>>([]);
   const anchorRef = useRef<HTMLDivElement>(null);
   return (
     <>
       <div ref={anchorRef}>
         <ComposerView
-          onSend={() => send(value)}
+          onSend={() => {
+            send(value);
+          }}
           editor={
             <ComposerEditor
               ref={handle}
@@ -77,12 +82,16 @@ function Harness({
 }
 function editable() {
   const node = host.querySelector<HTMLElement>('[contenteditable="true"]');
-  if (!node) throw new Error("Missing composer");
+  if (!node) {
+    throw new Error("Missing composer");
+  }
   return node;
 }
 function editor() {
   const instance = getNearestEditorFromDOMNode(editable());
-  if (!instance) throw new Error("Missing editor");
+  if (!instance) {
+    throw new Error("Missing editor");
+  }
   return instance;
 }
 function markdown() {
@@ -93,8 +102,11 @@ async function type(text: string) {
     editable().focus();
     editor().update(() => {
       const selection = $getSelection();
-      if ($isRangeSelection(selection)) selection.insertText(text);
-      else $getRoot().selectEnd().insertText(text);
+      if ($isRangeSelection(selection)) {
+        selection.insertText(text);
+      } else {
+        $getRoot().selectEnd().insertText(text);
+      }
     });
   });
 }
@@ -208,7 +220,9 @@ it("inserts a Save mention chip from @ and keeps it in the draft", async () => {
   await mount();
   await type("Compare @sus");
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 180));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 180);
+    });
   });
   expect(search).toHaveBeenCalledWith("agent.searchSaves", {
     query: "sus",
@@ -228,7 +242,9 @@ it("opens the Save search when Add Saves types @ after a word", async () => {
   await type("Compare");
   await act(async () => handle.current?.mention());
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 180));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 180);
+    });
   });
   expect(editable().textContent).toBe("Compare @");
   expect(search).toHaveBeenCalledWith("agent.searchSaves", {

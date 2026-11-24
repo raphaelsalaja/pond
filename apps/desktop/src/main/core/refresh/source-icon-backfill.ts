@@ -49,7 +49,9 @@ export async function backfillSourceIcons(): Promise<{
     )
     .all();
 
-  if (rows.length === 0) return { ok: true, written: 0 };
+  if (rows.length === 0) {
+    return { ok: true, written: 0 };
+  }
 
   let candidates = 0;
   let written = 0;
@@ -57,7 +59,9 @@ export async function backfillSourceIcons(): Promise<{
   const runLane = async (): Promise<void> => {
     while (cursor < rows.length) {
       const row = rows[cursor++];
-      if (!row) continue;
+      if (!row) {
+        continue;
+      }
       try {
         const stored = hasSourceIcon(row.files);
         if (
@@ -68,12 +72,14 @@ export async function backfillSourceIcons(): Promise<{
         }
         candidates += 1;
         const save = await readSave(row.id);
-        if (!save) continue;
+        if (!save) {
+          continue;
+        }
         if (await fetchSourceIcon(row.id, save, { replace: stored })) {
           written += 1;
         }
-      } catch (err) {
-        log.warn("[pond source-icon-backfill] failed", row.id, err);
+      } catch (error) {
+        log.warn("[pond source-icon-backfill] failed", row.id, error);
       }
     }
   };
@@ -86,8 +92,8 @@ export async function backfillSourceIcons(): Promise<{
       readableCheckMarker(),
       String(READABLE_CHECK_VERSION),
       "utf8",
-    ).catch((err) =>
-      log.warn("[pond source-icon-backfill] marker write failed", err),
+    ).catch((cause: unknown) =>
+      log.warn("[pond source-icon-backfill] marker write failed", cause),
     );
   }
 

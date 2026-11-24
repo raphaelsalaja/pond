@@ -50,17 +50,25 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
   }
 
   function publishDownloading(downloading: boolean): void {
-    if (latestNotice?.phase !== "available") return;
-    if (latestNotice.downloading === downloading) return;
+    if (latestNotice?.phase !== "available") {
+      return;
+    }
+    if (latestNotice.downloading === downloading) {
+      return;
+    }
     publishedPercent = -1;
     publish({ phase: "available", version: latestNotice.version, downloading });
   }
 
   /** electron-updater reports many times a second; broadcast only whole-percent steps. */
   function publishProgress(percent: number): void {
-    if (latestNotice?.phase !== "available") return;
+    if (latestNotice?.phase !== "available") {
+      return;
+    }
     const step = Math.floor(Math.min(Math.max(percent, 0), 100));
-    if (step === publishedPercent) return;
+    if (step === publishedPercent) {
+      return;
+    }
     publishedPercent = step;
     publish({
       phase: "available",
@@ -76,7 +84,9 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
   }
 
   async function applyPrefs(): Promise<void> {
-    if (!dependencies.isPackaged()) return;
+    if (!dependencies.isPackaged()) {
+      return;
+    }
     await applyPrefsTo(await dependencies.loadUpdater());
   }
 
@@ -116,10 +126,10 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
     updater.onProgress(publishProgress);
 
     dependencies.scheduleTimeout(() => {
-      void updater.check().catch((error) => {
+      void updater.check().catch((cause: unknown) => {
         dependencies.warn(
           "[pond updater] startup check failed",
-          error instanceof Error ? error : new Error("Unknown updater error"),
+          cause instanceof Error ? cause : new Error("Unknown updater error"),
         );
       });
     }, 2000);
@@ -133,7 +143,9 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
   }
 
   async function download(): Promise<OkResult | ReasonFailure<"dev_build">> {
-    if (!dependencies.isPackaged()) return { ok: false, reason: "dev_build" };
+    if (!dependencies.isPackaged()) {
+      return { ok: false, reason: "dev_build" };
+    }
     try {
       const updater = await dependencies.loadUpdater();
       publishDownloading(true);
@@ -152,7 +164,9 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
   }
 
   async function install(): Promise<OkResult | ReasonFailure<"dev_build">> {
-    if (!dependencies.isPackaged()) return { ok: false, reason: "dev_build" };
+    if (!dependencies.isPackaged()) {
+      return { ok: false, reason: "dev_build" };
+    }
     try {
       const updater = await dependencies.loadUpdater();
       await updater.install();
@@ -171,7 +185,9 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
   async function checkNow(): Promise<
     OkResult<{ version?: string }> | ReasonFailure<"dev_build">
   > {
-    if (!dependencies.isPackaged()) return { ok: false, reason: "dev_build" };
+    if (!dependencies.isPackaged()) {
+      return { ok: false, reason: "dev_build" };
+    }
     try {
       const updater = await dependencies.loadUpdater();
       const result = await updater.check();

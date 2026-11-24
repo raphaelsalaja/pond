@@ -7,10 +7,11 @@ import {
   IconTrash as Trash,
 } from "@pond/icons";
 import { Button, Field, Input, Settings, Switch } from "@pond/ui";
-import { type AssistantProvider, providerGroup } from "@shared/assistant";
+import { providerGroup } from "@shared/assistant";
+import type { AssistantProvider } from "@shared/assistant";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { AnimateHeight } from "@/shared/components/animate-height";
 import { IS_MAC } from "@/shared/lib/platform";
 import { ProviderLogo } from "../icons";
@@ -28,9 +29,15 @@ function endpointPatch(
   id: AssistantProvider,
   value: string,
 ): Partial<AgentPrefs> {
-  if (id === "ollama") return { ollamaBaseUrl: value };
-  if (id === "lmstudio") return { lmstudioBaseUrl: value };
-  if (id === "azure") return { azureResourceName: value };
+  if (id === "ollama") {
+    return { ollamaBaseUrl: value };
+  }
+  if (id === "lmstudio") {
+    return { lmstudioBaseUrl: value };
+  }
+  if (id === "azure") {
+    return { azureResourceName: value };
+  }
   return {};
 }
 
@@ -81,11 +88,8 @@ export function ProviderConnection({
   const [invalid, setInvalid] = useState({ key: false, endpoint: false });
   const keyField = useRef<HTMLInputElement>(null);
   const endpointField = useRef<HTMLInputElement>(null);
-  const appeared = useRef(false);
+  const [reopened, setReopened] = useState(false);
   const queryClient = useQueryClient();
-  useEffect(() => {
-    appeared.current = true;
-  }, []);
   const missingEndpoint = endpoint !== undefined && !endpointDraft.trim();
   const missingKey = catalog.needsKey && !connected && !keyDraft.trim();
   const refresh = async () => {
@@ -102,7 +106,9 @@ export function ProviderConnection({
     ]);
   };
   const save = async () => {
-    if (saving) return;
+    if (saving) {
+      return;
+    }
     setInvalid({ key: missingKey, endpoint: missingEndpoint });
     if (missingKey) {
       keyField.current?.focus();
@@ -125,23 +131,30 @@ export function ProviderConnection({
         const result = await window.pond.query("agent.listModels", {
           provider: catalog.id,
         });
-        if (!result.ok) throw new Error(result.error);
-        if (result.warning) throw new Error(result.warning);
+        if (!result.ok) {
+          throw new Error(result.error);
+        }
+        if (result.warning) {
+          throw new Error(result.warning);
+        }
       } else {
         const result = await window.pond.query("agent.saveKey", {
           provider: catalog.id,
           key: keyDraft.trim(),
         });
-        if (!result.ok) throw new Error(result.error);
+        if (!result.ok) {
+          throw new Error(result.error);
+        }
       }
       verified = true;
-      if (!agent.languageModel)
+      if (!agent.languageModel) {
         await onPatchAgent({ languageModel: catalog.id });
+      }
       setKeyDraft("");
       setRevealed(false);
       setEditing(false);
       await refresh();
-    } catch (cause) {
+    } catch (error_) {
       if (endpointSaved && !verified && endpoint !== undefined) {
         try {
           await onPatchAgent(endpointPatch(catalog.id, endpoint));
@@ -152,7 +165,7 @@ export function ProviderConnection({
           return;
         }
       }
-      setError(failMessage(cause, "Could not save provider. Try again."));
+      setError(failMessage(error_, "Could not save provider. Try again."));
     } finally {
       setSaving(false);
     }
@@ -164,7 +177,9 @@ export function ProviderConnection({
       const result = await window.pond.query("agent.removeKey", {
         provider: catalog.id,
       });
-      if (!result.ok) throw new Error("Could not remove provider. Try again.");
+      if (!result.ok) {
+        throw new Error("Could not remove provider. Try again.");
+      }
       await onPatchAgent({
         addedProviders: (agent.addedProviders ?? []).filter(
           (id) => id !== catalog.id,
@@ -219,7 +234,10 @@ export function ProviderConnection({
             variant="ghost"
             disabled={saving}
             aria-label={`Edit ${catalog.provider}`}
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setEditing(true);
+              setReopened(true);
+            }}
           >
             <Edit size={12} />
           </Button>
@@ -263,7 +281,7 @@ export function ProviderConnection({
           <AnimateHeight
             key="setup"
             className={styles.setup}
-            initial={appeared.current ? undefined : false}
+            initial={reopened ? undefined : false}
             presence
           >
             <form
@@ -278,8 +296,8 @@ export function ProviderConnection({
                   <p className={styles.instructions}>
                     Uses the model built into macOS, so nothing leaves your Mac.
                     Turn on Apple Intelligence in System Settings, then connect
-                    here. Fish can search and read your library but can't change
-                    it.
+                    here. Fish can search and read your library but can&apos;t
+                    change it.
                   </p>
                 ) : subscription ? (
                   <p className={styles.instructions}>

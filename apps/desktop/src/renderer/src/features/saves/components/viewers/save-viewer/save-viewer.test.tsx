@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { pool } from "@/features/saves/state/pool";
@@ -12,7 +13,7 @@ function file(path: string, kind: string, mimeType: string): SaveFile {
   return { path, kind, mimeType, sha256: `fixture-${path}`, size: 1 };
 }
 
-function mixedSave(files: SaveFile[]): Save {
+function mixedSave(files: Array<SaveFile>): Save {
   return {
     id: "mixed-viewer",
     source: "local",
@@ -43,10 +44,36 @@ function buttonByText(
   );
 }
 
+function imageSave(id: string): Save {
+  return {
+    ...mixedSave([file(`${id}.jpg`, "image", "image/jpeg")]),
+    id,
+    sourceId: id,
+    mediaType: "image",
+  };
+}
+
+function videoSave(id: string): Save {
+  return {
+    ...mixedSave([
+      file(`${id}.mp4`, "video", "video/mp4"),
+      file(`${id}-poster.jpg`, "poster", "image/jpeg"),
+    ]),
+    id,
+    sourceId: id,
+    mediaType: "video",
+  };
+}
+
+function fileName(src: string | null | undefined) {
+  return src?.split("?")[0]?.split("/").pop();
+}
+
 async function findToolbar(host: HTMLElement, label: string): Promise<void> {
   await vi.waitFor(() => {
-    if (!host.querySelector(`[role="toolbar"][aria-label="${label}"]`))
+    if (!host.querySelector(`[role="toolbar"][aria-label="${label}"]`)) {
       throw new Error(`Missing ${label} toolbar`);
+    }
   });
 }
 
@@ -68,6 +95,85 @@ describe("SaveViewer", () => {
   const next = () =>
     act(async () => {
       navigation?.onNext();
+    });
+  const decodeImage = (name: string) =>
+    act(async () => {
+      for (const pending of decodes) {
+        if (pending.src.includes(`/${name}`)) {
+          pending.resolve();
+        }
+      }
+    });
+  const decodeFile = (name: string) =>
+    act(async () => {
+      for (const pending of decodes) {
+        if (fileName(pending.src) === name) {
+          pending.resolve();
+        }
+      }
+    });
+  const layers = () => {
+    const images = host.querySelectorAll('img[alt="Mixed viewer"]');
+    return [...images].map((image) => {
+      let role = "current";
+      if (image.closest("[data-held]")) {
+        role = "held";
+      }
+      if (image.closest("div[data-pending]")) {
+        role = "pending";
+      }
+      const name = image.getAttribute("src")?.match(/\/(\w+)\.jpg/)?.[1];
+      return `${role} ${name}`;
+    });
+  };
+  const show = (save: Save) =>
+    act(async () => {
+      pool.upsert(save);
+      root.render(<SaveViewer save={save} />);
+    });
+  const stage = () =>
+    [...host.querySelectorAll<HTMLElement>("[data-blossom-slide]")].map(
+      (slide) => {
+        const layer = slide.closest("[data-held], div[data-pending]");
+        let role = "current";
+        if (layer?.hasAttribute("data-held")) {
+          role = "held";
+        } else if (layer) {
+          role = "pending";
+        }
+        const media =
+          slide.querySelector("video")?.getAttribute("src") ??
+          slide.querySelector('img[src*=".jpg"]')?.getAttribute("src");
+        return `${role} ${fileName(media)}`;
+      },
+    );
+  const timing = () => {
+    const elapsed = host.querySelectorAll('[aria-label="Elapsed time"]');
+    const duration = host.querySelectorAll('[aria-label="Duration"]');
+    const seek = host.querySelector('[aria-label="Seek"]');
+    expect(elapsed).toHaveLength(1);
+    expect(duration).toHaveLength(1);
+    return {
+      pending: [elapsed[0], duration[0], seek].map((part) =>
+        part?.hasAttribute("data-pending"),
+      ),
+      duration: duration[0]?.textContent,
+      seekDisabled: seek?.hasAttribute("data-disabled"),
+    };
+  };
+  const loadMetadata = (name: string, seconds: number) =>
+    act(async () => {
+      const video = host.querySelector<HTMLVideoElement>(
+        `video[src*="/${name}"]`,
+      );
+      if (!video) {
+        throw new Error(`Missing ${name}`);
+      }
+      Object.defineProperty(video, "duration", {
+        configurable: true,
+        value: seconds,
+      });
+      video.dispatchEvent(new Event("loadedmetadata"));
     });
 
   beforeEach(() => {
@@ -171,23 +277,6 @@ describe("SaveViewer", () => {
   });
 
   describe("stepping between images", () => {
-    const decode = (name: string) =>
-      act(async () => {
-        for (const pending of decodes) {
-          if (pending.src.includes(`/${name}`)) pending.resolve();
-        }
-      });
-    const layers = () => {
-      const images = host.querySelectorAll('img[alt="Mixed viewer"]');
-      return [...images].map((image) => {
-        let role = "current";
-        if (image.closest("[data-held]")) role = "held";
-        if (image.closest("div[data-pending]")) role = "pending";
-        const name = image.getAttribute("src")?.match(/\/(\w+)\.jpg/)?.[1];
-        return `${role} ${name}`;
-      });
-    };
-
     it("keeps the shown image on screen until the next one decodes", async () => {
       const save = mixedSave([
         file("first.jpg", "image", "image/jpeg"),
@@ -197,14 +286,14 @@ describe("SaveViewer", () => {
       resultNavigation.setSource({ ids: [save.id], total: 1 });
 
       await act(async () => root.render(viewer(save)));
-      await decode("first.jpg");
+      await decodeImage("first.jpg");
       expect(layers()).toEqual(["current first"]);
 
       await next();
       expect(layers()).toEqual(["held first", "pending second"]);
       expect(navigation).toMatchObject({ index: 1, count: 2 });
 
-      await decode("second.jpg");
+      await decodeImage("second.jpg");
       expect(layers()).toEqual(["current second"]);
       const second = host.querySelector('img[src*="second.jpg"]');
       expect(second?.hasAttribute("data-pending")).toBe(false);
@@ -220,88 +309,20 @@ describe("SaveViewer", () => {
       resultNavigation.setSource({ ids: [save.id], total: 1 });
 
       await act(async () => root.render(viewer(save)));
-      await decode("first.jpg");
+      await decodeImage("first.jpg");
       await next();
       await next();
       expect(layers()).toEqual(["held first", "pending third"]);
 
-      await decode("second.jpg");
+      await decodeImage("second.jpg");
       expect(layers()).toEqual(["held first", "pending third"]);
 
-      await decode("third.jpg");
+      await decodeImage("third.jpg");
       expect(layers()).toEqual(["current third"]);
     });
   });
 
   describe("stepping between Saves", () => {
-    const imageSave = (id: string): Save => ({
-      ...mixedSave([file(`${id}.jpg`, "image", "image/jpeg")]),
-      id,
-      sourceId: id,
-      mediaType: "image",
-    });
-    const videoSave = (id: string): Save => ({
-      ...mixedSave([
-        file(`${id}.mp4`, "video", "video/mp4"),
-        file(`${id}-poster.jpg`, "poster", "image/jpeg"),
-      ]),
-      id,
-      sourceId: id,
-      mediaType: "video",
-    });
-    const show = (save: Save) =>
-      act(async () => {
-        pool.upsert(save);
-        root.render(<SaveViewer save={save} />);
-      });
-    const fileName = (src: string | null | undefined) =>
-      src?.split("?")[0]?.split("/").pop();
-    const decode = (name: string) =>
-      act(async () => {
-        for (const pending of decodes) {
-          if (fileName(pending.src) === name) pending.resolve();
-        }
-      });
-    const stage = () =>
-      [...host.querySelectorAll<HTMLElement>("[data-blossom-slide]")].map(
-        (slide) => {
-          const layer = slide.closest("[data-held], div[data-pending]");
-          let role = "current";
-          if (layer?.hasAttribute("data-held")) role = "held";
-          else if (layer) role = "pending";
-          const media =
-            slide.querySelector("video")?.getAttribute("src") ??
-            slide.querySelector('img[src*=".jpg"]')?.getAttribute("src");
-          return `${role} ${fileName(media)}`;
-        },
-      );
-    const timing = () => {
-      const elapsed = host.querySelectorAll('[aria-label="Elapsed time"]');
-      const duration = host.querySelectorAll('[aria-label="Duration"]');
-      const seek = host.querySelector('[aria-label="Seek"]');
-      expect(elapsed).toHaveLength(1);
-      expect(duration).toHaveLength(1);
-      return {
-        pending: [elapsed[0], duration[0], seek].map((part) =>
-          part?.hasAttribute("data-pending"),
-        ),
-        duration: duration[0]?.textContent,
-        seekDisabled: seek?.hasAttribute("data-disabled"),
-      };
-    };
-    const loadMetadata = (name: string, seconds: number) =>
-      act(async () => {
-        const video = host.querySelector<HTMLVideoElement>(
-          `video[src*="/${name}"]`,
-        );
-        if (!video) throw new Error(`Missing ${name}`);
-        Object.defineProperty(video, "duration", {
-          configurable: true,
-          value: seconds,
-        });
-        video.dispatchEvent(new Event("loadedmetadata"));
-      });
-
     beforeEach(() => {
       vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
       vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(
@@ -311,21 +332,21 @@ describe("SaveViewer", () => {
 
     it("never lets an earlier Save's decode reveal a newer one", async () => {
       await show(imageSave("first"));
-      await decode("first.jpg");
+      await decodeFile("first.jpg");
       await show(imageSave("second"));
       await show(imageSave("third"));
       expect(stage()).toEqual(["held first.jpg", "pending third.jpg"]);
 
-      await decode("second.jpg");
+      await decodeFile("second.jpg");
       expect(stage()).toEqual(["held first.jpg", "pending third.jpg"]);
 
-      await decode("third.jpg");
+      await decodeFile("third.jpg");
       expect(stage()).toEqual(["current third.jpg"]);
     });
 
     it("keeps an incoming video's timeline pending until its metadata loads", async () => {
       await show(imageSave("photo"));
-      await decode("photo.jpg");
+      await decodeFile("photo.jpg");
       await show(videoSave("clip"));
 
       expect(stage()).toEqual(["held photo.jpg", "pending clip.mp4"]);
@@ -371,7 +392,7 @@ describe("SaveViewer", () => {
       expect(timing().pending).toEqual([true, true, true]);
 
       await show(imageSave("after"));
-      await decode("after.jpg");
+      await decodeFile("after.jpg");
 
       expect(stage()).toEqual(["current after.jpg"]);
       expect(host.querySelector('[aria-label="Duration"]')).toBeNull();
@@ -381,7 +402,7 @@ describe("SaveViewer", () => {
   it("offers Download Video until the video file arrives", async () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
-    const queries: string[] = [];
+    const queries: Array<string> = [];
     vi.stubGlobal("pond", {
       openSaveFile: async () => ({ ok: true }),
       query: async (name: string) => {
@@ -406,7 +427,9 @@ describe("SaveViewer", () => {
     expect(host.querySelector('img[alt="Mixed viewer"]')).not.toBeNull();
     expect(buttonByText(host, "Open Original")).not.toBeNull();
     const download = buttonByText(host, "Download Video");
-    if (!download) throw new Error("Missing Download Video button");
+    if (!download) {
+      throw new Error("Missing Download Video button");
+    }
     await act(async () => download.click());
     expect(queries).toContain("saves.downloadVideo");
     expect(buttonByText(host, "Downloading")?.disabled).toBe(true);

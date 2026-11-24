@@ -44,7 +44,7 @@ async function appIcon(): Promise<Buffer | null> {
 
 export async function writePondMcpBundle(
   command = process.execPath,
-  args: string[] = ["--mcp"],
+  args: Array<string> = ["--mcp"],
 ): Promise<string> {
   const icon = await appIcon();
   const manifest = {
@@ -73,7 +73,9 @@ export async function writePondMcpBundle(
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
   zip.file("server/index.js", LAUNCHER);
   zip.file("server/pond.json", JSON.stringify({ command, args }));
-  if (icon) zip.file("icon.png", icon);
+  if (icon) {
+    zip.file("icon.png", icon);
+  }
   const directory = join(app.getPath("temp"), "pond-mcp-bundle");
   await mkdir(directory, { recursive: true });
   const path = join(directory, "Pond.mcpb");

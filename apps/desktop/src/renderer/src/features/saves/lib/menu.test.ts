@@ -1,5 +1,6 @@
 import { MANUAL_NOT_SENSITIVE_MODEL } from "@pond/schema/content-safety";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { isValidElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
@@ -29,15 +30,15 @@ import {
   buildSaveExportPopup,
   buildSaveMenu,
   contextMenuSaves,
-  type OpenWithApp,
   openWithKind,
 } from "./menu";
+import type { OpenWithApp } from "./menu";
 import { createSaveMenuContext } from "./menu/context";
 
 function sectionItems(
-  items: MenuItemSpec[],
+  items: Array<MenuItemSpec>,
   label: string,
-): MenuItemSpec[] | null {
+): Array<MenuItemSpec> | null {
   for (const item of items) {
     if (
       (item.type === "submenu" || item.type === "group") &&
@@ -50,30 +51,39 @@ function sectionItems(
   return null;
 }
 
-function checkboxLabeled(items: MenuItemSpec[], label: string) {
+function checkboxLabeled(items: Array<MenuItemSpec>, label: string) {
   for (const item of items) {
-    if (item.type === "checkbox" && item.label === label) return item;
+    if (item.type === "checkbox" && item.label === label) {
+      return item;
+    }
   }
   throw new Error(`Missing ${label}`);
 }
 
-function containsSubmenu(items: MenuItemSpec[]): boolean {
+function containsSubmenu(items: Array<MenuItemSpec>): boolean {
   return items.some((item) => {
-    if (item.type === "submenu") return true;
+    if (item.type === "submenu") {
+      return true;
+    }
     return item.type === "group" ? containsSubmenu(item.items) : false;
   });
 }
 
-function visibleLeafItems(items: MenuItemSpec[]): MenuItemSpec[] {
+function visibleLeafItems(items: Array<MenuItemSpec>): Array<MenuItemSpec> {
   return items.flatMap((item) => {
-    if ("hidden" in item && item.hidden) return [];
-    if (item.type === "group") return visibleLeafItems(item.items);
+    if ("hidden" in item && item.hidden) {
+      return [];
+    }
+    if (item.type === "group") {
+      return visibleLeafItems(item.items);
+    }
     if (
       item.type === "separator" ||
       item.type === "custom" ||
       item.type === "submenu"
-    )
+    ) {
       return [];
+    }
     return [item];
   });
 }
@@ -159,7 +169,7 @@ afterEach(async () => {
   await folders.refresh();
 });
 
-function previewOpenWithApps(): OpenWithApp[] {
+function previewOpenWithApps(): Array<OpenWithApp> {
   return [
     {
       name: "Preview.app",
@@ -174,6 +184,34 @@ function previewOpenWithApps(): OpenWithApp[] {
       isDefault: false,
     },
   ];
+}
+
+function posterOnly(id: string): Save {
+  return fileSave({
+    id,
+    sourceId: id,
+    mediaType: "video",
+    files: [
+      {
+        kind: "poster",
+        path: "poster.jpg",
+        mimeType: "image/jpeg",
+        sha256: id,
+        size: 1,
+      },
+    ],
+  });
+}
+
+function row(id: string, parentId: string | null) {
+  return {
+    id,
+    name: id,
+    parentId,
+    color: null,
+    sortOrder: 0,
+    createdAt: new Date(),
+  };
 }
 
 describe("buildSaveMenu", () => {
@@ -198,8 +236,9 @@ describe("buildSaveMenu", () => {
     const exportItem = items.find(
       (item) => "label" in item && item.label === "Export",
     );
-    if (!exportItem || !("onClick" in exportItem))
+    if (!exportItem || !("onClick" in exportItem)) {
       throw new Error("Missing Export action");
+    }
     exportItem.onClick?.();
     expect(conversionDialogStore.state?.mode).toBe("files");
     expect(topLevelLabels(sectionItems(items, "Open With") ?? [])).toEqual([
@@ -285,7 +324,9 @@ describe("buildSaveMenu", () => {
     });
 
     const corrected = pool.get(save.id);
-    if (!corrected) throw new Error("Missing corrected Save");
+    if (!corrected) {
+      throw new Error("Missing corrected Save");
+    }
     const again = buildSaveMenu(corrected, { clipboardEmpty: true });
     const restore = checkboxLabeled(again, "Sensitive Content");
     expect(restore.checked).toBe(false);
@@ -400,8 +441,9 @@ describe("buildSaveMenu", () => {
     const compress = visibleLeafItems(exports).find(
       (item) => "label" in item && item.label === "Compress Videos",
     );
-    if (!compress || !("onClick" in compress))
+    if (!compress || !("onClick" in compress)) {
       throw new Error("Missing Compress Videos");
+    }
     vi.stubGlobal("pond", { query });
 
     compress.onClick?.();
@@ -420,7 +462,9 @@ describe("buildSaveMenu", () => {
     const context = createSaveMenuContext(videoSave(), {
       clipboardEmpty: true,
     });
-    if (!context) throw new Error("Missing menu context");
+    if (!context) {
+      throw new Error("Missing menu context");
+    }
     Object.defineProperty(navigator, "platform", {
       value: "Win32",
       configurable: true,
@@ -464,8 +508,9 @@ describe("buildSaveMenu", () => {
     const showPost = items.find(
       (item) => "label" in item && item.label === "Show Post",
     );
-    if (!showPost || !("onClick" in showPost))
+    if (!showPost || !("onClick" in showPost)) {
       throw new Error("Missing Show Post action");
+    }
     showPost.onClick?.();
     expect(router.history.location.pathname).toBe(
       pathForLibraryNav({ kind: "post", key: "twitter:DAbC" }),
@@ -698,21 +743,6 @@ describe("buildSaveMenu", () => {
   });
 
   it("offers Download Video for a batch of poster-only video saves", () => {
-    const posterOnly = (id: string) =>
-      fileSave({
-        id,
-        sourceId: id,
-        mediaType: "video",
-        files: [
-          {
-            kind: "poster",
-            path: "poster.jpg",
-            mimeType: "image/jpeg",
-            sha256: id,
-            size: 1,
-          },
-        ],
-      });
     const labels = visibleLabels(
       buildSaveMenu([posterOnly("first"), posterOnly("second")], {
         clipboardEmpty: true,
@@ -787,8 +817,13 @@ describe("buildSaveMenu", () => {
       buildSaveMenu(save, { clipboardEmpty: true }),
       "Thumbnail",
     )?.find((item) => "label" in item && item.label === "View Thumbnail");
-    if (!viewThumbnail || !("onClick" in viewThumbnail) || viewThumbnail.hidden)
+    if (
+      !viewThumbnail ||
+      !("onClick" in viewThumbnail) ||
+      viewThumbnail.hidden
+    ) {
       throw new Error("Missing View Thumbnail");
+    }
 
     viewThumbnail.onClick?.();
     expect(thumbnailViewerStore.state?.saveId).toBe("photo");
@@ -802,8 +837,13 @@ describe("buildSaveMenu", () => {
     const viewThumbnail = items.find(
       (item) => "label" in item && item.label === "View Thumbnail",
     );
-    if (!viewThumbnail || !("onClick" in viewThumbnail) || viewThumbnail.hidden)
+    if (
+      !viewThumbnail ||
+      !("onClick" in viewThumbnail) ||
+      viewThumbnail.hidden
+    ) {
       throw new Error("Missing View Thumbnail");
+    }
 
     viewThumbnail.onClick?.();
     expect(thumbnailViewerStore.state?.saveId).toBe("photo");
@@ -858,20 +898,14 @@ describe("buildSaveMenu", () => {
   });
 
   it("lists the folder tree under Add to Folders and checks folders the save is in", async () => {
-    const row = (id: string, parentId: string | null) => ({
-      id,
-      name: id,
-      parentId,
-      color: null,
-      sortOrder: 0,
-      createdAt: new Date(),
-    });
     vi.stubGlobal("pond", {
       query: async (name: string) => {
-        if (name === "folders.list")
+        if (name === "folders.list") {
           return [row("Refs", null), row("Shots", "Refs"), row("Inbox", null)];
-        if (name === "folders.memberships")
+        }
+        if (name === "folders.memberships") {
           return [{ saveId: "file-save", folderId: "Refs" }];
+        }
         return [];
       },
     });
@@ -950,7 +984,7 @@ describe("buildSaveMenu", () => {
   it("puts All ahead of folder names under Navigate to Folder", async () => {
     vi.stubGlobal("pond", {
       query: async (name: string) => {
-        if (name === "folders.list")
+        if (name === "folders.list") {
           return [
             {
               id: "refs",
@@ -961,8 +995,10 @@ describe("buildSaveMenu", () => {
               createdAt: new Date(),
             },
           ];
-        if (name === "folders.memberships")
+        }
+        if (name === "folders.memberships") {
           return [{ saveId: "file-save", folderId: "refs" }];
+        }
         return [];
       },
     });
@@ -986,7 +1022,10 @@ describe("buildSaveMenu", () => {
       );
       return (
         item?.type !== "group" &&
-        (!item || !("icon" in item) || item.icon == null)
+        (!item ||
+          !("icon" in item) ||
+          item.icon === undefined ||
+          item.icon === null)
       );
     });
     expect(missing).toEqual([]);
@@ -1096,8 +1135,9 @@ describe("buildViewerMenu", () => {
       const action = exports.find(
         (item) => "label" in item && item.label === label,
       );
-      if (!action || !("onClick" in action))
+      if (!action || !("onClick" in action)) {
         throw new Error(`Missing ${label}`);
+      }
       action.onClick?.();
     }
     expect(query).toHaveBeenNthCalledWith(

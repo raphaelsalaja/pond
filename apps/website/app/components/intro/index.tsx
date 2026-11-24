@@ -2,12 +2,8 @@
 
 import { Wordmark } from "@pond/ui/wordmark";
 import { useBrowser, usePlatform } from "@/lib/platform";
-import {
-  extensionUrl,
-  otherDownloads,
-  primaryDownload,
-  type Release,
-} from "@/lib/release";
+import { extensionUrl, otherDownloads, primaryDownload } from "@/lib/release";
+import type { Release } from "@/lib/release";
 import { Cta } from "../cta";
 import styles from "./styles.module.css";
 

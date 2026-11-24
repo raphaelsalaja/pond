@@ -1,5 +1,6 @@
 import { cssVars, Input } from "@pond/ui";
-import { type NodeProps, NodeResizer } from "@xyflow/react";
+import { NodeResizer } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
 import { clsx as cn } from "clsx";
 import { useEffect, useRef } from "react";
 import type { CodeNode } from "../../lib/document";
@@ -24,7 +25,9 @@ export function CodeItem({
   const lines = useHighlight(data.text, data.language, !editing);
 
   useEffect(() => {
-    if (editing) field.current?.focus();
+    if (editing) {
+      field.current?.focus();
+    }
   }, [editing]);
 
   return (
@@ -65,7 +68,9 @@ export function CodeItem({
                 event.currentTarget.blur();
                 return;
               }
-              if (event.key !== "Tab") return;
+              if (event.key !== "Tab") {
+                return;
+              }
               event.preventDefault();
               const element = event.currentTarget;
               element.setRangeText(
@@ -86,11 +91,11 @@ export function CodeItem({
               ? "Double-click to write code"
               : lines
                 ? lines.map((line, row) => (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: lines have no identity beyond their position
+                    // oxlint-disable-next-line react/no-array-index-key -- lines have no identity beyond their position
                     <span key={row} className={styles.line}>
                       {line.map((token, column) => (
                         <span
-                          // biome-ignore lint/suspicious/noArrayIndexKey: tokens have no identity beyond their position
+                          // oxlint-disable-next-line react/no-array-index-key -- tokens have no identity beyond their position
                           key={column}
                           className={styles.token}
                           style={cssVars({

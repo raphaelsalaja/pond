@@ -13,15 +13,18 @@ export function RaycastRow() {
     setError(null);
     try {
       const { token } = await window.pond.query("settings.ingestToken", {});
-      if (!token)
+      if (!token) {
         throw new Error("Couldn't read the Local API Token. Try again.");
+      }
       const result = await window.pond.query("clipboard.writeText", {
         text: token,
       });
-      if (!result.ok) throw new Error("Couldn't copy the token. Try again.");
+      if (!result.ok) {
+        throw new Error("Couldn't copy the token. Try again.");
+      }
       setCopied(true);
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't copy the token. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't copy the token. Try again."));
     } finally {
       setBusy(false);
     }
@@ -39,11 +42,12 @@ export function RaycastRow() {
       const result = await window.pond.query("clipboard.writeText", {
         text: token,
       });
-      if (!result.ok)
+      if (!result.ok) {
         throw new Error("Couldn't copy the new token. Try again.");
+      }
       setCopied(true);
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't rotate the token. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't rotate the token. Try again."));
     } finally {
       setBusy(false);
     }

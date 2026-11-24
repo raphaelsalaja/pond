@@ -1,3 +1,4 @@
+import { isElement } from "@pond/ui/dom";
 import { DEFAULT_APP_ICON } from "@shared/app-icons";
 import type { LibraryIconId } from "./icons";
 
@@ -14,15 +15,23 @@ export const PREVIEW_GLYPH = 60;
 export const PREVIEW_EMOJI = 52;
 
 export function markKey(mark: LibraryMark): string {
-  if (mark.kind === "image") return `image:${mark.src ?? "default"}`;
-  if (mark.kind === "pond") return `pond:${mark.tint}`;
-  if (mark.kind === "emoji") return `emoji:${mark.emoji}`;
+  if (mark.kind === "image") {
+    return `image:${mark.src ?? "default"}`;
+  }
+  if (mark.kind === "pond") {
+    return `pond:${mark.tint}`;
+  }
+  if (mark.kind === "emoji") {
+    return `emoji:${mark.emoji}`;
+  }
   return `icon:${mark.icon}`;
 }
 
 /** The default tint is what a Library without a stored logo already shows. */
 export function isDefaultMark(mark: LibraryMark): boolean {
-  if (mark.kind === "image") return mark.src === null;
+  if (mark.kind === "image") {
+    return mark.src === null;
+  }
   return mark.kind === "pond" && mark.tint === DEFAULT_APP_ICON;
 }
 
@@ -31,22 +40,32 @@ export async function markToLogo(
   mark: LibraryMark,
   tile: HTMLElement | null,
 ): Promise<string | null> {
-  if (isDefaultMark(mark)) return null;
-  if (mark.kind === "image") return mark.src;
+  if (isDefaultMark(mark)) {
+    return null;
+  }
+  if (mark.kind === "image") {
+    return mark.src;
+  }
   if (mark.kind === "pond") {
     const result = await window.pond.query("library.identity.pondLogo", {
       tint: mark.tint,
     });
-    if (!result.ok) throw new Error("Couldn't load the Pond logo. Try again.");
+    if (!result.ok) {
+      throw new Error("Couldn't load the Pond logo. Try again.");
+    }
     return result.icon;
   }
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
   canvas.height = SIZE;
   const context = canvas.getContext("2d");
-  if (!context) throw new Error("Canvas is unavailable.");
+  if (!context) {
+    throw new Error("Canvas is unavailable.");
+  }
   const preview = tile?.querySelector(`[data-mark="${markKey(mark)}"]`);
-  if (!tile || !preview) throw new Error("Logo preview is missing.");
+  if (!tile || !preview) {
+    throw new Error("Logo preview is missing.");
+  }
 
   context.fillStyle = resolveColor(tile, "--tile-color");
   context.fillRect(0, 0, SIZE, SIZE);
@@ -66,7 +85,9 @@ export async function markToLogo(
   }
 
   const glyph = preview.querySelector("svg");
-  if (!glyph) throw new Error("Logo preview is missing.");
+  if (!glyph) {
+    throw new Error("Logo preview is missing.");
+  }
   const extent = PREVIEW_GLYPH * scale;
   const image = await svgImage(
     glyph,
@@ -87,13 +108,23 @@ function resolveColor(host: HTMLElement, property: string): string {
   return color;
 }
 
+function isSvgRoot(node: Node): node is SVGSVGElement {
+  return (
+    isElement(node) &&
+    node.namespaceURI === "http://www.w3.org/2000/svg" &&
+    node.localName === "svg"
+  );
+}
+
 async function svgImage(
   svg: SVGSVGElement,
   size: number,
   color: string,
 ): Promise<HTMLImageElement> {
-  /** SAFETY: a deep clone of an `<svg>` element is an `<svg>` element. */
-  const clone = svg.cloneNode(true) as SVGSVGElement;
+  const clone = svg.cloneNode(true);
+  if (!isSvgRoot(clone)) {
+    throw new Error("Couldn't copy the logo");
+  }
   clone.setAttribute("width", String(size));
   clone.setAttribute("height", String(size));
   clone.style.color = color;

@@ -21,7 +21,7 @@ export function resolveAppearance(
   };
 }
 
-const painted = new WeakMap<HTMLElement, string[]>();
+const painted = new WeakMap<HTMLElement, Array<string>>();
 
 export function paintTheme(target: HTMLElement, appearance: Appearance): void {
   const { theme, mode } = appearance;

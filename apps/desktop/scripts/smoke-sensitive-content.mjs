@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import * as ort from "onnxruntime-web";
+import { InferenceSession, Tensor } from "onnxruntime-web";
 import sharp from "sharp";
 
 const REVISION = "6626debca038a8f7aa1729b1eaee3bd4eb929ad6";
@@ -17,23 +17,28 @@ function toTensor(rgb) {
     values[plane + pixel] = rgb[pixel * 3 + 1] / 127.5 - 1;
     values[plane * 2 + pixel] = rgb[pixel * 3 + 2] / 127.5 - 1;
   }
-  return new ort.Tensor("float32", values, [1, 3, SIZE, SIZE]);
+  return new Tensor("float32", values, [1, 3, SIZE, SIZE]);
 }
 
 async function main() {
   const response = await fetch(URL);
-  if (!response.ok)
+  if (!response.ok) {
     throw new Error(`Model download failed (${response.status})`);
+  }
   const bytes = new Uint8Array(await response.arrayBuffer());
   const checksum = createHash("sha256").update(bytes).digest("hex");
-  if (checksum !== SHA256) throw new Error("Model checksum mismatch");
+  if (checksum !== SHA256) {
+    throw new Error("Model checksum mismatch");
+  }
 
-  const session = await ort.InferenceSession.create(bytes, {
+  const session = await InferenceSession.create(bytes, {
     executionProviders: ["wasm"],
   });
   const inputName = session.inputNames[0];
   const outputName = session.outputNames[0];
-  if (!inputName || !outputName) throw new Error("Model I/O is missing");
+  if (!inputName || !outputName) {
+    throw new Error("Model I/O is missing");
+  }
 
   const rgb = await sharp({
     create: {
@@ -52,8 +57,9 @@ async function main() {
     throw new Error("Model returned an unexpected output");
   }
   const logits = Array.from(output.data, Number);
-  if (!logits.every(Number.isFinite))
+  if (!logits.every(Number.isFinite)) {
     throw new Error("Model returned invalid logits");
+  }
   console.log(
     JSON.stringify({
       ok: true,

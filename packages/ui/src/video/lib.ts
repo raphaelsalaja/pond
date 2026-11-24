@@ -7,7 +7,9 @@ export function frameStepTime(
   delta: number,
   frameRate: number | null | undefined,
 ): number | null {
-  if (!frameRate || !Number.isFinite(frameRate) || frameRate <= 0) return null;
+  if (!frameRate || !Number.isFinite(frameRate) || frameRate <= 0) {
+    return null;
+  }
   return Math.max(0, (Math.round(time * frameRate) + delta) / frameRate);
 }
 
@@ -39,7 +41,7 @@ export function bufferedEnd(video: HTMLVideoElement): number {
 }
 
 export function stepPlaybackRate(rate: number, direction: 1 | -1): number {
-  const speeds: readonly number[] = SPEED_OPTIONS;
+  const speeds: ReadonlyArray<number> = SPEED_OPTIONS;
   const exact = speeds.indexOf(rate);
   if (exact >= 0) {
     return (

@@ -3,7 +3,6 @@ import { Color, List } from "@raycast/api";
 import type { ApiSave } from "pond-api";
 import {
   escapeMarkdown,
-  type FolderPath,
   formatBytes,
   formatDate,
   formatDimensions,
@@ -13,14 +12,21 @@ import {
   saveTitle,
   sourceName,
 } from "../lib/display";
+import type { FolderPath } from "../lib/display";
 import { hostname, isWebUrl } from "../lib/links";
 
 function detailMarkdown(save: ApiSave, preview: string | null | undefined): string {
-  const parts: string[] = [];
-  if (preview) parts.push(`<img src="${pathToFileURL(preview).href}" height="220" />`);
+  const parts: Array<string> = [];
+  if (preview) {
+    parts.push(`<img src="${pathToFileURL(preview).href}" height="220" />`);
+  }
   parts.push(`## ${escapeMarkdown(saveTitle(save))}`);
-  if (save.description && save.description !== save.title) parts.push(escapeMarkdown(save.description));
-  if (save.note) parts.push(`---\n\n**Note**\n\n${save.note}`);
+  if (save.description && save.description !== save.title) {
+    parts.push(escapeMarkdown(save.description));
+  }
+  if (save.note) {
+    parts.push(`---\n\n**Note**\n\n${save.note}`);
+  }
   return parts.join("\n\n");
 }
 

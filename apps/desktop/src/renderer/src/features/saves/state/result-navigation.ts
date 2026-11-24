@@ -1,17 +1,19 @@
 import { useCallback, useSyncExternalStore } from "react";
 import {
   intersectingResults,
-  type ResultDirection,
-  type ResultRectangle,
   spatialNeighbor,
+} from "@/features/saves/lib/spatial-navigation";
+import type {
+  ResultDirection,
+  ResultRectangle,
 } from "@/features/saves/lib/spatial-navigation";
 import { protectSaves } from "@/features/saves/state/pool";
 
 interface ResultSource {
   key?: string;
-  loadedIds?: () => readonly string[];
-  ids: readonly string[];
-  allIds?: () => Promise<string[] | null>;
+  loadedIds?: () => ReadonlyArray<string>;
+  ids: ReadonlyArray<string>;
+  allIds?: () => Promise<Array<string> | null>;
   loadMore?: () => Promise<void>;
   total?: number;
 }
@@ -29,7 +31,7 @@ let reveal: ((id: string) => void) | null = null;
 let pendingReveal: string | null = null;
 let focusOnReveal = false;
 let focusOwner: Element | null = null;
-let rectangles: readonly ResultRectangle[] = [];
+let rectangles: ReadonlyArray<ResultRectangle> = [];
 
 /** `loadedIds` reads the live query page, so results stay protected before the view republishes them. */
 protectSaves(() => [...source.ids, ...(source.loadedIds?.() ?? [])]);
@@ -38,16 +40,16 @@ export const resultNavigation = {
   key(): string | undefined {
     return source.key;
   },
-  total(): number {
-    return source.total ?? source.ids.length;
-  },
+  total: (): number => source.total ?? source.ids.length,
   indexOf(id: string): number {
     return source.ids.indexOf(id);
   },
-  setLayout(items: readonly ResultRectangle[]): () => void {
+  setLayout(items: ReadonlyArray<ResultRectangle>): () => void {
     rectangles = items;
     return () => {
-      if (rectangles === items) rectangles = [];
+      if (rectangles === items) {
+        rectangles = [];
+      }
     };
   },
   neighbor(
@@ -57,7 +59,7 @@ export const resultNavigation = {
   ): string | null {
     return spatialNeighbor(rectangles, id, direction, pageHeight);
   },
-  intersecting(rectangle: Omit<ResultRectangle, "id">): string[] {
+  intersecting(rectangle: Omit<ResultRectangle, "id">): Array<string> {
     return intersectingResults(rectangles, rectangle);
   },
   async loadNextPage(): Promise<boolean> {
@@ -66,7 +68,9 @@ export const resultNavigation = {
     return (source.loadedIds?.() ?? source.ids).length > previous;
   },
   shouldFocus(): boolean {
-    if (!focusOnReveal || !("document" in globalThis)) return false;
+    if (!focusOnReveal || !("document" in globalThis)) {
+      return false;
+    }
     const active = document.activeElement;
     return (
       active === focusOwner ||
@@ -79,9 +83,12 @@ export const resultNavigation = {
       focusOnReveal = false;
     }
     source = next;
-    for (const listener of subscribers) listener();
-    if (pendingReveal && source.ids.includes(pendingReveal))
+    for (const listener of subscribers) {
+      listener();
+    }
+    if (pendingReveal && source.ids.includes(pendingReveal)) {
       reveal?.(pendingReveal);
+    }
   },
   /** Calls `listener` once, when the view next publishes its results. */
   onNextSource(listener: () => void): () => void {
@@ -91,23 +98,29 @@ export const resultNavigation = {
     });
     return stop;
   },
-  async ids(): Promise<readonly string[]> {
+  async ids(): Promise<ReadonlyArray<string>> {
     return (await source.allIds?.()) ?? source.ids;
   },
   async next(id: string, delta: number): Promise<string | null> {
     const loadedIndex = source.ids.indexOf(id);
     const loaded =
       loadedIndex >= 0 ? source.ids[loadedIndex + delta] : undefined;
-    if (loaded) return loaded;
+    if (loaded) {
+      return loaded;
+    }
     const ids = await this.ids();
     const index = ids.indexOf(id);
     return index < 0 ? null : (ids[index + delta] ?? null);
   },
   registerReveal(callback: (id: string) => void): () => void {
     reveal = callback;
-    if (pendingReveal) callback(pendingReveal);
+    if (pendingReveal) {
+      callback(pendingReveal);
+    }
     return () => {
-      if (reveal === callback) reveal = null;
+      if (reveal === callback) {
+        reveal = null;
+      }
     };
   },
   async reveal(id: string, options: { focus?: boolean } = {}): Promise<void> {
@@ -121,10 +134,16 @@ export const resultNavigation = {
     ) {
       const previous = (source.loadedIds?.() ?? source.ids).length;
       await source.loadMore();
-      if (source.key !== key || pendingReveal !== id) return;
-      if ((source.loadedIds?.() ?? source.ids).length <= previous) break;
+      if (source.key !== key || pendingReveal !== id) {
+        return;
+      }
+      if ((source.loadedIds?.() ?? source.ids).length <= previous) {
+        break;
+      }
     }
-    if (source.key === key) reveal?.(id);
+    if (source.key === key) {
+      reveal?.(id);
+    }
   },
   didReveal(id: string): void {
     if (pendingReveal === id) {
@@ -145,7 +164,9 @@ export const resultNavigation = {
       }
       const before = held;
       held = null;
-      if (!before || before.key !== source.key) return;
+      if (!before || before.key !== source.key) {
+        return;
+      }
       const remaining = new Set(source.ids);
       const index = before.ids.indexOf(id);
       onLeave(

@@ -3,7 +3,6 @@ import { useMemo } from "react";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import {
   addCondition,
-  type Combinator,
   removeRow,
   reorderRows,
   resetFilters,
@@ -16,19 +15,17 @@ import {
   updateRow,
   useViewStore,
 } from "@/features/library/state/view-store";
-import {
-  type DisplayPrefKey,
-  type DisplayPrefs,
-  setDisplayPref,
-  useDisplayPrefs,
-} from "@/features/saves";
-import { isSortKey, type SortDir, type SortKey } from "./use-filtered-saves";
+import type { Combinator } from "@/features/library/state/view-store";
+import { setDisplayPref, useDisplayPrefs } from "@/features/saves";
+import type { DisplayPrefKey, DisplayPrefs } from "@/features/saves";
+import { isSortKey } from "./use-filtered-saves";
+import type { SortDir, SortKey } from "./use-filtered-saves";
 
 export type { SortKey };
 
 interface ViewState {
   query: Query;
-  rows: Predicate[];
+  rows: Array<Predicate>;
   combinator: Combinator;
   layout: LayoutValue;
   sort: { key: SortKey; dir: SortDir };

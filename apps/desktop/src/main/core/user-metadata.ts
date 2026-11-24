@@ -11,6 +11,9 @@ export function hasUserTitle(id: string): boolean {
 }
 
 export function setUserTitleLock(id: string, locked: boolean): void {
-  if (locked) preserveUserTitle(id);
-  else rmSync(join(saveDir(id), "user-title.json"), { force: true });
+  if (locked) {
+    preserveUserTitle(id);
+  } else {
+    rmSync(join(saveDir(id), "user-title.json"), { force: true });
+  }
 }

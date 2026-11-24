@@ -12,6 +12,45 @@ import {
   sidebarCounts,
 } from "../test-harness";
 
+function pointer(type: string, clientY: number) {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    button: 0,
+    cancelable: true,
+    clientX: 20,
+    clientY,
+  });
+  Object.defineProperties(event, {
+    isPrimary: { value: true },
+    pointerId: { value: 1 },
+    pointerType: { value: "mouse" },
+  });
+  return event;
+}
+
+function option(label: string) {
+  const button = document.querySelector<HTMLButtonElement>(
+    `button[aria-label="${label}"]`,
+  );
+  if (!button) {
+    throw new Error(`Missing customization option: ${label}`);
+  }
+  return button;
+}
+
+function row(label: string) {
+  return [...document.querySelectorAll("button")].find((node) =>
+    node.textContent?.startsWith(label),
+  );
+}
+
+function sortedLabels(root: ParentNode, rowLabel: (node: Element) => string) {
+  return [...root.querySelectorAll("button")].flatMap((button) => {
+    const label = rowLabel(button);
+    return label === "Alpha" || label === "Zulu" ? [label] : [];
+  });
+}
+
 describe("folder sidebar tree", () => {
   const harness = createFolderSidebarHarness();
 
@@ -219,8 +258,10 @@ describe("folder sidebar tree", () => {
     }
     const all = harness.button("All");
     const allRow = all.closest<HTMLElement>("[data-sidebar-sortable]");
-    if (!allRow) throw new Error("Expected the All row to be sortable");
-    const transitions: string[] = [];
+    if (!allRow) {
+      throw new Error("Expected the All row to be sortable");
+    }
+    const transitions: Array<string> = [];
     const observer = new MutationObserver(() => {
       transitions.push(allRow.style.transition);
     });
@@ -228,22 +269,6 @@ describe("folder sidebar tree", () => {
       attributes: true,
       attributeFilter: ["style"],
     });
-
-    const pointer = (type: string, clientY: number) => {
-      const event = new MouseEvent(type, {
-        bubbles: true,
-        button: 0,
-        cancelable: true,
-        clientX: 20,
-        clientY,
-      });
-      Object.defineProperties(event, {
-        isPrimary: { value: true },
-        pointerId: { value: 1 },
-        pointerType: { value: "mouse" },
-      });
-      return event;
-    };
 
     await act(async () => {
       all.dispatchEvent(pointer("pointerdown", 20));
@@ -290,7 +315,9 @@ describe("folder sidebar tree", () => {
       (button) => button.textContent?.replace(/[\d,]+$/, "").trim() === "Shots",
     );
     const quickRow = rows[0];
-    if (!quickRow) throw new Error("Missing Quick Access folder");
+    if (!quickRow) {
+      throw new Error("Missing Quick Access folder");
+    }
     await act(async () => {
       quickRow.dispatchEvent(
         new MouseEvent("contextmenu", {
@@ -334,18 +361,12 @@ describe("folder sidebar tree", () => {
       );
     });
     await act(async () => harness.menuItem("Customize Folder").click());
-    const dialog = document.querySelector('[role="dialog"]');
-    if (!(dialog instanceof HTMLElement))
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+    if (!dialog) {
       throw new Error("Missing customization dialog");
+    }
     expect(dialog.getAttribute("aria-label")).toBe("Customize Folder");
 
-    const option = (label: string) => {
-      const button = document.querySelector<HTMLButtonElement>(
-        `button[aria-label="${label}"]`,
-      );
-      if (!button) throw new Error(`Missing customization option: ${label}`);
-      return button;
-    };
     await act(async () => option("Icon and Color").click());
     expect(
       document.querySelector(
@@ -355,8 +376,9 @@ describe("folder sidebar tree", () => {
     await act(async () => option("Album").click());
     await act(async () => option("Pink").click());
     const description = dialog.querySelector("textarea");
-    if (!(description instanceof HTMLTextAreaElement))
+    if (!description) {
       throw new Error("Missing folder description");
+    }
     expect(dialog.querySelector('input[type="url"]')).toBeNull();
     await act(async () => {
       Object.getOwnPropertyDescriptor(
@@ -396,9 +418,7 @@ describe("folder sidebar tree", () => {
     await harness.mount();
 
     expect(
-      [...harness.host.querySelectorAll("button")]
-        .map(harness.rowLabel)
-        .filter((label) => label === "Alpha" || label === "Zulu"),
+      sortedLabels(harness.host, (node) => harness.rowLabel(node)),
     ).toEqual(["Zulu", "Alpha"]);
 
     await act(async () => {
@@ -417,9 +437,7 @@ describe("folder sidebar tree", () => {
     await act(async () => harness.menuItem("Title").click());
 
     expect(
-      [...harness.host.querySelectorAll("button")]
-        .map(harness.rowLabel)
-        .filter((label) => label === "Alpha" || label === "Zulu"),
+      sortedLabels(harness.host, (node) => harness.rowLabel(node)),
     ).toEqual(["Alpha", "Zulu"]);
     expect(localStorage.getItem("pond:folder-list-sort")).toBe("title");
   });
@@ -441,11 +459,14 @@ describe("folder sidebar tree", () => {
     });
     await act(async () => {
       harness.menuItem("Remove Folder").click();
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
     });
-    const checkbox = document.querySelector('[role="checkbox"]');
-    if (!(checkbox instanceof HTMLElement))
+    const checkbox = document.querySelector<HTMLElement>('[role="checkbox"]');
+    if (!checkbox) {
       throw new Error("Missing Trash checkbox");
+    }
     await act(async () => checkbox.click());
     const remove = [...document.querySelectorAll("button")].find(
       (button) => button.textContent?.trim() === "Remove",
@@ -523,7 +544,9 @@ describe("folder sidebar tree", () => {
     const input = harness.host.querySelector<HTMLInputElement>(
       'input[aria-label="Folder name"]',
     );
-    if (!input) throw new Error("Missing folder name input");
+    if (!input) {
+      throw new Error("Missing folder name input");
+    }
     expect(input.value).toBe("Untitled");
     expect(input.selectionStart).toBe(0);
     expect(input.selectionEnd).toBe("Untitled".length);
@@ -663,11 +686,6 @@ describe("folder sidebar tree", () => {
     };
     await folders.refresh();
     await harness.mount();
-    const row = (label: string) =>
-      [...document.querySelectorAll("button")].find((node) =>
-        node.textContent?.startsWith(label),
-      );
-
     expect(row("Kitchens")?.textContent).toBe("Kitchens12 downloading");
     expect(
       row("Kitchens")?.querySelector("[title]")?.getAttribute("title"),

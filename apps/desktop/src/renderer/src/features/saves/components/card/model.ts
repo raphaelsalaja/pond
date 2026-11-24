@@ -9,10 +9,12 @@ import {
   buildMediaUnits,
   deriveTypeKind,
   deriveTypeLabel,
-  type MediaPickOptions,
-  type MediaUnit,
   pickCardUnit,
   pickPrimaryFile,
+} from "@/features/saves/lib/media/units";
+import type {
+  MediaPickOptions,
+  MediaUnit,
 } from "@/features/saves/lib/media/units";
 import { pickSourceIconUrl } from "@/features/saves/lib/media/url";
 import { getSourceLabel } from "@/features/saves/lib/source-labels";
@@ -23,11 +25,13 @@ import {
   useAspectVersion,
 } from "@/features/saves/state/aspect";
 import {
-  type DisplayPrefs,
-  type ItemInfo,
-  type ItemInfoField,
   useDisplayPrefs,
   useItemInfo,
+} from "@/features/saves/state/display-prefs";
+import type {
+  DisplayPrefs,
+  ItemInfo,
+  ItemInfoField,
 } from "@/features/saves/state/display-prefs";
 import {
   formatListDimension,
@@ -55,7 +59,7 @@ export interface SaveCardModel {
   save: Save;
   unit: MediaUnit | null;
   primary: SaveFile | null;
-  mediaUnits: MediaUnit[];
+  mediaUnits: Array<MediaUnit>;
   pickOptions: MediaPickOptions;
   aspect: number;
   title: string | null;
@@ -76,13 +80,23 @@ function itemInfoLine(
   }
   if (field === "fileSize") {
     const bytes = save.fileSize ?? primary?.size;
-    if (bytes == null || bytes <= 0) return "—";
+    if (bytes === undefined || bytes <= 0) {
+      return "—";
+    }
     return formatBytes(bytes);
   }
-  if (field === "tags") return save.tags.join(", ") || "—";
-  if (field === "rating") return formatListRating(save.rating);
-  if (field === "modified") return formatAbsolute(save.createdAt) || null;
-  if (field === "published") return formatAbsolute(save.publishedAt) || "—";
+  if (field === "tags") {
+    return save.tags.join(", ") || "—";
+  }
+  if (field === "rating") {
+    return formatListRating(save.rating);
+  }
+  if (field === "modified") {
+    return formatAbsolute(save.createdAt) || null;
+  }
+  if (field === "published") {
+    return formatAbsolute(save.publishedAt) || "—";
+  }
   return formatAbsolute(save.savedAt) || null;
 }
 

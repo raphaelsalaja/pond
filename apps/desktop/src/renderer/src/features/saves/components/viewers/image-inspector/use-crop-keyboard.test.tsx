@@ -59,7 +59,9 @@ it("handles crop resizing before document hotkeys and leaves other controls alon
       ),
     );
     const frame = host.querySelector<HTMLDivElement>('[role="application"]');
-    if (!frame) throw new Error("Missing crop frame");
+    if (!frame) {
+      throw new Error("Missing crop frame");
+    }
     vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(
       new DOMRect(0, 0, 100, 100),
     );

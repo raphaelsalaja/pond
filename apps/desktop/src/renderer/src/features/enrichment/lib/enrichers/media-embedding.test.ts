@@ -6,8 +6,8 @@ import {
   createMediaEmbeddingEnricher,
   MEDIA_EMBEDDING_AUDIO_OPTIONS,
   MEDIA_EMBEDDING_VIDEO_OPTIONS,
-  type MediaEmbeddingDependencies,
 } from "./media-embedding";
+import type { MediaEmbeddingDependencies } from "./media-embedding";
 
 function save(
   mediaType: Save["mediaType"],
@@ -129,7 +129,7 @@ describe("media embedding enricher", () => {
   });
 
   it("samples video at the bounded contract and normalized-means frame and audio vectors", async () => {
-    const events: string[] = [];
+    const events: Array<string> = [];
     const sampleVideo = vi.fn(async () => ({
       duration: 2,
       frames: [

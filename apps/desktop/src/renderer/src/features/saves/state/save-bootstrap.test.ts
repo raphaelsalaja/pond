@@ -1,10 +1,8 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SavePatchSchema } from "../lib/reconcile";
 import { pool } from "./pool";
-import {
-  createSaveBootstrap,
-  type SaveBootstrapDependencies,
-} from "./save-bootstrap";
+import { createSaveBootstrap } from "./save-bootstrap";
+import type { SaveBootstrapDependencies } from "./save-bootstrap";
 
 beforeEach(() => {
   pool.clear();
@@ -45,7 +43,7 @@ it("unblocks the window when cache and initial page stalls, then accepts the lat
   });
   const first = boot.bootPool();
   expect(boot.bootPool()).toBe(first);
-  await vi.advanceTimersByTimeAsync(6_000);
+  await vi.advanceTimersByTimeAsync(6000);
   await first;
   expect(ready).toHaveBeenCalledOnce();
   expect(subscribe).toHaveBeenCalledOnce();

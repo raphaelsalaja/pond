@@ -2,7 +2,8 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { PrefsSchema } from "@pond/schema";
 import type { LexicalEditor } from "lexical";
 import { act, useEffect } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   resetFilters,

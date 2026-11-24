@@ -1,4 +1,5 @@
 import type { ImageCrop } from "@pond/schema/db";
+import { isElement } from "@pond/ui/dom";
 import type {
   Dispatch,
   PointerEventHandler,
@@ -6,7 +7,6 @@ import type {
   SetStateAction,
 } from "react";
 import {
-  type CropHandle,
   clampImagePoint,
   cropContains,
   inImage,
@@ -17,10 +17,9 @@ import {
   snapCrop,
   snapImagePoint,
 } from "@/features/saves/lib/image-regions";
-import {
-  type ImagePose,
-  zoomImageAt,
-} from "@/features/saves/lib/viewer-memory";
+import type { CropHandle } from "@/features/saves/lib/image-regions";
+import { zoomImageAt } from "@/features/saves/lib/viewer-memory";
+import type { ImagePose } from "@/features/saves/lib/viewer-memory";
 import { cropHandleFromTarget } from "./crop-handles";
 import type { InspectorMode } from "./types";
 
@@ -39,8 +38,8 @@ export interface ImageDrag {
 interface ImageGestureOptions {
   active: boolean;
   draft: ImageCrop | null;
-  drag: RefObject<ImageDrag | null>;
-  gestureMoved: RefObject<boolean>;
+  dragRef: RefObject<ImageDrag | null>;
+  gestureMovedRef: RefObject<boolean>;
   mode: InspectorMode;
   onNavigate: (delta: number) => void;
   pointFromClient: (
@@ -64,11 +63,11 @@ interface ImageGestures {
   onPointerUp: PointerEventHandler<HTMLDivElement>;
 }
 
-export function createImageGestures({
+export function useImageGestures({
   active,
   draft,
-  drag,
-  gestureMoved,
+  dragRef,
+  gestureMovedRef,
   mode,
   onNavigate,
   pointFromClient,
@@ -79,20 +78,31 @@ export function createImageGestures({
 }: ImageGestureOptions): ImageGestures {
   return {
     onContextMenu: (event) => {
-      if (gestureMoved.current) event.preventDefault();
+      if (gestureMovedRef.current) {
+        event.preventDefault();
+      }
     },
     onPointerDown: (event) => {
-      if (!active) return;
+      if (!active) {
+        return;
+      }
       const handle = cropHandleFromTarget(event.target);
       if (
-        event.target instanceof Element &&
+        isElement(event.target) &&
         event.target.closest("button") &&
         !handle
-      )
+      ) {
         return;
-      if (mode !== "view" && event.button !== 0) return;
-      if (event.button !== 0 && event.button !== 2) return;
-      if (event.button === 0 && mode === "view" && poseZoom <= 1) return;
+      }
+      if (mode !== "view" && event.button !== 0) {
+        return;
+      }
+      if (event.button !== 0 && event.button !== 2) {
+        return;
+      }
+      if (event.button === 0 && mode === "view" && poseZoom <= 1) {
+        return;
+      }
       const raw = pointFromClient(event.clientX, event.clientY);
       const point = snapImagePoint(clampImagePoint(raw));
       const moving =
@@ -104,9 +114,9 @@ export function createImageGestures({
         cropContains(draft, point);
       event.preventDefault();
       event.stopPropagation();
-      gestureMoved.current = false;
+      gestureMovedRef.current = false;
       event.currentTarget.setPointerCapture(event.pointerId);
-      drag.current = {
+      dragRef.current = {
         button: event.button,
         x: event.clientX,
         y: event.clientY,
@@ -119,8 +129,10 @@ export function createImageGestures({
       };
     },
     onPointerMove: (event) => {
-      const origin = drag.current;
-      if (!origin) return;
+      const origin = dragRef.current;
+      if (!origin) {
+        return;
+      }
       event.stopPropagation();
       const dx = event.clientX - origin.x;
       const dy = event.clientY - origin.y;
@@ -129,12 +141,13 @@ export function createImageGestures({
           Math.abs(event.clientX - origin.startX) +
             Math.abs(event.clientY - origin.startY) >
           4
-        )
-          gestureMoved.current = true;
+        ) {
+          gestureMovedRef.current = true;
+        }
         if (
           Math.abs(event.clientY - origin.startY) >
           Math.abs(event.clientX - origin.startX)
-        )
+        ) {
           setPosition(
             (previous) =>
               zoomImageAt(previous, previous.zoom * Math.exp(-dy * 0.01), {
@@ -143,6 +156,7 @@ export function createImageGestures({
               }),
             true,
           );
+        }
       } else if (mode !== "view") {
         const point = snapImagePoint(
           clampImagePoint(pointFromClient(event.clientX, event.clientY)),
@@ -173,7 +187,7 @@ export function createImageGestures({
             event.shiftKey && ratio ? lockCropAspect(next, ratio) : next,
           );
         }
-      } else
+      } else {
         setPosition(
           (previous) => ({
             ...previous,
@@ -182,25 +196,28 @@ export function createImageGestures({
           }),
           true,
         );
+      }
       origin.x = event.clientX;
       origin.y = event.clientY;
     },
     onPointerUp: (event) => {
-      const origin = drag.current;
+      const origin = dragRef.current;
       if (
         origin?.button === 2 &&
         Math.abs(event.clientX - origin.startX) > 80 &&
         Math.abs(event.clientX - origin.startX) >
           Math.abs(event.clientY - origin.startY)
-      )
+      ) {
         onNavigate(event.clientX > origin.startX ? -1 : 1);
-      drag.current = null;
+      }
+      dragRef.current = null;
       event.stopPropagation();
-      if (event.currentTarget.hasPointerCapture(event.pointerId))
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
+      }
     },
     onPointerCancel: () => {
-      drag.current = null;
+      dragRef.current = null;
     },
   };
 }

@@ -1,11 +1,10 @@
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import { EMPTY_QUERY } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
 import type { LibraryQueryRequest } from "../../shared/library-query";
 import { recentlyAddedSince } from "../../shared/recently-added";
+import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
 import { queryFolderSummaries } from "./folder-summaries";
 import { queryLibraryIds, queryLibraryPage } from "./library-query";
@@ -18,27 +17,34 @@ function nativeAvailable() {
     db.close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
-const opened: Database.Database[] = [];
+const raw = (sourceId: string, media: Array<number>) =>
+  JSON.stringify({ capture: {}, split: { sourceId, media } });
+
+const opened: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of opened.splice(0)) db.close();
+  for (const db of opened.splice(0)) {
+    db.close();
+  }
 });
 function setup() {
   const sqlite = new Database(":memory:");
   opened.push(sqlite);
   initializePondSchema(sqlite, () => false);
   const db = Object.assign(
-    drizzle(sqlite, { schema: { ...schema, ...events } }),
+    drizzle(sqlite, { schema: { ...libraryTables, ...eventTables } }),
     { $raw: sqlite },
   );
   const insert = sqlite.prepare(
     "insert into saves (id, source, source_id, url, title, saved_at, created_at, status, media_type) values (?, 'local', ?, 'pond:test', ?, ?, ?, 'complete', 'text')",
   );
   sqlite.transaction(() => {
-    for (let i = 0; i < 1200; i++)
+    for (let i = 0; i < 1200; i++) {
       insert.run(
         String(i).padStart(4, "0"),
         String(i),
@@ -46,6 +52,7 @@ function setup() {
         i,
         i,
       );
+    }
   })();
   return { db, sqlite };
 }
@@ -72,10 +79,11 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
               sortDir,
               limit: 43,
             };
-            if (scope !== "all")
+            if (scope !== "all") {
               request.scope = {
                 folderIds: [scope === "empty" ? "empty" : "subset"],
               };
+            }
             const expected = await queryLibraryIds(
               db,
               "library",
@@ -185,8 +193,6 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
     const split = sqlite.prepare(
       "update saves set source = ?, raw_slim = ? where id = ?",
     );
-    const raw = (sourceId: string, media: number[]) =>
-      JSON.stringify({ capture: {}, split: { sourceId, media } });
     split.run("instagram", raw("DAbC", [0]), "0010");
     split.run("instagram", raw("DAbC", [2]), "0011");
     split.run("instagram", raw("DAbC", [1]), "0012");
@@ -614,8 +620,9 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       "notesmarker",
       "ocrmarker",
       "transcriptmarker",
-    ])
+    ]) {
       expect(await idsFor(keyword)).toEqual(["imported"]);
+    }
 
     sqlite
       .prepare(
@@ -628,8 +635,9 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       "notesmarker",
       "ocrmarker",
       "transcriptmarker",
-    ])
+    ]) {
       expect(await idsFor(keyword)).toEqual([]);
+    }
   });
 
   it("filters by canonical source identity from site name and url", async () => {

@@ -6,8 +6,12 @@ import { isTrustedSender } from "../helpers";
 
 export function registerHapticHandlers(): void {
   ipcMain.on(IPC.haptic, (event, raw) => {
-    if (!isTrustedSender(event)) return;
+    if (!isTrustedSender(event)) {
+      return;
+    }
     const pattern = HapticPatternSchema.safeParse(raw);
-    if (pattern.success) performHaptic(pattern.data);
+    if (pattern.success) {
+      performHaptic(pattern.data);
+    }
   });
 }

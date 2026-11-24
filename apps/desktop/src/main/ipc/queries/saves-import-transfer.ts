@@ -15,13 +15,8 @@ import { copySaveSelectionToLibrary } from "../../core/transfer-operations";
 import { libraryRoot } from "../../paths";
 import { resolveSaveDragFiles } from "../helpers";
 import { pickImportPaths } from "./import-picker";
-import {
-  FileIndexParam,
-  type QueryHandlerMap,
-  query,
-  StringListParam,
-  StringParam,
-} from "./params";
+import { FileIndexParam, query, StringListParam, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 import {
   renderSaveDragIcon,
   SAVE_DRAG_ICON_SCALE,
@@ -43,8 +38,9 @@ export const savesImportTransferQueries = {
       buttonLabel: "Import",
       properties: ["openDirectory", "openFile"],
     });
-    if (picked.canceled || !picked.filePaths[0])
+    if (picked.canceled || !picked.filePaths[0]) {
       return { ok: false, reason: "cancelled" };
+    }
     try {
       const source = picked.filePaths[0];
       return {
@@ -79,7 +75,9 @@ export const savesImportTransferQueries = {
         properties: ["openDirectory", "openFile"],
       });
       const target = picked.filePaths[0];
-      if (picked.canceled || !target) return { ok: false, reason: "cancelled" };
+      if (picked.canceled || !target) {
+        return { ok: false, reason: "cancelled" };
+      }
       try {
         return {
           ok: true,
@@ -160,7 +158,9 @@ export const savesImportTransferQueries = {
     }),
     async (params) => {
       const paths = params.paths.filter(Boolean);
-      if (paths.length === 0) return { ok: false, error: "no_files" };
+      if (paths.length === 0) {
+        return { ok: false, error: "no_files" };
+      }
       const candidates =
         params.duplicatePolicy === "use-existing" ||
         Object.values(params.duplicateDecisions).some(
@@ -199,8 +199,9 @@ export const savesImportTransferQueries = {
           (params.ids.length > 0 ? params.ids : [params.id]).filter(Boolean),
         ),
       ];
-      if (ids.length === 0 || !event)
+      if (ids.length === 0 || !event) {
         return { ok: false, error: "Choose Saves to drag." };
+      }
       const dragged = await resolveSaveDragFiles(
         ids.map((id) => ({
           id,
@@ -209,8 +210,9 @@ export const savesImportTransferQueries = {
       );
       const files = dragged.map((file) => file.path);
       const first = files[0];
-      if (!first)
+      if (!first) {
         return { ok: false, error: "These Saves have no files to drag." };
+      }
       rememberSaveDrag(dragged);
       try {
         const { app, nativeImage } = await import("electron");
@@ -224,16 +226,21 @@ export const savesImportTransferQueries = {
             })
           : nativeImage.createEmpty();
         /** macOS rejects `startDrag` with an empty icon, which is what a video file decodes to. */
-        if (icon.isEmpty())
+        if (icon.isEmpty()) {
           icon = await app
             .getFileIcon(first, {
               size: saveDragFileIconSize(process.platform),
             })
             .catch(() => icon);
-        if (icon.isEmpty())
+        }
+        if (icon.isEmpty()) {
           return { ok: false, error: "Pond couldn't draw a drag preview." };
-        if (files.length === 1) event.sender.startDrag({ file: first, icon });
-        else event.sender.startDrag({ file: first, files, icon });
+        }
+        if (files.length === 1) {
+          event.sender.startDrag({ file: first, icon });
+        } else {
+          event.sender.startDrag({ file: first, files, icon });
+        }
         return { ok: true };
       } catch (error) {
         log.warn("[pond ipc] startDrag failed", error);

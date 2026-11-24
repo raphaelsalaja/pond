@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { FolderCustomizeDialog } from ".";
 
@@ -17,8 +18,9 @@ beforeEach(() => {
   );
   vi.stubGlobal("pond", {
     query: vi.fn(async (name: string) => {
-      if (name === "folders.metadata.get")
+      if (name === "folders.metadata.get") {
         return { description: null, externalLink: null };
+      }
       return { ok: true };
     }),
   });
@@ -48,7 +50,9 @@ function button(label: string): HTMLButtonElement {
   const match = document.querySelector<HTMLButtonElement>(
     `button[aria-label="${label}"]`,
   );
-  if (!match) throw new Error(`Missing button: ${label}`);
+  if (!match) {
+    throw new Error(`Missing button: ${label}`);
+  }
   return match;
 }
 
@@ -76,7 +80,9 @@ it("renames the folder when the name changes", async () => {
   const name = document.querySelector<HTMLInputElement>(
     'input[maxlength="255"]',
   );
-  if (!name) throw new Error("Missing name field");
+  if (!name) {
+    throw new Error("Missing name field");
+  }
   await type(name, "References");
   await act(async () =>
     [...document.querySelectorAll("button")]

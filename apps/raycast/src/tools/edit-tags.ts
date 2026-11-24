@@ -5,19 +5,21 @@ import { cleanTags } from "../lib/urls";
 
 type Input = {
   /** Save IDs from Search Saves, all from the same library. */
-  ids: string[];
+  ids: Array<string>;
   /** Library ID returned with the saves. */
   libraryId: string;
   /** Tags to add. */
-  add?: string[];
+  add?: Array<string>;
   /** Tags to remove. */
-  remove?: string[];
+  remove?: Array<string>;
 };
 
 export default async function tool(input: Input) {
   const add = cleanTags(input.add ?? []);
   const remove = cleanTags(input.remove ?? []);
-  if (!add.length && !remove.length) throw new Error("Pass at least one tag to add or remove.");
+  if (!add.length && !remove.length) {
+    throw new Error("Pass at least one tag to add or remove.");
+  }
   return pond().editTags({ ids: input.ids, libraryId: input.libraryId, add, remove });
 }
 

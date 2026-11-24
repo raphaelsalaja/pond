@@ -4,7 +4,7 @@ import type {
 } from "../../../shared/file-ring-overlay-contracts";
 
 interface FileImport {
-  ids: string[];
+  ids: Array<string>;
   failed: number;
 }
 
@@ -12,8 +12,8 @@ export interface OverlayDropDeps {
   hasFolder: (id: string) => Promise<boolean>;
   /** Files dragged out of the Library are Saves already, so they file instead of importing twice. */
   saveIdFor: (path: string) => string | null;
-  addSaves: (folderId: string, ids: string[]) => Promise<void>;
-  importFiles: (paths: string[], folderId: string) => Promise<FileImport>;
+  addSaves: (folderId: string, ids: Array<string>) => Promise<void>;
+  importFiles: (paths: Array<string>, folderId: string) => Promise<FileImport>;
   quickAdd: (url: string, folderId: string) => Promise<boolean>;
 }
 
@@ -21,8 +21,9 @@ export async function dropIntoFolder(
   drop: FileRingOverlayDrop,
   deps: OverlayDropDeps,
 ): Promise<FileRingOverlayDropResult> {
-  if (!(await deps.hasFolder(drop.folderId)))
+  if (!(await deps.hasFolder(drop.folderId))) {
     return { ok: false, reason: "folder_unavailable" };
+  }
   if (drop.kind === "urls") {
     const added = await Promise.all(
       drop.urls.map((url) => deps.quickAdd(url, drop.folderId)),
@@ -41,7 +42,9 @@ export async function dropIntoFolder(
   }));
   const saveIds = matched.flatMap((file) => (file.id ? [file.id] : []));
   const outside = matched.flatMap((file) => (file.id ? [] : [file.path]));
-  if (saveIds.length > 0) await deps.addSaves(drop.folderId, saveIds);
+  if (saveIds.length > 0) {
+    await deps.addSaves(drop.folderId, saveIds);
+  }
   const imports =
     outside.length > 0
       ? await deps.importFiles(outside, drop.folderId)

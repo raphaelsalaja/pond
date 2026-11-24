@@ -12,7 +12,7 @@ export interface WatchEntry {
 }
 
 export type WatchHarvestResult =
-  | { ok: true; entries: WatchEntry[] }
+  | { ok: true; entries: Array<WatchEntry> }
   | {
       ok: false;
       reason:

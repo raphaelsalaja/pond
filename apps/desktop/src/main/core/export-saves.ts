@@ -9,18 +9,14 @@ import {
   tagGroups,
   tags as tagsTable,
 } from "@pond/schema/db";
-import { isGroup, type Query } from "@pond/schema/filters/types";
+import { isGroup } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import { inArray } from "drizzle-orm";
 import { getDb } from "../db";
 import { saveDir } from "../paths";
 import { exportEaglePackage } from "./eagle-package";
-import {
-  type ExportFolder,
-  type ExportItem,
-  exportFiles,
-  safeName,
-  sharedFolderPath,
-} from "./export-files";
+import { exportFiles, safeName, sharedFolderPath } from "./export-files";
+import type { ExportFolder, ExportItem } from "./export-files";
 import { zipDirectory } from "./export-zip";
 import { runLibraryTransfer } from "./library-transfers";
 import { getPrefs } from "./prefs";
@@ -29,31 +25,34 @@ function folderReferences(query: Query): Set<string> {
   const result = new Set<string>();
   for (const rule of query.rules) {
     if (isGroup(rule)) {
-      for (const id of folderReferences(rule)) result.add(id);
+      for (const id of folderReferences(rule)) {
+        result.add(id);
+      }
     } else if (
       rule.field === "folder" &&
       rule.operator !== "empty" &&
       Array.isArray(rule.value)
     ) {
-      for (const id of rule.value) result.add(String(id));
+      for (const id of rule.value) {
+        result.add(String(id));
+      }
     }
   }
   return result;
 }
 
 export function selectionViews(
-  views: readonly (typeof savedViews.$inferSelect)[],
+  views: ReadonlyArray<typeof savedViews.$inferSelect>,
   folderIds: ReadonlySet<string>,
 ) {
   const byId = new Map(views.map((view) => [view.id, view]));
   const included = new Set(
-    views
-      .filter(
-        (view) =>
-          view.kind !== "group" &&
-          [...folderReferences(view.query)].every((id) => folderIds.has(id)),
-      )
-      .map((view) => view.id),
+    views.flatMap((view) =>
+      view.kind !== "group" &&
+      [...folderReferences(view.query)].every((id) => folderIds.has(id))
+        ? [view.id]
+        : [],
+    ),
   );
   for (const id of included) {
     let parent = byId.get(id)?.parentId ?? null;
@@ -64,33 +63,40 @@ export function selectionViews(
       parent = byId.get(parent)?.parentId ?? null;
     }
   }
-  return views
-    .filter((view) => included.has(view.id))
-    .map((view) => ({
-      id: view.id,
-      name: view.name,
-      kind: view.kind,
-      parent_id: view.parentId,
-      question: view.question,
-      query: JSON.stringify(view.query),
-      sort_key: view.sortKey,
-      sort_dir: view.sortDir,
-      layout: view.layout,
-      sort_order: view.sortOrder,
-      created_at: view.createdAt.getTime(),
-    }));
+  return views.flatMap((view) =>
+    included.has(view.id)
+      ? [
+          {
+            id: view.id,
+            name: view.name,
+            kind: view.kind,
+            parent_id: view.parentId,
+            question: view.question,
+            query: JSON.stringify(view.query),
+            sort_key: view.sortKey,
+            sort_dir: view.sortDir,
+            layout: view.layout,
+            sort_order: view.sortOrder,
+            created_at: view.createdAt.getTime(),
+          },
+        ]
+      : [],
+  );
 }
 
 async function exportSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   options: { includeDerived?: boolean } = {},
 ) {
   const unique = [...new Set(ids.filter(Boolean))];
-  if (unique.length === 0) throw new Error("Select Saves to export.");
+  if (unique.length === 0) {
+    throw new Error("Select Saves to export.");
+  }
   const db = await getDb();
   const rows = await db.select().from(saves).where(inArray(saves.id, unique));
-  if (rows.length !== unique.length)
+  if (rows.length !== unique.length) {
     throw new Error("One of the selected Saves no longer exists.");
+  }
   const memberships = await db
     .select()
     .from(saveFolders)
@@ -171,7 +177,7 @@ async function exportSelection(
 }
 
 async function exportSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   directory: string,
   options: { includeDerived?: boolean } = {},
 ) {
@@ -182,21 +188,22 @@ async function exportSaves(
 }
 
 export function exportSavesToDirectory(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   directory: string,
   options: { includeDerived?: boolean } = {},
 ) {
   return runLibraryTransfer(() => exportSaves(ids, directory, options));
 }
 
+const pad = (value: number) => String(value).padStart(2, "0");
+
 function localDate(date: Date) {
-  const pad = (value: number) => String(value).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 /** Names an export after the folder or Save it holds, e.g. "Geoid (Pond Export 2026-11-22)". */
 export async function exportFilesName(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   options: { fromFolders?: boolean } = {},
   now = new Date(),
 ) {
@@ -206,8 +213,8 @@ export async function exportFilesName(
 
 /** A single Save names its export unless the export came from a folder; otherwise the shared folder does. */
 export function exportName(
-  items: readonly ExportItem[],
-  folders: readonly ExportFolder[],
+  items: ReadonlyArray<ExportItem>,
+  folders: ReadonlyArray<ExportFolder>,
   { fromFolders = false }: { fromFolders?: boolean },
   now: Date,
 ) {
@@ -231,12 +238,14 @@ export async function availableExportPath(
       parent,
       `${count === 1 ? name : `${name} ${count}`}${extension}`,
     );
-    if (!(await stat(path).catch(() => null))) return path;
+    if (!(await stat(path).catch(() => null))) {
+      return path;
+    }
   }
 }
 
 export function exportSavesToFolder(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   destination: string,
 ) {
   return runLibraryTransfer(async () => {
@@ -250,7 +259,10 @@ export function exportSavesToFolder(
   });
 }
 
-export function exportSavesToZip(ids: readonly string[], destination: string) {
+export function exportSavesToZip(
+  ids: ReadonlyArray<string>,
+  destination: string,
+) {
   return runLibraryTransfer(async () => {
     const staging = await mkdtemp(join(dirname(destination), ".pond-export-"));
     try {
@@ -270,7 +282,7 @@ export function exportSavesToZip(ids: readonly string[], destination: string) {
 }
 
 export function exportSavesToEaglePackage(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   destination: string,
 ) {
   return runLibraryTransfer(async () => {

@@ -14,6 +14,10 @@ interface NavigatorProps {
   onPose: (pose: ImagePose) => void;
 }
 
+function clampCenter(value: number, length: number) {
+  return Math.max(length / 2, Math.min(1 - length / 2, value));
+}
+
 export function Navigator({
   src,
   pose,
@@ -22,9 +26,9 @@ export function Navigator({
   onPose,
 }: NavigatorProps) {
   const box = viewportFraction(pose, stage, bounds);
-  if (!viewportOverflows(box)) return null;
-  const clampCenter = (value: number, length: number) =>
-    Math.max(length / 2, Math.min(1 - length / 2, value));
+  if (!viewportOverflows(box)) {
+    return null;
+  }
   return (
     <section className={styles.root} aria-label="Navigator">
       <button
@@ -32,14 +36,18 @@ export function Navigator({
         className={styles.map}
         aria-label="Move view. Use arrow keys to pan, Shift for larger steps, or Enter to center."
         onKeyDown={(event) => {
-          if (event.nativeEvent.isComposing) return;
+          if (event.nativeEvent.isComposing) {
+            return;
+          }
           const direction = {
             ArrowLeft: [-1, 0],
             ArrowRight: [1, 0],
             ArrowUp: [0, -1],
             ArrowDown: [0, 1],
           }[event.key];
-          if (!direction) return;
+          if (!direction) {
+            return;
+          }
           event.preventDefault();
           event.stopPropagation();
           const step = event.shiftKey ? 0.1 : 0.02;
@@ -59,7 +67,9 @@ export function Navigator({
             return;
           }
           const rect = event.currentTarget.getBoundingClientRect();
-          if (!rect.width || !rect.height) return;
+          if (!rect.width || !rect.height) {
+            return;
+          }
           const x = clampCenter(
             (event.clientX - rect.left) / rect.width,
             box.width,

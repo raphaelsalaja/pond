@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { Sidebar } from ".";
 
@@ -42,7 +43,9 @@ it("shows the full label on hover only when it is truncated", async () => {
   );
   const long = host.querySelector<HTMLElement>('[data-testid="long"]');
   const short = host.querySelector<HTMLElement>('[data-testid="short"]');
-  if (!long || !short) throw new Error("Missing labels");
+  if (!long || !short) {
+    throw new Error("Missing labels");
+  }
 
   await hover(long, { scroll: 240 });
   await hover(short, { scroll: 60 });

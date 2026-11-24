@@ -3,9 +3,9 @@ import { Button, Popover } from "@pond/ui";
 import {
   hostSetupCommands,
   isMcpInstallHost,
-  type McpHostDefinition,
   mcpHostConfigPath,
 } from "@shared/mcp-hosts";
+import type { McpHostDefinition } from "@shared/mcp-hosts";
 import { useState } from "react";
 import { CopyLine } from "../copy-line";
 import { JsonBlock } from "../json-block";
@@ -13,7 +13,7 @@ import styles from "./styles.module.css";
 
 type PondSnippet = {
   command: string;
-  args: string[];
+  args: Array<string>;
   json: string;
 };
 
@@ -36,7 +36,9 @@ export function HostPopover({
   );
 
   async function addToClient() {
-    if (!installable) return;
+    if (!installable) {
+      return;
+    }
     setError("");
     const result = await window.pond.query("agent.openMcpInstall", {
       id: installable,

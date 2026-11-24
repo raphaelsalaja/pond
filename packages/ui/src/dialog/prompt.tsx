@@ -1,11 +1,5 @@
-import {
-  type ComponentProps,
-  type ReactNode,
-  type RefObject,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { useId, useRef, useState } from "react";
+import type { ComponentProps, ReactNode, RefObject } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
 import { DialogParts as Dialog } from "./dialog";
@@ -40,7 +34,9 @@ export function PromptDialogHost() {
     <Dialog.Root
       handle={handle}
       onOpenChange={(_, details) => {
-        if (pending.current) details.cancel();
+        if (pending.current) {
+          details.cancel();
+        }
       }}
     >
       {({ payload }) =>
@@ -116,7 +112,9 @@ function PromptContent({
                 value={value}
                 onValueChange={(next) => {
                   setValue(next);
-                  if (next.trim()) setEmpty(false);
+                  if (next.trim()) {
+                    setEmpty(false);
+                  }
                 }}
                 type={options.inputType}
                 autoComplete={options.autoComplete}

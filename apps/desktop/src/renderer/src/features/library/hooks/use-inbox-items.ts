@@ -13,12 +13,12 @@ import {
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
 import {
-  type InboxProgress,
   isSnoozed,
   isUnread,
   useInboxProgress,
   useNotifications,
 } from "@/features/notifications";
+import type { InboxProgress } from "@/features/notifications";
 import { savesStore } from "@/features/saves/pool";
 import { usePrefs } from "@/shared/state/prefs";
 
@@ -46,7 +46,7 @@ type Entry = Exclude<InboxItem, { type: "progress" }>;
 
 type Display = Prefs["inboxDisplay"];
 
-const NO_IDS: readonly string[] = [];
+const NO_IDS: ReadonlyArray<string> = [];
 
 /** Saves count as priority: reviewing them is what the Inbox is for. */
 function isPriority(entry: Entry): boolean {
@@ -62,21 +62,25 @@ function rank(entry: Entry, display: Display): number {
 
 /** Saves keep the review queue's order so the deck and the list never disagree; notifications merge in by rank, then time. */
 function merge(
-  saves: readonly Entry[],
-  notifications: readonly Entry[],
+  saves: ReadonlyArray<Entry>,
+  notifications: ReadonlyArray<Entry>,
   display: Display,
-): Entry[] {
+): Array<Entry> {
   const byRank = (a: Entry, b: Entry) => rank(a, display) - rank(b, display);
   const queue = saves.toSorted(byRank);
   const sorted = notifications.toSorted((a, b) => byRank(a, b) || b.at - a.at);
-  const items: Entry[] = [];
+  const items: Array<Entry> = [];
   let next = 0;
   for (const save of queue) {
     for (; next < sorted.length; next += 1) {
       const notification = sorted[next];
-      if (!notification) break;
+      if (!notification) {
+        break;
+      }
       const order = byRank(notification, save);
-      if (order > 0 || (order === 0 && notification.at <= save.at)) break;
+      if (order > 0 || (order === 0 && notification.at <= save.at)) {
+        break;
+      }
       items.push(notification);
     }
     items.push(save);
@@ -97,15 +101,23 @@ const DATE_ORDER = ["Today", "Yesterday", "Last 7 Days", "Older"];
 const DAY = 24 * 60 * 60 * 1000;
 
 function dateSection(at: number, today: number): string {
-  if (at >= today) return "Today";
-  if (at >= today - DAY) return "Yesterday";
-  if (at >= today - 6 * DAY) return "Last 7 Days";
+  if (at >= today) {
+    return "Today";
+  }
+  if (at >= today - DAY) {
+    return "Yesterday";
+  }
+  if (at >= today - 6 * DAY) {
+    return "Last 7 Days";
+  }
   return "Older";
 }
 
 /** Sections reorder the list so J and K walk it in the order it's drawn; rank order holds inside each section. */
-function group(entries: Entry[], by: Display["groupBy"]): Entry[] {
-  if (by === "none") return entries;
+function group(entries: Array<Entry>, by: Display["groupBy"]): Array<Entry> {
+  if (by === "none") {
+    return entries;
+  }
   const today = new Date().setHours(0, 0, 0, 0);
   const order = by === "type" ? TYPE_ORDER : DATE_ORDER;
   return entries
@@ -122,7 +134,7 @@ function group(entries: Entry[], by: Display["groupBy"]): Entry[] {
 }
 
 /** Saves and notifications, without the running-work rows. */
-function useInboxEntries(): Entry[] {
+function useInboxEntries(): Array<Entry> {
   const queue = useInboxReview();
   const scope = useInboxReviewScope();
   const selected = useInboxSelection();
@@ -145,7 +157,7 @@ function useInboxEntries(): Entry[] {
         ? entry.index === current
         : entry.key === selected);
 
-    const saves = ids.flatMap((id, index): Entry[] => {
+    const saves = ids.flatMap((id, index): Array<Entry> => {
       const entry: Entry = {
         type: "save",
         key: `save:${id}`,
@@ -156,8 +168,10 @@ function useInboxEntries(): Entry[] {
       };
       return shown(entry) ? [entry] : [];
     });
-    const listed = notifications.flatMap((notification): Entry[] => {
-      if (isSnoozed(notification) !== (scope === "snoozed")) return [];
+    const listed = notifications.flatMap((notification): Array<Entry> => {
+      if (isSnoozed(notification) !== (scope === "snoozed")) {
+        return [];
+      }
       const entry: Entry = {
         type: "notification",
         key: notification.id,
@@ -171,14 +185,16 @@ function useInboxEntries(): Entry[] {
   }, [ids, savedAt, queue, notifications, scope, selected, display]);
 }
 
-export function useInboxItems(): InboxItem[] {
+export function useInboxItems(): Array<InboxItem> {
   const entries = useInboxEntries();
   const progress = useInboxProgress();
   return useMemo(
     () => [
-      ...progress.map(
-        (row): InboxItem => ({ type: "progress", key: row.id, progress: row }),
-      ),
+      ...progress.map((row): InboxItem => ({
+        type: "progress",
+        key: row.id,
+        progress: row,
+      })),
       ...entries,
     ],
     [progress, entries],
@@ -186,8 +202,11 @@ export function useInboxItems(): InboxItem[] {
 }
 
 function pick(item: Entry | undefined): void {
-  if (item?.type === "save") inboxReview.jump(item.index);
-  else inboxPicker.select(item?.type === "notification" ? item.key : null);
+  if (item?.type === "save") {
+    inboxReview.jump(item.index);
+  } else {
+    inboxPicker.select(item?.type === "notification" ? item.key : null);
+  }
 }
 
 /** J and K walk Saves and notifications as one list; running-work rows aren't stops. */
@@ -204,10 +223,13 @@ export function useInboxNavigation() {
   return {
     empty: pickable.length === 0,
     step(by: 1 | -1): void {
-      if (at < 0) pick(by > 0 ? pickable[0] : pickable.at(-1));
-      else {
+      if (at < 0) {
+        pick(by > 0 ? pickable[0] : pickable.at(-1));
+      } else {
         const next = pickable[at + by];
-        if (next) pick(next);
+        if (next) {
+          pick(next);
+        }
       }
     },
     leave(): void {

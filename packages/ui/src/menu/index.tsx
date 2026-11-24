@@ -2,12 +2,14 @@ import { Menu as Base } from "@base-ui/react/menu";
 import { IconChevronRight as CaretRight, IconCheck } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { forwardRef } from "react";
-import { Button, type ButtonProps } from "../button";
+import { Button } from "../button";
+import type { ButtonProps } from "../button";
 import { Checkbox } from "../checkbox";
 import { Keyboard } from "../keyboard";
 import { stopPageHotkeys } from "../stop-page-hotkeys";
 import { Switch } from "../switch";
-import { type MenuItemSpec, renderMenuSpec } from "./items";
+import { renderMenuSpec } from "./items";
+import type { MenuItemSpec } from "./items";
 
 import styles from "./styles.module.css";
 
@@ -90,7 +92,9 @@ function Row({
 }: React.ComponentProps<"button"> & { highlighted?: boolean }) {
   return (
     <button
-      type={type}
+      type={
+        type === "submit" ? "submit" : type === "reset" ? "reset" : "button"
+      }
       data-highlighted={highlighted || undefined}
       className={cn(styles.item, className)}
       {...props}
@@ -334,7 +338,7 @@ function SecondaryLabel({ className, ...props }: React.ComponentProps<"span">) {
   );
 }
 
-function Items({ items }: { items: MenuItemSpec[] }) {
+function Items({ items }: { items: Array<MenuItemSpec> }) {
   return (
     <>
       {renderMenuSpec(items, {

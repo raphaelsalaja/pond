@@ -20,7 +20,9 @@ export type UpdateButtonPreview =
 let run = 0;
 
 function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 /** Plays check, prompt, download and restart against fake updater data, for the dev preview route. */
@@ -44,12 +46,16 @@ export async function playUpdatePreview(): Promise<void> {
   });
 
   await wait(3400);
-  if (!open()) return;
+  if (!open()) {
+    return;
+  }
   presentUpdateNotice({ phase: "available", version: NEXT, downloading: true });
   await wait(700);
 
   for (let percent = 0; percent <= 100; percent += 2) {
-    if (!live()) return;
+    if (!live()) {
+      return;
+    }
     presentUpdateNotice({
       phase: "available",
       version: NEXT,
@@ -58,14 +64,20 @@ export async function playUpdatePreview(): Promise<void> {
     });
     await wait(60);
   }
-  if (!live()) return;
+  if (!live()) {
+    return;
+  }
   presentUpdateNotice({ phase: "downloaded", version: NEXT });
 
   await wait(2400);
-  if (!open()) return;
+  if (!open()) {
+    return;
+  }
   showUpdateRestarting(NEXT);
   await wait(2600);
-  if (!open()) return;
+  if (!open()) {
+    return;
+  }
   dismissUpdateDialog();
 }
 
@@ -84,6 +96,9 @@ export function showUpdateButtonPreview(state: UpdateButtonPreview): void {
     none: null,
   } satisfies Record<UpdateButtonPreview, UpdateNotice | null>;
   const notice = notices[state];
-  if (notice) presentUpdateNotice(notice);
-  else updateNoticeStore.setState(() => null);
+  if (notice) {
+    presentUpdateNotice(notice);
+  } else {
+    updateNoticeStore.setState(() => null);
+  }
 }

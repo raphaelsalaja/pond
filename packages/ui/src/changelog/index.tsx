@@ -22,49 +22,49 @@ const CATEGORIES = {
 
 const SectionContext = createContext<ChangelogCategory>("new");
 
-interface RootProps extends React.ComponentPropsWithoutRef<"div"> {}
+type RootProps = React.ComponentPropsWithoutRef<"div">;
 
 function Root({ className, ...props }: RootProps) {
   return <div className={cn(styles.root, className)} {...props} />;
 }
 
-interface EntryProps extends React.ComponentPropsWithoutRef<"article"> {}
+type EntryProps = React.ComponentPropsWithoutRef<"article">;
 
 function Entry({ className, ...props }: EntryProps) {
   return <article className={cn(styles.entry, className)} {...props} />;
 }
 
-interface MetaProps extends React.ComponentPropsWithoutRef<"div"> {}
+type MetaProps = React.ComponentPropsWithoutRef<"div">;
 
 function Meta({ className, ...props }: MetaProps) {
   return <div className={cn(styles.meta, className)} {...props} />;
 }
 
-interface VersionProps extends React.ComponentPropsWithoutRef<"p"> {}
+type VersionProps = React.ComponentPropsWithoutRef<"p">;
 
 function Version({ className, ...props }: VersionProps) {
   return <p className={cn(styles.version, className)} {...props} />;
 }
 
-interface DateProps extends React.ComponentPropsWithoutRef<"time"> {}
+type DateProps = React.ComponentPropsWithoutRef<"time">;
 
 function EntryDate({ className, ...props }: DateProps) {
   return <time className={cn(styles.date, className)} {...props} />;
 }
 
-interface BodyProps extends React.ComponentPropsWithoutRef<"div"> {}
+type BodyProps = React.ComponentPropsWithoutRef<"div">;
 
 function Body({ className, ...props }: BodyProps) {
   return <div className={cn(styles.body, className)} {...props} />;
 }
 
-interface TitleProps extends React.ComponentPropsWithoutRef<"h3"> {}
+type TitleProps = React.ComponentPropsWithoutRef<"h3">;
 
 function Title({ className, ...props }: TitleProps) {
   return <h3 className={cn(styles.title, className)} {...props} />;
 }
 
-interface SummaryProps extends React.ComponentPropsWithoutRef<"p"> {}
+type SummaryProps = React.ComponentPropsWithoutRef<"p">;
 
 function Summary({ className, ...props }: SummaryProps) {
   return <p className={cn(styles.summary, className)} {...props} />;
@@ -86,7 +86,7 @@ function Section({ className, category, ...props }: SectionProps) {
   );
 }
 
-interface HeadingProps extends React.ComponentPropsWithoutRef<"h4"> {}
+type HeadingProps = React.ComponentPropsWithoutRef<"h4">;
 
 function Heading({ className, children, ...props }: HeadingProps) {
   const { label, Icon } = CATEGORIES[use(SectionContext)];
@@ -98,13 +98,13 @@ function Heading({ className, children, ...props }: HeadingProps) {
   );
 }
 
-interface ListProps extends React.ComponentPropsWithoutRef<"ul"> {}
+type ListProps = React.ComponentPropsWithoutRef<"ul">;
 
 function List({ className, ...props }: ListProps) {
   return <ul className={cn(styles.list, className)} {...props} />;
 }
 
-interface ItemProps extends React.ComponentPropsWithoutRef<"li"> {}
+type ItemProps = React.ComponentPropsWithoutRef<"li">;
 
 function Item({ className, ...props }: ItemProps) {
   return <li className={cn(styles.item, className)} {...props} />;

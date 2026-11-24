@@ -28,7 +28,8 @@ import { closeDb, getDb } from "../../db";
 import { showDock } from "../../dock";
 import { libraryRoot, thumbnailCacheRoot } from "../../paths";
 import { runtimeControls } from "../../runtime";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const StorageOrderSchema = z.enum(["largest", "smallest"]);
 
@@ -81,7 +82,9 @@ export const libraryMaintenanceQueries = {
 
   async "library.openInFinder"(): Promise<QueryResult<"library.openInFinder">> {
     const err = await shell.openPath(libraryRoot());
-    if (err) return { ok: false as const, error: err };
+    if (err) {
+      return { ok: false as const, error: err };
+    }
     return { ok: true as const };
   },
 
@@ -93,8 +96,9 @@ export const libraryMaintenanceQueries = {
       defaultPath: `Pond Debug Report ${new Date().toISOString().slice(0, 10)}.zip`,
       filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
     });
-    if (picked.canceled || !picked.filePath)
+    if (picked.canceled || !picked.filePath) {
       return { ok: false as const, reason: "cancelled" as const };
+    }
     const { createDebugReport } = await import("../../core/debug-report");
     await writeFile(picked.filePath, await createDebugReport());
     return { ok: true as const, path: picked.filePath };
@@ -106,13 +110,13 @@ export const libraryMaintenanceQueries = {
     try {
       const result = await verifyLibraryIntegrity();
       return { ok: true as const, ...result };
-    } catch (err) {
-      log.warn("[pond ipc] verifyIntegrity failed", err);
+    } catch (error) {
+      log.warn("[pond ipc] verifyIntegrity failed", error);
       return {
         ok: false as const,
         error:
-          err instanceof Error
-            ? err.message
+          error instanceof Error
+            ? error.message
             : "Something went wrong. Try again.",
       };
     }
@@ -140,8 +144,8 @@ export const libraryMaintenanceQueries = {
     try {
       const { rm } = await import("node:fs/promises");
       await rm(dbPath, { force: true });
-    } catch (err) {
-      log.warn("[pond reset] db removal failed", err);
+    } catch (error) {
+      log.warn("[pond reset] db removal failed", error);
     }
     return { ok: true as const };
   },
@@ -179,9 +183,8 @@ export const libraryMaintenanceQueries = {
   },
 
   async "storage.applyGuardPrefs"() {
-    const { applyStorageWatcherPrefs } = await import(
-      "../../core/storage-watcher"
-    );
+    const { applyStorageWatcherPrefs } =
+      await import("../../core/storage-watcher");
     await applyStorageWatcherPrefs();
     return { ok: true as const };
   },
@@ -195,12 +198,12 @@ export const libraryMaintenanceQueries = {
     try {
       const result = await runtimeControls.restartHttpServer();
       return { ok: true as const, ...result };
-    } catch (err) {
+    } catch (error) {
       return {
         ok: false as const,
         error:
-          err instanceof Error
-            ? err.message
+          error instanceof Error
+            ? error.message
             : "Something went wrong. Try again.",
       };
     }
@@ -212,13 +215,13 @@ export const libraryMaintenanceQueries = {
     try {
       await runtimeControls.applyPrefsAtRuntime();
       return { ok: true as const };
-    } catch (err) {
-      log.warn("[pond ipc] applyPrefsAtRuntime failed", err);
+    } catch (error) {
+      log.warn("[pond ipc] applyPrefsAtRuntime failed", error);
       return {
         ok: false as const,
         error:
-          err instanceof Error
-            ? err.message
+          error instanceof Error
+            ? error.message
             : "Something went wrong. Try again.",
       };
     }
@@ -228,13 +231,13 @@ export const libraryMaintenanceQueries = {
     try {
       await runtimeControls.applyWindowPrefsAtRuntime();
       return { ok: true as const };
-    } catch (err) {
-      log.warn("[pond ipc] applyWindowPrefsAtRuntime failed", err);
+    } catch (error) {
+      log.warn("[pond ipc] applyWindowPrefsAtRuntime failed", error);
       return {
         ok: false as const,
         error:
-          err instanceof Error
-            ? err.message
+          error instanceof Error
+            ? error.message
             : "Something went wrong. Try again.",
       };
     }
@@ -248,7 +251,9 @@ export const libraryMaintenanceQueries = {
         ? { mode: "fixed_servers", proxyRules: prefs.proxyUrl }
         : { mode: prefs.proxyMode === "direct" ? "direct" : "system" },
     );
-    if (prefs.dockVisibility === "always") await showDock();
+    if (prefs.dockVisibility === "always") {
+      await showDock();
+    }
     return { ok: true as const, restartRequired: true };
   },
 } satisfies QueryHandlerMap;

@@ -1,3 +1,4 @@
+import { isHTMLTag } from "@pond/ui/dom";
 import { resolveFileIndex } from "@/features/saves/lib/actions";
 import {
   endSaveDragSession,
@@ -5,6 +6,7 @@ import {
 } from "@/features/saves/state/drag-session";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
+import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
 
@@ -13,7 +15,7 @@ const SAVES = { one: "Save", other: "Saves" };
 export const SAVE_DRAG_TYPE = "application/x-pond-save";
 
 export interface SaveDragDataTransfer {
-  readonly types: readonly string[];
+  readonly types: ReadonlyArray<string>;
   effectAllowed: DataTransfer["effectAllowed"];
   getData(format: string): string;
   setData(format: string, data: string): void;
@@ -26,12 +28,12 @@ export interface SaveDragStartEvent {
   preventDefault(): void;
 }
 
-let draggingIds: string[] = [];
+let draggingIds: Array<string> = [];
 let dragPreview: HTMLElement | null = null;
 let removeSessionListeners: (() => void) | null = null;
 let dragAnnouncement: HTMLElement | null = null;
 
-export function draggingSaveIds(): string[] {
+export function draggingSaveIds(): Array<string> {
   return draggingIds;
 }
 
@@ -42,15 +44,19 @@ export function clearDraggingSaveIds(): void {
 export function isLibrarySaveDrag(
   dataTransfer: SaveDragDataTransfer | null | undefined,
 ): boolean {
-  if (draggingIds.length) return true;
+  if (draggingIds.length) {
+    return true;
+  }
   return Array.from(dataTransfer?.types ?? []).includes(SAVE_DRAG_TYPE);
 }
 
 export function saveDropIds(
   dataTransfer: SaveDragDataTransfer | null | undefined,
-): string[] {
+): Array<string> {
   const fromMime = dataTransfer?.getData(SAVE_DRAG_TYPE).trim();
-  if (fromMime) return fromMime.split(",").filter(Boolean);
+  if (fromMime) {
+    return fromMime.split(",").filter(Boolean);
+  }
   return draggingIds;
 }
 
@@ -61,7 +67,7 @@ function cardImage(id: string): HTMLImageElement | null {
   return card?.querySelector("img") ?? null;
 }
 
-function createDragPreview(ids: readonly string[]): HTMLElement {
+function createDragPreview(ids: ReadonlyArray<string>): HTMLElement {
   const preview = document.createElement("div");
   preview.dataset.saveDragPreview = "";
   preview.setAttribute("aria-hidden", "true");
@@ -74,12 +80,13 @@ function createDragPreview(ids: readonly string[]): HTMLElement {
     layer.style.cssText = `position:absolute;inset:${offset}px ${12 - offset}px ${12 - offset}px ${offset}px;overflow:hidden;background:var(--ds-background-tertiary,#e5e5e5);border:1px solid color-mix(in srgb,var(--ds-foreground-primary,#111),transparent 82%);border-radius:10px;box-shadow:0 4px 12px rgb(0 0 0 / 20%);`;
     const image = cardImage(id);
     if (image) {
-      /** SAFETY: cloning an img element always yields an img element. */
-      const clone = image.cloneNode() as HTMLImageElement;
-      clone.removeAttribute("id");
-      clone.style.cssText =
-        "display:block;width:100%;height:100%;object-fit:cover;";
-      layer.append(clone);
+      const clone = image.cloneNode();
+      if (isHTMLTag(clone, "img")) {
+        clone.removeAttribute("id");
+        clone.style.cssText =
+          "display:block;width:100%;height:100%;object-fit:cover;";
+        layer.append(clone);
+      }
     }
     preview.append(layer);
   }
@@ -106,7 +113,9 @@ function announce(message: string): void {
   }
   dragAnnouncement.textContent = "";
   requestAnimationFrame(() => {
-    if (dragAnnouncement) dragAnnouncement.textContent = message;
+    if (dragAnnouncement) {
+      dragAnnouncement.textContent = message;
+    }
   });
 }
 
@@ -117,14 +126,23 @@ export function announceSaveDragTarget(
   announce(`Add ${formatPlural(count, SAVES)} to ${folderName}`);
 }
 
+function finishDrag(): void {
+  endSaveDrag();
+}
+
+function finishOnEscape(event: KeyboardEvent): void {
+  if (event.key === "Escape") {
+    endSaveDrag();
+  }
+}
+
 function installSessionListeners(): void {
   removeSessionListeners?.();
-  const finish = () => endSaveDrag();
-  window.addEventListener("dragend", finish, { once: true });
-  window.addEventListener("drop", finish, { once: true });
+  window.addEventListener("dragend", finishDrag, { once: true });
+  window.addEventListener("drop", finishDrag, { once: true });
   removeSessionListeners = () => {
-    window.removeEventListener("dragend", finish);
-    window.removeEventListener("drop", finish);
+    window.removeEventListener("dragend", finishDrag);
+    window.removeEventListener("drop", finishDrag);
     removeSessionListeners = null;
   };
 }
@@ -139,35 +157,33 @@ function installNativeSessionListeners(): void {
   removeSessionListeners?.();
   let live = false;
   let idle: ReturnType<typeof setTimeout> | undefined;
-  const finish = () => endSaveDrag();
   const touch = () => {
     live = true;
     clearTimeout(idle);
-    idle = setTimeout(finish, NATIVE_DRAG_IDLE_MS);
+    idle = setTimeout(finishDrag, NATIVE_DRAG_IDLE_MS);
   };
   const released = (event: PointerEvent) => {
-    if (live && event.buttons === 0) endSaveDrag();
+    if (live && event.buttons === 0) {
+      endSaveDrag();
+    }
   };
-  const keydown = (event: KeyboardEvent) => {
-    if (event.key === "Escape") endSaveDrag();
-  };
-  idle = setTimeout(finish, NATIVE_DRAG_IDLE_MS);
-  window.addEventListener("drop", finish);
-  window.addEventListener("dragend", finish);
+  idle = setTimeout(finishDrag, NATIVE_DRAG_IDLE_MS);
+  window.addEventListener("drop", finishDrag);
+  window.addEventListener("dragend", finishDrag);
   window.addEventListener("dragenter", touch, true);
   window.addEventListener("dragover", touch, true);
-  window.addEventListener("pointerdown", finish, true);
+  window.addEventListener("pointerdown", finishDrag, true);
   window.addEventListener("pointermove", released, true);
-  window.addEventListener("keydown", keydown, true);
+  window.addEventListener("keydown", finishOnEscape, true);
   removeSessionListeners = () => {
     clearTimeout(idle);
-    window.removeEventListener("drop", finish);
-    window.removeEventListener("dragend", finish);
+    window.removeEventListener("drop", finishDrag);
+    window.removeEventListener("dragend", finishDrag);
     window.removeEventListener("dragenter", touch, true);
     window.removeEventListener("dragover", touch, true);
-    window.removeEventListener("pointerdown", finish, true);
+    window.removeEventListener("pointerdown", finishDrag, true);
     window.removeEventListener("pointermove", released, true);
-    window.removeEventListener("keydown", keydown, true);
+    window.removeEventListener("keydown", finishOnEscape, true);
     removeSessionListeners = null;
   };
 }
@@ -188,7 +204,7 @@ export function beginSaveDrag(id: string, event?: SaveDragStartEvent): void {
   document.body.dataset.saveDragging = String(selected.length);
   const ids = selected.filter((saveId) => {
     const save = pool.get(saveId);
-    return save ? resolveFileIndex(save) != null : false;
+    return save ? resolveFileIndex(save) !== null : false;
   });
   startSaveDragSession({ ids: selected, hasFiles: ids.length > 0 });
   /**
@@ -209,17 +225,21 @@ export function beginSaveDrag(id: string, event?: SaveDragStartEvent): void {
     for (const saveId of ids) {
       const save = pool.get(saveId);
       const index = save ? resolveFileIndex(save) : null;
-      if (index != null) fileIndexes[saveId] = index;
+      if (index !== null) {
+        fileIndexes[saveId] = index;
+      }
     }
     const session = draggingIds;
     void window.pond
       .query("saves.startDrag", { ids, fileIndex: 0, fileIndexes })
-      .catch((error) => ({
+      .catch((cause: unknown) => ({
         ok: false as const,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorCopy(cause, "Try dragging again."),
       }))
       .then((result) => {
-        if (result.ok || draggingIds !== session) return;
+        if (result.ok || draggingIds !== session) {
+          return;
+        }
         endSaveDrag();
         notify({
           id: "save-drag",

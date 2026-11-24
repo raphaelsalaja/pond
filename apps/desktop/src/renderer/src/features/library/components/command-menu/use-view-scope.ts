@@ -26,7 +26,7 @@ export interface ViewScope {
   /** The same scope the Library grid queries, so the menu can search inside the view. */
   request: NonNullable<LibraryQueryRequest["scope"]>;
   /** The Saves from this list that the current view shows. */
-  pick: (saves: readonly Save[]) => Save[];
+  pick: (saves: ReadonlyArray<Save>) => Array<Save>;
 }
 
 /** The narrowed Library view you're on, if any, so its Saves can rank ahead of the rest. */
@@ -39,12 +39,16 @@ export function useViewScope(pathname: string): ViewScope | null {
   const onCollection = useOnCollection(pathname);
 
   return useMemo(() => {
-    if (!onCollection || !nav) return null;
+    if (!onCollection || !nav) {
+      return null;
+    }
     const view = searchViewFor(nav);
-    if (view.kind === "library") return null;
+    if (view.kind === "library") {
+      return null;
+    }
     const name = searchViewName(view, folderRows);
     const base = { name, deleted: false };
-    const navPick = (saves: readonly Save[]) =>
+    const navPick = (saves: ReadonlyArray<Save>) =>
       applyNavFilter(saves, nav, memberships, folderRows, includeSubfolders);
     switch (view.kind) {
       case "trash":

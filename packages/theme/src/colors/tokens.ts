@@ -63,7 +63,7 @@ const HUE_RAMPS = {
 const GRAY_TARGETS = {
   light: [1.07, 1.15, 1.26, 1.42, 1.7, 2.1, 2.79, 4.02, 6.36, 10.77],
   dark: [1.03, 1.08, 1.16, 1.3, 1.57, 2.03, 2.86, 4.31, 6.76, 10.75],
-} as const satisfies Record<ThemeMode, readonly number[]>;
+} as const satisfies Record<ThemeMode, ReadonlyArray<number>>;
 
 const TINT_CHROMA = [0.16, 0.32, 0.51, 0.69, 0.85, 0.95, 1, 1] as const;
 
@@ -102,7 +102,9 @@ function parseHex(input: string): Rgb | null {
           .map((ch) => ch + ch)
           .join("")
       : raw;
-  if (!/^[0-9a-f]{6}$/i.test(hex)) return null;
+  if (!/^[0-9a-f]{6}$/i.test(hex)) {
+    return null;
+  }
   const n = Number.parseInt(hex, 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
@@ -174,13 +176,18 @@ function inGamut(linear: Rgb, gamut: Gamut): boolean {
 }
 
 function cMax(l: number, h: number, gamut: Gamut): number {
-  if (l <= 0 || l >= 1) return 0;
+  if (l <= 0 || l >= 1) {
+    return 0;
+  }
   let lo = 0;
   let hi = 0.4;
   for (let i = 0; i < 16; i++) {
     const mid = (lo + hi) / 2;
-    if (inGamut(labToLinear(lchToLab({ l, c: mid, h })), gamut)) lo = mid;
-    else hi = mid;
+    if (inGamut(labToLinear(lchToLab({ l, c: mid, h })), gamut)) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
   }
   return lo;
 }
@@ -188,9 +195,13 @@ function cMax(l: number, h: number, gamut: Gamut): number {
 /** Keeps a color's position relative to the sRGB edge, so P3 widens it without leaving either gamut. */
 function fit({ l, c, h }: Lch, gamut: Gamut): Lch {
   const lightness = clamp(l, 0, 1);
-  if (c <= 0) return { l: lightness, c: 0, h };
+  if (c <= 0) {
+    return { l: lightness, c: 0, h };
+  }
   const srgbMax = cMax(lightness, h, "srgb");
-  if (srgbMax <= 0) return { l: lightness, c: 0, h };
+  if (srgbMax <= 0) {
+    return { l: lightness, c: 0, h };
+  }
   const relative = Math.min(c / srgbMax, 1);
   const max = gamut === "srgb" ? srgbMax : cMax(lightness, h, gamut);
   return { l: lightness, c: relative * max, h };
@@ -234,13 +245,18 @@ function wcag(a: Rgb, b: Rgb): number {
 
 /** Smallest t in [0, 1] where `reaches` turns true; 1 when it never does. */
 function bisect(reaches: (t: number) => boolean): number {
-  if (!reaches(1)) return 1;
+  if (!reaches(1)) {
+    return 1;
+  }
   let lo = 0;
   let hi = 1;
   for (let i = 0; i < 20; i++) {
     const mid = (lo + hi) / 2;
-    if (reaches(mid)) hi = mid;
-    else lo = mid;
+    if (reaches(mid)) {
+      hi = mid;
+    } else {
+      lo = mid;
+    }
   }
   return hi;
 }
@@ -283,8 +299,12 @@ function onColor(solid: Lch, gamut: Gamut): Lch {
   const ink: Lch = { l: 0.25, c: Math.max(0.08 * solid.c, 0.04), h: solid.h };
   const white = wcag(linearOf(WHITE, gamut), fill);
   const dark = wcag(linearOf(ink, gamut), fill);
-  if (white >= TEXT_MIN) return WHITE;
-  if (dark >= TEXT_MIN) return ink;
+  if (white >= TEXT_MIN) {
+    return WHITE;
+  }
+  if (dark >= TEXT_MIN) {
+    return ink;
+  }
   return white >= dark ? WHITE : ink;
 }
 
@@ -293,25 +313,31 @@ function whiteFill(seed: Lch, gamut: Gamut): Lch | null {
   const white = linearOf(WHITE, gamut);
   const target = TEXT_MIN;
   const at = (t: number): Lch => ({ ...seed, l: seed.l - MAX_FILL_SHIFT * t });
-  if (wcag(white, linearOf(seed, gamut)) >= target) return seed;
-  if (wcag(white, linearOf(at(1), gamut)) < target) return null;
+  if (wcag(white, linearOf(seed, gamut)) >= target) {
+    return seed;
+  }
+  if (wcag(white, linearOf(at(1), gamut)) < target) {
+    return null;
+  }
   return at(bisect((t) => wcag(white, linearOf(at(t), gamut)) >= target));
 }
 
 /** Keeps a solid whose text already reaches 4.5:1, else darkens it just enough for white text. */
 function readableSolid(solid: Lch, gamut: Gamut): Lch {
   const text = linearOf(onColor(solid, gamut), gamut);
-  if (wcag(text, linearOf(solid, gamut)) >= TEXT_MIN) return solid;
+  if (wcag(text, linearOf(solid, gamut)) >= TEXT_MIN) {
+    return solid;
+  }
   return whiteFill(solid, gamut) ?? solid;
 }
 
 interface Scale {
-  steps: Lch[];
+  steps: Array<Lch>;
   contrast: Lch;
 }
 
 interface ScaleTargets {
-  tints: readonly number[];
+  tints: ReadonlyArray<number>;
   text: number;
   textStrong: number;
   textAgainst: Rgb;
@@ -364,7 +390,9 @@ const fixed = (value: number, places: number) =>
   String(Number(value.toFixed(places)));
 
 function emitColor(linear: Rgb, gamut: Gamut): string {
-  if (gamut === "srgb" || unit(linear)) return hex(linear);
+  if (gamut === "srgb" || unit(linear)) {
+    return hex(linear);
+  }
   const [r, g, b] = linearToP3(linear).map((v) => clamp(toGamma(v), 0, 1));
   return `color(display-p3 ${fixed(r ?? 0, 4)} ${fixed(g ?? 0, 4)} ${fixed(b ?? 0, 4)})`;
 }
@@ -386,14 +414,20 @@ function emitAlpha(target: Rgb, bg: Rgb, wide: Gamut): string {
   const b = encoded(bg, gamut);
   const needed = t.map((v, i) => {
     const base = b[i] ?? 0;
-    if (v > base) return (v - base) / (1 - base);
-    if (v < base) return (base - v) / base;
+    if (v > base) {
+      return (v - base) / (1 - base);
+    }
+    if (v < base) {
+      return (base - v) / base;
+    }
     return 0;
   });
   const alpha = clamp(Math.ceil(Math.max(...needed) * 1000) / 1000, 0, 1);
   const channel = (i: number) => {
     const base = b[i] ?? 0;
-    if (alpha === 0) return base;
+    if (alpha === 0) {
+      return base;
+    }
     return clamp(base + ((t[i] ?? 0) - base) / alpha, 0, 1);
   };
   const a = fixed(alpha, 3);
@@ -475,7 +509,9 @@ export function buildThemeTokens(input: ThemeInput, gamut: Gamut): ThemeTokens {
   };
   pick("accent", "accent", ACCENT_ROLES);
   pick("danger", "red", DANGER_ROLES);
-  for (const name of HUE_NAMES) pick(name, name, PALETTE_ROLES);
+  for (const name of HUE_NAMES) {
+    pick(name, name, PALETTE_ROLES);
+  }
   return { mode, tokens };
 }
 
@@ -498,7 +534,7 @@ export function solveScales(input: ThemeInput, gamut: Gamut): ThemeTokens {
   const solveGray = (target: number, against: Rgb) =>
     along(bisect((t) => wcag(along(t), against) >= target));
 
-  const gray: Rgb[] = [bgLinear];
+  const gray: Array<Rgb> = [bgLinear];
   let previous = 1;
   for (let i = 0; i < 9; i++) {
     const target = Math.min(
@@ -546,11 +582,13 @@ export function solveScales(input: ThemeInput, gamut: Gamut): ThemeTokens {
   );
 
   const tokens: Record<ThemeTokenName, string> = {};
-  const writeSteps = (name: string, steps: Rgb[], alpha: boolean) => {
+  const writeSteps = (name: string, steps: Array<Rgb>, alpha: boolean) => {
     steps.forEach((color, i) => {
       tokens[`--ds-${name}-${i + 1}`] = emitColor(color, gamut);
     });
-    if (!alpha) return;
+    if (!alpha) {
+      return;
+    }
     steps.forEach((color, i) => {
       tokens[`--ds-${name}-a${i + 1}`] = emitAlpha(color, bgLinear, gamut);
     });

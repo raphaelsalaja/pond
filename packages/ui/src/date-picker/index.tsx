@@ -1,13 +1,9 @@
 import { IconCalendar, IconChevronLeft, IconChevronRight } from "@pond/icons";
 import { clsx as cn } from "clsx";
-import {
-  type KeyboardEvent,
-  type RefObject,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { Button, type ButtonProps } from "../button";
+import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent, RefObject } from "react";
+import { Button } from "../button";
+import type { ButtonProps } from "../button";
 import { cssVars } from "../css-vars";
 import { Popover } from "../popover";
 import {
@@ -219,7 +215,7 @@ function Calendar({
   locale: string;
   onSelect: (day: Date) => void;
 }) {
-  const today = startOfDay(new Date());
+  const [today] = useState(() => startOfDay(new Date()));
   const [focused, setFocused] = useState(() =>
     clampDay(selected ?? today, min, max),
   );
@@ -240,7 +236,9 @@ function Calendar({
   const next = addMonths(focused, 1);
 
   useEffect(() => {
-    if (!moved.current) return;
+    if (!moved.current) {
+      return;
+    }
     moved.current = false;
     grid.current
       ?.querySelector<HTMLElement>(`[data-day="${formatDay(focused)}"]`)
@@ -255,11 +253,15 @@ function Calendar({
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      if (!outside(focused)) onSelect(focused);
+      if (!outside(focused)) {
+        onSelect(focused);
+      }
       return;
     }
     const target = keyTarget(event, focused, weekStart);
-    if (!target) return;
+    if (!target) {
+      return;
+    }
     event.preventDefault();
     move(target);
   };
@@ -299,7 +301,7 @@ function Calendar({
       </div>
       <table
         ref={grid}
-        // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: the WAI-ARIA date picker grid is a table with role="grid".
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role -- the WAI-ARIA date picker grid is a table with role="grid"
         role="grid"
         aria-label={monthLabel}
         className={styles.grid}
@@ -328,7 +330,7 @@ function Calendar({
                 return (
                   <td
                     key={key}
-                    // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: WAI-ARIA date picker days are gridcells in the table.
+                    // oxlint-disable-next-line jsx-a11y/no-redundant-roles -- WAI-ARIA date picker days are explicit gridcells in the table
                     role="gridcell"
                     className={styles.day}
                     data-day={key}
@@ -348,7 +350,9 @@ function Calendar({
                     onClick={disabled ? undefined : () => onSelect(day)}
                     onKeyDown={onKeyDown}
                     onFocus={() => {
-                      if (!sameDay(day, focused)) setFocused(day);
+                      if (!sameDay(day, focused)) {
+                        setFocused(day);
+                      }
                     }}
                   >
                     {day.getDate()}

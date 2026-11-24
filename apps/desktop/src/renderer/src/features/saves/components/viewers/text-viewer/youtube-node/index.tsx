@@ -1,17 +1,16 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { IconArrowUpRight } from "@pond/icons";
 import { Button, Input } from "@pond/ui";
-import {
-  $applyNodeReplacement,
-  $getNodeByKey,
-  DecoratorNode,
-  type EditorConfig,
-  type LexicalNode,
-  type NodeKey,
-  type SerializedLexicalNode,
-  type Spread,
+import { $applyNodeReplacement, $getNodeByKey, DecoratorNode } from "lexical";
+import type {
+  EditorConfig,
+  LexicalNode,
+  NodeKey,
+  SerializedLexicalNode,
+  Spread,
 } from "lexical";
-import { type JSX, useState } from "react";
+import { useState } from "react";
+import type { JSX } from "react";
 import styles from "./styles.module.css";
 
 const YOUTUBE_ID =
@@ -88,7 +87,9 @@ export class YouTubeNode extends DecoratorNode<JSX.Element> {
   }
 
   decorate(): JSX.Element {
-    if (!this.__id) return <YouTubeDraft nodeKey={this.getKey()} />;
+    if (!this.__id) {
+      return <YouTubeDraft nodeKey={this.getKey()} />;
+    }
     const watch = youtubeWatchUrl(this.__id);
     return (
       <div className={styles.youtube}>
@@ -127,7 +128,9 @@ function YouTubeDraft({ nodeKey }: { nodeKey: NodeKey }) {
     }
     editor.update(() => {
       const node = $getNodeByKey(nodeKey);
-      if ($isYouTubeNode(node)) node.setId(id);
+      if ($isYouTubeNode(node)) {
+        node.setId(id);
+      }
     });
   }
 
@@ -165,5 +168,5 @@ export function $createYouTubeNode(id: string): YouTubeNode {
 export function $isYouTubeNode(
   node: LexicalNode | null | undefined,
 ): node is YouTubeNode {
-  return node instanceof YouTubeNode;
+  return node?.getType() === YouTubeNode.getType();
 }

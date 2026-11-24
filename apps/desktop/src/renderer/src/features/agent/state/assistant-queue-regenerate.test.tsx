@@ -6,8 +6,8 @@ import { assistant } from "./assistant";
 import {
   agentStreamBridge,
   createAssistantHarness,
-  type StreamReply,
 } from "./assistant.test-harness";
+import type { StreamReply } from "./assistant.test-harness";
 
 afterEach(() => {
   assistant.newChat();
@@ -21,13 +21,13 @@ interface QueryParams {
   chatId?: string;
 }
 
-type QueryReply = QueryResults["agent.regenerate"] | never[];
+type QueryReply = QueryResults["agent.regenerate"] | Array<never>;
 
 function stubPond(
   reply: (request: AgentStreamRequest) => StreamReply | Promise<StreamReply>,
   query: (name: string, params?: QueryParams) => QueryReply = () => [],
 ) {
-  const requests: AgentStreamRequest[] = [];
+  const requests: Array<AgentStreamRequest> = [];
   const queryMock = vi.fn(async (name: string, params?: QueryParams) =>
     query(name, params),
   );
@@ -78,7 +78,9 @@ it("queues messages sent mid-reply and sends them together once it settles", asy
       await assistant.queue("openai");
     });
     expect(harness.host.textContent).toContain('"draft":""');
-    expect(harness.host.textContent).toContain('"queued":"Second\\n\\nThird"');
+    expect(harness.host.textContent).toContain(
+      String.raw`"queued":"Second\n\nThird"`,
+    );
     expect(requests).toHaveLength(1);
 
     await act(async () => {
@@ -86,7 +88,7 @@ it("queues messages sent mid-reply and sends them together once it settles", asy
       await pending;
     });
     await vi.waitFor(() => expect(requests).toHaveLength(2));
-    expect(lastText(requests[1])).toContain("Second\\n\\nThird");
+    expect(lastText(requests[1])).toContain(String.raw`Second\n\nThird`);
     await vi.waitFor(() =>
       expect(harness.host.textContent).toContain('"busy":false'),
     );

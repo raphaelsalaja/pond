@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { topLevelMenuLabels as labels } from "@/shared/test/menu-labels";
-import { buildTagGroupMenuItems, type TagGroupMenuActions } from ".";
+import { buildTagGroupMenuItems } from ".";
+import type { TagGroupMenuActions } from ".";
 
 function actions(
   overrides: Partial<TagGroupMenuActions> = {},
@@ -36,7 +37,9 @@ describe("tag group context menu", () => {
     const merge = items.find(
       (item) => item.type === "submenu" && item.label === "Merge Into",
     );
-    if (merge?.type !== "submenu") throw new Error("Missing Merge Into");
+    if (merge?.type !== "submenu") {
+      throw new Error("Missing Merge Into");
+    }
     const target = merge.items[0];
     if (!target || !("onClick" in target)) {
       throw new Error("Missing merge target");

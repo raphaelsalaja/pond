@@ -5,7 +5,8 @@ import type {
   Item,
   SettingsValues,
 } from "@/features/settings/lib/engine-types";
-import { SECTIONS, type SectionDef } from "@/features/settings/lib/registry";
+import { SECTIONS } from "@/features/settings/lib/registry";
+import type { SectionDef } from "@/features/settings/lib/registry";
 import { IS_MAC, REVEAL_LABEL, THIS_DEVICE } from "@/shared/lib/platform";
 
 export interface SettingsSearchEntry {
@@ -17,7 +18,7 @@ export interface SettingsSearchEntry {
   itemKey?: string;
   title: string;
   description?: string;
-  keywords: string[];
+  keywords: Array<string>;
 }
 
 const TextNodeSchema = z.string().optional().catch(undefined);
@@ -34,15 +35,20 @@ function asText(node: ReactNode): string | undefined {
 function isStaticallyHidden(
   visible: ((values: SettingsValues) => boolean) | undefined,
 ): boolean {
-  if (!visible) return false;
+  if (!visible) {
+    return false;
+  }
   let readsValues = false;
   /** SAFETY: the probe only answers property reads, and every read marks the predicate as value-dependent. */
-  const probe = new Proxy({} as SettingsValues, {
-    get: () => {
-      readsValues = true;
-      return undefined;
+  const probe = new Proxy(
+    {},
+    {
+      get: () => {
+        readsValues = true;
+        return undefined;
+      },
     },
-  });
+  );
   try {
     return !visible(probe) && !readsValues;
   } catch {
@@ -52,7 +58,9 @@ function isStaticallyHidden(
 }
 
 function itemTitle(item: Item): string | undefined {
-  if (item.control === "custom") return asText(item.title);
+  if (item.control === "custom") {
+    return asText(item.title);
+  }
   return item.title;
 }
 
@@ -67,14 +75,20 @@ function itemDescription(item: Item): string | undefined {
 function itemEntries(
   section: SectionDef,
   group: GroupConfig,
-): SettingsSearchEntry[] {
+): Array<SettingsSearchEntry> {
   const groupTitle = asText(group.title);
-  const entries: SettingsSearchEntry[] = [];
-  if (isStaticallyHidden(group.visible)) return entries;
+  const entries: Array<SettingsSearchEntry> = [];
+  if (isStaticallyHidden(group.visible)) {
+    return entries;
+  }
   for (const item of group.items ?? []) {
-    if (isStaticallyHidden(item.visible)) continue;
+    if (isStaticallyHidden(item.visible)) {
+      continue;
+    }
     const title = itemTitle(item);
-    if (!title) continue;
+    if (!title) {
+      continue;
+    }
     const description = itemDescription(item);
     entries.push({
       id: `${section.id}:${item.key}`,
@@ -91,9 +105,9 @@ function itemEntries(
   return entries;
 }
 
-function sectionEntries(section: SectionDef): SettingsSearchEntry[] {
+function sectionEntries(section: SectionDef): Array<SettingsSearchEntry> {
   const { config } = section;
-  const entries: SettingsSearchEntry[] = [];
+  const entries: Array<SettingsSearchEntry> = [];
 
   entries.push({
     id: section.id,
@@ -111,9 +125,8 @@ function sectionEntries(section: SectionDef): SettingsSearchEntry[] {
   return entries;
 }
 
-export const SETTINGS_SEARCH_INDEX: SettingsSearchEntry[] = SECTIONS.filter(
-  (section) => !section.hidden,
-).flatMap(sectionEntries);
+export const SETTINGS_SEARCH_INDEX: Array<SettingsSearchEntry> =
+  SECTIONS.filter((section) => !section.hidden).flatMap(sectionEntries);
 
 const MANUAL_ENTRIES = [
   ["library", "Library", "logo", "Logo", `Choose an image from ${THIS_DEVICE}`],

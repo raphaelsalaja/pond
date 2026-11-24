@@ -1,4 +1,5 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
+import { isPredicateList } from "@pond/schema/filters/types";
 import type {
   FieldId,
   Predicate,
@@ -31,20 +32,22 @@ const UNIT_FACTORS = {
   gigabytes: 1024 ** 3,
 } satisfies Record<RangeUnit, number>;
 
-function unitItems(field: FieldId): { value: RangeUnit; label: string }[] {
-  if (field === "duration")
+function unitItems(field: FieldId): Array<{ value: RangeUnit; label: string }> {
+  if (field === "duration") {
     return [
       { value: "seconds", label: "Seconds" },
       { value: "minutes", label: "Minutes" },
       { value: "hours", label: "Hours" },
     ];
-  if (field === "fileSize")
+  }
+  if (field === "fileSize") {
     return [
       { value: "bytes", label: "Bytes" },
       { value: "kilobytes", label: "KB" },
       { value: "megabytes", label: "MB" },
       { value: "gigabytes", label: "GB" },
     ];
+  }
   return [];
 }
 
@@ -53,21 +56,34 @@ function localDate(value: PredicateValue | undefined): string {
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}/)
     .safeParse(value);
-  if (!parsed.success) return "";
+  if (!parsed.success) {
+    return "";
+  }
   const date = new Date(parsed.data);
-  if (!Number.isFinite(date.getTime())) return "";
+  if (!Number.isFinite(date.getTime())) {
+    return "";
+  }
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 export function rangeBounds(
   predicate?: Predicate,
 ): [PredicateValue | undefined, PredicateValue | undefined] {
-  if (!predicate) return ["", ""];
-  if (predicate.operator === "between" && Array.isArray(predicate.value))
+  if (!predicate) {
+    return ["", ""];
+  }
+  if (predicate.operator === "between" && isPredicateList(predicate.value)) {
     return [predicate.value[0], predicate.value[1]];
-  if (predicate.operator === "eq") return [predicate.value, predicate.value];
-  if (["gte", "gt"].includes(predicate.operator)) return [predicate.value, ""];
-  if (["lte", "lt"].includes(predicate.operator)) return ["", predicate.value];
+  }
+  if (predicate.operator === "eq") {
+    return [predicate.value, predicate.value];
+  }
+  if (["gte", "gt"].includes(predicate.operator)) {
+    return [predicate.value, ""];
+  }
+  if (["lte", "lt"].includes(predicate.operator)) {
+    return ["", predicate.value];
+  }
   return ["", ""];
 }
 
@@ -77,14 +93,24 @@ export function rangePredicate(
   end: string,
   multiplier = 1,
 ): Predicate | null {
-  if (!start && !end) return null;
+  if (!start && !end) {
+    return null;
+  }
   const date = FIELD_META[field].type === "date";
   const bound = (text: string, last: boolean): number => {
-    if (!date) return Number(text) * multiplier;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return Number.NaN;
+    if (!date) {
+      return Number(text) * multiplier;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+      return Number.NaN;
+    }
     const value = new Date(`${text}T00:00:00`);
-    if (!Number.isFinite(value.getTime())) return Number.NaN;
-    if (localDate(value.toISOString()) !== text) return Number.NaN;
+    if (!Number.isFinite(value.getTime())) {
+      return Number.NaN;
+    }
+    if (localDate(value.toISOString()) !== text) {
+      return Number.NaN;
+    }
     if (last) {
       value.setDate(value.getDate() + 1);
       value.setMilliseconds(-1);
@@ -102,16 +128,20 @@ export function rangePredicate(
             (value < 0 ||
               (field === "fileCount" && !Number.isInteger(value))))),
     )
-  )
+  ) {
     return null;
-  if (lo !== null && hi !== null && lo > hi) return null;
+  }
+  if (lo !== null && hi !== null && lo > hi) {
+    return null;
+  }
   const value = (n: number) => (date ? new Date(n).toISOString() : n);
-  if (lo !== null && hi !== null)
+  if (lo !== null && hi !== null) {
     return {
       field,
       operator: !date && lo === hi ? "eq" : "between",
       value: !date && lo === hi ? lo : [value(lo), value(hi)],
     };
+  }
   return lo !== null
     ? { field, operator: "gte", value: value(lo) }
     : hi !== null
@@ -153,8 +183,12 @@ export function CustomFilter({
   const factor = UNIT_FACTORS[unit];
   const draft = rangePredicate(field, start, end, factor);
   const sameBound = (text: string, value: PredicateValue | undefined) => {
-    if (date) return text === localDate(value);
-    if (text === "" || value === "") return text === value;
+    if (date) {
+      return text === localDate(value);
+    }
+    if (text === "" || value === "") {
+      return text === value;
+    }
     return (
       Math.abs(Number(text) * factor - Number(value)) <=
       Math.max(1, Math.abs(Number(value))) * 1e-10
@@ -178,8 +212,11 @@ export function CustomFilter({
       onSubmit={(event) => {
         event.preventDefault();
         schedule();
-        if (predicate) onApply(predicate);
-        else if (!start && !end) onClear?.();
+        if (predicate) {
+          onApply(predicate);
+        } else if (!start && !end) {
+          onClear?.();
+        }
       }}
     >
       {date ? (

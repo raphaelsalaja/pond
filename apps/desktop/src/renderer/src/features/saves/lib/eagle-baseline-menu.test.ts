@@ -1,7 +1,7 @@
 import type { MenuItemSpec } from "@pond/ui";
-import { describe, expect, it } from "vitest";
-import "@/app/effects/save-library-bridge";
 import { clipEmbeddingVersion, embeddingDimensions } from "@shared/embeddings";
+import "@/app/effects/save-library-bridge";
+import { describe, expect, it } from "vitest";
 import type { Save } from "@/features/saves/types";
 import { menuLabels as labels } from "@/shared/test/menu-labels";
 import { buildSaveMenu } from "./menu";
@@ -125,15 +125,21 @@ function fontSave(): Save {
 }
 
 function findSubmenu(
-  items: MenuItemSpec[],
+  items: Array<MenuItemSpec>,
   label: string,
 ): Extract<MenuItemSpec, { type: "submenu" }> | undefined {
   for (const item of items) {
-    if ("hidden" in item && item.hidden) continue;
-    if (item.type === "submenu" && item.label === label) return item;
+    if ("hidden" in item && item.hidden) {
+      continue;
+    }
+    if (item.type === "submenu" && item.label === label) {
+      return item;
+    }
     if ((item.type === "submenu" || item.type === "group") && "items" in item) {
       const nested = findSubmenu(item.items, label);
-      if (nested) return nested;
+      if (nested) {
+        return nested;
+      }
     }
   }
 }

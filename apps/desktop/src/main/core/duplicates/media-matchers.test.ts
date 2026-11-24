@@ -50,10 +50,10 @@ function sets(partial: Partial<FingerprintSets>): FingerprintSets {
   return { image: new Map(), video: new Map(), audio: new Map(), ...partial };
 }
 
-function frames(seed: number, length: number): bigint[] {
+function frames(seed: number, length: number): Array<bigint> {
   let state = seed;
   const next = () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
     return BigInt(state);
   };
   return Array.from({ length }, () => (next() << 32n) | next());
@@ -62,7 +62,7 @@ function frames(seed: number, length: number): bigint[] {
 function audioFrames(seed: number, length: number): Uint32Array {
   let state = seed;
   return Uint32Array.from({ length }, () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
     return state;
   });
 }
@@ -71,7 +71,11 @@ const hopSeconds = 128 / AUDIO_PRINT_SAMPLE_RATE;
 const audio = (values: Uint32Array) =>
   encodeAudioPrint({ durationSeconds: 30, hopSeconds, frames: values });
 
-function clip(durationSeconds: number, intervalSeconds: number, of: bigint[]) {
+function clip(
+  durationSeconds: number,
+  intervalSeconds: number,
+  of: Array<bigint>,
+) {
   return encodeVideoPrint({ durationSeconds, intervalSeconds, frames: of });
 }
 
@@ -173,7 +177,7 @@ describe("audio matching", () => {
   });
 });
 
-function run(bin: string, args: string[]): Promise<void> {
+function run(bin: string, args: Array<string>): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(bin, args, { stdio: "ignore" });
     child.on("error", reject);
@@ -181,6 +185,16 @@ function run(bin: string, args: string[]): Promise<void> {
       code === 0 ? resolve() : reject(new Error(`ffmpeg exited ${code}`)),
     );
   });
+}
+
+async function printOf(path: string) {
+  const outcome = await computeFingerprint(FINGERPRINT_ALGORITHMS.video, path);
+  expect(outcome.status).toBe("ok");
+  const print = outcome.value ? decodeVideoPrint(outcome.value) : null;
+  if (!print) {
+    throw new Error(`No print for ${path}`);
+  }
+  return print;
 }
 
 const ffmpeg = binariesAvailable().ffmpeg;
@@ -208,16 +222,6 @@ describe.skipIf(!ffmpeg)("video fingerprints from real files", () => {
         smaller,
       ]);
       await source("mandelbrot=size=320x240:rate=25", other);
-      const printOf = async (path: string) => {
-        const outcome = await computeFingerprint(
-          FINGERPRINT_ALGORITHMS.video,
-          path,
-        );
-        expect(outcome.status).toBe("ok");
-        const print = outcome.value ? decodeVideoPrint(outcome.value) : null;
-        if (!print) throw new Error(`No print for ${path}`);
-        return print;
-      };
       const [a, b, c] = await Promise.all([
         printOf(original),
         printOf(smaller),

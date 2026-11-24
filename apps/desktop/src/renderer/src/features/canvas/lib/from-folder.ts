@@ -1,11 +1,9 @@
-import {
-  CANVAS_ITEM_LIMIT,
-  type CanvasSummary,
-} from "@shared/canvas-contracts";
+import { CANVAS_ITEM_LIMIT } from "@shared/canvas-contracts";
+import type { CanvasSummary } from "@shared/canvas-contracts";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 
 interface FolderSavesPlan {
-  saveIds: string[];
+  saveIds: Array<string>;
   present: number;
   overflow: number;
 }
@@ -17,7 +15,7 @@ interface Notice {
 
 /** Folder Saves that fit on the Canvas, skipping ones already there. */
 export function planFolderSaves(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   canvas?: Pick<CanvasSummary, "saveIds" | "itemCount">,
 ): FolderSavesPlan {
   const onCanvas = new Set(canvas?.saveIds ?? []);
@@ -41,16 +39,18 @@ function overflowCopy(overflow: number): string {
 
 export function folderSavesNotice(name: string, plan: FolderSavesPlan): Notice {
   const added = plan.saveIds.length;
-  if (!added && plan.overflow)
+  if (!added && plan.overflow) {
     return {
       title: `"${name}" is full`,
       description: overflowCopy(plan.overflow),
     };
-  if (!added)
+  }
+  if (!added) {
     return {
       title: `Already on "${name}"`,
       description: "Every Save in this folder is on the canvas.",
     };
+  }
   const details = [
     plan.present
       ? `Skipped ${savesCopy(plan.present)} already on the canvas.`

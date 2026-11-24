@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import * as schema from "@pond/schema/db";
+import { deletedSourceIds } from "@pond/schema/db";
 import { buildWhere } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { is } from "drizzle-orm";
@@ -14,13 +14,16 @@ import {
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { migratePond } from "./migrations";
+import { libraryTables } from "./tables";
 
 function nativeSqliteAvailable(): boolean {
   try {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
@@ -72,14 +75,18 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     const db = new Database(":memory:");
     try {
       migratePond(db);
-      for (const table of Object.values(schema)) {
-        if (!is(table, SQLiteTable)) continue;
+      for (const table of Object.values(libraryTables)) {
+        if (!is(table, SQLiteTable)) {
+          continue;
+        }
         const config = getTableConfig(table);
         const present = db
           .prepare(`pragma table_info(${config.name})`)
           .all()
           .map((row) => z.object({ name: z.string() }).parse(row).name);
-        if (present.length === 0) continue;
+        if (present.length === 0) {
+          continue;
+        }
         expect(present, config.name).toEqual(
           expect.arrayContaining(config.columns.map((column) => column.name)),
         );
@@ -162,13 +169,9 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
       expect(
         db.prepare("SELECT source_id FROM deleted_source_ids").all(),
       ).toEqual([{ source_id: "100" }]);
-      const orm = drizzle(db, { schema });
+      const orm = drizzle(db, { schema: libraryTables });
       const again = { source: "twitter" as const, sourceId: "100" };
-      orm
-        .insert(schema.deletedSourceIds)
-        .values(again)
-        .onConflictDoNothing()
-        .run();
+      orm.insert(deletedSourceIds).values(again).onConflictDoNothing().run();
       expect(
         db.prepare("SELECT source_id FROM deleted_source_ids").all(),
       ).toEqual([{ source_id: "100" }]);
@@ -185,7 +188,9 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
         combinator: "and",
         rules: [{ field: "post", operator: "eq", value: "instagram:DAbC" }],
       });
-      if (!where) throw new Error("Expected a post predicate");
+      if (!where) {
+        throw new Error("Expected a post predicate");
+      }
       const compiled = new SQLiteSyncDialect().sqlToQuery(where);
       const plan = db
         .prepare(

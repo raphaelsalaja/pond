@@ -1,14 +1,16 @@
 import { mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
-import { type NewSave, type Save, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { NewSave, Save } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import mime from "mime-types";
 import { getDb } from "../../db";
 import { executeTransaction, withMutationScope } from "../executor";
 import { createManualSave } from "../manual-import";
 import { persistSave } from "../persist-save";
-import { type EnqueueOneResult, enqueue } from "../pipeline/enqueue";
+import { enqueue } from "../pipeline/enqueue";
+import type { EnqueueOneResult } from "../pipeline/enqueue";
 import { setSaveTags } from "../tags";
 import { hasUserTitle } from "../user-metadata";
 import type { createMymindClient, MymindObject } from "./client";
@@ -18,7 +20,7 @@ import type { MymindSyncState } from "./state";
 interface MymindMetadata {
   title?: string;
   notes?: string;
-  tags: string[];
+  tags: Array<string>;
   createdAt: Date;
   savedAt: Date;
 }
@@ -66,7 +68,9 @@ const defaultDependencies: MymindImportDependencies = {
     withMutationScope(async () => {
       const db = await getDb();
       const current = db.select().from(saves).where(eq(saves.id, id)).get();
-      if (!current) throw new Error("The imported mymind Save is missing.");
+      if (!current) {
+        throw new Error("The imported mymind Save is missing.");
+      }
       const metadata = mergeMymindMetadata(current, incoming);
       const patch: Partial<NewSave> = {
         importedFrom: "mymind",
@@ -78,10 +82,14 @@ const defaultDependencies: MymindImportDependencies = {
       const saved = await persistSave(id, patch, {
         actorReason: "mymind:sync",
       });
-      if (!saved) throw new Error("The imported mymind Save is missing.");
+      if (!saved) {
+        throw new Error("The imported mymind Save is missing.");
+      }
       beforeWrite();
       const tags = await setSaveTags(id, metadata.tags);
-      if (!tags.ok) throw new Error("The mymind tags could not be saved.");
+      if (!tags.ok) {
+        throw new Error("The mymind tags could not be saved.");
+      }
       if (metadata.title && !hasUserTitle(id)) {
         beforeWrite();
         await executeTransaction({
@@ -99,10 +107,14 @@ const defaultDependencies: MymindImportDependencies = {
 
 function sourceUrl(object: MymindObject): string | undefined {
   const value = object.source?.url || object.url;
-  if (!value) return undefined;
+  if (!value) {
+    return undefined;
+  }
   try {
     const url = new URL(value);
-    if (url.protocol === "http:" || url.protocol === "https:") return url.href;
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.href;
+    }
   } catch {
     // Invalid source URLs cannot be imported as links.
   }
@@ -115,8 +127,9 @@ async function downloadBlob(
   object: MymindObject,
   signal?: AbortSignal,
 ): Promise<string> {
-  if (!response.ok || !response.body)
+  if (!response.ok || !response.body) {
     throw new Error("The mymind file could not be downloaded.");
+  }
   const extension = mime.extension(response.headers.get("content-type") ?? "");
   const originalName = basename(
     (object.blob?.name || "mymind-file").replaceAll("\\", "/"),
@@ -136,7 +149,9 @@ async function downloadBlob(
       signal?.throwIfAborted();
       const chunk = await reader.read();
       signal?.throwIfAborted();
-      if (chunk.done) break;
+      if (chunk.done) {
+        break;
+      }
       await file.writeFile(chunk.value);
     }
     return path;
@@ -172,7 +187,9 @@ export async function importMymindObject(
   const previous = Object.hasOwn(state.imports, object.id)
     ? state.imports[object.id]
     : undefined;
-  if (previous?.complete) return { id: previous.saveId, imported: false };
+  if (previous?.complete) {
+    return { id: previous.saveId, imported: false };
+  }
 
   const notes = [
     mymindContentText(object.content),
@@ -188,8 +205,9 @@ export async function importMymindObject(
     savedAt: new Date(object.created),
   };
   const url = sourceUrl(object);
-  if (!url && !object.blob && !metadata.title && !metadata.notes)
+  if (!url && !object.blob && !metadata.title && !metadata.notes) {
     throw new Error("The mymind card is empty. Pond will try again later.");
+  }
 
   async function record(saveId: string, complete: boolean): Promise<void> {
     beforeWrite();
@@ -252,12 +270,16 @@ export async function importMymindObject(
       url,
       ...(file ? { filePaths: [file] } : { mediaType: "text" }),
     });
-    if (!result.ok) throw new Error("The mymind card could not be imported.");
+    if (!result.ok) {
+      throw new Error("The mymind card could not be imported.");
+    }
     const owned =
       !result.skipped || (await dependencies.isOwnedSave(result.id, accountId));
     await record(result.id, true);
     return { id: result.id, imported: owned };
   } finally {
-    if (directory) await rm(directory, { recursive: true, force: true });
+    if (directory) {
+      await rm(directory, { recursive: true, force: true });
+    }
   }
 }

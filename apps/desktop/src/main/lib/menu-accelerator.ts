@@ -16,12 +16,16 @@ const MENU_MODIFIERS = new Set([
 
 /** macOS still highlights displayed single-key accelerators even when registerAccelerator is false. */
 export function isTypingMenuAccelerator(accelerator: string): boolean {
-  if (accelerator.includes(" ")) return true;
+  if (accelerator.includes(" ")) {
+    return true;
+  }
   return !accelerator.split("+").some((part) => MENU_MODIFIERS.has(part));
 }
 
 export function menuAccelerator(shortcut: ShortcutDef): string | undefined {
-  if (shortcut.sequence) return undefined;
+  if (shortcut.sequence) {
+    return undefined;
+  }
   const accelerator = shortcut.keys
     ?.split("+")
     .map((part) => {
@@ -43,6 +47,8 @@ export function menuAccelerator(shortcut: ShortcutDef): string | undefined {
       }
     })
     .join("+");
-  if (!accelerator || isTypingMenuAccelerator(accelerator)) return undefined;
+  if (!accelerator || isTypingMenuAccelerator(accelerator)) {
+    return undefined;
+  }
   return accelerator;
 }

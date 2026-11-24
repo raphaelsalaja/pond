@@ -6,14 +6,10 @@
  * variant at the DPI steps Windows asks for (16px base, 1.25x, 1.5x, 2x).
  */
 
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import sharp from "sharp";
 
-const resources = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../resources",
-);
+const resources = resolve(import.meta.dirname, "../resources");
 const source = join(resources, "trayTemplate@2x.png");
 
 const variants = [

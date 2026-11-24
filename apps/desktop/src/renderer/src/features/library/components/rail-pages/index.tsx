@@ -1,14 +1,7 @@
-import {
-  Activity,
-  type ComponentType,
-  Suspense,
-  useEffect,
-  useState,
-} from "react";
-import {
-  type RailPage,
-  useRailPage,
-} from "@/features/library/state/shell-layout";
+import { Activity, Suspense, useEffect, useState } from "react";
+import type { ComponentType } from "react";
+import { useRailPage } from "@/features/library/state/shell-layout";
+import type { RailPage } from "@/features/library/state/shell-layout";
 import { useOpenSaveId } from "@/features/saves/navigation";
 import {
   lazyWithPreload,
@@ -31,10 +24,12 @@ const PAGES = {
 export function RailPages() {
   const railPage = useRailPage();
   const active = useOpenSaveId() === null ? railPage : null;
-  const [visited, setVisited] = useState<readonly RailPage[]>(() =>
+  const [visited, setVisited] = useState<ReadonlyArray<RailPage>>(() =>
     active ? [active] : [],
   );
-  if (active && !visited.includes(active)) setVisited([...visited, active]);
+  if (active && !visited.includes(active)) {
+    setVisited([...visited, active]);
+  }
 
   useEffect(
     () => preloadWhenIdle(...Object.values(PAGES).map((page) => page.preload)),

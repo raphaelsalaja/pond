@@ -1,11 +1,7 @@
 import type { ImageCrop } from "@pond/schema/db";
-import {
-  type Dispatch,
-  type RefObject,
-  type SetStateAction,
-  useEffect,
-  useRef,
-} from "react";
+import { isNode } from "@pond/ui/dom";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import type { Dispatch, RefObject, SetStateAction } from "react";
 import { containImage, nudgeCrop } from "@/features/saves/lib/image-regions";
 import type { InspectorMode } from "./types";
 
@@ -33,20 +29,27 @@ export function useCropKeyboard({
   setMode,
 }: CropKeyboardOptions): void {
   const applyRef = useRef(onApply);
-  applyRef.current = onApply;
+  useLayoutEffect(() => {
+    applyRef.current = onApply;
+  }, [onApply]);
 
   useEffect(() => {
-    if (!active || mode !== "crop" || !draft) return;
+    if (!active || mode !== "crop" || !draft) {
+      return;
+    }
     const element = frame.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     const onKey = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented ||
         event.isComposing ||
-        !(event.target instanceof Node) ||
+        !isNode(event.target) ||
         !frame.current?.contains(event.target)
-      )
+      ) {
         return;
+      }
       if (event.key === "Enter") {
         event.preventDefault();
         event.stopPropagation();
@@ -91,7 +94,9 @@ export function useCropKeyboard({
                   ? [0, 0, 0, py]
                   : [0, py, 0, 0]
                 : null;
-      if (!delta) return;
+      if (!delta) {
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
       const [dx, dy, dw, dh] = delta;

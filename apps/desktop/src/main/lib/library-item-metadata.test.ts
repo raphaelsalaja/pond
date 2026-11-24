@@ -5,7 +5,7 @@ import { afterEach, expect, it } from "vitest";
 import { saveDirIn } from "../paths";
 import { readSaveMetadata } from "./library";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),

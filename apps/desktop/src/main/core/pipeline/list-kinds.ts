@@ -1,4 +1,5 @@
-import { type ListKind, type Source, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { ListKind, Source } from "@pond/schema/db";
 import {
   listKindsEqual,
   mergeListKinds,
@@ -16,13 +17,21 @@ const EXPLICIT_SAVED = new Set([
   "user:quickAdd",
 ]);
 
-export function listKindsFromTrigger(trigger: string | undefined): ListKind[] {
-  if (!trigger) return [];
-  if (EXPLICIT_SAVED.has(trigger)) return ["saved"];
+export function listKindsFromTrigger(
+  trigger: string | undefined,
+): Array<ListKind> {
+  if (!trigger) {
+    return [];
+  }
+  if (EXPLICIT_SAVED.has(trigger)) {
+    return ["saved"];
+  }
   const suffix = trigger.includes(":")
     ? trigger.slice(trigger.lastIndexOf(":") + 1)
     : trigger;
-  if (suffix === "like" || suffix === "upvote") return ["liked"];
+  if (suffix === "like" || suffix === "upvote") {
+    return ["liked"];
+  }
   if (
     suffix === "save" ||
     suffix === "bookmark" ||
@@ -38,31 +47,37 @@ export function listKindsFromTrigger(trigger: string | undefined): ListKind[] {
 /** A slide split from a post answers to the post's Source ID, which is what a list walk reports. */
 const postSourceId = sql<string>`coalesce(json_extract(${saves.rawSlim}, '$.split.sourceId'), ${saves.sourceId})`;
 
-function chunk<T>(rows: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, size + i));
+function chunk<T>(rows: Array<T>, size: number): Array<Array<T>> {
+  const out: Array<Array<T>> = [];
+  for (let i = 0; i < rows.length; i += size) {
+    out.push(rows.slice(i, size + i));
+  }
   return out;
 }
 
 /** Returns the source ids of list-filtered saves found on another list; they're purged so the run queues them as new. */
 export async function mergeListKindsOntoExisting(
   source: Source,
-  entries: ReadonlyArray<{ sourceId: string; listKinds?: ListKind[] }>,
+  entries: ReadonlyArray<{ sourceId: string; listKinds?: Array<ListKind> }>,
 ): Promise<Set<string>> {
   const relisted = new Set<string>();
-  const incoming = new Map<string, ListKind[]>();
+  const incoming = new Map<string, Array<ListKind>>();
   for (const entry of entries) {
     const next = normalizeListKinds(entry.listKinds);
-    if (next.length === 0) continue;
+    if (next.length === 0) {
+      continue;
+    }
     incoming.set(
       entry.sourceId,
       mergeListKinds(incoming.get(entry.sourceId), next),
     );
   }
-  if (incoming.size === 0) return relisted;
+  if (incoming.size === 0) {
+    return relisted;
+  }
 
   const db = await getDb();
-  const released: string[] = [];
+  const released: Array<string> = [];
   for (const idChunk of chunk([...incoming.keys()], 400)) {
     const rows = db
       .select({
@@ -90,9 +105,13 @@ export async function mergeListKindsOntoExisting(
       .all();
     for (const row of rows) {
       const extra = incoming.get(row.postId);
-      if (!extra) continue;
+      if (!extra) {
+        continue;
+      }
       const merged = mergeListKinds(row.listKinds, extra);
-      if (listKindsEqual(row.listKinds, merged)) continue;
+      if (listKindsEqual(row.listKinds, merged)) {
+        continue;
+      }
       if (row.status === "skipped" && row.importFilter === "list") {
         released.push(row.id);
         relisted.add(row.postId);
@@ -132,7 +151,9 @@ export async function dropMissingListKind(
     .all();
   let dropped = 0;
   for (const row of rows) {
-    if (presentIds.has(row.postId) || !row.listKinds.includes(kind)) continue;
+    if (presentIds.has(row.postId) || !row.listKinds.includes(kind)) {
+      continue;
+    }
     await persistSave(
       row.id,
       { listKinds: row.listKinds.filter((k) => k !== kind) },

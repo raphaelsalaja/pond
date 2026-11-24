@@ -10,7 +10,7 @@ export interface InstagramMediaVersion {
 }
 
 export interface InstagramImageVersions {
-  candidates?: InstagramMediaVersion[];
+  candidates?: Array<InstagramMediaVersion>;
 }
 
 export interface InstagramUser {
@@ -36,8 +36,8 @@ export interface InstagramMediaNode {
   user?: InstagramUser;
   owner?: InstagramUser;
   image_versions2?: InstagramImageVersions;
-  video_versions?: InstagramMediaVersion[];
-  carousel_media?: InstagramMediaNode[];
+  video_versions?: Array<InstagramMediaVersion>;
+  carousel_media?: Array<InstagramMediaNode>;
 }
 
 export interface InstagramMedia {
@@ -67,7 +67,7 @@ export interface InstagramPost {
   description?: string;
   author?: string;
   mediaUrl?: string;
-  mediaUrls?: InstagramMedia[];
+  mediaUrls?: Array<InstagramMedia>;
   mediaType?: MediaType;
   meta?: InstagramMeta;
 }
@@ -108,23 +108,33 @@ export function inPageInstagramNormalize(validators: BrowserValidators) {
   function pickBestImage(
     iv2: InstagramImageVersions | undefined,
   ): string | null {
-    if (!iv2) return null;
+    if (!iv2) {
+      return null;
+    }
     const cands = iv2.candidates || [];
     let best: { url: string; w: number } | null = null;
     for (const c of cands) {
-      if (c?.url === undefined) continue;
+      if (c?.url === undefined) {
+        continue;
+      }
       const w = Number(c.width) || 0;
-      if (!best || w > best.w) best = { url: c.url, w };
+      if (!best || w > best.w) {
+        best = { url: c.url, w };
+      }
     }
     return best?.url ?? null;
   }
 
   function pickBestVideo(
-    versions: InstagramMediaVersion[] | undefined,
+    versions: Array<InstagramMediaVersion> | undefined,
   ): string | null {
-    if (!Array.isArray(versions)) return null;
+    if (!Array.isArray(versions)) {
+      return null;
+    }
     for (const v of versions) {
-      if (v?.url !== undefined) return v.url;
+      if (v?.url !== undefined) {
+        return v.url;
+      }
     }
     return null;
   }
@@ -134,9 +144,11 @@ export function inPageInstagramNormalize(validators: BrowserValidators) {
     opts?: { savedTimestamp?: number },
   ): InstagramEntry | null {
     node = validators.instagramNode.parse(node);
-    const pk = node.pk != null ? String(node.pk) : null;
+    const pk = node.pk !== undefined ? String(node.pk) : null;
     const code = node.code ?? (pk ? pkToShortcode(pk) : null);
-    if (!code) return null;
+    if (!code) {
+      return null;
+    }
 
     const kind = node.media_type === 2 ? "reel" : "p";
     const out: InstagramEntry = {
@@ -144,7 +156,7 @@ export function inPageInstagramNormalize(validators: BrowserValidators) {
       url: `https://www.instagram.com/${kind}/${code}/`,
     };
 
-    if (opts?.savedTimestamp != null) {
+    if (opts?.savedTimestamp !== undefined && opts.savedTimestamp !== null) {
       out.savedAt = new Date(opts.savedTimestamp * 1000).toISOString();
     }
 
@@ -154,9 +166,15 @@ export function inPageInstagramNormalize(validators: BrowserValidators) {
     if (user?.username) {
       out.author = `@${user.username}`;
       meta.authorUrl = `https://www.instagram.com/${user.username}/`;
-      if (user.full_name) meta.authorName = user.full_name;
-      if (user.profile_pic_url) meta.authorAvatar = user.profile_pic_url;
-      if (user.is_verified !== undefined) meta.verified = user.is_verified;
+      if (user.full_name) {
+        meta.authorName = user.full_name;
+      }
+      if (user.profile_pic_url) {
+        meta.authorAvatar = user.profile_pic_url;
+      }
+      if (user.is_verified !== undefined) {
+        meta.verified = user.is_verified;
+      }
     }
 
     if (node.taken_at !== undefined) {
@@ -164,21 +182,36 @@ export function inPageInstagramNormalize(validators: BrowserValidators) {
     }
 
     const htmlLang = globalThis.document?.documentElement.lang?.trim() ?? null;
-    if (htmlLang) meta.lang = htmlLang;
+    if (htmlLang) {
+      meta.lang = htmlLang;
+    }
 
     const metrics: NonNullable<InstagramMeta["metrics"]> = {};
-    if (node.like_count !== undefined) metrics.likes = node.like_count;
-    if (node.comment_count !== undefined) metrics.comments = node.comment_count;
-    if (node.play_count !== undefined) metrics.plays = node.play_count;
-    if (Object.keys(metrics).length > 0) meta.metrics = metrics;
+    if (node.like_count !== undefined) {
+      metrics.likes = node.like_count;
+    }
+    if (node.comment_count !== undefined) {
+      metrics.comments = node.comment_count;
+    }
+    if (node.play_count !== undefined) {
+      metrics.plays = node.play_count;
+    }
+    if (Object.keys(metrics).length > 0) {
+      meta.metrics = metrics;
+    }
 
-    if (node.is_paid_partnership !== undefined)
+    if (node.is_paid_partnership !== undefined) {
       meta.isPaidPartnership = node.is_paid_partnership;
-    if (node.location?.name) meta.location = node.location.name;
-    if (node.accessibility_caption !== undefined)
+    }
+    if (node.location?.name) {
+      meta.location = node.location.name;
+    }
+    if (node.accessibility_caption !== undefined) {
       meta.accessibilityCaption = node.accessibility_caption;
-    if (node.video_duration !== undefined)
+    }
+    if (node.video_duration !== undefined) {
       meta.videoDurationSec = Math.round(node.video_duration);
+    }
 
     const text = validators.text.safeParse(node.caption).data ?? null;
     if (text) {
@@ -190,14 +223,16 @@ export function inPageInstagramNormalize(validators: BrowserValidators) {
           : `${firstLine.slice(0, 89).trimEnd()}…`;
     }
 
-    const media: InstagramMedia[] = [];
+    const media: Array<InstagramMedia> = [];
     const seen = new Set<string>();
     const push = (
       url: string | null,
       type: MediaType,
       extra?: Omit<InstagramMedia, "url" | "type">,
     ) => {
-      if (!url || /^blob:/i.test(url) || seen.has(url)) return;
+      if (!url || /^blob:/i.test(url) || seen.has(url)) {
+        return;
+      }
       seen.add(url);
       media.push({ url, type, ...extra });
     };
@@ -213,9 +248,15 @@ export function inPageInstagramNormalize(validators: BrowserValidators) {
           const v = pickBestVideo(child.video_versions);
           const img = pickBestImage(child.image_versions2);
           const extra: Omit<InstagramMedia, "url" | "type"> = {};
-          if (img) extra.poster = img;
-          if (altText) extra.altText = altText;
-          if (dur) extra.durationSec = dur;
+          if (img) {
+            extra.poster = img;
+          }
+          if (altText) {
+            extra.altText = altText;
+          }
+          if (dur) {
+            extra.durationSec = dur;
+          }
           push(v || img, "video", extra);
         } else {
           const img = pickBestImage(child.image_versions2);
@@ -238,7 +279,9 @@ export function inPageInstagramNormalize(validators: BrowserValidators) {
       out.mediaType = first.type;
     }
 
-    if (Object.keys(meta).length > 0) out.meta = meta;
+    if (Object.keys(meta).length > 0) {
+      out.meta = meta;
+    }
     return out;
   }
 

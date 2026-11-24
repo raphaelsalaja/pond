@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { type AssistantActivity, assistantProvider } from "./assistant";
+import { assistantProvider } from "./assistant";
+import type { AssistantActivity } from "./assistant";
 
 export const DEFAULT_FISH_ID = "default";
 export const DEFAULT_FISH_NAME = "Koi";
@@ -160,7 +161,7 @@ export type FishEvent =
 /** Saves captured in the browser for a fish, to attach in its chat. */
 export interface FishOpen {
   fishId: string;
-  saveIds: string[];
+  saveIds: Array<string>;
 }
 
 export interface FishLatest {
@@ -183,13 +184,13 @@ export interface FishQueryInputs {
   "fish.run": { id: string; routineId: string };
   "fish.pauseRoutine": { id: string; routineId: string; paused: boolean };
   "fish.deleteRoutine": { id: string; routineId: string };
-  "fish.arrange": { placements: FishPlacement[] };
+  "fish.arrange": { placements: Array<FishPlacement> };
   "fish.sections": Record<string, never>;
-  "fish.setSections": { sections: FishSection[] };
+  "fish.setSections": { sections: Array<FishSection> };
 }
 
 export interface FishQueryResults {
-  "fish.list": FishSummary[];
+  "fish.list": Array<FishSummary>;
   "fish.create": Fish;
   "fish.update": Fish;
   "fish.delete": { ok: true } | { ok: false; error: string };
@@ -198,6 +199,6 @@ export interface FishQueryResults {
   "fish.pauseRoutine": Fish;
   "fish.deleteRoutine": Fish;
   "fish.arrange": { ok: true };
-  "fish.sections": FishSection[];
-  "fish.setSections": FishSection[];
+  "fish.sections": Array<FishSection>;
+  "fish.setSections": Array<FishSection>;
 }

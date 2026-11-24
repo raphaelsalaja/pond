@@ -1,16 +1,19 @@
-import { DEFAULT_PREFS, type Prefs } from "@pond/schema/db";
+import { DEFAULT_PREFS } from "@pond/schema/db";
+import type { Prefs } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 import { createRuntimeControls } from "./runtime-controls";
 
 function setup(isPackaged = false) {
-  const events: string[] = [];
+  const events: Array<string> = [];
   let prefs = structuredClone(DEFAULT_PREFS);
   let readError: Error | null = null;
   let closeError: Error | null = null;
   const controls = createRuntimeControls({
     async getPrefs() {
       events.push("read");
-      if (readError) throw readError;
+      if (readError) {
+        throw readError;
+      }
       return prefs;
     },
     invalidatePrefs() {
@@ -23,7 +26,9 @@ function setup(isPackaged = false) {
         host: bind === "lan" ? "0.0.0.0" : "127.0.0.1",
         async close() {
           events.push("close");
-          if (closeError) throw closeError;
+          if (closeError) {
+            throw closeError;
+          }
         },
       };
     },

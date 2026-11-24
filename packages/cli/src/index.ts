@@ -1,6 +1,5 @@
 import { readFileSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { Command, CommanderError } from "commander";
 import { PondApiError } from "pond-api";
 import { z } from "zod";
@@ -43,19 +42,30 @@ export function createProgram(): Command {
 }
 
 function exitCode(error: Error): number {
-  if (error instanceof CommanderError) return error.exitCode;
+  if (error instanceof CommanderError) {
+    return error.exitCode;
+  }
   if (error instanceof PondApiError) {
-    if (error.kind === "connection") return 2;
-    if (error.kind === "authentication") return 3;
-    if (error.kind === "not-found") return 4;
-    if (error.kind === "conflict") return 5;
+    if (error.kind === "connection") {
+      return 2;
+    }
+    if (error.kind === "authentication") {
+      return 3;
+    }
+    if (error.kind === "not-found") {
+      return 4;
+    }
+    if (error.kind === "conflict") {
+      return 5;
+    }
     return 7;
   }
   if (
     error instanceof Error &&
     /cancel|confirmation required/i.test(error.message)
-  )
+  ) {
     return 6;
+  }
   return 7;
 }
 
@@ -67,8 +77,9 @@ export async function main(argv = process.argv): Promise<number> {
     if (
       error instanceof CommanderError &&
       ["commander.helpDisplayed", "commander.version"].includes(error.code)
-    )
+    ) {
       return 0;
+    }
     process.stderr.write(
       `${error instanceof Error ? error.message : String(error)}\n`,
     );
@@ -78,6 +89,7 @@ export async function main(argv = process.argv): Promise<number> {
 
 if (
   process.argv[1] &&
-  realpathSync(resolve(process.argv[1])) === fileURLToPath(import.meta.url)
-)
+  realpathSync(resolve(process.argv[1])) === import.meta.filename
+) {
   process.exitCode = await main();
+}

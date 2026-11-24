@@ -1,15 +1,13 @@
 // Checks that icon switches follow the color and style, skip unchanged icons, and recover from a failed step.
 import { describe, expect, it } from "vitest";
 import type { AppIconStyle } from "../../shared/app-icons";
-import {
-  type AppIconPorts,
-  createAppIconController,
-} from "./app-icon-controller";
+import { createAppIconController } from "./app-icon-controller";
+import type { AppIconPorts } from "./app-icon-controller";
 import { chooseAppIconSource } from "./app-icon-source";
 
 function harness() {
-  const dock: string[] = [];
-  const errors: Error[] = [];
+  const dock: Array<string> = [];
+  const errors: Array<Error> = [];
   const ports: AppIconPorts = {
     decide: (id: string, style: AppIconStyle | null) =>
       chooseAppIconSource({
@@ -73,7 +71,9 @@ describe("app icon controller", () => {
     const ports: AppIconPorts = {
       decide: () => ({ kind: "image", path: "grape/default.png" }),
       showImage(path) {
-        if (fail) throw new Error("dock unavailable");
+        if (fail) {
+          throw new Error("dock unavailable");
+        }
         h.dock.push(path);
       },
       showBuiltin() {},

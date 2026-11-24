@@ -13,9 +13,9 @@ export interface LargestSave {
 }
 
 export interface LargestSavesResult {
-  saves: LargestSave[];
-  sources: string[];
-  mediaTypes: MediaType[];
+  saves: Array<LargestSave>;
+  sources: Array<string>;
+  mediaTypes: Array<MediaType>;
 }
 
 export interface LargestFile {
@@ -30,9 +30,9 @@ export interface LargestFile {
 }
 
 export interface LargestFilesResult {
-  files: LargestFile[];
-  kinds: string[];
-  extensions: string[];
+  files: Array<LargestFile>;
+  kinds: Array<string>;
+  extensions: Array<string>;
 }
 
 export interface StorageShare {
@@ -52,15 +52,15 @@ export interface StorageAttributionResult {
   totalBytes: number;
   saves: number;
   unsizedFiles: number;
-  types: StorageShare[];
-  sources: StorageShare[];
-  extensions: StorageShare[];
-  folders: FolderStorage[];
+  types: Array<StorageShare>;
+  sources: Array<StorageShare>;
+  extensions: Array<StorageShare>;
+  folders: Array<FolderStorage>;
 }
 
 export interface DuplicateStorageResult {
   groups: number;
   saves: number;
   extraBytes: number;
-  ids: string[];
+  ids: Array<string>;
 }

@@ -27,7 +27,9 @@ export function createPondBundle(
   name: string = DEFAULT_LIBRARY_NAME,
 ): CreatePondResult {
   const trimmedParent = parentDir.trim();
-  if (!trimmedParent) return { ok: false, reason: "no_path" };
+  if (!trimmedParent) {
+    return { ok: false, reason: "no_path" };
+  }
 
   const safeName = name.trim() || DEFAULT_LIBRARY_NAME;
   /** Windows rejects `:`, device names and trailing dots in a folder name; the library keeps its display name. */
@@ -54,7 +56,9 @@ export function createPondBundle(
 }
 
 export function ensureDefaultLibrary(): void {
-  if (readLibraryPointer()) return;
+  if (readLibraryPointer()) {
+    return;
+  }
 
   const parentDir = join(app.getPath("home"), "Pond");
   const defaultRoot = join(parentDir, `${DEFAULT_LIBRARY_NAME}.pond`);

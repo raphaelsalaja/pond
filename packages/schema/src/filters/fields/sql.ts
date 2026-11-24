@@ -1,4 +1,5 @@
-import { type SQL, type SQLWrapper, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import type { SQL, SQLWrapper } from "drizzle-orm";
 import { saves } from "../../db";
 
 export function jsonArrayExists(column: SQLWrapper, needle: SQL): SQL {
@@ -20,7 +21,7 @@ export function jsonArrayDistinctCount(column: SQLWrapper, needle: SQL): SQL {
   )`;
 }
 
-export function folderExists(folderIds: string[]): SQL {
+export function folderExists(folderIds: Array<string>): SQL {
   if (folderIds.length === 0) {
     return sql`not exists (select 1 from save_folders where save_id = ${saves.id})`;
   }

@@ -64,13 +64,14 @@ describe("runsByDay", () => {
   });
 });
 
-describe("next and last run copy", () => {
-  const time = (at: number) =>
-    new Date(at).toLocaleTimeString(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-    });
+function time(at: number) {
+  return new Date(at).toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
+describe("next and last run copy", () => {
   it("reads the next run as a moment, or soon once it's due", () => {
     const later = now.getTime() + 3 * 3_600_000;
     expect(nextRunText(later, now)).toBe(`Next today at ${time(later)}`);

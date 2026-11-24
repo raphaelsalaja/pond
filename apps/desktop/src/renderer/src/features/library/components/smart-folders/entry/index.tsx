@@ -3,7 +3,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { IconDots } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
-import { Button, cssVars, Menu, type MenuItemSpec, Sidebar } from "@pond/ui";
+import { Button, cssVars, Menu, Sidebar } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
 import { useId } from "react";
 import { savedViews } from "@/features/library/state/saved-views";
@@ -21,10 +22,10 @@ import type { OpenEditor, SavedViewPresentation } from "../types";
 import styles from "./styles.module.css";
 
 interface EntryProps {
-  organization: ReturnType<typeof useOrganizationTree>;
+  organization: Omit<ReturnType<typeof useOrganizationTree>, "root">;
   view: SavedView;
-  views: SavedView[];
-  childrenByParent: Map<string | null, SavedView[]>;
+  views: Array<SavedView>;
+  childrenByParent: Map<string | null, Array<SavedView>>;
   activeId: string | null;
   depth: number;
   editingViewId: string | null;
@@ -32,7 +33,7 @@ interface EntryProps {
   onStartRenaming: (id: string) => void;
   openEditor: OpenEditor;
   presentations: Record<string, SavedViewPresentation>;
-  quickAccessIds: string[];
+  quickAccessIds: Array<string>;
   drop: SmartFolderDrop | null;
   groupOpen: (id: string) => boolean;
   onGroupOpenChange: (id: string, open: boolean) => void;
@@ -86,7 +87,7 @@ export function SmartFolderEntry({
   const selectedCount = views.filter((entry) =>
     organization.selected.includes(entry.id),
   ).length;
-  const items = (): MenuItemSpec[] =>
+  const items = (): Array<MenuItemSpec> =>
     selectedCount > 1 && organization.selected.includes(view.id)
       ? selectionItems(organization.selected, views)
       : entryItems({
@@ -178,8 +179,9 @@ export function SmartFolderEntry({
               ref={setActivatorNodeRef}
               onKeyDown={(event) => {
                 listeners?.onKeyDown?.(event);
-                if (!keyboardDrag && !event.defaultPrevented)
+                if (!keyboardDrag && !event.defaultPrevented) {
                   rowProps.onKeyDown?.(event);
+                }
               }}
             >
               <Sidebar.Icon>

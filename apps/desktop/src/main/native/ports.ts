@@ -28,13 +28,17 @@ const fishHandoff = createFishHandoff({
   },
   activate: () => app.focus({ steal: true }),
 });
-onCaptureComplete(fishHandoff.complete);
+onCaptureComplete((receipt) => fishHandoff.complete(receipt));
 
 export function liveNativePorts(): NativePorts {
   return {
     capture: async (draft, cookies, fishId) => {
-      if (cookies?.length) attachCaptureCookies(draft.id, cookies);
-      if (fishId) fishHandoff.remember(draft.id, fishId);
+      if (cookies?.length) {
+        attachCaptureCookies(draft.id, cookies);
+      }
+      if (fishId) {
+        fishHandoff.remember(draft.id, fishId);
+      }
       return captures.accept(draft);
     },
     captureStatus: (id) => captures.status(id),
@@ -71,8 +75,9 @@ export function liveNativePorts(): NativePorts {
       ]);
       const [prefs, accounts] = await Promise.all([getPrefs(), listAccounts()]);
       const likes = { ...prefs.extension.likes };
-      for (const source of sourcesSkippingLikes(accounts))
+      for (const source of sourcesSkippingLikes(accounts)) {
         likes[source] = false;
+      }
       return { ...prefs.extension, likes };
     },
     sessionPending,

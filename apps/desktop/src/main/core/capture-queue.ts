@@ -1,12 +1,11 @@
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import {
-  type CaptureDraft,
-  CaptureDraftSchema,
-  CaptureItemSchema,
-  type CaptureMetadata,
-  type CaptureReceipt,
+import { CaptureDraftSchema, CaptureItemSchema } from "@pond/schema/capture";
+import type {
+  CaptureDraft,
+  CaptureMetadata,
+  CaptureReceipt,
 } from "@pond/schema/capture";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -65,6 +64,25 @@ export interface CaptureQueuePorts {
   transfer<T>(operation: () => Promise<T>): Promise<T>;
 }
 
+const directory = (root: string) => join(root, ".capture-queue");
+const path = (root: string, id: string) => join(directory(root), `${id}.json`);
+const receipt = (job: Job): CaptureReceipt => {
+  const out: CaptureReceipt = {
+    id: job.draft.id,
+    library: job.library,
+    state: job.state,
+    completed: job.completed,
+    total: job.total ?? job.draft.items.length,
+    error: job.error,
+    saveIds: job.saveIds,
+    duplicateCount: job.duplicateCount,
+  };
+  if (job.warning) {
+    out.warning = job.warning;
+  }
+  return out;
+};
+
 export function createCaptureQueue(ports: CaptureQueuePorts) {
   const active = new Map<string, Promise<void>>();
   let serial = Promise.resolve();
@@ -77,53 +95,46 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
     );
     return result;
   }
-  const directory = (root: string) => join(root, ".capture-queue");
-  const path = (root: string, id: string) =>
-    join(directory(root), `${id}.json`);
   async function persist(job: Job) {
     await mkdir(directory(job.library), { recursive: true });
     const target = path(job.library, job.draft.id);
     const tmp = `${target}.tmp`;
     const value = JSON.stringify(job);
-    if (Buffer.byteLength(value) > 128 * 1024 * 1024)
+    if (Buffer.byteLength(value) > 128 * 1024 * 1024) {
       throw new Error("This capture exceeds the capture queue limit.");
-    if (ports.writeStored) await ports.writeStored(tmp, value);
-    else await writeFile(tmp, value);
+    }
+    if (ports.writeStored) {
+      await ports.writeStored(tmp, value);
+    } else {
+      await writeFile(tmp, value);
+    }
     await renameWithRetry(tmp, target);
   }
   async function read(root: string, id: string): Promise<Job> {
-    if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id))
+    if (!/^[a-zA-Z0-9_-]{1,100}$/.test(id)) {
       throw new Error("Invalid capture ID.");
+    }
     const target = path(root, id);
     const value = ports.readStored
       ? await ports.readStored(target)
       : await readFile(target, "utf8");
     const result = JobSchema.parse(JSON.parse(value));
-    if (result.library !== root || result.draft.id !== id)
+    if (result.library !== root || result.draft.id !== id) {
       throw new Error("This capture belongs to another library.");
+    }
     return result;
   }
-  const receipt = (job: Job): CaptureReceipt => {
-    const out: CaptureReceipt = {
-      id: job.draft.id,
-      library: job.library,
-      state: job.state,
-      completed: job.completed,
-      total: job.total ?? job.draft.items.length,
-      error: job.error,
-      saveIds: job.saveIds,
-      duplicateCount: job.duplicateCount,
-    };
-    if (job.warning) out.warning = job.warning;
-    return out;
-  };
   function run(job: Job) {
     const key = path(job.library, job.draft.id);
-    if (active.has(key)) return;
+    if (active.has(key)) {
+      return;
+    }
     const work = serial
       .then(() =>
         ports.transfer(async () => {
-          if (ports.root() !== job.library) return;
+          if (ports.root() !== job.library) {
+            return;
+          }
           if (existsSync(`${key}.cancel`)) {
             job.state = "cancelled";
             await persist(job);
@@ -138,12 +149,15 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
                 job.state = "cancelled";
                 break;
               }
-              if (ports.root() !== job.library)
+              if (ports.root() !== job.library) {
                 throw new Error(
                   "Open the original library to resume this capture.",
                 );
+              }
               const item = job.draft.items[job.completed];
-              if (!item) break;
+              if (!item) {
+                break;
+              }
               const result = await ports.process(
                 item,
                 job.draft.metadata,
@@ -152,8 +166,12 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
                 job.draft.trigger,
               );
               job.saveIds.push(result.id);
-              if (result.duplicate) job.duplicateCount++;
-              if (result.warning) job.warning = result.warning;
+              if (result.duplicate) {
+                job.duplicateCount++;
+              }
+              if (result.warning) {
+                job.warning = result.warning;
+              }
               job.completed++;
               await persist(job);
             }
@@ -181,9 +199,9 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
           }
         }),
       )
-      .catch(async (error) => {
+      .catch(async (cause: unknown) => {
         job.state = "failed";
-        job.error = error instanceof Error ? error.message : String(error);
+        job.error = cause instanceof Error ? cause.message : String(cause);
         await persist(job);
       })
       .finally(() => active.delete(key));
@@ -205,8 +223,9 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
                 "code" in error &&
                 error.code === "ENOENT"
               )
-            )
+            ) {
               throw error;
+            }
           }
           const job: Job = {
             draft,
@@ -220,18 +239,23 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
           return receipt(job);
         }),
       );
-      if (result.state === "accepted") run(await read(root, draft.id));
+      if (result.state === "accepted") {
+        run(await read(root, draft.id));
+      }
       return result;
     },
     async status(id: string): Promise<CaptureReceipt> {
       return receipt(await read(ports.root(), id));
     },
-    async list(): Promise<CaptureReceipt[]> {
+    async list(): Promise<Array<CaptureReceipt>> {
       const root = ports.root();
-      const entries = await readdir(directory(root)).catch((): string[] => []);
-      const out: CaptureReceipt[] = [];
-      for (const entry of entries.filter((name) => name.endsWith(".json")))
+      const entries = await readdir(directory(root)).catch(
+        (): Array<string> => [],
+      );
+      const out: Array<CaptureReceipt> = [];
+      for (const entry of entries.filter((name) => name.endsWith(".json"))) {
         out.push(receipt(await read(root, entry.slice(0, -5))));
+      }
       return out;
     },
     async resume(
@@ -242,16 +266,21 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
       const result = await serialize(() =>
         ports.transfer(async () => {
           const job = await read(root, id);
-          if (active.has(path(root, id)) || job.state === "complete")
+          if (active.has(path(root, id)) || job.state === "complete") {
             return receipt(job);
+          }
           await rm(`${path(root, id)}.cancel`, { force: true });
-          if (metadata) job.draft.metadata = metadata;
+          if (metadata) {
+            job.draft.metadata = metadata;
+          }
           job.state = "accepted";
           await persist(job);
           return receipt(job);
         }),
       );
-      if (result.state === "accepted") run(await read(root, id));
+      if (result.state === "accepted") {
+        run(await read(root, id));
+      }
       return result;
     },
     async cancel(id: string): Promise<void> {
@@ -259,7 +288,9 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
       await serialize(() =>
         ports.transfer(async () => {
           const job = await read(root, id);
-          if (job.state === "complete") return;
+          if (job.state === "complete") {
+            return;
+          }
           if (active.has(path(root, id))) {
             await writeFile(`${path(root, id)}.cancel`, "cancel");
             return;
@@ -270,16 +301,21 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
       );
     },
     async recover(): Promise<void> {
-      for (const job of await this.list())
+      for (const job of await this.list()) {
         if (job.state === "accepted" || job.state === "processing") {
-          if (existsSync(`${path(ports.root(), job.id)}.cancel`))
+          if (existsSync(`${path(ports.root(), job.id)}.cancel`)) {
             await this.cancel(job.id);
-          else await this.resume(job.id);
+          } else {
+            await this.resume(job.id);
+          }
         }
+      }
     },
     async securePending(): Promise<void> {
       const root = ports.root();
-      const entries = await readdir(directory(root)).catch((): string[] => []);
+      const entries = await readdir(directory(root)).catch(
+        (): Array<string> => [],
+      );
       for (const entry of entries.filter((name) => name.endsWith(".json"))) {
         const job = await read(root, entry.slice(0, -5));
         await persist(job);

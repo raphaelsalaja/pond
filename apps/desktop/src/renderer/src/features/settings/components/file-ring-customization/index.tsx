@@ -1,12 +1,12 @@
 import {
   closestCenter,
   DndContext,
-  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
   SortableContext,
@@ -26,11 +26,12 @@ import type { Folder } from "@pond/schema/db";
 import {
   FILE_RING_ACTIONS,
   FILE_RING_CAPACITY,
-  type FileRingItem,
   fileRingItemKey,
 } from "@pond/schema/file-ring";
+import type { FileRingItem } from "@pond/schema/file-ring";
 import { Button, Dialog, Empty, EmptyPreview, Menu, Settings } from "@pond/ui";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   RING_ACTIONS,
   ringSlotName,
@@ -148,8 +149,8 @@ function AddItemMenu({
   disabled,
   onAdd,
 }: {
-  items: readonly FileRingItem[];
-  folders: readonly Folder[];
+  items: ReadonlyArray<FileRingItem>;
+  folders: ReadonlyArray<Folder>;
   disabled: boolean;
   onAdd: (item: FileRingItem) => void;
 }) {
@@ -231,14 +232,17 @@ function FileRingDialog({
   const [folderViews] = usePrefs("folderViews");
   const { items, customized, folders } = useFileRingItems();
   const [order, setOrder] = useState(items);
+  const [orderSource, setOrderSource] = useState(items);
+  if (orderSource !== items) {
+    setOrderSource(items);
+    setOrder(items);
+  }
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
   );
-
-  useEffect(() => setOrder(items), [items]);
 
   const byId = useMemo(
     () => new Map(folders.map((folder) => [folder.id, folder])),
@@ -252,12 +256,13 @@ function FileRingDialog({
       return { label, icon: <Icon />, missing: false };
     }
     const folder = byId.get(item.folderId);
-    if (!folder)
+    if (!folder) {
       return {
         label: "Unavailable Folder",
         icon: <FolderIcon />,
         missing: true,
       };
+    }
     return {
       label: folder.name,
       icon: (
@@ -267,16 +272,20 @@ function FileRingDialog({
     };
   };
 
-  const save = (next: FileRingItem[]) => {
+  const save = (next: Array<FileRingItem>) => {
     setOrder(next);
     void patch({ items: next });
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) return;
+    if (!over || active.id === over.id) {
+      return;
+    }
     const from = ids.indexOf(String(active.id));
     const to = ids.indexOf(String(over.id));
-    if (from >= 0 && to >= 0) save(moveRingItem(order, from, to));
+    if (from >= 0 && to >= 0) {
+      save(moveRingItem(order, from, to));
+    }
   };
 
   return (

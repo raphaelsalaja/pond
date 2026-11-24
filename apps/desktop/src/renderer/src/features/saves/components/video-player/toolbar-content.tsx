@@ -42,10 +42,14 @@ export function VideoToolbarContent({
   const videoReady = state.duration > 0 && Boolean(meta.videoRef.current);
   const withVideo = (action: (video: HTMLVideoElement) => void) => {
     const video = meta.videoRef.current;
-    if (video) action(video);
+    if (video) {
+      action(video);
+    }
   };
 
-  if (!render) return null;
+  if (!render) {
+    return null;
+  }
 
   return render({
     actions: (

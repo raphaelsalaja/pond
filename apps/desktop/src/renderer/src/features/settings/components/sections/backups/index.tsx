@@ -49,13 +49,17 @@ export function BackupSettings() {
       );
       if (!result.ok) {
         const message = backupError(result);
-        if (message) throw new Error(message);
+        if (message) {
+          throw new Error(message);
+        }
         return;
       }
       return result;
     },
     onSuccess: (result) => {
-      if (!result) return;
+      if (!result) {
+        return;
+      }
       void client.invalidateQueries({ queryKey: ["storage-backup"] });
       const first =
         "localStorage" in globalThis &&
@@ -76,10 +80,11 @@ export function BackupSettings() {
       const result = BackupResultSchema.parse(
         await window.pond.query("library.restoreBackup", {}),
       );
-      if (!result.ok && result.reason !== "cancelled")
+      if (!result.ok && result.reason !== "cancelled") {
         throw new Error(
           result.error ?? "Couldn't restore the backup. Try again.",
         );
+      }
     },
   });
 
@@ -146,7 +151,9 @@ function StatusNote({
   celebrate?: boolean;
 }) {
   const message = error || status;
-  if (!message) return null;
+  if (!message) {
+    return null;
+  }
   return (
     <span
       className={styles.message}

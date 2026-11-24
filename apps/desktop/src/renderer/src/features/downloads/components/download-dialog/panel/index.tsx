@@ -3,10 +3,10 @@ import { formatBytes } from "@/shared/lib/format";
 import { DownloadOptions } from "../export-options";
 import {
   COMPRESSION_FACTOR,
-  type ExportSettings,
   requestOf,
   useExportSettings,
 } from "../export-options/settings";
+import type { ExportSettings } from "../export-options/settings";
 import type { Clip } from "../lib/clip";
 import { useExportFolder } from "../lib/export-folder";
 import { Summary } from "../summary";
@@ -63,7 +63,9 @@ export function Panel({ clip, initialSettings }: PanelProps) {
           folder={folder.name}
           onChooseFolder={() =>
             void folder.choose().then((picked) => {
-              if (picked) settings.patch({ destination: "file" });
+              if (picked) {
+                settings.patch({ destination: "file" });
+              }
             })
           }
         />

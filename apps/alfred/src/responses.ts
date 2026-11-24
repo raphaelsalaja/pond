@@ -1,4 +1,4 @@
-import * as z from "zod/mini";
+import { z } from "zod/mini";
 
 /** The fields of the Local API Save that the workflow shows; `zod/mini` keeps the script small enough to run on every keystroke. */
 const AlfredSaveSchema = z.object({

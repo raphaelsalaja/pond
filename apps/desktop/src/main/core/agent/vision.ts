@@ -21,16 +21,20 @@ export function visionEnabled(
 }
 
 export async function imagesForSaves(
-  ids: string[],
+  ids: Array<string>,
 ): Promise<Array<{ mimeType: string; data: string }>> {
   const limit = pLimit(4);
   const images = await Promise.all(
     ids.slice(0, 24).map((id) =>
       limit(async () => {
         const target = await resolveSaveFilePath(id, 0);
-        if (!target.ok) return null;
+        if (!target.ok) {
+          return null;
+        }
         const mime = MIME.get(extname(target.path).toLowerCase());
-        if (!mime) return null;
+        if (!mime) {
+          return null;
+        }
         return {
           mimeType: mime,
           data: (await readLibraryMedia(target.path)).toString("base64"),

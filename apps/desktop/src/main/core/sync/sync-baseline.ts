@@ -1,9 +1,5 @@
-import {
-  type ConnectedAccount,
-  deletedSourceIds,
-  type SourceSyncPrefs,
-  saves,
-} from "@pond/schema/db";
+import { deletedSourceIds, saves } from "@pond/schema/db";
+import type { ConnectedAccount, SourceSyncPrefs } from "@pond/schema/db";
 import { and, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "../../db";
 import { knownIdsForFetch, trashedBaselineWhere } from "../deleted-sources";
@@ -33,7 +29,9 @@ export function knownIdsFromRows(
   const ids = new Set<string>();
   for (const row of rows) {
     ids.add(row.sourceId);
-    if (row.postSourceId) ids.add(row.postSourceId);
+    if (row.postSourceId) {
+      ids.add(row.postSourceId);
+    }
   }
   return ids;
 }
@@ -41,8 +39,9 @@ export function knownIdsFromRows(
 export function syncBaselineWhere(
   account: Pick<ConnectedAccount, "id" | "source">,
 ) {
-  if (account.source === "mymind")
+  if (account.source === "mymind") {
     return and(eq(saves.accountId, account.id), isNull(saves.deletedAt));
+  }
   return and(
     eq(saves.source, account.source),
     or(eq(saves.accountId, account.id), isNull(saves.accountId)),
@@ -81,7 +80,7 @@ export async function loadSyncBaseline(
       .orderBy(desc(saves.savedAt))
       .limit(RECENT_KNOWN_WINDOW);
     liveIds = knownIdsFromRows(rows);
-    const totalRow = await db
+    const totalRow = db
       .select({ c: count() })
       .from(saves)
       .where(syncBaselineWhere(account))
@@ -112,7 +111,9 @@ async function loadDismissedSourceIds(
     .from(deletedSourceIds)
     .where(eq(deletedSourceIds.source, account.source));
   const ids = knownIdsFromRows(trashed);
-  for (const row of removed) ids.add(row.sourceId);
+  for (const row of removed) {
+    ids.add(row.sourceId);
+  }
   return ids;
 }
 
@@ -120,7 +121,7 @@ export async function countSavesForAccount(
   account: Pick<ConnectedAccount, "id" | "source">,
 ): Promise<number> {
   const db = await getDb();
-  const totalRow = await db
+  const totalRow = db
     .select({ c: count() })
     .from(saves)
     .where(syncBaselineWhere(account))
@@ -144,10 +145,18 @@ export async function persistWatermark(
     lastError: null,
     knownCount: opts.total,
   };
-  if (opts.resumeCursor !== undefined) patch.resumeCursor = opts.resumeCursor;
-  if (opts.newestId) patch.highWaterMark = opts.newestId;
-  if (opts.full) patch.lastFullSyncAt = lastSyncedAt;
-  if (opts.collectionsChecked) patch.lastCollectionCheckAt = lastSyncedAt;
+  if (opts.resumeCursor !== undefined) {
+    patch.resumeCursor = opts.resumeCursor;
+  }
+  if (opts.newestId) {
+    patch.highWaterMark = opts.newestId;
+  }
+  if (opts.full) {
+    patch.lastFullSyncAt = lastSyncedAt;
+  }
+  if (opts.collectionsChecked) {
+    patch.lastCollectionCheckAt = lastSyncedAt;
+  }
   await patchAccountSync(accountId, patch);
   return lastSyncedAt;
 }

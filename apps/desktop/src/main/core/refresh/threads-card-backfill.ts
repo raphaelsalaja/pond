@@ -1,4 +1,5 @@
-import { type NewTask, saves, tasks } from "@pond/schema/db";
+import { saves, tasks } from "@pond/schema/db";
+import type { NewTask } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -45,8 +46,8 @@ export async function startThreadsCardBackfill(): Promise<{
   let recaptured = 0;
   let offset = 0;
   const limit = pLimit(MAX_INFLIGHT);
-  const jobs: Promise<void>[] = [];
-  const liveReplies: BackfillRow[] = [];
+  const jobs: Array<Promise<void>> = [];
+  const liveReplies: Array<BackfillRow> = [];
 
   for (;;) {
     const page = db
@@ -66,11 +67,15 @@ export async function startThreadsCardBackfill(): Promise<{
       .limit(PAGE_SIZE)
       .offset(offset)
       .all();
-    if (page.length === 0) break;
+    if (page.length === 0) {
+      break;
+    }
     offset += page.length;
 
     for (const row of page) {
-      if (!isCaptureTweetStale(row.rawJson)) continue;
+      if (!isCaptureTweetStale(row.rawJson)) {
+        continue;
+      }
       const source = row.source;
       if (
         source !== "twitter" &&
@@ -91,14 +96,16 @@ export async function startThreadsCardBackfill(): Promise<{
             ) {
               liveReplies.push({ id: row.id, source });
             }
-          } catch (err) {
-            log.warn("[pond native-card-backfill] failed", row.id, err);
+          } catch (error) {
+            log.warn("[pond native-card-backfill] failed", row.id, error);
           }
         }),
       );
     }
 
-    if (page.length < PAGE_SIZE) break;
+    if (page.length < PAGE_SIZE) {
+      break;
+    }
   }
 
   await Promise.all(jobs);
@@ -114,16 +121,20 @@ export async function startThreadsCardBackfill(): Promise<{
 
 function needsLiveReplyRecapture(rawJson: RawJson | null): boolean {
   const capture = rawJson?.capture;
-  if (!capture?.replyTo) return false;
+  if (!capture?.replyTo) {
+    return false;
+  }
   return capture.extras?.replyRecaptureQueued !== true;
 }
 
 /** Live screenshots hit X and Threads, so each stale reply is requeued at most once. */
 export async function requeueReplyCaptures(
-  rows: readonly BackfillRow[],
+  rows: ReadonlyArray<BackfillRow>,
   runtime: ReplyRecaptureRuntime = defaultRuntime,
 ): Promise<number> {
-  if (rows.length === 0) return 0;
+  if (rows.length === 0) {
+    return 0;
+  }
   const db = await runtime.getDb();
   const now = new Date();
   const existingRows = db
@@ -150,7 +161,9 @@ export async function requeueReplyCaptures(
       .from(saves)
       .where(eq(saves.id, row.id))
       .get()?.rawJson;
-    if (!rawJson?.capture || !needsLiveReplyRecapture(rawJson)) continue;
+    if (!rawJson?.capture || !needsLiveReplyRecapture(rawJson)) {
+      continue;
+    }
     for (const op of REPLY_RECAPTURE_OPS) {
       const existingId = existingByKey.get(`${row.id}:${op}`);
       if (existingId) {
@@ -201,6 +214,8 @@ export async function requeueReplyCaptures(
     queued += 1;
   }
 
-  if (queued > 0) runtime.kickReconciler();
+  if (queued > 0) {
+    runtime.kickReconciler();
+  }
   return queued;
 }

@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 
 const DEFAULT_LOCK_DIRECTORY = join(tmpdir(), "pond-dev-runtime.lock");
 const OWNER_FILENAME = "owner.json";
-const INITIALIZING_GRACE_MS = 5_000;
+const INITIALIZING_GRACE_MS = 5000;
 const SIGNAL_EXIT_CODES = new Map([
   ["SIGINT", 130],
   ["SIGTERM", 143],

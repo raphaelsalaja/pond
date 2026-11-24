@@ -9,7 +9,7 @@ interface SessionCookie {
 
 /** github.com sets `dotcom_user` beside `user_session`, and `logged_in=yes` only while signed in. */
 export function loginFromCookies(
-  cookies: readonly SessionCookie[],
+  cookies: ReadonlyArray<SessionCookie>,
 ): string | null {
   const signedIn = cookies.some(
     (cookie) => cookie.name === "logged_in" && cookie.value === "yes",
@@ -26,8 +26,8 @@ export async function probeGithubHandle(
       .fromPartition(partition)
       .cookies.get({ url: "https://github.com" });
     return loginFromCookies(cookies);
-  } catch (err) {
-    log.warn("[pond github] cookie read failed", err);
+  } catch (error) {
+    log.warn("[pond github] cookie read failed", error);
     return null;
   }
 }

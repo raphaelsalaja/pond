@@ -50,7 +50,9 @@ export function Metrics({ metrics }: { metrics: TweetCardMetrics }) {
   ];
 
   const shown = items.filter((i) => i.value !== undefined);
-  if (shown.length === 0) return null;
+  if (shown.length === 0) {
+    return null;
+  }
 
   return (
     <div className={styles.metrics}>

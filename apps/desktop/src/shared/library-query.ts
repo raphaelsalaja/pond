@@ -1,8 +1,5 @@
-import {
-  type ApiLibraryQueryRequest,
-  ApiLibraryQueryRequestSchema,
-  type ApiQueryPage,
-} from "@pond/schema/api";
+import { ApiLibraryQueryRequestSchema } from "@pond/schema/api";
+import type { ApiLibraryQueryRequest, ApiQueryPage } from "@pond/schema/api";
 import { QuerySchema } from "@pond/schema/filters";
 
 export type LibraryQueryRequest = ApiLibraryQueryRequest;

@@ -4,7 +4,8 @@ import type {
   DuplicateImportChoice,
   DuplicateImportDecision,
 } from "@shared/saves-import-contracts";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { CardThumb } from "@/features/saves/components/card/media";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
@@ -40,7 +41,9 @@ function parentFolder(path: string) {
 
 function describe(save: Save | undefined) {
   const file = save ? pickPrimaryFile(save) : null;
-  if (!file) return null;
+  if (!file) {
+    return null;
+  }
   return [
     file.width && file.height ? `${file.width} × ${file.height}` : null,
     file.size ? formatBytes(file.size) : null,
@@ -91,7 +94,7 @@ function DuplicateImportReview({
   candidates,
 }: {
   open: boolean;
-  candidates: DuplicateImportCandidate[];
+  candidates: Array<DuplicateImportCandidate>;
 }) {
   const confirmRef = useRef<HTMLButtonElement>(null);
   const applyId = useId();
@@ -105,10 +108,14 @@ function DuplicateImportReview({
   const existingId = candidate?.existingId;
   const save = useSave(existingId);
   useEffect(() => {
-    if (existingId) void ensureSaves([existingId]);
+    if (existingId) {
+      void ensureSaves([existingId]);
+    }
   }, [existingId]);
 
-  if (!candidate) return null;
+  if (!candidate) {
+    return null;
+  }
   const remaining = candidates.length - index;
   const last = applyToAll || remaining === 1;
   const existingName =
@@ -125,9 +132,10 @@ function DuplicateImportReview({
 
   const submit = () => {
     const next = { ...decisions };
-    for (const item of applied)
+    for (const item of applied) {
       next[item.path] =
         choice === "use-existing" && item.inTrash ? "restore" : choice;
+    }
     if (last) {
       completeDuplicateImportReview(next);
       return;
@@ -140,7 +148,9 @@ function DuplicateImportReview({
     <Dialog.Root
       open={open}
       onOpenChange={(open) => {
-        if (!open) closeDuplicateImportReview();
+        if (!open) {
+          closeDuplicateImportReview();
+        }
       }}
     >
       <Dialog.Portal>
@@ -199,8 +209,9 @@ function DuplicateImportReview({
                   value={[choice]}
                   onValueChange={(value) => {
                     const next = value[0];
-                    if (next === "use-existing" || next === "keep-both")
+                    if (next === "use-existing" || next === "keep-both") {
                       setChoice(next);
+                    }
                   }}
                 >
                   <Toggle type="button" size="sm" value="use-existing">

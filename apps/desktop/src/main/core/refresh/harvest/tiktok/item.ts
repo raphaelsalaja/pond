@@ -1,9 +1,11 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { inPageTiktokNormalize, type TiktokVideoPage } from "./normalize";
+import { inPageTiktokNormalize } from "./normalize";
+import type { TiktokVideoPage } from "./normalize";
 
 export function buildExpression(videoId: string): string {
   return buildItemExpression(
@@ -22,9 +24,12 @@ async function inPageTiktokHarvest(
     if (
       document.querySelector("video") ||
       document.querySelector('[data-e2e="browse-video-desc"]')
-    )
+    ) {
       break;
-    await new Promise((r) => setTimeout(r, 250));
+    }
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   return norm.extractVideoPageMeta();
 }

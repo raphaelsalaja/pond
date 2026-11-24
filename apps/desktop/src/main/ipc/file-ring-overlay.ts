@@ -2,9 +2,9 @@ import {
   FILE_RING_OVERLAY_IPC,
   FileRingOverlayActivateSchema,
   FileRingOverlayDropSchema,
-  type FileRingOverlaySnapshot,
   overlayMenuAction,
 } from "../../shared/file-ring-overlay-contracts";
+import type { FileRingOverlaySnapshot } from "../../shared/file-ring-overlay-contracts";
 import {
   closeFileRingOverlay,
   fileRingOverlayOwnsSender,
@@ -13,10 +13,8 @@ import {
   openFileRingOverlay,
   presentFileRingOverlay,
 } from "../core/file-ring-overlay";
-import {
-  dropIntoFolder,
-  type OverlayDropDeps,
-} from "../core/file-ring-overlay/drop";
+import { dropIntoFolder } from "../core/file-ring-overlay/drop";
+import type { OverlayDropDeps } from "../core/file-ring-overlay/drop";
 import { addSavesToFolder, listFolders } from "../core/folders";
 import { importFiles } from "../core/import-files";
 import { getPrefs } from "../core/prefs";
@@ -65,8 +63,11 @@ async function openFileRing(): Promise<void> {
 }
 
 export async function toggleFileRing(): Promise<void> {
-  if (isFileRingOverlayOpen()) closeFileRingOverlay();
-  else await openFileRing();
+  if (isFileRingOverlayOpen()) {
+    closeFileRingOverlay();
+  } else {
+    await openFileRing();
+  }
 }
 
 const DROP_DEPS: OverlayDropDeps = {
@@ -87,7 +88,9 @@ const DROP_DEPS: OverlayDropDeps = {
 };
 
 function assertOwner(id: number): void {
-  if (!fileRingOverlayOwnsSender(id)) throw new Error("Not the File To ring");
+  if (!fileRingOverlayOwnsSender(id)) {
+    throw new Error("Not the File To ring");
+  }
 }
 
 export function registerFileRingOverlayIpc(): void {
@@ -106,12 +109,15 @@ export function registerFileRingOverlayIpc(): void {
     closeFileRingOverlay();
     if (target.kind === "folder") {
       const link = `pond://folder/${encodeURIComponent(target.folderId)}`;
-      if (handleDeepLink(link, getMainWindow()) === "library")
+      if (handleDeepLink(link, getMainWindow()) === "library") {
         await openLibraryWindow();
+      }
       return;
     }
     const id = overlayMenuAction(target.action);
-    if (id) await runLibraryMenuAction(id);
+    if (id) {
+      await runLibraryMenuAction(id);
+    }
   });
   safeHandle(FILE_RING_OVERLAY_IPC.drop, (event, raw) => {
     assertOwner(event.sender.id);

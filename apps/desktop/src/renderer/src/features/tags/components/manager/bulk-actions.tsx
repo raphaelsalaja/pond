@@ -1,6 +1,7 @@
 import { Button, Dialog, Input } from "@pond/ui";
 import { DataTable } from "@pond/ui/data-table";
-import { type MutableRefObject, useState } from "react";
+import { useState } from "react";
+import type { MutableRefObject } from "react";
 import { tagOperations } from "@/features/tags/operations/tag-client";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
@@ -9,11 +10,11 @@ import styles from "./styles.module.css";
 
 type Draft = {
   kind: "merge" | "group";
-  names: string[];
+  names: Array<string>;
   value: string;
 };
 
-function confirmBulkDelete(names: string[], onDone: () => void) {
+function confirmBulkDelete(names: Array<string>, onDone: () => void) {
   const count = names.length;
   Dialog.confirm({
     title: `Delete ${formatPlural(count, { one: "Tag", other: "Tags" })}`,
@@ -27,15 +28,19 @@ export function TagsBulkActionBar({
   namesFromIds,
   clearRef,
 }: {
-  namesFromIds: (ids: string[]) => string[];
+  namesFromIds: (ids: Array<string>) => Array<string>;
   clearRef: MutableRefObject<() => void>;
 }) {
   const [draft, setDraft] = useState<Draft | null>(null);
 
   async function submitDraft() {
-    if (!draft) return;
+    if (!draft) {
+      return;
+    }
     const value = draft.value.trim();
-    if (!value) return;
+    if (!value) {
+      return;
+    }
     try {
       if (draft.kind === "merge") {
         await tagOperations.mergeTags(draft.names, value);

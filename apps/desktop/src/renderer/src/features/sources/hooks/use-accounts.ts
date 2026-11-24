@@ -1,22 +1,14 @@
-import {
-  IMPORT_MEDIA_KINDS,
-  type ImportScope,
-  SOURCES,
-  type Source,
-} from "@pond/schema/db";
+import { IMPORT_MEDIA_KINDS, SOURCES } from "@pond/schema/db";
+import type { ImportScope, Source } from "@pond/schema/db";
 import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { z } from "zod";
-import {
-  SOURCE_FETCH_PREF_FIELDS,
-  type SourceFetchPrefs,
-} from "@/features/sources/lib/fetch-prefs";
-import {
-  type SyncAccountStatus,
-  syncMonitor,
-} from "@/features/sources/state/sync-monitor";
+import { SOURCE_FETCH_PREF_FIELDS } from "@/features/sources/lib/fetch-prefs";
+import type { SourceFetchPrefs } from "@/features/sources/lib/fetch-prefs";
+import { syncMonitor } from "@/features/sources/state/sync-monitor";
+import type { SyncAccountStatus } from "@/features/sources/state/sync-monitor";
 
 export interface AccountRow {
   id: string;
@@ -82,7 +74,7 @@ const AccountsReplySchema = z
   .catch({ accounts: [] });
 
 interface AccountsState {
-  accounts: AccountRow[];
+  accounts: Array<AccountRow>;
   loaded: boolean;
 }
 
@@ -92,12 +84,12 @@ const store = new Store<AccountsState>({
 });
 
 interface AccountsResult {
-  accounts: AccountRow[];
+  accounts: Array<AccountRow>;
   loading: boolean;
-  refetch: () => Promise<AccountRow[]>;
+  refetch: () => Promise<Array<AccountRow>>;
 }
 
-export async function refetchAccounts(): Promise<AccountRow[]> {
+export async function refetchAccounts(): Promise<Array<AccountRow>> {
   try {
     const rows = AccountsReplySchema.parse(
       await window.pond.query("accounts.list", {}),
@@ -109,7 +101,9 @@ export async function refetchAccounts(): Promise<AccountRow[]> {
         lastSyncedAt: account.sync.lastSyncedAt,
         lastError: account.sync.lastError,
       };
-      if (account.syncing) status.state = "running";
+      if (account.syncing) {
+        status.state = "running";
+      }
       syncMonitor.seed(account.id, account.source, status);
     }
     return rows;
@@ -119,10 +113,10 @@ export async function refetchAccounts(): Promise<AccountRow[]> {
   }
 }
 
-let mountFetch: Promise<AccountRow[]> | null = null;
+let mountFetch: Promise<Array<AccountRow>> | null = null;
 
 /** Every Sources row mounts this hook, so mounts share one request instead of flooding the main process. */
-function syncAccounts(): Promise<AccountRow[]> {
+function syncAccounts(): Promise<Array<AccountRow>> {
   mountFetch ??= refetchAccounts().finally(() => {
     mountFetch = null;
   });
@@ -141,7 +135,9 @@ export function useAccounts(): AccountsResult {
       }
     });
     return () => {
-      if (timer) clearTimeout(timer);
+      if (timer) {
+        clearTimeout(timer);
+      }
     };
   }, []);
 

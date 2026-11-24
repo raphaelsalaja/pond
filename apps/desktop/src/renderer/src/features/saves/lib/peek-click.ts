@@ -7,9 +7,15 @@ export function isPeekClick(
   event: Pick<MouseEvent, "altKey" | "shiftKey" | "metaKey" | "ctrlKey">,
   setting: PeekClick,
 ): boolean {
-  if (setting === "off" || !event.altKey) return false;
+  if (setting === "off" || !event.altKey) {
+    return false;
+  }
   const command = event.metaKey || event.ctrlKey;
-  if (setting === "option") return !event.shiftKey && !command;
-  if (setting === "option-shift") return event.shiftKey && !command;
+  if (setting === "option") {
+    return !event.shiftKey && !command;
+  }
+  if (setting === "option-shift") {
+    return event.shiftKey && !command;
+  }
   return command && !event.shiftKey;
 }

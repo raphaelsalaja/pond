@@ -1,15 +1,16 @@
 import { PrefsSchema } from "@pond/schema";
 import { LibraryQueryRequestSchema } from "@shared/library-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { act, createContext, type ReactNode, use } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act, createContext, use } from "react";
+import type { ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/app/test/library-router";
+import { openLibraryAt } from "@/app/test/library-router";
+import type { LibraryTestRouter } from "@/app/test/library-router";
 import type { SaveListMode } from "@/features/saves";
-import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 import { getLibraryNav } from "../state/library-chrome";
 import {
   resetFilters,
@@ -62,9 +63,13 @@ describe("library search scope", () => {
   beforeEach(() => {
     vi.stubGlobal("pond", {
       query: vi.fn(async (name: string) => {
-        if (name === "settings.getPrefs") return prefs;
-        if (name === "settings.setPrefs") return { prefs };
-        if (name === "saves.queryPage")
+        if (name === "settings.getPrefs") {
+          return prefs;
+        }
+        if (name === "settings.setPrefs") {
+          return { prefs };
+        }
+        if (name === "saves.queryPage") {
           return {
             ids: [],
             total: 0,
@@ -72,7 +77,10 @@ describe("library search scope", () => {
             libraryId: "library",
             nextCursor: null,
           };
-        if (name === "saves.queryIds") return { ids: [] };
+        }
+        if (name === "saves.queryIds") {
+          return { ids: [] };
+        }
         return [];
       }),
       onSyncAction: () => () => {},

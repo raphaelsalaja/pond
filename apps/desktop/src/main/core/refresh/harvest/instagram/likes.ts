@@ -16,7 +16,7 @@ interface LikesRequest {
 }
 
 declare global {
-  var __pondIgBloksCaptures: string[] | undefined;
+  var __pondIgBloksCaptures: Array<string> | undefined;
   var __pondIgLikesRequest: LikesRequest | undefined;
   var __pondHarvestPartial:
     | Array<{ sourceId: string; url: string }>
@@ -80,13 +80,16 @@ async function inPageInstagramLikes(
     element_id: string;
   }
 
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   const known = new Set(args.knownIds.map(String));
   const earlyStopEnabled = args.earlyStop ?? known.size > 0;
   let knownPageStreak = 0;
 
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const sleep = (ms: number) =>
+    new Promise((r) => {
+      setTimeout(r, ms);
+    });
 
   function collect(text: string) {
     let added = 0;
@@ -94,10 +97,14 @@ async function inPageInstagramLikes(
     for (const match of text.matchAll(ITEM_RE)) {
       const code = match[1];
       const productType = match[2] ?? "";
-      if (!code || productType === "ad" || seen.has(code)) continue;
+      if (!code || productType === "ad" || seen.has(code)) {
+        continue;
+      }
       seen.add(code);
       added += 1;
-      if (!known.has(code)) fresh += 1;
+      if (!known.has(code)) {
+        fresh += 1;
+      }
       const isVideo = productType === "clips" || match[3] === "2";
       entries.push({
         sourceId: code,
@@ -116,9 +123,13 @@ async function inPageInstagramLikes(
 
   function drain(): NextPage | null {
     const buf = globalThis.__pondIgBloksCaptures;
-    if (!Array.isArray(buf)) return null;
+    if (!Array.isArray(buf)) {
+      return null;
+    }
     let next: NextPage | null = null;
-    for (const text of buf.splice(0)) next = collect(text).next ?? next;
+    for (const text of buf.splice(0)) {
+      next = collect(text).next ?? next;
+    }
     return next;
   }
 
@@ -135,7 +146,9 @@ async function inPageInstagramLikes(
   ): RequestInit | null {
     const form = new URLSearchParams(template.body);
     const params = form.get("params");
-    if (!params) return null;
+    if (!params) {
+      return null;
+    }
     form.set("params", JSON.stringify({ ...JSON.parse(params), ...page }));
     return {
       method: "POST",
@@ -169,9 +182,13 @@ async function inPageInstagramLikes(
   const hydrateDeadline = Date.now() + 30_000;
   while (Date.now() < hydrateDeadline) {
     next = drain() ?? next;
-    if (globalThis.__pondIgLikesRequest && next) break;
+    if (globalThis.__pondIgLikesRequest && next) {
+      break;
+    }
     pane ??= findPane();
-    if (pane) pane.scrollTop = pane.scrollHeight;
+    if (pane) {
+      pane.scrollTop = pane.scrollHeight;
+    }
     await sleep(600);
   }
   publish();
@@ -184,18 +201,25 @@ async function inPageInstagramLikes(
   });
 
   const template = globalThis.__pondIgLikesRequest;
-  if (!template || !next) return done(entries.length === 0);
+  if (!template || !next) {
+    return done(entries.length === 0);
+  }
 
   const deadline = Date.now() + args.deadlineMs;
   for (let attempt = 0; attempt < args.maxPages; attempt++) {
-    if (Date.now() > deadline || globalThis.__pondHarvestAbort)
+    if (Date.now() > deadline || globalThis.__pondHarvestAbort) {
       return done(false);
+    }
     const init = pageRequest(template, next);
-    if (!init) break;
+    if (!init) {
+      break;
+    }
     await sleep(args.pageDelayMs);
     const res = await fetch(template.url, init);
     if (!res.ok) {
-      if (entries.length > 0) return done(false);
+      if (entries.length > 0) {
+        return done(false);
+      }
       return {
         ok: false,
         reason: res.status === 429 ? "rate_limited" : "no_match",
@@ -208,11 +232,17 @@ async function inPageInstagramLikes(
       break;
     }
     next = page.next;
-    if (!earlyStopEnabled) continue;
+    if (!earlyStopEnabled) {
+      continue;
+    }
     knownPageStreak = page.fresh === 0 ? knownPageStreak + 1 : 0;
-    if (knownPageStreak >= 3) break;
+    if (knownPageStreak >= 3) {
+      break;
+    }
   }
   /** A next-page marker means likes exist; reading none means the payload format moved. */
-  if (entries.length === 0) return { ok: false, reason: "no_match" };
+  if (entries.length === 0) {
+    return { ok: false, reason: "no_match" };
+  }
   return done(true);
 }

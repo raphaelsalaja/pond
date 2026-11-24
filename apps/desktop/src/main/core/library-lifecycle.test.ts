@@ -10,7 +10,7 @@ import {
   rollbackLibraryRename,
 } from "./library-lifecycle";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(

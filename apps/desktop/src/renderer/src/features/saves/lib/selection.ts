@@ -57,22 +57,25 @@ export interface SelectionActionResult {
   message: string;
 }
 
-async function resolve(ids: readonly string[]): Promise<Save[]> {
+async function resolve(ids: ReadonlyArray<string>): Promise<Array<Save>> {
   await ensureSaves(ids);
-  const out: Save[] = [];
+  const out: Array<Save> = [];
   for (const id of new Set(ids)) {
     const save = pool.get(id);
-    if (!save)
+    if (!save) {
       throw new Error(
         "A selected Save is no longer available. Refresh the selection.",
       );
+    }
     out.push(save);
   }
   return out;
 }
 
 async function writeClipboard(text: string): Promise<boolean> {
-  if (!text) return false;
+  if (!text) {
+    return false;
+  }
   try {
     const result = OkSchema.parse(
       await window.pond.query("clipboard.writeText", { text }),
@@ -83,14 +86,16 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-export function failedIdsIn(ids: readonly string[]): string[] {
+export function failedIdsIn(ids: ReadonlyArray<string>): Array<string> {
   return ids.filter((id) => pool.get(id)?.status === "failed");
 }
 
 export async function retryFailedSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
-  if (ids.length === 0) return;
+  if (ids.length === 0) {
+    return;
+  }
   const result = RetryReplySchema.parse(
     await window.pond.query("saves.retryFailed", { ids: [...ids] }),
   );
@@ -99,44 +104,61 @@ export async function retryFailedSelection(
   }
 }
 
-export async function trashSelection(ids: readonly string[]): Promise<void> {
-  if (ids.length === 0) return;
+export async function trashSelection(
+  ids: ReadonlyArray<string>,
+): Promise<void> {
+  if (ids.length === 0) {
+    return;
+  }
   await trashSaves([...ids]);
   selection.clear();
 }
 
-export async function restoreSelection(ids: readonly string[]): Promise<void> {
-  if (ids.length === 0) return;
+export async function restoreSelection(
+  ids: ReadonlyArray<string>,
+): Promise<void> {
+  if (ids.length === 0) {
+    return;
+  }
   await untrashSaves([...ids]);
   selection.clear();
 }
 
 export async function deleteSelectionForever(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
-  if (ids.length === 0) return;
+  if (ids.length === 0) {
+    return;
+  }
   await purgeSaves([...ids]);
   selection.clear();
 }
 
 export async function addTagsToSelection(
-  ids: readonly string[],
-  tags: readonly string[],
+  ids: ReadonlyArray<string>,
+  tags: ReadonlyArray<string>,
 ): Promise<void> {
-  const clean = tags.map((t) => t.trim()).filter(Boolean);
-  if (clean.length === 0) return;
+  const clean = tags.flatMap((t) => {
+    const tag = t.trim();
+    return tag ? [tag] : [];
+  });
+  if (clean.length === 0) {
+    return;
+  }
   await bulkMutation(ids, { kind: "tags", tags: clean });
 }
 
 export async function clearTagsForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
-  if (ids.length === 0) return;
+  if (ids.length === 0) {
+    return;
+  }
   await bulkMutation(ids, { kind: "tags", tags: [], mode: "replace" });
 }
 
 export async function copyIdsForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<SelectionActionResult> {
   if (ids.length === 0) {
     return { ok: false, message: "Nothing selected" };
@@ -151,7 +173,7 @@ export async function copyIdsForSelection(
 }
 
 export async function copyNamesForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<SelectionActionResult> {
   const saves = await resolve(ids);
   const names = saves.map(
@@ -170,7 +192,7 @@ export async function copyNamesForSelection(
 }
 
 export async function copyUrlsForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<SelectionActionResult> {
   const urls = (await resolve(ids))
     .map((s) => s.url)
@@ -188,10 +210,10 @@ export async function copyUrlsForSelection(
 }
 
 export async function copyFilePathsForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<SelectionActionResult> {
   const saves = (await resolve(ids)).filter(
-    (save) => resolveFileIndex(save) != null,
+    (save) => resolveFileIndex(save) !== null,
   );
   const replies = await Promise.all(
     saves.map(async (save) =>
@@ -222,10 +244,12 @@ export async function copyFilePathsForSelection(
 }
 
 export async function exportSelectionFiles(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   options: { zip?: boolean; fromFolders?: boolean } = {},
 ): Promise<SelectionActionResult> {
-  if (ids.length === 0) return { ok: false, message: "Nothing selected" };
+  if (ids.length === 0) {
+    return { ok: false, message: "Nothing selected" };
+  }
   const job = statusFeed.start("Exporting files");
   const result = ExportReplySchema.parse(
     await window.pond.query("saves.exportFiles", {
@@ -260,9 +284,11 @@ export async function exportSelectionFiles(
 }
 
 export async function exportSelectionCsv(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<SelectionActionResult> {
-  if (ids.length === 0) return { ok: false, message: "Nothing selected" };
+  if (ids.length === 0) {
+    return { ok: false, message: "Nothing selected" };
+  }
   const job = statusFeed.start("Exporting CSV");
   const result = ExportReplySchema.parse(
     await window.pond.query("saves.exportCsv", { ids: [...ids] }),
@@ -281,19 +307,25 @@ export async function exportSelectionCsv(
 }
 
 export async function copyFilesForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   const files: Array<{ id: string; fileIndex: number }> = [];
   for (const save of await resolve(ids)) {
     const fileIndex = resolveFileIndex(save);
-    if (fileIndex == null) continue;
+    if (fileIndex === null) {
+      continue;
+    }
     files.push({ id: save.id, fileIndex });
   }
-  if (files.length === 0) return;
+  if (files.length === 0) {
+    return;
+  }
   const result = OkSchema.parse(
     await window.pond.query("saves.copyFiles", { files }),
   );
-  if (!result.ok) return;
+  if (!result.ok) {
+    return;
+  }
   notify({
     id: "copy-media",
     title:
@@ -304,40 +336,50 @@ export async function copyFilesForSelection(
 }
 
 export async function copyTagsForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
-  let tags: string[] = [];
+  let tags: Array<string> = [];
   for (const save of await resolve(ids)) {
     tags = mergeUniqueTags(tags, save.tags);
   }
-  if (tags.length === 0) return;
+  if (tags.length === 0) {
+    return;
+  }
   tagClipboard.set(tags);
   notify({ id: "copy-tags", title: "Tags copied" });
 }
 
 export async function pasteTagsForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   const buf = tagClipboard.get();
-  if (buf.length === 0) return;
+  if (buf.length === 0) {
+    return;
+  }
   await addTagsToSelection(ids, buf);
 }
 
 export async function openDefaultAppForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   let attempted = 0;
   let failed = 0;
   for (const save of await resolve(ids)) {
     const fileIndex = resolveFileIndex(save);
-    if (fileIndex == null) continue;
+    if (fileIndex === null) {
+      continue;
+    }
     attempted += 1;
     const result = OkSchema.parse(
       await window.pond.openSaveFile(save.id, fileIndex),
     );
-    if (!result.ok) failed += 1;
+    if (!result.ok) {
+      failed += 1;
+    }
   }
-  if (attempted === 0 || failed === 0) return;
+  if (attempted === 0 || failed === 0) {
+    return;
+  }
   statusFeed.error(
     "Open",
     failed === attempted
@@ -347,20 +389,26 @@ export async function openDefaultAppForSelection(
 }
 
 export async function revealFilesForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   let attempted = 0;
   let failed = 0;
   for (const save of await resolve(ids)) {
     const fileIndex = resolveFileIndex(save);
-    if (fileIndex == null) continue;
+    if (fileIndex === null) {
+      continue;
+    }
     attempted += 1;
     const result = OkSchema.parse(
       await window.pond.revealSave(save.id, fileIndex),
     );
-    if (!result.ok) failed += 1;
+    if (!result.ok) {
+      failed += 1;
+    }
   }
-  if (attempted === 0 || failed === 0) return;
+  if (attempted === 0 || failed === 0) {
+    return;
+  }
   statusFeed.error(
     "Reveal",
     failed === attempted
@@ -370,26 +418,32 @@ export async function revealFilesForSelection(
 }
 
 export async function openInBrowserForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   for (const save of await resolve(ids)) {
     const url = save.url;
-    if (!url) continue;
+    if (!url) {
+      continue;
+    }
     try {
       const parsed = new URL(url);
       if (parsed.protocol === "http:" || parsed.protocol === "https:") {
         await window.pond.openExternal(parsed.toString());
       }
-    } catch {}
+    } catch {
+      /** A malformed Save URL or a refused open skips to the next Save. */
+    }
   }
 }
 
 export async function reverseImageSearchForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   engineKey: string,
 ): Promise<void> {
   const engine = REVERSE_SEARCH_ENGINES.find((e) => e.key === engineKey);
-  if (!engine) return;
+  if (!engine) {
+    return;
+  }
   if ("usesImageUrl" in engine && !engine.usesImageUrl) {
     await window.pond.openExternal(engine.url(""));
     return;
@@ -399,7 +453,9 @@ export async function reverseImageSearchForSelection(
     const result = PublicUrlReplySchema.parse(
       await window.pond.query("saves.publicImageUrl", { id: save.id }),
     );
-    if (!result.ok || !result.url) continue;
+    if (!result.ok || !result.url) {
+      continue;
+    }
     await window.pond.openExternal(engine.url(encodeURIComponent(result.url)));
     opened += 1;
   }
@@ -412,19 +468,23 @@ export async function reverseImageSearchForSelection(
 }
 
 export async function refreshDetailsForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   for (const save of await resolve(ids)) {
-    if (!save.url) continue;
+    if (!save.url) {
+      continue;
+    }
     await window.pond.refreshSave(save.id);
   }
 }
 
 export async function archiveSitesForSelection(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   for (const save of await resolve(ids)) {
-    if (!save.url || !isWebPageSave(save) || save.deletedAt) continue;
+    if (!save.url || !isWebPageSave(save) || save.deletedAt) {
+      continue;
+    }
     await window.pond.archiveSite(save.id);
   }
 }

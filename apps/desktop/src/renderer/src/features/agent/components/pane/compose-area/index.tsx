@@ -1,15 +1,16 @@
 import type { AgentModelOptions } from "@pond/schema";
 import { Button } from "@pond/ui";
+import { isNode } from "@pond/ui/dom";
 import type { AssistantProvider, AssistantSource } from "@shared/assistant";
-import { type RefObject, useRef, useState } from "react";
-import {
-  type AssistantState,
-  assistant,
-} from "@/features/agent/state/assistant";
+import { useRef, useState } from "react";
+import type { RefObject } from "react";
+import { assistant } from "@/features/agent/state/assistant";
+import type { AssistantState } from "@/features/agent/state/assistant";
 import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
 import { ModelPicker } from "@/shared/components/model-picker";
 import { openSettings } from "@/shared/lib/open-settings";
-import { ComposerEditor, type ComposerEditorHandle } from "../../composer";
+import { ComposerEditor } from "../../composer";
+import type { ComposerEditorHandle } from "../../composer";
 import { ComposerView } from "../../composer-view";
 import { ErrorNotice } from "../../error-notice";
 import { useThreadScroll } from "../../thread";
@@ -34,11 +35,11 @@ interface ComposeAreaProps {
   lastError: string | undefined;
   requiredAction: string | undefined;
   referencesOpen: boolean;
-  referenceSources: AssistantSource[];
-  attachedIds: string[];
+  referenceSources: Array<AssistantSource>;
+  attachedIds: Array<string>;
   inputRef: RefObject<ComposerEditorHandle | null>;
   focus: () => void;
-  attach: (sources: AssistantSource[]) => void;
+  attach: (sources: Array<AssistantSource>) => void;
   submit: (content?: string) => void;
   queue: (content: string) => void;
 }
@@ -84,8 +85,8 @@ export function ComposeArea({
       <div className={styles.notices}>
         <QueuedMessage
           content={state.queued?.content ?? null}
-          onSendNow={assistant.sendQueuedNow}
-          onRemove={assistant.unqueue}
+          onSendNow={() => assistant.sendQueuedNow()}
+          onRemove={() => assistant.unqueue()}
         />
         {!provider ? (
           <ErrorNotice
@@ -117,7 +118,7 @@ export function ComposeArea({
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={assistant.clearError}
+                  onClick={() => assistant.clearError()}
                 >
                   Dismiss
                 </Button>
@@ -137,27 +138,36 @@ export function ComposeArea({
       <div
         ref={composer}
         onDragEnterCapture={(event) => {
-          if (!isLibrarySaveDrag(event.dataTransfer)) return;
+          if (!isLibrarySaveDrag(event.dataTransfer)) {
+            return;
+          }
           event.preventDefault();
           setDropping(true);
         }}
         onDragOverCapture={(event) => {
-          if (!isLibrarySaveDrag(event.dataTransfer)) return;
+          if (!isLibrarySaveDrag(event.dataTransfer)) {
+            return;
+          }
           event.preventDefault();
-          if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+          if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = "copy";
+          }
           setDropping(true);
         }}
         onDragLeaveCapture={(event) => {
           if (
-            event.relatedTarget instanceof Node &&
+            isNode(event.relatedTarget) &&
             event.currentTarget.contains(event.relatedTarget)
-          )
+          ) {
             return;
+          }
           setDropping(false);
         }}
         onDropCapture={(event) => {
           const ids = saveDropIds(event.dataTransfer);
-          if (!ids.length) return;
+          if (!ids.length) {
+            return;
+          }
           event.preventDefault();
           setDropping(false);
           void assistant.attachIds(ids);
@@ -175,7 +185,7 @@ export function ComposeArea({
           attached={state.files.length > 0}
           data-dragging={dropping || undefined}
           onSend={() => send()}
-          onStop={assistant.stop}
+          onStop={() => assistant.stop()}
           leading={
             <AddMenu
               disabled={state.loading}
@@ -220,7 +230,7 @@ export function ComposeArea({
         >
           <FileAttachments
             files={state.files}
-            onRemove={assistant.removeFile}
+            onRemove={(id) => assistant.removeFile(id)}
           />
         </ComposerView>
       </div>

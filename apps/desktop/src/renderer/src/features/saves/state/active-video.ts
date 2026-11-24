@@ -9,7 +9,9 @@ export function activeVideoShown(): boolean {
 
 export function useActiveVideo(active: boolean): void {
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     const player = Symbol("active video");
     players.add(player);
     return () => {

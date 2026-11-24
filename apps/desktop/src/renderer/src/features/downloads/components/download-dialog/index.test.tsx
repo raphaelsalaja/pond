@@ -1,10 +1,12 @@
 import {
-  type DownloadFileProbe,
-  type DownloadPostProbe,
   DownloadProbeInputSchema,
-  type DownloadProbeResult,
-  type DownloadSingleProbe,
   DownloadStartInputSchema,
+} from "@shared/downloader-contracts";
+import type {
+  DownloadFileProbe,
+  DownloadPostProbe,
+  DownloadProbeResult,
+  DownloadSingleProbe,
 } from "@shared/downloader-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
@@ -60,8 +62,8 @@ const FILE: DownloadFileProbe = {
 
 interface StubInput {
   url?: string;
-  urls?: string[];
-  files?: string[];
+  urls?: Array<string>;
+  files?: Array<string>;
 }
 
 interface Call {
@@ -89,15 +91,23 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+function buttonLabelled(label: string) {
+  return [...document.body.querySelectorAll("button")].find(
+    (candidate) => candidate.textContent?.trim() === label,
+  );
+}
+
 async function flush() {
-  for (let i = 0; i < 6; i++) await act(async () => {});
+  for (let i = 0; i < 6; i++) {
+    await act(async () => {});
+  }
 }
 
 async function renderDialog(
   probes: Record<string, DownloadProbeResult>,
-  links: string[],
+  links: Array<string>,
 ) {
-  const calls: Call[] = [];
+  const calls: Array<Call> = [];
   // `window.pond` is read when a query runs, so one module instance is enough.
   // Re-importing the dialog per test (`vi.resetModules()`) evaluates the Motion
   // and sources graph inside the 5s test budget. On a busy Windows runner that
@@ -106,26 +116,35 @@ async function renderDialog(
   vi.stubGlobal("pond", {
     async query(name: string, input: StubInput) {
       calls.push({ name, input });
-      if (name === "downloader.clipboardLinks") return { urls: [] };
-      if (name === "downloader.frames") return { frames: [] };
-      if (name === "downloader.exportFolder")
+      if (name === "downloader.clipboardLinks") {
+        return { urls: [] };
+      }
+      if (name === "downloader.frames") {
+        return { frames: [] };
+      }
+      if (name === "downloader.exportFolder") {
         return { path: "/Users/me/Downloads", name: "Downloads" };
-      if (name === "downloader.export")
+      }
+      if (name === "downloader.export") {
         return {
           ok: true,
           destination: "file",
           path: "/Users/me/Downloads/A talk about ponds.webm",
         };
+      }
       if (name === "downloader.probe") {
         const { url } = DownloadProbeInputSchema.parse(input);
         return probes[url] ?? { ok: false, reason: "failed", message: "Nope." };
       }
-      if (name === "saves.quickAdd") return { ok: true, id: "save-post" };
-      if (name === "downloader.exportFiles")
+      if (name === "saves.quickAdd") {
+        return { ok: true, id: "save-post" };
+      }
+      if (name === "downloader.exportFiles") {
         return {
           ok: true,
           paths: (input.files ?? []).map((_, index) => `/tmp/${index}.jpg`),
         };
+      }
       if (name === "downloader.start") {
         const { urls } = DownloadStartInputSchema.parse(input);
         return { ids: urls.map((_, index) => `save-${index}`), failed: [] };
@@ -145,19 +164,17 @@ async function renderDialog(
   );
   await act(async () => downloadDialog.open(links));
   await flush();
-  const button = (label: string) =>
-    [...document.body.querySelectorAll("button")].find(
-      (candidate) => candidate.textContent?.trim() === label,
-    );
   return {
     calls,
     text: () => document.body.textContent ?? "",
-    button,
+    button: buttonLabelled,
     async type(value: string) {
       const field = document.body.querySelector<HTMLInputElement>(
         'input[aria-label="Link"]',
       );
-      if (!field) throw new Error("No link field");
+      if (!field) {
+        throw new Error("No link field");
+      }
       const setValue = Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,
         "value",
@@ -166,12 +183,19 @@ async function renderDialog(
         setValue?.call(field, value);
         field.dispatchEvent(new Event("input", { bubbles: true }));
       });
-      await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+      await act(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(resolve, 10);
+          }),
+      );
       await flush();
     },
     async click(label: string) {
-      const target = button(label);
-      if (!target) throw new Error(`No button labelled ${label}`);
+      const target = buttonLabelled(label);
+      if (!target) {
+        throw new Error(`No button labelled ${label}`);
+      }
       await act(async () => target.click());
       await flush();
     },

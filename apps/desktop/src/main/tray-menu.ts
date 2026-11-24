@@ -11,12 +11,11 @@ import { getDb } from "./db";
 import { menuAccelerator } from "./lib/menu-accelerator";
 import { libraryRoot } from "./paths";
 import type { TrayOptions } from "./tray";
-import {
-  buildTrayTemplate,
-  type TrayAccelerators,
-  type TrayBlankDocument,
-  type TrayStatusInput,
-  trayHeaderLabel,
+import { buildTrayTemplate, trayHeaderLabel } from "./tray-status";
+import type {
+  TrayAccelerators,
+  TrayBlankDocument,
+  TrayStatusInput,
 } from "./tray-status";
 
 export async function buildTooltip(): Promise<string> {
@@ -99,7 +98,7 @@ async function loadTrayAccelerators(
   };
 }
 
-function loadTrayBlankDocuments(): TrayBlankDocument[] {
+function loadTrayBlankDocuments(): Array<TrayBlankDocument> {
   return listInstalledBlankDocuments().flatMap((kind) => {
     const label = blankDocumentDef(kind)?.label;
     return label ? [{ kind, label }] : [];

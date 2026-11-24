@@ -16,11 +16,13 @@ import {
   DEFAULT_LIGHT_THEME,
   DEFAULT_SOURCE_METRICS,
   DEFAULT_SYNC_CRON,
-  type SourceMetricDisplay,
-  type SyncAccounts,
-  type SyncWatches,
-  type ThemeAppearance,
-  type WindowBounds,
+} from "./prefs.types";
+import type {
+  SourceMetricDisplay,
+  SyncAccounts,
+  SyncWatches,
+  ThemeAppearance,
+  WindowBounds,
 } from "./prefs.types";
 import { SavedViewPresentationSchema } from "./saved-view-presentation";
 import { isSource } from "./sources";
@@ -82,7 +84,7 @@ export type SidebarDestination = (typeof SIDEBAR_DESTINATIONS)[number];
 export const LOCKED_SIDEBAR_DESTINATIONS = [
   "all",
   "trash",
-] as const satisfies readonly SidebarDestination[];
+] as const satisfies ReadonlyArray<SidebarDestination>;
 
 export function isLockedSidebarDestination(
   destination: SidebarDestination,
@@ -110,11 +112,13 @@ function isSidebarDestination(value: string): value is SidebarDestination {
 }
 
 export function normalizeSidebarDestinationOrder(
-  order: readonly SidebarDestination[],
-): SidebarDestination[] {
+  order: ReadonlyArray<SidebarDestination>,
+): Array<SidebarDestination> {
   const unique = [...new Set(order)];
   for (const [defaultIndex, destination] of SIDEBAR_DESTINATIONS.entries()) {
-    if (unique.includes(destination)) continue;
+    if (unique.includes(destination)) {
+      continue;
+    }
     let insertionIndex = 0;
     for (let index = defaultIndex - 1; index >= 0; index -= 1) {
       const candidate = SIDEBAR_DESTINATIONS[index];
@@ -136,8 +140,11 @@ const sidebar = z.object({
     .catch({})
     .transform((overrides) => {
       const known: Partial<Record<SidebarDestination, SidebarBadgeStyle>> = {};
-      for (const [destination, style] of Object.entries(overrides))
-        if (isSidebarDestination(destination)) known[destination] = style;
+      for (const [destination, style] of Object.entries(overrides)) {
+        if (isSidebarDestination(destination)) {
+          known[destination] = style;
+        }
+      }
       return known;
     }),
   order: z
@@ -325,13 +332,13 @@ const allTags = z.object({
 });
 
 const sourcesView = z.object({
-  metrics: z.custom<string[]>().default(DEFAULT_SOURCE_METRICS),
+  metrics: z.custom<Array<string>>().default(DEFAULT_SOURCE_METRICS),
   metricDisplay: z.custom<Record<string, SourceMetricDisplay>>().default({}),
   days: z.number().catch(7),
 });
 
 const api = z.object({
-  port: z.number().catch(41610),
+  port: z.number().catch(41_610),
   bindAddress: z.enum(["loopback", "lan"]).catch("loopback"),
   allowedOrigins: z.array(z.string()).catch([]),
 });
@@ -364,8 +371,11 @@ const sync = z.object({
     .default({})
     .transform((accounts) => {
       const known: SyncAccounts = {};
-      for (const [id, account] of Object.entries(accounts))
-        if (isSource(account.source)) known[id] = account;
+      for (const [id, account] of Object.entries(accounts)) {
+        if (isSource(account.source)) {
+          known[id] = account;
+        }
+      }
       return known;
     }),
   watches: z.custom<SyncWatches>().default({}),
@@ -424,7 +434,7 @@ export type AgentReasoning = z.infer<typeof AgentReasoningSchema>;
 
 export const AgentContextChoiceSchema = z.union([
   z.literal("auto"),
-  z.number().int().min(4_096).max(2_000_000),
+  z.number().int().min(4096).max(2_000_000),
 ]);
 export type AgentContextChoice = z.infer<typeof AgentContextChoiceSchema>;
 
@@ -437,7 +447,7 @@ export type AgentModelOptions = z.infer<typeof AgentModelOptionsSchema>;
 
 export const AgentRunControlsSchema = z.object({
   fast: z.boolean(),
-  contextTokens: z.number().int().min(4_096).max(2_000_000),
+  contextTokens: z.number().int().min(4096).max(2_000_000),
   reasoning: AgentReasoningSchema,
 });
 export type AgentRunControls = z.infer<typeof AgentRunControlsSchema>;

@@ -34,12 +34,12 @@ const LIBRARY: Reply = {
 async function walk(
   args: Partial<ListHarvestArgs>,
   replies: { getSession: Reply; listLibraryRefs?: Reply },
-): Promise<{ result: ListHarvestResult; requested: string[] }> {
+): Promise<{ result: ListHarvestResult; requested: Array<string> }> {
   const dom = new JSDOM("<!doctype html><body></body>", {
     url: MARKED_LIST_URL,
     runScripts: "outside-only",
   });
-  const requested: string[] = [];
+  const requested: Array<string> = [];
   Object.assign(dom.window, {
     fetch: async (url: string) => {
       const method = url.replace("/api/data/", "");
@@ -60,7 +60,7 @@ async function walk(
   return { result, requested };
 }
 
-function ids(result: ListHarvestResult): string[] {
+function ids(result: ListHarvestResult): Array<string> {
   return result.ok ? result.entries.map((entry) => entry.sourceId) : [];
 }
 
@@ -77,7 +77,9 @@ describe("Marked library walk", () => {
       reachedEnd: true,
       complete: true,
     });
-    if (!result.ok) return;
+    if (!result.ok) {
+      return;
+    }
     expect(result.entries[0]).toMatchObject({
       url: `https://marked.dev/ref/${NEW}`,
       savedAt: "2026-10-28T10:00:00.000Z",

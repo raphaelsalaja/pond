@@ -10,14 +10,15 @@ import {
   IconSection,
   IconTrash,
 } from "@pond/icons";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
-import {
-  DEFAULT_FISH_ID,
-  type Fish,
-  type FishPatch,
-  type FishPlacement,
-  type FishRoutine,
-  type FishSection,
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
+import type {
+  Fish,
+  FishPatch,
+  FishPlacement,
+  FishRoutine,
+  FishSection,
 } from "@shared/fish-contracts";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
@@ -46,7 +47,7 @@ async function runFishAction(
   }
 }
 
-export function arrangeFish(placements: FishPlacement[]): void {
+export function arrangeFish(placements: Array<FishPlacement>): void {
   void runFishAction(() => fish.arrange(placements), "Couldn't move this fish");
 }
 
@@ -60,7 +61,9 @@ function moveFishTo(id: string, shelf: string): Promise<void> {
 function createFish(section?: string): void {
   void runFishAction(async () => {
     const created = await fish.create();
-    if (section) await moveFishTo(created.id, section);
+    if (section) {
+      await moveFishTo(created.id, section);
+    }
     fish.open(created.id);
     fish.startEditing(created.id);
   });
@@ -109,7 +112,9 @@ function shiftSection(section: FishSection, by: -1 | 1): void {
   const sections = [...fish.sections()];
   const from = sections.findIndex((entry) => entry.id === section.id);
   const to = from + by;
-  if (from < 0 || to < 0 || to >= sections.length) return;
+  if (from < 0 || to < 0 || to >= sections.length) {
+    return;
+  }
   sections.splice(from, 1);
   sections.splice(to, 0, section);
   void runFishAction(
@@ -129,7 +134,7 @@ function deleteSection(section: FishSection): void {
   );
 }
 
-export function fishSectionItems(section: FishSection): MenuItemSpec[] {
+export function fishSectionItems(section: FishSection): Array<MenuItemSpec> {
   const sections = fish.sections();
   const index = sections.findIndex((entry) => entry.id === section.id);
   return [
@@ -183,14 +188,12 @@ function moveToItems(target: Fish): MenuItemSpec {
         disabled: shelf === LOOSE,
         onClick: () => move(LOOSE),
       },
-      ...sections.map(
-        (section): MenuItemSpec => ({
-          label: section.name,
-          icon: <IconSection />,
-          disabled: shelf === section.id,
-          onClick: () => move(section.id),
-        }),
-      ),
+      ...sections.map((section): MenuItemSpec => ({
+        label: section.name,
+        icon: <IconSection />,
+        disabled: shelf === section.id,
+        onClick: () => move(section.id),
+      })),
       { type: "separator" },
       {
         label: "New Section",
@@ -250,7 +253,7 @@ function confirmDeleteFish(target: Fish): void {
   });
 }
 
-export function newItems(): MenuItemSpec[] {
+export function newItems(): Array<MenuItemSpec> {
   return [
     { label: "New Fish", icon: <IconPlus />, onClick: () => createFish() },
     {
@@ -261,7 +264,7 @@ export function newItems(): MenuItemSpec[] {
   ];
 }
 
-export function sectionItems(): MenuItemSpec[] {
+export function sectionItems(): Array<MenuItemSpec> {
   return [
     { label: "New Fish", icon: <IconPlus />, onClick: () => createFish() },
     {
@@ -278,8 +281,8 @@ export function sectionItems(): MenuItemSpec[] {
 }
 
 /** Actions for the fish whose conversation is open. */
-export function fishPaneItems(target: Fish): MenuItemSpec[] {
-  const items: MenuItemSpec[] = [
+export function fishPaneItems(target: Fish): Array<MenuItemSpec> {
+  const items: Array<MenuItemSpec> = [
     {
       label: "Edit Fish",
       icon: <IconPencil />,
@@ -294,7 +297,7 @@ export function fishPaneItems(target: Fish): MenuItemSpec[] {
     { type: "separator" },
     { label: "New Fish", icon: <IconPlus />, onClick: () => createFish() },
   ];
-  if (target.id !== DEFAULT_FISH_ID)
+  if (target.id !== DEFAULT_FISH_ID) {
     items.push(
       { type: "separator" },
       {
@@ -304,10 +307,11 @@ export function fishPaneItems(target: Fish): MenuItemSpec[] {
         onClick: () => confirmDeleteFish(target),
       },
     );
+  }
   return items;
 }
 
-export function fishItems(target: Fish): MenuItemSpec[] {
+export function fishItems(target: Fish): Array<MenuItemSpec> {
   return [
     {
       label: "Open Chat",

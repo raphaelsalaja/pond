@@ -1,10 +1,8 @@
-import {
-  type BrowserWindow,
-  clipboard,
-  Menu,
-  type MenuItemConstructorOptions,
-  shell,
-  type WebContents,
+import { clipboard, Menu, shell } from "electron";
+import type {
+  BrowserWindow,
+  MenuItemConstructorOptions,
+  WebContents,
 } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../shared/constants";
@@ -22,7 +20,7 @@ function httpUrl(raw: string): string | null {
 
 function attachGuestContextMenu(guest: WebContents): void {
   guest.on("context-menu", (_event, params) => {
-    const template: MenuItemConstructorOptions[] = [];
+    const template: Array<MenuItemConstructorOptions> = [];
     const link = httpUrl(params.linkURL);
 
     if (params.selectionText.trim().length > 0) {
@@ -31,7 +29,13 @@ function attachGuestContextMenu(guest: WebContents): void {
     if (link) {
       template.push({
         label: "Copy Link",
-        click: () => clipboard.writeText(link),
+        click: () => {
+          void clipboard
+            .writeText(link)
+            .catch((cause: unknown) =>
+              log.warn("[pond archive] copy link failed", cause),
+            );
+        },
       });
     }
     if (params.mediaType === "image") {
@@ -41,14 +45,18 @@ function attachGuestContextMenu(guest: WebContents): void {
       });
     }
     if (link) {
-      if (template.length > 0) template.push({ type: "separator" });
+      if (template.length > 0) {
+        template.push({ type: "separator" });
+      }
       template.push({
         label: "Open Link in Browser",
         click: () => void shell.openExternal(link),
       });
     }
 
-    if (template.length > 0) Menu.buildFromTemplate(template).popup();
+    if (template.length > 0) {
+      Menu.buildFromTemplate(template).popup();
+    }
   });
 }
 
@@ -71,7 +79,9 @@ export function hardenArchiveWebviews(win: BrowserWindow): void {
       return { action: "deny" };
     });
     guest.on("will-navigate", (event, url) => {
-      if (url.startsWith("pond://")) return;
+      if (url.startsWith("pond://")) {
+        return;
+      }
       event.preventDefault();
       forwardNavigation(win, guest.id, url);
     });
@@ -83,6 +93,8 @@ function forwardNavigation(
   guestId: number,
   url: string,
 ): void {
-  if (win.isDestroyed()) return;
+  if (win.isDestroyed()) {
+    return;
+  }
   win.webContents.send(IPC.archiveNavigate, { guestId, url });
 }

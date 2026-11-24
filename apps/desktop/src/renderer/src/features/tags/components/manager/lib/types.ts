@@ -2,7 +2,7 @@ import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
 
 export interface GroupStats {
-  members: TagRow[];
+  members: Array<TagRow>;
 }
 
 export const EMPTY_STATS: GroupStats = {
@@ -15,7 +15,7 @@ export type TagsRowData =
       kind: "group";
       group: TagGroupRow;
       stats: GroupStats;
-      children: TagsRowData[];
+      children: Array<TagsRowData>;
     }
   | {
       id: string;

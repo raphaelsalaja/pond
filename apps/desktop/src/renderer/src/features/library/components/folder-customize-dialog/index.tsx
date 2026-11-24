@@ -7,11 +7,8 @@ import {
 } from "@/features/library/state/folder-appearance";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
-import {
-  FolderIcon,
-  type FolderIconId,
-  folderColorCss,
-} from "@/shared/lib/folder-icons";
+import { FolderIcon, folderColorCss } from "@/shared/lib/folder-icons";
+import type { FolderIconId } from "@/shared/lib/folder-icons";
 import { gentleSpring } from "@/shared/lib/motion";
 import { AppearancePicker } from "./appearance-picker";
 import styles from "./styles.module.css";
@@ -55,7 +52,9 @@ export function FolderCustomizeDialog({
     void window.pond
       .query("folders.metadata.get", { folderId: folder.id })
       .then((metadata) => {
-        if (!current) return;
+        if (!current) {
+          return;
+        }
         const nextDescription = metadata.description ?? "";
         setDescription(nextDescription);
         setInitialDescription(nextDescription);
@@ -67,7 +66,9 @@ export function FolderCustomizeDialog({
   }, [folder.id]);
 
   async function submit(): Promise<void> {
-    if (busy || !changed) return;
+    if (busy || !changed) {
+      return;
+    }
     if (!trimmedName) {
       setNameInvalid(true);
       nameField.current?.focus();
@@ -104,8 +105,12 @@ export function FolderCustomizeDialog({
       if (results.some((result) => !result.ok)) {
         throw new Error("Folder changes were rejected.");
       }
-      if (icon !== initialIcon) void rememberFolderIcon(icon);
-      if (color !== folder.color) void rememberFolderColor(color);
+      if (icon !== initialIcon) {
+        void rememberFolderIcon(icon);
+      }
+      if (color !== folder.color) {
+        void rememberFolderColor(color);
+      }
       await folders.refresh();
       onClose();
     } catch {
@@ -119,8 +124,11 @@ export function FolderCustomizeDialog({
     <Dialog.Root
       open
       onOpenChange={(open, details) => {
-        if (busy) details.cancel();
-        else if (!open) onClose();
+        if (busy) {
+          details.cancel();
+        } else if (!open) {
+          onClose();
+        }
       }}
     >
       <Dialog.Portal>

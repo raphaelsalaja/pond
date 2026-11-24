@@ -4,7 +4,9 @@ import { UpdateFlowPrototype } from "@/prototypes/update-flow";
 
 export const Route = createFileRoute("/_library/dev/update-flow")({
   beforeLoad: () => {
-    if (!import.meta.env.DEV) throw redirect({ to: "/" });
+    if (!import.meta.env.DEV) {
+      redirect({ to: "/", throw: true });
+    }
   },
   staticData: {
     details: null,

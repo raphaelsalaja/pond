@@ -10,15 +10,15 @@ import { parseTagBatch, partitionPickerTags } from "./lib";
 import type { CreateInfo, TagPickerRow, TagSection } from "./types";
 
 interface TagMenuOptions {
-  tags: readonly TagRow[];
-  groups: readonly TagGroupRow[];
+  tags: ReadonlyArray<TagRow>;
+  groups: ReadonlyArray<TagGroupRow>;
   appliedKeys: ReadonlySet<string> | undefined;
   onToggle: (
     name: string,
     options?: { created?: boolean },
   ) => void | Promise<void>;
   allowCreate: boolean;
-  recommendedNames: readonly string[];
+  recommendedNames: ReadonlyArray<string>;
   layout: "list" | "grid";
   gridSize: "sm" | "md" | "lg";
   showStarred: boolean;
@@ -35,8 +35,12 @@ function byName(a: TagRow, b: TagRow) {
 }
 
 function gridColumns(size: "sm" | "md" | "lg") {
-  if (size === "sm") return 3;
-  if (size === "md") return 2;
+  if (size === "sm") {
+    return 3;
+  }
+  if (size === "md") {
+    return 2;
+  }
   return 1;
 }
 
@@ -66,21 +70,27 @@ export function useTagMenu({
   const needle = query.trim().toLowerCase();
   const tagsByLower = useMemo(() => {
     const map = new Map<string, TagRow>();
-    for (const tag of tags) map.set(tag.name.toLowerCase(), tag);
+    for (const tag of tags) {
+      map.set(tag.name.toLowerCase(), tag);
+    }
     return map;
   }, [tags]);
   const groupNamesByTag = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const group of groups)
-      for (const tagId of group.tagIds)
+    const map = new Map<string, Array<string>>();
+    for (const group of groups) {
+      for (const tagId of group.tagIds) {
         map.set(tagId, [...(map.get(tagId) ?? []), group.name]);
+      }
+    }
     return map;
   }, [groups]);
   const matching = useMemo(
     () =>
       needle
         ? tags.filter((tag) => {
-            if (tag.name.toLowerCase().includes(needle)) return true;
+            if (tag.name.toLowerCase().includes(needle)) {
+              return true;
+            }
             return (groupNamesByTag.get(tag.id) ?? []).some((name) =>
               name.toLowerCase().includes(needle),
             );
@@ -110,7 +120,7 @@ export function useTagMenu({
     showRecently ? partitioned.recent : [],
     partitioned.others,
   ].filter((items) => items.length > 0).length;
-  const sections = useMemo<TagSection[]>(
+  const sections = useMemo<Array<TagSection>>(
     () => [
       {
         id: "starred",
@@ -157,26 +167,35 @@ export function useTagMenu({
   );
 
   const createInfo = useMemo<CreateInfo | null>(() => {
-    if (!allowCreate) return null;
+    if (!allowCreate) {
+      return null;
+    }
     const raw = query.trim();
-    if (!raw) return null;
+    if (!raw) {
+      return null;
+    }
     const batch = parseTagBatch(raw).map(normalizeLabelName).filter(Boolean);
-    if (batch.length > 1)
+    if (batch.length > 1) {
       return { kind: "batch", labels: batch, label: batch.join(", ") };
+    }
     const slash = raw.indexOf("/");
     if (slash >= 0) {
       const group = normalizeLabelName(raw.slice(0, slash));
       const label = normalizeLabelName(raw.slice(slash + 1));
-      if (!group || !label) return null;
+      if (!group || !label) {
+        return null;
+      }
       return { kind: "group", group, label };
     }
     const label = normalizeLabelName(raw);
-    if (!label || tagsByLower.has(label.toLowerCase())) return null;
+    if (!label || tagsByLower.has(label.toLowerCase())) {
+      return null;
+    }
     return { kind: "plain", label };
   }, [allowCreate, query, tagsByLower]);
 
   const showTree = list && !needle;
-  const recommendedRows = useMemo<TagPickerRow[]>(
+  const recommendedRows = useMemo<Array<TagPickerRow>>(
     () =>
       showTree && showRecommended
         ? partitioned.recommended.map((tag) => ({
@@ -188,8 +207,10 @@ export function useTagMenu({
         : [],
     [partitioned.recommended, showRecommended, showTree],
   );
-  const listRows = useMemo<TagPickerRow[]>(() => {
-    if (!list) return [];
+  const listRows = useMemo<Array<TagPickerRow>>(() => {
+    if (!list) {
+      return [];
+    }
     if (needle) {
       const starts = (tag: TagRow) =>
         Number(tag.name.toLowerCase().startsWith(needle));
@@ -199,7 +220,7 @@ export function useTagMenu({
     }
     const tagsById = new Map(tags.map((tag) => [tag.id, tag]));
     const grouped = new Set<string>();
-    const result: TagPickerRow[] = [];
+    const result: Array<TagPickerRow> = [];
     const sortedGroups = groups.toSorted(
       (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
     );
@@ -207,27 +228,35 @@ export function useTagMenu({
       const members = group.tagIds
         .flatMap((id) => tagsById.get(id) ?? [])
         .toSorted(byName);
-      if (!members.length) continue;
-      for (const tag of members) grouped.add(tag.id);
+      if (!members.length) {
+        continue;
+      }
+      for (const tag of members) {
+        grouped.add(tag.id);
+      }
       result.push({ id: `group-${group.id}`, kind: "group", group });
-      if (collapsedGroups.has(group.id)) continue;
-      for (const tag of members)
+      if (collapsedGroups.has(group.id)) {
+        continue;
+      }
+      for (const tag of members) {
         result.push({
           id: `tag-${group.id}-${tag.id}`,
           kind: "tag",
           tag,
           depth: 1,
         });
+      }
     }
     for (const tag of tags
       .filter((tag) => !grouped.has(tag.id))
-      .toSorted(byName))
+      .toSorted(byName)) {
       result.push({ id: `tag-${tag.id}`, kind: "tag", tag, depth: 0 });
+    }
     return result;
   }, [collapsedGroups, groups, list, matching, needle, tags]);
 
-  const rows = useMemo<readonly TagPickerRow[]>(() => {
-    const tagRows: readonly TagPickerRow[] = list
+  const rows = useMemo<ReadonlyArray<TagPickerRow>>(() => {
+    const tagRows: ReadonlyArray<TagPickerRow> = list
       ? [...recommendedRows, ...listRows]
       : sections.flatMap((section) =>
           section.open
@@ -253,7 +282,9 @@ export function useTagMenu({
   const createRow = lastRow?.kind === "create" ? lastRow : null;
 
   async function commitCreate(info: CreateInfo) {
-    if (creating) return;
+    if (creating) {
+      return;
+    }
     setCreating(true);
     setError(null);
     try {
@@ -262,27 +293,34 @@ export function useTagMenu({
         for (const item of info.labels) {
           const lower = item.toLowerCase();
           const existed = tagsByLower.has(lower);
-          if (!existed) await tagOperations.create("tag", item);
-          if (!appliedKeys?.has(lower))
+          if (!existed) {
+            await tagOperations.create("tag", item);
+          }
+          if (!appliedKeys?.has(lower)) {
             await onToggle(item, { created: !existed });
+          }
         }
         setQuery("");
         return;
       }
       const existed = tagsByLower.has(label.toLowerCase());
-      if (!existed) await tagOperations.create("tag", label);
+      if (!existed) {
+        await tagOperations.create("tag", label);
+      }
       if (info.kind === "group") {
         const group = groups.find(
           (candidate) =>
             candidate.name.toLowerCase() === info.group.toLowerCase(),
         );
-        if (!group) await tagOperations.create("group", info.group);
+        if (!group) {
+          await tagOperations.create("group", info.group);
+        }
         await tagOperations.addToGroup(label, group?.name ?? info.group);
       }
       await onToggle(label, { created: !existed });
       setQuery("");
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't create the tag. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't create the tag. Try again."));
     } finally {
       setCreating(false);
     }
@@ -292,24 +330,31 @@ export function useTagMenu({
     setError(null);
     try {
       await onToggle(name);
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't update the tag. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't update the tag. Try again."));
     }
   }
 
   function toggleGroup(id: string) {
     setCollapsedGroups((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }
 
   function activate(row: TagPickerRow) {
-    if (row.kind === "create") void commitCreate(row.create);
-    else if (row.kind === "group") toggleGroup(row.group.id);
-    else void toggleTag(row.tag.name);
+    if (row.kind === "create") {
+      void commitCreate(row.create);
+    } else if (row.kind === "group") {
+      toggleGroup(row.group.id);
+    } else {
+      void toggleTag(row.tag.name);
+    }
   }
 
   const cursor = usePickerCursor({
@@ -318,10 +363,16 @@ export function useTagMenu({
     columns: list ? 1 : gridColumns(gridSize),
     onActivate: activate,
     onHorizontalKey: (key, row) => {
-      if (!showTree) return false;
-      if (row.kind !== "group") return true;
+      if (!showTree) {
+        return false;
+      }
+      if (row.kind !== "group") {
+        return true;
+      }
       const open = !collapsedGroups.has(row.group.id);
-      if (key === "ArrowLeft" ? open : !open) toggleGroup(row.group.id);
+      if (key === "ArrowLeft" ? open : !open) {
+        toggleGroup(row.group.id);
+      }
       return true;
     },
   });

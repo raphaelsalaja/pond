@@ -12,7 +12,8 @@ import { pauseSource, resumeSource } from "../../core/pipeline/rate-governor";
 import { cancelGeneration } from "../../core/pipeline/reconciler-client";
 import { summarizeSourceGates } from "../../core/pipeline/source-gate-summary";
 import { getDb } from "../../db";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const GateRowSchema = z.object({
   source: z.enum(SOURCES),
@@ -34,7 +35,8 @@ const AttemptPayloadSchema = z
   .string()
   .transform((text, ctx) => {
     try {
-      return JSON.parse(text);
+      const parsed: unknown = JSON.parse(text);
+      return parsed;
     } catch {
       ctx.addIssue({ code: "custom", message: "Malformed attempt payload." });
       return z.NEVER;
@@ -136,12 +138,10 @@ export const queueQueries = {
       ? { ok: true as const }
       : GENERATION_FINISHED,
   ),
-  "queue.generation.resume": query(
-    z.object({ id: StringId }),
-    async ({ id }) =>
-      (await setQueueGenerationPaused(id, false))
-        ? { ok: true as const }
-        : GENERATION_FINISHED,
+  "queue.generation.resume": query(z.object({ id: StringId }), async ({ id }) =>
+    (await setQueueGenerationPaused(id, false))
+      ? { ok: true as const }
+      : GENERATION_FINISHED,
   ),
   "queue.generation.cancel": query(
     z.object({ id: StringId }),

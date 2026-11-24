@@ -5,12 +5,8 @@ import type {
   Save,
   SaveFile,
 } from "@pond/schema/db";
-import {
-  type Capture,
-  type CaptureMedia,
-  type RawJson,
-  walkCaptureMedia,
-} from "@pond/schema/raw";
+import { walkCaptureMedia } from "@pond/schema/raw";
+import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import { isVideoFile } from "@shared/media-index";
 import {
@@ -24,7 +20,7 @@ import { isAvatarUrl } from "@shared/tweet-card";
 
 export interface SaveSlide {
   primary: SaveFile;
-  files: SaveFile[];
+  files: Array<SaveFile>;
   video: boolean;
   /** Position in `walkCaptureMedia` order, or null when no capture media matches. */
   mediaIndex: number | null;
@@ -35,9 +31,9 @@ export interface SaveSplitPlan {
   /** The first slide, which stays on the original save. */
   keep: SaveSlide;
   /** Every other slide, in post order, each becoming its own save. */
-  slides: SaveSlide[];
+  slides: Array<SaveSlide>;
   /** Capture media positions the original keeps for later harvests. */
-  keepMedia: number[];
+  keepMedia: Array<number>;
 }
 
 type SplitSource = Pick<Save, "sourceId" | "files" | "rawJson">;
@@ -60,7 +56,9 @@ export function splitsOnImport(
 
 export function planSaveSplit(save: SplitSource): SaveSplitPlan | null {
   const primaries = slideFiles(save.files);
-  if (primaries.length < 2) return null;
+  if (primaries.length < 2) {
+    return null;
+  }
   const posters = save.files.filter((file) => file.kind === POSTER_KIND);
   let videoIndex = 0;
   const media = walkCaptureMedia(save.rawJson?.capture);
@@ -75,16 +73,18 @@ export function planSaveSplit(save: SplitSource): SaveSplitPlan | null {
       mediaIndex: indexes[index] ?? null,
     };
   });
-  const mapped = slides.every((slide) => slide.mediaIndex != null);
+  const mapped = slides.every((slide) => slide.mediaIndex !== null);
   const ordered = mapped
     ? [...slides].sort((a, b) => (a.mediaIndex ?? 0) - (b.mediaIndex ?? 0))
     : slides;
   const [keep, ...rest] = ordered;
-  if (!keep) return null;
+  if (!keep) {
+    return null;
+  }
   const taken = new Set(rest.map((slide) => slide.mediaIndex));
   const keepMedia = mapped
     ? media.flatMap((_, index) => (taken.has(index) ? [] : [index]))
-    : keep.mediaIndex == null
+    : keep.mediaIndex === null
       ? []
       : [keep.mediaIndex];
   return {
@@ -96,15 +96,17 @@ export function planSaveSplit(save: SplitSource): SaveSplitPlan | null {
 }
 
 function matchCaptureMedia(
-  primaries: readonly SaveFile[],
-  media: readonly CaptureMedia[],
-): (number | null)[] {
+  primaries: ReadonlyArray<SaveFile>,
+  media: ReadonlyArray<CaptureMedia>,
+): Array<number | null> {
   const taken = new Set<number>();
   const claim = (match: (entry: CaptureMedia) => boolean) => {
     const index = media.findIndex(
       (entry, position) => !taken.has(position) && match(entry),
     );
-    if (index === -1) return null;
+    if (index === -1) {
+      return null;
+    }
     taken.add(index);
     return index;
   };
@@ -113,7 +115,9 @@ function matchCaptureMedia(
   );
   return primaries.map((file, index) => {
     const matched = byUrl[index];
-    if (matched != null) return matched;
+    if (matched !== null && matched !== undefined) {
+      return matched;
+    }
     const type = isVideoFile(file) ? "video" : "image";
     return claim((entry) => entry.type === type && !isAvatarUrl(entry.url));
   });
@@ -122,7 +126,7 @@ function matchCaptureMedia(
 /** Keeps only the capture media at the given walk positions, across quoted and reply levels. */
 export function retainCaptureMedia(
   capture: Capture,
-  indexes: readonly number[],
+  indexes: ReadonlyArray<number>,
 ): Capture {
   const media = walkCaptureMedia(capture);
   const urls = new Set(
@@ -139,8 +143,12 @@ function filterCaptureMedia(capture: Capture, urls: Set<string>): Capture {
     ...capture,
     media: (capture.media ?? []).filter((entry) => urls.has(entry.url)),
   };
-  if (capture.quoted) next.quoted = filterCaptureMedia(capture.quoted, urls);
-  if (capture.replyTo) next.replyTo = filterCaptureMedia(capture.replyTo, urls);
+  if (capture.quoted) {
+    next.quoted = filterCaptureMedia(capture.quoted, urls);
+  }
+  if (capture.replyTo) {
+    next.replyTo = filterCaptureMedia(capture.replyTo, urls);
+  }
   return next;
 }
 
@@ -149,7 +157,9 @@ export function narrowToSplit(
   raw: RawJson,
   split: RawJson["split"] | undefined,
 ): RawJson {
-  if (!split) return raw;
+  if (!split) {
+    return raw;
+  }
   return {
     ...raw,
     capture: retainCaptureMedia(raw.capture, split.media),
@@ -160,7 +170,11 @@ export function narrowToSplit(
 /** Local and imported Saves carry no capture, but still record the split so the post can be found again. */
 const CAPTURELESS = storedAsRawJson({ capture: {} });
 
-function splitRaw(raw: RawJson | null, post: string, media: number[]): RawJson {
+function splitRaw(
+  raw: RawJson | null,
+  post: string,
+  media: Array<number>,
+): RawJson {
   const base = raw ?? CAPTURELESS;
   return {
     ...base,
@@ -170,12 +184,14 @@ function splitRaw(raw: RawJson | null, post: string, media: number[]): RawJson {
 }
 
 /** Slide Source IDs hash the file so a later sync of the post can never derive or collide with them. */
-export function slideSourceIds(plan: SaveSplitPlan): string[] {
+export function slideSourceIds(plan: SaveSplitPlan): Array<string> {
   const seen = new Set<string>();
   return plan.slides.map((slide) => {
     const base = `${plan.postSourceId} ${slide.primary.sha256.slice(0, 16) || slide.primary.path}`;
     let id = base;
-    for (let n = 2; seen.has(id); n += 1) id = `${base} ${n}`;
+    for (let n = 2; seen.has(id); n += 1) {
+      id = `${base} ${n}`;
+    }
     seen.add(id);
     return id;
   });
@@ -184,7 +200,7 @@ export function slideSourceIds(plan: SaveSplitPlan): string[] {
 function mediaFields(save: Save, slide: SaveSlide) {
   const index = slide.mediaIndex;
   const media =
-    index == null ? undefined : walkCaptureMedia(save.rawJson?.capture)[index];
+    index === null ? undefined : walkCaptureMedia(save.rawJson?.capture)[index];
   return {
     mediaUrl: media?.url ?? slide.primary.sourceUrl ?? null,
     mediaType: slide.video ? ("video" as const) : ("image" as const),
@@ -210,12 +226,12 @@ export function buildSlideRows(
   plan: SaveSplitPlan,
   newId: () => string,
   now = new Date(),
-): NewSave[] {
+): Array<NewSave> {
   const sourceIds = slideSourceIds(plan);
   const localUrl = `pond:local/${save.id}`;
   return plan.slides.map((slide, index): NewSave => {
     const id = newId();
-    const media = slide.mediaIndex == null ? [] : [slide.mediaIndex];
+    const media = slide.mediaIndex === null ? [] : [slide.mediaIndex];
     return {
       id,
       source: save.source,
@@ -258,7 +274,7 @@ function primaryBeforeSplit(save: SplitSource): SaveFile | undefined {
 export interface OriginalSplitPatch {
   patch: Partial<NewSave>;
   /** Files to delete from the original's folder once the patch lands. */
-  removed: SaveFile[];
+  removed: Array<SaveFile>;
 }
 
 export function buildOriginalPatch(
@@ -275,7 +291,9 @@ export function buildOriginalPatch(
       gone.has(file.path) ||
       (isThumbnailKind(file.kind) && !file.custom && sidecars.has(file.path)),
   );
-  for (const file of removed) gone.add(file.path);
+  for (const file of removed) {
+    gone.add(file.path);
+  }
   const files = save.files.filter((file) => !gone.has(file.path));
   const primaryChanged =
     primaryBeforeSplit(save)?.path !== plan.keep.primary.path;
@@ -287,15 +305,16 @@ export function buildOriginalPatch(
     ...mediaFields(save, plan.keep),
     ...keptSensitivity(save),
   };
-  if (cardChanged)
+  if (cardChanged) {
     Object.assign(patch, {
       blurhash: null,
       phash: null,
       dominantColors: [],
       primaryColor: null,
     } satisfies Partial<NewSave>);
+  }
   patch.rawJson = splitRaw(save.rawJson, plan.postSourceId, plan.keepMedia);
-  if (primaryChanged)
+  if (primaryChanged) {
     Object.assign(patch, {
       embedding: null,
       embeddingModel: null,
@@ -317,5 +336,6 @@ export function buildOriginalPatch(
       crop: null,
       metadataVersion: null,
     } satisfies Partial<NewSave>);
+  }
   return { patch, removed };
 }

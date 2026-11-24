@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createDragHaptics } from "./haptics";
 
 function setup() {
-  const played: HapticPattern[] = [];
+  const played: Array<HapticPattern> = [];
   return { played, haptics: createDragHaptics((p) => played.push(p)) };
 }
 

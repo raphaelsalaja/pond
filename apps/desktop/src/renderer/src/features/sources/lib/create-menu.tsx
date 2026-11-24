@@ -13,7 +13,7 @@ function sourceMenuIcon(source: Source): ReactNode {
 
 export function connectableSourceItems(
   onPick: (source: Source) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return CONNECTABLE.map((source) => {
     const label = getSourceDef(source).label;
     return {
@@ -28,7 +28,7 @@ export function connectableSourceItems(
 
 export function watchableSourceItems(
   onPick: (source: Source) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return WATCH_MENU_SOURCES.map((source) => {
     const label = watchSourceLabel(source);
     return {
@@ -45,7 +45,7 @@ export function buildSourceNewMenuItems(handlers: {
   onConnect: (source: Source) => void;
   onWatch: (source: Source) => void;
   onFolder: () => void;
-}): MenuItemSpec[] {
+}): Array<MenuItemSpec> {
   return [
     {
       type: "submenu",

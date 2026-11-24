@@ -14,8 +14,9 @@ export function followInterfaceZoom(
   },
 ): void {
   const apply = (next: ZoomPrefs) => {
-    if (!contents.isDestroyed())
+    if (!contents.isDestroyed()) {
       contents.setZoomFactor(next.window.interfaceZoom / 100);
+    }
   };
   contents.once("destroyed", prefs.subscribePrefs(apply));
   contents.on("did-finish-load", () => {

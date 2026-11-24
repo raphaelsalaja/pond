@@ -1,6 +1,7 @@
 import "@/app/effects/save-library-bridge";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   primarySelection,
@@ -28,38 +29,45 @@ function Gallery() {
   );
 }
 
+async function pointer(
+  target: EventTarget,
+  type: string,
+  x: number,
+  y: number,
+  ctrlKey = false,
+) {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    clientX: x,
+    clientY: y,
+    ctrlKey,
+  });
+  Object.defineProperty(event, "pointerId", { value: 1 });
+  await act(async () => {
+    target.dispatchEvent(event);
+  });
+}
+
 describe("rectangle selection cancellation", () => {
   let host: HTMLDivElement;
   let root: Root;
   let cleanupLayout: () => void;
   function element(selector: string) {
     const node = host.querySelector<HTMLElement>(selector);
-    if (!node) throw new Error(`Missing ${selector}`);
+    if (!node) {
+      throw new Error(`Missing ${selector}`);
+    }
     return node;
-  }
-  async function pointer(
-    target: EventTarget,
-    type: string,
-    x: number,
-    y: number,
-    ctrlKey = false,
-  ) {
-    const event = new MouseEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      button: 0,
-      clientX: x,
-      clientY: y,
-      ctrlKey,
-    });
-    Object.defineProperty(event, "pointerId", { value: 1 });
-    await act(() => target.dispatchEvent(event));
   }
   beforeEach(async () => {
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
-    await act(() => root.render(<Gallery />));
+    await act(async () => {
+      root.render(<Gallery />);
+    });
     for (const selector of ["[data-save-collection]", "[data-viewport]"]) {
       Object.defineProperty(element(selector), "getBoundingClientRect", {
         value: () => new DOMRect(0, 0, 300, 300),
@@ -77,7 +85,9 @@ describe("rectangle selection cancellation", () => {
     primarySelection.set("C");
   });
   afterEach(async () => {
-    await act(() => root.unmount());
+    await act(async () => {
+      root.unmount();
+    });
     host.remove();
     cleanupLayout();
     resultNavigation.setSource({ key: "empty", ids: [] });

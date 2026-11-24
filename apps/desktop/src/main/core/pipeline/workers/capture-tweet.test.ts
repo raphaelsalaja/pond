@@ -2,12 +2,11 @@ import type { Capture, RawJson } from "@pond/schema/raw";
 import { describe, expect, it, vi } from "vitest";
 import { CaptureIncompleteError } from "../extractors/errors";
 import {
-  type CaptureTweetPorts,
-  type CaptureTweetSave,
   createCaptureTweetRunner,
   createCaptureTweetTask,
   isCaptureTweetStale,
 } from "./capture-tweet";
+import type { CaptureTweetPorts, CaptureTweetSave } from "./capture-tweet";
 
 type TestPorts = CaptureTweetPorts<CaptureTweetSave>;
 type TweetDualResult = Awaited<ReturnType<TestPorts["screenshotTweetDual"]>>;
@@ -58,7 +57,9 @@ function makePorts(
   let stored = initial;
   const persistSave = vi.fn(
     async (...[, patch]: Parameters<TestPorts["persistSave"]>) => {
-      if (patch.rawJson) stored = { ...stored, rawJson: patch.rawJson };
+      if (patch.rawJson) {
+        stored = { ...stored, rawJson: patch.rawJson };
+      }
     },
   );
   const screenshotTweetDual = vi.fn(

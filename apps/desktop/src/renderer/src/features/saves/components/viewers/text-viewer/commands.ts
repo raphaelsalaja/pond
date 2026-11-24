@@ -12,8 +12,8 @@ import {
   $isRangeSelection,
   $setSelection,
   createCommand,
-  type LexicalEditor,
 } from "lexical";
+import type { LexicalEditor } from "lexical";
 import { $applyMarkdownBlock } from "@/shared/markdown-editor/blocks";
 import { $insertCollapsible } from "./collapsible";
 import { $createFileNode } from "./file-node";
@@ -41,7 +41,9 @@ const IMAGE_NAME = /\.(gif|png|jpe?g|webp|avif|svg|heic|bmp)$/i;
 
 export function $getNoteBlock(): NoteBlock {
   const selection = $getSelection();
-  if (!$isRangeSelection(selection)) return "paragraph";
+  if (!$isRangeSelection(selection)) {
+    return "paragraph";
+  }
   const anchor = selection.anchor.getNode();
   const list = $findMatchingParent(anchor, $isListNode);
   if ($isListNode(list) || $isListItemNode(anchor)) {
@@ -50,8 +52,12 @@ export function $getNoteBlock(): NoteBlock {
       : $findMatchingParent(anchor, $isListNode);
     if ($isListNode(node)) {
       const type = node.getListType();
-      if (type === "number") return "number";
-      if (type === "check") return "check";
+      if (type === "number") {
+        return "number";
+      }
+      if (type === "check") {
+        return "check";
+      }
       return "bullet";
     }
   }
@@ -62,7 +68,9 @@ export function $getNoteBlock(): NoteBlock {
       return tag;
     }
   }
-  if ($isQuoteNode(element)) return "quote";
+  if ($isQuoteNode(element)) {
+    return "quote";
+  }
   if ($isCodeNode(element)) {
     return element.getLanguage() === "mermaid" ? "diagram" : "code";
   }
@@ -71,10 +79,14 @@ export function $getNoteBlock(): NoteBlock {
 
 export function $linkHref(): string | null {
   const selection = $getSelection();
-  if (!$isRangeSelection(selection)) return null;
+  if (!$isRangeSelection(selection)) {
+    return null;
+  }
   const start = $findMatchingParent(selection.anchor.getNode(), $isLinkNode);
   const end = $findMatchingParent(selection.focus.getNode(), $isLinkNode);
-  if ($isLinkNode(start) && start === end) return start.getURL();
+  if ($isLinkNode(start) && start === end) {
+    return start.getURL();
+  }
   return null;
 }
 
@@ -93,8 +105,9 @@ export function $applyNoteBlock(block: NoteBlock): void {
     $insertCollapsible();
   } else if (block === "diagram") {
     const selection = $getSelection();
-    if ($isRangeSelection(selection))
+    if ($isRangeSelection(selection)) {
       $setBlocksType(selection, () => $createCodeNode("mermaid"));
+    }
   } else {
     $applyMarkdownBlock(block);
   }
@@ -119,7 +132,9 @@ export async function insertNoteFiles(
   const picked = await window.pond.query("saves.pickImportPaths", {
     kind: "files",
   });
-  if (!picked.paths.length) return;
+  if (!picked.paths.length) {
+    return;
+  }
   editor.update(() => {
     for (const path of picked.paths) {
       const name = path.split("/").filter(Boolean).at(-1) ?? path;

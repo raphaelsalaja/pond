@@ -92,7 +92,9 @@ function accountSlug(accountKey: string | undefined): string {
 function readCursor(cursor: string | undefined): PageCursor | null {
   const match = /^(user|group):(\d+)$/.exec(cursor ?? "");
   const page = Number(match?.[2]);
-  if (!match || !Number.isInteger(page) || page < 1) return null;
+  if (!match || !Number.isInteger(page) || page < 1) {
+    return null;
+  }
   return { kind: match[1] === "group" ? "groups" : "users", page };
 }
 
@@ -103,10 +105,14 @@ function writeCursor(kind: ContentsKind, page: number): string {
 /** The signed-in profile embeds the session token. It is sent as a bearer and never logged. */
 export function arenaAccessToken(html: string): string | null {
   const open = html.indexOf('<script id="__NEXT_DATA__"');
-  if (open < 0) return null;
+  if (open < 0) {
+    return null;
+  }
   const start = html.indexOf(">", open);
   const end = html.indexOf("</script>", start);
-  if (start < 0 || end < 0) return null;
+  if (start < 0 || end < 0) {
+    return null;
+  }
   try {
     const parsed = ArenaSessionSchema.parse(
       JSON.parse(html.slice(start + 1, end)),
@@ -127,7 +133,9 @@ function failure(status: number, retryAfterSec?: number): ListHarvestResult {
       ? { ok: false, reason: "rate_limited", retryAfterSec }
       : { ok: false, reason: "rate_limited" };
   }
-  if (status === 404) return { ok: false, reason: "no_match" };
+  if (status === 404) {
+    return { ok: false, reason: "no_match" };
+  }
   return { ok: false, reason: "unknown" };
 }
 
@@ -140,16 +148,25 @@ function blockEntry(
   row: z.infer<typeof ArenaBlockRowSchema>,
 ): ListEntry | null {
   const kind = (row.base_type ?? row.type ?? "").toLowerCase();
-  if (kind === "channel") return null;
-  const id = row.id != null ? String(row.id).trim() : "";
-  if (!id) return null;
+  if (kind === "channel") {
+    return null;
+  }
+  const id =
+    row.id !== null && row.id !== undefined ? String(row.id).trim() : "";
+  if (!id) {
+    return null;
+  }
   const entry: ListEntry = {
     sourceId: id,
     url: `https://www.are.na/block/${id}`,
   };
   const title = row.title?.trim();
-  if (title) entry.title = title;
-  if (row.created_at) entry.savedAt = row.created_at;
+  if (title) {
+    entry.title = title;
+  }
+  if (row.created_at) {
+    entry.savedAt = row.created_at;
+  }
   return entry;
 }
 
@@ -159,15 +176,17 @@ export async function readArenaBlocks(
   get: ArenaGet,
 ): Promise<ListHarvestResult> {
   const slug = accountSlug(args.accountKey);
-  if (!slug) return { ok: false, reason: "auth_required" };
+  if (!slug) {
+    return { ok: false, reason: "auth_required" };
+  }
 
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const resume = readCursor(args.resumeCursor);
   let kind: ContentsKind = resume?.kind ?? "users";
   let page = resume?.page ?? 1;
-  let tryGroup = resume == null;
-  const entries: ListEntry[] = [];
+  let tryGroup = resume === null;
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   let knownStreak = 0;
   let fetched = 0;
@@ -196,23 +215,29 @@ export async function readArenaBlocks(
     }
     tryGroup = false;
     fetched += 1;
-    if (res.status === 400 && page > 1) return finished();
+    if (res.status === 400 && page > 1) {
+      return finished();
+    }
     if (!res.ok) {
-      if (entries.length === 0) return failure(res.status, retryAfterSec(res));
+      if (entries.length === 0) {
+        return failure(res.status, retryAfterSec(res));
+      }
       return unfinished();
     }
 
     let parsed: z.infer<typeof ArenaContentsSchema>;
     try {
       parsed = ArenaContentsSchema.parse(await res.json());
-    } catch (err) {
+    } catch (error) {
       log.warn(
         "[pond arena:list] contents parse failed",
         kind,
         page,
-        err instanceof Error ? err.message : "error",
+        error instanceof Error ? error.message : "error",
       );
-      if (entries.length === 0) return { ok: false, reason: "unknown" };
+      if (entries.length === 0) {
+        return { ok: false, reason: "unknown" };
+      }
       return unfinished();
     }
 
@@ -220,9 +245,13 @@ export async function readArenaBlocks(
     let pageFresh = 0;
     for (const row of rows) {
       const entry = blockEntry(row);
-      if (!entry || seen.has(entry.sourceId)) continue;
+      if (!entry || seen.has(entry.sourceId)) {
+        continue;
+      }
       seen.add(entry.sourceId);
-      if (!known.has(entry.sourceId)) pageFresh += 1;
+      if (!known.has(entry.sourceId)) {
+        pageFresh += 1;
+      }
       entries.push(entry);
     }
 
@@ -231,9 +260,11 @@ export async function readArenaBlocks(
     const end =
       rows.length === 0 ||
       hasMore === false ||
-      (totalPages != null && page >= totalPages) ||
+      (totalPages !== null && totalPages !== undefined && page >= totalPages) ||
       (hasMore !== true && rows.length < PER_PAGE);
-    if (end || page >= MAX_PAGES) return finished();
+    if (end || page >= MAX_PAGES) {
+      return finished();
+    }
 
     if (earlyStop && pageFresh === 0) {
       knownStreak += 1;
@@ -255,8 +286,8 @@ async function pacedFetch(
 ): Promise<Response> {
   try {
     await acquire(ARENA_SOURCE);
-  } catch (err) {
-    if (err instanceof AuthRequiredError) {
+  } catch (error) {
+    if (error instanceof AuthRequiredError) {
       return new Response(null, { status: 401 });
     }
     return new Response(null, {
@@ -272,10 +303,10 @@ async function pacedFetch(
       headers: res.headers,
     });
     return res;
-  } catch (err) {
+  } catch (error) {
     log.warn(
       "[pond arena:list] fetch failed",
-      err instanceof Error ? err.message : "error",
+      error instanceof Error ? error.message : "error",
     );
     report(ARENA_SOURCE, { ok: false });
     return new Response(null, { status: 503 });
@@ -294,13 +325,15 @@ async function readArenaAccessToken(
   if (res.status === 401 || res.status === 403 || looksLikeAuthWall(res.url)) {
     return "signed_out";
   }
-  if (!res.ok) return null;
+  if (!res.ok) {
+    return null;
+  }
   try {
     return arenaAccessToken(await res.text());
-  } catch (err) {
+  } catch (error) {
     log.warn(
       "[pond arena:list] profile parse failed",
-      err instanceof Error ? err.message : "error",
+      error instanceof Error ? error.message : "error",
     );
     return null;
   }
@@ -327,9 +360,13 @@ export async function harvestArenaBlocks(
   partition?: string,
 ): Promise<ListHarvestResult> {
   const slug = accountSlug(args.accountKey);
-  if (!slug) return { ok: false, reason: "auth_required" };
+  if (!slug) {
+    return { ok: false, reason: "auth_required" };
+  }
   const part = partition ?? (await partitionForIngest(ARENA_SOURCE));
   const token = await readArenaAccessToken(part, slug);
-  if (token === "signed_out") return { ok: false, reason: "auth_required" };
+  if (token === "signed_out") {
+    return { ok: false, reason: "auth_required" };
+  }
   return readArenaBlocks(args, sessionGet(part, token));
 }

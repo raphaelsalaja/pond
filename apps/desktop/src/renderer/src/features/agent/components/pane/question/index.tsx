@@ -16,7 +16,7 @@ export function KoiQuestion({
   onAnswer,
 }: {
   question: string;
-  options: readonly string[];
+  options: ReadonlyArray<string>;
   recommended?: number;
   answered?: string;
   disabled?: boolean;
@@ -33,7 +33,9 @@ export function KoiQuestion({
   const folded = Boolean(answered) || later;
 
   async function submit(value = answer) {
-    if (!value || locked) return;
+    if (!value || locked) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -53,14 +55,18 @@ export function KoiQuestion({
     submit: () => void submit(),
     cancel: answered || disabled ? undefined : () => setLater(true),
     pick: (index, card) => {
-      if (locked || answered || later) return false;
+      if (locked || answered || later) {
+        return false;
+      }
       const option = options[index];
       if (option !== undefined) {
         setChoice(option);
         void submit(option);
         return true;
       }
-      if (index !== options.length) return false;
+      if (index !== options.length) {
+        return false;
+      }
       card.querySelector("input")?.focus();
       return true;
     },

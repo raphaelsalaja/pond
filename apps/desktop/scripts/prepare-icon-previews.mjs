@@ -5,11 +5,10 @@
  */
 
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import sharp from "sharp";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 const tintsRoot = resolve(__dirname, "../../../packages/icons/brand/tints");
 const outDir = resolve(
   __dirname,
@@ -50,7 +49,9 @@ async function main() {
   let written = 0;
 
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+    if (!entry.isDirectory()) {
+      continue;
+    }
     // `<id>[.NN][.dark].png`: the root (macOS 26) or `macos-NN/` design, Default or Dark style.
     const tintDir = join(tintsRoot, entry.name);
     const generations = (await readdir(tintDir)).flatMap((name) => {
@@ -67,9 +68,13 @@ async function main() {
     ];
     for (const [file, suffix] of variants) {
       const source = await sourceFor(join(tintsRoot, entry.name), file);
-      if (!source) continue;
+      if (!source) {
+        continue;
+      }
       const out = join(outDir, `${entry.name}${suffix}.png`);
-      if (await isFresh(out, source.mtime)) continue;
+      if (await isFresh(out, source.mtime)) {
+        continue;
+      }
       const png = await sharp(await readFile(source.path))
         .resize(PREVIEW_SIZE, PREVIEW_SIZE)
         .png({ compressionLevel: 9 })

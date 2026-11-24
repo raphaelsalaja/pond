@@ -17,7 +17,9 @@ const HOVER_DELAY_MS = 450;
 function seekToStart(el: HTMLVideoElement) {
   try {
     el.currentTime = 0;
-  } catch {}
+  } catch {
+    /** Seeking throws while the media has no seekable range; the poster frame stays. */
+  }
 }
 
 export function HoverVideo({
@@ -73,12 +75,20 @@ export function HoverVideo({
     },
     [coverKey, hasVideoDims, onReady, saveId, src],
   );
-  const poster = useImageReady(effectivePosterUrl ?? null, reportPosterReady);
+  const {
+    ref: posterRef,
+    loaded: posterLoaded,
+    onLoad: onPosterLoad,
+  } = useImageReady(effectivePosterUrl ?? null, reportPosterReady);
 
   useEffect(() => {
-    if (!active || !primed || !hoverEnabled) return;
+    if (!active || !primed || !hoverEnabled) {
+      return;
+    }
     const el = internalRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     /** Autoplay rejections are expected, and some Chromium builds return undefined here. */
     const play = (): void => {
       el.play()?.catch(() => {});
@@ -87,14 +97,19 @@ export function HoverVideo({
       el.pause();
     };
     const onVisibility = (): void => {
-      if (document.hidden) pause();
-      else if (document.hasFocus()) play();
+      if (document.hidden) {
+        pause();
+      } else if (document.hasFocus()) {
+        play();
+      }
     };
     if (motionPaused) {
       pause();
       return () => pause();
     }
-    if (!document.hidden && document.hasFocus()) play();
+    if (!document.hidden && document.hasFocus()) {
+      play();
+    }
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", pause);
     window.addEventListener("focus", onVisibility);
@@ -107,9 +122,13 @@ export function HoverVideo({
   }, [active, primed, hoverEnabled, motionPaused]);
 
   useEffect(() => {
-    if (primed) return;
+    if (primed) {
+      return;
+    }
     const el = internalRef.current;
-    if (!el || el.networkState === HTMLMediaElement.NETWORK_EMPTY) return;
+    if (!el || el.networkState === HTMLMediaElement.NETWORK_EMPTY) {
+      return;
+    }
     /** Dropping src alone keeps the decoder and buffers; load() with no source frees them. */
     el.removeAttribute("src");
     el.load();
@@ -125,14 +144,18 @@ export function HoverVideo({
   );
 
   const activate = useCallback(() => {
-    if (!hoverEnabled || document.body.dataset.saveDragging) return;
+    if (!hoverEnabled || document.body.dataset.saveDragging) {
+      return;
+    }
     window.clearTimeout(releaseTimer.current);
     setActive(true);
     setHoverPrimed(true);
   }, [hoverEnabled]);
 
   const onPointerEnter = useCallback(() => {
-    if (!hoverEnabled) return;
+    if (!hoverEnabled) {
+      return;
+    }
     window.clearTimeout(releaseTimer.current);
     window.clearTimeout(hoverTimer.current);
     hoverTimer.current = window.setTimeout(activate, HOVER_DELAY_MS);
@@ -147,14 +170,20 @@ export function HoverVideo({
       RELEASE_DELAY_MS,
     );
     const el = internalRef.current;
-    if (!el) return;
+    if (!el) {
+      return;
+    }
     el.pause();
   }, []);
 
   const onLoadedMetadata = useCallback(() => {
     const el = internalRef.current;
-    if (!el) return;
-    if (el.readyState < HTMLMediaElement.HAVE_METADATA) return;
+    if (!el) {
+      return;
+    }
+    if (el.readyState < HTMLMediaElement.HAVE_METADATA) {
+      return;
+    }
     if (el.videoWidth === 0 && el.videoHeight === 0) {
       onBroken();
       return;
@@ -178,23 +207,23 @@ export function HoverVideo({
   ]);
 
   const showHash =
-    Boolean(blurhash) && (effectivePosterUrl ? !poster.loaded : !videoReady);
+    Boolean(blurhash) && (effectivePosterUrl ? !posterLoaded : !videoReady);
 
   return (
     <>
       {showHash && blurhash ? <BlurHash hash={blurhash} /> : null}
       {effectivePosterUrl ? (
         <img
-          ref={poster.ref}
+          ref={posterRef}
           src={effectivePosterUrl}
           alt=""
           decoding="async"
           fetchPriority="auto"
           className={styles.poster}
           data-fit={prefs.galleryFit}
-          data-loaded={!blurhash || poster.loaded ? "true" : "false"}
+          data-loaded={!blurhash || posterLoaded ? "true" : "false"}
           draggable={false}
-          onLoad={poster.onLoad}
+          onLoad={onPosterLoad}
           onError={() => setPosterBroken(true)}
         />
       ) : null}

@@ -16,8 +16,8 @@ import { buildViewSection } from "./view-section";
 
 export function buildAppMenuTemplate(
   context: AppMenuContext,
-  recentEntries: RecentMenuEntry[],
-): AppMenuItem[] {
+  recentEntries: Array<RecentMenuEntry>,
+): Array<AppMenuItem> {
   const settingsItem = buildSettingsItem(context);
 
   return [

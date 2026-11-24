@@ -1,7 +1,7 @@
 /** Runs a PR proof scenario against the built desktop app in a throwaway Library and writes framed stills and clips. */
 const { app } = require("electron");
 const { existsSync, mkdirSync, writeFileSync } = require("node:fs");
-const { basename, isAbsolute, join } = require("node:path");
+const path = require("node:path");
 const {
   AREA,
   FPS,
@@ -17,6 +17,7 @@ const {
   driver,
   evalIn,
   frameSettled,
+  isFunction,
   keepOffscreen,
   keepPainting,
   openLibrary,
@@ -40,7 +41,9 @@ const timeout = Number(arg("timeout", "180000"));
 const defaultCrop = parseCrop(arg("crop", ""));
 
 function parseCrop(value) {
-  if (!value) return undefined;
+  if (!value) {
+    return undefined;
+  }
   const [x, y, cropWidth] = value.split(",").map(Number);
   if (![x, y, cropWidth].every(Number.isFinite) || cropWidth <= 0) {
     console.error("capture-proof: --crop is x,y,width in window points");
@@ -50,8 +53,8 @@ function parseCrop(value) {
 }
 
 if (
-  !isAbsolute(scenarioPath) ||
-  !isAbsolute(out) ||
+  !path.isAbsolute(scenarioPath) ||
+  !path.isAbsolute(out) ||
   !["light", "dark"].includes(theme) ||
   !(width > 0 && height > 0)
 ) {
@@ -60,7 +63,7 @@ if (
   );
   process.exit(1);
 }
-const entry = join(__dirname, "../out/main/index.js");
+const entry = path.join(__dirname, "../out/main/index.js");
 if (!existsSync(entry)) {
   console.error(
     "capture-proof: out/main/index.js is missing. Run `pnpm --filter @pond/desktop build` first.",
@@ -69,7 +72,7 @@ if (!existsSync(entry)) {
 }
 
 const sandbox = createSandbox("pond-proof-");
-const scratch = join(sandbox, "scratch");
+const scratch = path.join(sandbox, "scratch");
 mkdirSync(scratch, { recursive: true });
 mkdirSync(out, { recursive: true });
 
@@ -96,40 +99,57 @@ function fail(error) {
 
 app.on("browser-window-created", (_, win) => keepOffscreen(win));
 
-function context(main) {
-  const base = driver(main, { sandbox, onStep });
-  const resolveWindow = base.windowFor;
+function clamp(value, max) {
+  return Math.min(Math.max(0, value), max);
+}
 
-  const cropFor = async (win, crop) => {
-    if (!crop?.selector) return crop ?? defaultCrop;
-    const r = await evalIn(
-      win,
-      `(() => {
+async function cropFor(win, crop) {
+  if (!crop?.selector) {
+    return crop ?? defaultCrop;
+  }
+  const r = await evalIn(
+    win,
+    `(() => {
         const el = document.querySelector(${JSON.stringify(crop.selector)});
         if (!el) return null;
         const r = el.getBoundingClientRect();
         return { x: r.left, y: r.top, width: r.width, height: r.height };
       })()`,
-    );
-    if (!r) throw new Error(`No element matches ${crop.selector}`);
-    const pad = crop.padding ?? 48;
-    const [contentWidth, contentHeight] = win.getContentSize();
-    const aspect = (AREA.width * 16) / ((1 - AREA.y) * 10);
-    const cropWidth = Math.min(
-      contentWidth,
-      Math.max(r.width + 2 * pad, (r.height + 2 * pad) * aspect),
-    );
-    const cropHeight = cropWidth / aspect;
-    const clamp = (value, max) => Math.min(Math.max(0, value), max);
-    return {
-      x: clamp(r.x + r.width / 2 - cropWidth / 2, contentWidth - cropWidth),
-      y: clamp(
-        r.y + r.height / 2 - cropHeight / 2,
-        Math.max(0, contentHeight - cropHeight),
-      ),
-      width: cropWidth,
-    };
+  );
+  if (!r) {
+    throw new Error(`No element matches ${crop.selector}`);
+  }
+  const pad = crop.padding ?? 48;
+  const [contentWidth, contentHeight] = win.getContentSize();
+  const aspect = (AREA.width * 16) / ((1 - AREA.y) * 10);
+  const cropWidth = Math.min(
+    contentWidth,
+    Math.max(r.width + 2 * pad, (r.height + 2 * pad) * aspect),
+  );
+  const cropHeight = cropWidth / aspect;
+  return {
+    x: clamp(r.x + r.width / 2 - cropWidth / 2, contentWidth - cropWidth),
+    y: clamp(
+      r.y + r.height / 2 - cropHeight / 2,
+      Math.max(0, contentHeight - cropHeight),
+    ),
+    width: cropWidth,
   };
+}
+
+function contentSize(win) {
+  const [w, h] = win.getContentSize();
+  return { width: w, height: h };
+}
+
+function record(entry) {
+  manifest.push(entry);
+  console.log(`capture-proof: wrote ${entry.file}`);
+}
+
+function context(main) {
+  const base = driver(main, { sandbox, onStep });
+  const resolveWindow = base.windowFor;
 
   /** `bare` is for transparent windows: no window shadow, edge or traffic lights. */
   const chrome = (win, bare = false) => ({
@@ -142,16 +162,6 @@ function context(main) {
         : null,
   });
 
-  const contentSize = (win) => {
-    const [w, h] = win.getContentSize();
-    return { width: w, height: h };
-  };
-
-  const record = (entry) => {
-    manifest.push(entry);
-    console.log(`capture-proof: wrote ${entry.file}`);
-  };
-
   const stills = new Map();
 
   const ctx = {
@@ -162,15 +172,15 @@ function context(main) {
       const win = resolveWindow(options.window);
       await frameSettled(win);
       const image = await within(
-        10000,
+        10_000,
         win.webContents.capturePage(),
         "capturePage",
       );
-      const file = join(out, `${name}.png`);
+      const file = path.join(out, `${name}.png`);
       if (options.frame === false) {
         writeFileSync(file, image.toPNG());
         const size = image.getSize();
-        record({ kind: "still", name, file: basename(file), ...size });
+        record({ kind: "still", name, file: path.basename(file), ...size });
         return file;
       }
       const layout = frameLayout(
@@ -182,13 +192,15 @@ function context(main) {
       const png = await composeStill(image, layout, chrome(win, options.bare));
       writeFileSync(file, png);
       stills.set(name, png);
-      record({ kind: "still", name, file: basename(file), ...STILL });
+      record({ kind: "still", name, file: path.basename(file), ...STILL });
       if (options.pair) {
         const before = stills.get(options.pair);
-        if (!before) throw new Error(`No earlier shot named ${options.pair}`);
+        if (!before) {
+          throw new Error(`No earlier shot named ${options.pair}`);
+        }
         const pairName = `${options.pair}-vs-${name}`;
         writeFileSync(
-          join(out, `${pairName}.png`),
+          path.join(out, `${pairName}.png`),
           await composePair(before, png),
         );
         record({
@@ -237,16 +249,22 @@ function context(main) {
           done = true;
         });
       const capture = () =>
-        within(10000, win.webContents.capturePage(), "capturePage");
+        within(10_000, win.webContents.capturePage(), "capturePage");
       /** beginFrameSubscription caps at 30fps in Electron; capturePage resolves once per vsync if the next request is already queued. */
       let next = capture();
       for (;;) {
         const image = await next;
         const index = slot();
         const finished = done;
-        if (!finished) next = capture();
-        if (index >= written) await deliver(index, image);
-        if (finished) break;
+        if (!finished) {
+          next = capture();
+        }
+        if (index >= written) {
+          await deliver(index, image);
+        }
+        if (finished) {
+          break;
+        }
       }
       const end = slot();
       while (previous && written <= end) {
@@ -257,12 +275,12 @@ function context(main) {
       console.log(
         `capture-proof: ${name} captured ${unique} of ${written} frames`,
       );
-      const file = join(out, `${name}.mp4`);
+      const file = path.join(out, `${name}.mp4`);
       await recorder.finish(file, chrome(win, options.bare));
       record({
         kind: "video",
         name,
-        file: basename(file),
+        file: path.basename(file),
         ...VIDEO,
         fps: FPS,
         durationMs: Math.round((written / fps) * 1000),
@@ -286,16 +304,16 @@ async function main() {
   await seedLibrary(ctx);
   step = "load scenario";
   const scenario = require(scenarioPath);
-  if (!(scenario.run instanceof Function)) {
+  if (!isFunction(scenario.run)) {
     throw new Error(`${scenarioPath} must export async function run(ctx)`);
   }
   step = "scenario";
   await scenario.run(ctx);
   writeFileSync(
-    join(out, "manifest.json"),
+    path.join(out, "manifest.json"),
     `${JSON.stringify(
       {
-        scenario: basename(scenarioPath),
+        scenario: path.basename(scenarioPath),
         theme,
         size: { width, height },
         files: manifest,

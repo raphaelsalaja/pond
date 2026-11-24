@@ -11,7 +11,7 @@ export function FilterSelect<Value extends string>({
 }: {
   label: string;
   value: Value;
-  items: { value: Value; label: string }[];
+  items: Array<{ value: Value; label: string }>;
   className?: string;
   onChange: (value: Value) => void;
 }) {
@@ -20,7 +20,9 @@ export function FilterSelect<Value extends string>({
       items={items}
       value={value}
       onValueChange={(next) => {
-        if (next !== null) onChange(next);
+        if (next !== null) {
+          onChange(next);
+        }
       }}
     >
       <Select.Trigger

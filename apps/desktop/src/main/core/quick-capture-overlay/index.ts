@@ -1,8 +1,5 @@
-import {
-  BrowserWindow,
-  type BrowserWindowConstructorOptions,
-  screen,
-} from "electron";
+import { BrowserWindow, screen } from "electron";
+import type { BrowserWindowConstructorOptions } from "electron";
 import type {
   QuickCaptureSnapshot,
   QuickCaptureSubmit,
@@ -28,7 +25,9 @@ let kept: QuickCaptureSubmit | null = null;
 const BLUR_GRACE_MS = 1500;
 
 function cancelBlurClose(): void {
-  if (blurClose) clearTimeout(blurClose);
+  if (blurClose) {
+    clearTimeout(blurClose);
+  }
   blurClose = null;
 }
 
@@ -41,8 +40,9 @@ function scheduleBlurClose(win: BrowserWindow, ignoreFocus = false): void {
       !picking &&
       !draggingIn &&
       (ignoreFocus || !win.isFocused())
-    )
+    ) {
       closeQuickCapture();
+    }
   }, BLUR_GRACE_MS);
 }
 
@@ -80,9 +80,13 @@ export function setQuickCapturePicking(next: boolean): void {
 /** A drag from another app keeps the window open until it drops or leaves. */
 export function setQuickCaptureDrag(phase: "enter" | "leave" | "drop"): void {
   const win = overlay;
-  if (!win || win.isDestroyed()) return;
+  if (!win || win.isDestroyed()) {
+    return;
+  }
   if (phase === "enter") {
-    if (!draggingIn) dragAfterBlur = blurClose !== null || !win.isFocused();
+    if (!draggingIn) {
+      dragAfterBlur = blurClose !== null || !win.isFocused();
+    }
     draggingIn = true;
     cancelBlurClose();
     return;
@@ -93,7 +97,9 @@ export function setQuickCaptureDrag(phase: "enter" | "leave" | "drop"): void {
   if (phase === "drop") {
     cancelBlurClose();
     win.focus();
-  } else if (abandoned || !win.isFocused()) scheduleBlurClose(win, abandoned);
+  } else if (abandoned || !win.isFocused()) {
+    scheduleBlurClose(win, abandoned);
+  }
 }
 
 export function closeQuickCapture(): void {
@@ -104,7 +110,9 @@ export function closeQuickCapture(): void {
   overlay = null;
   snapshot = null;
   picking = false;
-  if (win && !win.isDestroyed()) win.close();
+  if (win && !win.isDestroyed()) {
+    win.close();
+  }
 }
 
 /** Upper third of the display under the pointer, like Spotlight. */
@@ -155,7 +163,9 @@ export async function openQuickCapture(
       nodeIntegration: false,
     },
   };
-  if (behavior.panel) options.type = "panel";
+  if (behavior.panel) {
+    options.type = "panel";
+  }
   const win = new BrowserWindow(options);
   overlay = win;
   snapshot = next;
@@ -163,27 +173,36 @@ export async function openQuickCapture(
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("will-navigate", (event) => event.preventDefault());
   win.setAlwaysOnTop(true, "pop-up-menu");
-  if (behavior.allWorkspaces)
+  if (behavior.allWorkspaces) {
     win.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
       skipTransformProcessType: true,
     });
+  }
   win.on("blur", () => {
-    if (overlay === win && !picking) scheduleBlurClose(win);
+    if (overlay === win && !picking) {
+      scheduleBlurClose(win);
+    }
   });
   win.on("focus", cancelBlurClose);
   win.once("closed", () => {
-    if (overlay !== win) return;
+    if (overlay !== win) {
+      return;
+    }
     overlay = null;
     snapshot = null;
   });
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   try {
-    if (devUrl)
+    if (devUrl) {
       await win.loadURL(new URL("quick-capture.html", `${devUrl}/`).toString());
-    else await win.loadFile(resolveMainOut("../renderer/quick-capture.html"));
+    } else {
+      await win.loadFile(resolveMainOut("../renderer/quick-capture.html"));
+    }
   } catch (error) {
-    if (!win.isDestroyed()) win.destroy();
+    if (!win.isDestroyed()) {
+      win.destroy();
+    }
     throw error;
   }
 }
@@ -191,7 +210,9 @@ export async function openQuickCapture(
 /** Shown only after the renderer paints, so it never flashes an empty window. */
 export function presentQuickCapture(): void {
   const win = overlay;
-  if (!win || win.isDestroyed() || win.isVisible()) return;
+  if (!win || win.isDestroyed() || win.isVisible()) {
+    return;
+  }
   win.show();
   win.focus();
 }

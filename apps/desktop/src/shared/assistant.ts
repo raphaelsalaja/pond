@@ -291,7 +291,9 @@ export function assistantCatalog(id: string): AssistantCatalog | undefined {
 export type ProviderGroup = "cloud" | "local" | "subscription";
 
 export function providerGroup(id: AssistantProvider): ProviderGroup {
-  if (id === "codex" || id === "claude-code") return "subscription";
+  if (id === "codex" || id === "claude-code") {
+    return "subscription";
+  }
   return assistantCatalog(id)?.local ? "local" : "cloud";
 }
 
@@ -482,7 +484,7 @@ export type AssistantRoutineEvent = z.infer<typeof assistantRoutineEvent>;
 export const assistantSend = z.object({
   chatId: z.string().min(1),
   requestId: z.string().min(1).max(100),
-  content: z.string().trim().min(1).max(32000),
+  content: z.string().trim().min(1).max(32_000),
   attachmentIds: z
     .array(z.string().min(1))
     .max(ASSISTANT_ATTACH_CAP)
@@ -622,9 +624,9 @@ export const ASSISTANT_ACTIVITY_LABELS = {
 } satisfies Record<AssistantActivity, string>;
 export type AssistantEvent =
   | { type: "activity"; activity: AssistantActivity }
-  | { type: "sources"; sources: AssistantSource[] }
-  | { type: "results"; results: AssistantResultSet[] }
-  | { type: "steps"; steps: AssistantToolStep[] }
+  | { type: "sources"; sources: Array<AssistantSource> }
+  | { type: "results"; results: Array<AssistantResultSet> }
+  | { type: "steps"; steps: Array<AssistantToolStep> }
   | { type: "text"; text: string };
 
 export const agentStreamRequest = assistantSend.omit({ content: true }).extend({

@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 
-import type { JsonValue } from "@pond/schema/json";
+import { isJsonValue } from "@pond/schema/json";
+import type { JsonObject, JsonValue } from "@pond/schema/json";
 import type { ImportCollectionOption } from "@shared/import-scope";
 import { z } from "zod";
 
@@ -17,7 +18,9 @@ export function buildOpenBookmarkFolderExpression(folderId: string): string {
 
 async function inPageOpenBookmarkFolder(folderId: string): Promise<boolean> {
   const sleep = (ms: number): Promise<void> =>
-    new Promise((r) => setTimeout(r, ms));
+    new Promise((r) => {
+      setTimeout(r, ms);
+    });
   const mountDeadline = Date.now() + 15_000;
   while (
     !globalThis.__pondBookmarksCaptures?.length &&
@@ -25,7 +28,9 @@ async function inPageOpenBookmarkFolder(folderId: string): Promise<boolean> {
   ) {
     await sleep(250);
   }
-  if (!document.querySelector('[data-testid="primaryColumn"]')) return false;
+  if (!document.querySelector('[data-testid="primaryColumn"]')) {
+    return false;
+  }
   globalThis.__pondBookmarkFolderRequest = null;
   /** The main list shares this buffer, and its posts must not be filed into the folder. */
   globalThis.__pondBookmarksCaptures = [];
@@ -37,7 +42,9 @@ async function inPageOpenBookmarkFolder(folderId: string): Promise<boolean> {
   /** Only the folder's own request proves the view switched; otherwise a scroll would read the main list. */
   const requestDeadline = Date.now() + 20_000;
   while (!globalThis.__pondBookmarkFolderRequest) {
-    if (Date.now() > requestDeadline) return false;
+    if (Date.now() > requestDeadline) {
+      return false;
+    }
     await sleep(250);
   }
   return true;
@@ -48,7 +55,7 @@ export function buildReadBookmarkFoldersExpression(): string {
   return `(${inPageReadBookmarkFolders.toString()})()`;
 }
 
-async function inPageReadBookmarkFolders(): Promise<string[]> {
+async function inPageReadBookmarkFolders(): Promise<Array<string>> {
   const deadline = Date.now() + 12_000;
   while (Date.now() < deadline) {
     const captures = globalThis.__pondBookmarkFoldersCaptures ?? [];
@@ -57,7 +64,9 @@ async function inPageReadBookmarkFolders(): Promise<string[]> {
         capture.body ? [capture.body] : [],
       );
     }
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => {
+      setTimeout(r, 300);
+    });
   }
   return [];
 }
@@ -75,19 +84,24 @@ const BodiesSchema = z.array(z.string()).catch([]);
 
 export function parseBookmarkFolders(
   value: JsonValue,
-): ImportCollectionOption[] {
-  const out: ImportCollectionOption[] = [];
+): Array<ImportCollectionOption> {
+  const out: Array<ImportCollectionOption> = [];
   const seen = new Set<string>();
   for (const body of BodiesSchema.parse(value)) {
-    let json: JsonValue;
+    let json: unknown;
     try {
       json = JSON.parse(body);
     } catch {
       continue;
     }
+    if (!isJsonValue(json)) {
+      continue;
+    }
     for (const slice of findKey(json, "bookmark_collections_slice")) {
       for (const folder of SliceSchema.parse(slice).items) {
-        if (!folder || seen.has(folder.id)) continue;
+        if (!folder || seen.has(folder.id)) {
+          continue;
+        }
         seen.add(folder.id);
         out.push({
           id: folder.id,
@@ -100,10 +114,18 @@ export function parseBookmarkFolders(
   return out;
 }
 
-function findKey(value: JsonValue, key: string): JsonValue[] {
-  if (Array.isArray(value)) return value.flatMap((item) => findKey(item, key));
-  if (!(value instanceof Object)) return [];
+function findKey(value: JsonValue, key: string): Array<JsonValue> {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => findKey(item, key));
+  }
+  if (!isJsonObject(value)) {
+    return [];
+  }
   return Object.entries(value).flatMap(([name, child]) =>
     name === key ? [child] : findKey(child, key),
   );
+}
+
+function isJsonObject(value: JsonValue): value is JsonObject {
+  return Object(value) === value;
 }

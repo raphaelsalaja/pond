@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MediaViewer } from "@/features/saves/components/viewers/media-viewer";
 import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
@@ -107,7 +108,9 @@ describe("generated raster viewer", () => {
     const save = generatedSave("heic");
     save.mediaType = "image";
     const file = save.files[0];
-    if (!file) throw new Error("Missing fixture file");
+    if (!file) {
+      throw new Error("Missing fixture file");
+    }
     file.kind = "image";
     file.mimeType = "image/heic";
     pool.upsert(save);

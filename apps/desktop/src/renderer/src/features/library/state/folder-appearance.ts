@@ -1,4 +1,5 @@
-import { DEFAULT_PREFS, type Prefs } from "@pond/schema";
+import { DEFAULT_PREFS } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
 import {
   FolderColorSchema,
   RECENT_FOLDER_APPEARANCE_LIMIT,
@@ -14,7 +15,7 @@ import {
 type FolderAppearancePrefs = Prefs["folderAppearance"];
 
 /** Most recent first, without duplicates, capped to one picker row. */
-export function withRecent<T>(recent: readonly T[], value: T): T[] {
+export function withRecent<T>(recent: ReadonlyArray<T>, value: T): Array<T> {
   return [value, ...recent.filter((entry) => entry !== value)].slice(
     0,
     RECENT_FOLDER_APPEARANCE_LIMIT,
@@ -43,7 +44,9 @@ export function rememberFolderIcon(icon: FolderIconId): Promise<void> {
 
 export function rememberFolderColor(color: string | null): Promise<void> {
   const parsed = FolderColorSchema.safeParse(color);
-  if (!parsed.success) return Promise.resolve();
+  if (!parsed.success) {
+    return Promise.resolve();
+  }
   return remember((current) => ({
     recentColors: withRecent(current.recentColors, parsed.data),
   }));

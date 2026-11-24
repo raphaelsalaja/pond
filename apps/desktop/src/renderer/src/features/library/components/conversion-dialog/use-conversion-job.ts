@@ -3,49 +3,53 @@ import type {
   ConversionPreset,
 } from "@shared/conversion-contracts";
 import { useEffect, useState } from "react";
-import {
-  closeConversionDialog,
-  type ExportMode,
-} from "@/features/library/state/conversion-dialog";
+import { closeConversionDialog } from "@/features/library/state/conversion-dialog";
+import type { ExportMode } from "@/features/library/state/conversion-dialog";
 import { exportSelectionCsv, exportSelectionFiles } from "@/features/saves";
 import { errorCopy } from "@/shared/lib/error-copy";
 
 interface ExportRequest {
   mode: ExportMode;
-  ids: string[];
+  ids: Array<string>;
   fileIndex: number;
   preset: ConversionPreset;
 }
 
 async function exportSaves(
   mode: Exclude<ExportMode, "converted">,
-  ids: string[],
+  ids: Array<string>,
 ) {
   if (mode === "files") {
     const result = await exportSelectionFiles(ids);
-    if (!result.ok) throw new Error(result.message);
+    if (!result.ok) {
+      throw new Error(result.message);
+    }
     return;
   }
   if (mode === "csv") {
     const result = await exportSelectionCsv(ids);
-    if (!result.ok) throw new Error(result.message);
+    if (!result.ok) {
+      throw new Error(result.message);
+    }
     return;
   }
   if (mode === "eagle-package") {
     const result = await window.pond.query("saves.exportEaglePackage", {
       ids,
     });
-    if (!result.ok && result.reason !== "cancelled")
+    if (!result.ok && result.reason !== "cancelled") {
       throw new Error(
         result.error || "Couldn't export the Eagle package. Try again.",
       );
+    }
     return;
   }
   const result = await window.pond.query("saves.exportPackage", { ids });
-  if (!result.ok && result.reason !== "cancelled")
+  if (!result.ok && result.reason !== "cancelled") {
     throw new Error(
       result.error || "Couldn't export the Pond package. Try again.",
     );
+  }
 }
 
 export function useConversionJob() {
@@ -55,23 +59,32 @@ export function useConversionJob() {
   const running = job?.status === "running";
 
   useEffect(() => {
-    if (job?.status !== "running") return;
+    if (job?.status !== "running") {
+      return;
+    }
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
     async function poll() {
-      if (!job) return;
+      if (!job) {
+        return;
+      }
       try {
         const next = await window.pond.query("conversion.status", {
           id: job.id,
         });
-        if (!stopped && next) setJob(next);
-      } catch (cause) {
-        if (!stopped)
+        if (!stopped && next) {
+          setJob(next);
+        }
+      } catch (error_) {
+        if (!stopped) {
           setError(
-            errorCopy(cause, "Couldn't check export progress. Try again."),
+            errorCopy(error_, "Couldn't check export progress. Try again."),
           );
+        }
       }
-      if (!stopped) timer = setTimeout(() => void poll(), 500);
+      if (!stopped) {
+        timer = setTimeout(() => void poll(), 500);
+      }
     }
     timer = setTimeout(() => void poll(), 200);
     return () => {
@@ -85,8 +98,8 @@ export function useConversionJob() {
     setError(null);
     try {
       await task();
-    } catch (cause) {
-      setError(errorCopy(cause, fallback));
+    } catch (error_) {
+      setError(errorCopy(error_, fallback));
     } finally {
       setBusy(false);
     }
@@ -100,7 +113,9 @@ export function useConversionJob() {
           fileIndex,
           preset,
         });
-        if (result) setJob(result);
+        if (result) {
+          setJob(result);
+        }
         return;
       }
       await exportSaves(mode, ids);
@@ -109,11 +124,13 @@ export function useConversionJob() {
   }
 
   async function cancel() {
-    if (!job) return;
+    if (!job) {
+      return;
+    }
     try {
       setJob(await window.pond.query("conversion.cancel", { id: job.id }));
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't cancel the export. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't cancel the export. Try again."));
     }
   }
 

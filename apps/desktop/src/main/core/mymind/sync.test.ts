@@ -14,9 +14,9 @@ function object(id: string, offset: number): MymindObject {
   };
 }
 
-function fixture(objects: MymindObject[]) {
+function fixture(objects: Array<MymindObject>) {
   const state = createMymindSyncState(connectedAt);
-  const requests: { start: number; end: number }[] = [];
+  const requests: Array<{ start: number; end: number }> = [];
   const persist = vi.fn(async () => {});
   const importObject = vi.fn(async (item: MymindObject) => {
     const id = `save-${item.id}`;

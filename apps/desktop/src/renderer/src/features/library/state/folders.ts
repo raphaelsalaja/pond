@@ -4,8 +4,8 @@ import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 
 interface FoldersState {
-  folders: Folder[];
-  bySave: Record<string, string[]>;
+  folders: Array<Folder>;
+  bySave: Record<string, Array<string>>;
   editingId: string | null;
   loaded: boolean;
 }
@@ -18,12 +18,14 @@ const store = new Store<FoldersState>({
 });
 
 export const folders = {
-  snapshot(): Folder[] {
+  snapshot(): Array<Folder> {
     return store.state.folders;
   },
-  forSave(saveId: string): Folder[] {
+  forSave(saveId: string): Array<Folder> {
     const ids = store.state.bySave[saveId] ?? [];
-    if (ids.length === 0) return [];
+    if (ids.length === 0) {
+      return [];
+    }
     const byId = new Map(
       store.state.folders.map((folder) => [folder.id, folder]),
     );
@@ -38,7 +40,8 @@ export const folders = {
   finishEditing(id?: string): void {
     store.setState((state) => ({
       ...state,
-      editingId: id == null || state.editingId === id ? null : state.editingId,
+      editingId:
+        id === undefined || state.editingId === id ? null : state.editingId,
     }));
   },
   async refresh(): Promise<void> {
@@ -46,7 +49,7 @@ export const folders = {
       window.pond.query("folders.list", {}),
       window.pond.query("folders.memberships", {}),
     ]);
-    const bySave: Record<string, string[]> = {};
+    const bySave: Record<string, Array<string>> = {};
     for (const row of membershipRows ?? []) {
       const list = bySave[row.saveId] ?? [];
       list.push(row.folderId);
@@ -65,7 +68,7 @@ export const folders = {
   },
 };
 
-export function useFolders(): Folder[] {
+export function useFolders(): Array<Folder> {
   return useSelector(store, (s) => s.folders);
 }
 
@@ -73,7 +76,7 @@ export function useFoldersLoaded(): boolean {
   return useSelector(store, (s) => s.loaded);
 }
 
-export function useFolderMemberships(): Record<string, string[]> {
+export function useFolderMemberships(): Record<string, Array<string>> {
   return useSelector(store, (s) => s.bySave);
 }
 
@@ -86,8 +89,9 @@ export function useHydrateFolders(): void {
     void folders.refresh();
     let timer: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = window.pond.onSyncAction((event) => {
-      if (event.modelName !== "save_folder" && event.modelName !== "folder")
+      if (event.modelName !== "save_folder" && event.modelName !== "folder") {
         return;
+      }
       clearTimeout(timer);
       timer = setTimeout(() => void folders.refresh(), 16);
     });

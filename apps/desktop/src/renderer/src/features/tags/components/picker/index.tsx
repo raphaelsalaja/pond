@@ -1,12 +1,11 @@
-import { type ButtonProps, PickerPanel } from "@pond/ui";
+import { PickerPanel } from "@pond/ui";
+import type { ButtonProps } from "@pond/ui";
 import { createContext, use, useCallback, useMemo, useState } from "react";
 import type { Save } from "@/features/saves/types";
 import { TagMenu } from "@/features/tags/components/menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
-import {
-  type TagGroupRow,
-  useTagGroups,
-} from "@/features/tags/state/tag-groups";
+import { useTagGroups } from "@/features/tags/state/tag-groups";
+import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import { useTags } from "@/features/tags/state/tags";
 import { usePrefs } from "@/shared/state/prefs";
 
@@ -49,7 +48,9 @@ function Root({
   const open = controlledOpen ?? internalOpen;
 
   const setOpen = (next: boolean) => {
-    if (controlledOpen === undefined) setInternalOpen(next);
+    if (controlledOpen === undefined) {
+      setInternalOpen(next);
+    }
     onOpenChange?.(next);
   };
 
@@ -98,13 +99,17 @@ function Content({
   const groups = useTagGroups();
 
   const liveGroup = useMemo(() => {
-    if (target.kind !== "group") return null;
+    if (target.kind !== "group") {
+      return null;
+    }
     return groups.find((g) => g.id === target.group.id) ?? target.group;
   }, [target, groups]);
 
   const tagsByLowerName = useMemo(() => {
     const map = new Map<string, (typeof tags)[number]>();
-    for (const t of tags) map.set(t.name.toLowerCase(), t);
+    for (const t of tags) {
+      map.set(t.name.toLowerCase(), t);
+    }
     return map;
   }, [tags]);
 
@@ -118,7 +123,9 @@ function Content({
   const toggle = useCallback(
     async (rawName: string, options?: { created?: boolean }) => {
       const cleaned = rawName.trim();
-      if (!cleaned) return;
+      if (!cleaned) {
+        return;
+      }
       const lower = cleaned.toLowerCase();
       if (target.kind === "save") {
         const save = target.save;

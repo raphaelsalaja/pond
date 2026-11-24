@@ -5,8 +5,8 @@
   font-family: allo-variable;
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
   src: url("/fonts/allo/variable.woff2") format("woff2");
+  font-display: swap;
 }
 
 /* Same metrics as Allo; covers the symbols, Greek and Cyrillic Allo lacks. */
@@ -14,8 +14,8 @@
   font-family: inter-variable;
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
   src: url("/fonts/inter/variable.woff2") format("woff2");
+  font-display: swap;
 }
 
 /* One width for every popup view, so switching views never resizes the window. */

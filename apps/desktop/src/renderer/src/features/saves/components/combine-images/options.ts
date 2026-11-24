@@ -1,7 +1,5 @@
-import {
-  type CombineImagesOptions,
-  CombineImagesOptionsSchema,
-} from "@shared/combine-images-contracts";
+import { CombineImagesOptionsSchema } from "@shared/combine-images-contracts";
+import type { CombineImagesOptions } from "@shared/combine-images-contracts";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
 
 type Direction = CombineImagesOptions["direction"];
@@ -33,7 +31,9 @@ function sanitize(options: CombineImagesOptions): CombineImagesOptions {
 export function readStoredOptions(): CombineImagesOptions {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_OPTIONS;
+    if (!raw) {
+      return DEFAULT_OPTIONS;
+    }
     const parsed = CombineImagesOptionsSchema.safeParse({
       ...DEFAULT_OPTIONS,
       ...JSON.parse(raw),
@@ -47,7 +47,9 @@ export function readStoredOptions(): CombineImagesOptions {
 export function storeOptions(options: CombineImagesOptions): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitize(options)));
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked; the options still apply for this session. */
+  }
 }
 
 /** The cross axis is listed first because it anchors the scale. */
@@ -60,7 +62,9 @@ export function withDirection(
   options: CombineImagesOptions,
   direction: Direction,
 ): CombineImagesOptions {
-  if (direction === options.direction) return options;
+  if (direction === options.direction) {
+    return options;
+  }
   return {
     ...options,
     direction,

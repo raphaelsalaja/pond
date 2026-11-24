@@ -1,3 +1,5 @@
+import { isHTMLTag } from "@pond/ui/dom";
+
 /** Pond accepts at most 500 items in one capture. */
 export const MAX_IMAGES = 500;
 /** Computed styles are costly, so background images come from the first few thousand elements. */
@@ -9,7 +11,7 @@ const MEDIUM_EDGE = 400;
 
 export type SizeBucket = "large" | "medium" | "small";
 
-export const SIZE_BUCKETS: readonly { id: SizeBucket; label: string }[] = [
+export const SIZE_BUCKETS: ReadonlyArray<{ id: SizeBucket; label: string }> = [
   { id: "large", label: "Large" },
   { id: "medium", label: "Medium" },
   { id: "small", label: "Small" },
@@ -53,7 +55,9 @@ function parse(url: string, base?: string): URL | null {
 
 export function imageFormat(url: string): string {
   const parsed = parse(url);
-  if (!parsed) return "Other";
+  if (!parsed) {
+    return "Other";
+  }
   const extension = parsed.pathname.split(".").at(-1)?.toLowerCase() ?? "";
   const query =
     parsed.searchParams.get("format") ?? parsed.searchParams.get("fm") ?? "";
@@ -66,18 +70,24 @@ export function imageFormat(url: string): string {
 
 export function imageName(url: string): string {
   const parsed = parse(url);
-  if (!parsed) return url;
+  if (!parsed) {
+    return url;
+  }
   const last = parsed.pathname.split("/").filter(Boolean).at(-1) ?? "";
   let decoded = last;
   try {
     decoded = decodeURIComponent(last);
-  } catch {}
+  } catch {
+    /** A malformed escape keeps the raw path segment as the name. */
+  }
   return decoded.replace(/\.[a-z\d]{2,5}$/i, "") || parsed.hostname;
 }
 
 export function sizeBucket(width: number, height: number): SizeBucket {
   const edge = Math.max(width, height);
-  if (edge >= LARGE_EDGE) return "large";
+  if (edge >= LARGE_EDGE) {
+    return "large";
+  }
   return edge >= MEDIUM_EDGE ? "medium" : "small";
 }
 
@@ -86,10 +96,14 @@ export function largestSrcset(srcset: string, base: string): string | null {
   let best: { url: string; size: number } | null = null;
   for (const entry of srcset.split(/,\s+/)) {
     const [raw, descriptor = "1x"] = entry.trim().split(/\s+/);
-    if (!raw) continue;
+    if (!raw) {
+      continue;
+    }
     const size = Number.parseFloat(descriptor) || 1;
     const url = parse(raw, base)?.href;
-    if (url && (!best || size > best.size)) best = { url, size };
+    if (url && (!best || size > best.size)) {
+      best = { url, size };
+    }
   }
   return best?.url ?? null;
 }
@@ -98,17 +112,19 @@ function isWeb(url: string): boolean {
   return /^https?:\/\//i.test(url);
 }
 
-function backgroundUrls(value: string, base: string): string[] {
+function backgroundUrls(value: string, base: string): Array<string> {
   return [...value.matchAll(/url\(\s*(['"]?)(.*?)\1\s*\)/g)].flatMap(
     ([, , raw]) => {
-      if (!raw) return [];
+      if (!raw) {
+        return [];
+      }
       const url = parse(raw, base)?.href;
       return url && isWeb(url) ? [url] : [];
     },
   );
 }
 
-export function collectCandidates(root: Document): Candidate[] {
+export function collectCandidates(root: Document): Array<Candidate> {
   const found = new Map<string, Candidate>();
   const base = root.baseURI;
   const add = (
@@ -117,7 +133,9 @@ export function collectCandidates(root: Document): Candidate[] {
     width = 0,
     height = 0,
   ) => {
-    if (!url || !isWeb(url)) return;
+    if (!url || !isWeb(url)) {
+      return;
+    }
     const existing = found.get(url);
     if (existing) {
       existing.width ||= width;
@@ -133,22 +151,31 @@ export function collectCandidates(root: Document): Candidate[] {
     const largest = image.srcset ? largestSrcset(image.srcset, base) : null;
     /** `naturalWidth` divides by the chosen density, so responsive images get probed instead. */
     const responsive =
-      !!image.srcset || image.parentElement instanceof HTMLPictureElement;
-    if (largest && largest !== shown) add(largest, image.alt);
-    else if (responsive) add(shown, image.alt);
-    else add(shown, image.alt, image.naturalWidth, image.naturalHeight);
+      !!image.srcset || isHTMLTag(image.parentElement, "picture");
+    if (largest && largest !== shown) {
+      add(largest, image.alt);
+    } else if (responsive) {
+      add(shown, image.alt);
+    } else {
+      add(shown, image.alt, image.naturalWidth, image.naturalHeight);
+    }
   }
   for (const video of Array.from(root.querySelectorAll("video[poster]"))) {
-    if (video instanceof HTMLVideoElement) add(video.poster);
+    if (isHTMLTag(video, "video")) {
+      add(video.poster);
+    }
   }
   for (const link of Array.from(root.querySelectorAll("a[href]"))) {
-    if (link instanceof HTMLAnchorElement && IMAGE_LINK.test(link.pathname))
+    if (isHTMLTag(link, "a") && IMAGE_LINK.test(link.pathname)) {
       add(link.href, link.textContent?.trim() ?? "");
+    }
   }
   const share = root.querySelector<HTMLMetaElement>(
     'meta[property="og:image"]',
   );
-  if (share?.content) add(parse(share.content, base)?.href);
+  if (share?.content) {
+    add(parse(share.content, base)?.href);
+  }
   const styled = root.body?.querySelectorAll("*") ?? [];
   for (
     let index = 0;
@@ -156,10 +183,15 @@ export function collectCandidates(root: Document): Candidate[] {
     index++
   ) {
     const element = styled[index];
-    if (!element) continue;
+    if (!element) {
+      continue;
+    }
     const background = getComputedStyle(element).backgroundImage;
-    if (background && background !== "none")
-      for (const url of backgroundUrls(background, base)) add(url);
+    if (background && background !== "none") {
+      for (const url of backgroundUrls(background, base)) {
+        add(url);
+      }
+    }
   }
   return [...found.values()];
 }
@@ -188,19 +220,28 @@ export function matchesFilters(
   filters: ImageFilters,
 ): boolean {
   const known = image.width > 0 && image.height > 0;
-  if (known && (image.width < MIN_EDGE || image.height < MIN_EDGE))
+  if (known && (image.width < MIN_EDGE || image.height < MIN_EDGE)) {
     return false;
-  if (known && !filters.sizes.has(sizeBucket(image.width, image.height)))
+  }
+  if (known && !filters.sizes.has(sizeBucket(image.width, image.height))) {
     return false;
+  }
   if (
     known &&
     (image.width < filters.minWidth || image.height < filters.minHeight)
-  )
+  ) {
     return false;
-  if (filters.hiddenFormats.has(image.format)) return false;
-  if (filters.hiddenDomains.has(image.domain)) return false;
+  }
+  if (filters.hiddenFormats.has(image.format)) {
+    return false;
+  }
+  if (filters.hiddenDomains.has(image.domain)) {
+    return false;
+  }
   const needle = filters.query.trim().toLowerCase();
-  if (!needle) return true;
+  if (!needle) {
+    return true;
+  }
   return [image.name, image.alt, image.url].some((text) =>
     text.toLowerCase().includes(needle),
   );
@@ -213,17 +254,21 @@ export interface FacetCount {
 }
 
 export function facetCounts(
-  images: readonly PageImage[],
+  images: ReadonlyArray<PageImage>,
   selected: ReadonlySet<string>,
   facet: (image: PageImage) => string | null,
-): FacetCount[] {
+): Array<FacetCount> {
   const counts = new Map<string, FacetCount>();
   for (const image of images) {
     const id = facet(image);
-    if (!id) continue;
+    if (!id) {
+      continue;
+    }
     const count = counts.get(id) ?? { id, total: 0, selected: 0 };
     count.total++;
-    if (selected.has(image.url)) count.selected++;
+    if (selected.has(image.url)) {
+      count.selected++;
+    }
     counts.set(id, count);
   }
   return [...counts.values()].toSorted((a, b) => b.total - a.total);

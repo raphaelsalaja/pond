@@ -28,7 +28,6 @@ export function Item({
   ...props
 }: ItemProps) {
   return (
-    // biome-ignore lint/a11y/useAriaPropsSupportedByRole: aria-selected is only set for SELECTABLE_ROLES, which all support it.
     <button
       {...props}
       type="button"
@@ -75,7 +74,7 @@ export function ItemIcon({
 }
 
 interface ItemLabelProps extends React.ComponentProps<"span"> {
-  path?: readonly string[];
+  path?: ReadonlyArray<string>;
 }
 
 export function ItemLabel({

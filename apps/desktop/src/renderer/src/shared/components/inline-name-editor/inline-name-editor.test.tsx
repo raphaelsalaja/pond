@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { InlineNameEditor } from "./index";
 
@@ -14,7 +15,7 @@ beforeEach(async () => {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
-  await act(() =>
+  await act(async () =>
     root.render(
       <InlineNameEditor
         name="Untitled"
@@ -26,13 +27,15 @@ beforeEach(async () => {
   );
 });
 afterEach(async () => {
-  await act(() => root.unmount());
+  await act(async () => root.unmount());
   container.remove();
   vi.unstubAllGlobals();
 });
 function field() {
   const input = container.querySelector("input");
-  if (!input) throw new Error("Missing inline name editor");
+  if (!input) {
+    throw new Error("Missing inline name editor");
+  }
   return input;
 }
 async function press(key: string, isComposing = false) {
@@ -50,20 +53,20 @@ it("focuses and selects the current name", () => {
 it("saves the trimmed name once on Enter followed by blur", async () => {
   field().value = "  Travel  ";
   await press("Enter");
-  await act(() => field().blur());
+  await act(async () => field().blur());
   expect(onSave).toHaveBeenCalledExactlyOnceWith("Travel");
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("saves when focus leaves the editor", async () => {
   field().value = "Recipes";
-  await act(() => field().blur());
+  await act(async () => field().blur());
   expect(onSave).toHaveBeenCalledExactlyOnceWith("Recipes");
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("keeps the current name on Escape", async () => {
   field().value = "Changed";
   await press("Escape");
-  await act(() => field().blur());
+  await act(async () => field().blur());
   expect(onSave).not.toHaveBeenCalled();
   expect(onFinish).toHaveBeenCalledOnce();
 });
@@ -80,7 +83,7 @@ it("keeps the existing name when the input is empty", async () => {
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("cancels an empty create instead of keeping a blank name", async () => {
-  await act(() =>
+  await act(async () =>
     root.render(
       <InlineNameEditor
         name=""

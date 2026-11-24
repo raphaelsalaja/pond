@@ -1,4 +1,5 @@
-import { DEFAULT_PREFS, type Prefs } from "@pond/schema";
+import { DEFAULT_PREFS } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
 import { expect, it, vi } from "vitest";
 import {
   getPrefsSnapshot,
@@ -17,17 +18,21 @@ it("receives another window's preferences and keeps the main process's committed
         return () => listeners.delete(listener);
       },
       async query(name: string) {
-        if (name === "settings.getPrefs") return saved;
+        if (name === "settings.getPrefs") {
+          return saved;
+        }
         if (name === "settings.setPrefs") {
           saved = { ...saved, window: { ...saved.window, interfaceZoom: 125 } };
-          for (const listener of listeners) listener(saved);
+          for (const listener of listeners) {
+            listener(saved);
+          }
           return { ok: true, prefs: saved };
         }
         throw new Error(`Unexpected query: ${name}`);
       },
     },
   });
-  let unsubscribe = (): void => {};
+  let unsubscribe: (() => void) | null = null;
   try {
     const prefsChanged = vi.fn();
     unsubscribe = subscribePrefsSnapshot(prefsChanged);
@@ -38,14 +43,16 @@ it("receives another window's preferences and keeps the main process's committed
       ...saved,
       preferences: { ...saved.preferences, soundsEnabled: false },
     };
-    for (const listener of listeners) listener(saved);
+    for (const listener of listeners) {
+      listener(saved);
+    }
     expect(getPrefsSnapshot()?.preferences.soundsEnabled).toBe(false);
     await savePrefsSection("window", { interfaceZoom: 125 });
     expect(getPrefsSnapshot()?.window.interfaceZoom).toBe(125);
     expect(getPrefsSnapshot()?.preferences.soundsEnabled).toBe(false);
     expect(prefsChanged).toHaveBeenCalled();
   } finally {
-    unsubscribe();
+    unsubscribe?.();
     vi.unstubAllGlobals();
   }
 });
@@ -56,7 +63,9 @@ it("keeps every other section by reference when one section is written", async (
     pond: {
       onPrefsChanged: () => () => {},
       async query(name: string) {
-        if (name === "settings.getPrefs") return structuredClone(saved);
+        if (name === "settings.getPrefs") {
+          return structuredClone(saved);
+        }
         if (name === "settings.setPrefs") {
           saved = {
             ...saved,

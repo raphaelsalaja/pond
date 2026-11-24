@@ -6,10 +6,10 @@ import { ulid } from "ulid";
 import { resolveMainOut } from "../../lib/resolve-preload";
 import { binariesAvailable, FFMPEG_PATH_ENV } from "../refresh/binaries";
 import { QueueWorkerResponseSchema } from "./worker-contract";
-import {
-  createQueueWorkerHost,
-  type QueueWorkerHostDependencies,
-  type QueueWorkerResult,
+import { createQueueWorkerHost } from "./worker-host-core";
+import type {
+  QueueWorkerHostDependencies,
+  QueueWorkerResult,
 } from "./worker-host-core";
 import { runsQueueWorkerInProcess } from "./worker-mode";
 import { executeQueueWorkerRequest } from "./worker-operations";
@@ -32,7 +32,9 @@ const dependencies: QueueWorkerHostDependencies = {
       onMessage: (listener) => {
         child.on("message", (message) => {
           const response = QueueWorkerResponseSchema.safeParse(message);
-          if (response.success) listener(response.data);
+          if (response.success) {
+            listener(response.data);
+          }
         });
       },
       onExit: (listener) => {
@@ -44,15 +46,18 @@ const dependencies: QueueWorkerHostDependencies = {
   },
   createJobId: ulid,
   validateSourcePath: async (path) => {
-    if (!isAbsolute(path)) return false;
+    if (!isAbsolute(path)) {
+      return false;
+    }
     const info = await stat(path);
     return info.isFile();
   },
   onStopped: () => log.info("[pond queue workers] stopped"),
 };
 
-if (runsQueueWorkerInProcess())
+if (runsQueueWorkerInProcess()) {
   dependencies.execute = executeQueueWorkerRequest;
+}
 
 const host = createQueueWorkerHost(dependencies);
 

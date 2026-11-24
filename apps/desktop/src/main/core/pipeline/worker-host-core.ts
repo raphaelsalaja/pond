@@ -62,12 +62,14 @@ interface WorkerSlot {
 
 export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
   const slots = new Set<WorkerSlot>();
-  const queue: PendingJob[] = [];
+  const queue: Array<PendingJob> = [];
   const scheduleIdle = deps.scheduleIdle ?? scheduleTimer;
   let disposed = false;
 
   function clearSlotTimeout(slot: WorkerSlot): void {
-    if (!slot.timeout) return;
+    if (!slot.timeout) {
+      return;
+    }
     clearTimeout(slot.timeout);
     slot.timeout = null;
   }
@@ -78,10 +80,14 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
   }
 
   function retireWhenIdle(slot: WorkerSlot): void {
-    if (slot.cancelIdle || slot.current || slot.stopped) return;
+    if (slot.cancelIdle || slot.current || slot.stopped) {
+      return;
+    }
     slot.cancelIdle = scheduleIdle(() => {
       slot.cancelIdle = null;
-      if (disposed || slot.current || slot.stopped) return;
+      if (disposed || slot.current || slot.stopped) {
+        return;
+      }
       slot.stopped = true;
       slots.delete(slot);
       slot.child.kill();
@@ -105,7 +111,9 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
     response: QueueWorkerResponse,
   ): void {
     const current = slot.current;
-    if (!current) return;
+    if (!current) {
+      return;
+    }
     if (
       response.jobId !== current.request.jobId ||
       response.leaseToken !== current.request.leaseToken ||
@@ -116,8 +124,9 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
     slot.current = null;
     clearSlotTimeout(slot);
     detachAbort(current);
-    if (response.ok) current.resolve(response.result);
-    else {
+    if (response.ok) {
+      current.resolve(response.result);
+    } else {
       const error = new Error(response.error.message);
       error.name = response.error.name;
       current.reject(error);
@@ -152,14 +161,15 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
         if (
           current.request.operation === "process_image" ||
           current.request.operation === "probe_image"
-        )
+        ) {
           current.resolve(null);
-        else
+        } else {
           current.reject(
             new Error(
               `Queue worker exited before completing its job (${code}).`,
             ),
           );
+        }
       }
       if (!disposed && queue.length > 0) {
         try {
@@ -174,7 +184,9 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
   }
 
   function pump(): void {
-    if (disposed) return;
+    if (disposed) {
+      return;
+    }
     let idleSlots = [...slots].filter(
       (slot) => !slot.current && !slot.stopped,
     ).length;
@@ -183,7 +195,9 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
       idleSlots += 1;
     }
     for (const slot of slots) {
-      if (slot.current || slot.stopped) continue;
+      if (slot.current || slot.stopped) {
+        continue;
+      }
       const job = queue.shift();
       if (!job) {
         retireWhenIdle(slot);
@@ -199,7 +213,9 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
       slot.current = job;
       job.slot = slot;
       slot.timeout = setTimeout(() => {
-        if (slot.current === job) slot.child.kill();
+        if (slot.current === job) {
+          slot.child.kill();
+        }
       }, job.timeoutMs);
       slot.child.postMessage(job.request);
     }
@@ -209,7 +225,9 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
     job: QueueWorkerJob,
     options: { timeoutMs?: number; signal?: AbortSignal } = {},
   ): Promise<QueueWorkerResult> {
-    if (disposed) throw new Error("Queue worker host is disposed.");
+    if (disposed) {
+      throw new Error("Queue worker host is disposed.");
+    }
     if (
       job.operation === "build_poster" &&
       !(await deps.validateSourcePath(job.sourcePath))
@@ -221,9 +239,13 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
       jobId: deps.createJobId(),
     });
     if (deps.execute) {
-      if (options.signal?.aborted) throw new Error("Queue worker job aborted.");
+      if (options.signal?.aborted) {
+        throw new Error("Queue worker job aborted.");
+      }
       const response = await deps.execute(request);
-      if (response.ok) return response.result;
+      if (response.ok) {
+        return response.result;
+      }
       const error = new Error(response.error.message);
       error.name = response.error.name;
       throw error;
@@ -253,7 +275,9 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
         pump();
       } catch (error) {
         const index = queue.indexOf(pending);
-        if (index >= 0) queue.splice(index, 1);
+        if (index >= 0) {
+          queue.splice(index, 1);
+        }
         detachAbort(pending);
         reject(error instanceof Error ? error : new Error(String(error)));
       }
@@ -261,7 +285,9 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
   }
 
   function dispose(): void {
-    if (disposed) return;
+    if (disposed) {
+      return;
+    }
     disposed = true;
     failQueued(new Error("Queue worker host stopped."));
     for (const slot of slots) {

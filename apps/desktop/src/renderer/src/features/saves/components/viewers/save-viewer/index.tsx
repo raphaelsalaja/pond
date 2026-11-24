@@ -1,6 +1,5 @@
 import { useHotkey } from "@tanstack/react-hotkeys";
 import {
-  type RefObject,
   Suspense,
   useCallback,
   useEffect,
@@ -8,41 +7,32 @@ import {
   useRef,
   useState,
 } from "react";
+import type { RefObject } from "react";
 import { StoredFileContent } from "@/features/saves/components/viewers/file-viewer";
-import {
-  MediaViewerFrame,
-  type ViewerNav,
-} from "@/features/saves/components/viewers/media-viewer";
-import {
-  type MediaSlide,
-  Slide,
-} from "@/features/saves/components/viewers/media-viewer/slide";
+import { MediaViewerFrame } from "@/features/saves/components/viewers/media-viewer";
+import type { ViewerNav } from "@/features/saves/components/viewers/media-viewer";
+import { Slide } from "@/features/saves/components/viewers/media-viewer/slide";
+import type { MediaSlide } from "@/features/saves/components/viewers/media-viewer/slide";
 import type { ViewerNavigation } from "@/features/saves/components/viewers/viewer-toolbar-groups";
-import {
-  type StageEntry,
-  useHeldStage,
-} from "@/features/saves/hooks/use-held-stage";
+import { useHeldStage } from "@/features/saves/hooks/use-held-stage";
+import type { StageEntry } from "@/features/saves/hooks/use-held-stage";
 import { MediaReadyContext } from "@/features/saves/hooks/use-media-ready";
-import {
-  type ChapterCue,
-  chaptersForSave,
-} from "@/features/saves/lib/media/chapters-vtt";
+import { chaptersForSave } from "@/features/saves/lib/media/chapters-vtt";
+import type { ChapterCue } from "@/features/saves/lib/media/chapters-vtt";
 import {
   PRELOAD_SETTLE_MS,
   preloadableImageUrl,
   preloadImage,
 } from "@/features/saves/lib/media/preload";
 import { needsVideoDownload } from "@/features/saves/lib/media/video-download";
-import {
-  buildViewerItems,
-  type ViewerItem,
-} from "@/features/saves/lib/media/viewer-item";
+import { buildViewerItems } from "@/features/saves/lib/media/viewer-item";
+import type { ViewerItem } from "@/features/saves/lib/media/viewer-item";
 import { openSave } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
-import styles from "./styles.module.css";
 import { VideoDownload } from "./video-download";
+import styles from "./styles.module.css";
 
 interface SaveViewerProps {
   save: Save;
@@ -56,7 +46,7 @@ interface SaveViewerProps {
 interface StageItem {
   save: Save;
   item: ViewerItem;
-  chapters?: ChapterCue[];
+  chapters?: Array<ChapterCue>;
 }
 
 interface ViewerItemContentProps {
@@ -64,7 +54,7 @@ interface ViewerItemContentProps {
   item: ViewerItem;
   active: boolean;
   onNavigate?: (id: string) => void;
-  chapters?: ChapterCue[];
+  chapters?: Array<ChapterCue>;
 }
 
 function mediaSlideFor(save: Save, item: ViewerItem): MediaSlide {
@@ -99,7 +89,9 @@ function ViewerItemContent({
   chapters,
 }: ViewerItemContentProps) {
   const file = save.files[item.fileIndex];
-  if (!file) return null;
+  if (!file) {
+    return null;
+  }
 
   if (
     item.capability.surface === "raster" ||
@@ -160,11 +152,13 @@ export function SaveViewer({
   const activeItem = items[boundedIndex];
   const activeFile = activeItem ? save.files[activeItem.fileIndex] : undefined;
 
+  if (activeIndex !== boundedIndex) {
+    setPosition({ saveId: save.id, index: boundedIndex });
+  }
+
   useEffect(() => {
     activeIndexRef.current = boundedIndex;
-    if (activeIndex !== boundedIndex)
-      setPosition({ saveId: save.id, index: boundedIndex });
-  }, [activeIndex, boundedIndex, save.id]);
+  }, [boundedIndex]);
 
   const step = useCallback(
     (delta: number): boolean => {
@@ -173,7 +167,9 @@ export function SaveViewer({
         Math.max(0, items.length - 1),
       );
       const next = Math.min(items.length - 1, Math.max(0, current + delta));
-      if (items.length === 0 || next === current) return false;
+      if (items.length === 0 || next === current) {
+        return false;
+      }
       activeIndexRef.current = next;
       setPosition({ saveId: save.id, index: next });
       return true;
@@ -237,7 +233,9 @@ export function SaveViewer({
   }, [navigation, onNavigationChange]);
 
   useEffect(() => {
-    if (!navRef) return;
+    if (!navRef) {
+      return;
+    }
     navRef.current = { step };
     return () => {
       navRef.current = null;
@@ -247,10 +245,16 @@ export function SaveViewer({
   const previousUrl = preloadableImageUrl(items[boundedIndex - 1]);
   const nextUrl = preloadableImageUrl(items[boundedIndex + 1]);
   useEffect(() => {
-    if (!previousUrl && !nextUrl) return;
+    if (!previousUrl && !nextUrl) {
+      return;
+    }
     const timer = window.setTimeout(() => {
-      if (nextUrl) preloadImage(nextUrl);
-      if (previousUrl) preloadImage(previousUrl);
+      if (nextUrl) {
+        preloadImage(nextUrl);
+      }
+      if (previousUrl) {
+        preloadImage(previousUrl);
+      }
     }, PRELOAD_SETTLE_MS);
     return () => window.clearTimeout(timer);
   }, [previousUrl, nextUrl]);
@@ -269,7 +273,9 @@ export function SaveViewer({
   const stage = useHeldStage(target);
 
   const downloadable = needsVideoDownload(save);
-  if (!activeItem && !downloadable) return null;
+  if (!activeItem && !downloadable) {
+    return null;
+  }
 
   return (
     <MediaViewerFrame showControls={showControls}>

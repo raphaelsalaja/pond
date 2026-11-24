@@ -1,4 +1,6 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import log from "electron-log/renderer";
+import { Component } from "react";
+import type { ErrorInfo, ReactNode } from "react";
 import { ErrorScreen } from "@/app/components/error-screen";
 
 interface Props {
@@ -18,7 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(cause: unknown, info: ErrorInfo): void {
-    console.error("[pond] render error", cause, info.componentStack);
+    log.error("[pond] render error", cause, info.componentStack);
     this.setState({ componentStack: info.componentStack ?? null });
   }
 
@@ -27,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   render(): ReactNode {
-    if (this.state.error != null) {
+    if (this.state.error !== null && this.state.error !== undefined) {
       return (
         <ErrorScreen
           error={this.state.error}

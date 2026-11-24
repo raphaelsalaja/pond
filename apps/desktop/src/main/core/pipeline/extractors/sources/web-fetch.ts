@@ -28,12 +28,15 @@ export async function fetchHtml(url: string): Promise<string | null> {
           "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
     });
-  } catch (err) {
-    const cause = err instanceof Error && "cause" in err ? err.cause : null;
+  } catch (error) {
+    const cause =
+      error instanceof Error && "cause" in error ? error.cause : null;
     const code =
       cause instanceof Error && "code" in cause ? String(cause.code) : null;
-    if (code === HEADERS_OVERFLOW) return null;
-    const message = err instanceof Error ? err.message : String(err);
+    if (code === HEADERS_OVERFLOW) {
+      return null;
+    }
+    const message = error instanceof Error ? error.message : String(error);
     throw new TransientError(
       `web fetch failed: ${message}${code ? ` (${code})` : ""}`,
     );
@@ -41,7 +44,9 @@ export async function fetchHtml(url: string): Promise<string | null> {
     clearTimeout(timer);
   }
 
-  if (res.status === 403) return null;
+  if (res.status === 403) {
+    return null;
+  }
   assertPageStatus(res.status, "web fetch");
 
   const contentType = res.headers.get("content-type") ?? "";
@@ -50,12 +55,16 @@ export async function fetchHtml(url: string): Promise<string | null> {
   }
 
   const text = await res.text();
-  if (!text.trim()) throw new TerminalError("web fetch returned empty body");
+  if (!text.trim()) {
+    throw new TerminalError("web fetch returned empty body");
+  }
   return text;
 }
 
 function assertPageStatus(status: number, label: string): void {
-  if (status < 400) return;
+  if (status < 400) {
+    return;
+  }
   if (status >= 500 || status === 429) {
     throw new TransientError(`${label} ${status}`);
   }

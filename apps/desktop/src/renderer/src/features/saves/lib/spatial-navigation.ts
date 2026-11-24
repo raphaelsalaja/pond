@@ -15,13 +15,15 @@ export type ResultDirection =
   | "page-down";
 
 export function spatialNeighbor(
-  items: readonly ResultRectangle[],
+  items: ReadonlyArray<ResultRectangle>,
   id: string,
   direction: ResultDirection,
   pageHeight: number,
 ): string | null {
   const current = items.find((item) => item.id === id);
-  if (!current) return null;
+  if (!current) {
+    return null;
+  }
   const horizontal = direction === "left" || direction === "right";
   const forward =
     direction === "right" || direction === "down" || direction === "page-down";
@@ -31,11 +33,15 @@ export function spatialNeighbor(
   let best: ResultRectangle | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
   for (const item of items) {
-    if (item.id === id) continue;
+    if (item.id === id) {
+      continue;
+    }
     const dx = item.left + item.width / 2 - centerX;
     const dy = item.top + item.height / 2 - centerY;
     const distance = horizontal ? dx : dy;
-    if (forward ? distance <= 0.5 : distance >= -0.5) continue;
+    if (forward ? distance <= 0.5 : distance >= -0.5) {
+      continue;
+    }
     const overlap = horizontal
       ? item.top < current.top + current.height &&
         item.top + item.height > current.top
@@ -55,16 +61,15 @@ export function spatialNeighbor(
 }
 
 export function intersectingResults(
-  items: readonly ResultRectangle[],
+  items: ReadonlyArray<ResultRectangle>,
   rectangle: Omit<ResultRectangle, "id">,
-): string[] {
-  return items
-    .filter(
-      (item) =>
-        item.left < rectangle.left + rectangle.width &&
-        item.left + item.width > rectangle.left &&
-        item.top < rectangle.top + rectangle.height &&
-        item.top + item.height > rectangle.top,
-    )
-    .map((item) => item.id);
+): Array<string> {
+  return items.flatMap((item) =>
+    item.left < rectangle.left + rectangle.width &&
+    item.left + item.width > rectangle.left &&
+    item.top < rectangle.top + rectangle.height &&
+    item.top + item.height > rectangle.top
+      ? [item.id]
+      : [],
+  );
 }

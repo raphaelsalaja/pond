@@ -57,12 +57,14 @@ export function TransferJobsPanel() {
     action.variables?.id === id &&
     action.variables.kind === kind;
   const visible = (jobs.data ?? []).slice(0, 30);
-  if (!visible.length && !jobs.isError) return null;
+  if (!visible.length && !jobs.isError) {
+    return null;
+  }
   return (
     <section className={styles.panel} aria-label="Library transfers">
       <h2>Library Transfers</h2>
       {jobs.isError ? (
-        <p role="alert">Couldn't load transfer history.</p>
+        <p role="alert">Couldn&apos;t load transfer history.</p>
       ) : null}
       {error ? <p role="alert">{error}</p> : null}
       {visible.map((job) => {

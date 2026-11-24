@@ -1,13 +1,15 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
-import {
-  type FolderChoice,
-  useReviewFolders,
-} from "@/features/library/components/inbox-review/collections";
+import { isHTMLElement, isHTMLTag } from "@pond/ui/dom";
+import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
+import { useReviewFolders } from "@/features/library/components/inbox-review/collections";
+import type { FolderChoice } from "@/features/library/components/inbox-review/collections";
 import {
   currentReviewId,
-  type ReviewOutcome,
-  type ReviewQueue,
   reviewKey,
+} from "@/features/library/lib/review-queue";
+import type {
+  ReviewOutcome,
+  ReviewQueue,
 } from "@/features/library/lib/review-queue";
 import { inboxReview } from "@/features/library/state/inbox-review";
 import {
@@ -52,14 +54,17 @@ export function useReview(
   }, []);
 
   useEffect(() => {
-    if (id) selectOnlySave(id);
+    if (id) {
+      selectOnlySave(id);
+    }
   }, [id]);
 
   /** A disabled or unmounted control drops focus to the body, where the grid's keys would take over. */
   useEffect(() => {
     const active = document.activeElement;
-    if (queue.index >= 0 && (!active || active === document.body))
+    if (queue.index >= 0 && (!active || active === document.body)) {
       ref.current?.focus({ preventScroll: true });
+    }
   }, [queue.index]);
 
   /** The toast's Undo button takes focus, so the stage reclaims it to keep the review keys working. */
@@ -77,60 +82,87 @@ export function useReview(
   }
 
   const actions = {
-    keep(fling = STILL) {
-      if (!id) return;
+    keep: (fling = STILL) => {
+      if (!id) {
+        return;
+      }
       void markProcessed([id], rewindTo(id));
       advance("keep", fling);
     },
-    trash(fling = STILL) {
-      if (!id) return;
+    trash: (fling = STILL) => {
+      if (!id) {
+        return;
+      }
       void trashWithUndo([id], rewindTo(id));
       advance("trash", fling);
     },
-    skip(fling = STILL) {
-      if (id) advance("skip", fling);
+    skip: (fling = STILL) => {
+      if (id) {
+        advance("skip", fling);
+      }
     },
-    file(folder: FolderChoice) {
-      if (!id) return;
+    file: (folder: FolderChoice) => {
+      if (!id) {
+        return;
+      }
       setChoosing(false);
       void assignSavesToFolder([id], folder, rewindTo(id));
       advance("collection", STILL);
     },
-    back() {
+    back: () => {
       setDeparture(null);
       inboxReview.back();
     },
-    preview() {
-      if (id) openSave(id);
+    preview: () => {
+      if (id) {
+        openSave(id);
+      }
     },
   };
 
   function onKeyDown(event: KeyboardEvent<HTMLElement>) {
     const target = event.target;
-    if (!(target instanceof HTMLElement)) return;
-    if (!ref.current?.contains(target) || isEditableTarget(target)) return;
+    if (!isHTMLElement(target)) {
+      return;
+    }
+    if (!ref.current?.contains(target) || isEditableTarget(target)) {
+      return;
+    }
     if (matchesShortcut(event.nativeEvent, "save.mark-processed")) {
       event.preventDefault();
       actions.keep();
       return;
     }
     const key = reviewKey(event, {
-      fromButton: target instanceof HTMLButtonElement,
+      fromButton: isHTMLTag(target, "button"),
     });
-    if (!key) return;
+    if (!key) {
+      return;
+    }
     event.preventDefault();
-    if (key.kind === "exit") onExit();
-    else if (key.kind === "back") actions.back();
-    else if (key.kind === "step") onStep(key.by);
-    else if (!id) return;
-    else if (key.kind === "trash") actions.trash();
-    else if (key.kind === "keep") actions.keep();
-    else if (key.kind === "skip") actions.skip();
-    else if (key.kind === "choose-folder") setChoosing(true);
-    else if (key.kind === "preview") actions.preview();
-    else if (key.kind === "folder") {
+    if (key.kind === "exit") {
+      onExit();
+    } else if (key.kind === "back") {
+      actions.back();
+    } else if (key.kind === "step") {
+      onStep(key.by);
+    } else if (!id) {
+      return;
+    } else if (key.kind === "trash") {
+      actions.trash();
+    } else if (key.kind === "keep") {
+      actions.keep();
+    } else if (key.kind === "skip") {
+      actions.skip();
+    } else if (key.kind === "choose-folder") {
+      setChoosing(true);
+    } else if (key.kind === "preview") {
+      actions.preview();
+    } else if (key.kind === "folder") {
       const folder = slots[key.slot];
-      if (folder) actions.file(folder);
+      if (folder) {
+        actions.file(folder);
+      }
     }
   }
 
@@ -146,4 +178,5 @@ export function useReview(
   };
 }
 
-export type Review = ReturnType<typeof useReview>;
+/** The deck keeps the stage ref; cards and actions only get the review state. */
+export type Review = Omit<ReturnType<typeof useReview>, "ref">;

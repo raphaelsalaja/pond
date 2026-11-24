@@ -24,7 +24,9 @@ async function inPageCaptureMediaSettled(
     Boolean(img.getAttribute("src")) && !img.complete;
   const poster = (src: string): HTMLImageElement => {
     const known = posters.get(src);
-    if (known) return known;
+    if (known) {
+      return known;
+    }
     const image = new Image();
     image.src = src;
     posters.set(src, image);
@@ -45,8 +47,12 @@ async function inPageCaptureMediaSettled(
         ),
     );
   while (pending()) {
-    if (Date.now() >= deadline) return false;
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (Date.now() >= deadline) {
+      return false;
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
   }
   return true;
 }

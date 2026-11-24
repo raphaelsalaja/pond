@@ -4,11 +4,13 @@ import { Store } from "@tanstack/store";
 import {
   advanceQueue,
   jumpQueue,
-  type ReviewOutcome,
-  type ReviewQueue,
   rewindQueue,
   startQueue,
   stepBack,
+} from "@/features/library/lib/review-queue";
+import type {
+  ReviewOutcome,
+  ReviewQueue,
 } from "@/features/library/lib/review-queue";
 
 export type InboxScope = "review" | "snoozed";
@@ -43,7 +45,9 @@ export const inboxReview = {
       scope: { inbox: scope },
       limit: QUEUE_LIMIT,
     });
-    if (ticket !== request) return;
+    if (ticket !== request) {
+      return;
+    }
     store.setState(() => ({ scope, queue: startQueue(page.ids) }));
   },
   exit(): void {

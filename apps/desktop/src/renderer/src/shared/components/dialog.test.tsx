@@ -1,16 +1,18 @@
 import { Dialog } from "@pond/ui";
+import { isHTMLElement } from "@pond/ui/dom";
 import { clsx as cn } from "clsx";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 let root: Root;
 let host: HTMLDivElement;
-const observers: {
-  targets: Element[];
+const observers: Array<{
+  targets: Array<Element>;
   disconnected: boolean;
   callback: () => void;
-}[] = [];
+}> = [];
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -59,7 +61,9 @@ function button(label: string) {
       element.textContent === label ||
       element.getAttribute("aria-label") === label,
   );
-  if (!found) throw new Error(`Missing button: ${label}`);
+  if (!found) {
+    throw new Error(`Missing button: ${label}`);
+  }
   return found;
 }
 
@@ -131,13 +135,8 @@ it("uses compact confirmation actions in the footer", async () => {
 });
 
 it("keeps a prompt open and blocks duplicate submissions while saving", async () => {
-  let finish = () => {};
-  const onConfirm = vi.fn(
-    () =>
-      new Promise<void>((resolve) => {
-        finish = resolve;
-      }),
-  );
+  const { promise, resolve: finish } = Promise.withResolvers<void>();
+  const onConfirm = vi.fn(() => promise);
   await act(async () => root.render(<Dialog.Host />));
   await act(async () =>
     Dialog.prompt({
@@ -172,7 +171,9 @@ it("focuses the safe close action before a destructive action", async () => {
   );
   await act(
     async () =>
-      new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      }),
   );
   expect(document.activeElement).toBe(button("Cancel"));
 });
@@ -189,8 +190,9 @@ it("passes the confirmation checkbox value to the action", async () => {
     }),
   );
   const checkbox = document.querySelector('[role="checkbox"]');
-  if (!(checkbox instanceof HTMLElement))
+  if (!isHTMLElement(checkbox)) {
     throw new Error("Missing confirmation checkbox");
+  }
   expect(checkbox.getAttribute("aria-checked")).toBe("false");
   await act(async () => checkbox.click());
   expect(checkbox.getAttribute("aria-checked")).toBe("true");
@@ -270,13 +272,8 @@ it("handles confirmation failures without dismissing the dialog", async () => {
 });
 
 it("blocks duplicate confirmations and Escape while an action is pending", async () => {
-  let finish = () => {};
-  const onConfirm = vi.fn(
-    () =>
-      new Promise<void>((resolve) => {
-        finish = resolve;
-      }),
-  );
+  const { promise, resolve: finish } = Promise.withResolvers<void>();
+  const onConfirm = vi.fn(() => promise);
   await act(async () => root.render(<Dialog.Host />));
   await act(async () =>
     Dialog.confirm({
@@ -326,7 +323,12 @@ function Pages({ page, footer = false }: { page: number; footer?: boolean }) {
 it("keeps measuring the active page after the outgoing page unmounts", async () => {
   await act(async () => root.render(<Pages page={0} />));
   await act(async () => root.render(<Pages page={1} />));
-  await act(async () => new Promise((resolve) => setTimeout(resolve, 350)));
+  await act(
+    async () =>
+      new Promise((resolve) => {
+        setTimeout(resolve, 350);
+      }),
+  );
   const active = observers.filter(
     (observer) =>
       observer.targets.some((target) => target.textContent === "Page 1") &&
@@ -336,9 +338,13 @@ it("keeps measuring the active page after the outgoing page unmounts", async () 
   const page = active[0]?.targets.find(
     (target) => target.textContent === "Page 1",
   );
-  if (!page) throw new Error("Missing active page observer");
+  if (!page) {
+    throw new Error("Missing active page observer");
+  }
   const header = document.querySelector('[role="dialog"] header');
-  if (!header) throw new Error("Missing dialog header");
+  if (!header) {
+    throw new Error("Missing dialog header");
+  }
   Object.defineProperty(header, "offsetHeight", {
     configurable: true,
     value: 64,
@@ -374,8 +380,9 @@ it("includes the header and persistent footer when sizing a page", async () => {
   const page = popup?.querySelector<HTMLElement>("[data-dialog-page]");
   const header = popup?.querySelector("header");
   const footer = popup?.querySelector("footer");
-  if (!popup || !page || !header || !footer)
+  if (!popup || !page || !header || !footer) {
     throw new Error("Missing dialog parts");
+  }
   Object.defineProperty(page, "offsetHeight", {
     configurable: true,
     value: 192,
@@ -428,10 +435,7 @@ it("renders a static header close without submitting its form", async () => {
 });
 
 it("disables prompt header dismissal while saving", async () => {
-  let finish = () => {};
-  const pending = new Promise<void>((resolve) => {
-    finish = resolve;
-  });
+  const { promise: pending, resolve: finish } = Promise.withResolvers<void>();
   await act(async () => root.render(<Dialog.Host />));
   await act(async () =>
     Dialog.prompt({

@@ -37,7 +37,7 @@ export const FolderTemplateSchema = z.object({
 });
 
 /** Drops templates that fail to parse, so one bad entry never erases the rest on the next prefs write. */
-function validTemplates(items: readonly unknown[]): FolderTemplate[] {
+function validTemplates(items: ReadonlyArray<unknown>): Array<FolderTemplate> {
   return items.flatMap((item) => {
     const parsed = FolderTemplateSchema.safeParse(item);
     return parsed.success ? [parsed.data] : [];
@@ -58,31 +58,41 @@ export type FolderTemplateView = z.infer<typeof FolderTemplateViewSchema>;
  * anything other than one root, a missing parent, or a cycle.
  */
 export function orderFolderTemplateNodes(
-  nodes: readonly FolderTemplateNode[],
-): FolderTemplateNode[] {
+  nodes: ReadonlyArray<FolderTemplateNode>,
+): Array<FolderTemplateNode> {
   const keys = new Set(nodes.map((node) => node.key));
-  if (keys.size !== nodes.length)
+  if (keys.size !== nodes.length) {
     throw new Error("This template has two folders with the same key.");
+  }
   const roots = nodes.filter((node) => node.parentKey === null);
-  if (roots.length !== 1)
+  if (roots.length !== 1) {
     throw new Error("A template needs exactly one top folder.");
-  const children = new Map<string, FolderTemplateNode[]>();
+  }
+  const children = new Map<string, Array<FolderTemplateNode>>();
   for (const node of nodes) {
-    if (node.parentKey === null) continue;
-    if (!keys.has(node.parentKey))
+    if (node.parentKey === null) {
+      continue;
+    }
+    if (!keys.has(node.parentKey)) {
       throw new Error("This template has a folder with a missing parent.");
+    }
     children.set(node.parentKey, [
       ...(children.get(node.parentKey) ?? []),
       node,
     ]);
   }
-  const ordered: FolderTemplateNode[] = [];
+  const ordered: Array<FolderTemplateNode> = [];
   const visit = (node: FolderTemplateNode) => {
     ordered.push(node);
-    for (const child of children.get(node.key) ?? []) visit(child);
+    for (const child of children.get(node.key) ?? []) {
+      visit(child);
+    }
   };
-  for (const root of roots) visit(root);
-  if (ordered.length !== nodes.length)
+  for (const root of roots) {
+    visit(root);
+  }
+  if (ordered.length !== nodes.length) {
     throw new Error("This template's folders form a loop.");
+  }
   return ordered;
 }

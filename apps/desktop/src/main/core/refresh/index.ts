@@ -1,5 +1,6 @@
 import { rm } from "node:fs/promises";
-import { type Source, saves, tasks } from "@pond/schema/db";
+import { saves, tasks } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
 import { and, eq, inArray, ne, or } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
@@ -7,10 +8,8 @@ import { saveFile } from "../../paths";
 import { persistSave } from "../persist-save";
 import { resetTasksForSave } from "../pipeline/enqueue";
 import { createPendingTasks } from "../pipeline/enqueue-scheduling";
-import {
-  type TaskPayload,
-  withInteractivePriority,
-} from "../pipeline/priority";
+import { withInteractivePriority } from "../pipeline/priority";
+import type { TaskPayload } from "../pipeline/priority";
 import { createQueueGeneration } from "../pipeline/queue-generations";
 import { kickReconciler } from "../pipeline/reconciler-client";
 
@@ -36,8 +35,12 @@ export async function refreshSave(
   const db = await getDb();
   const rows = await db.select().from(saves).where(eq(saves.id, saveId));
   const current = rows[0];
-  if (!current) return { ok: false, reason: "not_found" };
-  if (!current.url) return { ok: false, reason: "no_url" };
+  if (!current) {
+    return { ok: false, reason: "not_found" };
+  }
+  if (!current.url) {
+    return { ok: false, reason: "no_url" };
+  }
   try {
     const generationId = await createQueueGeneration({
       kind: "refresh",
@@ -172,7 +175,9 @@ export async function refreshSave(
       log.warn("[pond refresh] no harvest_metadata task", saveId);
       return { ok: false, reason: "internal_error" };
     }
-    if (missing.length > 0) db.insert(tasks).values(missing).run();
+    if (missing.length > 0) {
+      db.insert(tasks).values(missing).run();
+    }
 
     await persistSave(
       saveId,
@@ -185,8 +190,8 @@ export async function refreshSave(
     );
     kickReconciler();
     return { ok: true, method: "metadata" };
-  } catch (err) {
-    log.error("[pond refresh] reset failed", saveId, err);
+  } catch (error) {
+    log.error("[pond refresh] reset failed", saveId, error);
     return { ok: false, reason: "internal_error" };
   }
 }

@@ -7,7 +7,8 @@ import {
   IconGlobe,
   IconLink2,
 } from "@pond/icons";
-import { Menu, type MenuItemSpec } from "@pond/ui";
+import { Menu } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import {
@@ -17,11 +18,11 @@ import {
 import { ViewerSaveNav } from "@/features/saves/components/viewers/viewer-save-nav";
 import { copyUrl } from "@/features/saves/lib/actions";
 import {
-  type ArchiveManifest,
   archiveUrlKey,
   buildArchiveViewerUrl,
   loadArchiveManifest,
 } from "@/features/saves/lib/media/archive";
+import type { ArchiveManifest } from "@/features/saves/lib/media/archive";
 import type { Save } from "@/features/saves/types";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 import type { PondWebviewElement } from "@/shared/types/electron-webview";
@@ -39,14 +40,18 @@ export function SaveArchiveViewer({ save }: { save: Save }) {
   useEffect(() => {
     let alive = true;
     void loadArchiveManifest(save).then((m) => {
-      if (alive) setManifest(m);
+      if (alive) {
+        setManifest(m);
+      }
     });
     return () => {
       alive = false;
     };
   }, [save]);
 
-  if (!manifest || manifest.pages.length === 0) return null;
+  if (!manifest || manifest.pages.length === 0) {
+    return null;
+  }
   return (
     <ViewerChrome>
       <ArchiveFrame key={save.id} save={save} manifest={manifest} />
@@ -81,7 +86,9 @@ function ArchiveFrame({
     const map = new Map<string, number>();
     manifest.pages.forEach((page, i) => {
       const key = archiveUrlKey(page.url);
-      if (!map.has(key)) map.set(key, i);
+      if (!map.has(key)) {
+        map.set(key, i);
+      }
     });
     return map;
   }, [manifest]);
@@ -106,9 +113,15 @@ function ArchiveFrame({
 
   useEffect(() => {
     return window.pond.onArchiveNavigate(({ guestId, url }) => {
-      if (guestId == null || guestId !== guestIdRef.current) return;
+      if (
+        guestId === null ||
+        guestId === undefined ||
+        guestId !== guestIdRef.current
+      ) {
+        return;
+      }
       const index = pageIndexByKey.get(archiveUrlKey(url));
-      if (index != null) {
+      if (index !== undefined) {
         visit(index);
       } else {
         void window.pond.openExternal(url);
@@ -116,17 +129,21 @@ function ArchiveFrame({
     });
   }, [pageIndexByKey, visit]);
 
-  if (!page || !src) return null;
+  if (!page || !src) {
+    return null;
+  }
 
   const address = displayArchiveAddress(page.url);
-  const buildPageItems = (): MenuItemSpec[] =>
+  const buildPageItems = (): Array<MenuItemSpec> =>
     manifest.pages.map((p, index) => ({
       type: "checkbox",
       label: p.title.trim() || displayArchiveAddress(p.url),
       indicator: "check",
       checked: index === pageIndex,
       onCheckedChange: (checked) => {
-        if (checked) visit(index);
+        if (checked) {
+          visit(index);
+        }
       },
     }));
 

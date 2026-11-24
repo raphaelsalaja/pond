@@ -1,6 +1,8 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
@@ -66,7 +68,9 @@ describe("new source menu", () => {
     const trigger = [...document.querySelectorAll("button")].find(
       (el) => el.getAttribute("aria-label") === "New Source",
     );
-    if (!trigger) throw new Error("Missing New Source");
+    if (!trigger) {
+      throw new Error("Missing New Source");
+    }
     expect(trigger.getAttribute("data-variant")).toBe("ghost");
     await act(async () => trigger.click());
   }
@@ -74,7 +78,9 @@ describe("new source menu", () => {
   it("lists every source create action", async () => {
     await openMenu();
     const text = document.body.textContent ?? "";
-    for (const label of labels) expect(text).toContain(label);
+    for (const label of labels) {
+      expect(text).toContain(label);
+    }
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
@@ -83,7 +89,9 @@ describe("new source menu", () => {
     const item = [...document.querySelectorAll('[role="menuitem"]')].find(
       (el) => el.textContent?.includes("New Folder"),
     );
-    if (!(item instanceof HTMLElement)) throw new Error("Missing folder");
+    if (!isHTMLElement(item)) {
+      throw new Error("Missing folder");
+    }
     await act(async () => item.click());
     expect(onWatchedFolder).toHaveBeenCalledOnce();
     expect(sourceFlow.current()).toBeNull();

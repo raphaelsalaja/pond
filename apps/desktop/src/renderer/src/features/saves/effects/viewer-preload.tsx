@@ -10,7 +10,7 @@ import { useSelectionCursor } from "@/features/saves/state/selection";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
 
-const NO_URLS: readonly string[] = [];
+const NO_URLS: ReadonlyArray<string> = [];
 
 export function ViewerPreload({ details }: { details: boolean }) {
   const theme = useResolvedTheme();
@@ -21,15 +21,23 @@ export function ViewerPreload({ details }: { details: boolean }) {
   );
 
   useEffect(() => {
-    if (urls.length === 0) return;
+    if (urls.length === 0) {
+      return;
+    }
     let started = false;
     const timer = window.setTimeout(() => {
       started = true;
-      for (const url of urls) preloadImage(url);
+      for (const url of urls) {
+        preloadImage(url);
+      }
     }, PRELOAD_SETTLE_MS);
     return () => {
       window.clearTimeout(timer);
-      if (started) for (const url of urls) cancelPreload(url);
+      if (started) {
+        for (const url of urls) {
+          cancelPreload(url);
+        }
+      }
     };
   }, [urls]);
 

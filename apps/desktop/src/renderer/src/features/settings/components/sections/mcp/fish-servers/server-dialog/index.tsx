@@ -2,10 +2,12 @@ import { IconPlus, IconXmark } from "@pond/icons";
 import { Button, Dialog, Field, Input, Toggle, ToggleGroup } from "@pond/ui";
 import {
   FishMcpSecretName,
-  type FishMcpServerConfig,
   FishMcpServerDraft,
   FishMcpServerName,
-  type FishMcpServerStatus,
+} from "@shared/fish-mcp-contracts";
+import type {
+  FishMcpServerConfig,
+  FishMcpServerStatus,
 } from "@shared/fish-mcp-contracts";
 import { useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
@@ -25,12 +27,17 @@ interface ServerDialogProps {
   onSaved: (status: FishMcpServerStatus) => void;
 }
 
-function secretProblem(rows: SecretRow[]): string | null {
-  const names = rows.map((row) => row.name.trim()).filter(Boolean);
-  if (names.some((name) => !FishMcpSecretName.safeParse(name).success))
+function secretProblem(rows: Array<SecretRow>): string | null {
+  const names = rows.flatMap((row) => {
+    const trimmed = row.name.trim();
+    return trimmed ? [trimmed] : [];
+  });
+  if (names.some((name) => !FishMcpSecretName.safeParse(name).success)) {
     return "Secret names use letters, numbers, dashes, and underscores.";
-  if (new Set(names).size !== names.length)
+  }
+  if (new Set(names).size !== names.length) {
     return "Give each secret a different name.";
+  }
   return null;
 }
 
@@ -47,7 +54,7 @@ export function ServerDialog({ initial, onClose, onSaved }: ServerDialogProps) {
   const [url, setUrl] = useState(
     initial?.transport === "http" ? initial.url : "",
   );
-  const [secrets, setSecrets] = useState<SecretRow[]>(() =>
+  const [secrets, setSecrets] = useState<Array<SecretRow>>(() =>
     (initial?.secretNames ?? []).map((secret, key) => ({
       key,
       name: secret,
@@ -98,7 +105,9 @@ export function ServerDialog({ initial, onClose, onSaved }: ServerDialogProps) {
   async function save() {
     setSubmitted(true);
     setError(null);
-    if (!nameCheck.success) return;
+    if (!nameCheck.success) {
+      return;
+    }
     const problem = secretProblem(secrets);
     if (problem) {
       setError(problem);
@@ -124,8 +133,8 @@ export function ServerDialog({ initial, onClose, onSaved }: ServerDialogProps) {
         ),
       });
       onSaved(status);
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't save the server. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't save the server. Try again."));
     } finally {
       setBusy(false);
     }
@@ -135,8 +144,11 @@ export function ServerDialog({ initial, onClose, onSaved }: ServerDialogProps) {
     <Dialog.Root
       open
       onOpenChange={(open, details) => {
-        if (busy) details.cancel();
-        else if (!open) onClose();
+        if (busy) {
+          details.cancel();
+        } else if (!open) {
+          onClose();
+        }
       }}
     >
       <Dialog.Portal>
@@ -177,7 +189,9 @@ export function ServerDialog({ initial, onClose, onSaved }: ServerDialogProps) {
                 value={[transport]}
                 onValueChange={(values) => {
                   const next = values[0];
-                  if (next === "stdio" || next === "http") setTransport(next);
+                  if (next === "stdio" || next === "http") {
+                    setTransport(next);
+                  }
                 }}
               >
                 <Toggle type="button" size="sm" value="stdio">

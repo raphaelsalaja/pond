@@ -63,7 +63,7 @@ const HEART_OUTLINE =
 
 type Point = readonly [number, number];
 
-function parse(points: string): Point[] {
+function parse(points: string): Array<Point> {
   return points.split(" ").map((pair) => {
     const [x = 0, y = 0] = pair.split(",").map(Number);
     return [x, y] as const;
@@ -73,7 +73,7 @@ function parse(points: string): Point[] {
 const round = (value: number) => Number(value.toFixed(1));
 
 /** Closed Catmull-Rom spline: same point count in, same command sequence out. */
-function smooth(points: readonly Point[]): string {
+function smooth(points: ReadonlyArray<Point>): string {
   const n = points.length;
   const at = (index: number): Point => points[(index + n) % n] ?? [0, 0];
   const [startX, startY] = at(0);

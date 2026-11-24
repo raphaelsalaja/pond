@@ -10,7 +10,7 @@ export const session = {};
 export const net = {};
 /** Tests open no windows, so main-process broadcasts reach none. */
 export class BrowserWindow {
-  static getAllWindows(): BrowserWindow[] {
+  static getAllWindows(): Array<BrowserWindow> {
     return [];
   }
   isDestroyed(): boolean {

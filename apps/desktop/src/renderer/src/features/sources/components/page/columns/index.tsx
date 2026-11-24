@@ -120,7 +120,7 @@ function SourceMark({
   );
 }
 
-export const sourcesColumns: TableColumn<SourceTableRow>[] = [
+export const sourcesColumns: Array<TableColumn<SourceTableRow>> = [
   {
     id: "name",
     header: "Name",

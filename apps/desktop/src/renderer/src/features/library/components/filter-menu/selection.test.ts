@@ -17,7 +17,10 @@ const tagged: Predicate = {
   operator: "some",
   value: ["design"],
 };
-const query = (rules: Predicate[]): Query => ({ combinator: "and", rules });
+const query = (rules: Array<Predicate>): Query => ({
+  combinator: "and",
+  rules,
+});
 
 describe("filter menu selections", () => {
   it("matches either selected type while still requiring the selected tag", () => {
@@ -81,7 +84,9 @@ describe("filter menu selections", () => {
     ]);
     const first = options[0];
     const second = options[1];
-    if (!first || !second) throw new Error("Missing folder choices");
+    if (!first || !second) {
+      throw new Error("Missing folder choices");
+    }
     const rows = selectFilter([first.predicate], second.predicate, true);
     expect(
       matches(query(rows), {

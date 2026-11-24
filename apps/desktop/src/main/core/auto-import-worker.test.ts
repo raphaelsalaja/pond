@@ -11,12 +11,12 @@ import {
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  type AutoImportWorkerOptions,
-  createAutoImportWorker,
-} from "./auto-import-worker";
+import { createAutoImportWorker } from "./auto-import-worker";
+import type { AutoImportWorkerOptions } from "./auto-import-worker";
 
-const roots: string[] = [];
+function noop(): void {}
+
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -42,7 +42,9 @@ async function fixture(mode: "copy" | "move" = "copy") {
     stableMs: 1000,
     async ingest({ path, sourceId }) {
       const existing = imported.get(sourceId);
-      if (existing) return { ok: true, id: existing };
+      if (existing) {
+        return { ok: true, id: existing };
+      }
       const id = `save-${imported.size}`;
       await copyFile(path, join(library, id));
       imported.set(sourceId, id);
@@ -141,11 +143,11 @@ describe("auto-import reconciliation", () => {
   it("drains in-flight import before stop resolves and accepts no later work", async () => {
     const { directory, imported, options, advance } = await fixture();
     await writeFile(join(directory, "image.png"), "original");
-    let release = () => {};
+    let release: () => void = noop;
     const barrier = new Promise<void>((done) => {
       release = done;
     });
-    let entered = () => {};
+    let entered: () => void = noop;
     const started = new Promise<void>((done) => {
       entered = done;
     });

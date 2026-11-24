@@ -6,11 +6,11 @@ import type {
 import { reviewChanges as review, reviewDependencies } from "./review";
 
 interface ReviewTestState {
-  changes: AssistantChange[];
+  changes: Array<AssistantChange>;
   title: string;
-  tags: string[];
+  tags: Array<string>;
   deletedAt: Date | null;
-  folderIds: string[];
+  folderIds: Array<string>;
   fail: boolean;
 }
 const state: ReviewTestState = {
@@ -96,9 +96,17 @@ beforeEach(() => {
     },
   ];
   mock.write.mockImplementation(async (tx) => {
-    if (mock.fail) throw new Error("Disk unavailable");
-    if (tx.model === "save" && tx.kind === "update" && tx.patch.title != null)
+    if (mock.fail) {
+      throw new Error("Disk unavailable");
+    }
+    if (
+      tx.model === "save" &&
+      tx.kind === "update" &&
+      tx.patch.title !== null &&
+      tx.patch.title !== undefined
+    ) {
       mock.title = tx.patch.title;
+    }
     return {
       id: 1,
       modelName: tx.model,
@@ -226,27 +234,27 @@ describe("reviewed library edits", () => {
   });
 });
 
-describe("Pond operation reviews", () => {
-  function operationChange(): AssistantChange {
-    return {
-      id: "operation",
-      saveId: "",
-      title: "Create a Film Folder",
-      reason: "Organize references",
-      field: "action",
-      action: "runOperation",
-      before: null,
-      after: "folders.create",
-      status: "pending",
-      undoable: false,
-      payload: {
-        operation: "folders.create",
-        arguments: { name: "Film" },
-        libraryId: "library",
-      },
-    };
-  }
+function operationChange(): AssistantChange {
+  return {
+    id: "operation",
+    saveId: "",
+    title: "Create a Film Folder",
+    reason: "Organize references",
+    field: "action",
+    action: "runOperation",
+    before: null,
+    after: "folders.create",
+    status: "pending",
+    undoable: false,
+    payload: {
+      operation: "folders.create",
+      arguments: { name: "Film" },
+      libraryId: "library",
+    },
+  };
+}
 
+describe("Pond operation reviews", () => {
   it("applies a persisted operation once and retains its result for follow-up", async () => {
     mock.changes = [operationChange()];
     const apply = vi
@@ -272,7 +280,9 @@ describe("Pond operation reviews", () => {
 
   it("reconnects MCP servers before applying a reviewed MCP tool call", async () => {
     const change = operationChange();
-    if (change.field !== "action") throw new Error("Expected action fixture");
+    if (change.field !== "action") {
+      throw new Error("Expected action fixture");
+    }
     const request = {
       operation: "mcp.github.create_issue",
       arguments: { title: "Bug" },
@@ -315,7 +325,9 @@ describe("Pond operation reviews", () => {
 
   it("does not execute malformed stored operation requests", async () => {
     const change = operationChange();
-    if (change.field !== "action") throw new Error("Expected action fixture");
+    if (change.field !== "action") {
+      throw new Error("Expected action fixture");
+    }
     change.payload = { operation: "folders.create", arguments: {} };
     mock.changes = [change];
     const apply = vi.fn<(typeof reviewDependencies)["applyPondOperation"]>();

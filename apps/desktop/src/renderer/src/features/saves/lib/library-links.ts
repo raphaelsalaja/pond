@@ -1,7 +1,7 @@
 import type { Predicate } from "@pond/schema/filters/types";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 
-export function showInLibrary(ids: readonly string[]): void {
+export function showInLibrary(ids: ReadonlyArray<string>): void {
   saveLibraryBridge.showSaves(ids);
 }
 
@@ -13,6 +13,6 @@ export function showFolderInLibrary(id: string): void {
   saveLibraryBridge.showLibrary({ kind: "folder", id });
 }
 
-export function reviewDuplicates(ids: readonly string[]): void {
+export function reviewDuplicates(ids: ReadonlyArray<string>): void {
   saveLibraryBridge.openDuplicateReview({ ids });
 }

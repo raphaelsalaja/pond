@@ -10,7 +10,9 @@ function memoryReader(files: Record<string, string>) {
     paths: Object.keys(files),
     readText: async (path) => {
       const text = files[path];
-      if (text === undefined) throw new Error("missing");
+      if (text === undefined) {
+        throw new Error("missing");
+      }
       return text;
     },
     close: async () => {

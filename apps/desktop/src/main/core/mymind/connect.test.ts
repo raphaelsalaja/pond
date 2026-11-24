@@ -1,10 +1,10 @@
-import {
-  type ConnectedAccount,
-  DEFAULT_SOURCE_SYNC_PREFS,
-} from "@pond/schema/db";
+import { DEFAULT_SOURCE_SYNC_PREFS } from "@pond/schema/db";
+import type { ConnectedAccount } from "@pond/schema/db";
 import { describe, expect, it, vi } from "vitest";
 import { connectMymind, isMymindConnecting } from "./connect";
 import { createMymindSyncState } from "./state";
+
+function noop(): void {}
 
 const now = Date.parse("2026-11-06T12:00:00Z");
 const credential = { kid: "key", secret: "YWJjZGVmZ2hpamtsbW5vcA==" };
@@ -108,7 +108,7 @@ describe("mymind connection", () => {
 
   it("blocks a second reconnect until the first one finishes", async () => {
     const f = fixture(existingAccount);
-    let release = () => {};
+    let release: () => void = noop;
     f.dependencies.validate.mockImplementation(
       () =>
         new Promise<void>((resolve) => {

@@ -5,7 +5,7 @@ import { TagMenu } from "@/features/tags";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
-function tagKeys(names: readonly string[]) {
+function tagKeys(names: ReadonlyArray<string>) {
   return new Set(names.map((name) => name.toLowerCase()));
 }
 
@@ -20,9 +20,9 @@ export function AutomaticTagsDialog({
 }) {
   const checkboxId = useId();
   const [tagPicker] = usePrefs("tagPicker");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [initial, setInitial] = useState<string[]>([]);
-  const [inherited, setInherited] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Array<string>>([]);
+  const [initial, setInitial] = useState<Array<string>>([]);
+  const [inherited, setInherited] = useState<Array<string>>([]);
   const [applyExisting, setApplyExisting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -39,17 +39,20 @@ export function AutomaticTagsDialog({
     void window.pond
       .query("folders.rules.get", { id: folderId })
       .then((result) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setSelected(result.tags);
         setInitial(result.tags);
         setInherited(result.inheritedTags);
         setLoading(false);
       })
       .catch(() => {
-        if (active)
+        if (active) {
           setError(
             "Couldn't load automatic tags. Close this dialog and try again.",
           );
+        }
       });
     return () => {
       active = false;
@@ -57,7 +60,9 @@ export function AutomaticTagsDialog({
   }, [folderId]);
 
   function toggle(name: string) {
-    if (loading || busy) return;
+    if (loading || busy) {
+      return;
+    }
     const key = name.toLowerCase();
     setSelected((current) =>
       current.some((item) => item.toLowerCase() === key)
@@ -88,7 +93,9 @@ export function AutomaticTagsDialog({
     <Dialog.Root
       open
       onOpenChange={(open) => {
-        if (!open && !busy) onClose();
+        if (!open && !busy) {
+          onClose();
+        }
       }}
     >
       <Dialog.Portal>

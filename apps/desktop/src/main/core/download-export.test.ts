@@ -3,10 +3,8 @@ import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import type { DownloadRequest } from "@shared/downloader-contracts";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createDownloadExports,
-  type DownloadExportRuntime,
-} from "./download-export";
+import { createDownloadExports } from "./download-export";
+import type { DownloadExportRuntime } from "./download-export";
 
 const URL = "https://www.youtube.com/watch?v=abc123def45";
 

@@ -26,7 +26,9 @@ it("supports lossless PNG and WebP compression without changing dimensions", asy
   );
   expect(png).not.toBeNull();
   expect(webp).not.toBeNull();
-  if (!png || !webp) throw new Error("Expected compressed image bytes.");
+  if (!png || !webp) {
+    throw new Error("Expected compressed image bytes.");
+  }
   expect(await sharp(png).metadata()).toMatchObject({
     width: 64,
     height: 32,
@@ -59,7 +61,9 @@ it("uses quality mode for JPEG and refuses to label it lossless", async () => {
     "quality",
     60,
   );
-  if (!compressed) throw new Error("Expected compressed JPEG bytes.");
+  if (!compressed) {
+    throw new Error("Expected compressed JPEG bytes.");
+  }
   expect(await sharp(compressed).metadata()).toMatchObject({
     width: 40,
     height: 20,
@@ -84,7 +88,9 @@ it("converts image bytes to WebP for in-place replacement", async () => {
     "webp",
     85,
   );
-  if (!converted) throw new Error("Expected converted WebP bytes.");
+  if (!converted) {
+    throw new Error("Expected converted WebP bytes.");
+  }
   expect(await sharp(converted).metadata()).toMatchObject({
     width: 40,
     height: 20,
@@ -120,8 +126,8 @@ it("commits replacement bytes, metadata, derived images, and Undo as one batch",
     .png({ compressionLevel: 0 })
     .toBuffer();
   const thumbnail = await sharp(source).resize(20, 10).png().toBuffer();
-  const committed: Transaction[][] = [];
-  const undo: Transaction[][] = [];
+  const committed: Array<Array<Transaction>> = [];
+  const undo: Array<Array<Transaction>> = [];
   const result = await compressExistingImages(
     {
       ids: ["save"],

@@ -1,4 +1,5 @@
-import { Grid, getPreferenceValues, Icon, type LaunchProps } from "@raycast/api";
+import { Grid, getPreferenceValues, Icon } from "@raycast/api";
+import type { LaunchProps } from "@raycast/api";
 import { useCachedPromise, useCachedState } from "@raycast/utils";
 import type { ApiCursor, ApiLibraryQueryInput, ApiSave } from "pond-api";
 import { useMemo, useState } from "react";
@@ -10,7 +11,8 @@ import { kindIcon } from "./components/save-item";
 import { saveTitle, sourceName } from "./lib/display";
 import { saveEditor } from "./lib/edits";
 import { useQuickLook } from "./lib/files";
-import { decodeFilter, encodeFilter, type Filter, queryFor } from "./lib/filters";
+import { decodeFilter, encodeFilter, queryFor } from "./lib/filters";
+import type { Filter } from "./lib/filters";
 import { useLookups } from "./lib/library";
 import { uniqueById } from "./lib/pages";
 import { thumbnailKey, useThumbnails } from "./lib/thumbnails";
@@ -20,7 +22,7 @@ interface MediaPreferences {
 }
 
 const PAGE_SIZE = 60;
-const NONE: ApiSave[] = [];
+const NONE: Array<ApiSave> = [];
 
 const TYPES = [
   { title: "Images and Videos", types: ["image", "video"] },
@@ -30,7 +32,9 @@ const TYPES = [
 
 function loadMedia(input: ApiLibraryQueryInput | null) {
   return async ({ cursor }: { cursor?: ApiCursor | null }) => {
-    if (!input) return { data: NONE, hasMore: false };
+    if (!input) {
+      return { data: NONE, hasMore: false };
+    }
     const page = await pond().query({ ...input, limit: PAGE_SIZE, cursor });
     return { data: page.saves ?? [], hasMore: page.nextCursor !== null, cursor: page.nextCursor };
   };
@@ -46,7 +50,7 @@ export default function Command(props: LaunchProps) {
   const decoded = decodeFilter(stored);
   const filter: Filter = decoded.kind === "media" ? decoded : { kind: "media", types: TYPES[0].types };
   const input = queryFor(filter, searchText, []);
-  const media = useCachedPromise(loadMedia, [input], { keepPreviousData: true });
+  const media = useCachedPromise<typeof loadMedia, Array<ApiSave>>(loadMedia, [input], { keepPreviousData: true });
   const data = useMemo(() => uniqueById(media.data ?? NONE), [media.data]);
   const thumbnails = useThumbnails(data, "medium");
   const selected = data.find((save) => save.id === selectedId) ?? data[0];

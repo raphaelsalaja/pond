@@ -1,9 +1,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { buildColorsCss, buildTokensCss } from "./ramps.ts";
 
-const here = dirname(fileURLToPath(import.meta.url));
+const here = import.meta.dirname;
 
 const outputs = [
   [join(here, "palette.css"), buildColorsCss()],
@@ -18,6 +17,8 @@ if (process.argv.includes("--check")) {
   }
   console.log("Verified colors/palette.css and colors/scale.css");
 } else {
-  for (const [path, source] of outputs) writeFileSync(path, source);
+  for (const [path, source] of outputs) {
+    writeFileSync(path, source);
+  }
   console.log("Generated colors/palette.css and colors/scale.css");
 }

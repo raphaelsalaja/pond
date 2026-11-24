@@ -11,23 +11,25 @@ import {
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   closeFolderTemplateDialog,
-  type FolderTemplateDialogState,
   useFolderTemplateDialog,
 } from "@/features/library/state/folder-template-dialog";
+import type { FolderTemplateDialogState } from "@/features/library/state/folder-template-dialog";
 import { folders, useFolders } from "@/features/library/state/folders";
 import { useRetainedDialogPayload } from "@/shared/hooks/use-retained-dialog-payload";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { FolderIcon } from "@/shared/lib/folder-icons";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
-import styles from "./styles.module.css";
 import { folderTemplateRows } from "./tree";
+import styles from "./styles.module.css";
 
 export function FolderTemplateDialogHost() {
   const state = useFolderTemplateDialog();
   const presentation = useRetainedDialogPayload(state);
   const payload = presentation.payload;
-  if (!payload) return null;
+  if (!payload) {
+    return null;
+  }
   return payload.mode === "apply" ? (
     <ApplyTemplateDialog
       key={payload.id}
@@ -111,7 +113,9 @@ function ApplyTemplateDialog({
   }
 
   async function create() {
-    if (!selected || busy) return;
+    if (!selected || busy) {
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
@@ -126,8 +130,8 @@ function ApplyTemplateDialog({
         title: `Created ${formatPlural(result.count, { one: "folder", other: "folders" })}`,
       });
       closeFolderTemplateDialog();
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't create folders. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't create folders. Try again."));
     } finally {
       setBusy(false);
     }
@@ -140,9 +144,9 @@ function ApplyTemplateDialog({
       });
       await reload();
       select(copy.id);
-    } catch (reason) {
+    } catch (error_) {
       setError(
-        errorCopy(reason, "Couldn't duplicate the template. Try again."),
+        errorCopy(error_, "Couldn't duplicate the template. Try again."),
       );
     }
   }
@@ -172,7 +176,9 @@ function ApplyTemplateDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next && !busy) closeFolderTemplateDialog();
+        if (!next && !busy) {
+          closeFolderTemplateDialog();
+        }
       }}
     >
       <Dialog.Portal>
@@ -200,7 +206,9 @@ function ApplyTemplateDialog({
                     value={selected ? [selected.id] : []}
                     onValueChange={(next) => {
                       const [id] = next;
-                      if (id) select(id);
+                      if (id) {
+                        select(id);
+                      }
                     }}
                   >
                     <p className={styles.heading}>Built-In</p>
@@ -299,7 +307,9 @@ function SaveTemplateDialog({
   const subfoldersId = useId();
 
   async function save() {
-    if (busy) return;
+    if (busy) {
+      return;
+    }
     if (!name.trim()) {
       setError("Enter a template name.");
       field.current?.focus();
@@ -316,8 +326,8 @@ function SaveTemplateDialog({
       });
       notify({ id: "folder-template", title: `Saved ${template.name}` });
       closeFolderTemplateDialog();
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't save the template. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't save the template. Try again."));
     } finally {
       setBusy(false);
     }
@@ -327,7 +337,9 @@ function SaveTemplateDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next && !busy) closeFolderTemplateDialog();
+        if (!next && !busy) {
+          closeFolderTemplateDialog();
+        }
       }}
     >
       <Dialog.Portal>

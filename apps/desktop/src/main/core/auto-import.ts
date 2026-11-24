@@ -35,8 +35,9 @@ async function readLogFile(root: string): Promise<AutoImportLog> {
   try {
     raw = await readFile(logPath(root), "utf8");
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT")
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return { entries: [] };
+    }
     throw error;
   }
   return AutoImportLogSchema.parse(JSON.parse(raw));
@@ -48,7 +49,9 @@ export function readAutoImportLog(): Promise<AutoImportLog> {
 
 export async function stopAutoImport(): Promise<void> {
   generation += 1;
-  if (timer) clearInterval(timer);
+  if (timer) {
+    clearInterval(timer);
+  }
   timer = null;
   const previous = worker;
   worker = null;
@@ -61,7 +64,9 @@ export async function startAutoImport(): Promise<void> {
   const root = resolve(libraryRoot());
   const prefs = await getPrefs();
   const cfg = prefs.autoImport;
-  if (current !== generation || !cfg.enabled || !cfg.path) return;
+  if (current !== generation || !cfg.enabled || !cfg.path) {
+    return;
+  }
   const directory = resolve(cfg.path);
   if (
     directory === root ||
@@ -76,8 +81,9 @@ export async function startAutoImport(): Promise<void> {
     checkpointPath: join(root, "auto-import-checkpoints.json"),
     mode: cfg.mode,
     async ingest(input) {
-      if (resolve(libraryRoot()) !== root)
+      if (resolve(libraryRoot()) !== root) {
         throw new Error("The import library changed.");
+      }
       return createManualSave({
         filePaths: [input.path],
         sourceId: input.sourceId,
@@ -99,8 +105,8 @@ export async function startAutoImport(): Promise<void> {
         log.warn("[pond auto-import] import log not updated", error);
       }
       if (entry.ok) {
-        await emitFeedback("autoImport").catch((error) =>
-          log.warn("[pond auto-import] feedback failed", error),
+        await emitFeedback("autoImport").catch((cause: unknown) =>
+          log.warn("[pond auto-import] feedback failed", cause),
         );
       }
     },
@@ -112,7 +118,9 @@ export async function startAutoImport(): Promise<void> {
   worker = next;
   let scanning = false;
   const tick = async () => {
-    if (scanning || current !== generation) return;
+    if (scanning || current !== generation) {
+      return;
+    }
 
     scanning = true;
     try {
@@ -124,5 +132,7 @@ export async function startAutoImport(): Promise<void> {
     }
   };
   await tick();
-  if (current === generation) timer = setInterval(() => void tick(), 1000);
+  if (current === generation) {
+    timer = setInterval(() => void tick(), 1000);
+  }
 }

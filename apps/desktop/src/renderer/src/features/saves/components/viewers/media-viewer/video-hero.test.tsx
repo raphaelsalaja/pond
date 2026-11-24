@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";

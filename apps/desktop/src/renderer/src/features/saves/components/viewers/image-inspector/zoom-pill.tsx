@@ -1,5 +1,6 @@
 import { IconMinus, IconPlus } from "@pond/icons";
-import { Menu, type MenuItemSpec } from "@pond/ui";
+import { Menu } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 
@@ -8,14 +9,16 @@ export const ZOOM_RATIOS = [5, 10, 25, 50, 100, 200, 400, 800] as const;
 export function buildZoomRatioItems(
   actual: number,
   onRatio: (ratio: number) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return ZOOM_RATIOS.map((percent) => ({
     type: "checkbox",
     label: `${percent}%`,
     indicator: "check",
     checked: Math.round(actual * 100) === percent,
     onCheckedChange: (checked) => {
-      if (checked) onRatio(percent / 100);
+      if (checked) {
+        onRatio(percent / 100);
+      }
     },
   }));
 }

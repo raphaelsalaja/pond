@@ -6,8 +6,8 @@ import { z } from "zod";
 import {
   captureFromTweetDraft,
   draftFromRichPost,
-  type RichPostDraft,
 } from "../capture/tweet-draft";
+import type { RichPostDraft } from "../capture/tweet-draft";
 import { pickTitle } from "../refresh/harvest/lib/title";
 import type { BookmarksEntry, RichTweet } from "../refresh/harvest/twitter";
 
@@ -26,7 +26,9 @@ export function buildTwitterBookmarkSeed(
   entry: BookmarksEntry,
 ): SaveSeed | null {
   const rich = entry.rich;
-  if (!rich) return null;
+  if (!rich) {
+    return null;
+  }
 
   const legacy = LegacyCreatedAtSchema.safeParse(rich.raw);
   const publishedAt = legacy.success
@@ -38,7 +40,9 @@ export function buildTwitterBookmarkSeed(
       (entry.author ? entry.author.replace(/^@/, "") : ""),
     name: rich.author.name || rich.author.handle,
   };
-  if (rich.author.avatarUrl) author.avatarUrl = rich.author.avatarUrl;
+  if (rich.author.avatarUrl) {
+    author.avatarUrl = rich.author.avatarUrl;
+  }
 
   const draft: RichPostDraft = {
     source: "twitter",
@@ -49,10 +53,14 @@ export function buildTwitterBookmarkSeed(
     media: rich.media,
     metrics: rich.metrics,
   };
-  if (rich.quoted) draft.quoted = richQuoted(rich.quoted);
+  if (rich.quoted) {
+    draft.quoted = richQuoted(rich.quoted);
+  }
   if (rich.replyTo) {
     draft.isReply = true;
-    if (rich.replyTo.handle) draft.replyingTo = rich.replyTo.handle;
+    if (rich.replyTo.handle) {
+      draft.replyingTo = rich.replyTo.handle;
+    }
     draft.replyTo = {
       source: "twitter",
       id: rich.replyTo.tweetId,
@@ -65,8 +73,12 @@ export function buildTwitterBookmarkSeed(
       media: [],
     };
   }
-  if (rich.card) draft.card = rich.card;
-  if (publishedAt) draft.publishedAt = publishedAt.toISOString();
+  if (rich.card) {
+    draft.card = rich.card;
+  }
+  if (publishedAt) {
+    draft.publishedAt = publishedAt.toISOString();
+  }
 
   const capture = captureFromTweetDraft(draftFromRichPost(draft));
 
@@ -100,7 +112,9 @@ function richQuoted(quoted: RichTweet): RichPostDraft {
     handle: quoted.author.handle,
     name: quoted.author.name,
   };
-  if (quoted.author.avatarUrl) author.avatarUrl = quoted.author.avatarUrl;
+  if (quoted.author.avatarUrl) {
+    author.avatarUrl = quoted.author.avatarUrl;
+  }
 
   const draft: RichPostDraft = {
     source: "twitter",
@@ -111,8 +125,12 @@ function richQuoted(quoted: RichTweet): RichPostDraft {
     media: quoted.media,
     metrics: quoted.metrics,
   };
-  if (quoted.quoted) draft.quoted = richQuoted(quoted.quoted);
-  if (quoted.card) draft.card = quoted.card;
+  if (quoted.quoted) {
+    draft.quoted = richQuoted(quoted.quoted);
+  }
+  if (quoted.card) {
+    draft.card = quoted.card;
+  }
   return draft;
 }
 

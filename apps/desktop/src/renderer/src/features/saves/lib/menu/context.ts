@@ -19,24 +19,34 @@ import type { Save, SaveFile } from "@/features/saves/types";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 import type { BuildSaveMenuOptions, SaveMenuContext } from "./types";
 
+function isSaveList(
+  value: Save | ReadonlyArray<Save>,
+): value is ReadonlyArray<Save> {
+  return Array.isArray(value);
+}
+
 function canRemoveVideo(save: Save): boolean {
   return save.source !== "local" && hasVideoFile(save);
 }
 
-export function contextMenuSaves(clicked: Save): Save[] {
+export function contextMenuSaves(clicked: Save): Array<Save> {
   if (selection.has(clicked.id) && selection.size() > 1) {
-    const out: Save[] = [];
+    const out: Array<Save> = [];
     for (const id of selection.snapshot()) {
       const save = pool.get(id);
-      if (save) out.push(save);
+      if (save) {
+        out.push(save);
+      }
     }
-    if (out.length > 1) return out;
+    if (out.length > 1) {
+      return out;
+    }
   }
   return [clicked];
 }
 
 export function createSaveMenuContext(
-  saveOrSaves: Save | readonly Save[],
+  saveOrSaves: Save | ReadonlyArray<Save>,
   {
     clipboardEmpty,
     fileIndex = null,
@@ -48,9 +58,13 @@ export function createSaveMenuContext(
     fontActivated = false,
   }: BuildSaveMenuOptions,
 ): SaveMenuContext | null {
-  const saves = Array.isArray(saveOrSaves) ? saveOrSaves : [saveOrSaves];
+  const saves: ReadonlyArray<Save> = isSaveList(saveOrSaves)
+    ? saveOrSaves
+    : [saveOrSaves];
   const save = saves[0];
-  if (!save) return null;
+  if (!save) {
+    return null;
+  }
   const ids =
     selection.has(save.id) && selection.size() > saves.length
       ? [...selection.snapshot()]
@@ -67,10 +81,10 @@ export function createSaveMenuContext(
     coverSaveId !== undefined ? coverSaveId : (folderView?.coverSaveId ?? null);
   const incomplete = ids.length > saves.length;
   const hasFiles =
-    incomplete || saves.some((item) => resolveFileIndex(item) != null);
+    incomplete || saves.some((item) => resolveFileIndex(item) !== null);
   const targetIndex = resolveFileIndex(save, fileIndex);
   const targetFile =
-    targetIndex != null ? (save.files[targetIndex] ?? null) : null;
+    targetIndex !== null ? (save.files[targetIndex] ?? null) : null;
   const isGif =
     !batch &&
     (targetFile?.mimeType === "image/gif" ||

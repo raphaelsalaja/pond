@@ -20,10 +20,15 @@ const SERVERS_KEY = ["fish-mcp"];
 type Editing = { kind: "new" } | { kind: "edit"; id: string };
 
 function statusLine({ state, error, tools }: FishMcpServerStatus) {
-  if (state === "connected")
+  if (state === "connected") {
     return `Connected, ${formatPlural(tools.length, { one: "tool", other: "tools" })}`;
-  if (state === "idle") return "Connects when a fish needs it";
-  if (state === "off") return "Off";
+  }
+  if (state === "idle") {
+    return "Connects when a fish needs it";
+  }
+  if (state === "off") {
+    return "Off";
+  }
   return error ?? "Couldn't connect";
 }
 
@@ -129,11 +134,11 @@ function ServerRow({
     setBusy(label);
     try {
       await work();
-    } catch (reason) {
+    } catch (error) {
       notify({
         id: `fish-mcp-${server.id}`,
         title: failure,
-        description: errorCopy(reason, "Try again."),
+        description: errorCopy(error, "Try again."),
       });
     } finally {
       await onChanged();

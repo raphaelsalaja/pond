@@ -1,8 +1,10 @@
 import { IconMusicNote, IconVideo } from "@pond/icons";
+import { isElement } from "@pond/ui/dom";
 import { clsx as cn } from "clsx";
 import type { KeyboardEvent } from "react";
 import { Frame } from "../frame";
-import { type Clip, frameAt } from "../lib/clip";
+import { frameAt } from "../lib/clip";
+import type { Clip } from "../lib/clip";
 import { useRangeDrag } from "../lib/drag";
 import { usePlayer } from "../lib/player";
 import { storyboardTile } from "../lib/range";
@@ -23,7 +25,9 @@ export function useEditor(clip: Clip) {
     duration,
     ...probe.chapters.map((chapter) => chapter.start),
   ];
-  if (replay) targets.push(replay.start, replay.end);
+  if (replay) {
+    targets.push(replay.start, replay.end);
+  }
   const drag = useRangeDrag(clip, { enabled: true, targets });
   const player = usePlayer(clip, drag);
   targets.push(player.time);
@@ -40,10 +44,16 @@ export function useEditor(clip: Clip) {
     });
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) {
+      return;
+    }
     const { target } = event;
-    if (!(target instanceof Element) || target.closest(OWN_KEYS)) return;
-    if (event.key === " " && target.closest("button")) return;
+    if (!isElement(target) || target.closest(OWN_KEYS)) {
+      return;
+    }
+    if (event.key === " " && target.closest("button")) {
+      return;
+    }
     const step = event.shiftKey ? 10 : 1;
     const actions = new Map<string, () => void>([
       [" ", player.toggle],
@@ -55,7 +65,9 @@ export function useEditor(clip: Clip) {
       ["o", setEnd],
     ]);
     const action = actions.get(event.key);
-    if (!action) return;
+    if (!action) {
+      return;
+    }
     event.preventDefault();
     action();
   };
@@ -93,23 +105,22 @@ function Panel({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
 /** The preview stream when the site offers one, otherwise the frame under the playhead. */
 function Screen({ editor, className, ...props }: PartProps) {
   const { clip, player } = editor;
+  const { video, time, playable, toggle, fail } = player;
   const { probe } = clip;
-  const tile = probe.storyboard
-    ? storyboardTile(probe.storyboard, player.time)
-    : null;
-  const still = frameAt(clip, player.time) ?? probe.thumbnail;
+  const tile = probe.storyboard ? storyboardTile(probe.storyboard, time) : null;
+  const still = frameAt(clip, time) ?? probe.thumbnail;
   return (
     <div className={cn(styles.screen, className)} {...props}>
-      {player.playable && probe.preview ? (
+      {playable && probe.preview ? (
         <video
-          ref={player.video}
+          ref={video}
           className={styles.video}
           src={probe.preview}
           poster={probe.thumbnail ?? undefined}
           preload="metadata"
           playsInline
-          onClick={player.toggle}
-          onError={player.fail}
+          onClick={toggle}
+          onError={fail}
         >
           <track kind="captions" />
         </video>

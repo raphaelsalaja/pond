@@ -597,14 +597,21 @@ const isThreads =
   host.endsWith(".threads.net");
 
 function installHook(name: string, source: string): void {
-  webFrame
-    .executeJavaScript(source)
-    .catch((err) =>
-      console.error(`[pond preload] ${name} capture hook failed`, host, err),
-    );
+  webFrame.executeJavaScript(source).catch((cause: unknown) => {
+    // oxlint-disable-next-line no-console -- The scrape preload has no logger; the harvest window's DevTools console is the only place this shows.
+    console.error(`[pond preload] ${name} capture hook failed`, host, cause);
+  });
 }
 
-if (isTwitter) installHook("twitter", TWITTER_HOOK);
-if (isCosmos) installHook("cosmos", COSMOS_HOOK);
-if (isInstagram) installHook("instagram", INSTAGRAM_HOOK);
-if (isThreads) installHook("threads", THREADS_HOOK);
+if (isTwitter) {
+  installHook("twitter", TWITTER_HOOK);
+}
+if (isCosmos) {
+  installHook("cosmos", COSMOS_HOOK);
+}
+if (isInstagram) {
+  installHook("instagram", INSTAGRAM_HOOK);
+}
+if (isThreads) {
+  installHook("threads", THREADS_HOOK);
+}

@@ -1,6 +1,6 @@
 import { lstat, rm } from "node:fs/promises";
 import { join } from "node:path";
-import type { NewSave, Save, SyncAction, Tag } from "@pond/schema/db";
+import type { NewSave, SyncAction, Tag } from "@pond/schema/db";
 import {
   deletedSourceIds,
   folders as foldersTable,
@@ -49,8 +49,12 @@ interface ExecuteOptions {
 type TagRow = Tag;
 
 function dataForSyncAction(tx: Transaction): SyncActionPayload {
-  if ("data" in tx) return tx.data;
-  if ("patch" in tx) return tx.patch;
+  if ("data" in tx) {
+    return tx.data;
+  }
+  if ("patch" in tx) {
+    return tx.patch;
+  }
   switch (tx.kind) {
     case "trash":
       return { deletedAt: new Date() };
@@ -110,8 +114,8 @@ const mutationQueue = createMutationQueue();
 const blockedLibraries = new Map<string, Error>();
 
 export interface TrashIngestChange {
-  trashedIds: readonly string[];
-  restoredIds: readonly string[];
+  trashedIds: ReadonlyArray<string>;
+  restoredIds: ReadonlyArray<string>;
 }
 
 type TrashIngestHandler = (change: TrashIngestChange) => Promise<void>;
@@ -123,20 +127,28 @@ export function registerTrashIngestHandler(handler: TrashIngestHandler): void {
 }
 
 function trashIngestChange(
-  transactions: readonly Transaction[],
+  transactions: ReadonlyArray<Transaction>,
 ): TrashIngestChange | null {
   const kindById = new Map<string, "trash" | "untrash">();
   for (const tx of transactions) {
-    if (tx.model !== "save") continue;
-    if (tx.kind === "trash" || tx.kind === "untrash")
+    if (tx.model !== "save") {
+      continue;
+    }
+    if (tx.kind === "trash" || tx.kind === "untrash") {
       kindById.set(tx.id, tx.kind);
+    }
   }
-  if (kindById.size === 0) return null;
-  const trashedIds: string[] = [];
-  const restoredIds: string[] = [];
+  if (kindById.size === 0) {
+    return null;
+  }
+  const trashedIds: Array<string> = [];
+  const restoredIds: Array<string> = [];
   for (const [id, kind] of kindById) {
-    if (kind === "trash") trashedIds.push(id);
-    else restoredIds.push(id);
+    if (kind === "trash") {
+      trashedIds.push(id);
+    } else {
+      restoredIds.push(id);
+    }
   }
   return { trashedIds, restoredIds };
 }
@@ -144,7 +156,9 @@ function trashIngestChange(
 export function withMutationScope<T>(operation: () => Promise<T>): Promise<T> {
   return mutationQueue.run(async () => {
     const blocked = blockedLibraries.get(libraryRoot());
-    if (blocked) throw blocked;
+    if (blocked) {
+      throw blocked;
+    }
     return operation();
   });
 }
@@ -161,25 +175,31 @@ export async function executeTransaction(
   opts: ExecuteOptions = {},
 ): Promise<SyncAction> {
   const [action] = await executeBatch([tx], opts);
-  if (!action) throw new Error("The transaction produced no sync action.");
+  if (!action) {
+    throw new Error("The transaction produced no sync action.");
+  }
   return action;
 }
 
 export function executeBatch(
-  txs: Transaction[],
+  txs: Array<Transaction>,
   opts: ExecuteOptions = {},
-): Promise<SyncAction[]> {
+): Promise<Array<SyncAction>> {
   return withMutationScope(() => executeSerializedBatch(txs, opts));
 }
 
 async function executeSerializedBatch(
-  txs: Transaction[],
+  txs: Array<Transaction>,
   opts: ExecuteOptions = {},
-): Promise<SyncAction[]> {
-  if (txs.length === 0) return [];
+): Promise<Array<SyncAction>> {
+  if (txs.length === 0) {
+    return [];
+  }
   const root = libraryRoot();
   const blocked = blockedLibraries.get(root);
-  if (blocked) throw blocked;
+  if (blocked) {
+    throw blocked;
+  }
   const batchId = ulid();
   const db = await getDb();
   const raw = db.$raw;
@@ -194,8 +214,9 @@ async function executeSerializedBatch(
     batchId,
     transactions: withBatch,
     async applyDisk(transaction) {
-      if (libraryRoot() !== root)
+      if (libraryRoot() !== root) {
         throw new Error("The active library changed during a write.");
+      }
       await applyToDisk(transaction);
     },
     afterCleanup: () => {
@@ -207,7 +228,7 @@ async function executeSerializedBatch(
       log.warn("[pond executor] journal cleanup deferred", error),
     commitIndex: () =>
       raw.transaction(() => {
-        const out: SyncAction[] = [];
+        const out: Array<SyncAction> = [];
         for (const tx of withBatch) {
           applyToIndex(db, tx);
           const inserted = db
@@ -224,26 +245,33 @@ async function executeSerializedBatch(
             })
             .returning()
             .all()[0];
-          if (!inserted) throw new Error("sync_actions insert returned no row");
+          if (!inserted) {
+            throw new Error("sync_actions insert returned no row");
+          }
           out.push(inserted);
         }
         if (
           withBatch.some(
             (tx) => tx.model === "folder" || tx.model === "saved_view",
           )
-        )
+        ) {
           writeOrganizationBundle(db, libraryRoot());
+        }
         raw
           .prepare("INSERT INTO mutation_commits (batch_id) VALUES (?)")
           .run(batchId);
         return out;
       })(),
-  }).catch((error) => {
-    if (error instanceof BatchRecoveryError) blockedLibraries.set(root, error);
-    throw error;
+  }).catch((cause: unknown) => {
+    if (cause instanceof BatchRecoveryError) {
+      blockedLibraries.set(root, cause);
+    }
+    throw cause;
   });
 
-  if (withBatch.some((tx) => isTagModel(tx.model))) scheduleTagsDump();
+  if (withBatch.some((tx) => isTagModel(tx.model))) {
+    scheduleTagsDump();
+  }
 
   writesSinceTrim += actions.length;
   if (writesSinceTrim >= 500) {
@@ -256,19 +284,23 @@ async function executeSerializedBatch(
            )`,
         )
         .run(SYNC_ACTIONS_RING);
-    } catch (err) {
-      log.warn("[pond executor] sync_actions trim failed", err);
+    } catch (error) {
+      log.warn("[pond executor] sync_actions trim failed", error);
     }
   }
 
   if (!opts.silent) {
     for (let i = 0; i < actions.length; i += 1) {
       const action = actions[i];
-      if (action && !withBatch[i]?.meta?.silent) broadcastSyncAction(action);
+      if (action && !withBatch[i]?.meta?.silent) {
+        broadcastSyncAction(action);
+      }
     }
   }
   const ingestChange = trashIngestChange(withBatch);
-  if (ingestChange && onTrashIngest) await onTrashIngest(ingestChange);
+  if (ingestChange && onTrashIngest) {
+    await onTrashIngest(ingestChange);
+  }
   return actions;
 }
 
@@ -277,11 +309,12 @@ async function applyToDisk(tx: Transaction): Promise<void> {
     await writeFolderMemberships(tx.id, tx.patch.folderIds);
     return;
   }
-  if (tx.model !== "save") return;
+  if (tx.model !== "save") {
+    return;
+  }
   switch (tx.kind) {
     case "create": {
-      /** SAFETY: a create carries the full row; `NewSave` differs only in DB-defaulted columns `writeSaveFiles` never reads. */
-      await writeSaveFiles(tx.id, tx.data as Save, tx.files ?? []);
+      await writeSaveFiles(tx.id, tx.data, tx.files ?? []);
       return;
     }
     case "update": {
@@ -290,32 +323,37 @@ async function applyToDisk(tx: Transaction): Promise<void> {
         const destination = joinSaveFile(tx.id, file.to);
         const destinationExists = await lstat(destination).then(
           () => true,
-          (error: NodeJS.ErrnoException) => {
+          (cause: unknown) => {
             if (
-              error instanceof Error &&
-              "code" in error &&
-              error.code === "ENOENT"
-            )
+              cause instanceof Error &&
+              "code" in cause &&
+              cause.code === "ENOENT"
+            ) {
               return false;
-            throw error;
+            }
+            throw cause;
           },
         );
         const caseOnlyRename =
           process.platform === "win32" && isSamePath(source, destination);
-        if (destinationExists && !caseOnlyRename)
+        if (destinationExists && !caseOnlyRename) {
           throw new Error(`A file named ${file.to} already exists.`);
+        }
         await renameWithRetry(source, destination);
       }
-      for (const file of tx.fileMoves ?? [])
+      for (const file of tx.fileMoves ?? []) {
         await moveIntoSave(file.sourcePath, joinSaveFile(tx.id, file.filename));
+      }
       /** SAFETY: `Partial<NewSave>` and `Partial<Save>` differ only in timestamp nullability, which `patchSaveFiles` writes back unchanged. */
       const patched = await patchSaveFiles(
         tx.id,
-        (tx.patch ?? {}) as Partial<Save>,
+        tx.patch ?? {},
         tx.files ?? [],
       );
       if (patched) {
-        if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
+        if (tx.titleLock) {
+          setUserTitleLock(tx.id, tx.titleLock.after);
+        }
         return;
       }
 
@@ -338,20 +376,24 @@ async function applyToDisk(tx: Transaction): Promise<void> {
         current.files.length === 0 &&
         canPersistBeforeMaterialization(tx.patch)
       ) {
-        if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
+        if (tx.titleLock) {
+          setUserTitleLock(tx.id, tx.titleLock.after);
+        }
         return;
       }
 
       if (tx.files && tx.files.length > 0) {
         /** SAFETY: `current` is a full row from the DB; the patch only narrows its columns. */
-        const merged = { ...current, ...tx.patch } as Save;
+        const merged = { ...current, ...tx.patch };
         log.info(
           "[pond executor] healing orphan: rebuilding items dir",
           tx.id,
           tx.files.map((f) => f.filename),
         );
         await writeSaveFiles(tx.id, merged, tx.files);
-        if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
+        if (tx.titleLock) {
+          setUserTitleLock(tx.id, tx.titleLock.after);
+        }
         return;
       }
       throw new Error(
@@ -380,8 +422,11 @@ async function moveIntoSave(
     await renameWithRetry(source, destination);
     return;
   } catch (error) {
-    if (!(error instanceof Error && "code" in error && error.code === "EXDEV"))
+    if (
+      !(error instanceof Error && "code" in error && error.code === "EXDEV")
+    ) {
       throw error;
+    }
   }
   const staged = `${destination}.pond-move`;
   try {
@@ -401,8 +446,9 @@ function joinSaveFile(id: string, filename: string): string {
     filename.includes("\\") ||
     filename === "." ||
     filename === ".."
-  )
+  ) {
     throw new Error("Invalid Save filename.");
+  }
   return join(saveDir(id), filename);
 }
 
@@ -421,8 +467,9 @@ function applyToIndex(
     if (
       JSON.stringify(current) !==
       JSON.stringify([...new Set(tx.before.folderIds)].sort())
-    )
+    ) {
       throw new Error("Folder membership changed. Review the operation again.");
+    }
     replaceFolderMemberships(db, tx.id, tx.patch.folderIds);
     return;
   }
@@ -445,13 +492,18 @@ function applyToIndex(
           .from(savesTable)
           .where(eq(savesTable.id, tx.id))
           .get();
-        if (!current) throw new Error("The Save no longer exists.");
+        if (!current) {
+          throw new Error("The Save no longer exists.");
+        }
         const entries = Object.entries(current);
         for (const [key, expected] of Object.entries(tx.before)) {
-          if (expected === undefined) continue;
+          if (expected === undefined) {
+            continue;
+          }
           const actual = entries.find(([field]) => field === key)?.[1];
-          if (JSON.stringify(actual) !== JSON.stringify(expected))
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
             throw new Error("The Save changed. Review the operation again.");
+          }
         }
         db.update(savesTable)
           .set(withRawSlim(tx.patch))
@@ -588,10 +640,10 @@ export function broadcastSyncAction(action: SyncAction): void {
   for (const fn of syncActionListeners) {
     try {
       fn(action);
-    } catch (err) {
-      log.warn("[pond executor] sync listener threw", err);
+    } catch (error) {
+      log.warn("[pond executor] sync listener threw", error);
     }
   }
 }
 
-void ((): TagRow[] => []);
+void ((): Array<TagRow> => []);

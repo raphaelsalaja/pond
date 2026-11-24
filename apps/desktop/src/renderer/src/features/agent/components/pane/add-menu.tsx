@@ -7,7 +7,7 @@ import { notify } from "@/shared/lib/toast";
 
 interface AddMenuProps {
   disabled?: boolean;
-  onAttach: (files: AssistantFileAttachment[]) => void | Promise<void>;
+  onAttach: (files: Array<AssistantFileAttachment>) => void | Promise<void>;
   onAddSaves: () => void;
 }
 
@@ -23,8 +23,12 @@ export function AddMenu({
     setBusy(true);
     try {
       const picked = await window.pond.query("agent.pickAttachments", {});
-      if (!picked.ok) throw new Error(picked.error);
-      if (picked.files.length === 0) return;
+      if (!picked.ok) {
+        throw new Error(picked.error);
+      }
+      if (picked.files.length === 0) {
+        return;
+      }
       await onAttach(picked.files);
     } catch (error) {
       notify({
@@ -40,7 +44,9 @@ export function AddMenu({
   return (
     <Menu.Root
       onOpenChange={(open) => {
-        if (open) chose.current = false;
+        if (open) {
+          chose.current = false;
+        }
       }}
     >
       <Tooltip label="Add" side="top">

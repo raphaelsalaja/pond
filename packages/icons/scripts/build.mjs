@@ -20,7 +20,7 @@ import {
 } from "./manifest.mjs";
 
 const check = process.argv.includes("--check");
-/** Skips index.ts so the manifest can be checked without Biome. */
+/** Skips index.ts so the manifest can be checked without oxfmt. */
 const reportOnly = process.argv.includes("--report");
 const command = "pnpm --filter @pond/icons generate";
 
@@ -28,7 +28,7 @@ const ROOT = /^<svg\b([^>]*\bviewBox="0 0 18 18"[^>]*)>([\s\S]*)<\/svg>\s*$/;
 const ELEMENT = /<(path|circle|rect)\s([^>]*?)\/>/g;
 const ATTRIBUTE = /([\w-]+)="([^"]*)"/g;
 
-const camel = (name) => name.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+const camel = (name) => name.replaceAll(/-(\w)/g, (_, c) => c.toUpperCase());
 const pascal = (file) =>
   file
     .split("-")
@@ -38,7 +38,9 @@ const pascal = (file) =>
 function parse(path) {
   const svg = readFileSync(path, "utf8");
   const match = ROOT.exec(svg);
-  if (!match) throw new Error(`${path}: expected an 18×18 <svg>.`);
+  if (!match) {
+    throw new Error(`${path}: expected an 18×18 <svg>.`);
+  }
   const [, root, body] = match;
   const nodes = [...body.matchAll(ELEMENT)].map(([, tag, attrs]) => [
     tag,
@@ -49,8 +51,10 @@ function parse(path) {
       ]),
     ),
   ]);
-  const rest = body.replace(ELEMENT, "").trim();
-  if (rest) throw new Error(`${path}: unsupported markup ${rest.slice(0, 40)}`);
+  const rest = body.replaceAll(ELEMENT, "").trim();
+  if (rest) {
+    throw new Error(`${path}: unsupported markup ${rest.slice(0, 40)}`);
+  }
   const style = nodes.some(([, attrs]) => attrs.className === "bg")
     ? "duo"
     : /\bfill="currentColor"/.test(root)
@@ -62,7 +66,9 @@ function parse(path) {
 
 /** Ink past the 0–18 frame, counting half the stroke on outline drawings. */
 function overflow({ style, nodes, visible }) {
-  if (visible) return 0;
+  if (visible) {
+    return 0;
+  }
   const half = style === "outline" ? 0.625 : 0;
   let past = 0;
   for (const [tag, attrs] of nodes) {
@@ -126,13 +132,17 @@ function glyphs(manifest, miss) {
     }
   }
   for (const folder of readdirSync(dir, { withFileTypes: true })) {
-    if (!folder.isDirectory()) continue;
+    if (!folder.isDirectory()) {
+      continue;
+    }
     if (!manifest[folder.name]) {
       miss(`svg/${folder.name}`, "manifest-missing", "no manifest entry");
       continue;
     }
     for (const file of readdirSync(resolve(dir, folder.name))) {
-      if (!file.endsWith(".svg")) continue;
+      if (!file.endsWith(".svg")) {
+        continue;
+      }
       if (!listed.has(`${folder.name}/${file}`)) {
         miss(
           `svg/${folder.name}/${file}`,
@@ -169,7 +179,9 @@ function imported() {
           .trim()
           .replace(/^type\s+/, "")
           .split(/\s+as\s+/)[0];
-        if (name) names.add(name);
+        if (name) {
+          names.add(name);
+        }
       }
     }
   }
@@ -177,7 +189,9 @@ function imported() {
 }
 
 function parts(dir) {
-  if (!existsSync(dir)) return new Map();
+  if (!existsSync(dir)) {
+    return new Map();
+  }
   return new Map(
     readdirSync(dir)
       .filter((file) => file.endsWith(".svg"))
@@ -189,7 +203,9 @@ function parts(dir) {
 /** Checks each Neutral drawing in a staged tree against the parts it names. A Duo file draws only its badges and slash as lines. */
 function stagedMisses(root, label) {
   const path = resolve(root, "manifest.json");
-  if (!existsSync(path)) return [];
+  if (!existsSync(path)) {
+    return [];
+  }
   const misses = [];
   for (const [name, entry] of Object.entries(
     JSON.parse(readFileSync(path, "utf8")),
@@ -200,7 +216,9 @@ function stagedMisses(root, label) {
       ["duo-18.svg", names.filter(cuts)],
     ]) {
       const drawing = resolve(root, name, file);
-      if (!existsSync(drawing) || used.length === 0) continue;
+      if (!existsSync(drawing) || used.length === 0) {
+        continue;
+      }
       misses.push(
         ...partMisses(
           `${label}/${name}/${file}`,
@@ -244,8 +262,9 @@ const staged = [
   ...stagedMisses(seedRoot, "seed"),
   ...stagedMisses(nextRoot, "next"),
 ];
-if (staged.length > 0)
+if (staged.length > 0) {
   console.warn(`${staged.length} drifts in the seed/ and next/ drafts.`);
+}
 const reportPath = resolve(packageRoot, "REPORT.md");
 if (misses.length > 0) {
   writeFileSync(reportPath, report(misses));
@@ -280,14 +299,22 @@ emit(
   { check, command },
 );
 
-if (!check) writeLab();
+if (!check) {
+  writeLab();
+}
+
+function readJson(path) {
+  return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : {};
+}
 
 /** The lab page opens from disk, where it can't fetch, so its data is a classic script. */
 function writeLab() {
   const svgs = {};
   for (const [name, entry] of Object.entries(manifest)) {
     for (const variant of entry.variants) {
-      if (variant.size !== 18) continue;
+      if (variant.size !== 18) {
+        continue;
+      }
       const key = [name, variant.style === "duo" && "duo", variant.state]
         .filter(Boolean)
         .join("-");
@@ -306,7 +333,9 @@ function writeLab() {
       const path = resolve(seedRoot, name, file);
       return existsSync(path) ? readFileSync(path, "utf8") : null;
     };
-    if (!read("outline-18.svg")) continue;
+    if (!read("outline-18.svg")) {
+      continue;
+    }
     seed[name] = { outline: read("outline-18.svg"), duo: read("duo-18.svg") };
   }
   const staged = {};
@@ -322,10 +351,10 @@ function writeLab() {
       duoOpen: read("duo-18-open.svg"),
       fill: read("fill-18.svg"),
     };
-    if (files.outline || files.fill) staged[name] = files;
+    if (files.outline || files.fill) {
+      staged[name] = files;
+    }
   }
-  const readJson = (path) =>
-    existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : {};
   const data = {
     manifest,
     migration,

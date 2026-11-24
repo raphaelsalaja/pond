@@ -31,18 +31,24 @@ export async function setMediaEmbedding(
   });
 }
 
-export function clearMediaEmbeddings(ids?: readonly string[]): number {
+export function clearMediaEmbeddings(ids?: ReadonlyArray<string>): number {
   if (ids && ids.length > 0) {
     let count = 0;
     store.setState((state) => {
       const byId = new Map(state.byId);
-      for (const id of ids) if (byId.delete(id)) count++;
+      for (const id of ids) {
+        if (byId.delete(id)) {
+          count++;
+        }
+      }
       return count === 0 ? state : { byId, version: state.version + 1 };
     });
     return count;
   }
   const count = store.state.byId.size;
-  if (count === 0) return 0;
+  if (count === 0) {
+    return 0;
+  }
   store.setState((state) => ({
     byId: new Map(),
     version: state.version + 1,

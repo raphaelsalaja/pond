@@ -23,16 +23,23 @@ export function useImageReady(
   );
 
   const markBroken = useCallback(() => {
-    if (!src || settledSrc.current === src) return;
+    if (!src || settledSrc.current === src) {
+      return;
+    }
     settledSrc.current = src;
     onBroken?.();
   }, [onBroken, src]);
 
   useEffect(() => {
     const image = ref.current;
-    if (!image?.complete) return;
-    if (image.naturalWidth > 0) markReady(image);
-    else markBroken();
+    if (!image?.complete) {
+      return;
+    }
+    if (image.naturalWidth > 0) {
+      markReady(image);
+    } else {
+      markBroken();
+    }
   }, [markBroken, markReady]);
 
   return {

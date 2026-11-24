@@ -55,16 +55,20 @@ function sessionGet(partition: string): TumblrGet {
 async function readToken(get: TumblrGet): Promise<string | null> {
   try {
     const res = await get(`${WWW}/`, { accept: "text/html" });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     const html = await res.text();
     const raw =
       /<script[^>]*id="___INITIAL_STATE___"[^>]*>([\s\S]*?)<\/script>/.exec(
         html,
       )?.[1];
-    if (!raw) return null;
+    if (!raw) {
+      return null;
+    }
     return StateSchema.parse(JSON.parse(raw)).apiFetchStore.API_TOKEN;
-  } catch (err) {
-    log.warn("[pond tumblr-api] token read failed", err);
+  } catch (error) {
+    log.warn("[pond tumblr-api] token read failed", error);
     return null;
   }
 }
@@ -82,11 +86,13 @@ async function tumblrJson<T>(
       authorization: `Bearer ${token}`,
       "x-version": "redpop/3/0//redpop/",
     });
-  } catch (err) {
-    log.warn("[pond tumblr-api] fetch threw", path, err);
+  } catch (error) {
+    log.warn("[pond tumblr-api] fetch threw", path, error);
     return { ok: false, status: 0 };
   }
-  if (!res.ok) return { ok: false, status: res.status };
+  if (!res.ok) {
+    return { ok: false, status: res.status };
+  }
   try {
     return { ok: true, json: schema.parse(await res.json()) };
   } catch {
@@ -98,7 +104,9 @@ function failure(status: number): Extract<ListHarvestResult, { ok: false }> {
   if (status === 401 || status === 403) {
     return { ok: false, reason: "auth_required" };
   }
-  if (status === 429) return { ok: false, reason: "rate_limited" };
+  if (status === 429) {
+    return { ok: false, reason: "rate_limited" };
+  }
   return { ok: false, reason: "unknown" };
 }
 
@@ -107,7 +115,9 @@ export async function probeTumblrHandle(
 ): Promise<string | null> {
   const get = sessionGet(partition);
   const token = await readToken(get);
-  if (!token) return null;
+  if (!token) {
+    return null;
+  }
   const info = await tumblrJson(get, token, "/v2/user/info", UserInfoSchema);
   return info.ok ? primaryBlog(info.json.response.user) : null;
 }
@@ -117,14 +127,18 @@ export async function readTumblrLikes(
   get: TumblrGet,
 ): Promise<ListHarvestResult> {
   const token = await readToken(get);
-  if (!token) return { ok: false, reason: "unknown" };
+  if (!token) {
+    return { ok: false, reason: "unknown" };
+  }
   const info = await tumblrJson(get, token, "/v2/user/info", UserInfoSchema);
-  if (!info.ok) return failure(info.status);
+  if (!info.ok) {
+    return failure(info.status);
+  }
 
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   let before = args.resumeCursor;
   let knownPageStreak = 0;
 
@@ -133,7 +147,9 @@ export async function readTumblrLikes(
       limit: String(PAGE_SIZE),
       reblog_info: "true",
     });
-    if (before) query.set("before", before);
+    if (before) {
+      query.set("before", before);
+    }
     const result = await tumblrJson(
       get,
       token,
@@ -141,7 +157,9 @@ export async function readTumblrLikes(
       LikesPageSchema,
     );
     if (!result.ok) {
-      if (page === 0) return failure(result.status);
+      if (page === 0) {
+        return failure(result.status);
+      }
       log.warn("[pond tumblr-api] likes page failed", result.status);
       return partial(entries, before);
     }
@@ -155,7 +173,9 @@ export async function readTumblrLikes(
       ) {
         return { ok: true, entries, reachedEnd: true, seen: entries.length };
       }
-      if (!known.has(post.idString)) fresh += 1;
+      if (!known.has(post.idString)) {
+        fresh += 1;
+      }
       entries.push(postEntry(post));
     }
     if (earlyStop && posts.length > 0 && fresh === 0) {
@@ -179,7 +199,7 @@ export async function readTumblrLikes(
 }
 
 function partial(
-  entries: ListEntry[],
+  entries: Array<ListEntry>,
   before: string | undefined,
 ): ListHarvestResult {
   const result: ListHarvestResult = {
@@ -188,7 +208,9 @@ function partial(
     reachedEnd: false,
     seen: entries.length,
   };
-  if (before) result.resumeCursor = before;
+  if (before) {
+    result.resumeCursor = before;
+  }
   return result;
 }
 
@@ -202,9 +224,13 @@ export async function readTumblrCapture(
   get: TumblrGet,
 ): Promise<TumblrCaptureResult> {
   const blog = blogFromUrl(url);
-  if (!blog) return { ok: false, reason: "not_found" };
+  if (!blog) {
+    return { ok: false, reason: "not_found" };
+  }
   const token = await readToken(get);
-  if (!token) return { ok: false, reason: "error" };
+  if (!token) {
+    return { ok: false, reason: "error" };
+  }
   const result = await tumblrJson(
     get,
     token,
@@ -212,7 +238,9 @@ export async function readTumblrCapture(
     PermalinkSchema,
   );
   if (!result.ok) {
-    if (result.status === 404) return { ok: false, reason: "not_found" };
+    if (result.status === 404) {
+      return { ok: false, reason: "not_found" };
+    }
     if (result.status === 401 || result.status === 403) {
       return { ok: false, reason: "auth_required" };
     }

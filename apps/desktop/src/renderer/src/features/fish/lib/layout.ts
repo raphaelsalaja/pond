@@ -4,15 +4,15 @@ export const PINNED = "pinned";
 export const LOOSE = "loose";
 
 /** Fish ids per shelf: the pinned grid, the loose list, then one per section id. */
-export type FishLayout = Record<string, string[]>;
+export type FishLayout = Record<string, Array<string>>;
 
-export function shelfKeys(sections: readonly FishSection[]): string[] {
+export function shelfKeys(sections: ReadonlyArray<FishSection>): Array<string> {
   return [PINNED, LOOSE, ...sections.map((section) => section.id)];
 }
 
 export function fishLayout(
-  school: readonly Pick<Fish, "id" | "pinned" | "section">[],
-  sections: readonly FishSection[],
+  school: ReadonlyArray<Pick<Fish, "id" | "pinned" | "section">>,
+  sections: ReadonlyArray<FishSection>,
 ): FishLayout {
   const layout: FishLayout = Object.fromEntries(
     shelfKeys(sections).map((key) => [key, []]),
@@ -29,7 +29,9 @@ export function fishLayout(
 }
 
 export function shelfOf(layout: FishLayout, id: string): string | null {
-  if (layout[id]) return id;
+  if (layout[id]) {
+    return id;
+  }
   return Object.keys(layout).find((key) => layout[key]?.includes(id)) ?? null;
 }
 
@@ -52,8 +54,8 @@ export function moveFish(
 
 export function layoutPlacements(
   layout: FishLayout,
-  sections: readonly FishSection[],
-): FishPlacement[] {
+  sections: ReadonlyArray<FishSection>,
+): Array<FishPlacement> {
   return shelfKeys(sections).flatMap((key) =>
     (layout[key] ?? []).map((id) => ({
       id,

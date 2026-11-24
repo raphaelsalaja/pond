@@ -23,7 +23,8 @@ import {
   IconTableDownload,
 } from "@pond/icons";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import type { ReactElement } from "react";
 import {
   addFolderSavesToCanvas,
@@ -45,7 +46,7 @@ export interface FolderMenuActions {
   onNewFolder: () => void;
   onNewSubfolder: () => void;
   onNewSubfolderFromTemplate: () => void;
-  moveItems: MenuItemSpec[];
+  moveItems: Array<MenuItemSpec>;
   onRename: () => void;
   onBatchRename?: () => void;
   onAutoTag: () => void;
@@ -61,14 +62,16 @@ export interface FolderMenuActions {
   onExportPackage: () => void;
   onCopyToLibrary: () => void;
   onCreateCanvas: () => void;
-  canvasItems: MenuItemSpec[];
+  canvasItems: Array<MenuItemSpec>;
   onCopyLink?: () => void;
   onToggleSubfolders: (next: boolean) => void;
   onCustomize: () => void;
   onRemove: () => void;
 }
 
-export function buildFolderMenuItems(a: FolderMenuActions): MenuItemSpec[] {
+export function buildFolderMenuItems(
+  a: FolderMenuActions,
+): Array<MenuItemSpec> {
   return [
     {
       label: "New Folder",
@@ -255,13 +258,13 @@ export function folderIdsForExport(
   folderId: string,
   folders: ReadonlyArray<{ id: string; parentId: string | null }>,
   includeSubfolders: boolean,
-): string[] {
+): Array<string> {
   return includeSubfolders
     ? descendantFolderIds(folderId, folders)
     : [folderId];
 }
 
-async function folderSaveIds(folderIds: string[]): Promise<string[]> {
+async function folderSaveIds(folderIds: Array<string>): Promise<Array<string>> {
   const result = await window.pond.query("saves.queryIds", {
     query: EMPTY_QUERY,
     scope: { folderIds },
@@ -270,8 +273,8 @@ async function folderSaveIds(folderIds: string[]): Promise<string[]> {
 }
 
 async function withFolderSaves(
-  folderIds: string[],
-  run: (ids: string[]) => Promise<void>,
+  folderIds: Array<string>,
+  run: (ids: Array<string>) => Promise<void>,
 ): Promise<void> {
   const ids = await folderSaveIds(folderIds);
   if (!ids.length) {
@@ -285,7 +288,7 @@ async function withFolderSaves(
 }
 
 export async function exportFolderFiles(
-  folderIds: string[],
+  folderIds: Array<string>,
   options: { zip?: boolean } = {},
 ): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
@@ -293,53 +296,63 @@ export async function exportFolderFiles(
       ...options,
       fromFolders: true,
     });
-    if (!result.ok) notify({ id: "folder-export", title: result.message });
+    if (!result.ok) {
+      notify({ id: "folder-export", title: result.message });
+    }
   });
 }
 
-export async function exportFolderCsv(folderIds: string[]): Promise<void> {
+export async function exportFolderCsv(folderIds: Array<string>): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
     const result = await exportSelectionCsv(ids);
-    if (!result.ok) notify({ id: "folder-export", title: result.message });
+    if (!result.ok) {
+      notify({ id: "folder-export", title: result.message });
+    }
   });
 }
 
-export async function exportFolderPackage(folderIds: string[]): Promise<void> {
+export async function exportFolderPackage(
+  folderIds: Array<string>,
+): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
     const result = await window.pond.query("saves.exportPackage", { ids });
-    if (!result.ok && result.reason !== "cancelled")
+    if (!result.ok && result.reason !== "cancelled") {
       notify({
         id: "folder-export",
         title: result.error || "Couldn't export package.",
       });
-    else if (result.ok)
+    } else if (result.ok) {
       notify({ id: "folder-export", title: "Pond package exported" });
+    }
   });
 }
 
 export async function exportFolderEaglePackage(
-  folderIds: string[],
+  folderIds: Array<string>,
 ): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
     const result = await window.pond.query("saves.exportEaglePackage", { ids });
-    if (!result.ok && result.reason !== "cancelled")
+    if (!result.ok && result.reason !== "cancelled") {
       notify({
         id: "folder-export",
         title: result.error || "Couldn't export Eagle package.",
       });
-    else if (result.ok)
+    } else if (result.ok) {
       notify({ id: "folder-export", title: "Eagle package exported" });
+    }
   });
 }
 
 export async function createCanvasFromFolderSaves(
   name: string,
-  folderIds: string[],
+  folderIds: Array<string>,
 ): Promise<void> {
   await withFolderSaves(folderIds, (ids) => createCanvasFromFolder(name, ids));
 }
 
-export function buildFolderCanvasItems(folderIds: string[]): MenuItemSpec[] {
+export function buildFolderCanvasItems(
+  folderIds: Array<string>,
+): Array<MenuItemSpec> {
   return canvases.snapshot().map((canvas) => ({
     label: canvas.name,
     icon: <IconCanvas />,
@@ -350,21 +363,24 @@ export function buildFolderCanvasItems(folderIds: string[]): MenuItemSpec[] {
   }));
 }
 
-export async function copyFolderToLibrary(folderIds: string[]): Promise<void> {
+export async function copyFolderToLibrary(
+  folderIds: Array<string>,
+): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
     try {
       const result = await window.pond.query("saves.copyToLibrary", { ids });
-      if (result.ok)
+      if (result.ok) {
         notify({
           id: "folder-copy",
           title: "Saves copied to library",
           description: `${result.imported ?? 0} copied, ${result.skipped ?? 0} already in this library.`,
         });
-      else if (result.reason !== "cancelled")
+      } else if (result.reason !== "cancelled") {
         notify({
           id: "folder-copy",
           title: result.error || "Couldn't copy Saves.",
         });
+      }
     } catch {
       notify({ id: "folder-copy", title: "Couldn't copy Saves." });
     }
@@ -397,7 +413,7 @@ export function confirmRemoveFolder(input: {
 }
 
 interface FolderContextMenuProps {
-  buildItems: () => MenuItemSpec[];
+  buildItems: () => Array<MenuItemSpec>;
   children: ReactElement;
 }
 

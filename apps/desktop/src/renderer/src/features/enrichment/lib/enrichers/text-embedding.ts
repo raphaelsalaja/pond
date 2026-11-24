@@ -13,13 +13,19 @@ export const textEmbeddingEnricher: Enricher = {
   dependsOn: ["caption", "ocr", "transcript"],
   enabled: () => getPrefsSnapshot()?.ai?.semanticSearch === true,
   eligible(save: Save) {
-    if (save.status !== "complete" || save.deletedAt != null) return false;
-    if (!save.title?.trim() && !saveEmbeddingText(save)) return false;
+    if (save.status !== "complete" || save.deletedAt !== null) {
+      return false;
+    }
+    if (!save.title?.trim() && !saveEmbeddingText(save)) {
+      return false;
+    }
     return save.embeddingModel !== embedModelVersion();
   },
   async run(save: Save) {
     const text = saveEmbeddingText(save);
-    if (!save.title?.trim() && !text) return null;
+    if (!save.title?.trim() && !text) {
+      return null;
+    }
     const vec = await embedDocument(save.title, text);
     const model = embedModelVersion();
     setEmbedding(save.id, vec, model);

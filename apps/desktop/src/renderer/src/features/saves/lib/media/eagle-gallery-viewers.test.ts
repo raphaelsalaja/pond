@@ -1,10 +1,8 @@
 import { EAGLE_DETAIL_VIEW_EXTENSIONS } from "@shared/eagle-detail-view-formats";
 import { describe, expect, it } from "vitest";
 import type { Save, SaveFile } from "@/features/saves/types";
-import {
-  type ViewerCapability,
-  viewerCapabilityFor,
-} from "./viewer-capability";
+import { viewerCapabilityFor } from "./viewer-capability";
+import type { ViewerCapability } from "./viewer-capability";
 import { buildViewerItems } from "./viewer-item";
 
 const TERMINAL_PROVIDER_BY_SURFACE = {
@@ -55,7 +53,9 @@ describe("Eagle Format Gallery viewers", () => {
     (extension, surface, source) => {
       const capability = viewerCapabilityFor(file(extension));
       expect(capability).toMatchObject({ surface });
-      if (source) expect(capability).toMatchObject({ source });
+      if (source) {
+        expect(capability).toMatchObject({ source });
+      }
     },
   );
 

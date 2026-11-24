@@ -262,11 +262,11 @@ export const SOURCE_DESCRIPTORS = [
     /** Read the complete date window. The stream has no order or cursor guarantee. */
     sync: { strategy: "full" },
   },
-] as const satisfies readonly SourceDescriptor[];
+] as const satisfies ReadonlyArray<SourceDescriptor>;
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];
 
-export const EXTERNAL_SOURCE_IDS: readonly ExternalSource[] =
+export const EXTERNAL_SOURCE_IDS: ReadonlyArray<ExternalSource> =
   SOURCE_DESCRIPTORS.map((d) => d.id);
 
 const BY_ID = new Map<string, SourceDescriptor>(
@@ -275,14 +275,18 @@ const BY_ID = new Map<string, SourceDescriptor>(
 
 export function descriptorFor(id: ExternalSource): SourceDescriptor {
   const descriptor = BY_ID.get(id);
-  if (!descriptor) throw new Error(`no source descriptor for "${id}"`);
+  if (!descriptor) {
+    throw new Error(`no source descriptor for "${id}"`);
+  }
   return descriptor;
 }
 
 export function syncConfigFor(id: string): SourceSyncConfig {
   const descriptor = BY_ID.get(id);
   const override = descriptor?.sync;
-  if (!override) return NO_SYNC;
+  if (!override) {
+    return NO_SYNC;
+  }
   return {
     strategy: override.strategy ?? NO_SYNC.strategy,
     rate: { ...DEFAULT_RATE_PROFILE, ...override.rate },

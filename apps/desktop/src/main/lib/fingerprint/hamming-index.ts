@@ -2,7 +2,7 @@ import { popcount32 } from "./bits";
 
 const CHUNKS = 4;
 const CHUNK_BITS = 16;
-const LOW_32 = 0xffffffffn;
+const LOW_32 = 0xff_ff_ff_ffn;
 
 interface Entry<T> {
   low: number;
@@ -16,26 +16,29 @@ function halves(hash: bigint) {
 
 function chunkOf(low: number, high: number, chunk: number): number {
   const word = chunk < 2 ? low : high;
-  return (chunk % 2 === 0 ? word : word >>> CHUNK_BITS) & 0xffff;
+  return (chunk % 2 === 0 ? word : word >>> CHUNK_BITS) & 0xff_ff;
 }
 
-function nearbyKeys(key: number, flips: number, from = 0): number[] {
-  if (flips === 0) return [key];
+function nearbyKeys(key: number, flips: number, from = 0): Array<number> {
+  if (flips === 0) {
+    return [key];
+  }
   const keys = [key];
-  for (let bit = from; bit < CHUNK_BITS; bit++)
+  for (let bit = from; bit < CHUNK_BITS; bit++) {
     keys.push(...nearbyKeys(key ^ (1 << bit), flips - 1, bit + 1));
+  }
   return keys;
 }
 
 /** Hashes within `radius` bits differ by at most `radius / 4` bits in one of four 16-bit chunks, so a search only compares hashes near in some chunk. */
 export class HammingIndex<T> {
-  readonly #buckets: Array<Map<number, number[]>> = Array.from(
+  readonly #buckets: Array<Map<number, Array<number>>> = Array.from(
     { length: CHUNKS },
-    () => new Map(),
+    () => new Map<number, Array<number>>(),
   );
   /** Hashes are kept as 32-bit halves because bigint math dominates the scan of a large Library. */
   readonly #entries: Array<Entry<T>> = [];
-  readonly #seen: number[] = [];
+  readonly #seen: Array<number> = [];
   #searches = 0;
 
   add(hash: bigint, value: T): void {
@@ -46,8 +49,11 @@ export class HammingIndex<T> {
     for (const [chunk, bucket] of this.#buckets.entries()) {
       const key = chunkOf(low, high, chunk);
       const ids = bucket.get(key);
-      if (ids) ids.push(id);
-      else bucket.set(key, [id]);
+      if (ids) {
+        ids.push(id);
+      } else {
+        bucket.set(key, [id]);
+      }
     }
   }
 
@@ -61,11 +67,15 @@ export class HammingIndex<T> {
       for (const key of nearbyKeys(chunkOf(low, high, chunk), flips)) {
         for (const id of bucket.get(key) ?? []) {
           const entry = this.#entries[id];
-          if (!entry || this.#seen[id] === stamp) continue;
+          if (!entry || this.#seen[id] === stamp) {
+            continue;
+          }
           this.#seen[id] = stamp;
           const distance =
             popcount32(entry.low ^ low) + popcount32(entry.high ^ high);
-          if (distance <= radius) found.push({ value: entry.value, distance });
+          if (distance <= radius) {
+            found.push({ value: entry.value, distance });
+          }
         }
       }
     }

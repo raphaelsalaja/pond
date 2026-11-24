@@ -4,10 +4,9 @@ import {
   TreeItemIndicator,
   TreeItemLabel,
   TreeItem as TreeItemPart,
-  type TreeMode,
   Tree as TreeRoot,
-  type TreeProps as TreeRootProps,
 } from "@ui-sdk/react/tree";
+import type { TreeMode, TreeProps as TreeRootProps } from "@ui-sdk/react/tree";
 import { clsx as cn } from "clsx";
 import type { ComponentProps } from "react";
 import styles from "./styles.module.css";
@@ -17,11 +16,17 @@ type StateClassName<State> =
   | ((state: State) => string | undefined)
   | undefined;
 
+function isClassCallback<State>(
+  className: StateClassName<State>,
+): className is (state: State) => string | undefined {
+  return typeof className === "function";
+}
+
 function withClass<State>(
   base: string | undefined,
   className: StateClassName<State>,
 ) {
-  return className instanceof Function
+  return isClassCallback(className)
     ? (state: State) => cn(base, className(state))
     : cn(base, className);
 }

@@ -23,7 +23,9 @@ export function bend([a, b, c], radius, w) {
   const la = len(sub(a, b));
   const lc = len(sub(c, b));
   let r = Math.min(radius, Math.min(la, lc) / 4);
-  if (angle < Math.PI / 3) r /= 2;
+  if (angle < Math.PI / 3) {
+    r /= 2;
+  }
   const t = Math.min(r / Math.tan(angle / 2), la / 2, lc / 2);
   r = t * Math.tan(angle / 2);
   const from = add(b, mul(u, t));

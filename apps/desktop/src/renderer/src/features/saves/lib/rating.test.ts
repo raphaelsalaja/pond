@@ -5,7 +5,9 @@ import { normalise, SavePatchSchema } from "./reconcile";
 
 function seed(id: string, rating: number | null) {
   const save = normalise(SavePatchSchema.parse({ id, title: id, rating }));
-  if (!save) throw new Error("Invalid fixture");
+  if (!save) {
+    throw new Error("Invalid fixture");
+  }
   pool.upsert(save);
 }
 afterEach(() => {

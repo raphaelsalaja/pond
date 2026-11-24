@@ -4,10 +4,8 @@ import { join } from "node:path";
 import type { NewSave } from "@pond/schema/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ManualSaveInput } from "./manual-import";
-import {
-  importMymindExport,
-  type MymindImportDependencies,
-} from "./mymind-import";
+import { importMymindExport } from "./mymind-import";
+import type { MymindImportDependencies } from "./mymind-import";
 
 let root = "";
 let exportDirectory = "";
@@ -44,7 +42,9 @@ interface ImportFixture {
 }
 
 function csvCell(value: string): string {
-  if (/[",\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  if (/[",\r\n]/.test(value)) {
+    return `"${value.replaceAll('"', '""')}"`;
+  }
   return value;
 }
 
@@ -57,14 +57,17 @@ function createImportFixture(): ImportFixture {
     dependencies: {
       async createSave(input) {
         const sourceId = input.sourceId ?? `generated:${saves.size}`;
-        if (saves.has(sourceId))
+        if (saves.has(sourceId)) {
           return { ok: true, id: sourceId, skipped: true };
+        }
         saves.set(sourceId, input);
         return { ok: true, id: sourceId };
       },
       async enqueueLink(url) {
         const current = links.get(url);
-        if (current) return { id: current.id, created: false };
+        if (current) {
+          return { id: current.id, created: false };
+        }
         const id = `link:${links.size}`;
         links.set(url, { id, metadata: {} });
         return { id, created: true };
@@ -73,7 +76,9 @@ function createImportFixture(): ImportFixture {
         const link = [...links.values()].find(
           (candidate) => candidate.id === id,
         );
-        if (!link) return false;
+        if (!link) {
+          return false;
+        }
         Object.assign(link.metadata, patch);
         return true;
       },
@@ -81,7 +86,9 @@ function createImportFixture(): ImportFixture {
         const link = [...links.values()].find(
           (candidate) => candidate.id === id,
         );
-        if (!link) return { ok: false, error: "Save not found." };
+        if (!link) {
+          return { ok: false, error: "Save not found." };
+        }
         link.metadata.tags = tags;
         return { ok: true };
       },
@@ -116,7 +123,9 @@ describe("importMymindExport", () => {
       join(exportDirectory, "clip.webm"),
     ]);
 
-    if (!link) throw new Error("Expected the link fixture to exist.");
+    if (!link) {
+      throw new Error("Expected the link fixture to exist.");
+    }
     link.metadata = { notes: "Edited in Pond", tags: ["pond-only"] };
     const second = await importMymindExport(
       exportDirectory,
@@ -143,8 +152,9 @@ describe("importMymindExport", () => {
     );
     const fixture = createImportFixture();
     fixture.dependencies.createSave = async (input) => {
-      if (!input.title && !input.note && !input.filePaths?.length)
+      if (!input.title && !input.note && !input.filePaths?.length) {
         return { ok: false, error: "empty Save" };
+      }
       fixture.saves.set(input.sourceId ?? "", input);
       return { ok: true, id: input.sourceId ?? "" };
     };

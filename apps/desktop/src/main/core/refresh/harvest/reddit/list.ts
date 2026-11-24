@@ -13,8 +13,28 @@ type JsonValue =
   | number
   | boolean
   | null
-  | JsonValue[]
+  | Array<JsonValue>
   | { [key: string]: JsonValue };
+
+interface RedditPost {
+  id?: JsonValue;
+  permalink?: JsonValue;
+  thumbnail?: JsonValue;
+  preview?: { images?: Array<{ source?: { url?: JsonValue } }> };
+  title?: JsonValue;
+  selftext?: JsonValue;
+  author?: JsonValue;
+  created_utc?: JsonValue;
+}
+
+interface RedditListing {
+  error?: JsonValue;
+  reason?: JsonValue;
+  data?: {
+    children?: Array<{ kind?: JsonValue; data?: RedditPost } | null>;
+    after?: JsonValue;
+  };
+}
 
 export function redditSavedUrl(handle: string): string {
   return `https://www.reddit.com/user/${encodeURIComponent(handle)}/saved/`;
@@ -57,10 +77,12 @@ async function inPageRedditList(
     mediaType?: MediaType;
   };
 
-  const asText = (value: JsonValue): string | undefined =>
+  const asText = (value: JsonValue | undefined): string | undefined =>
     validators.text.safeParse(value).data;
-  const asNumber = (value: JsonValue): number | undefined =>
+  const asNumber = (value: JsonValue | undefined): number | undefined =>
     validators.number.safeParse(value).data;
+  const isListing = (value: unknown): value is RedditListing =>
+    validators.object.safeParse(value).success;
 
   const username =
     location.pathname.match(/^\/user\/([^/]+)\/saved/i)?.[1] ??
@@ -70,13 +92,15 @@ async function inPageRedditList(
   }
 
   const apiResult = await fetchSavedViaApi(username);
-  if (apiResult) return apiResult;
+  if (apiResult) {
+    return apiResult;
+  }
   return await fallbackDomScroll();
 
   async function fetchSavedViaApi(
     handle: string,
   ): Promise<ListHarvestResult | null> {
-    const entries: Entry[] = [];
+    const entries: Array<Entry> = [];
     let after: string | undefined;
     const known = new Set(args.knownIds.map(String));
     const earlyStopEnabled = known.size > 0;
@@ -101,10 +125,12 @@ async function inPageRedditList(
         raw_json: "1",
         type: "links",
       });
-      if (after) params.set("after", after);
+      if (after) {
+        params.set("after", after);
+      }
       const url = `/user/${encodeURIComponent(handle)}/saved.json?${params}`;
 
-      let json: any;
+      let json: RedditListing | null;
       try {
         const res = await fetch(url, {
           method: "GET",
@@ -124,12 +150,17 @@ async function inPageRedditList(
             ok: false,
             reason: "rate_limited",
           };
-          if (Number.isFinite(n)) limited.retryAfterSec = Math.max(0, n);
+          if (Number.isFinite(n)) {
+            limited.retryAfterSec = Math.max(0, n);
+          }
           return limited;
         }
-        if (!res.ok) return null;
+        if (!res.ok) {
+          return null;
+        }
 
-        json = await res.json();
+        const body: unknown = await res.json();
+        json = isListing(body) ? body : null;
       } catch {
         return null;
       }
@@ -138,15 +169,21 @@ async function inPageRedditList(
         return { ok: false, reason: "auth_required" };
       }
 
-      const children: any[] = json?.data?.children ?? [];
-      if (children.length === 0 && page === 0) return null;
+      const children = json?.data?.children ?? [];
+      if (children.length === 0 && page === 0) {
+        return null;
+      }
 
       let pageFresh = 0;
       for (const child of children) {
-        if (child?.kind !== "t3") continue;
-        const data = child.data ?? {};
+        if (child?.kind !== "t3") {
+          continue;
+        }
+        const data: RedditPost = child.data ?? {};
         const id = asText(data.id) ?? null;
-        if (!id) continue;
+        if (!id) {
+          continue;
+        }
         const permalink = asText(data.permalink) ?? `/comments/${id}/`;
         const urlAbs = permalink.startsWith("http")
           ? permalink
@@ -155,18 +192,22 @@ async function inPageRedditList(
         const previewUrl = asText(data.preview?.images?.[0]?.source?.url);
         const thumb = thumbnail?.startsWith("http")
           ? thumbnail
-          : previewUrl?.replace(/&amp;/g, "&");
+          : previewUrl?.replaceAll("&amp;", "&");
         const title = asText(data.title);
         const selftext = asText(data.selftext);
         const author = asText(data.author);
         const createdUtc = asNumber(data.created_utc);
         const entry: Entry = { sourceId: id, url: urlAbs };
-        if (title !== undefined) entry.title = title;
+        if (title !== undefined) {
+          entry.title = title;
+        }
         if (selftext) {
           entry.description =
             selftext.length > 4000 ? `${selftext.slice(0, 4000)}…` : selftext;
         }
-        if (author !== undefined) entry.author = author;
+        if (author !== undefined) {
+          entry.author = author;
+        }
         if (thumb) {
           entry.mediaUrl = thumb;
           entry.mediaUrls = [{ url: thumb, type: "image" }];
@@ -175,7 +216,9 @@ async function inPageRedditList(
         if (createdUtc !== undefined) {
           entry.savedAt = new Date(createdUtc * 1000).toISOString();
         }
-        if (!known.has(id)) pageFresh += 1;
+        if (!known.has(id)) {
+          pageFresh += 1;
+        }
         entries.push(entry);
       }
 
@@ -197,7 +240,9 @@ async function inPageRedditList(
         return { ok: true, entries, reachedEnd: true };
       }
       after = next;
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => {
+        setTimeout(r, 500);
+      });
     }
 
     return { ok: true, entries, reachedEnd: false };
@@ -207,8 +252,8 @@ async function inPageRedditList(
     const known = new Set(args.knownIds.map(String));
     type StubEntry = { sourceId: string; url: string };
 
-    function collect(): StubEntry[] {
-      const out: StubEntry[] = [];
+    function collect(): Array<StubEntry> {
+      const out: Array<StubEntry> = [];
       const seen = new Set<string>();
       const links = Array.from(
         document.querySelectorAll<HTMLAnchorElement>(
@@ -217,12 +262,16 @@ async function inPageRedditList(
       );
       for (const a of links) {
         const id = norm.extractPostId(a.href);
-        if (!id || seen.has(id)) continue;
+        if (!id || seen.has(id)) {
+          continue;
+        }
         seen.add(id);
         let href = a.href;
         try {
           href = new URL(a.href, location.origin).href;
-        } catch {}
+        } catch {
+          /** An unparseable href keeps the anchor's own value. */
+        }
         out.push({ sourceId: id, url: href });
       }
       for (const post of Array.from(
@@ -230,7 +279,9 @@ async function inPageRedditList(
       )) {
         const id = post.getAttribute("id")?.replace(/^t3_/, "") ?? null;
         const permalink = post.getAttribute("permalink");
-        if (!id || seen.has(id) || !permalink) continue;
+        if (!id || seen.has(id) || !permalink) {
+          continue;
+        }
         seen.add(id);
         out.push({
           sourceId: id,
@@ -250,13 +301,17 @@ async function inPageRedditList(
       ) {
         break;
       }
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => {
+        setTimeout(r, 250);
+      });
     }
 
     const collected = new Map<string, StubEntry>();
-    function ingestRows(rows: StubEntry[]): void {
+    function ingestRows(rows: Array<StubEntry>): void {
       for (const r of rows) {
-        if (!collected.has(r.sourceId)) collected.set(r.sourceId, r);
+        if (!collected.has(r.sourceId)) {
+          collected.set(r.sourceId, r);
+        }
       }
     }
 
@@ -269,13 +324,17 @@ async function inPageRedditList(
     while (Date.now() < deadline && stable < 4) {
       const before = collected.size;
       window.scrollBy(0, Math.max(600, window.innerHeight * 0.9));
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => {
+        setTimeout(r, 700);
+      });
       const batch = collect();
       let pageFresh = 0;
       for (const row of batch) {
         if (!collected.has(row.sourceId)) {
           collected.set(row.sourceId, row);
-          if (!known.has(row.sourceId)) pageFresh += 1;
+          if (!known.has(row.sourceId)) {
+            pageFresh += 1;
+          }
         } else if (!known.has(row.sourceId)) {
           pageFresh += 1;
         }
@@ -287,11 +346,16 @@ async function inPageRedditList(
           fresh: [...collected.keys()].filter((id) => !known.has(id)).length,
         },
       });
-      if (collected.size === before) stable += 1;
-      else stable = 0;
+      if (collected.size === before) {
+        stable += 1;
+      } else {
+        stable = 0;
+      }
       if (earlyStopEnabled && batch.length > 0 && pageFresh === 0) {
         knownBatchStreak += 1;
-        if (knownBatchStreak >= 3) break;
+        if (knownBatchStreak >= 3) {
+          break;
+        }
       } else {
         knownBatchStreak = 0;
       }

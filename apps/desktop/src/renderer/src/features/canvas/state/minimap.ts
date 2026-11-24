@@ -14,14 +14,14 @@ function readShown(): boolean {
 const store = new Store({ shown: readShown() });
 
 export const minimap = {
-  shown(): boolean {
-    return store.state.shown;
-  },
-  toggle(): void {
+  shown: (): boolean => store.state.shown,
+  toggle: (): void => {
     const shown = !store.state.shown;
     try {
       window.localStorage.setItem(STORAGE_KEY, shown ? "1" : "0");
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the toggle still applies for this session. */
+    }
     store.setState(() => ({ shown }));
   },
 };

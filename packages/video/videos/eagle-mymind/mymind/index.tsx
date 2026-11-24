@@ -21,7 +21,9 @@ const cardY = (index: number) =>
 export function Mymind({ t }: { t: number }) {
   const enter = start("mymind") + 200;
   const exit = end("mymind") - 350;
-  if (t < enter - 50 || t > exit + 400) return null;
+  if (t < enter - 50 || t > exit + 400) {
+    return null;
+  }
   const e = envelope(t, enter, exit, { duration: 800, rise: 30 });
   return (
     <div className={styles.scene} style={styled(e)}>
@@ -77,7 +79,9 @@ export function Mymind({ t }: { t: number }) {
       {MYMIND.map((card, index) => {
         const at = rowAt(index) + 380;
         const k = ease.outQuint(progress(t, at, 600));
-        if (k <= 0) return null;
+        if (k <= 0) {
+          return null;
+        }
         return (
           <article
             key={card.id}

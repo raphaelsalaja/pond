@@ -1,15 +1,15 @@
 import type { CancellableResult, OkResult } from "./query-contracts-shared";
 
 export interface SavesOpenWithQueryInputs {
-  "saves.copyInternalLinks": { ids: string[] };
-  "saves.copyPrompt": { ids: string[] };
+  "saves.copyInternalLinks": { ids: Array<string> };
+  "saves.copyPrompt": { ids: Array<string> };
   "saves.listOpenWith": {
-    ids: string[];
+    ids: Array<string>;
     fileIndex?: number;
     includeIcons?: boolean;
   };
   "saves.openWith": {
-    ids: string[];
+    ids: Array<string>;
     fileIndex?: number;
     application?: string;
   };

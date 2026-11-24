@@ -1,6 +1,7 @@
 import type { FileRingAction, FileRingItem } from "@pond/schema/file-ring";
 import { quickAccessRows } from "../folder-sidebar/folder-tree/quick-access/order";
-import { RING_SLOTS, type RingSlot } from "./geometry";
+import { RING_SLOTS } from "./geometry";
+import type { RingSlot } from "./geometry";
 
 /** Items fill the top first, then both sides before the bottom, so a short ring still sits balanced. */
 export const RING_FILL = [
@@ -10,7 +11,7 @@ export const RING_FILL = [
   "right",
   "bottom-left",
   "bottom-right",
-] as const satisfies readonly RingSlot[];
+] as const satisfies ReadonlyArray<RingSlot>;
 
 const SLOT_NAMES = {
   "top-left": "Top Left",
@@ -30,7 +31,7 @@ export function ringSlotName(index: number): string | null {
 const AUTO_ACTIONS = [
   { kind: "action", action: "new-folder" },
   { kind: "action", action: "export-files" },
-] as const satisfies readonly FileRingItem[];
+] as const satisfies ReadonlyArray<FileRingItem>;
 
 export type RingAction = FileRingAction;
 
@@ -59,16 +60,18 @@ interface QuickAccessPresentation {
 }
 
 export function pickRingFolders<Row extends RingFolderRow>(
-  rows: readonly Row[],
+  rows: ReadonlyArray<Row>,
   presentations: Partial<Record<string, QuickAccessPresentation>>,
-  recentIds: readonly string[],
-): Row[] {
+  recentIds: ReadonlyArray<string>,
+): Array<Row> {
   const quick = quickAccessRows(rows, presentations);
   const picked = new Set(quick.map((row) => row.id));
   const byId = new Map(rows.map((row) => [row.id, row]));
   const recent = recentIds.flatMap((id) => {
     const row = byId.get(id);
-    if (!row || picked.has(id)) return [];
+    if (!row || picked.has(id)) {
+      return [];
+    }
     picked.add(id);
     return [row];
   });
@@ -77,10 +80,10 @@ export function pickRingFolders<Row extends RingFolderRow>(
 
 /** New Folder and Export Files on top, then Quick Access and recent folders, for a ring nobody has customized. */
 export function autoRingItems<Row extends RingFolderRow>(
-  rows: readonly Row[],
+  rows: ReadonlyArray<Row>,
   presentations: Partial<Record<string, QuickAccessPresentation>>,
-  recentIds: readonly string[],
-): FileRingItem[] {
+  recentIds: ReadonlyArray<string>,
+): Array<FileRingItem> {
   const folders = pickRingFolders(rows, presentations, recentIds);
   return [
     ...AUTO_ACTIONS,
@@ -98,15 +101,17 @@ export function dragActions(hasFiles: boolean): ActionAvailable {
 
 /** A folder that no longer exists leaves its sector empty, so the rest of the ring stays where you learned it. */
 export function layoutRing<Folder extends { id: string }>(
-  items: readonly FileRingItem[],
-  folders: readonly Folder[],
+  items: ReadonlyArray<FileRingItem>,
+  folders: ReadonlyArray<Folder>,
   available: ActionAvailable,
 ): RingLayout<Folder> {
   const byId = new Map(folders.map((folder) => [folder.id, folder]));
   const layout: RingLayout<Folder> = {};
   for (const [index, item] of items.entries()) {
     const slot = RING_FILL[index];
-    if (!slot) break;
+    if (!slot) {
+      break;
+    }
     if (item.kind === "action") {
       layout[slot] = {
         kind: "action",
@@ -116,7 +121,9 @@ export function layoutRing<Folder extends { id: string }>(
       continue;
     }
     const folder = byId.get(item.folderId);
-    if (folder) layout[slot] = { kind: "folder", folder };
+    if (folder) {
+      layout[slot] = { kind: "folder", folder };
+    }
   }
   return layout;
 }
@@ -124,7 +131,9 @@ export function layoutRing<Folder extends { id: string }>(
 export function acceptsDrop<Folder>(
   target: RingTarget<Folder> | undefined,
 ): target is RingTarget<Folder> {
-  if (!target) return false;
+  if (!target) {
+    return false;
+  }
   return target.kind === "folder" || !target.disabled;
 }
 
@@ -150,10 +159,17 @@ export function dropOnRing<Folder, Payload>(
   payload: Payload,
   handlers: RingDropHandlers<Folder, Payload>,
 ): boolean {
-  if (!acceptsDrop(target)) return false;
-  if (target.kind === "folder") handlers.addToFolder(payload, target.folder);
-  else if (target.action === "new-folder") handlers.createFolder(payload);
-  else if (handlers.exportFiles) handlers.exportFiles(payload);
-  else return false;
+  if (!acceptsDrop(target)) {
+    return false;
+  }
+  if (target.kind === "folder") {
+    handlers.addToFolder(payload, target.folder);
+  } else if (target.action === "new-folder") {
+    handlers.createFolder(payload);
+  } else if (handlers.exportFiles) {
+    handlers.exportFiles(payload);
+  } else {
+    return false;
+  }
   return true;
 }

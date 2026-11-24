@@ -1,6 +1,7 @@
 import { extname } from "node:path";
 import type { Save, SaveFile } from "@pond/schema/db";
-import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
+import { walkCaptureMedia } from "@pond/schema/raw";
+import type { RawJson } from "@pond/schema/raw";
 import {
   IMAGE_KIND,
   inferKindFromFilename,
@@ -18,8 +19,8 @@ import type {
 import { probeImageDims, processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs, getVideoDownloadPrefs } from "../../prefs";
-import { isGithubGeneratedOpenGraph } from "../../refresh/harvest/github/open-graph";
 import { browserUserAgent } from "../../refresh/harvest-window/constants";
+import { isGithubGeneratedOpenGraph } from "../../refresh/harvest/github/open-graph";
 import {
   ensureSaveThumbnail,
   repairMismatchedThumbnail,
@@ -31,7 +32,8 @@ import {
   QueueWorkerImageResultSchema,
 } from "../worker-contract";
 import { runQueueWorkerJob } from "../worker-host";
-import { readSave, type WriteFileArgs } from "./apply";
+import { readSave } from "./apply";
+import type { WriteFileArgs } from "./apply";
 import { fileSizeAfterMediaWrite } from "./media-file-size";
 import { fetchSourceIcon } from "./source-icon";
 
@@ -47,15 +49,17 @@ export async function runFetchBlobs(
   ctx: FetchBlobsContext = {},
 ): Promise<void> {
   const save = await readSave(saveId);
-  if (!save) return;
+  if (!save) {
+    return;
+  }
 
   const icon =
     save.source === "web"
-      ? fetchSourceIcon(saveId, save).catch((err) => {
+      ? fetchSourceIcon(saveId, save).catch((cause: unknown) => {
           log.warn(
             "[pond pipeline:fetch-blobs] source icon failed",
             saveId,
-            err,
+            cause,
           );
         })
       : undefined;
@@ -102,8 +106,8 @@ async function fetchMissingMedia(
   const settlement = settleMediaFetches(results, {
     optionalGeneratedCard: save.source === "github",
     finalAttempt:
-      ctx.attempt != null &&
-      ctx.maxAttempts != null &&
+      ctx.attempt !== undefined &&
+      ctx.maxAttempts !== undefined &&
       ctx.attempt >= ctx.maxAttempts,
   });
   if (settlement.generatedCardMissed) {
@@ -111,11 +115,11 @@ async function fetchMissingMedia(
     try {
       const { runRenderTextCover } = await import("./render-text-cover");
       await runRenderTextCover(saveId, { imageFallback: true });
-    } catch (err) {
+    } catch (error) {
       log.warn(
         "[pond pipeline:fetch-blobs] text cover fallback failed",
         saveId,
-        err,
+        error,
       );
     }
     log.debug(
@@ -145,7 +149,7 @@ async function fetchMissingMedia(
       let dims: { width: number; height: number } | null = null;
       if (kind !== "video") {
         const processed =
-          ctx.leaseToken && ctx.cancellationFence != null
+          ctx.leaseToken && ctx.cancellationFence !== undefined
             ? QueueWorkerImageResultSchema.nullable().parse(
                 await runQueueWorkerJob(
                   {
@@ -175,7 +179,7 @@ async function fetchMissingMedia(
           }
         }
         dims ??=
-          ctx.leaseToken && ctx.cancellationFence != null
+          ctx.leaseToken && ctx.cancellationFence !== undefined
             ? QueueWorkerImageDimsSchema.nullable().parse(
                 await runQueueWorkerJob(
                   {
@@ -195,7 +199,9 @@ async function fetchMissingMedia(
         bytes,
         sourceUrl: entry.url,
       };
-      if (mimeType) write.mimeType = mimeType;
+      if (mimeType) {
+        write.mimeType = mimeType;
+      }
       if (dims) {
         write.width = dims.width;
         write.height = dims.height;
@@ -239,7 +245,9 @@ async function fetchMissingMedia(
     },
   );
   const saved = await readSave(saveId);
-  if (replaceStale) await ensureSaveThumbnail(saveId, saved, { force: true });
+  if (replaceStale) {
+    await ensureSaveThumbnail(saveId, saved, { force: true });
+  }
   await repairMismatchedThumbnail(saveId, saved);
   log.info("[pond pipeline:fetch-blobs] wrote", {
     saveId,
@@ -281,7 +289,9 @@ export function requireFetchedMedia(
   const transientMisses = results.filter(
     (result) => result.miss === "transient",
   ).length;
-  if (fetched.length > 0) return { fetched, transientMisses };
+  if (fetched.length > 0) {
+    return { fetched, transientMisses };
+  }
   if (transientMisses > 0) {
     throw new TransientError(
       `fetch-blobs: ${transientMisses}/${requestedCount} media transiently unavailable`,
@@ -361,18 +371,23 @@ function fetchedFiles(
 export function collectMediaUrls(
   rawJson: RawJson | null,
   opts: { includeVideo: boolean },
-): string[] {
-  const out: string[] = [];
+): Array<string> {
+  const out: Array<string> = [];
   const seen = new Set<string>();
   for (const m of walkCaptureMedia(rawJson?.capture)) {
     if (
       m.type === "video" &&
       (!opts.includeVideo || !hasDirectVideoExtension(m.url))
-    )
+    ) {
       continue;
+    }
     /* A harvest can store the author's avatar as tweet media; it is not part of the post, and a failed avatar fetch must not fail the save. */
-    if (isAvatarUrl(m.url)) continue;
-    if (seen.has(m.url)) continue;
+    if (isAvatarUrl(m.url)) {
+      continue;
+    }
+    if (seen.has(m.url)) {
+      continue;
+    }
     seen.add(m.url);
     out.push(m.url);
   }
@@ -385,7 +400,9 @@ function hasDirectVideoExtension(url: string): boolean {
   try {
     const path = new URL(url).pathname.toLowerCase();
     const dot = path.lastIndexOf(".");
-    if (dot === -1) return false;
+    if (dot === -1) {
+      return false;
+    }
     return DIRECT_VIDEO_EXTENSIONS.has(path.slice(dot));
   } catch {
     return false;
@@ -393,10 +410,12 @@ function hasDirectVideoExtension(url: string): boolean {
 }
 
 function missingMediaUrls(
-  urls: string[],
+  urls: Array<string>,
   files: ReadonlyArray<SaveFile>,
-): string[] {
-  if (urls.length === 0) return [];
+): Array<string> {
+  if (urls.length === 0) {
+    return [];
+  }
   const mediaFiles = files.filter(
     (f) =>
       isOriginalImageKind(f.kind) ||
@@ -404,14 +423,20 @@ function missingMediaUrls(
       inferKindFromFilename(f.path) === VIDEO_KIND,
   );
   const mapped = new Set(
-    mediaFiles
-      .map((f) => f.sourceUrl)
-      .filter((u): u is string => u != null && u.length > 0),
+    mediaFiles.flatMap((f) =>
+      f.sourceUrl !== null &&
+      f.sourceUrl !== undefined &&
+      f.sourceUrl.length > 0
+        ? [f.sourceUrl]
+        : [],
+    ),
   );
   if (mapped.size > 0) {
     return urls.filter((u) => !mapped.has(u));
   }
-  if (mediaFiles.length >= urls.length) return [];
+  if (mediaFiles.length >= urls.length) {
+    return [];
+  }
   return urls;
 }
 

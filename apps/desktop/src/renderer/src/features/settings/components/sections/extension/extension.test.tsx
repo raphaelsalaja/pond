@@ -7,7 +7,7 @@ import { ExtensionSources } from "./";
 it("turns Twitter likes off while the Twitter Account imports bookmarks only", async () => {
   vi.stubGlobal("pond", {
     async query(name: string) {
-      if (name === "accounts.list")
+      if (name === "accounts.list") {
         return {
           accounts: [
             {
@@ -27,6 +27,7 @@ it("turns Twitter likes off while the Twitter Account imports bookmarks only", a
             },
           ],
         };
+      }
       return PrefsSchema.parse({});
     },
     tx: async () => ({ ok: true }),

@@ -1,19 +1,10 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useBootReady, useSavePaging } from "@/features/saves/hooks/use-saves";
 import { loadPrefs } from "@/shared/state/prefs";
-import {
-  type SetupProfile,
-  type SetupStart,
-  setupFlow,
-  useSetupFlow,
-} from "@/shared/state/setup";
-import {
-  choicesFrom,
-  parentFolder,
-  SETUP_VERSION,
-  type Session,
-  STEP_IDS,
-} from "./model";
+import { setupFlow, useSetupFlow } from "@/shared/state/setup";
+import type { SetupProfile, SetupStart } from "@/shared/state/setup";
+import { choicesFrom, parentFolder, SETUP_VERSION, STEP_IDS } from "./model";
+import type { Session } from "./model";
 import { setupResume } from "./resume";
 
 const SetupDialog = lazy(() =>
@@ -54,7 +45,9 @@ function useLaunchCheck(): void {
   const bootReady = useBootReady();
   const { total, loaded } = useSavePaging();
   useEffect(() => {
-    if (!bootReady || launchChecked) return;
+    if (!bootReady || launchChecked) {
+      return;
+    }
     launchChecked = true;
     if (setupResume.take()) {
       setupFlow.open(total > 0 || loaded > 0 ? "existing" : "new", "import");
@@ -62,7 +55,9 @@ function useLaunchCheck(): void {
     }
     void loadPrefs()
       .then((prefs) => {
-        if (prefs.setup.version >= SETUP_VERSION) return;
+        if (prefs.setup.version >= SETUP_VERSION) {
+          return;
+        }
         const used =
           total > 0 ||
           loaded > 0 ||
@@ -82,14 +77,20 @@ export function SetupHost() {
   const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     let cancelled = false;
     startSession(profile, start).then(
       (next) => {
-        if (!cancelled) setSession(next);
+        if (!cancelled) {
+          setSession(next);
+        }
       },
       () => {
-        if (!cancelled) setupFlow.close();
+        if (!cancelled) {
+          setupFlow.close();
+        }
       },
     );
     return () => {
@@ -97,7 +98,9 @@ export function SetupHost() {
     };
   }, [open, profile, start]);
 
-  if (!session) return null;
+  if (!session) {
+    return null;
+  }
   return (
     <Suspense fallback={null}>
       <SetupDialog

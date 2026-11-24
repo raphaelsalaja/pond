@@ -1,6 +1,7 @@
 import type { JsonValue } from "@pond/schema/json";
 import { describe, expect, it, vi } from "vitest";
-import { type ArenaGet, arenaAccessToken, readArenaBlocks } from "./list";
+import { arenaAccessToken, readArenaBlocks } from "./list";
+import type { ArenaGet } from "./list";
 
 function block(id: number) {
   return {
@@ -12,7 +13,11 @@ function block(id: number) {
   };
 }
 
-function page(ids: number[], hasMore: boolean, extra: JsonValue[] = []) {
+function page(
+  ids: Array<number>,
+  hasMore: boolean,
+  extra: Array<JsonValue> = [],
+) {
   return {
     meta: {
       current_page: 1,
@@ -33,7 +38,7 @@ function json(body: JsonValue, status = 200): Response {
 }
 
 function client(pages: Record<string, Response>) {
-  const requested: URL[] = [];
+  const requested: Array<URL> = [];
   const get: ArenaGet = vi.fn(async (raw) => {
     const url = new URL(raw);
     requested.push(url);
@@ -43,7 +48,9 @@ function client(pages: Record<string, Response>) {
   return { get, requested };
 }
 
-function ids(result: Awaited<ReturnType<typeof readArenaBlocks>>): string[] {
+function ids(
+  result: Awaited<ReturnType<typeof readArenaBlocks>>,
+): Array<string> {
   return result.ok ? result.entries.map((entry) => entry.sourceId) : [];
 }
 
@@ -66,7 +73,9 @@ describe("Are.na block pages", () => {
     );
 
     expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    if (!result.ok) {
+      return;
+    }
     expect(result.reachedEnd).toBe(true);
     expect(result.resumeCursor).toBeUndefined();
     expect(ids(result)).toEqual([...first, ...second].map(String));

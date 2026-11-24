@@ -1,11 +1,8 @@
 import { IconMagnifier } from "@pond/icons";
 import { Input as Base } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentPropsWithoutRef,
-  forwardRef,
-  type ReactNode,
-} from "react";
+import { forwardRef } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { usePageToolbarHost } from "@/shared/state/page-toolbar";
 import styles from "./styles.module.css";
@@ -32,13 +29,13 @@ function Root({ children, actions, below }: RootProps) {
   );
 }
 
-interface BarProps extends ComponentPropsWithoutRef<"div"> {}
+type BarProps = ComponentPropsWithoutRef<"div">;
 
 function Bar({ className, ...props }: BarProps) {
   return <div className={cn(styles.bar, className)} {...props} />;
 }
 
-interface ActionsProps extends ComponentPropsWithoutRef<"div"> {}
+type ActionsProps = ComponentPropsWithoutRef<"div">;
 
 function Actions({ className, ...props }: ActionsProps) {
   return <div className={cn(styles.actions, className)} {...props} />;

@@ -39,13 +39,19 @@ export function MymindConnectForm({
   const submitting = useRef(false);
   const request = useRef(0);
   const reduceMotion = useReducedMotion();
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (!active) {
+      setKid("");
+      setSecret("");
+      setError(null);
+    }
+  }
 
   useEffect(() => {
     if (!active) {
       request.current += 1;
-      setKid("");
-      setSecret("");
-      setError(null);
     }
     return () => {
       request.current += 1;
@@ -53,7 +59,9 @@ export function MymindConnectForm({
   }, [active]);
 
   const submit = async () => {
-    if (!active || submitting.current || !kid.trim() || !secret.trim()) return;
+    if (!active || submitting.current || !kid.trim() || !secret.trim()) {
+      return;
+    }
     submitting.current = true;
     setBusy(true);
     setError(null);
@@ -63,9 +71,13 @@ export function MymindConnectForm({
         kid: kid.trim(),
         secret: secret.trim(),
       };
-      if (accountId) input.accountId = accountId;
+      if (accountId) {
+        input.accountId = accountId;
+      }
       const result = await connect(input);
-      if (revision !== request.current) return;
+      if (revision !== request.current) {
+        return;
+      }
       if (!result.ok) {
         setError(result.error);
         return;
@@ -74,11 +86,14 @@ export function MymindConnectForm({
       setSecret("");
       onConnected(result.account.id);
     } catch {
-      if (revision === request.current)
+      if (revision === request.current) {
         setError("Pond could not connect to mymind. Try again.");
+      }
     } finally {
       submitting.current = false;
-      if (revision === request.current) setBusy(false);
+      if (revision === request.current) {
+        setBusy(false);
+      }
     }
   };
 

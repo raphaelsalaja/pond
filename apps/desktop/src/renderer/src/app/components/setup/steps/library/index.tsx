@@ -36,7 +36,9 @@ function Location({ profile, library, choices, update }: StepProps) {
       }
       onClick={async () => {
         const result = await window.pond.query("library.pickFolder", {});
-        if (result.ok) update({ libraryLocation: result.path });
+        if (result.ok) {
+          update({ libraryLocation: result.path });
+        }
       }}
     >
       <IconFolder size={16} aria-hidden />
@@ -66,11 +68,12 @@ export function Library(props: StepProps) {
           value={[choices.moveLibrary ? "move" : "keep"]}
           onValueChange={(value) => {
             const next = value[0];
-            if (next)
+            if (next) {
               update({
                 moveLibrary: next === "move",
                 libraryLocation: library.parent,
               });
+            }
           }}
         >
           <Toggle type="button" size="sm" value="keep">

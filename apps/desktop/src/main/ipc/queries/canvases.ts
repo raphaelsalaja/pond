@@ -34,7 +34,7 @@ const EXPORT_FILTERS = {
 };
 
 function fileNameOf(name: string): string {
-  return name.replace(/[/\\:*?"<>|]/g, "-").trim() || "Canvas";
+  return name.replaceAll(/[/\\:*?"<>|]/g, "-").trim() || "Canvas";
 }
 
 export const canvasesQueries = {
@@ -66,7 +66,9 @@ export const canvasesQueries = {
     ({ id, saveIds }) => addSavesToCanvas(id, saveIds),
   ),
   "canvases.capture": query(Rect, async (rect, event) => {
-    if (!event) throw new Error("Capturing a canvas needs its window.");
+    if (!event) {
+      throw new Error("Capturing a canvas needs its window.");
+    }
     const image = await event.sender.capturePage({
       x: Math.round(rect.x),
       y: Math.round(rect.y),
@@ -94,8 +96,9 @@ export const canvasesQueries = {
       const picked = owner
         ? await dialog.showSaveDialog(owner, options)
         : await dialog.showSaveDialog(options);
-      if (picked.canceled || !picked.filePath)
+      if (picked.canceled || !picked.filePath) {
         return { ok: false, reason: "cancelled" };
+      }
       await writeFile(
         picked.filePath,
         input.format === "png"

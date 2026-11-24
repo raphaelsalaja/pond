@@ -7,7 +7,7 @@ interface WatchKind {
 
 interface WatchTargets {
   placeholder: string;
-  kinds: readonly WatchKind[];
+  kinds: ReadonlyArray<WatchKind>;
 }
 
 const TARGETS = new Map<Source, WatchTargets>([

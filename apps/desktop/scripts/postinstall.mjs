@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
-const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const appRoot = resolve(import.meta.dirname, "..");
 
 export const SETUP_STEPS = Object.freeze([
   {
@@ -91,7 +90,7 @@ export function runSetup({
 }
 
 const invokedPath = process.argv[1] ? resolve(process.argv[1]) : "";
-if (fileURLToPath(import.meta.url) === invokedPath) {
+if (import.meta.filename === invokedPath) {
   try {
     runSetup();
   } catch (error) {

@@ -17,7 +17,8 @@ import type { IconComponent } from "@pond/icons/types";
 import { COLOR_PRESETS } from "@pond/schema/filters/color";
 import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
-import { createElement, type ReactNode } from "react";
+import { createElement } from "react";
+import type { ReactNode } from "react";
 import { z } from "zod";
 import {
   addLocalDays,
@@ -83,18 +84,18 @@ export const FILTER_SECTIONS = [
     label: "Dates",
     fields: ["savedAt", "modifiedAt", "publishedAt", "takenAt"],
   },
-] as const satisfies readonly {
+] as const satisfies ReadonlyArray<{
   label: string;
-  fields: readonly FieldId[];
-}[];
+  fields: ReadonlyArray<FieldId>;
+}>;
 
-export const FILTER_GROUPS: readonly (readonly FieldId[])[] =
+export const FILTER_GROUPS: ReadonlyArray<ReadonlyArray<FieldId>> =
   FILTER_SECTIONS.map(({ fields }) => fields);
 
 export interface FilterMenuGroup {
   label: string;
   icon: IconComponent;
-  fields: readonly FieldId[];
+  fields: ReadonlyArray<FieldId>;
 }
 
 export type FilterMenuEntry = FieldId | FilterMenuGroup;
@@ -105,12 +106,12 @@ export function isFieldEntry(entry: FilterMenuEntry): entry is FieldId {
   return FIELD_ENTRIES.has(entry);
 }
 
-export function entryFields(entry: FilterMenuEntry): readonly FieldId[] {
+export function entryFields(entry: FilterMenuEntry): ReadonlyArray<FieldId> {
   return isFieldEntry(entry) ? [entry] : entry.fields;
 }
 
 /** Sections are split by dividers; a group shows as a submenu once two or more of its fields apply. */
-export const FILTER_MENU: readonly (readonly FilterMenuEntry[])[] = [
+export const FILTER_MENU: ReadonlyArray<ReadonlyArray<FilterMenuEntry>> = [
   [
     "tags",
     "folder",
@@ -188,18 +189,22 @@ export const DATA_GATED_FIELDS = new Map<FieldId, FieldId>([
 export function fieldMatchesQuery(
   field: FieldId,
   query: string,
-  options: readonly FilterOption[],
+  options: ReadonlyArray<FilterOption>,
 ): boolean {
   const needle = query.trim().toLowerCase();
-  if (!needle) return true;
-  if (FIELD_META[field].label.toLowerCase().includes(needle)) return true;
+  if (!needle) {
+    return true;
+  }
+  if (FIELD_META[field].label.toLowerCase().includes(needle)) {
+    return true;
+  }
   return options.some((option) => option.label.toLowerCase().includes(needle));
 }
 
 export function choiceOptions(
   field: FieldId,
-  choices: readonly { label: string; value: string }[],
-): FilterOption[] {
+  choices: ReadonlyArray<{ label: string; value: string }>,
+): Array<FilterOption> {
   return choices.map(({ label, value }) => ({
     label,
     predicate: {
@@ -210,9 +215,9 @@ export function choiceOptions(
   }));
 }
 
-function calendarDateOptions(field: FieldId): FilterOption[] {
+function calendarDateOptions(field: FieldId): Array<FilterOption> {
   const now = new Date();
-  const options: FilterOption[] = [
+  const options: Array<FilterOption> = [
     { label: "Today", predicate: localDayPredicate(field, now, now) },
     {
       label: "Yesterday",
@@ -222,11 +227,13 @@ function calendarDateOptions(field: FieldId): FilterOption[] {
       label:
         iso === "-P1D"
           ? "Past 24 Hours"
-          : label.replace(/\b\w/g, (character) => character.toUpperCase()),
+          : label.replaceAll(/\b\w/g, (character) => character.toUpperCase()),
       predicate: { field, operator: "gte" as const, value: iso },
     })),
   ];
-  if (field !== "modifiedAt") return options;
+  if (field !== "modifiedAt") {
+    return options;
+  }
   const monthFormatter = new Intl.DateTimeFormat("en-US", {
     month: "long",
     year: "numeric",
@@ -265,9 +272,11 @@ function typeIcon(value: string): ReactNode {
   return Icon ? createElement(Icon) : undefined;
 }
 
-export function presetOptions(field: FieldId): FilterOption[] {
+export function presetOptions(field: FieldId): Array<FilterOption> {
   const meta = FIELD_META[field];
-  if (meta.type === "date") return calendarDateOptions(field);
+  if (meta.type === "date") {
+    return calendarDateOptions(field);
+  }
   if (meta.type === "optional") {
     return [
       {
@@ -298,7 +307,7 @@ export function presetOptions(field: FieldId): FilterOption[] {
   }
   if (field === "duration" || field === "fileSize") {
     return (meta.presets ?? []).map(({ id, label, value }) => ({
-      label: label.replace(/\b[a-z]/g, (c) => c.toUpperCase()),
+      label: label.replaceAll(/\b[a-z]/g, (c) => c.toUpperCase()),
       predicate: {
         field,
         operator: id === "longer" || id === "large" ? "gte" : "lt",
@@ -307,7 +316,7 @@ export function presetOptions(field: FieldId): FilterOption[] {
     }));
   }
   return (meta.presets ?? []).map(({ label, value }) => ({
-    label: label.replace(/\b[a-z]/g, (c) => c.toUpperCase()),
+    label: label.replaceAll(/\b[a-z]/g, (c) => c.toUpperCase()),
     icon: field === "type" ? typeIcon(String(value)) : undefined,
     predicate: {
       field,

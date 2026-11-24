@@ -13,7 +13,7 @@ import { ProblemView } from "./problem";
 import { SaveItem } from "./save-item";
 
 const LIMIT = 30;
-const NONE: ApiSave[] = [];
+const NONE: Array<ApiSave> = [];
 
 async function loadRelated(id: string) {
   return pond().related(id, LIMIT);

@@ -12,7 +12,9 @@ function useScrollToHashField(hash: string | null) {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (!hash) return;
+    if (!hash) {
+      return;
+    }
     let frame = 0;
     let tries = 0;
     let clearHighlight = 0;
@@ -30,7 +32,9 @@ function useScrollToHashField(hash: string | null) {
         );
         return;
       }
-      if (tries++ < 40) frame = requestAnimationFrame(attempt);
+      if (tries++ < 40) {
+        frame = requestAnimationFrame(attempt);
+      }
     };
     frame = requestAnimationFrame(attempt);
     return () => {
@@ -49,7 +53,9 @@ export function SettingsDetail({
 }) {
   useScrollToHashField(hash);
   const def = sectionForPath(section);
-  if (!def) return null;
+  if (!def) {
+    return null;
+  }
 
   const bespoke = isBespokeSection(def);
   return (

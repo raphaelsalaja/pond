@@ -13,7 +13,9 @@ interface ImageOverlayProps {
 }
 
 export function ImageOverlay({ draft, mode }: ImageOverlayProps) {
-  if (!draft || mode !== "crop") return null;
+  if (!draft || mode !== "crop") {
+    return null;
+  }
   return (
     <div
       className={styles.selection}

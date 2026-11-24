@@ -6,11 +6,9 @@ import { choicesFrom } from "./model";
 
 type LibraryQuery = "library.pickExisting" | "library.switchTo";
 
-function stubQuery(
-  results: {
-    [Name in LibraryQuery]?: QueryResult<Name>;
-  },
-) {
+function stubQuery(results: {
+  [Name in LibraryQuery]?: QueryResult<Name>;
+}) {
   const query = vi.fn(async (name: LibraryQuery) => results[name]);
   vi.stubGlobal("window", { pond: { query } });
   return query;

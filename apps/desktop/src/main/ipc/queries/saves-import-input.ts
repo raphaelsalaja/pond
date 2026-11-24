@@ -35,10 +35,18 @@ export function normalizeManualSaveInput(
     sourceId: params.sourceId,
     mediaType: params.mediaType,
   };
-  if (params.width != null && Number.isFinite(params.width)) {
+  if (
+    params.width !== null &&
+    params.width !== undefined &&
+    Number.isFinite(params.width)
+  ) {
     input.width = params.width;
   }
-  if (params.height != null && Number.isFinite(params.height)) {
+  if (
+    params.height !== null &&
+    params.height !== undefined &&
+    Number.isFinite(params.height)
+  ) {
     input.height = params.height;
   }
   return input;
@@ -54,7 +62,7 @@ export const QuickAddParamsSchema = z.object({
 export interface QuickAddInput {
   url: string;
   note: string | null;
-  tags: string[];
+  tags: Array<string>;
 }
 
 export interface QuickAddRequest extends QuickAddInput {
@@ -75,26 +83,35 @@ export function normalizeQuickAddInput(
 export function normalizeClipboardFilePaths(
   uriList: string | null,
   plainText: string | null,
-): string[] {
-  const paths: string[] = [];
+): Array<string> {
+  const paths: Array<string> = [];
   const pushFileUrl = (raw: string) => {
     const token = raw.trim();
-    if (!token.startsWith("file:")) return;
+    if (!token.startsWith("file:")) {
+      return;
+    }
     try {
       paths.push(fileURLToPath(token));
-    } catch {}
+    } catch {
+      /** A malformed file URL is skipped like any other non-file token. */
+    }
   };
 
-  if (uriList != null) {
+  if (uriList !== null) {
     for (const part of uriList.split(/\r?\n/)) {
-      if (!part.startsWith("#")) pushFileUrl(part);
+      if (!part.startsWith("#")) {
+        pushFileUrl(part);
+      }
     }
   }
 
-  if (plainText != null) {
+  if (plainText !== null) {
     for (const part of plainText.split(/\s+/).filter(Boolean)) {
-      if (part.startsWith("file:")) pushFileUrl(part);
-      else if (isAbsolute(part)) paths.push(part);
+      if (part.startsWith("file:")) {
+        pushFileUrl(part);
+      } else if (isAbsolute(part)) {
+        paths.push(part);
+      }
     }
   }
 

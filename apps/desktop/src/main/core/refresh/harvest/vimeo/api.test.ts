@@ -1,13 +1,14 @@
 import type { JsonValue } from "@pond/schema/json";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readVimeoCapture, readVimeoLists, type VimeoGet } from "./api";
+import { readVimeoCapture, readVimeoLists } from "./api";
+import type { VimeoGet } from "./api";
 
 const get = vi.fn<VimeoGet>();
 
 const SIGNED_IN = { user: { link: "https://vimeo.com/urza" }, jwt: "tok" };
 
 interface ListPage {
-  ids: string[];
+  ids: Array<string>;
   next?: boolean;
 }
 
@@ -39,7 +40,9 @@ function serve(site: Site) {
       return json(site.viewer ?? SIGNED_IN);
     }
     if (url.host === "api.vimeo.com") {
-      if (site.hydrate) return json({ error: "nope" }, site.hydrate);
+      if (site.hydrate) {
+        return json({ error: "nope" }, site.hydrate);
+      }
       const uris = url.searchParams.get("uris")?.split(",") ?? [];
       return json({
         data: uris.map((uri) => ({ uri, name: `video ${uri.slice(8)}` })),
@@ -50,7 +53,9 @@ function serve(site: Site) {
   });
 }
 
-function ids(result: Awaited<ReturnType<typeof readVimeoLists>>): string[] {
+function ids(
+  result: Awaited<ReturnType<typeof readVimeoLists>>,
+): Array<string> {
   return result.ok ? result.entries.map((e) => e.sourceId) : [];
 }
 

@@ -44,7 +44,9 @@ function pinCapture(mediaUrl?: string): Capture {
     url: URL,
     media: mediaUrl ? [{ url: mediaUrl, type: "image" }] : [],
   };
-  if (!mediaUrl) capture.title = "Idea pin";
+  if (!mediaUrl) {
+    capture.title = "Idea pin";
+  }
   return capture;
 }
 

@@ -1,8 +1,6 @@
-import {
-  type ChangelogEntry,
-  compareVersions,
-  parseChangelogEntry,
-} from "@pond/schema/changelog";
+import { compareVersions, parseChangelogEntry } from "@pond/schema/changelog";
+import type { ChangelogEntry } from "@pond/schema/changelog";
+import log from "electron-log/renderer";
 
 const sources = import.meta.glob<string>(
   "../../../../../../../../changelog/*.md",
@@ -31,20 +29,20 @@ export function mediaUrl(entry: ChangelogEntry): string | undefined {
   return MEDIA_URLS.get(entry.media);
 }
 
-function parseAll(files: Record<string, string>): ChangelogEntry[] {
-  const entries: ChangelogEntry[] = [];
+function parseAll(files: Record<string, string>): Array<ChangelogEntry> {
+  const entries: Array<ChangelogEntry> = [];
   for (const [path, source] of Object.entries(files)) {
     try {
       entries.push(parseChangelogEntry(source));
     } catch (error) {
-      console.warn(`[pond changelog] skipped ${path}`, error);
+      log.warn(`[pond changelog] skipped ${path}`, error);
     }
   }
   return entries.sort((a, b) => compareVersions(b.version, a.version));
 }
 
 /** Every bundled entry, newest first. */
-export const CHANGELOG: readonly ChangelogEntry[] = parseAll(sources);
+export const CHANGELOG: ReadonlyArray<ChangelogEntry> = parseAll(sources);
 
 export const CHANGELOG_FILE_COUNT = Object.keys(sources).length;
 
@@ -55,12 +53,14 @@ export function unseenVersions({
   lastSeen,
   hasSaves,
 }: {
-  entries: readonly ChangelogEntry[];
+  entries: ReadonlyArray<ChangelogEntry>;
   current: string;
   lastSeen: string | null;
   hasSaves: boolean;
-}): string[] {
-  if (current.includes("-")) return [];
+}): Array<string> {
+  if (current.includes("-")) {
+    return [];
+  }
   if (lastSeen === null) {
     return hasSaves
       ? entries.filter((e) => e.version === current).map((e) => e.version)

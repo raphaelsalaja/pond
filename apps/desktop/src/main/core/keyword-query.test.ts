@@ -34,7 +34,9 @@ describe("keyword grammar", () => {
     const where = compileKeywordWhere(
       'folder:"Reference Images" folder-description:client',
     );
-    if (!where) throw new Error("Expected folder keyword predicates");
+    if (!where) {
+      throw new Error("Expected folder keyword predicates");
+    }
     const compiled = new SQLiteSyncDialect().sqlToQuery(where);
     expect(compiled.sql).toContain("save_folders");
     expect(compiled.sql).toContain("folders");
@@ -43,7 +45,9 @@ describe("keyword grammar", () => {
 
   it("supports negative-only searches through a SQL complement", () => {
     const where = compileKeywordWhere('-"cat food"');
-    if (!where) throw new Error("Expected a keyword predicate");
+    if (!where) {
+      throw new Error("Expected a keyword predicate");
+    }
     const compiled = new SQLiteSyncDialect().sqlToQuery(where);
     expect(compiled.params).toEqual([
       '"cat food"',
@@ -60,7 +64,9 @@ describe("keyword grammar", () => {
       "title",
       "extension",
     ]);
-    if (!where) throw new Error("Expected scoped keyword predicates");
+    if (!where) {
+      throw new Error("Expected scoped keyword predicates");
+    }
     const compiled = new SQLiteSyncDialect().sqlToQuery(where);
     expect(compiled.sql).toContain("json_each");
     expect(compiled.params).toEqual(['title : "reference"*', "%.reference%"]);

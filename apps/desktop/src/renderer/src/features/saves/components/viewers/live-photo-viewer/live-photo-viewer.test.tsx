@@ -10,11 +10,12 @@ it.each([true, false])(
     const archive = new JSZip()
       .file("photo.jpg", "image")
       .file("motion.mov", "movie");
-    if (captions)
+    if (captions) {
       archive.file(
         "captions.vtt",
         "WEBVTT\n\n00:00.000 --> 00:01.000\nBirdsong\n",
       );
+    }
     const buffer = await archive.generateAsync({ type: "arraybuffer" });
     vi.stubGlobal("fetch", async () => new Response(buffer));
     const createDescriptor = Object.getOwnPropertyDescriptor(
@@ -70,12 +71,16 @@ it.each([true, false])(
       await act(async () => root.unmount());
       expect(revoke).toHaveBeenCalledTimes(captions ? 3 : 2);
       host.remove();
-      if (createDescriptor)
+      if (createDescriptor) {
         Object.defineProperty(URL, "createObjectURL", createDescriptor);
-      else Reflect.deleteProperty(URL, "createObjectURL");
-      if (revokeDescriptor)
+      } else {
+        Reflect.deleteProperty(URL, "createObjectURL");
+      }
+      if (revokeDescriptor) {
         Object.defineProperty(URL, "revokeObjectURL", revokeDescriptor);
-      else Reflect.deleteProperty(URL, "revokeObjectURL");
+      } else {
+        Reflect.deleteProperty(URL, "revokeObjectURL");
+      }
       vi.unstubAllGlobals();
     }
   },

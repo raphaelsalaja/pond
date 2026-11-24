@@ -1,5 +1,6 @@
 import { join } from "node:path";
-import { type NewSave, type Save, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { NewSave, Save } from "@pond/schema/db";
 import type { Transaction, TxMeta } from "@pond/schema/tx";
 import { inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -15,12 +16,8 @@ import { saveDir } from "../paths";
 import { executeBatch, withMutationScope } from "./executor";
 import { folderIdsForSave } from "./folder-memberships";
 import { assignSaveFolders } from "./folders";
-import {
-  canGroupMember,
-  type GroupFile,
-  type GroupRefusal,
-  planGroup,
-} from "./group-saves-plan";
+import { canGroupMember, planGroup } from "./group-saves-plan";
+import type { GroupFile, GroupRefusal } from "./group-saves-plan";
 import { runLibraryTransfer } from "./library-transfers";
 import { persistSave } from "./persist-save";
 import { readSave } from "./pipeline/workers/apply";
@@ -31,17 +28,17 @@ import { prepareTagRegistryUpdates } from "./tags";
 import { recordBatchForUndo } from "./undo";
 
 export interface GroupSavesRuntime {
-  read(ids: readonly string[]): Promise<Save[]>;
-  folders(id: string): Promise<string[]>;
+  read(ids: ReadonlyArray<string>): Promise<Array<Save>>;
+  folders(id: string): Promise<Array<string>>;
   create(row: NewSave): Promise<void>;
   /** Copies the files into the gallery and marks it complete, returning how many landed. */
-  copyFiles(id: string, files: readonly GroupFile[]): Promise<number>;
-  assignFolders(id: string, folderIds: readonly string[]): Promise<void>;
+  copyFiles(id: string, files: ReadonlyArray<GroupFile>): Promise<number>;
+  assignFolders(id: string, folderIds: ReadonlyArray<string>): Promise<void>;
   discard(id: string): Promise<void>;
   /** Trashes the members and records one Undo step that also covers the gallery. */
-  trash(groupId: string, ids: readonly string[]): Promise<string | null>;
+  trash(groupId: string, ids: ReadonlyArray<string>): Promise<string | null>;
   refresh(id: string): Promise<void>;
-  newId(): string;
+  newId: () => string;
 }
 
 export type GroupSavesResult = OkResult<
@@ -91,17 +88,22 @@ const runtime: GroupSavesRuntime = {
     return updated?.files.length ?? 0;
   },
   async assignFolders(id, folderIds) {
-    if (folderIds.length > 0)
+    if (folderIds.length > 0) {
       await assignSaveFolders(
         [{ saveId: id, folderIds: [...folderIds] }],
         false,
       );
+    }
     const updated = await readSave(id);
-    if (updated) await writeSaveInfo(updated);
+    if (updated) {
+      await writeSaveInfo(updated);
+    }
   },
   async discard(id) {
     const row = await readSave(id);
-    if (!row) return;
+    if (!row) {
+      return;
+    }
     await executeBatch([
       {
         kind: "purge",
@@ -113,7 +115,7 @@ const runtime: GroupSavesRuntime = {
     ]);
   },
   async trash(groupId, ids) {
-    const trashed: Transaction[] = ids.map((id) => ({
+    const trashed: Array<Transaction> = ids.map((id) => ({
       kind: "trash",
       model: "save",
       id,
@@ -127,11 +129,17 @@ const runtime: GroupSavesRuntime = {
   },
   async refresh(id) {
     const save = await readSave(id);
-    if (!save) return;
+    if (!save) {
+      return;
+    }
     await ensureSaveThumbnail(id, save);
-    if (needsPosterRepair(save.files)) await runEnsurePoster(id);
+    if (needsPosterRepair(save.files)) {
+      await runEnsurePoster(id);
+    }
     const updated = await readSave(id);
-    if (updated) await analyzeSaveColors(updated, false, "group-saves:colors");
+    if (updated) {
+      await analyzeSaveColors(updated, false, "group-saves:colors");
+    }
   },
   newId: ulid,
 };
@@ -145,20 +153,26 @@ const REFUSALS = {
 
 /** Copies every file into the gallery before any member moves to Trash, so a failure leaves the Saves as they were. */
 export async function runGroupSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   dependencies: GroupSavesRuntime,
 ): Promise<GroupSavesResult> {
   const order = [...new Set(ids)];
-  if (order.length < 2) return { ok: false, error: REFUSALS.count };
+  if (order.length < 2) {
+    return { ok: false, error: REFUSALS.count };
+  }
   const byId = new Map(
     (await dependencies.read(order)).map((save) => [save.id, save]),
   );
-  const members: Save[] = [];
+  const members: Array<Save> = [];
   for (const id of order) {
     const save = byId.get(id);
     const refusal = save ? canGroupMember(save) : "missing";
-    if (refusal) return { ok: false, error: REFUSALS[refusal] };
-    if (save) members.push(save);
+    if (refusal) {
+      return { ok: false, error: REFUSALS[refusal] };
+    }
+    if (save) {
+      members.push(save);
+    }
   }
   const plan = planGroup(members, dependencies.newId);
   const { id } = plan;
@@ -168,13 +182,14 @@ export async function runGroupSaves(
   await dependencies.create(plan.row);
   try {
     const copied = await dependencies.copyFiles(id, plan.files);
-    if (copied < plan.files.length)
+    if (copied < plan.files.length) {
       throw new Error(`Couldn't copy every file into ${id}.`);
+    }
     await dependencies.assignFolders(id, [...new Set(memberships.flat())]);
   } catch (error) {
     log.warn("[pond group] failed to build the gallery", error);
-    await dependencies.discard(id).catch((err) => {
-      log.warn("[pond group] failed to discard the partial gallery", err);
+    await dependencies.discard(id).catch((cause: unknown) => {
+      log.warn("[pond group] failed to discard the partial gallery", cause);
     });
     return {
       ok: false,
@@ -187,15 +202,16 @@ export async function runGroupSaves(
 }
 
 export async function groupSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   dependencies: GroupSavesRuntime = runtime,
 ): Promise<GroupSavesResult> {
   const result = await runLibraryTransfer(() =>
     withMutationScope(() => runGroupSaves(ids, dependencies)),
   );
-  if (result.ok)
-    void dependencies.refresh(result.id).catch((err) => {
-      log.warn("[pond group] failed to refresh the gallery", result.id, err);
+  if (result.ok) {
+    void dependencies.refresh(result.id).catch((cause: unknown) => {
+      log.warn("[pond group] failed to refresh the gallery", result.id, cause);
     });
+  }
   return result;
 }

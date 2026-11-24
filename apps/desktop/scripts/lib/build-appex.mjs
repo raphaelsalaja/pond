@@ -2,10 +2,9 @@
 
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
-const desktopRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const desktopRoot = resolve(import.meta.dirname, "../..");
 /** Matches the Safari appex in `build-safari-extension.mjs`. */
 const DEPLOYMENT_TARGET = "13.5";
 const ARCHS = ["arm64", "x86_64"];
@@ -17,7 +16,9 @@ function appBundleId(fail) {
     "utf8",
   );
   const match = yml.match(/^appId:\s*(\S+)\s*$/m);
-  if (!match) fail("electron-builder.yml has no top-level appId");
+  if (!match) {
+    fail("electron-builder.yml has no top-level appId");
+  }
   return match[1];
 }
 
@@ -47,12 +48,16 @@ export function buildAppex({
     }
   };
 
-  if (process.platform !== "darwin") skip(`${kind} are macOS only`);
+  if (process.platform !== "darwin") {
+    skip(`${kind} are macOS only`);
+  }
   const swiftc = spawnSync("xcrun", ["--find", "swiftc"], {
     encoding: "utf8",
   });
   if (swiftc.error || swiftc.status !== 0) {
-    if (process.env.CI) fail(`swiftc is required to build the ${kind}`);
+    if (process.env.CI) {
+      fail(`swiftc is required to build the ${kind}`);
+    }
     skip("swiftc is not installed");
   }
 

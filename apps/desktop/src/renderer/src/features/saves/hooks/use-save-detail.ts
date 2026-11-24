@@ -1,9 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { composeContentDescription } from "@/features/saves/lib/content-description";
-import {
-  collectIdentityRows,
-  type DetailRow,
-} from "@/features/saves/lib/detail";
+import { collectIdentityRows } from "@/features/saves/lib/detail";
+import type { DetailRow } from "@/features/saves/lib/detail";
 import {
   pickAuthorAvatarUrl,
   pickSourceIconUrl,
@@ -19,9 +17,9 @@ type SourceIcon = ReturnType<typeof getSourceIcon>;
 
 interface SaveDetailView {
   save: Save | undefined;
-  rows: DetailRow[];
+  rows: Array<DetailRow>;
   description: string;
-  colors: string[];
+  colors: Array<string>;
   avatarUrl: string | null;
   sourceLogo: string | null;
   sourceIcon: SourceIcon;

@@ -39,7 +39,9 @@ const BROWSERS = new Map([
 ]);
 
 async function extensionTabUrl(): Promise<string | null> {
-  if (!environment.canAccess(BrowserExtension)) return null;
+  if (!environment.canAccess(BrowserExtension)) {
+    return null;
+  }
   const tabs = await BrowserExtension.getTabs().catch(() => []);
   return parseWebUrl(tabs.find((tab) => tab.active)?.url);
 }
@@ -47,7 +49,9 @@ async function extensionTabUrl(): Promise<string | null> {
 async function scriptedTabUrl(): Promise<string | null> {
   const app = await getFrontmostApplication().catch(() => null);
   const tab = app?.bundleId ? BROWSERS.get(app.bundleId) : undefined;
-  if (!app?.bundleId || !tab) return null;
+  if (!app?.bundleId || !tab) {
+    return null;
+  }
   const url = await runAppleScript(`tell application id "${app.bundleId}" to get URL of ${tab} of front window`).catch(
     () => null,
   );
@@ -69,16 +73,22 @@ export async function clipboardUrl(): Promise<string | null> {
 /** Selection wins because selecting a link is the most deliberate signal, then the page you're on. */
 export async function findUrl(): Promise<FoundUrl | null> {
   const selection = await selectionUrl();
-  if (selection) return { url: selection, origin: "selection" };
+  if (selection) {
+    return { url: selection, origin: "selection" };
+  }
   const browser = await browserTabUrl();
-  if (browser) return { url: browser, origin: "browser" };
+  if (browser) {
+    return { url: browser, origin: "browser" };
+  }
   const clipboard = await clipboardUrl();
-  if (clipboard) return { url: clipboard, origin: "clipboard" };
+  if (clipboard) {
+    return { url: clipboard, origin: "clipboard" };
+  }
   return null;
 }
 
 export interface SaveOptions {
-  tags?: string[];
+  tags?: Array<string>;
   folderId?: string;
 }
 
@@ -92,7 +102,9 @@ export function enqueue(url: string, options: SaveOptions = {}): Promise<Enqueue
 }
 
 export function savedTitle(result: EnqueueResult, options: SaveOptions = {}): string {
-  if (result.created) return "Saved to Pond";
+  if (result.created) {
+    return "Saved to Pond";
+  }
   return options.tags?.length || options.folderId ? "Updated in Pond" : "Already in Pond";
 }
 
@@ -104,13 +116,25 @@ export async function saveWithToast(
   const toast = await showToast({ style: Toast.Style.Animated, title: "Saving to Pond" });
   try {
     const target = await resolveUrl();
-    if (!target) throw new Error("Select, open, or copy a web page first, then try again.");
+    if (!target) {
+      throw new Error("Select, open, or copy a web page first, then try again.");
+    }
     toast.message = hostname(target);
     const result = await enqueue(target, options);
     toast.style = Toast.Style.Success;
     toast.title = savedTitle(result, options);
-    toast.primaryAction = { title: "Open in Pond", onAction: () => open(saveLink({ id: result.id })) };
-    toast.secondaryAction = { title: "Copy URL", onAction: () => Clipboard.copy(target) };
+    toast.primaryAction = {
+      title: "Open in Pond",
+      onAction: () => {
+        void open(saveLink({ id: result.id }));
+      },
+    };
+    toast.secondaryAction = {
+      title: "Copy URL",
+      onAction: () => {
+        void Clipboard.copy(target);
+      },
+    };
     return result;
   } catch (error) {
     failToast(toast, toError(error), "Couldn't save the URL");

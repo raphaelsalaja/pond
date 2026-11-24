@@ -13,7 +13,9 @@ function playlistName(path: string): string {
 
 function takeoutDate(raw: string | undefined): Date | null {
   const text = raw?.trim();
-  if (!text) return null;
+  if (!text) {
+    return null;
+  }
   const parsed = Date.parse(text.replace(" UTC", "Z").replace(" ", "T"));
   return Number.isNaN(parsed) ? null : new Date(parsed);
 }
@@ -29,20 +31,26 @@ export const youtubeParser: ExportParser = {
       row.some((cell) => cell.trim() === "Video ID"),
     );
     const header = rows[headerAt];
-    if (!header) return [];
+    if (!header) {
+      return [];
+    }
     const idAt = header.findIndex((cell) => cell.trim() === "Video ID");
     const timeAt = header.findIndex((cell) => /time|timestamp/i.test(cell));
     const name = playlistName(path);
     const liked = /^liked videos$/i.test(name);
-    return rows.slice(headerAt + 1).flatMap((row): ExportEntry[] => {
+    return rows.slice(headerAt + 1).flatMap((row): Array<ExportEntry> => {
       const id = row[idAt]?.trim();
-      if (!id || !VIDEO_ID.test(id)) return [];
+      if (!id || !VIDEO_ID.test(id)) {
+        return [];
+      }
       const entry: ExportEntry = {
         url: `https://www.youtube.com/watch?v=${id}`,
         listKind: liked ? "liked" : "saved",
         savedAt: takeoutDate(timeAt >= 0 ? row[timeAt] : undefined),
       };
-      if (!liked) entry.folder = name;
+      if (!liked) {
+        entry.folder = name;
+      }
       return [entry];
     });
   },

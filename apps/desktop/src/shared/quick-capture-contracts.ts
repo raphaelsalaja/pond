@@ -37,7 +37,7 @@ export interface QuickCaptureSnapshot {
   clipboard: string;
   /** What was typed before the window last hid, restored instead of the clipboard. */
   draft: QuickCaptureSubmit | null;
-  folders: QuickCaptureFolder[];
+  folders: Array<QuickCaptureFolder>;
   shell: ShellHint;
 }
 

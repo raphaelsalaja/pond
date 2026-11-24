@@ -19,7 +19,9 @@ export function embedDocument(
   return inferEmbedText(embeddingDocument(title, text));
 }
 
-export function embedSearchQueries(texts: string[]): Promise<Float32Array[]> {
+export function embedSearchQueries(
+  texts: Array<string>,
+): Promise<Array<Float32Array>> {
   return inferEmbedTexts(texts.map(embeddingSearchQuery));
 }
 
@@ -29,7 +31,7 @@ export function saveEmbeddingBody(save: {
   description: string | null;
   notes: string | null;
   author: string | null;
-  tags: string[];
+  tags: Array<string>;
 }): string {
   return [
     save.description ?? "",
@@ -46,7 +48,7 @@ export function saveEmbeddingText(save: {
   description: string | null;
   notes: string | null;
   author: string | null;
-  tags: string[];
+  tags: Array<string>;
   caption?: string | null;
   ocrText?: string | null;
   transcript?: string | null;

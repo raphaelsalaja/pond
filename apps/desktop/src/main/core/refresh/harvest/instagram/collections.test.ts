@@ -1,10 +1,11 @@
 import { runInNewContext } from "node:vm";
+import { isJsonValue } from "@pond/schema/json";
 import type { JsonObject } from "@pond/schema/json";
 import { describe, expect, it, vi } from "vitest";
-import {
-  type CollectionsReply,
-  type CollectionsResult,
-  readCollectionsReply,
+import { readCollectionsReply } from "../lib/collections-reply";
+import type {
+  CollectionsReply,
+  CollectionsResult,
 } from "../lib/collections-reply";
 import {
   buildInstagramCollectionsExpression,
@@ -24,7 +25,13 @@ interface Request {
   headers: Record<string, string>;
 }
 
+type PageModule =
+  | { token: string }
+  | { getViewerData_DO_NOT_USE: () => { username: string } }
+  | { params: { id: string } };
+
 interface Modules {
+  [name: string]: PageModule | undefined;
   DTSGInitialData?: { token: string };
   PolarisConfig?: { getViewerData_DO_NOT_USE: () => { username: string } };
   PolarisProfileSavedTabContentQuery$Parameters?: { params: { id: string } };
@@ -51,7 +58,7 @@ const SIGNED_IN: Page = {
 
 /** What the web app's Saved tab gets back from its collections query. */
 function savedTab(
-  nodes: JsonObject[],
+  nodes: Array<JsonObject>,
   page: { end_cursor?: string; has_next_page?: boolean } = {},
 ): Reply {
   return {
@@ -135,8 +142,8 @@ const onApiHost = (r: Request) => r.url.startsWith("https://i.instagram.com/");
 async function run(
   respond: (request: Request) => Reply | Error,
   page: Page = SIGNED_IN,
-): Promise<{ result: CollectionsReply; requests: Request[] }> {
-  const requests: Request[] = [];
+): Promise<{ result: CollectionsReply; requests: Array<Request> }> {
+  const requests: Array<Request> = [];
   const modules = new Map(Object.entries(page.modules ?? {}));
   const result = await runInNewContext(buildInstagramCollectionsExpression(), {
     URLSearchParams,
@@ -147,8 +154,9 @@ async function run(
       documentElement: { innerHTML: page.html ?? "<html></html>" },
     },
     require: (name: string) => {
-      if (!modules.has(name))
+      if (!modules.has(name)) {
         throw new Error(`Requiring unknown module "${name}"`);
+      }
       return modules.get(name);
     },
     setTimeout: (fn: () => void) => setTimeout(fn, 0),
@@ -168,7 +176,9 @@ async function run(
       };
       requests.push(request);
       const reply = respond(request);
-      if (reply instanceof Error) throw reply;
+      if (reply instanceof Error) {
+        throw reply;
+      }
       const { status, body } = reply;
       const text = body ? JSON.stringify(body) : "<!DOCTYPE html><html></html>";
       return {
@@ -179,7 +189,9 @@ async function run(
         },
         text: async () => text,
         json: async () => {
-          if (!body) throw new SyntaxError("not json");
+          if (!body) {
+            throw new SyntaxError("not json");
+          }
           return body;
         },
       };
@@ -191,8 +203,12 @@ async function run(
 /** GraphQL refuses every query, so the listing falls through to the REST list. */
 function restOnly(rest: (request: Request) => Reply | Error) {
   return (request: Request) => {
-    if (isGraphql(request)) return STALE_DOC;
-    if (isCurrentUser(request)) return SIGNED_IN_USER;
+    if (isGraphql(request)) {
+      return STALE_DOC;
+    }
+    if (isCurrentUser(request)) {
+      return SIGNED_IN_USER;
+    }
     return rest(request);
   };
 }
@@ -353,7 +369,7 @@ describe("buildInstagramCollectionsExpression over GraphQL", () => {
 
 /** GraphQL replies can start with `for (;;);`. */
 async function runPrefixed() {
-  const requests: Request[] = [];
+  const requests: Array<Request> = [];
   const body = JSON.stringify(savedTab([RECIPES_NODE]).body);
   const result: CollectionsReply = await runInNewContext(
     buildInstagramCollectionsExpression(),
@@ -424,7 +440,9 @@ describe("buildInstagramCollectionsExpression over REST", () => {
   it("keeps paging on the API host once www has failed", async () => {
     const { result, requests } = await run(
       restOnly((r): Reply => {
-        if (!onApiHost(r)) return SOFT_FAIL_FR;
+        if (!onApiHost(r)) {
+          return SOFT_FAIL_FR;
+        }
         return r.url.includes("max_id=")
           ? {
               status: 200,
@@ -550,8 +568,12 @@ describe("buildInstagramCollectionsExpression when everything fails", () => {
 
   it("names a GraphQL reply that isn't JSON", async () => {
     const { result } = await run((r) => {
-      if (isGraphql(r)) return { status: 200 };
-      if (isCurrentUser(r)) return SIGNED_IN_USER;
+      if (isGraphql(r)) {
+        return { status: 200 };
+      }
+      if (isCurrentUser(r)) {
+        return SIGNED_IN_USER;
+      }
       return NOT_FOUND_PAGE;
     });
     expect(result).toMatchObject({
@@ -574,9 +596,11 @@ describe("buildInstagramCollectionsExpression when everything fails", () => {
     expect(detail).toMatch(
       /; www\.instagram\.com 200 x+; i\.instagram\.com 200 x+$/,
     );
-    expect(readCollectionsReply(JSON.parse(JSON.stringify(result)))).toEqual(
-      result,
-    );
+    const serialized = JSON.stringify(result);
+    const received: unknown = JSON.parse(serialized);
+    expect(
+      isJsonValue(received) ? readCollectionsReply(received) : null,
+    ).toEqual(result);
   });
 });
 

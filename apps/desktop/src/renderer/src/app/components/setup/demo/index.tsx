@@ -1,16 +1,20 @@
 import { IconArrowLeft, IconArrowRight, IconDots } from "@pond/icons";
 import type { SidebarDestination } from "@pond/schema";
-import { buildThemeTokens, type ThemeInput } from "@pond/theme/tokens";
+import { buildThemeTokens } from "@pond/theme/tokens";
+import type { ThemeInput } from "@pond/theme/tokens";
 import { useReducedMotionConfig } from "motion/react";
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { displayGamut } from "@/shared/lib/paint-theme";
-import { Art, type ArtKind } from "./art";
+import { Art } from "./art";
+import type { ArtKind } from "./art";
 import { Chat } from "./chat";
 import { Downloads } from "./downloads";
-import { Inspector, type InspectorField } from "./inspector";
+import { Inspector } from "./inspector";
+import type { InspectorField } from "./inspector";
 import { Sidebar } from "./sidebar";
-import styles from "./styles.module.css";
 import { Toolbar } from "./toolbar";
+import styles from "./styles.module.css";
 
 export { Art, type ArtKind } from "./art";
 
@@ -43,7 +47,9 @@ function useDemoCycle(paused = false) {
     reduceMotion ? "library" : "harvest",
   );
   useEffect(() => {
-    if (reduceMotion || paused) return;
+    if (reduceMotion || paused) {
+      return;
+    }
     const id = setTimeout(() => {
       const next = (DEMO_STATES.indexOf(state) + 1) % DEMO_STATES.length;
       setState(DEMO_STATES[next] ?? "harvest");
@@ -77,10 +83,10 @@ export function Demo({
 }: {
   state?: DemoState;
   name?: string;
-  hidden?: readonly SidebarDestination[];
+  hidden?: ReadonlyArray<SidebarDestination>;
   /** Omitted to follow the app theme. */
   theme?: ThemeInput;
-  fields?: readonly InspectorField[];
+  fields?: ReadonlyArray<InspectorField>;
   connected?: boolean;
   /** `bleed` squares the bottom corners for a frame that crops it; `whole` rounds all four. */
   framing?: "bleed" | "whole";

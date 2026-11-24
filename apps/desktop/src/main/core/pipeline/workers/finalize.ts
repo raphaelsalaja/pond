@@ -1,15 +1,17 @@
-import { type Save, type Task, tasks } from "@pond/schema/db";
+import { tasks } from "@pond/schema/db";
+import type { Save, Task } from "@pond/schema/db";
 import { pickCardFile } from "@shared/save-file-names";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../../db";
 import { commitSaveIngestEvent } from "../../../lib/wide-event";
 import { persistSave } from "../../persist-save";
-import { CAPTURE_EXPECTATIONS, type CaptureField } from "../specs";
+import { CAPTURE_EXPECTATIONS } from "../specs";
+import type { CaptureField } from "../specs";
 import { readSave } from "./apply";
 
 export class FinalizeIncompleteError extends Error {
-  constructor(public readonly missing: string[]) {
+  constructor(public readonly missing: Array<string>) {
     super(`finalize: missing required fields: ${missing.join(", ")}`);
     this.name = "FinalizeIncompleteError";
   }
@@ -17,7 +19,9 @@ export class FinalizeIncompleteError extends Error {
 
 export async function runFinalize(saveId: string): Promise<void> {
   const save = await readSave(saveId);
-  if (!save) return;
+  if (!save) {
+    return;
+  }
 
   const taskRows = await fetchTaskRows(saveId);
   const report = computeCaptureReport(save);
@@ -68,7 +72,9 @@ export async function runFinalize(saveId: string): Promise<void> {
 
   const { splitNewPost } = await import("../../split-on-import");
   const current = await splitNewPost(save);
-  if (!current) return;
+  if (!current) {
+    return;
+  }
   const { writeSaveBlurhash } = await import("../../save-blurhash");
   await Promise.all([writeDominantColors(current), writeSaveBlurhash(current)]);
 
@@ -87,15 +93,20 @@ export async function runFinalize(saveId: string): Promise<void> {
 }
 
 async function writeDominantColors(save: Save): Promise<void> {
-  if (save.mediaType !== "image" || (save.dominantColors ?? []).length > 0)
+  if (save.mediaType !== "image" || (save.dominantColors ?? []).length > 0) {
     return;
+  }
   const files = save.files ?? [];
   const cover = pickCardFile(files) ?? files[0];
-  if (!cover) return;
+  if (!cover) {
+    return;
+  }
   const { extractPalette } = await import("../../../lib/palette");
   const { saveFile } = await import("../../../paths");
   const colors = await extractPalette(saveFile(save.id, cover.path));
-  if (colors.length === 0) return;
+  if (colors.length === 0) {
+    return;
+  }
   await persistSave(
     save.id,
     { dominantColors: colors },
@@ -103,14 +114,14 @@ async function writeDominantColors(save: Save): Promise<void> {
   );
 }
 
-async function fetchTaskRows(saveId: string): Promise<Task[]> {
+async function fetchTaskRows(saveId: string): Promise<Array<Task>> {
   const db = await getDb();
   return db.select().from(tasks).where(eq(tasks.saveId, saveId));
 }
 
 interface FieldPartition {
-  present: CaptureField[];
-  missing: CaptureField[];
+  present: Array<CaptureField>;
+  missing: Array<CaptureField>;
 }
 
 interface CaptureReport {
@@ -120,7 +131,7 @@ interface CaptureReport {
 }
 
 function hasText(value: string | null | undefined): boolean {
-  return value != null && value.trim().length > 0;
+  return value !== null && value !== undefined && value.trim().length > 0;
 }
 
 function hasNumber(value: number | undefined): boolean {
@@ -166,14 +177,17 @@ function computeCaptureReport(save: Save): CaptureReport {
 }
 
 function partition(
-  fields: readonly CaptureField[],
+  fields: ReadonlyArray<CaptureField>,
   save: Save,
 ): FieldPartition {
-  const present: CaptureField[] = [];
-  const missing: CaptureField[] = [];
+  const present: Array<CaptureField> = [];
+  const missing: Array<CaptureField> = [];
   for (const field of fields) {
-    if (FIELD_PRESENT[field](save)) present.push(field);
-    else missing.push(field);
+    if (FIELD_PRESENT[field](save)) {
+      present.push(field);
+    } else {
+      missing.push(field);
+    }
   }
   return { present, missing };
 }

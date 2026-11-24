@@ -1,9 +1,8 @@
 import type { DeepPartial, Folder, Prefs } from "@pond/schema/db";
-import {
-  type FolderTemplate,
-  FolderTemplateSchema,
-} from "@pond/schema/folder-templates";
-import { inverse, type Transaction } from "@pond/schema/tx";
+import { FolderTemplateSchema } from "@pond/schema/folder-templates";
+import type { FolderTemplate } from "@pond/schema/folder-templates";
+import { inverse } from "@pond/schema/tx";
+import type { Transaction } from "@pond/schema/tx";
 import {
   BUILT_IN_FOLDER_TEMPLATES,
   duplicateTemplateName,
@@ -14,23 +13,27 @@ import { ulid } from "ulid";
 import { executeBatch, withMutationScope } from "./executor";
 import {
   buildFolderTemplate,
-  type FolderTemplatePlan,
   planFolderTemplate,
 } from "./folder-template-plan";
+import type { FolderTemplatePlan } from "./folder-template-plan";
 import { listFolders } from "./folders";
 import { getPrefs, removeFolderPrefs, setPrefs } from "./prefs";
 import { normalizeTagList } from "./tags";
-import { recordBatchForUndo, type UndoEffects } from "./undo";
+import { recordBatchForUndo } from "./undo";
+import type { UndoEffects } from "./undo";
 
 export interface FolderTemplateRuntime {
   run<T>(operation: () => Promise<T>): Promise<T>;
-  listFolders(): Promise<Folder[]>;
+  listFolders(): Promise<Array<Folder>>;
   getPrefs(): Promise<Prefs>;
   setPrefs(patch: DeepPartial<Prefs>): Promise<void>;
-  removeFolderPrefs(ids: readonly string[]): Promise<void>;
-  execute(transactions: Transaction[]): Promise<void>;
-  recordUndo(transactions: Transaction[], effects?: UndoEffects): string | null;
-  createId(): string;
+  removeFolderPrefs(ids: ReadonlyArray<string>): Promise<void>;
+  execute(transactions: Array<Transaction>): Promise<void>;
+  recordUndo(
+    transactions: Array<Transaction>,
+    effects?: UndoEffects,
+  ): string | null;
+  createId: () => string;
 }
 
 const defaultRuntime: FolderTemplateRuntime = {
@@ -53,8 +56,8 @@ const defaultRuntime: FolderTemplateRuntime = {
 export async function listFolderTemplates(
   runtime: FolderTemplateRuntime = defaultRuntime,
 ): Promise<{
-  builtIn: readonly FolderTemplate[];
-  custom: FolderTemplate[];
+  builtIn: ReadonlyArray<FolderTemplate>;
+  custom: Array<FolderTemplate>;
 }> {
   return {
     builtIn: BUILT_IN_FOLDER_TEMPLATES,
@@ -64,12 +67,14 @@ export async function listFolderTemplates(
 
 function findFolderTemplate(
   id: string,
-  custom: readonly FolderTemplate[],
+  custom: ReadonlyArray<FolderTemplate>,
 ): FolderTemplate {
   const template = [...BUILT_IN_FOLDER_TEMPLATES, ...custom].find(
     (entry) => entry.id === id,
   );
-  if (!template) throw new Error("This template no longer exists.");
+  if (!template) {
+    throw new Error("This template no longer exists.");
+  }
   return template;
 }
 
@@ -80,8 +85,9 @@ function templateSettings(plan: FolderTemplatePlan): DeepPartial<Prefs> | null {
       { automaticTags: normalizeTagList(tags) },
     ]),
   );
-  if (!Object.keys(plan.views).length && !Object.keys(folderRules).length)
+  if (!Object.keys(plan.views).length && !Object.keys(folderRules).length) {
     return null;
+  }
   return { folderViews: plan.views, folderRules };
 }
 
@@ -100,8 +106,9 @@ export function applyFolderTemplate(
     );
     const existing = await runtime.listFolders();
     const parentId = input.parentId ?? null;
-    if (parentId && !existing.some((row) => row.id === parentId))
+    if (parentId && !existing.some((row) => row.id === parentId)) {
       throw new Error("Destination folder no longer exists.");
+    }
     const plan = planFolderTemplate({
       template,
       parentId,
@@ -110,8 +117,10 @@ export function applyFolderTemplate(
       createId: runtime.createId,
     });
     const root = plan.folders[0];
-    if (!root) throw new Error("A template needs exactly one top folder.");
-    const txs: Transaction[] = plan.folders.map((data) => ({
+    if (!root) {
+      throw new Error("A template needs exactly one top folder.");
+    }
+    const txs: Array<Transaction> = plan.folders.map((data) => ({
       kind: "create",
       model: "folder",
       id: data.id,
@@ -126,8 +135,8 @@ export function applyFolderTemplate(
       } catch (error) {
         await runtime
           .execute([...txs].reverse().map(inverse))
-          .catch((rollback) =>
-            log.warn("[pond folder templates] rollback failed", rollback),
+          .catch((cause: unknown) =>
+            log.warn("[pond folder templates] rollback failed", cause),
           );
         throw error;
       }

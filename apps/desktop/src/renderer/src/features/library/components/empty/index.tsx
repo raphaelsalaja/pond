@@ -102,7 +102,7 @@ export function UncategorizedEmpty() {
       </Empty.Media>
       <Empty.Title>No Uncategorized Saves</Empty.Title>
       <Empty.Description>
-        Saves that aren't in a folder appear here.
+        Saves that aren&apos;t in a folder appear here.
       </Empty.Description>
       <Empty.Action>
         <ButtonLink to="/" variant="secondary" size="sm">
@@ -148,7 +148,7 @@ export function InboxEmpty() {
           </EmptyPreview.Column>
         </EmptyPreview.Root>
       </Empty.Media>
-      <Empty.Title>You're All Caught Up</Empty.Title>
+      <Empty.Title>You&apos;re All Caught Up</Empty.Title>
       <Empty.Description>
         New saves wait here until you process them.
       </Empty.Description>

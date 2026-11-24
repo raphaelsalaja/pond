@@ -8,7 +8,7 @@ function choiceText(choice: RuleChoice): string {
 
 interface SingleProps<T extends string> {
   value: T;
-  items: readonly { value: T; label: string }[];
+  items: ReadonlyArray<{ value: T; label: string }>;
   label: string;
   width?: "content";
   onChange: (value: T) => void;
@@ -26,7 +26,9 @@ function Single<T extends string>({
       value={value}
       items={items}
       onValueChange={(next) => {
-        if (next !== null) onChange(next);
+        if (next !== null) {
+          onChange(next);
+        }
       }}
     >
       <Select.Trigger
@@ -49,11 +51,11 @@ function Single<T extends string>({
 }
 
 interface MultipleProps {
-  value: string[];
-  items: readonly RuleChoice[];
+  value: Array<string>;
+  items: ReadonlyArray<RuleChoice>;
   label: string;
   placeholder: string;
-  onChange: (value: string[]) => void;
+  onChange: (value: Array<string>) => void;
 }
 
 function Multiple({

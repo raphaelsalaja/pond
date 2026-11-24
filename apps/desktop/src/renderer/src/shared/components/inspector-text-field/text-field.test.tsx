@@ -1,7 +1,9 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { type InspectorDrafts, InspectorTextField } from ".";
+import { InspectorTextField } from ".";
+import type { InspectorDrafts } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -37,7 +39,9 @@ async function render(
 }
 function field() {
   const node = host.querySelector("textarea");
-  if (!node) throw new Error("Missing notes field");
+  if (!node) {
+    throw new Error("Missing notes field");
+  }
   return node;
 }
 async function fill(value: string) {
@@ -82,7 +86,9 @@ it("does not replace mixed notes until edited, then commits only the bound targe
 it("retains failed notes across selection changes and retries the original value", async () => {
   let fail = true;
   const commit = vi.fn(async (_value: string) => {
-    if (fail) throw new Error("Disk full");
+    if (fail) {
+      throw new Error("Disk full");
+    }
   });
   await render("a", "Original", commit);
   await fill("Keep this draft");
@@ -126,7 +132,9 @@ it("keeps a single-line field open on Enter while text is composing", async () =
     ),
   );
   const input = host.querySelector("input");
-  if (!input) throw new Error("Missing title field");
+  if (!input) {
+    throw new Error("Missing title field");
+  }
   const press = (isComposing: boolean) =>
     act(async () => {
       input.dispatchEvent(

@@ -9,8 +9,12 @@ type FieldValue = ReturnType<(typeof FIELD_DESCRIPTORS)[FieldId]["project"]>;
 const SAVES_PER_CHUNK = 100;
 
 function hasValue(value: FieldValue): boolean {
-  if (Array.isArray(value)) return value.length > 0;
-  return value != null && value !== "" && value !== false;
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return (
+    value !== null && value !== undefined && value !== "" && value !== false
+  );
 }
 
 /** Null until the whole library is in memory, so a half-loaded pool never hides a field. */
@@ -24,7 +28,9 @@ export function usePresentFields(
     present: ReadonlySet<FieldId>;
   } | null>(null);
   useEffect(() => {
-    if (!enabled || hasMore || result?.saves === saves) return;
+    if (!enabled || hasMore || result?.saves === saves) {
+      return;
+    }
     let cancelled = false;
     let timer = 0;
     let index = 0;
@@ -34,7 +40,9 @@ export function usePresentFields(
       const end = Math.min(index + SAVES_PER_CHUNK, saves.length);
       for (; index < end && found.size < probes.size; index += 1) {
         const save = saves[index];
-        if (!save) continue;
+        if (!save) {
+          continue;
+        }
         const record = { ...save, folderIds: [] };
         for (const probe of probes) {
           if (
@@ -52,9 +60,14 @@ export function usePresentFields(
       const next = new Set<FieldId>(
         FIELD_IDS.filter((field) => !DATA_GATED_FIELDS.has(field)),
       );
-      for (const [field, probe] of DATA_GATED_FIELDS)
-        if (found.has(probe)) next.add(field);
-      if (!cancelled) setResult({ saves, present: next });
+      for (const [field, probe] of DATA_GATED_FIELDS) {
+        if (found.has(probe)) {
+          next.add(field);
+        }
+      }
+      if (!cancelled) {
+        setResult({ saves, present: next });
+      }
     };
     timer = window.setTimeout(scanChunk, 0);
     return () => {

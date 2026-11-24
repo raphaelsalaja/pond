@@ -88,13 +88,17 @@ async function inPageSavedApi(
   }
 
   const sleep = (ms: number): Promise<void> =>
-    new Promise((r) => setTimeout(r, ms));
+    new Promise((r) => {
+      setTimeout(r, ms);
+    });
 
   const retryAfterFromHeaders = (res: Response): number | null => {
     const retryAfter = res.headers.get("retry-after");
     if (retryAfter) {
       const n = Number(retryAfter);
-      if (Number.isFinite(n)) return Math.max(0, n);
+      if (Number.isFinite(n)) {
+        return Math.max(0, n);
+      }
       const when = Date.parse(retryAfter);
       if (Number.isFinite(when)) {
         return Math.max(0, Math.round((when - Date.now()) / 1000));
@@ -103,16 +107,27 @@ async function inPageSavedApi(
     return null;
   };
 
-  const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>
-    value instanceof Object && !Array.isArray(value);
+  /** Only applied to `JSON.parse` output, so an object's entries are already JSON. */
+  const isJsonObject = (value: unknown): value is JsonObject =>
+    Object(value) === value && !Array.isArray(value);
+  const isObjectNode = (value: JsonValue | undefined): value is JsonObject =>
+    Object(value) === value && !Array.isArray(value);
+  const isJsonTree = (value: unknown): value is JsonObject | Array<JsonValue> =>
+    Object(value) === value;
+  const isRequestBody = (value: unknown): value is GraphqlRequestBody =>
+    isJsonObject(value);
 
   const isJsonNumber = (value: JsonValue): value is number =>
     Number.isFinite(value);
 
   const jsonString = (value: JsonValue | undefined): string | undefined => {
-    if (value === undefined || value === null) return undefined;
-    if (value === true || value === false) return undefined;
-    if (Array.isArray(value) || isJsonObject(value) || isJsonNumber(value)) {
+    if (value === undefined || value === null) {
+      return undefined;
+    }
+    if (value === true || value === false) {
+      return undefined;
+    }
+    if (Array.isArray(value) || isObjectNode(value) || isJsonNumber(value)) {
       return undefined;
     }
     return value;
@@ -120,7 +135,9 @@ async function inPageSavedApi(
 
   const getRequest = (): SavedRequestTemplate | null => {
     const req = globalThis.__pondThreadsSavedRequest;
-    if (!req?.url) return null;
+    if (!req?.url) {
+      return null;
+    }
     return req;
   };
 
@@ -128,11 +145,13 @@ async function inPageSavedApi(
   const waitDeadline = Date.now() + 20_000;
   let nudged = false;
   while (!template && Date.now() < waitDeadline) {
-    if (!nudged && Date.now() - (waitDeadline - 20_000) > 4_000) {
+    if (!nudged && Date.now() - (waitDeadline - 20_000) > 4000) {
       nudged = true;
       try {
         window.scrollBy({ top: 600, behavior: "instant" });
-      } catch {}
+      } catch {
+        /** The nudge only hurries the page's own request; waiting still works without it. */
+      }
     }
     await sleep(250);
     template = getRequest();
@@ -152,12 +171,16 @@ async function inPageSavedApi(
   for (const [k, v] of Object.entries(template.headers ?? {})) {
     headers[k] = v;
   }
-  if (!("accept" in headers)) headers.accept = "*/*";
+  if (!("accept" in headers)) {
+    headers.accept = "*/*";
+  }
 
   const parseVariables = (raw: string | null): JsonObject => {
-    if (!raw) return {};
+    if (!raw) {
+      return {};
+    }
     try {
-      const parsed: JsonValue = JSON.parse(raw);
+      const parsed: unknown = JSON.parse(raw);
       return isJsonObject(parsed) ? parsed : {};
     } catch {
       return {};
@@ -171,7 +194,8 @@ async function inPageSavedApi(
   let jsonBody: GraphqlRequestBody | null = null;
   if (template.body?.trim().startsWith("{")) {
     try {
-      jsonBody = JSON.parse(template.body);
+      const parsed: unknown = JSON.parse(template.body);
+      jsonBody = isRequestBody(parsed) ? parsed : null;
     } catch {
       jsonBody = null;
     }
@@ -179,8 +203,9 @@ async function inPageSavedApi(
 
   let baseVariables: JsonObject = {};
   const urlVars = base.searchParams.get("variables");
-  if (urlVars) baseVariables = parseVariables(urlVars);
-  else if (form?.get("variables")) {
+  if (urlVars) {
+    baseVariables = parseVariables(urlVars);
+  } else if (form?.get("variables")) {
     baseVariables = parseVariables(form.get("variables"));
   } else if (jsonBody?.variables) {
     const rawVariables = jsonBody.variables;
@@ -222,12 +247,18 @@ async function inPageSavedApi(
   const pageCursor = (json: JsonValue): string | null => {
     let found: string | null = null;
     const visit = (value: JsonValue): void => {
-      if (found) return;
-      if (Array.isArray(value)) {
-        for (const item of value) visit(item);
+      if (found) {
         return;
       }
-      if (!isJsonObject(value)) return;
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          visit(item);
+        }
+        return;
+      }
+      if (!isObjectNode(value)) {
+        return;
+      }
       const pageInfo = value.page_info;
       const endCursor = isJsonObject(pageInfo)
         ? jsonString(pageInfo.end_cursor)
@@ -236,21 +267,27 @@ async function inPageSavedApi(
         found = endCursor;
         return;
       }
-      for (const child of Object.values(value)) visit(child);
+      for (const child of Object.values(value)) {
+        visit(child);
+      }
     };
     visit(json);
     return found;
   };
 
-  const pagePostIds = (json: JsonValue): string[] => {
-    const ids: string[] = [];
+  const pagePostIds = (json: JsonValue): Array<string> => {
+    const ids: Array<string> = [];
     const seen = new Set<string>();
     const visit = (value: JsonValue, skip: boolean): void => {
       if (Array.isArray(value)) {
-        for (const item of value) visit(item, skip);
+        for (const item of value) {
+          visit(item, skip);
+        }
         return;
       }
-      if (!isJsonObject(value)) return;
+      if (!isObjectNode(value)) {
+        return;
+      }
       const code = jsonString(value.code);
       if (
         !skip &&
@@ -285,7 +322,7 @@ async function inPageSavedApi(
   };
   Object.assign(globalThis, { __pondHarvestStats: stats });
 
-  const captures: SavedCapture[] = [];
+  const captures: Array<SavedCapture> = [];
   const deadline = Date.now() + args.deadlineMs;
   const known = new Set<string>((args.knownIds ?? []).map(String));
   const earlyStopEnabled = known.size > 0;
@@ -306,7 +343,9 @@ async function inPageSavedApi(
       headers,
       credentials: "include",
     };
-    if (built.body) init.body = built.body;
+    if (built.body) {
+      init.body = built.body;
+    }
     let res: Response;
     try {
       res = await fetch(built.url, init);
@@ -317,7 +356,9 @@ async function inPageSavedApi(
       reason = "http_error";
       break;
     }
-    if (pages === 0) firstStatus = res.status;
+    if (pages === 0) {
+      firstStatus = res.status;
+    }
     if (!res.ok) {
       if (res.status === 429) {
         return {
@@ -340,7 +381,8 @@ async function inPageSavedApi(
     const body = await res.text();
     let json: JsonValue;
     try {
-      json = JSON.parse(body);
+      const parsed: unknown = JSON.parse(body);
+      json = isJsonTree(parsed) ? parsed : null;
     } catch {
       if (pages === 0) {
         return { ok: false, reason: "fallback", detail: "parse_error" };
@@ -387,7 +429,9 @@ async function inPageSavedApi(
     await sleep(args.throttleMs + Math.random() * 150);
   }
 
-  if (Date.now() >= deadline) reason = "deadline";
+  if (Date.now() >= deadline) {
+    reason = "deadline";
+  }
 
   if (pages === 1 && postTotal === 0) {
     return { ok: false, reason: "fallback", detail: "empty_first_page" };

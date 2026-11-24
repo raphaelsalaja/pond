@@ -8,7 +8,7 @@ import { useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import styles from "./styles.module.css";
 
-const ACCESS_ITEMS: { value: FishMcpToolAccess; label: string }[] = [
+const ACCESS_ITEMS: Array<{ value: FishMcpToolAccess; label: string }> = [
   { value: "review", label: "Ask First" },
   { value: "read", label: "Run Without Review" },
   { value: "off", label: "Off" },
@@ -31,8 +31,8 @@ export function ToolList({ status, onChanged, onClose }: ToolListProps) {
     try {
       await window.pond.query("fishMcp.test", { id: server.id });
       await onChanged();
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't reach the server. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't reach the server. Try again."));
     } finally {
       setTesting(false);
     }
@@ -42,7 +42,9 @@ export function ToolList({ status, onChanged, onClose }: ToolListProps) {
     <Dialog.Root
       open
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) {
+          onClose();
+        }
       }}
     >
       <Dialog.Portal>
@@ -125,8 +127,8 @@ function ToolRow({
         access,
       });
       await onChanged();
-    } catch (reason) {
-      onError(errorCopy(reason, "Couldn't change that tool. Try again."));
+    } catch (error) {
+      onError(errorCopy(error, "Couldn't change that tool. Try again."));
     } finally {
       setPending(null);
     }
@@ -151,7 +153,9 @@ function ToolRow({
         value={pending ?? tool.access}
         items={ACCESS_ITEMS}
         onValueChange={(next) => {
-          if (next !== null) void change(next);
+          if (next !== null) {
+            void change(next);
+          }
         }}
       >
         <Select.Trigger size="sm" aria-label={`${tool.name} access`}>

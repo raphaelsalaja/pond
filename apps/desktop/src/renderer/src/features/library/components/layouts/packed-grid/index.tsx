@@ -1,6 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
-  type ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -9,14 +8,13 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  type GridLayout,
-  LibraryGrid,
-} from "@/features/library/components/layouts/grid";
-import {
-  type CardLayoutItem,
-  type CardLayoutResult,
-  stackSections,
+import type { ReactNode } from "react";
+import { LibraryGrid } from "@/features/library/components/layouts/grid";
+import type { GridLayout } from "@/features/library/components/layouts/grid";
+import { stackSections } from "@/features/library/components/layouts/packing";
+import type {
+  CardLayoutItem,
+  CardLayoutResult,
 } from "@/features/library/components/layouts/packing";
 import { useLibrarySaveRadius } from "@/features/library/components/layouts/save-radius";
 import { useLibraryLayoutTransition } from "@/features/library/hooks/use-library-layout-transition";
@@ -32,9 +30,9 @@ import {
   recallScrollAnchor,
   rememberScroll,
   rememberScrollAnchor,
-  type ScrollAnchor,
   ScrollRestorationContext,
 } from "@/shared/hooks/use-scroll-restoration";
+import type { ScrollAnchor } from "@/shared/hooks/use-scroll-restoration";
 import { findScrollParent } from "@/shared/lib/dom";
 import {
   buildVirtualBands,
@@ -58,7 +56,7 @@ const MISSING_ANCHOR_TIMEOUT_MS = 5000;
 const ANCHOR_RESTORE_TOLERANCE_PX = 2;
 
 function fallbackCursorId(
-  itemsByTop: readonly PackedItem[],
+  itemsByTop: ReadonlyArray<PackedItem>,
   parent: HTMLElement | null,
   scrollMargin: number,
 ): string | undefined {
@@ -70,14 +68,18 @@ export function findScrollAnchor(
   itemsByTop: ReadonlyArray<PackedItem>,
   localScrollTop: number,
 ): { item: PackedItem; offset: number } | null {
-  if (itemsByTop.length === 0) return null;
+  if (itemsByTop.length === 0) {
+    return null;
+  }
   let low = 0;
   let high = itemsByTop.length - 1;
   let best = 0;
   while (low <= high) {
     const mid = (low + high) >>> 1;
     const item = itemsByTop[mid];
-    if (!item) break;
+    if (!item) {
+      break;
+    }
     if (item.top <= localScrollTop) {
       best = mid;
       low = mid + 1;
@@ -86,32 +88,42 @@ export function findScrollAnchor(
     }
   }
   const bestItem = itemsByTop[best];
-  if (!bestItem) return null;
-  while (best > 0 && itemsByTop[best - 1]?.top === bestItem.top) best -= 1;
+  if (!bestItem) {
+    return null;
+  }
+  while (best > 0 && itemsByTop[best - 1]?.top === bestItem.top) {
+    best -= 1;
+  }
   const item = itemsByTop[best];
-  if (!item) return null;
+  if (!item) {
+    return null;
+  }
   return { item, offset: Math.max(0, localScrollTop - item.top) };
 }
 
 interface PackedGridProps {
   layout: GridLayout;
-  items: PackedItem[];
+  items: Array<PackedItem>;
   totalHeight: number;
   onEndReached?: () => void;
   renderItem: (item: PackedItem) => ReactNode;
-  onRunwayChange?: (itemIndexes: readonly number[]) => void;
+  onRunwayChange?: (itemIndexes: ReadonlyArray<number>) => void;
 }
 
 export function surroundingBandIndexes(
-  mounted: readonly number[],
+  mounted: ReadonlyArray<number>,
   count: number,
   runway = RUNWAY_BANDS,
-): number[] {
-  if (mounted.length === 0 || count <= 0 || runway <= 0) return [];
+): Array<number> {
+  if (mounted.length === 0 || count <= 0 || runway <= 0) {
+    return [];
+  }
   const first = Math.min(...mounted);
   const last = Math.max(...mounted);
-  const result: number[] = [];
-  for (let i = Math.max(0, first - runway); i < first; i += 1) result.push(i);
+  const result: Array<number> = [];
+  for (let i = Math.max(0, first - runway); i < first; i += 1) {
+    result.push(i);
+  }
   for (let i = last + 1; i <= Math.min(count - 1, last + runway); i += 1) {
     result.push(i);
   }
@@ -184,16 +196,24 @@ export function PackedGrid({
   const [scrollMargin, setScrollMargin] = useState(0);
 
   useLayoutEffect(() => {
-    if (document.activeElement !== ref.current) return;
-    if (cursor && itemById.has(cursor)) return;
+    if (document.activeElement !== ref.current) {
+      return;
+    }
+    if (cursor && itemById.has(cursor)) {
+      return;
+    }
     const next = fallbackCursorId(itemsByTop, getScrollElement(), scrollMargin);
-    if (next && next !== cursor) selection.setCursor(next);
+    if (next && next !== cursor) {
+      selection.setCursor(next);
+    }
   }, [cursor, getScrollElement, itemById, itemsByTop, scrollMargin]);
 
   useLayoutEffect(() => {
     const node = ref.current;
     const parent = restoration?.ref.current ?? findScrollParent(node);
-    if (!node || !parent) return;
+    if (!node || !parent) {
+      return;
+    }
 
     const measure = () => {
       const parentRect = parent.getBoundingClientRect();
@@ -209,7 +229,9 @@ export function PackedGrid({
       "ResizeObserver" in globalThis ? new ResizeObserver(measure) : null;
     observer?.observe(node);
     observer?.observe(parent);
-    if (node.parentElement) observer?.observe(node.parentElement);
+    if (node.parentElement) {
+      observer?.observe(node.parentElement);
+    }
     window.addEventListener("resize", measure, { passive: true });
     return () => {
       observer?.disconnect();
@@ -218,10 +240,14 @@ export function PackedGrid({
   }, [restoration]);
 
   useLayoutEffect(() => {
-    if (!restoration) return;
+    if (!restoration) {
+      return;
+    }
     const parent = getScrollElement();
     const active = activeRestoration.current;
-    if (!parent || !active || active.key !== restoration.key) return;
+    if (!parent || !active || active.key !== restoration.key) {
+      return;
+    }
     parent.dataset.restoringScroll = "";
     const item = itemById.get(active.anchor.id);
     if (!item) {
@@ -229,7 +255,9 @@ export function PackedGrid({
         clearTimeout(restorationSettleTimer.current);
       }
       restorationSettleTimer.current = setTimeout(() => {
-        if (activeRestoration.current !== active) return;
+        if (activeRestoration.current !== active) {
+          return;
+        }
         activeRestoration.current = null;
         delete parent.dataset.restoringScroll;
         restorationSettleTimer.current = null;
@@ -242,13 +270,19 @@ export function PackedGrid({
       Math.abs(savedTop - target) <= ANCHOR_RESTORE_TOLERANCE_PX
         ? savedTop
         : target;
-    if (parent.scrollTop !== nextTop) parent.scrollTop = nextTop;
-    if (nextTop !== savedTop) rememberScroll(restoration.key, nextTop);
+    if (parent.scrollTop !== nextTop) {
+      parent.scrollTop = nextTop;
+    }
+    if (nextTop !== savedTop) {
+      rememberScroll(restoration.key, nextTop);
+    }
     if (restorationSettleTimer.current !== null) {
       clearTimeout(restorationSettleTimer.current);
     }
     restorationSettleTimer.current = setTimeout(() => {
-      if (activeRestoration.current !== active) return;
+      if (activeRestoration.current !== active) {
+        return;
+      }
       activeRestoration.current = null;
       delete parent.dataset.restoringScroll;
       restorationSettleTimer.current = null;
@@ -263,7 +297,9 @@ export function PackedGrid({
 
   useEffect(() => {
     const parent = getScrollElement();
-    if (!parent) return;
+    if (!parent) {
+      return;
+    }
     const cancel = () => {
       activeRestoration.current = null;
       if (restorationSettleTimer.current !== null) {
@@ -290,19 +326,25 @@ export function PackedGrid({
       resultNavigation.registerReveal((id) => {
         const item = itemById.get(id);
         const parent = getScrollElement();
-        if (!item || !parent) return;
+        if (!item || !parent) {
+          return;
+        }
         const top = scrollMargin + item.top;
         const bottom = top + item.height;
-        if (top < parent.scrollTop) parent.scrollTop = top;
-        else if (bottom > parent.scrollTop + parent.clientHeight)
+        if (top < parent.scrollTop) {
+          parent.scrollTop = top;
+        } else if (bottom > parent.scrollTop + parent.clientHeight) {
           parent.scrollTop = Math.max(0, bottom - parent.clientHeight);
-        if (resultNavigation.shouldFocus())
+        }
+        if (resultNavigation.shouldFocus()) {
           ref.current?.focus({ preventScroll: true });
+        }
         resultNavigation.didReveal(id);
       }),
     [getScrollElement, itemById, scrollMargin],
   );
 
+  // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual returns unstable methods by design; the compiler skips memoizing this component.
   const virtualizer = useVirtualizer({
     count: bands.length,
     getScrollElement,
@@ -312,29 +354,43 @@ export function PackedGrid({
     useFlushSync: false,
     scrollMargin,
     initialOffset: () => {
-      if (!restoration) return 0;
+      if (!restoration) {
+        return 0;
+      }
       const active = activeRestoration.current;
       const anchor = active?.anchor ?? recallScrollAnchor(restoration.key);
       const savedTop = active?.top ?? recallScroll(restoration.key);
-      if (!anchor) return savedTop;
+      if (!anchor) {
+        return savedTop;
+      }
       const item = itemById.get(anchor.id);
-      if (!item) return savedTop;
+      if (!item) {
+        return savedTop;
+      }
       const anchoredTop = scrollMargin + item.top + anchor.offset;
       return Math.abs(savedTop - anchoredTop) <= ANCHOR_RESTORE_TOLERANCE_PX
         ? savedTop
         : anchoredTop;
     },
     onChange: (instance, sync) => {
-      if (!sync || !restoration || instance.scrollOffset == null) return;
-      if (activeRestoration.current?.key === restoration.key) return;
+      if (!sync || !restoration || instance.scrollOffset === null) {
+        return;
+      }
+      if (activeRestoration.current?.key === restoration.key) {
+        return;
+      }
       const parent = getScrollElement();
-      if (!parent || "restoringScroll" in parent.dataset) return;
+      if (!parent || "restoringScroll" in parent.dataset) {
+        return;
+      }
       const top = instance.scrollOffset;
       const anchor = findScrollAnchor(
         itemsByTop,
         Math.max(0, top - scrollMargin),
       );
-      if (!anchor) return;
+      if (!anchor) {
+        return;
+      }
       rememberScrollAnchor(restoration.key, top, {
         id: anchor.item.id,
         offset: anchor.offset,
@@ -355,7 +411,9 @@ export function PackedGrid({
       : indexes;
   }, [activeId, items, mountedIndexes]);
   const runway = useMemo(() => {
-    if (!onRunwayChange) return [];
+    if (!onRunwayChange) {
+      return [];
+    }
     const mounted = new Set(visible);
     return indicesForVirtualBands(
       bands,
@@ -392,21 +450,28 @@ export function PackedGrid({
       style={style}
       role="listbox"
       aria-label="Saves"
+      // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- aria-description is a global ARIA 1.3 attribute
       aria-description="Arrow keys select Saves. Shift extends the selection. Option or Alt with arrows moves focus without changing selection; Shift+Space toggles the focused Save. Enter opens; Space previews."
       aria-multiselectable="true"
       aria-activedescendant={activeId ? `save-option-${activeId}` : undefined}
       data-save-collection=""
       tabIndex={0}
       onMouseDown={(event) => {
-        if (event.target !== event.currentTarget || event.button !== 0) return;
-        if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+        if (event.target !== event.currentTarget || event.button !== 0) {
+          return;
+        }
+        if (event.metaKey || event.ctrlKey || event.shiftKey) {
+          return;
+        }
         // The list is as tall as the whole result. A gap click would focus it
         // and the browser would scroll the top into view.
         event.preventDefault();
         event.currentTarget.focus({ preventScroll: true });
       }}
       onFocus={(event) => {
-        if (event.target !== event.currentTarget) return;
+        if (event.target !== event.currentTarget) {
+          return;
+        }
         const cursorId = selection.getCursor();
         const present = cursorId !== null && itemById.has(cursorId);
         if (!present) {
@@ -415,7 +480,9 @@ export function PackedGrid({
             getScrollElement(),
             scrollMargin,
           );
-          if (next && next !== cursorId) selection.setCursor(next);
+          if (next && next !== cursorId) {
+            selection.setCursor(next);
+          }
           return;
         }
         void resultNavigation.reveal(cursorId);
@@ -424,12 +491,15 @@ export function PackedGrid({
         if (
           event.key !== "ContextMenu" &&
           !(event.shiftKey && event.key === "F10")
-        )
+        ) {
           return;
+        }
         const option = activeId
           ? document.getElementById(`save-option-${activeId}`)
           : null;
-        if (!option) return;
+        if (!option) {
+          return;
+        }
         event.preventDefault();
         const rect = option.getBoundingClientRect();
         option.dispatchEvent(
@@ -448,7 +518,7 @@ export function PackedGrid({
 
 interface SavePackedGridProps {
   layout: GridLayout;
-  items: PackedItem[];
+  items: Array<PackedItem>;
   totalHeight: number;
   onEndReached?: () => void;
   lead?: CardLayoutResult;
@@ -465,10 +535,12 @@ export function SavePackedGrid({
 }: SavePackedGridProps) {
   const dividerRef = useRef<HTMLDivElement>(null);
   const [dividerHeight, setDividerHeight] = useState(0);
-  const hasDivider = divider != null;
+  const hasDivider = divider !== null && divider !== undefined;
   useLayoutEffect(() => {
     const node = dividerRef.current;
-    if (!hasDivider || !node) return;
+    if (!hasDivider || !node) {
+      return;
+    }
     const measure = () => setDividerHeight(node.offsetHeight);
     measure();
     const observer =

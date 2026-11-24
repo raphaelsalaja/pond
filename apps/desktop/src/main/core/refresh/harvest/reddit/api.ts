@@ -16,11 +16,11 @@ import {
   entriesFromListing,
   handleFromMeJson,
   RedditAccountSchema,
-  type RedditListingKind,
   RedditListingSchema,
   RedditPostResponseSchema,
   redditListingUrl,
 } from "./listing";
+import type { RedditListingKind } from "./listing";
 
 const CHROME_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
@@ -45,8 +45,8 @@ async function fetchRedditJson<T>(
         "user-agent": CHROME_UA,
       },
     });
-  } catch (err) {
-    log.warn("[pond reddit-api] fetch threw", url, err);
+  } catch (error) {
+    log.warn("[pond reddit-api] fetch threw", url, error);
     return { ok: false, status: 0, html: false };
   }
   const text = await res.text();
@@ -70,7 +70,9 @@ export async function probeRedditHandle(
     "https://old.reddit.com/api/me.json?raw_json=1",
   ]) {
     const result = await fetchRedditJson(partition, url, RedditAccountSchema);
-    if (!result.ok) continue;
+    if (!result.ok) {
+      continue;
+    }
     const handle = handleFromMeJson(result.json);
     if (handle) {
       log.info("[pond reddit-api] probed handle", handle);
@@ -91,14 +93,18 @@ export async function fetchRedditAvatar(
   );
   if (me.ok) {
     const url = avatarFromMeJson(me.json);
-    if (url) return url;
+    if (url) {
+      return url;
+    }
   }
   const about = await fetchRedditJson(
     partition,
     `https://www.reddit.com/user/${encodeURIComponent(name)}/about.json?raw_json=1`,
     RedditAccountSchema,
   );
-  if (!about.ok) return null;
+  if (!about.ok) {
+    return null;
+  }
   return avatarFromMeJson(about.json);
 }
 
@@ -125,7 +131,9 @@ async function harvestRedditListingJson(
       if (result.status === 429) {
         return { ok: false, reason: "rate_limited" };
       }
-      if (page === 0) return { ok: false, reason: "no_match" };
+      if (page === 0) {
+        return { ok: false, reason: "no_match" };
+      }
       break;
     }
     const pageData = entriesFromListing(result.json);
@@ -134,7 +142,9 @@ async function harvestRedditListingJson(
     }
     let pageFresh = 0;
     for (const entry of pageData.entries) {
-      if (!known.has(entry.sourceId)) pageFresh += 1;
+      if (!known.has(entry.sourceId)) {
+        pageFresh += 1;
+      }
       entries.push(entry);
     }
     if (earlyStopEnabled && pageData.entries.length > 0 && pageFresh === 0) {
@@ -168,7 +178,9 @@ export async function harvestRedditLists(
   const saved = kinds.includes("saved")
     ? await harvestRedditListingJson(args, "saved", partition)
     : null;
-  if (saved && !saved.ok) return saved;
+  if (saved && !saved.ok) {
+    return saved;
+  }
   const savedEntries = saved ? stampListKind(saved.entries, "saved") : [];
   if (!kinds.includes("liked")) {
     return saved
@@ -202,25 +214,37 @@ export async function fetchRedditPostCapture(
   const jar = partition ?? (await partitionForIngest("reddit"));
   const url = `https://www.reddit.com/comments/${encodeURIComponent(postId)}.json?raw_json=1`;
   const result = await fetchRedditJson(jar, url, RedditPostResponseSchema);
-  if (!result.ok) return null;
+  if (!result.ok) {
+    return null;
+  }
   const listing = Array.isArray(result.json) ? result.json[0] : result.json;
   const { entries } = entriesFromListing(listing ?? {});
   const entry = entries[0];
-  if (!entry) return null;
-  const media: CaptureMedia[] = [];
+  if (!entry) {
+    return null;
+  }
+  const media: Array<CaptureMedia> = [];
   for (const m of entry.mediaUrls ?? []) {
     const item: CaptureMedia = {
       url: m.url,
       type: m.type === "video" ? "video" : "image",
     };
-    if (m.poster) item.posterUrl = m.poster;
+    if (m.poster) {
+      item.posterUrl = m.poster;
+    }
     media.push(item);
   }
   const metrics: CaptureMetrics = {};
-  if (entry.likes !== undefined) metrics.likes = entry.likes;
-  if (entry.comments !== undefined) metrics.comments = entry.comments;
+  if (entry.likes !== undefined) {
+    metrics.likes = entry.likes;
+  }
+  if (entry.comments !== undefined) {
+    metrics.comments = entry.comments;
+  }
   const extras: RedditCaptureExtras = {};
-  if (entry.subreddit) extras.subreddit = entry.subreddit;
+  if (entry.subreddit) {
+    extras.subreddit = entry.subreddit;
+  }
   const capture: Capture = {
     id: postId,
     source: "reddit",
@@ -235,8 +259,14 @@ export async function fetchRedditPostCapture(
       profileUrl: `https://www.reddit.com/user/${entry.author}/`,
     };
   }
-  if (entry.publishedAt) capture.publishedAt = entry.publishedAt;
-  if (Object.keys(metrics).length > 0) capture.metrics = metrics;
-  if (Object.keys(extras).length > 0) capture.extras = extras;
+  if (entry.publishedAt) {
+    capture.publishedAt = entry.publishedAt;
+  }
+  if (Object.keys(metrics).length > 0) {
+    capture.metrics = metrics;
+  }
+  if (Object.keys(extras).length > 0) {
+    capture.extras = extras;
+  }
   return capture;
 }

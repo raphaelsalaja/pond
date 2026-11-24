@@ -50,17 +50,25 @@ export function uniqueIdFromHydration(data: TiktokHydration): string | null {
 export function uniqueIdFromTiktokHtml(html: string): string | null {
   for (const id of ["__UNIVERSAL_DATA_FOR_REHYDRATION__", "SIGI_STATE"]) {
     const json = scriptJson(html, id);
-    if (!json) continue;
+    if (!json) {
+      continue;
+    }
     const handle = uniqueIdFromHydration(json);
-    if (handle) return handle;
+    if (handle) {
+      return handle;
+    }
   }
   return null;
 }
 
 function handleFromUniqueId(value: string | undefined): string | null {
-  if (value === undefined) return null;
+  if (value === undefined) {
+    return null;
+  }
   const handle = value.replace(/^@/, "").trim();
-  if (!/^[A-Za-z0-9._]{2,24}$/.test(handle)) return null;
+  if (!/^[A-Za-z0-9._]{2,24}$/.test(handle)) {
+    return null;
+  }
   return handle;
 }
 
@@ -70,7 +78,9 @@ function scriptJson(html: string, id: string): TiktokHydration | null {
     "i",
   );
   const match = re.exec(html);
-  if (!match?.[1]) return null;
+  if (!match?.[1]) {
+    return null;
+  }
   try {
     const parsed = TiktokHydrationSchema.safeParse(JSON.parse(match[1].trim()));
     return parsed.success ? parsed.data : null;

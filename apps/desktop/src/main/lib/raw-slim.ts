@@ -1,7 +1,9 @@
 import type { RawJson } from "@pond/schema/raw";
 
 export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   const cap = raw.capture;
   const capture: RawJson["capture"] = {
     id: cap.id,
@@ -12,29 +14,41 @@ export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
         url: m.url,
         type: m.type,
       };
-      if (m.durationSec != null) media.durationSec = m.durationSec;
+      if (m.durationSec !== undefined) {
+        media.durationSec = m.durationSec;
+      }
       return media;
     }),
   };
-  if (cap.author?.avatarUrl)
+  if (cap.author?.avatarUrl) {
     capture.author = { avatarUrl: cap.author.avatarUrl };
-  if (cap.duration != null) capture.duration = cap.duration;
-  if (cap.extras?.product) capture.extras = { product: true };
+  }
+  if (cap.duration !== undefined) {
+    capture.duration = cap.duration;
+  }
+  if (cap.extras?.product) {
+    capture.extras = { product: true };
+  }
 
   const slim: RawJson = {
     capture,
     extractorId: raw.extractorId,
     extractedAt: raw.extractedAt,
   };
-  if (raw.ytdlp?.duration != null)
+  if (raw.ytdlp?.duration !== undefined) {
     slim.ytdlp = { duration: raw.ytdlp.duration };
-  if (raw.split) slim.split = raw.split;
+  }
+  if (raw.split) {
+    slim.split = raw.split;
+  }
   return slim;
 }
 
 export function withRawSlim<T extends { rawJson?: RawJson | null }>(
   values: T,
 ): T & { rawSlim?: RawJson | null } {
-  if (!("rawJson" in values)) return values;
+  if (!("rawJson" in values)) {
+    return values;
+  }
   return { ...values, rawSlim: slimRawJson(values.rawJson) };
 }

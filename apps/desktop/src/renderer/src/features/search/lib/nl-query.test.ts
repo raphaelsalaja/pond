@@ -2,7 +2,7 @@ import type { Predicate } from "@pond/schema/filters/types";
 import { describe, expect, it } from "vitest";
 import { compileStageA, EMPTY_FACETS } from "@/features/search/lib/nl-query";
 
-const rules = (input: string): Predicate[] =>
+const rules = (input: string): Array<Predicate> =>
   compileStageA(input, EMPTY_FACETS).query.rules;
 
 describe("compileStageA — dates compose with the rest of the compiler", () => {

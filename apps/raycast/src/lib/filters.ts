@@ -9,7 +9,7 @@ export type Filter =
   | { kind: "folder"; id: string }
   | { kind: "tag"; name: string }
   | { kind: "view"; id: string }
-  | { kind: "media"; types: string[] };
+  | { kind: "media"; types: Array<string> };
 
 export const ALL_SAVES: Filter = { kind: "all" };
 
@@ -31,22 +31,42 @@ export function encodeFilter(filter: Filter): string {
 }
 
 export function decodeFilter(value: string | undefined): Filter {
-  if (!value) return ALL_SAVES;
+  if (!value) {
+    return ALL_SAVES;
+  }
   const split = value.indexOf(":");
   const kind = split === -1 ? value : value.slice(0, split);
   const rest = split === -1 ? "" : value.slice(split + 1);
-  if (kind === "trash" || kind === "untagged" || kind === "unfiled") return { kind };
-  if (!rest) return ALL_SAVES;
-  if (kind === "source") return { kind, source: rest };
-  if (kind === "folder") return { kind, id: rest };
-  if (kind === "tag") return { kind, name: rest };
-  if (kind === "view") return { kind, id: rest };
-  if (kind === "media") return { kind, types: rest.split(",").filter(Boolean) };
+  if (kind === "trash" || kind === "untagged" || kind === "unfiled") {
+    return { kind };
+  }
+  if (!rest) {
+    return ALL_SAVES;
+  }
+  if (kind === "source") {
+    return { kind, source: rest };
+  }
+  if (kind === "folder") {
+    return { kind, id: rest };
+  }
+  if (kind === "tag") {
+    return { kind, name: rest };
+  }
+  if (kind === "view") {
+    return { kind, id: rest };
+  }
+  if (kind === "media") {
+    return { kind, types: rest.split(",").filter(Boolean) };
+  }
   return ALL_SAVES;
 }
 
 /** Resolves `null` while a saved view's definition hasn't loaded yet. */
-export function queryFor(filter: Filter, keywords: string, views?: readonly ApiView[]): ApiLibraryQueryInput | null {
+export function queryFor(
+  filter: Filter,
+  keywords: string,
+  views?: ReadonlyArray<ApiView>,
+): ApiLibraryQueryInput | null {
   const base: ApiLibraryQueryInput = {
     keywords: keywords.trim() || undefined,
     sortKey: "savedAt",
@@ -75,7 +95,9 @@ export function queryFor(filter: Filter, keywords: string, views?: readonly ApiV
       };
     case "view": {
       const view = views?.find((item) => item.id === filter.id);
-      if (!view) return null;
+      if (!view) {
+        return null;
+      }
       return { ...base, query: view.query, sortKey: view.sortKey, sortDir: view.sortDir };
     }
   }

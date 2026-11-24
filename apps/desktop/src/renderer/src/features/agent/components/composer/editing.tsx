@@ -20,13 +20,11 @@ import {
   KEY_DOWN_COMMAND,
   KEY_ENTER_COMMAND,
   PASTE_COMMAND,
-  type RangeSelection,
 } from "lexical";
+import type { RangeSelection } from "lexical";
 import { useEffect, useRef, useState } from "react";
-import {
-  $applyMarkdownBlock,
-  type MarkdownBlock,
-} from "@/shared/markdown-editor/blocks";
+import { $applyMarkdownBlock } from "@/shared/markdown-editor/blocks";
+import type { MarkdownBlock } from "@/shared/markdown-editor/blocks";
 import styles from "./styles.module.css";
 
 export function ComposerEditing({
@@ -50,8 +48,8 @@ export function ComposerEditing({
           (event) =>
             Boolean(
               event?.isComposing ||
-                event?.keyCode === 229 ||
-                editor.isComposing(),
+              event?.keyCode === 229 ||
+              editor.isComposing(),
             ),
           COMMAND_PRIORITY_HIGH,
         ),
@@ -63,18 +61,24 @@ export function ComposerEditing({
               event.isComposing ||
               event.keyCode === 229 ||
               editor.isComposing()
-            )
+            ) {
               return false;
+            }
             event.preventDefault();
-            if (event.shiftKey)
+            if (event.shiftKey) {
               return editor.dispatchCommand(
                 INSERT_PARAGRAPH_COMMAND,
                 undefined,
               );
-            if (editor.getRootElement()?.hasAttribute("aria-controls"))
+            }
+            if (editor.getRootElement()?.hasAttribute("aria-controls")) {
               return true;
-            if (!running) onSend($convertToMarkdownString());
-            else onQueue?.($convertToMarkdownString());
+            }
+            if (!running) {
+              onSend($convertToMarkdownString());
+            } else {
+              onQueue?.($convertToMarkdownString());
+            }
             return true;
           },
           COMMAND_PRIORITY_LOW,
@@ -82,7 +86,9 @@ export function ComposerEditing({
         editor.registerCommand(
           KEY_DOWN_COMMAND,
           (event) => {
-            if (event.isComposing || editor.isComposing()) return false;
+            if (event.isComposing || editor.isComposing()) {
+              return false;
+            }
             const mod = event.metaKey || event.ctrlKey;
             const headings = new Map<string, MarkdownBlock>([
               ["Digit0", "paragraph"],
@@ -112,7 +118,9 @@ export function ComposerEditing({
             }
             if (mod && event.code === "KeyK") {
               const selection = $getSelection();
-              if (!$isRangeSelection(selection)) return false;
+              if (!$isRangeSelection(selection)) {
+                return false;
+              }
               const linkNode = $findMatchingParent(
                 selection.anchor.getNode(),
                 $isLinkNode,
@@ -142,14 +150,17 @@ export function ComposerEditing({
           PASTE_COMMAND,
           (event) => {
             if (
-              !(event instanceof ClipboardEvent) ||
+              !("clipboardData" in event) ||
               !event.clipboardData ||
               event.clipboardData.getData("text/html")
-            )
+            ) {
               return false;
+            }
             const text = event.clipboardData.getData("text/plain");
             const selection = $getSelection();
-            if (!text || !$isRangeSelection(selection)) return false;
+            if (!text || !$isRangeSelection(selection)) {
+              return false;
+            }
             event.preventDefault();
             if ($findMatchingParent(selection.anchor.getNode(), $isCodeNode)) {
               selection.insertText(text);
@@ -163,7 +174,9 @@ export function ComposerEditing({
       ),
     [editor, running, onSend, onQueue],
   );
-  if (link === null) return null;
+  if (link === null) {
+    return null;
+  }
   return (
     <form
       className={styles.link}
@@ -176,8 +189,9 @@ export function ComposerEditing({
             !saved ||
             !$getNodeByKey(saved.anchor.key) ||
             !$getNodeByKey(saved.focus.key)
-          )
+          ) {
             return;
+          }
           $setSelection(saved);
           $toggleLink(value || null);
         });
@@ -193,7 +207,9 @@ export function ComposerEditing({
           autoFocus
           onValueChange={setLink}
           onKeyDown={(event) => {
-            if (event.key !== "Escape") return;
+            if (event.key !== "Escape") {
+              return;
+            }
             event.preventDefault();
             setLink(null);
             editor.focus();

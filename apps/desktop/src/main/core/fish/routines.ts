@@ -3,12 +3,11 @@ import type { Prefs } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
-import {
-  ASSISTANT_MODELS,
-  type AssistantMessage,
-  type AssistantSend,
-  type AssistantSendResult,
-  assistantMessages,
+import { ASSISTANT_MODELS, assistantMessages } from "../../../shared/assistant";
+import type {
+  AssistantMessage,
+  AssistantSend,
+  AssistantSendResult,
 } from "../../../shared/assistant";
 import type {
   Fish,
@@ -29,23 +28,23 @@ const MAX_NEW_SAVES = 200;
 export type RoutineTrigger =
   | { kind: "manual" }
   | { kind: "schedule" }
-  | { kind: "newSaves"; saveIds: string[] }
-  | { kind: "inbox"; saveIds: string[] };
+  | { kind: "newSaves"; saveIds: Array<string> }
+  | { kind: "inbox"; saveIds: Array<string> };
 
 export interface RoutineDependencies {
-  listFish(): Fish[];
+  listFish(): Array<Fish>;
   recordRun(id: string, run: FishRun): void;
   announce(): void;
   getPrefs(): Promise<Prefs>;
   thread(fishId: string): Promise<{ id: string; created: boolean }>;
   deleteChat(chatId: string): Promise<OkSuccess>;
   send(input: AssistantSend): Promise<AssistantSendResult>;
-  listMessages(chatId: string): Promise<AssistantMessage[]>;
+  listMessages(chatId: string): Promise<Array<AssistantMessage>>;
   savesInScope(
-    saveIds: readonly string[],
+    saveIds: ReadonlyArray<string>,
     fish: Fish,
     inInbox?: boolean,
-  ): Promise<string[]>;
+  ): Promise<Array<string>>;
   now(): number;
 }
 
@@ -73,7 +72,9 @@ const defaultDependencies: RoutineDependencies = {
     return assistantMessages.parse(await listMessages(chatId));
   },
   async savesInScope(saveIds, fish, inInbox) {
-    if (!saveIds.length) return [];
+    if (!saveIds.length) {
+      return [];
+    }
     const db = await getDb();
     const rows = await db
       .select({ id: saves.id })
@@ -99,15 +100,17 @@ function routineMessage(routine: FishRoutine, trigger: RoutineTrigger): string {
     `This is your routine ${JSON.stringify(routine.name)}${trigger.kind === "manual" ? ", run now" : ""}. Nobody is watching live, so don't ask questions; propose any Library changes for review.`,
     routine.instruction,
   ];
-  if (trigger.kind === "newSaves")
+  if (trigger.kind === "newSaves") {
     lines.push(
       `New Saves to look at (read them by ID): ${trigger.saveIds.join(", ")}`,
     );
-  if (trigger.kind === "inbox")
+  }
+  if (trigger.kind === "inbox") {
     lines.push(
       `Saves waiting in the Inbox (read them by ID): ${trigger.saveIds.join(", ")}`,
       "For each one, suggest folders, tags, and a note or short summary where it helps, and point out likely duplicates already in the Library. Leave marking processed, snoozing, and the Trash to the person reviewing.",
     );
+  }
   return lines.join("\n\n");
 }
 
@@ -126,7 +129,9 @@ export async function runFishRoutine(
   trigger: RoutineTrigger,
   deps: RoutineDependencies = defaultDependencies,
 ): Promise<FishRun | null> {
-  if (running.has(fish.id)) return null;
+  if (running.has(fish.id)) {
+    return null;
+  }
   running.add(fish.id);
   const at = deps.now();
   const finish = (result: Omit<FishRun, "routineId" | "routineName">) => {
@@ -137,7 +142,7 @@ export async function runFishRoutine(
   };
   try {
     const model = providerFor(fish, await deps.getPrefs());
-    if (!model)
+    if (!model) {
       return finish({
         chatId: null,
         at,
@@ -147,6 +152,7 @@ export async function runFishRoutine(
         changes: 0,
         seen: false,
       });
+    }
     const chat = await deps.thread(fish.id);
     const result = await deps.send({
       chatId: chat.id,
@@ -168,7 +174,9 @@ export async function runFishRoutine(
       },
     });
     if (!result.accepted) {
-      if (chat.created) await deps.deleteChat(chat.id);
+      if (chat.created) {
+        await deps.deleteChat(chat.id);
+      }
       return finish({
         chatId: null,
         at,
@@ -213,36 +221,42 @@ export async function runDueRoutines(
   const now = deps.now();
   for (const fish of deps.listFish()) {
     for (const routine of fish.routines) {
-      if (isRoutineDue(routine, now))
+      if (isRoutineDue(routine, now)) {
         await runFishRoutine(fish, routine, { kind: "schedule" }, deps);
+      }
     }
   }
 }
 
 async function runArrivalRoutines(
   kind: "newSaves" | "inbox",
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   deps: RoutineDependencies,
 ): Promise<void> {
   for (const fish of deps.listFish()) {
     const routines = fish.routines.filter(
       (routine) => routine.when.kind === kind && !routine.paused,
     );
-    if (!routines.length) continue;
+    if (!routines.length) {
+      continue;
+    }
     const inScope = await deps.savesInScope(saveIds, fish, kind === "inbox");
-    if (!inScope.length) continue;
-    for (const routine of routines)
+    if (!inScope.length) {
+      continue;
+    }
+    for (const routine of routines) {
       await runFishRoutine(
         fish,
         routine,
         { kind, saveIds: inScope.slice(0, MAX_NEW_SAVES) },
         deps,
       );
+    }
   }
 }
 
 export function runNewSaveRoutines(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   deps: RoutineDependencies = defaultDependencies,
 ): Promise<void> {
   return runArrivalRoutines("newSaves", saveIds, deps);
@@ -250,7 +264,7 @@ export function runNewSaveRoutines(
 
 /** Inbox routines only see Saves still waiting for review when the batch settles. */
 export function runInboxRoutines(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   deps: RoutineDependencies = defaultDependencies,
 ): Promise<void> {
   return runArrivalRoutines("inbox", saveIds, deps);

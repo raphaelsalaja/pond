@@ -6,17 +6,11 @@ import type {
   AssistantQuestion,
   AssistantSend,
 } from "../../../shared/assistant";
-import {
-  DEFAULT_FISH_ID,
-  type Fish,
-  type FishPresence,
-} from "../../../shared/fish-contracts";
+import { DEFAULT_FISH_ID } from "../../../shared/fish-contracts";
+import type { Fish, FishPresence } from "../../../shared/fish-contracts";
 import { routineTools } from "../fish/routine-tools";
-import {
-  type ChatDependencies,
-  sendMessage as send,
-  stopMessage,
-} from "./chat";
+import { sendMessage as send, stopMessage } from "./chat";
+import type { ChatDependencies } from "./chat";
 import type { ToolSpec } from "./complete";
 import type { LibraryScope } from "./tools";
 
@@ -29,11 +23,11 @@ interface ChatTestState {
   loadFiles: ReturnType<typeof vi.fn<ChatDependencies["loadLocalAttachments"]>>;
   prepare: ReturnType<typeof vi.fn<ChatDependencies["prepareTools"]>>;
   read: ReturnType<typeof vi.fn<ToolSpec["execute"]>>;
-  history: AssistantMessage[];
+  history: Array<AssistantMessage>;
   question: AssistantQuestion | undefined;
   fish: Fish;
   presence: Array<[string, FishPresence]>;
-  scopes: LibraryScope[];
+  scopes: Array<LibraryScope>;
 }
 const koi: Fish = {
   id: DEFAULT_FISH_ID,
@@ -242,8 +236,10 @@ it.each([false, true])(
   async (fails) => {
     const clock = vi.spyOn(performance, "now").mockReturnValue(1000);
     mock.complete.mockImplementation(async (input) => {
-      clock.mockReturnValue(91000);
-      if (fails) throw new Error("Provider unavailable");
+      clock.mockReturnValue(91_000);
+      if (fails) {
+        throw new Error("Provider unavailable");
+      }
       input.onText("Reply");
       return "Reply";
     });
@@ -252,7 +248,7 @@ it.each([false, true])(
       expect(mock.append).toHaveBeenLastCalledWith(
         expect.objectContaining({
           role: "assistant",
-          metadata: expect.objectContaining({ elapsedMs: 90000 }),
+          metadata: expect.objectContaining({ elapsedMs: 90_000 }),
         }),
       );
     } finally {
@@ -408,13 +404,13 @@ describe("Assistant requests", () => {
     mock.complete.mockImplementation(async (input) => {
       input.onText("Partial reply");
       started();
-      await new Promise((_, reject) =>
+      await new Promise((_, reject) => {
         input.abortController.signal.addEventListener(
           "abort",
           () => reject(new Error("aborted")),
           { once: true },
-        ),
-      );
+        );
+      });
       return "";
     });
     const result = sendMessage(request);

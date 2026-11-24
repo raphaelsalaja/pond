@@ -1,7 +1,8 @@
 import { PrefsSchema } from "@pond/schema";
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   commandMenu,
@@ -68,7 +69,9 @@ describe("app hotkeys in text fields", () => {
     root = createRoot(host);
     libraryHeader.closePopover();
     commandMenu.close();
-    if (!libraryChrome.getState().sidebarOpen) libraryChrome.toggleSidebar();
+    if (!libraryChrome.getState().sidebarOpen) {
+      libraryChrome.toggleSidebar();
+    }
   });
 
   afterEach(async () => {
@@ -93,7 +96,9 @@ describe("app hotkeys in text fields", () => {
         </HotkeysProvider>,
       );
     });
-    if (!field) return;
+    if (!field) {
+      return;
+    }
     host.append(field);
     field.focus();
     expect(document.activeElement).toBe(field);
@@ -160,10 +165,10 @@ describe("app hotkeys in text fields", () => {
 
   it("lets the field handle typing keys before stopping window listeners", async () => {
     const input = document.createElement("input");
-    const field: string[] = [];
+    const field: Array<string> = [];
     input.addEventListener("keydown", (event) => field.push(event.key));
     await mount(input);
-    const seen: string[] = [];
+    const seen: Array<string> = [];
     const onBubble = (event: KeyboardEvent) => {
       seen.push(event.key);
     };

@@ -4,12 +4,14 @@ import type { Guide } from "../../lib/snap";
 import styles from "./styles.module.css";
 
 interface GuidesProps {
-  guides: readonly Guide[];
+  guides: ReadonlyArray<Guide>;
 }
 
 export function Guides({ guides }: GuidesProps) {
   const zoom = useStore((state) => state.transform[2]);
-  if (!guides.length) return null;
+  if (!guides.length) {
+    return null;
+  }
   return (
     <ViewportPortal>
       {guides.map((guide) => (

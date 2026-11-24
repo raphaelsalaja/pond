@@ -1,15 +1,14 @@
 import { IconChevronDown as ChevronDown } from "@pond/icons";
 import { PickerPanel } from "@pond/ui";
 import type { ReactNode } from "react";
-import {
-  type TagGroupRow,
-  useTagGroups,
-} from "@/features/tags/state/tag-groups";
-import { type TagRow, useTags } from "@/features/tags/state/tags";
+import { useTagGroups } from "@/features/tags/state/tag-groups";
+import type { TagGroupRow } from "@/features/tags/state/tag-groups";
+import { useTags } from "@/features/tags/state/tags";
+import type { TagRow } from "@/features/tags/state/tags";
 import { TagMenuRow } from "./row";
-import styles from "./styles.module.css";
 import type { TagPickerRow } from "./types";
 import { useTagMenu } from "./use-tag-menu";
+import styles from "./styles.module.css";
 
 interface TagMenuProps {
   appliedKeys?: ReadonlySet<string>;
@@ -22,7 +21,7 @@ interface TagMenuProps {
   allowCreate?: boolean;
   placeholder?: string;
   emptyLabel?: ReactNode;
-  recommendedNames?: readonly string[];
+  recommendedNames?: ReadonlyArray<string>;
   layout?: "list" | "grid";
   gridSize?: "sm" | "md" | "lg";
   showStarred?: boolean;
@@ -33,8 +32,8 @@ interface TagMenuProps {
 }
 
 export interface TagMenuViewProps extends TagMenuProps {
-  tags: readonly TagRow[];
-  groups: readonly TagGroupRow[];
+  tags: ReadonlyArray<TagRow>;
+  groups: ReadonlyArray<TagGroupRow>;
 }
 
 export function TagMenu(props: TagMenuProps) {
@@ -196,7 +195,7 @@ export function TagMenuView({
                       aria-expanded={section.open}
                       tabIndex={-1}
                       onMouseDown={(event) => event.preventDefault()}
-                      onClick={section.toggle}
+                      onClick={() => section.toggle()}
                     >
                       <span>
                         {section.label} ({section.items.length})

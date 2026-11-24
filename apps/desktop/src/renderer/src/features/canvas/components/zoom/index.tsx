@@ -6,7 +6,7 @@ import styles from "./styles.module.css";
 
 interface ZoomProps {
   minimap: boolean;
-  onMinimap(): void;
+  onMinimap: () => void;
 }
 
 export function Zoom({ minimap, onMinimap }: ZoomProps) {

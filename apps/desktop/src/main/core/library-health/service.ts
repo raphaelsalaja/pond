@@ -1,24 +1,24 @@
 import { randomUUID } from "node:crypto";
 import type { Save } from "@pond/schema/db";
 import { isVideoFile } from "@shared/media-index";
-import {
-  HEALTH_COUNT_KEYS,
-  type HealthCountKey,
-  type HealthIndexCheck,
-  type HealthIntegrityIssue,
-  type HealthPosterGap,
-  type HealthUnverifiedSave,
-  type LibraryHealthCheck,
-  type LibraryHealthJob,
-  type LibraryHealthOverview,
-  type MediaWarmSnapshot,
+import { HEALTH_COUNT_KEYS } from "../../../shared/library-health-contracts";
+import type {
+  HealthCountKey,
+  HealthIndexCheck,
+  HealthIntegrityIssue,
+  HealthPosterGap,
+  HealthUnverifiedSave,
+  LibraryHealthCheck,
+  LibraryHealthJob,
+  LibraryHealthOverview,
+  MediaWarmSnapshot,
 } from "../../../shared/library-health-contracts";
 import { LibraryRepairKindSchema } from "../../../shared/library-repair-contracts";
-import {
-  type IntegritySave,
-  inspectSaveIntegrity,
-  type LibraryIntegrityRuntime,
-  type PayloadInspection,
+import { inspectSaveIntegrity } from "../library-integrity";
+import type {
+  IntegritySave,
+  LibraryIntegrityRuntime,
+  PayloadInspection,
 } from "../library-integrity";
 import { mediaWarmCandidates } from "../media-warm/candidates";
 
@@ -26,8 +26,8 @@ export type HealthSave = IntegritySave &
   Pick<Save, "status" | "blurhash" | "coverIndex">;
 
 export interface HealthIndexReport {
-  orphans: string[];
-  missing: string[];
+  orphans: Array<string>;
+  missing: Array<string>;
   errors: Record<string, string>;
 }
 
@@ -35,7 +35,7 @@ export interface LibraryHealthDependencies {
   now(): number;
   libraryId(): string;
   integrityRuntime: LibraryIntegrityRuntime;
-  listSaves(): Promise<HealthSave[]>;
+  listSaves(): Promise<Array<HealthSave>>;
   getSave(id: string): Promise<HealthSave | null>;
   verifyIndex(): Promise<HealthIndexReport>;
   readCheck(libraryId: string): Promise<LibraryHealthCheck | null>;
@@ -45,7 +45,7 @@ export interface LibraryHealthDependencies {
 }
 
 /** Bounds the stored file and IPC payload; counts stay exact past the cap. */
-const LIST_LIMIT = 2_000;
+const LIST_LIMIT = 2000;
 const LIBRARY_ERROR_KEY = "library";
 
 interface JobRecord {
@@ -56,9 +56,9 @@ interface JobRecord {
 
 interface Findings {
   counts: Record<HealthCountKey, number>;
-  issues: HealthIntegrityIssue[];
-  posters: HealthPosterGap[];
-  unverified: HealthUnverifiedSave[];
+  issues: Array<HealthIntegrityIssue>;
+  posters: Array<HealthPosterGap>;
+  unverified: Array<HealthUnverifiedSave>;
 }
 
 export function createLibraryHealthService(deps: LibraryHealthDependencies) {
@@ -68,20 +68,28 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
 
   async function current(): Promise<LibraryHealthCheck | null> {
     const libraryId = deps.libraryId();
-    if (latest?.libraryId === libraryId) return latest.check;
+    if (latest?.libraryId === libraryId) {
+      return latest.check;
+    }
     const check = await deps.readCheck(libraryId);
-    if (libraryId === deps.libraryId()) latest = { libraryId, check };
+    if (libraryId === deps.libraryId()) {
+      latest = { libraryId, check };
+    }
     return check;
   }
 
   function currentJob(): LibraryHealthJob | null {
-    if (!record || record.libraryId !== deps.libraryId()) return null;
+    if (!record || record.libraryId !== deps.libraryId()) {
+      return null;
+    }
     return { ...record.job };
   }
 
   /** Folders come and go between checks, so index findings that are no longer true drop out without a recheck. */
   function settled(check: LibraryHealthCheck): LibraryHealthCheck {
-    if (!check.index) return check;
+    if (!check.index) {
+      return check;
+    }
     const { orphans, missing, unreadable } = check.index;
     return {
       ...check,
@@ -102,7 +110,9 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
   function start(): LibraryHealthJob {
     const libraryId = deps.libraryId();
     if (record?.job.status === "running") {
-      if (record.libraryId === libraryId) return { ...record.job };
+      if (record.libraryId === libraryId) {
+        return { ...record.job };
+      }
       record.controller.abort();
     }
     const next: JobRecord = {
@@ -123,7 +133,9 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
   }
 
   function cancel(): LibraryHealthJob | null {
-    if (!record || record.libraryId !== deps.libraryId()) return null;
+    if (!record || record.libraryId !== deps.libraryId()) {
+      return null;
+    }
     if (record.job.status === "running") {
       record.controller.abort();
       record.job.status = "cancelled";
@@ -151,8 +163,9 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
         indexError = messageOf(error, "Pond couldn't compare the index.");
       }
       throwIfAborted(signal);
-      if (job.libraryId !== deps.libraryId())
+      if (job.libraryId !== deps.libraryId()) {
         throw new Error("The active Library changed. Check the Library again.");
+      }
       const check: LibraryHealthCheck = {
         checkedAt: deps.now(),
         durationMs: Math.max(0, deps.now() - job.job.startedAt),
@@ -163,7 +176,9 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
       };
       await deps.writeCheck(job.libraryId, check);
       latest = { libraryId: job.libraryId, check };
-      if (!signal.aborted) job.job.status = "completed";
+      if (!signal.aborted) {
+        job.job.status = "completed";
+      }
     } catch (error) {
       if (signal.aborted || isAbortError(error)) {
         job.job.status = "cancelled";
@@ -176,12 +191,16 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
 
   async function inspectInto(findings: Findings, row: HealthSave) {
     /** Only a finished ingest owns its files; Downloads reports the rest. */
-    if (row.status !== "complete") return;
+    if (row.status !== "complete") {
+      return;
+    }
     const runtime = memoizedRuntime(deps.integrityRuntime);
     try {
       for (const kind of LibraryRepairKindSchema.options) {
         const found = await inspectSaveIntegrity({ kind, row, runtime });
-        if (!found) continue;
+        if (!found) {
+          continue;
+        }
         add(findings, kind, findings.issues, {
           kind,
           saveId: found.saveId,
@@ -200,23 +219,29 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
       });
     }
     const gap = posterGap(row);
-    if (gap) add(findings, "posters", findings.posters, gap);
+    if (gap) {
+      add(findings, "posters", findings.posters, gap);
+    }
   }
 
   async function recheck(
-    saveIds: readonly string[],
+    saveIds: ReadonlyArray<string>,
   ): Promise<LibraryHealthCheck | null> {
     const libraryId = deps.libraryId();
     const check = await current();
-    if (!check) return null;
+    if (!check) {
+      return null;
+    }
     const ids = new Set(saveIds);
     const removed = zeroCounts();
     const keep = <T extends { saveId: string }>(
-      list: readonly T[],
+      list: ReadonlyArray<T>,
       key: (item: T) => HealthCountKey,
     ) =>
       list.filter((item) => {
-        if (!ids.has(item.saveId)) return true;
+        if (!ids.has(item.saveId)) {
+          return true;
+        }
         removed[key(item)] += 1;
         return false;
       });
@@ -226,15 +251,20 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
     const fresh = emptyFindings();
     for (const id of ids) {
       const row = await deps.getSave(id);
-      if (row) await inspectInto(fresh, row);
+      if (row) {
+        await inspectInto(fresh, row);
+      }
     }
-    if (libraryId !== deps.libraryId()) return null;
+    if (libraryId !== deps.libraryId()) {
+      return null;
+    }
     const counts = zeroCounts();
-    for (const key of HEALTH_COUNT_KEYS)
+    for (const key of HEALTH_COUNT_KEYS) {
       counts[key] = Math.max(
         0,
         check.counts[key] - removed[key] + fresh.counts[key],
       );
+    }
     const next: LibraryHealthCheck = {
       ...check,
       counts,
@@ -265,14 +295,18 @@ function memoizedRuntime(
     inspectPayload(path, expected) {
       const key = JSON.stringify([path, expected.size, expected.sha256]);
       const cached = payloads.get(key);
-      if (cached) return cached;
+      if (cached) {
+        return cached;
+      }
       const pending = runtime.inspectPayload(path, expected);
       payloads.set(key, pending);
       return pending;
     },
     canRenderThumbnail(path) {
       const cached = renders.get(path);
-      if (cached) return cached;
+      if (cached) {
+        return cached;
+      }
       const pending = runtime.canRenderThumbnail(path);
       renders.set(path, pending);
       return pending;
@@ -281,7 +315,9 @@ function memoizedRuntime(
 }
 
 function posterGap(row: HealthSave): HealthPosterGap | null {
-  if (!mediaWarmCandidates(row).some((c) => c.kind === "poster")) return null;
+  if (!mediaWarmCandidates(row).some((c) => c.kind === "poster")) {
+    return null;
+  }
   return {
     saveId: row.id,
     title: row.title,
@@ -292,12 +328,12 @@ function posterGap(row: HealthSave): HealthPosterGap | null {
 
 function indexCheck(
   report: HealthIndexReport,
-  rows: readonly HealthSave[],
+  rows: ReadonlyArray<HealthSave>,
 ): HealthIndexCheck {
   const { [LIBRARY_ERROR_KEY]: backupError, ...unreadable } = report.errors;
   /** A download that never finished has no folder yet. */
   const unfinished = new Set(
-    rows.filter((row) => row.status !== "complete").map((row) => row.id),
+    rows.flatMap((row) => (row.status === "complete" ? [] : [row.id])),
   );
   return {
     orphans: report.orphans,
@@ -326,11 +362,13 @@ function emptyFindings(): Findings {
 function add<T>(
   findings: Findings,
   key: HealthCountKey,
-  list: T[],
+  list: Array<T>,
   item: T,
 ): void {
   findings.counts[key] += 1;
-  if (findings.counts[key] <= LIST_LIMIT) list.push(item);
+  if (findings.counts[key] <= LIST_LIMIT) {
+    list.push(item);
+  }
 }
 
 function messageOf(cause: unknown, fallback: string): string {
@@ -342,6 +380,7 @@ function isAbortError(cause: unknown): boolean {
 }
 
 function throwIfAborted(signal: AbortSignal): void {
-  if (signal.aborted)
+  if (signal.aborted) {
     throw new DOMException("Library check canceled.", "AbortError");
+  }
 }

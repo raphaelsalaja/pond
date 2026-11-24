@@ -24,22 +24,17 @@ import {
   IconTrash,
 } from "@pond/icons";
 import { Button, Keyboard, Menu, Popover, Toolbar, Tooltip } from "@pond/ui";
+import { isHTMLTag } from "@pond/ui/dom";
 import {
   $getSelection,
   $isRangeSelection,
   COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
   SELECTION_CHANGE_COMMAND,
-  type TextFormatType,
 } from "lexical";
-import {
-  type ComponentType,
-  type ReactNode,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import type { TextFormatType } from "lexical";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
 import { $inCollapsible } from "../collapsible";
 import {
@@ -47,9 +42,9 @@ import {
   $linkHref,
   $restoreRange,
   applyNoteBlock,
-  type NoteBlock,
   OPEN_NOTE_LINK_COMMAND,
 } from "../commands";
+import type { NoteBlock } from "../commands";
 import styles from "./styles.module.css";
 
 interface Formats {
@@ -81,14 +76,20 @@ type SavedRange = {
 
 function hrefFromDraft(value: string): string | null {
   const trimmed = value.trim();
-  if (!trimmed) return null;
-  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
+  if (!trimmed) {
+    return null;
+  }
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
+    return trimmed;
+  }
   return `https://${trimmed}`;
 }
 
 function httpHref(value: string): string | null {
   const href = hrefFromDraft(value);
-  if (!href) return null;
+  if (!href) {
+    return null;
+  }
   try {
     const url = new URL(href);
     if (url.protocol === "http:" || url.protocol === "https:") {
@@ -100,12 +101,12 @@ function httpHref(value: string): string | null {
   return null;
 }
 
-const STYLES: {
+const STYLES: Array<{
   block: NoteBlock;
   label: string;
-  shortcut: string[];
+  shortcut: Array<string>;
   Icon?: ComponentType;
-}[] = [
+}> = [
   { block: "paragraph", label: "Regular Text", shortcut: ["⌘", "⌥", "0"] },
   {
     block: "h1",
@@ -139,17 +140,21 @@ function StyleGlyph({ block }: { block: NoteBlock }) {
 }
 
 function ListGlyph({ block }: { block: NoteBlock }) {
-  if (block === "number") return <IconOrderedList />;
-  if (block === "check") return <IconCheckList />;
+  if (block === "number") {
+    return <IconOrderedList />;
+  }
+  if (block === "check") {
+    return <IconCheckList />;
+  }
   return <IconBulletList />;
 }
 
-const LISTS: {
+const LISTS: Array<{
   block: NoteBlock;
   label: string;
-  shortcut: string[];
+  shortcut: Array<string>;
   icon: ReactNode;
-}[] = [
+}> = [
   {
     block: "bullet",
     label: "Bulleted List",
@@ -194,7 +199,9 @@ export function FormatToolbar() {
       editor.getEditorState().read(() => {
         const selection = $getSelection();
         if (!$isRangeSelection(selection) || selection.isCollapsed()) {
-          if (urlRef.current === document.activeElement) return;
+          if (urlRef.current === document.activeElement) {
+            return;
+          }
           explicit.current = false;
           setLinkMode(false);
           setStyleMenuOpen(false);
@@ -269,7 +276,9 @@ export function FormatToolbar() {
   const applyHref = (value: string) => {
     const href = hrefFromDraft(value);
     editor.update(() => {
-      if (rangeRef.current) $restoreRange(rangeRef.current);
+      if (rangeRef.current) {
+        $restoreRange(rangeRef.current);
+      }
     });
     editor.dispatchCommand(TOGGLE_LINK_COMMAND, href);
   };
@@ -306,7 +315,9 @@ export function FormatToolbar() {
             initialFocus={false}
             finalFocus={false}
             onMouseDown={(event) => {
-              if (event.target instanceof HTMLInputElement) return;
+              if (isHTMLTag(event.target, "input")) {
+                return;
+              }
               event.preventDefault();
             }}
           >
@@ -353,7 +364,9 @@ export function FormatToolbar() {
                       label="Open"
                       onClick={() => {
                         skipBlur.current = true;
-                        if (openHref) void window.pond.openExternal(openHref);
+                        if (openHref) {
+                          void window.pond.openExternal(openHref);
+                        }
                       }}
                     >
                       <IconArrowUpRight />
@@ -573,7 +586,7 @@ function FormatButton({
   children,
 }: {
   label: string;
-  shortcut?: string[];
+  shortcut?: Array<string>;
   pressed?: boolean;
   onClick: () => void;
   children: ReactNode;

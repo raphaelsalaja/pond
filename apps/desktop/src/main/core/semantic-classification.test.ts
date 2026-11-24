@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { normalizedEmbeddingVector } from "../../shared/embeddings";
 import { savesReadQueries } from "../ipc/queries/saves-read";
-import {
-  classifyLabelsWithStore,
-  type SemanticClassificationStore,
-} from "./semantic-classification";
+import { classifyLabelsWithStore } from "./semantic-classification";
+import type { SemanticClassificationStore } from "./semantic-classification";
 
-function vector(first: number, second: number): number[] {
+function vector(first: number, second: number): Array<number> {
   return normalizedEmbeddingVector([
     first,
     second,
@@ -25,7 +23,7 @@ describe("classifyLabelsWithStore", () => {
         ];
       }),
     };
-    const embed = vi.fn(async (texts: string[]) => {
+    const embed = vi.fn(async (texts: Array<string>) => {
       expect(texts).toEqual([
         "task: classification | query: Design",
         "task: classification | query: Recipes",
@@ -80,7 +78,7 @@ describe("saves.classifyLabels input", () => {
     );
     expect(
       schema.safeParse({
-        saveIds: Array.from({ length: 2_001 }, (_, index) => `save-${index}`),
+        saveIds: Array.from({ length: 2001 }, (_, index) => `save-${index}`),
         labels: ["Design"],
       }).success,
     ).toBe(false);

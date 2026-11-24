@@ -9,7 +9,8 @@ import {
   KEY_DOWN_COMMAND,
 } from "lexical";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
@@ -36,15 +37,21 @@ function noteSave(partial: Partial<Save> = {}): Save {
       ...partial,
     }),
   );
-  if (!save) throw new Error("Fixture must produce a save");
+  if (!save) {
+    throw new Error("Fixture must produce a save");
+  }
   return save;
 }
 
 function editorFromHost(root: HTMLElement) {
   const body = root.querySelector<HTMLElement>('[aria-label="Note"]');
-  if (!body) throw new Error("Missing note");
+  if (!body) {
+    throw new Error("Missing note");
+  }
   const editor = getNearestEditorFromDOMNode(body);
-  if (!editor) throw new Error("Missing editor");
+  if (!editor) {
+    throw new Error("Missing editor");
+  }
   return editor;
 }
 
@@ -108,7 +115,9 @@ describe("text viewer", () => {
     const title = host.querySelector<HTMLInputElement>(
       'input[aria-label="Title"]',
     );
-    if (!title) throw new Error("Missing title");
+    if (!title) {
+      throw new Error("Missing title");
+    }
     await act(async () => {
       title.focus();
       Object.getOwnPropertyDescriptor(
@@ -142,7 +151,9 @@ describe("text viewer", () => {
       });
     });
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 500);
+      });
     });
     expect(tx).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -188,7 +199,9 @@ describe("text viewer", () => {
     await act(async () => {
       editor.update(() => {
         const text = $getRoot().getFirstDescendant();
-        if ($isTextNode(text)) text.select(0, 5);
+        if ($isTextNode(text)) {
+          text.select(0, 5);
+        }
       });
     });
     const labels = [...document.querySelectorAll("button")].map((button) =>
@@ -246,13 +259,17 @@ describe("text viewer", () => {
     await act(async () => {
       editor.update(() => {
         const text = $getRoot().getFirstDescendant();
-        if ($isTextNode(text)) text.select(0, 5);
+        if ($isTextNode(text)) {
+          text.select(0, 5);
+        }
       });
     });
     const link = [...document.querySelectorAll("button")].find(
       (button) => button.getAttribute("aria-label") === "Link",
     );
-    if (!link) throw new Error("Missing Link");
+    if (!link) {
+      throw new Error("Missing Link");
+    }
     await act(async () => {
       link.click();
     });
@@ -275,7 +292,9 @@ describe("text viewer", () => {
     await act(async () => {
       editor.update(() => {
         const text = $getRoot().getFirstDescendant();
-        if ($isTextNode(text)) text.select(0, 5);
+        if ($isTextNode(text)) {
+          text.select(0, 5);
+        }
       });
     });
     const url = document.querySelector<HTMLInputElement>(
@@ -297,7 +316,9 @@ describe("text viewer", () => {
     await act(async () => {
       editor.update(() => {
         const text = $getRoot().getFirstDescendant();
-        if ($isTextNode(text)) text.select(0, 5);
+        if ($isTextNode(text)) {
+          text.select(0, 5);
+        }
       });
       editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold");
     });
@@ -379,7 +400,9 @@ describe("text viewer", () => {
     const option = [...document.querySelectorAll('[role="option"]')].find(
       (item) => item.textContent?.includes("Collapsible Section"),
     );
-    if (!option) throw new Error("Missing Collapsible Section");
+    if (!option) {
+      throw new Error("Missing Collapsible Section");
+    }
     await act(async () => {
       option.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });

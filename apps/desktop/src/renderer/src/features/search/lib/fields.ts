@@ -52,7 +52,7 @@ import { accountChipLabel } from "@/features/search/lib/account-aliases";
 import { DATE_PRESETS, serializePredicate } from "@/features/search/lib/syntax";
 
 const orientationField = "shape";
-const FIELD_ICONS = {
+export const FIELD_ICONS = {
   title: Heading,
   tags: Tag,
   folder: FolderIcon,
@@ -141,7 +141,9 @@ export function describePredicate(predicate: Predicate): PredicateChip {
   switch (meta.type) {
     case "enum": {
       const negated = operator === "neq" || operator === "nin";
-      if (field === "post") return { ...base, label: meta.label, negated };
+      if (field === "post") {
+        return { ...base, label: meta.label, negated };
+      }
       const list = (Array.isArray(value) ? value : [value]).map((v) =>
         field === "account" ? accountChipLabel(String(v)) : String(v),
       );
@@ -156,12 +158,13 @@ export function describePredicate(predicate: Predicate): PredicateChip {
       return { ...base, label: list.join(", "), negated };
     }
     case "optional": {
-      if (operator === "contains")
+      if (operator === "contains") {
         return {
           ...base,
           label: `${meta.label}: ${String(value)}`,
           negated: false,
         };
+      }
       const has = value !== false;
       const noun = meta.label.toLowerCase();
       return {

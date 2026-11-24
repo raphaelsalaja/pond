@@ -1,5 +1,6 @@
 import type { IconComponent } from "@pond/icons/types";
-import { type AnyRouter, useLocation, useRouter } from "@tanstack/react-router";
+import { useLocation, useRouter } from "@tanstack/react-router";
+import type { AnyRouter } from "@tanstack/react-router";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { getAppRouter } from "@/shared/lib/app-router";
 import type { LibraryNav } from "@/shared/lib/library-nav";
@@ -47,6 +48,10 @@ export interface RouteMeta {
   routeId: string | null;
 }
 
+function isRouteId(value: unknown): value is string {
+  return typeof value === "string";
+}
+
 const resolved = new WeakMap<AnyRouter, Map<string, RouteMeta>>();
 const CACHE_SIZE = 32;
 
@@ -56,12 +61,16 @@ function resolve(router: AnyRouter, pathname: string): RouteMeta {
   let details: ShellDetails | null | undefined;
   for (let index = branch.length - 1; index >= 0; index -= 1) {
     const data = branch[index]?.options.staticData;
-    if (!data) continue;
+    if (!data) {
+      continue;
+    }
     surface ??= data.surface;
-    if (details === undefined && data.details !== undefined)
+    if (details === undefined && data.details !== undefined) {
       details = data.details;
+    }
   }
   const data = leaf?.options.staticData;
+  const routeId: unknown = leaf?.id;
   return {
     surface: surface ?? (data?.railPage ? "rail" : "page"),
     details: details === undefined ? "save" : details,
@@ -71,7 +80,7 @@ function resolve(router: AnyRouter, pathname: string): RouteMeta {
     nav: data?.nav?.(params) ?? null,
     crumb: data?.crumb ?? null,
     params,
-    routeId: leaf?.id ?? null,
+    routeId: isRouteId(routeId) ? routeId : null,
   };
 }
 
@@ -92,7 +101,9 @@ export function routeMeta(router: AnyRouter, pathname: string): RouteMeta {
   cache.set(pathname, meta);
   if (cache.size > CACHE_SIZE) {
     const oldest = cache.keys().next().value;
-    if (oldest !== undefined) cache.delete(oldest);
+    if (oldest !== undefined) {
+      cache.delete(oldest);
+    }
   }
   return meta;
 }
@@ -114,6 +125,8 @@ export function useLatestRouteMeta(): RouteMeta {
 /** The route a navigation is heading to, read synchronously for event handlers and stores. */
 export function currentRouteMeta(): RouteMeta | null {
   const router = getAppRouter();
-  if (!router) return null;
+  if (!router) {
+    return null;
+  }
   return routeMeta(router, router.latestLocation.pathname);
 }

@@ -40,8 +40,8 @@ export function emit(update: SyncStatusUpdate): void {
   for (const cb of listeners) {
     try {
       cb(update);
-    } catch (err) {
-      log.warn("[pond sync] status listener threw", err);
+    } catch (error) {
+      log.warn("[pond sync] status listener threw", error);
     }
   }
 }
@@ -67,7 +67,9 @@ export function cancelAllSyncs(): void {
 
 export function cancelSync(accountId: string): void {
   const entry = inFlight.get(accountId);
-  if (!entry) return;
+  if (!entry) {
+    return;
+  }
   entry.controller.abort();
   emit({
     accountId,

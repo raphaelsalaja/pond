@@ -5,10 +5,12 @@ import { expect, it, vi } from "vitest";
 import { RaycastRow } from "./raycast";
 
 it("copies the Local API Token without rendering it", async () => {
-  const copied: string[] = [];
+  const copied: Array<string> = [];
   vi.stubGlobal("pond", {
     async query(name: string, params: { text?: string }) {
-      if (name === "settings.ingestToken") return { token: "secret-token" };
+      if (name === "settings.ingestToken") {
+        return { token: "secret-token" };
+      }
       if (name === "clipboard.writeText") {
         copied.push(params.text ?? "");
         return { ok: true };
@@ -31,7 +33,9 @@ it("copies the Local API Token without rendering it", async () => {
     const button = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
       (candidate) => candidate.textContent === "Copy Token",
     );
-    if (!button) throw new Error("Missing copy token button");
+    if (!button) {
+      throw new Error("Missing copy token button");
+    }
     await act(async () => button.click());
     expect(copied).toEqual(["secret-token"]);
     expect(button.textContent).toBe("Copied");

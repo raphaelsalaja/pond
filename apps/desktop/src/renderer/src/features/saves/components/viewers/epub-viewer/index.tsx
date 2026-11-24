@@ -1,7 +1,8 @@
 import { IconArrowLeft, IconArrowRight } from "@pond/icons";
 import { Select, Slider } from "@pond/ui";
 import type { Book, NavItem, Rendition } from "epubjs";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
@@ -14,8 +15,14 @@ interface EpubViewerProps {
   toolbarActions?: ReactNode;
 }
 
+function isValueList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return Array.isArray(value);
+}
+
 function flattenNavigation(
-  items: NavItem[],
+  items: Array<NavItem>,
   depth = 0,
 ): Array<NavItem & { depth: number }> {
   return items.flatMap((item) => [
@@ -39,7 +46,9 @@ export function EpubViewer({
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) return;
+    if (!root) {
+      return;
+    }
     let alive = true;
     let book: Book | null = null;
     let rendition: Rendition | null = null;
@@ -49,10 +58,14 @@ export function EpubViewer({
       import("epubjs"),
     ])
       .then(async ([buffer, module]) => {
-        if (!alive) return;
+        if (!alive) {
+          return;
+        }
         book = module.default();
         await book.open(buffer, "binary");
-        if (!alive || !book) return;
+        if (!alive || !book) {
+          return;
+        }
         rendition = book.renderTo(root, {
           width: "100%",
           height: "100%",
@@ -70,12 +83,18 @@ export function EpubViewer({
           img: { "max-width": "100% !important" },
         });
         const navigation = await book.loaded.navigation;
-        if (alive) setToc(flattenNavigation(navigation.toc));
+        if (alive) {
+          setToc(flattenNavigation(navigation.toc));
+        }
         await rendition.display();
-        if (alive) setReady(true);
+        if (alive) {
+          setReady(true);
+        }
       })
       .catch(() => {
-        if (alive) onUnavailable();
+        if (alive) {
+          onUnavailable();
+        }
       });
 
     return () => {
@@ -120,9 +139,7 @@ export function EpubViewer({
                     step={1}
                     value={fontSize}
                     onValueChange={(next) => {
-                      const value = Array.isArray(next)
-                        ? (next[0] ?? 100)
-                        : next;
+                      const value = isValueList(next) ? (next[0] ?? 100) : next;
                       setFontSize(value);
                     }}
                   >
@@ -164,7 +181,9 @@ export function EpubViewer({
                 items={chapters}
                 value={chapter}
                 onValueChange={(next) => {
-                  if (next === null) return;
+                  if (next === null) {
+                    return;
+                  }
                   setChapter(next);
                   void renditionRef.current?.display(next);
                 }}

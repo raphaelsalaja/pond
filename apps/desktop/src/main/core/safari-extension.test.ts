@@ -5,10 +5,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   openSafariSettings,
   parsePluginkit,
-  type RunCommand,
-  type SafariExtensionStatus,
-  type SafariSettingsModule,
   safariExtensionStatus,
+} from "./safari-extension";
+import type {
+  RunCommand,
+  SafariExtensionStatus,
+  SafariSettingsModule,
 } from "./safari-extension";
 
 /**
@@ -122,7 +124,7 @@ type Reply = { stdout?: string; stderr?: string } | { fail: Error };
  * unlisted command fails like a missing binary. Calls are recorded for assertions.
  */
 function commands(replies: Record<string, Reply>) {
-  const calls: { command: string; args: string[] }[] = [];
+  const calls: Array<{ command: string; args: Array<string> }> = [];
   const run: RunCommand = async (command, args) => {
     calls.push({ command, args });
     const name = command.split("/").at(-1) ?? command;
@@ -132,13 +134,15 @@ function commands(replies: Record<string, Reply>) {
         code: "ENOENT",
       });
     }
-    if ("fail" in reply) throw reply.fail;
+    if ("fail" in reply) {
+      throw reply.fail;
+    }
     return { stdout: reply.stdout ?? "", stderr: reply.stderr ?? "" };
   };
   return { run, calls };
 }
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 /**
  * A Pond.app on disk with the appex in Contents/PlugIns and, when given, these bytes as
@@ -163,7 +167,7 @@ function packagedApp({ settingsModule }: { settingsModule?: string } = {}) {
 
 /** Stands in for safari-settings.node, answering every request the same way. */
 function settingsModule(answer: () => Promise<void>) {
-  const requests: string[] = [];
+  const requests: Array<string> = [];
   const settings: SafariSettingsModule = {
     async showPreferences(identifier) {
       requests.push(identifier);

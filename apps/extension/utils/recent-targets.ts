@@ -15,10 +15,10 @@ const item = storage.defineItem<RecentTargets>("local:recentTargets");
 
 /** Most recent first, each value once, capped at `limit`. */
 export function pushRecent(
-  current: readonly string[],
-  used: readonly string[],
+  current: ReadonlyArray<string>,
+  used: ReadonlyArray<string>,
   limit: number,
-): string[] {
+): Array<string> {
   const fresh = [...new Set(used)];
   const rest = current.filter((value) => !fresh.includes(value));
   return [...fresh, ...rest].slice(0, limit);
@@ -30,10 +30,12 @@ export async function readRecentTargets(): Promise<RecentTargets> {
 }
 
 export async function rememberTargets(
-  folderIds: readonly string[],
-  tags: readonly string[],
+  folderIds: ReadonlyArray<string>,
+  tags: ReadonlyArray<string>,
 ): Promise<void> {
-  if (folderIds.length === 0 && tags.length === 0) return;
+  if (folderIds.length === 0 && tags.length === 0) {
+    return;
+  }
   const current = await readRecentTargets();
   await item.setValue({
     folderIds: pushRecent(current.folderIds, folderIds, FOLDER_LIMIT),

@@ -3,14 +3,16 @@ import { normalizedEmbeddingVector } from "../../shared/embeddings";
 import { savesReadQueries } from "../ipc/queries/saves-read";
 import {
   previewSemanticClusters,
-  type SemanticClusterCandidate,
-  type SemanticClusterEdge,
-  type SemanticClusterSourceCandidate,
-  type SemanticClustersStore,
   semanticClustersWithStore,
 } from "./semantic-clusters";
+import type {
+  SemanticClusterCandidate,
+  SemanticClusterEdge,
+  SemanticClusterSourceCandidate,
+  SemanticClustersStore,
+} from "./semantic-clusters";
 
-function vector(first: number, second: number): number[] {
+function vector(first: number, second: number): Array<number> {
   return normalizedEmbeddingVector([
     first,
     second,
@@ -18,7 +20,7 @@ function vector(first: number, second: number): number[] {
   ]);
 }
 
-const candidates: SemanticClusterCandidate[] = [
+const candidates: Array<SemanticClusterCandidate> = [
   {
     id: "a1",
     title: "Design systems",
@@ -68,7 +70,7 @@ const candidates: SemanticClusterCandidate[] = [
   { id: "u5", title: "Five", tags: [], vector: vector(0.5, -0.866) },
 ];
 
-const edges: SemanticClusterEdge[] = [
+const edges: Array<SemanticClusterEdge> = [
   { sourceId: "a1", targetId: "a2" },
   { sourceId: "a2", targetId: "a3" },
   { sourceId: "a1", targetId: "a4" },
@@ -79,7 +81,9 @@ const edges: SemanticClusterEdge[] = [
 
 function candidate(id: string): SemanticClusterCandidate {
   const found = candidates.find((value) => value.id === id);
-  if (!found) throw new Error(`missing test candidate: ${id}`);
+  if (!found) {
+    throw new Error(`missing test candidate: ${id}`);
+  }
   return found;
 }
 
@@ -120,7 +124,7 @@ describe("previewSemanticClusters", () => {
 describe("semanticClustersWithStore", () => {
   it("uses bounded neighbors for only current, complete, admissible Saves", async () => {
     const currentModel = "current-media-model";
-    const rows: SemanticClusterSourceCandidate[] = [
+    const rows: Array<SemanticClusterSourceCandidate> = [
       ...candidates.slice(0, 3).map((candidate) => ({
         ...candidate,
         model: currentModel,
@@ -164,8 +168,8 @@ describe("semanticClustersWithStore", () => {
         deleted: false,
       },
     ];
-    const candidateCalls: number[] = [];
-    const neighborCalls: number[] = [];
+    const candidateCalls: Array<number> = [];
+    const neighborCalls: Array<number> = [];
     const store: SemanticClustersStore = {
       candidates: async (_scope, model, limit) => {
         expect(model).toBe(currentModel);
@@ -181,7 +185,7 @@ describe("semanticClustersWithStore", () => {
     await expect(
       semanticClustersWithStore(
         store,
-        { distance: 0.03, limit: 4_000 },
+        { distance: 0.03, limit: 4000 },
         currentModel,
       ),
     ).resolves.toEqual({
@@ -194,7 +198,7 @@ describe("semanticClustersWithStore", () => {
       ],
       unclustered: [],
     });
-    expect(candidateCalls).toEqual([2_000]);
+    expect(candidateCalls).toEqual([2000]);
     expect(neighborCalls).toHaveLength(3);
     expect(neighborCalls.every((limit) => limit <= 25)).toBe(true);
   });
@@ -204,12 +208,10 @@ describe("saves.semanticClusters input", () => {
   it("bounds preview scope, distance, and candidate count", () => {
     const schema = savesReadQueries["saves.semanticClusters"].inputSchema;
 
-    expect(schema.safeParse({ distance: 0.2, limit: 2_000 }).success).toBe(
-      true,
-    );
+    expect(schema.safeParse({ distance: 0.2, limit: 2000 }).success).toBe(true);
     expect(
       schema.safeParse({
-        saveIds: Array.from({ length: 2_001 }, (_, index) => `save-${index}`),
+        saveIds: Array.from({ length: 2001 }, (_, index) => `save-${index}`),
         distance: 0.2,
         limit: 100,
       }).success,
@@ -221,7 +223,7 @@ describe("saves.semanticClusters input", () => {
       false,
     );
     expect(schema.safeParse({ distance: 0.2, limit: 2 }).success).toBe(false);
-    expect(schema.safeParse({ distance: 0.2, limit: 2_001 }).success).toBe(
+    expect(schema.safeParse({ distance: 0.2, limit: 2001 }).success).toBe(
       false,
     );
   });

@@ -4,7 +4,9 @@ import { appHotkeyBlockedByEditable } from "@/shared/lib/editable-target";
 export function EditableHotkeyGuard() {
   useLayoutEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (!appHotkeyBlockedByEditable(event)) return;
+      if (!appHotkeyBlockedByEditable(event)) {
+        return;
+      }
       event.stopImmediatePropagation();
     };
     /** The root element bubbles after React's field handlers and before TanStack hotkeys on document. */

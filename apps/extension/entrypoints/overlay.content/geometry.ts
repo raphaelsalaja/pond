@@ -14,7 +14,7 @@ export interface Rect {
 
 export type Handle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 
-export const HANDLES: readonly Handle[] = [
+export const HANDLES: ReadonlyArray<Handle> = [
   "nw",
   "n",
   "ne",
@@ -49,7 +49,9 @@ export function viewportRegion(rect: Rect): CaptureRegion | null {
   const end = clampPoint(rect.x + rect.width, rect.y + rect.height);
   const width = end.x - start.x;
   const height = end.y - start.y;
-  if (width < 2 || height < 2) return null;
+  if (width < 2 || height < 2) {
+    return null;
+  }
   return {
     ...start,
     width,
@@ -61,8 +63,9 @@ export function viewportRegion(rect: Rect): CaptureRegion | null {
 
 export function clipRect(rect: Rect): Rect | null {
   const region = viewportRegion(rect);
-  if (!region || region.width < MIN_SIZE || region.height < MIN_SIZE)
+  if (!region || region.width < MIN_SIZE || region.height < MIN_SIZE) {
     return null;
+  }
   return {
     x: region.x,
     y: region.y,
@@ -90,10 +93,18 @@ export function resizeRect(
   let top = rect.y;
   let right = rect.x + rect.width;
   let bottom = rect.y + rect.height;
-  if (handle.includes("w")) left += dx;
-  if (handle.includes("e")) right += dx;
-  if (handle.includes("n")) top += dy;
-  if (handle.includes("s")) bottom += dy;
+  if (handle.includes("w")) {
+    left += dx;
+  }
+  if (handle.includes("e")) {
+    right += dx;
+  }
+  if (handle.includes("n")) {
+    top += dy;
+  }
+  if (handle.includes("s")) {
+    bottom += dy;
+  }
   const a = clampPoint(left, top);
   const b = clampPoint(right, bottom);
   const next = rectBetween(a, b);

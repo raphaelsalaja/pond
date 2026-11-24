@@ -8,16 +8,14 @@ import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
   CosmosClusterConnectionsDataSchema,
   CosmosClustersDataSchema,
-  type CosmosCollection,
   CosmosLibraryDataSchema,
   CosmosMeDataSchema,
-  type CosmosViewer,
-  type LibraryPage,
   pageFromClusterConnections,
   pageFromClusters,
   pageFromLibrary,
   viewerFromMeData,
 } from "./listing";
+import type { CosmosCollection, CosmosViewer, LibraryPage } from "./listing";
 
 const CHROME_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
@@ -72,7 +70,9 @@ export async function probeCosmosHandle(
   partition: string = PARTITION,
 ): Promise<string | null> {
   const viewer = await fetchCosmosViewer(partition);
-  if (!viewer) return null;
+  if (!viewer) {
+    return null;
+  }
   log.info("[pond cosmos-api] probed handle", viewer.handle);
   return viewer.handle;
 }
@@ -87,7 +87,9 @@ export async function fetchCosmosViewer(
     {},
     CosmosMeDataSchema,
   );
-  if (!result.ok) return null;
+  if (!result.ok) {
+    return null;
+  }
   return viewerFromMeData(result.json);
 }
 
@@ -153,7 +155,9 @@ async function harvestCosmosPages(
 ): Promise<ListHarvestResult> {
   const jar = partition ?? (await partitionForIngest("cosmos"));
   const viewer = await fetchCosmosViewer(jar);
-  if (!viewer) return { ok: false, reason: "auth_required" };
+  if (!viewer) {
+    return { ok: false, reason: "auth_required" };
+  }
   const userId = Number(viewer.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
     return { ok: false, reason: "auth_required" };
@@ -175,7 +179,9 @@ async function harvestCosmosPages(
       if (result.status === 429) {
         return { ok: false, reason: "rate_limited" };
       }
-      if (page === 0) return { ok: false, reason: "no_match" };
+      if (page === 0) {
+        return { ok: false, reason: "no_match" };
+      }
       break;
     }
     const pageData = result.json;
@@ -189,7 +195,9 @@ async function harvestCosmosPages(
     }
     let pageFresh = 0;
     for (const entry of pageData.entries) {
-      if (!known.has(entry.sourceId)) pageFresh += 1;
+      if (!known.has(entry.sourceId)) {
+        pageFresh += 1;
+      }
       entries.push(entry);
     }
     if (earlyStopEnabled && pageData.entries.length > 0 && pageFresh === 0) {
@@ -218,16 +226,19 @@ async function harvestCosmosPages(
 export async function listCosmosCollections(
   partition: string = PARTITION,
 ): Promise<
-  { ok: true; collections: CosmosCollection[] } | { ok: false; status: number }
+  | { ok: true; collections: Array<CosmosCollection> }
+  | { ok: false; status: number }
 > {
   const viewer = await fetchCosmosViewer(partition);
-  if (!viewer) return { ok: false, status: 401 };
+  if (!viewer) {
+    return { ok: false, status: 401 };
+  }
   const userId = Number(viewer.userId);
   if (!Number.isInteger(userId) || userId <= 0) {
     return { ok: false, status: 401 };
   }
 
-  const collections: CosmosCollection[] = [];
+  const collections: Array<CosmosCollection> = [];
   let pageCursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
     const result = await cosmosGraphql(
@@ -237,10 +248,14 @@ export async function listCosmosCollections(
       { userId, pageSize: PAGE_SIZE, pageCursor },
       CosmosClustersDataSchema,
     );
-    if (!result.ok) return result;
+    if (!result.ok) {
+      return result;
+    }
     const pageData = pageFromClusters(result.json);
     collections.push(...pageData.collections);
-    if (!pageData.nextPageCursor) return { ok: true, collections };
+    if (!pageData.nextPageCursor) {
+      return { ok: true, collections };
+    }
     pageCursor = pageData.nextPageCursor;
     await sleep(250);
   }
@@ -260,7 +275,9 @@ async function cosmosGraphql<T>(
   schema: z.ZodType<T>,
 ): Promise<JsonResult<T>> {
   const token = await accessToken(partition);
-  if (!token) return { ok: false, status: 401 };
+  if (!token) {
+    return { ok: false, status: 401 };
+  }
   const ses = session.fromPartition(partition);
   ses.setUserAgent(CHROME_UA);
   const url = `${GRAPHQL_URL}?q=${encodeURIComponent(operationName)}`;
@@ -279,11 +296,13 @@ async function cosmosGraphql<T>(
       },
       body: JSON.stringify({ operationName, query, variables }),
     });
-  } catch (err) {
-    log.warn("[pond cosmos-api] fetch threw", operationName, err);
+  } catch (error) {
+    log.warn("[pond cosmos-api] fetch threw", operationName, error);
     return { ok: false, status: 0 };
   }
-  if (res.status === 429) return { ok: false, status: 429 };
+  if (res.status === 429) {
+    return { ok: false, status: 429 };
+  }
   const text = await res.text();
   let envelope: z.infer<typeof GraphqlEnvelopeSchema>;
   try {
@@ -309,7 +328,9 @@ async function cosmosGraphql<T>(
     );
     return { ok: false, status: res.status || 400 };
   }
-  if (!res.ok) return { ok: false, status: res.status };
+  if (!res.ok) {
+    return { ok: false, status: res.status };
+  }
   try {
     return { ok: true, json: schema.parse(envelope.data ?? {}) };
   } catch {
@@ -322,8 +343,8 @@ async function accessToken(partition: string): Promise<string | null> {
     const cookies = await session.fromPartition(partition).cookies.get({});
     const hit = cookies.find((cookie) => cookie.name === "csms_accessToken");
     return hit && hit.value.length > 0 ? hit.value : null;
-  } catch (err) {
-    log.warn("[pond cosmos-api] cookies.get failed", err);
+  } catch (error) {
+    log.warn("[pond cosmos-api] cookies.get failed", error);
     return null;
   }
 }

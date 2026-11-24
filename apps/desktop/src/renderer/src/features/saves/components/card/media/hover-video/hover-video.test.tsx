@@ -1,13 +1,14 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { loadPrefs } from "@/shared/state/prefs";
 import { HoverVideo } from "./";
 
 let host: HTMLDivElement;
 let root: Root;
-const frames: FrameRequestCallback[] = [];
+const frames: Array<FrameRequestCallback> = [];
 
 beforeEach(() => {
   frames.length = 0;
@@ -47,7 +48,9 @@ afterEach(async () => {
 
 function flushFrames(): void {
   const pending = frames.splice(0);
-  for (const frame of pending) frame(0);
+  for (const frame of pending) {
+    frame(0);
+  }
 }
 
 it("plays on hover and ignores pointer movement while scrub on hover stays available", async () => {
@@ -66,7 +69,9 @@ it("plays on hover and ignores pointer movement while scrub on hover stays avail
   });
 
   const video = host.querySelector("video");
-  if (!video) throw new Error("Missing hover video");
+  if (!video) {
+    throw new Error("Missing hover video");
+  }
   Object.defineProperty(video, "duration", { configurable: true, value: 10 });
   vi.spyOn(video, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 200, 100),
@@ -109,7 +114,9 @@ async function renderClip(posterUrl?: string): Promise<HTMLVideoElement> {
     );
   });
   const video = host.querySelector("video");
-  if (!video) throw new Error("Missing hover video");
+  if (!video) {
+    throw new Error("Missing hover video");
+  }
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   return video;
 }

@@ -1,7 +1,9 @@
 import "@/app/effects/save-library-bridge";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { FolderPickerHost } from ".";
 import { closeFolderPicker, openFolderPicker } from "../../state/folder-picker";
 import { folders } from "../../state/folders";
 import {
@@ -10,7 +12,6 @@ import {
   folderList,
   pondQuery,
 } from "../folder-sidebar/test-harness";
-import { FolderPickerHost } from ".";
 
 const RECENT_KEY = "pond:recent-folder-destinations";
 const harness = createFolderSidebarHarness();
@@ -45,7 +46,9 @@ function control(label: string) {
   const element = document.querySelector<HTMLElement>(
     `[aria-label="${label}"]`,
   );
-  if (!element) throw new Error(`Missing control ${label}`);
+  if (!element) {
+    throw new Error(`Missing control ${label}`);
+  }
   return element;
 }
 
@@ -64,7 +67,9 @@ it("creates a folder from the search", async () => {
   const search = document.querySelector<HTMLInputElement>(
     'input[aria-label="Search Folders"]',
   );
-  if (!search) throw new Error("Missing search");
+  if (!search) {
+    throw new Error("Missing search");
+  }
   await act(async () => {
     const setValue = Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,
@@ -76,7 +81,9 @@ it("creates a folder from the search", async () => {
   const create = [
     ...document.querySelectorAll<HTMLElement>('[role="option"]'),
   ].find((node) => node.textContent?.includes("Moodboards"));
-  if (!create) throw new Error("Missing Create row");
+  if (!create) {
+    throw new Error("Missing Create row");
+  }
   await act(async () => create.click());
   await vi.waitFor(() =>
     expect(pondQuery).toHaveBeenCalledWith("folders.create", {
@@ -94,7 +101,9 @@ function search() {
   const input = document.querySelector<HTMLInputElement>(
     'input[aria-label="Search Folders"]',
   );
-  if (!input) throw new Error("Missing search");
+  if (!input) {
+    throw new Error("Missing search");
+  }
   return input;
 }
 
@@ -131,7 +140,9 @@ it("opens every folder from the recent picker", async () => {
   const all = [...document.querySelectorAll("button")].find(
     (button) => button.textContent === "All Folders",
   );
-  if (!all) throw new Error("Missing All Folders");
+  if (!all) {
+    throw new Error("Missing All Folders");
+  }
   await act(async () => all.click());
   expect(control("Add to Folders").getAttribute("role")).toBe("dialog");
 });
@@ -161,7 +172,9 @@ it("leaves staging on Escape without closing the picker", async () => {
   const start = [...document.querySelectorAll("button")].find(
     (button) => button.textContent === "Select Multiple",
   );
-  if (!start) throw new Error("Missing Select Multiple");
+  if (!start) {
+    throw new Error("Missing Select Multiple");
+  }
   await act(async () => start.click());
   expect(control("Add to Multiple Folders").getAttribute("role")).toBe(
     "dialog",

@@ -76,7 +76,9 @@ const setOverlay = (input: Parameters<typeof overlay>[0]) =>
 const dialect = new SQLiteSyncDialect();
 const query = () => {
   const condition = mock.where.mock.calls[0]?.[0];
-  if (!condition) throw new Error("Expected scoped query");
+  if (!condition) {
+    throw new Error("Expected scoped query");
+  }
   return dialect.sqlToQuery(condition);
 };
 beforeEach(() => {
@@ -204,14 +206,19 @@ it("returns OCR snippets from library grep", async () => {
   });
 });
 
-function untypedSchemaPaths(schema: JsonValue, path = "$"): string[] {
-  if (schema === true || schema === false) return [path];
-  if (Array.isArray(schema))
+function untypedSchemaPaths(schema: JsonValue, path = "$"): Array<string> {
+  if (schema === true || schema === false) {
+    return [path];
+  }
+  if (Array.isArray(schema)) {
     return schema.flatMap((entry, index) =>
       untypedSchemaPaths(entry, `${path}[${index}]`),
     );
+  }
   const parsed = z.record(z.string(), z.json()).safeParse(schema);
-  if (!parsed.success) return [];
+  if (!parsed.success) {
+    return [];
+  }
   const node = parsed.data;
   const keys = Object.keys(node).filter((key) => key !== "$schema");
   const typed =
@@ -225,18 +232,22 @@ function untypedSchemaPaths(schema: JsonValue, path = "$"): string[] {
     z.string().safeParse(node.$ref).success;
   const hits = !typed && keys.length === 0 ? [path] : [];
   for (const [key, value] of Object.entries(node)) {
-    if (key === "$schema" || key === "$ref" || key === "additionalProperties")
+    if (key === "$schema" || key === "$ref" || key === "additionalProperties") {
       continue;
+    }
     const properties =
       key === "properties"
         ? z.record(z.string(), z.json()).safeParse(value)
         : null;
     if (properties?.success) {
-      for (const [name, property] of Object.entries(properties.data))
+      for (const [name, property] of Object.entries(properties.data)) {
         hits.push(
           ...untypedSchemaPaths(property, `${path}.properties.${name}`),
         );
-    } else hits.push(...untypedSchemaPaths(value, `${path}.${key}`));
+      }
+    } else {
+      hits.push(...untypedSchemaPaths(value, `${path}.${key}`));
+    }
   }
   return hits;
 }

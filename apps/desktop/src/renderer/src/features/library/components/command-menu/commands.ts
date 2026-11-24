@@ -33,7 +33,7 @@ import {
 } from "@/features/library/components/new-menu/actions";
 import { resetFilters } from "@/features/library/state/view-store";
 import { openSources, pickWatchedFolder } from "@/features/sources";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
 import { fishIntroDialog } from "@/shared/state/fish-intro";
 import { setupFlow } from "@/shared/state/setup";
@@ -41,10 +41,10 @@ import { supportDialog } from "@/shared/state/support";
 import type { CommandSpec } from "./types";
 
 function navigateTo(path: string): void {
-  getAppRouter()?.history.push(path);
+  getAppHistory()?.push(path);
 }
 
-export const COMMANDS: readonly CommandSpec[] = [
+export const COMMANDS: ReadonlyArray<CommandSpec> = [
   {
     id: "new-folder",
     group: "Create",
@@ -52,7 +52,9 @@ export const COMMANDS: readonly CommandSpec[] = [
     icon: IconFolder,
     keywords: "create collection organize directory",
     shortcut: "library.new-folder",
-    run: () => newFolder(),
+    run: () => {
+      void newFolder();
+    },
   },
   {
     id: "new-tag",

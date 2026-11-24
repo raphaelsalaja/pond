@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
@@ -19,7 +20,7 @@ function image(path: string): SaveFile {
   };
 }
 
-function imageSave(id: string, files: SaveFile[]): Save {
+function imageSave(id: string, files: Array<SaveFile>): Save {
   return {
     id,
     source: "local",
@@ -95,12 +96,16 @@ it("keeps a failed only slide visible through generated and file fallback", asyn
   await act(async () => root.render(<MediaViewer save={save} />));
 
   const direct = host.querySelector<HTMLImageElement>("img");
-  if (!direct) throw new Error("Missing direct image");
+  if (!direct) {
+    throw new Error("Missing direct image");
+  }
   await fail(direct);
 
   const generated = host.querySelector<HTMLImageElement>("img");
   expect(generated?.src).toContain("preview=2048");
-  if (!generated) throw new Error("Missing generated image");
+  if (!generated) {
+    throw new Error("Missing generated image");
+  }
   await fail(generated);
 
   expect(host.textContent).toContain("This preview could not be rendered.");
@@ -138,10 +143,14 @@ it("does not change slide count or file indices when one item fails", async () =
 
   const images = host.querySelectorAll<HTMLImageElement>("img");
   const second = images[1];
-  if (!second) throw new Error("Missing second image");
+  if (!second) {
+    throw new Error("Missing second image");
+  }
   await fail(second);
   const generatedSecond = host.querySelectorAll<HTMLImageElement>("img")[1];
-  if (!generatedSecond) throw new Error("Missing generated second image");
+  if (!generatedSecond) {
+    throw new Error("Missing generated second image");
+  }
   await fail(generatedSecond);
 
   const slides = [...host.querySelectorAll("[data-blossom-slide]")];
@@ -157,7 +166,9 @@ it("does not change slide count or file indices when one item fails", async () =
 
 it("keeps a failed video in place as a file fallback", async () => {
   query.mockImplementation(async (name: string) => {
-    if (name === "video.preparePreview") return { ok: false };
+    if (name === "video.preparePreview") {
+      return { ok: false };
+    }
     return PrefsSchema.parse({});
   });
   const save = imageSave("video-failure", [
@@ -178,7 +189,9 @@ it("keeps a failed video in place as a file fallback", async () => {
   await act(async () => root.render(<MediaViewer save={save} />));
 
   const video = host.querySelector("video");
-  if (!video) throw new Error("Missing video");
+  if (!video) {
+    throw new Error("Missing video");
+  }
   await act(async () => {
     video.dispatchEvent(new Event("error", { bubbles: true }));
     await Promise.resolve();
@@ -210,7 +223,9 @@ it("retries an undecodable video through one compatible preview before fallback"
   await act(async () => root.render(<MediaViewer save={save} />));
 
   const original = host.querySelector<HTMLVideoElement>("video");
-  if (!original) throw new Error("Missing original video");
+  if (!original) {
+    throw new Error("Missing original video");
+  }
   await act(async () => {
     original.dispatchEvent(new Event("error", { bubbles: true }));
     await Promise.resolve();
@@ -225,7 +240,9 @@ it("retries an undecodable video through one compatible preview before fallback"
   );
   expect(host.querySelector("[data-viewer-fallback]")).toBeNull();
 
-  if (!proxy) throw new Error("Missing compatible video preview");
+  if (!proxy) {
+    throw new Error("Missing compatible video preview");
+  }
   await act(async () => {
     proxy.dispatchEvent(new Event("error", { bubbles: true }));
   });

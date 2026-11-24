@@ -14,17 +14,23 @@ type FrameParams = {
 
 function frameParams(video: HTMLVideoElement): FrameParams | null {
   const src = video.currentSrc || video.src;
-  if (!src) return null;
+  if (!src) {
+    return null;
+  }
   return { src, timeSec: video.currentTime };
 }
 
 export async function copyVideoFrame(video: HTMLVideoElement): Promise<void> {
   const params = frameParams(video);
-  if (!params) return;
+  if (!params) {
+    return;
+  }
   const result = OkSchema.parse(
     await window.pond.query("video.copyFrame", params),
   );
-  if (!result.ok) return;
+  if (!result.ok) {
+    return;
+  }
   notify({
     id: "copy-frame",
     title: "Frame copied to clipboard",
@@ -33,11 +39,15 @@ export async function copyVideoFrame(video: HTMLVideoElement): Promise<void> {
 
 export async function saveVideoFrame(video: HTMLVideoElement): Promise<void> {
   const params = frameParams(video);
-  if (!params) return;
+  if (!params) {
+    return;
+  }
   const result = OkSchema.parse(
     await window.pond.query("video.saveFrame", params),
   );
-  if (!result.ok) return;
+  if (!result.ok) {
+    return;
+  }
   notify({
     id: "save-frame",
     title: "Frame saved",
@@ -49,6 +59,8 @@ export async function setVideoThumbnail(
   video: HTMLVideoElement,
 ): Promise<void> {
   const params = frameParams(video);
-  if (!params) return;
+  if (!params) {
+    return;
+  }
   await window.pond.query("video.setThumbnail", { saveId, ...params });
 }

@@ -32,7 +32,7 @@ function invalidContent(): never {
 }
 
 function escapeText(text: string): string {
-  return text.replace(/[\\`*_{}[\]()#+\-.!|>~]/g, "\\$&");
+  return text.replaceAll(/[\\`*_{}[\]()#+\-.!|>~]/g, String.raw`\$&`);
 }
 
 function codeDelimiter(text: string, minimum: number): string {
@@ -41,7 +41,9 @@ function codeDelimiter(text: string, minimum: number): string {
 }
 
 function textNode(node: ProseNode): string {
-  if (node.text === undefined) return invalidContent();
+  if (node.text === undefined) {
+    return invalidContent();
+  }
   const marks = node.marks ?? [];
   const isCode = marks.some((mark) => mark.type === "code");
   let text = escapeText(node.text);
@@ -51,13 +53,21 @@ function textNode(node: ProseNode): string {
     text = `${delimiter}${padding}${node.text}${padding}${delimiter}`;
   }
   for (const mark of marks) {
-    if (mark.type === "bold" || mark.type === "strong") text = `**${text}**`;
-    if (mark.type === "italic" || mark.type === "em") text = `*${text}*`;
-    if (mark.type === "strike") text = `~~${text}~~`;
+    if (mark.type === "bold" || mark.type === "strong") {
+      text = `**${text}**`;
+    }
+    if (mark.type === "italic" || mark.type === "em") {
+      text = `*${text}*`;
+    }
+    if (mark.type === "strike") {
+      text = `~~${text}~~`;
+    }
     if (mark.type === "link") {
       const href = mark.attrs?.href;
-      if (!href) return invalidContent();
-      const destination = href.replace(/[\\\s()<>]/g, (character) =>
+      if (!href) {
+        return invalidContent();
+      }
+      const destination = href.replaceAll(/[\\\s()<>]/g, (character) =>
         character === "("
           ? "%28"
           : character === ")"
@@ -95,23 +105,35 @@ function renderList(node: ProseNode): string {
 }
 
 function renderNode(node: ProseNode): string {
-  if (node.type === "text") return textNode(node);
-  if (node.type === "hardBreak") return "  \n";
-  if (node.type === "horizontalRule") return "---\n\n";
-  if (["bulletList", "orderedList", "taskList"].includes(node.type))
+  if (node.type === "text") {
+    return textNode(node);
+  }
+  if (node.type === "hardBreak") {
+    return "  \n";
+  }
+  if (node.type === "horizontalRule") {
+    return "---\n\n";
+  }
+  if (["bulletList", "orderedList", "taskList"].includes(node.type)) {
     return renderList(node);
+  }
   if (node.type === "codeBlock") {
     const code = (node.content ?? [])
       .map((child) => {
-        if (child.type === "text" && child.text !== undefined)
+        if (child.type === "text" && child.text !== undefined) {
           return child.text;
-        if (child.type === "hardBreak") return "\n";
+        }
+        if (child.type === "hardBreak") {
+          return "\n";
+        }
         return invalidContent();
       })
       .join("");
     const fence = codeDelimiter(code, 3);
     const language = node.attrs?.language ?? "";
-    if (!/^[\w+-]*$/.test(language)) return invalidContent();
+    if (!/^[\w+-]*$/.test(language)) {
+      return invalidContent();
+    }
     return `${fence}${language}\n${code}\n${fence}\n\n`;
   }
 
@@ -132,14 +154,20 @@ function renderNode(node: ProseNode): string {
         .map((line) => (line ? `> ${line}` : ">"))
         .join("\n")}\n\n`;
     default:
-      if (node.text !== undefined) return `${escapeText(node.text)}${children}`;
-      if (node.content !== undefined) return children;
+      if (node.text !== undefined) {
+        return `${escapeText(node.text)}${children}`;
+      }
+      if (node.content !== undefined) {
+        return children;
+      }
       return invalidContent();
   }
 }
 
 export function mymindContentText(content: MymindObject["content"]): string {
-  if (!content) return "";
+  if (!content) {
+    return "";
+  }
   if (content.type === "text/markdown" || content.type === "text/plain") {
     const text = z.string().safeParse(content.body);
     return text.success ? text.data : invalidContent();

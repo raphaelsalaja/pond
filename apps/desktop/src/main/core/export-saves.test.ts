@@ -60,17 +60,18 @@ describe("selection organization export", () => {
   });
 });
 
+const item = (title: string): ExportItem => ({
+  directory: "",
+  folderIds: ["geoid"],
+  save: { id: title, title, url: "", tags: [], notes: "", files: [] },
+});
+
 describe("export names", () => {
   const now = new Date(2026, 10, 22);
-  const folders: ExportFolder[] = [
+  const folders: Array<ExportFolder> = [
     { id: "projects", name: "Projects", parentId: null },
     { id: "geoid", name: "Geoid", parentId: "projects" },
   ];
-  const item = (title: string): ExportItem => ({
-    directory: "",
-    folderIds: ["geoid"],
-    save: { id: title, title, url: "", tags: [], notes: "", files: [] },
-  });
 
   it("names a single Save after its title even when it's filed in a folder", () => {
     expect(exportName([item("Survey")], folders, {}, now)).toBe(

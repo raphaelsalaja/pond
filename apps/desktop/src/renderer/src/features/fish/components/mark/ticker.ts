@@ -1,4 +1,5 @@
-import { type Avatar, frameGap, type Pose } from "./face";
+import { frameGap } from "./face";
+import type { Avatar, Pose } from "./face";
 
 export interface Rig {
   element: Element;
@@ -51,7 +52,9 @@ function tick(now: number) {
     const x = box && pointer ? pointer.x - (box.left + box.width / 2) : 0;
     const y = box && pointer ? pointer.y - (box.top + box.height / 2) : 0;
     if (box && Math.hypot(x, y) < NOTICE) {
-      if (!state.near) rig.avatar.enter();
+      if (!state.near) {
+        rig.avatar.enter();
+      }
       state.near = true;
       rig.avatar.move(x, y);
     } else if (state.near) {
@@ -77,7 +80,9 @@ function schedule(gap: number) {
 
 function cancel() {
   cancelAnimationFrame(frame);
-  if (timer) clearTimeout(timer);
+  if (timer) {
+    clearTimeout(timer);
+  }
   frame = 0;
   timer = null;
 }
@@ -97,20 +102,28 @@ function sync() {
 }
 
 function onMotionChange() {
-  if (reducedMotion()) for (const { rig } of rigs.values()) rig.rest();
+  if (reducedMotion()) {
+    for (const { rig } of rigs.values()) {
+      rig.rest();
+    }
+  }
   sync();
 }
 
 function within(state: State, at: { x: number; y: number }): boolean {
   const { box } = state;
-  if (!state.visible || !box) return false;
+  if (!state.visible || !box) {
+    return false;
+  }
   const x = at.x - (box.left + box.width / 2);
   const y = at.y - (box.top + box.height / 2);
   return Math.hypot(x, y) < NOTICE;
 }
 
 function onPointerMove(event: PointerEvent) {
-  if (event.pointerType === "touch") return;
+  if (event.pointerType === "touch") {
+    return;
+  }
   const at = { x: event.clientX, y: event.clientY };
   pointer = at;
   movedAt = event.timeStamp;
@@ -131,7 +144,9 @@ function start() {
     (entries) => {
       for (const entry of entries) {
         const state = rigs.get(entry.target);
-        if (state) state.visible = entry.isIntersecting;
+        if (state) {
+          state.visible = entry.isIntersecting;
+        }
       }
       sync();
     },
@@ -157,14 +172,20 @@ function stop() {
 
 /** One frame loop steps every fish on screen; it never runs while motion is reduced or the machine is resting. */
 export function animate(rig: Rig): () => void {
-  if (!("IntersectionObserver" in globalThis)) return () => {};
-  if (!observer) start();
+  if (!("IntersectionObserver" in globalThis)) {
+    return () => {};
+  }
+  if (!observer) {
+    start();
+  }
   rigs.set(rig.element, { rig, visible: false, near: false, box: null });
   observer?.observe(rig.element);
   return () => {
     observer?.unobserve(rig.element);
     rigs.delete(rig.element);
-    if (rigs.size === 0) stop();
+    if (rigs.size === 0) {
+      stop();
+    }
     sync();
   };
 }

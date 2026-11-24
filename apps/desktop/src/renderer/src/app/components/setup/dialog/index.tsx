@@ -1,7 +1,9 @@
 import { Button, Dialog } from "@pond/ui";
+import { isElement } from "@pond/ui/dom";
 import { Calligraph } from "calligraph";
 import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { setupFlow } from "@/shared/state/setup";
 import {
   connectAssistant,
@@ -9,7 +11,8 @@ import {
   openExistingLibrary,
   relaunchesLibrary,
 } from "../apply";
-import { type Session, type SetupChoices, STEP_IDS } from "../model";
+import { STEP_IDS } from "../model";
+import type { Session, SetupChoices } from "../model";
 import { setupResume } from "../resume";
 import { stepSpec } from "../steps";
 import styles from "./styles.module.css";
@@ -46,7 +49,9 @@ export function SetupDialog({
 
   const previousIndex = useRef(index);
   useEffect(() => {
-    if (previousIndex.current === index) return;
+    if (previousIndex.current === index) {
+      return;
+    }
     previousIndex.current = index;
     headingRef.current?.focus({ preventScroll: true });
   }, [index]);
@@ -84,37 +89,57 @@ export function SetupDialog({
   const canOpenExisting = id === "welcome" && profile === "new";
 
   const openExisting = async () => {
-    if (busy || opening) return;
+    if (busy || opening) {
+      return;
+    }
     setOpening(true);
     patch({ error: "" });
     const failure = await openExistingLibrary();
-    if (failure === "") return;
+    if (failure === "") {
+      return;
+    }
     setOpening(false);
-    if (failure) patch({ error: failure });
+    if (failure) {
+      patch({ error: failure });
+    }
   };
 
   const next = async () => {
-    if (busy || opening) return;
-    if (id === "assistant" && !(await run(() => connectAssistant(choices))))
+    if (busy || opening) {
       return;
+    }
+    if (id === "assistant" && !(await run(() => connectAssistant(choices)))) {
+      return;
+    }
     if (id === "library") {
       const relaunching = relaunchesLibrary(choices, library, profile);
-      if (relaunching) setupResume.mark();
+      if (relaunching) {
+        setupResume.mark();
+      }
       const done = await run(() =>
         finishSetup(choices, session.initial, library, profile),
       );
-      if (done) return go(1);
-      if (relaunching) setupResume.clear();
+      if (done) {
+        return go(1);
+      }
+      if (relaunching) {
+        setupResume.clear();
+      }
       return;
     }
-    if (!last) return go(1);
+    if (!last) {
+      return go(1);
+    }
     setupFlow.close();
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
-    if (event.target instanceof Element && event.target.closest(OWNS_ENTER))
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) {
       return;
+    }
+    if (isElement(event.target) && event.target.closest(OWNS_ENTER)) {
+      return;
+    }
     event.preventDefault();
     void next();
   };
@@ -142,7 +167,9 @@ export function SetupDialog({
       open={open}
       disablePointerDismissal
       onOpenChangeComplete={(nextOpen) => {
-        if (!nextOpen) setSession(() => null);
+        if (!nextOpen) {
+          setSession(() => null);
+        }
       }}
     >
       <Dialog.Portal>

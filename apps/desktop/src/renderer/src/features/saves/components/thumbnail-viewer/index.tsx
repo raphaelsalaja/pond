@@ -33,7 +33,9 @@ function ThumbnailViewer({ open, saveId }: { open: boolean; saveId: string }) {
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) closeThumbnailViewer();
+        if (!next) {
+          closeThumbnailViewer();
+        }
       }}
     >
       <Dialog.Portal>
@@ -49,7 +51,7 @@ function ThumbnailViewer({ open, saveId }: { open: boolean; saveId: string }) {
             />
           ) : (
             <Empty.Root>
-              <Empty.Title>Couldn't load the thumbnail</Empty.Title>
+              <Empty.Title>Couldn&apos;t load the thumbnail</Empty.Title>
             </Empty.Root>
           )}
         </Dialog.Popup>

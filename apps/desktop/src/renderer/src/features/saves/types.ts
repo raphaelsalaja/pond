@@ -24,5 +24,5 @@ type SaveIdentity =
 export type Save = Pick<WireSave, SaveIdentity> &
   Partial<Omit<WireSave, SaveIdentity>> &
   Pick<SavesDerivedPatch, "transcript" | "clipEmbedding"> & {
-    folderIds?: string[];
+    folderIds?: Array<string>;
   };

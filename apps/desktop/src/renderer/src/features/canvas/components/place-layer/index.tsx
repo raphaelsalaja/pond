@@ -10,7 +10,7 @@ interface FlowRect {
 }
 
 interface PlaceLayerProps {
-  onPlace(rect: FlowRect | null, point: { x: number; y: number }): void;
+  onPlace: (rect: FlowRect | null, point: { x: number; y: number }) => void;
 }
 
 const CLICK = 6;
@@ -25,7 +25,9 @@ export function PlaceLayer({ onPlace }: PlaceLayerProps) {
     const start = origin.current;
     origin.current = null;
     setDraft(null);
-    if (!start) return;
+    if (!start) {
+      return;
+    }
     const bounds = event.currentTarget.getBoundingClientRect();
     const corner = (x: number, y: number) =>
       flow.screenToFlowPosition(
@@ -52,7 +54,9 @@ export function PlaceLayer({ onPlace }: PlaceLayerProps) {
     <div
       className={styles.layer}
       onPointerDown={(event) => {
-        if (event.button !== 0) return;
+        if (event.button !== 0) {
+          return;
+        }
         const bounds = event.currentTarget.getBoundingClientRect();
         event.currentTarget.setPointerCapture(event.pointerId);
         origin.current = {
@@ -62,8 +66,9 @@ export function PlaceLayer({ onPlace }: PlaceLayerProps) {
       }}
       onPointerMove={(event) => {
         const start = origin.current;
-        if (!start || !event.currentTarget.hasPointerCapture(event.pointerId))
+        if (!start || !event.currentTarget.hasPointerCapture(event.pointerId)) {
           return;
+        }
         const bounds = event.currentTarget.getBoundingClientRect();
         const x = event.clientX - bounds.left;
         const y = event.clientY - bounds.top;

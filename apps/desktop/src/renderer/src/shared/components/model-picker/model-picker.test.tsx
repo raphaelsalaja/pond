@@ -1,6 +1,8 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ModelPicker } from ".";
 
@@ -30,7 +32,7 @@ beforeEach(() => {
                   name: "GPT-5.6 Sol",
                   description: "Built for complex coding and knowledge work.",
                   contextWindow: 200_000,
-                  maxOutputTokens: 8_192,
+                  maxOutputTokens: 8192,
                   capabilities: ["fast"],
                   reasoningOptions: ["low", "high"],
                 },
@@ -120,8 +122,9 @@ async function renderPicker(
 
 async function openPicker() {
   const trigger = host.querySelector('button[aria-label^="Choose model"]');
-  if (!(trigger instanceof HTMLElement))
+  if (!isHTMLElement(trigger)) {
     throw new Error("Missing model picker");
+  }
   await act(async () => trigger.click());
   await vi.waitFor(() =>
     expect(trigger.getAttribute("aria-label")).toContain("GPT-5.6 Sol"),
@@ -171,8 +174,9 @@ it("splits provider and model choices into separate submenus", async () => {
   expect(document.body.textContent).not.toContain("gemma4:26b");
   const selectedModel = menuItem("GPT-5.6 Sol");
   const modelMenu = selectedModel?.closest<HTMLElement>('[role="dialog"]');
-  if (!selectedModel || !modelMenu)
+  if (!selectedModel || !modelMenu) {
     throw new Error("Missing selected model menu item");
+  }
   vi.spyOn(selectedModel, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 180),
   );
@@ -196,7 +200,9 @@ it("splits provider and model choices into separate submenus", async () => {
   const input = document.querySelector<HTMLInputElement>(
     'input[placeholder="Search…"]',
   );
-  if (!input) throw new Error("Missing model search");
+  if (!input) {
+    throw new Error("Missing model search");
+  }
   await act(async () => setInput(input, "sol"));
   expect(document.body.textContent).toContain("GPT-5.6 Sol");
   expect(document.body.textContent).not.toContain("Claude Test");

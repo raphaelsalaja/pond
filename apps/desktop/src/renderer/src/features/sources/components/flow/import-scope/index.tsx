@@ -7,14 +7,12 @@ import {
   Switch,
   Tooltip,
 } from "@pond/ui";
-import {
-  type ImportCollectionKind,
-  importScopeOptions,
-  importsAnyList,
-} from "@shared/import-scope";
+import { importScopeOptions, importsAnyList } from "@shared/import-scope";
+import type { ImportCollectionKind } from "@shared/import-scope";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { ChipsField } from "@/features/sources/components/chips-field";
 import {
   collectionNouns,
@@ -34,10 +32,12 @@ import {
   draftFiles,
   draftImportScope,
   filingChanged,
-  type ImportScopeAccount,
-  type ImportScopeFlow,
   useImportScopeFlow,
   useImportScopeFlowActions,
+} from "@/features/sources/state/import-scope-flow";
+import type {
+  ImportScopeAccount,
+  ImportScopeFlow,
 } from "@/features/sources/state/import-scope-flow";
 import { formatNumber } from "@/shared/lib/format";
 import { BlueskySignIn, useBlueskySignedIn } from "./bluesky-sign-in";
@@ -47,7 +47,7 @@ import styles from "./styles.module.css";
 export function useImportScopeDraft(account: ImportScopeAccount): void {
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
-  const key = JSON.stringify({
+  const snapshot: ImportScopeAccount = {
     id: account.id,
     source: account.source,
     sync: {
@@ -55,7 +55,12 @@ export function useImportScopeDraft(account: ImportScopeAccount): void {
       importPending: account.sync.importPending,
       syncLikes: account.sync.syncLikes,
     },
-  } satisfies ImportScopeAccount);
+  };
+  const key = JSON.stringify(snapshot);
+  const [opened, setOpened] = useState({ key, account: snapshot });
+  if (opened.key !== key) {
+    setOpened({ key, account: snapshot });
+  }
   useEffect(
     () => () => {
       const left = flow.snapshot();
@@ -68,8 +73,8 @@ export function useImportScopeDraft(account: ImportScopeAccount): void {
     [flow],
   );
   useEffect(() => {
-    flow.open(JSON.parse(key));
-  }, [flow, key]);
+    flow.open(opened.account);
+  }, [flow, opened]);
   const unsaved =
     draft.accountId === account.id &&
     !draft.saving &&
@@ -77,14 +82,18 @@ export function useImportScopeDraft(account: ImportScopeAccount): void {
     draftChanged(draft) &&
     draftImportScope(draft) !== null;
   useEffect(() => {
-    if (unsaved) void confirmImportScope(flow, { start: false });
+    if (unsaved) {
+      void confirmImportScope(flow, { start: false });
+    }
   }, [flow, unsaved]);
 }
 
 export function ImportScopeLists({ accountId }: { accountId: string }) {
   const draft = useImportScopeFlow();
   const { source } = draft;
-  if (draft.accountId !== accountId || !source) return null;
+  if (draft.accountId !== accountId || !source) {
+    return null;
+  }
   const options = importScopeOptions(source);
   const label = getSourceDef(source).label;
   const collections = options.collections ? (
@@ -116,8 +125,8 @@ export function ImportScopeLists({ accountId }: { accountId: string }) {
   }
   return (
     <p className={styles.note}>
-      Pond imports everything you've saved on {label}. Choosing specific lists
-      isn't available for {label} yet.
+      Pond imports everything you&apos;ve saved on {label}. Choosing specific
+      lists isn&apos;t available for {label} yet.
     </p>
   );
 }
@@ -125,7 +134,9 @@ export function ImportScopeLists({ accountId }: { accountId: string }) {
 export function ImportScopeFilters({ accountId }: { accountId: string }) {
   const draft = useImportScopeFlow();
   const { source } = draft;
-  if (draft.accountId !== accountId || !source) return null;
+  if (draft.accountId !== accountId || !source) {
+    return null;
+  }
   const options = importScopeOptions(source);
   return (
     <Settings.List className={styles.choices}>
@@ -141,7 +152,9 @@ export function ImportScopeFilters({ accountId }: { accountId: string }) {
 export function ImportScopeStatus() {
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
-  if (!draft.source) return null;
+  if (!draft.source) {
+    return null;
+  }
   const scope = draftImportScope(draft);
   const empty = scope !== null && !importsAnyList(draft.source, scope);
   const ready = scope !== null && !empty;
@@ -155,7 +168,9 @@ export function ImportScopeStatus() {
       {problem}
     </p>
   ) : null;
-  if (!draft.starts) return alert;
+  if (!draft.starts) {
+    return alert;
+  }
   return (
     <div className={styles.status}>
       <Settings.List>
@@ -189,7 +204,9 @@ async function confirmImportScope(
 ): Promise<void> {
   const draft = flow.snapshot();
   const scope = draftImportScope(draft);
-  if (!draft.accountId || !draft.source || !scope || draft.saving) return;
+  if (!draft.accountId || !draft.source || !scope || draft.saving) {
+    return;
+  }
   flow.setSaving(true);
   let result: OkResult;
   try {
@@ -290,7 +307,7 @@ function CollectionRows({
   );
   const details = new Map(
     available.flatMap((c) =>
-      c.itemCount == null ? [] : [[c.id, formatNumber(c.itemCount)] as const],
+      c.itemCount === null ? [] : [[c.id, formatNumber(c.itemCount)] as const],
     ),
   );
   const ids = Array.from(
@@ -381,7 +398,7 @@ function CollectionRows({
   );
 }
 
-function MediaKindsRow({ kinds }: { kinds: readonly ImportMediaKind[] }) {
+function MediaKindsRow({ kinds }: { kinds: ReadonlyArray<ImportMediaKind> }) {
   const flow = useImportScopeFlowActions();
   const draft = useImportScopeFlow();
   return (
@@ -414,6 +431,7 @@ function SinceRows({ source }: { source: Source }) {
   const draft = useImportScopeFlow();
   const custom = draft.sincePreset === "custom";
   const copy = sinceCopy(source);
+  const [today] = useState(() => localDay(new Date()));
   return (
     <>
       <Settings.Item>
@@ -436,7 +454,9 @@ function SinceRows({ source }: { source: Source }) {
             value={draft.sincePreset}
             items={[...copy.presets]}
             onValueChange={(next) => {
-              if (next) flow.setSincePreset(next);
+              if (next) {
+                flow.setSincePreset(next);
+              }
             }}
           >
             <Select.Trigger
@@ -468,7 +488,7 @@ function SinceRows({ source }: { source: Source }) {
             aria-label="Date"
             className={styles.date}
             value={draft.since}
-            max={localDay(new Date())}
+            max={today}
             disabled={!custom}
             onValueChange={(since) => flow.setSince(since)}
           />

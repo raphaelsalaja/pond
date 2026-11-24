@@ -5,14 +5,12 @@ import { setSourceCooldown } from "../pipeline/rate-governor";
 import { patchAccountSync } from "../sync/accounts";
 import { fileIncomingSaves } from "../sync/incoming";
 import { emit } from "../sync/sync-status";
-import { type createMymindClient, MymindApiError } from "./client";
+import { MymindApiError } from "./client";
+import type { createMymindClient } from "./client";
 import { readMymindCredential, removeMymindCredential } from "./credentials";
 import { importMymindObject } from "./import";
-import {
-  type MymindSyncState,
-  readMymindSyncState,
-  writeMymindSyncState,
-} from "./state";
+import { readMymindSyncState, writeMymindSyncState } from "./state";
+import type { MymindSyncState } from "./state";
 import { createConnectedMymindClient } from "./transport";
 
 const DATE_OVERLAP_MS = 5 * 60_000;
@@ -31,7 +29,7 @@ export async function importNewMymindObjects(
   signal: AbortSignal,
   maxItems: number | undefined,
   dependencies: ImportDependencies,
-): Promise<{ imported: string[]; processed: number; hasMore: boolean }> {
+): Promise<{ imported: Array<string>; processed: number; hasMore: boolean }> {
   signal.throwIfAborted();
   const cutoff = Date.parse(state.startedAt);
   const start = Math.max(
@@ -39,10 +37,12 @@ export async function importNewMymindObjects(
     Date.parse(state.checkedThrough) - DATE_OVERLAP_MS,
   );
   const end = dependencies.now;
-  const imported: string[] = [];
+  const imported: Array<string> = [];
   let processed = 0;
   let hasMore = false;
-  if (start >= end) return { imported, processed, hasMore };
+  if (start >= end) {
+    return { imported, processed, hasMore };
+  }
 
   for await (const object of dependencies.client.listCreatedObjects({
     start,
@@ -56,8 +56,9 @@ export async function importNewMymindObjects(
       created < cutoff ||
       created >= end ||
       state.imports[object.id]?.complete
-    )
+    ) {
       continue;
+    }
     if (maxItems !== undefined && processed >= maxItems) {
       hasMore = true;
       break;
@@ -65,12 +66,16 @@ export async function importNewMymindObjects(
     const result = await dependencies.importObject(object);
     signal.throwIfAborted();
     processed += 1;
-    if (result.imported) imported.push(result.id);
+    if (result.imported) {
+      imported.push(result.id);
+    }
   }
 
   signal.throwIfAborted();
   // A partial stream must keep its lower bound until every item is processed.
-  if (!hasMore) state.checkedThrough = new Date(end).toISOString();
+  if (!hasMore) {
+    state.checkedThrough = new Date(end).toISOString();
+  }
   delete state.retryAt;
   await dependencies.persist();
   return { imported, processed, hasMore };
@@ -122,8 +127,9 @@ export async function syncMymind(
       persist,
       importObject: async (object) => {
         signal.throwIfAborted();
-        if (libraryRoot() !== root)
+        if (libraryRoot() !== root) {
           throw new Error("The Library changed. The mymind import stopped.");
+        }
         const result = await importMymindObject({
           object,
           accountId,
@@ -133,19 +139,21 @@ export async function syncMymind(
           signal,
           beforeWrite: () => {
             signal.throwIfAborted();
-            if (libraryRoot() !== root)
+            if (libraryRoot() !== root) {
               throw new Error(
                 "The Library changed. The mymind import stopped.",
               );
+            }
           },
         });
-        if (result.imported)
+        if (result.imported) {
           await fileIncomingSaves(
             [result.id],
             accountId,
             "mymind",
             "sync:mymind",
           );
+        }
         emit({
           accountId,
           source: "mymind",

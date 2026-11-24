@@ -152,26 +152,30 @@ it("starts a pasted link without selecting it", async () => {
 });
 
 interface FakeTransfer {
-  files: File[];
-  types?: string[];
+  files: Array<File>;
+  types?: Array<string>;
   getData: (type: string) => string;
+}
+
+function stubPond() {
+  const query = vi.fn(async (operation: string) => {
+    if (operation === "saves.reviewImportDuplicates") {
+      return { candidates: [] };
+    }
+    if (operation === "saves.quickAdd") {
+      return { ok: true, id: "new-save" };
+    }
+    if (operation === "saves.stageClipboard") {
+      return { ok: true, paths: ["/tmp/pond-clip/clipboard.png"] };
+    }
+    return { ok: true, ids: ["new-save"] };
+  });
+  vi.stubGlobal("pond", { query, pathForFile: () => "/tmp/drop image.png" });
+  return query;
 }
 
 describe("inside an open folder", () => {
   const folder = { id: "type", name: "Type" };
-
-  function stubPond() {
-    const query = vi.fn(async (operation: string) => {
-      if (operation === "saves.reviewImportDuplicates")
-        return { candidates: [] };
-      if (operation === "saves.quickAdd") return { ok: true, id: "new-save" };
-      if (operation === "saves.stageClipboard")
-        return { ok: true, paths: ["/tmp/pond-clip/clipboard.png"] };
-      return { ok: true, ids: ["new-save"] };
-    });
-    vi.stubGlobal("pond", { query, pathForFile: () => "/tmp/drop image.png" });
-    return query;
-  }
 
   async function mount() {
     const host = document.createElement("div");

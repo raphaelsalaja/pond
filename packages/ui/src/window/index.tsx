@@ -1,18 +1,17 @@
 import { createParts } from "@ui-sdk/react/primitive";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentProps,
-  type ComponentPropsWithoutRef,
-  type ReactNode,
-  type RefObject,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
+import { useId, useLayoutEffect, useMemo, useRef } from "react";
+import type {
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  ReactNode,
+  RefObject,
 } from "react";
+import { isHTMLElement } from "../dom";
 import { Tooltip } from "../tooltip";
 import { useWindow, WindowContext } from "./context";
-import { type WindowSide, windowHandle } from "./handle";
+import { windowHandle } from "./handle";
+import type { WindowSide } from "./handle";
 import styles from "./styles.module.css";
 
 const { Root: HandleRoot } = createParts(windowHandle, { root: "div" });
@@ -60,15 +59,17 @@ function Root({
 /** Sums padding, gaps and children, since the element itself stretches to the column under it. */
 function naturalWidth(element: HTMLElement): number {
   const style = getComputedStyle(element);
-  const children = [...element.children].filter(
-    (child): child is HTMLElement => child instanceof HTMLElement,
+  const children = [...element.children].filter((child): child is HTMLElement =>
+    isHTMLElement(child),
   );
   const gap = Number.parseFloat(style.columnGap) || 0;
   let width =
     (Number.parseFloat(style.paddingLeft) || 0) +
     (Number.parseFloat(style.paddingRight) || 0) +
     gap * Math.max(0, children.length - 1);
-  for (const child of children) width += child.getBoundingClientRect().width;
+  for (const child of children) {
+    width += child.getBoundingClientRect().width;
+  }
   return Math.ceil(width);
 }
 
@@ -80,11 +81,15 @@ function useNaturalWidth(
   useLayoutEffect(() => {
     const element = ref.current;
     const root = element?.closest<HTMLElement>('[data-slot="window"]');
-    if (!element || !root) return;
+    if (!element || !root) {
+      return;
+    }
     let last = "";
     const write = () => {
       const next = `${naturalWidth(element)}px`;
-      if (next === last) return;
+      if (next === last) {
+        return;
+      }
       last = next;
       root.style.setProperty(property, next);
     };
@@ -92,7 +97,9 @@ function useNaturalWidth(
     const observe = () => {
       resize.disconnect();
       resize.observe(element);
-      for (const child of element.children) resize.observe(child);
+      for (const child of element.children) {
+        resize.observe(child);
+      }
       write();
     };
     const mutation = new MutationObserver(observe);
@@ -106,7 +113,7 @@ function useNaturalWidth(
   }, [ref, property]);
 }
 
-interface ClusterProps extends ComponentPropsWithoutRef<"div"> {}
+type ClusterProps = ComponentPropsWithoutRef<"div">;
 
 function Leading({ className, ...props }: ClusterProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -257,7 +264,9 @@ function Handle({
       onCollapse={onCollapse}
     />
   );
-  if (!onCollapse) return handle;
+  if (!onCollapse) {
+    return handle;
+  }
   return (
     <Tooltip
       label={Tooltip.Label("Click to collapse", collapseShortcut)}
@@ -271,7 +280,7 @@ function Handle({
 }
 
 /** Takes a `ref`, so a page can portal its own controls into the row. */
-interface PartProps extends ComponentProps<"div"> {}
+type PartProps = ComponentProps<"div">;
 
 function Bar({ className, ...props }: PartProps) {
   return (

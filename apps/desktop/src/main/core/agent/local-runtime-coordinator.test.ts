@@ -21,13 +21,13 @@ describe("local runtime coordinator", () => {
   it("runs only one request at a time on the same local runtime", async () => {
     const coordinator = createLocalRuntimeCoordinator();
     const first = deferred<void>();
-    const order: string[] = [];
+    const order: Array<string> = [];
     const firstRun = coordinator.run(
       {
         runtime,
         priority: "background",
         signal: new AbortController().signal,
-        timeoutMs: 1_000,
+        timeoutMs: 1000,
       },
       async () => {
         order.push("first-start");
@@ -40,7 +40,7 @@ describe("local runtime coordinator", () => {
         runtime,
         priority: "background",
         signal: new AbortController().signal,
-        timeoutMs: 1_000,
+        timeoutMs: 1000,
       },
       async () => {
         order.push("second");
@@ -56,7 +56,7 @@ describe("local runtime coordinator", () => {
   it("runs queued interactive Assistant work before queued background media", async () => {
     const coordinator = createLocalRuntimeCoordinator();
     const active = deferred<void>();
-    const order: string[] = [];
+    const order: Array<string> = [];
     const run = (
       name: string,
       priority: "interactive" | "background",
@@ -67,7 +67,7 @@ describe("local runtime coordinator", () => {
           runtime,
           priority,
           signal: new AbortController().signal,
-          timeoutMs: 1_000,
+          timeoutMs: 1000,
         },
         async () => {
           order.push(name);
@@ -99,7 +99,7 @@ describe("local runtime coordinator", () => {
         runtime,
         priority: "background",
         signal: new AbortController().signal,
-        timeoutMs: 1_000,
+        timeoutMs: 1000,
       },
       () => active.promise,
     );
@@ -108,7 +108,7 @@ describe("local runtime coordinator", () => {
         runtime,
         priority: "background",
         signal: waitingController.signal,
-        timeoutMs: 1_000,
+        timeoutMs: 1000,
       },
       waitingOperation,
     );
@@ -160,14 +160,14 @@ describe("local runtime coordinator", () => {
 
   it("reports the first run as cold and later runs as warm", async () => {
     const coordinator = createLocalRuntimeCoordinator();
-    const temperatures: boolean[] = [];
+    const temperatures: Array<boolean> = [];
     for (let index = 0; index < 2; index += 1) {
       await coordinator.run(
         {
           runtime,
           priority: "background",
           signal: new AbortController().signal,
-          timeoutMs: 1_000,
+          timeoutMs: 1000,
         },
         async ({ cold }) => {
           temperatures.push(cold);

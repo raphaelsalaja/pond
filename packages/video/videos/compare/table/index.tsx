@@ -1,7 +1,8 @@
 import { IconCheck, IconXmark } from "@pond/icons";
 import { Logo } from "@pond/ui/logo";
 import { ease, envelope, mix, progress, styled } from "@pond/video";
-import { type Mark, RIVALS, ROWS } from "../data";
+import { RIVALS, ROWS } from "../data";
+import type { Mark } from "../data";
 import { CUES, end, rowAt } from "../timeline";
 import styles from "./styles.module.css";
 
@@ -28,25 +29,30 @@ function pop(t: number, at: number, duration = 520) {
 }
 
 function Glyph({ mark, pond }: { mark: Mark; pond?: boolean }) {
-  if (mark === "partly") return <span className={styles.partly}>Partly</span>;
-  if (mark === "no")
+  if (mark === "partly") {
+    return <span className={styles.partly}>Partly</span>;
+  }
+  if (mark === "no") {
     return (
       <span className={styles.no}>
         <IconXmark size={24} />
       </span>
     );
-  if (mark !== "yes")
+  }
+  if (mark !== "yes") {
     return (
       <span className={styles.text} data-pond={pond || undefined}>
         {mark.text}
       </span>
     );
-  if (pond)
+  }
+  if (pond) {
     return (
       <span className={styles.badge}>
         <IconCheck size={22} />
       </span>
     );
+  }
   return (
     <span className={styles.yes}>
       <IconCheck size={30} />
@@ -57,7 +63,9 @@ function Glyph({ mark, pond }: { mark: Mark; pond?: boolean }) {
 /** The comparison grid: rival logos, then one row per bar, with Pond's column filling in last. */
 export function Table({ t }: { t: number }) {
   const exit = end("table") - 500;
-  if (t < CUES.tableRise - 50 || t > exit + 600) return null;
+  if (t < CUES.tableRise - 50 || t > exit + 600) {
+    return null;
+  }
   const scene = envelope(t, CUES.tableRise, exit, {
     duration: 900,
     rise: 40,
@@ -202,7 +210,7 @@ export function Table({ t }: { t: number }) {
           opacity: ease.out(progress(t, rowAt(0), 700)) * rivalOpacity,
         }}
       >
-        Checked against each app's own site, November 2026.
+        Checked against each app&apos;s own site, November 2026.
       </span>
     </div>
   );

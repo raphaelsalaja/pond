@@ -23,7 +23,9 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
@@ -37,6 +39,10 @@ const RowSchema = z.object({
   attempts: z.number(),
 });
 
+const fail = (): FingerprintOutcome => {
+  throw new Error("decoder crashed");
+};
+
 describe.skipIf(!nativeSqliteAvailable())("fingerprint batches", () => {
   let root: string;
   let db: Database.Database;
@@ -47,9 +53,11 @@ describe.skipIf(!nativeSqliteAvailable())("fingerprint batches", () => {
     files: Array<{ path: string; seed: string; bytes?: number; size?: number }>,
   ) {
     mkdirSync(join(root, id), { recursive: true });
-    for (const item of files)
-      if (item.bytes !== undefined)
+    for (const item of files) {
+      if (item.bytes !== undefined) {
         writeFileSync(join(root, id, item.path), Buffer.alloc(item.bytes, 1));
+      }
+    }
     db.prepare(
       "INSERT INTO saves (id, source, source_id, url, files) VALUES (?, 'local', ?, '', ?)",
     ).run(
@@ -103,7 +111,7 @@ describe.skipIf(!nativeSqliteAvailable())("fingerprint batches", () => {
     addSave("one", [{ path: "a.png", seed: "a", bytes: 4 }]);
     addSave("two", [{ path: "copy.png", seed: "a", bytes: 4 }]);
     addSave("three", [{ path: "b.png", seed: "b", bytes: 4 }]);
-    const computed: string[] = [];
+    const computed: Array<string> = [];
     const ok = (path: string): FingerprintOutcome => {
       computed.push(path);
       return { status: "ok", value: new Uint8Array(16).fill(1) };
@@ -144,9 +152,6 @@ describe.skipIf(!nativeSqliteAvailable())("fingerprint batches", () => {
   it("backs off failures and gives up after the last attempt", async () => {
     addSave("one", [{ path: "a.png", seed: "a", bytes: 4 }]);
     await run(() => ({ status: "ok" }));
-    const fail = (): FingerprintOutcome => {
-      throw new Error("decoder crashed");
-    };
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       expect(await run(fail)).toEqual({ state: "fingerprinted", count: 1 });
       expect(rows()[0]).toMatchObject({ status: "failed", attempts: attempt });

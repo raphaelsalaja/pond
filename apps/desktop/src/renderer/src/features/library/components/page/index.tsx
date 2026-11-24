@@ -31,9 +31,13 @@ export function Library() {
   useLayoutEffect(() => {
     const closed = wasOpen.current && !saveOpen;
     wasOpen.current = saveOpen;
-    if (!closed || !grid) return;
+    if (!closed || !grid) {
+      return;
+    }
     const cursor = selection.getCursor();
-    if (cursor) void resultNavigation.reveal(cursor, { focus: true });
+    if (cursor) {
+      void resultNavigation.reveal(cursor, { focus: true });
+    }
   }, [saveOpen, grid]);
 
   const covered = saveOpen || (grid && nav?.kind === "inbox");

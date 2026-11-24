@@ -49,7 +49,7 @@ export function textPost(id: string): VoyagerEntityResult {
 }
 
 export function clusterReply(
-  posts: VoyagerEntityResult[],
+  posts: Array<VoyagerEntityResult>,
   paging: { start: number; count: number; total?: number },
 ): VoyagerClusterReply {
   return {

@@ -1,7 +1,8 @@
 import { IconFolderSearch, IconGrid, IconWindow } from "@pond/icons";
 import type { Prefs } from "@pond/schema";
 import type { Folder } from "@pond/schema/db";
-import { type MenuItemSpec, Sidebar } from "@pond/ui";
+import { Sidebar } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import {
   enterAll,
   enterFolder,
@@ -32,8 +33,8 @@ const SAVED_VIEW_ICONS = {
 } as const;
 
 interface QuickAccessProps {
-  folderRows: Folder[];
-  quickFolders: Folder[];
+  folderRows: Array<Folder>;
+  quickFolders: Array<Folder>;
   folderViews: Prefs["folderViews"];
   folderCounts: Record<string, number>;
   folderDownloading: Record<string, number>;
@@ -69,7 +70,7 @@ export function QuickAccess({
       parentId: null,
     })),
   ];
-  function openQuickSelection(ids: string[]) {
+  function openQuickSelection(ids: Array<string>) {
     const selectedFolders = quickFolders.filter((folder) =>
       ids.includes(`folder:${folder.id}`),
     );
@@ -107,12 +108,12 @@ export function QuickAccess({
       ],
     });
   }
-  const quickOrganization = useOrganizationTree(
+  const { root: quickRoot, ...quickOrganization } = useOrganizationTree(
     quickEntries,
     openQuickSelection,
     destination,
   );
-  function quickSelectionItems(): MenuItemSpec[] {
+  function quickSelectionItems(): Array<MenuItemSpec> {
     const ids = quickOrganization.selected;
     const selectedFolderIds = quickFolders
       .filter((folder) => ids.includes(`folder:${folder.id}`))
@@ -155,10 +156,14 @@ export function QuickAccess({
   async function moveQuickView(id: string, offset: -1 | 1): Promise<void> {
     const current = quickViewIds.indexOf(id);
     const target = current + offset;
-    if (current < 0 || target < 0 || target >= quickViewIds.length) return;
+    if (current < 0 || target < 0 || target >= quickViewIds.length) {
+      return;
+    }
     const ordered = [...quickViewIds];
     const [moved] = ordered.splice(current, 1);
-    if (!moved) return;
+    if (!moved) {
+      return;
+    }
     ordered.splice(target, 0, moved);
     await Promise.all(
       ordered.map((viewId, quickAccessOrder) =>
@@ -167,11 +172,13 @@ export function QuickAccess({
     );
   }
 
-  if (quickFolders.length === 0 && quickViews.length === 0) return null;
+  if (quickFolders.length === 0 && quickViews.length === 0) {
+    return null;
+  }
 
   return (
     <Sidebar.Group
-      ref={quickOrganization.root}
+      ref={quickRoot}
       role="tree"
       aria-label="Quick Access"
       aria-multiselectable

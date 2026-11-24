@@ -1,8 +1,5 @@
-import {
-  type AnyRouter,
-  type ParsedLocation,
-  useRouter,
-} from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
+import type { AnyRouter, ParsedLocation } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { RouteSearch } from "@/shared/lib/route-search";
@@ -13,7 +10,9 @@ const committed = new WeakMap<AnyRouter, Store<RouteLocation>>();
 
 function committedLocation(router: AnyRouter): Store<RouteLocation> {
   const existing = committed.get(router);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   const store = new Store<RouteLocation>(
     router.state.resolvedLocation ?? router.state.location,
   );

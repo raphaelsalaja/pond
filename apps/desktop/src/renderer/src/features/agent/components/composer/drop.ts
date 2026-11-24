@@ -1,26 +1,29 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { mergeRegister } from "@lexical/utils";
 import { COMMAND_PRIORITY_HIGH, DRAGOVER_COMMAND, DROP_COMMAND } from "lexical";
-import { useEffect, useRef } from "react";
+import { useEffect, useEffectEvent } from "react";
 import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
 
 export function ComposerDrop({
   onDropIds,
 }: {
-  onDropIds: (ids: string[]) => void;
+  onDropIds: (ids: Array<string>) => void;
 }) {
   const [editor] = useLexicalComposerContext();
-  const drop = useRef(onDropIds);
-  drop.current = onDropIds;
+  const drop = useEffectEvent(onDropIds);
   useEffect(
     () =>
       mergeRegister(
         editor.registerCommand(
           DRAGOVER_COMMAND,
           (event) => {
-            if (!isLibrarySaveDrag(event.dataTransfer)) return false;
+            if (!isLibrarySaveDrag(event.dataTransfer)) {
+              return false;
+            }
             event.preventDefault();
-            if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+            if (event.dataTransfer) {
+              event.dataTransfer.dropEffect = "copy";
+            }
             return true;
           },
           COMMAND_PRIORITY_HIGH,
@@ -29,9 +32,11 @@ export function ComposerDrop({
           DROP_COMMAND,
           (event) => {
             const ids = saveDropIds(event.dataTransfer);
-            if (!ids.length) return false;
+            if (!ids.length) {
+              return false;
+            }
             event.preventDefault();
-            drop.current(ids);
+            drop(ids);
             return true;
           },
           COMMAND_PRIORITY_HIGH,

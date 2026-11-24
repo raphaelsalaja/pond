@@ -2,6 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
+import { z } from "zod";
 import { DEFAULT_FISH_ID, FISH_RUN_CAP } from "../../../shared/fish-contracts";
 import {
   arrangeFish,
@@ -19,7 +20,7 @@ import {
   updateRoutine,
 } from "./store";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -48,8 +49,10 @@ it("stores new fish in the Library with distinct names, colors, and species", as
   expect(second.name).toBe("Librarian 2");
   expect(new Set(listFish(root).map((fish) => fish.color)).size).toBe(3);
   expect(new Set(listFish(root).map((fish) => fish.species)).size).toBe(3);
-  const stored = JSON.parse(await readFile(join(root, "fish.json"), "utf8"));
-  expect(stored.data.map((fish: { id: string }) => fish.id)).toEqual([
+  const stored = z
+    .object({ data: z.array(z.object({ id: z.string() })) })
+    .parse(JSON.parse(await readFile(join(root, "fish.json"), "utf8")));
+  expect(stored.data.map((fish) => fish.id)).toEqual([
     DEFAULT_FISH_ID,
     first.id,
     second.id,
@@ -106,12 +109,13 @@ it("records a routine result until it has been seen", async () => {
 
 it("keeps a capped run history, newest first, and marks it all seen", async () => {
   const root = await library();
-  for (let at = 1; at <= FISH_RUN_CAP + 5; at += 1)
+  for (let at = 1; at <= FISH_RUN_CAP + 5; at += 1) {
     recordFishRun(
       DEFAULT_FISH_ID,
       { chatId: "chat", at, status: "done", changes: 0, seen: false },
       root,
     );
+  }
   const runs = listFish(root)[0]?.runs ?? [];
   expect(runs).toHaveLength(FISH_RUN_CAP);
   expect(runs[0]?.at).toBe(FISH_RUN_CAP + 5);
@@ -207,7 +211,9 @@ it("reads fish saved before species existed as koi", async () => {
   createFish({ name: "Scout", species: "shark" }, root, 1);
   const file = join(root, "fish.json");
   const stored = JSON.parse(await readFile(file, "utf8"));
-  for (const fish of stored.data) delete fish.species;
+  for (const fish of stored.data) {
+    delete fish.species;
+  }
   await writeFile(file, JSON.stringify(stored));
   expect(listFish(root).map((fish) => fish.species)).toEqual(["koi", "koi"]);
 });

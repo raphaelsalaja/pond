@@ -29,7 +29,9 @@ export function isPathInside(
   target: string,
   platform: NodeJS.Platform = process.platform,
 ): boolean {
-  if (platform !== "win32") return target.startsWith(`${root}/`);
+  if (platform !== "win32") {
+    return target.startsWith(`${root}/`);
+  }
   const child = win32.relative(root, target);
   return (
     child === "" ||
@@ -39,12 +41,16 @@ export function isPathInside(
 
 export function readLibraryPointer(): string | null {
   try {
-    const raw = readFileSync(pointerPath(), "utf-8");
+    const raw = readFileSync(pointerPath(), "utf8");
     const parsed = StoredPointerSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success) return null;
+    if (!parsed.success) {
+      return null;
+    }
     const candidate = parsed.data.path;
     const abs = isAbsolute(candidate) ? candidate : resolve(candidate);
-    if (isPathInside(app.getPath("userData"), abs)) return null;
+    if (isPathInside(app.getPath("userData"), abs)) {
+      return null;
+    }
     return abs;
   } catch {
     return null;
@@ -82,7 +88,9 @@ export function checkPointerSafety(target: string): PointerSafetyReport {
   try {
     if (existsSync(abs)) {
       const st = statSync(abs);
-      if (!st.isDirectory()) return { ok: false, reason: "not_a_directory" };
+      if (!st.isDirectory()) {
+        return { ok: false, reason: "not_a_directory" };
+      }
     } else {
       mkdirSync(abs, { recursive: true });
     }
@@ -93,11 +101,13 @@ export function checkPointerSafety(target: string): PointerSafetyReport {
     } finally {
       try {
         unlinkSync(probe);
-      } catch {}
+      } catch {
+        /** A leftover probe file does not change whether the folder is writable. */
+      }
     }
     return { ok: true };
-  } catch (cause) {
-    if (errnoCode(cause) === "EACCES") {
+  } catch (error) {
+    if (errnoCode(error) === "EACCES") {
       return { ok: false, reason: "not_writable" };
     }
     return { ok: false, reason: "unknown_error" };

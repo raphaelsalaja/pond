@@ -2,27 +2,88 @@ import type { Source } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
 import type { Capture } from "@pond/schema/raw";
 import { sourceIdFromUrl } from "@pond/schema/sources";
-import * as arena from "./arena";
-import * as behance from "./behance/item";
-import * as bluesky from "./bluesky/item";
-import * as cosmos from "./cosmos";
-import * as dribbble from "./dribbble/item";
+import {
+  adapt as arenaAdapt,
+  buildExpression as arenaExpression,
+} from "./arena";
+import {
+  adapt as behanceAdapt,
+  buildExpression as behanceExpression,
+} from "./behance/item";
+import {
+  adapt as blueskyAdapt,
+  buildExpression as blueskyExpression,
+} from "./bluesky/item";
+import {
+  adapt as cosmosAdapt,
+  buildExpression as cosmosExpression,
+} from "./cosmos";
+import {
+  adapt as dribbbleAdapt,
+  buildExpression as dribbbleExpression,
+} from "./dribbble/item";
 import type { HarvestAdaptCtx } from "./from-page";
-import * as github from "./github/item";
-import * as instagram from "./instagram";
-import * as linkedin from "./linkedin/item";
-import * as marked from "./marked/item";
-import * as pinterest from "./pinterest";
-import * as reddit from "./reddit";
-import * as savee from "./savee/item";
-import * as substack from "./substack/item";
-import * as threads from "./threads";
-import * as tiktok from "./tiktok";
-import * as tumblr from "./tumblr/item";
-import * as twitter from "./twitter";
-import * as unsplash from "./unsplash/item";
-import * as vimeo from "./vimeo/item";
-import * as youtube from "./youtube";
+import {
+  adapt as githubAdapt,
+  buildExpression as githubExpression,
+} from "./github/item";
+import {
+  adapt as instagramAdapt,
+  buildExpression as instagramExpression,
+} from "./instagram";
+import {
+  adapt as linkedinAdapt,
+  buildExpression as linkedinExpression,
+} from "./linkedin/item";
+import {
+  adapt as markedAdapt,
+  buildExpression as markedExpression,
+} from "./marked/item";
+import {
+  adapt as pinterestAdapt,
+  buildExpression as pinterestExpression,
+} from "./pinterest";
+import {
+  adapt as redditAdapt,
+  buildExpression as redditExpression,
+} from "./reddit";
+import {
+  adapt as saveeAdapt,
+  buildExpression as saveeExpression,
+} from "./savee/item";
+import {
+  adapt as substackAdapt,
+  buildExpression as substackExpression,
+} from "./substack/item";
+import {
+  adapt as threadsAdapt,
+  buildExpression as threadsExpression,
+} from "./threads";
+import {
+  adapt as tiktokAdapt,
+  buildExpression as tiktokExpression,
+} from "./tiktok";
+import {
+  adapt as tumblrAdapt,
+  buildExpression as tumblrExpression,
+} from "./tumblr/item";
+import {
+  adapt as twitterAdapt,
+  buildExpression as twitterExpression,
+} from "./twitter";
+import {
+  adapt as unsplashAdapt,
+  buildExpression as unsplashExpression,
+} from "./unsplash/item";
+import {
+  adapt as vimeoAdapt,
+  buildExpression as vimeoExpression,
+} from "./vimeo/item";
+import {
+  adapt as youtubeAdapt,
+  buildExpression as youtubeExpression,
+  urlForHarvest as youtubeUrlForHarvest,
+} from "./youtube";
 
 interface Harvester {
   buildExpression: (sourceId: string) => string;
@@ -34,105 +95,105 @@ interface Harvester {
 
 const REGISTRY = {
   twitter: {
-    buildExpression: twitter.buildExpression,
-    adapt: twitter.adapt,
+    buildExpression: twitterExpression,
+    adapt: twitterAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("twitter", url),
   },
   instagram: {
-    buildExpression: instagram.buildExpression,
-    adapt: instagram.adapt,
+    buildExpression: instagramExpression,
+    adapt: instagramAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("instagram", url),
   },
   youtube: {
-    buildExpression: youtube.buildExpression,
-    adapt: youtube.adapt,
+    buildExpression: youtubeExpression,
+    adapt: youtubeAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("youtube", url),
-    urlForHarvest: youtube.urlForHarvest,
+    urlForHarvest: youtubeUrlForHarvest,
   },
   pinterest: {
-    buildExpression: pinterest.buildExpression,
-    adapt: pinterest.adapt,
+    buildExpression: pinterestExpression,
+    adapt: pinterestAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("pinterest", url),
   },
   tiktok: {
-    buildExpression: tiktok.buildExpression,
-    adapt: tiktok.adapt,
+    buildExpression: tiktokExpression,
+    adapt: tiktokAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("tiktok", url),
   },
   arena: {
-    buildExpression: arena.buildExpression,
-    adapt: arena.adapt,
+    buildExpression: arenaExpression,
+    adapt: arenaAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("arena", url),
   },
   cosmos: {
-    buildExpression: cosmos.buildExpression,
-    adapt: cosmos.adapt,
+    buildExpression: cosmosExpression,
+    adapt: cosmosAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("cosmos", url),
   },
   reddit: {
-    buildExpression: reddit.buildExpression,
-    adapt: reddit.adapt,
+    buildExpression: redditExpression,
+    adapt: redditAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("reddit", url),
   },
   threads: {
-    buildExpression: threads.buildExpression,
-    adapt: threads.adapt,
+    buildExpression: threadsExpression,
+    adapt: threadsAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("threads", url),
   },
   github: {
-    buildExpression: github.buildExpression,
-    adapt: github.adapt,
+    buildExpression: githubExpression,
+    adapt: githubAdapt,
     sourceIdFromUrl: (url) =>
       sourceIdFromUrl("github", url)?.toLowerCase() ?? null,
   },
   substack: {
-    buildExpression: substack.buildExpression,
-    adapt: substack.adapt,
+    buildExpression: substackExpression,
+    adapt: substackAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("substack", url),
   },
   tumblr: {
-    buildExpression: tumblr.buildExpression,
-    adapt: tumblr.adapt,
+    buildExpression: tumblrExpression,
+    adapt: tumblrAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("tumblr", url),
   },
   savee: {
-    buildExpression: savee.buildExpression,
-    adapt: savee.adapt,
+    buildExpression: saveeExpression,
+    adapt: saveeAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("savee", url),
   },
   behance: {
-    buildExpression: behance.buildExpression,
-    adapt: behance.adapt,
+    buildExpression: behanceExpression,
+    adapt: behanceAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("behance", url),
   },
   vimeo: {
-    buildExpression: vimeo.buildExpression,
-    adapt: vimeo.adapt,
+    buildExpression: vimeoExpression,
+    adapt: vimeoAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("vimeo", url),
   },
   dribbble: {
-    buildExpression: dribbble.buildExpression,
-    adapt: dribbble.adapt,
+    buildExpression: dribbbleExpression,
+    adapt: dribbbleAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("dribbble", url),
   },
   unsplash: {
-    buildExpression: unsplash.buildExpression,
-    adapt: unsplash.adapt,
+    buildExpression: unsplashExpression,
+    adapt: unsplashAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("unsplash", url),
   },
   bluesky: {
-    buildExpression: bluesky.buildExpression,
-    adapt: bluesky.adapt,
+    buildExpression: blueskyExpression,
+    adapt: blueskyAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("bluesky", url),
   },
   marked: {
-    buildExpression: marked.buildExpression,
-    adapt: marked.adapt,
+    buildExpression: markedExpression,
+    adapt: markedAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("marked", url),
   },
   linkedin: {
-    buildExpression: linkedin.buildExpression,
-    adapt: linkedin.adapt,
+    buildExpression: linkedinExpression,
+    adapt: linkedinAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("linkedin", url),
   },
   mymind: {

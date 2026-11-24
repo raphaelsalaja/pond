@@ -81,7 +81,9 @@ export const SaveCard = memo(function SaveCard({
     [],
   );
   const startAudioPreview = useCallback(() => {
-    if (!audioUrl) return;
+    if (!audioUrl) {
+      return;
+    }
     const audio = audioRef.current ?? new Audio();
     if (audio.dataset.previewUrl !== audioUrl) {
       audio.src = audioUrl;
@@ -94,7 +96,9 @@ export const SaveCard = memo(function SaveCard({
   }, [audioUrl]);
   const stopAudioPreview = useCallback(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio) {
+      return;
+    }
     audio.pause();
     audio.currentTime = 0;
   }, []);
@@ -147,7 +151,9 @@ export const SaveCard = memo(function SaveCard({
     [onPick, id],
   );
 
-  if (!save) return null;
+  if (!save) {
+    return null;
+  }
 
   const children = (
     <>
@@ -220,7 +226,9 @@ const SaveCardBody = memo(function SaveCardBody({
   width?: number;
 }) {
   const model = useSaveCardModel(save, view === "grid");
-  if (view === "grid") return <GridCard model={model} width={width} />;
+  if (view === "grid") {
+    return <GridCard model={model} width={width} />;
+  }
   if (view === "waterfall") {
     return <WaterfallCard model={model} width={width} />;
   }

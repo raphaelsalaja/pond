@@ -37,8 +37,8 @@ export interface ListHarvestPlan {
   liked: boolean;
   subscriptions: boolean;
   /** What a combined walk reads; empty for Sources that walk their lists separately. */
-  listKinds: ListKind[];
-  collections: ImportCollection[] | null;
+  listKinds: Array<ListKind>;
+  collections: Array<ImportCollection> | null;
   /** Walk every collection after the lists so each save can be filed into its collection's Folder. */
   fileEveryCollection: boolean;
 }
@@ -117,8 +117,12 @@ export function collectionCheckDue(
   full: boolean,
   now = Date.now(),
 ): boolean {
-  if (plan.collections === null && !plan.fileEveryCollection) return false;
-  if (full) return true;
+  if (plan.collections === null && !plan.fileEveryCollection) {
+    return false;
+  }
+  if (full) {
+    return true;
+  }
   const last = sync.lastCollectionCheckAt
     ? Date.parse(sync.lastCollectionCheckAt)
     : Number.NaN;
@@ -142,8 +146,12 @@ export function importScopePatch(
       ? undefined
       : scope;
   const patch: Partial<SourceSyncPrefs> = { importScope: next };
-  if (start) patch.importPending = false;
-  if (current.syncLikes !== undefined) patch.syncLikes = undefined;
+  if (start) {
+    patch.importPending = false;
+  }
+  if (current.syncLikes !== undefined) {
+    patch.syncLikes = undefined;
+  }
   /** Early stop ends a walk at ids already in the Library, so a new selection needs one full walk to reach its older items. */
   if (!sameScope(accountImportScope(source, current), next)) {
     patch.lastFullSyncAt = null;
@@ -159,10 +167,13 @@ function sameScope(
   return scopeKey(a) === scopeKey(b);
 }
 
+const sorted = (values: ReadonlyArray<string> | undefined): string =>
+  values ? [...values].sort().join(",") : "*";
+
 function scopeKey(scope: ImportScope | undefined): string {
-  if (!scope) return "";
-  const sorted = (values: readonly string[] | undefined): string =>
-    values ? [...values].sort().join(",") : "*";
+  if (!scope) {
+    return "";
+  }
   return [
     sorted(scope.listKinds),
     sorted(scope.collections?.map((collection) => collection.id)),

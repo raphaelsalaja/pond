@@ -1,11 +1,8 @@
 import type { Capture } from "@pond/schema/raw";
 import { describe, expect, it, vi } from "vitest";
 import { TerminalError } from "../../../pipeline/extractors/errors";
-import {
-  type ArenaBlock,
-  fetchArenaCapture,
-  withLinkedPageCapture,
-} from "./api";
+import { fetchArenaCapture, withLinkedPageCapture } from "./api";
+import type { ArenaBlock } from "./api";
 
 const LINKED = "https://en.wikipedia.org/wiki/Community_Memory";
 const ARENA_SHOT =
@@ -14,7 +11,7 @@ const PAGE_COVER = "https://upload.wikimedia.org/community-memory.jpg";
 const FAVICON = "https://en.wikipedia.org/favicon.ico";
 
 const linkBlock: ArenaBlock = {
-  id: 2824521,
+  id: 2_824_521,
   class: "Link",
   title: "Community Memory",
   generated_title: "Community Memory - Wikipedia",
@@ -162,7 +159,7 @@ describe("Are.na Link blocks", () => {
 describe("other Are.na blocks", () => {
   it("leaves an Image block's mapping alone and never reads its source page", async () => {
     const d = deps({
-      id: 29774986,
+      id: 29_774_986,
       class: "Image",
       title: "Group show",
       image: { original: { url: ARENA_SHOT, width: 800, height: 600 } },
@@ -185,7 +182,7 @@ describe("other Are.na blocks", () => {
 
   it("keeps a Text block on its Are.na page", async () => {
     const d = deps({
-      id: 4929062,
+      id: 4_929_062,
       class: "Text",
       content: "A note to self.",
     });

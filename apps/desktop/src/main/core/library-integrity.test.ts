@@ -6,14 +6,16 @@ import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   eaglePreviewName,
-  type IntegritySave,
   inspectSaveIntegrity,
-  type LibraryIntegrityRuntime,
   libraryIntegrityRuntime,
+} from "./library-integrity";
+import type {
+  IntegritySave,
+  LibraryIntegrityRuntime,
 } from "./library-integrity";
 import { writeLibraryMedia } from "./storage/library-media-storage";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
@@ -59,11 +61,12 @@ function file(kind: string, path: string, bytes: Uint8Array) {
 
 async function gradient(size: number, reverse: boolean) {
   const pixels = Buffer.alloc(size * size);
-  for (let y = 0; y < size; y += 1)
+  for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const value = Math.round((x / (size - 1)) * 255);
       pixels[y * size + x] = reverse ? 255 - value : value;
     }
+  }
   return sharp(pixels, { raw: { width: size, height: size, channels: 1 } })
     .png()
     .toBuffer();
@@ -138,12 +141,14 @@ describe("Library integrity repair previews", () => {
       runtime: runtime(root),
     });
 
-    if (fixture.flagged)
+    if (fixture.flagged) {
       expect(issue).toMatchObject({
         summary: "Thumbnail doesn't match this save",
         action: { kind: "thumbnail", source: "photo.png" },
       });
-    else expect(issue).toBeNull();
+    } else {
+      expect(issue).toBeNull();
+    }
   });
 
   it("flags a text card left beside an image", async () => {
@@ -251,16 +256,16 @@ describe("Library integrity repair previews", () => {
   });
 });
 
-describe("Eagle preview duplicates", () => {
-  function eagleRuntime(
-    original: { id: string; title: string } | null,
-  ): LibraryIntegrityRuntime {
-    return {
-      ...runtime("/unused"),
-      eaglePreviewOriginal: async () => original,
-    };
-  }
+function eagleRuntime(
+  original: { id: string; title: string } | null,
+): LibraryIntegrityRuntime {
+  return {
+    ...runtime("/unused"),
+    eaglePreviewOriginal: async () => original,
+  };
+}
 
+describe("Eagle preview duplicates", () => {
   it("flags a preview Save when its original is in the Library", async () => {
     const row = { ...fixtureSave([]), title: "Sunset_thumbnail" };
 

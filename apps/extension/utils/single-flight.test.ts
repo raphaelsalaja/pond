@@ -7,7 +7,9 @@ it("replays a forced trigger that arrives during an active run", async () => {
     releaseFirst = resolve;
   });
   const run = vi.fn(async () => {
-    if (run.mock.calls.length === 1) await firstRun;
+    if (run.mock.calls.length === 1) {
+      await firstRun;
+    }
   });
   const trigger = createSingleFlightTrigger(run);
 

@@ -1,7 +1,8 @@
 import type { TransferJob } from "@shared/transfer-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { TransferJobsPanel } from "./";
 
@@ -52,7 +53,9 @@ afterEach(async () => {
 
 async function settle() {
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    });
   });
 }
 
@@ -75,7 +78,9 @@ function button(label: string) {
 
 async function clickButton(label: string) {
   const node = button(label);
-  if (!node) throw new Error(`Missing button ${label}`);
+  if (!node) {
+    throw new Error(`Missing button ${label}`);
+  }
   await act(async () => node.click());
   await settle();
 }
@@ -83,7 +88,9 @@ async function clickButton(label: string) {
 async function waitForText(text: string, present: boolean) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const has = document.body.textContent?.includes(text) ?? false;
-    if (has === present) return;
+    if (has === present) {
+      return;
+    }
     await settle();
   }
   throw new Error(
@@ -95,7 +102,9 @@ it("dismisses a failed library transfer and hides the section", async () => {
   const failed = job("failed", "One of the selected Saves no longer exists.");
   let jobs = [failed];
   query.mockImplementation(async (name: string, input?: { id: string }) => {
-    if (name === "transferJobs.list") return jobs;
+    if (name === "transferJobs.list") {
+      return jobs;
+    }
     if (name === "transferJobs.dismiss") {
       expect(input).toEqual({ id: failed.id });
       jobs = [];
@@ -115,7 +124,9 @@ it("dismisses a failed library transfer and hides the section", async () => {
 
 it("offers cancel instead of dismiss while a transfer is running", async () => {
   query.mockImplementation(async (name: string) => {
-    if (name === "transferJobs.list") return [job("running", null)];
+    if (name === "transferJobs.list") {
+      return [job("running", null)];
+    }
     throw new Error(`Unexpected query: ${name}`);
   });
   await renderPanel();
@@ -128,9 +139,12 @@ it("offers cancel instead of dismiss while a transfer is running", async () => {
 it("keeps the failed transfer when dismiss is refused", async () => {
   const failed = job("failed", "One of the selected Saves no longer exists.");
   query.mockImplementation(async (name: string) => {
-    if (name === "transferJobs.list") return [failed];
-    if (name === "transferJobs.dismiss")
+    if (name === "transferJobs.list") {
+      return [failed];
+    }
+    if (name === "transferJobs.dismiss") {
       return { ok: false, error: "This transfer is still running." };
+    }
     throw new Error(`Unexpected query: ${name}`);
   });
   await renderPanel();

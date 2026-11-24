@@ -18,7 +18,7 @@ export interface ExtractedFrame {
 
 export interface ExtractedFrames {
   frames: Array<Omit<ExtractedFrame, "cleanup">>;
-  timestamps: number[];
+  timestamps: Array<number>;
   durationSec: number;
   cleanup: () => Promise<void>;
 }
@@ -26,8 +26,10 @@ export interface ExtractedFrames {
 export function sampleFrameTimestamps(
   durationSec: number,
   maxFrames: number,
-): number[] {
-  if (!Number.isFinite(durationSec) || durationSec <= 0) return [];
+): Array<number> {
+  if (!Number.isFinite(durationSec) || durationSec <= 0) {
+    return [];
+  }
   const cap = Math.min(12, Math.max(3, Math.floor(maxFrames)));
   const count = Math.min(cap, Math.max(3, Math.ceil(durationSec / 30) + 2));
   return Array.from({ length: count }, (_, index) =>
@@ -38,8 +40,10 @@ export function sampleFrameTimestamps(
 export function embeddingFrameTimestamps(
   durationSec: number,
   maxFrames = 32,
-): number[] {
-  if (!Number.isFinite(durationSec) || durationSec <= 0) return [];
+): Array<number> {
+  if (!Number.isFinite(durationSec) || durationSec <= 0) {
+    return [];
+  }
   const cappedDuration = Math.min(durationSec, 32);
   const count = Math.min(
     Math.max(1, Math.floor(maxFrames)),
@@ -77,25 +81,31 @@ export async function extractSampledFrames(
     return null;
   }
   const durationSec = await probeDuration(ffmpeg, videoPath);
-  if (durationSec == null) return null;
+  if (durationSec === null) {
+    return null;
+  }
   const timestamps =
     strategy === "embedding"
       ? embeddingFrameTimestamps(durationSec, maxFrames)
       : sampleFrameTimestamps(durationSec, maxFrames);
-  if (timestamps.length === 0) return null;
+  if (timestamps.length === 0) {
+    return null;
+  }
   const sampledDurationSec =
     strategy === "embedding" ? Math.min(durationSec, 32) : durationSec;
 
   let outputDir: string | null = null;
   let cleanupCalled = false;
   const cleanup = async () => {
-    if (cleanupCalled) return;
+    if (cleanupCalled) {
+      return;
+    }
     cleanupCalled = true;
     if (outputDir) {
       try {
         await rm(outputDir, { recursive: true, force: true });
-      } catch (err) {
-        log.warn("[pond ffmpeg-frame] tmpdir cleanup failed", outputDir, err);
+      } catch (error) {
+        log.warn("[pond ffmpeg-frame] tmpdir cleanup failed", outputDir, error);
       }
     }
   };
@@ -177,8 +187,8 @@ export async function extractSampledFrames(
       durationSec: sampledDurationSec,
       cleanup,
     };
-  } catch (err) {
-    log.warn("[pond ffmpeg-frame] sample extraction error", videoPath, err);
+  } catch (error) {
+    log.warn("[pond ffmpeg-frame] sample extraction error", videoPath, error);
     await cleanup();
     return null;
   }
@@ -188,7 +198,7 @@ function jpegArgv(
   videoPath: string,
   outPath: string,
   seek: ["before" | "after", string],
-): string[] {
+): Array<string> {
   const head =
     seek[0] === "before"
       ? ["-ss", seek[1], "-i", videoPath]
@@ -211,7 +221,7 @@ function jpegArgv(
 
 async function extractJpeg(
   videoPath: string,
-  argvFor: (outPath: string) => string[],
+  argvFor: (outPath: string) => Array<string>,
 ): Promise<ExtractedFrame | null> {
   const { ffmpeg } = binariesAvailable();
   if (!ffmpeg) {
@@ -222,13 +232,15 @@ async function extractJpeg(
   let outputDir: string | null = null;
   let cleanupCalled = false;
   const cleanup = async () => {
-    if (cleanupCalled) return;
+    if (cleanupCalled) {
+      return;
+    }
     cleanupCalled = true;
     if (outputDir) {
       try {
         await rm(outputDir, { recursive: true, force: true });
-      } catch (err) {
-        log.warn("[pond ffmpeg-frame] tmpdir cleanup failed", outputDir, err);
+      } catch (error) {
+        log.warn("[pond ffmpeg-frame] tmpdir cleanup failed", outputDir, error);
       }
     }
   };
@@ -272,8 +284,8 @@ async function extractJpeg(
       size,
       cleanup,
     };
-  } catch (err) {
-    log.warn("[pond ffmpeg-frame] unexpected error", videoPath, err);
+  } catch (error) {
+    log.warn("[pond ffmpeg-frame] unexpected error", videoPath, error);
     await cleanup();
     return null;
   }
@@ -295,11 +307,15 @@ export async function sampleGrayFrames(
     width: number;
     height: number;
   },
-): Promise<Uint8Array[] | null> {
+): Promise<Array<Uint8Array> | null> {
   const { ffmpeg } = binariesAvailable();
-  if (!ffmpeg) return null;
+  if (!ffmpeg) {
+    return null;
+  }
   const { windowSeconds, count, width, height } = options;
-  if (!(windowSeconds > 0) || count < 1) return null;
+  if (!(windowSeconds > 0) || count < 1) {
+    return null;
+  }
   const frameBytes = width * height;
   const outcome = await runCapturingStdout(
     ffmpeg,
@@ -339,21 +355,22 @@ export async function sampleGrayFrames(
     );
     return null;
   }
-  const frames: Uint8Array[] = [];
+  const frames: Array<Uint8Array> = [];
   for (
     let offset = 0;
     offset + frameBytes <= outcome.stdout.length && frames.length < count;
     offset += frameBytes
-  )
+  ) {
     frames.push(
       Uint8Array.from(outcome.stdout.subarray(offset, offset + frameBytes)),
     );
+  }
   return frames;
 }
 
 function runCapturingStdout(
   bin: string,
-  argv: string[],
+  argv: Array<string>,
   timeoutMs: number,
   byteLimit: number,
 ): Promise<ProcOutcome & { stdout: Buffer }> {
@@ -362,12 +379,14 @@ function runCapturingStdout(
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true,
     });
-    const chunks: Buffer[] = [];
+    const chunks: Array<Buffer> = [];
     let bytes = 0;
     let stderr = "";
     let settled = false;
     const finish = (code: number, note = "") => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       clearTimeout(timer);
       resolve({
@@ -379,7 +398,9 @@ function runCapturingStdout(
     const kill = (code: number, note: string) => {
       try {
         killProcessTree(child, "SIGKILL");
-      } catch {}
+      } catch {
+        /** The process may already have exited. */
+      }
       finish(code, note);
     };
     const timer = setTimeout(
@@ -395,7 +416,7 @@ function runCapturingStdout(
       chunks.push(chunk);
     });
     child.stderr?.on("data", (chunk: Buffer) => {
-      stderr = (stderr + chunk.toString("utf8")).slice(-8_000);
+      stderr = (stderr + chunk.toString("utf8")).slice(-8000);
     });
     child.on("error", (err) => finish(-1, String(err)));
     child.on("close", (code) => finish(code ?? -1));
@@ -412,7 +433,9 @@ async function probeDuration(
     HARD_TIMEOUT_MS,
   );
   const match = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(stderr);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
   const seconds = Number(match[3]);
@@ -427,7 +450,7 @@ interface ProcOutcome {
 
 function runWithTimeout(
   bin: string,
-  argv: string[],
+  argv: Array<string>,
   timeoutMs: number,
 ): Promise<ProcOutcome> {
   return new Promise((resolve) => {
@@ -439,26 +462,36 @@ function runWithTimeout(
     let settled = false;
 
     const timer = setTimeout(() => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       try {
         killProcessTree(child, "SIGKILL");
-      } catch {}
+      } catch {
+        /** The process may already have exited. */
+      }
       resolve({ code: 124, stderr: `${stderr}\n[pond ffmpeg-frame] timeout` });
     }, timeoutMs);
 
     child.stderr?.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
-      if (stderr.length > 32_000) stderr = stderr.slice(-32_000);
+      if (stderr.length > 32_000) {
+        stderr = stderr.slice(-32_000);
+      }
     });
     child.on("error", (err) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       clearTimeout(timer);
       resolve({ code: -1, stderr: String(err) });
     });
     child.on("close", (code) => {
-      if (settled) return;
+      if (settled) {
+        return;
+      }
       settled = true;
       clearTimeout(timer);
       resolve({ code: code ?? -1, stderr });

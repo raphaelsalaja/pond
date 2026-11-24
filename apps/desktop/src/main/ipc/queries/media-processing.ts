@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { decodeAudioSamples } from "../../lib/ffmpeg-audio";
 import { resolvePondSavePath } from "../helpers";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 export const mediaProcessingQueries = {
   "media.decodeAudio": query(
@@ -12,8 +13,9 @@ export const mediaProcessingQueries = {
     }),
     async ({ src, maxSamples, offsetSeconds }) => {
       const resolved = resolvePondSavePath(src);
-      if (!resolved)
+      if (!resolved) {
         throw new Error("Audio analysis requires a file in the active Library");
+      }
       const result = await decodeAudioSamples(
         resolved.path,
         maxSamples,

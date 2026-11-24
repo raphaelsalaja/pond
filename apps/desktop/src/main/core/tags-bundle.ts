@@ -1,10 +1,9 @@
 import {
-  type Tag,
-  type TagGroup,
   tagGroupMembers as tagGroupMembersTable,
   tagGroups as tagGroupsTable,
   tags as tagsTable,
 } from "@pond/schema/db";
+import type { Tag, TagGroup } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { getDb } from "../db";
@@ -49,9 +48,9 @@ interface WireTagGroupMember {
 }
 
 interface TagsBundle {
-  tags: WireTag[];
-  groups: WireTagGroup[];
-  members: WireTagGroupMember[];
+  tags: Array<WireTag>;
+  groups: Array<WireTagGroup>;
+  members: Array<WireTagGroupMember>;
 }
 
 const StoredInstantSchema = z
@@ -136,7 +135,7 @@ export async function flushTagsDump(): Promise<void> {
 
 export async function hydrateTagsFromBundle(): Promise<void> {
   const paths = resolvePaths();
-  const read = readBundleJson<TagsBundle>(paths.tagsFile, paths.backupDir);
+  const read = readBundleJson(paths.tagsFile, paths.backupDir);
 
   const db = await getDb();
   const existingTags = await db.select({ id: tagsTable.id }).from(tagsTable);
@@ -167,12 +166,16 @@ export async function hydrateTagsFromBundle(): Promise<void> {
   const raw = db.$raw;
   raw.transaction(() => {
     for (const tag of wireTags) {
-      if (knownTagIds.has(tag.id)) continue;
+      if (knownTagIds.has(tag.id)) {
+        continue;
+      }
       db.insert(tagsTable).values(tagFromWire(tag)).onConflictDoNothing().run();
       inserted += 1;
     }
     for (const group of wireGroups) {
-      if (knownGroupIds.has(group.id)) continue;
+      if (knownGroupIds.has(group.id)) {
+        continue;
+      }
       db.insert(tagGroupsTable)
         .values(groupFromWire(group))
         .onConflictDoNothing()
@@ -184,7 +187,9 @@ export async function hydrateTagsFromBundle(): Promise<void> {
         knownTagIds.has(member.tagId) || bundleTagIds.has(member.tagId);
       const groupOk =
         knownGroupIds.has(member.groupId) || bundleGroupIds.has(member.groupId);
-      if (!tagOk || !groupOk) continue;
+      if (!tagOk || !groupOk) {
+        continue;
+      }
       db.insert(tagGroupMembersTable)
         .values(member)
         .onConflictDoNothing()

@@ -22,7 +22,9 @@ export function createHapticPlayer(
   let unavailable = false;
 
   function running(): HelperProcess | null {
-    if (helper || unavailable) return helper;
+    if (helper || unavailable) {
+      return helper;
+    }
     if (launches >= MAX_LAUNCHES) {
       unavailable = true;
       return null;
@@ -35,11 +37,15 @@ export function createHapticPlayer(
     }
     /** A failed spawn emits `error` without `exit`, and its stdin is already destroyed. */
     child.on("error", () => {
-      if (helper === child) helper = null;
+      if (helper === child) {
+        helper = null;
+      }
       unavailable = true;
     });
     child.on("exit", () => {
-      if (helper === child) helper = null;
+      if (helper === child) {
+        helper = null;
+      }
     });
     child.stdin?.on("error", () => {});
     helper = child;

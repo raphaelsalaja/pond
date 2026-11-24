@@ -1,12 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
-import { dropIntoFolder, type OverlayDropDeps } from "./drop";
+import { dropIntoFolder } from "./drop";
+import type { OverlayDropDeps } from "./drop";
 
 function deps(): OverlayDropDeps {
   return {
     hasFolder: vi.fn(async (id: string) => id === "moodboard"),
     saveIdFor: (path) => (path.startsWith("/library/") ? "save-1" : null),
     addSaves: vi.fn(async () => {}),
-    importFiles: vi.fn(async (paths: string[]) => ({
+    importFiles: vi.fn(async (paths: Array<string>) => ({
       ids: paths.filter((path) => !path.endsWith(".broken")),
       failed: paths.filter((path) => path.endsWith(".broken")).length,
     })),

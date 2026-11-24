@@ -4,9 +4,8 @@
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 
-const here = dirname(fileURLToPath(import.meta.url));
+const here = import.meta.dirname;
 const require = createRequire(import.meta.url);
 
 const pkgDir = dirname(require.resolve("replaywebpage/index.html"));

@@ -1,5 +1,6 @@
 import { deleteSecret, getSecret, setSecret } from "../../keychain";
-import { type MymindCredential, MymindCredentialSchema } from "./client";
+import { MymindCredentialSchema } from "./client";
+import type { MymindCredential } from "./client";
 
 const credentialKey = (accountId: string) => `mymind:${accountId}`;
 
@@ -7,7 +8,9 @@ export async function readMymindCredential(
   accountId: string,
 ): Promise<MymindCredential | null> {
   const stored = await getSecret(credentialKey(accountId));
-  if (!stored) return null;
+  if (!stored) {
+    return null;
+  }
   try {
     const result = MymindCredentialSchema.safeParse(JSON.parse(stored));
     return result.success ? result.data : null;

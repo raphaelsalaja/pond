@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { SourceFlowHost } from ".";
@@ -40,7 +41,9 @@ function button(label: string) {
       element.textContent === label ||
       element.getAttribute("aria-label") === label,
   );
-  if (!found) throw new Error(`Missing button: ${label}`);
+  if (!found) {
+    throw new Error(`Missing button: ${label}`);
+  }
   return found;
 }
 
@@ -56,12 +59,15 @@ it.each(["close", "escape", "back"] as const)(
         ?.hasAttribute("data-empty"),
     ).toBe(true);
     await act(async () => {
-      if (dismiss === "close") button("Cancel").click();
-      else if (dismiss === "back") sourceFlow.back();
-      else
+      if (dismiss === "close") {
+        button("Cancel").click();
+      } else if (dismiss === "back") {
+        sourceFlow.back();
+      } else {
         document.dispatchEvent(
           new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
         );
+      }
     });
     expect(sourceFlow.current()).toBeNull();
     expect(document.querySelector('[role="presentation"]')).toBeNull();

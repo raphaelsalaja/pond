@@ -16,16 +16,14 @@ import { Tooltip } from "@pond/ui/tooltip";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { LibraryTargets, OverlayResult } from "@/utils/messaging";
 import {
-  type Candidate,
   collectCandidates,
   describe,
   facetCounts,
-  type ImageFilters,
   MAX_IMAGES,
   matchesFilters,
-  type PageImage,
   sizeBucket,
 } from "./discover";
+import type { Candidate, ImageFilters, PageImage } from "./discover";
 import { Sidebar } from "./sidebar";
 import styles from "./styles.module.css";
 
@@ -42,7 +40,10 @@ const INITIAL_FILTERS: ImageFilters = {
   minHeight: 0,
 };
 
-function merge(current: Candidate[], found: Candidate[]): Candidate[] {
+function merge(
+  current: Array<Candidate>,
+  found: Array<Candidate>,
+): Array<Candidate> {
   const known = new Set(current.map((candidate) => candidate.url));
   return [
     ...current,
@@ -51,14 +52,16 @@ function merge(current: Candidate[], found: Candidate[]): Candidate[] {
 }
 
 /** Loads images Pond doesn't know the size of yet, so size filters and tile labels can fill in. */
-function useProbedSizes(candidates: Candidate[]) {
+function useProbedSizes(candidates: Array<Candidate>) {
   const [sizes, setSizes] = useState<ReadonlyMap<string, [number, number]>>(
     new Map(),
   );
   const probing = useRef(new Map<string, HTMLImageElement>());
   useEffect(() => {
     for (const candidate of candidates) {
-      if (candidate.width || probing.current.has(candidate.url)) continue;
+      if (candidate.width || probing.current.has(candidate.url)) {
+        continue;
+      }
       const probe = new Image();
       probe.decoding = "async";
       probe.onload = () =>
@@ -74,7 +77,9 @@ function useProbedSizes(candidates: Candidate[]) {
   }, [candidates]);
   useEffect(
     () => () => {
-      for (const probe of probing.current.values()) probe.src = "";
+      for (const probe of probing.current.values()) {
+        probe.src = "";
+      }
     },
     [],
   );
@@ -86,8 +91,12 @@ async function scrollThroughPage(): Promise<void> {
   for (let step = 0; step < SCROLL_STEPS; step++) {
     const before = scrollY;
     window.scrollBy({ top: innerHeight, behavior: "instant" });
-    await new Promise((resolve) => setTimeout(resolve, SCROLL_PAUSE_MS));
-    if (scrollY === before) break;
+    await new Promise((resolve) => {
+      setTimeout(resolve, SCROLL_PAUSE_MS);
+    });
+    if (scrollY === before) {
+      break;
+    }
   }
   window.scrollTo({ ...start, behavior: "instant" });
 }
@@ -113,23 +122,25 @@ export function ImagePicker({
   const [anchor, setAnchor] = useState<number | null>(null);
   const [zoom, setZoom] = useState(ZOOM.initial);
   const [loading, setLoading] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
-  const [folderIds, setFolderIds] = useState<string[]>([]);
+  const [tags, setTags] = useState<Array<string>>([]);
+  const [folderIds, setFolderIds] = useState<Array<string>>([]);
   const shift = useRef(false);
 
   useEffect(() => {
     const track = (event: KeyboardEvent | PointerEvent) => {
       shift.current = event.shiftKey;
     };
-    for (const type of ["pointerdown", "keydown", "keyup"] as const)
+    for (const type of ["pointerdown", "keydown", "keyup"] as const) {
       window.addEventListener(type, track, true);
+    }
     return () => {
-      for (const type of ["pointerdown", "keydown", "keyup"] as const)
+      for (const type of ["pointerdown", "keydown", "keyup"] as const) {
         window.removeEventListener(type, track, true);
+      }
     };
   }, []);
 
-  const images: PageImage[] = useMemo(
+  const images: Array<PageImage> = useMemo(
     () =>
       candidates.map((candidate) => {
         const size = probed.get(candidate.url);
@@ -151,11 +162,14 @@ export function ImagePicker({
   const formats = facetCounts(images, selected, (image) => image.format);
   const domains = facetCounts(images, selected, (image) => image.domain);
 
-  const setMany = (urls: string[], on: boolean) => {
+  const setMany = (urls: Array<string>, on: boolean) => {
     const next = new Set(selected);
     for (const url of urls) {
-      if (on) next.add(url);
-      else next.delete(url);
+      if (on) {
+        next.add(url);
+      } else {
+        next.delete(url);
+      }
     }
     setSelected(next);
   };
@@ -189,8 +203,11 @@ export function ImagePicker({
   const invert = () => {
     const next = new Set(selected);
     for (const image of shown) {
-      if (next.has(image.url)) next.delete(image.url);
-      else next.add(image.url);
+      if (next.has(image.url)) {
+        next.delete(image.url);
+      } else {
+        next.add(image.url);
+      }
     }
     setSelected(next);
   };
@@ -208,7 +225,9 @@ export function ImagePicker({
       modal="trap-focus"
       disablePointerDismissal
       onOpenChange={(open) => {
-        if (!open) onFinish(null);
+        if (!open) {
+          onFinish(null);
+        }
       }}
     >
       <Dialog.Portal container={container}>
@@ -216,10 +235,13 @@ export function ImagePicker({
         <Dialog.Popup
           className={styles.popup}
           onKeyDown={(event) => {
-            if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey))
+            if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) {
               return;
+            }
             event.preventDefault();
-            if (canSave) save();
+            if (canSave) {
+              save();
+            }
           }}
         >
           <Dialog.Header className={styles.header}>
@@ -248,7 +270,9 @@ export function ImagePicker({
                 value={zoom}
                 onValueChange={(value) => {
                   const [next] = [value].flat();
-                  if (next !== undefined) setZoom(next);
+                  if (next !== undefined) {
+                    setZoom(next);
+                  }
                 }}
               >
                 <Slider.Control>

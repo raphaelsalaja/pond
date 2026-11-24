@@ -52,6 +52,14 @@ function sweep(distance: number, radius: number): number {
   return (distance / radius) * (180 / Math.PI);
 }
 
+function inset(radius: number): number {
+  return (Math.asin(GAP / 2 / radius) * 180) / Math.PI;
+}
+
+function at(point: Point): string {
+  return `${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
+}
+
 function slotBounds(slot: RingSlot) {
   const start = FIRST_SECTOR_START + RING_SLOTS.indexOf(slot) * SECTOR_DEGREES;
   return { start, end: start + SECTOR_DEGREES };
@@ -62,8 +70,12 @@ export function ringHit(x: number, y: number): RingHit {
   const dx = x - CENTER;
   const dy = y - CENTER;
   const distance = Math.hypot(dx, dy);
-  if (distance <= HUB_RADIUS) return "hub";
-  if (distance < INNER_RADIUS || distance > OUTER_RADIUS) return null;
+  if (distance <= HUB_RADIUS) {
+    return "hub";
+  }
+  if (distance < INNER_RADIUS || distance > OUTER_RADIUS) {
+    return null;
+  }
   const degrees = (Math.atan2(dx, -dy) * 180) / Math.PI;
   const turned = (((degrees - FIRST_SECTOR_START) % 360) + 360) % 360;
   return RING_SLOTS[Math.floor(turned / SECTOR_DEGREES)] ?? null;
@@ -75,15 +87,15 @@ export function ringHitAt(
   clientY: number,
   rect: RingRect,
 ): RingHit {
-  if (rect.width <= 0) return null;
+  if (rect.width <= 0) {
+    return null;
+  }
   const scale = rect.width / RING_SIZE;
   return ringHit((clientX - rect.left) / scale, (clientY - rect.top) / scale);
 }
 
 export function sectorPath(slot: RingSlot): string {
   const { start, end } = slotBounds(slot);
-  const inset = (radius: number) =>
-    (Math.asin(GAP / 2 / radius) * 180) / Math.PI;
   const innerStart = start + inset(INNER_RADIUS);
   const innerEnd = end - inset(INNER_RADIUS);
   const outerStart = start + inset(OUTER_RADIUS);
@@ -94,7 +106,6 @@ export function sectorPath(slot: RingSlot): string {
   const p4 = polar(INNER_RADIUS, innerEnd);
   const outerCorner = sweep(CORNER, OUTER_RADIUS);
   const innerCorner = sweep(CORNER, INNER_RADIUS);
-  const at = (point: Point) => `${point.x.toFixed(2)} ${point.y.toFixed(2)}`;
   return [
     `M ${at(toward(p1, p2, CORNER))}`,
     `L ${at(toward(p2, p1, CORNER))}`,

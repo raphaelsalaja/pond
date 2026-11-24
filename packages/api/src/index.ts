@@ -108,8 +108,11 @@ export interface ApiBinary {
 
 function params(values: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(values))
-    if (value !== undefined) search.set(key, String(value));
+  for (const [key, value] of Object.entries(values)) {
+    if (value !== undefined) {
+      search.set(key, String(value));
+    }
+  }
   return search.toString();
 }
 
@@ -150,6 +153,12 @@ export interface PondApiOptions {
   allowRemote?: boolean;
 }
 
+function isTokenReader(
+  token: PondApiOptions["token"],
+): token is () => string | Promise<string> {
+  return typeof token === "function";
+}
+
 function endpoint(value: string, allowRemote: boolean): string {
   let url: URL;
   try {
@@ -168,10 +177,18 @@ function endpoint(value: string, allowRemote: boolean): string {
 }
 
 function failureKind(status: number, code?: string): ApiFailure {
-  if (code === "invalid_json" || code === "invalid_request") return "invalid";
-  if (status === 401 || status === 403) return "authentication";
-  if (status === 404) return "not-found";
-  if (status === 409 || status === 422 || status === 429) return "conflict";
+  if (code === "invalid_json" || code === "invalid_request") {
+    return "invalid";
+  }
+  if (status === 401 || status === 403) {
+    return "authentication";
+  }
+  if (status === 404) {
+    return "not-found";
+  }
+  if (status === 409 || status === 422 || status === 429) {
+    return "conflict";
+  }
   return status >= 500 ? "internal" : "response";
 }
 
@@ -186,7 +203,7 @@ export class PondApi {
       options.baseUrl ?? "http://127.0.0.1:41610/api/v2",
       options.allowRemote ?? false,
     );
-    if (options.token instanceof Function) {
+    if (isTokenReader(options.token)) {
       this.token = options.token;
     } else {
       const token = options.token;
@@ -207,7 +224,9 @@ export class PondApi {
     const headers: ApiHeaders = {
       "content-type": "application/json",
     };
-    if (authorization) headers.authorization = authorization;
+    if (authorization) {
+      headers.authorization = authorization;
+    }
     Object.assign(headers, Object.fromEntries(new Headers(init.headers)));
     try {
       return await this.fetcher(`${this.baseUrl}${path}`, {
@@ -232,13 +251,14 @@ export class PondApi {
     const body = ApiErrorBodySchema.safeParse(
       parsed.success ? parsed.data.error : null,
     );
-    if (body.success)
+    if (body.success) {
       return new PondApiError(
         body.data.message,
         failureKind(response.status, body.data.code),
         response.status,
         body.data.code,
       );
+    }
     const message = parsed.success
       ? Object(parsed.data.error) === parsed.data.error
         ? (JSON.stringify(parsed.data.error) ?? String(parsed.data.error))
@@ -257,25 +277,29 @@ export class PondApi {
     init: RequestInit = {},
   ): Promise<Output> {
     const response = await this.send(path, init);
-    if (!response.ok) throw await this.failure(response);
+    if (!response.ok) {
+      throw await this.failure(response);
+    }
     const decoded = ApiJsonSchema.safeParse(
       await response.json().catch(() => null),
     );
     const payload = decoded.success ? decoded.data : null;
     const envelope = apiSuccessSchema(ApiJsonSchema).safeParse(payload);
-    if (!envelope.success)
+    if (!envelope.success) {
       throw new PondApiError(
         "Pond returned an unexpected response.",
         "response",
         response.status,
       );
+    }
     const parsed = schema.safeParse(envelope.data.data);
-    if (!parsed.success)
+    if (!parsed.success) {
       throw new PondApiError(
         "Pond returned an unexpected response.",
         "response",
         response.status,
       );
+    }
     return parsed.data;
   }
 
@@ -292,7 +316,9 @@ export class PondApi {
 
   private async binary(path: string): Promise<ApiBinary> {
     const response = await this.send(path);
-    if (!response.ok) throw await this.failure(response);
+    if (!response.ok) {
+      throw await this.failure(response);
+    }
     return {
       type: response.headers.get("content-type") ?? "application/octet-stream",
       bytes: new Uint8Array(await response.arrayBuffer()),
@@ -359,7 +385,7 @@ export class PondApi {
     );
   }
 
-  status(ids: readonly string[]) {
+  status(ids: ReadonlyArray<string>) {
     return this.request(
       `/saves/status?${params({ ids: ids.join(",") })}`,
       ApiSaveStateSchema.array(),
@@ -375,21 +401,24 @@ export class PondApi {
       const thumbnail = await this.binary(
         `/saves/thumb?${params({ id, size })}`,
       );
-      if (!thumbnail.type.startsWith("image/"))
+      if (!thumbnail.type.startsWith("image/")) {
         throw new PondApiError(
           "Pond returned an unexpected response.",
           "response",
         );
+      }
       return thumbnail;
     } catch (error) {
-      if (error instanceof PondApiError && error.code === "no_thumbnail")
+      if (error instanceof PondApiError && error.code === "no_thumbnail") {
         return null;
+      }
       if (
         error instanceof PondApiError &&
         error.code === undefined &&
         error.status === 404
-      )
+      ) {
         return null;
+      }
       throw error;
     }
   }
@@ -410,14 +439,14 @@ export class PondApi {
     return this.post("/saves/folders", ApiEditResultSchema, input);
   }
 
-  trash(ids: readonly string[], libraryId?: string) {
+  trash(ids: ReadonlyArray<string>, libraryId?: string) {
     return this.post("/saves/trash", ApiEditResultSchema, {
       ids: [...ids],
       libraryId,
     });
   }
 
-  restore(ids: readonly string[], libraryId?: string) {
+  restore(ids: ReadonlyArray<string>, libraryId?: string) {
     return this.post("/saves/restore", ApiEditResultSchema, {
       ids: [...ids],
       libraryId,
@@ -432,7 +461,7 @@ export class PondApi {
     });
   }
 
-  setRating(ids: readonly string[], rating: number, libraryId?: string) {
+  setRating(ids: ReadonlyArray<string>, rating: number, libraryId?: string) {
     return this.post("/saves/rating", ApiEditResultSchema, {
       ids: [...ids],
       rating,
@@ -440,7 +469,11 @@ export class PondApi {
     });
   }
 
-  setFavorite(ids: readonly string[], favorite: boolean, libraryId?: string) {
+  setFavorite(
+    ids: ReadonlyArray<string>,
+    favorite: boolean,
+    libraryId?: string,
+  ) {
     return this.post("/saves/favorite", ApiEditResultSchema, {
       ids: [...ids],
       favorite,

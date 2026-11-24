@@ -41,7 +41,9 @@ export function createDownloadActivityStore(
     entries.set(task.id, activity);
     let settled = false;
     const report: ReportDownloadActivity = (update) => {
-      if (settled || entries.get(task.id) !== activity) return;
+      if (settled || entries.get(task.id) !== activity) {
+        return;
+      }
       const at = now();
       if (update.transfer) {
         const transfer = structuredClone(update.transfer);
@@ -52,20 +54,25 @@ export function createDownloadActivityStore(
         );
         const previous = activity.transfers[index];
         transfer.lastByteAt =
-          transfer.receivedBytes != null &&
+          transfer.receivedBytes !== undefined &&
           transfer.receivedBytes > (previous?.receivedBytes ?? 0)
             ? at
             : previous?.lastByteAt;
-        if (index >= 0) activity.transfers[index] = transfer;
-        else {
+        if (index >= 0) {
+          activity.transfers[index] = transfer;
+        } else {
           if (activity.transfers.length >= 64) {
             const finished = activity.transfers.findIndex(
               (entry) =>
                 entry.state === "completed" || entry.state === "failed",
             );
-            if (finished >= 0) activity.transfers.splice(finished, 1);
+            if (finished >= 0) {
+              activity.transfers.splice(finished, 1);
+            }
           }
-          if (activity.transfers.length < 64) activity.transfers.push(transfer);
+          if (activity.transfers.length < 64) {
+            activity.transfers.push(transfer);
+          }
         }
       }
       const phase =
@@ -91,7 +98,9 @@ export function createDownloadActivityStore(
       activity.updatedAt = at;
     };
     function finish(state: "completed" | "failed") {
-      if (settled || entries.get(task.id) !== activity) return;
+      if (settled || entries.get(task.id) !== activity) {
+        return;
+      }
       report({ phase: state });
       settled = true;
       activity.state = state;
@@ -105,8 +114,9 @@ export function createDownloadActivityStore(
       const recent = [...entries.values()]
         .filter((entry) => entry.state !== "running")
         .sort((a, b) => b.updatedAt - a.updatedAt);
-      for (const entry of recent.slice(recentLimit))
+      for (const entry of recent.slice(recentLimit)) {
         entries.delete(entry.taskId);
+      }
     }
     return { report, finish };
   }
@@ -114,13 +124,13 @@ export function createDownloadActivityStore(
   return {
     begin,
     reset: () => entries.clear(),
-    snapshot: (): DownloadActivity[] => {
+    snapshot: (): Array<DownloadActivity> => {
       const snapshot = structuredClone([...entries.values()]);
       for (const activity of snapshot) {
         for (const transfer of activity.transfers) {
           if (
             transfer.state === "receiving" &&
-            now() - (transfer.lastByteAt ?? transfer.startedAt) >= 2_000
+            now() - (transfer.lastByteAt ?? transfer.startedAt) >= 2000
           ) {
             transfer.bytesPerSecond = 0;
             transfer.etaSeconds = undefined;

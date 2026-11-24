@@ -1,11 +1,11 @@
 import type { TreeItemData, TreeProps } from "@ui-sdk/react/tree";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { userEvent } from "vitest/browser";
 import { Sidebar } from ".";
 
-const folders: TreeItemData[] = [
+const folders: Array<TreeItemData> = [
   { value: "inbox", label: "Inbox" },
   {
     value: "design",
@@ -18,7 +18,7 @@ const folders: TreeItemData[] = [
   { value: "archive", label: "Archive" },
 ];
 
-function Rows({ items }: { items: TreeItemData[] }) {
+function Rows({ items }: { items: Array<TreeItemData> }) {
   return items.map((item) => (
     <Sidebar.TreeItem key={item.value} value={item.value}>
       <Sidebar.TreeRow>
@@ -47,7 +47,7 @@ function Folders(props: Partial<TreeProps>) {
 }
 
 function Controlled() {
-  const [expanded, setExpanded] = useState<string[]>([]);
+  const [expanded, setExpanded] = useState<Array<string>>([]);
   const [value, setValue] = useState<string | null>(null);
   return (
     <>
@@ -244,7 +244,9 @@ describe("Sidebar.TreeItem slots", () => {
           ref={(element) => {
             node = element;
           }}
-          onKeyDown={(event) => onKey(event.key)}
+          onKeyDown={(event) => {
+            onKey(event.key);
+          }}
         >
           <Sidebar.TreeRow>
             {(state) => (
@@ -281,7 +283,9 @@ describe("Sidebar.TreeItem slots", () => {
         <Sidebar.TreeItem
           value="inbox"
           onKeyDown={(event) => {
-            if (event.key === "ArrowDown") event.preventDefault();
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+            }
           }}
         >
           <Sidebar.TreeRow>

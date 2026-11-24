@@ -26,7 +26,7 @@ describe("observed download transfers", () => {
 
   it("times out when a response stops sending bytes", async () => {
     vi.useFakeTimers();
-    const updates: DownloadActivityUpdate[] = [];
+    const updates: Array<DownloadActivityUpdate> = [];
     const download = fetchDownload({
       url: "https://media.example/image",
       fileIndex: 1,
@@ -73,7 +73,7 @@ describe("observed download transfers", () => {
   });
 
   it("reports actual response and bytes without exposing URL credentials or query tokens", async () => {
-    const updates: DownloadActivityUpdate[] = [];
+    const updates: Array<DownloadActivityUpdate> = [];
     const result = await fetchDownload({
       url: "https://user:password@media.example/video.mp4?token=secret#fragment",
       fileIndex: 2,
@@ -110,7 +110,7 @@ describe("observed download transfers", () => {
 
   it("cancels an oversized unbounded stream as soon as the cap is crossed", async () => {
     let cancelled = false;
-    const updates: DownloadActivityUpdate[] = [];
+    const updates: Array<DownloadActivityUpdate> = [];
     await expect(
       fetchDownload({
         url: "https://media.example/image",
@@ -138,7 +138,7 @@ describe("observed download transfers", () => {
   });
 
   it("does not present compressed content length as a decoded byte total", async () => {
-    const updates: DownloadActivityUpdate[] = [];
+    const updates: Array<DownloadActivityUpdate> = [];
     await fetchDownload({
       url: "https://media.example/image",
       fileIndex: 1,
@@ -183,7 +183,7 @@ describe("observed download transfers", () => {
 
   it("releases rejected HTTP responses without reporting downloaded bytes", async () => {
     let cancelled = false;
-    const updates: DownloadActivityUpdate[] = [];
+    const updates: Array<DownloadActivityUpdate> = [];
     const result = await fetchDownload({
       url: "https://media.example/image",
       fileIndex: 1,
@@ -228,7 +228,7 @@ describe("observed download transfers", () => {
   });
 
   it("propagates body read failures and leaves a failed transfer", async () => {
-    const updates: DownloadActivityUpdate[] = [];
+    const updates: Array<DownloadActivityUpdate> = [];
     await expect(
       fetchDownload({
         url: "https://media.example/image",
@@ -250,11 +250,13 @@ describe("observed download transfers", () => {
   });
 });
 
+function noop() {}
+
 function timedResponse(
   signal: AbortSignal | null | undefined,
   { chunks, close }: { chunks: number; close: boolean },
 ): Response {
-  let cleanup = () => {};
+  let cleanup: () => void = noop;
   return new Response(
     new ReadableStream({
       start(controller) {

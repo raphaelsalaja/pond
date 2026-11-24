@@ -3,9 +3,17 @@ import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext } from "@dnd-kit/sortable";
 import { IconPlus, IconSortArrows } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
-import { Button, type MenuItemSpec, Sidebar } from "@pond/ui";
+import { Button, Sidebar } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { enterFolders } from "@/features/library/operations/enter-folder";
 import {
@@ -39,14 +47,14 @@ import { folderCollisionDetection, staticFolderSorting } from "./folder-dnd";
 import { QuickAccess } from "./quick-access";
 import { quickAccessRows } from "./quick-access/order";
 import { FolderRootDrop } from "./root-drop";
-import styles from "./styles.module.css";
 import { useFolderTreeActions } from "./use-folder-tree-actions";
 import { useFolderTreeDrag } from "./use-folder-tree-drag";
 import { FOLDER_ROW_SLOT, useVirtualWindow } from "./use-virtual-window";
+import styles from "./styles.module.css";
 
 interface FolderTreeProps {
   destination: LibraryNav | null;
-  folderRows: Folder[];
+  folderRows: Array<Folder>;
 }
 
 const FOLDER_SORT_OPTIONS: Array<{
@@ -61,7 +69,7 @@ const FOLDER_SORT_OPTIONS: Array<{
 function folderGroupMenuItems(
   sort: FolderListSort,
   onSort: (sort: FolderListSort) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     {
       type: "submenu",
@@ -99,7 +107,7 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
   const counts = useSidebarCounts();
   const tree = useFolderTreeState(folderRows);
   const reduceMotion = useReducedMotionConfig();
-  function openSelectedFolders(ids: string[]) {
+  function openSelectedFolders(ids: Array<string>) {
     enterFolders(ids, includeSubfolders);
   }
   /** Keyboard navigation walks this list instead of the DOM, so it reaches unmounted rows. */
@@ -109,15 +117,16 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
   );
   const indexOfRow = useMemo(() => {
     const indexById = new Map<string, number>();
-    for (const [index, { folder }] of tree.nested.entries())
+    for (const [index, { folder }] of tree.nested.entries()) {
       indexById.set(folder.id, index);
+    }
     return (id: string) => indexById.get(id);
   }, [tree.nested]);
   const folderById = useMemo(
     () => new Map(folderRows.map((folder) => [folder.id, folder])),
     [folderRows],
   );
-  const organization = useOrganizationTree(
+  const { root: treeRoot, ...organization } = useOrganizationTree(
     folderRows,
     openSelectedFolders,
     destination,
@@ -153,14 +162,25 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
 
   // The inline editor mounts on the folder row, so a collapsed ancestor
   // has to open before that row can be named.
+  const [openedForEditing, setOpenedForEditing] = useState<string | null>(null);
+  if (editingFolderId !== openedForEditing) {
+    setOpenedForEditing(editingFolderId);
+    if (editingFolderId) {
+      setFoldersOpen(true);
+    }
+  }
+  const revealFolder = tree.revealFolder;
   useEffect(() => {
-    if (!editingFolderId) return;
-    setFoldersOpen(true);
+    if (!editingFolderId) {
+      return;
+    }
     const parentId = folders
       .snapshot()
       .find((folder) => folder.id === editingFolderId)?.parentId;
-    if (parentId) tree.revealFolder(parentId);
-  }, [editingFolderId, tree.revealFolder]);
+    if (parentId) {
+      revealFolder(parentId);
+    }
+  }, [editingFolderId, revealFolder]);
   useRevealSidebarSection("folders", editingFolderId !== null);
 
   const customizingFolder = customizingFolderId
@@ -172,8 +192,11 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
   );
   const parentsWithChildFolders = useMemo(() => {
     const set = new Set<string | null>();
-    for (const row of folderRows)
-      if (tree.parentIds.has(row.id)) set.add(row.parentId);
+    for (const row of folderRows) {
+      if (tree.parentIds.has(row.id)) {
+        set.add(row.parentId);
+      }
+    }
     return set;
   }, [folderRows, tree.parentIds]);
 
@@ -184,12 +207,15 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
     selectionItems,
     toggleAllFolders: tree.toggleAllFolders,
   });
-  latest.current = {
-    folderRows,
-    selected: organization.selected,
-    selectionItems,
-    toggleAllFolders: tree.toggleAllFolders,
-  };
+  const toggleAll = tree.toggleAllFolders;
+  useLayoutEffect(() => {
+    latest.current = {
+      folderRows,
+      selected: organization.selected,
+      selectionItems,
+      toggleAllFolders: toggleAll,
+    };
+  });
   const selectionMenu = useCallback(
     () => latest.current.selectionItems(latest.current.selected),
     [],
@@ -198,28 +224,14 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
     () => latest.current.toggleAllFolders(),
     [],
   );
-  const exportIdsCache = useRef(
-    new Map<string, (include: boolean) => string[]>(),
-  );
-  if (exportIdsCache.current.size > folderRows.length * 4)
-    exportIdsCache.current.clear();
-  const exportIdsFor = (id: string) => {
-    let fn = exportIdsCache.current.get(id);
-    if (!fn) {
-      fn = (include: boolean) =>
-        folderIdsForExport(id, latest.current.folderRows, include);
-      exportIdsCache.current.set(id, fn);
-    }
-    return fn;
-  };
 
   const quickIdsKey = useMemo(
     () => quickFolders.map((entry) => entry.id).join("\n"),
     [quickFolders],
   );
-  // biome-ignore lint/correctness/useExhaustiveDependencies: keyed by quickIdsKey.
+  /** Keyed on the joined ids so the array keeps its identity while the Quick Access set is unchanged. */
   const quickAccessFolderIds = useMemo(
-    () => quickFolders.map((entry) => entry.id),
+    () => (quickIdsKey ? quickIdsKey.split("\n") : []),
     [quickIdsKey],
   );
 
@@ -233,7 +245,7 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
     [organization.cursor, activeFolderId],
   );
   const rowWindow = useVirtualWindow(
-    organization.root,
+    treeRoot,
     totalRows,
     virtualFocusIds,
     indexOfRow,
@@ -298,7 +310,7 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
               strategy={staticFolderSorting}
             >
               <Sidebar.CollapsibleGroupContent
-                ref={organization.root}
+                ref={treeRoot}
                 role="tree"
                 aria-label="Folders"
                 aria-multiselectable
@@ -310,6 +322,7 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
               >
                 <div
                   role="none"
+                  // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- aria-hidden is a global attribute; the spacer only sizes the virtual list
                   aria-hidden
                   className={styles.spacer}
                   style={{
@@ -359,7 +372,13 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
                           creating={creatingFolder}
                           depth={depth}
                           editing={editingFolderId === folder.id}
-                          exportIds={exportIdsFor(folder.id)}
+                          exportIds={(include) =>
+                            folderIdsForExport(
+                              folder.id,
+                              latest.current.folderRows,
+                              include,
+                            )
+                          }
                           folder={folder}
                           folderDrop={drag.folderDrop}
                           folderIcon={presentation?.icon}
@@ -387,7 +406,7 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
                             folders.finishEditing(folder.id)
                           }
                           onOpenTool={setFolderTool}
-                          onStartEditing={folders.startEditing}
+                          onStartEditing={(id) => folders.startEditing(id)}
                           onToggleAll={toggleAllFolders}
                           onToggleFolder={() => tree.toggleFolder(folder.id)}
                           doubleClickBehavior={sidebar.doubleClickBehavior}

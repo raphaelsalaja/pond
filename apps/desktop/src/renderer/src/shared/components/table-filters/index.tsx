@@ -1,11 +1,8 @@
 import { Chip, Menu } from "@pond/ui";
 import type { ReactNode } from "react";
 import { FilterToolbar } from "@/shared/components/filter-toolbar";
-import {
-  type FilterOption,
-  filterChipLabel,
-  filterChipSummary,
-} from "./chip-label";
+import { filterChipLabel, filterChipSummary } from "./chip-label";
+import type { FilterOption } from "./chip-label";
 
 export const TableFilterToggle = FilterToolbar.Toggle;
 export const TableFilterBar = FilterToolbar.Bar;
@@ -19,7 +16,7 @@ export function TableFilterChip<T extends string>({
 }: {
   name: string;
   icon: ReactNode;
-  options: readonly FilterOption<T>[];
+  options: ReadonlyArray<FilterOption<T>>;
   selected: ReadonlySet<T>;
   onChange: (next: Set<T>) => void;
 }) {
@@ -47,8 +44,11 @@ export function TableFilterChip<T extends string>({
             checked={selected.has(option.id)}
             onCheckedChange={(checked) => {
               const next = new Set(selected);
-              if (checked) next.add(option.id);
-              else next.delete(option.id);
+              if (checked) {
+                next.add(option.id);
+              } else {
+                next.delete(option.id);
+              }
               onChange(next);
             }}
           >

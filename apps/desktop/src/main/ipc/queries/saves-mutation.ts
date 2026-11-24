@@ -35,11 +35,11 @@ import { saveFile } from "../../paths";
 import {
   FlagParam,
   NullableStringParam,
-  type QueryHandlerMap,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 async function analyzeSaveMetadata(
   row: typeof saves.$inferSelect,
@@ -49,15 +49,21 @@ async function analyzeSaveMetadata(
     const mediaType = classifyLibraryFile(entry.path, entry.mimeType).mediaType;
     return ["image", "video", "audio"].includes(mediaType);
   });
-  if (!file) return false;
+  if (!file) {
+    return false;
+  }
   const mediaType = classifyLibraryFile(file.path, file.mimeType).mediaType;
-  if (!force && row.metadataVersion === 1) return false;
+  if (!force && row.metadataVersion === 1) {
+    return false;
+  }
   const path = saveFile(row.id, file.path);
   const metadata =
     mediaType === "image"
       ? await extractImageMetadata(path)
       : await extractMediaMetadata(path);
-  if (Object.keys(metadata).length === 0) return false;
+  if (Object.keys(metadata).length === 0) {
+    return false;
+  }
   await persistSave(
     row.id,
     { ...metadata, metadataVersion: 1 },
@@ -85,9 +91,8 @@ export const savesMutationQueries = {
       extension: z.string().trim().min(1).max(16),
     }),
     async (params) => {
-      const { batchEditExtensions } = await import(
-        "../../core/batch-extensions"
-      );
+      const { batchEditExtensions } =
+        await import("../../core/batch-extensions");
       return batchEditExtensions(params);
     },
   ),
@@ -97,8 +102,10 @@ export const savesMutationQueries = {
       .select()
       .from(saves)
       .where(isNotNull(saves.deletedAt));
-    if (rows.length === 0) return { ok: true, count: 0 };
-    const txs: Transaction[] = rows.map((row) => ({
+    if (rows.length === 0) {
+      return { ok: true, count: 0 };
+    }
+    const txs: Array<Transaction> = rows.map((row) => ({
       kind: "purge",
       model: "save",
       id: row.id,
@@ -106,7 +113,9 @@ export const savesMutationQueries = {
       meta: { actor: "user", actorReason: "empty-trash" },
     }));
     await executeBatch(txs);
-    for (const transaction of txs) recordForUndo(transaction);
+    for (const transaction of txs) {
+      recordForUndo(transaction);
+    }
     return { ok: true, count: txs.length };
   },
 
@@ -116,15 +125,19 @@ export const savesMutationQueries = {
       .select({ id: saves.id })
       .from(saves)
       .where(isNotNull(saves.deletedAt));
-    if (rows.length === 0) return { ok: true, count: 0 };
-    const txs: Transaction[] = rows.map((row) => ({
+    if (rows.length === 0) {
+      return { ok: true, count: 0 };
+    }
+    const txs: Array<Transaction> = rows.map((row) => ({
       kind: "untrash",
       model: "save",
       id: row.id,
       meta: { actor: "user", actorReason: "restore-all" },
     }));
     await executeBatch(txs);
-    for (const transaction of txs) recordForUndo(transaction);
+    for (const transaction of txs) {
+      recordForUndo(transaction);
+    }
     return { ok: true, count: txs.length };
   },
 
@@ -151,7 +164,9 @@ export const savesMutationQueries = {
   "saves.setPhash": query(
     z.object({ id: StringParam, phash: NullableStringParam }),
     async (params): Promise<QueryResult<"saves.setPhash">> => {
-      if (!params.id) return SAVE_NOT_FOUND;
+      if (!params.id) {
+        return SAVE_NOT_FOUND;
+      }
       await persistSave(
         params.id,
         { phash: params.phash },
@@ -171,7 +186,9 @@ export const savesMutationQueries = {
       embeddingModel: NullableStringParam,
     }),
     async (params): Promise<QueryResult<"saves.setEmbedding">> => {
-      if (!params.id) return SAVE_NOT_FOUND;
+      if (!params.id) {
+        return SAVE_NOT_FOUND;
+      }
       const db = await getDb();
       await db
         .update(saves)
@@ -181,7 +198,9 @@ export const savesMutationQueries = {
         })
         .where(eq(saves.id, params.id));
       const vector = parseJsonVector(params.embedding);
-      if (vector) upsertVec(db.$raw, "text", params.id, vector);
+      if (vector) {
+        upsertVec(db.$raw, "text", params.id, vector);
+      }
       return { ok: true };
     },
   ),
@@ -189,17 +208,24 @@ export const savesMutationQueries = {
   "saves.patchDerived": query(
     z.object({ id: StringParam, patch: SavesDerivedPatchSchema.catch({}) }),
     async (params): Promise<QueryResult<"saves.patchDerived">> => {
-      if (!params.id) return SAVE_NOT_FOUND;
-      if (Object.keys(params.patch).length === 0)
+      if (!params.id) {
+        return SAVE_NOT_FOUND;
+      }
+      if (Object.keys(params.patch).length === 0) {
         return { ok: false, error: "Nothing to update." };
+      }
       const updated = await persistSave(params.id, params.patch, {
         actorReason: "enrichment:derived",
       });
-      if (!updated) return SAVE_NOT_FOUND;
+      if (!updated) {
+        return SAVE_NOT_FOUND;
+      }
       if (params.patch.clipEmbedding) {
         const db = await getDb();
         const vector = parseJsonVector(params.patch.clipEmbedding);
-        if (vector) upsertVec(db.$raw, "clip", params.id, vector);
+        if (vector) {
+          upsertVec(db.$raw, "clip", params.id, vector);
+        }
       }
       return { ok: true };
     },
@@ -210,7 +236,11 @@ export const savesMutationQueries = {
     const rows = await db.select().from(saves);
     const { analyzeSaveColors } = await import("../../core/save-colors");
     let updated = 0;
-    for (const row of rows) if (await analyzeSaveColors(row, false)) updated++;
+    for (const row of rows) {
+      if (await analyzeSaveColors(row, false)) {
+        updated++;
+      }
+    }
     return { ok: true as const, updated };
   },
 
@@ -218,8 +248,11 @@ export const savesMutationQueries = {
     const db = await getDb();
     const rows = await db.select().from(saves);
     let updated = 0;
-    for (const row of rows)
-      if (await analyzeSaveMetadata(row, false)) updated++;
+    for (const row of rows) {
+      if (await analyzeSaveMetadata(row, false)) {
+        updated++;
+      }
+    }
     return { ok: true as const, updated };
   },
 
@@ -228,7 +261,9 @@ export const savesMutationQueries = {
     async ({ id }): Promise<QueryResult<"saves.reanalyzeColors">> => {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
-      if (!row) return SAVE_NOT_FOUND;
+      if (!row) {
+        return SAVE_NOT_FOUND;
+      }
       const { analyzeSaveColors } = await import("../../core/save-colors");
       const updated = await analyzeSaveColors(row, true);
       return updated
@@ -248,15 +283,18 @@ export const savesMutationQueries = {
     async ({ id, color }): Promise<QueryResult<"saves.setPrimaryColor">> => {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
-      if (!row) return SAVE_NOT_FOUND;
+      if (!row) {
+        return SAVE_NOT_FOUND;
+      }
       const primaryColor = color?.toLowerCase() ?? null;
       if (
         primaryColor &&
         !(row.dominantColors ?? []).some(
           (candidate) => candidate.toLowerCase() === primaryColor,
         )
-      )
+      ) {
         return { ok: false, error: "Choose one of this Save's colors." };
+      }
       await persistSave(
         id,
         { primaryColor },
@@ -278,12 +316,14 @@ export const savesMutationQueries = {
       if (
         !file ||
         classifyLibraryFile(file.path, file.mimeType).mediaType !== "text"
-      )
+      ) {
         return { ok: false, error: "This Save has no text file." };
+      }
       const bytes = await readLibraryMedia(saveFile(id, file.path));
       const decoded = decodeTextBytes(bytes);
-      if (decoded.encoding === "utf-8" && !decoded.hadBom)
+      if (decoded.encoding === "utf8" && !decoded.hadBom) {
         return { ok: true, updated: false };
+      }
       const directory = await mkdtemp(join(tmpdir(), "pond-text-"));
       const path = join(directory, basename(file.path));
       try {
@@ -334,7 +374,9 @@ export const savesMutationQueries = {
   "saves.ensureTextCover": query(
     z.object({ id: StringParam, force: FlagParam.default(false) }),
     async (params) => {
-      if (!params.id) return SAVE_NOT_FOUND;
+      if (!params.id) {
+        return SAVE_NOT_FOUND;
+      }
       const captured = await runRenderTextCover(params.id, {
         force: params.force,
       });
@@ -384,9 +426,8 @@ export const savesMutationQueries = {
         .max(10_000),
     }),
     async ({ pairs }) => {
-      const { addDismissals } = await import(
-        "../../core/duplicates/dismissals"
-      );
+      const { addDismissals } =
+        await import("../../core/duplicates/dismissals");
       return { ok: true as const, dismissed: addDismissals(pairs) };
     },
   ),
@@ -397,7 +438,7 @@ export const savesMutationQueries = {
   ),
 
   "saves.split": query(
-    z.object({ ids: z.array(StringParam).min(1).max(1_000) }),
+    z.object({ ids: z.array(StringParam).min(1).max(1000) }),
     async ({ ids }) => {
       const { splitSaves } = await import("../../core/split-save");
       return splitSaves(ids);

@@ -4,15 +4,15 @@ import { tmpdir } from "node:os";
 import { join, posix } from "node:path";
 import {
   BLANK_DOCUMENTS,
-  type BlankDocumentKind,
   blankDocumentDef,
 } from "../../shared/blank-documents";
+import type { BlankDocumentKind } from "../../shared/blank-documents";
 
 const APP_DIRS = ["/Applications", "/System/Applications"];
 
 export interface AppDirReader {
   exists: (path: string) => boolean;
-  entries: (path: string) => string[];
+  entries: (path: string) => Array<string>;
 }
 
 export interface InstalledBlankDocumentApp {
@@ -34,7 +34,7 @@ const defaultReader: AppDirReader = {
 export function listInstalledBlankDocuments(
   reader: AppDirReader = defaultReader,
   platform: NodeJS.Platform = process.platform,
-): BlankDocumentKind[] {
+): Array<BlankDocumentKind> {
   return listInstalledBlankDocumentApps(reader, platform).map(
     (item) => item.kind,
   );
@@ -43,8 +43,10 @@ export function listInstalledBlankDocuments(
 export function listInstalledBlankDocumentApps(
   reader: AppDirReader = defaultReader,
   platform: NodeJS.Platform = process.platform,
-): InstalledBlankDocumentApp[] {
-  if (platform !== "darwin") return [];
+): Array<InstalledBlankDocumentApp> {
+  if (platform !== "darwin") {
+    return [];
+  }
   const apps = APP_DIRS.flatMap((dir) =>
     reader.exists(dir)
       ? reader
@@ -64,7 +66,9 @@ export async function writeBlankDocumentFile(
   kind: BlankDocumentKind,
 ): Promise<string | null> {
   const def = blankDocumentDef(kind);
-  if (!def) return null;
+  if (!def) {
+    return null;
+  }
   const dir = await mkdtemp(join(tmpdir(), "pond-blank-"));
   const path = join(dir, def.filename);
   await writeFile(path, await blankDocumentBytes(kind));

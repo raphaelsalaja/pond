@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   closeThumbnailViewer,
@@ -37,6 +38,19 @@ function imageSave(id: string, size?: { width: number; height: number }): Save {
   };
 }
 
+function postSave(): Save {
+  const save = imageSave("post");
+  const file = save.files[0];
+  if (!file) {
+    throw new Error("Missing fixture file");
+  }
+  save.files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => ({
+    ...file,
+    path: `${name}.jpg`,
+  }));
+  return save;
+}
+
 describe("SavePreviews", () => {
   let host: HTMLDivElement;
   let root: Root;
@@ -68,7 +82,9 @@ describe("SavePreviews", () => {
   const decode = (name: string) =>
     act(async () => {
       for (const pending of decodes) {
-        if (pending.src.includes(`/${name}.jpg`)) pending.resolve();
+        if (pending.src.includes(`/${name}.jpg`)) {
+          pending.resolve();
+        }
       }
     });
   const layers = () =>
@@ -111,7 +127,9 @@ describe("SavePreviews", () => {
     await show(imageSave("wide", { width: 1600, height: 900 }));
     const image = host.querySelector<HTMLImageElement>('img[alt="wide"]');
     const frame = image?.closest("figure");
-    if (!image || !frame) throw new Error("Missing preview image");
+    if (!image || !frame) {
+      throw new Error("Missing preview image");
+    }
     expect(Number(frame.style.getPropertyValue("--preview-aspect"))).toBe(
       1600 / 900,
     );
@@ -133,7 +151,9 @@ describe("SavePreviews", () => {
     const open = host.querySelector<HTMLButtonElement>(
       'button[aria-label="View Thumbnail"]',
     );
-    if (!open) throw new Error("Missing View Thumbnail");
+    if (!open) {
+      throw new Error("Missing View Thumbnail");
+    }
     expect(open.querySelector("img")?.alt).toBe("photo");
 
     await act(async () => open.click());
@@ -163,25 +183,17 @@ describe("SavePreviews", () => {
     expect(host.querySelector("[data-pending]")).toBeNull();
   });
 
-  function postSave(): Save {
-    const save = imageSave("post");
-    const file = save.files[0];
-    if (!file) throw new Error("Missing fixture file");
-    save.files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => ({
-      ...file,
-      path: `${name}.jpg`,
-    }));
-    return save;
-  }
   const slots = () =>
     Object.fromEntries(
-      [...host.querySelectorAll("[data-slot]")].map((card) => [
-        card.getAttribute("data-slot"),
-        card
-          .querySelector("img")
-          ?.getAttribute("src")
-          ?.match(/(\w)\.jpg/)?.[1],
-      ]),
+      [...host.querySelectorAll("[data-slot]")].map(
+        (card): [string, string | undefined] => [
+          String(card.getAttribute("data-slot")),
+          card
+            .querySelector("img")
+            ?.getAttribute("src")
+            ?.match(/(\w)\.jpg/)?.[1],
+        ],
+      ),
     );
 
   it("stacks a Save's files with the first file on top", async () => {

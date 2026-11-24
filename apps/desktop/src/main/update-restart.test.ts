@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { runUpdateRestart } from "./update-restart";
 
+function noop() {}
+
 describe("update restart", () => {
   it("finishes shutdown and releases the caller before quitAndInstall", async () => {
-    const events: string[] = [];
-    let finishShutdown: () => void = () => {};
+    const events: Array<string> = [];
+    let finishShutdown: () => void = noop;
     const shutdown = new Promise<void>((resolve) => {
       finishShutdown = () => {
         events.push("shutdown");

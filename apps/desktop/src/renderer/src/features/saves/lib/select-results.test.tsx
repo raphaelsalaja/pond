@@ -4,13 +4,19 @@ import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { selectResults } from "./select-results";
 
+interface PendingLookup {
+  finish?: (ids: Array<string>) => void;
+}
+
 function deferredIds() {
-  let finish: (ids: string[]) => void = () => {
-    throw new Error("Lookup is not pending");
-  };
-  const promise = new Promise<string[]>((resolve) => {
-    finish = resolve;
+  const pending: PendingLookup = {};
+  const promise = new Promise<Array<string>>((resolve) => {
+    pending.finish = resolve;
   });
+  const { finish } = pending;
+  if (!finish) {
+    throw new Error("Lookup is not pending");
+  }
   return { promise, finish };
 }
 

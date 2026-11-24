@@ -1,5 +1,7 @@
+import { isHTMLTag } from "@pond/ui/dom";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AddMenu } from "./add-menu";
 
@@ -31,13 +33,16 @@ afterEach(async () => {
 
 async function choose(label: string) {
   const trigger = host.querySelector('button[aria-label="Add"]');
-  if (!(trigger instanceof HTMLButtonElement))
+  if (!isHTMLTag(trigger, "button")) {
     throw new Error("Missing Add button");
+  }
   await act(async () => trigger.click());
   const item = [
     ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
   ].find((node) => node.textContent?.includes(label));
-  if (!item) throw new Error(`Missing ${label} item`);
+  if (!item) {
+    throw new Error(`Missing ${label} item`);
+  }
   await act(async () => item.click());
 }
 

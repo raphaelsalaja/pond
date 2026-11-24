@@ -29,8 +29,8 @@ const ChatSchema = z.object({ id: z.string() });
 
 interface DraftSnapshot {
   content: string;
-  attachments: AssistantSource[];
-  files: AssistantFileAttachment[];
+  attachments: Array<AssistantSource>;
+  files: Array<AssistantFileAttachment>;
   provider: AssistantProvider;
   modelId?: AssistantSend["modelId"];
   controls?: AssistantSend["controls"];
@@ -46,17 +46,17 @@ export interface AssistantState {
   chatId: string | null;
   chats: z.infer<typeof ChatsSchema>;
   referenceMessageId: string | null;
-  messages: AssistantMessage[];
+  messages: Array<AssistantMessage>;
   draft: string;
-  attachments: AssistantSource[];
-  files: AssistantFileAttachment[];
+  attachments: Array<AssistantSource>;
+  files: Array<AssistantFileAttachment>;
   busy: boolean;
   loading: boolean;
   requestId: string | null;
-  sources: AssistantSource[];
+  sources: Array<AssistantSource>;
   activity: AssistantActivity;
-  results: AssistantResultSet[];
-  steps: AssistantToolStep[];
+  results: Array<AssistantResultSet>;
+  steps: Array<AssistantToolStep>;
   error: string | null;
   failed: DraftSnapshot | null;
   /** Sent on its own once the running reply finishes. */
@@ -96,7 +96,7 @@ let cancelledRequest: string | null = null;
 const isBusy = () => store.state.sending;
 const currentMessages = () => store.state.messages;
 
-function setMessages(messages: AssistantMessage[]) {
+function setMessages(messages: Array<AssistantMessage>) {
   patch({ messages });
 }
 
@@ -105,7 +105,9 @@ async function refreshChats() {
   const chats = ChatsSchema.parse(
     await window.pond.query("agent.chats", { fishId }),
   );
-  if (store.state.fishId === fishId) patch({ chats });
+  if (store.state.fishId === fishId) {
+    patch({ chats });
+  }
 }
 async function loadMessages(chatId: string) {
   return assistantMessages.parse(
@@ -116,7 +118,9 @@ async function refreshMessages(chatId: string, version = historyVersion) {
   const messages = await loadMessages(chatId);
   if (store.state.chatId === chatId && version === historyVersion) {
     setMessages(messages);
-    if (!store.state.sending) hydratePondChat(chatId, messages);
+    if (!store.state.sending) {
+      hydratePondChat(chatId, messages);
+    }
   }
 }
 
@@ -158,7 +162,7 @@ function composerFor(
 }
 
 function snapshotContext(
-  attachments: AssistantSource[],
+  attachments: Array<AssistantSource>,
 ): DraftSnapshot["context"] {
   return {
     scope: { kind: "library" },
@@ -173,12 +177,13 @@ function restoreDraft(sent: DraftSnapshot) {
     !store.state.draft &&
     !store.state.attachments.length &&
     !store.state.files.length
-  )
+  ) {
     patch({
       draft: sent.content,
       attachments: sent.attachments,
       files: sent.files,
     });
+  }
 }
 
 export const assistant = {
@@ -186,8 +191,9 @@ export const assistant = {
     const message = currentMessages().find(
       (message) => message.id === messageId && message.role === "assistant",
     );
-    if (message?.metadata?.sources?.length)
+    if (message?.metadata?.sources?.length) {
       patch({ referenceMessageId: messageId });
+    }
   },
   closeReferences() {
     patch({ referenceMessageId: null });
@@ -200,7 +206,7 @@ export const assistant = {
   },
   appendDraft(content: string) {
     const draft = [store.state.draft, content].filter(Boolean).join("\n\n");
-    if (draft.length > 32000) {
+    if (draft.length > 32_000) {
       patch({
         error: "This text is too long to add. Shorten the message first.",
       });
@@ -215,7 +221,7 @@ export const assistant = {
       .map((line) => `> ${line}`)
       .join("\n");
     const draft = `${[store.state.draft, quote].filter(Boolean).join("\n\n")}\n\n`;
-    if (draft.length > 32000) {
+    if (draft.length > 32_000) {
       patch({
         error:
           "This quote is too long for the message. Copy a shorter passage instead.",
@@ -228,7 +234,7 @@ export const assistant = {
   clearError() {
     patch({ error: null });
   },
-  attach(saves: AssistantSource[]) {
+  attach(saves: Array<AssistantSource>) {
     const merged = [
       ...new Map(
         [...store.state.attachments, ...saves].map((save) => [save.id, save]),
@@ -247,7 +253,7 @@ export const assistant = {
       attachments: store.state.attachments.filter((save) => save.id !== id),
     });
   },
-  attachFiles(files: AssistantFileAttachment[]) {
+  attachFiles(files: Array<AssistantFileAttachment>) {
     const merged = [
       ...new Map(
         [...store.state.files, ...files].map((file) => [file.id, file]),
@@ -264,7 +270,7 @@ export const assistant = {
   removeFile(id: string) {
     patch({ files: store.state.files.filter((file) => file.id !== id) });
   },
-  async attachIds(ids: string[]) {
+  async attachIds(ids: Array<string>) {
     try {
       assistant.attach(
         assistantSources.parse(
@@ -281,7 +287,9 @@ export const assistant = {
     return store.state.fishId;
   },
   selectFish(fishId: string) {
-    if (fishSelected && store.state.fishId === fishId) return;
+    if (fishSelected && store.state.fishId === fishId) {
+      return;
+    }
     fishSelected = true;
     if (isBusy()) {
       patch({ fishId, chats: [] });
@@ -305,13 +313,19 @@ export const assistant = {
       loading: true,
     });
     const settle = () => {
-      if (version === historyVersion) patch({ loading: false });
+      if (version === historyVersion) {
+        patch({ loading: false });
+      }
     };
     void refreshChats()
       .then(() => {
-        if (version !== historyVersion || isBusy()) return;
+        if (version !== historyVersion || isBusy()) {
+          return;
+        }
         const chatId = store.state.chats[0]?.id;
-        if (!chatId) return settle();
+        if (!chatId) {
+          return settle();
+        }
         void assistant.openChat(chatId);
       })
       .catch(() => {
@@ -320,7 +334,9 @@ export const assistant = {
       });
   },
   newChat() {
-    if (isBusy()) return;
+    if (isBusy()) {
+      return;
+    }
     saveComposer();
     historyVersion++;
     patch({
@@ -335,22 +351,31 @@ export const assistant = {
     });
   },
   async deleteChat(chatId: string) {
-    if (isBusy()) throw new Error("Wait for the reply to finish.");
+    if (isBusy()) {
+      throw new Error("Wait for the reply to finish.");
+    }
     const result = await window.pond.query("agent.deleteChat", { chatId });
-    if (!result.ok)
+    if (!result.ok) {
       throw new Error(result.error || "Could not delete this chat.");
-    if (store.state.chatId === chatId) assistant.newChat();
+    }
+    if (store.state.chatId === chatId) {
+      assistant.newChat();
+    }
     composers.delete(chatId);
     await refreshChats();
   },
   async openChat(chatId: string) {
-    if (isBusy()) return;
+    if (isBusy()) {
+      return;
+    }
     saveComposer();
     const version = ++historyVersion;
     patch({ loading: true });
     try {
       const messages = await loadMessages(chatId);
-      if (version !== historyVersion) return;
+      if (version !== historyVersion) {
+        return;
+      }
       hydratePondChat(chatId, messages);
       patch({
         chatId,
@@ -363,11 +388,12 @@ export const assistant = {
         loading: false,
       });
     } catch {
-      if (version === historyVersion)
+      if (version === historyVersion) {
         patch({
           error: "Could not load this conversation. Try again.",
           loading: false,
         });
+      }
     }
   },
   async send(
@@ -375,7 +401,9 @@ export const assistant = {
     run?: Pick<AssistantSend, "modelId" | "controls">,
     snapshot?: DraftSnapshot,
   ) {
-    if (isBusy() || store.state.loading) return;
+    if (isBusy() || store.state.loading) {
+      return;
+    }
     const sent = snapshot ?? {
       content: store.state.draft.trim(),
       attachments: store.state.attachments,
@@ -385,7 +413,9 @@ export const assistant = {
       modelId: run?.modelId,
       controls: run?.controls,
     };
-    if (!sent.content) return;
+    if (!sent.content) {
+      return;
+    }
     const requestId = crypto.randomUUID();
     patch({
       sending: true,
@@ -403,12 +433,13 @@ export const assistant = {
         store.state.draft === sent.content &&
         store.state.attachments === sent.attachments &&
         store.state.files === sent.files)
-    )
+    ) {
       patch({
         draft: "",
         attachments: [],
         files: [],
       });
+    }
     let chatId = store.state.chatId;
     try {
       if (!chatId) {
@@ -422,7 +453,9 @@ export const assistant = {
         patch({ chatId });
       }
       if (!chatId || cancelledRequest === requestId) {
-        if (cancelledRequest === requestId) restoreDraft(sent);
+        if (cancelledRequest === requestId) {
+          restoreDraft(sent);
+        }
         return;
       }
       const threadId = chatId;
@@ -458,7 +491,9 @@ export const assistant = {
           },
         },
       );
-      if (session.error) throw session.error;
+      if (session.error) {
+        throw session.error;
+      }
       patch({ error: null });
     } catch (error) {
       if (cancelledRequest !== requestId) {
@@ -472,7 +507,9 @@ export const assistant = {
         });
       }
     } finally {
-      if (cancelledRequest === requestId) cancelledRequest = null;
+      if (cancelledRequest === requestId) {
+        cancelledRequest = null;
+      }
       patch({ sending: false, requestId: null, sources: [] });
       await Promise.all([
         chatId
@@ -496,9 +533,13 @@ export const assistant = {
     provider: AssistantProvider,
     run?: Pick<AssistantSend, "modelId" | "controls">,
   ) {
-    if (!isBusy()) return assistant.send(provider, run);
+    if (!isBusy()) {
+      return assistant.send(provider, run);
+    }
     const content = store.state.draft.trim();
-    if (!content) return;
+    if (!content) {
+      return;
+    }
     const previous = store.state.queued;
     const attachments = [
       ...new Map(
@@ -528,7 +569,9 @@ export const assistant = {
   },
   /** Stops the running reply; the queued message goes out as soon as it settles. */
   sendQueuedNow() {
-    if (store.state.queued && isBusy()) assistant.stop();
+    if (store.state.queued && isBusy()) {
+      assistant.stop();
+    }
   },
   async answerQuestion(
     messageId: string,
@@ -536,7 +579,9 @@ export const assistant = {
     provider: AssistantProvider,
     run?: Pick<AssistantSend, "modelId" | "controls">,
   ) {
-    if (currentMessages().at(-1)?.id !== messageId) return;
+    if (currentMessages().at(-1)?.id !== messageId) {
+      return;
+    }
     await assistant.send(provider, run, {
       content,
       attachments: [],
@@ -565,12 +610,13 @@ export const assistant = {
   },
   async retry() {
     const sent = store.state.failed;
-    if (sent)
+    if (sent) {
       await assistant.send(
         sent.provider,
         { modelId: sent.modelId, controls: sent.controls },
         sent,
       );
+    }
   },
   /** Replaces the latest reply by running its request again with the current model. */
   async regenerate(
@@ -578,7 +624,9 @@ export const assistant = {
     run?: Pick<AssistantSend, "modelId" | "controls">,
   ) {
     const chatId = store.state.chatId;
-    if (!chatId || isBusy() || store.state.loading) return;
+    if (!chatId || isBusy() || store.state.loading) {
+      return;
+    }
     const result = await window.pond.query("agent.regenerate", { chatId });
     if (!result.ok) {
       patch({ error: result.error });
@@ -599,7 +647,7 @@ export const assistant = {
   },
   async review(
     messageId: string,
-    changeIds: string[],
+    changeIds: Array<string>,
     action: "apply" | "undo" | "dismiss",
   ) {
     const result = await window.pond.query("agent.review", {
@@ -613,12 +661,16 @@ export const assistant = {
         : m,
     );
     setMessages(messages);
-    if (store.state.chatId) hydratePondChat(store.state.chatId, messages);
+    if (store.state.chatId) {
+      hydratePondChat(store.state.chatId, messages);
+    }
     await folders.refresh();
   },
   async refresh() {
     const chatId = store.state.chatId;
-    if (chatId) await refreshMessages(chatId);
+    if (chatId) {
+      await refreshMessages(chatId);
+    }
     await refreshChats();
   },
 };
@@ -631,10 +683,18 @@ export function useAssistant() {
       );
     }
     const unsubscribe = window.pond.onAgentChunk((chunk) => {
-      if (chunk.type === "activity") patch({ activity: chunk.activity });
-      if (chunk.type === "sources") patch({ sources: chunk.sources });
-      if (chunk.type === "results") patch({ results: chunk.results });
-      if (chunk.type === "steps") patch({ steps: chunk.steps });
+      if (chunk.type === "activity") {
+        patch({ activity: chunk.activity });
+      }
+      if (chunk.type === "sources") {
+        patch({ sources: chunk.sources });
+      }
+      if (chunk.type === "results") {
+        patch({ results: chunk.results });
+      }
+      if (chunk.type === "steps") {
+        patch({ steps: chunk.steps });
+      }
     });
     return () => {
       unsubscribe();

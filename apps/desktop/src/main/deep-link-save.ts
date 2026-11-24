@@ -3,7 +3,7 @@ import log from "electron-log/main.js";
 
 export interface SaveLink {
   url: string;
-  tags: string[];
+  tags: Array<string>;
   folderId: string | null;
 }
 
@@ -14,14 +14,18 @@ const MAX_PER_WINDOW = 20;
 
 export function parseSaveLink(link: URL): SaveLink | null {
   const raw = link.searchParams.get("url");
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   let target: URL;
   try {
     target = new URL(raw);
   } catch {
     return null;
   }
-  if (target.protocol !== "http:" && target.protocol !== "https:") return null;
+  if (target.protocol !== "http:" && target.protocol !== "https:") {
+    return null;
+  }
   const tags = (link.searchParams.get("tags") ?? "")
     .split(",")
     .map((tag) => tag.trim())
@@ -35,10 +39,14 @@ export function parseSaveLink(link: URL): SaveLink | null {
 
 interface SaveLinkDeps {
   enqueue: (url: string, opts: { trigger: string }) => Promise<{ id: string }>;
-  addTags: (ids: string[], names: string[], reason: string) => Promise<number>;
+  addTags: (
+    ids: Array<string>,
+    names: Array<string>,
+    reason: string,
+  ) => Promise<number>;
   addToFolder: (
     folderId: string,
-    saveIds: string[],
+    saveIds: Array<string>,
   ) => Promise<{ ok: boolean }>;
   notify: (title: string, body: string) => void;
   now: () => number;
@@ -46,11 +54,12 @@ interface SaveLinkDeps {
 }
 
 export function createSaveLinkHandler(deps: SaveLinkDeps) {
-  const recent: number[] = [];
+  const recent: Array<number> = [];
   return async (link: SaveLink): Promise<void> => {
     const now = deps.now();
-    while (recent.length > 0 && now - (recent[0] ?? now) >= WINDOW_MS)
+    while (recent.length > 0 && now - (recent[0] ?? now) >= WINDOW_MS) {
       recent.shift();
+    }
     if (recent.length >= MAX_PER_WINDOW) {
       log.warn("[pond deep-link] save rate limited", link.url);
       return;
@@ -60,11 +69,15 @@ export function createSaveLinkHandler(deps: SaveLinkDeps) {
     await deps.ready();
     try {
       const { id } = await deps.enqueue(link.url, { trigger: TRIGGER });
-      if (link.tags.length > 0) await deps.addTags([id], link.tags, TRIGGER);
-      if (link.folderId) await deps.addToFolder(link.folderId, [id]);
+      if (link.tags.length > 0) {
+        await deps.addTags([id], link.tags, TRIGGER);
+      }
+      if (link.folderId) {
+        await deps.addToFolder(link.folderId, [id]);
+      }
       deps.notify("Saved to Pond", host);
-    } catch (err) {
-      log.warn("[pond deep-link] save failed", link.url, err);
+    } catch (error) {
+      log.warn("[pond deep-link] save failed", link.url, error);
       deps.notify("Pond can't save that link", host);
     }
   };

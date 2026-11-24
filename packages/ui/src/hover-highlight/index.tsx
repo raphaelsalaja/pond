@@ -1,6 +1,7 @@
 import { useRender } from "@base-ui/react/use-render";
 import { clsx as cn } from "clsx";
 import { useEffect, useRef } from "react";
+import { isElement } from "../dom";
 import styles from "./styles.module.css";
 
 const ROW =
@@ -18,7 +19,9 @@ export function HoverHighlight({
   useEffect(() => {
     const highlight = highlightRef.current;
     const host = highlight?.parentElement;
-    if (!highlight || !host) return;
+    if (!highlight || !host) {
+      return;
+    }
     let current: HTMLElement | null = null;
     let pointer: { x: number; y: number } | null = null;
 
@@ -26,7 +29,9 @@ export function HoverHighlight({
       const hit = target?.closest<HTMLElement>(ROW) ?? null;
       /** A row that wraps another row only widens the hover area; the fill sits on the inner one. */
       const row = hit?.querySelector<HTMLElement>(ROW) ?? hit;
-      if (row === current && !instant) return;
+      if (row === current && !instant) {
+        return;
+      }
       current = row && host.contains(row) ? row : null;
       if (!current) {
         delete highlight.dataset.visible;
@@ -37,7 +42,9 @@ export function HoverHighlight({
       const x = box.left - origin.left - host.clientLeft + host.scrollLeft;
       const y = box.top - origin.top - host.clientTop + host.scrollTop;
       const snap = instant || highlight.dataset.visible === undefined;
-      if (snap) highlight.dataset.snap = "";
+      if (snap) {
+        highlight.dataset.snap = "";
+      }
       highlight.style.width = `${box.width}px`;
       highlight.style.height = `${box.height}px`;
       highlight.style.borderRadius = getComputedStyle(current).borderRadius;
@@ -50,21 +57,29 @@ export function HoverHighlight({
     };
 
     const move = (event: PointerEvent) => {
-      if (event.pointerType === "touch") return;
+      if (event.pointerType === "touch") {
+        return;
+      }
       pointer = { x: event.clientX, y: event.clientY };
-      place(event.target instanceof Element ? event.target : null, false);
+      place(isElement(event.target) ? event.target : null, false);
     };
     const leave = () => {
       pointer = null;
       place(null, false);
     };
     const scroll = () => {
-      if (pointer) place(document.elementFromPoint(pointer.x, pointer.y), true);
+      if (pointer) {
+        place(document.elementFromPoint(pointer.x, pointer.y), true);
+      }
     };
     /** A faded-out highlight left at its last row would still stretch the scroll height. */
     const park = (event: TransitionEvent) => {
-      if (event.propertyName !== "opacity") return;
-      if (highlight.dataset.visible !== undefined) return;
+      if (event.propertyName !== "opacity") {
+        return;
+      }
+      if (highlight.dataset.visible !== undefined) {
+        return;
+      }
       highlight.style.width = "";
       highlight.style.height = "";
       highlight.style.transform = "";

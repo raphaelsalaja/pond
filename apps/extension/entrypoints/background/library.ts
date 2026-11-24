@@ -7,11 +7,14 @@ import type {
   Tag,
 } from "@/utils/messaging";
 import { nativeCall } from "@/utils/native";
-import { type Appearance, resolveAppearance } from "@/utils/paint-theme";
-import { OFFLINE, type ProbeResult, probe } from "@/utils/probe";
+import { resolveAppearance } from "@/utils/paint-theme";
+import type { Appearance } from "@/utils/paint-theme";
+import { OFFLINE, probe } from "@/utils/probe";
+import type { ProbeResult } from "@/utils/probe";
 import { readRecentTargets } from "@/utils/recent-targets";
 import { getSettings } from "@/utils/settings";
-import { type ThemeVars, themeVarsSchema } from "@/utils/theme";
+import { themeVarsSchema } from "@/utils/theme";
+import type { ThemeVars } from "@/utils/theme";
 import { syncSettings } from "./settings";
 
 const THEME_KEY = "libraryTheme";
@@ -64,7 +67,9 @@ async function libraryTheme(): Promise<ThemeVars | null> {
     await browser.storage.session.get(THEME_KEY);
   if (THEME_KEY in stored) {
     const cached = themeVarsSchema.nullable().safeParse(stored[THEME_KEY]);
-    if (cached.success) return cached.data;
+    if (cached.success) {
+      return cached.data;
+    }
   }
   const result = await probeLibrary();
   return result.state === "connected" ? (result.library.theme ?? null) : null;
@@ -79,29 +84,37 @@ async function libraryName(): Promise<string> {
   const stored: Record<string, JsonValue> =
     await browser.storage.session.get(NAME_KEY);
   const cached = z.string().safeParse(stored[NAME_KEY]);
-  if (cached.success) return cached.data;
+  if (cached.success) {
+    return cached.data;
+  }
   const result = await probeLibrary();
   return result.state === "connected" ? result.library.name : "Pond";
 }
 
-async function listFolders(): Promise<Folder[]> {
+async function listFolders(): Promise<Array<Folder>> {
   const result = await nativeCall({ type: "folders.list" });
-  if (!result.ok) return [];
+  if (!result.ok) {
+    return [];
+  }
   const folders = foldersSchema.safeParse(result.data);
   return folders.success ? folders.data : [];
 }
 
-async function listTags(): Promise<Tag[]> {
+async function listTags(): Promise<Array<Tag>> {
   const result = await nativeCall({ type: "tags.list" });
-  if (!result.ok) return [];
+  if (!result.ok) {
+    return [];
+  }
   const tags = tagsSchema.safeParse(result.data);
   return tags.success ? tags.data : [];
 }
 
 /** Pond builds before Fish answer `invalid`, so the picker stays hidden. */
-async function listFish(): Promise<FishTarget[]> {
+async function listFish(): Promise<Array<FishTarget>> {
   const result = await nativeCall({ type: "fish.list" });
-  if (!result.ok) return [];
+  if (!result.ok) {
+    return [];
+  }
   const fish = fishSchema.safeParse(result.data);
   return fish.success ? fish.data : [];
 }

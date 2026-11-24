@@ -12,14 +12,15 @@ import { join } from "node:path";
 import { ulid } from "ulid";
 import { afterEach, expect, it } from "vitest";
 import type { TransferRequest } from "../../shared/transfer-contracts";
-import { type ExportItem, exportFiles } from "./export-files";
+import { exportFiles } from "./export-files";
+import type { ExportItem } from "./export-files";
 import {
   checkTransferCancellation,
   createTransferJobStore,
   transferPhase,
 } from "./transfer-jobs";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -37,7 +38,7 @@ async function fixture() {
     destination,
     ids: ["first", "second"],
   };
-  const items: ExportItem[] = [];
+  const items: Array<ExportItem> = [];
   for (const id of request.ids ?? []) {
     const source = join(root, id);
     await mkdir(source);
@@ -71,8 +72,9 @@ async function fixture() {
     store: createTransferJobStore(directory),
   };
 }
+function noop() {}
 function deferred() {
-  let release = () => {};
+  let release: () => void = noop;
   const promise = new Promise<void>((resolve) => {
     release = resolve;
   });
@@ -81,7 +83,9 @@ function deferred() {
 it("persists cancellation and reuses verified completed originals on retry after store reload", async () => {
   const { store, request, items, destination, directory } = await fixture();
   const first = items[0];
-  if (!first) throw new Error("Missing first original");
+  if (!first) {
+    throw new Error("Missing first original");
+  }
   const ready = deferred();
   const resume = deferred();
   const run = store.run(request, async () => {
@@ -92,7 +96,9 @@ it("persists cancellation and reuses verified completed originals on retry after
   });
   await ready.promise;
   const [job] = await store.list();
-  if (!job) throw new Error("Missing transfer");
+  if (!job) {
+    throw new Error("Missing transfer");
+  }
   await store.cancel(job.id);
   resume.release();
   await expect(run).rejects.toThrow("canceled");
@@ -111,7 +117,9 @@ it("persists cancellation and reuses verified completed originals on retry after
 it("keeps user changes to a checkpointed output and copies to a fresh name", async () => {
   const { store, request, items, destination } = await fixture();
   const first = items[0];
-  if (!first) throw new Error("Missing first original");
+  if (!first) {
+    throw new Error("Missing first original");
+  }
   await expect(
     store.run(request, async () => {
       await exportFiles({ directory: destination, items: [first] });
@@ -119,7 +127,9 @@ it("keeps user changes to a checkpointed output and copies to a fresh name", asy
     }),
   ).rejects.toThrow("Interrupted fixture");
   const [job] = await store.list();
-  if (!job) throw new Error("Missing job");
+  if (!job) {
+    throw new Error("Missing job");
+  }
   await writeFile(join(destination, "first.txt"), "other");
   await store.run(
     request,
@@ -168,7 +178,9 @@ it("dismisses a failed library transfer and leaves the others in place", async (
     }),
   ).rejects.toThrow("no longer exists");
   const [failed] = await store.list();
-  if (!failed) throw new Error("Missing failed transfer");
+  if (!failed) {
+    throw new Error("Missing failed transfer");
+  }
   expect(failed.status).toBe("failed");
   await writeFile(join(directory, `${failed.id}.jsonl`), "{}\n");
   await store.run(
@@ -176,7 +188,9 @@ it("dismisses a failed library transfer and leaves the others in place", async (
     async () => "kept",
   );
   const kept = (await store.list()).find((job) => job.id !== failed.id);
-  if (!kept) throw new Error("Missing kept transfer");
+  if (!kept) {
+    throw new Error("Missing kept transfer");
+  }
   expect(await store.dismiss(failed.id)).toEqual({ ok: true });
   expect(await store.dismiss(failed.id)).toEqual({
     ok: false,
@@ -208,7 +222,9 @@ it("keeps a running transfer when dismiss is requested", async () => {
   });
   await ready.promise;
   const [job] = await store.list();
-  if (!job) throw new Error("Missing transfer");
+  if (!job) {
+    throw new Error("Missing transfer");
+  }
   expect(job.status).toBe("running");
   expect(await store.dismiss(job.id)).toEqual({
     ok: false,
@@ -233,7 +249,9 @@ it("isolates cancellation between parallel transfers", async () => {
   });
   await ready.promise;
   const [job] = await store.list();
-  if (!job) throw new Error("Missing job");
+  if (!job) {
+    throw new Error("Missing job");
+  }
   await store.cancel(job.id);
   await expect(
     store.run(

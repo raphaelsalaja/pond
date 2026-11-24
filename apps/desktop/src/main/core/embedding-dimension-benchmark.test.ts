@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   assessCompactDimension,
   DIMENSION_ACCEPTANCE_RULE,
-  type EmbeddingBenchmarkCorpus,
   evaluateEmbeddingDimension,
   truncateAndNormalizeEmbedding,
 } from "./embedding-dimension-benchmark";
+import type { EmbeddingBenchmarkCorpus } from "./embedding-dimension-benchmark";
 
-const vector = (...entries: number[]): number[] => [
+const vector = (...entries: Array<number>): Array<number> => [
   ...entries,
   ...Array.from({ length: 768 - entries.length }, () => 0),
 ];

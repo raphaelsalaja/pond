@@ -1,4 +1,5 @@
-import { BOTTOM, CURVE, type Recipe, SHARP, SOFT, TOP } from "./apple";
+import { BOTTOM, CURVE, SHARP, SOFT, TOP } from "./apple";
+import type { Recipe } from "./apple";
 
 export type Side = "top" | "bottom" | "left" | "right";
 
@@ -33,8 +34,12 @@ const DIRECTION = {
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
 
 function mask(t: number, start: number, end: number) {
-  if (t <= start) return 1;
-  if (t >= end) return 0;
+  if (t <= start) {
+    return 1;
+  }
+  if (t >= end) {
+    return 0;
+  }
   const u = ((t - start) / (end - start)) * (CURVE.length - 1);
   const i = Math.floor(u);
   const a = CURVE[i] ?? 0;
@@ -55,14 +60,16 @@ function gradient(
   stops.push(end, 1);
   const list = stops.map((t) => {
     const a = Math.round(alpha(mask(t, start, end)) * 1000) / 1000;
-    return `rgb(0 0 0 / ${a}) ${Math.round(t * 10000) / 100}%`;
+    return `rgb(0 0 0 / ${a}) ${Math.round(t * 10_000) / 100}%`;
   });
   return `linear-gradient(${DIRECTION[side]}, ${list.join(", ")})`;
 }
 
 function sharp(m: number) {
   let i = 1;
-  while (i < SHARP.length - 1 && (SHARP[i]?.[0] ?? 1) < m) i++;
+  while (i < SHARP.length - 1 && (SHARP[i]?.[0] ?? 1) < m) {
+    i++;
+  }
   const [m0, s0] = SHARP[i - 1] ?? [0, 0];
   const [m1, s1] = SHARP[i] ?? [1, 0];
   return s0 + (s1 - s0) * clamp((m - m0) / (m1 - m0));
@@ -76,8 +83,12 @@ function reach(r: Recipe, m: number) {
 
 function detect(): Exclude<Technique, "auto"> {
   const ua = navigator.userAgent;
-  if (/Chrome\//.test(ua)) return "filter";
-  if (/AppleWebKit/.test(ua) && !/Android/.test(ua)) return "blend";
+  if (/Chrome\//.test(ua)) {
+    return "filter";
+  }
+  if (/AppleWebKit/.test(ua) && !/Android/.test(ua)) {
+    return "blend";
+  }
   return "plain";
 }
 
@@ -97,7 +108,9 @@ const filters = new Map<string, string>();
 function svgFilter(r: Recipe) {
   const key = `${r.fill}-${r.normal}-${r.lighten}-${r.darken}`;
   const known = filters.get(key);
-  if (known && document.getElementById(known)) return known;
+  if (known && document.getElementById(known)) {
+    return known;
+  }
   const id = `pond-progressive-blur-${filters.size}`;
   const svg = document.createElementNS(SVG, "svg");
   svg.setAttribute("aria-hidden", "true");
@@ -126,9 +139,9 @@ function layers(
   r: Recipe,
   technique: Exclude<Technique, "auto">,
   color: string,
-): Layer[] {
+): Array<Layer> {
   /** The veil sits under the blur so the wide blur smears its fade too. */
-  const out: Layer[] = [{ background: color, alpha: (m) => r.veil * m }];
+  const out: Array<Layer> = [{ background: color, alpha: (m) => r.veil * m }];
   const most = sharp(1);
   for (let k = 1; k <= LEVELS; k++) {
     const from = (most * (k - 1)) / LEVELS;
@@ -142,7 +155,9 @@ function layers(
   }
   const wide = `blur(${r.fill}px)`;
   if (technique === "blend") {
-    if (r.normal) out.push({ backdrop: wide, alpha: (m) => r.normal * m });
+    if (r.normal) {
+      out.push({ backdrop: wide, alpha: (m) => r.normal * m });
+    }
     if (r.lighten) {
       out.push({
         backdrop: wide,
@@ -182,11 +197,13 @@ export function progressiveBlur(
   host: HTMLElement,
   options: ProgressiveBlurOptions = {},
 ): () => void {
-  let nodes: HTMLElement[] = [];
+  let nodes: Array<HTMLElement> = [];
   const dark = matchMedia("(prefers-color-scheme: dark)");
 
   function render() {
-    for (const node of nodes) node.remove();
+    for (const node of nodes) {
+      node.remove();
+    }
     const side = options.side ?? "top";
     const edge = side === "bottom" ? BOTTOM : TOP;
     const start = options.start ?? edge.start;
@@ -208,8 +225,12 @@ export function progressiveBlur(
         style.setProperty("backdrop-filter", layer.backdrop);
         style.setProperty("-webkit-backdrop-filter", layer.backdrop);
       }
-      if (layer.blend) style.mixBlendMode = layer.blend;
-      if (layer.background) style.background = layer.background;
+      if (layer.blend) {
+        style.mixBlendMode = layer.blend;
+      }
+      if (layer.background) {
+        style.background = layer.background;
+      }
       const image = gradient(side, start, end, layer.alpha);
       style.setProperty("mask-image", image);
       style.setProperty("-webkit-mask-image", image);
@@ -219,14 +240,18 @@ export function progressiveBlur(
   }
 
   const onScheme = () => {
-    if ((options.scheme ?? "auto") === "auto") render();
+    if ((options.scheme ?? "auto") === "auto") {
+      render();
+    }
   };
   dark.addEventListener("change", onScheme);
   render();
 
   return () => {
     dark.removeEventListener("change", onScheme);
-    for (const node of nodes) node.remove();
+    for (const node of nodes) {
+      node.remove();
+    }
     nodes = [];
   };
 }

@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { app, dialog, type OpenDialogOptions } from "electron";
+import { app, dialog } from "electron";
+import type { OpenDialogOptions } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_LIBRARY_NAME } from "../shared/constants";
 import type { MissingLibraryChoice } from "../shared/missing-library-contracts";
@@ -38,10 +39,14 @@ const UNUSABLE_LIBRARY: OpenProblem = {
 
 function checkLibrary(path: string): OpenProblem | null {
   try {
-    if (readLibraryId(path) === null) return UNUSABLE_LIBRARY;
-  } catch (cause) {
-    if (cause instanceof LibraryMetadataError) return metadataProblem(cause);
-    log.warn("[pond library-recovery] Library check failed", cause);
+    if (readLibraryId(path) === null) {
+      return UNUSABLE_LIBRARY;
+    }
+  } catch (error) {
+    if (error instanceof LibraryMetadataError) {
+      return metadataProblem(error);
+    }
+    log.warn("[pond library-recovery] Library check failed", error);
     return UNUSABLE_LIBRARY;
   }
   return checkPointerSafety(path).ok ? null : UNUSABLE_LIBRARY;
@@ -110,7 +115,9 @@ export async function recoverMissingLibrary(
   ports: MissingLibraryPorts = windowMissingLibraryPorts(missing),
 ): Promise<boolean> {
   const recovered = await recoverMissingLibraryLoop(missing, ports);
-  if (recovered) ports.settle?.();
+  if (recovered) {
+    ports.settle?.();
+  }
   return recovered;
 }
 
@@ -122,20 +129,28 @@ async function recoverMissingLibraryLoop(
     "If you moved it, locate it. If it's on a drive or in iCloud, wait until it's available, then try again.";
   for (;;) {
     const choice = await ports.ask(detail);
-    if (choice === "quit") return false;
+    if (choice === "quit") {
+      return false;
+    }
     if (choice === "retry") {
-      if (existsSync(missing)) return true;
+      if (existsSync(missing)) {
+        return true;
+      }
       detail =
         "It's still missing. Connect the drive it's on and try again, or locate it.";
       continue;
     }
     if (choice === "new") {
-      if (ports.create()) return true;
+      if (ports.create()) {
+        return true;
+      }
       detail = "Couldn't create a new Library. Locate an existing one instead.";
       continue;
     }
     const path = await ports.pick();
-    if (!path) continue;
+    if (!path) {
+      continue;
+    }
     const located = normalizeLibraryPath(path);
     const problem = ports.check(located);
     if (problem) {
@@ -172,7 +187,9 @@ export async function recoverUnreadableLibrary(
       properties: ["openFile", "openDirectory"],
     });
     const path = picked.filePaths[0];
-    if (picked.canceled || !path) continue;
+    if (picked.canceled || !path) {
+      continue;
+    }
     const next = checkLibrary(path);
     if (next) {
       problem = next;

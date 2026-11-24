@@ -8,7 +8,7 @@ export function usePlayer(clip: Clip, drag: ReturnType<typeof useRangeDrag>) {
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
-  const playable = clip.probe.preview != null && !failed;
+  const playable = clip.probe.preview !== null && !failed;
   const { range, duration } = clip;
   const edge =
     drag.active === "end"
@@ -19,13 +19,17 @@ export function usePlayer(clip: Clip, drag: ReturnType<typeof useRangeDrag>) {
 
   const seek = (next: number) => {
     const clamped = Math.min(duration, Math.max(0, next));
-    if (video.current) video.current.currentTime = clamped;
+    if (video.current) {
+      video.current.currentTime = clamped;
+    }
     setTime(clamped);
   };
 
   useEffect(() => {
     const element = video.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     if (!playing) {
       element.pause();
       return;
@@ -36,7 +40,9 @@ export function usePlayer(clip: Clip, drag: ReturnType<typeof useRangeDrag>) {
     void element.play().catch(() => setPlaying(false));
     let frame = 0;
     const tick = () => {
-      if (element.currentTime >= range.end) element.currentTime = range.start;
+      if (element.currentTime >= range.end) {
+        element.currentTime = range.start;
+      }
       setTime(element.currentTime);
       frame = requestAnimationFrame(tick);
     };
@@ -44,10 +50,21 @@ export function usePlayer(clip: Clip, drag: ReturnType<typeof useRangeDrag>) {
     return () => cancelAnimationFrame(frame);
   }, [playing, range.start, range.end]);
 
+  const [followedEdge, setFollowedEdge] = useState<number | null>(null);
+  if (edge !== followedEdge) {
+    setFollowedEdge(edge);
+    if (edge !== null) {
+      setTime(edge);
+    }
+  }
+
   useEffect(() => {
-    if (edge == null) return;
-    if (video.current) video.current.currentTime = edge;
-    setTime(edge);
+    if (edge === null) {
+      return;
+    }
+    if (video.current) {
+      video.current.currentTime = edge;
+    }
   }, [edge]);
 
   return {
@@ -56,7 +73,9 @@ export function usePlayer(clip: Clip, drag: ReturnType<typeof useRangeDrag>) {
     playing,
     playable,
     toggle: () => {
-      if (playable) setPlaying((current) => !current);
+      if (playable) {
+        setPlaying((current) => !current);
+      }
     },
     seek,
     fail: () => {

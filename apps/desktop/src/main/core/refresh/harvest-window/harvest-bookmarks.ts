@@ -5,9 +5,6 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import {
-  type BookmarksEntry,
-  type BookmarksHarvestArgs,
-  type BookmarksHarvestResult,
   buildBookmarkFolderApiExpression,
   buildBookmarksApiExpression,
   buildBookmarksExpression,
@@ -15,6 +12,11 @@ import {
   buildOpenBookmarkFolderExpression,
   parseBookmarksResponses,
   TWITTER_BOOKMARKS_URL,
+} from "../harvest/twitter";
+import type {
+  BookmarksEntry,
+  BookmarksHarvestArgs,
+  BookmarksHarvestResult,
 } from "../harvest/twitter";
 import { NAV_TIMEOUT_MS } from "./constants";
 import {
@@ -172,7 +174,9 @@ export async function harvestTwitterLikes(
   },
 ): Promise<BookmarksHarvestResult> {
   const handle = opts.handle.replace(/^@/, "").trim();
-  if (!handle) return { ok: false, reason: "no_match" };
+  if (!handle) {
+    return { ok: false, reason: "no_match" };
+  }
   return harvestTwitterTimeline(
     `https://x.com/${encodeURIComponent(handle)}/likes`,
     "likes",
@@ -197,7 +201,9 @@ async function harvestTwitterTimeline(
   const lease = await leaseWindow("twitter", { partition: opts.partition });
   try {
     const navOk = await navigateWithTimeout(lease.win, listUrl, NAV_TIMEOUT_MS);
-    if (!navOk) return { ok: false, reason: "timeout" };
+    if (!navOk) {
+      return { ok: false, reason: "timeout" };
+    }
     const bookmarksUrl = lease.win.webContents.getURL();
     const bookmarksChallenge = looksLikeChallenge(bookmarksUrl);
     if (bookmarksChallenge) {
@@ -212,7 +218,7 @@ async function harvestTwitterTimeline(
       return { ok: false, reason: "auth_required" };
     }
     if (opts.openView) {
-      const opened = await lease.win.webContents.executeJavaScript(
+      const opened: unknown = await lease.win.webContents.executeJavaScript(
         opts.openView,
         true,
       );
@@ -226,7 +232,9 @@ async function harvestTwitterTimeline(
     let lastPhase: BookmarksHarvestProgress["phase"] | null = null;
     let stopPolling = false;
     const pollInterval = setInterval(() => {
-      if (stopPolling) return;
+      if (stopPolling) {
+        return;
+      }
       if (lease.win.isDestroyed()) {
         clearInterval(pollInterval);
         return;
@@ -238,9 +246,13 @@ async function harvestTwitterTimeline(
         )
         .then((raw) => {
           const stats = readStats(TextSchema.parse(raw));
-          if (!stats || stats.phase === "done") return;
+          if (!stats || stats.phase === "done") {
+            return;
+          }
           const moved = stats.seen !== lastSeen || stats.phase !== lastPhase;
-          if (!moved) return;
+          if (!moved) {
+            return;
+          }
           lastSeen = stats.seen;
           lastPhase = stats.phase;
           opts.onProgress?.({
@@ -309,7 +321,9 @@ async function harvestTwitterTimeline(
         if (!scroll) {
           return { ok: false, reason: "no_match" };
         }
-        if (!scroll.ok) return scroll;
+        if (!scroll.ok) {
+          return scroll;
+        }
         result = {
           ok: true,
           entries: scroll.entries.flatMap((e) => (e ? [e] : [])),
@@ -324,9 +338,11 @@ async function harvestTwitterTimeline(
 
     const rich = parseBookmarksResponses(result.captures);
     const seenTweetIds = new Set<string>();
-    const merged: BookmarksEntry[] = [];
+    const merged: Array<BookmarksEntry> = [];
     for (const entry of result.entries) {
-      if (seenTweetIds.has(entry.tweetId)) continue;
+      if (seenTweetIds.has(entry.tweetId)) {
+        continue;
+      }
       seenTweetIds.add(entry.tweetId);
       const r = rich.get(entry.tweetId);
       if (!r) {
@@ -351,7 +367,9 @@ async function harvestTwitterTimeline(
       });
     }
     for (const [tweetId, r] of rich) {
-      if (seenTweetIds.has(tweetId)) continue;
+      if (seenTweetIds.has(tweetId)) {
+        continue;
+      }
       seenTweetIds.add(tweetId);
       const firstLine = r.fullText.split(/\n+/)[0]?.trim() ?? "";
       const richTitle =
@@ -362,12 +380,24 @@ async function harvestTwitterTimeline(
             : `${firstLine.slice(0, 89).trimEnd()}…`;
       const richMediaUrls = r.media.length > 0 ? r.media : undefined;
       const entry: BookmarksEntry = { tweetId, url: r.url, rich: r };
-      if (r.bookmarkedAt) entry.bookmarkedAt = r.bookmarkedAt;
-      if (richTitle) entry.title = richTitle;
-      if (r.fullText) entry.description = r.fullText;
-      if (r.author.handle) entry.author = `@${r.author.handle}`;
-      if (richMediaUrls) entry.mediaUrls = richMediaUrls;
-      if (r.media[0]?.url) entry.mediaUrl = r.media[0].url;
+      if (r.bookmarkedAt) {
+        entry.bookmarkedAt = r.bookmarkedAt;
+      }
+      if (richTitle) {
+        entry.title = richTitle;
+      }
+      if (r.fullText) {
+        entry.description = r.fullText;
+      }
+      if (r.author.handle) {
+        entry.author = `@${r.author.handle}`;
+      }
+      if (richMediaUrls) {
+        entry.mediaUrls = richMediaUrls;
+      }
+      if (r.media[0]?.url) {
+        entry.mediaUrl = r.media[0].url;
+      }
       merged.push(entry);
     }
     log.info(
@@ -379,8 +409,8 @@ async function harvestTwitterTimeline(
       captures: result.captures,
       reachedEnd: result.reachedEnd,
     };
-  } catch (err) {
-    log.warn(`[pond ${logTag}] unexpected error`, err);
+  } catch (error) {
+    log.warn(`[pond ${logTag}] unexpected error`, error);
     return { ok: false, reason: "timeout" };
   } finally {
     lease.release();

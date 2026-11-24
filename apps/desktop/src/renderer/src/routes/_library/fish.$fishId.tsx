@@ -21,7 +21,9 @@ function FishPage() {
 
   /** Opening the newest run's chat marks it seen, so a later visit starts where you left off. */
   useEffect(() => {
-    if (unseenAt === null || !unseenChat) return;
+    if (unseenAt === null || !unseenChat) {
+      return;
+    }
     void assistant.openChat(unseenChat);
     void fishStore.markSeen(fishId).catch(() => undefined);
   }, [fishId, unseenChat, unseenAt]);

@@ -1,23 +1,20 @@
-import {
-  type RefObject,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 import {
   containImage,
   viewToImagePoint,
 } from "@/features/saves/lib/image-regions";
 import {
   FIT_POSE,
-  type ImagePose,
   poseToActual,
-  type ViewerWheelBehavior,
   viewerMemory,
   viewerWheelIntent,
   wheelZoomFactor,
   zoomImageAt,
+} from "@/features/saves/lib/viewer-memory";
+import type {
+  ImagePose,
+  ViewerWheelBehavior,
 } from "@/features/saves/lib/viewer-memory";
 import type { InspectorMode } from "./types";
 
@@ -62,7 +59,9 @@ export function actualScale(input: {
   naturalWidth: number;
   fittedWidth: number;
 }): number {
-  if (input.naturalWidth <= 0 || input.fittedWidth <= 0) return 1;
+  if (input.naturalWidth <= 0 || input.fittedWidth <= 0) {
+    return 1;
+  }
   return input.naturalWidth / input.fittedWidth;
 }
 
@@ -80,7 +79,9 @@ export function useImageViewport({
   staticAtFit,
   wheelBehavior,
 }: ImageViewportOptions): ImageViewport {
-  const [pose, setPose] = useState<ImagePose>(() => viewerMemory.image(src));
+  const [pose, setPose] = useState<ImagePose>(() =>
+    rememberPosition ? viewerMemory.image(src) : FIT_POSE,
+  );
   const [live, setLive] = useState(false);
   const [ratio, setRatio] = useState(initialRatio);
   const [decoded, setDecoded] = useState({ src, width: 0 });
@@ -89,7 +90,6 @@ export function useImageViewport({
   const image = useRef<HTMLImageElement>(null);
   const latestPose = useRef(pose);
   const poseFrame = useRef(0);
-  const defaultAppliedFor = useRef<string | null>(null);
   const bounds = containImage({ left: 0, top: 0, ...size }, ratio);
   const hasDecodedImage = decoded.src === src && decoded.width > 0;
   const renderedNaturalWidth =
@@ -101,6 +101,30 @@ export function useImageViewport({
           fittedWidth: bounds.width,
         })
       : null;
+
+  const [rememberedPosition, setRememberedPosition] =
+    useState(rememberPosition);
+  if (rememberedPosition !== rememberPosition) {
+    setRememberedPosition(rememberPosition);
+    if (!rememberPosition) {
+      setPose(FIT_POSE);
+    }
+  }
+  const [defaultPose, setDefaultPose] = useState<{
+    src: string;
+    pose: ImagePose;
+  } | null>(null);
+  if (
+    defaultPose?.src !== src &&
+    defaultSize === "actual" &&
+    !(rememberPosition && viewerMemory.hasImage(src)) &&
+    hasDecodedImage &&
+    oneToOne
+  ) {
+    const next = { zoom: Math.min(32, oneToOne), x: 0, y: 0 };
+    setDefaultPose({ src, pose: next });
+    setPose(next);
+  }
 
   const setPosition = (
     update: (previous: ImagePose) => ImagePose,
@@ -115,18 +139,11 @@ export function useImageViewport({
     setLive(nextLive);
     setPose(next);
   };
-  const queuePose = (update: (previous: ImagePose) => ImagePose) => {
-    latestPose.current = update(latestPose.current);
-    if (poseFrame.current) return;
-    poseFrame.current = requestAnimationFrame(() => {
-      poseFrame.current = 0;
-      setLive(true);
-      setPose(latestPose.current);
-    });
-  };
 
   useEffect(() => {
-    if (!rememberPosition) return;
+    if (!rememberPosition) {
+      return;
+    }
     const timer = window.setTimeout(
       () => viewerMemory.setImage(src, pose),
       150,
@@ -135,32 +152,28 @@ export function useImageViewport({
   }, [pose, rememberPosition, src]);
   useEffect(
     () => () => {
-      if (rememberPosition) viewerMemory.setImage(src, latestPose.current);
+      if (rememberPosition) {
+        viewerMemory.setImage(src, latestPose.current);
+      }
     },
     [rememberPosition, src],
   );
-  useEffect(() => {
-    if (rememberPosition) return;
-    latestPose.current = FIT_POSE;
-    setPose(FIT_POSE);
+  useLayoutEffect(() => {
+    if (!rememberPosition) {
+      latestPose.current = FIT_POSE;
+    }
   }, [rememberPosition]);
-  useEffect(() => {
-    if (
-      defaultAppliedFor.current === src ||
-      defaultSize !== "actual" ||
-      (rememberPosition && viewerMemory.hasImage(src))
-    )
-      return;
-    if (!(hasDecodedImage && oneToOne)) return;
-    defaultAppliedFor.current = src;
-    const next = { zoom: Math.min(32, oneToOne), x: 0, y: 0 };
-    latestPose.current = next;
-    setPose(next);
-  }, [defaultSize, hasDecodedImage, oneToOne, rememberPosition, src]);
+  useLayoutEffect(() => {
+    if (defaultPose) {
+      latestPose.current = defaultPose.pose;
+    }
+  }, [defaultPose]);
   /** Fitted bounds must exist before first paint so the open transition lands on the image, not the whole stage. */
   useLayoutEffect(() => {
     const element = frame.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
     const measure = () => {
       const width = element.clientWidth;
       const height = element.clientHeight;
@@ -171,7 +184,9 @@ export function useImageViewport({
       );
     };
     measure();
-    if (!globalThis.ResizeObserver) return;
+    if (!globalThis.ResizeObserver) {
+      return;
+    }
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
@@ -185,20 +200,33 @@ export function useImageViewport({
     staticAtFit,
     wheelBehavior,
   });
-  wheelState.current = {
-    active,
-    isDragging,
-    mode,
-    onNavigate,
-    staticAtFit,
-    wheelBehavior,
-  };
-  const queuePoseRef = useRef(queuePose);
-  queuePoseRef.current = queuePose;
+  useLayoutEffect(() => {
+    wheelState.current = {
+      active,
+      isDragging,
+      mode,
+      onNavigate,
+      staticAtFit,
+      wheelBehavior,
+    };
+  }, [active, isDragging, mode, onNavigate, staticAtFit, wheelBehavior]);
 
   useEffect(() => {
     const element = frame.current;
-    if (!element) return;
+    if (!element) {
+      return;
+    }
+    const queuePose = (update: (previous: ImagePose) => ImagePose) => {
+      latestPose.current = update(latestPose.current);
+      if (poseFrame.current) {
+        return;
+      }
+      poseFrame.current = requestAnimationFrame(() => {
+        poseFrame.current = 0;
+        setLive(true);
+        setPose(latestPose.current);
+      });
+    };
     const onWheel = (event: WheelEvent) => {
       const state = wheelState.current;
       if (!state.active || state.mode === "crop") {
@@ -216,13 +244,22 @@ export function useImageViewport({
       });
       event.preventDefault();
       event.stopPropagation();
-      if (intent === "pan" && state.staticAtFit && latestPose.current.zoom <= 1)
-        return;
-      if (intent === "navigate") {
-        if (state.mode === "view") state.onNavigate(event.deltaY > 0 ? 1 : -1);
+      if (
+        intent === "pan" &&
+        state.staticAtFit &&
+        latestPose.current.zoom <= 1
+      ) {
         return;
       }
-      if (intent !== "zoom" && state.isDragging()) return;
+      if (intent === "navigate") {
+        if (state.mode === "view") {
+          state.onNavigate(event.deltaY > 0 ? 1 : -1);
+        }
+        return;
+      }
+      if (intent !== "zoom" && state.isDragging()) {
+        return;
+      }
       const rect = element.getBoundingClientRect();
       if (intent === "zoom") {
         const factor = wheelZoomFactor(
@@ -230,7 +267,7 @@ export function useImageViewport({
           event.deltaMode,
           event.ctrlKey,
         );
-        queuePoseRef.current((previous) =>
+        queuePose((previous) =>
           zoomImageAt(previous, previous.zoom * factor, {
             x: event.clientX - rect.left - rect.width / 2,
             y: event.clientY - rect.top - rect.height / 2,
@@ -238,7 +275,7 @@ export function useImageViewport({
         );
         return;
       }
-      queuePoseRef.current((previous) => ({
+      queuePose((previous) => ({
         ...previous,
         x: previous.x - event.deltaX,
         y: previous.y - event.deltaY,
@@ -258,8 +295,12 @@ export function useImageViewport({
   }, []);
 
   const reportImage = (width: number, height: number) => {
-    if (!(Number.isFinite(width) && Number.isFinite(height))) return;
-    if (width <= 0 || height <= 0) return;
+    if (!(Number.isFinite(width) && Number.isFinite(height))) {
+      return;
+    }
+    if (width <= 0 || height <= 0) {
+      return;
+    }
     setDecoded((current) =>
       current.src === src && current.width === width ? current : { src, width },
     );

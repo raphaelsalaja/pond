@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, vi } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
@@ -26,6 +27,14 @@ export const IMAGE_INSPECTOR_SAVE: Save = {
   flipX: true,
   crop: { x: 0.1, y: 0.2, w: 0.5, h: 0.6 },
 };
+
+async function flushPose() {
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
 
 export function setupImageInspectorTest() {
   let host: HTMLDivElement;
@@ -56,7 +65,9 @@ export function setupImageInspectorTest() {
         candidate.textContent === label ||
         candidate.getAttribute("aria-label") === label,
     );
-    if (!found) throw new Error(`Missing button ${label}`);
+    if (!found) {
+      throw new Error(`Missing button ${label}`);
+    }
     return found;
   };
   const render = async (
@@ -80,7 +91,9 @@ export function setupImageInspectorTest() {
   };
   const prepareFrame = (): Element => {
     const frame = host.querySelector("[data-background]");
-    if (!frame) throw new Error("Missing image inspection frame");
+    if (!frame) {
+      throw new Error("Missing image inspection frame");
+    }
     vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(
       new DOMRect(0, 0, 400, 400),
     );
@@ -90,14 +103,6 @@ export function setupImageInspectorTest() {
     });
     return frame;
   };
-  const flushPose = async () => {
-    await act(async () => {
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve());
-      });
-    });
-  };
-
   return {
     button,
     flushPose,

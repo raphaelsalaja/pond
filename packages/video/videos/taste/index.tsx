@@ -62,7 +62,7 @@ function Composition({ t }: { t: number }) {
 export const video = defineVideo({
   title: "Pond: My taste, in every prompt",
   duration: DURATION,
-  poster: 10800,
+  poster: 10_800,
   media: MEDIA,
   Composition,
 });

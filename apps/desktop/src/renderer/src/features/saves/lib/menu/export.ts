@@ -14,7 +14,8 @@ import {
   IconTableDownload,
   IconVideo,
 } from "@pond/icons";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
   exportSelectionCsv,
@@ -41,7 +42,7 @@ function compressibleVideoCount(context: SaveMenuContext): number {
   ).length;
 }
 
-function confirmCompressVideos(ids: string[]): void {
+function confirmCompressVideos(ids: Array<string>): void {
   Dialog.confirm({
     title: "Compress Videos",
     description:
@@ -51,7 +52,7 @@ function confirmCompressVideos(ids: string[]): void {
   });
 }
 
-function compressVideos(ids: string[]): void {
+function compressVideos(ids: Array<string>): void {
   void window.pond
     .query("conversion.compressVideos", { ids, quality: "balanced" })
     .then((job) => {
@@ -71,7 +72,9 @@ function compressVideos(ids: string[]): void {
 
 async function pollVideoCompression(id: string): Promise<void> {
   const job = await window.pond.query("conversion.status", { id });
-  if (!job) return;
+  if (!job) {
+    return;
+  }
   if (job.status === "running") {
     notify({
       id: `video-compression-${id}`,
@@ -94,7 +97,7 @@ async function pollVideoCompression(id: string): Promise<void> {
 }
 
 function startWebpConvert(
-  ids: string[],
+  ids: Array<string>,
   fileIndex: number,
   format: "png" | "jpeg",
 ) {
@@ -154,7 +157,7 @@ function compressionCopy(
 }
 
 function compressImages(
-  ids: string[],
+  ids: Array<string>,
   fileIndex: number,
   mode: "lossless" | "quality" | "webp" | "upscale" | "remove-background",
 ): void {
@@ -183,7 +186,9 @@ async function pollCompression(
   copy: { done: string; failed: string },
 ): Promise<void> {
   const job = await window.pond.query("conversion.status", { id });
-  if (!job) return;
+  if (!job) {
+    return;
+  }
   if (job.status === "running") {
     setTimeout(() => void pollCompression(id, copy), 500);
     return;
@@ -209,7 +214,9 @@ async function pollCompression(
   });
 }
 
-export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
+export function buildExportItems(
+  context: SaveMenuContext,
+): Array<MenuItemSpec> {
   const { ids, hasFiles, fileIndex, isWebp } = context;
   return [
     {
@@ -322,16 +329,17 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
         void window.pond
           .query("saves.exportEaglePackage", { ids })
           .then((result) => {
-            if (!result.ok && result.reason !== "cancelled")
+            if (!result.ok && result.reason !== "cancelled") {
               notify({
                 id: "eagle-package-export",
                 title: result.error || "Couldn't export Eagle package.",
               });
-            else if (result.ok)
+            } else if (result.ok) {
               notify({
                 id: "eagle-package-export",
                 title: "Eagle package exported",
               });
+            }
           });
       },
     },
@@ -343,13 +351,14 @@ export function buildExportItems(context: SaveMenuContext): MenuItemSpec[] {
         void window.pond
           .query("saves.exportPackage", { ids })
           .then((result) => {
-            if (!result.ok && result.reason !== "cancelled")
+            if (!result.ok && result.reason !== "cancelled") {
               notify({
                 id: "package-export",
                 title: result.error || "Couldn't export package.",
               });
-            else if (result.ok)
+            } else if (result.ok) {
               notify({ id: "package-export", title: "Pond package exported" });
+            }
           });
       },
     },
@@ -373,7 +382,7 @@ const EXPORT_POPUP_IDS = new Set([
 
 export function buildExportPopupItems(
   context: SaveMenuContext,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return buildExportItems(context).filter(
     (item) =>
       item.type !== "separator" &&

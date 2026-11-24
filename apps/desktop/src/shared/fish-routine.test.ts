@@ -89,9 +89,11 @@ describe("isRoutineDue", () => {
   });
 });
 
+function at(day: number, hours: number, minutes = 0): number {
+  return new Date(2026, 9, day, hours, minutes).getTime();
+}
+
 describe("nextRun", () => {
-  const at = (day: number, hours: number, minutes = 0) =>
-    new Date(2026, 9, day, hours, minutes).getTime();
   const weekdays: FishWhen = {
     kind: "daily",
     time: "09:00",

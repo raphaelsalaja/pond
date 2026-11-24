@@ -21,5 +21,7 @@ export function rememberGridLocation(
 ): void {
   const { save: _save, ...search } = location.search;
   lastHref = `${location.pathname}${stringifySearch(search)}`;
-  if (!inbox) lastOutsideInbox = lastHref;
+  if (!inbox) {
+    lastOutsideInbox = lastHref;
+  }
 }

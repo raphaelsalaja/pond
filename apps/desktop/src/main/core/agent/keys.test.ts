@@ -21,7 +21,9 @@ describe("checkProviderKey", () => {
       { provider: "openai", key: "sk-bad", ...bases },
       async () => new Response(null, { status: 401 }),
     );
-    if (result.ok) throw new Error("Expected a failure.");
+    if (result.ok) {
+      throw new Error("Expected a failure.");
+    }
     expect(result.error).toMatch(/OpenAI rejected this key/);
   });
 
@@ -45,7 +47,9 @@ describe("checkProviderKey", () => {
         { provider: "openai", key: "sk-test", ...bases },
         async () => new Response(null, { status }),
       );
-      if (result.ok) throw new Error("Expected a failure.");
+      if (result.ok) {
+        throw new Error("Expected a failure.");
+      }
       expect(result.error).toContain(`HTTP ${status}`);
       expect(result.error).not.toContain("rejected");
     },
@@ -258,7 +262,7 @@ describe("complete model discovery", () => {
   it.each(["gemini", "anthropic"] as const)(
     "collects every %s page",
     async (provider) => {
-      const urls: string[] = [];
+      const urls: Array<string> = [];
       const result = await fetchProviderModels(
         { provider, key: "test-key", ...bases },
         async (url) => {

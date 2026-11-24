@@ -29,9 +29,14 @@ function Viewport({ className, ...props }: Base.Viewport.Props) {
   );
 }
 
+function hasProgressField(data: unknown): data is { progress: unknown } {
+  return typeof data === "object" && data !== null && "progress" in data;
+}
+
 function Root({ className, toast, ...props }: Base.Root.Props) {
   const updateKey = toast.updateKey ?? 0;
-  const hasProgress = Boolean(toast.data?.progress);
+  const data: unknown = toast.data;
+  const hasProgress = hasProgressField(data) && Boolean(data.progress);
   const pulse = updateKey > 0 && !hasProgress;
   return (
     <Base.Root

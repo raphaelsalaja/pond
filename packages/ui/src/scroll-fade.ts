@@ -3,6 +3,8 @@
  * @remarks Scroll-driven CSS animations never finish, so they tick every frame and stall Base UI popups that wait on them.
  */
 
+import { isElement, isHTMLElement } from "./dom";
+
 const DEFAULT_SIZE = 24;
 
 interface FadeSizes {
@@ -17,13 +19,15 @@ const observers = new WeakMap<HTMLElement, ResizeObserver>();
 
 function readSize(el: HTMLElement, name: string): number {
   const raw = getComputedStyle(el).getPropertyValue(name);
-  const value = raw ? parseFloat(raw) : Number.NaN;
+  const value = raw ? Number.parseFloat(raw) : Number.NaN;
   return Number.isFinite(value) ? value : DEFAULT_SIZE;
 }
 
 function refresh(el: HTMLElement): void {
   const entry = sizes.get(el);
-  if (!entry) return;
+  if (!entry) {
+    return;
+  }
   const horizontal = el.dataset.scrollFade === "horizontal";
   const pos = horizontal ? el.scrollLeft : el.scrollTop;
   const max = Math.max(
@@ -50,16 +54,22 @@ function refresh(el: HTMLElement): void {
 }
 
 function schedule(el: HTMLElement): void {
-  if (pending.has(el)) return;
+  if (pending.has(el)) {
+    return;
+  }
   pending.add(el);
   requestAnimationFrame(() => {
     pending.delete(el);
-    if (wired.has(el)) refresh(el);
+    if (wired.has(el)) {
+      refresh(el);
+    }
   });
 }
 
 function wire(el: HTMLElement): void {
-  if (wired.has(el)) return;
+  if (wired.has(el)) {
+    return;
+  }
   wired.add(el);
   sizes.set(el, {
     start: readSize(el, "--scroll-fade-start-size"),
@@ -82,10 +92,11 @@ function wireSubtree(root: ParentNode): void {
 
 /** Content changes resize a scroller's extent without firing a scroll or resize event. */
 function scrollerOf(node: Node): HTMLElement | null {
-  /** SAFETY: nodeType === 1 (Node.ELEMENT_NODE) means node is an element. */
-  let el = node.nodeType === 1 ? (node as HTMLElement) : node.parentElement;
+  let el = isHTMLElement(node) ? node : node.parentElement;
   while (el) {
-    if (el.hasAttribute("data-scroll-fade")) return el;
+    if (el.hasAttribute("data-scroll-fade")) {
+      return el;
+    }
     el = el.parentElement;
   }
   return null;
@@ -94,28 +105,34 @@ function scrollerOf(node: Node): HTMLElement | null {
 let started = false;
 
 export function initScrollFade(root?: ParentNode): void {
-  if (started || !("document" in globalThis)) return;
+  if (started || !("document" in globalThis)) {
+    return;
+  }
   started = true;
 
   const scope = root ?? document;
   wireSubtree(scope);
-  if (!("MutationObserver" in globalThis)) return;
+  if (!("MutationObserver" in globalThis)) {
+    return;
+  }
 
   const mutations = new MutationObserver((records) => {
     for (const record of records) {
       for (const node of record.addedNodes) {
-        if (node.nodeType !== 1) continue;
-        /** SAFETY: guarded above: node.nodeType === 1. */
-        const el = node as HTMLElement;
-        if (el.hasAttribute?.("data-scroll-fade")) {
-          wire(el);
+        if (!isElement(node)) {
           continue;
         }
-        wireSubtree(el);
+        if (isHTMLElement(node) && node.hasAttribute?.("data-scroll-fade")) {
+          wire(node);
+          continue;
+        }
+        wireSubtree(node);
       }
       for (const node of [...record.addedNodes, ...record.removedNodes]) {
         const scroller = scrollerOf(node);
-        if (scroller) schedule(scroller);
+        if (scroller) {
+          schedule(scroller);
+        }
       }
     }
   });

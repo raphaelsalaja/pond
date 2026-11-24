@@ -31,5 +31,5 @@ export function defaultGlobalKeys(id: GlobalShortcutId): string | undefined {
 
 export interface GlobalShortcutStatus {
   enabled: boolean;
-  errors: string[];
+  errors: Array<string>;
 }

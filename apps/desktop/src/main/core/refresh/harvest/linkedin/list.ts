@@ -5,7 +5,8 @@ import type {
   ListHarvestArgs,
   ListHarvestResult,
 } from "../list-types";
-import { inPageLinkedInNormalize, type VoyagerClusterReply } from "./normalize";
+import { inPageLinkedInNormalize } from "./normalize";
+import type { VoyagerClusterReply } from "./normalize";
 
 declare global {
   var __pondHarvestAbort: boolean | undefined;
@@ -77,12 +78,18 @@ async function inPageLinkedInSavedPosts(
 
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   let fresh = 0;
 
   function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  function isClusterReply(value: unknown): value is VoyagerClusterReply {
+    return Object(value) === value;
   }
 
   function pause(): Promise<void> {
@@ -99,10 +106,12 @@ async function inPageLinkedInSavedPosts(
     Object.assign(globalThis, { __pondHarvestStats: stats });
   }
 
-  function ingest(rows: ListEntry[]): number {
+  function ingest(rows: Array<ListEntry>): number {
     let added = 0;
     for (const entry of rows) {
-      if (seen.has(entry.sourceId)) continue;
+      if (seen.has(entry.sourceId)) {
+        continue;
+      }
       seen.add(entry.sourceId);
       if (!known.has(entry.sourceId)) {
         fresh += 1;
@@ -140,7 +149,9 @@ async function inPageLinkedInSavedPosts(
 
   /** Only a walk from the first save that read posts may drop missing ones from Saved. */
   function finished(first: number): ListHarvestResult {
-    if (first > 0 || entries.length === 0) return stopped(true);
+    if (first > 0 || entries.length === 0) {
+      return stopped(true);
+    }
     return {
       ok: true,
       entries,
@@ -157,7 +168,9 @@ async function inPageLinkedInSavedPosts(
       .map((entry) => entry.name);
     for (const code of Array.from(document.querySelectorAll("code"))) {
       const match = /"request":"([^"]+)"/.exec(code.textContent ?? "");
-      if (match?.[1]) urls.push(match[1].replace(/\\u0026|&amp;/g, "&"));
+      if (match?.[1]) {
+        urls.push(match[1].replaceAll(/\\u0026|&amp;/g, "&"));
+      }
     }
     for (const url of urls) {
       if (url.includes("/voyager/api/graphql") && url.includes(SAVED_QUERY)) {
@@ -205,10 +218,14 @@ async function inPageLinkedInSavedPosts(
         retryAfterSec: retryAfter > 0 ? retryAfter : null,
       };
     }
-    if (!res.ok) return { kind: "failed" };
+    if (!res.ok) {
+      return { kind: "failed" };
+    }
     try {
-      const reply: VoyagerClusterReply = await res.json();
-      return { kind: "page", reply };
+      const reply: unknown = await res.json();
+      return isClusterReply(reply)
+        ? { kind: "page", reply }
+        : { kind: "failed" };
     } catch {
       return { kind: "failed" };
     }
@@ -227,12 +244,16 @@ async function inPageLinkedInSavedPosts(
         return unfinished(start);
       }
       const fetched = await fetchPage(query, start);
-      if (fetched.kind === "checkpoint") return checkpoint();
+      if (fetched.kind === "checkpoint") {
+        return checkpoint();
+      }
       if (fetched.kind === "auth") {
         return { ok: false, reason: "auth_required" };
       }
       if (fetched.kind === "rate_limited") {
-        if (page > 0) return unfinished(start);
+        if (page > 0) {
+          return unfinished(start);
+        }
         return fetched.retryAfterSec === null
           ? { ok: false, reason: "rate_limited" }
           : {
@@ -245,16 +266,24 @@ async function inPageLinkedInSavedPosts(
         return page > 0 ? unfinished(start) : null;
       }
       const { entries: rows, count, total } = norm.clusterPage(fetched.reply);
-      if (page === 0 && rows.length === 0) return null;
-      if (count === 0) return finished(first);
+      if (page === 0 && rows.length === 0) {
+        return null;
+      }
+      if (count === 0) {
+        return finished(first);
+      }
       start += count;
       globalThis.__pondHarvestCursor = String(start);
       const added = ingest(rows);
       report("page", start);
-      if (total !== undefined && start >= total) return finished(first);
+      if (total !== undefined && start >= total) {
+        return finished(first);
+      }
       if (earlyStop && added === 0) {
         knownStreak += 1;
-        if (knownStreak >= 2) return stopped(true);
+        if (knownStreak >= 2) {
+          return stopped(true);
+        }
       } else {
         knownStreak = 0;
       }
@@ -277,8 +306,12 @@ async function inPageLinkedInSavedPosts(
   async function walkRendered(): Promise<ListHarvestResult> {
     globalThis.__pondHarvestCursor = null;
     for (let attempt = 0; attempt < args.discoverTries; attempt++) {
-      if (document.querySelector(RESULT)) break;
-      if (CHECKPOINT.test(location.pathname)) return checkpoint();
+      if (document.querySelector(RESULT)) {
+        break;
+      }
+      if (CHECKPOINT.test(location.pathname)) {
+        return checkpoint();
+      }
       await sleep(500);
     }
     let knownStreak = 0;
@@ -288,24 +321,32 @@ async function inPageLinkedInSavedPosts(
         report("aborted", entries.length);
         return stopped(false);
       }
-      if (CHECKPOINT.test(location.pathname)) return checkpoint();
+      if (CHECKPOINT.test(location.pathname)) {
+        return checkpoint();
+      }
       const before = entries.length;
       const added = ingest(norm.renderedEntries(document));
       report("rendered", entries.length);
       if (entries.length === before) {
         stalls += 1;
-        if (stalls >= 2) return stopped(true);
+        if (stalls >= 2) {
+          return stopped(true);
+        }
       } else {
         stalls = 0;
       }
       if (earlyStop && entries.length > before && added === 0) {
         knownStreak += 1;
-        if (knownStreak >= 2) return stopped(true);
+        if (knownStreak >= 2) {
+          return stopped(true);
+        }
       } else if (added > 0) {
         knownStreak = 0;
       }
       const more = showMore();
-      if (!more) return stopped(true);
+      if (!more) {
+        return stopped(true);
+      }
       more.click();
       await pause();
     }
@@ -314,14 +355,20 @@ async function inPageLinkedInSavedPosts(
 
   let query: string | null = null;
   for (let attempt = 0; attempt < args.discoverTries; attempt++) {
-    if (CHECKPOINT.test(location.pathname)) return checkpoint();
+    if (CHECKPOINT.test(location.pathname)) {
+      return checkpoint();
+    }
     query = findSavedQuery();
-    if (query) break;
+    if (query) {
+      break;
+    }
     await sleep(500);
   }
   if (query) {
     const result = await walkQuery(query);
-    if (result) return result;
+    if (result) {
+      return result;
+    }
   }
   return walkRendered();
 }

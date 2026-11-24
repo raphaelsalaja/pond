@@ -9,7 +9,9 @@ const USER_AGENT =
 function feedUrl(handle: string, kind?: WatchKind): string | null {
   if (kind === "board" || handle.includes("/")) {
     const [user, board] = handle.split("/", 2);
-    if (!user || !board) return null;
+    if (!user || !board) {
+      return null;
+    }
     return `https://www.pinterest.com/${encodeURIComponent(user)}/${encodeURIComponent(board)}.rss`;
   }
   return `https://www.pinterest.com/${encodeURIComponent(handle)}/feed.rss`;
@@ -22,7 +24,9 @@ export async function listPinterestWatch(
   fetchPage: FetchWatchPage = fetch,
 ): Promise<WatchHarvestResult> {
   const url = feedUrl(handle, kind);
-  if (!url) return { ok: false, reason: "unknown" };
+  if (!url) {
+    return { ok: false, reason: "unknown" };
+  }
   const feed = await readFeed(
     url,
     (address, init) => {
@@ -32,7 +36,9 @@ export async function listPinterestWatch(
     },
     signal,
   );
-  if (!feed.ok) return feed;
+  if (!feed.ok) {
+    return feed;
+  }
   return {
     ok: true,
     entries: feed.entries.filter((entry) => entry.source === "pinterest"),

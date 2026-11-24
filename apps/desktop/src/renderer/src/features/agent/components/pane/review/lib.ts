@@ -9,27 +9,25 @@ export interface ChipChange {
 }
 
 export function chipDiff(
-  before: readonly string[],
-  after: readonly string[],
-): ChipChange[] {
+  before: ReadonlyArray<string>,
+  after: ReadonlyArray<string>,
+): Array<ChipChange> {
   return [
-    ...after.map(
-      (value): ChipChange => ({
-        value,
-        tone: before.includes(value) ? "tag" : "added",
-      }),
+    ...after.map((value): ChipChange => ({
+      value,
+      tone: before.includes(value) ? "tag" : "added",
+    })),
+    ...before.flatMap((value): Array<ChipChange> =>
+      after.includes(value) ? [] : [{ value, tone: "removed" }],
     ),
-    ...before
-      .filter((value) => !after.includes(value))
-      .map((value): ChipChange => ({ value, tone: "removed" })),
   ];
 }
 
 export function reviewTitle(title: string): string {
   return (
     title
-      .replace(/https?:\/\/\S+/gi, "")
-      .replace(/\s+/g, " ")
+      .replaceAll(/https?:\/\/\S+/gi, "")
+      .replaceAll(/\s+/g, " ")
       .trim() || "Untitled"
   );
 }
@@ -39,17 +37,20 @@ export interface SummaryPart {
   tone: "added" | "removed" | "neutral";
 }
 
+function neutral(text: string): Array<SummaryPart> {
+  return [{ text, tone: "neutral" }];
+}
+
 export function summaryParts(
   change: AssistantChange,
   folderName: (id: string) => string = String,
-): SummaryPart[] {
-  const neutral = (text: string): SummaryPart[] => [{ text, tone: "neutral" }];
+): Array<SummaryPart> {
   switch (change.field) {
     case "tags":
     case "folders": {
       const name = change.field === "folders" ? folderName : String;
       return chipDiff(change.before, change.after).flatMap(
-        (chip): SummaryPart[] =>
+        (chip): Array<SummaryPart> =>
           chip.tone === "tag"
             ? []
             : [
@@ -115,7 +116,7 @@ function summaryVerb(change: AssistantChange): string {
   }
 }
 
-export function reviewSummary(changes: readonly AssistantChange[]): string {
+export function reviewSummary(changes: ReadonlyArray<AssistantChange>): string {
   const groups = new Map<string, number>();
   for (const change of changes) {
     const verb = summaryVerb(change);
@@ -138,11 +139,13 @@ export interface ReviewOutcome {
 }
 
 export function reviewOutcome(
-  changes: readonly AssistantChange[],
+  changes: ReadonlyArray<AssistantChange>,
 ): ReviewOutcome {
   const tally = { applied: 0, dismissed: 0, undone: 0 };
   for (const change of changes) {
-    if (change.status !== "pending") tally[change.status] += 1;
+    if (change.status !== "pending") {
+      tally[change.status] += 1;
+    }
   }
   const parts = (
     [

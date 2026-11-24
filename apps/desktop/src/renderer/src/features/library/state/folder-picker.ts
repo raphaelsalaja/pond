@@ -2,7 +2,7 @@ import { Store } from "@tanstack/store";
 import type { FolderPickerMode } from "@/features/saves";
 
 export interface FolderPickerState {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   mode: FolderPickerMode;
 }
 
@@ -11,7 +11,7 @@ export const folderPickerStore = new Store<FolderPickerState>({
   mode: "all",
 });
 export function openFolderPicker(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   mode: FolderPickerMode = "all",
 ): void {
   folderPickerStore.setState(() => ({ ids: [...new Set(ids)], mode }));

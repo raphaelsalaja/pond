@@ -1,7 +1,7 @@
 import { IconFolderPlus, IconMagnifier, IconSliders } from "@pond/icons";
+import { Toolbar } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Toolbar } from ".";
 
 export const docs: ComponentDocs = {
   slug: "toolbar",

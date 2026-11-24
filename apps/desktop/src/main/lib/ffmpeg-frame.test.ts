@@ -10,7 +10,7 @@ import {
   sampleFrameTimestamps,
 } from "./ffmpeg-frame";
 
-function run(bin: string, args: string[]): Promise<void> {
+function run(bin: string, args: Array<string>): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(bin, args, { stdio: "ignore" });
     child.on("error", reject);
@@ -47,7 +47,9 @@ describe("video frame sampling", () => {
 
   it("cleans every extracted frame and fails closed", async () => {
     const ffmpeg = binariesAvailable().ffmpeg;
-    if (!ffmpeg) throw new Error("Expected the bundled ffmpeg");
+    if (!ffmpeg) {
+      throw new Error("Expected the bundled ffmpeg");
+    }
     const root = await mkdtemp(join(tmpdir(), "pond-frame-fixture-"));
     try {
       const video = join(root, "neutral.mp4");

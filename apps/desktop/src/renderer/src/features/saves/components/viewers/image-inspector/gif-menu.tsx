@@ -10,7 +10,7 @@ export function buildGifMenuItems({
   hasLoop: boolean;
   onResetLoop: () => void;
   onSetThumbnail: () => void;
-}): MenuItemSpec[] {
+}): Array<MenuItemSpec> {
   return [
     {
       label: "Set Current Frame as Thumbnail",

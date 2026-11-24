@@ -14,7 +14,7 @@ export interface EnumOption<T> {
 interface EnumSelectProps<T> {
   value: T;
   onValueChange: (value: T) => void;
-  options: readonly EnumOption<T>[];
+  options: ReadonlyArray<EnumOption<T>>;
   placeholder?: ReactNode;
   disabled?: boolean;
   className?: string;
@@ -26,12 +26,13 @@ interface EnumSelectProps<T> {
   "aria-describedby"?: string;
 }
 
-function longestStringLabel<T>(options: readonly EnumOption<T>[]): string {
+function longestStringLabel<T>(options: ReadonlyArray<EnumOption<T>>): string {
   let longest = "";
   for (const option of options) {
     const label = StringLabelSchema.safeParse(option.label);
-    if (label.success && label.data.length > longest.length)
+    if (label.success && label.data.length > longest.length) {
       longest = label.data;
+    }
   }
   return longest;
 }
@@ -59,9 +60,13 @@ export function EnumSelect<T>({
       value={value}
       disabled={disabled}
       onValueChange={(next) => {
-        if (next === null && !hasNullOption) return;
+        if (next === null && !hasNullOption) {
+          return;
+        }
         const match = options.find((option) => Object.is(option.value, next));
-        if (match) onValueChange(match.value);
+        if (match) {
+          onValueChange(match.value);
+        }
       }}
     >
       <Select.Trigger

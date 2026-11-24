@@ -1,11 +1,7 @@
 import { IconDots } from "@pond/icons";
 import { Button, Chip, Popover, Tooltip } from "@pond/ui";
-import {
-  FISH_COLORS,
-  FISH_SPECIES,
-  type FishColor,
-  type FishSummary,
-} from "@shared/fish-contracts";
+import { FISH_COLORS, FISH_SPECIES } from "@shared/fish-contracts";
+import type { FishColor, FishSummary } from "@shared/fish-contracts";
 import { useRef } from "react";
 import { updateFish } from "../../../lib/menu";
 import { FishMark, fishColorCss, fishMood, SPECIES_LABELS } from "../../mark";

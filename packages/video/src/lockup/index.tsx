@@ -21,8 +21,10 @@ export function Lockup({ t, enter }: { t: number; enter: number }) {
   const [width, setWidth] = useState(0);
   useLayoutEffect(() => {
     const measured = name.current?.offsetWidth ?? 0;
-    if (measured !== width) setWidth(measured);
-  });
+    if (measured !== width) {
+      setWidth(measured);
+    }
+  }, [t, enter, width]);
   const at = enter + HOLD;
   const p = progress(t, at, SLIDE);
   const slide = ease.inOut(p);

@@ -1,11 +1,13 @@
 import { IconDuplicate } from "@pond/icons";
 import { Button, Dialog, Empty, Loader } from "@pond/ui";
 import {
-  type DuplicateDismissal,
-  type DuplicatePair,
   describeDuplicateGroup,
   isMergeableRelation,
   relationRank,
+} from "@shared/duplicate-contracts";
+import type {
+  DuplicateDismissal,
+  DuplicatePair,
 } from "@shared/duplicate-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -17,7 +19,8 @@ import {
 import { pool, reloadSaves } from "@/features/saves/pool";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
-import { type DuplicateGroup, defaultKeeper, Group, groupKey } from "./group";
+import { defaultKeeper, Group, groupKey } from "./group";
+import type { DuplicateGroup } from "./group";
 import styles from "./styles.module.css";
 
 function isMergeable(group: DuplicateGroup) {
@@ -25,7 +28,7 @@ function isMergeable(group: DuplicateGroup) {
 }
 
 /** Saves that open the review come first, then the strongest relations. */
-function arrange(groups: DuplicateGroup[], saveId: string | null) {
+function arrange(groups: Array<DuplicateGroup>, saveId: string | null) {
   return [...groups].sort(
     (a, b) =>
       Number(Boolean(saveId && b.ids.includes(saveId))) -
@@ -35,9 +38,9 @@ function arrange(groups: DuplicateGroup[], saveId: string | null) {
 }
 
 function dismissalsFor(
-  groups: readonly DuplicateGroup[],
-  pairs: readonly DuplicatePair[],
-): DuplicateDismissal[] {
+  groups: ReadonlyArray<DuplicateGroup>,
+  pairs: ReadonlyArray<DuplicatePair>,
+): Array<DuplicateDismissal> {
   return groups.flatMap((group) =>
     group.pairs.flatMap((index) => {
       const pair = pairs[index];
@@ -66,10 +69,10 @@ export function DuplicateReview({
   ids,
 }: {
   saveId: string | null;
-  ids?: string[] | null;
+  ids?: Array<string> | null;
 }) {
-  const [groups, setGroups] = useState<DuplicateGroup[]>([]);
-  const [pairs, setPairs] = useState<DuplicatePair[]>([]);
+  const [groups, setGroups] = useState<Array<DuplicateGroup>>([]);
+  const [pairs, setPairs] = useState<Array<DuplicatePair>>([]);
   const [pending, setPending] = useState(0);
   const [loading, setLoading] = useState(true);
   const [merging, setMerging] = useState(false);
@@ -82,15 +85,19 @@ export function DuplicateReview({
     void window.pond
       .query("saves.findDuplicates", ids ? { ids } : {})
       .then((result) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setGroups(result.groups);
         setPairs(result.pairs);
         setPending(result.index.pending);
         setLoading(false);
       })
-      .catch((reason) => {
-        if (!active) return;
-        setError(errorCopy(reason, "Couldn't find duplicates. Try again."));
+      .catch((cause: unknown) => {
+        if (!active) {
+          return;
+        }
+        setError(errorCopy(cause, "Couldn't find duplicates. Try again."));
         setLoading(false);
       });
     return () => {
@@ -101,22 +108,36 @@ export function DuplicateReview({
   const shown = useMemo(() => arrange(groups, saveId), [groups, saveId]);
   const keeperOf = (group: DuplicateGroup) => {
     const key = groupKey(group);
-    if (picks[key]) return picks[key];
-    if (saveId && group.ids.includes(saveId)) return saveId;
+    if (picks[key]) {
+      return picks[key];
+    }
+    if (saveId && group.ids.includes(saveId)) {
+      return saveId;
+    }
     return undefined;
   };
   const trashing = new Set<string>();
   const plan = shown.flatMap((group) => {
     const key = groupKey(group);
-    if (!isMergeable(group) || skipped.has(key)) return [];
+    if (!isMergeable(group) || skipped.has(key)) {
+      return [];
+    }
     const keepId =
       keeperOf(group) ?? defaultKeeper(group.ids, (id) => pool.get(id));
-    if (trashing.has(keepId)) return [];
+    if (trashing.has(keepId)) {
+      return [];
+    }
     const selected = group.ids.filter(
       (id) => id === keepId || !trashing.has(id),
     );
-    if (selected.length < 2) return [];
-    for (const id of selected) if (id !== keepId) trashing.add(id);
+    if (selected.length < 2) {
+      return [];
+    }
+    for (const id of selected) {
+      if (id !== keepId) {
+        trashing.add(id);
+      }
+    }
     return [{ keepId, ids: selected }];
   });
   const hasMergeable = shown.some(isMergeable);
@@ -125,6 +146,7 @@ export function DuplicateReview({
   );
 
   const listRef = useRef<HTMLDivElement>(null);
+  // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual returns unstable methods by design; the compiler skips memoizing this component.
   const virtual = useVirtualizer({
     count: shown.length,
     getScrollElement: () => listRef.current,
@@ -133,17 +155,20 @@ export function DuplicateReview({
   });
 
   const merge = async () => {
-    if (merging || (plan.length === 0 && keptSeparate.length === 0)) return;
+    if (merging || (plan.length === 0 && keptSeparate.length === 0)) {
+      return;
+    }
     setMerging(true);
     setError(null);
-    const merged: { keepId: string; ids: string[] }[] = [];
+    const merged: Array<{ keepId: string; ids: Array<string> }> = [];
     try {
       if (keptSeparate.length > 0) {
         const result = await window.pond.query("saves.dismissDuplicates", {
           pairs: dismissalsFor(keptSeparate, pairs),
         });
-        if (!result.ok)
+        if (!result.ok) {
           throw Error(result.error ?? "Couldn't keep these saves separate.");
+        }
         const separate = new Set(keptSeparate.map(groupKey));
         setGroups((items) =>
           items.filter((item) => !separate.has(groupKey(item))),
@@ -151,12 +176,13 @@ export function DuplicateReview({
       }
       for (const item of plan) {
         const result = await window.pond.query("saves.mergeDuplicates", item);
-        if (!result.ok)
+        if (!result.ok) {
           throw Error(result.error ?? "Couldn't merge these saves. Try again.");
+        }
         merged.push(item);
       }
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't merge these saves."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't merge these saves."));
     }
     if (merged.length > 0) {
       const trashed = new Set(
@@ -185,7 +211,9 @@ export function DuplicateReview({
     <Dialog.Root
       open
       onOpenChange={(open) => {
-        if (!open && !merging) closeDuplicateReview();
+        if (!open && !merging) {
+          closeDuplicateReview();
+        }
       }}
     >
       <Dialog.Portal>
@@ -220,7 +248,9 @@ export function DuplicateReview({
               >
                 {virtual.getVirtualItems().map((row) => {
                   const group = shown[row.index];
-                  if (!group) return null;
+                  if (!group) {
+                    return null;
+                  }
                   const key = groupKey(group);
                   return (
                     <div
@@ -243,8 +273,11 @@ export function DuplicateReview({
                         onInclude={(include) =>
                           setSkipped((current) => {
                             const next = new Set(current);
-                            if (include) next.delete(key);
-                            else next.add(key);
+                            if (include) {
+                              next.delete(key);
+                            } else {
+                              next.add(key);
+                            }
                             return next;
                           })
                         }

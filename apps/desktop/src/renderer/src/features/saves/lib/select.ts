@@ -1,3 +1,4 @@
+import { isElement } from "@pond/ui/dom";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 
@@ -10,9 +11,11 @@ export function selectOnlySave(id: string): void {
 }
 
 /** Selects exactly `ids`, puts the cursor on the first, and scrolls the grid to it. */
-export function selectSaves(ids: readonly string[]): void {
+export function selectSaves(ids: ReadonlyArray<string>): void {
   const [first] = ids;
-  if (!first) return;
+  if (!first) {
+    return;
+  }
   selection.setPicking(false);
   selection.setCursor(first);
   selection.set(ids);
@@ -34,7 +37,9 @@ export function clearSaveSelection(): void {
 function dropDepartedSaves(gone: ReadonlySet<string>): void {
   selection.remove(gone);
   const primary = primarySelection.get();
-  if (primary === null || !gone.has(primary)) return;
+  if (primary === null || !gone.has(primary)) {
+    return;
+  }
   const anchor = selection.getAnchor();
   primarySelection.set(
     (anchor && selection.has(anchor) ? anchor : null) ??
@@ -45,7 +50,7 @@ function dropDepartedSaves(gone: ReadonlySet<string>): void {
 
 interface CollectionResults {
   key: string;
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   settled: boolean;
 }
 
@@ -56,13 +61,19 @@ export function createSelectionReconciler(): (
   let last: Omit<CollectionResults, "settled"> | null = null;
   return ({ key, ids, settled }) => {
     /** A refetch, or a new query still showing the previous page, must not read as Saves leaving. */
-    if (!settled) return;
+    if (!settled) {
+      return;
+    }
     const previous = last;
     last = { key, ids };
-    if (previous?.key !== key) return;
+    if (previous?.key !== key) {
+      return;
+    }
     const remaining = new Set(ids);
     const gone = new Set(previous.ids.filter((id) => !remaining.has(id)));
-    if (gone.size > 0) dropDepartedSaves(gone);
+    if (gone.size > 0) {
+      dropDepartedSaves(gone);
+    }
   };
 }
 
@@ -78,7 +89,9 @@ export function clickSave(
       rememberSave(id);
       return;
     }
-    if (primarySelection.get() !== id) return;
+    if (primarySelection.get() !== id) {
+      return;
+    }
     const anchor = selection.getAnchor();
     const fallback =
       (anchor && selection.has(anchor) ? anchor : null) ??
@@ -110,11 +123,17 @@ export function pickSave(
 }
 
 export function isLibraryBackgroundTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
-  if (target.closest("[data-save-id]")) return false;
-  if (target.closest("[role='dialog']")) return false;
+  if (!isElement(target)) {
+    return false;
+  }
+  if (target.closest("[data-save-id]")) {
+    return false;
+  }
+  if (target.closest("[role='dialog']")) {
+    return false;
+  }
   if (target.closest("button, a, input, textarea, [contenteditable='true']")) {
     return false;
   }
-  return target.closest("[data-library-grid]") != null;
+  return target.closest("[data-library-grid]") !== null;
 }

@@ -1,7 +1,10 @@
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
-import { type AnyRoute, RouterProvider } from "@tanstack/react-router";
+import { isHTMLElement, isHTMLTag } from "@pond/ui/dom";
+import { RouterProvider } from "@tanstack/react-router";
+import type { AnyRoute } from "@tanstack/react-router";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createLibraryTestRouter } from "@/app/test/library-router";
 import { getLibraryNav } from "@/features/library/state/library-chrome";
@@ -27,7 +30,7 @@ const fixtures = {
     lastUsedAt: null,
     usageCount: 0,
     createdAt: null,
-  })) satisfies TagRow[],
+  })) satisfies Array<TagRow>,
   groups: [
     {
       id: "design",
@@ -39,9 +42,19 @@ const fixtures = {
       tagIds: ["0"],
       tagNames: ["Animation"],
     },
-  ] satisfies TagGroupRow[],
+  ] satisfies Array<TagGroupRow>,
   saves: [],
 };
+
+async function fill(input: HTMLInputElement, value: string) {
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set?.call(input, value);
+    input.dispatchEvent(new InputEvent("input", { bubbles: true }));
+  });
+}
 
 describe("library Tags page", () => {
   let host: HTMLDivElement;
@@ -49,8 +62,12 @@ describe("library Tags page", () => {
   let stopViewUrlSync: (() => void) | null = null;
   const createdTags = new Set(["animation", "typography"]);
   const query = vi.fn(async (name: string, params?: { name?: string }) => {
-    if (name === "tags.list") return fixtures.tags;
-    if (name === "tagGroups.list") return fixtures.groups;
+    if (name === "tags.list") {
+      return fixtures.tags;
+    }
+    if (name === "tagGroups.list") {
+      return fixtures.groups;
+    }
     if (name === "tags.create") {
       const tagName = (params?.name ?? "").toLowerCase();
       if (createdTags.has(tagName)) {
@@ -106,7 +123,9 @@ describe("library Tags page", () => {
     const tagsRoute = (router.routesById as Record<string, AnyRoute>)[
       "/_library/tags"
     ];
-    if (!tagsRoute) throw new Error("Missing Tags route");
+    if (!tagsRoute) {
+      throw new Error("Missing Tags route");
+    }
     tagsRoute.update({
       component: () => (
         <>
@@ -121,16 +140,6 @@ describe("library Tags page", () => {
       root.render(<RouterProvider router={router} />);
     });
     return router;
-  }
-
-  async function fill(input: HTMLInputElement, value: string) {
-    await act(async () => {
-      Object.getOwnPropertyDescriptor(
-        HTMLInputElement.prototype,
-        "value",
-      )?.set?.call(input, value);
-      input.dispatchEvent(new InputEvent("input", { bubbles: true }));
-    });
   }
 
   it("renders tag navigation and rows from the real stores", async () => {
@@ -148,8 +157,9 @@ describe("library Tags page", () => {
   it("filters tags using the existing manager", async () => {
     await mount();
     const search = host.querySelector('input[placeholder="Search…"]');
-    if (!(search instanceof HTMLInputElement))
+    if (!isHTMLTag(search, "input")) {
       throw new Error("Missing search");
+    }
     await fill(search, "animation");
     expect(host.textContent).toContain("Animation");
     expect(host.textContent).not.toContain("Typography");
@@ -160,7 +170,9 @@ describe("library Tags page", () => {
     const starred = [...host.querySelectorAll("button")].find((node) =>
       node.textContent?.includes("Starred"),
     );
-    if (!starred) throw new Error("Missing Starred collection");
+    if (!starred) {
+      throw new Error("Missing Starred collection");
+    }
     await act(async () => starred.click());
     expect(host.textContent).toContain("Animation");
     expect(host.textContent).not.toContain("Typography");
@@ -171,7 +183,9 @@ describe("library Tags page", () => {
     const group = [...host.querySelectorAll("button")].find(
       (node) => node.textContent?.trim() === "Design1",
     );
-    if (!group) throw new Error("Missing Design group");
+    if (!group) {
+      throw new Error("Missing Design group");
+    }
     await act(async () => group.click());
     expect(host.querySelector('[aria-current="true"]')?.textContent).toContain(
       "Design",
@@ -180,7 +194,7 @@ describe("library Tags page", () => {
       host.querySelector('[aria-label="Add Tags to Design"]'),
     ).not.toBeNull();
     const description = host.querySelector('[aria-label="Design description"]');
-    if (!(description instanceof HTMLInputElement)) {
+    if (!isHTMLTag(description, "input")) {
       throw new Error("Missing group description");
     }
     await act(async () => description.focus());
@@ -215,7 +229,7 @@ describe("library Tags page", () => {
     });
     const row = host.querySelector('[role="option"][title="Typography"]');
     const more = row?.querySelector('[aria-label="More Actions"]');
-    if (!(row instanceof HTMLElement) || !(more instanceof HTMLElement)) {
+    if (!isHTMLElement(row) || !isHTMLElement(more)) {
       throw new Error("Missing Typography");
     }
 
@@ -232,7 +246,9 @@ describe("library Tags page", () => {
   it("opens tagged saves from the keyboard", async () => {
     const router = await mount();
     const row = host.querySelector('[role="option"][title="Animation"]');
-    if (!(row instanceof HTMLElement)) throw new Error("Missing Animation");
+    if (!isHTMLElement(row)) {
+      throw new Error("Missing Animation");
+    }
     await act(async () => {
       row.focus();
       row.dispatchEvent(
@@ -247,7 +263,9 @@ describe("library Tags page", () => {
     const router = await mount();
     const row = host.querySelector('[role="option"]');
     const checkbox = host.querySelector('[aria-label="Select Animation"]');
-    if (!(row instanceof HTMLDivElement)) throw new Error("Missing tag row");
+    if (!isHTMLTag(row, "div")) {
+      throw new Error("Missing tag row");
+    }
 
     expect(checkbox).toBeNull();
     expect(row.firstElementChild?.textContent).toContain("Animation");
@@ -268,10 +286,14 @@ describe("library Tags page", () => {
         node.textContent === "New Group" ||
         node.getAttribute("aria-label") === "New Group",
     );
-    if (!button) throw new Error("Missing New Group");
+    if (!button) {
+      throw new Error("Missing New Group");
+    }
     await act(async () => button.click());
     const draft = host.querySelector('input[placeholder="Group name"]');
-    if (!(draft instanceof HTMLInputElement)) throw new Error("Missing draft");
+    if (!isHTMLTag(draft, "input")) {
+      throw new Error("Missing draft");
+    }
     await fill(draft, "Design");
     await act(async () => {
       draft.dispatchEvent(
@@ -293,11 +315,13 @@ describe("library Tags page", () => {
     const group = [...host.querySelectorAll("button")].find(
       (node) => node.textContent?.trim() === "Design1",
     );
-    if (!group) throw new Error("Missing Design group");
+    if (!group) {
+      throw new Error("Missing Design group");
+    }
     await act(async () => group.click());
 
     const trigger = host.querySelector('[aria-label="Add Tags to Design"]');
-    if (!(trigger instanceof HTMLElement)) {
+    if (!isHTMLElement(trigger)) {
       throw new Error("Missing Add Tags trigger");
     }
     await act(async () => trigger.click());
@@ -305,7 +329,7 @@ describe("library Tags page", () => {
     const picker = document.body.querySelector(
       'input[placeholder="Search…"]:not([data-tags-search])',
     );
-    if (!(picker instanceof HTMLInputElement)) {
+    if (!isHTMLTag(picker, "input")) {
       throw new Error("Missing tag picker");
     }
     await fill(picker, "Brand");
@@ -332,13 +356,15 @@ describe("library Tags page", () => {
     const group = [...host.querySelectorAll("button")].find(
       (node) => node.textContent?.trim() === "Design1",
     );
-    if (!group) throw new Error("Missing Design group");
+    if (!group) {
+      throw new Error("Missing Design group");
+    }
     await act(async () => group.click());
 
     await act(async () => tagCreation.request("tag"));
 
     const draft = host.querySelector('input[placeholder="Tag name"]');
-    if (!(draft instanceof HTMLInputElement)) {
+    if (!isHTMLTag(draft, "input")) {
       throw new Error("Missing tag draft");
     }
     await fill(draft, "Motion");
@@ -361,13 +387,13 @@ describe("library Tags page", () => {
   it("offers New Tag in All and creates the tag without leaving it", async () => {
     await mount();
     const newTag = host.querySelector('[aria-label="New Tag"]');
-    if (!(newTag instanceof HTMLElement)) {
+    if (!isHTMLElement(newTag)) {
       throw new Error("Missing New Tag in All");
     }
 
     await act(async () => newTag.click());
     const draft = host.querySelector('input[placeholder="Tag name"]');
-    if (!(draft instanceof HTMLInputElement)) {
+    if (!isHTMLTag(draft, "input")) {
       throw new Error("Missing tag draft");
     }
     await fill(draft, "Reading");
@@ -392,15 +418,19 @@ describe("library Tags page", () => {
     const uncategorized = [...host.querySelectorAll("button")].find(
       (node) => node.textContent?.trim() === "Uncategorized1",
     );
-    if (!uncategorized) throw new Error("Missing Uncategorized");
+    if (!uncategorized) {
+      throw new Error("Missing Uncategorized");
+    }
     await act(async () => uncategorized.click());
 
     const newTag = host.querySelector('[aria-label="New Tag"]');
-    if (!(newTag instanceof HTMLElement)) throw new Error("Missing New Tag");
+    if (!isHTMLElement(newTag)) {
+      throw new Error("Missing New Tag");
+    }
     await act(async () => newTag.click());
 
     const draft = host.querySelector('input[placeholder="Tag name"]');
-    if (!(draft instanceof HTMLInputElement)) {
+    if (!isHTMLTag(draft, "input")) {
       throw new Error("Missing tag draft");
     }
     await fill(draft, "Reading");

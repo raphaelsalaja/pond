@@ -1,12 +1,14 @@
 import {
-  type NewTagGroup,
-  type NewTagGroupMember,
-  type Tag,
-  type TagGroup,
-  type TagGroupMember,
   tagGroupMembers as tagGroupMembersTable,
   tagGroups as tagGroupsTable,
   tags as tagsTable,
+} from "@pond/schema/db";
+import type {
+  NewTagGroup,
+  NewTagGroupMember,
+  Tag,
+  TagGroup,
+  TagGroupMember,
 } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import type { OkResult } from "@shared/query-contracts-shared";
@@ -22,19 +24,19 @@ import {
 import { recordBatchForUndo } from "./undo";
 
 interface TagGroupWithMembers extends TagGroup {
-  tagIds: string[];
-  tagNames: string[];
+  tagIds: Array<string>;
+  tagNames: Array<string>;
 }
 
 interface MergeGroupRuntime {
   run<T>(operation: () => Promise<T>): Promise<T>;
   getDb(): Promise<Db>;
-  commit(transactions: Transaction[]): Promise<void>;
-  recordUndo(transactions: Transaction[]): void;
+  commit(transactions: Array<Transaction>): Promise<void>;
+  recordUndo(transactions: Array<Transaction>): void;
 }
 
 interface GroupMergePlan {
-  transactions: Transaction[];
+  transactions: Array<Transaction>;
   added: number;
 }
 
@@ -64,13 +66,15 @@ async function tagByLowerName(
   return rows.find((tag) => tag.name.toLowerCase() === lowered);
 }
 
-export async function listGroups(): Promise<TagGroupWithMembers[]> {
+export async function listGroups(): Promise<Array<TagGroupWithMembers>> {
   const db = await getDb();
   const groups = await db
     .select()
     .from(tagGroupsTable)
     .orderBy(asc(tagGroupsTable.sortOrder), asc(tagGroupsTable.name));
-  if (groups.length === 0) return [];
+  if (groups.length === 0) {
+    return [];
+  }
 
   const memberRows = await db
     .select({
@@ -83,11 +87,18 @@ export async function listGroups(): Promise<TagGroupWithMembers[]> {
     .innerJoin(tagsTable, eq(tagGroupMembersTable.tagId, tagsTable.id))
     .orderBy(asc(tagGroupMembersTable.sortOrder), asc(tagsTable.name));
 
-  const byGroup = new Map<string, { tagIds: string[]; tagNames: string[] }>();
-  for (const g of groups) byGroup.set(g.id, { tagIds: [], tagNames: [] });
+  const byGroup = new Map<
+    string,
+    { tagIds: Array<string>; tagNames: Array<string> }
+  >();
+  for (const g of groups) {
+    byGroup.set(g.id, { tagIds: [], tagNames: [] });
+  }
   for (const m of memberRows) {
     const bucket = byGroup.get(m.groupId);
-    if (!bucket) continue;
+    if (!bucket) {
+      continue;
+    }
     bucket.tagIds.push(m.tagId);
     bucket.tagNames.push(m.tagName);
   }
@@ -105,10 +116,14 @@ export async function createGroup(input: {
   description?: string | null;
 }): Promise<OkResult<{ id: string }>> {
   const name = input.name.trim();
-  if (!name) return { ok: false, error: "Enter a group name." };
+  if (!name) {
+    return { ok: false, error: "Enter a group name." };
+  }
   const db = await getDb();
   const existing = await groupByLowerName(db, name.toLowerCase());
-  if (existing) return { ok: true, id: existing.id };
+  if (existing) {
+    return { ok: true, id: existing.id };
+  }
   const nextOrder = await nextSortOrder(db);
   const data: NewTagGroup = {
     id: ulid(),
@@ -130,10 +145,14 @@ export async function createGroup(input: {
 
 export async function renameGroup(from: string, to: string): Promise<OkResult> {
   const target = to.trim();
-  if (!target) return { ok: false, error: "Enter a group name." };
+  if (!target) {
+    return { ok: false, error: "Enter a group name." };
+  }
   const db = await getDb();
   const fromRow = await groupByLowerName(db, from.trim().toLowerCase());
-  if (!fromRow) return { ok: false, error: "Tag group not found." };
+  if (!fromRow) {
+    return { ok: false, error: "Tag group not found." };
+  }
   const targetKey = target.toLowerCase();
   if (fromRow.name.toLowerCase() === targetKey && fromRow.name === target) {
     return { ok: true };
@@ -159,7 +178,9 @@ export async function updateGroup(
 ): Promise<OkResult> {
   const db = await getDb();
   const row = await groupByLowerName(db, name.trim().toLowerCase());
-  if (!row) return { ok: false, error: "Tag group not found." };
+  if (!row) {
+    return { ok: false, error: "Tag group not found." };
+  }
   const next: Partial<NewTagGroup> = { ...patch };
   if ("description" in next) {
     const description = next.description?.trim() ?? "";
@@ -181,12 +202,14 @@ export async function deleteGroup(
 ): Promise<OkResult<{ affected: number }>> {
   const db = await getDb();
   const row = await groupByLowerName(db, name.trim().toLowerCase());
-  if (!row) return { ok: false, error: "Tag group not found." };
+  if (!row) {
+    return { ok: false, error: "Tag group not found." };
+  }
   const members = await db
     .select()
     .from(tagGroupMembersTable)
     .where(eq(tagGroupMembersTable.groupId, row.id));
-  const txs: Transaction[] = [];
+  const txs: Array<Transaction> = [];
   for (const m of members) {
     txs.push({
       kind: "delete",
@@ -208,13 +231,15 @@ export async function deleteGroup(
 }
 
 export async function addTagsToGroup(
-  tagNames: string[],
+  tagNames: Array<string>,
   groupName: string,
 ): Promise<OkResult<{ affected: number }>> {
   const db = await getDb();
   const group = await groupByLowerName(db, groupName.trim().toLowerCase());
-  if (!group) return { ok: false, error: "Tag group not found." };
-  const txs: Transaction[] = [];
+  if (!group) {
+    return { ok: false, error: "Tag group not found." };
+  }
+  const txs: Array<Transaction> = [];
   const [last] = await db
     .select({
       order: sql<number>`coalesce(max(${tagGroupMembersTable.sortOrder}), -1)`,
@@ -224,7 +249,9 @@ export async function addTagsToGroup(
   let order = (last?.order ?? -1) + 1;
   for (const raw of tagNames) {
     const tag = await tagByLowerName(db, raw.trim().toLowerCase());
-    if (!tag) continue;
+    if (!tag) {
+      continue;
+    }
     const existing = await db
       .select()
       .from(tagGroupMembersTable)
@@ -234,7 +261,9 @@ export async function addTagsToGroup(
           eq(tagGroupMembersTable.groupId, group.id),
         ),
       );
-    if (existing[0]) continue;
+    if (existing[0]) {
+      continue;
+    }
     const data: NewTagGroupMember = {
       tagId: tag.id,
       groupId: group.id,
@@ -248,7 +277,9 @@ export async function addTagsToGroup(
       meta: { actor: "user", actorReason: "tag-group-add" },
     });
   }
-  if (txs.length === 0) return { ok: true, affected: 0 };
+  if (txs.length === 0) {
+    return { ok: true, affected: 0 };
+  }
   await executeBatch(txs);
   return { ok: true, affected: txs.length };
 }
@@ -267,7 +298,9 @@ export async function mergeGroup(
     const db = await runtime.getDb();
     const source = await groupByLowerName(db, sourceName.toLowerCase());
     const target = await groupByLowerName(db, targetName.toLowerCase());
-    if (!source || !target) return { ok: false, error: "Tag group not found." };
+    if (!source || !target) {
+      return { ok: false, error: "Tag group not found." };
+    }
     if (source.id === target.id) {
       return {
         ok: false,
@@ -298,15 +331,15 @@ export async function mergeGroup(
 export function planGroupMergeTransactions(input: {
   source: TagGroup;
   target: TagGroup;
-  sourceMembers: TagGroupMember[];
-  targetMembers: TagGroupMember[];
+  sourceMembers: Array<TagGroupMember>;
+  targetMembers: Array<TagGroupMember>;
 }): GroupMergePlan {
   const targetTagIds = new Set(
     input.targetMembers.map((member) => member.tagId),
   );
   let nextOrder =
     Math.max(-1, ...input.targetMembers.map((member) => member.sortOrder)) + 1;
-  const transactions: Transaction[] = [];
+  const transactions: Array<Transaction> = [];
   let added = 0;
 
   for (const member of input.sourceMembers) {
@@ -351,8 +384,9 @@ export async function removeTagFromGroup(
   const db = await getDb();
   const tag = await tagByLowerName(db, tagName.trim().toLowerCase());
   const group = await groupByLowerName(db, groupName.trim().toLowerCase());
-  if (!tag || !group)
+  if (!tag || !group) {
     return { ok: false, error: "Tag or tag group not found." };
+  }
   const rows = await db
     .select()
     .from(tagGroupMembersTable)
@@ -363,7 +397,9 @@ export async function removeTagFromGroup(
       ),
     );
   const member = rows[0];
-  if (!member) return { ok: true };
+  if (!member) {
+    return { ok: true };
+  }
   await executeTransaction({
     kind: "delete",
     model: "tag_group_member",

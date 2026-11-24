@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { userEvent } from "vitest/browser";
 import { Message } from ".";
 
 const ANSWER = "Three saves fit the cabin.";
 
 describe("Message actions keyboard", () => {
   it("reaches Copy and Quote with Tab and runs them with Enter", async () => {
-    const copied: string[] = [];
+    const copied: Array<string> = [];
     let quoted = 0;
     const screen = await render(
       <Message.View

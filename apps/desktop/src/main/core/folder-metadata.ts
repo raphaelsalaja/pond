@@ -1,4 +1,5 @@
-import { type FolderMetadata, folderMetadata, folders } from "@pond/schema/db";
+import { folderMetadata, folders } from "@pond/schema/db";
+import type { FolderMetadata } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import type { OkResult } from "../../shared/query-contracts-shared";
 import { getDb } from "../db";
@@ -16,7 +17,9 @@ export function normalizeFolderMetadata(
 ): FolderMetadataInput {
   const description = input.description?.trim() || null;
   const candidate = input.externalLink?.trim() || null;
-  if (!candidate) return { description, externalLink: null };
+  if (!candidate) {
+    return { description, externalLink: null };
+  }
   const link = new URL(candidate);
   if (link.protocol !== "http:" && link.protocol !== "https:") {
     throw new Error("External link must use HTTP or HTTPS.");
@@ -53,7 +56,9 @@ export async function setFolderMetadata(
       .from(folders)
       .where(eq(folders.id, folderId))
       .get();
-    if (!exists) return { ok: false, error: "Folder not found." };
+    if (!exists) {
+      return { ok: false, error: "Folder not found." };
+    }
     const next = normalizeFolderMetadata(input);
     if (!next.description && !next.externalLink) {
       db.delete(folderMetadata)

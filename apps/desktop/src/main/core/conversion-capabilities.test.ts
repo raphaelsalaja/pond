@@ -120,12 +120,13 @@ it.skipIf(!ffmpegPath)(
       unavailableReason:
         "Sharp cannot encode jxl in this build. FFmpeg does not provide encoder libjxl.",
     });
-    for (const format of ["heic", "heif"] as const)
+    for (const format of ["heic", "heif"] as const) {
       expect(
         capabilities.find((capability) => capability.format === format),
       ).toMatchObject({
         available: false,
         unavailableReason: `Sharp's ${format} encoder failed runtime validation.`,
       });
+    }
   },
 );

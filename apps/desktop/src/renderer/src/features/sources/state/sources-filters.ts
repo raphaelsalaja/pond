@@ -3,9 +3,11 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import {
   defaultSourceFilters,
-  type SourceFilters,
-  type SourceStatusId,
   sourceFiltersActive,
+} from "@/features/sources/components/page/lib/filters";
+import type {
+  SourceFilters,
+  SourceStatusId,
 } from "@/features/sources/components/page/lib/filters";
 
 const store = new Store<SourceFilters>(defaultSourceFilters());

@@ -17,6 +17,8 @@ import { buildAppMenuTemplate } from "./template";
 import type { AppMenuContext } from "./types";
 import { buildViewSection } from "./view-section";
 
+const noOp = () => undefined;
+
 function createContext({
   isMac,
   isPackaged,
@@ -24,8 +26,6 @@ function createContext({
   isMac: boolean;
   isPackaged: boolean;
 }): AppMenuContext {
-  const noOp = () => undefined;
-
   return {
     accelerator: (id) => id,
     appName: "Pond",
@@ -92,8 +92,8 @@ describe("app menu sections", () => {
 
   it("checks for updates from the application menu instead of opening Settings", () => {
     const context = createContext({ isMac: true, isPackaged: true });
-    const actions: string[] = [];
-    const navigated: string[] = [];
+    const actions: Array<string> = [];
+    const navigated: Array<string> = [];
     context.sendMenuAction = (id) => {
       actions.push(id);
       return () => undefined;
@@ -177,7 +177,7 @@ describe("app menu sections", () => {
 
   it("backfills Window and Help commands", () => {
     const context = createContext({ isMac: true, isPackaged: true });
-    const externalUrls: string[] = [];
+    const externalUrls: Array<string> = [];
     context.openExternalUrl = (url) => {
       externalUrls.push(url);
       return () => undefined;
@@ -211,7 +211,7 @@ describe("app menu sections", () => {
 
   it("dispatches native File, Edit, Organize, and View actions", () => {
     const context = createContext({ isMac: true, isPackaged: true });
-    const actions: string[] = [];
+    const actions: Array<string> = [];
     context.sendMenuAction = (id) => {
       actions.push(id);
       return () => undefined;
@@ -262,7 +262,9 @@ describe("app menu sections", () => {
     const context = createContext({ isMac: true, isPackaged: true });
     const edit = buildEditSection(context, buildSettingsItem(context));
     const submenu = edit.submenu;
-    if (!Array.isArray(submenu)) throw new Error("Missing Edit submenu");
+    if (!Array.isArray(submenu)) {
+      throw new Error("Missing Edit submenu");
+    }
 
     expect(submenu.find((item) => item.label === "Select All")).toMatchObject({
       accelerator: "CmdOrCtrl+A",
@@ -288,7 +290,7 @@ describe("app menu sections", () => {
 
   it("lists each command in only one menu", () => {
     const context = createContext({ isMac: true, isPackaged: true });
-    const actions: string[] = [];
+    const actions: Array<string> = [];
     context.sendMenuAction = (id) => {
       actions.push(id);
       return () => undefined;
@@ -303,7 +305,9 @@ describe("app menu sections", () => {
   it("groups File actions like the tray menu without navigation", () => {
     const context = createContext({ isMac: true, isPackaged: true });
     const file = buildFileSection(context).submenu;
-    if (!Array.isArray(file)) throw new Error("Missing File submenu");
+    if (!Array.isArray(file)) {
+      throw new Error("Missing File submenu");
+    }
     const newMenu = file.find((item) => item.label === "New");
     const importMenu = file.find((item) => item.label === "Import");
 
@@ -382,7 +386,9 @@ describe("app menu sections", () => {
       file.find((item) => item.label === "Open with Default App")?.accelerator,
     ).toBe(undefined);
     const edit = buildEditSection(context, buildSettingsItem(context)).submenu;
-    if (!Array.isArray(edit)) throw new Error("Missing Edit submenu");
+    if (!Array.isArray(edit)) {
+      throw new Error("Missing Edit submenu");
+    }
     expect(edit.find((item) => item.label === "Search Pond")?.accelerator).toBe(
       "CommandOrControl+K",
     );

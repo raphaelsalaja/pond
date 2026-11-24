@@ -1,5 +1,7 @@
-import { act, type CSSProperties, useCallback, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act, useCallback, useState } from "react";
+import type { CSSProperties } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Window } from "../../../packages/ui/src/window";
 
@@ -47,6 +49,28 @@ function Fixture({
   );
 }
 
+/** Pointer moves land on the next animation frame, so each event waits for one. */
+async function pointer(target: HTMLElement, type: string, clientX: number) {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    button: 0,
+    buttons: type === "pointerup" ? 0 : 1,
+    clientX,
+  });
+  Object.defineProperties(event, {
+    pointerId: { value: 1 },
+    pointerType: { value: "mouse" },
+    isPrimary: { value: true },
+  });
+  await act(async () => {
+    target.dispatchEvent(event);
+    await new Promise((resolve) => {
+      requestAnimationFrame(resolve);
+    });
+  });
+}
+
 describe("sidebar resize handle", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -55,31 +79,13 @@ describe("sidebar resize handle", () => {
 
   function element(selector: string) {
     const node = container.querySelector<HTMLElement>(selector);
-    if (!node) throw new Error(`Missing ${selector}`);
+    if (!node) {
+      throw new Error(`Missing ${selector}`);
+    }
     return node;
   }
 
-  /** Pointer moves land on the next animation frame, so each event waits for one. */
-  async function pointer(target: HTMLElement, type: string, clientX: number) {
-    const event = new MouseEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      button: 0,
-      buttons: type === "pointerup" ? 0 : 1,
-      clientX,
-    });
-    Object.defineProperties(event, {
-      pointerId: { value: 1 },
-      pointerType: { value: "mouse" },
-      isPrimary: { value: true },
-    });
-    await act(async () => {
-      target.dispatchEvent(event);
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-    });
-  }
-
-  beforeEach(async () => {
+  beforeEach(() => {
     resized.mockClear();
     collapsed.mockClear();
     container = document.createElement("div");
@@ -94,9 +100,9 @@ describe("sidebar resize handle", () => {
         return new DOMRect(0, 0, width, 600);
       },
     );
-    await act(() =>
-      root.render(<Fixture onResize={resized} onCollapse={collapsed} />),
-    );
+    act(() => {
+      root.render(<Fixture onResize={resized} onCollapse={collapsed} />);
+    });
     Object.defineProperties(element('[data-slot="handle"]'), {
       setPointerCapture: { value: vi.fn(), configurable: true },
       releasePointerCapture: { value: vi.fn(), configurable: true },
@@ -104,8 +110,10 @@ describe("sidebar resize handle", () => {
     });
   });
 
-  afterEach(async () => {
-    await act(() => root.unmount());
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
     container.remove();
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
@@ -149,7 +157,9 @@ describe("sidebar resize handle", () => {
     await key("Enter");
     expect(collapsed).toHaveBeenCalledTimes(1);
     expect(document.activeElement).toBe(element('[data-slot="center"]'));
-    await act(() => element("button").click());
+    act(() => {
+      element("button").click();
+    });
     expect(element('[data-slot="handle"]').getAttribute("aria-valuenow")).toBe(
       "420",
     );
@@ -196,7 +206,9 @@ describe("sidebar resize handle", () => {
     await pointer(handle, "pointerup", 100);
     expect(collapsed).toHaveBeenCalledTimes(1);
     expect(resized).toHaveBeenCalledTimes(1);
-    await act(() => element("button").click());
+    act(() => {
+      element("button").click();
+    });
     expect(element('[data-slot="window"]').hasAttribute("data-left-open")).toBe(
       true,
     );
@@ -237,7 +249,9 @@ describe("sidebar resize handle", () => {
     await pointer(handle, "pointerup", 300);
     expect(collapsed).toHaveBeenCalledTimes(1);
     expect(resized).not.toHaveBeenCalled();
-    await act(() => element("button").click());
+    act(() => {
+      element("button").click();
+    });
     expect(
       element('[data-slot="window"]').style.getPropertyValue(
         "--window-left-track",

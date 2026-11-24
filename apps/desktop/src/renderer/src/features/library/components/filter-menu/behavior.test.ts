@@ -21,7 +21,10 @@ const SqlValues = z.array(
   ]),
 );
 
-const query = (rules: Predicate[]): Query => ({ combinator: "and", rules });
+const query = (rules: Array<Predicate>): Query => ({
+  combinator: "and",
+  rules,
+});
 const tag = (value: string): Predicate => ({
   field: "tags",
   operator: "some",
@@ -84,7 +87,7 @@ describe("filter dropdown matching", () => {
       },
       { ...base, id: "empty", files: [] },
     ];
-    const rules: Predicate[] = [
+    const rules: Array<Predicate> = [
       { field: "format", operator: "some", value: ["jpg"] },
       { field: "format", operator: "every", value: ["psd", "mp4"] },
       { field: "format", operator: "none", value: ["mp4"] },
@@ -93,11 +96,15 @@ describe("filter dropdown matching", () => {
     try {
       db.exec("create table saves (id text, files text)");
       const insert = db.prepare("insert into saves values (?, ?)");
-      for (const save of saves) insert.run(save.id, JSON.stringify(save.files));
+      for (const save of saves) {
+        insert.run(save.id, JSON.stringify(save.files));
+      }
       for (const rule of rules) {
         const filter = query([rule]);
         const where = buildWhere(filter);
-        if (!where) throw new Error("Missing SQL predicate");
+        if (!where) {
+          throw new Error("Missing SQL predicate");
+        }
         const compiled = new SQLiteSyncDialect().sqlToQuery(where);
         expect(
           db
@@ -105,7 +112,7 @@ describe("filter dropdown matching", () => {
             .all(...SqlValues.parse(compiled.params))
             .map((row) => row.id),
         ).toEqual(
-          saves.filter((save) => matches(filter, save)).map((save) => save.id),
+          saves.flatMap((save) => (matches(filter, save) ? [save.id] : [])),
         );
       }
     } finally {
@@ -153,21 +160,23 @@ describe("filter dropdown matching", () => {
         "create table saves (id text, site_name text, source text, url text)",
       );
       const insert = db.prepare("insert into saves values (?, ?, ?, ?)");
-      for (const save of saves)
+      for (const save of saves) {
         insert.run(save.id, save.siteName, save.source, save.url);
+      }
       const where = buildWhere(filter);
-      if (!where) throw new Error("Missing SQL predicate");
+      if (!where) {
+        throw new Error("Missing SQL predicate");
+      }
       const compiled = new SQLiteSyncDialect().sqlToQuery(where);
       expect(
         db
           .prepare(`select id from saves where ${compiled.sql}`)
           .all(...SqlValues.parse(compiled.params))
-          .map((row) => row.id)
-          .sort(),
+          .map((row) => String(row.id))
+          .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
       ).toEqual(
         saves
-          .filter((save) => matches(filter, save))
-          .map((save) => save.id)
+          .flatMap((save) => (matches(filter, save) ? [save.id] : []))
           .sort(),
       );
     } finally {
@@ -196,8 +205,9 @@ describe("filter dropdown matching", () => {
       ["-1", ""],
       ["1.5", ""],
       ["Infinity", ""],
-    ])
+    ]) {
       expect(rangePredicate("fileCount", a ?? "", b ?? "")).toBeNull();
+    }
     expect(rangePredicate("savedAt", "2026-02-30", "")).toBeNull();
     expect(rangePredicate("savedAt", "bad", "")).toBeNull();
     const end = new Date("2026-09-01T00:00:00");
@@ -245,12 +255,13 @@ describe("filter dropdown matching", () => {
       { hex: "#ff0000", tolerance: -1 },
       { hex: "#ff0000", tolerance: Infinity },
       { hex: "bad", tolerance: 30 },
-    ])
+    ]) {
       expect(readColorMatch(value)).toBeNull();
+    }
   });
 
   it("retains distinct content, matching modes and negation when deduplicating", () => {
-    const rows: Predicate[] = [
+    const rows: Array<Predicate> = [
       tag("design"),
       { ...tag("design"), operator: "every" },
       { ...tag("design"), negate: true },
@@ -266,7 +277,7 @@ describe("filter dropdown matching", () => {
       { ...base, id: "linked", url: "https://example.com/Design" },
       { ...base, id: "blank", url: "   " },
     ];
-    const rules: Predicate[] = [
+    const rules: Array<Predicate> = [
       { field: "url", operator: "exists", value: true },
       { field: "url", operator: "exists", value: false },
       { field: "url", operator: "contains", value: "design" },
@@ -274,11 +285,15 @@ describe("filter dropdown matching", () => {
     try {
       db.exec("create table saves (id text, url text)");
       const insert = db.prepare("insert into saves values (?, ?)");
-      for (const save of saves) insert.run(save.id, save.url);
+      for (const save of saves) {
+        insert.run(save.id, save.url);
+      }
       for (const rule of rules) {
         const filter = query([rule]);
         const where = buildWhere(filter);
-        if (!where) throw new Error("Missing SQL predicate");
+        if (!where) {
+          throw new Error("Missing SQL predicate");
+        }
         const compiled = new SQLiteSyncDialect().sqlToQuery(where);
         expect(
           db
@@ -286,7 +301,7 @@ describe("filter dropdown matching", () => {
             .all(...SqlValues.parse(compiled.params))
             .map((row) => row.id),
         ).toEqual(
-          saves.filter((save) => matches(filter, save)).map((save) => save.id),
+          saves.flatMap((save) => (matches(filter, save) ? [save.id] : [])),
         );
       }
     } finally {
@@ -304,7 +319,7 @@ describe("filter dropdown matching", () => {
         {
           ...base,
           id: "literal",
-          notes: "  100% Design_1 \\ Draft  ",
+          notes: String.raw`  100% Design_1 \ Draft  `,
           description: null,
           caption: "Motion Design",
           transcript: "Hello DESIGN",
@@ -327,7 +342,7 @@ describe("filter dropdown matching", () => {
         },
       ];
       const insert = db.prepare("insert into saves values (?, ?, ?, ?, ?)");
-      for (const save of saves)
+      for (const save of saves) {
         insert.run(
           save.id,
           save.notes,
@@ -335,6 +350,7 @@ describe("filter dropdown matching", () => {
           save.caption,
           save.transcript,
         );
+      }
       for (const field of ["note", "caption", "transcript"] as const) {
         for (const rule of [
           { field, operator: "contains" as const, value: "design" },
@@ -345,7 +361,9 @@ describe("filter dropdown matching", () => {
         ]) {
           const filter = query([rule]);
           const where = buildWhere(filter);
-          if (!where) throw new Error("Missing SQL predicate");
+          if (!where) {
+            throw new Error("Missing SQL predicate");
+          }
           const sql = new SQLiteSyncDialect().sqlToQuery(where);
           const params = SqlValues.parse(sql.params);
           expect(
@@ -355,9 +373,7 @@ describe("filter dropdown matching", () => {
               .map((row) => row.id),
             `${field} ${String(rule.value)}`,
           ).toEqual(
-            saves
-              .filter((save) => matches(filter, save))
-              .map((save) => save.id),
+            saves.flatMap((save) => (matches(filter, save) ? [save.id] : [])),
           );
         }
       }

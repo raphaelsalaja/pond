@@ -1,4 +1,5 @@
-import { type DataTableRow, useDataTable } from "@pond/ui/data-table";
+import { useDataTable } from "@pond/ui/data-table";
+import type { DataTableRow } from "@pond/ui/data-table";
 import { useEffect } from "react";
 import type { RowSelectionStore } from "@/shared/state/row-selection";
 
@@ -22,10 +23,17 @@ export function TableSelectionSync<T extends DataTableRow>({
   useEffect(() => {
     const selected = [...selectionStore.state.selectedIds];
     const next = selected.filter((id) => rowsById.has(id));
-    if (next.length !== selected.length) actions.replaceSelection(next);
-    if (next.length === 0) return;
+    if (next.length !== selected.length) {
+      actions.replaceSelection(next);
+    }
+    if (next.length === 0) {
+      return;
+    }
     selection.set(
-      next.map((id) => rowsById.get(id)).filter((row): row is T => row != null),
+      next.flatMap((id) => {
+        const row = rowsById.get(id);
+        return row === undefined ? [] : [row];
+      }),
     );
   }, [actions, rowsById, selection, selectionStore]);
 

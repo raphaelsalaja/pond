@@ -12,7 +12,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function captured(): string[] {
+function captured(): Array<string> {
   return postMessage.mock.calls.map(([data]) => data.message.payload.url);
 }
 

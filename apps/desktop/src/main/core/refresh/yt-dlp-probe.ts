@@ -14,9 +14,9 @@ import { cookieAttempts } from "./yt-dlp-format";
 import {
   frameSourceOf,
   toDownloadProbe,
-  type YtdlpProbeInfo,
   YtdlpProbeInfoSchema,
 } from "./yt-dlp-probe-parse";
+import type { YtdlpProbeInfo } from "./yt-dlp-probe-parse";
 import { runWithTimeout } from "./yt-dlp-process";
 import { ensureYtDlp } from "./yt-dlp-updater";
 
@@ -36,14 +36,20 @@ const cache = new Map<string, CachedProbe>();
 
 function normalizeProbeUrl(raw: string): string | null {
   const trimmed = raw.trim();
-  if (!trimmed) return null;
+  if (!trimmed) {
+    return null;
+  }
   const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed)
     ? trimmed
     : `https://${trimmed}`;
   try {
     const url = new URL(withScheme);
-    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    if (!url.hostname.includes(".")) return null;
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return null;
+    }
+    if (!url.hostname.includes(".")) {
+      return null;
+    }
     return url.toString();
   } catch {
     return null;
@@ -52,7 +58,9 @@ function normalizeProbeUrl(raw: string): string | null {
 
 function fresh(url: string): CachedProbe | null {
   const hit = cache.get(url);
-  if (!hit) return null;
+  if (!hit) {
+    return null;
+  }
   if (Date.now() - hit.at > CACHE_TTL_MS) {
     cache.delete(url);
     return null;
@@ -65,7 +73,9 @@ function remember(url: string, entry: CachedProbe): void {
   cache.set(url, entry);
   while (cache.size > CACHE_LIMIT) {
     const oldest = cache.keys().next().value;
-    if (oldest === undefined) break;
+    if (oldest === undefined) {
+      break;
+    }
     cache.delete(oldest);
   }
 }
@@ -128,7 +138,7 @@ function classifyProbeFailure(
 }
 
 async function readProbeInfo(dir: string): Promise<YtdlpProbeInfo | null> {
-  let names: string[];
+  let names: Array<string>;
   try {
     names = await readdir(dir);
   } catch {
@@ -137,7 +147,9 @@ async function readProbeInfo(dir: string): Promise<YtdlpProbeInfo | null> {
   const name =
     names.find((entry) => entry === "playlist.info.json") ??
     names.find((entry) => entry.endsWith(".info.json"));
-  if (!name) return null;
+  if (!name) {
+    return null;
+  }
   try {
     const parsed = YtdlpProbeInfoSchema.safeParse(
       JSON.parse(await readFile(join(dir, name), "utf8")),
@@ -161,7 +173,9 @@ export async function probeLink(
     };
   }
   const cached = fresh(url);
-  if (cached) return cached.result;
+  if (cached) {
+    return cached.result;
+  }
 
   await ensureYtDlp();
   const { ytdlp } = binariesAvailable();
@@ -181,7 +195,9 @@ export async function probeLink(
   try {
     let last = { code: -1, stderr: "" };
     for (const withCookies of cookieAttempts(source, cookies.count)) {
-      if (dir) await rm(dir, { recursive: true, force: true });
+      if (dir) {
+        await rm(dir, { recursive: true, force: true });
+      }
       dir = await mkdtemp(join(tmpdir(), "pond-probe-"));
       const argv = [
         "--skip-download",
@@ -214,22 +230,28 @@ export async function probeLink(
         return result;
       }
       last = outcome;
-      if (signal?.aborted) break;
+      if (signal?.aborted) {
+        break;
+      }
     }
     log.info("[pond downloader] probe failed", url, last.stderr.slice(-400));
     const failure: DownloadProbeResult = {
       ok: false,
       ...classifyProbeFailure(last.code, last.stderr),
     };
-    if (source && source !== "web") failure.source = source;
+    if (source && source !== "web") {
+      failure.source = source;
+    }
     return failure;
   } finally {
-    if (dir) await rm(dir, { recursive: true, force: true }).catch(() => {});
+    if (dir) {
+      await rm(dir, { recursive: true, force: true }).catch(() => {});
+    }
     await cookies.cleanup();
   }
 }
 
-function headerArg(headers: Record<string, string>): string[] {
+function headerArg(headers: Record<string, string>): Array<string> {
   const lines = Object.entries(headers)
     .filter(([key, value]) => key && value && !/[\r\n]/.test(key + value))
     .map(([key, value]) => `${key}: ${value}\r\n`);
@@ -241,9 +263,11 @@ export async function probeFrames(
   rawUrl: string,
   count: number,
   signal?: AbortSignal,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const url = normalizeProbeUrl(rawUrl);
-  if (!url) return [];
+  if (!url) {
+    return [];
+  }
   let cached = fresh(url);
   if (!cached) {
     await probeLink(url, signal);
@@ -251,7 +275,9 @@ export async function probeFrames(
   }
   const target = cached ? frameSourceOf(cached.info) : null;
   const { ffmpeg } = binariesAvailable();
-  if (!target || !ffmpeg) return [];
+  if (!target || !ffmpeg) {
+    return [];
+  }
 
   const dir = await mkdtemp(join(tmpdir(), "pond-frames-"));
   try {
@@ -261,7 +287,9 @@ export async function probeFrames(
     );
     const frames = Array.from({ length: count }, (): string | null => null);
     for (let offset = 0; offset < times.length; offset += FRAME_CONCURRENCY) {
-      if (signal?.aborted) break;
+      if (signal?.aborted) {
+        break;
+      }
       const batch = times.slice(offset, offset + FRAME_CONCURRENCY);
       await Promise.all(
         batch.map(async (time, batchIndex) => {
@@ -289,17 +317,23 @@ export async function probeFrames(
             FRAME_TIMEOUT_MS,
             signal,
           );
-          if (code !== 0) return;
+          if (code !== 0) {
+            return;
+          }
           try {
             const bytes = await readFile(out);
             frames[index] =
               `data:image/jpeg;base64,${bytes.toString("base64")}`;
-          } catch {}
+          } catch {
+            /** A frame that failed to write stays empty. */
+          }
         }),
       );
     }
     const found = frames.filter((frame) => frame !== null).length;
-    if (found < Math.ceil(count / 2)) return [];
+    if (found < Math.ceil(count / 2)) {
+      return [];
+    }
     let previous = frames.find((frame) => frame !== null) ?? "";
     return frames.map((frame) => {
       previous = frame ?? previous;

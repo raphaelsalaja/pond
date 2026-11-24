@@ -7,7 +7,7 @@ export type NewMenuDialog =
   | {
       kind: "repair";
       repair: LibraryRepairKind;
-      saveIds?: readonly string[];
+      saveIds?: ReadonlyArray<string>;
       onClosed?: () => void;
     };
 

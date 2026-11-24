@@ -3,8 +3,10 @@ import type { SavedView } from "@pond/schema/db";
 import type { QueryInput } from "@shared/query-contracts";
 import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import {
   savedViews,
@@ -24,6 +26,34 @@ import { pagingStore } from "@/features/saves/state/bootstrap";
 import { FilterBarView, FilterToggleView } from "./";
 import { entryFields, FILTER_MENU, FILTER_SECTIONS } from "./options";
 import { filterToolbar } from "./toolbar-state";
+
+const StateOutput = z.looseObject({
+  query: z.looseObject({ rules: z.array(z.unknown()) }),
+});
+
+function menuItems() {
+  return [
+    ...document.querySelectorAll<HTMLElement>(
+      '[role="menuitem"], [role="menuitemcheckbox"]',
+    ),
+  ];
+}
+
+async function type(text: string) {
+  const input = document.querySelector<HTMLInputElement>(
+    'input[aria-label="Add Filter"]',
+  );
+  if (!input) {
+    throw new Error("Missing Add Filter input");
+  }
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set?.call(input, text);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
 
 function State() {
   return (
@@ -95,7 +125,9 @@ describe("filter toolbar", () => {
   }
 
   function state() {
-    return JSON.parse(host.querySelector("output")?.textContent ?? "{}");
+    return StateOutput.parse(
+      JSON.parse(host.querySelector("output")?.textContent ?? "{}"),
+    );
   }
 
   function button(label: string) {
@@ -103,7 +135,9 @@ describe("filter toolbar", () => {
       (node) =>
         node.getAttribute("aria-label") === label || node.textContent === label,
     );
-    if (!match) throw new Error(`Missing button ${label}`);
+    if (!match) {
+      throw new Error(`Missing button ${label}`);
+    }
     return match;
   }
 
@@ -193,8 +227,8 @@ describe("filter toolbar", () => {
   });
 
   it("creates an Untitled saved view and starts inline naming", async () => {
-    const views: SavedView[] = [];
-    const created: QueryInput<"savedViews.create">[] = [];
+    const views: Array<SavedView> = [];
+    const created: Array<QueryInput<"savedViews.create">> = [];
     vi.stubGlobal("pond", {
       query: async (name: string, input: QueryInput<"savedViews.create">) => {
         if (name === "savedViews.create") {
@@ -214,7 +248,9 @@ describe("filter toolbar", () => {
           });
           return { ok: true, id: "view-1" };
         }
-        if (name === "savedViews.list") return views;
+        if (name === "savedViews.list") {
+          return views;
+        }
         return PrefsSchema.parse({});
       },
     });
@@ -359,7 +395,9 @@ describe("filter toolbar", () => {
         source: "web",
         url: "https://www.youtube.com/watch?v=1",
       });
-      if (!save) throw new Error("Invalid save fixture");
+      if (!save) {
+        throw new Error("Invalid save fixture");
+      }
       pool.upsert(save);
     });
     afterEach(() => {
@@ -401,28 +439,6 @@ describe("filter toolbar", () => {
       await act(async () => button("Add Filter").click());
       expect(menuItems().map((node) => node.textContent)).toContain("Camera");
     });
-
-    function menuItems() {
-      return [
-        ...document.querySelectorAll<HTMLElement>(
-          '[role="menuitem"], [role="menuitemcheckbox"]',
-        ),
-      ];
-    }
-
-    async function type(text: string) {
-      const input = document.querySelector<HTMLInputElement>(
-        'input[aria-label="Add Filter"]',
-      );
-      if (!input) throw new Error("Missing Add Filter input");
-      await act(async () => {
-        Object.getOwnPropertyDescriptor(
-          HTMLInputElement.prototype,
-          "value",
-        )?.set?.call(input, text);
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-      });
-    }
 
     it("keeps applied filters in a menu instead of a chip row", async () => {
       await render();

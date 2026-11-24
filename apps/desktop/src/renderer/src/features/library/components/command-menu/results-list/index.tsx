@@ -1,15 +1,7 @@
 import { IconCaretRight, IconCheck } from "@pond/icons";
 import { Keyboard, Loader, PickerPanel } from "@pond/ui";
-import {
-  type CSSProperties,
-  type MouseEvent,
-  memo,
-  type ReactNode,
-  type RefObject,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { memo, useEffect, useRef, useState } from "react";
+import type { CSSProperties, MouseEvent, ReactNode, RefObject } from "react";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import type { MatchRange } from "../score";
 import type { MenuModel, RankedEntry } from "../types";
@@ -35,13 +27,17 @@ function Highlight({
   ranges,
 }: {
   text: string;
-  ranges: readonly MatchRange[];
+  ranges: ReadonlyArray<MatchRange>;
 }) {
-  if (ranges.length === 0) return text;
-  const parts: ReactNode[] = [];
+  if (ranges.length === 0) {
+    return text;
+  }
+  const parts: Array<ReactNode> = [];
   let cursor = 0;
   for (const [start, end] of ranges) {
-    if (start > cursor) parts.push(text.slice(cursor, start));
+    if (start > cursor) {
+      parts.push(text.slice(cursor, start));
+    }
     parts.push(
       <mark key={start} className={styles.match}>
         {text.slice(start, end)}
@@ -49,7 +45,9 @@ function Highlight({
     );
     cursor = end;
   }
-  if (cursor < text.length) parts.push(text.slice(cursor));
+  if (cursor < text.length) {
+    parts.push(text.slice(cursor));
+  }
   return parts;
 }
 
@@ -72,8 +70,12 @@ const EntryRow = memo(function EntryRow({
 }: EntryRowProps) {
   const { entry, ranges } = item;
   function onMouseMove(event: MouseEvent) {
-    if (keyboard.current) return;
-    if (event.movementX === 0 && event.movementY === 0) return;
+    if (keyboard.current) {
+      return;
+    }
+    if (event.movementX === 0 && event.movementY === 0) {
+      return;
+    }
     onActivate(index);
   }
   return (
@@ -147,7 +149,9 @@ export function ResultsList({
   }, []);
 
   useEffect(() => {
-    if (!keyboard.current) return;
+    if (!keyboard.current) {
+      return;
+    }
     viewportRef.current
       ?.querySelector<HTMLElement>(`[data-command-index="${activeIndex}"]`)
       ?.scrollIntoView({ block: "nearest" });

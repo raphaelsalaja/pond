@@ -32,9 +32,15 @@ export const MIN_SIZE = {
 export function cursorFor(corner: Corner, rotation: number): string {
   const base = corner === "nw" || corner === "se" ? 45 : 135;
   const angle = (((base + rotation) % 180) + 180) % 180;
-  if (angle < 22.5 || angle >= 157.5) return "ew-resize";
-  if (angle < 67.5) return "nwse-resize";
-  if (angle < 112.5) return "ns-resize";
+  if (angle < 22.5 || angle >= 157.5) {
+    return "ew-resize";
+  }
+  if (angle < 67.5) {
+    return "nwse-resize";
+  }
+  if (angle < 112.5) {
+    return "ns-resize";
+  }
   return "nesw-resize";
 }
 
@@ -131,7 +137,7 @@ export function groupScale(
   bounds: Box,
   corner: Corner,
   point: XYPosition,
-  members: readonly (Size & { min: Size })[],
+  members: ReadonlyArray<Size & { min: Size }>,
   keepAspect: boolean,
 ): Scale {
   const signs = signsOf(corner);

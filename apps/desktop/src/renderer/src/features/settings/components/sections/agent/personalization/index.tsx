@@ -1,5 +1,5 @@
 import { Input, Settings } from "@pond/ui";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { savePrefsSection, usePrefs } from "@/shared/state/prefs";
 import type { AgentPrefs } from "../types";
 import styles from "./styles.module.css";
@@ -89,14 +89,17 @@ export function PersonalizationForm({
   );
   const [error, setError] = useState("");
   const draft = useRef({ profile, instructions });
-  draft.current = { profile, instructions };
   const saved = useRef({
     userProfile: value.userProfile ?? "",
     responseInstructions: value.responseInstructions ?? "",
   });
   const timer = useRef(0);
+  const onSaveRef = useRef(onSave);
+  useEffect(() => {
+    onSaveRef.current = onSave;
+  }, [onSave]);
 
-  async function persist() {
+  const persist = useCallback(async () => {
     const next = {
       userProfile: draft.current.profile,
       responseInstructions: draft.current.instructions,
@@ -108,13 +111,13 @@ export function PersonalizationForm({
       return;
     }
     try {
-      await onSave(next);
+      await onSaveRef.current(next);
       saved.current = next;
       setError("");
     } catch {
       setError("Could not save personalization. Try again.");
     }
-  }
+  }, []);
 
   function schedule() {
     window.clearTimeout(timer.current);
@@ -126,14 +129,12 @@ export function PersonalizationForm({
     return persist();
   }
 
-  const persistRef = useRef(persist);
-  persistRef.current = persist;
   useEffect(
     () => () => {
       window.clearTimeout(timer.current);
-      void persistRef.current();
+      void persist();
     },
-    [],
+    [persist],
   );
 
   return (
@@ -146,6 +147,7 @@ export function PersonalizationForm({
         value={profile}
         onValueChange={(text) => {
           setProfile(text);
+          draft.current = { ...draft.current, profile: text };
           schedule();
         }}
         onBlur={() => void commit()}
@@ -158,6 +160,7 @@ export function PersonalizationForm({
         value={instructions}
         onValueChange={(text) => {
           setInstructions(text);
+          draft.current = { ...draft.current, instructions: text };
           schedule();
         }}
         onBlur={() => void commit()}

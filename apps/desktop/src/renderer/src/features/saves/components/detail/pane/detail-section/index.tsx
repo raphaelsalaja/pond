@@ -2,8 +2,10 @@ import { clsx as cn } from "clsx";
 import { useId } from "react";
 import styles from "./styles.module.css";
 
-interface DetailSectionProps
-  extends Omit<React.ComponentPropsWithoutRef<"section">, "title"> {
+interface DetailSectionProps extends Omit<
+  React.ComponentPropsWithoutRef<"section">,
+  "title"
+> {
   title: string;
   action?: React.ReactNode;
 }

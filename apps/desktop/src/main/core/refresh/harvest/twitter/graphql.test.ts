@@ -40,6 +40,24 @@ function tweetEntry(
   };
 }
 
+function fullTextOf(entry: ReturnType<typeof tweetEntry>) {
+  const rich = parseBookmarksResponses([
+    {
+      url: "https://x.com/i/api/graphql/abc/Bookmarks",
+      body: JSON.stringify({
+        data: {
+          bookmark_timeline_v2: {
+            timeline: {
+              instructions: [{ type: "TimelineAddEntries", entries: [entry] }],
+            },
+          },
+        },
+      }),
+    },
+  ]);
+  return rich.get("333")?.fullText;
+}
+
 describe("parseBookmarksResponses", () => {
   it("reads tweets from a Bookmarks envelope", () => {
     const rich = parseBookmarksResponses([
@@ -94,26 +112,6 @@ describe("parseBookmarksResponses", () => {
   });
 
   describe("tweet text links", () => {
-    function fullTextOf(entry: ReturnType<typeof tweetEntry>) {
-      const rich = parseBookmarksResponses([
-        {
-          url: "https://x.com/i/api/graphql/abc/Bookmarks",
-          body: JSON.stringify({
-            data: {
-              bookmark_timeline_v2: {
-                timeline: {
-                  instructions: [
-                    { type: "TimelineAddEntries", entries: [entry] },
-                  ],
-                },
-              },
-            },
-          }),
-        },
-      ]);
-      return rich.get("333")?.fullText;
-    }
-
     it("replaces t.co wrappers with the expanded link", () => {
       const entry = tweetEntry("333", "carol", "read https://t.co/AbCdEf1234", {
         legacy: {

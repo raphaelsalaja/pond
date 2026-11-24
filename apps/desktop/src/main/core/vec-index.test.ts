@@ -1,4 +1,5 @@
-import { describe, expect, it, type TestContext } from "vitest";
+import { describe, expect, it } from "vitest";
+import type { TestContext } from "vitest";
 import { embeddingDimensions } from "../../shared/embeddings";
 import {
   backfillVecBatch,
@@ -22,7 +23,9 @@ async function openMemoryDb(context: TestContext) {
     const Database = (await import("better-sqlite3")).default;
     return new Database(":memory:");
   } catch (error) {
-    if (nativeRequired) throw error;
+    if (nativeRequired) {
+      throw error;
+    }
     context.skip(
       "better-sqlite3 cannot load under plain Node (set POND_REQUIRE_NATIVE=1 to require it)",
     );

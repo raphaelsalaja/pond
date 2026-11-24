@@ -12,10 +12,10 @@ import { app } from "electron";
 import { ulid } from "ulid";
 import { z } from "zod";
 import type { OkResult } from "../../shared/query-contracts-shared";
-import {
-  type TransferJob,
-  TransferJobSchema,
-  type TransferRequest,
+import { TransferJobSchema } from "../../shared/transfer-contracts";
+import type {
+  TransferJob,
+  TransferRequest,
 } from "../../shared/transfer-contracts";
 import { renameWithRetry } from "../lib/rename-retry";
 import { libraryRoot } from "../paths";
@@ -37,6 +37,12 @@ interface TransferContext {
   write: () => Promise<void>;
   record: (copy: CopyCheckpoint) => Promise<void>;
 }
+const MissingFileSchema = z.object({ code: z.literal("ENOENT") });
+
+function isMissingFile(cause: unknown): boolean {
+  return MissingFileSchema.safeParse(cause).success;
+}
+
 const scope = new AsyncLocalStorage<TransferContext>();
 class TransferCancelledError extends Error {
   constructor() {
@@ -68,12 +74,16 @@ export function createTransferJobStore(directory: string) {
   async function load() {
     loaded ??= (async () => {
       const text = await readFile(join(directory, "jobs.json"), "utf8").catch(
-        (error: NodeJS.ErrnoException) => {
-          if (error.code === "ENOENT") return null;
-          throw error;
+        (cause: unknown) => {
+          if (isMissingFile(cause)) {
+            return null;
+          }
+          throw cause;
         },
       );
-      if (!text) return;
+      if (!text) {
+        return;
+      }
       for (const job of z.array(TransferJobSchema).parse(JSON.parse(text))) {
         if (job.status === "running" || job.status === "cancelling") {
           job.status = "interrupted";
@@ -90,14 +100,17 @@ export function createTransferJobStore(directory: string) {
     operation: () => Promise<T>,
     retryId?: string,
   ): Promise<T> {
-    if (scope.getStore()?.active) return operation();
+    if (scope.getStore()?.active) {
+      return operation();
+    }
     await load();
     const previous = retryId ? entries.get(retryId) : undefined;
     if (
       retryId &&
       (!previous || running.has(retryId) || previous.status === "completed")
-    )
+    ) {
       throw new Error("This transfer cannot be retried.");
+    }
     const job: TransferJob = previous ?? {
       id: ulid(),
       request,
@@ -120,9 +133,11 @@ export function createTransferJobStore(directory: string) {
       const text = await readFile(
         join(directory, `${job.id}.jsonl`),
         "utf8",
-      ).catch((error: NodeJS.ErrnoException) => {
-        if (error.code === "ENOENT") return "";
-        throw error;
+      ).catch((cause: unknown) => {
+        if (isMissingFile(cause)) {
+          return "";
+        }
+        throw cause;
       });
       for (const line of text.split("\n").filter(Boolean)) {
         try {
@@ -152,7 +167,9 @@ export function createTransferJobStore(directory: string) {
     try {
       await write();
       const result = await scope.run(context, operation);
-      if (context.cancelled) throw new TransferCancelledError();
+      if (context.cancelled) {
+        throw new TransferCancelledError();
+      }
       job.status = "completed";
       job.currentFile = null;
       return result;
@@ -179,8 +196,9 @@ export function createTransferJobStore(directory: string) {
     async cancel(id: string): Promise<OkResult> {
       await load();
       const context = running.get(id);
-      if (!context)
+      if (!context) {
         return { ok: false, error: "This transfer already finished." };
+      }
       context.cancelled = true;
       context.job.status = "cancelling";
       context.job.updatedAt = Date.now();
@@ -190,13 +208,16 @@ export function createTransferJobStore(directory: string) {
     async dismiss(id: string): Promise<OkResult> {
       await load();
       const job = entries.get(id);
-      if (!job) return { ok: false, error: "This transfer is already gone." };
+      if (!job) {
+        return { ok: false, error: "This transfer is already gone." };
+      }
       if (
         running.has(job.id) ||
         job.status === "running" ||
         job.status === "cancelling"
-      )
+      ) {
         return { ok: false, error: "This transfer is still running." };
+      }
       entries.delete(job.id);
       await write();
       await rm(join(directory, `${job.id}.jsonl`), { force: true });
@@ -216,8 +237,9 @@ export function runTransferJob<T>(
   operation: () => Promise<T>,
 ) {
   return runLibraryTransfer(async () => {
-    if ((await realpath(request.origin)) !== (await realpath(libraryRoot())))
+    if ((await realpath(request.origin)) !== (await realpath(libraryRoot()))) {
       throw new Error("The library changed before this transfer started.");
+    }
     return transferJobStore().run(request, operation);
   });
 }
@@ -226,7 +248,9 @@ function activeContext() {
   return current?.active ? current : undefined;
 }
 export function checkTransferCancellation(): void {
-  if (activeContext()?.cancelled) throw new TransferCancelledError();
+  if (activeContext()?.cancelled) {
+    throw new TransferCancelledError();
+  }
 }
 export async function transferPhase(
   phase: string,
@@ -234,7 +258,9 @@ export async function transferPhase(
 ): Promise<void> {
   checkTransferCancellation();
   const current = activeContext();
-  if (!current) return;
+  if (!current) {
+    return;
+  }
   Object.assign(current.job, {
     phase,
     total,
@@ -247,7 +273,9 @@ export async function transferPhase(
 }
 export async function transferProgress(path: string, size = 0): Promise<void> {
   const current = activeContext();
-  if (!current) return;
+  if (!current) {
+    return;
+  }
   current.job.completed += 1;
   current.job.bytes += size;
   current.job.currentFile = path;

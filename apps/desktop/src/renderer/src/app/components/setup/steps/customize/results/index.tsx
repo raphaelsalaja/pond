@@ -1,6 +1,7 @@
 import { IconMagnifier, IconSparkle } from "@pond/icons";
 import type { ReactNode } from "react";
-import { Art, type ArtKind } from "../../../demo";
+import { Art } from "../../../demo";
+import type { ArtKind } from "../../../demo";
 import styles from "./styles.module.css";
 
 const MATCHES = [

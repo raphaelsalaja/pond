@@ -23,12 +23,12 @@ it("appends shortcut actions without replacing the draft and rejects oversized i
       "Keep my notes\n\nSummarize these Saves.",
     );
     await act(async () => {
-      assistant.setDraft("x".repeat(31990));
+      assistant.setDraft("x".repeat(31_990));
       expect(assistant.appendDraft("This will not fit.")).toBe(false);
       expect(assistant.quote("Neither will this quote.")).toBe(false);
     });
     const result = JSON.parse(harness.host.textContent || "{}");
-    expect(result.draft).toBe("x".repeat(31990));
+    expect(result.draft).toBe("x".repeat(31_990));
     expect(result.error).toContain("quote is too long");
   } finally {
     await harness.unmount();

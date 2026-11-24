@@ -1,6 +1,7 @@
 import { Slider as SliderBase } from "@base-ui/react/slider";
 import { clsx as cn } from "clsx";
 import { useState } from "react";
+import { isHTMLElement } from "../../dom";
 import { useVideo } from "../context";
 import { clamp, formatTime } from "../lib";
 import styles from "./styles.module.css";
@@ -8,6 +9,26 @@ import styles from "./styles.module.css";
 interface ScrubberProps {
   className?: string;
   renderPreview?: (time: number) => React.ReactNode;
+}
+
+function isValueList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return Array.isArray(value);
+}
+
+function firstValue(value: number | ReadonlyArray<number>): number {
+  return isValueList(value) ? (value[0] ?? 0) : value;
+}
+
+function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+  const root = event.currentTarget;
+  requestAnimationFrame(() => {
+    const focused = root.ownerDocument.activeElement;
+    if (isHTMLElement(focused) && root.contains(focused)) {
+      focused.blur();
+    }
+  });
 }
 
 export function Scrubber({ className, renderPreview }: ScrubberProps) {
@@ -23,20 +44,12 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    if (rect.width === 0) return;
+    if (rect.width === 0) {
+      return;
+    }
     setPointer({
       at: clamp((event.clientX - rect.left) / rect.width, 0, 1),
       inside: true,
-    });
-  };
-
-  const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    const root = event.currentTarget;
-    requestAnimationFrame(() => {
-      const focused = root.ownerDocument.activeElement;
-      if (focused instanceof HTMLElement && root.contains(focused)) {
-        focused.blur();
-      }
     });
   };
 
@@ -50,7 +63,7 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
       min={0}
       max={max}
       step={0.01}
-      onValueChange={(v) => actions.seek(Array.isArray(v) ? (v[0] ?? 0) : v)}
+      onValueChange={(v) => actions.seek(firstValue(v))}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerLeave={() =>

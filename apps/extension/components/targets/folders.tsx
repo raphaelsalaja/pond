@@ -1,18 +1,10 @@
 import { IconFolder } from "@pond/icons";
 import { PickerPanel, usePickerCursor } from "@pond/ui/picker-panel";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentPropsWithoutRef,
-  type CSSProperties,
-  Fragment,
-  useMemo,
-  useState,
-} from "react";
-import {
-  type FolderRow,
-  folderRows,
-  searchFolders,
-} from "@/utils/library-targets";
+import { Fragment, useMemo, useState } from "react";
+import type { ComponentPropsWithoutRef, CSSProperties } from "react";
+import { folderRows, searchFolders } from "@/utils/library-targets";
+import type { FolderRow } from "@/utils/library-targets";
 import type { Folder } from "@/utils/messaging";
 import styles from "./styles.module.css";
 
@@ -28,8 +20,12 @@ const SWATCHES = new Set([
 ]);
 
 function folderColor(color: string | null): string | undefined {
-  if (!color) return undefined;
-  if (SWATCHES.has(color)) return `var(--ds-${color})`;
+  if (!color) {
+    return undefined;
+  }
+  if (SWATCHES.has(color)) {
+    return `var(--ds-${color})`;
+  }
   return /^#[\da-f]{3,8}$/i.test(color) ? color : undefined;
 }
 
@@ -41,7 +37,7 @@ interface Entry {
 
 interface Section {
   label: string | null;
-  entries: Entry[];
+  entries: Array<Entry>;
 }
 
 interface RowStyle extends CSSProperties {
@@ -50,12 +46,14 @@ interface RowStyle extends CSSProperties {
 
 const entryId = (entry: Entry) => entry.id;
 
-interface FoldersProps
-  extends Omit<ComponentPropsWithoutRef<"div">, "onChange"> {
-  folders: Folder[];
-  recentIds: string[];
-  value: string[];
-  onValueChange: (value: string[]) => void;
+interface FoldersProps extends Omit<
+  ComponentPropsWithoutRef<"div">,
+  "onChange"
+> {
+  folders: Array<Folder>;
+  recentIds: Array<string>;
+  value: Array<string>;
+  onValueChange: (value: Array<string>) => void;
 }
 
 export function Folders({
@@ -71,23 +69,25 @@ export function Folders({
   const selected = new Set(value);
   const searching = query.trim().length > 0;
 
-  const sections = useMemo<Section[]>(() => {
-    const entries = (prefix: string, list: FolderRow[], flat: boolean) =>
+  const sections = useMemo<Array<Section>>(() => {
+    const entries = (prefix: string, list: Array<FolderRow>, flat: boolean) =>
       list.map((row) => ({ id: `${prefix}-${row.folder.id}`, row, flat }));
-    if (searching)
+    if (searching) {
       return [
         {
           label: null,
           entries: entries("match", searchFolders(rows, query), true),
         },
       ];
+    }
     const byId = new Map(rows.map((row) => [row.folder.id, row]));
     const recent = recentIds.flatMap((id) => {
       const row = byId.get(id);
       return row ? [row] : [];
     });
-    if (recent.length === 0)
+    if (recent.length === 0) {
       return [{ label: null, entries: entries("all", rows, false) }];
+    }
     return [
       { label: "Recent", entries: entries("recent", recent, true) },
       { label: "All Folders", entries: entries("all", rows, false) },

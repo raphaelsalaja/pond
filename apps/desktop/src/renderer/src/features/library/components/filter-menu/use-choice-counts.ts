@@ -17,20 +17,31 @@ export interface ChoiceCounts {
   empty: number;
 }
 
+function isFieldId(id: string): id is FieldId {
+  return id in FIELD_DESCRIPTORS;
+}
+
+/** Rebuilds the field list from its joined key, so callers can pass a fresh array every render. */
+function fieldsOfKey(key: string): Array<FieldId> {
+  return key ? key.split(",").filter(isFieldId) : [];
+}
+
 export function useFieldCounts(
-  fields: readonly FieldId[],
+  fields: ReadonlyArray<FieldId>,
 ): Map<FieldId, ChoiceCounts> {
   const saves = useSaves();
   const nav = useLibraryNav() ?? ALL;
   const memberships = useFolderMemberships();
   const folders = useFolders();
   const key = fields.join(",");
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` stands in for `fields`, which callers rebuild every render.
+  const keyedFields = useMemo(() => fieldsOfKey(key), [key]);
   return useMemo(() => {
     const result = new Map<FieldId, ChoiceCounts>(
-      fields.map((field) => [field, { counts: new Map(), empty: 0 }]),
+      keyedFields.map((field) => [field, { counts: new Map(), empty: 0 }]),
     );
-    if (!fields.length) return result;
+    if (!keyedFields.length) {
+      return result;
+    }
     const scoped = applyNavFilter(
       saves.filter((save) =>
         nav.kind === "trash" ? !!save.deletedAt : !save.deletedAt,
@@ -45,18 +56,21 @@ export function useFieldCounts(
         const projected = FIELD_DESCRIPTORS[field].project(record);
         const values = Array.isArray(projected)
           ? projected
-          : projected == null || projected === ""
+          : projected === null || projected === undefined || projected === ""
             ? []
             : [projected];
-        if (!values.length) tally.empty++;
+        if (!values.length) {
+          tally.empty++;
+        }
         for (const value of new Set(
           values.map((value) => String(value).toLowerCase()),
-        ))
+        )) {
           tally.counts.set(value, (tally.counts.get(value) ?? 0) + 1);
+        }
       }
     }
     return result;
-  }, [saves, nav, memberships, folders, key]);
+  }, [saves, nav, memberships, folders, keyedFields]);
 }
 
 export function useChoiceCounts(field: FieldId): ChoiceCounts {

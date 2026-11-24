@@ -19,15 +19,15 @@ import {
   mix,
   Pointer,
   progress,
-  type Tile,
   tileRect,
 } from "@pond/video";
+import type { Tile } from "@pond/video";
 import { added, LIBRARY, media, PREVIEW } from "../data";
 import { CUES, end } from "../timeline";
 import { Pane } from "./pane";
 import styles from "./styles.module.css";
 
-const TILES: Tile[] = LIBRARY.map((shot, index) => ({
+const TILES: Array<Tile> = LIBRARY.map((shot, index) => ({
   key: shot.id,
   src: media(shot.id),
   title: shot.title,
@@ -118,7 +118,9 @@ export function LibrarySidebar({ t }: { t: number }) {
 export function Library({ t }: { t: number }) {
   const rise = ease.outQuint(progress(t, CUES.windowRise, 1100));
   const away = ease.inOut(progress(t, end("preview") - 650, 600));
-  if (t < CUES.windowRise - 50 || away >= 1) return null;
+  if (t < CUES.windowRise - 50 || away >= 1) {
+    return null;
+  }
 
   const pointer = keyed(t, POINTER);
   const pointerOpacity =

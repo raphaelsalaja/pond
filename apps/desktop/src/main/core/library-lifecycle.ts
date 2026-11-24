@@ -12,8 +12,9 @@ export function libraryPathForName(source: string, name: string): string {
     trimmed === "." ||
     trimmed === ".." ||
     INVALID_NAME.test(trimmed)
-  )
+  ) {
     throw new Error("Choose a name without slashes or colons.");
+  }
   return join(dirname(source), `${trimmed}.pond`);
 }
 
@@ -31,8 +32,9 @@ export async function renameLibraryBundle(
   }
   const caseOnlyRename =
     destination.toLocaleLowerCase() === source.toLocaleLowerCase();
-  if (existsSync(destination) && !caseOnlyRename)
+  if (existsSync(destination) && !caseOnlyRename) {
     throw new Error("A library with that name already exists.");
+  }
   if (caseOnlyRename) {
     const temporary = `${source}.rename-${process.pid}`;
     await rename(source, temporary);
@@ -61,7 +63,9 @@ export async function rollbackLibraryRename(
   destination: string,
   previousName: string,
 ): Promise<void> {
-  if (source !== destination) await rename(destination, source);
+  if (source !== destination) {
+    await rename(destination, source);
+  }
   updateLibraryIdentity(source, { name: previousName });
 }
 
@@ -69,8 +73,12 @@ export async function removeMovedLibrarySource(
   source: string,
   destination: string,
 ): Promise<boolean> {
-  if (source === destination) return true;
-  if (!existsSync(destination)) return false;
+  if (source === destination) {
+    return true;
+  }
+  if (!existsSync(destination)) {
+    return false;
+  }
   try {
     await rm(source, { recursive: true });
     return true;

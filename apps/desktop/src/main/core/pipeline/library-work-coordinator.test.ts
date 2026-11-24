@@ -1,11 +1,9 @@
 import { expect, it, vi } from "vitest";
-import {
-  createLibraryWorkCoordinator,
-  type LibraryWorkOperations,
-} from "./library-work-coordinator";
+import { createLibraryWorkCoordinator } from "./library-work-coordinator";
+import type { LibraryWorkOperations } from "./library-work-coordinator";
 
 function setup(wasPaused: boolean) {
-  const order: string[] = [];
+  const order: Array<string> = [];
   const asyncStep = (name: string) =>
     vi.fn(async () => {
       order.push(name);

@@ -5,6 +5,9 @@ const ARITY = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0 };
 
 const num = (value) => Number.parseFloat(value ?? "0");
 
+const vectorAngle = (ux, uy, vx, vy) =>
+  Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+
 function arcCenter([x1, y1], [x2, y2], rx, ry, phi, large, sweep) {
   const cos = Math.cos(phi);
   const sin = Math.sin(phi);
@@ -27,17 +30,19 @@ function arcCenter([x1, y1], [x2, y2], rx, ry, phi, large, sweep) {
     Math.sqrt(Math.max(0, numerator / denominator));
   const cxp = (factor * rxa * py) / rya;
   const cyp = (-factor * rya * px) / rxa;
-  const angle = (ux, uy, vx, vy) =>
-    Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
-  const start = angle(1, 0, (px - cxp) / rxa, (py - cyp) / rya);
-  let delta = angle(
+  const start = vectorAngle(1, 0, (px - cxp) / rxa, (py - cyp) / rya);
+  let delta = vectorAngle(
     (px - cxp) / rxa,
     (py - cyp) / rya,
     (-px - cxp) / rxa,
     (-py - cyp) / rya,
   );
-  if (!sweep && delta > 0) delta -= 2 * Math.PI;
-  if (sweep && delta < 0) delta += 2 * Math.PI;
+  if (!sweep && delta > 0) {
+    delta -= 2 * Math.PI;
+  }
+  if (sweep && delta < 0) {
+    delta += 2 * Math.PI;
+  }
   return {
     cx: cos * cxp - sin * cyp + (x1 + x2) / 2,
     cy: sin * cxp + cos * cyp + (y1 + y2) / 2,
@@ -59,7 +64,9 @@ function pathSegments(d) {
   let control = null;
   let move = true;
   while (i < tokens.length) {
-    if (/[a-z]/i.test(tokens[i])) command = tokens[i++];
+    if (/[a-z]/i.test(tokens[i])) {
+      command = tokens[i++];
+    }
     const upper = command.toUpperCase();
     const relative = command !== upper;
     const args = tokens.slice(i, i + ARITY[upper]).map(Number);
@@ -157,8 +164,12 @@ function roundRect(attrs) {
 
 /** Every shape as one path, so circles and rects compare with paths. */
 function toPath(tag, attrs) {
-  if (tag === "path") return attrs.d;
-  if (tag === "rect") return roundRect(attrs);
+  if (tag === "path") {
+    return attrs.d;
+  }
+  if (tag === "rect") {
+    return roundRect(attrs);
+  }
   const cx = num(attrs.cx);
   const cy = num(attrs.cy);
   const r = num(attrs.r);
@@ -206,7 +217,9 @@ export function flatten(list, step = 0.05) {
           ? length * 1.6
           : length;
     const count = Math.max(1, Math.ceil(span / step));
-    for (let i = 0; i <= count; i++) points.push(pointAt(segment, i / count));
+    for (let i = 0; i <= count; i++) {
+      points.push(pointAt(segment, i / count));
+    }
   }
   return points;
 }

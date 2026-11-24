@@ -1,9 +1,5 @@
-import {
-  CONTRAST_DEFAULT,
-  CONTRAST_MAX,
-  CONTRAST_MIN,
-  type ThemeDef,
-} from "./prefs.types";
+import { CONTRAST_DEFAULT, CONTRAST_MAX, CONTRAST_MIN } from "./prefs.types";
+import type { ThemeDef } from "./prefs.types";
 
 export interface Oklch {
   l: number;
@@ -17,7 +13,9 @@ function clamp(value: number, min: number, max: number): number {
 
 function parseHex(hex: string): [number, number, number] | null {
   const normalized = normalizeHex(hex);
-  if (!normalized) return null;
+  if (!normalized) {
+    return null;
+  }
   const int = Number.parseInt(normalized.slice(1), 16);
   return [(int >> 16) & 0xff, (int >> 8) & 0xff, int & 0xff];
 }
@@ -45,7 +43,9 @@ function srgbToLinear(channel: number): number {
  */
 export function hexToOklch(hex: string): Oklch | null {
   const rgb = parseHex(hex);
-  if (!rgb) return null;
+  if (!rgb) {
+    return null;
+  }
   const r = srgbToLinear(rgb[0]);
   const g = srgbToLinear(rgb[1]);
   const b = srgbToLinear(rgb[2]);

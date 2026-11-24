@@ -1,5 +1,6 @@
 import { IconCanvas, IconPencil, IconPlus, IconTrash } from "@pond/icons";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import type { CanvasSummary } from "@shared/canvas-contracts";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
@@ -20,7 +21,7 @@ export async function runCanvasAction(
   }
 }
 
-export function createCanvas(saveIds: readonly string[] = []): void {
+export function createCanvas(saveIds: ReadonlyArray<string> = []): void {
   void runCanvasAction(async () => {
     await canvases.create(saveIds);
   });
@@ -28,11 +29,13 @@ export function createCanvas(saveIds: readonly string[] = []): void {
 
 export function addSavesToCanvas(
   canvasId: string,
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): void {
   void runCanvasAction(async () => {
     await canvases.addSaves(canvasId, saveIds);
-    if (canvases.isOpen(canvasId)) return;
+    if (canvases.isOpen(canvasId)) {
+      return;
+    }
     const canvas = canvases.snapshot().find((entry) => entry.id === canvasId);
     notify({
       id: "canvas-add-saves",
@@ -44,25 +47,28 @@ export function addSavesToCanvas(
 
 export function createCanvasFromFolder(
   name: string,
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<void> {
   const plan = planFolderSaves(saveIds);
   return runCanvasAction(async () => {
     const canvas = await canvases.create(plan.saveIds, name.slice(0, 200));
-    if (plan.overflow)
+    if (plan.overflow) {
       notify({
         id: "canvas-from-folder",
         ...folderSavesNotice(canvas.name, plan),
       });
+    }
   });
 }
 
 export function addFolderSavesToCanvas(
   canvasId: string,
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<void> {
   const canvas = canvases.snapshot().find((entry) => entry.id === canvasId);
-  if (!canvas) return Promise.resolve();
+  if (!canvas) {
+    return Promise.resolve();
+  }
   const plan = planFolderSaves(saveIds, canvas);
   return runCanvasAction(async () => {
     await canvases.addSaves(canvasId, plan.saveIds, "beside");
@@ -87,7 +93,7 @@ function confirmDeleteCanvas(canvas: CanvasSummary): void {
   });
 }
 
-export function sectionItems(): MenuItemSpec[] {
+export function sectionItems(): Array<MenuItemSpec> {
   return [
     {
       label: "New Canvas",
@@ -97,7 +103,7 @@ export function sectionItems(): MenuItemSpec[] {
   ];
 }
 
-export function canvasItems(canvas: CanvasSummary): MenuItemSpec[] {
+export function canvasItems(canvas: CanvasSummary): Array<MenuItemSpec> {
   return [
     {
       label: "Open",

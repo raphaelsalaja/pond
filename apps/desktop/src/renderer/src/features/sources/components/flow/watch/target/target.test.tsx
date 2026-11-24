@@ -1,5 +1,7 @@
-import { act, type ComponentProps } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ComponentProps } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { WatchTargetProvider, WatchTargetSection, WatchTargetSubmit } from "./";
 
@@ -44,9 +46,13 @@ async function render(
   );
 }
 
+function noop() {}
+
 function field() {
   const input = host.querySelector<HTMLInputElement>('input[type="text"]');
-  if (!input) throw new Error("Missing input");
+  if (!input) {
+    throw new Error("Missing input");
+  }
   return input;
 }
 
@@ -54,7 +60,9 @@ function watchButton() {
   const button = Array.from(host.querySelectorAll("button")).find(
     (button) => button.textContent === "Watch",
   );
-  if (!button) throw new Error("Missing Watch button");
+  if (!button) {
+    throw new Error("Missing Watch button");
+  }
   return button;
 }
 
@@ -190,7 +198,7 @@ it("explains a profile Pond couldn't find and clears it on edit", async () => {
 
 it("prevents duplicate starts and lets the user retry after a failure", async () => {
   vi.useFakeTimers({ toFake: ["setTimeout"] });
-  let fail: (error: Error) => void = () => {};
+  let fail: (error: Error) => void = noop;
   addWatch.mockImplementationOnce(
     () =>
       new Promise((_resolve, reject) => {

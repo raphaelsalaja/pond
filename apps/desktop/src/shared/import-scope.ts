@@ -9,13 +9,13 @@ import type {
 
 export interface ImportScopeOptions {
   /** Lists the Account sync walks separately, so leaving one out skips its requests. */
-  listKinds: readonly ListKind[];
+  listKinds: ReadonlyArray<ListKind>;
   /** The kind of collection that can narrow the saved list, or null when the sync can only walk all of it. */
   collections: ImportCollectionKind | null;
   /** Whether Add to Folders can file every collection when none are picked; false where an empty pick means one default list. */
   fileEveryCollection: boolean;
   /** Media kinds the Source mixes; empty when every save holds the same kind. */
-  mediaKinds: readonly ImportMediaKind[];
+  mediaKinds: ReadonlyArray<ImportMediaKind>;
   /** Whether captures carry a publish date the `since` limit can compare. */
   since: boolean;
   /** Set when `since` compares the day you saved an item, because the Source has no publish date. */
@@ -42,8 +42,8 @@ const EVERYTHING_ONLY: ImportScopeOptions = {
   since: false,
 };
 
-const SAVED_AND_LIKED: readonly ListKind[] = ["saved", "liked"];
-const ALL_MEDIA: readonly ImportMediaKind[] = ["image", "video", "text"];
+const SAVED_AND_LIKED: ReadonlyArray<ListKind> = ["saved", "liked"];
+const ALL_MEDIA: ReadonlyArray<ImportMediaKind> = ["image", "video", "text"];
 
 const IMPORT_SCOPE_OPTIONS = {
   mymind: EVERYTHING_ONLY,
@@ -184,8 +184,9 @@ export function normalizeImportScope(
   if (scope.listKinds && options.listKinds.length > 0) {
     const chosen = new Set(scope.listKinds);
     const listKinds = options.listKinds.filter((kind) => chosen.has(kind));
-    if (listKinds.length === 0) next.listKinds = [];
-    else if (listKinds.length < options.listKinds.length) {
+    if (listKinds.length === 0) {
+      next.listKinds = [];
+    } else if (listKinds.length < options.listKinds.length) {
       next.listKinds = listKinds;
     }
   }
@@ -200,7 +201,9 @@ export function normalizeImportScope(
       return { ok: false, problem: "no_collections" };
     }
     next.collections = collections;
-    if (scope.addToFolders === false) next.addToFolders = false;
+    if (scope.addToFolders === false) {
+      next.addToFolders = false;
+    }
   } else if (
     scope.addToFolders === true &&
     options.fileEveryCollection &&
@@ -212,7 +215,9 @@ export function normalizeImportScope(
   if (scope.mediaKinds && options.mediaKinds.length > 0) {
     const chosen = new Set(scope.mediaKinds);
     const mediaKinds = options.mediaKinds.filter((kind) => chosen.has(kind));
-    if (mediaKinds.length === 0) return { ok: false, problem: "no_media" };
+    if (mediaKinds.length === 0) {
+      return { ok: false, problem: "no_media" };
+    }
     if (mediaKinds.length < options.mediaKinds.length) {
       next.mediaKinds = mediaKinds;
     }
@@ -245,19 +250,24 @@ export function accountImportScope(
 
 /** Sources with Accounts where none imports Likes, so the extension stops saving likes there too. */
 export function sourcesSkippingLikes(
-  accounts: readonly {
+  accounts: ReadonlyArray<{
     source: Source;
     sync: { importScope?: ImportScope; syncLikes?: boolean };
-  }[],
+  }>,
 ): Set<Source> {
   const skipping = new Set<Source>();
   const importing = new Set<Source>();
   for (const account of accounts) {
     const scope = accountImportScope(account.source, account.sync);
-    if (importsListKind(scope, "liked")) importing.add(account.source);
-    else skipping.add(account.source);
+    if (importsListKind(scope, "liked")) {
+      importing.add(account.source);
+    } else {
+      skipping.add(account.source);
+    }
   }
-  for (const source of importing) skipping.delete(source);
+  for (const source of importing) {
+    skipping.delete(source);
+  }
   return skipping;
 }
 
@@ -271,8 +281,12 @@ export function importsListKind(
 /** An empty `listKinds` imports nothing. Omitting the field still imports every list. */
 export function importsAnyList(source: Source, scope: ImportScope): boolean {
   const options = importScopeOptions(source);
-  if (options.listKinds.length === 0) return true;
-  if (!scope.listKinds) return true;
+  if (options.listKinds.length === 0) {
+    return true;
+  }
+  if (!scope.listKinds) {
+    return true;
+  }
   return scope.listKinds.length > 0;
 }
 
@@ -293,7 +307,9 @@ export function collectionFiling(
   scope: ImportScope | undefined,
 ): CollectionFiling {
   const options = importScopeOptions(source);
-  if (!options.collections || !importsListKind(scope, "saved")) return "off";
+  if (!options.collections || !importsListKind(scope, "saved")) {
+    return "off";
+  }
   if (scope?.collections?.length) {
     return scope.addToFolders === false ? "off" : "picked";
   }
@@ -307,9 +323,11 @@ export type ImportFilterReason = "list" | "media" | "since";
 /** Skips a save only from lists the scope leaves out; a save on no known list is kept. */
 export function listFilterReason(
   scope: ImportScope | undefined,
-  listKinds: readonly ListKind[],
+  listKinds: ReadonlyArray<ListKind>,
 ): "list" | null {
-  if (!scope?.listKinds || listKinds.length === 0) return null;
+  if (!scope?.listKinds || listKinds.length === 0) {
+    return null;
+  }
   return listKinds.some((kind) => scope.listKinds?.includes(kind))
     ? null
     : "list";
@@ -330,13 +348,15 @@ export function savedSinceStart(
 export function importFilterReason(
   scope: ImportScope | undefined,
   save: {
-    listKinds: readonly ListKind[];
+    listKinds: ReadonlyArray<ListKind>;
     mediaType: MediaType | null;
     publishedAt: Date | null;
   },
 ): ImportFilterReason | null {
   const list = listFilterReason(scope, save.listKinds);
-  if (list) return list;
+  if (list) {
+    return list;
+  }
   if (scope?.mediaKinds) {
     const kind =
       save.mediaType === "image" || save.mediaType === "video"
@@ -344,17 +364,23 @@ export function importFilterReason(
         : save.mediaType === null || save.mediaType === "text"
           ? "text"
           : null;
-    if (kind && !scope.mediaKinds.includes(kind)) return "media";
+    if (kind && !scope.mediaKinds.includes(kind)) {
+      return "media";
+    }
   }
   const start = scope?.since ? sinceStart(scope.since) : null;
-  if (start && save.publishedAt && save.publishedAt < start) return "since";
+  if (start && save.publishedAt && save.publishedAt < start) {
+    return "since";
+  }
   return null;
 }
 
 /** Local midnight that starts the `since` day, or null when it isn't a real calendar day. */
 export function sinceStart(since: string): Date | null {
   const match = DAY.exec(since);
-  if (!match) return null;
+  if (!match) {
+    return null;
+  }
   const [, year, month, day] = match.map(Number);
   if (year === undefined || month === undefined || day === undefined) {
     return null;
@@ -368,13 +394,15 @@ export function sinceStart(since: string): Date | null {
 }
 
 function uniqueCollections(
-  collections: readonly ImportCollection[],
-): ImportCollection[] {
+  collections: ReadonlyArray<ImportCollection>,
+): Array<ImportCollection> {
   const seen = new Set<string>();
-  const out: ImportCollection[] = [];
+  const out: Array<ImportCollection> = [];
   for (const collection of collections) {
     const id = collection.id.trim();
-    if (!id || seen.has(id)) continue;
+    if (!id || seen.has(id)) {
+      continue;
+    }
     seen.add(id);
     out.push({ id, name: collection.name.trim() || id });
   }

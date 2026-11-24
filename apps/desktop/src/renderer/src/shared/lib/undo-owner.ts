@@ -9,7 +9,9 @@ let owner: UndoOwner | null = null;
 export function claimUndo(next: UndoOwner): () => void {
   owner = next;
   return () => {
-    if (owner === next) owner = null;
+    if (owner === next) {
+      owner = null;
+    }
   };
 }
 

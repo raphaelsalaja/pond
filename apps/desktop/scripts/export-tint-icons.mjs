@@ -11,11 +11,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const tintsRoot = resolve(
-  dirname(fileURLToPath(import.meta.url)),
+  import.meta.dirname,
   "../../../packages/icons/brand/tints",
 );
 const ictool = "/Applications/Icon Composer.app/Contents/Executables/ictool";
@@ -47,7 +46,9 @@ if (!existsSync(ictool)) {
 const work = mkdtempSync(join(tmpdir(), "pond-tint-icons-"));
 for (const entry of readdirSync(tintsRoot, { withFileTypes: true })) {
   const source = join(tintsRoot, entry.name, "icon.icon");
-  if (!entry.isDirectory() || !existsSync(source)) continue;
+  if (!entry.isDirectory() || !existsSync(source)) {
+    continue;
+  }
   for (const { generation, rendition, file } of EXPORTS) {
     const exported = join(work, `${entry.name}-${generation}-${rendition}.png`);
     const result = spawnSync(

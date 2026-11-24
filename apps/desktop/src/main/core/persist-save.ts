@@ -6,12 +6,13 @@ import {
   writeEnrichmentSidecar,
 } from "./enrichment-sidecar";
 import { withMutationScope } from "./executor";
-import { applySavePatch, type WriteFileArgs } from "./pipeline/workers/apply";
+import { applySavePatch } from "./pipeline/workers/apply";
+import type { WriteFileArgs } from "./pipeline/workers/apply";
 
 interface PersistSaveOptions {
   actorReason: string;
-  newFiles?: WriteFileArgs[];
-  replaceFilesWithKind?: WriteFileArgs["kind"] | WriteFileArgs["kind"][];
+  newFiles?: Array<WriteFileArgs>;
+  replaceFilesWithKind?: WriteFileArgs["kind"] | Array<WriteFileArgs["kind"]>;
   writeInfo?: boolean;
 }
 
@@ -26,10 +27,13 @@ export async function persistSave(
       newFiles: opts.newFiles,
       replaceFilesWithKind: opts.replaceFilesWithKind,
     });
-    if (!updated) return null;
+    if (!updated) {
+      return null;
+    }
 
     const filesChanged =
-      (opts.newFiles?.length ?? 0) > 0 || opts.replaceFilesWithKind != null;
+      (opts.newFiles?.length ?? 0) > 0 ||
+      opts.replaceFilesWithKind !== undefined;
     if (opts.writeInfo || filesChanged || patchTouchesInfo(patch)) {
       await writeSaveInfo(updated);
     }

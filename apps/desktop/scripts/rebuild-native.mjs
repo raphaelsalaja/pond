@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { rebuild } from "@electron/rebuild";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 const appRoot = resolve(__dirname, "..");
 
 async function electronVersion() {
@@ -32,7 +31,9 @@ async function main() {
   console.log("[pond] native rebuild ok");
 }
 
-main().catch((err) => {
-  console.error("[pond] native rebuild failed:", err);
+function fail(error) {
+  console.error("[pond] native rebuild failed:", error);
   process.exit(1);
-});
+}
+
+main().catch(fail);

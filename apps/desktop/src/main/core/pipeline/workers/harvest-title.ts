@@ -5,7 +5,9 @@ export function keepsCurrentTitle(
   current: string | null | undefined,
   harvested: Pick<Capture, "title" | "extras">,
 ): boolean {
-  if (harvested.extras?.search) return false;
+  if (harvested.extras?.search) {
+    return false;
+  }
   const kept = current?.trim().toLowerCase() ?? "";
   const next = harvested.title?.trim().toLowerCase() ?? "";
   return next.length > 0 && kept.length > next.length && kept.includes(next);

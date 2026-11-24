@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { CaptureReceiptSchema } from "@pond/schema/capture";
 import type { CaptureReceipt, CaptureWebDraft } from "@pond/schema/capture";
 import { saves } from "@pond/schema/db";
 import type { NativeResponse } from "@pond/schema/native";
@@ -24,7 +25,9 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
@@ -51,7 +54,7 @@ async function trash(id: string) {
 async function saveFromExtension(
   draftId: string,
   item: CaptureWebDraft["items"][number],
-  tags: string[] = [],
+  tags: Array<string> = [],
 ): Promise<CaptureReceipt> {
   const ports = liveNativePorts();
   const accepted: NativeResponse = await dispatchNative(
@@ -73,12 +76,16 @@ async function saveFromExtension(
       { type: "capture.status", id: draftId },
       ports,
     );
-    if (!status.ok) throw new Error(`capture.status failed: ${status.error}`);
-    /** SAFETY: `capture.status` answers with the queue's CaptureReceipt. */
-    const receipt = status.data as CaptureReceipt;
-    if (receipt.state !== "accepted" && receipt.state !== "processing")
+    if (!status.ok) {
+      throw new Error(`capture.status failed: ${status.error}`);
+    }
+    const receipt = CaptureReceiptSchema.parse(status.data);
+    if (receipt.state !== "accepted" && receipt.state !== "processing") {
       return receipt;
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
   }
   throw new Error("capture never settled");
 }
@@ -103,7 +110,9 @@ describe.skipIf(!nativeSqliteAvailable())(
         rmSync(dir, { recursive: true, force: true });
       } catch (error) {
         /** Pond keeps `global.db` open until the process ends, and Windows can't delete an open file. */
-        if (process.platform !== "win32") throw error;
+        if (process.platform !== "win32") {
+          throw error;
+        }
       }
     });
 
@@ -112,7 +121,9 @@ describe.skipIf(!nativeSqliteAvailable())(
       const first = await saveFromExtension("first-save", page);
       expect(first).toMatchObject({ state: "complete", duplicateCount: 0 });
       const [saveId] = first.saveIds;
-      if (!saveId) throw new Error("first save returned no Save");
+      if (!saveId) {
+        throw new Error("first save returned no Save");
+      }
       const savedAt = (await row(saveId))?.savedAt;
 
       await trash(saveId);
@@ -146,7 +157,9 @@ describe.skipIf(!nativeSqliteAvailable())(
         filePaths: [file],
         fileSourceUrls: [image],
       });
-      if (!first.ok) throw new Error(first.error);
+      if (!first.ok) {
+        throw new Error(first.error);
+      }
       await trash(first.id);
 
       const again = await saveFromExtension("image-again", {

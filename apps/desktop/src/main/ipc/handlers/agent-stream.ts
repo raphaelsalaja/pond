@@ -1,8 +1,6 @@
 import { ipcMain } from "electron";
-import {
-  type AgentStreamRequest,
-  agentStreamRequest,
-} from "../../../shared/assistant";
+import { agentStreamRequest } from "../../../shared/assistant";
+import type { AgentStreamRequest } from "../../../shared/assistant";
 import { IPC } from "../../../shared/constants";
 import { isTrustedSender } from "../helpers";
 
@@ -11,7 +9,9 @@ type AgentStreamPayload = Parameters<typeof agentStreamRequest.safeParse>[0];
 export function registerAgentStream(): void {
   ipcMain.on(IPC.agentStream, (event, payload: AgentStreamPayload) => {
     const port = event.ports[0];
-    if (!port) return;
+    if (!port) {
+      return;
+    }
     port.start();
     if (!isTrustedSender(event)) {
       port.close();
@@ -50,15 +50,20 @@ async function reply(
     const reader = body.getReader();
     while (!signal.aborted) {
       const { done, value } = await reader.read();
-      if (done) break;
-      if (value) port.postMessage(value);
+      if (done) {
+        break;
+      }
+      if (value) {
+        port.postMessage(value);
+      }
     }
   } catch (error) {
-    if (!signal.aborted)
+    if (!signal.aborted) {
       await writeError(
         port,
         error instanceof Error ? error.message : "Could not reply. Try again.",
       );
+    }
     return;
   }
   port.close();
@@ -72,8 +77,12 @@ async function writeError(port: Electron.MessagePortMain, message: string) {
     const reader = body.getReader();
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
-      if (value) port.postMessage(value);
+      if (done) {
+        break;
+      }
+      if (value) {
+        port.postMessage(value);
+      }
     }
   }
   port.close();

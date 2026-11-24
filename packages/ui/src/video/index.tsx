@@ -7,18 +7,14 @@ import {
 } from "@pond/icons";
 import { clsx as cn } from "clsx";
 import { useMemo } from "react";
-import {
-  useVideo,
-  type VideoActions,
-  VideoContext,
-  type VideoContextValue,
-} from "./context";
+import { useVideo, VideoContext } from "./context";
+import type { VideoActions, VideoContextValue } from "./context";
 import { formatTime } from "./lib";
 import { Scrubber } from "./scrubber";
 import { SpeedSelect } from "./speed-select";
-import styles from "./styles.module.css";
 import { useAutoHide } from "./use-auto-hide";
 import { useMediaState } from "./use-media-state";
+import styles from "./styles.module.css";
 
 const ICON = 16;
 
@@ -74,7 +70,6 @@ function Root({
 
   return (
     <VideoContext value={value}>
-      {/* biome-ignore lint/a11y/useSemanticElements: a media player is a group of controls, not a form fieldset. */}
       <div
         ref={rootRef}
         role="group"
@@ -88,7 +83,7 @@ function Root({
   );
 }
 
-interface MediaProps extends React.ComponentPropsWithoutRef<"video"> {}
+type MediaProps = React.ComponentPropsWithoutRef<"video">;
 
 function Media({
   className,
@@ -97,9 +92,11 @@ function Media({
   ...props
 }: MediaProps) {
   const { meta } = useVideo();
+  const { registerVideo } = meta;
   return (
+    // oxlint-disable-next-line jsx-a11y/media-has-caption -- callers pass caption tracks as children when a Save has them
     <video
-      ref={meta.registerVideo}
+      ref={registerVideo}
       aria-label={ariaLabel}
       className={cn(styles.video, className)}
       playsInline
@@ -110,7 +107,7 @@ function Media({
   );
 }
 
-interface ControlsProps extends React.ComponentPropsWithoutRef<"div"> {}
+type ControlsProps = React.ComponentPropsWithoutRef<"div">;
 
 function Controls({ className, children, ...props }: ControlsProps) {
   const { state, chrome } = useVideo();
@@ -228,7 +225,9 @@ function TimeDisplay({
 
 function FullscreenButton({ className, ...props }: ButtonProps) {
   const { state, actions } = useVideo();
-  if (!state.fullscreenSupported) return null;
+  if (!state.fullscreenSupported) {
+    return null;
+  }
   return (
     <button
       type="button"

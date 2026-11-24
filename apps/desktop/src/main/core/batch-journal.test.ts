@@ -9,7 +9,8 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { inverse, type Transaction } from "@pond/schema/tx";
+import { inverse } from "@pond/schema/tx";
+import type { Transaction } from "@pond/schema/tx";
 import { afterEach, expect, it } from "vitest";
 import {
   prepareBatchJournal,
@@ -17,10 +18,11 @@ import {
   runRecoverableBatch,
 } from "./batch-journal";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
-  for (const root of roots.splice(0))
+  for (const root of roots.splice(0)) {
     await rm(root, { recursive: true, force: true });
+  }
 });
 async function fixture() {
   const root = await mkdtemp(join(tmpdir(), "pond-batch-"));
@@ -36,7 +38,7 @@ async function fixture() {
       `original-image-${id}`,
     );
   }
-  const transactions: Transaction[] = ["a", "b"].map((id) => ({
+  const transactions: Array<Transaction> = ["a", "b"].map((id) => ({
     kind: "update",
     model: "save",
     id,
@@ -56,7 +58,9 @@ it("restores successful earlier files and the partially written failing file bef
       transactions,
       async applyDisk(tx) {
         await writeFile(info(tx.id), "partial");
-        if (tx.id === "b") throw new Error("disk full");
+        if (tx.id === "b") {
+          throw new Error("disk full");
+        }
       },
       commitIndex() {
         committed = true;

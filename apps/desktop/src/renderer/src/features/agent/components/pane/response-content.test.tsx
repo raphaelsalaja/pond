@@ -1,3 +1,4 @@
+import { isElement } from "@pond/ui/dom";
 import type { AssistantChange } from "@shared/assistant";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -24,13 +25,17 @@ afterEach(async () => {
 
 /** Card buttons carry a decorative shortcut hint; read the words only. */
 function buttonLabel(button: Element) {
-  /** SAFETY: a deep clone of an Element is an Element. */
-  const copy = button.cloneNode(true) as Element;
-  for (const hidden of copy.querySelectorAll("[aria-hidden]")) hidden.remove();
+  const copy = button.cloneNode(true);
+  if (!isElement(copy)) {
+    throw new Error("Cloned button is not an element");
+  }
+  for (const hidden of copy.querySelectorAll("[aria-hidden]")) {
+    hidden.remove();
+  }
   return copy.textContent;
 }
 
-async function renderReview(changes: AssistantChange[]) {
+async function renderReview(changes: Array<AssistantChange>) {
   await act(async () =>
     root.render(
       <ResponseContent
@@ -152,11 +157,8 @@ it("shows proposed tags as chips and leaves changed Saves out of the consulted l
   ).toEqual(["Preview Clock 2", "Preview Clock 3"]);
 });
 
-it("captions resolved rows with their status and leaves a lone pending change to the footer", async () => {
-  const change = (
-    index: number,
-    status: "pending" | "applied" | "dismissed",
-  ) => ({
+function tagChange(index: number, status: "pending" | "applied" | "dismissed") {
+  return {
     id: `save-${index}:tags`,
     saveId: `save-${index}`,
     title: `Clock ${index}`,
@@ -165,7 +167,10 @@ it("captions resolved rows with their status and leaves a lone pending change to
     field: "tags" as const,
     before: [],
     after: ["Clock"],
-  });
+  };
+}
+
+it("captions resolved rows with their status and leaves a lone pending change to the footer", async () => {
   await act(async () =>
     root.render(
       <ResponseContent
@@ -176,9 +181,9 @@ it("captions resolved rows with their status and leaves a lone pending change to
           content: "Proposed tags.",
           metadata: {
             changes: [
-              change(1, "pending"),
-              change(2, "applied"),
-              change(3, "dismissed"),
+              tagChange(1, "pending"),
+              tagChange(2, "applied"),
+              tagChange(3, "dismissed"),
             ],
           },
         }}
@@ -193,9 +198,12 @@ it("captions resolved rows with their status and leaves a lone pending change to
   const tile = (title: string) =>
     host.querySelector(`[aria-label="Open ${title}"]`)?.closest("li");
   const labels = (title: string) =>
-    [...(tile(title)?.querySelectorAll("button[aria-label]") ?? [])]
-      .map((button) => button.getAttribute("aria-label"))
-      .filter((label) => !label?.startsWith("Open"));
+    [...(tile(title)?.querySelectorAll("button[aria-label]") ?? [])].flatMap(
+      (button) => {
+        const label = button.getAttribute("aria-label");
+        return label?.startsWith("Open") ? [] : [label];
+      },
+    );
 
   expect(tile("Clock 1")?.textContent).toContain("+Clock");
   expect(labels("Clock 1")).toEqual([]);
@@ -432,7 +440,7 @@ const idle: AssistantState = {
   focusRequest: 0,
 };
 
-async function renderReply(content: string, messages?: string[]) {
+async function renderReply(content: string, messages?: Array<string>) {
   await act(async () =>
     root.render(
       <AgentMessage
@@ -482,8 +490,9 @@ it("copies the whole reply through Pond from beside the last bubble", async () =
   const messages = ["Hey!", "Here's the second."];
   await renderReply(messages.join("\n\n"), messages);
   const copy = host.querySelector<HTMLButtonElement>('[aria-label="Copy"]');
-  const bubbles = host.querySelectorAll('[data-slot="message-bubble"]');
-  const last = bubbles[bubbles.length - 1];
+  const last = [...host.querySelectorAll('[data-slot="message-bubble"]')].at(
+    -1,
+  );
   expect(copy && last?.compareDocumentPosition(copy)).toBe(
     Node.DOCUMENT_POSITION_FOLLOWING,
   );

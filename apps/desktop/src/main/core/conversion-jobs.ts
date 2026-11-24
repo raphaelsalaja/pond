@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
-import {
-  type ConversionJob,
-  type ConversionPreset,
-  ConversionPresetSchema,
-  type ImageCompressionRequest,
-  type VideoCompressionRequest,
+import { ConversionPresetSchema } from "../../shared/conversion-contracts";
+import type {
+  ConversionJob,
+  ConversionPreset,
+  ImageCompressionRequest,
+  VideoCompressionRequest,
 } from "../../shared/conversion-contracts";
 import { resolveSaveFilePath } from "../ipc/helpers";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
@@ -20,12 +20,13 @@ import {
 
 export function conversionPresets(
   root = resolvePaths().libraryRoot,
-): ConversionPreset[] {
+): Array<ConversionPreset> {
   const file = join(root, "conversion-presets.json");
-  const stored = readBundleJson<ConversionPreset[]>(file);
+  const stored = readBundleJson(file);
   if (!stored) {
-    if (existsSync(file))
+    if (existsSync(file)) {
       throw new Error("Conversion presets could not be read.");
+    }
     return [];
   }
   return z.array(ConversionPresetSchema).parse(stored.data);
@@ -64,7 +65,9 @@ const runtime: ConversionRuntime = {
   scope: () => resolvePaths().libraryRoot,
   async resolve(id, fileIndex) {
     const target = await resolveSaveFilePath(id, fileIndex);
-    if (!target.ok) throw new Error(`No file is available for save ${id}.`);
+    if (!target.ok) {
+      throw new Error(`No file is available for save ${id}.`);
+    }
     return target.path;
   },
   async withSource(id, fileIndex, operation) {
@@ -84,9 +87,9 @@ export function createConversionJobs(operations: ConversionRuntime) {
     { value: ConversionJob; controller: AbortController }
   >();
   function runCompression(
-    requested: readonly string[],
+    requested: ReadonlyArray<string>,
     compress: (
-      ids: string[],
+      ids: Array<string>,
       hooks: {
         signal: AbortSignal;
         assertActive: () => void;
@@ -103,10 +106,11 @@ export function createConversionJobs(operations: ConversionRuntime) {
     if (
       [...jobs.values()].filter((job) => job.value.status === "running")
         .length >= 2
-    )
+    ) {
       throw new Error(
         "Two conversion jobs are already running. Wait or cancel one before starting another.",
       );
+    }
     const scope = operations.scope();
     const ids = [...new Set(requested)];
     const value: ConversionJob = {
@@ -133,10 +137,11 @@ export function createConversionJobs(operations: ConversionRuntime) {
         const result = await compress(ids, {
           signal: controller.signal,
           assertActive() {
-            if (operations.scope() !== scope)
+            if (operations.scope() !== scope) {
               throw new Error(
                 "The active library changed. Start the compression again.",
               );
+            }
           },
           onProgress(completed, total) {
             value.completed = completed;
@@ -164,7 +169,7 @@ export function createConversionJobs(operations: ConversionRuntime) {
   }
   return {
     start(input: {
-      ids: readonly string[];
+      ids: ReadonlyArray<string>;
       fileIndex: number;
       preset: ConversionPreset;
       directory: string;
@@ -172,10 +177,11 @@ export function createConversionJobs(operations: ConversionRuntime) {
       if (
         [...jobs.values()].filter((job) => job.value.status === "running")
           .length >= 2
-      )
+      ) {
         throw new Error(
           "Two conversion jobs are already running. Wait or cancel one before starting another.",
         );
+      }
       const scope = operations.scope();
       const ids = [...new Set(input.ids)];
       const value: ConversionJob = {
@@ -198,23 +204,29 @@ export function createConversionJobs(operations: ConversionRuntime) {
       const controller = new AbortController();
       jobs.set(value.id, { value, controller });
       for (const [id, job] of jobs) {
-        if (jobs.size <= 20) break;
-        if (job.value.status !== "running") jobs.delete(id);
+        if (jobs.size <= 20) {
+          break;
+        }
+        if (job.value.status !== "running") {
+          jobs.delete(id);
+        }
       }
       void (async () => {
         try {
           for (const id of ids) {
             controller.signal.throwIfAborted();
             value.currentId = id;
-            if (operations.scope() !== scope)
+            if (operations.scope() !== scope) {
               throw new Error(
                 "The active library changed. Start the export again.",
               );
+            }
             const convert = async (source: string) => {
-              if (operations.scope() !== scope)
+              if (operations.scope() !== scope) {
                 throw new Error(
                   "The active library changed. Start the export again.",
                 );
+              }
               return operations.convert({
                 source,
                 directory: input.directory,
@@ -263,7 +275,9 @@ export function createConversionJobs(operations: ConversionRuntime) {
     },
     cancel(id: string): ConversionJob | null {
       const job = jobs.get(id);
-      if (job?.value.status === "running") job.controller.abort();
+      if (job?.value.status === "running") {
+        job.controller.abort();
+      }
       return job ? structuredClone(job.value) : null;
     },
   };

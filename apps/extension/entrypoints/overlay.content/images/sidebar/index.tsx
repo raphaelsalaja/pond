@@ -4,12 +4,8 @@ import { Sidebar as Panel } from "@pond/ui/sidebar";
 import type { ReactNode } from "react";
 import { Targets } from "@/components/targets";
 import type { LibraryTargets } from "@/utils/messaging";
-import {
-  type FacetCount,
-  type ImageFilters,
-  SIZE_BUCKETS,
-  type SizeBucket,
-} from "../discover";
+import { SIZE_BUCKETS } from "../discover";
+import type { FacetCount, ImageFilters, SizeBucket } from "../discover";
 import styles from "./styles.module.css";
 
 const MAX_DOMAINS = 8;
@@ -17,21 +13,24 @@ const MAX_DOMAINS = 8;
 interface SidebarProps {
   filters: ImageFilters;
   onFiltersChange: (filters: ImageFilters) => void;
-  sizes: FacetCount[];
-  formats: FacetCount[];
-  domains: FacetCount[];
+  sizes: Array<FacetCount>;
+  formats: Array<FacetCount>;
+  domains: Array<FacetCount>;
   library: LibraryTargets;
-  tags: string[];
-  onTagsChange: (tags: string[]) => void;
-  folderIds: string[];
-  onFolderIdsChange: (folderIds: string[]) => void;
+  tags: Array<string>;
+  onTagsChange: (tags: Array<string>) => void;
+  folderIds: Array<string>;
+  onFolderIdsChange: (folderIds: Array<string>) => void;
   container: HTMLElement;
 }
 
 function toggled<T>(set: ReadonlySet<T>, value: T, on: boolean): Set<T> {
   const next = new Set(set);
-  if (on) next.add(value);
-  else next.delete(value);
+  if (on) {
+    next.add(value);
+  } else {
+    next.delete(value);
+  }
   return next;
 }
 
@@ -85,7 +84,7 @@ function MinimumField({
         value={value ? String(value) : ""}
         onChange={(event) => {
           const next = Number.parseInt(
-            event.target.value.replace(/\D/g, ""),
+            event.target.value.replaceAll(/\D/g, ""),
             10,
           );
           onValueChange(Number.isFinite(next) ? Math.min(next, 100_000) : 0);

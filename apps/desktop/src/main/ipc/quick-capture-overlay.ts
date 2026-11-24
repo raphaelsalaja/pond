@@ -4,9 +4,9 @@ import log from "electron-log/main.js";
 import {
   QUICK_CAPTURE_IPC,
   QuickCaptureDragSchema,
-  type QuickCaptureResult,
   QuickCaptureSubmitSchema,
 } from "../../shared/quick-capture-contracts";
+import type { QuickCaptureResult } from "../../shared/quick-capture-contracts";
 import { userError } from "../../shared/user-error";
 import { captures } from "../core/captures";
 import { addSavesToFolder, listFolders } from "../core/folders";
@@ -65,12 +65,17 @@ async function openWithSnapshot(): Promise<void> {
 }
 
 export async function toggleQuickCapture(): Promise<void> {
-  if (isQuickCaptureOpen()) closeQuickCapture();
-  else await openWithSnapshot();
+  if (isQuickCaptureOpen()) {
+    closeQuickCapture();
+  } else {
+    await openWithSnapshot();
+  }
 }
 
 function assertOwner(id: number): void {
-  if (!quickCaptureOwnsSender(id)) throw new Error("Not Quick Capture");
+  if (!quickCaptureOwnsSender(id)) {
+    throw new Error("Not Quick Capture");
+  }
 }
 
 export function registerQuickCaptureIpc(): void {
@@ -85,7 +90,9 @@ export function registerQuickCaptureIpc(): void {
   safeHandle(QUICK_CAPTURE_IPC.pick, async (event) => {
     assertOwner(event.sender.id);
     const win = quickCaptureWindow();
-    if (!win) return [];
+    if (!win) {
+      return [];
+    }
     setQuickCapturePicking(true);
     try {
       const result = await dialog.showOpenDialog(win, {
@@ -94,7 +101,9 @@ export function registerQuickCaptureIpc(): void {
       return result.canceled ? [] : result.filePaths;
     } finally {
       setQuickCapturePicking(false);
-      if (!win.isDestroyed()) win.focus();
+      if (!win.isDestroyed()) {
+        win.focus();
+      }
     }
   });
   safeHandle(
@@ -105,21 +114,26 @@ export function registerQuickCaptureIpc(): void {
       if (
         input.folderId &&
         !(await listFolders()).some((folder) => folder.id === input.folderId)
-      )
+      ) {
         throw userError("That folder no longer exists. Pick another folder.");
+      }
       const plan = quickCapturePlan(
         input,
         randomUUID(),
         (path) => resolveSaveDrop([path])[0] ?? null,
       );
-      if (!plan.draft && !input.folderId)
+      if (!plan.draft && !input.folderId) {
         throw userError(
           "These files are already in your Library. Pick a folder to file them.",
         );
+      }
       const filed = input.folderId ? plan.saveIds : [];
-      if (input.folderId && filed.length)
+      if (input.folderId && filed.length) {
         await addSavesToFolder(input.folderId, filed);
-      if (plan.draft) await captures.accept(plan.draft);
+      }
+      if (plan.draft) {
+        await captures.accept(plan.draft);
+      }
       keepQuickCaptureDraft(null);
       return { count: (plan.draft?.items.length ?? 0) + filed.length };
     },

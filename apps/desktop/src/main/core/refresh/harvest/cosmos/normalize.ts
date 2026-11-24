@@ -20,7 +20,7 @@ export interface CosmosElementPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: CosmosElementPageMedia[];
+  mediaUrls?: Array<CosmosElementPageMedia>;
   mediaType?: MediaType;
   meta?: CosmosElementPageMeta;
 }
@@ -39,8 +39,12 @@ export function inPageCosmosNormalize() {
   function upgradeCosmosImage(src: string): string {
     try {
       const u = new URL(src, location.origin);
-      if (!/(^|\.)cosmos\.so$/i.test(u.hostname)) return src;
-      if (!u.hostname.startsWith("cdn.")) return src;
+      if (!/(^|\.)cosmos\.so$/i.test(u.hostname)) {
+        return src;
+      }
+      if (!u.hostname.startsWith("cdn.")) {
+        return src;
+      }
       for (const key of [
         "w",
         "h",
@@ -68,7 +72,9 @@ export function inPageCosmosNormalize() {
       "[class*='title' i], [class*='Title'], h1, h2",
     );
     const title = titleEl?.textContent?.trim();
-    if (title) out.title = title;
+    if (title) {
+      out.title = title;
+    }
 
     const descEl = document.querySelector<HTMLElement>(
       "[class*='description' i], [class*='Description'], [class*='caption' i]",
@@ -97,7 +103,9 @@ export function inPageCosmosNormalize() {
     const avatarImg = document.querySelector<HTMLImageElement>(
       "[class*='avatar' i] img, [class*='Avatar'] img",
     );
-    if (avatarImg?.src) meta.authorAvatar = avatarImg.src;
+    if (avatarImg?.src) {
+      meta.authorAvatar = avatarImg.src;
+    }
 
     const ogImage = document.querySelector<HTMLMetaElement>(
       'meta[property="og:image"]',
@@ -118,7 +126,9 @@ export function inPageCosmosNormalize() {
       const poster = video.poster || ogImageUrl || out.mediaUrl;
       out.mediaUrl = poster || video.src;
       const entry: CosmosElementPageMedia = { url: video.src, type: "video" };
-      if (poster) entry.poster = poster;
+      if (poster) {
+        entry.poster = poster;
+      }
       out.mediaUrls = [entry];
       out.mediaType = "video";
     }
@@ -126,7 +136,9 @@ export function inPageCosmosNormalize() {
     const ogTitle = document.querySelector<HTMLMetaElement>(
       'meta[property="og:title"]',
     );
-    if (!out.title && ogTitle?.content) out.title = ogTitle.content.trim();
+    if (!out.title && ogTitle?.content) {
+      out.title = ogTitle.content.trim();
+    }
 
     const lang = document.documentElement.lang?.trim();
     if (lang) {
@@ -134,8 +146,12 @@ export function inPageCosmosNormalize() {
       meta.lang = lang;
     }
 
-    if (Object.keys(meta).length > 0) out.meta = meta;
-    if (!out.title && !out.description && !out.mediaUrl) return null;
+    if (Object.keys(meta).length > 0) {
+      out.meta = meta;
+    }
+    if (!out.title && !out.description && !out.mediaUrl) {
+      return null;
+    }
     return out;
   }
 

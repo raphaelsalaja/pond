@@ -10,11 +10,11 @@ import { normalizeTagList, planTagRegistryUpdates } from "./tags";
 export async function bulkEditSaves(
   input: BulkEdit,
   db: Db,
-  commit: (transactions: Transaction[]) => Promise<void>,
-  recordUndo: (transactions: Transaction[]) => string | null,
+  commit: (transactions: Array<Transaction>) => Promise<void>,
+  recordUndo: (transactions: Array<Transaction>) => string | null,
 ): Promise<{ changed: number } & UndoableChange> {
   const ids = [...new Set(input.ids)];
-  const transactions: Transaction[] = [];
+  const transactions: Array<Transaction> = [];
   const meta = {
     actor: "user",
     actorReason: input.actorReason ?? `selection:${input.operation.kind}`,
@@ -25,20 +25,19 @@ export async function bulkEditSaves(
     const operation = input.operation;
     if (operation.kind === "purge") {
       const rows = db.select().from(saves).where(condition).all();
-      if (rows.length !== wanted.length)
+      if (rows.length !== wanted.length) {
         throw new Error(
           "A selected Save is no longer available. Refresh the selection.",
         );
+      }
       transactions.push(
-        ...rows.map(
-          (row): Transaction => ({
-            kind: "purge",
-            model: "save",
-            id: row.id,
-            before: row,
-            meta,
-          }),
-        ),
+        ...rows.map((row): Transaction => ({
+          kind: "purge",
+          model: "save",
+          id: row.id,
+          before: row,
+          meta,
+        })),
       );
       continue;
     }
@@ -57,10 +56,11 @@ export async function bulkEditSaves(
       .from(saves)
       .where(condition)
       .all();
-    if (rows.length !== wanted.length)
+    if (rows.length !== wanted.length) {
       throw new Error(
         "A selected Save is no longer available. Refresh the selection.",
       );
+    }
     for (const row of rows) {
       if (operation.kind === "tags" || operation.kind === "suggested-tags") {
         const removed = new Set(
@@ -79,7 +79,7 @@ export async function bulkEditSaves(
                     ? operation.tags
                     : (row.suggestedTags ?? [])),
                 ]);
-        if (JSON.stringify(next) !== JSON.stringify(row.tags))
+        if (JSON.stringify(next) !== JSON.stringify(row.tags)) {
           transactions.push({
             kind: "update",
             model: "save",
@@ -88,8 +88,9 @@ export async function bulkEditSaves(
             patch: { tags: next },
             meta,
           });
+        }
       } else if (operation.kind === "notes") {
-        if (row.notes !== operation.notes)
+        if (row.notes !== operation.notes) {
           transactions.push({
             kind: "update",
             model: "save",
@@ -98,9 +99,10 @@ export async function bulkEditSaves(
             patch: { notes: operation.notes },
             meta,
           });
+        }
       } else if (operation.kind === "rating") {
         const next = operation.rating || null;
-        if (!row.deletedAt && next !== row.rating)
+        if (!row.deletedAt && next !== row.rating) {
           transactions.push({
             kind: "update",
             model: "save",
@@ -109,8 +111,9 @@ export async function bulkEditSaves(
             patch: { rating: next },
             meta,
           });
+        }
       } else if (operation.kind === "favorite") {
-        if (!row.deletedAt && operation.favorite !== row.favorite)
+        if (!row.deletedAt && operation.favorite !== row.favorite) {
           transactions.push({
             kind: "update",
             model: "save",
@@ -119,9 +122,10 @@ export async function bulkEditSaves(
             patch: { favorite: operation.favorite },
             meta,
           });
+        }
       } else if (operation.kind === "inbox" || operation.kind === "snooze") {
         const next = applyInboxChange(operation, row);
-        if (next)
+        if (next) {
           transactions.push({
             kind: "update",
             model: "save",
@@ -130,21 +134,25 @@ export async function bulkEditSaves(
             patch: next,
             meta,
           });
-      } else if ((operation.kind === "trash") !== Boolean(row.deletedAt))
+        }
+      } else if ((operation.kind === "trash") !== Boolean(row.deletedAt)) {
         transactions.push({
           kind: operation.kind,
           model: "save",
           id: row.id,
           meta,
         });
+      }
     }
   }
   const changed = transactions.length;
-  if (!changed) return { changed: 0, undoId: null };
+  if (!changed) {
+    return { changed: 0, undoId: null };
+  }
   if (
     input.operation.kind === "tags" ||
     input.operation.kind === "suggested-tags"
-  )
+  ) {
     transactions.unshift(
       ...planTagRegistryUpdates(
         transactions.flatMap((tx) =>
@@ -155,6 +163,7 @@ export async function bulkEditSaves(
         db.select().from(tags).all(),
       ),
     );
+  }
   await commit(transactions);
   const undoId =
     input.operation.kind === "purge" ? null : recordUndo(transactions);

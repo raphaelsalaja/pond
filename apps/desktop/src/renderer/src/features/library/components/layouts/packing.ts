@@ -8,7 +8,7 @@ export interface CardLayoutItem {
 }
 
 export interface CardLayoutResult {
-  items: CardLayoutItem[];
+  items: Array<CardLayoutItem>;
   totalHeight: number;
 }
 
@@ -104,13 +104,15 @@ export function packWaterfall(
   }
   const columns = columnMetrics(containerWidth, columnMinimum, gap);
   const heights = Array.from({ length: columns.count }, () => 0);
-  const items: CardLayoutItem[] = [];
+  const items: Array<CardLayoutItem> = [];
 
   for (const entry of entries) {
     const mediaHeight = columns.width / safeAspect(entry.aspect);
     let target = 0;
     for (let index = 1; index < columns.count; index += 1) {
-      if ((heights[index] ?? 0) < (heights[target] ?? 0)) target = index;
+      if ((heights[index] ?? 0) < (heights[target] ?? 0)) {
+        target = index;
+      }
     }
     const top = heights[target] ?? 0;
     items.push({
@@ -141,8 +143,8 @@ export function packJustified(
     return { items: [], totalHeight: 0 };
   }
 
-  const items: CardLayoutItem[] = [];
-  let row: AspectEntry[] = [];
+  const items: Array<CardLayoutItem> = [];
+  let row: Array<AspectEntry> = [];
   let aspectSum = 0;
   let top = 0;
 
@@ -175,7 +177,9 @@ export function packJustified(
       flush(available / aspectSum);
     }
   }
-  if (row.length > 0) flush(targetHeight);
+  if (row.length > 0) {
+    flush(targetHeight);
+  }
 
   return {
     items,
@@ -190,7 +194,9 @@ export function stackSections(
 ) {
   const dividerTop = lead?.totalHeight ?? 0;
   const offset = dividerTop + spacing;
-  if (!lead && offset === 0) return { ...rest, dividerTop };
+  if (!lead && offset === 0) {
+    return { ...rest, dividerTop };
+  }
   return {
     items: [
       ...(lead?.items ?? []),

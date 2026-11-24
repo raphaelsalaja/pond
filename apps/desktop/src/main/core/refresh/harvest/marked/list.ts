@@ -1,6 +1,5 @@
 /// <reference lib="dom" />
 
-import type { JsonValue } from "@pond/schema/json";
 import { browserValidationSource } from "../lib/browser-validation-source";
 import type {
   ListEntry,
@@ -48,30 +47,42 @@ async function inPageMarkedLibrary(
   };
 
   const session = await call("getSession");
-  if (!session.ok) return failure(session.status);
-  const signedIn: { data?: JsonValue } = await session.json();
-  if (!signedIn.data) return { ok: false, reason: "auth_required" };
+  if (!session.ok) {
+    return failure(session.status);
+  }
+  const signedIn: unknown = await session.json();
+  if (!norm.isReply(signedIn) || !signedIn.data) {
+    return { ok: false, reason: "auth_required" };
+  }
 
   const res = await call("listLibraryRefs");
-  if (!res.ok) return failure(res.status);
-  const body: { data?: JsonValue } = await res.json();
-  const refs = norm.parseRefs(body.data ?? null);
-  if (!refs) return { ok: false, reason: "unknown" };
+  if (!res.ok) {
+    return failure(res.status);
+  }
+  const body: unknown = await res.json();
+  const refs = norm.parseRefs(norm.isReply(body) ? (body.data ?? null) : null);
+  if (!refs) {
+    return { ok: false, reason: "unknown" };
+  }
 
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
   const known = new Set(args.knownIds);
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   let fresh = 0;
   for (const ref of refs) {
-    if (seen.has(ref.id)) continue;
+    if (seen.has(ref.id)) {
+      continue;
+    }
     seen.add(ref.id);
     const entry = norm.refEntry(ref);
     const savedAt = entry.savedAt ? Date.parse(entry.savedAt) : Number.NaN;
     if (Number.isFinite(since) && Number.isFinite(savedAt) && savedAt < since) {
       continue;
     }
-    if (!known.has(entry.sourceId)) fresh += 1;
+    if (!known.has(entry.sourceId)) {
+      fresh += 1;
+    }
     entries.push(entry);
   }
   Object.assign(globalThis, {

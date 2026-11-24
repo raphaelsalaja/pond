@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { FolderNameEditor } from "./";
 
@@ -13,26 +14,35 @@ beforeEach(async () => {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
-  await act(() =>
+  await act(async () => {
     root.render(
       <FolderNameEditor name="Untitled" onSave={onSave} onFinish={onFinish} />,
-    ),
-  );
+    );
+  });
 });
 afterEach(async () => {
-  await act(() => root.unmount());
+  await act(async () => {
+    root.unmount();
+  });
   container.remove();
   vi.unstubAllGlobals();
 });
 function field() {
   const input = container.querySelector("input");
-  if (!input) throw new Error("Missing folder name editor");
+  if (!input) {
+    throw new Error("Missing folder name editor");
+  }
   return input;
 }
 async function press(key: string) {
   await act(() =>
     field().dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true })),
   );
+}
+async function blur() {
+  await act(async () => {
+    field().blur();
+  });
 }
 it("focuses and selects the new folder name", () => {
   expect(document.activeElement).toBe(field());
@@ -42,20 +52,20 @@ it("focuses and selects the new folder name", () => {
 it("saves the trimmed name once on Enter followed by blur", async () => {
   field().value = "  Travel  ";
   await press("Enter");
-  await act(() => field().blur());
+  await blur();
   expect(onSave).toHaveBeenCalledExactlyOnceWith("Travel");
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("saves when focus leaves the editor", async () => {
   field().value = "Recipes";
-  await act(() => field().blur());
+  await blur();
   expect(onSave).toHaveBeenCalledExactlyOnceWith("Recipes");
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("keeps Untitled on Escape or empty input", async () => {
   field().value = "Changed";
   await press("Escape");
-  await act(() => field().blur());
+  await blur();
   expect(onSave).not.toHaveBeenCalled();
   expect(onFinish).toHaveBeenCalledOnce();
 });

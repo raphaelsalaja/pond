@@ -1,5 +1,7 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { act, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import type { CombineImage } from "../preview";
@@ -29,7 +31,9 @@ function image(id: string): CombineImage {
     }),
   );
   const file = save?.files?.[0];
-  if (!save || !file) throw new Error("Fixture must produce an image save");
+  if (!save || !file) {
+    throw new Error("Fixture must produce an image save");
+  }
   return { save, file };
 }
 
@@ -42,7 +46,9 @@ function Harness() {
         setImages((current) => {
           const next = [...current];
           const [moved] = next.splice(from, 1);
-          if (moved) next.splice(to, 0, moved);
+          if (moved) {
+            next.splice(to, 0, moved);
+          }
           return next;
         })
       }
@@ -69,7 +75,9 @@ function order() {
 
 function press(key: string) {
   const target = document.activeElement;
-  if (!(target instanceof HTMLElement)) throw new Error("Nothing focused");
+  if (!isHTMLElement(target)) {
+    throw new Error("Nothing focused");
+  }
   target.dispatchEvent(
     new KeyboardEvent("keydown", {
       key,
@@ -83,7 +91,9 @@ function press(key: string) {
 it("moves the focused image with Option and the arrow keys", async () => {
   await act(async () => root.render(<Harness />));
   const second = host.querySelectorAll<HTMLElement>('[role="button"]')[1];
-  if (!second) throw new Error("Missing image");
+  if (!second) {
+    throw new Error("Missing image");
+  }
   await act(async () => second.focus());
   await act(async () => press("ArrowUp"));
   expect(order()).toEqual(["b", "a", "c"]);

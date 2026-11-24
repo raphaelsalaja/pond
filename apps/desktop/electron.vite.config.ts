@@ -23,13 +23,17 @@ interface ChunkInfo {
 
 /** Rolldown otherwise parks a vendor export in an app chunk and circular-inits (drizzle-orm `count` in library-retrieval). */
 function vendorChunkName(id: string) {
-  if (!id.includes("node_modules")) return null;
+  if (!id.includes("node_modules")) {
+    return null;
+  }
   const match = id.match(
     /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)/,
   );
   const pkg = match?.[1];
-  if (!pkg) return null;
-  return `vendor-${pkg.replace(/^@/, "").replace(/\//g, "-")}`;
+  if (!pkg) {
+    return null;
+  }
+  return `vendor-${pkg.replace(/^@/, "").replaceAll("/", "-")}`;
 }
 
 const CJS_SHIM_RE =
@@ -41,9 +45,13 @@ function cjsShimPlugin(): Plugin {
     apply: "build",
     enforce: "post",
     renderChunk(code: string, _chunk: ChunkInfo, options: { format: string }) {
-      if (options.format !== "es") return null;
-      const stripped = code.replace(CJS_SHIM_RE, "");
-      if (!/(__filename|__dirname|require\()/.test(stripped)) return null;
+      if (options.format !== "es") {
+        return null;
+      }
+      const stripped = code.replaceAll(CJS_SHIM_RE, "");
+      if (!/(__filename|__dirname|require\()/.test(stripped)) {
+        return null;
+      }
       const lastImport = [...stripped.matchAll(/^import\s.+$/gm)].pop();
       const idx = lastImport
         ? (lastImport.index ?? 0) + lastImport[0].length
@@ -62,7 +70,7 @@ function fileFontPreloadPlugin(): Plugin {
     name: "pond:file-font-preload",
     apply: "build",
     transformIndexHtml: (html) =>
-      html.replace(FONT_PRELOAD_CROSSORIGIN_RE, "$1"),
+      html.replaceAll(FONT_PRELOAD_CROSSORIGIN_RE, "$1"),
   };
 }
 

@@ -1,12 +1,15 @@
 import { IconArrowUpRight } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
 import { sourceLabel } from "@pond/schema/sources";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { isElement } from "@pond/ui/dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
 import { formatDate } from "@/shared/lib/format";
-import { type Article, readArticle } from "./sanitize";
+import { readArticle } from "./sanitize";
+import type { Article } from "./sanitize";
 import styles from "./styles.module.css";
 
 interface ArticleViewerProps {
@@ -34,14 +37,20 @@ export function ArticleViewer({
     let alive = true;
     void fetch(url)
       .then((response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
         return response.text();
       })
       .then((text) => {
-        if (alive) setSource(text);
+        if (alive) {
+          setSource(text);
+        }
       })
       .catch(() => {
-        if (alive) onUnavailable();
+        if (alive) {
+          onUnavailable();
+        }
       });
     return () => {
       alive = false;
@@ -107,11 +116,17 @@ function ArticleBody({
 
   useEffect(() => {
     const scroller = scrollRef.current;
-    if (!scroller) return;
+    if (!scroller) {
+      return;
+    }
     const onClick = (event: MouseEvent) => {
-      if (!(event.target instanceof Element)) return;
+      if (!isElement(event.target)) {
+        return;
+      }
       const anchor = event.target.closest("a[href]");
-      if (!anchor || !scroller.contains(anchor)) return;
+      if (!anchor || !scroller.contains(anchor)) {
+        return;
+      }
       event.preventDefault();
       const href = anchor.getAttribute("href") ?? "";
       if (href.startsWith("#")) {
@@ -151,7 +166,7 @@ function ArticleBody({
         </header>
         <div
           className={styles.body}
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: readArticle keeps only allowlisted tags and attributes.
+          // oxlint-disable-next-line react/no-danger -- readArticle keeps only allowlisted tags and attributes
           dangerouslySetInnerHTML={{ __html: article.html }}
         />
         {meta.preview && postUrl ? (

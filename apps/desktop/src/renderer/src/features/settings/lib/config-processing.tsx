@@ -1,11 +1,9 @@
 import { Input, Settings } from "@pond/ui";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { z } from "zod";
 import { ProcessingStatus } from "@/features/settings/components/sections/processing";
-import {
-  type Binding,
-  defineSection,
-} from "@/features/settings/lib/engine-types";
+import { defineSection } from "@/features/settings/lib/engine-types";
+import type { Binding } from "@/features/settings/lib/engine-types";
 
 function MediaModelIdControl({ binding }: { binding: Binding }) {
   const titleId = useId();
@@ -15,7 +13,11 @@ function MediaModelIdControl({ binding }: { binding: Binding }) {
     .catch("")
     .parse(binding.values.mediaUnderstandingModelId);
   const [draft, setDraft] = useState(modelId);
-  useEffect(() => setDraft(modelId), [modelId]);
+  const [syncedModelId, setSyncedModelId] = useState(modelId);
+  if (syncedModelId !== modelId) {
+    setSyncedModelId(modelId);
+    setDraft(modelId);
+  }
   return (
     <>
       <Settings.ItemDetails>
@@ -34,8 +36,9 @@ function MediaModelIdControl({ binding }: { binding: Binding }) {
             onValueChange={setDraft}
             onBlur={() => {
               const value = draft.trim();
-              if (value && value !== modelId)
+              if (value && value !== modelId) {
                 void binding.patch({ mediaUnderstandingModelId: value });
+              }
             }}
             style={{ width: 160 }}
           />

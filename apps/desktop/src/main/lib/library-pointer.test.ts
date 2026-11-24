@@ -3,14 +3,14 @@ import { isPathInside } from "./library-pointer";
 
 describe("isPathInside", () => {
   it("recognizes Windows children without confusing sibling prefixes", () => {
-    const root = "C:\\Users\\A Person\\AppData\\Roaming\\Pond";
+    const root = String.raw`C:\Users\A Person\AppData\Roaming\Pond`;
     expect(isPathInside(root, `${root}\\libraries\\Mine.pond`, "win32")).toBe(
       true,
     );
     expect(
       isPathInside(
         root,
-        "C:\\Users\\A Person\\AppData\\Roaming\\Pond Library",
+        String.raw`C:\Users\A Person\AppData\Roaming\Pond Library`,
         "win32",
       ),
     ).toBe(false);

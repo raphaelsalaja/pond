@@ -1,8 +1,8 @@
-import {
-  type ConnectedAccount,
-  DEFAULT_SOURCE_SYNC_PREFS,
-  type Source,
-  type SourceSyncPrefs,
+import { DEFAULT_SOURCE_SYNC_PREFS } from "@pond/schema/db";
+import type {
+  ConnectedAccount,
+  Source,
+  SourceSyncPrefs,
 } from "@pond/schema/db";
 import type {
   ExtensionCookie,
@@ -56,10 +56,12 @@ function failedSessionImport(
 
 export async function importSessionCookies(
   source: Source,
-  cookies: ExtensionCookie[],
+  cookies: Array<ExtensionCookie>,
 ): Promise<SessionImportResponse> {
   const domain = primaryDomainForSource(source);
-  if (!domain) return failedSessionImport(source, "no_cookie_domain");
+  if (!domain) {
+    return failedSessionImport(source, "no_cookie_domain");
+  }
 
   const allowedHost = domain.replace(/^\./, "").toLowerCase();
   const filtered = cookies.filter((cookie: ExtensionCookie) => {
@@ -119,9 +121,8 @@ export async function importSessionCookies(
   if (source === "reddit") {
     const handle = resolution.probedHandle ?? account.handle;
     if (handle) {
-      const { fetchRedditAvatar } = await import(
-        "./refresh/harvest/reddit/api"
-      );
+      const { fetchRedditAvatar } =
+        await import("./refresh/harvest/reddit/api");
       const avatarUrl = await fetchRedditAvatar(
         handle,
         partitionForAccount(account.id),
@@ -136,7 +137,9 @@ export async function importSessionCookies(
     const { fetchCosmosViewer } = await import("./refresh/harvest/cosmos/api");
     const viewer = await fetchCosmosViewer(partitionForAccount(account.id));
     if (viewer) {
-      if (viewer.handle !== account.handle) patch.handle = viewer.handle;
+      if (viewer.handle !== account.handle) {
+        patch.handle = viewer.handle;
+      }
       if (account.identityKey !== viewer.userId) {
         patch.identityKey = viewer.userId;
       }
@@ -147,8 +150,8 @@ export async function importSessionCookies(
     }
   }
   if (Object.keys(patch).length > 0) {
-    await patchAccount(account.id, patch).catch((err) =>
-      log.warn("[pond session-import] identity patch failed", err),
+    await patchAccount(account.id, patch).catch((cause: unknown) =>
+      log.warn("[pond session-import] identity patch failed", cause),
     );
   }
 
@@ -156,8 +159,8 @@ export async function importSessionCookies(
     await resumeSessionDownloads(account);
   }
 
-  void syncAccount(account.id, { trigger: "manual" }).catch((err) =>
-    log.warn("[pond session-import] follow-up sync threw", source, err),
+  void syncAccount(account.id, { trigger: "manual" }).catch((cause: unknown) =>
+    log.warn("[pond session-import] follow-up sync threw", source, cause),
   );
 
   fillMissingAvatars();
@@ -194,20 +197,21 @@ export const refreshSessionCookies = createSessionRefresh({
     }
   },
   patchHandle: async (account, handle) => {
-    await patchAccount(account.id, { handle }).catch((err) =>
-      log.warn("[pond session-refresh] handle patch failed", err),
+    await patchAccount(account.id, { handle }).catch((cause: unknown) =>
+      log.warn("[pond session-refresh] handle patch failed", cause),
     );
   },
   signedBackIn: (account) => {
     log.info(
       `[pond session-import] ${account.source} → @${account.handle ?? "?"} (${account.id}): signed back in from a rotated browser session`,
     );
-    void syncAccount(account.id, { trigger: "manual" }).catch((err) =>
-      log.warn(
-        "[pond session-import] follow-up sync threw",
-        account.source,
-        err,
-      ),
+    void syncAccount(account.id, { trigger: "manual" }).catch(
+      (cause: unknown) =>
+        log.warn(
+          "[pond session-import] follow-up sync threw",
+          account.source,
+          cause,
+        ),
     );
     broadcast(IPC.sessionImported, {
       source: account.source,
@@ -224,7 +228,7 @@ interface AccountResolution {
 
 async function resolveTargetAccount(
   source: Source,
-  cookies: ExtensionCookie[],
+  cookies: Array<ExtensionCookie>,
   identityKey: string | null,
 ): Promise<AccountResolution> {
   if (identityKey) {
@@ -274,7 +278,9 @@ async function resolveTargetAccount(
     return { account, kind: "created", probedHandle };
   }
   const first = accounts[0];
-  if (!first) throw new Error("unreachable: accounts non-empty");
+  if (!first) {
+    throw new Error("unreachable: accounts non-empty");
+  }
   if (accounts.length > 1) {
     log.warn(
       `[pond session-import] ${source}: ${accounts.length} accounts but the session carries no identity; assigning to the first`,
@@ -291,7 +297,7 @@ function awaitingImportChoice(): SourceSyncPrefs {
 
 async function probeStagedHandle(
   source: Source,
-  cookies: ExtensionCookie[],
+  cookies: Array<ExtensionCookie>,
 ): Promise<string | null> {
   const staging = `pond-staging-${source}`;
   try {
@@ -299,8 +305,8 @@ async function probeStagedHandle(
     await writePartitionCookies({ cookies, partition: staging });
     const handle = await probeUserHandle(source, staging);
     return normalizeHandle(handle);
-  } catch (err) {
-    log.warn("[pond session-import] staged probe failed", source, err);
+  } catch (error) {
+    log.warn("[pond session-import] staged probe failed", source, error);
     return null;
   } finally {
     void session

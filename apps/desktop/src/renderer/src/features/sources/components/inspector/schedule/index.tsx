@@ -1,12 +1,13 @@
 import { Button, Select, Settings, Switch } from "@pond/ui";
 import type { SourceTargetInput } from "@shared/account-contracts";
 import { describeSyncSchedule } from "@shared/sync-schedule";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import {
   FETCH_INTERVAL_HOURS,
   intervalLabel,
-  type SourceFetchPrefs,
 } from "@/features/sources/lib/fetch-prefs";
+import type { SourceFetchPrefs } from "@/features/sources/lib/fetch-prefs";
 import { openSettings } from "@/shared/lib/open-settings";
 import { notify } from "@/shared/lib/toast";
 import { usePrefs } from "@/shared/state/prefs";
@@ -97,7 +98,9 @@ export function SourceSchedule({
               value={value}
               disabled={off || draft.paused}
               onValueChange={(next) => {
-                if (!next) return;
+                if (!next) {
+                  return;
+                }
                 void save({
                   ...draft,
                   intervalHours: next === DEFAULT ? null : Number(next),

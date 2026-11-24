@@ -1,10 +1,10 @@
-import * as schema from "@pond/schema/db";
-import * as eventsSchema from "@pond/schema/events";
+import { queueGenerations, saves, tasks } from "@pond/schema/db";
+import type { NewSave } from "@pond/schema/db";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import Database from "better-sqlite3";
 import { and, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { wrapSqlite } from "../../database/client";
 import { initializePondSchema } from "../../db";
 import { requeueReplyCaptures } from "./threads-card-backfill";
 
@@ -14,30 +14,31 @@ function nativeSqliteAvailable(): boolean {
     probe.close();
     return true;
   } catch (error) {
-    if (process.versions.electron) throw error;
+    if (process.versions.electron) {
+      throw error;
+    }
     return false;
   }
 }
 
-const databases: Database.Database[] = [];
+const databases: Array<Database.Database> = [];
 
 afterEach(() => {
-  for (const db of databases.splice(0)) db.close();
+  for (const db of databases.splice(0)) {
+    db.close();
+  }
 });
 
 function setup() {
   const sqlite = new Database(":memory:");
   databases.push(sqlite);
   initializePondSchema(sqlite, () => false);
-  const db = Object.assign(
-    drizzle(sqlite, { schema: { ...schema, ...eventsSchema } }),
-    { $raw: sqlite },
-  );
+  const db = wrapSqlite(sqlite);
   const runtime = {
     getDb: async () => db,
     kickReconciler: () => {},
-    async persistSave(id: string, patch: Partial<schema.NewSave>) {
-      db.update(schema.saves).set(patch).where(eq(schema.saves.id, id)).run();
+    async persistSave(id: string, patch: Partial<NewSave>) {
+      db.update(saves).set(patch).where(eq(saves.id, id)).run();
       return null;
     },
   };
@@ -48,10 +49,10 @@ describe.skipIf(!nativeSqliteAvailable())("requeueReplyCaptures", () => {
   it("detaches requeued tasks from their finished generation", async () => {
     const { db, runtime } = setup();
     const at = new Date();
-    db.insert(schema.queueGenerations)
+    db.insert(queueGenerations)
       .values({ id: "gen", kind: "refresh", status: "done" })
       .run();
-    db.insert(schema.saves)
+    db.insert(saves)
       .values({
         id: "reply",
         source: "twitter",
@@ -70,7 +71,7 @@ describe.skipIf(!nativeSqliteAvailable())("requeueReplyCaptures", () => {
       })
       .run();
     for (const op of ["capture_tweet", "finalize"] as const) {
-      db.insert(schema.tasks)
+      db.insert(tasks)
         .values({
           id: op,
           saveId: "reply",
@@ -92,8 +93,8 @@ describe.skipIf(!nativeSqliteAvailable())("requeueReplyCaptures", () => {
     for (const op of ["capture_tweet", "finalize"] as const) {
       const task = db
         .select()
-        .from(schema.tasks)
-        .where(and(eq(schema.tasks.saveId, "reply"), eq(schema.tasks.op, op)))
+        .from(tasks)
+        .where(and(eq(tasks.saveId, "reply"), eq(tasks.op, op)))
         .get();
       expect(task?.status).toBe("pending");
       // The claim query skips tasks whose generation is no longer active.

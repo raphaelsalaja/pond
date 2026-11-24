@@ -1,5 +1,7 @@
+import { isHTMLElement, isHTMLTag } from "@pond/ui/dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, type ReactNode, useState } from "react";
+import { act, useState } from "react";
+import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { SourceDetailsPage } from "@/features/sources/state/source-detail";
@@ -7,10 +9,10 @@ import {
   SourceDetail,
   SourceDetailNavView,
   SourceDetailSidebar,
-  type SourceDetailsProps,
   SourceDetailView,
   sourceDetailModel,
 } from "./index";
+import type { SourceDetailsProps } from "./index";
 
 interface TestRoot {
   render(node: ReactNode): void;
@@ -105,8 +107,9 @@ it("centers the handle and suggests it as the nickname", async () => {
     );
   });
   const field = nicknameField();
-  if (!(field instanceof HTMLInputElement))
+  if (!isHTMLTag(field, "input")) {
     throw new Error("Missing nickname field");
+  }
   expect(field.value).toBe("");
   expect(field.placeholder).toBe("@oluwa.rafa");
   expect(host.querySelector("h3")?.textContent).toBe("Profile Picture");
@@ -192,8 +195,9 @@ it("lays out source actions as rows on General", async () => {
     );
   });
   const field = nicknameField();
-  if (!(field instanceof HTMLInputElement))
+  if (!isHTMLTag(field, "input")) {
     throw new Error("Missing nickname field");
+  }
   expect(field.value).toBe("Are.na");
   const titles = Array.from(host.querySelectorAll("h3")).map(
     (title) => title.textContent,
@@ -206,14 +210,18 @@ it("lays out source actions as rows on General", async () => {
   ]);
   expect(host.textContent).toContain("Profile");
   const copy = actionButton("Copy Username");
-  if (!(copy instanceof HTMLElement)) throw new Error("Missing Copy Username");
+  if (!isHTMLElement(copy)) {
+    throw new Error("Missing Copy Username");
+  }
   await act(async () => copy.click());
   expect(onCopy).toHaveBeenCalledOnce();
 
   const connection = Array.from(
     host.querySelectorAll('[aria-label="Source"] button'),
   ).find((button) => button.textContent === "Connection");
-  if (!(connection instanceof HTMLElement)) throw new Error("Missing page");
+  if (!isHTMLElement(connection)) {
+    throw new Error("Missing page");
+  }
   await act(async () => connection.click());
   expect(host.querySelector("h1")?.textContent).toBe("Connection");
   const disconnect = Array.from(host.querySelectorAll("button")).find(
@@ -223,12 +231,15 @@ it("lays out source actions as rows on General", async () => {
   expect(onDisconnect).toHaveBeenCalledOnce();
 });
 
+function page(
+  id: SourceDetailsPage,
+  label: string,
+  group?: "import" | "fetching",
+) {
+  return { id, label, icon: null, group, content: <p>{label}</p> };
+}
+
 it("groups the sidebar and keeps Connection last", async () => {
-  const page = (
-    id: SourceDetailsPage,
-    label: string,
-    group?: "import" | "fetching",
-  ) => ({ id, label, icon: null, group, content: <p>{label}</p> });
   await act(async () => {
     root.render(
       <DetailHarness
@@ -289,7 +300,9 @@ it("searches pages by the rows on them", async () => {
   const search = host.querySelector(
     'input[aria-label="Search Source Settings"]',
   );
-  if (!(search instanceof HTMLInputElement)) throw new Error("Missing search");
+  if (!isHTMLTag(search, "input")) {
+    throw new Error("Missing search");
+  }
   const type = async (value: string) => {
     const setter = Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,
@@ -343,8 +356,9 @@ it("dims a disabled action row without hiding it", async () => {
     );
   });
   const fetch = actionButton("Fetch Older Saves");
-  if (!(fetch instanceof HTMLButtonElement))
+  if (!isHTMLTag(fetch, "button")) {
     throw new Error("Missing Fetch Older Saves");
+  }
   expect(fetch.disabled).toBe(true);
   expect(fetch.closest("[data-disabled]")).toBeTruthy();
 });
@@ -360,8 +374,9 @@ it("keeps a failed nickname edit available and retries it on the next blur", asy
     );
   });
   const field = nicknameField();
-  if (!(field instanceof HTMLInputElement))
+  if (!isHTMLTag(field, "input")) {
     throw new Error("Missing nickname field");
+  }
   await act(async () => {
     field.focus();
     field.blur();
@@ -411,13 +426,14 @@ it("shows watch properties", async () => {
 it("shows watched folder details with its folder actions", async () => {
   vi.stubGlobal("pond", {
     query: async (name: string) => {
-      if (name === "autoImport.status")
+      if (name === "autoImport.status") {
         return {
           enabled: true,
           path: "/Users/me/Inbox",
           mode: "copy",
           history: [{ at: Date.now(), name: "a.png", mode: "copy", ok: true }],
         };
+      }
       throw new Error(name);
     },
   });

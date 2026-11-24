@@ -6,17 +6,16 @@ import type {
   AssistantSource,
 } from "@shared/assistant";
 import { MESSAGE_BREAK, splitMessages } from "@shared/assistant-text";
-import { type ReactNode, useRef } from "react";
-import {
-  type AssistantState,
-  assistant,
-} from "@/features/agent/state/assistant";
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { assistant } from "@/features/agent/state/assistant";
+import type { AssistantState } from "@/features/agent/state/assistant";
 import {
   fromUIMessage,
   messageText,
-  type PondUIMessage,
   partData,
 } from "@/features/agent/state/pond-messages";
+import type { PondUIMessage } from "@/features/agent/state/pond-messages";
 import { openSave } from "@/features/saves/navigation";
 import { RunStatus } from "../run-status";
 import { currentActivityLabel } from "./activity-label";
@@ -26,7 +25,9 @@ import { inferredLookupResult, ResponseExtras } from "./response-content";
 
 async function copyText(text: string): Promise<void> {
   const result = await window.pond.query("clipboard.writeText", { text });
-  if (!result.ok) throw new Error(result.error);
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
 }
 
 export function AgentMessage({
@@ -46,8 +47,8 @@ export function AgentMessage({
   message: PondUIMessage;
   state: AssistantState;
   provider: AssistantProvider;
-  attachedIds: string[];
-  attach: (sources: AssistantSource[]) => void;
+  attachedIds: Array<string>;
+  attach: (sources: Array<AssistantSource>) => void;
   streaming: boolean;
   entering?: boolean;
   latest: boolean;
@@ -74,9 +75,14 @@ export function AgentMessage({
       : settled && saved?.length
         ? saved
         : splitMessages(responseText);
-  const animatedResponse = useRef(false);
-  if (message.role === "assistant" && (streaming || reveal.pending))
-    animatedResponse.current = true;
+  const [animatedResponse, setAnimatedResponse] = useState(false);
+  if (
+    !animatedResponse &&
+    message.role === "assistant" &&
+    (streaming || reveal.pending)
+  ) {
+    setAnimatedResponse(true);
+  }
   const steps = partData(message, "pond-steps") ?? state.steps;
   const activity =
     partData(message, "pond-activity")?.activity ?? state.activity;
@@ -112,8 +118,11 @@ export function AgentMessage({
         text={message.role === "assistant" ? bubbles.join("\n\n") : text}
         onCopy={copyText}
         onQuote={() => {
-          if (sources.length) attach(sources);
-          else if (text) assistant.quote(text);
+          if (sources.length) {
+            attach(sources);
+          } else if (text) {
+            assistant.quote(text);
+          }
         }}
         onRetry={
           message.role === "assistant" &&
@@ -157,13 +166,11 @@ export function AgentMessage({
       inferredLookupResult(text, sources) ? null : responseText ? (
         message.role === "assistant" ? (
           bubbles.map((bubble, index) => (
-            <Message.Bubble
-              // biome-ignore lint/suspicious/noArrayIndexKey: messages only ever append, so position is their identity.
-              key={index}
-            >
+            // oxlint-disable-next-line react/no-array-index-key -- messages only ever append, so position is their identity
+            <Message.Bubble key={index}>
               <AssistantResponse
                 content={bubble}
-                streaming={animatedResponse.current}
+                streaming={animatedResponse}
                 sources={sources}
                 onOpenSave={openSave}
               />

@@ -1,10 +1,9 @@
 import type { RowData } from "@tanstack/react-table";
-import {
-  type KeyboardEvent as ReactKeyboardEvent,
-  type ReactNode,
-  type PointerEvent as ReactPointerEvent,
-  useMemo,
-  useRef,
+import { useMemo, useRef } from "react";
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  ReactNode,
+  PointerEvent as ReactPointerEvent,
 } from "react";
 import { SelectAllCell, stop } from "../cells";
 import { useDataTable } from "../context";
@@ -12,11 +11,19 @@ import type { HeaderContext, TableColumn } from "../types";
 import { ColumnHeader, ColumnRow, movedColumn } from "./reorder";
 import styles from "./styles.module.css";
 
+type HeaderRender = (ctx: HeaderContext) => ReactNode;
+
+function isHeaderRender(
+  header: ReactNode | HeaderRender,
+): header is HeaderRender {
+  return typeof header === "function";
+}
+
 function headerContent<T extends RowData>(
   column: TableColumn<T>,
   sorted: false | "asc" | "desc",
 ): ReactNode {
-  return column.header instanceof Function
+  return isHeaderRender(column.header)
     ? column.header({ sorted } satisfies HeaderContext)
     : (column.header ?? null);
 }
@@ -77,7 +84,9 @@ function HeaderCell<T extends RowData>({
   };
 
   const resizeWithKeyboard = (event: ReactKeyboardEvent) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     const width = headRef.current?.getBoundingClientRect().width ?? 0;
@@ -139,8 +148,9 @@ function HeaderCell<T extends RowData>({
               origin &&
               event.detail > 0 &&
               Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > 3
-            )
+            ) {
               return;
+            }
             actions.toggleSort(column.id);
           }}
         >
@@ -157,6 +167,7 @@ function HeaderCell<T extends RowData>({
 
 export function DataTableHeader<T extends RowData>() {
   const { actions, meta, selectionStore } = useDataTable<T>();
+  const { headerRef } = meta;
   const rowIds = useMemo(() => meta.rows.map((row) => row.id), [meta.rows]);
   const ids = useMemo(
     () => meta.columns.map((column) => column.id),
@@ -172,12 +183,14 @@ export function DataTableHeader<T extends RowData>() {
   };
 
   return (
-    <div ref={meta.headerRef} className={styles.scroll} role="rowgroup">
+    <div ref={headerRef} className={styles.scroll} role="rowgroup">
       <ColumnRow
         order={ids}
         onOrderChange={(next) => {
           const move = movedColumn(ids, next);
-          if (move) actions.reorderColumns(move.from, move.to);
+          if (move) {
+            actions.reorderColumns(move.from, move.to);
+          }
         }}
         columnLabel={labelFor}
         aria-rowindex={1}

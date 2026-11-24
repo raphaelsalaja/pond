@@ -1,5 +1,5 @@
-import folder from "./parts/folder.mjs";
 import folderOpen from "./parts/folder-open.mjs";
+import folder from "./parts/folder.mjs";
 
 export default (h, s) => folder(h, s);
 

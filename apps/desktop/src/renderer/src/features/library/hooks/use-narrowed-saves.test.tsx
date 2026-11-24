@@ -1,17 +1,13 @@
 import { PrefsSchema } from "@pond/schema";
-import {
-  type LibraryQueryRequest,
-  LibraryQueryRequestSchema,
-} from "@shared/library-query";
+import { LibraryQueryRequestSchema } from "@shared/library-query";
+import type { LibraryQueryRequest } from "@shared/library-query";
 import { RouterContextProvider } from "@tanstack/react-router";
 import { act, useEffect, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  currentLocation,
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/app/test/library-router";
+import { currentLocation, openLibraryAt } from "@/app/test/library-router";
+import type { LibraryTestRouter } from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { followDeparture } from "@/features/saves/lib/save-nav";
 import {
@@ -50,9 +46,16 @@ function Collection({ preview }: { preview: boolean }) {
     });
   }, [paging]);
   useEffect(() => {
-    if (!preview || opened) return;
-    if (paging.loading || !paging.filtered.some((save) => save.id === SAVE_ID))
+    if (!preview || opened) {
       return;
+    }
+    if (
+      paging.loading ||
+      !paging.filtered.some((save) => save.id === SAVE_ID)
+    ) {
+      return;
+    }
+    // oxlint-disable-next-line react/set-state-in-effect -- The preview opens a commit after setSource publishes the list, as a real open after the grid renders would.
     setOpened(true);
   }, [opened, paging, preview]);
   return (
@@ -88,7 +91,9 @@ describe("recently added preview", () => {
       title: "Recent reference",
       files: [],
     });
-    if (!save) throw new Error("Invalid fixture");
+    if (!save) {
+      throw new Error("Invalid fixture");
+    }
     pool.upsert(save);
     router = await openLibraryAt(
       `${pathForLibraryNav({ kind: "recentlyAdded" })}?save=${SAVE_ID}`,
@@ -97,15 +102,23 @@ describe("recently added preview", () => {
     primarySelection.set(SAVE_ID);
     vi.stubGlobal("pond", {
       query: vi.fn(async (name: string, input?: LibraryQueryRequest) => {
-        if (name === "settings.getPrefs") return prefs;
-        if (name === "settings.setPrefs") return { prefs };
+        if (name === "settings.getPrefs") {
+          return prefs;
+        }
+        if (name === "settings.setPrefs") {
+          return { prefs };
+        }
         if (name === "saves.queryPage") {
           const request = LibraryQueryRequestSchema.parse(input);
           cutoffs.push(request.scope?.savedSince);
           return page();
         }
-        if (name === "saves.queryIds") return { ids: [SAVE_ID] };
-        if (name === "saves.getMany") return [];
+        if (name === "saves.queryIds") {
+          return { ids: [SAVE_ID] };
+        }
+        if (name === "saves.getMany") {
+          return [];
+        }
         return [];
       }),
       onSyncAction: () => () => {},
@@ -147,7 +160,9 @@ describe("recently added preview", () => {
       );
     });
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 30));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 30);
+      });
     });
 
     expect(host.querySelector("[data-ids]")?.getAttribute("data-ids")).toBe(
@@ -168,13 +183,17 @@ describe("recently added preview", () => {
 async function settle(host: HTMLElement): Promise<void> {
   for (let attempt = 0; attempt < 30; attempt++) {
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
     });
     const ids = host.querySelector("[data-ids]")?.getAttribute("data-ids");
     const loading = host
       .querySelector("[data-loading]")
       ?.getAttribute("data-loading");
-    if (ids === SAVE_ID && loading === "false") return;
+    if (ids === SAVE_ID && loading === "false") {
+      return;
+    }
   }
   throw new Error(`Recently Added did not settle: ${host.innerHTML}`);
 }

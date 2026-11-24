@@ -59,7 +59,7 @@ describe("vimeo normalize", () => {
         jwt: jwt({}),
       }),
     ).toBe("staff");
-    expect(handleFromViewer({ user: {}, jwt: jwt({ user_id: 755559 }) })).toBe(
+    expect(handleFromViewer({ user: {}, jwt: jwt({ user_id: 755_559 }) })).toBe(
       "user755559",
     );
     expect(handleFromViewer({ user: {}, jwt: jwt({ user_id: null }) })).toBe(

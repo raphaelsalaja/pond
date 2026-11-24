@@ -1,3 +1,5 @@
+import log from "electron-log/renderer";
+
 export async function optimistic<T>(
   optimisticUpdate: () => void,
   rollback: () => void,
@@ -6,8 +8,8 @@ export async function optimistic<T>(
   optimisticUpdate();
   try {
     return await run();
-  } catch (err) {
-    console.warn("[pond pool] tx failed, rolling back", err);
+  } catch (error) {
+    log.warn("[pond pool] tx failed, rolling back", error);
     rollback();
     return null;
   }

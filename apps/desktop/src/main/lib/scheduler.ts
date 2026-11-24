@@ -46,16 +46,26 @@ export function schedule(opts: ScheduleOpts): void {
 
 function cancel(name: string): void {
   const job = jobs.get(name);
-  if (!job) return;
-  if (job.initial) clearTimeout(job.initial);
-  if (job.timer) clearInterval(job.timer);
+  if (!job) {
+    return;
+  }
+  if (job.initial) {
+    clearTimeout(job.initial);
+  }
+  if (job.timer) {
+    clearInterval(job.timer);
+  }
   jobs.delete(name);
 }
 
 function stopAll(): void {
   for (const job of jobs.values()) {
-    if (job.initial) clearTimeout(job.initial);
-    if (job.timer) clearInterval(job.timer);
+    if (job.initial) {
+      clearTimeout(job.initial);
+    }
+    if (job.timer) {
+      clearInterval(job.timer);
+    }
   }
   jobs.clear();
 }
@@ -63,7 +73,7 @@ function stopAll(): void {
 async function run(job: Job): Promise<void> {
   try {
     await job.fn();
-  } catch (err) {
-    log.warn(`[pond scheduler] '${job.name}' tick failed`, err);
+  } catch (error) {
+    log.warn(`[pond scheduler] '${job.name}' tick failed`, error);
   }
 }

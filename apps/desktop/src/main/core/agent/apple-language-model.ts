@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import type { LanguageModel } from "ai";
 import { z } from "zod";
 import { appleErrorMessage, runAppleHelper } from "./apple-runtime";
-import { type AppleTool, replySchemaFor } from "./apple-schema";
+import { replySchemaFor } from "./apple-schema";
+import type { AppleTool } from "./apple-schema";
 
 type AppleLanguageModel = Extract<
   LanguageModel,
@@ -15,7 +16,7 @@ type ToolResultPart = Extract<
   { type: "tool-result" }
 >;
 
-const RESULT_CHARS = 2_000;
+const RESULT_CHARS = 2000;
 
 /** The trailing ellipsis marks clipped tool output for the model, not for the user. */
 function clip(text: string): string {
@@ -40,8 +41,8 @@ function resultText(output: ToolResultPart["output"]): string {
 }
 
 export function renderPrompt(prompt: CallOptions["prompt"]) {
-  const system: string[] = [];
-  const turns: string[] = [];
+  const system: Array<string> = [];
+  const turns: Array<string> = [];
   for (const message of prompt) {
     if (message.role === "system") {
       system.push(message.content);
@@ -107,7 +108,7 @@ export function createAppleLanguageModel(
         "Apple Intelligence reads text only. Choose a vision model for attachments.",
       );
     }
-    const tools = (options.tools ?? []).flatMap((tool): AppleTool[] =>
+    const tools = (options.tools ?? []).flatMap((tool): Array<AppleTool> =>
       tool.type === "function"
         ? [
             {
@@ -129,9 +130,13 @@ export function createAppleLanguageModel(
       options.abortSignal,
     );
     options.abortSignal?.throwIfAborted();
-    if (!reply.ok) throw new Error(appleErrorMessage(reply.error));
+    if (!reply.ok) {
+      throw new Error(appleErrorMessage(reply.error));
+    }
     const content = contentSchema.safeParse(reply.content);
-    if (!content.success) throw new Error(appleErrorMessage("failed"));
+    if (!content.success) {
+      throw new Error(appleErrorMessage("failed"));
+    }
     const { call, text } = content.data;
     if (
       (call && !tools.some((tool) => tool.name === call.tool)) ||
@@ -180,7 +185,9 @@ export function createAppleLanguageModel(
                   delta: part.text,
                 });
                 controller.enqueue({ type: "text-end", id });
-              } else if (part.type === "tool-call") controller.enqueue(part);
+              } else if (part.type === "tool-call") {
+                controller.enqueue(part);
+              }
             }
             controller.enqueue({
               type: "finish",

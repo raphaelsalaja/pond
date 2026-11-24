@@ -1,9 +1,17 @@
 export function prettifyType(t: string): string {
   const lower = t.toLowerCase();
-  if (lower === "video") return "MP4";
-  if (lower === "image") return "Image";
-  if (lower === "web") return "Web";
-  if (lower === "link") return "Link";
+  if (lower === "video") {
+    return "MP4";
+  }
+  if (lower === "image") {
+    return "Image";
+  }
+  if (lower === "web") {
+    return "Web";
+  }
+  if (lower === "link") {
+    return "Link";
+  }
   return t.toUpperCase();
 }
 

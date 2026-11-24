@@ -14,13 +14,13 @@ const SIDES = {
     x: 4.75,
     label: "Toggle Sidebar",
     shortcut: "view.sidebar",
-    toggle: libraryChrome.toggleSidebar,
+    toggle: () => libraryChrome.toggleSidebar(),
   },
   right: {
     x: 13.25,
     label: "Toggle Details",
     shortcut: "view.inspector",
-    toggle: libraryChrome.toggleDetails,
+    toggle: () => libraryChrome.toggleDetails(),
   },
 } as const;
 

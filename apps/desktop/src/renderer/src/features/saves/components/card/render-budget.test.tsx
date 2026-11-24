@@ -1,7 +1,8 @@
 import { Tooltip } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { LibraryGridProvider } from "@/features/saves/components/card/context";
 import { primarySelection, selection } from "@/features/saves/navigation";

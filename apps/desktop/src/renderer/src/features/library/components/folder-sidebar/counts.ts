@@ -1,7 +1,7 @@
 export interface SidebarSave {
   id: string;
   deletedAt: number | null;
-  tags: readonly string[];
+  tags: ReadonlyArray<string>;
 }
 
 export interface SidebarCounts {
@@ -13,8 +13,8 @@ export interface SidebarCounts {
 }
 
 export function countSidebarSaves(
-  saves: readonly SidebarSave[],
-  memberships: Record<string, readonly string[]>,
+  saves: ReadonlyArray<SidebarSave>,
+  memberships: Record<string, ReadonlyArray<string>>,
 ): SidebarCounts {
   let library = 0;
   let uncategorized = 0;
@@ -28,9 +28,13 @@ export function countSidebarSaves(
       continue;
     }
     library += 1;
-    if (save.tags.length === 0) untagged += 1;
+    if (save.tags.length === 0) {
+      untagged += 1;
+    }
     const folderIds = memberships[save.id] ?? [];
-    if (folderIds.length === 0) uncategorized += 1;
+    if (folderIds.length === 0) {
+      uncategorized += 1;
+    }
     for (const folderId of folderIds) {
       folders[folderId] = (folders[folderId] ?? 0) + 1;
     }

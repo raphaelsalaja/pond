@@ -1,16 +1,20 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AutomaticTagsDialog } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
 const query = vi.fn(async (name: string) => {
-  if (name === "folders.rules.get")
+  if (name === "folders.rules.get") {
     return { tags: ["Logos"], inheritedTags: ["Brand"] };
-  if (name === "settings.getPrefs") return PrefsSchema.parse({});
-  if (name === "tags.list")
+  }
+  if (name === "settings.getPrefs") {
+    return PrefsSchema.parse({});
+  }
+  if (name === "tags.list") {
     return ["Logos", "Posters"].map((tag) => ({
       id: tag,
       name: tag,
@@ -20,7 +24,10 @@ const query = vi.fn(async (name: string) => {
       usageCount: 0,
       createdAt: null,
     }));
-  if (name === "tagGroups.list" || name === "folders.list") return [];
+  }
+  if (name === "tagGroups.list" || name === "folders.list") {
+    return [];
+  }
   return { ok: true, affected: 0 };
 });
 

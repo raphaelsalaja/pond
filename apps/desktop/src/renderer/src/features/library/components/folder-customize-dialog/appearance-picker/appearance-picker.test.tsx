@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AppearancePicker } from ".";
 
@@ -61,7 +62,9 @@ function button(scope: ParentNode, label: string): HTMLButtonElement {
   const match = scope.querySelector<HTMLButtonElement>(
     `button[aria-label="${label}"]`,
   );
-  if (!match) throw new Error(`Missing button: ${label}`);
+  if (!match) {
+    throw new Error(`Missing button: ${label}`);
+  }
   return match;
 }
 
@@ -73,7 +76,9 @@ function field(label: string): HTMLInputElement {
   const match = document.querySelector<HTMLInputElement>(
     `input[aria-label="${label}"]`,
   );
-  if (!match) throw new Error(`Missing field: ${label}`);
+  if (!match) {
+    throw new Error(`Missing field: ${label}`);
+  }
   return match;
 }
 
@@ -90,10 +95,14 @@ function type(input: HTMLInputElement, value: string): Promise<void> {
 it("shows recently used icons and colors", async () => {
   await open();
   const icons = section("Recently Used Icons");
-  if (!icons) throw new Error("Missing recent icons");
+  if (!icons) {
+    throw new Error("Missing recent icons");
+  }
   expect(button(icons, "Heart")).toBeDefined();
   const colors = section("Recently Used Colors");
-  if (!colors) throw new Error("Missing recent colors");
+  if (!colors) {
+    throw new Error("Missing recent colors");
+  }
   const custom = button(colors, "#336699");
   expect(custom.getAttribute("aria-pressed")).toBe("true");
   await act(async () => button(colors, "Pink").click());
@@ -106,7 +115,9 @@ it("searches icons by keyword and picks the first result on Enter", async () => 
   await type(search, "photos");
   expect(section("Recently Used Icons")).toBeNull();
   const results = section("Icons");
-  if (!results) throw new Error("Missing icon results");
+  if (!results) {
+    throw new Error("Missing icon results");
+  }
   expect(
     [...results.querySelectorAll("button")].map((entry) =>
       entry.getAttribute("aria-label"),

@@ -24,8 +24,12 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
     ) {
       return true;
     }
-    if (u.hostname.includes("accounts.google.com")) return true;
-    if (u.hostname.includes("login.reddit.com")) return true;
+    if (u.hostname.includes("accounts.google.com")) {
+      return true;
+    }
+    if (u.hostname.includes("login.reddit.com")) {
+      return true;
+    }
     return false;
   } catch {
     return false;
@@ -42,7 +46,9 @@ export function looksLikeChallenge(currentUrl: string): null | {
     if (p.includes("/challenge") || hay.includes("challenge")) {
       return { kind: "challenge" };
     }
-    if (p.includes("/checkpoint")) return { kind: "checkpoint" };
+    if (p.includes("/checkpoint")) {
+      return { kind: "checkpoint" };
+    }
     if (
       p.includes("/account/access") ||
       p.includes("/i/flow/consent") ||
@@ -76,7 +82,9 @@ export async function navigateWithTimeout(
       failedUrl: string,
       isMainFrame: boolean,
     ) => {
-      if (!isMainFrame || code === -3) return;
+      if (!isMainFrame || code === -3) {
+        return;
+      }
       log.info("[pond scrape] nav load failed", { code, desc, failedUrl });
       cleanup();
       resolve(false);
@@ -93,13 +101,13 @@ export async function navigateWithTimeout(
   const navPromise = (async () => {
     try {
       await wc.loadURL(url);
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("ERR_ABORTED")) {
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("ERR_ABORTED")) {
         return finished;
       }
       log.info("[pond scrape] loadURL rejected", {
         url,
-        err: err instanceof Error ? err.message : String(err),
+        err: error instanceof Error ? error.message : String(error),
       });
       return false as const;
     }
@@ -113,7 +121,9 @@ export async function navigateWithTimeout(
   if (result === TIMEOUT) {
     try {
       wc.stop();
-    } catch {}
+    } catch {
+      /** The window may already be destroyed, and the navigation counts as failed either way. */
+    }
     return false;
   }
   return result === true;
@@ -134,7 +144,9 @@ export async function waitPastInterstitial(
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (!win.isDestroyed() && isInterstitial(win.webContents.getURL())) {
-    if (Date.now() > deadline) return false;
+    if (Date.now() > deadline) {
+      return false;
+    }
     await sleep(250);
   }
   return !win.isDestroyed();

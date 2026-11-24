@@ -30,15 +30,18 @@ function centerSlide(
 ) {
   const nodes = slideNodes(scroller);
   const slide = nodes[clamp(index, 0, nodes.length - 1)];
-  if (!slide) return;
+  if (!slide) {
+    return;
+  }
   const elRect = scroller.getBoundingClientRect();
   const slideRect = slide.getBoundingClientRect();
   const delta =
     slideRect.left +
     slideRect.width / 2 -
     (elRect.left + scroller.clientWidth / 2);
-  if (Math.abs(delta) > 1)
+  if (Math.abs(delta) > 1) {
     scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior });
+  }
 }
 
 export function useLockedSlideRatio() {
@@ -48,7 +51,9 @@ export function useLockedSlideRatio() {
   const reportRatio = useCallback((src: string, r: number) => {
     setRatios((prev) => {
       const cur = prev.get(src);
-      if (cur != null && Math.abs(cur - r) < 0.01) return prev;
+      if (cur !== undefined && Math.abs(cur - r) < 0.01) {
+        return prev;
+      }
       const next = new Map(prev);
       next.set(src, r);
       return next;
@@ -63,7 +68,9 @@ export function useActiveSlide(
 ): number {
   const [active, setActive] = useState(0);
   useEffect(() => {
-    if (!scroller) return;
+    if (!scroller) {
+      return;
+    }
     let frame = 0;
     const compute = () => {
       cancelAnimationFrame(frame);
@@ -88,7 +95,9 @@ export function useCarouselNavigation(
 ) {
   const interactedRef = useRef(false);
   useEffect(() => {
-    if (!scroller) return;
+    if (!scroller) {
+      return;
+    }
     const mark = () => {
       interactedRef.current = true;
     };
@@ -102,17 +111,22 @@ export function useCarouselNavigation(
 
   /** Native scroll-snap doesn't settle the first slide to centre on load; "instant" because Blossom sets scroll-behavior:smooth and "auto" would animate the slide in from the left. */
   useEffect(() => {
-    if (!scroller || interactedRef.current) return;
+    if (!scroller || interactedRef.current) {
+      return;
+    }
     centerSlide(scroller, 0, "instant");
   }, [scroller]);
 
   const aimedIndexRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!scroller) return;
+    if (!scroller) {
+      return;
+    }
     const settle = () => {
-      if (aimedIndexRef.current === centeredIndex(scroller))
+      if (aimedIndexRef.current === centeredIndex(scroller)) {
         aimedIndexRef.current = null;
+      }
     };
     const release = () => {
       aimedIndexRef.current = null;
@@ -129,11 +143,15 @@ export function useCarouselNavigation(
 
   const step = useCallback(
     (delta: number): boolean => {
-      if (!scroller) return false;
+      if (!scroller) {
+        return false;
+      }
       const count = slideNodes(scroller).length;
       const from = aimedIndexRef.current ?? centeredIndex(scroller);
       const next = clamp(from + delta, 0, count - 1);
-      if (next === from) return false;
+      if (next === from) {
+        return false;
+      }
       interactedRef.current = true;
       aimedIndexRef.current = next;
       centerSlide(scroller, next, "smooth");

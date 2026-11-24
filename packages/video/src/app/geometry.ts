@@ -52,7 +52,9 @@ export const submenuOf = (
 
 /** The menu item under `point`, or -1. */
 export function hit(menu: Placement, count: number, point: Point) {
-  if (point.x < menu.left || point.x > menu.left + menu.width) return -1;
+  if (point.x < menu.left || point.x > menu.left + menu.width) {
+    return -1;
+  }
   const index = Math.floor((point.y - menu.top - PAD) / (ITEM + GAP));
   return index >= 0 && index < count ? index : -1;
 }

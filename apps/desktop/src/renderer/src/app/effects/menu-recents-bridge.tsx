@@ -11,9 +11,13 @@ interface RecentMenuEntry {
 
 function titleFor(id: string): string | null {
   const save = pool.get(id);
-  if (!save) return null;
+  if (!save) {
+    return null;
+  }
   const trimmed = save.title?.trim();
-  if (trimmed) return trimmed;
+  if (trimmed) {
+    return trimmed;
+  }
   return save.url || "Untitled";
 }
 
@@ -21,12 +25,14 @@ export function MenuRecentsBridge(): null {
   const recents = useRecents();
   const revision = useSelector(savesStore, (s) => s.revision);
 
-  const entries = useMemo<RecentMenuEntry[]>(() => {
+  const entries = useMemo<Array<RecentMenuEntry>>(() => {
     void revision;
-    const out: RecentMenuEntry[] = [];
+    const out: Array<RecentMenuEntry> = [];
     for (const entry of recents) {
       const title = titleFor(entry.saveId);
-      if (title) out.push({ id: entry.saveId, title });
+      if (title) {
+        out.push({ id: entry.saveId, title });
+      }
     }
     return out;
   }, [recents, revision]);

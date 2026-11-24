@@ -7,7 +7,8 @@ import {
   IconTypography,
 } from "@pond/icons";
 import { Button, Input, Slider } from "@pond/ui";
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerFallback } from "@/features/saves/components/viewers/viewer-fallback";
@@ -35,34 +36,45 @@ const FONT_MODES = [
 
 type FontMode = (typeof FONT_MODES)[number]["value"];
 
+function isValueList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return Array.isArray(value);
+}
+
 export function FontViewer(props: ViewerProps & { url: string }) {
   const [specimen, setSpecimen] = useState(DEFAULT_SPECIMEN);
   const [size, setSize] = useState(68);
   const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failedSource, setFailedSource] = useState<string | null>(null);
   const [mode, setMode] = useState<FontMode>("specimen");
   const [background, setBackground] = useState<"light" | "dark">("light");
   const [renaming, setRenaming] = useState(false);
   const family = useMemo(
-    () => `pond-preview-${props.save.id.replace(/[^a-zA-Z0-9_-]/g, "")}`,
+    () => `pond-preview-${props.save.id.replaceAll(/[^a-zA-Z0-9_-]/g, "")}`,
     [props.save.id],
   );
+  const failed = failedSource === `${family} ${props.url}`;
 
   useEffect(() => {
     let active = true;
-    setFailed(false);
+    const source = `${family} ${props.url}`;
     const face = new FontFace(family, `url(${JSON.stringify(props.url)})`);
     void face
       .load()
       .then((font) => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         document.fonts.add(font);
         setLoaded(true);
       })
       .catch(() => {
-        if (!active) return;
+        if (!active) {
+          return;
+        }
         setLoaded(false);
-        setFailed(true);
+        setFailedSource(source);
       });
     return () => {
       active = false;
@@ -111,7 +123,7 @@ export function FontViewer(props: ViewerProps & { url: string }) {
                       step={1}
                       value={size}
                       onValueChange={(next) => {
-                        const value = Array.isArray(next)
+                        const value = isValueList(next)
                           ? (next[0] ?? 68)
                           : next;
                         setSize(value);
@@ -220,8 +232,9 @@ export function FontViewer(props: ViewerProps & { url: string }) {
                       "saves.batchRename",
                       { ids: [props.save.id], pattern: name },
                     );
-                    if (!result.ok)
+                    if (!result.ok) {
                       throw new Error("Could not rename this font.");
+                    }
                   }}
                   onFinish={() => setRenaming(false)}
                 />

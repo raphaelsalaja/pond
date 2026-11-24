@@ -147,7 +147,7 @@ it("uses a bounded text fallback instead of fetching a remote image", async () =
             url: "https://example.com",
             source: "local",
             notes:
-              '<img src="https://example.com/tracker">A note\\nwith texture. ' +
+              String.raw`<img src="https://example.com/tracker">A note\nwith texture. ` +
               "x".repeat(500),
           },
         ]}

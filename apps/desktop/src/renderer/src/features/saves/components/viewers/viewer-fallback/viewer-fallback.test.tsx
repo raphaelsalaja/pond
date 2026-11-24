@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { StoredFileViewer } from "@/features/saves/components/viewers/file-viewer";
 import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
@@ -70,7 +71,9 @@ afterEach(async () => {
 
 it("keeps failure content and original actions inside the existing chrome", async () => {
   const file = save.files[0];
-  if (!file) throw new Error("Missing fixture file");
+  if (!file) {
+    throw new Error("Missing fixture file");
+  }
 
   await act(async () => {
     root.render(
@@ -115,7 +118,9 @@ it("ends a failed generated file preview in the shared fallback", async () => {
     ],
   };
   const file = documentSave.files[0];
-  if (!file) throw new Error("Missing document fixture");
+  if (!file) {
+    throw new Error("Missing document fixture");
+  }
   pool.upsert(documentSave);
   resultNavigation.setSource({ ids: [documentSave.id], total: 1 });
 
@@ -124,7 +129,9 @@ it("ends a failed generated file preview in the shared fallback", async () => {
   });
 
   const image = host.querySelector("img");
-  if (!image) throw new Error("Missing generated document preview");
+  if (!image) {
+    throw new Error("Missing generated document preview");
+  }
   await act(async () => {
     image.dispatchEvent(new Event("error", { bubbles: true }));
   });
@@ -140,7 +147,9 @@ it("ends a failed generated file preview in the shared fallback", async () => {
     files: [{ ...file, path: "replacement.docx", sha256: "replacement" }],
   };
   const replacementFile = replacement.files[0];
-  if (!replacementFile) throw new Error("Missing replacement fixture");
+  if (!replacementFile) {
+    throw new Error("Missing replacement fixture");
+  }
   pool.upsert(replacement);
   await act(async () => {
     root.render(<StoredFileViewer save={replacement} file={replacementFile} />);

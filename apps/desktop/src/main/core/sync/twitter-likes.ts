@@ -37,12 +37,14 @@ export async function harvestConfiguredTwitterLikes(
   account: ConnectedAccount,
   input: {
     aborted: boolean;
-    knownIds: string[];
+    knownIds: Array<string>;
     partition: string;
   },
   dependencies: TwitterLikesDependencies,
 ): Promise<BookmarksHarvestResult | null> {
-  if (!importsLikes(account.sync)) return null;
+  if (!importsLikes(account.sync)) {
+    return null;
+  }
   if (!shouldHarvestTwitterLikes(account, input.aborted)) {
     return { ok: false, reason: "no_match" };
   }

@@ -33,7 +33,8 @@ import {
   resumeLibraryWork,
   suspendLibraryWork,
 } from "./library-location-runtime";
-import { type QueryHandlerMap, query, StringParam } from "./params";
+import { query, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const PathParams = z.object({ path: StringParam });
 
@@ -49,8 +50,9 @@ export const libraryLocationMaintenanceQueries = {
           properties: ["openDirectory", "openFile"],
         });
         source = picked.filePaths[0];
-        if (picked.canceled || !source)
+        if (picked.canceled || !source) {
           return { ok: false, reason: "cancelled" as const };
+        }
       }
       try {
         return {
@@ -106,8 +108,8 @@ export const libraryLocationMaintenanceQueries = {
             renamed.path,
             renamed.previousName,
           );
-          await relocateLibrary(source, "adopt").catch((rollbackError) =>
-            log.error("Could not restore the library pointer", rollbackError),
+          await relocateLibrary(source, "adopt").catch((cause: unknown) =>
+            log.error("Could not restore the library pointer", cause),
           );
           throw error;
         }
@@ -194,14 +196,18 @@ export const libraryLocationMaintenanceQueries = {
           path: result.path,
           sourceRemoved,
         };
-        if (sourceRemoved) return moved;
+        if (sourceRemoved) {
+          return moved;
+        }
         return { ...moved, cleanupPath: srcResolved };
-      } catch (err) {
+      } catch (error) {
         await resumeLibraryWork();
         return {
           ok: false as const,
           error:
-            err instanceof Error ? err.message : "Couldn't move the library.",
+            error instanceof Error
+              ? error.message
+              : "Couldn't move the library.",
         };
       }
     },

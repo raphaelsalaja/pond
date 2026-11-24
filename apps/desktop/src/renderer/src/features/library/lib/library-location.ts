@@ -22,7 +22,9 @@ function reportError(id: string, title: string, error: Error): void {
 export async function createLibrary(): Promise<void> {
   try {
     const picked = await window.pond.query("library.pickFolder", {});
-    if (!picked.ok || !picked.path) return;
+    if (!picked.ok || !picked.path) {
+      return;
+    }
     const result = await window.pond.query("library.createAt", {
       path: picked.path,
       name: DEFAULT_LIBRARY_NAME,
@@ -45,7 +47,9 @@ export async function createLibrary(): Promise<void> {
 export async function openLibrary(): Promise<void> {
   try {
     const picked = await window.pond.query("library.pickExisting", {});
-    if (!picked.ok || !picked.path) return;
+    if (!picked.ok || !picked.path) {
+      return;
+    }
     await switchLibrary(picked.path);
   } catch (error) {
     reportError(
@@ -103,7 +107,9 @@ export async function mergeLibrary(): Promise<void> {
   try {
     const result = await window.pond.query("library.mergeFrom", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") return;
+      if (result.reason === "cancelled") {
+        return;
+      }
       throw new Error(result.error || "Choose a different library.");
     }
     notify({

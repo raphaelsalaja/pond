@@ -40,13 +40,13 @@ function Root({ tone = "default", visible, className, ...props }: RootProps) {
   );
 }
 
-interface BodyProps extends React.ComponentPropsWithoutRef<"div"> {}
+type BodyProps = React.ComponentPropsWithoutRef<"div">;
 
 function Body({ className, ...props }: BodyProps) {
   return <div className={cn(styles.body, className)} {...props} />;
 }
 
-interface TitleProps extends React.ComponentPropsWithoutRef<"h3"> {}
+type TitleProps = React.ComponentPropsWithoutRef<"h3">;
 
 function Title({ id, className, ...props }: TitleProps) {
   const generated = useId();
@@ -59,17 +59,18 @@ function Title({ id, className, ...props }: TitleProps) {
   return <h3 id={titleId} className={cn(styles.title, className)} {...props} />;
 }
 
-interface DescriptionProps extends React.ComponentPropsWithoutRef<"p"> {}
+type DescriptionProps = React.ComponentPropsWithoutRef<"p">;
 
 function Description({ className, ...props }: DescriptionProps) {
   return <p className={cn(styles.description, className)} {...props} />;
 }
 
-interface ChoicesProps extends React.ComponentPropsWithoutRef<"fieldset"> {}
+type ChoicesProps = React.ComponentPropsWithoutRef<"fieldset">;
 
 function Choices({ className, ...props }: ChoicesProps) {
   const titleId = use(PromptContext)?.titleId;
-  const named = props["aria-label"] != null || props["aria-labelledby"] != null;
+  const named =
+    props["aria-label"] !== undefined || props["aria-labelledby"] !== undefined;
   return (
     <fieldset
       aria-labelledby={named ? undefined : titleId}
@@ -110,8 +111,10 @@ function Choice({
   );
 }
 
-interface FreeformProps
-  extends Omit<React.ComponentPropsWithoutRef<"input">, "type"> {
+interface FreeformProps extends Omit<
+  React.ComponentPropsWithoutRef<"input">,
+  "type"
+> {
   marker: React.ReactNode;
   selected?: boolean;
 }
@@ -142,13 +145,13 @@ function Freeform({
   );
 }
 
-interface FooterProps extends React.ComponentPropsWithoutRef<"div"> {}
+type FooterProps = React.ComponentPropsWithoutRef<"div">;
 
 function Footer({ className, ...props }: FooterProps) {
   return <div className={cn(styles.footer, className)} {...props} />;
 }
 
-interface AnswersProps extends React.ComponentPropsWithoutRef<"div"> {}
+type AnswersProps = React.ComponentPropsWithoutRef<"div">;
 
 function Answers({ className, ...props }: AnswersProps) {
   return <div className={cn(styles.answers, className)} {...props} />;
@@ -168,20 +171,22 @@ function Answer({ tone = "default", className, ...props }: AnswerProps) {
   );
 }
 
-interface AnswerQuestionProps extends React.ComponentPropsWithoutRef<"p"> {}
+type AnswerQuestionProps = React.ComponentPropsWithoutRef<"p">;
 
 function AnswerQuestion({ className, ...props }: AnswerQuestionProps) {
   return <p className={cn(styles.question, className)} {...props} />;
 }
 
-interface AnswerTextProps extends React.ComponentPropsWithoutRef<"p"> {}
+type AnswerTextProps = React.ComponentPropsWithoutRef<"p">;
 
 function AnswerText({ className, ...props }: AnswerTextProps) {
   return <p className={cn(styles.response, className)} {...props} />;
 }
 
-interface ReceiptProps
-  extends Omit<React.ComponentPropsWithoutRef<"div">, "children"> {
+interface ReceiptProps extends Omit<
+  React.ComponentPropsWithoutRef<"div">,
+  "children"
+> {
   icon?: React.ReactNode;
   label: React.ReactNode;
   detail?: React.ReactNode;

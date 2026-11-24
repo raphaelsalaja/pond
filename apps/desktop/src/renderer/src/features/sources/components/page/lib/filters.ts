@@ -36,10 +36,10 @@ export function defaultSourceFilters(): SourceFilters {
   };
 }
 
-export const SOURCE_STATUS_OPTIONS: readonly {
+export const SOURCE_STATUS_OPTIONS: ReadonlyArray<{
   id: SourceStatusId;
   label: string;
-}[] = [
+}> = [
   { id: "active", label: "Active" },
   { id: "syncing", label: "Syncing" },
   { id: "failed", label: "Failed" },
@@ -59,10 +59,18 @@ export function sourceStatusId(
   tone: CardModel["tone"],
   connected: boolean,
 ): SourceStatusId {
-  if (tone === "run") return "syncing";
-  if (tone === "err") return "failed";
-  if (tone === "paused") return "paused";
-  if (!connected) return "offline";
+  if (tone === "run") {
+    return "syncing";
+  }
+  if (tone === "err") {
+    return "failed";
+  }
+  if (tone === "paused") {
+    return "paused";
+  }
+  if (!connected) {
+    return "offline";
+  }
   return "active";
 }
 
@@ -87,7 +95,9 @@ export function matchesSourceFilters(
     return false;
   }
   const q = filters.q.trim().toLowerCase();
-  if (!q) return true;
+  if (!q) {
+    return true;
+  }
   const hay = [row.name, row.handle, row.sourceLabel]
     .filter(Boolean)
     .join(" ")

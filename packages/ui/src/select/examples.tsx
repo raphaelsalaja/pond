@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { Select } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 const SORT = [
   { value: "newest", label: "Newest First" },
@@ -23,7 +23,7 @@ function SortSelect({
   disabled?: boolean;
   variant?: "secondary" | "chip";
   size?: "sm" | "md";
-  items?: { value: string; label: string; shortcut?: number }[];
+  items?: Array<{ value: string; label: string; shortcut?: number }>;
 }) {
   return (
     <Select.Root items={items} defaultValue={defaultValue} disabled={disabled}>

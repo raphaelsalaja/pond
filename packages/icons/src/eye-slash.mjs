@@ -1,10 +1,11 @@
 import slash from "./parts/slash.mjs";
 
+const side = (p) => (p[0] - p[1]) / Math.SQRT2;
+
 /** `eye.mjs` cut where the slash crosses it; the pupil would sit in the cut, so it goes. */
 export default (h, s) => {
   const [x0, , x1] = s.keylines.wide;
   const gap = s.stroke + 1;
-  const side = (p) => (p[0] - p[1]) / Math.SQRT2;
   const curve = (p0, c, p2) => {
     const at = (t) =>
       [0, 1].map(
@@ -17,8 +18,11 @@ export default (h, s) => {
       const rising = side(at(1)) > side(at(0));
       for (let k = 0; k < 40; k++) {
         const mid = (lo + hi) / 2;
-        if (side(at(mid)) < target === rising) lo = mid;
-        else hi = mid;
+        if (side(at(mid)) < target === rising) {
+          lo = mid;
+        } else {
+          hi = mid;
+        }
       }
       return lo;
     };

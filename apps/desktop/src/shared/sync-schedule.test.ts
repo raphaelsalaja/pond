@@ -4,8 +4,8 @@ import {
   isSourceFetchDue,
   isSyncScheduleDue,
   nextSyncOccurrence,
-  type SyncSchedule,
 } from "./sync-schedule";
+import type { SyncSchedule } from "./sync-schedule";
 
 const now = new Date(2026, 8, 7, 9, 0);
 const daily: SyncSchedule = {

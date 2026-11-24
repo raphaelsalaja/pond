@@ -8,12 +8,11 @@ import type { WirePrefsPatch } from "@shared/wire";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoute, RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { vi } from "vitest";
-import {
-  createLibraryTestRouter,
-  type LibraryTestRouter,
-} from "@/app/test/library-router";
+import { createLibraryTestRouter } from "@/app/test/library-router";
+import type { LibraryTestRouter } from "@/app/test/library-router";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { savedViews } from "@/features/library/state/saved-views";
@@ -25,15 +24,15 @@ import { ToastHost } from "@/shared/components/toast-host";
 import { FolderSidebar } from ".";
 
 interface SavedViewFixtures {
-  current: SavedView[];
+  current: Array<SavedView>;
 }
 
 interface FolderFixtures {
-  current: Folder[];
+  current: Array<Folder>;
 }
 
 interface FishFixtures {
-  current: FishSummary[];
+  current: Array<FishSummary>;
 }
 
 interface QueueSummaryFixtures {
@@ -80,30 +79,61 @@ export const queueSummary: QueueSummaryFixtures = {
 
 let storedPrefs = PrefsSchema.parse({});
 export const pondQuery = vi.fn(async (name: string, patch?: WirePrefsPatch) => {
-  if (name === "saves.sidebarCounts") return sidebarCounts.current;
-  if (name === "queue.summary") return queueSummary.current;
-  if (name === "savedViews.list") return savedViewList.current;
-  if (name === "accounts.list") return { accounts: [] };
-  if (name === "watches.list") return { watches: [] };
-  if (name === "tags.list" || name === "tagGroups.list") return [];
-  if (name === "canvases.list") return [];
-  if (name === "fish.list") return fishList.current;
-  if (name === "fish.sections") return [];
-  if (name === "folders.list") return folderList.current;
-  if (name === "folders.create") return folder("Untitled");
-  if (name === "folders.memberships") return [];
-  if (name === "folders.metadata.get")
+  if (name === "saves.sidebarCounts") {
+    return sidebarCounts.current;
+  }
+  if (name === "queue.summary") {
+    return queueSummary.current;
+  }
+  if (name === "savedViews.list") {
+    return savedViewList.current;
+  }
+  if (name === "accounts.list") {
+    return { accounts: [] };
+  }
+  if (name === "watches.list") {
+    return { watches: [] };
+  }
+  if (name === "tags.list" || name === "tagGroups.list") {
+    return [];
+  }
+  if (name === "canvases.list") {
+    return [];
+  }
+  if (name === "fish.list") {
+    return fishList.current;
+  }
+  if (name === "fish.sections") {
+    return [];
+  }
+  if (name === "folders.list") {
+    return folderList.current;
+  }
+  if (name === "folders.create") {
+    return folder("Untitled");
+  }
+  if (name === "folders.memberships") {
+    return [];
+  }
+  if (name === "folders.metadata.get") {
     return {
       folderId: "folder",
       description: null,
       externalLink: "https://example.com/project",
     };
-  if (name === "library.info")
+  }
+  if (name === "library.info") {
     return { path: "/tmp/My Pond.pond", name: "My Pond" };
-  if (name === "library.recent") return [];
-  if (name === "libraryHealth.overview")
+  }
+  if (name === "library.recent") {
+    return [];
+  }
+  if (name === "libraryHealth.overview") {
     return { check: null, job: null, media: { failures: [] } };
-  if (name === "settings.getPrefs") return storedPrefs;
+  }
+  if (name === "settings.getPrefs") {
+    return storedPrefs;
+  }
   if (name === "settings.setPrefs") {
     const updates = new Map(Object.entries(patch ?? {}));
     storedPrefs = PrefsSchema.parse(
@@ -151,13 +181,13 @@ export function savedView(
 }
 
 interface FolderTransfer extends SaveDragDataTransfer {
-  types: string[];
+  types: Array<string>;
   dropEffect: string;
 }
 
 export function folderTransfer(id = ""): FolderTransfer {
   const data = new Map<string, string>();
-  const types: string[] = [];
+  const types: Array<string> = [];
   if (id) {
     data.set("application/x-pond-folder", id);
     types.push("application/x-pond-folder");
@@ -168,7 +198,9 @@ export function folderTransfer(id = ""): FolderTransfer {
     effectAllowed: "all",
     setData(type: string, value: string) {
       data.set(type, value);
-      if (!types.includes(type)) types.push(type);
+      if (!types.includes(type)) {
+        types.push(type);
+      }
     },
     getData(type: string) {
       return data.get(type) ?? "";
@@ -193,7 +225,9 @@ export function createFolderSidebarHarness() {
   let stopViewUrlSync: (() => void) | null = null;
 
   function getHost(): HTMLDivElement {
-    if (!host) throw new Error("Sidebar harness isn't set up");
+    if (!host) {
+      throw new Error("Sidebar harness isn't set up");
+    }
     return host;
   }
 
@@ -202,7 +236,9 @@ export function createFolderSidebarHarness() {
       return getHost();
     },
     get router(): LibraryTestRouter {
-      if (!router) throw new Error("Sidebar harness isn't mounted");
+      if (!router) {
+        throw new Error("Sidebar harness isn't mounted");
+      }
       return router;
     },
     async setup(): Promise<void> {
@@ -239,7 +275,9 @@ export function createFolderSidebarHarness() {
       root = createRoot(host);
     },
     async cleanup(): Promise<void> {
-      if (root) await act(async () => root?.unmount());
+      if (root) {
+        await act(async () => root?.unmount());
+      }
       stopViewUrlSync?.();
       stopViewUrlSync = null;
       host?.remove();
@@ -258,28 +296,35 @@ export function createFolderSidebarHarness() {
           node.getAttribute("aria-label") === label ||
           (node.textContent?.replace(/[\d,]+$/, "").trim() ?? "") === label,
       );
-      if (!match) throw new Error(`Missing sidebar button: ${label}`);
+      if (!match) {
+        throw new Error(`Missing sidebar button: ${label}`);
+      }
       return match;
     },
     iconButton(label: string): HTMLElement {
-      const match = getHost().querySelector(`[aria-label="${label}"]`);
-      if (!(match instanceof HTMLElement)) {
+      const match = getHost().querySelector<HTMLElement>(
+        `[aria-label="${label}"]`,
+      );
+      if (!match) {
         throw new Error(`Missing icon button: ${label}`);
       }
       return match;
     },
     menuItem(label: string): HTMLElement {
       const node = [
-        ...document.querySelectorAll(
+        ...document.querySelectorAll<HTMLElement>(
           '[role="menuitem"], [role="menuitemcheckbox"], [role="menuitemradio"]',
         ),
       ].find((item) => item.textContent?.trim() === label);
-      if (!(node instanceof HTMLElement))
+      if (!node) {
         throw new Error(`Missing menu item: ${label}`);
+      }
       return node;
     },
     async mount(path = "/"): Promise<LibraryTestRouter> {
-      if (!root) throw new Error("Sidebar harness isn't set up");
+      if (!root) {
+        throw new Error("Sidebar harness isn't set up");
+      }
       const next = createLibraryTestRouter(path, {
         component: FolderSidebar,
         routes: (library) => [

@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
@@ -37,15 +38,19 @@ describe("new menu", () => {
 
   async function openMenu() {
     await act(async () => root.render(<NewMenu />));
-    const trigger = document.querySelector('[aria-label="New"]');
-    if (!(trigger instanceof HTMLElement)) throw new Error("Missing New");
+    const trigger = document.querySelector<HTMLElement>('[aria-label="New"]');
+    if (!trigger) {
+      throw new Error("Missing New");
+    }
     await act(async () => trigger.click());
   }
 
   it("groups actions into task submenus", async () => {
     await openMenu();
     const text = document.body.textContent ?? "";
-    for (const label of labels) expect(text).toContain(label);
+    for (const label of labels) {
+      expect(text).toContain(label);
+    }
     expect(text).not.toContain("New Folder");
     expect(text).not.toContain("Import Files");
     expect(text).not.toContain("Navigate");
@@ -68,9 +73,12 @@ describe("new menu", () => {
 
   it("filters by search and reports no matches", async () => {
     await openMenu();
-    const search = document.querySelector('[aria-label="Search Actions"]');
-    if (!(search instanceof HTMLInputElement))
+    const search = document.querySelector<HTMLInputElement>(
+      'input[aria-label="Search Actions"]',
+    );
+    if (!search) {
       throw new Error("Missing search");
+    }
     await act(async () => {
       search.focus();
       Object.getOwnPropertyDescriptor(
@@ -97,7 +105,9 @@ describe("new menu", () => {
     await act(async () => newMenuDialog.open({ kind: "links" }));
     expect(document.body.textContent).toContain("Import from Links");
     const links = document.querySelector("textarea");
-    if (!links) throw new Error("Missing links field");
+    if (!links) {
+      throw new Error("Missing links field");
+    }
     await act(async () => {
       Object.getOwnPropertyDescriptor(
         HTMLTextAreaElement.prototype,

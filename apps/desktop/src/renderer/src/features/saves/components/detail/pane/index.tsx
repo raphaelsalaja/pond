@@ -8,10 +8,8 @@ import { RelatedSaves } from "@/features/saves/components/detail/related-saves";
 import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
 import { changeSaveFolders } from "@/features/saves/lib/folder-actions";
-import {
-  type SaveFolderReference,
-  saveLibraryBridge,
-} from "@/features/saves/lib/library-bridge";
+import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import type { SaveFolderReference } from "@/features/saves/lib/library-bridge";
 import { bulkMutation } from "@/features/saves/lib/mutate";
 import { loadRelated } from "@/features/saves/lib/related";
 import { pool } from "@/features/saves/state/pool";
@@ -20,20 +18,21 @@ import {
   useSaveViewerNavigation,
 } from "@/features/saves/state/save-viewer";
 import { useTagGroups, useTags } from "@/features/tags";
-import {
-  type InspectorDrafts,
-  InspectorTextField,
-} from "@/shared/components/inspector-text-field";
+import { InspectorTextField } from "@/shared/components/inspector-text-field";
+import type { InspectorDrafts } from "@/shared/components/inspector-text-field";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
 import { errorCopy } from "@/shared/lib/error-copy";
-import { FolderIcon, type FolderIconId } from "@/shared/lib/folder-icons";
+import { FolderIcon } from "@/shared/lib/folder-icons";
+import type { FolderIconId } from "@/shared/lib/folder-icons";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
-import { AssignMenu, type AssignOption } from "./assign-menu";
+import { AssignMenu } from "./assign-menu";
+import type { AssignOption } from "./assign-menu";
 import { AssignmentChip } from "./chip";
 import { DetailSection } from "./detail-section";
 import { EnrichedText } from "./enriched-text";
 import { FavoriteButton } from "./favorite";
-import { type FilePager, FileSwitcher } from "./file-switcher";
+import { FileSwitcher } from "./file-switcher";
+import type { FilePager } from "./file-switcher";
 import { SaveIdentity } from "./identity";
 import { SaveNote } from "./note";
 import { SavePreviews, stackCards } from "./previews";
@@ -41,30 +40,32 @@ import { SaveProperties } from "./properties";
 import styles from "./styles.module.css";
 export interface SaveInspectorProps {
   saveId: string;
-  saveIds?: readonly string[];
-  folders?: readonly {
+  saveIds?: ReadonlyArray<string>;
+  folders?: ReadonlyArray<{
     id: string;
     name: string;
     parentId?: string | null;
     count: number;
     icon?: FolderIconId;
     color?: string | null;
-  }[];
+  }>;
 }
 
 type InspectorView = "details" | "related";
 
 type InspectorFolder = NonNullable<SaveInspectorProps["folders"]>[number];
-const EMPTY_INSPECTOR_FOLDERS: readonly InspectorFolder[] = [];
+const EMPTY_INSPECTOR_FOLDERS: ReadonlyArray<InspectorFolder> = [];
 
 interface FolderOption extends InspectorFolder {
   path: string;
 }
 
-function folderOptions(folders: readonly InspectorFolder[]): FolderOption[] {
+function folderOptions(
+  folders: ReadonlyArray<InspectorFolder>,
+): Array<FolderOption> {
   const byId = new Map(folders.map((folder) => [folder.id, folder]));
   const path = (folder: InspectorFolder) => {
-    const parts: string[] = [];
+    const parts: Array<string> = [];
     const seen = new Set<string>();
     let current: InspectorFolder | undefined = folder;
     while (current && !seen.has(current.id)) {
@@ -110,13 +111,21 @@ export function SaveInspector({
   useRetainedSaves(ids);
   const available = useSaves();
   const [drafts] = useState<InspectorDrafts>(() => new Map());
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [loadFailure, setLoadFailure] = useState<{
+    ids: ReadonlyArray<string>;
+    attempt: number;
+    message: string;
+  } | null>(null);
+  const loadError =
+    loadFailure?.ids === ids && loadFailure.attempt === attempt
+      ? loadFailure.message
+      : null;
   const tags = useTags();
   const tagGroups = useTagGroups();
   const [failure, setFailure] = useState<{
     message: string;
-    retry(): Promise<void>;
+    retry: () => Promise<void>;
   } | null>(null);
   const fileIndex = useSaveViewerFileIndex();
   const [view, setView] = useState<InspectorView>("details");
@@ -132,7 +141,7 @@ export function SaveInspector({
   const viewerNavigation = useSaveViewerNavigation();
   const viewing =
     single !== undefined && viewerNavigation?.saveId === single.id;
-  const cards = useMemo(() => (single ? stackCards(single) : []), [single]);
+  const cards = single ? stackCards(single) : [];
   const [slide, setSlide] = useState({ saveId, index: 0 });
   const slideIndex =
     slide.saveId === saveId
@@ -154,17 +163,21 @@ export function SaveInspector({
         };
 
   useEffect(() => {
-    void attempt;
     let active = true;
-    setLoadError(null);
     const targets = ids;
+    const fail = (message: string) => {
+      if (active) {
+        setLoadFailure({ ids: targets, attempt, message });
+      }
+    };
     void ensureSaves(targets)
       .then(() => {
-        if (targets.some((id) => !pool.get(id)))
-          throw new Error("A selected Save is no longer available.");
+        if (targets.some((id) => !pool.get(id))) {
+          fail("A selected Save is no longer available.");
+        }
       })
-      .catch((error: Error) => {
-        if (active) setLoadError(error.message);
+      .catch((cause: unknown) => {
+        fail(errorCopy(cause, "Couldn't load the selected saves."));
       });
     return () => {
       active = false;
@@ -193,7 +206,7 @@ export function SaveInspector({
       await bulkMutation([...ids], { kind: "rating", rating: next });
     });
   const tagCounts = new Map<string, { name: string; count: number }>();
-  for (const save of saves)
+  for (const save of saves) {
     for (const name of new Set(save.tags)) {
       const key = name.toLowerCase();
       const previous = tagCounts.get(key);
@@ -202,25 +215,31 @@ export function SaveInspector({
         count: (previous?.count ?? 0) + 1,
       });
     }
+  }
   const applied = new Set(
-    [...tagCounts]
-      .filter(([, tag]) => tag.count === ids.length)
-      .map(([key]) => key),
+    [...tagCounts].flatMap(([key, tag]) =>
+      tag.count === ids.length ? [key] : [],
+    ),
   );
   const tagGroupOf = new Map<string, string>();
-  for (const group of tagGroups)
-    for (const name of group.tagNames)
-      if (!tagGroupOf.has(name.toLowerCase()))
+  for (const group of tagGroups) {
+    for (const name of group.tagNames) {
+      if (!tagGroupOf.has(name.toLowerCase())) {
         tagGroupOf.set(name.toLowerCase(), group.name);
+      }
+    }
+  }
   const tagNames = new Map<string, string>();
   for (const name of [
     ...tags.map((tag) => tag.name),
     ...[...tagCounts.values()].map((tag) => tag.name),
     ...(single?.suggestedTags ?? []),
-  ])
-    if (!tagNames.has(name.toLowerCase()))
+  ]) {
+    if (!tagNames.has(name.toLowerCase())) {
       tagNames.set(name.toLowerCase(), name);
-  const tagOptions: AssignOption[] = [...tagNames].map(([key, name]) => ({
+    }
+  }
+  const tagOptions: Array<AssignOption> = [...tagNames].map(([key, name]) => ({
     key,
     label: name,
     crumb: tagGroupOf.get(key),
@@ -235,7 +254,7 @@ export function SaveInspector({
   const folderNames = new Map(
     folders.map((folder) => [folder.id, folder.name]),
   );
-  const folderAssignOptions: AssignOption[] = folders.map((folder) => ({
+  const folderAssignOptions: Array<AssignOption> = folders.map((folder) => ({
     key: folder.id,
     label: folder.name,
     crumb: folder.parentId ? folderNames.get(folder.parentId) : undefined,
@@ -293,7 +312,9 @@ export function SaveInspector({
       options={folderAssignOptions}
       onToggle={(option) => {
         const folder = folders.find(({ id }) => id === option.key);
-        if (folder) toggleFolder(folder);
+        if (folder) {
+          toggleFolder(folder);
+        }
       }}
       onCreate={createFolder}
     />
@@ -436,7 +457,9 @@ export function SaveInspector({
   );
 
   const prefetchRelated = () => {
-    if (single && indexed) void loadRelated(single.id).catch(() => undefined);
+    if (single && indexed) {
+      void loadRelated(single.id).catch(() => undefined);
+    }
   };
 
   const related =

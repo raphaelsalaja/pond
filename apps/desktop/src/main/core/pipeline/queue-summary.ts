@@ -1,4 +1,5 @@
-import { type QueueSummary, QueueSummarySchema } from "@shared/queue-contracts";
+import { QueueSummarySchema } from "@shared/queue-contracts";
+import type { QueueSummary } from "@shared/queue-contracts";
 import type Database from "better-sqlite3";
 import { getDb } from "../../db";
 

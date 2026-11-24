@@ -45,7 +45,9 @@ export function HandleForm({ label, notFound }: HandleFormProps) {
             autoCapitalize="none"
             onChange={(event) => {
               setHandle(event.target.value);
-              if (event.target.value.trim()) setMissing(false);
+              if (event.target.value.trim()) {
+                setMissing(false);
+              }
             }}
           />
         </Input.Root>
@@ -53,11 +55,12 @@ export function HandleForm({ label, notFound }: HandleFormProps) {
           <Field.Error match>Enter your {label} handle.</Field.Error>
         ) : notFound ? (
           <Field.Error match>
-            Pond couldn't find that handle. Check the spelling and try again.
+            Pond couldn&apos;t find that handle. Check the spelling and try
+            again.
           </Field.Error>
         ) : (
           <Field.Description>
-            Pond reads your public likes. You don't sign in.
+            Pond reads your public likes. You don&apos;t sign in.
           </Field.Description>
         )}
       </Field.Root>

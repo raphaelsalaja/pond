@@ -32,7 +32,7 @@ function backoffFor(attempts: number): number {
   const base = BACKOFF_SCHEDULE_MS[idx] ?? BACKOFF_SCHEDULE_MS.at(-1) ?? 60_000;
   const spread = base * JITTER_FRACTION;
   const jitter = (Math.random() * 2 - 1) * spread;
-  return Math.max(1_000, Math.round(base + jitter));
+  return Math.max(1000, Math.round(base + jitter));
 }
 
 export function classifyError(

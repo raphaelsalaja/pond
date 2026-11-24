@@ -18,7 +18,9 @@ export function registerTrashCron() {
     fn: async () => {
       const prefs = await getPrefs();
       const days = prefs.trash.autoEmptyDays;
-      if (days === null) return;
+      if (days === null) {
+        return;
+      }
       const purged = await emptyTrashOlderThan(days);
       if (purged > 0) {
         log.info(
@@ -36,11 +38,13 @@ export function registerInboxSnoozeCron() {
     initialDelay: 15_000,
     fn: async () => {
       const returned = await returnDueSnoozes();
-      if (returned > 0)
+      if (returned > 0) {
         log.info(`[pond inbox] ${returned} snoozed saves back in review`);
+      }
       const notifications = await notificationLog.returnDueSnoozes();
-      if (notifications > 0)
+      if (notifications > 0) {
         log.info(`[pond inbox] ${notifications} snoozed notifications back`);
+      }
     },
   });
 }
@@ -51,7 +55,7 @@ export function registerYtDlpUpdateCron() {
   schedule({
     name: "yt-dlp-update",
     every: 24 * 60 * 60 * 1000,
-    initialDelay: 5_000,
+    initialDelay: 5000,
     /** Windows antivirus flags a new app that downloads and runs an exe at first launch, so the first install waits for a video. */
     fn: () => maybeUpdateYtDlp({ install: process.platform !== "win32" }),
   });
@@ -70,7 +74,9 @@ export function registerSyncCron() {
     every: 60_000,
     initialDelay: 60_000,
     fn: async () => {
-      if (running) return;
+      if (running) {
+        return;
+      }
       running = true;
       try {
         const prefs = await getPrefs();
@@ -80,10 +86,13 @@ export function registerSyncCron() {
           calendar: cron.calendar,
           recurrence: cron.recurrence,
         });
-        if (calendarRule !== undefined && calendarRule !== rule)
+        if (calendarRule !== undefined && calendarRule !== rule) {
           calendarSince = Date.now();
+        }
         calendarRule = rule;
-        if (!cron.enabled) return;
+        if (!cron.enabled) {
+          return;
+        }
         if (isSyncBlockedByStorageGuard()) {
           log.info("[pond sync-cron] storage guard active, skipping");
           return;
@@ -101,11 +110,17 @@ export function registerSyncCron() {
         if (globalDue) {
           if (!cron.calendar && !cron.recurrence) {
             const jitter = Math.floor(Math.random() * SYNC_CRON_JITTER_MS);
-            await new Promise((resolve) => setTimeout(resolve, jitter));
+            await new Promise((resolve) => {
+              setTimeout(resolve, jitter);
+            });
           }
           const latest = (await getPrefs()).sync.cron;
-          if (JSON.stringify(latest) !== JSON.stringify(cron)) return;
-          if (!net.isOnline() || isSyncBlockedByStorageGuard()) return;
+          if (JSON.stringify(latest) !== JSON.stringify(cron)) {
+            return;
+          }
+          if (!net.isOnline() || isSyncBlockedByStorageGuard()) {
+            return;
+          }
           lastSyncCronRunAt = Date.now();
           log.info("[pond sync-cron] starting background sync", {
             intervalHours: cron.intervalHours,

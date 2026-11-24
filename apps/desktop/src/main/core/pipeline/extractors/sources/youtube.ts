@@ -78,7 +78,9 @@ export class YouTubeWatchExtractor implements Extractor {
   async extract(input: ExtractInput): Promise<Capture> {
     const match = firstMatch(input.url, this.validUrl);
     const videoId = match?.[1] ?? null;
-    if (!videoId) throw new TerminalError("could not parse youtube id");
+    if (!videoId) {
+      throw new TerminalError("could not parse youtube id");
+    }
     return captureFromSource({
       url: `https://www.youtube.com/watch?v=${videoId}`,
       source: "youtube",

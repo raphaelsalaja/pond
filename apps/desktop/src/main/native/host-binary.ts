@@ -1,9 +1,7 @@
 import { chmod, copyFile, mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
-import { posix } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path/posix";
 import log from "electron-log/main.js";
-
-const { basename, dirname, isAbsolute, join } = posix;
 
 function linuxDataHome(
   env: NodeJS.ProcessEnv = process.env,
@@ -49,7 +47,9 @@ export async function prepareNativeHostBinary(
 ): Promise<string> {
   const platform = input.platform ?? process.platform;
   const packaged = input.packaged ?? false;
-  if (platform !== "linux" || !packaged || !input.appImage) return input.source;
+  if (platform !== "linux" || !packaged || !input.appImage) {
+    return input.source;
+  }
 
   const target = stableLinuxNativeHostPath(
     basename(input.source),
@@ -61,8 +61,11 @@ export async function prepareNativeHostBinary(
     await (input.copy ?? copyFile)(input.source, target);
     await (input.setMode ?? chmod)(target, 0o755);
     return target;
-  } catch (err) {
-    log.warn("[pond native] failed to copy the host out of the AppImage", err);
+  } catch (error) {
+    log.warn(
+      "[pond native] failed to copy the host out of the AppImage",
+      error,
+    );
     return input.source;
   }
 }

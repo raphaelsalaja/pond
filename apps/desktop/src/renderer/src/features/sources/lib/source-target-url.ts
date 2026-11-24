@@ -18,10 +18,16 @@ function encodedPath(handle: string): string {
 }
 
 export function sourceTargetUrl(target: SourceTarget): string | null {
-  if (!target.handle) return null;
-  if (target.kind === "feed") return normalizeFeedUrl(target.handle);
+  if (!target.handle) {
+    return null;
+  }
+  if (target.kind === "feed") {
+    return normalizeFeedUrl(target.handle);
+  }
   const path = encodedPath(target.handle);
-  if (!path) return null;
+  if (!path) {
+    return null;
+  }
 
   switch (target.source) {
     case "instagram":

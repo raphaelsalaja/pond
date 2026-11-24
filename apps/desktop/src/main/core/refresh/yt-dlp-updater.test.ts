@@ -18,21 +18,23 @@ import {
   recoverFiles,
   renameWithRetry,
   runUpdate,
-  type UpdaterDeps,
   ytDlpAsset,
 } from "./yt-dlp-updater";
+import type { UpdaterDeps } from "./yt-dlp-updater";
 
 function busy(code: string) {
   return Object.assign(new Error(code), { code });
 }
 
 function flakyRename(failures: number, code: string) {
-  const calls: string[] = [];
+  const calls: Array<string> = [];
   return {
     calls,
     async rename(from: string, to: string) {
       calls.push(`${from}>${to}`);
-      if (calls.length <= failures) throw busy(code);
+      if (calls.length <= failures) {
+        throw busy(code);
+      }
     },
   };
 }
@@ -100,6 +102,29 @@ describe("ytDlpAsset", () => {
   });
 });
 
+const text = (path: string) => readFile(path, "utf8").catch(() => null);
+
+/** A stand-in binary runs when its content starts with "good". */
+const smokeTest = async (path: string) =>
+  ((await text(path)) ?? "").startsWith("good");
+
+/** Every rename from the nth (1-based) on fails, like a process that died at that step. */
+function failingRename(nth: number) {
+  let calls = 0;
+  return async (from: string, to: string) => {
+    calls++;
+    if (calls >= nth) {
+      throw Object.assign(new Error("EIO"), { code: "EIO" });
+    }
+    await rename(from, to);
+  };
+}
+
+async function* broken() {
+  yield Buffer.from("good");
+  throw new Error("connection reset");
+}
+
 describe("yt-dlp update lifecycle", () => {
   let dir = "";
   beforeEach(async () => {
@@ -111,11 +136,6 @@ describe("yt-dlp update lifecycle", () => {
 
   const active = () => join(dir, YTDLP_FILENAME);
   const previous = () => join(dir, `${YTDLP_FILENAME}.previous`);
-  const text = (path: string) => readFile(path, "utf8").catch(() => null);
-
-  /** A stand-in binary runs when its content starts with "good". */
-  const smokeTest = async (path: string) =>
-    ((await text(path)) ?? "").startsWith("good");
 
   function offlineDeps(rename_: UpdaterDeps["rename"] = rename): UpdaterDeps {
     return {
@@ -142,16 +162,6 @@ describe("yt-dlp update lifecycle", () => {
         createHash("sha256").update(body).digest("hex"),
       fetchBinary: async () =>
         Readable.from([body.subarray(0, 4), body.subarray(4)]),
-    };
-  }
-
-  /** Every rename from the nth (1-based) on fails, like a process that died at that step. */
-  function failingRename(nth: number) {
-    let calls = 0;
-    return async (from: string, to: string) => {
-      calls++;
-      if (calls >= nth) throw Object.assign(new Error("EIO"), { code: "EIO" });
-      await rename(from, to);
     };
   }
 
@@ -186,10 +196,6 @@ describe("yt-dlp update lifecycle", () => {
 
   it("drops a download that fails partway, leaving no partial file", async () => {
     await installV1();
-    async function* broken() {
-      yield Buffer.from("good");
-      throw new Error("connection reset");
-    }
     await runUpdate(
       { ...onlineDeps(), fetchBinary: async () => broken() },
       { force: true, install: true },

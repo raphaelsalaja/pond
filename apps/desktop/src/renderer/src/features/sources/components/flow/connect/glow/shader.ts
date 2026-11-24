@@ -67,10 +67,10 @@ void main() {
 `;
 
 export interface GlowColors {
-  start: readonly number[];
-  middle: readonly number[];
-  end: readonly number[];
-  core: readonly number[];
+  start: ReadonlyArray<number>;
+  middle: ReadonlyArray<number>;
+  end: ReadonlyArray<number>;
+  core: ReadonlyArray<number>;
 }
 
 const RESOLUTION = 0.5;
@@ -78,7 +78,9 @@ const SETTLED_TIME = 2;
 
 function compile(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type);
-  if (!shader) return null;
+  if (!shader) {
+    return null;
+  }
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
   return gl.getShaderParameter(shader, gl.COMPILE_STATUS) ? shader : null;
@@ -92,16 +94,21 @@ export function startGlow(
   still: boolean,
 ): () => void {
   const gl = canvas.getContext("webgl", { premultipliedAlpha: true });
-  if (!gl) return () => {};
+  if (!gl) {
+    return () => {};
+  }
   const vertex = compile(gl, gl.VERTEX_SHADER, VERTEX);
   const fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT);
   const program = gl.createProgram();
-  if (!vertex || !fragment || !program) return () => {};
+  if (!vertex || !fragment || !program) {
+    return () => {};
+  }
   gl.attachShader(program, vertex);
   gl.attachShader(program, fragment);
   gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return () => {};
-  // biome-ignore lint/correctness/useHookAtTopLevel: WebGL method, not a React hook
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    return () => {};
+  }
   gl.useProgram(program);
 
   const buffer = gl.createBuffer();

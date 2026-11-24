@@ -3,7 +3,8 @@ import {
   menuLabels as labels,
   menuLabelsWithoutIcons,
 } from "@/shared/test/menu-labels";
-import { buildTagMenuItems, type TagMenuActions } from ".";
+import { buildTagMenuItems } from ".";
+import type { TagMenuActions } from ".";
 
 function actions(overrides: Partial<TagMenuActions> = {}): TagMenuActions {
   return {
@@ -91,11 +92,16 @@ describe("tag context menu", () => {
     const merge = buildTagMenuItems(actions({ onMerge })).find(
       (item) => item.type === "submenu" && item.label === "Merge Into",
     );
-    if (merge?.type !== "submenu") throw new Error("Missing merge menu");
+    if (merge?.type !== "submenu") {
+      throw new Error("Missing merge menu");
+    }
     const target = merge.items[0];
-    if (!target || target.type === "separator" || target.type === "submenu")
+    if (!target || target.type === "separator" || target.type === "submenu") {
       throw new Error("Missing merge target");
-    if ("onClick" in target) target.onClick?.();
+    }
+    if ("onClick" in target) {
+      target.onClick?.();
+    }
     expect(onMerge).toHaveBeenCalledWith("Inspiration");
   });
 });

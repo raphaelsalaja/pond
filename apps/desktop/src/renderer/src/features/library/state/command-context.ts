@@ -1,11 +1,11 @@
 import type { MenuItemSpec } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
 export interface CommandContext {
   group: string;
-  items: () => MenuItemSpec[];
+  items: () => Array<MenuItemSpec>;
 }
 
 const store = new Store<ReadonlyMap<symbol, CommandContext>>(new Map());
@@ -13,15 +13,17 @@ const store = new Store<ReadonlyMap<symbol, CommandContext>>(new Map());
 /** Offers a page's own actions in the command menu while it's mounted; `null` offers nothing. */
 export function useCommandContext(
   group: string,
-  items: (() => MenuItemSpec[]) | null,
+  items: (() => Array<MenuItemSpec>) | null,
 ): void {
   const latest = useRef(items);
-  useEffect(() => {
+  useLayoutEffect(() => {
     latest.current = items;
   });
   const active = items !== null;
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     const key = Symbol(group);
     store.setState((current) =>
       new Map(current).set(key, {
@@ -39,7 +41,7 @@ export function useCommandContext(
 }
 
 /** One context per group; when a page mounts the same group twice, the latest wins. */
-export function useCommandContexts(): readonly CommandContext[] {
+export function useCommandContexts(): ReadonlyArray<CommandContext> {
   const contexts = useSelector(store, (state) => state);
   return useMemo(
     () => [

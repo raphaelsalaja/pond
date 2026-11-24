@@ -1,7 +1,8 @@
 import "@/app/effects/save-library-bridge";
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { openTagPicker } from "@/features/saves/lib/actions";
@@ -11,14 +12,14 @@ import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { closeSaveTagPicker } from "@/features/saves/state/tag-picker";
 import type { Save } from "@/features/saves/types";
-import { SaveContextMenu } from "../context-menu";
 import { SaveTagPickerHost } from ".";
+import { SaveContextMenu } from "../context-menu";
 
 interface QueryInput {
-  ids?: readonly string[];
+  ids?: ReadonlyArray<string>;
   operation?: {
     kind: string;
-    tags?: readonly string[];
+    tags?: ReadonlyArray<string>;
     mode?: string;
   };
 }
@@ -28,9 +29,9 @@ interface QueryCall {
   input: QueryInput;
 }
 
-const calls: QueryCall[] = [];
+const calls: Array<QueryCall> = [];
 
-function save(id: string, tags: string[] = []): Save {
+function save(id: string, tags: Array<string> = []): Save {
   const row = normalise(
     SavePatchSchema.parse({
       id,
@@ -40,7 +41,9 @@ function save(id: string, tags: string[] = []): Save {
       tags,
     }),
   );
-  if (!row) throw new Error("Invalid Save fixture");
+  if (!row) {
+    throw new Error("Invalid Save fixture");
+  }
   return row;
 }
 
@@ -50,13 +53,17 @@ function tagSearch(): HTMLElement | null {
 
 function tagOption(name: string): HTMLElement {
   const option = document.querySelector<HTMLElement>(`[aria-label="${name}"]`);
-  if (!option) throw new Error(`Missing tag ${name}`);
+  if (!option) {
+    throw new Error(`Missing tag ${name}`);
+  }
   return option;
 }
 
 async function settle() {
   await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
   });
 }
 
@@ -64,7 +71,9 @@ async function waitFor(read: () => HTMLElement | null, label: string) {
   const start = Date.now();
   let node = read();
   while (!node) {
-    if (Date.now() - start > 2000) throw new Error(`Missing ${label}`);
+    if (Date.now() - start > 2000) {
+      throw new Error(`Missing ${label}`);
+    }
     await settle();
     node = read();
   }
@@ -89,7 +98,9 @@ function menuItem(label: string): HTMLElement {
   const item = [
     ...document.querySelectorAll<HTMLElement>("[role='menuitem']"),
   ].find((node) => node.textContent?.includes(label));
-  if (!item) throw new Error(`Missing menu item ${label}`);
+  if (!item) {
+    throw new Error(`Missing menu item ${label}`);
+  }
   return item;
 }
 
@@ -124,10 +135,18 @@ beforeEach(() => {
           },
         ];
       }
-      if (name === "tagGroups.list") return [];
-      if (name === "settings.getPrefs") return {};
-      if (name === "saves.listOpenWith") return { apps: [] };
-      if (name === "saves.bulkEdit") return { changed: 1 };
+      if (name === "tagGroups.list") {
+        return [];
+      }
+      if (name === "settings.getPrefs") {
+        return {};
+      }
+      if (name === "saves.listOpenWith") {
+        return { apps: [] };
+      }
+      if (name === "saves.bulkEdit") {
+        return { changed: 1 };
+      }
       return {};
     },
   });
@@ -178,7 +197,9 @@ async function mount(row: Save) {
 
 function collection(): HTMLElement {
   const node = host.querySelector<HTMLElement>("[data-save-collection] button");
-  if (!node) throw new Error("Missing save collection");
+  if (!node) {
+    throw new Error("Missing save collection");
+  }
   return node;
 }
 
@@ -186,7 +207,9 @@ it("opens a tag picker from Add Tags and assigns the chosen tag", async () => {
   const row = save("save-1");
   await mount(row);
   const card = host.querySelector<HTMLElement>("[data-save-id='save-1']");
-  if (!card) throw new Error("Missing save");
+  if (!card) {
+    throw new Error("Missing save");
+  }
   await openMenu(card);
   await act(async () => menuItem("Add Tags").click());
   await waitFor(tagSearch, "tag picker");

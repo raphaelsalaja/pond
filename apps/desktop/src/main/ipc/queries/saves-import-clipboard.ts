@@ -5,24 +5,24 @@ import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { importFiles } from "../../core/import-files";
-import {
-  NullableStringParam,
-  type QueryHandlerMap,
-  query,
-  StringListParam,
-} from "./params";
+import { NullableStringParam, query, StringListParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 import { normalizeClipboardFilePaths } from "./saves-import-input";
 
-async function clipboardFilePaths(): Promise<string[]> {
-  const uriLists: string[] = [];
+async function clipboardFilePaths(): Promise<Array<string>> {
+  const uriLists: Array<string> = [];
   let plainText: string | null = null;
 
   try {
     const items = await clipboard.read();
     for (const item of items) {
-      if (!item.types.includes("text/uri-list")) continue;
+      if (!item.types.includes("text/uri-list")) {
+        continue;
+      }
       const payload = await item.getType("text/uri-list");
-      if (payload instanceof Blob) uriLists.push(await payload.text());
+      if ("arrayBuffer" in payload) {
+        uriLists.push(await payload.text());
+      }
     }
   } catch (error) {
     log.warn("[pond ipc] clipboard file read failed", error);
@@ -41,13 +41,19 @@ export async function readClipboardImage() {
   const items = await clipboard.read();
   for (const type of ["image/png", "image/jpeg"]) {
     const item = items.find((candidate) => candidate.types.includes(type));
-    if (!item) continue;
+    if (!item) {
+      continue;
+    }
     const payload = await item.getType(type);
-    if (!(payload instanceof Blob)) continue;
+    if (!("arrayBuffer" in payload)) {
+      continue;
+    }
     const image = nativeImage.createFromBuffer(
       Buffer.from(await payload.arrayBuffer()),
     );
-    if (!image.isEmpty()) return image;
+    if (!image.isEmpty()) {
+      return image;
+    }
   }
   return nativeImage.createEmpty();
 }
@@ -57,12 +63,16 @@ const stagedImages = new Set<string>();
 
 /** The pasted files, or the pasted image written to a temporary PNG, so they can go through duplicate review before import. */
 async function stageClipboard(): Promise<
-  { ok: true; paths: string[] } | { ok: false; error: string }
+  { ok: true; paths: Array<string> } | { ok: false; error: string }
 > {
   const filePaths = await clipboardFilePaths();
-  if (filePaths.length > 0) return { ok: true, paths: filePaths };
+  if (filePaths.length > 0) {
+    return { ok: true, paths: filePaths };
+  }
   const image = await readClipboardImage();
-  if (image.isEmpty()) return { ok: false, error: "empty_clipboard" };
+  if (image.isEmpty()) {
+    return { ok: false, error: "empty_clipboard" };
+  }
   try {
     const directory = await mkdtemp(join(tmpdir(), "pond-clip-"));
     const path = join(directory, "clipboard.png");
@@ -75,9 +85,11 @@ async function stageClipboard(): Promise<
   }
 }
 
-async function discardStagedClipboard(paths: readonly string[]) {
+async function discardStagedClipboard(paths: ReadonlyArray<string>) {
   for (const path of paths) {
-    if (!stagedImages.delete(path)) continue;
+    if (!stagedImages.delete(path)) {
+      continue;
+    }
     try {
       await rm(dirname(path), { recursive: true, force: true });
     } catch (error) {
@@ -111,7 +123,7 @@ export const savesImportClipboardQueries = {
         const directory = await mkdtemp(join(tmpdir(), "pond-clip-"));
         const path = join(directory, "clipboard.png");
         await writeFile(path, image.toPNG());
-        return importFiles({
+        return await importFiles({
           paths: [path],
           tags: [],
           folderIds,

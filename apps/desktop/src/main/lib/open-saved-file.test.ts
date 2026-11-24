@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { LAUNCHABLE_FILE_MESSAGE, openSavedFile } from "./open-saved-file";
 
 function fakeShell(result = "") {
-  const calls: string[] = [];
+  const calls: Array<string> = [];
   return {
     calls,
     shell: {

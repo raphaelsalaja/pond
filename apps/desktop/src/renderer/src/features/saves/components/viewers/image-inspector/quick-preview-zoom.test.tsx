@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { pool } from "@/features/saves/state/pool";
@@ -41,7 +42,9 @@ async function renderQuickPreview(src: string) {
   );
   const frame = host.querySelector<HTMLElement>("[data-background]");
   const position = host.querySelector("img")?.parentElement?.parentElement;
-  if (!frame || !position) throw new Error("Missing image inspection frame");
+  if (!frame || !position) {
+    throw new Error("Missing image inspection frame");
+  }
   vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(
     new DOMRect(0, 0, 400, 400),
   );
@@ -55,7 +58,9 @@ async function renderQuickPreview(src: string) {
 const nextFrame = () =>
   act(
     async () =>
-      new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      }),
   );
 
 const click = (target: Element, x = 200, y = 200) =>

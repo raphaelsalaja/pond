@@ -1,11 +1,8 @@
-import { SOURCES, type Source } from "./source-ids";
+import { SOURCES } from "./source-ids";
+import type { Source } from "./source-ids";
 import { descriptorFor } from "./sources/registry";
 
-export {
-  canonicalHost,
-  domainFromUrl,
-  sourceIdentity,
-} from "./domain";
+export { canonicalHost, domainFromUrl, sourceIdentity } from "./domain";
 export { hostToSource, sourceLabel } from "./source-ids";
 export {
   DEFAULT_RATE_PROFILE,
@@ -42,22 +39,30 @@ export function resolveSourceId(value: string): Source | null {
 }
 
 export function connectsByHandle(source: Source): boolean {
-  if (source === "web" || source === "local") return false;
+  if (source === "web" || source === "local") {
+    return false;
+  }
   return descriptorFor(source).connect === "handle";
 }
 
 export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
-  if (source === "local") return null;
+  if (source === "local") {
+    return null;
+  }
   let href: string;
   try {
     href = new URL(rawUrl).href;
   } catch {
     return null;
   }
-  if (source === "web") return href;
+  if (source === "web") {
+    return href;
+  }
   for (const rx of descriptorFor(source).urlPatterns) {
     const match = rx.exec(href);
-    if (match?.[1]) return match[1];
+    if (match?.[1]) {
+      return match[1];
+    }
   }
   return null;
 }

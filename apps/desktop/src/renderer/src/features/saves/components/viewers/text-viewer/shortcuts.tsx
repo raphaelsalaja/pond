@@ -8,9 +8,9 @@ import { useEffect } from "react";
 import {
   applyNoteBlock,
   insertNoteFiles,
-  type NoteBlock,
   OPEN_NOTE_LINK_COMMAND,
 } from "./commands";
+import type { NoteBlock } from "./commands";
 
 function isMod(event: KeyboardEvent): boolean {
   return event.metaKey || event.ctrlKey;
@@ -28,7 +28,9 @@ export function NoteShortcuts() {
           applyNoteBlock(editor, "quote");
           return true;
         }
-        if (!isMod(event)) return false;
+        if (!isMod(event)) {
+          return false;
+        }
         const key = event.key.toLowerCase();
         if (event.altKey) {
           const block: NoteBlock | null =
