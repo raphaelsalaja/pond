@@ -288,7 +288,7 @@ describe.skipIf(!nativeAvailable())("inbox intake", () => {
 
   it("sends one-off captures to the Inbox and keeps Sync out until it is switched on", async () => {
     dir = await mkdtemp(join(tmpdir(), "pond-inbox-intake-"));
-    vi.spyOn(app, "getPath").mockReturnValue(dir);
+    app.setPath("userData", dir);
     invalidatePaths();
     invalidatePrefs();
     resolvePaths(join(dir, "Inbox.pond"));

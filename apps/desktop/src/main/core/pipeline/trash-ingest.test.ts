@@ -143,7 +143,7 @@ describe.skipIf(!nativeSqliteAvailable())(
 
     beforeAll(() => {
       dir = mkdtempSync(join(tmpdir(), "pond-trash-ingest-"));
-      vi.spyOn(app, "getPath").mockReturnValue(dir);
+      app.setPath("userData", dir);
       invalidatePaths();
       resolvePaths(join(dir, "Trash Ingest.pond"));
     });

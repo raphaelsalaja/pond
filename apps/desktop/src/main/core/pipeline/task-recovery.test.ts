@@ -97,7 +97,7 @@ describe.skipIf(!nativeSqliteAvailable())("download recovery", () => {
 
   beforeEach(() => {
     directory = mkdtempSync(join(tmpdir(), "pond-task-recovery-"));
-    vi.spyOn(app, "getPath").mockReturnValue(directory);
+    app.setPath("userData", directory);
     invalidatePaths();
     resolvePaths(join(directory, "Recovery.pond"));
   });
@@ -342,7 +342,7 @@ describe.skipIf(!nativeSqliteAvailable())("source sign-in stop", () => {
 
   beforeAll(async () => {
     directory = mkdtempSync(join(tmpdir(), "pond-sign-in-stop-"));
-    vi.spyOn(app, "getPath").mockReturnValue(directory);
+    app.setPath("userData", directory);
     invalidatePaths();
     invalidatePrefs();
     resolvePaths(join(directory, "Sign In Stop.pond"));

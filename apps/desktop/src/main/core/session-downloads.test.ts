@@ -67,7 +67,8 @@ describe.skipIf(!nativeSqliteAvailable())("session download recovery", () => {
 
   beforeAll(async () => {
     directory = mkdtempSync(join(tmpdir(), "pond-session-downloads-"));
-    vi.spyOn(app, "getPath").mockReturnValue(directory);
+    app.setPath("userData", directory);
+    app.setPath("downloads", directory);
     invalidatePaths();
     invalidatePrefs();
     resolvePaths(join(directory, "Session Downloads.pond"));
