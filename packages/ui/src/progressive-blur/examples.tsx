@@ -1,3 +1,4 @@
+import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
 import { ProgressiveBlur } from ".";
 
@@ -26,9 +27,19 @@ export const docs: ComponentDocs = {
       name: "Top Edge",
       render: () => (
         <div style={{ position: "relative", height: 200, overflow: "hidden" }}>
-          <div style={{ height: "100%", overflowY: "auto" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "start",
+              height: "100%",
+              overflowY: "auto",
+            }}
+          >
             {ROWS.map((row) => (
-              <p key={row}>{row}</p>
+              <Button key={row} variant="ghost">
+                {row}
+              </Button>
             ))}
           </div>
           <ProgressiveBlur
