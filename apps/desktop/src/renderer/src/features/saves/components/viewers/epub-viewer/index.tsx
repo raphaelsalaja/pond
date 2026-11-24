@@ -169,12 +169,7 @@ export function EpubViewer({
                   void renditionRef.current?.display(next);
                 }}
               >
-                <Select.Trigger
-                  size="sm"
-                  variant="ghost"
-                  rounding="full"
-                  aria-label="Table of contents"
-                >
+                <Select.Trigger variant="chip" aria-label="Table of contents">
                   <Select.Value placeholder="Contents">
                     {selected?.label ?? "Contents"}
                   </Select.Value>

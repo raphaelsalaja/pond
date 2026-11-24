@@ -194,6 +194,79 @@ export function parseExif(exif: Buffer | undefined): ImageMetadata {
   };
 }
 
+const PHOTOSHOP_HEADER = "Photoshop 3.0\u0000";
+const IPTC_RESOURCE_ID = 0x0404;
+/** IPTC IIM caps a keyword at 64 octets. */
+const MAX_KEYWORD_BYTES = 64;
+
+/** TIFF stores raw IIM datasets; JPEG APP13 wraps them in a Photoshop 8BIM resource. */
+function iimBlock(iptc: Buffer): Buffer | null {
+  if (iptc[0] === 0x1c) return iptc;
+  let offset =
+    iptc.toString("latin1", 0, PHOTOSHOP_HEADER.length) === PHOTOSHOP_HEADER
+      ? PHOTOSHOP_HEADER.length
+      : 0;
+  while (offset + 12 <= iptc.length) {
+    if (iptc.toString("latin1", offset, offset + 4) !== "8BIM") return null;
+    const id = iptc.readUInt16BE(offset + 4);
+    const nameLength = iptc[offset + 6] ?? 0;
+    offset += 6 + ((nameLength + 2) & ~1);
+    if (offset + 4 > iptc.length) return null;
+    const size = iptc.readUInt32BE(offset);
+    offset += 4;
+    if (offset + size > iptc.length) return null;
+    if (id === IPTC_RESOURCE_ID) return iptc.subarray(offset, offset + size);
+    offset += size + (size & 1);
+  }
+  return null;
+}
+
+function decodeKeyword(value: Buffer): string | null {
+  if (value.length > MAX_KEYWORD_BYTES) return null;
+  let keyword: string;
+  try {
+    keyword = new TextDecoder("utf-8", { fatal: true }).decode(value);
+  } catch {
+    keyword = value.toString("latin1");
+  }
+  keyword = keyword.trim();
+  return keyword && !/\p{Cc}/u.test(keyword) ? keyword : null;
+}
+
+export function parseIptcKeywords(iptc: Buffer | undefined): string[] {
+  const iim = iptc ? iimBlock(iptc) : null;
+  if (!iim) return [];
+  const keywords = new Set<string>();
+  let offset = 0;
+  while (offset + 5 <= iim.length && iim[offset] === 0x1c) {
+    const length = iim.readUInt16BE(offset + 3);
+    if ((length & 0x8000) !== 0) break;
+    const start = offset + 5;
+    const end = start + length;
+    if (end > iim.length) break;
+    if (iim[offset + 1] === 0x02 && iim[offset + 2] === 0x19) {
+      const keyword = decodeKeyword(iim.subarray(start, end));
+      if (keyword) keywords.add(keyword);
+    }
+    offset = end;
+  }
+  return [...keywords];
+}
+
+export async function extractImageKeywords(
+  source: string | Buffer,
+): Promise<string[]> {
+  try {
+    const { iptc } = await sharp(source, {
+      failOn: "none",
+      pages: 1,
+    }).metadata();
+    return parseIptcKeywords(iptc);
+  } catch {
+    return [];
+  }
+}
+
 export async function extractImageMetadata(
   source: string | Buffer,
 ): Promise<ImageMetadata> {

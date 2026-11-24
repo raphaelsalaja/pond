@@ -35,13 +35,15 @@ import {
 import type { Save } from "@/features/saves/types";
 import { keywordScopesFromPrefs, useRetrievalOverlay } from "@/features/search";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
-import { inboxScope } from "@/shared/lib/library-nav";
+import { inboxScope, type LibraryNav } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { useRetainedTagPickerSaves } from "./retain-tag-picker-saves";
 
 /** Long enough to span a pause between keystrokes, so results swap once typing stops. */
 const KEYWORD_DEBOUNCE_MS = 250;
 const NO_PINS: ReadonlyArray<string> = [];
+
+const ALL: LibraryNav = { kind: "all" };
 
 const runtime: QuerySessionRuntime = {
   page: (request) => window.pond.query("saves.queryPage", request),
@@ -54,8 +56,8 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   const recents = useRecents();
   const query = useEffectiveFilterQuery();
   const keywords = useSearchText();
-  const nav = useLibraryNav();
-  const searchScope = useSearchScope(searchViewFor(mode, nav));
+  const nav = useLibraryNav() ?? ALL;
+  const searchScope = useSearchScope(searchViewFor(nav));
   const sortKey = useSortKey();
   const sortDir = useSortDir();
   const randomSeed = useRandomSeed();

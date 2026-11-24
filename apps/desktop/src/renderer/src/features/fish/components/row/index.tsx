@@ -32,7 +32,7 @@ export function FishRow({
       searchLabel="Search Fish operations"
       buildItems={items}
     >
-      <div className={styles.row}>
+      <div className={styles.row} data-hover-row="">
         <Sidebar.Item
           {...dragProps}
           className={styles.item}

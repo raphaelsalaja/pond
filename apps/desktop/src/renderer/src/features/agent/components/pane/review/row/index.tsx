@@ -76,6 +76,7 @@ export function ChangeRow({
   return (
     <li
       className={styles.row}
+      data-hover-row={change.saveId ? "" : undefined}
       data-dimmed={
         change.status === "dismissed" || change.status === "undone" || undefined
       }

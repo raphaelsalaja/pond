@@ -1,33 +1,26 @@
 import "@/app/effects/save-library-bridge";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-} from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { libraryChrome } from "@/features/library";
 import {
   getViewState,
   resetFilters,
   setQuery,
 } from "@/features/library/state/view-store";
+import { startViewUrlSync } from "@/features/library/state/view-url";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { primarySelection } from "@/features/saves/state/selection";
-import { ToastHost } from "@/shared/components/toast-host";
-import { setAppRouter } from "@/shared/lib/app-router";
-import { toastManager } from "@/shared/lib/toast";
+import { currentLocation, openLibraryAt } from "@/shared/test/library-router";
 import { SaveInspector } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
+let stopViewUrlSync: (() => void) | undefined;
 const requests: Array<{
   name: string;
   input: Record<string, string | string[] | number>;
@@ -98,7 +91,8 @@ afterEach(async () => {
   host.remove();
   pool.clear();
   setSaveViewerFileIndex(null);
-  libraryChrome.setNav({ kind: "all" });
+  stopViewUrlSync?.();
+  stopViewUrlSync = undefined;
   resetFilters();
   vi.unstubAllGlobals();
 });
@@ -143,9 +137,6 @@ it("loads the complete selection before displaying mixed notes, tags and total s
   expect(host.textContent).toContain("2 items selected");
   expect(host.textContent).toContain("3 KiB");
   expect(host.textContent).not.toContain("Dimensions");
-  expect(
-    host.querySelector<HTMLInputElement>('[aria-label="Source URL"]'),
-  ).toBeNull();
 });
 
 it("uses available thumbnails for the multi-selection stack before title fallbacks", async () => {
@@ -191,7 +182,7 @@ it("uses available thumbnails for the multi-selection stack before title fallbac
   expect(host.textContent).not.toContain("Missing preview");
 });
 
-it("shows the name, URL, source card, and note on one card", async () => {
+it("shows the title, note, and property cards in one column", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
   pool.upsert({
@@ -199,6 +190,8 @@ it("shows the name, URL, source card, and note on one card", async () => {
     source: "twitter",
     author: "Example Author",
     notes: null,
+    savedAt: Date.UTC(2026, 0, 2),
+    createdAt: Date.UTC(2026, 0, 1),
     rawJson: {
       extractorId: "test",
       extractedAt: "2026-01-01T00:00:00.000Z",
@@ -217,19 +210,9 @@ it("shows the name, URL, source card, and note on one card", async () => {
   expect(title?.readOnly).toBe(false);
   expect(title?.placeholder).toBe("Untitled");
   expect(title?.closest('[data-slot="root"]')).toMatchObject({
-    dataset: { size: "sm", variant: "secondary" },
+    dataset: { size: "sm", variant: "borderless" },
   });
-  expect(host.textContent).toContain("Name");
-  const url = host.querySelector<HTMLInputElement>('[aria-label="Source URL"]');
-  expect(url?.readOnly).toBe(false);
-  expect(url?.value).toBe("https://example.test");
-  expect(host.querySelector('[aria-label="Open Source URL"]')).not.toBeNull();
-
-  const card = host.querySelector('[aria-label="Source"]');
-  expect(card?.textContent).toContain("Example Author");
-  expect(card?.textContent).toContain("Open");
-  expect(card?.textContent).toContain("Captured page description");
-  expect(card?.querySelector('[aria-label="Description"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Source URL"]')).toBeNull();
 
   expect(
     host.querySelector<HTMLTextAreaElement>('[aria-label="Notes"]')
@@ -240,33 +223,28 @@ it("shows the name, URL, source card, and note on one card", async () => {
     [...host.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent),
   ).toEqual(["Details", "Related"]);
   expect(host.querySelector('[aria-label="Save Info"]')).toBeNull();
-  const sectionButtons = [...host.querySelectorAll("button")].filter(
-    (button) => button.getAttribute("aria-expanded") !== null,
+  expect(
+    [...host.querySelectorAll("h3")].map((heading) => heading.textContent),
+  ).toEqual(
+    expect.arrayContaining(["Folders", "Tags", "Note", "Source", "Metadata"]),
   );
-  expect(sectionButtons.map((button) => button.textContent)).toEqual(
-    expect.arrayContaining(["Tags", "Properties", "Activity"]),
-  );
-  expect(sectionButtons.map((button) => button.textContent)).not.toContain(
-    "Source",
-  );
-  expect(host.textContent).toContain("Folders");
   expect(host.querySelector('[aria-label="Add Tag"]')).not.toBeNull();
   expect(host.querySelector('[aria-label="Add Folder"]')).not.toBeNull();
 
-  const tagsTrigger = sectionButtons.find(
-    (button) => button.textContent === "Tags",
-  );
-  if (!tagsTrigger) throw new Error("Missing Tags section trigger");
-  await act(async () => tagsTrigger.click());
-  expect(tagsTrigger.getAttribute("aria-expanded")).toBe("false");
-
   expect(host.textContent).toContain("Likes42");
   expect(host.textContent).toContain("Views120");
-  expect(host.textContent).toContain("Rating");
+  expect(
+    host
+      .querySelector('[role="radiogroup"][aria-label="Rating"] [data-filled]')
+      ?.getAttribute("aria-label"),
+  ).toBe("1 Star");
+  expect(
+    host.querySelectorAll('[role="radiogroup"] [data-filled]'),
+  ).toHaveLength(3);
   expect(host.textContent).toContain("Saved");
   expect(host.textContent).toContain("Modified");
-  expect(host.textContent).toContain("Dimensions640 × 480");
-  expect(host.textContent).toContain("IDa");
+  expect(host.textContent).toContain("Dimensions 640 × 480");
+  expect(host.textContent).toContain("ID a");
   expect(host.textContent).not.toContain("Additional Details");
   expect(host.querySelector("details:not([open])")).toBeNull();
   expect(
@@ -276,38 +254,7 @@ it("shows the name, URL, source card, and note on one card", async () => {
   ).toBe(false);
 });
 
-it("shows Description as read-only text and hides an empty source card", async () => {
-  const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
-  pool.upsert({ ...current, description: current.title });
-
-  await act(async () => root.render(<SaveInspector saveId="a" />));
-
-  const card = () => host.querySelector('[aria-label="Source"]');
-  expect(card()?.textContent).toContain("Screenshot");
-  expect(card()?.querySelector("textarea")).toBeNull();
-
-  await act(async () => {
-    pool.upsert({ ...current, description: null });
-  });
-  expect(card()).toBeNull();
-
-  await act(async () => {
-    pool.upsert({ ...current, author: "Example Author", description: null });
-  });
-  expect(card()?.textContent).toContain("Example Author");
-  expect(card()?.querySelector("p")).toBeNull();
-
-  await act(async () => {
-    pool.upsert({ ...current, title: null, description: null });
-  });
-  expect(
-    host.querySelector<HTMLTextAreaElement>('[aria-label="Title"]')
-      ?.placeholder,
-  ).toBe("Untitled");
-});
-
-it("hides empty read-only sections and keeps empty addable sections static", async () => {
+it("hides empty read-only sections and keeps empty addable sections", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
   pool.upsert({
@@ -319,14 +266,13 @@ it("hides empty read-only sections and keeps empty addable sections static", asy
 
   await act(async () => root.render(<SaveInspector saveId="a" />));
 
-  const sectionButtons = [...host.querySelectorAll("button")].filter(
-    (button) => button.getAttribute("aria-expanded") !== null,
+  const headings = [...host.querySelectorAll("h3")].map(
+    (heading) => heading.textContent,
   );
-  expect(sectionButtons.map((button) => button.textContent)).not.toEqual(
-    expect.arrayContaining(["Tags", "Folders", "Activity"]),
-  );
-  expect(host.textContent).toContain("Tags");
-  expect(host.textContent).toContain("Folders");
+  expect(headings).toEqual(expect.arrayContaining(["Tags", "Folders"]));
+  expect(headings).not.toContain("Activity");
+  expect(host.textContent).toContain("No Tags Selected");
+  expect(host.textContent).toContain("No Folders Selected");
   expect(host.querySelector('[aria-label="Add Tag"]')).not.toBeNull();
   expect(host.querySelector('[aria-label="Add Folder"]')).not.toBeNull();
 });
@@ -355,70 +301,27 @@ it("removes only the clicked folder immediately for every selected Save", async 
   expect(host.textContent).not.toContain("Apply");
 });
 
-it("marks an Inbox Save processed, while folder changes leave it in review", async () => {
+it("leaves Inbox processing to the Inbox", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
   pool.upsert({ ...current, inboxState: "review" });
-  await act(async () =>
-    root.render(
-      <SaveInspector
-        saveId="a"
-        folders={[{ id: "folder", name: "Inspiration", count: 1 }]}
-      />,
-    ),
-  );
-  expect(host.textContent).toContain("Needs review");
-  await act(async () =>
-    host
-      .querySelector<HTMLButtonElement>(
-        '[aria-label="Remove folder Inspiration"]',
-      )
-      ?.click(),
-  );
-  expect(requests.map((request) => request.name)).not.toContain(
-    "saves.bulkEdit",
-  );
-  const markProcessed = [...host.querySelectorAll("button")].find(
-    (button) => button.textContent === "Mark Processed",
-  );
-  await act(async () => markProcessed?.click());
-  expect(requests).toContainEqual({
-    name: "saves.bulkEdit",
-    input: { ids: ["a"], operation: { kind: "inbox", state: "processed" } },
-  });
+  await act(async () => root.render(<SaveInspector saveId="a" />));
+  expect(host.textContent).not.toContain("Mark Processed");
+  expect(host.querySelector('[aria-label="Remove from Inbox"]')).toBeNull();
 });
 
-it("removes an Inbox Save from the Inbox without marking it processed", async () => {
+it("hides Modified when it shows the same date as Saved", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
-  pool.upsert({ ...current, inboxState: "snoozed", inboxUntil: 4_000_000 });
+  const day = Date.UTC(2026, 0, 1, 12);
+  pool.upsert({ ...current, savedAt: day, createdAt: day + 60_000 });
   await act(async () => root.render(<SaveInspector saveId="a" />));
-  await act(async () =>
-    host
-      .querySelector<HTMLButtonElement>('[aria-label="Remove from Inbox"]')
-      ?.click(),
-  );
-  expect(requests).toContainEqual({
-    name: "saves.bulkEdit",
-    input: { ids: ["a"], operation: { kind: "inbox", state: null } },
-  });
+
+  expect(host.textContent).toContain("Saved");
+  expect(host.textContent).not.toContain("Modified");
 });
 
-it("does not expose a local Save's internal identity as a source link", async () => {
-  const current = pool.get("a");
-  if (!current) throw new Error("Missing Save fixture");
-  pool.upsert({ ...current, url: "pond:local/a" });
-  await act(async () => root.render(<SaveInspector saveId="a" />));
-  expect(
-    host.querySelector<HTMLInputElement>('[aria-label="Source URL"]')?.value,
-  ).toBe("");
-  expect(
-    host.querySelector<HTMLInputElement>('[aria-label="Source URL"]')
-      ?.placeholder,
-  ).toBe("No source URL");
-});
-
-it("shows enrichment output and applies suggested tags", async () => {
+it("shows enrichment output and suggested tags", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
   pool.upsert({
@@ -432,22 +335,26 @@ it("shows enrichment output and applies suggested tags", async () => {
   });
   await act(async () => root.render(<SaveInspector saveId="a" />));
 
-  expect(host.textContent).toContain("Likely sensitive content");
+  expect(host.textContent).toContain("Sensitive Content Likely Sensitive");
   expect(host.textContent).toContain("A dashboard with charts");
   expect(host.textContent).toContain("Revenue 42%");
   expect(host.querySelector('[aria-label="Copy Caption"]')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Add tag Dashboard"]')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Add tag One"]')).toBeNull();
+  expect(host.textContent).not.toContain("Dashboard");
 
-  const applyAll = [...host.querySelectorAll("button")].find(
-    (button) => button.textContent === "Apply All",
+  const trigger = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Add Tag"]',
   );
-  if (!applyAll) throw new Error("Missing Apply All");
-  await act(async () => applyAll.click());
-  expect(requests).toContainEqual({
-    name: "saves.bulkEdit",
-    input: { ids: ["a"], operation: { kind: "suggested-tags" } },
-  });
+  if (!trigger) throw new Error("Missing Add Tag");
+  await act(async () => trigger.click());
+  const rows = [
+    ...document.querySelectorAll<HTMLElement>(
+      '[role="menu"] [role="menuitemcheckbox"]',
+    ),
+  ].map((item) => item.textContent);
+  expect(document.querySelector('[role="menu"]')?.textContent).toContain(
+    "Suggested",
+  );
+  expect(rows[0]).toBe("Dashboard");
 });
 
 it("toggles Favorite from the inspector without touching the rating", async () => {
@@ -465,7 +372,11 @@ it("toggles Favorite from the inspector without touching the rating", async () =
   });
   expect(pool.get("a")).toMatchObject({ favorite: true, rating: 3 });
   await vi.waitFor(() =>
-    expect(host.querySelector('[aria-label="Unfavorite"]')).not.toBeNull(),
+    expect(
+      host
+        .querySelector('[aria-label="Favorite"]')
+        ?.getAttribute("aria-pressed"),
+    ).toBe("true"),
   );
 });
 
@@ -556,7 +467,7 @@ it("assigns a mixed folder immediately from the inspector menu", async () => {
   });
 });
 
-it("stages multiple folders and assigns them together from the inspector menu", async () => {
+it("adds each folder you tick while the menu stays open", async () => {
   await act(async () =>
     root.render(
       <SaveInspector
@@ -573,82 +484,6 @@ it("stages multiple folders and assigns them together from the inspector menu", 
   );
   if (!trigger) throw new Error("Missing Add Folder");
   await act(async () => trigger.click());
-  const multiple = [
-    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-  ].find((item) => item.textContent === "Select Multiple");
-  if (!multiple) throw new Error("Missing Select Multiple action");
-  await act(async () => multiple.click());
-
-  const folderRow = (name: string) =>
-    [
-      ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
-    ].find((item) => item.textContent?.includes(name));
-  const inspiration = folderRow("Inspiration");
-  const reference = folderRow("Reference");
-  if (!inspiration || !reference) throw new Error("Missing folder rows");
-  await act(async () => inspiration.click());
-  await act(async () => reference.click());
-
-  expect(requests.some((request) => request.name === "folders.assign")).toBe(
-    false,
-  );
-  const apply = document.querySelector<HTMLButtonElement>(
-    '[aria-label="Add to 2 Folders"]',
-  );
-  if (!apply) throw new Error("Missing Add to Folders action");
-  expect(apply.disabled).toBe(false);
-  await act(async () => apply.click());
-  expect(requests).toContainEqual({
-    name: "folders.assign",
-    input: {
-      saveIds: ["a"],
-      addIds: ["inspiration", "reference"],
-      removeIds: [],
-    },
-  });
-});
-
-it("undoes a staged multi-folder assignment as one step from its toast", async () => {
-  const undone: string[] = [];
-  vi.stubGlobal("pond", {
-    onSyncAction: () => () => {},
-    query: async (
-      name: string,
-      input: Record<string, string | string[] | number>,
-    ) => {
-      if (name !== "folders.assign") return stubQuery(name, input);
-      requests.push({ name, input });
-      return { ok: true, undoId: "step-7" };
-    },
-    undoStep: async (step: string) => {
-      undone.push(step);
-      return { outcome: "done", canUndo: false, canRedo: true };
-    },
-  });
-  await act(async () =>
-    root.render(
-      <>
-        <ToastHost />
-        <SaveInspector
-          saveId="a"
-          folders={[
-            { id: "inspiration", name: "Inspiration", count: 0 },
-            { id: "reference", name: "Reference", count: 0 },
-          ]}
-        />
-      </>,
-    ),
-  );
-  const trigger = host.querySelector<HTMLButtonElement>(
-    '[aria-label="Add Folder"]',
-  );
-  if (!trigger) throw new Error("Missing Add Folder");
-  await act(async () => trigger.click());
-  const multiple = [
-    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-  ].find((item) => item.textContent === "Select Multiple");
-  if (!multiple) throw new Error("Missing Select Multiple action");
-  await act(async () => multiple.click());
   for (const name of ["Inspiration", "Reference"]) {
     const row = [
       ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
@@ -656,127 +491,7 @@ it("undoes a staged multi-folder assignment as one step from its toast", async (
     if (!row) throw new Error(`Missing ${name}`);
     await act(async () => row.click());
   }
-  const apply = document.querySelector<HTMLButtonElement>(
-    '[aria-label="Add to 2 Folders"]',
-  );
-  if (!apply) throw new Error("Missing Add to Folders action");
-  await act(async () => apply.click());
 
-  const toasts = () =>
-    document.body.querySelector("[data-slot='toasts']")?.textContent ?? "";
-  await vi.waitFor(() => expect(toasts()).toContain("Added to 2 Folders"));
-  const undo = [
-    ...document.querySelectorAll<HTMLButtonElement>(
-      "[data-slot='toasts'] button",
-    ),
-  ].find((button) => button.textContent === "Undo");
-  if (!undo) throw new Error("Missing Undo");
-  await act(async () => undo.click());
-  expect(undone).toEqual(["step-7"]);
-  await vi.waitFor(() => expect(toasts()).toContain("Assignment undone"));
-  toastManager.close();
-});
-
-it("cancels staged folder assignment without mutating the Save", async () => {
-  await act(async () =>
-    root.render(
-      <SaveInspector
-        saveId="a"
-        folders={[{ id: "inspiration", name: "Inspiration", count: 0 }]}
-      />,
-    ),
-  );
-  const trigger = host.querySelector<HTMLButtonElement>(
-    '[aria-label="Add Folder"]',
-  );
-  if (!trigger) throw new Error("Missing Add Folder");
-  await act(async () => trigger.click());
-  const multiple = [
-    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-  ].find((item) => item.textContent === "Select Multiple");
-  if (!multiple) throw new Error("Missing Select Multiple action");
-  await act(async () => multiple.click());
-  const inspiration = [
-    ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
-  ].find((item) => item.textContent?.includes("Inspiration"));
-  if (!inspiration) throw new Error("Missing Inspiration folder");
-  await act(async () => inspiration.click());
-  const cancel = [
-    ...document.querySelectorAll<HTMLButtonElement>("button"),
-  ].find((button) => button.textContent === "Cancel");
-  if (!cancel) throw new Error("Missing Cancel action");
-  await act(async () => cancel.click());
-
-  expect(requests.some((request) => request.name === "folders.assign")).toBe(
-    false,
-  );
-  expect(document.querySelector('[aria-label="Add to 1 Folder"]')).toBeNull();
-});
-
-it("drives staged folder assignment from the keyboard", async () => {
-  await act(async () =>
-    root.render(
-      <SaveInspector
-        saveId="a"
-        folders={[
-          { id: "inspiration", name: "Inspiration", count: 0 },
-          { id: "reference", name: "Reference", count: 0 },
-        ]}
-      />,
-    ),
-  );
-  const trigger = host.querySelector<HTMLButtonElement>(
-    '[aria-label="Add Folder"]',
-  );
-  if (!trigger) throw new Error("Missing Add Folder");
-  await act(async () => trigger.click());
-  const startStaging = async () => {
-    const multiple = [
-      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-    ].find((item) => item.textContent === "Select Multiple");
-    if (!multiple) throw new Error("Missing Select Multiple action");
-    await act(async () => multiple.click());
-    const inspiration = [
-      ...document.querySelectorAll<HTMLElement>('[role="menuitemcheckbox"]'),
-    ].find((item) => item.textContent?.includes("Inspiration"));
-    if (!inspiration) throw new Error("Missing Inspiration folder");
-    await act(async () => inspiration.click());
-  };
-  const search = () => {
-    const input = document.querySelector<HTMLInputElement>(
-      '[aria-label="Search Folders"]',
-    );
-    if (!input) throw new Error("Missing folder search");
-    return input;
-  };
-  const key = (init: KeyboardEventInit) =>
-    act(async () => {
-      search().dispatchEvent(
-        new KeyboardEvent("keydown", {
-          bubbles: true,
-          cancelable: true,
-          ...init,
-        }),
-      );
-    });
-
-  await startStaging();
-  const apply = document.querySelector<HTMLButtonElement>(
-    '[aria-label="Add to 1 Folder"]',
-  );
-  if (!apply) throw new Error("Missing Add to Folder action");
-  const cancel = [
-    ...document.querySelectorAll<HTMLButtonElement>("button"),
-  ].find((button) => button.textContent === "Cancel");
-  expect(cancel?.tabIndex).toBe(0);
-  expect(apply.tabIndex).toBe(0);
-
-  await key({ key: "Escape" });
-  expect(document.querySelector('[aria-label="Add to 1 Folder"]')).toBeNull();
-  expect(search().isConnected).toBe(true);
-
-  await startStaging();
-  await key({ key: "Enter", metaKey: true });
   expect(
     requests.filter((request) => request.name === "folders.assign"),
   ).toEqual([
@@ -784,21 +499,28 @@ it("drives staged folder assignment from the keyboard", async () => {
       name: "folders.assign",
       input: { saveIds: ["a"], addIds: ["inspiration"], removeIds: [] },
     },
+    {
+      name: "folders.assign",
+      input: { saveIds: ["a"], addIds: ["reference"], removeIds: [] },
+    },
   ]);
+  expect(
+    document.querySelector('[aria-label="Search Folders"]')?.isConnected,
+  ).toBe(true);
+  expect(
+    [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].some(
+      (item) => item.textContent === "Select Multiple",
+    ),
+  ).toBe(false);
 });
 
-it("stages a folder created while selecting multiple folders", async () => {
+it("assigns a folder created from the folder search", async () => {
   await act(async () => root.render(<SaveInspector saveId="a" folders={[]} />));
   const trigger = host.querySelector<HTMLButtonElement>(
     '[aria-label="Add Folder"]',
   );
   if (!trigger) throw new Error("Missing Add Folder");
   await act(async () => trigger.click());
-  const multiple = [
-    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-  ].find((item) => item.textContent === "Select Multiple");
-  if (!multiple) throw new Error("Missing Select Multiple action");
-  await act(async () => multiple.click());
   const search = document.querySelector<HTMLInputElement>(
     '[aria-label="Search Folders"]',
   );
@@ -814,21 +536,12 @@ it("stages a folder created while selecting multiple folders", async () => {
     name: "folders.create",
     input: { name: "Moodboard" },
   });
-  const apply = await vi.waitFor(() => {
-    const button = document.querySelector<HTMLButtonElement>(
-      '[aria-label="Add to 1 Folder"]',
-    );
-    if (!button) throw new Error("Missing Add to Folder action");
-    return button;
-  });
-  expect(requests.some((request) => request.name === "folders.assign")).toBe(
-    false,
+  await vi.waitFor(() =>
+    expect(requests).toContainEqual({
+      name: "folders.assign",
+      input: { saveIds: ["a"], addIds: ["created"], removeIds: [] },
+    }),
   );
-  await act(async () => apply.click());
-  expect(requests).toContainEqual({
-    name: "folders.assign",
-    input: { saveIds: ["a"], addIds: ["created"], removeIds: [] },
-  });
 });
 
 it("shows an assigned nested folder as one breadcrumb with its full path", async () => {
@@ -930,9 +643,7 @@ it("explains why Related is empty before the save is indexed", async () => {
   ].find((entry) => entry.textContent === "Related");
   if (!tab) throw new Error("Missing Related tab");
   await act(async () => tab.click());
-  expect(host.querySelector('[role="status"]')?.textContent).toContain(
-    "Not indexed yet",
-  );
+  expect(host.textContent).toContain("Not Indexed Yet");
   expect(requests.some((request) => request.name === "saves.related")).toBe(
     false,
   );
@@ -992,7 +703,9 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
   expect(trigger.getAttribute("aria-selected")).toBe("false");
   await act(async () => trigger.click());
   expect(trigger.getAttribute("aria-selected")).toBe("true");
-  expect(host.textContent).not.toContain("Properties");
+  expect(
+    host.querySelector('[aria-label="Notes"]')?.closest("[hidden]"),
+  ).not.toBeNull();
 
   expect(query).toHaveBeenCalledWith("saves.related", { id: "a", limit: 12 });
   expect(
@@ -1009,24 +722,8 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
 });
 
 it("opens tagged saves from a tag chip without removing the tag", async () => {
-  const rootRoute = createRootRoute();
-  const indexRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/",
-    component: () => null,
-  });
-  const saveRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/save/$id",
-    component: () => null,
-  });
-  const router = createRouter({
-    routeTree: rootRoute.addChildren([indexRoute, saveRoute]),
-    history: createMemoryHistory({ initialEntries: ["/save/a"] }),
-  });
-  await router.load();
-  setAppRouter(router);
-  libraryChrome.setNav({ kind: "all" });
+  const router = await openLibraryAt("/?save=a");
+  stopViewUrlSync = startViewUrlSync(router);
   setQuery({
     combinator: "and",
     rules: [{ field: "tags", operator: "some", value: ["Other"] }],
@@ -1049,36 +746,12 @@ it("opens tagged saves from a tag chip without removing the tag", async () => {
       operation: { kind: "tags", tags: ["One"], mode: "remove" },
     },
   });
-  expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
-  expect(router.state.location.pathname).toBe("/save/a");
+  expect(currentLocation(router).pathname).toBe("/");
+  expect(currentLocation(router).search).toMatchObject({ save: "a" });
 
   const callsBeforeOpen = requests.length;
   await act(async () => tag.click());
   expect(requests).toHaveLength(callsBeforeOpen);
-  expect(libraryChrome.getState().nav).toEqual({ kind: "tag", name: "One" });
-  expect(router.history.location.pathname).toBe("/");
+  expect(currentLocation(router).pathname).toBe("/tags/One");
   expect(getViewState().query).toEqual(EMPTY_QUERY);
-});
-
-it("clamps a long source description behind Read More and sizes the source icon", async () => {
-  const scroll = vi
-    .spyOn(HTMLParagraphElement.prototype, "scrollHeight", "get")
-    .mockReturnValue(400);
-  await act(async () => root.render(<SaveInspector saveId="a" />));
-
-  const card = host.querySelector('[aria-label="Source"]');
-  const body = [...(card?.querySelectorAll("p") ?? [])].find(
-    (paragraph) => paragraph.textContent === "Captured page description",
-  );
-  const more = [...(card?.querySelectorAll("button") ?? [])].find(
-    (button) => button.textContent === "Read More",
-  );
-  expect(body?.hasAttribute("data-clamped")).toBe(true);
-  expect(card?.querySelector("footer svg")?.getAttribute("width")).toBe("14");
-
-  await act(async () => more?.click());
-
-  expect(body?.hasAttribute("data-clamped")).toBe(false);
-  expect(card?.textContent).not.toContain("Read More");
-  scroll.mockRestore();
 });

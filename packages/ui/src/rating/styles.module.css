@@ -6,7 +6,7 @@
   align-items: center;
 
   &[data-size="sm"] {
-    --rating-star: 18px;
+    --rating-star: 16px;
   }
 }
 
@@ -34,7 +34,7 @@
   }
 
   &[data-filled] > svg {
-    animation: pop var(--ds-duration-bounce) var(--ds-easing-bounce);
+    animation: pop var(--ds-duration-medium) var(--ds-easing-snap);
   }
 
   &:focus-visible {
@@ -49,9 +49,18 @@
     color: var(--ds-foreground-tertiary);
   }
 
+  .root:hover .star > svg {
+    fill: none;
+  }
+
   .root .star:hover,
   .root .star:has(~ .star:hover) {
     color: var(--ds-gold-border);
+  }
+
+  .root .star:hover > svg,
+  .root .star:has(~ .star:hover) > svg {
+    fill: currentColor;
   }
 }
 

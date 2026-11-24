@@ -90,6 +90,7 @@ const GroupContext = createContext<Base.Handle<GroupPayload> | null>(null);
 /** Bridges the gap between neighbouring triggers so the popup travels instead of closing and reopening. */
 const GROUP_CLOSE_DELAY = 100;
 
+/** Props an outer trigger merges in, such as a context menu's, pass through to the child. */
 function TooltipWrapper({
   label,
   shortcut,
@@ -100,11 +101,13 @@ function TooltipWrapper({
   delay,
   trackCursorAxis,
   container,
+  ...triggerProps
 }: TooltipProps) {
   const group = useContext(GroupContext);
   if (group && !trackCursorAxis && !container) {
     return (
       <Trigger
+        {...triggerProps}
         handle={group}
         payload={{ label, shortcut, side, align, sideOffset }}
         delay={delay}
@@ -115,7 +118,7 @@ function TooltipWrapper({
   }
   return (
     <Root trackCursorAxis={trackCursorAxis}>
-      <Trigger delay={delay} render={children} />
+      <Trigger {...triggerProps} delay={delay} render={children} />
       <Portal container={container}>
         <Positioner side={side} align={align} sideOffset={sideOffset}>
           <Popup>
@@ -185,7 +188,7 @@ function Info({
           />
         }
       >
-        <IconCircleInfo size={12} strokeWidth={1.75} />
+        <IconCircleInfo size={12} />
       </Trigger>
       <Portal>
         <Positioner side={side}>

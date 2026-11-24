@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -134,8 +134,33 @@ describe("notification log", () => {
     const stored = JSON.parse(
       await readFile(join(root, "library-a.json"), "utf8"),
     );
-    expect(stored.version).toBe(1);
+    expect(stored.version).toBe(2);
     expect(stored.notifications[0].id).toBe("a");
+  });
+
+  it("drops activity and retired kinds from a version 1 log", async () => {
+    const { log, root } = await setup();
+    const row = (id: string, kind: string) => ({
+      id,
+      kind,
+      priority: false,
+      title: `Title ${id}`,
+      createdAt: 1_000,
+      updatedAt: 1_000,
+    });
+    await writeFile(
+      join(root, "library-a.json"),
+      JSON.stringify({
+        version: 1,
+        notifications: [
+          row("toast", "activity"),
+          row("failure", "attention"),
+          row("notice", "announcement"),
+        ],
+      }),
+      "utf8",
+    );
+    expect((await log.list()).map((item) => item.id)).toEqual(["failure"]);
   });
 
   it("serializes concurrent posts", async () => {

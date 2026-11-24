@@ -1,7 +1,0 @@
-.text {
-  margin: 0;
-  font-size: var(--ds-text-body);
-  font-weight: var(--ds-weight-regular);
-  line-height: 24px;
-  color: var(--ds-foreground-secondary);
-}

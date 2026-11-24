@@ -17,23 +17,22 @@ interface CreateTagInput {
   name: string;
 }
 
+/** SQLite's lower() only folds ASCII, so names compare in JS. */
 async function tagByLowerName(db: Db, lowered: string) {
-  const rows = await db
-    .select()
-    .from(tagsTable)
-    .where(sql`lower(${tagsTable.name}) = ${lowered}`);
-  return rows[0];
+  const rows = await db.select().from(tagsTable);
+  return rows.find((tag) => tag.name.toLowerCase() === lowered);
 }
 
+/** Saves can hold tags written before normalization, so they match by label key in JS. */
 async function savesWithTag(
   db: Db,
-  lowerKey: string,
+  key: string,
 ): Promise<Array<{ id: string; tags: string[] | null }>> {
-  const needle = `%"${lowerKey}"%`;
-  return db
+  const rows = await db
     .select({ id: savesTable.id, tags: savesTable.tags })
     .from(savesTable)
-    .where(sql`lower(${savesTable.tags}) LIKE ${needle}`);
+    .where(sql`${savesTable.tags} != '[]'`);
+  return rows.filter((row) => row.tags?.some((tag) => labelKey(tag) === key));
 }
 
 export async function listTags() {
@@ -83,10 +82,10 @@ export async function renameTag(
   const txs: Transaction[] = [];
   for (const row of all) {
     const current = (row.tags ?? []).slice();
-    const idx = current.findIndex((t) => t.toLowerCase() === fromKey);
+    const idx = current.findIndex((t) => labelKey(t) === fromKey);
     if (idx === -1) continue;
     const collidesWithExistingTarget =
-      fromKey !== toKey && current.some((t) => t.toLowerCase() === toKey);
+      fromKey !== toKey && current.some((t) => labelKey(t) === toKey);
     if (collidesWithExistingTarget) {
       current.splice(idx, 1);
     } else {
@@ -138,9 +137,9 @@ export async function mergeTags(
   const txs: Transaction[] = [];
   for (const row of all) {
     const current = (row.tags ?? []).slice();
-    const idx = current.findIndex((t) => t.toLowerCase() === fromKey);
+    const idx = current.findIndex((t) => labelKey(t) === fromKey);
     if (idx === -1) continue;
-    if (current.some((t) => t.toLowerCase() === toKey)) {
+    if (current.some((t) => labelKey(t) === toKey)) {
       current.splice(idx, 1);
     } else {
       current[idx] = toStored;
@@ -220,7 +219,7 @@ export async function deleteTag(
   const all = await savesWithTag(db, key);
   const txs: Transaction[] = [];
   for (const row of all) {
-    const current = (row.tags ?? []).filter((t) => t.toLowerCase() !== key);
+    const current = (row.tags ?? []).filter((t) => labelKey(t) !== key);
     if (current.length === (row.tags?.length ?? 0)) continue;
     txs.push({
       kind: "update",

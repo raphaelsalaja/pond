@@ -1,25 +1,20 @@
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { type AnyRoute, RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { libraryChrome } from "@/features/library";
+import { getLibraryNav } from "@/features/library/state/library-chrome";
 import {
   getViewState,
   resetFilters,
   setQuery,
 } from "@/features/library/state/view-store";
+import { startViewUrlSync } from "@/features/library/state/view-url";
 import { tagCreation } from "@/features/tags/state/creation";
 import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
 import { tagsScope } from "@/features/tags/state/tags-scope";
-import { setAppRouter } from "@/shared/lib/app-router";
+import { createLibraryTestRouter } from "@/shared/test/library-router";
 import { TagsSidebar } from "../sidebar";
 import { TagsPage } from "./";
 
@@ -51,6 +46,7 @@ const fixtures = {
 describe("library Tags page", () => {
   let host: HTMLDivElement;
   let root: Root;
+  let stopViewUrlSync: (() => void) | null = null;
   const createdTags = new Set(["animation", "typography"]);
   const query = vi.fn(async (name: string, params?: { name?: string }) => {
     if (name === "tags.list") return fixtures.tags;
@@ -95,8 +91,9 @@ describe("library Tags page", () => {
 
   afterEach(async () => {
     await act(async () => root.unmount());
+    stopViewUrlSync?.();
+    stopViewUrlSync = null;
     host.remove();
-    libraryChrome.setNav({ kind: "all" });
     tagsScope.set("all");
     resetFilters();
     vi.unstubAllGlobals();
@@ -104,15 +101,12 @@ describe("library Tags page", () => {
   });
 
   async function mount() {
-    const rootRoute = createRootRoute();
-    const indexRoute = createRoute({
-      getParentRoute: () => rootRoute,
-      path: "/",
-      component: () => null,
-    });
-    const tagsRoute = createRoute({
-      getParentRoute: () => rootRoute,
-      path: "/tags",
+    const router = createLibraryTestRouter("/tags");
+    const tagsRoute = (router.routesById as Record<string, AnyRoute>)[
+      "/_library/tags"
+    ];
+    if (!tagsRoute) throw new Error("Missing Tags route");
+    tagsRoute.update({
       component: () => (
         <>
           <TagsSidebar />
@@ -120,13 +114,9 @@ describe("library Tags page", () => {
         </>
       ),
     });
-    const router = createRouter({
-      routeTree: rootRoute.addChildren([indexRoute, tagsRoute]),
-      history: createMemoryHistory({ initialEntries: ["/tags"] }),
-    });
-    setAppRouter(router);
     await act(async () => {
       await router.load();
+      stopViewUrlSync = startViewUrlSync(router);
       root.render(<RouterProvider router={router} />);
     });
     return router;
@@ -218,7 +208,6 @@ describe("library Tags page", () => {
 
   it("opens tagged saves from a tag click", async () => {
     const router = await mount();
-    libraryChrome.setNav({ kind: "all" });
     setQuery({
       combinator: "and",
       rules: [{ field: "tags", operator: "some", value: ["Other"] }],
@@ -230,22 +219,17 @@ describe("library Tags page", () => {
     }
 
     await act(async () => more.click());
-    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
     expect(router.state.location.pathname).toBe("/tags");
 
     await act(async () => row.click());
     expect(row.getAttribute("aria-selected")).toBe("false");
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "tag",
-      name: "Typography",
-    });
-    expect(router.state.location.pathname).toBe("/");
+    expect(getLibraryNav()).toEqual({ kind: "tag", name: "Typography" });
+    expect(router.state.location.pathname).toBe("/tags/Typography");
     expect(getViewState().query).toEqual(EMPTY_QUERY);
   });
 
   it("opens tagged saves from the keyboard", async () => {
     const router = await mount();
-    libraryChrome.setNav({ kind: "all" });
     const row = host.querySelector('[role="option"][title="Animation"]');
     if (!(row instanceof HTMLElement)) throw new Error("Missing Animation");
     await act(async () => {
@@ -254,29 +238,25 @@ describe("library Tags page", () => {
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
       );
     });
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "tag",
-      name: "Animation",
-    });
-    expect(router.state.location.pathname).toBe("/");
+    expect(getLibraryNav()).toEqual({ kind: "tag", name: "Animation" });
+    expect(router.state.location.pathname).toBe("/tags/Animation");
   });
 
   it("selects a tag only with Shift-click and shows no checkbox", async () => {
-    await mount();
+    const router = await mount();
     const row = host.querySelector('[role="option"]');
     const checkbox = host.querySelector('[aria-label="Select Animation"]');
     if (!(row instanceof HTMLDivElement)) throw new Error("Missing tag row");
 
     expect(checkbox).toBeNull();
     expect(row.firstElementChild?.textContent).toContain("Animation");
-    libraryChrome.setNav({ kind: "all" });
     await act(async () => {
       row.dispatchEvent(
         new MouseEvent("click", { bubbles: true, shiftKey: true }),
       );
     });
     expect(row.getAttribute("aria-selected")).toBe("true");
-    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
+    expect(router.state.location.pathname).toBe("/tags");
     expect(host.querySelector('[role="option"][title="Animation"]')).toBe(row);
   });
 

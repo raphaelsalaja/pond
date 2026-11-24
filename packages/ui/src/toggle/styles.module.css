@@ -18,8 +18,8 @@
   border: 0;
   border-radius: var(--ds-radius-full);
   transition:
-    background var(--ds-duration-snap) var(--ds-easing-standard),
-    color var(--ds-duration-snap) var(--ds-easing-standard),
+    background var(--ds-duration-fast) var(--ds-easing-standard),
+    color var(--ds-duration-fast) var(--ds-easing-standard),
     box-shadow var(--ds-duration-snap) var(--ds-easing-standard),
     outline-color var(--ds-duration-snap) var(--ds-easing-snap);
 
@@ -41,7 +41,7 @@
   &:hover,
   &[data-demo-state="hover"] {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   &[data-pressed] {
@@ -64,10 +64,6 @@
       color: var(--ds-foreground-primary);
       background: var(--ds-surface-secondary);
       box-shadow: inset 0 0 0 var(--ds-border-width) transparent;
-    }
-
-    &[data-pressed]:hover {
-      background: var(--ds-surface-tertiary);
     }
   }
 
@@ -100,6 +96,19 @@
   }
 }
 
+[data-pond-toggle-group][data-variant="segmented"] > .root {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  padding: 0 var(--ds-space-xs);
+  font-weight: var(--ds-weight-regular);
+  border-radius: var(--ds-radius-sm);
+
+  &[data-pressed] {
+    font-weight: var(--ds-weight-medium);
+  }
+}
+
 [data-pond-toggle-group][data-multiple] > .root[data-pressed] {
   background: var(--ds-background-primary);
   box-shadow: var(--ds-shadow-border);
@@ -119,8 +128,8 @@
   background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-md);
   transition:
-    background var(--ds-duration-snap) var(--ds-easing-standard),
-    color var(--ds-duration-snap) var(--ds-easing-standard),
+    background var(--ds-duration-fast) var(--ds-easing-standard),
+    color var(--ds-duration-fast) var(--ds-easing-standard),
     box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
 
   &:hover,
@@ -164,6 +173,107 @@
   }
 }
 
+[data-pond-toggle-group][data-variant="pictures"] > .root {
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: var(--ds-space-sm);
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
+  background: none;
+  border-radius: var(--ds-radius-md);
+
+  & > :first-child {
+    box-sizing: border-box;
+    width: 100%;
+    overflow: hidden;
+    border-radius: var(--ds-radius-md);
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
+    transition:
+      outline-color var(--ds-duration-snap) var(--ds-easing-standard),
+      box-shadow var(--ds-duration-fast) var(--ds-easing-standard);
+  }
+
+  /* Labels may run into the gap so narrow tiles keep the whole word. */
+  & > :last-child:not(:first-child) {
+    padding: 0 var(--ds-space-sm);
+    line-height: 20px;
+    white-space: nowrap;
+    border-radius: var(--ds-radius-full);
+    transition:
+      background var(--ds-duration-fast) var(--ds-easing-standard),
+      color var(--ds-duration-fast) var(--ds-easing-standard);
+  }
+
+  &:hover,
+  &[data-demo-state="hover"] {
+    color: var(--ds-foreground-primary);
+    background: none;
+
+    & > :first-child {
+      box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-strong);
+    }
+  }
+
+  &[data-pressed],
+  &[data-pressed]:hover {
+    color: var(--ds-foreground-primary);
+    background: none;
+    box-shadow: none;
+
+    & > :first-child {
+      outline-color: var(--ds-accent);
+    }
+
+    & > :last-child:not(:first-child) {
+      font-weight: var(--ds-weight-strong);
+      color: var(--ds-accent-contrast);
+      background: var(--ds-accent);
+    }
+  }
+}
+
+[data-pond-toggle-group][data-variant="pills"] > .root {
+  flex: none;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-tertiary);
+  background: var(--ds-background-primary);
+  box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
+  transition:
+    background var(--ds-duration-fast) var(--ds-easing-standard),
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-fast) var(--ds-easing-standard),
+    outline-color var(--ds-duration-snap) var(--ds-easing-snap);
+
+  &:hover,
+  &[data-demo-state="hover"] {
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-primary);
+  }
+
+  &[data-pressed],
+  &[data-pressed]:hover {
+    font-weight: var(--ds-weight-strong);
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-secondary);
+    box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-strong);
+  }
+}
+
+[data-pond-toggle-group][data-variant="pills"][data-multiple] > .root {
+  &[data-pressed],
+  &[data-pressed]:hover {
+    font-weight: var(--ds-weight-medium);
+    color: var(--ds-foreground-primary);
+    box-shadow: inset 0 0 0 var(--ds-border-width) transparent;
+  }
+}
+
 /* Rail items may sit inside a context-menu wrapper, so match any depth. */
 [data-pond-toggle-group][data-variant="rail"] .root {
   justify-content: center;
@@ -172,13 +282,13 @@
   color: var(--ds-foreground-tertiary);
   border-radius: var(--ds-radius-md);
   transition:
-    background var(--ds-duration-snap) var(--ds-easing-standard),
-    color var(--ds-duration-snap) var(--ds-easing-standard);
+    background var(--ds-duration-fast) var(--ds-easing-standard),
+    color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover,
   &[data-demo-state="hover"] {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   &[data-pressed],
@@ -200,14 +310,14 @@
   &:hover,
   &[data-demo-state="hover"] {
     color: var(--ds-foreground-primary);
-    background: none;
+    background: var(--ds-surface-primary);
   }
 
   &[data-pressed],
   &[data-pressed]:hover {
     font-weight: var(--ds-weight-regular);
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-primary);
+    background: var(--ds-surface-secondary);
     box-shadow: none;
   }
 }
@@ -217,6 +327,9 @@
   [data-pond-toggle-group] > .root,
   [data-pond-toggle-group][data-variant="tiles"] > .root,
   [data-pond-toggle-group][data-variant="list"] > .root,
+  [data-pond-toggle-group][data-variant="pictures"] > .root,
+  [data-pond-toggle-group][data-variant="pictures"] > .root > *,
+  [data-pond-toggle-group][data-variant="pills"] > .root,
   [data-pond-toggle-group][data-variant="rail"] .root {
     transition: none;
   }

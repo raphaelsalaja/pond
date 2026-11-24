@@ -1,4 +1,6 @@
 .list {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-2xs);
@@ -23,10 +25,6 @@
   min-height: 52px;
   padding: var(--ds-space-sm) var(--ds-space-md);
   border-radius: var(--ds-radius-md);
-
-  &:hover {
-    background: var(--ds-surface-primary);
-  }
 }
 
 .frame {

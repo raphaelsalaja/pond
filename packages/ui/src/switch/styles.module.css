@@ -60,8 +60,8 @@
   border-radius: var(--ds-radius-full);
   box-shadow: var(--ds-shadow-raised);
   transition:
-    translate var(--ds-duration-bounce) var(--ds-easing-bounce),
-    width var(--ds-duration-bounce) var(--ds-easing-bounce),
+    translate var(--ds-duration-medium) var(--ds-easing-snap),
+    width var(--ds-duration-medium) var(--ds-easing-snap),
     background var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-checked] {
@@ -70,14 +70,14 @@
 }
 
 .root:active:not([data-disabled]) .thumb {
-  width: 15px;
+  width: 14px;
   transition:
-    translate var(--ds-duration-bounce) var(--ds-easing-bounce),
+    translate var(--ds-duration-medium) var(--ds-easing-snap),
     width var(--ds-duration-snap) var(--ds-easing-decelerate),
     background var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-checked] {
-    translate: 5px 0;
+    translate: 6px 0;
   }
 }
 

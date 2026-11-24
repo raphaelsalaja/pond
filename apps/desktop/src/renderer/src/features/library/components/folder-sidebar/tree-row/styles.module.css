@@ -31,8 +31,11 @@
   }
 
   &[data-drop="into"] .row {
+    --sidebar-fill: var(--ds-accent-tint);
     color: var(--ds-accent-foreground);
-    background: var(--ds-accent-tint);
+  }
+
+  &[data-drop="into"] .row::before {
     box-shadow: inset 0 0 0 1px var(--ds-accent-border);
   }
 

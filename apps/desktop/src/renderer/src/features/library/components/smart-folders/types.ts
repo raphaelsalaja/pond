@@ -6,7 +6,7 @@ export type EditorRequest =
       mode: "create";
       kind: "smart_folder" | "group";
       parentId: string | null;
-      onSaved: () => void;
+      onSaved?: () => void;
     }
   | { mode: "edit"; view: SavedView };
 

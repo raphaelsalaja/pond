@@ -1,0 +1,243 @@
+import { clsx as cn } from "clsx";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import styles from "./styles.module.css";
+
+interface PageProps extends ComponentPropsWithoutRef<"div"> {}
+
+/** Whole-page first run for a place with nothing in it yet. */
+function Page({ className, children, ...props }: PageProps) {
+  return (
+    <div className={cn(styles.page, className)} {...props}>
+      <div className={styles.center}>
+        <div className={styles.layout}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+interface HeroProps extends ComponentPropsWithoutRef<"div"> {}
+
+function Hero({ className, ...props }: HeroProps) {
+  return <div className={cn(styles.hero, className)} {...props} />;
+}
+
+interface CopyProps extends ComponentPropsWithoutRef<"div"> {}
+
+function Copy({ className, ...props }: CopyProps) {
+  return <div className={cn(styles.copy, className)} {...props} />;
+}
+
+interface TitleProps extends ComponentPropsWithoutRef<"h1"> {}
+
+function Title({ className, ...props }: TitleProps) {
+  return <h1 className={cn(styles.title, className)} {...props} />;
+}
+
+interface DescriptionProps extends ComponentPropsWithoutRef<"p"> {}
+
+function Description({ className, ...props }: DescriptionProps) {
+  return <p className={cn(styles.description, className)} {...props} />;
+}
+
+interface ActionsProps extends ComponentPropsWithoutRef<"div"> {}
+
+function Actions({ className, ...props }: ActionsProps) {
+  return <div className={cn(styles.actions, className)} {...props} />;
+}
+
+interface PreviewProps extends ComponentPropsWithoutRef<"div"> {}
+
+/** A grayscale miniature of the place once it has content; never interactive. */
+function Preview({ className, children, ...props }: PreviewProps) {
+  return (
+    <div
+      className={cn(styles.preview, className)}
+      aria-hidden="true"
+      inert
+      {...props}
+    >
+      <div className={styles.scene}>{children}</div>
+    </div>
+  );
+}
+
+interface WindowProps extends ComponentPropsWithoutRef<"div"> {}
+
+/** An app window that runs off the preview's right and bottom edges. */
+function Window({ className, children, ...props }: WindowProps) {
+  return (
+    <div className={cn(styles.window, className)} {...props}>
+      <span className={styles.dots}>
+        <span />
+        <span />
+        <span />
+      </span>
+      <div className={styles.panel}>{children}</div>
+    </div>
+  );
+}
+
+interface HeadingProps extends ComponentPropsWithoutRef<"span"> {
+  icon: ReactNode;
+}
+
+function Heading({ icon, className, children, ...props }: HeadingProps) {
+  return (
+    <span className={cn(styles.heading, className)} {...props}>
+      {icon}
+      <span className={styles.label}>{children}</span>
+    </span>
+  );
+}
+
+interface CardProps extends ComponentPropsWithoutRef<"div"> {
+  elevation?: "flat" | "raised";
+}
+
+function Card({ elevation = "flat", className, ...props }: CardProps) {
+  return (
+    <div
+      className={cn(styles.card, className)}
+      data-elevation={elevation}
+      {...props}
+    />
+  );
+}
+
+interface BarProps extends ComponentPropsWithoutRef<"span"> {
+  width: number | string;
+  tone?: "default" | "strong";
+}
+
+/** A line of text, drawn as a skeleton. */
+function Bar({
+  width,
+  tone = "default",
+  className,
+  style,
+  ...props
+}: BarProps) {
+  return (
+    <span
+      className={cn(styles.bar, className)}
+      data-tone={tone}
+      style={{ width, ...style }}
+      {...props}
+    />
+  );
+}
+
+interface BlockProps extends ComponentPropsWithoutRef<"span"> {
+  width?: number | string;
+  height?: number | string;
+  shape?: "rounded" | "round";
+}
+
+/** An image or avatar, drawn as a skeleton. */
+function Block({
+  width,
+  height,
+  shape = "rounded",
+  className,
+  style,
+  ...props
+}: BlockProps) {
+  return (
+    <span
+      className={cn(styles.block, className)}
+      data-shape={shape}
+      style={{ width, height, ...style }}
+      {...props}
+    />
+  );
+}
+
+interface BadgeProps extends ComponentPropsWithoutRef<"span"> {}
+
+/** A source logo pinned to a Block's corner, like the badge on a Save card. */
+function Badge({ className, ...props }: BadgeProps) {
+  return <span className={cn(styles.badge, className)} {...props} />;
+}
+
+interface LabelProps extends ComponentPropsWithoutRef<"span"> {
+  tone?: "default" | "faint";
+}
+
+function Label({ tone = "default", className, ...props }: LabelProps) {
+  return (
+    <span
+      className={cn(styles.label, className)}
+      data-tone={tone}
+      {...props}
+    />
+  );
+}
+
+interface PillProps extends ComponentPropsWithoutRef<"span"> {
+  variant?: "outline" | "solid";
+}
+
+function Pill({ variant = "outline", className, ...props }: PillProps) {
+  return (
+    <span
+      className={cn(styles.pill, className)}
+      data-variant={variant}
+      {...props}
+    />
+  );
+}
+
+interface CursorProps extends ComponentPropsWithoutRef<"span"> {}
+
+function Cursor({ className, ...props }: CursorProps) {
+  return (
+    <span className={cn(styles.cursor, className)} {...props}>
+      <svg width="11" height="15" viewBox="0 0 11 15" fill="none">
+        <path d="M1 1v11.5l3-3 2.25 4.75 2-1-2.25-4.5H10.5z" />
+      </svg>
+      <span className={styles.you}>You</span>
+    </span>
+  );
+}
+
+interface FeaturesProps extends ComponentPropsWithoutRef<"ul"> {}
+
+function Features({ className, ...props }: FeaturesProps) {
+  return <ul className={cn(styles.features, className)} {...props} />;
+}
+
+interface FeatureProps extends Omit<ComponentPropsWithoutRef<"li">, "title"> {
+  icon: ReactNode;
+  title: string;
+}
+
+function Feature({ icon, title, className, children, ...props }: FeatureProps) {
+  return (
+    <li className={cn(styles.feature, className)} {...props}>
+      <span className={styles.icon}>{icon}</span>
+      <h2 className={styles["feature-title"]}>{title}</h2>
+      <p className={styles["feature-description"]}>{children}</p>
+    </li>
+  );
+}
+
+export const Intro = {
+  Page,
+  Hero,
+  Copy,
+  Title,
+  Description,
+  Actions,
+  Preview,
+  Window,
+  Heading,
+  Card,
+  Bar,
+  Block,
+  Badge,
+  Label,
+  Pill,
+  Cursor,
+  Features,
+  Feature,
+};

@@ -17,10 +17,8 @@ import {
 } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import type { z } from "zod";
-import {
-  DownloadsCompletedHidden,
-  DownloadsEmpty,
-} from "@/features/downloads/components/empty";
+import { DownloadsCompletedHidden } from "@/features/downloads/components/empty";
+import { DownloadsIntro } from "@/features/downloads/components/intro";
 import {
   canTrashDownload,
   clearUnfinishedDownloads,
@@ -201,6 +199,16 @@ export function DownloadsPage() {
       ),
   });
   const clearUnfinished = useMutation({ mutationFn: clearUnfinishedDownloads });
+
+  if (
+    showPlaceEmpty &&
+    !history.isPending &&
+    !history.isError &&
+    transferJobs.isSuccess
+  ) {
+    return <DownloadsIntro />;
+  }
+
   const toolbar = (
     <SearchChrome.Root
       actions={
@@ -335,11 +343,7 @@ export function DownloadsPage() {
         onLoadMore={() => void history.fetchNextPage()}
         onRetryHistory={() => void history.refetch()}
         empty={
-          showPlaceEmpty ? (
-            <div className={styles.empty}>
-              <DownloadsEmpty />
-            </div>
-          ) : showCompletedHidden ? (
+          showPlaceEmpty ? null : showCompletedHidden ? (
             <div className={styles.empty}>
               <DownloadsCompletedHidden
                 onShowCompleted={() =>

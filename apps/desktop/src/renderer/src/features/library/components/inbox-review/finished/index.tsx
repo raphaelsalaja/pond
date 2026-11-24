@@ -1,5 +1,5 @@
-import { IconCircleCheck } from "@pond/icons";
-import { Button, Empty } from "@pond/ui";
+import { IconCheck } from "@pond/icons";
+import { Button, Empty, EmptyPreview } from "@pond/ui";
 import {
   countOutcomes,
   type ReviewQueue,
@@ -36,9 +36,19 @@ export function ReviewFinished({
   return (
     <Empty.Root role="status">
       <Empty.Media>
-        <IconCircleCheck size={14} />
+        <EmptyPreview.Root layout="single">
+          <EmptyPreview.Row>
+            <EmptyPreview.Icon>
+              <IconCheck size={12} />
+            </EmptyPreview.Icon>
+            <EmptyPreview.Lines>
+              <EmptyPreview.Line width={56} />
+              <EmptyPreview.Line width={34} tone="thin" />
+            </EmptyPreview.Lines>
+          </EmptyPreview.Row>
+        </EmptyPreview.Root>
       </Empty.Media>
-      <Empty.Title>Review complete</Empty.Title>
+      <Empty.Title>Review Complete</Empty.Title>
       <Empty.Description>
         {reviewSummary(queue)}
         {remaining > 0
@@ -51,7 +61,7 @@ export function ReviewFinished({
             Review Again
           </Button>
         ) : null}
-        <Button variant="primary" size="sm" onClick={onExit}>
+        <Button variant="secondary" size="sm" onClick={onExit}>
           Back to Library
         </Button>
       </Empty.Action>

@@ -1,0 +1,32 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-sm);
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  justify-content: space-between;
+  height: 18px;
+  padding-inline: var(--ds-space-lg);
+
+  [data-action] > & {
+    padding-inline-end: var(--ds-space-xs);
+  }
+
+  /* The 24px action overhangs the 18px heading row, so every section keeps the same heading-to-content gap. */
+  & > :not(.title) {
+    margin-block: -3px;
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  line-height: 18px;
+  color: var(--ds-foreground-secondary);
+}

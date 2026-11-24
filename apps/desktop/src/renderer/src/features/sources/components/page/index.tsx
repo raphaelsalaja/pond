@@ -2,7 +2,7 @@ import { IconCircleCheck, IconFile, IconLink2, IconRefresh } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { DataTable } from "@pond/ui/data-table";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { SourcesEmpty } from "@/features/sources/components/empty";
+import { SourcesIntro } from "@/features/sources/components/intro";
 import { NewSourceMenu } from "@/features/sources/components/new-menu";
 import { useSourceTableRows } from "@/features/sources/hooks/use-source-table-rows";
 import {
@@ -184,6 +184,8 @@ export function SourcesPage() {
       setFetchingAll(false);
     }
   }, []);
+  if (loaded && tableRows.length === 0) return <SourcesIntro />;
+
   const toolbar = (
     <SearchChrome.Root
       actions={
@@ -292,8 +294,6 @@ export function SourcesPage() {
         <div className={styles.content}>
           {!loaded ? (
             <SourcesLoading />
-          ) : tableRows.length === 0 ? (
-            <SourcesEmpty />
           ) : showMatchesEmpty ? (
             <div className={styles.empty}>
               <SourcesMatchesEmpty filters={filters} total={tableRows.length} />

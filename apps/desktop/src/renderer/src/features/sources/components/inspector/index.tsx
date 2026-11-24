@@ -2,9 +2,9 @@ import {
   IconCalendar,
   IconFolder,
   IconGauge,
-  IconGear3,
   IconHistory,
   IconLink2,
+  IconNut,
   IconSliders,
 } from "@pond/icons";
 import type { IncomingSaveRule, Source } from "@pond/schema/db";
@@ -663,7 +663,7 @@ export function sourceDetailModel({
   const general: SourceDetailPageDef = {
     id: "general",
     label: "General",
-    icon: <IconGear3 />,
+    icon: <IconNut />,
     description,
     items: [
       ...(source !== "local" && source !== "web"

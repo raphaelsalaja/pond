@@ -1,0 +1,75 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-sm);
+  width: 100%;
+  --progress-height: 4px;
+
+  &[data-size="md"] {
+    --progress-height: 8px;
+  }
+}
+
+.track {
+  position: relative;
+  height: var(--progress-height);
+  overflow: hidden;
+  background: var(--ds-surface-tertiary);
+  border-radius: var(--ds-radius-full);
+}
+
+.indicator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--ds-foreground-primary);
+  border-radius: inherit;
+  transition: width var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &[data-indeterminate] {
+    width: 32%;
+    animation: progress-sweep 1.4s var(--ds-easing-in-out) infinite;
+  }
+}
+
+.label,
+.value {
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-tertiary);
+}
+
+@keyframes progress-sweep {
+  from {
+    left: -32%;
+  }
+
+  to {
+    left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+
+    &[data-indeterminate] {
+      left: 0;
+      width: 100%;
+      opacity: 0.32;
+      animation: none;
+    }
+  }
+}
+
+:global(html[data-reduce-motion="true"]) .indicator {
+  transition: none;
+
+  &[data-indeterminate] {
+    left: 0;
+    width: 100%;
+    opacity: 0.32;
+    animation: none;
+  }
+}

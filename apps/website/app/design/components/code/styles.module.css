@@ -1,5 +1,5 @@
 .code {
-  padding: 1px var(--ds-space-xs);
+  padding: var(--ds-space-2xs) var(--ds-space-xs);
   font-family: var(--ds-font-mono);
   font-size: 0.9em;
   color: var(--ds-foreground-primary);

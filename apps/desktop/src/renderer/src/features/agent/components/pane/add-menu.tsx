@@ -53,7 +53,7 @@ export function AddMenu({
           aria-busy={busy || undefined}
           disabled={disabled || busy}
         >
-          <IconPlus size={14} strokeWidth={2} />
+          <IconPlus size={14} />
         </Menu.Trigger>
       </Tooltip>
       <Menu.Portal>

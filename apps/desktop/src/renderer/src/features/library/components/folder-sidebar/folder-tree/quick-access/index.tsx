@@ -2,7 +2,10 @@ import { IconFolderSearch, IconGrid, IconWindow } from "@pond/icons";
 import type { Prefs } from "@pond/schema";
 import type { Folder } from "@pond/schema/db";
 import { type MenuItemSpec, Sidebar } from "@pond/ui";
-import { enterFolder } from "@/features/library/operations/enter-folder";
+import {
+  enterAll,
+  enterFolder,
+} from "@/features/library/operations/enter-folder";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { FolderIcon, folderColorCss } from "@/shared/lib/folder-icons";
 import type { LibraryNav } from "@/shared/lib/library-nav";
@@ -16,14 +19,9 @@ import { saveFolderPresentation } from "../../../../state/folder-presentation";
 import { openOrganizationRenameDialog } from "../../../../state/organization-rename-dialog";
 import { saveSavedViewPresentation } from "../../../../state/saved-view-presentation";
 import { savedViews, useSavedViews } from "../../../../state/saved-views";
-import {
-  resetFilters,
-  setQuery,
-  useActiveViewId,
-} from "../../../../state/view-store";
+import { useActiveViewId } from "../../../../state/view-store";
 import { folderIdsForExport } from "../../../folder-context-menu";
 import { buildQuickAccessFolderMenuItems } from "../../folder-row-menu";
-import { selectLibraryNav } from "../../navigation";
 import { Row } from "../../sidebar-row";
 import { quickAccessRows } from "./order";
 
@@ -82,13 +80,11 @@ export function QuickAccess({
       enterFolder(selectedFolders[0].id);
       return;
     }
-    resetFilters();
-    selectLibraryNav({ kind: "all" });
     if (ids.length === 1 && selectedViews[0]) {
       savedViews.select(selectedViews[0].id);
       return;
     }
-    setQuery({
+    enterAll({
       combinator: "or",
       rules: [
         ...selectedViews.map((view) =>
@@ -201,10 +197,7 @@ export function QuickAccess({
                             ? "Group"
                             : "Smart Folder"
                       }`,
-                      onClick: () => {
-                        selectLibraryNav({ kind: "all" });
-                        savedViews.select(view.id);
-                      },
+                      onClick: () => savedViews.select(view.id),
                     },
                     {
                       label: "Remove from Quick Access",

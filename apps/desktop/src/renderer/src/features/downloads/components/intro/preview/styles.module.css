@@ -1,0 +1,54 @@
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-lg);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 14px 80px auto;
+  gap: var(--ds-space-md);
+  align-items: center;
+}
+
+.track {
+  position: relative;
+  width: 44px;
+  height: 4px;
+  overflow: hidden;
+  background: var(--intro-skeleton);
+  border-radius: var(--ds-radius-full);
+}
+
+.fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--intro-faint);
+  border-radius: inherit;
+}
+
+.dialog {
+  position: absolute;
+  top: 82px;
+  left: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+  width: 156px;
+  padding: var(--ds-space-md);
+}
+
+.field {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  padding: var(--ds-space-xs) var(--ds-space-sm);
+  background: var(--ds-background-secondary);
+  border-radius: var(--ds-radius-sm);
+}
+
+.actions {
+  display: flex;
+  gap: var(--ds-space-xs);
+  justify-content: flex-end;
+}

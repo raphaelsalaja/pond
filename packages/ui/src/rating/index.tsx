@@ -78,7 +78,7 @@ export function Rating({
             if (star === value) onValueChange(0);
           }}
         >
-          <IconStar size={size === "sm" ? 12 : 14} />
+          <IconStar size={size === "sm" ? 16 : 14} />
         </Radio.Root>
       ))}
     </RadioGroup>

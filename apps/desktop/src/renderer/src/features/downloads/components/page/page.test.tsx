@@ -582,7 +582,7 @@ it("hides completed downloads by default and shows them on request", async () =>
   });
   await render();
   expect(host.querySelector('[title="Saved clip"]')).toBeNull();
-  expect(host.textContent).toContain("No unfinished downloads");
+  expect(host.textContent).toContain("No Unfinished Downloads");
 
   await clickButton("Show Completed");
   expect(host.querySelector('[title="Saved clip"]')).not.toBeNull();

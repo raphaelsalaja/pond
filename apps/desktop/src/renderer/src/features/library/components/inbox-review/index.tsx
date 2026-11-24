@@ -1,5 +1,5 @@
-import { IconCircleCheck } from "@pond/icons";
-import { Button, Empty, Loader } from "@pond/ui";
+import { IconClock } from "@pond/icons";
+import { Button, Empty, EmptyPreview, Loader } from "@pond/ui";
 import { useEffect } from "react";
 import { ReviewDeck } from "@/features/library/components/inbox-review/deck";
 import { ReviewFinished } from "@/features/library/components/inbox-review/finished";
@@ -14,34 +14,26 @@ import {
   useInboxReviewScope,
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
+import { lastGridHrefOutsideInbox } from "@/features/library/state/last-grid";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
-import { navigationHistory } from "@/features/library/state/navigation-history";
-import { NotificationDetail, useNotification } from "@/features/notifications";
-import { ensureSaves } from "@/features/saves/pool";
 import {
-  restoreLibraryNav,
-  selectLibraryNav,
-} from "../folder-sidebar/navigation";
+  NotificationDetail,
+  ProgressDetail,
+  useInboxProgress,
+  useNotification,
+} from "@/features/notifications";
+import { ensureSaves } from "@/features/saves/pool";
+import { getAppRouter } from "@/shared/lib/app-router";
 import styles from "./styles.module.css";
 
-/** Returns to the last place you were before the Inbox, or All when the Inbox was the first stop. */
 function leaveInbox() {
-  const { entries, index } = navigationHistory.snapshot();
-  for (let at = index - 1; at >= 0; at -= 1) {
-    if (entries[at]?.kind === "inbox") continue;
-    const nav = navigationHistory.jump(at);
-    if (nav) {
-      restoreLibraryNav(nav);
-      return;
-    }
-  }
-  selectLibraryNav({ kind: "all" });
+  getAppRouter()?.history.push(lastGridHrefOutsideInbox());
 }
 
 export function InboxReview() {
   const nav = useLibraryNav();
   const scope: InboxScope | null =
-    nav.kind === "inbox" ? (nav.snoozed ? "snoozed" : "review") : null;
+    nav?.kind === "inbox" ? (nav.snoozed ? "snoozed" : "review") : null;
   const queue = useInboxReview();
   const loaded = useInboxReviewScope();
 
@@ -65,6 +57,7 @@ function InboxPage({
   const navigation = useInboxNavigation();
   const selectedId = useInboxSelection();
   const notification = useNotification(selectedId);
+  const progress = useInboxProgress().find((row) => row.id === selectedId);
   const total = queue?.ids.length ?? 0;
   const position = queue ? Math.min(queue.index + 1, total) : 0;
   const remaining = scope === "snoozed" ? counts.inboxSnoozed : counts.inbox;
@@ -74,10 +67,13 @@ function InboxPage({
     if (ids) void ensureSaves(ids).catch(() => {});
   }, [ids]);
 
-  /** A resolved or deleted notification drops back to the deck instead of a blank pane. */
+  /** A resolved notification or settled work drops back to the deck instead of a blank pane. */
+  const open = notification !== null || progress !== undefined;
   useEffect(() => {
-    if (selectedId && !notification) inboxPicker.select(null);
-  }, [selectedId, notification]);
+    if (selectedId && !open) inboxPicker.select(null);
+  }, [selectedId, open]);
+
+  const close = () => (total > 0 ? inboxPicker.select(null) : leaveInbox());
 
   /** With no Saves to review, the first notification opens rather than an empty state. */
   const autoOpen = queue !== null && total === 0 && !navigation.empty;
@@ -98,9 +94,14 @@ function InboxPage({
           notification={notification}
           onLeave={navigation.leave}
           onStep={navigation.step}
-          onClose={() =>
-            total > 0 ? inboxPicker.select(null) : leaveInbox()
-          }
+          onClose={close}
+        />
+      ) : progress ? (
+        <ProgressDetail
+          key={progress.id}
+          progress={progress}
+          onStep={navigation.step}
+          onClose={close}
         />
       ) : queue === null ? (
         <div className={styles.center}>
@@ -110,12 +111,31 @@ function InboxPage({
         <div className={styles.center}>
           <Empty.Root role="status">
             <Empty.Media>
-              <IconCircleCheck size={14} />
+              {scope === "snoozed" ? (
+                <EmptyPreview.Root>
+                  <EmptyPreview.Row>
+                    <EmptyPreview.Icon>
+                      <IconClock size={12} />
+                    </EmptyPreview.Icon>
+                    <EmptyPreview.Line width={46} />
+                    <EmptyPreview.Space />
+                    <EmptyPreview.Line width={24} tone="mid" />
+                  </EmptyPreview.Row>
+                </EmptyPreview.Root>
+              ) : (
+                <EmptyPreview.Root shape="panel">
+                  <EmptyPreview.Column>
+                    <EmptyPreview.Block />
+                    <EmptyPreview.Line width={52} />
+                    <EmptyPreview.Line width={34} tone="thin" />
+                  </EmptyPreview.Column>
+                </EmptyPreview.Root>
+              )}
             </Empty.Media>
             <Empty.Title>
               {scope === "snoozed"
-                ? "No snoozed saves"
-                : "You're all caught up"}
+                ? "No Snoozed Saves"
+                : "You're All Caught Up"}
             </Empty.Title>
             <Empty.Description>
               {scope === "snoozed"

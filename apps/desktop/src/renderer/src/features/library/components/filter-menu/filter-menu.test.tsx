@@ -1,6 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import type { SavedView } from "@pond/schema/db";
 import type { QueryInput } from "@shared/query-contracts";
+import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -10,7 +11,6 @@ import {
 } from "@/features/library/state/saved-views";
 import {
   getOverlays,
-  getViewState,
   resetFilters,
   setSearchInput,
   setSemanticQuery,
@@ -20,6 +20,7 @@ import {
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import { pagingStore } from "@/features/saves/state/bootstrap";
+import { currentLocation, openLibraryAt } from "@/shared/test/library-router";
 import { FilterBarView, FilterToggleView } from "./";
 import { entryFields, FILTER_MENU, FILTER_SECTIONS } from "./options";
 import { filterToolbar } from "./toolbar-state";
@@ -80,15 +81,17 @@ describe("filter toolbar", () => {
   };
 
   async function render() {
+    const router = await openLibraryAt("/");
     await act(async () =>
       root.render(
-        <>
+        <RouterContextProvider router={router}>
           <FilterToggleView {...data} />
           <FilterBarView {...data} />
           <State />
-        </>,
+        </RouterContextProvider>,
       ),
     );
+    return router;
   }
 
   function state() {
@@ -215,7 +218,7 @@ describe("filter toolbar", () => {
         return PrefsSchema.parse({});
       },
     });
-    await render();
+    const router = await render();
 
     await act(async () => button("Save View").click());
 
@@ -225,7 +228,7 @@ describe("filter toolbar", () => {
     await vi.waitFor(() =>
       expect(host.querySelector("[data-editing]")?.textContent).toBe("view-1"),
     );
-    expect(getViewState().activeViewId).toBe("view-1");
+    expect(currentLocation(router).pathname).toBe("/views/view-1");
     expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 

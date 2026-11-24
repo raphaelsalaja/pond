@@ -1,12 +1,7 @@
 import { Sidebar } from "@pond/ui";
+import { type MouseEvent, Suspense, useEffect, useLayoutEffect } from "react";
 import {
-  type MouseEvent,
-  type ReactNode,
-  Suspense,
-  useEffect,
-  useLayoutEffect,
-} from "react";
-import {
+  CANVASES_PATH,
   CanvasesSection,
   canvases,
   canvasIdFromPath,
@@ -36,8 +31,9 @@ import {
   useEditingSavedViewId,
   useHydrateSavedViews,
 } from "@/features/library/state/saved-views";
+import { useRailOnlySidebar } from "@/features/library/state/shell-layout";
+import { lastGridHref } from "@/features/library/state/last-grid";
 import { useActiveViewId } from "@/features/library/state/view-store";
-import { getLastListPath, getLastListSearch } from "@/features/saves";
 import { SourcesSidebar } from "@/features/sources";
 import { SourceDetailSidebar } from "@/features/sources/components/inspector";
 import {
@@ -51,10 +47,6 @@ import {
   lazyWithPreload,
   preloadWhenIdle,
 } from "@/shared/lib/lazy-with-preload";
-import {
-  activeLibraryDestination,
-  pathForLibraryNav,
-} from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { LibraryDestinations } from "./destinations";
 import { FolderTree } from "./folder-tree";
@@ -85,6 +77,8 @@ type RoutePanel = Extract<
   "inbox" | "downloads" | "sources" | "tags"
 >;
 
+const SOURCES_NAV: LibraryNav = { kind: "sources" };
+
 const lastOpened: { canvases: string | null; fish: string | null } = {
   canvases: null,
   fish: null,
@@ -110,7 +104,7 @@ function routePanel(destination: LibraryNav | null): RoutePanel | null {
   }
 }
 
-export function FolderSidebar({ footer }: { footer?: ReactNode }) {
+export function FolderSidebar() {
   const nav = useLibraryNav();
   const activeViewId = useActiveViewId();
   const pathname = useRouteLocation((location) => location.pathname);
@@ -119,14 +113,16 @@ export function FolderSidebar({ footer }: { footer?: ReactNode }) {
   );
   const folderRows = useFolders();
   const activeCanvasId = canvasIdFromPath(pathname);
+  const canvasIntro = pathname === CANVASES_PATH;
   const activeFishId = fishIdFromPath(pathname);
+  const railOnly = useRailOnlySidebar();
   const sourceDetail = parseSourceDetailPath(pathname, detailPage);
   const settings = pathname.startsWith("/settings");
   const destination: LibraryNav | null = settings
     ? null
     : sourceDetail
-      ? { kind: "sources" }
-      : activeLibraryDestination(pathname, nav);
+      ? SOURCES_NAV
+      : nav;
   useEffect(() => preloadWhenIdle(SettingsSidebar.preload), []);
   const editingFish = useFishEditingId();
   const editingCanvas = useCanvasEditingId();
@@ -151,7 +147,7 @@ export function FolderSidebar({ footer }: { footer?: ReactNode }) {
     if (editingCanvas) return "canvases";
     if (editingView || editingFolder) return "library";
     if (activeFishId) return "fish";
-    if (activeCanvasId) return "canvases";
+    if (activeCanvasId || canvasIntro) return "canvases";
     return route;
   }
 
@@ -178,24 +174,26 @@ export function FolderSidebar({ footer }: { footer?: ReactNode }) {
     if (activeFishId) lastOpened.fish = activeFishId;
   }, [activeCanvasId, activeFishId]);
 
+  function backToLibrary() {
+    getAppRouter()?.history.push(lastGridHref());
+  }
+
   function pickSection(next: RailSection) {
     libraryChrome.setSidebarPanel(next);
     if (next === "canvases") {
-      if (activeCanvasId) return;
+      if (activeCanvasId || canvasIntro) return;
       const id = openable(canvases.snapshot(), lastOpened.canvases);
       if (id) canvases.open(id);
+      else getAppRouter()?.history.push(CANVASES_PATH);
     } else if (next === "fish") {
       if (activeFishId) return;
       const id = openable(fish.snapshot(), lastOpened.fish);
       if (id) fish.open(id);
+      else if (canvasIntro) backToLibrary();
     } else if (railPage) {
       selectLibraryNav({ kind: "all" });
-    } else if (activeCanvasId || activeFishId) {
-      getAppRouter()?.history.push(
-        pathForLibraryNav(isRailPage(nav.kind) ? { kind: "all" } : nav),
-      );
-    } else if (settings) {
-      getAppRouter()?.history.push(`${getLastListPath()}${getLastListSearch()}`);
+    } else if (activeCanvasId || activeFishId || canvasIntro || settings) {
+      backToLibrary();
     }
   }
 
@@ -223,15 +221,8 @@ export function FolderSidebar({ footer }: { footer?: ReactNode }) {
             activeViewId={activeViewId}
             destination={destination}
           />
-          <SmartFoldersSection
-            active={destination?.kind === "all"}
-            onSelect={() => selectLibraryNav({ kind: "all" })}
-          />
-          <FolderTree
-            destination={destination}
-            folderRows={folderRows}
-            nav={nav}
-          />
+          <SmartFoldersSection active={destination?.kind === "all"} />
+          <FolderTree destination={destination} folderRows={folderRows} />
         </>
       ) : null}
       {panel === "fish" ? <FishSection activeId={activeFishId} /> : null}
@@ -263,7 +254,7 @@ export function FolderSidebar({ footer }: { footer?: ReactNode }) {
         sections={visible}
         onSectionChange={pickSection}
       />
-      <div className={styles.panel}>
+      <div className={styles.panel} data-hidden={railOnly || undefined}>
         {panel === "library" ? (
           <SidebarMenu>
             <div className={styles.background}>{scroll}</div>
@@ -271,7 +262,6 @@ export function FolderSidebar({ footer }: { footer?: ReactNode }) {
         ) : (
           scroll
         )}
-        <div className={styles.footer}>{footer}</div>
       </div>
     </Sidebar.Root>
   );

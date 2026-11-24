@@ -1,35 +1,35 @@
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
-import {
-  getLastListPath,
-  rememberListPath,
-} from "@/features/saves/lib/list-path";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { useRouteLocation } from "@/shared/hooks/use-route-location";
+import { latestSearch, writeSearch } from "@/shared/lib/route-search";
 
-export function saveIdFromPath(pathname: string): string | null {
-  const m = pathname.match(/^\/save\/([^/]+)\/?$/);
-  if (!m?.[1]) return null;
-  try {
-    return decodeURIComponent(m[1]);
-  } catch {
-    return m[1];
-  }
+/** Numeric ids arrive JSON-parsed from hand-written links. */
+export function saveIdFromSearch(search: Record<string, unknown>): string | null {
+  const value = search.save;
+  if (typeof value === "string" && value) return value;
+  if (typeof value === "number") return String(value);
+  return null;
 }
 
+/** The Save open over the current route, read from the committed location. */
+export function useOpenSaveId(): string | null {
+  return useRouteLocation((location) => saveIdFromSearch(location.search));
+}
+
+export function openSaveId(): string | null {
+  return saveIdFromSearch(latestSearch());
+}
+
+/** Opens over the current route, so closing returns to exactly what was behind it. */
 export function openSave(
   id: string,
   options: { replace?: boolean } = {},
 ): void {
-  const path = `/save/${encodeURIComponent(id)}`;
   primarySelection.set(id);
   selection.setCursor(id);
-  const router = getAppRouter();
-  if (!router) return;
-  const { pathname, searchStr } = router.state.location;
-  rememberListPath(pathname, searchStr);
-  if (options.replace) router.history.replace(path);
-  else router.history.push(path);
+  const replace = options.replace ?? openSaveId() !== null;
+  writeSearch({ save: id }, { replace });
 }
 
 /** Moves on when the open Save leaves its results, so a move or trash keeps the preview going. */
@@ -53,12 +53,10 @@ export function stepSave(id: string, delta: number): void {
 
 export function closeSave(): void {
   primarySelection.set(selection.getCursor());
-  getAppRouter()?.history.push(getLastListPath());
+  writeSearch({ save: undefined });
 }
 
-export function syncPrimaryFromPath(pathname: string): void {
-  const id = saveIdFromPath(pathname);
-  const primary = id ?? selection.getCursor();
+export function syncPrimaryFromSearch(search: Record<string, unknown>): void {
+  const primary = saveIdFromSearch(search) ?? selection.getCursor();
   if (primarySelection.get() !== primary) primarySelection.set(primary);
-  rememberListPath(pathname);
 }

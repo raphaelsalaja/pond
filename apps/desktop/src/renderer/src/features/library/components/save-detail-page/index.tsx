@@ -1,5 +1,4 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
-import { useParams } from "@tanstack/react-router";
 import {
   type RefObject,
   useCallback,
@@ -57,8 +56,7 @@ interface DetailHotkey {
   run: () => void;
 }
 
-export function SaveDetailPage() {
-  const { id } = useParams({ from: "/_library/save/$id" });
+export function SaveDetailPage({ id }: { id: string }) {
   const save = useSave(id);
   const shortcuts = useShortcutBindings();
   useTrackVisit(id);

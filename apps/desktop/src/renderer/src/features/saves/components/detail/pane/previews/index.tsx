@@ -1,3 +1,4 @@
+import { IconEyeSlash } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { typeLabelForPath } from "@shared/file-format";
 import {
@@ -25,6 +26,7 @@ import {
   pickCardUnit,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
+import { shouldBlurSensitiveThumbnail } from "@/features/saves/lib/sensitive-content";
 import {
   aspectDimsFor,
   aspectFor,
@@ -32,6 +34,7 @@ import {
 } from "@/features/saves/state/aspect";
 import { openThumbnailViewer } from "@/features/saves/state/thumbnail-viewer";
 import type { Save } from "@/features/saves/types";
+import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
 function inspectorFormat(save: Save): string {
@@ -52,7 +55,7 @@ function entries(saves: readonly Save[]) {
   return (withImages.length > 0 ? withImages : next).slice(0, 4);
 }
 
-interface Card {
+export interface Card {
   key: string;
   url: string;
   aspect: number;
@@ -61,7 +64,7 @@ interface Card {
 /** Cards kept mounted after the top card, so the next ones slide in instead of popping. */
 const STACK_DEPTH = 3;
 
-function stackCards(save: Save): Card[] {
+export function stackCards(save: Save): Card[] {
   return buildOriginalMediaUnits(save).flatMap((unit) => {
     const url = detailsPreviewUrl(unit);
     if (!url) return [];
@@ -89,6 +92,11 @@ function Preview({
   caption?: boolean;
   viewable?: boolean;
 }) {
+  const [ai] = usePrefs("ai");
+  const sensitive = shouldBlurSensitiveThumbnail(
+    ai.enableSensitiveContent && ai.blurSensitiveThumbnails,
+    save.sensitiveScore,
+  );
   const [failed, setFailed] = useState<string | null>(null);
   const [measured, setMeasured] = useState<{
     url: string;
@@ -120,7 +128,12 @@ function Preview({
       />
     ) : null;
   return (
-    <figure className={styles.preview} data-slot={slot} style={style}>
+    <figure
+      className={styles.preview}
+      data-slot={slot}
+      data-sensitive={sensitive || undefined}
+      style={style}
+    >
       {!img ? (
         <span className={styles.placeholder}>{save.title || "No preview"}</span>
       ) : viewable && cardThumbnailUrl(save) !== null ? (
@@ -136,6 +149,11 @@ function Preview({
       ) : (
         img
       )}
+      {sensitive && url && failed !== url ? (
+        <span className={styles.sensitive} aria-hidden>
+          <IconEyeSlash size={12} />
+        </span>
+      ) : null}
       {caption ? <figcaption>{inspectorFormat(save)}</figcaption> : null}
     </figure>
   );
@@ -202,14 +220,18 @@ function Layer({
 export function SavePreviews({
   saves,
   fileIndex = null,
+  activeKey = null,
 }: {
   saves: readonly Save[];
   fileIndex?: number | null;
+  /** A stack card to show on top when the viewer isn't driving `fileIndex`. */
+  activeKey?: string | null;
 }) {
   const single = saves.length === 1 ? saves[0] : undefined;
   const url = single ? detailsPreviewUrl(pickCardUnit(single)) : null;
   const activePath =
-    fileIndex === null ? null : (single?.files[fileIndex]?.path ?? null);
+    activeKey ??
+    (fileIndex === null ? null : (single?.files[fileIndex]?.path ?? null));
   const target = useMemo<StageEntry<Entry> | null>(() => {
     if (!single) return null;
     const stack = stackCards(single);

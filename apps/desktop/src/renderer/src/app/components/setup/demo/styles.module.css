@@ -143,7 +143,7 @@
   width: 180px;
   height: 135px;
   outline: 2px solid var(--ds-accent);
-  outline-offset: 5px;
+  outline-offset: 6px;
   border-radius: var(--ds-radius-xs);
   transition:
     top var(--move),

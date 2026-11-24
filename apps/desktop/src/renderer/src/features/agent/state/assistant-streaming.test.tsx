@@ -3,7 +3,8 @@ import type { AgentStreamRequest, AssistantMessage } from "@shared/assistant";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
-import { libraryChrome } from "../../library/state/library-chrome";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import { openLibraryAt } from "@/shared/test/library-router";
 import { selection } from "../../saves/state/selection";
 import { assistant, useAssistant } from "./assistant";
 import {
@@ -233,15 +234,19 @@ it("streams normal submissions without inferring context from selection pronouns
   });
   const harness = createAssistantHarness(() => null);
   let pending = Promise.resolve();
+  const router = await openLibraryAt(
+    pathForLibraryNav({ kind: "folder", id: "original-folder" }),
+  );
   await harness.mount();
   try {
     await act(async () => {
       assistant.newChat();
       assistant.setDraft("Summarize these selected Saves");
       selection.set(["invisible-selection"]);
-      libraryChrome.setNav({ kind: "folder", id: "original-folder" });
       pending = assistant.send("openai");
-      libraryChrome.setNav({ kind: "folder", id: "later-folder" });
+      await router.navigate({
+        href: pathForLibraryNav({ kind: "folder", id: "later-folder" }),
+      });
       created.resolve({ id: "snapshot-created" });
       await pending;
     });
@@ -258,7 +263,6 @@ it("streams normal submissions without inferring context from selection pronouns
     created.resolve({ id: "snapshot-created" });
     await harness.unmount(async () => pending);
     selection.clear();
-    libraryChrome.setNav({ kind: "all" });
     vi.unstubAllGlobals();
   }
 });

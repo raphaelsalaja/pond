@@ -3,13 +3,12 @@ import {
   useFolderMemberships,
   useFolders,
 } from "@/features/library/state/folders";
-import { saveIdFromPath } from "@/features/saves/lib/save-nav";
+import { useOpenSaveId } from "@/features/saves/lib/save-nav";
 import {
   usePrimarySelection,
   useSelectedIds,
   useSelectionCursor,
 } from "@/features/saves/state/selection";
-import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { usePrefs } from "@/shared/state/prefs";
 
 const SaveInspector = lazy(async () => {
@@ -22,7 +21,7 @@ const EmptySaveInspector = lazy(async () => {
   return { default: module.EmptySaveInspector };
 });
 
-/** The open Save route stays singular; the library inspector follows the current selection. */
+/** The open Save stays singular; the library inspector follows the current selection. */
 export function inspectorSaveIds(input: {
   routeId: string | null;
   selected: readonly string[];
@@ -37,9 +36,7 @@ export function inspectorSaveIds(input: {
 }
 
 function useInspectorSaveIds(): string[] {
-  const routeId = useRouteLocation((location) =>
-    saveIdFromPath(location.pathname),
-  );
+  const routeId = useOpenSaveId();
   const selected = useSelectedIds();
   const primary = usePrimarySelection();
   const cursor = useSelectionCursor();

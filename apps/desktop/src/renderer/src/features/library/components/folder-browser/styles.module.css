@@ -77,7 +77,7 @@
   aspect-ratio: 1;
   padding: var(--ds-space-md);
   overflow: hidden;
-  background: var(--ds-surface-secondary);
+  background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-xl);
 }
 
@@ -109,7 +109,7 @@
 }
 
 .trigger:hover .cover {
-  background: var(--ds-surface-tertiary);
+  background: var(--ds-surface-secondary);
 }
 
 .selection {
@@ -123,5 +123,5 @@
 
 .trigger[aria-selected="true"] .cover {
   outline: 1px solid var(--ds-border-strong);
-  background: var(--ds-surface-tertiary);
+  background: var(--ds-surface-secondary);
 }

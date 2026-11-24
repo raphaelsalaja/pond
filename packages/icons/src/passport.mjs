@@ -4,14 +4,8 @@ const cover = ({ rect }, s) => {
 };
 
 export default (h, s) => {
-  const r = 3;
-  const [cx, cy] = [9, 7.875];
-  return [
-    cover(h, s),
-    h.circle(cx, cy, r),
-    `M ${cx - r} ${cy} H ${cx + r}`,
-    "M 7.25 12.875 H 10.75",
-  ];
+  const [cx, cy, r] = [9, 7.625, 2.5];
+  return [cover(h, s), h.circle(cx, cy, r), `M ${cx - r} ${cy} H ${cx + r}`, "M 7.25 12.625 H 10.75"];
 };
 
 /** Open, the photo page shows. */

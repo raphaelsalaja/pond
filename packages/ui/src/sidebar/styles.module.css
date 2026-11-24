@@ -2,6 +2,9 @@
   --sidebar-height-lg: 32px;
   --sidebar-height-md: 28px;
   --sidebar-text: 13px;
+  /* Rows sit flush; each fill gives up half the 2px seam between neighbors. */
+  --sidebar-fill-inset: calc(var(--ds-space-2xs) / 2);
+  --hover-highlight-inset: var(--sidebar-fill-inset);
 
   display: flex;
   flex-direction: column;
@@ -32,10 +35,11 @@
 }
 
 .scroll {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 1px;
   min-height: 0;
   padding-bottom: var(--ds-space-2xl);
   overflow-y: auto;
@@ -44,13 +48,15 @@
 .clamp {
   flex: none;
   height: 0;
-  /* Cancels the scroll's 1px gap, so the spacer adds no height at rest. */
-  margin-top: -1px;
   pointer-events: none;
   transition: height var(--ds-duration-medium) var(--ds-easing-snap);
 }
 
 .result {
+  --sidebar-fill: transparent;
+
+  position: relative;
+  isolation: isolate;
   display: block;
   max-width: calc(100% - 24px);
   padding: var(--ds-space-sm) var(--ds-space-sm) var(--ds-space-sm) 30px;
@@ -60,12 +66,10 @@
   color: var(--ds-foreground-secondary);
   white-space: nowrap;
   text-decoration: none;
-
   border-radius: var(--ds-radius-md);
 
   &:hover {
     color: var(--ds-foreground-primary);
-    background: var(--ds-background-secondary);
   }
 }
 
@@ -84,7 +88,6 @@
 
   display: flex;
   flex-direction: column;
-  gap: 1px;
   align-items: flex-start;
   align-self: stretch;
   padding-top: var(--ds-space-xl);
@@ -96,7 +99,7 @@
   margin-left: var(--ds-space-xs);
   opacity: 0;
   transition:
-    transform var(--ds-duration-bounce) var(--ds-easing-bounce),
+    transform var(--ds-duration-medium) var(--ds-easing-snap),
     opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
@@ -108,7 +111,7 @@
   height: var(--sidebar-height-md);
   padding: 0 var(--ds-space-md);
   font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-regular);
   color: var(--ds-foreground-tertiary);
   border-radius: var(--ds-radius-md);
 
@@ -123,6 +126,10 @@
 }
 
 button.label {
+  --sidebar-fill: transparent;
+
+  position: relative;
+  isolation: isolate;
   width: max-content;
   max-width: 100%;
   height: auto;
@@ -132,7 +139,23 @@ button.label {
 }
 
 button.label:hover {
-  background: var(--ds-surface-secondary);
+  --sidebar-fill: var(--ds-surface-primary);
+  color: var(--ds-foreground-primary);
+}
+
+:is(.result, button.label, .item)::before {
+  position: absolute;
+  inset: var(--sidebar-fill-inset) 0;
+  z-index: -1;
+  content: "";
+  background: var(--sidebar-fill);
+  border-radius: inherit;
+  transition: background var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+/* Inside a scroll region the shared highlight draws row hover instead. */
+:is(.result, .item):hover:where(:not(.scroll *)) {
+  --sidebar-fill: var(--ds-surface-primary);
 }
 
 .heading {
@@ -179,12 +202,15 @@ button.label:hover {
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 1px;
   width: 100%;
   overflow: visible;
 }
 
 .item {
+  --sidebar-fill: transparent;
+
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   width: 100%;
@@ -193,25 +219,22 @@ button.label:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--sidebar-text);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-regular);
   color: var(--ds-foreground-tertiary);
   white-space: nowrap;
   border-radius: var(--ds-radius-md);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
+  transition: color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
-    color: var(--ds-foreground-secondary);
-    background: var(--ds-surface-primary);
+    color: var(--ds-foreground-primary);
   }
 
   &[data-pressed],
   &[data-status="active"],
   &[data-popup-open],
   &[aria-selected="true"] {
+    --sidebar-fill: var(--ds-surface-secondary);
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-secondary);
   }
 
   &[data-empty] {
@@ -272,14 +295,14 @@ button.label:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--sidebar-text);
-  font-weight: 500;
+  font-weight: var(--ds-weight-medium);
 }
 
 .stack {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 
@@ -306,18 +329,18 @@ button.label:hover {
   color: var(--ds-foreground-secondary);
   border-radius: var(--ds-radius-lg);
   transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   &[data-status="active"],
   &[data-popup-open] {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-surface-secondary);
   }
 
   .icon {
@@ -351,8 +374,8 @@ button.label:hover {
   flex: none;
   margin-right: var(--ds-space-xs);
   margin-left: auto;
-  font-size: var(--ds-text-micro);
-  font-weight: var(--ds-weight-medium);
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-regular);
   font-variant-numeric: tabular-nums;
   color: var(--ds-foreground-tertiary);
 }
@@ -372,7 +395,6 @@ button.label:hover {
 
   display: flex;
   flex-direction: column;
-  gap: 1px;
   width: 100%;
 }
 
@@ -381,8 +403,8 @@ button.label:hover {
 
   &[data-selected],
   &[data-current] {
+    --sidebar-fill: var(--ds-surface-secondary);
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-secondary);
   }
 
   &[data-disabled] {
@@ -393,7 +415,6 @@ button.label:hover {
 .node {
   display: flex;
   flex-direction: column;
-  gap: 1px;
   width: 100%;
 
   /* Focus sits on the item, which wraps its children, so its row draws the ring. */
@@ -435,7 +456,6 @@ button.label:hover {
 .subtree {
   display: flex;
   flex-direction: column;
-  gap: 1px;
   height: var(--tree-group-height);
   overflow: hidden;
   transition: height var(--ds-duration-medium) var(--ds-easing-standard);

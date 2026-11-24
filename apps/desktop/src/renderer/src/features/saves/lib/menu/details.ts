@@ -59,7 +59,7 @@ function buildThumbnailBackgroundItems(): MenuItemSpec[] {
         width: 14,
         height: 14,
         border: "1px solid currentColor",
-        borderRadius: 3,
+        borderRadius: 4,
         background:
           value === "grid"
             ? "conic-gradient(#b6b6b6 25%, #fff 0 50%, #b6b6b6 0 75%, #fff 0) 0 0 / 6px 6px"
@@ -179,8 +179,7 @@ export function buildDetailItems({
         icon: glyph(IconGroup),
         hidden: !post,
         onClick: () => {
-          if (post)
-            saveLibraryBridge.showPost({ key: post, title: save.title ?? "" });
+          if (post) saveLibraryBridge.showPost(post);
         },
       },
     ],

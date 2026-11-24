@@ -31,7 +31,7 @@ Measured from the 60 icons on `0 0 18 18` in `packages/icons/src`: `Archive`, `A
 | A corner's radius fits its part | Must | Star, Tag |
 | Dots are solid, never rings | Must | Eye, Tag |
 | Containers are circles before squares | Should | Circle Check, Clock |
-| The magnifier's handle is heavier and clear of the lens | Should | Magnifier, the only handle in the seed |
+| The magnifier's handle is an even line that touches the lens | Should | Magnifier, the only handle in the seed |
 | Outward arrows point up and right, slashes cut top left to bottom right | Must | Arrow Up Right, Ban |
 | Never busy: one idea, the fewest parts that read | Must | Gear, Folder Plus |
 | No icon takes more attention than its label | Standard | Folder, User |

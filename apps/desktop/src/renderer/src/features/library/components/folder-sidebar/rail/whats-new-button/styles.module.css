@@ -1,0 +1,47 @@
+.button {
+  position: relative;
+}
+
+/* Masks outside the twinkle so the hole stays under the dot while the sparkle turns. */
+.cutout {
+  display: flex;
+  mask-image: radial-gradient(circle at 17px 1px, transparent 4.5px, black 5px);
+}
+
+/* Animates a wrapper, since SVG transforms skip hardware acceleration. */
+.icon {
+  display: flex;
+  animation: twinkle 3600ms cubic-bezier(0.77, 0, 0.175, 1) infinite;
+}
+
+.dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+
+@keyframes twinkle {
+  0%,
+  80%,
+  100% {
+    transform: none;
+  }
+
+  87% {
+    transform: scale(1.18) rotate(18deg);
+  }
+
+  93% {
+    transform: scale(0.96) rotate(-6deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon {
+    animation: none;
+  }
+}
+
+:global(html[data-reduce-motion="true"]) .icon {
+  animation: none;
+}

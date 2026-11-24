@@ -72,6 +72,41 @@
     flex: none;
     min-height: 0;
   }
+
+  &[data-variant="dashed"] {
+    --empty-padding-block-start: var(--ds-space-2xl);
+    --empty-padding-block-end: var(--ds-space-2xl);
+    --empty-description-color: color-mix(
+      in srgb,
+      var(--ds-foreground-tertiary) 60%,
+      transparent
+    );
+
+    position: relative;
+    max-width: none;
+  }
+}
+
+/* An SVG stroke, because a CSS dashed border can't set the dash length. */
+.frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+
+  & rect {
+    x: 0.5px;
+    y: 0.5px;
+    width: calc(100% - 1px);
+    height: calc(100% - 1px);
+    rx: calc(var(--ds-radius-xl) - 0.5px);
+    fill: none;
+    stroke: var(--ds-border-strong);
+    stroke-width: var(--ds-border-width);
+    stroke-dasharray: 6 6;
+  }
 }
 
 .media {
@@ -134,7 +169,7 @@
   font-weight: var(--empty-description-weight);
   line-height: var(--empty-description-leading);
   color: var(--empty-description-color);
-  text-wrap: pretty;
+  text-wrap: balance;
 }
 
 .action {

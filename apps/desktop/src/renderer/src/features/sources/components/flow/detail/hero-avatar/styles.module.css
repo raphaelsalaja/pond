@@ -32,8 +32,8 @@
 /* The ring is padding, not an outline, so the shadow falls outside it. */
 .badge {
   position: absolute;
-  right: -5px;
-  bottom: -5px;
+  right: calc(-1 * var(--ds-space-xs));
+  bottom: calc(-1 * var(--ds-space-xs));
   box-sizing: border-box;
   padding: var(--ds-space-2xs);
   overflow: hidden;

@@ -10,6 +10,7 @@ interface UpdaterListeners {
   notAvailable?: () => void;
   error?: (error: Error) => void;
   downloaded?: (version: string) => void;
+  progress?: (percent: number) => void;
 }
 
 function setup() {
@@ -32,6 +33,9 @@ function setup() {
     },
     onDownloaded: (listener) => {
       listeners.downloaded = listener;
+    },
+    onProgress: (listener) => {
+      listeners.progress = listener;
     },
     check: vi.fn().mockResolvedValue({ version: "2.0.0" }),
     download: vi.fn().mockResolvedValue(undefined),
@@ -103,6 +107,55 @@ describe("updater coordinator", () => {
     expect(coordinator.currentNotice()).toEqual({
       phase: "downloaded",
       version: "1.2.0",
+    });
+  });
+
+  it("publishes download progress in whole-percent steps", async () => {
+    const { coordinator, dependencies, listeners } = setup();
+    await coordinator.start();
+    listeners.available?.("1.2.0");
+    vi.mocked(dependencies.publish).mockClear();
+
+    listeners.progress?.(41.2);
+    listeners.progress?.(41.9);
+    listeners.progress?.(42.1);
+
+    expect(dependencies.publish).toHaveBeenCalledTimes(2);
+    expect(coordinator.currentNotice()).toEqual({
+      phase: "available",
+      version: "1.2.0",
+      downloading: true,
+      progress: 0.42,
+    });
+  });
+
+  it("marks a requested download as running until it fails", async () => {
+    const { coordinator, dependencies, listeners, updater } = setup();
+    await coordinator.start();
+    listeners.available?.("1.2.0");
+    let fail = (_error: Error): void => {};
+    vi.mocked(updater.download).mockImplementationOnce(
+      () =>
+        new Promise<void>((_resolve, reject) => {
+          fail = reject;
+        }),
+    );
+
+    const pending = coordinator.download();
+    await vi.waitFor(() =>
+      expect(coordinator.currentNotice()).toEqual({
+        phase: "available",
+        version: "1.2.0",
+        downloading: true,
+      }),
+    );
+
+    fail(new Error("offline"));
+    await expect(pending).resolves.toEqual({ ok: false, error: "offline" });
+    expect(dependencies.publish).toHaveBeenLastCalledWith({
+      phase: "available",
+      version: "1.2.0",
+      downloading: false,
     });
   });
 

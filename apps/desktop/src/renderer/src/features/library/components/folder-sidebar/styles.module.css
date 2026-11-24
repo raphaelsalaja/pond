@@ -1,5 +1,5 @@
 .root {
-  --folder-indent: 21px;
+  --folder-indent: 20px;
 
   flex-direction: row;
   overflow: hidden;
@@ -13,9 +13,11 @@
   background: var(--ds-background-primary);
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);
   border-left: var(--ds-border-width) solid var(--ds-border-subtle);
-  /* The window's column divider sits under this surface, so the panel draws its own. */
-  border-right: var(--ds-border-width) solid var(--ds-border-subtle);
   border-top-left-radius: var(--ds-radius-xl);
+
+  &[data-hidden] {
+    display: none;
+  }
 }
 
 .background {
@@ -50,8 +52,7 @@
     flex: none;
     box-sizing: border-box;
     width: calc(100% + var(--ds-space-md) * 2);
-    /* Same height as the toolbar and the Sources table header, so pane borders run as one line. */
-    height: 44px;
+    height: var(--window-header-height, 44px);
     padding-inline: var(--ds-space-md);
     margin-inline: calc(var(--ds-space-md) * -1);
     margin-bottom: var(--ds-space-md);
@@ -63,14 +64,5 @@
       font-size: var(--ds-text-body);
       color: var(--ds-foreground-primary);
     }
-  }
-}
-
-.footer {
-  flex: none;
-  padding: 0 var(--ds-space-md) var(--ds-space-md);
-
-  &:empty {
-    display: none;
   }
 }

@@ -1,4 +1,5 @@
 export { NotificationDetail } from "./components/detail";
+export { ProgressDetail } from "./components/detail/progress";
 export { NotificationBridge } from "./components/notification-bridge";
 export {
   NotificationIcon,

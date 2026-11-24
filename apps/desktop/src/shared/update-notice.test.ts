@@ -15,6 +15,14 @@ describe("UpdateNoticeSchema", () => {
       downloading: true,
     });
     expect(
+      UpdateNoticeSchema.parse({
+        phase: "available",
+        version: "1.0.2",
+        downloading: true,
+        progress: 0.5,
+      }),
+    ).toMatchObject({ progress: 0.5 });
+    expect(
       UpdateNoticeSchema.parse({ phase: "downloaded", version: "1.0.2" }),
     ).toEqual({ phase: "downloaded", version: "1.0.2" });
   });
@@ -28,6 +36,14 @@ describe("UpdateNoticeSchema", () => {
         phase: "downloaded",
         version: "1.0.2",
         downloading: true,
+      }),
+    ).toThrow();
+    expect(() =>
+      UpdateNoticeSchema.parse({
+        phase: "available",
+        version: "1.0.2",
+        downloading: true,
+        progress: 1.5,
       }),
     ).toThrow();
   });

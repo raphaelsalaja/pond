@@ -1,0 +1,38 @@
+.body {
+  position: relative;
+  flex-direction: column;
+  min-height: 0;
+  timeline-scope: --library-grid;
+}
+
+.main {
+  min-height: 0;
+  padding-block: var(--ds-space-xl) var(--ds-space-2xl);
+  padding-inline: var(--ds-space-2xl);
+  scroll-timeline: --library-grid block;
+}
+
+/* The divider shows only once rows scroll under the chrome, so the resting grid has no edge. */
+.chrome {
+  position: relative;
+
+  &::after {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 1px;
+    pointer-events: none;
+    content: "";
+    background: var(--ds-surface-tertiary);
+    opacity: 0;
+    animation: divider-show linear both;
+    animation-timeline: --library-grid;
+    animation-range: 0 24px;
+  }
+}
+
+@keyframes divider-show {
+  to {
+    opacity: 1;
+  }
+}

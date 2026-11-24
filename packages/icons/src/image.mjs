@@ -16,30 +16,19 @@ export default (h, s) => {
   ];
 };
 
-/** The picture lifts out of its frame; the frame drops to an open tray below it. */
+/** In the same frame, the mountain grows and the sun rises. */
 export const open = (h, s) => {
-  const [x0, , x1, y1] = s.keylines.wide;
-  const [top, base] = [2.375, 12.25];
-  const [l, r] = [5.25, 12.75];
+  const [x0, y0, x1, y1] = s.keylines.wide;
   return [
+    h.rect(x0, y0, x1 - x0, y1 - y0, s.box),
     h.poly(
       [
-        [x0, 8.5],
-        [x0, y1],
-        [x1, y1],
-        [x1, 8.5],
-      ],
-      { corners: { 1: s.box, 2: s.box } },
-    ),
-    h.rect(l, top, r - l, base - top, s.box),
-    h.poly(
-      [
-        [l, 10.25],
-        [7.5, 8],
-        [11.75, base],
+        [x0, 10.5],
+        [6.625, 6.5],
+        [13.625, y1],
       ],
       { radius: s.ease },
     ),
-    dot(h, s, 9.75, 5.5),
+    dot(h, s, 12.25, 6.5),
   ];
 };

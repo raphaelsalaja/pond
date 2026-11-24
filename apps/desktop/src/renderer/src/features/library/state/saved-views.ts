@@ -10,15 +10,15 @@ import {
   inheritedQueryFor,
 } from "@/features/library/lib/smart-folders";
 import { folders } from "@/features/library/state/folders";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import { getLibraryNav } from "@/features/library/state/library-chrome";
 import {
-  applySavedView,
+  currentSort,
   getViewState,
-  resetFilters,
   setInheritedQuery,
 } from "@/features/library/state/view-store";
 import { descendantFolderIds } from "@/features/saves";
-import { inboxScope } from "@/shared/lib/library-nav";
+import { getAppRouter } from "@/shared/lib/app-router";
+import { inboxScope, savedViewPath } from "@/shared/lib/library-nav";
 
 export type SavedViewEditorRequest =
   | {
@@ -50,9 +50,9 @@ const store = new Store<SavedViewsState>({
 
 function currentQuery(): Query {
   const { query, inheritedQuery, includeSubfolders } = getViewState();
-  const { nav } = libraryChrome.getState();
+  const nav = getLibraryNav();
   let scope = EMPTY_QUERY;
-  if (nav.kind === "folder") {
+  if (nav?.kind === "folder") {
     scope = {
       combinator: "and",
       rules: [
@@ -65,22 +65,22 @@ function currentQuery(): Query {
         },
       ],
     };
-  } else if (nav.kind === "tag") {
+  } else if (nav?.kind === "tag") {
     scope = {
       combinator: "and",
       rules: [{ field: "tags", operator: "some", value: [nav.name] }],
     };
-  } else if (nav.kind === "inbox") {
+  } else if (nav?.kind === "inbox") {
     scope = {
       combinator: "and",
       rules: [{ field: "inbox", operator: "eq", value: inboxScope(nav) }],
     };
-  } else if (nav.kind === "uncategorized") {
+  } else if (nav?.kind === "uncategorized") {
     scope = {
       combinator: "and",
       rules: [{ field: "folder", operator: "empty", value: null }],
     };
-  } else if (nav.kind === "post") {
+  } else if (nav?.kind === "post") {
     scope = { combinator: "and", rules: [splitPostPredicate(nav.key)] };
   }
   return combineQueries([inheritedQuery, query, scope]);
@@ -138,16 +138,19 @@ export const savedViews = {
     const { activeViewId } = getViewState();
     if (!activeViewId) return;
     const active = store.state.views.find((view) => view.id === activeViewId);
-    if (!active) resetFilters();
+    if (!active) getAppRouter()?.history.replace("/");
     else setInheritedQuery(inheritedQueryFor(active, store.state.views));
   },
-  select(id: string): void {
-    const view = store.state.views.find((entry) => entry.id === id);
-    if (!view) throw new Error("This smart folder item no longer exists.");
-    applySavedView({
-      ...view,
-      inheritedQuery: inheritedQueryFor(view, store.state.views),
-    });
+  loaded(): boolean {
+    return store.state.loaded;
+  },
+  select(id: string, options: { replace?: boolean } = {}): void {
+    if (!store.state.views.some((entry) => entry.id === id))
+      throw new Error("This smart folder item no longer exists.");
+    const router = getAppRouter();
+    if (!router) return;
+    if (options.replace) router.history.replace(savedViewPath(id));
+    else router.history.push(savedViewPath(id));
   },
   async create(input: {
     kind: SavedView["kind"];
@@ -155,7 +158,8 @@ export const savedViews = {
     name: string;
     query?: Query;
   }): Promise<SavedView> {
-    const { sortKey, sortDir, layout } = getViewState();
+    const { layout } = getViewState();
+    const { key: sortKey, dir: sortDir } = currentSort();
     const payload: QueryInput<"savedViews.create"> = {
       ...input,
       query: input.query ?? (input.parentId ? EMPTY_QUERY : currentQuery()),
@@ -184,8 +188,9 @@ export const savedViews = {
       query: state.query,
     };
     if (view.kind === "saved_view") {
-      patch.sortKey = state.sortKey;
-      patch.sortDir = state.sortDir;
+      const sort = currentSort(state);
+      patch.sortKey = sort.key;
+      patch.sortDir = sort.dir;
       patch.layout = state.layout;
     }
     const result = await window.pond.query("savedViews.update", { id, patch });
@@ -220,7 +225,7 @@ export const savedViews = {
     });
     if (!result.ok) throw new Error("Could not save these rules.");
     await savedViews.refresh();
-    if (active) savedViews.select(id);
+    if (active) savedViews.select(id, { replace: true });
   },
   async rename(id: string, name: string): Promise<void> {
     const result = await window.pond.query("savedViews.rename", { id, name });
@@ -247,6 +252,11 @@ export const savedViews = {
     await savedViews.refresh();
   },
 };
+
+export function subscribeSavedViews(listener: () => void): () => void {
+  const subscription = store.subscribe(listener);
+  return () => subscription.unsubscribe();
+}
 
 export function useSavedViews(): SavedView[] {
   return useSelector(store, (s) => s.views);

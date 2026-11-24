@@ -1,0 +1,79 @@
+.card {
+  position: absolute;
+  right: var(--ds-space-xl);
+  bottom: var(--ds-space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-lg);
+  width: 340px;
+  max-height: calc(100% - 48px);
+  padding: var(--ds-space-lg);
+  overflow-y: auto;
+  background: var(--ds-background-elevated);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-dialog);
+  animation: card-in var(--ds-duration-emphasized)
+    cubic-bezier(0.23, 1, 0.32, 1) both;
+  --page-dialog-action-inset: 8px;
+}
+
+.head {
+  display: flex;
+  gap: var(--ds-space-md);
+  align-items: flex-start;
+  padding-right: var(--ds-space-xl);
+}
+
+.mark {
+  flex: none;
+  color: var(--ds-foreground-primary);
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-strong);
+}
+
+.summary {
+  margin: 0;
+  font-size: var(--ds-text-small);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-secondary);
+}
+
+.list {
+  padding-top: var(--ds-space-xs);
+}
+
+.actions {
+  display: flex;
+  gap: var(--ds-space-sm);
+  justify-content: flex-end;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation-name: card-fade;
+  }
+}
+
+@keyframes card-fade {
+  from {
+    opacity: 0;
+  }
+}

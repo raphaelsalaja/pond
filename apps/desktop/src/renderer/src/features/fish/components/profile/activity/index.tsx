@@ -1,5 +1,4 @@
-import { IconClock } from "@pond/icons";
-import { Badge, Button, Empty } from "@pond/ui";
+import { Badge, Button, Empty, EmptyPreview } from "@pond/ui";
 import type { FishSummary } from "@shared/fish-contracts";
 import { Section } from "@/shared/components/inspector-section";
 import { fishRuns, runGroup, runSentence, runsByDay } from "../../../lib/runs";
@@ -25,9 +24,17 @@ export function FishActivity({
     return (
       <Empty.Root size="card">
         <Empty.Media>
-          <IconClock size={14} />
+          <EmptyPreview.Root layout="list">
+            <EmptyPreview.Row>
+              <EmptyPreview.Thumb shape="round" />
+              <EmptyPreview.Lines>
+                <EmptyPreview.Line width={60} />
+                <EmptyPreview.Line width={38} tone="thin" />
+              </EmptyPreview.Lines>
+            </EmptyPreview.Row>
+          </EmptyPreview.Root>
         </Empty.Media>
-        <Empty.Title>No runs yet</Empty.Title>
+        <Empty.Title>No Runs Yet</Empty.Title>
         <Empty.Description>
           {fish.routines.length
             ? `${fish.name}'s runs show up here.`

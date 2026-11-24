@@ -227,13 +227,17 @@ function RadioItem({ className, ...props }: Base.RadioItem.Props) {
 
 function RadioItemIndicator({
   className,
+  keepMounted = true,
   ...props
 }: Base.RadioItemIndicator.Props) {
   return (
     <Base.RadioItemIndicator
-      className={cn(styles.indicator, className)}
+      keepMounted={keepMounted}
+      className={cn(styles["check-indicator"], className)}
       {...props}
-    />
+    >
+      <IconCheck size={14} aria-hidden />
+    </Base.RadioItemIndicator>
   );
 }
 
@@ -340,6 +344,9 @@ function Items({ items }: { items: MenuItemSpec[] }) {
         ItemKeyboard,
         CheckboxItem,
         CheckboxItemIndicator,
+        RadioGroup,
+        RadioItem,
+        RadioItemIndicator,
         LinkItem,
         Separator,
         Group,

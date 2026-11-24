@@ -18,6 +18,7 @@ import {
   type CardLayoutResult,
   stackSections,
 } from "@/features/library/components/layouts/packing";
+import { useLibrarySaveRadius } from "@/features/library/components/layouts/save-radius";
 import { useLibraryLayoutTransition } from "@/features/library/hooks/use-library-layout-transition";
 import { SaveCard, useMultiSelectActive } from "@/features/saves";
 import {
@@ -154,9 +155,14 @@ export function PackedGrid({
         : null;
   }
   const multiSelectActive = useMultiSelectActive();
-  const style = useMemo<React.CSSProperties>(
-    () => ({ height: `${totalHeight}px` }),
-    [totalHeight],
+  const radius = useLibrarySaveRadius();
+  const style = useMemo(
+    () =>
+      ({
+        height: `${totalHeight}px`,
+        "--card-radius": `${radius}px`,
+      }) as React.CSSProperties,
+    [totalHeight, radius],
   );
   const bands = useMemo(
     () => buildVirtualBands(items, totalHeight),

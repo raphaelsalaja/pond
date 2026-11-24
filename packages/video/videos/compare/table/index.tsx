@@ -32,7 +32,7 @@ function Glyph({ mark, pond }: { mark: Mark; pond?: boolean }) {
   if (mark === "no")
     return (
       <span className={styles.no}>
-        <IconXmark size={24} strokeWidth={2} />
+        <IconXmark size={24} />
       </span>
     );
   if (mark !== "yes")
@@ -44,12 +44,12 @@ function Glyph({ mark, pond }: { mark: Mark; pond?: boolean }) {
   if (pond)
     return (
       <span className={styles.badge}>
-        <IconCheck size={22} strokeWidth={2.75} />
+        <IconCheck size={22} />
       </span>
     );
   return (
     <span className={styles.yes}>
-      <IconCheck size={30} strokeWidth={2.25} />
+      <IconCheck size={30} />
     </span>
   );
 }

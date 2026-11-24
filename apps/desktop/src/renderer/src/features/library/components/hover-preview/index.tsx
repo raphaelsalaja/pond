@@ -31,15 +31,14 @@ import {
 } from "@/features/saves";
 import { pickPrimaryFile } from "@/features/saves/media";
 import {
+  openSaveId,
   resultNavigation,
-  saveIdFromPath,
   selection,
   useSelectionCursor,
   useSelectionSize,
 } from "@/features/saves/navigation";
 import { ensureSaves, useSave } from "@/features/saves/pool";
 import type { SaveFile } from "@/features/saves/types";
-import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 import { usePrefs } from "@/shared/state/prefs";
@@ -87,7 +86,7 @@ export function HoverPreview() {
         return;
       }
       if (event.defaultPrevented || !collectionOwnsKeyboard()) return;
-      if (saveIdFromPath(getAppRouter()?.state.location.pathname ?? "")) return;
+      if (openSaveId()) return;
       const selected = selection.getCursor();
       if (!selected) return;
       if (

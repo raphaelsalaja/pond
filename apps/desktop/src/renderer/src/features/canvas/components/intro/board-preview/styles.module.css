@@ -1,0 +1,77 @@
+.board {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(
+    circle,
+    var(--intro-skeleton) 1px,
+    transparent 1.5px
+  );
+  background-size: 12px 12px;
+  border-radius: inherit;
+}
+
+.section {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-sm);
+  width: 132px;
+  padding: var(--ds-space-sm);
+  border: 1px dashed var(--ds-border-strong);
+  border-radius: var(--ds-radius-md);
+}
+
+.cards {
+  display: flex;
+  gap: var(--ds-space-sm);
+}
+
+.card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ds-space-xs);
+  padding: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-sm);
+}
+
+.connector {
+  position: absolute;
+  top: 46px;
+  left: 156px;
+  width: 24px;
+  height: 32px;
+  overflow: visible;
+
+  & path {
+    stroke: var(--ds-border-strong);
+    stroke-linecap: round;
+    stroke-width: 1.25;
+  }
+}
+
+.note {
+  position: absolute;
+  top: 30px;
+  left: 184px;
+  display: flex;
+  flex-direction: column;
+  padding: var(--ds-space-sm) var(--ds-space-md);
+}
+
+.dragged {
+  position: absolute;
+  top: 112px;
+  left: 168px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-xs);
+  width: 64px;
+  padding: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-sm);
+  rotate: -3deg;
+}
+
+.cursor {
+  top: 140px;
+  left: 214px;
+}

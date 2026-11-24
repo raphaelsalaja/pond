@@ -129,12 +129,12 @@ body[data-media-type="video"] .preview-controls {
   line-height: 1;
   color: var(--ds-foreground-primary);
   cursor: var(--ds-cursor-interactive);
-  background: var(--ds-surface-secondary);
+  background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-md);
 }
 
 #retry:hover {
-  background: var(--ds-surface-tertiary);
+  background: var(--ds-surface-secondary);
 }
 
 #image[hidden],

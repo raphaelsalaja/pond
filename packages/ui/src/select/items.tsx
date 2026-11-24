@@ -4,6 +4,7 @@ interface SelectOptionItem<Value> {
   type?: "option";
   value: Value;
   label: ReactNode;
+  shortcut?: ReactNode;
   disabled?: boolean;
 }
 
@@ -36,6 +37,7 @@ interface SelectParts<Value> {
   }>;
   ItemText: React.ComponentType<{ children?: ReactNode }>;
   ItemIndicator: React.ComponentType;
+  ItemShortcut: React.ComponentType<{ children?: ReactNode }>;
   Group: React.ComponentType<{ children?: ReactNode }>;
   GroupLabel: React.ComponentType<{ children?: ReactNode }>;
   Separator: React.ComponentType;
@@ -69,6 +71,9 @@ function renderSpec<Value>(
     <parts.Item key={key} value={spec.value} disabled={spec.disabled}>
       <parts.ItemText>{spec.label}</parts.ItemText>
       <parts.ItemIndicator />
+      {spec.shortcut != null ? (
+        <parts.ItemShortcut>{spec.shortcut}</parts.ItemShortcut>
+      ) : null}
     </parts.Item>
   );
 }

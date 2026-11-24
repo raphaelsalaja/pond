@@ -5,7 +5,6 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import { Button, Loader } from "@pond/ui";
 import {
   $createTextNode,
   COMMAND_PRIORITY_LOW,
@@ -15,27 +14,13 @@ import {
   LineBreakNode,
   SKIP_DOM_SELECTION_TAG,
 } from "lexical";
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type ReactNode, useEffect, useMemo } from "react";
 import {
   setSearchDraft,
-  setSearchInput,
-  useFilterQuery,
   useSearchInput,
   useSearchNonce,
   useSearchText,
 } from "@/features/library";
-import { useNlCompiler } from "@/features/search/hooks/use-nl-query";
-import {
-  dedupePredicates,
-  flattenPredicates,
-} from "@/features/search/lib/nl-query";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";
 import { usePrefs } from "@/shared/state/prefs";
@@ -44,13 +29,11 @@ import { buildSearchScopeItems } from "./search-scope-menu";
 import styles from "./styles.module.css";
 
 export interface SearchComposerProps {
-  compile?: ReturnType<typeof useNlCompiler>;
   placeholder?: string;
   children?: ReactNode;
 }
 
 export function SearchComposer({
-  compile,
   placeholder = "Search…",
   children,
 }: SearchComposerProps = {}) {
@@ -67,43 +50,22 @@ export function SearchComposer({
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <SearchField compileOverride={compile} placeholder={placeholder} />
+      <SearchField placeholder={placeholder} />
       {children}
     </LexicalComposer>
   );
 }
 
-function SearchField({
-  compileOverride,
-  placeholder,
-}: {
-  compileOverride?: ReturnType<typeof useNlCompiler>;
-  placeholder: string;
-}) {
+function SearchField({ placeholder }: { placeholder: string }) {
   const [editor] = useLexicalComposerContext();
-  const defaultCompile = useNlCompiler();
-  const compile = compileOverride ?? defaultCompile;
   const searchNonce = useSearchNonce();
-  const [status, setStatus] = useState<"idle" | "thinking" | "error">("idle");
-  const compileRef = useRef(compile);
-  compileRef.current = compile;
-  const statusRef = useRef(status);
-  statusRef.current = status;
-  const runRef = useRef(0);
   const [searchPrefs, patchSearchPrefs] = usePrefs("search");
 
   const seedInput = useSearchInput();
-  const seedQuery = useFilterQuery();
   const seedText = useSearchText();
-  const lastQueryRef = useRef(seedQuery);
   useEffect(() => {
     const serialized = seedInput.trim() || seedText;
     const current = editor.getEditorState().read($readSearchString);
-    const queryChanged = lastQueryRef.current !== seedQuery;
-    lastQueryRef.current = seedQuery;
-    if (!queryChanged && current === serialized.trim()) return;
-    runRef.current += 1;
-    setStatus("idle");
     if (current === serialized.trim()) return;
     editor.update(
       () => {
@@ -111,7 +73,7 @@ function SearchField({
       },
       { tag: ["search-store-sync", SKIP_DOM_SELECTION_TAG] },
     );
-  }, [editor, seedInput, seedQuery, seedText]);
+  }, [editor, seedInput, seedText]);
 
   useEffect(() => {
     return editor.registerUpdateListener(
@@ -120,8 +82,6 @@ function SearchField({
         editorState.read(() => {
           const raw = $readSearchString();
           if (raw === prevEditorState.read($readSearchString)) return;
-          runRef.current += 1;
-          setStatus("idle");
           setSearchDraft(raw);
         });
       },
@@ -133,71 +93,27 @@ function SearchField({
     editor.focus();
   }, [editor, searchNonce]);
 
-  const cancelAi = useCallback(() => {
-    runRef.current += 1;
-    setStatus("idle");
-  }, []);
-
-  const submitAi = async () => {
-    if (statusRef.current === "thinking") return;
-    let raw = "";
-    editor.getEditorState().read(() => {
-      raw = $readSearchString();
-    });
-    if (!raw) return;
-    runRef.current += 1;
-    const nonce = runRef.current;
-    setStatus("thinking");
-    try {
-      const compiled = await compileRef.current(raw);
-      if (runRef.current !== nonce) return;
-      const residual = compiled.residual.trim();
-      const predicates = dedupePredicates([
-        ...flattenPredicates(seedQuery),
-        ...flattenPredicates(compiled.plan.filter),
-      ]);
-      setSearchInput(predicates, residual, residual);
-      editor.update(() => $writeSearchString(residual), {
-        tag: "search-store-sync",
-      });
-      setStatus("idle");
-    } catch {
-      if (runRef.current !== nonce) return;
-      setStatus("error");
-    }
-  };
-
-  const submitAiRef = useRef(submitAi);
-  submitAiRef.current = submitAi;
-
   useEffect(() => {
     return editor.registerCommand(
       KEY_ESCAPE_COMMAND,
       () => {
-        if (statusRef.current === "thinking") {
-          cancelAi();
-          return true;
-        }
         editor.getRootElement()?.blur();
         return true;
       },
       COMMAND_PRIORITY_LOW,
     );
-  }, [editor, cancelAi]);
+  }, [editor]);
 
   useEffect(() => {
-    const submitOrSwallow = () => {
-      void submitAiRef.current();
-      return true;
-    };
+    const swallow = () => true;
     const unregisterBreak = editor.registerCommand(
       INSERT_LINE_BREAK_COMMAND,
-      submitOrSwallow,
+      swallow,
       COMMAND_PRIORITY_LOW,
     );
     const unregisterParagraph = editor.registerCommand(
       INSERT_PARAGRAPH_COMMAND,
-      submitOrSwallow,
+      swallow,
       COMMAND_PRIORITY_LOW,
     );
     const unregisterTransform = editor.registerNodeTransform(
@@ -231,7 +147,6 @@ function SearchField({
                   className={styles.input}
                   spellCheck={false}
                   ariaLabel="Search"
-                  aria-busy={status === "thinking"}
                   data-library-search=""
                   onKeyDown={stopAppHotkeysFromEditable}
                 />
@@ -244,29 +159,8 @@ function SearchField({
             <HistoryPlugin />
             {searchNonce > 0 ? <AutoFocusPlugin /> : null}
           </div>
-          {status === "thinking" ? (
-            <Loader.Root className={styles.thinking}>
-              <Loader.Dots />
-              Finding filters
-            </Loader.Root>
-          ) : null}
         </div>
       </SpecContextMenu>
-      {status === "error" ? (
-        <div className={styles.status}>
-          <span role="status">
-            Couldn't interpret filters. Keyword search is still active.
-            <Button
-              size="xs"
-              variant="ghost"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => void submitAi()}
-            >
-              Retry
-            </Button>
-          </span>
-        </div>
-      ) : null}
     </div>
   );
 }

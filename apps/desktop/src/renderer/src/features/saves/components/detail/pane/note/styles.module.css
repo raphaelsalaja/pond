@@ -1,12 +1,9 @@
-.root {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-sm);
-  min-width: 0;
+/* Matches the property cards below it. */
+.field [data-slot="root"] {
+  --input-radius: var(--ds-radius-xl);
 }
 
-.label {
-  font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-regular);
-  color: var(--ds-foreground-tertiary);
+.field textarea[data-multiline][data-padding] {
+  min-height: 64px;
+  padding-block: var(--ds-space-md);
 }

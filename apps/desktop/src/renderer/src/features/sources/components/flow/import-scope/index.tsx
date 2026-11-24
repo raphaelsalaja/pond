@@ -18,14 +18,16 @@ import { type ReactNode, useEffect, useState } from "react";
 import { ChipsField } from "@/features/sources/components/chips-field";
 import {
   collectionNouns,
-  listKindDescription,
-  listKindLabel,
   localDay,
   mediaKindLabel,
   saveImportScope,
   sinceCopy,
   startImportSync,
 } from "@/features/sources/lib/import-scope";
+import {
+  listKindDescription,
+  listKindLabel,
+} from "@/features/sources/lib/list-kind-copy";
 import { getSourceDef } from "@/features/sources/lib/registry";
 import {
   draftChanged,

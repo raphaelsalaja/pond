@@ -34,7 +34,7 @@ Must: shapes sit inside the keylines, never on the frame. Broken: a folder from 
 Must: a corner's radius fits its part, at most a quarter of its shorter segment and halved under 60°. Broken: a star rounded at 3 on every point. Fixed: the star under the radius table.
 Must: dots are solid, never rings. Broken: an eye with a ring pupil. Fixed: the eye with a solid r1.75 pupil.
 Should: containers are circles before squares. Broken: a check in a rounded square. Fixed: the check in the ring.
-Should: the magnifier's handle is heavier, 2.25, and stops 1.25 clear of the lens. Broken: a 1.25 handle touching the lens. Fixed: the heavy handle with its gap.
+Should: the magnifier's handle is the same 1.25 line as the lens and grows from its rim. Broken: a 2.25 handle stopping short of the lens. Fixed: the even handle touching the lens.
 Must: outward arrows point up and right, slashes cut top left to bottom right. Broken: the open arrow pointing down and left. Fixed: up and right.
 Must: never busy, one idea and the fewest parts that read. Broken: a 10-tooth gear. Fixed: 6 teeth.
 Standard: no icon takes more attention than the label beside it. Broken: a folder at 1.75. Fixed: the folder at 1.25.

@@ -20,13 +20,9 @@ import {
   setIncludeSubfolders,
   useIncludeSubfolders,
 } from "@/features/library/state/view-store";
+import { buildSaveMenu, descendantFolderIds } from "@/features/saves";
 import {
-  buildSaveMenu,
-  descendantFolderIds,
-  isSaveCollectionPath,
-} from "@/features/saves";
-import {
-  saveIdFromPath,
+  useOpenSaveId,
   useResultTotal,
   useSelectedIds,
 } from "@/features/saves/navigation";
@@ -37,6 +33,7 @@ import { offerEntries } from "./offer-entries";
 import { usePageEntries } from "./page-entries";
 import { specEntries } from "./spec-entries";
 import type { MenuEntry } from "./types";
+import { useOnCollection } from "./use-on-collection";
 
 /** Shown before a query; typing searches every action in the Save menu. */
 const SUGGESTED = new Set([
@@ -52,8 +49,8 @@ function sameSaves(a: readonly Save[], b: readonly Save[]): boolean {
   return a.length === b.length && a.every((save, i) => save === b[i]);
 }
 
-function useFocusedSaves(pathname: string) {
-  const openId = saveIdFromPath(pathname);
+function useFocusedSaves() {
+  const openId = useOpenSaveId();
   const selectedIds = useSelectedIds();
   const ids = openId ? [openId] : selectedIds;
   const saves = useSelector(
@@ -154,8 +151,8 @@ export function useContextEntries(
   searching: boolean,
 ): MenuEntry[] {
   const nav = useLibraryNav();
-  const { saves, opened } = useFocusedSaves(pathname);
-  const onCollection = isSaveCollectionPath(pathname);
+  const { saves, opened } = useFocusedSaves();
+  const onCollection = useOnCollection(pathname);
   const folderRows = useFolders();
   const includeSubfolders = useIncludeSubfolders();
   const trashCount = useResultTotal();
@@ -164,7 +161,7 @@ export function useContextEntries(
   return useMemo(() => {
     const entries = saveEntries(saves, opened, searching);
     entries.push(...pageEntries);
-    if (!onCollection) return entries;
+    if (!onCollection || !nav) return entries;
     if (nav.kind === "folder") {
       const folder = folderRows.find((row) => row.id === nav.id);
       if (folder)

@@ -39,7 +39,7 @@
 
   &:not(:empty):hover {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-surface-primary);
   }
 
   & svg {

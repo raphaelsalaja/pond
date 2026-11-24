@@ -62,7 +62,7 @@ export function MissingLibraryWindow() {
         <div className={styles.drag} />
         {view ? (
           <Empty.Root className={styles.empty}>
-            <Empty.Title>Library not found</Empty.Title>
+            <Empty.Title>Library Not Found</Empty.Title>
             <Empty.Description aria-live="polite">
               Pond can't find {view.name} at{" "}
               <span className={styles.path}>{view.path}</span>. {view.detail}

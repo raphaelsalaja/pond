@@ -33,11 +33,13 @@ export function Item({ className, kind, tone, selected, ...props }: ItemProps) {
 
 interface ActionProps extends ComponentPropsWithoutRef<"button"> {
   tone: Extract<ChipTone, "applied" | "suggested" | "mention">;
+  icon?: boolean;
 }
 
 export function Action({
   className,
   tone,
+  icon,
   type = "button",
   ...props
 }: ActionProps) {
@@ -46,6 +48,7 @@ export function Action({
       type={type}
       className={cn(styles.action, className)}
       data-tone={tone}
+      data-icon={icon || undefined}
       {...props}
     />
   );

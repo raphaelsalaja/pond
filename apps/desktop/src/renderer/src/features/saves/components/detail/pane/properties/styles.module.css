@@ -1,0 +1,80 @@
+.card {
+  padding: var(--ds-space-xs) var(--ds-space-lg);
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-raised);
+}
+
+.value {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.action {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  cursor: var(--ds-cursor-interactive, pointer);
+
+  & .text {
+    text-decoration: underline dotted var(--ds-border-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+    transition: text-decoration-color var(--ds-duration-fast) var(--ds-easing-standard);
+  }
+
+  &:hover .text,
+  &[data-popup-open] .text {
+    text-decoration-color: var(--ds-foreground-secondary);
+  }
+}
+
+.text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Swatch triggers are 24px wide; the negative margins leave 4px between 16px circles and align the last one to the edge. */
+.colors {
+  --chip-swatch-size: 16px;
+
+  display: flex;
+  margin-inline-end: calc(var(--ds-space-xs) * -1);
+
+  & > * + * {
+    margin-inline-start: calc(var(--ds-space-xs) * -1);
+  }
+}
+
+.avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+  font-size: 8px;
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-inverse);
+  text-transform: uppercase;
+  border-radius: var(--ds-radius-full);
+
+  & img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.logo {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--ds-radius-full);
+}

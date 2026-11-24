@@ -11,6 +11,7 @@ const SourceDetailSearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_library/sources_/$kind/$id")({
+  staticData: { details: null },
   validateSearch: SourceDetailSearchSchema,
   beforeLoad: ({ params }) => {
     if (!isSourceDetailsKind(params.kind)) throw redirect({ to: "/sources" });

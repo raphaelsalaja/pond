@@ -1,8 +1,4 @@
-import { SOURCES } from "@pond/schema/source-ids";
-import { EXTERNAL_SOURCE_IDS, sourceLabel } from "@pond/schema/sources";
-import { isWatchableSource, watchSourceLabel } from "@pond/schema/watches";
 import {
-  FILE_MENU_DUPLICATES_LABELS,
   FILE_MENU_EXPORT_LABELS,
   FILE_MENU_IMPORT_LABELS,
   FILE_MENU_NEW_LABELS,
@@ -118,58 +114,6 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
         ],
       },
       {
-        label: "Sources",
-        submenu: [
-          {
-            label: "New Source",
-            submenu: EXTERNAL_SOURCE_IDS.map((source) => ({
-              label: sourceLabel(source),
-              click: sendMenuAction(`library.connect-${source}`),
-            })),
-          },
-          {
-            label: "New Watch",
-            submenu: SOURCES.filter(isWatchableSource).map((source) => ({
-              label: watchSourceLabel(source),
-              click: sendMenuAction(`library.watch-${source}`),
-            })),
-          },
-        ],
-      },
-      {
-        label: "Library",
-        submenu: [
-          {
-            label: "Find Duplicates",
-            submenu: [
-              {
-                label: FILE_MENU_DUPLICATES_LABELS[0],
-                click: sendMenuAction("library.find-duplicates-all"),
-              },
-              {
-                label: FILE_MENU_DUPLICATES_LABELS[1],
-                click: sendMenuAction("library.find-duplicates-list"),
-              },
-              {
-                label: FILE_MENU_DUPLICATES_LABELS[2],
-                click: sendMenuAction("library.find-duplicates-selected"),
-              },
-            ],
-          },
-          { type: "separator" },
-          {
-            label: "Rescan Library",
-            accelerator: accelerator("library.rescan"),
-            registerAccelerator: false,
-            click: context.rescanLibrary,
-          },
-          {
-            label: "Verify Integrity",
-            click: context.verifyLibrary,
-          },
-        ],
-      },
-      {
         label: "Export",
         submenu: [
           {
@@ -199,11 +143,6 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
       },
       { type: "separator" },
       {
-        label: "Library Window",
-        click: context.openLibraryWindow,
-      },
-      { type: "separator" },
-      {
         label: "Open with Default App",
         accelerator: accelerator("save.open"),
         registerAccelerator: false,
@@ -227,12 +166,6 @@ export function buildFileSection(context: AppMenuContext): AppMenuItem {
         accelerator: accelerator("save.rename"),
         registerAccelerator: false,
         click: sendMenuAction("save.rename"),
-      },
-      {
-        label: "Add Tags",
-        accelerator: accelerator("save.add-tag"),
-        registerAccelerator: false,
-        click: sendMenuAction("save.add-tag"),
       },
       {
         label: "Refresh from Source",

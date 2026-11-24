@@ -1,7 +1,6 @@
 import { Select as Base } from "@base-ui/react/select";
 import { IconCheck as Check, IconChevronDown as Expand } from "@pond/icons";
 import { clsx as cn } from "clsx";
-import { Button, type ButtonProps } from "../button";
 import { renderSelectSpec, type SelectItemSpec } from "./items";
 import styles from "./styles.module.css";
 
@@ -17,41 +16,34 @@ function Label({ className, ...props }: Base.Label.Props) {
   return <Base.Label className={cn(styles.label, className)} {...props} />;
 }
 
-type TriggerProps = Base.Trigger.Props &
-  Pick<ButtonProps, "variant" | "size" | "icon" | "rounding" | "width">;
+interface TriggerProps extends Base.Trigger.Props {
+  /** `field` is a raised, borderless trigger for inspector rows. */
+  variant?: "secondary" | "chip" | "field";
+  size?: "sm" | "md";
+  width?: "full" | "auto";
+}
 
 function Trigger({
   className,
-  variant,
-  size,
-  icon,
-  rounding,
+  variant = "secondary",
+  size = "sm",
   width,
+  children,
   ...props
 }: TriggerProps) {
   return (
     <Base.Trigger
-      render={
-        props.render ? (
-          props.render
-        ) : (
-          <Button
-            size={size}
-            icon={icon}
-            rounding={rounding}
-            width={width}
-            variant={variant ?? "secondary"}
-            className={cn(styles.trigger, className)}
-          >
-            {props.children}
-            <Icon>
-              <Expand size={12} />
-            </Icon>
-          </Button>
-        )
-      }
+      data-variant={variant}
+      data-size={size}
+      data-width={width}
+      className={cn(styles.trigger, className)}
       {...props}
-    />
+    >
+      {children}
+      <Icon>
+        <Expand size={12} />
+      </Icon>
+    </Base.Trigger>
   );
 }
 
@@ -75,13 +67,15 @@ function Portal(props: Base.Portal.Props) {
 
 function Positioner({
   className,
-  sideOffset = 8,
+  sideOffset = 4,
+  align = "start",
   alignItemWithTrigger = false,
   ...props
 }: Base.Positioner.Props) {
   return (
     <Base.Positioner
       sideOffset={sideOffset}
+      align={align}
       alignItemWithTrigger={alignItemWithTrigger}
       data-type="select"
       className={cn(styles.positioner, className)}
@@ -124,6 +118,15 @@ function ItemIndicator({ className, ...props }: Base.ItemIndicator.Props) {
   );
 }
 
+function ItemShortcut({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"span">) {
+  return (
+    <span aria-hidden className={cn(styles.shortcut, className)} {...props} />
+  );
+}
+
 function Group(props: Base.Group.Props) {
   return <Base.Group {...props} />;
 }
@@ -147,6 +150,7 @@ function Items<Value>({ items }: { items: SelectItemSpec<Value>[] }) {
         Item,
         ItemText,
         ItemIndicator,
+        ItemShortcut,
         Group,
         GroupLabel,
         Separator,
@@ -170,6 +174,7 @@ export const Select = {
   Item,
   ItemText,
   ItemIndicator,
+  ItemShortcut,
   Group,
   GroupLabel,
   Separator,

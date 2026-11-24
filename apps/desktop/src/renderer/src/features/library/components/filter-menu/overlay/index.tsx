@@ -1,8 +1,8 @@
 import {
-  IconGear3,
   IconImagePlus,
   IconImageSparkle,
   IconMagnifier,
+  IconNut,
   IconTextToImage,
 } from "@pond/icons";
 import { Menu } from "@pond/ui";
@@ -244,7 +244,7 @@ function IndexOff({ title, hash }: { title: string; hash: string }) {
       </Menu.Item>
       <Menu.Item onClick={() => openSettings("processing", hash)}>
         <Menu.ItemIcon>
-          <IconGear3 />
+          <IconNut />
         </Menu.ItemIcon>
         <Menu.ItemLabel>Open Processing Settings</Menu.ItemLabel>
       </Menu.Item>

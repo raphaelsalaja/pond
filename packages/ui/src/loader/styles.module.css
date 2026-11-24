@@ -15,8 +15,8 @@
 }
 
 .dots > span {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   background: currentColor;
   border-radius: var(--ds-radius-full);
   animation: loader-dot 1.4s var(--ds-easing-in-out) infinite;

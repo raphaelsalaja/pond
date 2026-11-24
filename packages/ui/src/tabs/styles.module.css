@@ -36,7 +36,7 @@
     outline-color var(--ds-duration-snap) var(--ds-easing-snap);
 
   &:hover:not([data-active], [data-disabled]) {
-    color: var(--ds-foreground-secondary);
+    color: var(--ds-foreground-primary);
     background: var(--ds-background-secondary);
   }
 
@@ -67,7 +67,7 @@
   box-shadow: none;
 
   &:hover:not([data-active], [data-disabled]) {
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   &[data-active] {

@@ -1,7 +1,7 @@
 .popup {
-  --ds-popup-width: 260px;
-  --ds-popup-min-width: min(260px, var(--available-width));
-  --ds-popup-max-width: 260px;
+  --ds-popup-width: 300px;
+  --ds-popup-min-width: min(300px, var(--available-width));
+  --ds-popup-max-width: min(300px, var(--available-width));
 
   max-height: var(--available-height);
   padding: 0;

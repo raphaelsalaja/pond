@@ -2,7 +2,6 @@ import { docs as accordion } from "./accordion/examples";
 import { docs as badge } from "./badge/examples";
 import { docs as brandTile } from "./brand-tile/examples";
 import { docs as button } from "./button/examples";
-import { docs as callout } from "./callout/examples";
 import { docs as changelog } from "./changelog/examples";
 import { docs as checkbox } from "./checkbox/examples";
 import { docs as chip } from "./chip/examples";
@@ -16,6 +15,7 @@ import { docs as dialog } from "./dialog/examples";
 import { docs as empty } from "./empty/examples";
 import { docs as field } from "./field/examples";
 import { docs as fileIcon } from "./file-icon/examples";
+import { docs as hoverHighlight } from "./hover-highlight/examples";
 import { docs as iconMorph } from "./icon-morph/examples";
 import { docs as input } from "./input/examples";
 import { docs as keyboard } from "./keyboard/examples";
@@ -23,9 +23,11 @@ import { docs as loader } from "./loader/examples";
 import { docs as logo } from "./logo/examples";
 import { docs as menu } from "./menu/examples";
 import { docs as message } from "./message/examples";
+import { docs as numberField } from "./number-field/examples";
 import { docs as paneHeader } from "./pane-header/examples";
 import { docs as pickerPanel } from "./picker-panel/examples";
 import { docs as popover } from "./popover/examples";
+import { docs as progress } from "./progress/examples";
 import { docs as progressiveBlur } from "./progressive-blur/examples";
 import { docs as prompt } from "./prompt/examples";
 import { docs as rating } from "./rating/examples";
@@ -69,7 +71,6 @@ export const COMPONENT_DOCS: readonly ComponentDocs[] = [
   badge,
   brandTile,
   button,
-  callout,
   changelog,
   checkbox,
   chip,
@@ -83,6 +84,7 @@ export const COMPONENT_DOCS: readonly ComponentDocs[] = [
   empty,
   field,
   fileIcon,
+  hoverHighlight,
   iconMorph,
   input,
   keyboard,
@@ -90,9 +92,11 @@ export const COMPONENT_DOCS: readonly ComponentDocs[] = [
   logo,
   menu,
   message,
+  numberField,
   paneHeader,
   pickerPanel,
   popover,
+  progress,
   progressiveBlur,
   prompt,
   rating,

@@ -31,7 +31,7 @@
 }
 
 .hue > .thumb {
-  width: 13px;
+  width: 12px;
   height: 1px;
   border: 0;
   border-top: 1px solid var(--ds-media-edge);
@@ -141,7 +141,7 @@
 }
 
 .track {
-  height: 3px;
+  height: 4px;
   background: var(--ds-surface-tertiary);
 }
 

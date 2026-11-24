@@ -13,6 +13,7 @@
 
   & .sheet {
     position: relative;
+    isolation: isolate;
   }
 
   & .row {
@@ -39,21 +40,6 @@
   & .row[data-selected]:not([data-selected-end]) {
     border-end-start-radius: 0;
     border-end-end-radius: 0;
-  }
-}
-
-.hover {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  background: var(--ds-background-secondary);
-  border-radius: var(--ds-radius-md);
-  opacity: 0;
-  transition: transform var(--ds-duration-snap) var(--ds-easing-snap);
-
-  &[data-visible] {
-    opacity: 1;
   }
 }
 
@@ -122,7 +108,7 @@
 .row:hover,
 .row:focus-visible {
   outline: none;
-  background: var(--ds-background-secondary);
+  background: var(--ds-surface-primary);
 }
 
 .row[data-selected] {
@@ -149,7 +135,7 @@
 
 .row:hover .cell[data-pinned],
 .row:focus-visible .cell[data-pinned] {
-  --pin-bg: var(--ds-background-secondary);
+  --pin-tint: var(--ds-surface-primary);
 }
 
 .row[data-selected] .cell[data-pinned] {
@@ -217,10 +203,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hover {
-    transition: none;
-  }
-
   .caret,
   .row {
     box-sizing: border-box;

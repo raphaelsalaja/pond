@@ -8,16 +8,27 @@
   overflow: hidden;
 }
 
-/* Same height as the sidebar header bar, so both bottom borders run as one line. */
 .header {
-  height: 44px;
-  min-height: 44px;
+  height: var(--window-header-height, 44px);
+  min-height: var(--window-header-height, 44px);
   padding-block: 0;
 
   /* The tab pills draw their ring as a box-shadow outside the box. */
   & [data-slot="pane-header-title"] {
     padding-left: 0;
     overflow: visible;
+  }
+}
+
+/* Base UI waits for the panel's own animations before unmounting, and the scroll fade never finishes. */
+.panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+
+  &[hidden] {
+    display: none;
   }
 }
 
@@ -30,34 +41,15 @@
   gap: var(--ds-space-lg);
   min-height: 0;
   padding-block: var(--ds-space-xl) var(--ds-space-2xl);
-  overflow-y: auto;
+  overflow: hidden auto;
 }
 
-/* Base UI waits for the panel's own animations before unmounting, and the scroll fade never finishes. */
-.panel {
+.sections {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  min-height: 0;
+  gap: var(--ds-space-xl);
 }
 
-.rating {
-  display: flex;
-  flex-direction: row;
-  gap: var(--ds-space-md);
-  align-items: center;
-  min-width: 0;
-  /* Match one line of a tile value so the label below lines up with its neighbors. */
-  min-height: 1lh;
-  font-size: var(--ds-text-small);
-}
-
-.colors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ds-space-2xs);
-  justify-content: center;
-}
 .count {
   margin: 0;
   color: var(--ds-foreground-secondary);
@@ -66,27 +58,10 @@
 .count strong {
   color: var(--ds-accent-foreground);
 }
-.muted {
-  font-size: var(--ds-text-small);
-  color: var(--ds-foreground-tertiary);
-}
 .error {
   font-size: var(--ds-text-small);
   color: var(--ds-danger-foreground);
 }
 .prose {
   margin-inline: calc(var(--ds-space-md) * -1);
-}
-
-.flag {
-  display: flex;
-  gap: var(--ds-space-sm);
-  align-items: center;
-  margin: 0;
-  font-size: var(--ds-text-small);
-  color: var(--ds-foreground-secondary);
-
-  &[data-band="possible-sensitive"] {
-    color: var(--ds-foreground-tertiary);
-  }
 }

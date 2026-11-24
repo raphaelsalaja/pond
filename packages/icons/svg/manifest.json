@@ -3168,27 +3168,6 @@
       }
     ]
   },
-  "gear-3": {
-    "concept": "Settings",
-    "tags": [
-      "settings",
-      "preferences",
-      "options"
-    ],
-    "variants": [
-      {
-        "style": "outline",
-        "size": 18,
-        "file": "gear-3/outline-18.svg"
-      },
-      {
-        "style": "outline",
-        "size": 18,
-        "state": "open",
-        "file": "gear-3/outline-18-open.svg"
-      }
-    ]
-  },
   "gif": {
     "concept": "GIF",
     "tags": [
@@ -4676,6 +4655,29 @@
         "style": "outline",
         "size": 18,
         "file": "notepad/outline-18.svg"
+      }
+    ]
+  },
+  "nut": {
+    "concept": "Settings",
+    "tags": [
+      "settings",
+      "preferences",
+      "options",
+      "nut",
+      "gear"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "nut/outline-18.svg"
+      },
+      {
+        "style": "outline",
+        "size": 18,
+        "state": "open",
+        "file": "nut/outline-18-open.svg"
       }
     ]
   },

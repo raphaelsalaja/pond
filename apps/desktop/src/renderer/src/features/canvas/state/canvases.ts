@@ -11,11 +11,13 @@ import { getAppRouter } from "@/shared/lib/app-router";
 interface CanvasesState {
   canvases: CanvasSummary[];
   editingId: string | null;
+  loaded: boolean;
 }
 
 const store = new Store<CanvasesState>({
   canvases: [],
   editingId: null,
+  loaded: false,
 });
 
 type Placement = "beside";
@@ -32,6 +34,8 @@ const documents = new Map<string, Canvas>();
 
 /** The open board flushes on unmount, which lands after its Canvas was deleted. */
 const removed = new Set<string>();
+
+export const CANVASES_PATH = "/canvases";
 
 function canvasPath(id: string): string {
   return `/canvas/${encodeURIComponent(id)}`;
@@ -83,6 +87,7 @@ export const canvases = {
     store.setState((state) => ({
       ...state,
       canvases: list,
+      loaded: true,
       editingId: list.some((canvas) => canvas.id === state.editingId)
         ? state.editingId
         : null,
@@ -120,10 +125,10 @@ export const canvases = {
       throw error;
     }
     documents.delete(id);
+    await canvases.refresh();
     const router = getAppRouter();
     if (router && canvasIdFromPath(router.state.location.pathname) === id)
-      router.history.push("/");
-    await canvases.refresh();
+      router.history.push(store.state.canvases.length ? "/" : CANVASES_PATH);
   },
   isOpen(id: string): boolean {
     return openBoard?.id === id;
@@ -189,6 +194,10 @@ export function useCanvas(id: string | null): CanvasSummary | undefined {
   return useSelector(store, (state) =>
     id ? state.canvases.find((canvas) => canvas.id === id) : undefined,
   );
+}
+
+export function useCanvasesLoaded(): boolean {
+  return useSelector(store, (state) => state.loaded);
 }
 
 export function useCanvasEditingId(): string | null {

@@ -35,6 +35,7 @@
 .trigger:not([data-variant="bare"]) {
   @media (hover: hover) {
     &:hover:not([data-disabled]) {
+      color: var(--ds-foreground-primary);
       background-color: var(--ds-surface-primary);
     }
   }

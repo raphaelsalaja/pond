@@ -6,13 +6,7 @@ import type { QueueSummary } from "@shared/queue-contracts";
 import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
 import type { WirePrefsPatch } from "@shared/wire";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { createRoute, RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { vi } from "vitest";
@@ -20,10 +14,14 @@ import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { savedViews } from "@/features/library/state/saved-views";
 import { resetFilters } from "@/features/library/state/view-store";
+import { startViewUrlSync } from "@/features/library/state/view-url";
 import type { SaveDragDataTransfer } from "@/features/saves";
 import { selection } from "@/features/saves/navigation";
 import { ToastHost } from "@/shared/components/toast-host";
-import { setAppRouter } from "@/shared/lib/app-router";
+import {
+  createLibraryTestRouter,
+  type LibraryTestRouter,
+} from "@/shared/test/library-router";
 import { FolderSidebar } from ".";
 
 interface SavedViewFixtures {
@@ -190,6 +188,8 @@ export function fireDrag(
 export function createFolderSidebarHarness() {
   let host: HTMLDivElement | null = null;
   let root: Root | null = null;
+  let router: LibraryTestRouter | null = null;
+  let stopViewUrlSync: (() => void) | null = null;
 
   function getHost(): HTMLDivElement {
     if (!host) throw new Error("Sidebar harness isn't set up");
@@ -200,9 +200,12 @@ export function createFolderSidebarHarness() {
     get host() {
       return getHost();
     },
+    get router(): LibraryTestRouter {
+      if (!router) throw new Error("Sidebar harness isn't mounted");
+      return router;
+    },
     async setup(): Promise<void> {
       storedPrefs = PrefsSchema.parse({});
-      libraryChrome.setNav({ kind: "all" });
       libraryChrome.setSidebarPanel("library");
       resetFilters();
       savedViewList.current = [];
@@ -236,9 +239,12 @@ export function createFolderSidebarHarness() {
     },
     async cleanup(): Promise<void> {
       if (root) await act(async () => root?.unmount());
+      stopViewUrlSync?.();
+      stopViewUrlSync = null;
       host?.remove();
       root = null;
       host = null;
+      router = null;
       selection.clear();
       vi.unstubAllGlobals();
     },
@@ -271,45 +277,34 @@ export function createFolderSidebarHarness() {
         throw new Error(`Missing menu item: ${label}`);
       return node;
     },
-    async mount(path = "/") {
+    async mount(path = "/"): Promise<LibraryTestRouter> {
       if (!root) throw new Error("Sidebar harness isn't set up");
-      const rootRoute = createRootRoute({ component: FolderSidebar });
-      const children = [
-        "/",
-        "/sources",
-        "/tags",
-        "/fish/$fishId",
-        "/untagged",
-        "/recents",
-        "/recently-added",
-        "/downloads",
-        "/trash",
-      ].map((routePath) =>
-        createRoute({
-          getParentRoute: () => rootRoute,
-          path: routePath,
-          component: () => null,
-        }),
-      );
-      const router = createRouter({
-        routeTree: rootRoute.addChildren(children),
-        history: createMemoryHistory({ initialEntries: [path] }),
+      const next = createLibraryTestRouter(path, {
+        component: FolderSidebar,
+        routes: (library) => [
+          createRoute({
+            getParentRoute: () => library,
+            path: "fish/$fishId",
+            staticData: { details: "fish" },
+          }),
+        ],
       });
-      setAppRouter(router);
+      router = next;
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false } },
       });
       await act(async () => {
-        await router.load();
+        await next.load();
+        stopViewUrlSync = startViewUrlSync(next);
         root?.render(
           <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
+            <RouterProvider router={next} />
             <Dialog.Host />
             <ToastHost />
           </QueryClientProvider>,
         );
       });
-      return router;
+      return next;
     },
   };
 }

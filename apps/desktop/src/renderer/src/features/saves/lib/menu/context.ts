@@ -58,7 +58,7 @@ export function createSaveMenuContext(
   const batch = ids.length > 1;
   const nav = saveLibraryBridge.getNav();
   const resolvedFolderId =
-    folderId !== undefined ? folderId : nav.kind === "folder" ? nav.id : null;
+    folderId !== undefined ? folderId : nav?.kind === "folder" ? nav.id : null;
   const folderView = resolvedFolderId
     ? getPrefsSnapshot()?.folderViews[resolvedFolderId]
     : undefined;

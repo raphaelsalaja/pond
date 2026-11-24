@@ -37,7 +37,7 @@
   width: 12px;
   height: 12px;
   margin-left: var(--ds-space-sm);
-  animation: pop var(--ds-duration-bounce) var(--ds-easing-bounce);
+  animation: pop var(--ds-duration-medium) var(--ds-easing-snap);
 }
 
 .failed {
@@ -67,8 +67,7 @@
 }
 
 .row:hover .item:not([data-status="active"]) {
-  color: var(--ds-foreground-secondary);
-  background: var(--ds-surface-secondary);
+  color: var(--ds-foreground-primary);
 }
 
 @keyframes appear {

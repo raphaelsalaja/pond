@@ -14,6 +14,7 @@ export { IconBrandLinkedIn } from "./custom/linkedin";
 export { IconLmStudio } from "./custom/lmstudio";
 export { IconSourceLocal } from "./custom/local";
 export { IconBrandMarked } from "./custom/marked";
+export { IconBrandMymind } from "./custom/mymind";
 export { IconOllama } from "./custom/ollama";
 export { IconOpenAI } from "./custom/openai";
 export { IconBrandPinterest as IconPinterest } from "./custom/pinterest";

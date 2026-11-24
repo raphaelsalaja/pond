@@ -1,5 +1,12 @@
 import { IconTag, IconMagnifier as Magnifier } from "@pond/icons";
-import { Accordion, Button, Empty, Input, Settings } from "@pond/ui";
+import {
+  Accordion,
+  Button,
+  Empty,
+  EmptyPreview,
+  Input,
+  Settings,
+} from "@pond/ui";
 import { DataTable } from "@pond/ui/data-table";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useMemo, useRef } from "react";
@@ -158,15 +165,22 @@ export function TagsSection() {
             ) : total === 0 ? (
               <Empty.Root>
                 <Empty.Media>
-                  <IconTag size={14} />
+                  <EmptyPreview.Root shape="chip">
+                    <EmptyPreview.Row>
+                      <EmptyPreview.Icon>
+                        <IconTag size={12} />
+                      </EmptyPreview.Icon>
+                      <EmptyPreview.Line width={44} />
+                    </EmptyPreview.Row>
+                  </EmptyPreview.Root>
                 </Empty.Media>
-                <Empty.Title>No tags yet</Empty.Title>
+                <Empty.Title>No Tags Yet</Empty.Title>
                 <Empty.Description>
                   Create your first tag to start organizing your library.
                 </Empty.Description>
                 <Empty.Action>
                   <Button
-                    variant="primary"
+                    variant="secondary"
                     size="sm"
                     onClick={() => startCreate("tag")}
                   >

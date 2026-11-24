@@ -1,17 +1,18 @@
 import { Button } from "@pond/ui";
-import type { QueryResult } from "@shared/query-contracts";
 import { type CSSProperties, useEffect, useState } from "react";
 import { CardThumb } from "@/features/saves/components/card/media";
 import { Card } from "@/features/saves/components/card/parts";
 import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import {
+  loadRelated,
+  peekRelated,
+  type RelatedItem,
+} from "@/features/saves/lib/related";
 import { openSave } from "@/features/saves/lib/save-nav";
 import { displayTitleForSave } from "@/features/saves/lib/text";
 import { layoutAspectFor } from "@/features/saves/state/aspect";
 import type { Save } from "@/features/saves/types";
 import styles from "./styles.module.css";
-
-type RelatedItem = QueryResult<"saves.related">["items"][number];
 
 function reasonLabel(reason: RelatedItem["reason"]): string {
   return reason === "already-organized" ? "Same folder" : "Related content";
@@ -46,29 +47,45 @@ function RelatedCard({ item, save }: { item: RelatedItem; save: Save }) {
   );
 }
 
+/** Under this, the results replace an empty panel instead of a loading line flashing first. */
+const LOADING_DELAY_MS = 400;
+
 export function RelatedSaves({ saveId }: { saveId: string }) {
   const saves = useSaves();
-  const [items, setItems] = useState<RelatedItem[] | null>(null);
+  const [result, setResult] = useState(() => ({
+    saveId,
+    items: peekRelated(saveId),
+  }));
   const [failed, setFailed] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const items =
+    result.saveId === saveId ? result.items : peekRelated(saveId);
   useRetainedSaves(items?.map((item) => item.id) ?? []);
 
   useEffect(() => {
-    void attempt;
     let active = true;
-    setItems(null);
     setFailed(false);
-    void window.pond
-      .query("saves.related", { id: saveId, limit: 12 })
-      .then(async (result) => {
-        await ensureSaves(result.items.map((item) => item.id));
-        if (active) setItems(result.items);
+    setSlow(false);
+    const cached = attempt === 0 ? peekRelated(saveId) : null;
+    if (cached) {
+      setResult({ saveId, items: cached });
+      return;
+    }
+    setResult({ saveId, items: null });
+    const timer = window.setTimeout(() => {
+      if (active) setSlow(true);
+    }, LOADING_DELAY_MS);
+    void loadRelated(saveId, attempt > 0)
+      .then((loaded) => {
+        if (active) setResult({ saveId, items: loaded });
       })
       .catch(() => {
         if (active) setFailed(true);
       });
     return () => {
       active = false;
+      window.clearTimeout(timer);
     };
   }, [attempt, saveId]);
 
@@ -87,11 +104,11 @@ export function RelatedSaves({ saveId }: { saveId: string }) {
     );
   }
   if (items === null)
-    return (
+    return slow ? (
       <p className={styles.message} role="status">
         Finding related Saves
       </p>
-    );
+    ) : null;
   if (items.length === 0)
     return <p className={styles.message}>No related Saves found.</p>;
 

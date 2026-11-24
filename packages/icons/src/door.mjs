@@ -14,18 +14,17 @@ const frame = (poly, s) =>
 
 export default (h, s) => [frame(h.poly, s), floor, dot(h, s, 10.75, 9.25)];
 
-/** The leaf turns on its left hinge, so its free edge reads shorter. */
+/** The leaf swings in on the left jamb, so its free edge reads shorter. */
 export const open = (h, s) => [
-  floor,
+  frame(h.poly, s),
   h.poly(
     [
+      [4.375, 4.875],
+      [11, 6.25],
+      [11, 13.75],
       [4.375, 15.625],
-      [4.375, 2.375],
-      [12.125, 4.125],
-      [12.125, 13.875],
-      [6.625, 15.625],
     ],
-    { corners: { 1: s.box, 2: s.ease, 3: s.ease } },
+    { corners: { 1: s.ease, 2: s.ease } },
   ),
-  dot(h, s, 9.875, 9.25),
+  dot(h, s, 8.125, 10),
 ];

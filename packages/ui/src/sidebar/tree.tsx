@@ -53,6 +53,7 @@ export function TreeRow({ className, ...props }: TreeRowProps) {
   return (
     <TreeItemLabel
       className={withClass(cn(styles.item, styles.row), className)}
+      data-hover-row=""
       {...props}
     />
   );

@@ -1,0 +1,14 @@
+.list {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+}
+
+.empty,
+.note {
+  margin: 0;
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
+}

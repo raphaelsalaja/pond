@@ -1,14 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRouter,
-} from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import { setAppRouter } from "@/shared/lib/app-router";
 import { WorkspaceMenu } from ".";
 
 const query = vi.fn(async (name: string) => {
@@ -108,27 +102,15 @@ describe("workspace menu", () => {
     await act(async () => trigger.click());
   }
 
-  async function openSwitchLibrary() {
+  async function openLibraryMenu() {
     await openMenu();
-    const submenu = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (entry) => entry.textContent?.includes("Switch Library"),
-    );
-    if (!(submenu instanceof HTMLElement))
-      throw new Error("Missing Switch Library submenu");
-    await act(async () => submenu.click());
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Library Settings"),
     );
   }
 
-  it("keeps library actions in the Switch Library submenu", async () => {
-    await openMenu();
-    expect(document.body.textContent).toContain("Switch Library");
-    expect(document.body.textContent).not.toContain("Create Library");
-  });
-
   it("shows a compact library menu", async () => {
-    await openSwitchLibrary();
+    await openLibraryMenu();
     const text = document.body.textContent ?? "";
     expect(host.querySelector("button img")).toBeTruthy();
     expect(
@@ -142,13 +124,8 @@ describe("workspace menu", () => {
     expect(text).toContain("Open Library");
     expect(text).toContain("Merge Library");
     expect(text).toContain("Library Settings");
-    expect(text).toContain("Settings");
-    expect(text).toContain("Check for Updates");
-    expect(text).toContain("Browser Extension");
-    expect(text).toContain("Twitter");
-    expect(text).toContain("GitHub");
-    expect(text).toContain("Email");
-    expect(text).not.toContain("Hotkeys");
+    expect(text).not.toContain("Switch Library");
+    expect(text).not.toContain("Check for Updates");
     for (const label of ["Create Library", "Open Library", "Merge Library"]) {
       const item = [...document.querySelectorAll('[role="menuitem"]')].find(
         (entry) => entry.textContent?.includes(label),
@@ -158,7 +135,7 @@ describe("workspace menu", () => {
   });
 
   it("switches to a recent library", async () => {
-    await openSwitchLibrary();
+    await openLibraryMenu();
     await vi.waitFor(() => expect(document.body.textContent).toContain("Work"));
     const work = [...document.querySelectorAll('[role="menuitem"]')].find(
       (item) => item.textContent?.includes("Work"),
@@ -173,7 +150,7 @@ describe("workspace menu", () => {
   });
 
   it("creates a new library", async () => {
-    await openSwitchLibrary();
+    await openLibraryMenu();
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Create Library"),
     );
@@ -192,7 +169,7 @@ describe("workspace menu", () => {
   });
 
   it("merges another library", async () => {
-    await openSwitchLibrary();
+    await openLibraryMenu();
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Merge Library"),
     );
@@ -204,69 +181,6 @@ describe("workspace menu", () => {
     await act(async () => item.click());
     await vi.waitFor(() =>
       expect(query).toHaveBeenCalledWith("library.mergeFrom", {}),
-    );
-  });
-
-  async function openExtensionDialog(): Promise<Element | null> {
-    await openMenu();
-    const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (entry) => entry.textContent?.includes("Browser Extension"),
-    );
-    if (!(item instanceof HTMLElement))
-      throw new Error("Missing Browser Extension action");
-    await act(async () => item.click());
-    await vi.waitFor(() =>
-      expect(document.querySelector('[role="dialog"]')).not.toBeNull(),
-    );
-    return document.querySelector('[role="dialog"]');
-  }
-
-  function storeButton(dialog: Element | null, label: string) {
-    const button = [...(dialog?.querySelectorAll("button") ?? [])].find(
-      (entry) => entry.textContent === label,
-    );
-    if (!button) throw new Error(`Missing ${label} button`);
-    return button;
-  }
-
-  it("opens each browser's store listing from the extension dialog", async () => {
-    const dialog = await openExtensionDialog();
-    await act(async () => storeButton(dialog, "Add to Chrome").click());
-    expect(openExternal).toHaveBeenLastCalledWith(
-      "https://chromewebstore.google.com/detail/ghigndnldiagchoaifgndleogpkendbc",
-    );
-    await act(async () => storeButton(dialog, "Add to Firefox").click());
-    expect(openExternal).toHaveBeenLastCalledWith(
-      "https://addons.mozilla.org/firefox/addon/desktop%40pond.so/",
-    );
-  });
-
-  it("checks for updates instead of opening Settings", async () => {
-    const history = createMemoryHistory({ initialEntries: ["/"] });
-    const router = createRouter({
-      routeTree: createRootRoute(),
-      history,
-    });
-    setAppRouter(router);
-    await openMenu();
-    const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-      (entry) => entry.textContent?.includes("Check for Updates"),
-    );
-    if (!(item instanceof HTMLElement))
-      throw new Error("Missing Check for Updates action");
-    await act(async () => item.click());
-    expect(query).toHaveBeenCalledWith("updates.checkNow", {});
-    expect(history.location.href).not.toContain("/settings");
-  });
-
-  it("says so when a store page doesn't open", async () => {
-    openExternal.mockResolvedValueOnce({ ok: false });
-    const dialog = await openExtensionDialog();
-    await act(async () => storeButton(dialog, "Add to Chrome").click());
-    await vi.waitFor(() =>
-      expect(dialog?.textContent).toContain(
-        "Pond couldn't open the store page. Try again.",
-      ),
     );
   });
 });

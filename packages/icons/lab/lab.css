@@ -140,7 +140,6 @@ body {
 .group {
   display: flex;
   flex-direction: column;
-  gap: 1px;
   padding-top: var(--ds-space-xl);
 }
 

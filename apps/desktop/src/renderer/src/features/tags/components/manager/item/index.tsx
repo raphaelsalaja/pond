@@ -72,6 +72,7 @@ function ItemRow({ variant }: { variant: "row" | "card" | "index" }) {
         data-tag-row=""
         data-card={variant === "card" || undefined}
         data-index={variant === "index" || undefined}
+        data-hover-row={variant === "index" ? "" : undefined}
         data-selected={selected || undefined}
         role="option"
         aria-selected={selected}

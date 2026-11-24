@@ -4,7 +4,6 @@ import {
   IconLibrary,
   IconNodes3,
   IconTag,
-  IconTrashXmark,
   IconWindowDownload,
 } from "@pond/icons";
 import { ToggleGroup, Tooltip } from "@pond/ui";
@@ -17,23 +16,22 @@ import { useFishList } from "@/features/fish/state/fish";
 import { WorkspaceMenu } from "@/features/library/components/workspace-menu";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
 import { useInboxSignal } from "@/features/notifications";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import { UpdateButton } from "@/features/settings";
 import { preloadWhenIdle } from "@/shared/lib/lazy-with-preload";
 import type { ShortcutId } from "@/shared/lib/shortcuts";
 import { usePrefs } from "@/shared/state/prefs";
 import { preloadLibraryNav, selectLibraryNav } from "../navigation";
-import { buildTrashMenuItems } from "../trash-menu";
 import { HelpMenu } from "./help-menu";
 import { Item } from "./item";
-import { SettingsButton } from "./settings-button";
 import styles from "./styles.module.css";
+import { WhatsNewButton } from "./whats-new-button";
 
 export type RailSection = "library" | "fish" | "canvases";
-export type RailPage = "inbox" | "tags" | "sources" | "downloads" | "trash";
+export type RailPage = "inbox" | "tags" | "sources" | "downloads";
 export type RailItem = RailSection | RailPage;
 
 const SECTIONS: RailSection[] = ["fish", "library", "canvases"];
-const PAGES: RailPage[] = ["inbox", "tags", "sources", "downloads", "trash"];
+const PAGES: RailPage[] = ["inbox", "tags", "sources", "downloads"];
 
 const LABELS: Record<RailItem, string> = {
   library: "Library",
@@ -43,7 +41,6 @@ const LABELS: Record<RailItem, string> = {
   tags: "Tags",
   sources: "Sources",
   downloads: "Downloads",
-  trash: "Trash",
 };
 
 const SHORTCUTS: Partial<Record<RailItem, ShortcutId>> = {
@@ -53,7 +50,6 @@ const SHORTCUTS: Partial<Record<RailItem, ShortcutId>> = {
   inbox: "nav.inbox",
   sources: "nav.sources",
   downloads: "nav.downloads",
-  trash: "nav.trash",
 };
 
 export function isRailPage(kind: string): kind is RailPage {
@@ -92,8 +88,6 @@ function icon(item: RailItem): ReactNode {
       return <IconNodes3 />;
     case "downloads":
       return <IconWindowDownload />;
-    case "trash":
-      return <IconTrashXmark />;
   }
 }
 
@@ -162,20 +156,12 @@ export function Rail({ value, sections, onSectionChange }: RailProps) {
               />
             ),
           )}
-          {PAGES.filter(
-            (kind) => kind !== "trash" && sidebar.destinations[kind],
-          ).map(page)}
+          {PAGES.filter((kind) => sidebar.destinations[kind]).map(page)}
           <span className={styles.spacer} aria-hidden />
-          {sidebar.destinations.trash ? (
-            <SpecContextMenu
-              buildItems={() => buildTrashMenuItems(counts.trash > 0)}
-            >
-              <span className={styles.menu}>{page("trash")}</span>
-            </SpecContextMenu>
-          ) : null}
+          <UpdateButton />
+          <WhatsNewButton />
         </ToggleGroup>
         <HelpMenu />
-        <SettingsButton />
       </Tooltip.Group>
     </nav>
   );

@@ -91,7 +91,7 @@ export function SortSection({ onArrange }: { onArrange?: () => void }) {
           </Button>
         </ViewMenuRow.Root>
       ) : null}
-      {nav.kind === "folder" ? (
+      {nav?.kind === "folder" ? (
         <ViewMenuRow.Root>
           <span className={ViewMenuRow.Label}>Saved for this folder</span>
           <Button size="sm" variant="secondary" onClick={onArrange}>

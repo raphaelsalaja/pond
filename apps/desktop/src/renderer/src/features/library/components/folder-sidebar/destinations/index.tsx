@@ -524,7 +524,6 @@ export function LibraryDestinations({
       destinations: order.filter(
         (destination) =>
           destination !== "inbox" &&
-          destination !== "trash" &&
           destination !== "tags" &&
           destinations[destination] &&
           group.destinations.some((item) => item === destination),

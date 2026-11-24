@@ -1,7 +1,7 @@
-import { IconInbox, IconTrash } from "@pond/icons";
+import { IconTrash } from "@pond/icons";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Empty } from ".";
+import { Empty, EmptyPreview } from ".";
 
 export const docs: ComponentDocs = {
   slug: "empty",
@@ -18,12 +18,22 @@ export const docs: ComponentDocs = {
     {
       name: "Empty.Media",
       description:
-        "The place's icon, drawn large and faint above the title. Pass a 14px icon or a `Loader.Spinner`.",
+        "A faint preview of what will land here, drawn with `EmptyPreview`, or a `Loader.Spinner` while loading.",
+    },
+    {
+      name: "EmptyPreview.Root",
+      description:
+        'Ghost cards shaped like the thing that fills the place. `shape` picks `row`, `tile`, `chip`, `panel`, `field` or `board`. `layout` picks `stack`, `single`, `spread` or `list`. Shrinks inside `size="card"`.',
+    },
+    {
+      name: "EmptyPreview.Row, Column, Line, Lines, Space, Thumb, Block, Icon, Chips",
+      description:
+        "The content of each card. Put a 12px icon in `Icon` or `Block` to name the place.",
     },
     {
       name: "Empty.Title",
       description:
-        "What's missing (`h2`), like No saves yet. Five words max, no period.",
+        "What's missing (`h2`), like No Saves Yet. Title case, five words max, no period.",
     },
     {
       name: "Empty.Description",
@@ -33,7 +43,7 @@ export const docs: ComponentDocs = {
     {
       name: "Empty.Action",
       description:
-        'One primary action. A second path is a `variant="text"` button. Leave it out when the place is done.',
+        'One `variant="secondary"` button, a verb plus noun. A second path is a `variant="text"` button. Leave it out when the place is done.',
     },
   ],
   keyboard: [],
@@ -48,9 +58,16 @@ export const docs: ComponentDocs = {
       render: () => (
         <Empty.Root>
           <Empty.Media>
-            <IconTrash size={14} />
+            <EmptyPreview.Root shape="tile" layout="single">
+              <EmptyPreview.Column>
+                <EmptyPreview.Block>
+                  <IconTrash size={12} />
+                </EmptyPreview.Block>
+                <EmptyPreview.Line width={32} />
+              </EmptyPreview.Column>
+            </EmptyPreview.Root>
           </Empty.Media>
-          <Empty.Title>Trash is empty</Empty.Title>
+          <Empty.Title>Trash Is Empty</Empty.Title>
           <Empty.Description>Saves you delete show up here.</Empty.Description>
         </Empty.Root>
       ),
@@ -60,9 +77,15 @@ export const docs: ComponentDocs = {
       render: () => (
         <Empty.Root size="card">
           <Empty.Media>
-            <IconInbox size={14} />
+            <EmptyPreview.Root shape="panel">
+              <EmptyPreview.Column>
+                <EmptyPreview.Block />
+                <EmptyPreview.Line width={52} />
+                <EmptyPreview.Line width={34} tone="thin" />
+              </EmptyPreview.Column>
+            </EmptyPreview.Root>
           </Empty.Media>
-          <Empty.Title>You're all caught up</Empty.Title>
+          <Empty.Title>You're All Caught Up</Empty.Title>
           <Empty.Description>
             New saves wait here until you process them.
           </Empty.Description>
@@ -73,7 +96,7 @@ export const docs: ComponentDocs = {
       name: "Inline",
       render: () => (
         <Empty.Root size="inline">
-          <Empty.Title>No notifications</Empty.Title>
+          <Empty.Title>No Notifications</Empty.Title>
         </Empty.Root>
       ),
     },
@@ -82,14 +105,22 @@ export const docs: ComponentDocs = {
       render: () => (
         <Empty.Root>
           <Empty.Media>
-            <IconInbox size={14} />
+            <EmptyPreview.Root shape="tile" layout="spread">
+              <EmptyPreview.Column>
+                <EmptyPreview.Block />
+                <EmptyPreview.Line width={36} />
+                <EmptyPreview.Line width={24} tone="thin" />
+              </EmptyPreview.Column>
+            </EmptyPreview.Root>
           </Empty.Media>
-          <Empty.Title>No saves yet</Empty.Title>
+          <Empty.Title>No Saves Yet</Empty.Title>
           <Empty.Description>
             Add a source to start collecting saves.
           </Empty.Description>
           <Empty.Action>
-            <Button variant="primary">New Source</Button>
+            <Button variant="secondary" size="sm">
+              New Source
+            </Button>
           </Empty.Action>
         </Empty.Root>
       ),

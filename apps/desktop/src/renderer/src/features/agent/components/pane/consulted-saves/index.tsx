@@ -1,4 +1,4 @@
-import { Button, Popover, Reveal } from "@pond/ui";
+import { Button, HoverHighlight, Popover, Reveal } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
 import type { ReactNode, RefObject } from "react";
@@ -131,7 +131,7 @@ export function ConsultedSaves({
   useSourceCovers(items.map((item) => item.id));
   if (!items.length) return null;
   const renderRow = (item: ReferenceItem) => (
-    <article key={item.id} className={styles.row}>
+    <article key={item.id} className={styles.row} data-hover-row="">
       <Popover.Root>
         <Popover.Trigger
           render={
@@ -162,6 +162,7 @@ export function ConsultedSaves({
         <Reveal visible={expanded}>
           <div className={styles.more}>{items.slice(3).map(renderRow)}</div>
         </Reveal>
+        <HoverHighlight />
       </div>
       {items.length > 3 ? (
         <div className={styles.footer}>

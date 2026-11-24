@@ -11,7 +11,7 @@ export const docs: ComponentDocs = {
     {
       name: "Slider.Root",
       description:
-        'Holds the value, `min`, `max`, `step` and `largeStep`. `layout="stacked"` puts the label above the track.',
+        'Holds the value, `min`, `max`, `step` and `largeStep`. `layout="stacked"` puts the label above the track. `layout="field"` puts the label and value inside the control, for rows of sliders.',
     },
     {
       name: "Slider.Label",
@@ -74,6 +74,25 @@ export const docs: ComponentDocs = {
             </Slider.Track>
           </Slider.Control>
           <Slider.Bounds min="0%" max="100%" />
+        </Slider.Root>
+      ),
+    },
+    {
+      name: "Field",
+      render: () => (
+        <Slider.Root
+          defaultValue={60}
+          layout="field"
+          format={{ style: "unit", unit: "percent" }}
+        >
+          <Slider.Control>
+            <Slider.Track>
+              <Slider.Indicator />
+              <Slider.Thumb />
+            </Slider.Track>
+            <Slider.Label>Opacity</Slider.Label>
+            <Slider.Value />
+          </Slider.Control>
         </Slider.Root>
       ),
     },

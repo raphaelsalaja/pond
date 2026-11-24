@@ -1,27 +1,23 @@
 import { IconLayers } from "@pond/icons";
-import { Empty } from "@pond/ui";
+import { Button, Empty, EmptyPreview } from "@pond/ui";
 import type { SplitPostSummary } from "@shared/split-posts";
-import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { LibraryLoading } from "@/features/library/components/empty";
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
+import { postTitle, useSplitPosts } from "@/features/library/hooks/use-split-posts";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
 import { Card, getSourceLabel } from "@/features/saves";
-import { ensureSaves, useSave } from "@/features/saves/pool";
+import { useSave } from "@/features/saves/pool";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { formatPlural } from "@/shared/lib/format";
 import { usePrefs } from "@/shared/state/prefs";
+import { SplitPostsIntro } from "./intro";
 import styles from "./styles.module.css";
 
 const ITEMS = { one: "item", other: "items" };
-const PREVIEW_COUNT = 4;
-
-function postTitle(post: SplitPostSummary): string {
-  return post.title || getSourceLabel(post.source);
-}
 
 function PostCard({
   post,
@@ -47,7 +43,7 @@ function PostCard({
       <Card.Select
         className={styles.trigger}
         aria-label={`Open ${title}, ${meta}`}
-        onClick={() => selectLibraryNav({ kind: "post", key: post.key, title })}
+        onClick={() => selectLibraryNav({ kind: "post", key: post.key })}
       >
         <Card.Media>
           <span className={styles.cover}>
@@ -74,16 +70,7 @@ export function SplitPostsPage() {
   const [q, setQ] = useState("");
   const [viewer] = usePrefs("viewer");
   const gap = useLibrarySaveGap();
-  const posts = useQuery({
-    queryKey: ["saves.splitPosts"],
-    queryFn: async () => {
-      const result = await window.pond.query("saves.splitPosts", {});
-      await ensureSaves(
-        result.flatMap((post) => post.saveIds.slice(0, PREVIEW_COUNT)),
-      );
-      return result;
-    },
-  });
+  const posts = useSplitPosts();
   const { refetch } = posts;
 
   useEffect(
@@ -105,6 +92,8 @@ export function SplitPostsPage() {
     );
   }, [posts.data, q]);
 
+  if (posts.isSuccess && posts.data.length === 0) return <SplitPostsIntro />;
+
   return (
     <div className={styles.page}>
       <SearchChrome.Root>
@@ -117,15 +106,30 @@ export function SplitPostsPage() {
       <div className={styles.body} data-scroll-fade="vertical">
         {posts.isPending ? (
           <LibraryLoading />
-        ) : (posts.data ?? []).length === 0 ? (
-          <Empty.Root>
+        ) : posts.isError ? (
+          <Empty.Root role="alert">
             <Empty.Media>
-              <IconLayers size={14} />
+              <EmptyPreview.Root shape="tile">
+                <EmptyPreview.Column>
+                  <EmptyPreview.Block>
+                    <IconLayers size={12} />
+                  </EmptyPreview.Block>
+                  <EmptyPreview.Line width={36} />
+                  <EmptyPreview.Line width={28} tone="thin" />
+                </EmptyPreview.Column>
+              </EmptyPreview.Root>
             </Empty.Media>
-            <Empty.Title>No split posts yet</Empty.Title>
-            <Empty.Description>
-              Split a gallery into Saves and its post stays together here.
-            </Empty.Description>
+            <Empty.Title>Couldn't Load Split Posts</Empty.Title>
+            <Empty.Description>Try again in a moment.</Empty.Description>
+            <Empty.Action>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void refetch()}
+              >
+                Try Again
+              </Button>
+            </Empty.Action>
           </Empty.Root>
         ) : visible.length === 0 ? (
           <MatchesEmpty query={q} onReset={() => setQ("")} />

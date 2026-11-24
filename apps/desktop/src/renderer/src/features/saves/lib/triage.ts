@@ -1,6 +1,6 @@
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { bulkMutation } from "@/features/saves/lib/mutate";
-import { openSave, saveIdFromPath } from "@/features/saves/lib/save-nav";
+import { openSave, openSaveId } from "@/features/saves/lib/save-nav";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
@@ -9,7 +9,6 @@ import {
   selection,
 } from "@/features/saves/state/selection";
 import { tumbleToTrash } from "@/features/saves/state/trash-tumble";
-import { getAppRouter } from "@/shared/lib/app-router";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
@@ -97,8 +96,7 @@ export async function showResult(
 ): Promise<void> {
   await ensureSaves([next]);
   if (primarySelectionStore.state.id !== from) return;
-  const detail =
-    saveIdFromPath(getAppRouter()?.state.location.pathname ?? "") !== null;
+  const detail = openSaveId() !== null;
   selectOnlySave(next);
   if (detail) openSave(next);
   else await resultNavigation.reveal(next);

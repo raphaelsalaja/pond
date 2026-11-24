@@ -2,7 +2,7 @@ import {
   IconPalette as Appearance,
   IconArchive as Backups,
   IconPuzzle as Extension,
-  IconGear3 as General,
+  IconNut as General,
   IconShieldCheck as Health,
   IconImage as Images,
   IconFolder as Library,

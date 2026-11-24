@@ -1,5 +1,5 @@
 import { IconMagnifier } from "@pond/icons";
-import { Button, Empty } from "@pond/ui";
+import { Button, Empty, EmptyPreview } from "@pond/ui";
 
 interface MatchesEmptyProps {
   query?: string;
@@ -47,15 +47,23 @@ export function MatchesEmpty({
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconMagnifier size={14} />
+        <EmptyPreview.Root shape="field" layout="single">
+          <EmptyPreview.Row>
+            <EmptyPreview.Icon>
+              <IconMagnifier size={12} />
+            </EmptyPreview.Icon>
+            <EmptyPreview.Line width={filtered ? 44 : 30} />
+            <EmptyPreview.Line width={filtered ? 30 : 44} tone="mid" />
+          </EmptyPreview.Row>
+        </EmptyPreview.Root>
       </Empty.Media>
       <Empty.Title>
-        {trimmed ? `No results for “${trimmed}”` : "No results found"}
+        {trimmed ? `No Results for “${trimmed}”` : "No Results Found"}
       </Empty.Title>
       <Empty.Description>{content.description}</Empty.Description>
       {onReset ? (
         <Empty.Action>
-          <Button variant="primary" size="sm" onClick={onReset}>
+          <Button variant="secondary" size="sm" onClick={onReset}>
             {content.action}
           </Button>
         </Empty.Action>

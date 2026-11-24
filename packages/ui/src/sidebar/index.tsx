@@ -14,6 +14,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { HoverHighlight } from "../hover-highlight";
 import { Input } from "../input";
 import { pop } from "../shared/pop";
 import { useEasedScrollClamp } from "./scroll-clamp";
@@ -51,6 +52,7 @@ function Item({ className, size = "md", onClick, ...props }: ItemProps) {
     <Button
       className={cn(styles.item, className)}
       data-size={size}
+      data-hover-row=""
       onClick={(event) => {
         pop(event.currentTarget.querySelector(`.${styles.icon}`));
         onClick?.(event);
@@ -122,7 +124,7 @@ function Tile({ className, onClick, ...props }: TileProps) {
 interface ResultButtonProps extends Button.Props {}
 
 function ResultButton({ ...props }: ResultButtonProps) {
-  return <Button className={styles.result} {...props} />;
+  return <Button className={styles.result} data-hover-row="" {...props} />;
 }
 
 interface IconProps extends React.ComponentPropsWithoutRef<"span"> {
@@ -195,6 +197,7 @@ function Scroll({ className, children, ...props }: ScrollProps) {
       {...props}
     >
       {children}
+      <HoverHighlight />
       <div ref={spaceRef} aria-hidden className={styles.clamp} />
     </div>
   );

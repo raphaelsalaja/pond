@@ -17,6 +17,80 @@
   }
 }
 
+.root[data-layout="field"] {
+  min-width: 0;
+
+  & > .control {
+    --slider-inset: 0px;
+    --slider-thumb-width: 12px;
+    width: auto;
+    min-width: 0;
+    height: var(--ds-size-md);
+
+    &::before {
+      border-radius: var(--ds-radius-md);
+    }
+  }
+
+  & .track {
+    border-radius: var(--ds-radius-md);
+  }
+
+  & > .label {
+    flex: none;
+    font-size: var(--ds-text-small);
+    font-weight: var(--ds-weight-regular);
+    line-height: var(--ds-leading-small);
+    color: var(--ds-foreground-secondary);
+  }
+
+  & > .control {
+    flex: 1 1 auto;
+  }
+
+  /* Label and value sit over the fill; the control underneath still takes the drag. */
+  & .control > .label,
+  & .control > .value {
+    position: absolute;
+    top: 50%;
+    z-index: 1;
+    min-width: 0;
+    font-size: var(--ds-text-small);
+    line-height: var(--ds-leading-small);
+    pointer-events: none;
+    translate: 0 -50%;
+  }
+
+  & .control > .label {
+    left: var(--ds-space-md);
+    font-weight: var(--ds-weight-regular);
+  }
+
+  & .control > .value {
+    right: var(--ds-space-md);
+  }
+
+  &[data-disabled] .label,
+  &[data-disabled] .value {
+    color: var(--ds-foreground-tertiary);
+  }
+}
+
+.root[data-tone="accent"] {
+  & .indicator {
+    background: var(--ds-accent);
+    box-shadow: none;
+  }
+
+  & .thumb::before {
+    background: var(--ds-accent-contrast);
+  }
+
+  &[data-disabled] .indicator {
+    background: var(--ds-surface-tertiary);
+  }
+}
+
 .label {
   font-size: var(--ds-text-body);
   font-weight: var(--ds-weight-strong);
@@ -25,7 +99,7 @@
 }
 
 .control {
-  --slider-inset: 3px;
+  --slider-inset: var(--ds-space-xs);
   --slider-thumb-width: 16px;
   position: relative;
   isolation: isolate;

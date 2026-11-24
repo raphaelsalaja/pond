@@ -29,8 +29,17 @@
     color-mix(in srgb, var(--ds-accent-contrast) 24%, transparent);
 }
 
+.root[data-variant="ghost"] > .trigger:not(:first-child) {
+  box-shadow: inset var(--ds-border-width) 0 0 var(--ds-border-subtle);
+}
+
 .root[data-variant="secondary"] > [data-popup-open] {
   background-color: var(--ds-background-secondary);
+}
+
+.root[data-variant="ghost"] > [data-popup-open] {
+  color: var(--ds-foreground-primary);
+  background-color: var(--ds-surface-secondary);
 }
 
 .root[data-variant="primary"] > [data-popup-open] {

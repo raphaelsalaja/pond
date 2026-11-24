@@ -1,33 +1,30 @@
 import { Activity, Suspense, useEffect, useState } from "react";
+import { type RailPage, useRailPage } from "@/features/library/state/shell-layout";
+import { useOpenSaveId } from "@/features/saves/navigation";
 import {
   lazyWithPreload,
   preloadWhenIdle,
 } from "@/shared/lib/lazy-with-preload";
 
 const PAGES = {
-  "/tags": lazyWithPreload(() =>
+  tags: lazyWithPreload(() =>
     import("@/features/tags/page").then((module) => module.TagsPage),
   ),
-  "/sources": lazyWithPreload(() =>
+  sources: lazyWithPreload(() =>
     import("@/features/sources/components/page").then(
       (module) => module.SourcesPage,
     ),
   ),
-  "/downloads": lazyWithPreload(() =>
+  downloads: lazyWithPreload(() =>
     import("@/features/downloads/page").then((module) => module.DownloadsPage),
   ),
-};
-
-type RailPagePath = keyof typeof PAGES;
-
-function railPagePath(pathname: string): RailPagePath | null {
-  return Object.hasOwn(PAGES, pathname) ? (pathname as RailPagePath) : null;
-}
+} satisfies Record<RailPage, unknown>;
 
 /** Rail pages stay mounted once visited, so switching back skips the remount and refetch; `Activity` pauses their effects while hidden. */
-export function RailPages({ pathname }: { pathname: string }) {
-  const active = railPagePath(pathname);
-  const [visited, setVisited] = useState<readonly RailPagePath[]>(() =>
+export function RailPages() {
+  const railPage = useRailPage();
+  const active = useOpenSaveId() === null ? railPage : null;
+  const [visited, setVisited] = useState<readonly RailPage[]>(() =>
     active ? [active] : [],
   );
   if (active && !visited.includes(active)) setVisited([...visited, active]);
@@ -37,10 +34,10 @@ export function RailPages({ pathname }: { pathname: string }) {
     [],
   );
 
-  return visited.map((path) => {
-    const Page = PAGES[path];
+  return visited.map((page) => {
+    const Page = PAGES[page];
     return (
-      <Activity key={path} mode={path === active ? "visible" : "hidden"}>
+      <Activity key={page} mode={page === active ? "visible" : "hidden"}>
         <Suspense fallback={null}>
           <Page />
         </Suspense>

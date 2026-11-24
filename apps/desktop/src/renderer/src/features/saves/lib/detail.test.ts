@@ -46,7 +46,7 @@ function save(partial: Partial<Save> & { id: string }): Save {
 }
 
 describe("groupDetailRows", () => {
-  it("splits identity, file, and dates into separate islands", () => {
+  it("splits origin, file, and dates into separate groups", () => {
     const groups = groupDetailRows([
       row("id", "ID"),
       row("author", "Author"),
@@ -58,20 +58,19 @@ describe("groupDetailRows", () => {
       row("imported", "Imported"),
     ]);
 
-    expect(groups.map((g) => g.title)).toEqual(["Properties", "File", "Dates"]);
+    expect(groups.map((g) => g.title)).toEqual(["Origin", "File", "Dates"]);
     expect(groups[0]?.rows.map((r) => r.id)).toEqual([
       "author",
       "from",
       "platform",
-      "type",
     ]);
-    expect(groups[1]?.rows.map((r) => r.id)).toEqual(["size", "id"]);
+    expect(groups[1]?.rows.map((r) => r.id)).toEqual(["type", "size", "id"]);
     expect(groups[2]?.rows.map((r) => r.id)).toEqual(["published", "imported"]);
   });
 
-  it("omits empty islands", () => {
+  it("omits empty groups", () => {
     const groups = groupDetailRows([row("author", "Author")]);
-    expect(groups.map((g) => g.title)).toEqual(["Properties"]);
+    expect(groups.map((g) => g.title)).toEqual(["Origin"]);
   });
 });
 
@@ -228,14 +227,26 @@ describe("collectIdentityRows", () => {
     expect(from?.label).toBe("Watch");
   });
 
-  it("shows liked and saved as a Saved To property", () => {
+  it("shows liked and saved as a List property", () => {
     const row = collectIdentityRows(
       save({ id: "s1", listKinds: ["saved", "liked"], mediaType: null }),
     ).find((r) => r.id === "list");
     expect(row).toMatchObject({
       id: "list",
-      label: "Saved To",
+      label: "List",
       value: "Liked, Saved",
     });
+  });
+
+  it("names the List after the Source's own lists", () => {
+    const row = collectIdentityRows(
+      save({
+        id: "s1",
+        source: "twitter",
+        listKinds: ["saved", "liked"],
+        mediaType: null,
+      }),
+    ).find((r) => r.id === "list");
+    expect(row?.value).toBe("Likes, Bookmarks");
   });
 });

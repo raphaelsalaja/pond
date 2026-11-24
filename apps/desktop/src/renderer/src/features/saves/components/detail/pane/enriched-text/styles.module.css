@@ -1,7 +1,8 @@
-.root {
+.card {
   overflow: hidden;
-  background: var(--ds-surface-primary);
-  border-radius: var(--ds-radius-sm);
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-raised);
 }
 
 .text {
@@ -11,7 +12,7 @@
   overflow-y: auto;
   font-size: var(--ds-text-small);
   line-height: 1.5;
-  color: var(--ds-foreground-secondary);
+  color: var(--ds-foreground-primary);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
   user-select: text;

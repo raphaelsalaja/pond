@@ -49,6 +49,8 @@
 /* Leaves room under the image for the two caption lines. */
 .card {
   --card-preview-height: min(480px, 100cqw, calc(100cqh - 56px));
+  /* Rendered post images bake in rounded corners; a smaller radius shows the thumb fill behind them. */
+  --card-radius: var(--ds-radius-2xl);
 
   position: relative;
   touch-action: none;

@@ -9,12 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  libraryChrome,
-  resetFilters,
-  selectLibraryNav,
-  setQuery,
-} from "@/features/library";
+import { enterAll, selectLibraryNav } from "@/features/library";
 import {
   buildTagMenuItems,
   type TagMenuActions,
@@ -24,7 +19,6 @@ import {
   type TagGroupMenuActions,
 } from "@/features/tags/components/group-context-menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
-import { getAppRouter } from "@/shared/lib/app-router";
 import { eventFromEditable } from "@/shared/lib/editable-target";
 import { matchesShortcut } from "@/shared/lib/shortcuts";
 import { useTagsTable } from "./context";
@@ -115,13 +109,10 @@ export function TagRowProvider({
         onFilter: () => {
           const names = row.group.tagNames;
           if (names.length === 0) return;
-          resetFilters();
-          setQuery({
+          enterAll({
             combinator: "and",
             rules: [{ field: "tags", operator: "some", value: names }],
           });
-          libraryChrome.setNav({ kind: "all" });
-          getAppRouter()?.history.push("/");
         },
         onRename: startRename,
         onChangeColor: (color) =>

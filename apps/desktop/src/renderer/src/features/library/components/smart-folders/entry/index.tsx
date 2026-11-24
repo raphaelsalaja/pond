@@ -26,7 +26,6 @@ interface EntryProps {
   views: SavedView[];
   childrenByParent: Map<string | null, SavedView[]>;
   activeId: string | null;
-  onSelect: () => void;
   depth: number;
   editingViewId: string | null;
   onFinishRenaming: () => void;
@@ -45,7 +44,6 @@ export function SmartFolderEntry({
   views,
   childrenByParent,
   activeId,
-  onSelect,
   depth,
   editingViewId,
   onFinishRenaming,
@@ -84,10 +82,7 @@ export function SmartFolderEntry({
   const { label, icon: Icon } = ENTRY_TYPES[view.kind];
   const presentation = presentations[view.id] ?? {};
   const color = folderColorCss(presentation.color);
-  const select = () => {
-    savedViews.select(view.id);
-    onSelect();
-  };
+  const select = () => savedViews.select(view.id);
   const selectedCount = views.filter((entry) =>
     organization.selected.includes(entry.id),
   ).length;
@@ -102,10 +97,7 @@ export function SmartFolderEntry({
           openEditor,
           onRename: () => onStartRenaming(view.id),
           onStartRenaming,
-          onCreated: () => {
-            onGroupOpenChange(view.id, true);
-            onSelect();
-          },
+          onCreated: () => onGroupOpenChange(view.id, true),
           presentation,
           quickAccessIds,
         });
@@ -123,6 +115,7 @@ export function SmartFolderEntry({
       >
         <div
           className={styles.row}
+          data-hover-row={renaming ? undefined : ""}
           data-dragging={isDragging || undefined}
           data-drop={drop?.id === view.id ? drop.kind : undefined}
           data-smart-folder-sortable={view.id}
@@ -239,7 +232,6 @@ export function SmartFolderEntry({
               views={views}
               childrenByParent={childrenByParent}
               activeId={activeId}
-              onSelect={onSelect}
               depth={depth + 1}
               editingViewId={editingViewId}
               onFinishRenaming={onFinishRenaming}

@@ -77,6 +77,9 @@ async function loadUpdater(): Promise<UpdaterPort> {
     onDownloaded: (listener) => {
       autoUpdater.on("update-downloaded", (info) => listener(info.version));
     },
+    onProgress: (listener) => {
+      autoUpdater.on("download-progress", (info) => listener(info.percent));
+    },
     check: async () => {
       const result = await autoUpdater.checkForUpdates();
       return result ? { version: result.updateInfo.version } : null;

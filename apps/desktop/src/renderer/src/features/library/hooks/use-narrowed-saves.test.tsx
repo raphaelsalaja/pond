@@ -3,16 +3,11 @@ import {
   type LibraryQueryRequest,
   LibraryQueryRequestSchema,
 } from "@shared/library-query";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRouter,
-} from "@tanstack/react-router";
+import { RouterContextProvider } from "@tanstack/react-router";
 import { act, useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { normalise } from "@/features/saves";
-import { rememberListPath } from "@/features/saves/lib/list-path";
 import { followDeparture } from "@/features/saves/lib/save-nav";
 import {
   primarySelection,
@@ -21,7 +16,12 @@ import {
 } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/pool";
 import { clearRecents, useTrackVisit } from "@/features/saves/state/recents";
-import { setAppRouter } from "@/shared/lib/app-router";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import {
+  currentLocation,
+  type LibraryTestRouter,
+  openLibraryAt,
+} from "@/shared/test/library-router";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
 const SAVE_ID = "recent-save";
@@ -74,10 +74,11 @@ function OpenedSave({ id }: { id: string }) {
 describe("recently added preview", () => {
   let host: HTMLDivElement;
   let root: Root;
+  let router: LibraryTestRouter;
   const cutoffs: Array<number | undefined> = [];
   const prefs = PrefsSchema.parse({});
 
-  beforeEach(() => {
+  beforeEach(async () => {
     cutoffs.length = 0;
     const save = normalise({
       id: SAVE_ID,
@@ -89,7 +90,9 @@ describe("recently added preview", () => {
     });
     if (!save) throw new Error("Invalid fixture");
     pool.upsert(save);
-    rememberListPath("/recently-added");
+    router = await openLibraryAt(
+      `${pathForLibraryNav({ kind: "recentlyAdded" })}?save=${SAVE_ID}`,
+    );
     selection.setCursor(SAVE_ID);
     primarySelection.set(SAVE_ID);
     vi.stubGlobal("pond", {
@@ -125,22 +128,23 @@ describe("recently added preview", () => {
 
   it("keeps the open save when a visit is recorded from Recently Added", async () => {
     await act(async () => {
-      root.render(<Collection preview={false} />);
+      root.render(
+        <RouterContextProvider router={router}>
+          <Collection preview={false} />
+        </RouterContextProvider>,
+      );
     });
     await settle(host);
-    const router = createRouter({
-      routeTree: createRootRoute(),
-      history: createMemoryHistory({
-        initialEntries: [`/save/${SAVE_ID}`],
-      }),
-    });
-    setAppRouter(router);
     const cutoff = cutoffs.at(-1);
     expect(cutoff).toEqual(expect.any(Number));
     const queriesBeforeOpen = cutoffs.length;
 
     await act(async () => {
-      root.render(<Collection preview />);
+      root.render(
+        <RouterContextProvider router={router}>
+          <Collection preview />
+        </RouterContextProvider>,
+      );
     });
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 30));
@@ -152,7 +156,10 @@ describe("recently added preview", () => {
     expect(
       host.querySelector("[data-loading]")?.getAttribute("data-loading"),
     ).toBe("false");
-    expect(router.history.location.pathname).toBe(`/save/${SAVE_ID}`);
+    expect(currentLocation(router)).toMatchObject({
+      pathname: "/recently-added",
+      search: { save: SAVE_ID },
+    });
     expect(cutoffs.slice(queriesBeforeOpen)).toEqual([]);
     expect(new Set(cutoffs)).toEqual(new Set([cutoff]));
   });

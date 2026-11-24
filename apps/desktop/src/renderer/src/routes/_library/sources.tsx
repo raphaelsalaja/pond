@@ -1,6 +1,13 @@
+import { IconNodes3 } from "@pond/icons";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_library/sources")({
-  /** `RailPages` in the Library page keeps this page mounted across rail switches. */
+  staticData: {
+    surface: "rail",
+    railPage: "sources",
+    details: null,
+    nav: () => ({ kind: "sources" }),
+    crumb: { label: "Sources", icon: IconNodes3 },
+  },
   component: () => null,
 });

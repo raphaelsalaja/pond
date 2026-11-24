@@ -163,8 +163,7 @@
   }
 
   > span:first-child {
-    height: 3px;
-    margin-bottom: 1px;
+    height: 4px;
   }
 }
 

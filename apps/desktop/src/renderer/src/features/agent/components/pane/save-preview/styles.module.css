@@ -93,10 +93,6 @@
   line-height: 1;
   color: var(--ds-accent-foreground);
 
-  &:hover {
-    color: var(--ds-accent-foreground);
-  }
-
   &:hover > span {
     background-size: 100% 1px;
   }

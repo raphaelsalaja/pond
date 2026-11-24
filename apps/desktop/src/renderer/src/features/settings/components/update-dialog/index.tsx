@@ -1,15 +1,17 @@
-import { Dialog } from "@pond/ui";
+import { Button, Dialog, Logo, Progress, Shimmer } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
 import { type UpdateNotice, UpdateNoticeSchema } from "@shared/update-notice";
-import { useEffect, useState } from "react";
-import { updateDialogPrompt } from "./prompt";
+import { useEffect, useRef, useState } from "react";
+import { updateScreen } from "./screen";
 import {
   dismissUpdateDialog,
   presentUpdateNotice,
   readUpdateDialog,
   requestUpdateCheck,
+  showUpdateRestarting,
   type UpdateDialogView,
 } from "./session";
+import styles from "./styles.module.css";
 import { useUpdateDialog } from "./use-update-dialog";
 
 type UpdateAction = "updates.download" | "updates.install";
@@ -35,6 +37,12 @@ const FALLBACK_ERRORS = {
   "updates.install": "Couldn't restart Pond. Try again.",
 } satisfies Record<UpdateAction, string>;
 
+function noticeKey(notice: UpdateNotice): string {
+  if (notice.phase === "downloaded") return `downloaded:${notice.version}`;
+  return `available:${notice.version}:${notice.downloading}:${notice.progress ?? ""}`;
+}
+
+/** Leaves out download state: a failed download's notice and its error reply arrive in either order. */
 function viewKey(view: UpdateDialogView | null): string {
   if (!view) return "none";
   switch (view.kind) {
@@ -45,9 +53,9 @@ function viewKey(view: UpdateDialogView | null): string {
     case "failed":
       return `failed:${view.retry}:${view.message}`;
     case "update":
-      return `update:${view.notice.phase}:${view.notice.version}:${
-        view.notice.phase === "available" ? view.notice.downloading : ""
-      }`;
+      return `update:${view.notice.phase}:${view.notice.version}`;
+    case "restarting":
+      return `restarting:${view.version}`;
   }
 }
 
@@ -55,6 +63,7 @@ export function UpdateDialog() {
   const model = useUpdateDialog();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const actionRef = useRef<HTMLButtonElement>(null);
   const key = viewKey(model.view);
   const [trackedKey, setTrackedKey] = useState(key);
   if (trackedKey !== key) {
@@ -65,13 +74,24 @@ export function UpdateDialog() {
 
   useEffect(() => subscribeToUpdateNotices(presentUpdateNotice), []);
 
-  const prompt = model.view ? updateDialogPrompt(model.view) : null;
-  const pending = Boolean(prompt?.pending || busy);
+  const screen = model.view ? updateScreen(model.view) : null;
+  const step = stepKey(model.view);
+  const working = busy || (screen !== null && screen.action === null);
+  const startingDownload =
+    busy &&
+    model.view?.kind === "update" &&
+    model.view.notice.phase === "available";
+
+  useEffect(() => {
+    if (step === "none") return;
+    actionRef.current?.focus({ preventScroll: true });
+  }, [step]);
 
   async function confirm() {
     const current = readUpdateDialog();
     const view = current.view;
-    if (!current.open || !view || view.kind === "checking") return;
+    if (!current.open || !view) return;
+    if (view.kind === "checking" || view.kind === "restarting") return;
     if (view.kind === "current" || (view.kind === "failed" && !view.retry)) {
       dismissUpdateDialog();
       return;
@@ -94,7 +114,10 @@ export function UpdateDialog() {
       viewKey(readUpdateDialog().view) !== started
     )
       return;
-    if (!failure && action === "updates.install") return;
+    if (!failure && action === "updates.install") {
+      showUpdateRestarting(view.notice.version);
+      return;
+    }
     setError(failure);
     setBusy(false);
   }
@@ -106,38 +129,90 @@ export function UpdateDialog() {
         if (!next) dismissUpdateDialog();
       }}
     >
-      {prompt ? (
+      {screen ? (
         <Dialog.Portal>
-          <Dialog.Backdrop />
-          <Dialog.Popup aria-busy={pending}>
-            <Dialog.Header>
-              <Dialog.Title>{prompt.title}</Dialog.Title>
-            </Dialog.Header>
-            <Dialog.Content>
-              <Dialog.Description>{prompt.description}</Dialog.Description>
+          <Dialog.Popup
+            size="full"
+            aria-busy={working}
+            initialFocus={screen.action ? actionRef : undefined}
+          >
+            <div className={styles.column}>
+              <Logo size={66} className={styles.mark} aria-hidden />
+              <div key={`copy:${step}`} className={styles.copy}>
+                <Dialog.Title className={styles.title}>
+                  {screen.action === null && model.view?.kind !== "failed" ? (
+                    <Shimmer.Root tone="neutral">{screen.title}</Shimmer.Root>
+                  ) : (
+                    screen.title
+                  )}
+                </Dialog.Title>
+                <Dialog.Description className={styles.description}>
+                  {screen.description}
+                </Dialog.Description>
+              </div>
+              <Progress.Root
+                className={styles.meter}
+                size="md"
+                value={progressValue(screen.meter.value)}
+              >
+                <Progress.Track>
+                  <Progress.Indicator />
+                </Progress.Track>
+                <Progress.Label key={`label:${step}`} className={styles.label}>
+                  {screen.meter.label}
+                </Progress.Label>
+              </Progress.Root>
               {error ? (
-                <Dialog.Description role="alert" data-error>
+                <Dialog.Description
+                  role="alert"
+                  className={styles.error}
+                  data-error
+                >
                   {error}
                 </Dialog.Description>
               ) : null}
-            </Dialog.Content>
-            <Dialog.Footer>
-              {prompt.cancel ? (
-                <Dialog.Cancel>{prompt.cancel}</Dialog.Cancel>
-              ) : null}
-              <Dialog.Confirm
-                disabled={pending}
-                loading={pending}
-                onClick={() => void confirm()}
+              <div
+                key={`actions:${step}:${startingDownload}`}
+                className={styles.actions}
               >
-                {prompt.action}
-              </Dialog.Confirm>
-            </Dialog.Footer>
+                {startingDownload ? null : screen.dismiss ? (
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    onClick={dismissUpdateDialog}
+                  >
+                    {screen.dismiss}
+                  </Button>
+                ) : null}
+                {!startingDownload && screen.action ? (
+                  <Button
+                    ref={actionRef}
+                    size="md"
+                    loading={busy}
+                    onClick={() => void confirm()}
+                  >
+                    {screen.action}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
           </Dialog.Popup>
         </Dialog.Portal>
       ) : null}
     </Dialog.Root>
   );
+}
+
+/** Changes on every step the overlay animates into, but not on each percent of a download. */
+function stepKey(view: UpdateDialogView | null): string {
+  if (view?.kind === "update" && view.notice.phase === "available") {
+    return `${viewKey(view)}:${view.notice.downloading}`;
+  }
+  return viewKey(view);
+}
+
+function progressValue(value: number | null): number | null {
+  return value === null ? null : Math.round(value * 100);
 }
 
 export function subscribeToUpdateNotices(
@@ -147,7 +222,7 @@ export function subscribeToUpdateNotices(
   let active = true;
   let lastNotice = "";
   const presentOnce = (notice: UpdateNotice) => {
-    const key = `${notice.phase}:${notice.version}:${"downloading" in notice ? notice.downloading : ""}`;
+    const key = noticeKey(notice);
     if (key === lastNotice) return;
     lastNotice = key;
     present(notice);

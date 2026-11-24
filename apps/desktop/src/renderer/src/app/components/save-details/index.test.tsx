@@ -1,21 +1,24 @@
 import "@/app/effects/save-library-bridge";
 import { PrefsSchema } from "@pond/schema";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from "@tanstack/react-router";
-import { act } from "react";
+import { RouterProvider } from "@tanstack/react-router";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { folders } from "@/features/library/state/folders";
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
-import { setAppRouter } from "@/shared/lib/app-router";
+import { openLibraryAt } from "@/shared/test/library-router";
 import { inspectorSaveIds, SaveDetails } from "./";
+
+function Shell({ children }: { children: ReactNode }) {
+  return (
+    <>
+      {children}
+      <SaveDetails />
+    </>
+  );
+}
 
 describe("inspectorSaveIds", () => {
   it("prefers the open save route over library selection", () => {
@@ -108,30 +111,17 @@ describe("SaveDetails", () => {
   });
 
   async function mount(path = "/") {
-    const rootRoute = createRootRoute({ component: SaveDetails });
-    const children = ["/", "/save/$saveId"].map((path) =>
-      createRoute({
-        getParentRoute: () => rootRoute,
-        path,
-        component: () => null,
-      }),
+    const router = await openLibraryAt(path);
+    await act(async () =>
+      root.render(<RouterProvider router={router} InnerWrap={Shell} />),
     );
-    const router = createRouter({
-      routeTree: rootRoute.addChildren(children),
-      history: createMemoryHistory({ initialEntries: [path] }),
-    });
-    setAppRouter(router);
-    await act(async () => {
-      await router.load();
-      root.render(<RouterProvider router={router} />);
-    });
     return router;
   }
 
   it("shows an empty inspector when the library has no selection", async () => {
     await mount("/");
     await vi.waitFor(() =>
-      expect(host.textContent).toContain("Nothing selected"),
+      expect(host.textContent).toContain("Nothing Selected"),
     );
   });
 
@@ -165,5 +155,26 @@ describe("SaveDetails", () => {
     });
     expect(host.textContent).toContain("One1/2");
     expect(host.textContent).toContain("Two1/2");
+  });
+
+  it("inspects the open Save over the library selection", async () => {
+    const extra = normalise({
+      id: "other",
+      title: "Second save",
+      url: "https://other.example",
+      source: "local",
+      tags: ["Two"],
+    });
+    if (!extra) throw new Error("Invalid save fixture");
+    pool.upsert(extra);
+    selection.set(["other"]);
+    primarySelection.set("other");
+    await import("@/features/saves/components/detail/pane");
+    await mount("/?save=demo");
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(host.textContent).toContain("One");
+    expect(host.textContent).not.toContain("Two");
   });
 });

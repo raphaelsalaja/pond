@@ -1,13 +1,8 @@
 import { createContext, use } from "react";
-
-export type WindowEdge = "top" | "left" | "right" | "bottom";
+import type { WindowSide } from "./handle";
 
 export interface WindowContextValue {
-  state: Record<WindowEdge, boolean>;
-  actions: {
-    setOpen: (edge: WindowEdge, open: boolean) => void;
-  };
-  meta: Record<string, never>;
+  state: Record<WindowSide, boolean>;
 }
 
 export const WindowContext = createContext<WindowContextValue | null>(null);

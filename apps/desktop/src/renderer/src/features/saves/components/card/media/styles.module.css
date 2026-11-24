@@ -6,7 +6,7 @@
   width: 100%;
   height: 100%;
   background-color: var(--ds-background-secondary);
-  border-radius: var(--ds-radius-xs);
+  border-radius: var(--card-radius, var(--ds-radius-xs));
   box-shadow: var(--ds-shadow-border);
   isolation: isolate;
 

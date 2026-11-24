@@ -2,7 +2,6 @@ import type { InboxNotification } from "@shared/notification-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
-import { announcements } from "@/shared/state/announcements";
 
 interface NotificationsState {
   items: readonly InboxNotification[];
@@ -41,12 +40,6 @@ function patch(
     (items) => items.map((item) => (wanted.has(item.id) ? change(item) : item)),
     send,
   );
-}
-
-function dismissAnnouncements(items: readonly InboxNotification[]): void {
-  for (const item of items)
-    if (item.target?.type === "announcement")
-      announcements.dismiss(item.target.id);
 }
 
 export function isSnoozed(item: InboxNotification): boolean {
@@ -88,16 +81,13 @@ export const notifications = {
   remove(ids: readonly string[]): void {
     if (ids.length === 0) return;
     const gone = new Set(ids);
-    dismissAnnouncements(store.state.items.filter((item) => gone.has(item.id)));
     optimistic(
       (items) => items.filter((item) => !gone.has(item.id)),
       () => window.pond.query("notifications.delete", { ids: [...ids] }),
     );
   },
   removeRead(): void {
-    const read = store.state.items.filter((item) => !isUnread(item));
-    if (read.length === 0) return;
-    dismissAnnouncements(read);
+    if (!store.state.items.some((item) => !isUnread(item))) return;
     optimistic(
       (items) => items.filter(isUnread),
       () => window.pond.query("notifications.delete", { read: true }),

@@ -66,7 +66,7 @@ it("keeps a split post's Saves and nothing else", () => {
   expect(
     applyNavFilter(
       saves,
-      { kind: "post", key: "instagram:DAbC", title: "Studio" },
+      { kind: "post", key: "instagram:DAbC" },
       {},
       [],
     ).map((save) => save.id),

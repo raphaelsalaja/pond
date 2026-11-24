@@ -7,6 +7,7 @@ export {
   createCanvasFromFolder,
 } from "./lib/menu";
 export {
+  CANVASES_PATH,
   canvases,
   canvasIdFromPath,
   useCanvas,

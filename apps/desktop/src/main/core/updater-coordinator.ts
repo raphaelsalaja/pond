@@ -18,6 +18,7 @@ export interface UpdaterPort {
   onNotAvailable(listener: () => void): void;
   onError(listener: (error: Error) => void): void;
   onDownloaded(listener: (version: string) => void): void;
+  onProgress(listener: (percent: number) => void): void;
   check(): Promise<{ version?: string } | null>;
   download(): Promise<void>;
   /** May resolve before `quitAndInstall` runs, so the caller can reply first. */
@@ -41,10 +42,32 @@ function message(error: Error | null, fallback: string): string {
 
 export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
   let latestNotice: UpdateNotice | null = null;
+  let publishedPercent = -1;
 
   function publish(notice: UpdateNotice): void {
     latestNotice = notice;
     dependencies.publish(notice);
+  }
+
+  function publishDownloading(downloading: boolean): void {
+    if (latestNotice?.phase !== "available") return;
+    if (latestNotice.downloading === downloading) return;
+    publishedPercent = -1;
+    publish({ phase: "available", version: latestNotice.version, downloading });
+  }
+
+  /** electron-updater reports many times a second; broadcast only whole-percent steps. */
+  function publishProgress(percent: number): void {
+    if (latestNotice?.phase !== "available") return;
+    const step = Math.floor(Math.min(Math.max(percent, 0), 100));
+    if (step === publishedPercent) return;
+    publishedPercent = step;
+    publish({
+      phase: "available",
+      version: latestNotice.version,
+      downloading: true,
+      progress: step / 100,
+    });
   }
 
   async function applyPrefsTo(updater: UpdaterPort): Promise<void> {
@@ -72,6 +95,7 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
 
     updater.onAvailable((version) => {
       dependencies.info("[pond updater] update available", version);
+      publishedPercent = -1;
       publish({
         phase: "available",
         version,
@@ -89,6 +113,7 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
       dependencies.info("[pond updater] downloaded", version);
       publish({ phase: "downloaded", version });
     });
+    updater.onProgress(publishProgress);
 
     dependencies.scheduleTimeout(() => {
       void updater.check().catch((error) => {
@@ -111,9 +136,11 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
     if (!dependencies.isPackaged()) return { ok: false, reason: "dev_build" };
     try {
       const updater = await dependencies.loadUpdater();
+      publishDownloading(true);
       await updater.download();
       return { ok: true };
     } catch (error) {
+      publishDownloading(false);
       return {
         ok: false,
         error: message(

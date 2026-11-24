@@ -4,20 +4,24 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import styles from "./styles.module.css";
 
 interface RootProps extends Base.Root.Props {
-  /** `stacked` puts the label above the track and `Slider.Bounds` below it. */
-  layout?: "inline" | "stacked";
+  /** `stacked` puts the label above the track and `Slider.Bounds` below it. `field` draws `Slider.Label` and `Slider.Value` inside the control; a label placed before the control sits beside it. */
+  layout?: "inline" | "stacked" | "field";
+  /** `accent` fills the indicator with the accent color. */
+  tone?: "neutral" | "accent";
 }
 
 function Root({
   className,
   layout = "inline",
+  tone = "neutral",
   thumbAlignment = "edge",
   ...props
 }: RootProps) {
   return (
     <Base.Root
       className={cn(styles.root, className)}
-      data-layout={layout === "stacked" ? layout : undefined}
+      data-layout={layout === "inline" ? undefined : layout}
+      data-tone={tone === "neutral" ? undefined : tone}
       thumbAlignment={thumbAlignment}
       {...props}
     />

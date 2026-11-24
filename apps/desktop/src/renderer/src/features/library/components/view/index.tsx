@@ -22,6 +22,7 @@ import { splitPinned } from "@/features/library/lib/pinned-sections";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 import { resetFilters } from "@/features/library/state/view-store";
 import {
   clearSaveSelection,
@@ -41,6 +42,8 @@ import { importFolderFor } from "./import-folder";
 
 const NO_SAVES: ReadonlyArray<Save> = [];
 
+const ALL: LibraryNav = { kind: "all" };
+
 function LibraryEmptyState({
   mode,
   navKind,
@@ -52,7 +55,7 @@ function LibraryEmptyState({
   downloading,
 }: {
   mode: ReturnType<typeof useLibraryState>["mode"];
-  navKind: ReturnType<typeof useLibraryNav>["kind"];
+  navKind: LibraryNav["kind"];
   folderId: string | undefined;
   hasActiveSearch: boolean;
   hasActiveFilter: boolean;
@@ -88,7 +91,7 @@ function LibraryEmptyState({
 export function LibraryView() {
   const data = useLibraryState();
   const marquee = useRectangleSelection();
-  const nav = useLibraryNav();
+  const nav = useLibraryNav() ?? ALL;
   const folders = useFolders();
   const paging = useSavePaging();
   const [folderViews] = usePrefs("folderViews");

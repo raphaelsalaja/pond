@@ -151,7 +151,7 @@
 .unchecked::before,
 .checked::before {
   position: absolute;
-  top: 5px;
+  top: 4px;
   left: calc(-1 * var(--note-list-inset));
   width: 14px;
   height: 14px;

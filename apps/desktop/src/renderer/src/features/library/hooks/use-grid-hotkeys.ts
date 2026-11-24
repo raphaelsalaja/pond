@@ -9,13 +9,12 @@ import {
 } from "@/features/saves";
 import {
   openSave,
+  openSaveId,
   primarySelection,
   resultNavigation,
-  saveIdFromPath,
   selection,
 } from "@/features/saves/navigation";
 import { ensureSaves } from "@/features/saves/pool";
-import { getAppRouter } from "@/shared/lib/app-router";
 import { findScrollParent } from "@/shared/lib/dom";
 import { eventFromEditable } from "@/shared/lib/editable-target";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
@@ -29,7 +28,7 @@ function canNavigate(event: KeyboardEvent): boolean {
     !event.isComposing &&
     !eventFromEditable(event) &&
     collectionOwnsKeyboard() &&
-    !saveIdFromPath(getAppRouter()?.state.location.pathname ?? "")
+    !openSaveId()
   );
 }
 

@@ -56,7 +56,7 @@ ol.list {
 .checked::before,
 .unchecked::before {
   position: absolute;
-  top: 5px;
+  top: 4px;
   left: -22px;
   width: 14px;
   height: 14px;
@@ -72,7 +72,7 @@ ol.list {
 .quote {
   padding-left: var(--ds-space-lg);
   margin: var(--ds-space-xs) 0;
-  border-left: 3px solid var(--ds-border-strong);
+  border-left: 2px solid var(--ds-border-strong);
 }
 
 .code {
@@ -89,7 +89,7 @@ ol.list {
 }
 
 .inline-code {
-  padding: 1px var(--ds-space-xs);
+  padding: var(--ds-space-2xs) var(--ds-space-xs);
   font-family: var(--ds-font-mono);
   font-size: 0.95em;
   background: var(--ds-background-tertiary);

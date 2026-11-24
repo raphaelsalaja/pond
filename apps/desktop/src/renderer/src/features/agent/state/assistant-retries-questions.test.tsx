@@ -1,7 +1,8 @@
 import type { AgentStreamRequest } from "@shared/assistant";
 import { act } from "react";
 import { expect, it, vi } from "vitest";
-import { libraryChrome } from "../../library/state/library-chrome";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import { openLibraryAt } from "@/shared/test/library-router";
 import { assistant } from "./assistant";
 import {
   agentStreamBridge,
@@ -155,7 +156,9 @@ it("preserves new attachments and retries through the shared stream session", as
     });
     await act(async () => {
       await assistant.openChat("retry-other");
-      libraryChrome.setNav({ kind: "folder", id: "different-folder" });
+      await openLibraryAt(
+        pathForLibraryNav({ kind: "folder", id: "different-folder" }),
+      );
       await assistant.openChat("retry-context");
       await assistant.retry();
     });
@@ -182,7 +185,6 @@ it("preserves new attachments and retries through the shared stream session", as
   } finally {
     failed.resolve({ error: "Unavailable" });
     await harness.unmount(async () => pending);
-    libraryChrome.setNav({ kind: "all" });
     vi.unstubAllGlobals();
   }
 });

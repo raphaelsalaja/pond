@@ -39,18 +39,12 @@
   text-wrap: nowrap;
   user-select: none;
   transition:
-    background-color var(--ds-duration-snap) var(--ds-easing-standard),
-    color var(--ds-duration-snap) var(--ds-easing-standard),
+    background-color var(--ds-duration-fast) var(--ds-easing-standard),
+    color var(--ds-duration-fast) var(--ds-easing-standard),
     outline-color var(--ds-duration-snap) var(--ds-easing-snap),
     outline-offset var(--ds-duration-snap) var(--ds-easing-snap),
-    box-shadow var(--ds-duration-snap) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-fast) var(--ds-easing-standard),
     opacity var(--ds-duration-snap) var(--ds-easing-standard);
-
-  /* Highlights land instantly and only fade on the way out. */
-  &:hover,
-  &:active {
-    transition-duration: 0s;
-  }
 
   &:not(:focus-visible, [data-demo-state="focus"]) {
     outline: var(--ds-focus-width) solid transparent;
@@ -166,7 +160,9 @@
   &:where([data-variant="secondary"]) {
     color: var(--ds-foreground-primary);
     background-color: var(--ds-background-primary);
-    box-shadow: var(--ds-shadow-border);
+    box-shadow:
+      0 0 0 1px var(--ds-border-subtle),
+      var(--ds-shadow-outline);
 
     &:hover,
     &[data-demo-state="hover"] {
@@ -176,24 +172,42 @@
 
   &:where([data-variant="tertiary"]) {
     color: var(--ds-foreground-secondary);
-    background-color: var(--ds-surface-secondary);
+    background-color: var(--ds-surface-primary);
 
     &:hover,
     &[data-demo-state="hover"] {
       color: var(--ds-foreground-primary);
-      background-color: var(--ds-surface-tertiary);
+      background-color: var(--ds-surface-secondary);
+    }
+  }
+
+  &:where(
+      [data-variant="primary"],
+      [data-variant="accent"],
+      [data-variant="destructive"]
+    ) {
+    background-color: var(--button-solid);
+    background-image: var(--ds-gloss);
+    box-shadow:
+      0 0 0 1px var(--button-solid),
+      var(--ds-shadow-button);
+
+    &:hover,
+    &[data-demo-state="hover"] {
+      background-color: var(--button-solid-hover);
+      background-image: none;
+    }
+
+    &:active {
+      background-image: var(--ds-gloss);
     }
   }
 
   &:where([data-variant="primary"], [data-variant="accent"]) {
-    color: var(--ds-accent-contrast);
-    background-color: var(--ds-accent);
+    --button-solid: var(--ds-accent);
+    --button-solid-hover: var(--ds-accent-hover);
 
-    &:hover,
-    &:active,
-    &[data-demo-state="hover"] {
-      background-color: var(--ds-accent-hover);
-    }
+    color: var(--ds-accent-contrast);
 
     &:focus-visible,
     &[data-demo-state="focus"] {
@@ -202,14 +216,10 @@
   }
 
   &:where([data-variant="destructive"]) {
-    color: var(--ds-danger-contrast);
-    background-color: var(--ds-danger);
+    --button-solid: var(--ds-danger);
+    --button-solid-hover: var(--ds-danger-hover);
 
-    &:hover,
-    &:active,
-    &[data-demo-state="hover"] {
-      background-color: var(--ds-danger-hover);
-    }
+    color: var(--ds-danger-contrast);
 
     &:focus-visible,
     &[data-demo-state="focus"] {
@@ -229,6 +239,10 @@
     &[data-pressed],
     &[data-demo-state="hover"] {
       color: var(--ds-foreground-primary);
+      background-color: var(--ds-surface-primary);
+    }
+
+    &[data-pressed] {
       background-color: var(--ds-surface-secondary);
     }
   }

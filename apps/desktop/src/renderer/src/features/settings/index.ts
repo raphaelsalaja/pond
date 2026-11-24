@@ -2,6 +2,12 @@ export { ProviderLogo } from "./components/sections/agent/icons";
 export { PresetSelect as ThemePresetSelect } from "./components/sections/theme";
 export { SidebarCustomizationDialog } from "./components/sidebar-customization-dialog";
 export { SidebarSectionMenu } from "./components/sidebar-section-menu";
+export { UpdateButton } from "./components/update-button";
+export {
+  playUpdatePreview,
+  showUpdateButtonPreview,
+  type UpdateButtonPreview,
+} from "./components/update-dialog/preview";
 export { listAppIconPreviews } from "./lib/app-icon-previews";
 export {
   moveVisibleSidebarDestination,

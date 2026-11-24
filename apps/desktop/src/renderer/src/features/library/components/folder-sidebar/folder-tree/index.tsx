@@ -47,7 +47,6 @@ import { FOLDER_ROW_SLOT, useVirtualWindow } from "./use-virtual-window";
 interface FolderTreeProps {
   destination: LibraryNav | null;
   folderRows: Folder[];
-  nav: LibraryNav;
 }
 
 const FOLDER_SORT_OPTIONS: Array<{
@@ -78,7 +77,7 @@ function folderGroupMenuItems(
   ];
 }
 
-export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
+export function FolderTree({ destination, folderRows }: FolderTreeProps) {
   const editingFolderId = useEditingFolderId();
   const [foldersOpen, setFoldersOpen] = useState(true);
   const [folderViews] = usePrefs("folderViews");
@@ -314,7 +313,7 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
                   aria-hidden
                   className={styles.spacer}
                   style={{
-                    height: Math.max(0, totalRows * FOLDER_ROW_SLOT - 1),
+                    height: totalRows * FOLDER_ROW_SLOT,
                   }}
                 />
                 <div
@@ -368,7 +367,6 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
                           folderSortKey={presentation?.sortKey ?? "savedAt"}
                           hasChildren={tree.parentIds.has(folder.id)}
                           includeSubfolders={includeThisFolder}
-                          nav={nav}
                           quickAccess={presentation?.quickAccess ?? false}
                           quickAccessFolderIds={quickAccessFolderIds}
                           sameLevelHasChildren={parentsWithChildFolders.has(
@@ -402,6 +400,17 @@ export function FolderTree({ destination, folderRows, nav }: FolderTreeProps) {
                 </div>
               </Sidebar.CollapsibleGroupContent>
             </SortableContext>
+            {foldersOpen && folderRows.length === 0 ? (
+              <Sidebar.Item
+                disabled={creatingFolder}
+                onClick={() => void createFolder()}
+              >
+                <Sidebar.Icon>
+                  <IconPlus />
+                </Sidebar.Icon>
+                <Sidebar.ItemLabel>New Folder</Sidebar.ItemLabel>
+              </Sidebar.Item>
+            ) : null}
             <FolderRootDrop
               target={drag.folderDrop?.id === FOLDER_ROOT_DROP_ID}
             />

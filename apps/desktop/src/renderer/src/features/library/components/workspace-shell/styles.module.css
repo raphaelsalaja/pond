@@ -1,64 +1,12 @@
-.shell {
-  /* Sidebar, viewer, and Details headers all center on half this height. */
-  --window-header-height: 56px;
+.shell[data-slot="window"] {
   --window-inset: 8px;
-  --window-left-min: 0px;
+  --window-chrome-start: var(--ds-space-lg);
   --window-background: var(--ds-background-secondary);
 }
 
-.shell[data-slot="window"] [data-slot="center"],
-.shell[data-slot="window"] [data-slot="right"] > div:not([role="separator"]) {
-  background: var(--ds-background-primary);
-  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
-}
-
-/* The 44px toolbar row is chrome, so the column dividers start below it. */
-.shell[data-slot="window"]::before,
-.shell[data-slot="window"]::after {
-  top: 44px;
-}
-
+/* Clears the traffic lights. */
 :global(html[data-platform="mac"]:not([data-full-screen])) .shell {
   --window-chrome-start: 96px;
-}
-
-.shell[data-slot="window"] [data-slot="left"] > div {
-  opacity: 1;
-  transform: translateX(
-    calc(var(--window-left-width) - var(--window-left-track))
-  );
-  transition: transform var(--ds-duration-medium) var(--ds-easing-decelerate);
-}
-
-.shell[data-slot="window"] {
-  transition-property: --window-right-width;
-}
-
-.shell[data-slot="window"] [data-slot="left"] {
-  overflow: visible;
-}
-
-.shell[data-slot="window"] [data-slot="right"] > div {
-  opacity: 1;
-  transform: translateX(
-    calc(var(--window-right-track) - var(--window-right-width))
-  );
-  transition: none;
-}
-
-.shell[data-slot="window"][data-resizing] [data-slot="left"] > div {
-  transition: none;
-}
-
-.toolbar {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--ds-space-md);
-  align-items: center;
-  justify-content: center;
-  height: 44px;
-  padding-inline: var(--ds-space-lg);
-  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .content {

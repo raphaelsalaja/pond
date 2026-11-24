@@ -1,5 +1,4 @@
-import { IconImage } from "@pond/icons";
-import { Empty } from "@pond/ui";
+import { Empty, EmptyPreview } from "@pond/ui";
 import type {
   CombineImagesOptions,
   CombineImagesZoomAction,
@@ -87,9 +86,17 @@ export function Preview({
       {images.length === 0 ? (
         <Empty.Root size="card" className={styles.empty}>
           <Empty.Media>
-            <IconImage size={14} />
+            <EmptyPreview.Root shape="board" layout="single">
+              <EmptyPreview.Row>
+                <EmptyPreview.Thumb />
+                <EmptyPreview.Thumb />
+                <EmptyPreview.Thumb />
+                <EmptyPreview.Space />
+                <EmptyPreview.Line width={24} tone="mid" />
+              </EmptyPreview.Row>
+            </EmptyPreview.Root>
           </Empty.Media>
-          <Empty.Title>No images selected</Empty.Title>
+          <Empty.Title>No Images Selected</Empty.Title>
           <Empty.Description>
             Drag images from your library to add them.
           </Empty.Description>

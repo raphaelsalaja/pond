@@ -1,8 +1,15 @@
-.body {
-  position: relative;
-  flex-direction: column;
-  min-height: 0;
-  timeline-scope: --library-grid;
+.viewer {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--window-header-height);
+  padding-inline: var(--window-inset);
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+
+  /* Viewers without tools leave an empty slot, which gives the row back to the stage. */
+  &:not(:has(:not(:empty))) {
+    display: none;
+  }
 }
 
 .stage {
@@ -15,23 +22,20 @@
   overflow: hidden;
 }
 
-.keep-alive {
+.surface {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-}
 
-/**
- * Park the grid under the save overlay without `visibility: hidden` / `display: none`.
- * Hiding drops decoded thumbnails and flashes empty cards when the list returns.
- */
-.keep-alive[data-suppressed] {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
+  /* Park the page under the Save overlay without hiding it, which drops decoded thumbnails and flashes empty cards. */
+  &[data-suppressed] {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
 }
 
 .overlay {
@@ -43,36 +47,4 @@
   min-width: 0;
   min-height: 0;
   background: var(--ds-background-primary);
-}
-
-.main {
-  min-height: 0;
-  padding-block: var(--ds-space-xl) var(--ds-space-2xl);
-  padding-inline: var(--ds-space-2xl);
-  scroll-timeline: --library-grid block;
-}
-
-/* The divider shows only once rows scroll under the chrome, so the resting grid has no edge. */
-.chrome {
-  position: relative;
-
-  &::after {
-    position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    height: 1px;
-    pointer-events: none;
-    content: "";
-    background: var(--ds-surface-tertiary);
-    opacity: 0;
-    animation: divider-show linear both;
-    animation-timeline: --library-grid;
-    animation-range: 0 24px;
-  }
-}
-
-@keyframes divider-show {
-  to {
-    opacity: 1;
-  }
 }

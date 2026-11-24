@@ -4,7 +4,7 @@ import { createContext, use, useMemo } from "react";
 import { Button, type ButtonProps } from "../button";
 import styles from "./styles.module.css";
 
-type Variant = "primary" | "secondary";
+type Variant = "primary" | "secondary" | "ghost";
 type Size = NonNullable<ButtonProps["size"]>;
 
 const SplitContext = createContext<{ variant: Variant; size: Size }>({

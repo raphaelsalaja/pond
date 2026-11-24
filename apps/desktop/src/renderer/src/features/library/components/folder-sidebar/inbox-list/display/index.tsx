@@ -6,7 +6,7 @@ import {
   type InboxScope,
   inboxPicker,
 } from "@/features/library/state/inbox-review";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
@@ -95,7 +95,7 @@ function Section({ children }: { children: ReactNode }) {
 
 function showSnoozed(on: boolean): void {
   inboxPicker.select(null);
-  libraryChrome.setNav(on ? { kind: "inbox", snoozed: true } : { kind: "inbox" });
+  selectLibraryNav(on ? { kind: "inbox", snoozed: true } : { kind: "inbox" });
 }
 
 export function InboxDisplayMenu({ scope }: { scope: InboxScope }) {
@@ -107,7 +107,7 @@ export function InboxDisplayMenu({ scope }: { scope: InboxScope }) {
         <Button
           render={<Popover.Trigger />}
           icon
-          size="xs"
+          size="sm"
           variant="ghost"
           aria-label={LABEL}
         >
@@ -117,16 +117,6 @@ export function InboxDisplayMenu({ scope }: { scope: InboxScope }) {
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8}>
           <Popover.Popup className={styles.popup} aria-label={LABEL}>
-            <Section>
-              <SwitchRow
-                label="Priority Inbox"
-                checked={display.priorityInbox}
-                onCheckedChange={(priorityInbox) => {
-                  inboxPicker.setView("priority");
-                  void patch({ priorityInbox });
-                }}
-              />
-            </Section>
             <Section>
               <SelectRow
                 label="Ordering"

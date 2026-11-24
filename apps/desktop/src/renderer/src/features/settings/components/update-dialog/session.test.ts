@@ -1,10 +1,13 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   dismissUpdateDialog,
+  openUpdateOverlay,
   presentUpdateNotice,
   readUpdateDialog,
+  readUpdateNotice,
   requestUpdateCheck,
   type UpdateCheckClient,
+  updateNoticeStore,
 } from "./session";
 
 const current = { version: "1.0.0" };
@@ -20,6 +23,7 @@ function client(overrides: Partial<UpdateCheckClient> = {}): UpdateCheckClient {
 
 afterEach(() => {
   dismissUpdateDialog();
+  updateNoticeStore.setState(() => null);
 });
 
 describe("requestUpdateCheck", () => {
@@ -51,7 +55,7 @@ describe("requestUpdateCheck", () => {
     await viWait();
     expect(readUpdateDialog()).toEqual({
       open: true,
-      view: { kind: "update", notice, explicit: true },
+      view: { kind: "update", notice },
     });
   });
 
@@ -64,11 +68,7 @@ describe("requestUpdateCheck", () => {
       }),
     );
     await viWait();
-    expect(readUpdateDialog().view).toEqual({
-      kind: "update",
-      notice,
-      explicit: true,
-    });
+    expect(readUpdateDialog().view).toEqual({ kind: "update", notice });
   });
 
   it("explains a development build without offering a retry", async () => {
@@ -137,25 +137,14 @@ describe("requestUpdateCheck", () => {
 });
 
 describe("presentUpdateNotice", () => {
-  it("stays closed while an automatic download is running", () => {
-    presentUpdateNotice({
-      phase: "available",
-      version: "2.0.0",
-      downloading: true,
-    });
-    expect(readUpdateDialog().open).toBe(false);
-  });
-
-  it("still opens when an automatic download finishes", () => {
+  it("keeps the overlay closed and hands a background notice to the sidebar", () => {
     const notice = { phase: "downloaded" as const, version: "2.0.0" };
     presentUpdateNotice(notice);
-    expect(readUpdateDialog()).toEqual({
-      open: true,
-      view: { kind: "update", notice, explicit: false },
-    });
+    expect(readUpdateDialog().open).toBe(false);
+    expect(readUpdateNotice()).toEqual(notice);
   });
 
-  it("updates an open check result when the download finishes", async () => {
+  it("updates an open check result as the download progresses and finishes", async () => {
     requestUpdateCheck(
       client({
         checkNow: async () => ({ ok: true, version: "2.0.0" }),
@@ -167,13 +156,49 @@ describe("presentUpdateNotice", () => {
       }),
     );
     await viWait();
+    const progressing = {
+      phase: "available" as const,
+      version: "2.0.0",
+      downloading: true,
+      progress: 0.5,
+    };
+    presentUpdateNotice(progressing);
+    expect(readUpdateDialog().view).toEqual({
+      kind: "update",
+      notice: progressing,
+    });
     const downloaded = { phase: "downloaded" as const, version: "2.0.0" };
     presentUpdateNotice(downloaded);
     expect(readUpdateDialog().view).toEqual({
       kind: "update",
       notice: downloaded,
-      explicit: true,
     });
+  });
+});
+
+describe("openUpdateOverlay", () => {
+  it("shows the pending update without checking again", () => {
+    let checks = 0;
+    const notice = { phase: "downloaded" as const, version: "2.0.0" };
+    presentUpdateNotice(notice);
+    openUpdateOverlay(
+      client({
+        checkNow: async () => {
+          checks += 1;
+          return { ok: true, version: "2.0.0" };
+        },
+      }),
+    );
+    expect(checks).toBe(0);
+    expect(readUpdateDialog()).toEqual({
+      open: true,
+      view: { kind: "update", notice },
+    });
+  });
+
+  it("checks when nothing is pending", () => {
+    openUpdateOverlay(client());
+    expect(readUpdateDialog().view).toEqual({ kind: "checking" });
   });
 });
 

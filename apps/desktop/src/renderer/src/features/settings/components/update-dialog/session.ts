@@ -3,13 +3,13 @@ import { UpdateNoticeSchema } from "@shared/update-notice";
 import { Store } from "@tanstack/store";
 import { z } from "zod";
 import { loadAppInfo } from "@/shared/lib/app-info";
-import { updateDialogCopy } from "./copy";
 
 export type UpdateDialogView =
   | { kind: "checking" }
   | { kind: "current"; version: string }
   | { kind: "failed"; message: string; retry: boolean }
-  | { kind: "update"; notice: UpdateNotice; explicit: boolean };
+  | { kind: "update"; notice: UpdateNotice }
+  | { kind: "restarting"; version: string };
 
 export interface UpdateDialogModel {
   open: boolean;
@@ -63,11 +63,18 @@ export const updateDialogStore = new Store<UpdateDialogModel>({
   view: null,
 });
 
+/** The updater's latest notice, kept while the overlay is closed so the sidebar can offer it. */
+export const updateNoticeStore = new Store<UpdateNotice | null>(null);
+
 let generation = 0;
 let inFlight = false;
 
 export function readUpdateDialog(): UpdateDialogModel {
   return updateDialogStore.state;
+}
+
+export function readUpdateNotice(): UpdateNotice | null {
+  return updateNoticeStore.state;
 }
 
 function failureView(
@@ -88,12 +95,11 @@ function successView(input: {
 }): UpdateDialogView {
   const { currentVersion, reportedVersion, notice } = input;
   if (notice && notice.version !== currentVersion) {
-    return { kind: "update", notice, explicit: true };
+    return { kind: "update", notice };
   }
   if (reportedVersion && reportedVersion !== currentVersion) {
     return {
       kind: "update",
-      explicit: true,
       notice: {
         phase: "available",
         version: reportedVersion,
@@ -104,25 +110,38 @@ function successView(input: {
   return { kind: "current", version: currentVersion };
 }
 
-/**
- * Background downloads stay quiet until the build is ready to install.
- * A dialog the user already opened keeps tracking that download.
- */
+/** Background notices only reach the sidebar; an overlay you opened keeps tracking them. */
 export function presentUpdateNotice(notice: UpdateNotice): void {
+  updateNoticeStore.setState(() => notice);
   const state = updateDialogStore.state;
-  if (state.open && state.view?.kind === "checking") return;
-  if (state.open && state.view?.kind === "update") {
-    const explicit = state.view.explicit;
-    updateDialogStore.setState(() => ({
-      open: true,
-      view: { kind: "update", notice, explicit },
-    }));
-    return;
-  }
-  if (!updateDialogCopy(notice)) return;
+  if (!state.open || state.view?.kind !== "update") return;
   updateDialogStore.setState(() => ({
     open: true,
-    view: { kind: "update", notice, explicit: false },
+    view: { kind: "update", notice },
+  }));
+}
+
+/** Shows the pending update as it stands, or checks when nothing is pending yet. */
+export function openUpdateOverlay(
+  client: UpdateCheckClient = defaultClient,
+): void {
+  const notice = updateNoticeStore.state;
+  if (!notice) {
+    requestUpdateCheck(client);
+    return;
+  }
+  generation += 1;
+  inFlight = false;
+  updateDialogStore.setState(() => ({
+    open: true,
+    view: { kind: "update", notice },
+  }));
+}
+
+export function showUpdateRestarting(version: string): void {
+  updateDialogStore.setState(() => ({
+    open: true,
+    view: { kind: "restarting", version },
   }));
 }
 

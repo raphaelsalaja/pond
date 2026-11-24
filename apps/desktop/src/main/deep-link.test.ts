@@ -31,7 +31,19 @@ describe("deepLinkArg", () => {
 describe("handleDeepLink", () => {
   it("opens the Inbox from pond://inbox", () => {
     expect(handleDeepLink("pond://inbox", null)).toBe("library");
-    expect(consumePendingDeepLink()).toBe("/?inbox=1");
+    expect(consumePendingDeepLink()).toBe("/inbox");
+  });
+
+  it("opens folders and views at their routes", () => {
+    handleDeepLink("pond://folder/f1", null);
+    expect(consumePendingDeepLink()).toBe("/folders/f1");
+    handleDeepLink("pond://view/v1", null);
+    expect(consumePendingDeepLink()).toBe("/views/v1");
+  });
+
+  it("keeps item links on the Save path the renderer opens in place", () => {
+    handleDeepLink("pond://item/s1", null);
+    expect(consumePendingDeepLink()).toBe("/save/s1");
   });
 });
 

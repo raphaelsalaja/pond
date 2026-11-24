@@ -1,4 +1,7 @@
+import { IconLayers, IconNodes3, IconTrashXmark } from "@pond/icons";
 import { describe, expect, it } from "vitest";
+import type { LibraryNav } from "@/shared/lib/library-nav";
+import type { RouteMeta } from "@/shared/lib/route-meta";
 import { buildBreadcrumbs } from "./breadcrumbs";
 
 const folders = [
@@ -6,139 +9,107 @@ const folders = [
   { id: "child", name: "Interfaces", parentId: "parent" },
 ];
 
-describe("library breadcrumb paths", () => {
+type Meta = Parameters<typeof buildBreadcrumbs>[0]["meta"];
+
+function grid(nav: LibraryNav, crumb: RouteMeta["crumb"] = null): Meta {
+  return { routeId: "/_library/_grid/x", nav, crumb, params: {}, surface: "grid" };
+}
+
+function page(routeId: string, params: Record<string, string> = {}): Meta {
+  return { routeId, nav: null, crumb: null, params, surface: "page" };
+}
+
+const labels = (meta: Meta, pathname = "/", extra = {}) =>
+  buildBreadcrumbs({ meta, pathname, folders, ...extra }).map((c) => c.label);
+
+describe("library breadcrumbs", () => {
   it("keeps the library root to one crumb", () => {
     expect(
-      buildBreadcrumbs({
-        pathname: "/",
-        listPath: "/",
-        nav: { kind: "all" },
-        folders,
-      }),
-    ).toEqual([{ label: "All", path: "/", nav: { kind: "all" } }]);
+      buildBreadcrumbs({ meta: grid({ kind: "all" }), pathname: "/", folders }),
+    ).toMatchObject([{ label: "All", path: "/", nav: { kind: "all" } }]);
   });
 
   it.each([
-    ["/fish/default", "Fish"],
-    ["/sources", "Sources"],
-    ["/tags", "Tags"],
-    ["/untagged", "Untagged"],
-    ["/downloads", "Downloads"],
-    ["/trash", "Trash"],
-    ["/split-posts", "Split Posts"],
-    ["/settings", "Settings"],
-  ] as const)("keeps %s as its own root", (pathname, label) => {
+    [{ kind: "trash" }, { label: "Trash", icon: IconTrashXmark }, "Trash"],
+    [{ kind: "sources" }, { label: "Sources", icon: IconNodes3 }, "Sources"],
+    [{ kind: "splitPosts" }, { label: "Split Posts", icon: IconLayers }, "Split Posts"],
+  ] as const)("uses the route crumb for %o", (nav, crumb, label) => {
+    expect(labels(grid(nav, crumb))).toEqual([label]);
+  });
+
+  it("names a page by its route crumb", () => {
     expect(
-      buildBreadcrumbs({
-        pathname,
-        listPath: "/",
-        nav: { kind: "folder", id: "child" },
-        folders,
-      }).map((crumb) => crumb.label),
-    ).toEqual([label]);
+      labels({ ...page("/_library/canvases"), crumb: { label: "Canvases", icon: IconLayers } }),
+    ).toEqual(["Canvases"]);
   });
 
   it("places a split post under Split Posts", () => {
-    const nav = {
-      kind: "post",
-      key: "instagram:DAbC",
-      title: "Studio",
-    } as const;
+    const nav = { kind: "post", key: "instagram:DAbC" } as const;
     expect(
-      buildBreadcrumbs({ pathname: "/", listPath: "/", nav, folders }),
-    ).toEqual([
-      {
-        label: "Split Posts",
-        path: "/split-posts",
-        nav: { kind: "splitPosts" },
-      },
-      { label: "Studio", path: "/", nav },
+      buildBreadcrumbs({
+        meta: grid(nav),
+        pathname: "/split-posts/instagram%3ADAbC",
+        folders,
+        labels: { post: "Studio" },
+      }),
+    ).toMatchObject([
+      { label: "Split Posts", path: "/split-posts", nav: { kind: "splitPosts" } },
+      { label: "Studio", path: "/split-posts/instagram%3ADAbC", nav },
     ]);
   });
 
   it("names a fish page after its fish", () => {
     expect(
       buildBreadcrumbs({
+        meta: page("/_library/fish/$fishId"),
         pathname: "/fish/koi",
-        listPath: "/",
-        nav: { kind: "all" },
         folders,
-        fishLabel: "Koi",
+        labels: { fish: "Koi" },
       }),
     ).toEqual([{ label: "Koi", path: "/fish/koi" }]);
   });
 
   it("orders folder parents before children and gives each a destination", () => {
     const crumbs = buildBreadcrumbs({
-      pathname: "/",
-      listPath: "/",
-      nav: { kind: "folder", id: "child" },
+      meta: grid({ kind: "folder", id: "child" }),
+      pathname: "/folders/child",
       folders,
     });
     expect(crumbs.map((c) => c.label)).toEqual(["All", "Design", "Interfaces"]);
-    expect(crumbs[1]?.nav).toEqual({ kind: "folder", id: "parent" });
+    expect(crumbs[1]).toMatchObject({
+      path: "/folders/parent",
+      nav: { kind: "folder", id: "parent" },
+    });
     expect(crumbs[2]?.nav).toEqual({ kind: "folder", id: "child" });
   });
 
-  it("nests Model Context Protocol under Settings", () => {
-    expect(
-      buildBreadcrumbs({
-        pathname: "/settings/mcp",
-        listPath: "/",
-        nav: { kind: "folder", id: "child" },
-        folders,
-      }).map((c) => c.label),
-    ).toEqual(["Settings", "Model Context Protocol"]);
-  });
-
-  it("nests Models under Settings", () => {
-    expect(
-      buildBreadcrumbs({
-        pathname: "/settings/agent-models",
-        listPath: "/",
-        nav: { kind: "folder", id: "child" },
-        folders,
-      }).map((c) => c.label),
-    ).toEqual(["Settings", "Models"]);
-  });
-
-  it("nests a settings section under Settings", () => {
-    expect(
-      buildBreadcrumbs({
-        pathname: "/settings/models",
-        listPath: "/",
-        nav: { kind: "folder", id: "child" },
-        folders,
-      }).map((c) => c.label),
-    ).toEqual(["Settings", "Providers"]);
-  });
-
   it.each([
-    ["/settings/library", "Library"],
-    ["/settings/storage", "Storage"],
-    ["/settings/backups", "Backups"],
-    ["/settings/processing", "Processing"],
-    ["/settings/schedule", "Schedule"],
-    ["/settings/sources", "Sources"],
-    ["/settings/images", "Images"],
-    ["/settings/videos", "Videos"],
-  ] as const)("labels the focused section at %s", (pathname, label) => {
+    ["mcp", ["Settings", "Model Context Protocol"]],
+    ["agent-models", ["Settings", "Models"]],
+    ["models", ["Settings", "Providers"]],
+    ["library", ["Settings", "Library"]],
+    ["storage", ["Settings", "Storage"]],
+    ["backups", ["Settings", "Backups"]],
+    ["processing", ["Settings", "Processing"]],
+    ["schedule", ["Settings", "Schedule"]],
+    ["sources", ["Settings", "Sources"]],
+    ["images", ["Settings", "Images"]],
+    ["videos", ["Settings", "Videos"]],
+  ] as const)("labels the settings section %s", (section, expected) => {
     expect(
-      buildBreadcrumbs({
-        pathname,
-        listPath: "/",
-        nav: { kind: "all" },
-        folders,
-      }).map((crumb) => crumb.label),
-    ).toEqual(["Settings", label]);
+      labels(page("/_library/settings/$section", { section }), `/settings/${section}`),
+    ).toEqual(expected);
+  });
+
+  it("keeps Settings as its own root", () => {
+    expect(labels(page("/_library/settings/"), "/settings")).toEqual(["Settings"]);
   });
 
   it("nests a source download page under Sources", () => {
     expect(
       buildBreadcrumbs({
+        meta: page("/_library/settings/$section", { section: "sources-youtube" }),
         pathname: "/settings/sources-youtube",
-        listPath: "/",
-        nav: { kind: "all" },
         folders,
       }).map(({ label, path }) => ({ label, path })),
     ).toEqual([
@@ -151,11 +122,10 @@ describe("library breadcrumb paths", () => {
   it("nests a source detail page under Sources", () => {
     expect(
       buildBreadcrumbs({
+        meta: page("/_library/sources_/$kind/$id"),
         pathname: "/sources/account/acc-1",
-        listPath: "/",
-        nav: { kind: "all" },
         folders,
-        sourceLabel: "@raphaelsalaja",
+        labels: { source: "@raphaelsalaja" },
       }).map(({ label, path }) => ({ label, path })),
     ).toEqual([
       { label: "Sources", path: "/sources" },
@@ -163,103 +133,59 @@ describe("library breadcrumb paths", () => {
     ]);
   });
 
-  it("nests a source page under Sources", () => {
+  it("adds an open save after its containing folder path", () => {
     expect(
-      buildBreadcrumbs({
-        pathname: "/source/pinterest",
-        listPath: "/",
-        nav: { kind: "folder", id: "child" },
-        folders,
-      }).map((c) => c.label),
-    ).toEqual(["Sources", "Pinterest"]);
-  });
-
-  it("includes a save after its containing folder path", () => {
-    const crumbs = buildBreadcrumbs({
-      pathname: "/save/one",
-      listPath: "/",
-      nav: { kind: "folder", id: "child" },
-      folders,
-      saveLabel: "A saved interface",
-    });
-    expect(crumbs.map((c) => c.label)).toEqual([
-      "All",
-      "Design",
-      "Interfaces",
-      "A saved interface",
-    ]);
-  });
-
-  it("names the open canvas and keeps it as the parent of a save opened from it", () => {
-    expect(
-      buildBreadcrumbs({
-        pathname: "/canvas/board",
-        listPath: "/",
-        nav: { kind: "folder", id: "child" },
-        folders,
-        canvasLabel: "App idea",
+      labels(grid({ kind: "folder", id: "child" }), "/folders/child", {
+        saveOpen: true,
+        labels: { save: "A saved interface" },
       }),
-    ).toEqual([{ label: "App idea", path: "/canvas/board" }]);
-    expect(
-      buildBreadcrumbs({
-        pathname: "/save/one",
-        listPath: "/canvas/board",
-        nav: { kind: "all" },
-        folders,
-        canvasLabel: "App idea",
-        saveLabel: "Type specimen",
-      }).map((c) => c.path),
-    ).toEqual(["/canvas/board", "/save/one"]);
+    ).toEqual(["All", "Design", "Interfaces", "A saved interface"]);
   });
 
-  it("uses the originating list for saves opened from Trash", () => {
+  it("keeps the canvas as the parent of a save opened from it", () => {
     expect(
       buildBreadcrumbs({
-        pathname: "/save/one",
-        listPath: "/trash",
-        nav: { kind: "all" },
+        meta: page("/_library/canvas/$id"),
+        pathname: "/canvas/board",
         folders,
+        saveOpen: true,
+        labels: { canvas: "App idea", save: "Type specimen" },
       }).map((c) => c.label),
+    ).toEqual(["App idea", "Type specimen"]);
+  });
+
+  it("adds a search crumb on the grid until a save opens", () => {
+    const meta = grid({ kind: "trash" }, { label: "Trash", icon: IconTrashXmark });
+    expect(labels(meta, "/trash", { searchResultCount: 3 })).toEqual([
+      "Trash",
+      "Search results (3)",
+    ]);
+    expect(
+      labels(meta, "/trash", { searchResultCount: 3, saveOpen: true }),
     ).toEqual(["Trash", "Save"]);
   });
 
   it("supports Uncategorized and tag locations", () => {
-    expect(
-      buildBreadcrumbs({
-        pathname: "/",
-        listPath: "/",
-        nav: { kind: "uncategorized" },
-        folders,
-      }).map((c) => c.label),
-    ).toEqual(["All", "Uncategorized"]);
-    expect(
-      buildBreadcrumbs({
-        pathname: "/",
-        listPath: "/",
-        nav: { kind: "tag", name: "Animation" },
-        folders,
-      }).map((c) => c.label),
-    ).toEqual(["All", "Animation"]);
+    expect(labels(grid({ kind: "uncategorized" }))).toEqual(["All", "Uncategorized"]);
+    expect(labels(grid({ kind: "tag", name: "Animation" }))).toEqual([
+      "All",
+      "Animation",
+    ]);
   });
 
   it("handles missing folders and cyclic ancestry without hanging", () => {
-    expect(
-      buildBreadcrumbs({
-        pathname: "/",
-        listPath: "/",
-        nav: { kind: "folder", id: "missing" },
-        folders,
-      }).map((c) => c.label),
-    ).toEqual(["All", "Folder"]);
+    expect(labels(grid({ kind: "folder", id: "missing" }))).toEqual([
+      "All",
+      "Folder",
+    ]);
     const cyclic = folders.map((f) => ({
       ...f,
       parentId: f.id === "parent" ? "child" : "parent",
     }));
     expect(
       buildBreadcrumbs({
-        pathname: "/",
-        listPath: "/",
-        nav: { kind: "folder", id: "child" },
+        meta: grid({ kind: "folder", id: "child" }),
+        pathname: "/folders/child",
         folders: cyclic,
       }).map((c) => c.label),
     ).toEqual(["All", "Design", "Interfaces"]);

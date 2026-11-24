@@ -13,7 +13,7 @@
   overflow: hidden;
   color: var(--ds-foreground-tertiary);
   background: var(--ds-background-secondary);
-  border-radius: var(--ds-radius-xs);
+  border-radius: var(--card-radius, var(--ds-radius-xs));
   box-shadow: var(--ds-shadow-border);
 }
 

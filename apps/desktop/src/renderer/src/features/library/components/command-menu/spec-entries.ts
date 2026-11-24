@@ -20,6 +20,23 @@ export function specEntries(
       entries.push(...specEntries(item.items, group, `${key}.${index}`));
       return;
     }
+    if (item.type === "radio") {
+      for (const option of item.options) {
+        const label = menuLabelText(option.label);
+        if (option.disabled || label === null) continue;
+        entries.push({
+          id: `${key}.${index}.${option.value}`,
+          group,
+          label,
+          keywords: option.keywords,
+          icon: option.icon ?? null,
+          keys: [],
+          checked: item.value === option.value,
+          run: () => item.onValueChange(option.value),
+        });
+      }
+      return;
+    }
     const label = menuLabelText(item.label);
     if (item.disabled || label === null) return;
     const base = {

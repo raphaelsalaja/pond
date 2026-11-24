@@ -8,7 +8,6 @@ import {
   conversionDialogStore,
 } from "@/features/library/state/conversion-dialog";
 import { folders } from "@/features/library/state/folders";
-import { libraryChrome } from "@/features/library/state/library-chrome";
 import { buildViewerMenu } from "@/features/saves/components/viewers/media-viewer/lib/menu";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
@@ -17,7 +16,9 @@ import {
   thumbnailViewerStore,
 } from "@/features/saves/state/thumbnail-viewer";
 import type { Save } from "@/features/saves/types";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
+import { openLibraryAt } from "@/shared/test/library-router";
 import {
   menuLabelsWithoutIcons,
   topLevelMenuLabels as topLevelLabels,
@@ -436,6 +437,8 @@ describe("buildSaveMenu", () => {
   });
 
   it("shows the whole post from a split Save", () => {
+  it("shows the whole post from a split Save", async () => {
+    const router = await openLibraryAt("/");
     const options = {
       clipboardEmpty: true,
       openWithApps: previewOpenWithApps(),
@@ -465,12 +468,9 @@ describe("buildSaveMenu", () => {
     if (!showPost || !("onClick" in showPost))
       throw new Error("Missing Show Post action");
     showPost.onClick?.();
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "post",
-      key: "twitter:DAbC",
-      title: "File",
-    });
-    libraryChrome.setNav({ kind: "all" });
+    expect(router.history.location.pathname).toBe(
+      pathForLibraryNav({ kind: "post", key: "twitter:DAbC" }),
+    );
   });
 
   it("keeps common actions flat and reserves submenus for option families", () => {

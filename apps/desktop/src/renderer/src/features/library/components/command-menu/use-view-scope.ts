@@ -14,12 +14,10 @@ import { useIncludeSubfolders } from "@/features/library/state/view-store";
 import {
   applyNavFilter,
   descendantFolderIds,
-  isSaveCollectionPath,
-  listPathForLocation,
-  parseMode,
   useRecents,
 } from "@/features/saves";
 import type { Save } from "@/features/saves/types";
+import { useOnCollection } from "./use-on-collection";
 
 export interface ViewScope {
   name: string;
@@ -38,11 +36,11 @@ export function useViewScope(pathname: string): ViewScope | null {
   const memberships = useFolderMemberships();
   const includeSubfolders = useIncludeSubfolders();
   const recents = useRecents();
+  const onCollection = useOnCollection(pathname);
 
   return useMemo(() => {
-    if (!isSaveCollectionPath(pathname)) return null;
-    const mode = parseMode(listPathForLocation(pathname)) ?? "library";
-    const view = searchViewFor(mode, nav);
+    if (!onCollection || !nav) return null;
+    const view = searchViewFor(nav);
     if (view.kind === "library") return null;
     const name = searchViewName(view, folderRows);
     const base = { name, deleted: false };
@@ -94,5 +92,5 @@ export function useViewScope(pathname: string): ViewScope | null {
       case "uncategorized":
         return { ...base, request: { uncategorized: true }, pick: navPick };
     }
-  }, [pathname, nav, folderRows, memberships, includeSubfolders, recents]);
+  }, [onCollection, nav, folderRows, memberships, includeSubfolders, recents]);
 }

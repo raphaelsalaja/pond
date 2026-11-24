@@ -1,5 +1,5 @@
 import { IconFileExport, IconXmark } from "@pond/icons";
-import { Button, Empty } from "@pond/ui";
+import { Button, Empty, EmptyPreview, HoverHighlight } from "@pond/ui";
 import type { ConversionPreset } from "@shared/conversion-contracts";
 import { typeLabelForPath } from "@shared/file-format";
 import { CardThumb } from "@/features/saves";
@@ -57,7 +57,11 @@ function Row({
         ? `Can't convert to ${target.label}`
         : null;
   return (
-    <li className={styles.row} data-skipped={row.skipped || undefined}>
+    <li
+      className={styles.row}
+      data-hover-row=""
+      data-skipped={row.skipped || undefined}
+    >
       <span className={styles.frame}>
         {row.save ? <CardThumb save={row.save} width={96} /> : null}
       </span>
@@ -108,9 +112,18 @@ export function FileList({
       <div className={styles.empty}>
         <Empty.Root size="card">
           <Empty.Media>
-            <IconFileExport size={14} />
+            <EmptyPreview.Root>
+              <EmptyPreview.Row>
+                <EmptyPreview.Icon>
+                  <IconFileExport size={12} />
+                </EmptyPreview.Icon>
+                <EmptyPreview.Line width={46} />
+                <EmptyPreview.Space />
+                <EmptyPreview.Line width={24} tone="mid" />
+              </EmptyPreview.Row>
+            </EmptyPreview.Root>
           </Empty.Media>
-          <Empty.Title>No saves to export</Empty.Title>
+          <Empty.Title>No Saves to Export</Empty.Title>
         </Empty.Root>
       </div>
     );
@@ -129,6 +142,7 @@ export function FileList({
           onRemove={() => onRemove(row.id)}
         />
       ))}
+      <HoverHighlight render={<li />} />
     </ul>
   );
 }

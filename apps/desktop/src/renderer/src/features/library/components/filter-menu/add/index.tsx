@@ -187,7 +187,7 @@ export function AddFilter({
           <Menu.Trigger
             icon
             size="sm"
-            variant="secondary"
+            variant="ghost"
             aria-label="Add Filter"
             {...(segment && {
               render: <SplitButton.Trigger aria-label="Add Filter" />,

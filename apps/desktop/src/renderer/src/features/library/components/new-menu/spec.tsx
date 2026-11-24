@@ -3,6 +3,7 @@ import {
   IconBulletList,
   IconCheckboxChecked,
   IconClipboardArrowIn,
+  IconCopy,
   IconDownload,
   IconDuplicate,
   IconEye,

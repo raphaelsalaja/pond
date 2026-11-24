@@ -1,24 +1,17 @@
 import { PrefsSchema } from "@pond/schema";
 import type { LibraryQueryRequest } from "@shared/library-query";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { createRoute, RouterProvider } from "@tanstack/react-router";
 import { act, useSyncExternalStore } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
 import { useCommandContext } from "@/features/library/state/command-context";
 import { commandMenu } from "@/features/library/state/command-menu";
-import { libraryChrome } from "@/features/library/state/library-chrome";
 import { clearRecents, normalise, useTrackVisit } from "@/features/saves";
 import { resultNavigation, selection } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/pool";
 import type { SaveHit, SaveLookup } from "@/features/search";
-import { setAppRouter } from "@/shared/lib/app-router";
+import { createLibraryTestRouter } from "@/shared/test/library-router";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();
@@ -175,7 +168,6 @@ describe("command menu", () => {
     clearRecents();
     commandMenu.close();
     selection.clear();
-    libraryChrome.setNav({ kind: "all" });
     lookups.hits.clear();
     lookups.pending.clear();
     viewIds = [];
@@ -196,21 +188,17 @@ describe("command menu", () => {
   });
 
   async function open(path = "/") {
-    const rootRoute = createRootRoute({
+    const router = createLibraryTestRouter(path, {
       component: () => (
         <CommandMenuHost useLookup={useLookup} onOpenSave={openSave} />
       ),
+      routes: (library) => [
+        createRoute({
+          getParentRoute: () => library,
+          path: "sources/$kind/$id",
+        }),
+      ],
     });
-    const router = createRouter({
-      routeTree: rootRoute.addChildren(
-        ["/", "/trash", "/save/$saveId", "/sources/account/$id"].map(
-          (routePath) =>
-            createRoute({ getParentRoute: () => rootRoute, path: routePath }),
-        ),
-      ),
-      history: createMemoryHistory({ initialEntries: [path] }),
-    });
-    setAppRouter(router);
     await act(async () => {
       await router.load();
       root.render(<RouterProvider router={router} />);
@@ -268,7 +256,7 @@ describe("command menu", () => {
   });
 
   it("acts on the open Save without a selection", async () => {
-    await open("/save/save-1");
+    await open("/?save=save-1");
     expect(document.body.textContent).toContain("Current Save");
     expect(document.body.textContent).toContain("Add Tags");
   });
@@ -279,8 +267,7 @@ describe("command menu", () => {
       { id: "save-1", via: "keyword" },
       { id: "save-2", via: "keyword" },
     ]);
-    libraryChrome.setNav({ kind: "tag", name: "poster" });
-    await open();
+    await open("/tags/poster");
     await type("design");
 
     expect(document.body.textContent).toContain("In poster");
@@ -295,8 +282,7 @@ describe("command menu", () => {
   it("finds Saves inside the current view that miss the Library's top hits", async () => {
     addSave("save-3", "Archive sheet", ["poster"]);
     viewIds = ["save-3"];
-    libraryChrome.setNav({ kind: "tag", name: "poster" });
-    await open();
+    await open("/tags/poster");
     await type("design");
     await wait(80);
 
@@ -311,7 +297,6 @@ describe("command menu", () => {
   it("searches inside Trash", async () => {
     addSave("save-trashed", "Design leftovers", [], Date.now());
     viewIds = ["save-trashed"];
-    libraryChrome.setNav({ kind: "trash" });
     await open("/trash");
     await type("design");
     await wait(80);
@@ -327,8 +312,7 @@ describe("command menu", () => {
   });
 
   it("offers the current tag's actions", async () => {
-    libraryChrome.setNav({ kind: "tag", name: "poster" });
-    await open();
+    await open("/tags/poster");
     await wait(0);
     expect(document.body.textContent).toContain("Current Tag");
     expect(document.body.textContent).toContain("Rename Tag");
@@ -346,9 +330,8 @@ describe("command menu", () => {
   });
 
   it("offers Trash actions in Trash", async () => {
-    libraryChrome.setNav({ kind: "trash" });
     resultNavigation.setSource({ ids: ["trashed"], total: 1 });
-    await open();
+    await open("/trash");
     await type("trash");
     expect(document.body.textContent).toContain("Empty Trash");
   });

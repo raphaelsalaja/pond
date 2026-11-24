@@ -38,7 +38,7 @@
   transform-origin: var(--transform-origin);
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
-    transform var(--ds-duration-bounce) var(--ds-easing-bounce);
+    transform var(--ds-duration-emphasized) var(--ds-easing-snap);
   -webkit-app-region: no-drag;
 
   &[data-starting-style],
@@ -131,7 +131,7 @@
     calc(var(--ds-space-md) + var(--popup-item-inset));
   font: inherit;
   font-size: var(--ds-text-body);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-regular);
   line-height: var(--ds-leading-body);
   color: var(--ds-foreground-secondary);
   text-align: left;

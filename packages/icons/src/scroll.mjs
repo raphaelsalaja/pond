@@ -1,15 +1,15 @@
-/** A sheet curled at both ends, from a 20 × 18 drawing scaled onto the square keyline. */
-const scroll = ({ snap }) => {
-  const k = 13.25 / 20;
-  const p = (x, y) => `${snap(2.375 + (x - 2) * k)} ${snap(3.125 + (y - 3) * k)}`;
-  const r = snap(2 * k);
+/** The sheet's left edge curls into the top roll and runs down into the bottom roll; `r` is each roll's radius. */
+const scroll = (s, r) => {
+  const [x0, y0, x1, y1] = s.keylines.square;
+  const e = 0.75;
+  const left = x0 + 2 * r;
+  const [cy, by, roll] = [y0 + r, y1 - r, y1 - 2 * r];
   return [
-    `M ${p(8, 21)} L ${p(20, 21)} A ${r} ${r} 0 0 0 ${p(22, 19)} L ${p(22, 17)} L ${p(10, 17)} L ${p(10, 19)} A ${r} ${r} 0 1 1 ${p(6, 19)} L ${p(6, 5)} A ${r} ${r} 0 1 0 ${p(2, 5)} L ${p(2, 8)} L ${p(6, 8)}`,
-    `M ${p(19, 17)} L ${p(19, 5)} A ${r} ${r} 0 0 0 ${p(17, 3)} L ${p(4, 3)}`,
+    `M ${left} ${y0 + 2 * r} H ${x0 + e} A ${e} ${e} 0 0 1 ${x0} ${y0 + 2 * r - e} V ${cy} A ${r} ${r} 0 0 1 ${left} ${cy} V ${by} A ${r} ${r} 0 0 0 ${left + 2 * r} ${by} V ${roll + e} A ${e} ${e} 0 0 1 ${left + 2 * r + e} ${roll} H ${x1 - e} A ${e} ${e} 0 0 1 ${x1} ${roll + e} V ${by} A ${r} ${r} 0 0 1 ${x1 - r} ${y1} H ${left + r}`,
+    `M 13.625 ${roll} V ${y0 + s.box} A ${s.box} ${s.box} 0 0 0 ${13.625 - s.box} ${y0} H ${x0 + r}`,
   ];
 };
 
-export default (h) => scroll(h);
+export default (h, s) => scroll(s, 2);
 
-/** Open, the sheet shows its writing. */
-export const open = (h) => [scroll(h), "M 7.75 8.5 H 11", "M 7.75 11 H 11"];
+export const open = (h, s) => [scroll(s, 1.5), "M 7.75 6.5 H 11.25 M 7.75 9 H 11.25"];

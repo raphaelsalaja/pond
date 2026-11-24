@@ -11,10 +11,10 @@ import {
   useState,
 } from "react";
 import { cssVars } from "../css-vars";
+import { HoverHighlight } from "../hover-highlight";
 import { DataTableBody } from "./body";
 import { useDataTable } from "./context";
 import { DataTableHeader } from "./header";
-import { DataTableHover } from "./hover";
 import styles from "./styles.module.css";
 
 function useStickyHeaderOffset(
@@ -157,7 +157,7 @@ export function DataTableRoot<T extends RowData>({
         }
       >
         <div className={styles.sheet} style={{ minWidth: meta.gridMinWidth }}>
-          {rows === "inset" && hasRows ? <DataTableHover /> : null}
+          {rows === "inset" && hasRows ? <HoverHighlight /> : null}
           {showHeader ? <DataTableHeader<T> /> : null}
           <DataTableBody<T>
             extraRow={extraRow}

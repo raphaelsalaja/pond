@@ -53,7 +53,7 @@
   pointer-events: none;
   content: "";
   border: 2px solid transparent;
-  border-radius: var(--ds-radius-sm);
+  border-radius: calc(var(--card-radius, var(--ds-radius-xs)) + 2px);
   transition: border-color var(--ds-duration-medium) var(--ds-easing-standard);
 }
 

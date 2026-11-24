@@ -7,8 +7,8 @@ import {
   useState,
 } from "react";
 
-/** One tree row: a 28px `Sidebar.Item` plus the 1px gap between rows. */
-export const FOLDER_ROW_SLOT = 29;
+/** One tree row: a 28px `Sidebar.Item`; rows sit flush. */
+export const FOLDER_ROW_SLOT = 28;
 
 const OVERSCAN = 8;
 const INITIAL_ROWS = 48;

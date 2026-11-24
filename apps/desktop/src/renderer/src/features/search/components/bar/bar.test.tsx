@@ -10,17 +10,10 @@ import {
   useFilterQuery,
   useSearchInput,
 } from "@/features/library";
-import type { SearchComposerProps } from "./";
 import { SearchComposer } from "./";
 import { $writeSearchString } from "./lib/editor-state";
 
-interface SearchHarness {
-  compile: ReturnType<
-    typeof vi.fn<NonNullable<SearchComposerProps["compile"]>>
-  >;
-  editor: LexicalEditor | null;
-}
-const harness: SearchHarness = { compile: vi.fn(), editor: null };
+const harness: { editor: LexicalEditor | null } = { editor: null };
 function CaptureEditor() {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
@@ -70,7 +63,6 @@ describe("search editor synchronization", () => {
       value: () => [],
     });
     resetFilters();
-    harness.compile.mockReset();
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -86,7 +78,7 @@ describe("search editor synchronization", () => {
     await act(async () => {
       root.render(
         <>
-          <SearchComposer compile={harness.compile}>
+          <SearchComposer>
             <CaptureEditor />
           </SearchComposer>
           <button type="button">Filter</button>
@@ -128,7 +120,7 @@ describe("search editor synchronization", () => {
     );
     await act(async () =>
       root.render(
-        <SearchComposer compile={harness.compile}>
+        <SearchComposer>
           <CaptureEditor />
         </SearchComposer>,
       ),
@@ -142,92 +134,17 @@ describe("search editor synchronization", () => {
     ).toBe("");
   });
 
-  it("keeps a newer typed query when an earlier search finishes", async () => {
-    const pending = Promise.withResolvers<{
-      plan: { filter: { combinator: "and"; rules: [] } };
-      residual: string;
-    }>();
-    harness.compile.mockReturnValue(pending.promise);
-    setSearchInput([], "old query", "old query");
-    await act(async () =>
-      root.render(
-        <SearchComposer compile={harness.compile}>
-          <CaptureEditor />
-        </SearchComposer>,
-      ),
-    );
-    const input = host.querySelector<HTMLElement>("[data-library-search]");
-    await act(async () => {
-      input?.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
-      );
-    });
-    expect(harness.compile).toHaveBeenCalledWith("old query");
-    expect(input?.getAttribute("aria-busy")).toBe("true");
-    expect(host.querySelector('[role="status"]')?.textContent).toContain(
-      "Finding filters",
-    );
-    await act(async () =>
-      harness.editor?.update(() => $writeSearchString("new query")),
-    );
-    await act(async () =>
-      pending.resolve({
-        plan: { filter: { combinator: "and", rules: [] } },
-        residual: "old query",
-      }),
-    );
-    expect(input?.textContent?.trim()).toBe("new query");
-    expect(input?.getAttribute("aria-busy")).toBe("false");
-  });
-
-  it("does not restore a query cleared while a search is pending", async () => {
-    const pending = Promise.withResolvers<{
-      plan: { filter: { combinator: "and"; rules: [] } };
-      residual: string;
-    }>();
-    harness.compile.mockReturnValue(pending.promise);
-    setSearchInput([], "cats", "cats");
-    await act(async () =>
-      root.render(
-        <SearchComposer compile={harness.compile}>
-          <CaptureEditor />
-        </SearchComposer>,
-      ),
-    );
-    const input = host.querySelector<HTMLElement>("[data-library-search]");
-    await act(async () =>
-      input?.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
-      ),
-    );
-    await act(async () =>
-      harness.editor?.update(() => $writeSearchString("")),
-    );
-    await act(async () =>
-      pending.resolve({
-        plan: { filter: { combinator: "and", rules: [] } },
-        residual: "cats",
-      }),
-    );
-    expect(input?.textContent?.trim()).toBe("");
-    expect(input?.getAttribute("aria-busy")).toBe("false");
-  });
-
-  it("keeps toolbar filters when interpreting the typed words", async () => {
+  it("keeps Enter as keyword search without turning words into filters", async () => {
     const rule = {
       field: "source" as const,
       operator: "eq" as const,
       value: "youtube.com",
     };
-    harness.compile.mockResolvedValue({
-      plan: { filter: { combinator: "and", rules: [] } },
-      residual: "cats",
-    });
-    setSearchInput([rule], "cats", "cats");
+    setSearchInput([rule], "videos from last week", "videos from last week");
     await act(async () =>
       root.render(
         <>
-          <SearchComposer compile={harness.compile}>
+          <SearchComposer>
             <CaptureEditor />
           </SearchComposer>
           <SearchState />
@@ -240,8 +157,10 @@ describe("search editor synchronization", () => {
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
       ),
     );
-    expect(harness.compile).toHaveBeenCalledWith("cats");
-    expect(input?.textContent?.trim()).toBe("cats");
+    expect(input?.textContent?.trim()).toBe("videos from last week");
+    expect(host.querySelector("output")?.textContent).toBe(
+      "videos from last week",
+    );
     expect(
       JSON.parse(host.querySelector("[data-filter-state]")?.textContent ?? "{}")
         .rules,
@@ -258,7 +177,7 @@ describe("search editor synchronization", () => {
     await act(async () =>
       root.render(
         <>
-          <SearchComposer compile={harness.compile}>
+          <SearchComposer>
             <CaptureEditor />
           </SearchComposer>
           <SearchState />
@@ -289,7 +208,7 @@ describe("search editor synchronization", () => {
     await act(async () =>
       root.render(
         <>
-          <SearchComposer compile={harness.compile}>
+          <SearchComposer>
             <CaptureEditor />
           </SearchComposer>
           <SearchState />

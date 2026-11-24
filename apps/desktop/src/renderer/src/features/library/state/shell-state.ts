@@ -1,8 +1,9 @@
 import { useDeferredValue, useLayoutEffect, useState } from "react";
 import {
-  useSidebarOpen,
+  useDetailsWidth,
   useSidebarWidth,
 } from "@/features/library/state/library-chrome";
+import { useShellLayout } from "@/features/library/state/shell-layout";
 import { observeSettledSize } from "@/shared/lib/settled-resize";
 
 const MAIN_PADDING_INLINE = 20;
@@ -11,6 +12,8 @@ const GRID_PADDING = MAIN_PADDING_INLINE * 2;
 interface PaneWidths {
   sidebarOpen: boolean;
   sidebarWidth: number;
+  detailsOpen?: boolean;
+  detailsWidth?: number;
 }
 
 interface GridMeasurement {
@@ -19,7 +22,10 @@ interface GridMeasurement {
 }
 
 export function occupiedPaneWidth(panes: PaneWidths): number {
-  return panes.sidebarOpen ? panes.sidebarWidth : 0;
+  return (
+    (panes.sidebarOpen ? panes.sidebarWidth : 0) +
+    (panes.detailsOpen ? (panes.detailsWidth ?? 0) : 0)
+  );
 }
 
 export function predictGridWidth(
@@ -39,18 +45,27 @@ function fallbackWidth(): number {
 }
 
 function measuredOccupiedPaneWidth(viewport: HTMLElement): number {
-  return (
-    viewport
-      .closest("[data-slot=window]")
-      ?.querySelector<HTMLElement>("[data-slot=left]")
-      ?.getBoundingClientRect().width ?? 0
-  );
+  const shell = viewport.closest("[data-slot=window]");
+  let width = 0;
+  for (const side of ["left", "right"]) {
+    width +=
+      shell
+        ?.querySelector<HTMLElement>(`:scope > [data-slot=${side}]`)
+        ?.getBoundingClientRect().width ?? 0;
+  }
+  return width;
 }
 
 function useGridWidth(): number {
-  const sidebarOpen = useSidebarOpen();
+  const { leftOpen, rightOpen } = useShellLayout();
   const sidebarWidth = useSidebarWidth();
-  const occupiedWidth = occupiedPaneWidth({ sidebarOpen, sidebarWidth });
+  const detailsWidth = useDetailsWidth();
+  const occupiedWidth = occupiedPaneWidth({
+    sidebarOpen: leftOpen,
+    sidebarWidth,
+    detailsOpen: rightOpen,
+    detailsWidth,
+  });
   const [measurement, setMeasurement] = useState<GridMeasurement>(() => ({
     occupiedWidth,
     width: fallbackWidth(),
@@ -84,7 +99,7 @@ function useGridWidth(): number {
   );
 }
 
-/** Keep width-driven card packing out of the urgent sidebar-toggle render. */
+/** Keep width-driven card packing out of the urgent column-toggle render. */
 export function useDeferredGridWidth(): number {
   return useDeferredValue(useGridWidth());
 }

@@ -1,19 +1,37 @@
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
+export { EmptyPreview } from "./preview";
+
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   align?: "start";
   size?: "card" | "inline";
+  variant?: "dashed";
 }
 
-function Root({ className, align, size, ...props }: RootProps) {
+function Root({
+  className,
+  align,
+  size,
+  variant,
+  children,
+  ...props
+}: RootProps) {
   return (
     <div
       className={cn(styles.root, className)}
       data-align={align || undefined}
       data-size={size || undefined}
+      data-variant={variant || undefined}
       {...props}
-    />
+    >
+      {variant === "dashed" ? (
+        <svg aria-hidden="true" className={styles.frame}>
+          <rect />
+        </svg>
+      ) : null}
+      {children}
+    </div>
   );
 }
 

@@ -34,7 +34,7 @@ import { buildMoveFolderItems } from "@/features/library/lib/move-folders-menu";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { openFolderTemplateDialog } from "@/features/library/state/folder-template-dialog";
 import { folders } from "@/features/library/state/folders";
-import type { LibraryNav } from "@/features/library/state/library-chrome";
+import { getLibraryNav } from "@/features/library/state/library-chrome";
 import { openOrganizationRenameDialog } from "@/features/library/state/organization-rename-dialog";
 import {
   setIncludeSubfolders,
@@ -56,7 +56,6 @@ interface FolderRowMenuInput {
   hasChildren: boolean;
   includeSubfolders: boolean;
   quickAccess?: boolean;
-  nav: LibraryNav;
   sameLevelHasChildren: boolean;
   viewing: boolean;
   quickAccessFolderIds: string[];
@@ -198,7 +197,8 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
             name: folder.name,
             onRemoved: async () => {
               await folders.refresh();
-              if (input.nav.kind === "folder" && input.nav.id === folder.id) {
+              const nav = getLibraryNav();
+              if (nav?.kind === "folder" && nav.id === folder.id) {
                 selectLibraryNav({ kind: "all" });
               }
             },

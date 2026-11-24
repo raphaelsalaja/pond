@@ -16,6 +16,7 @@
       "!branding",
       "!.mobbin",
       "!.impeccable",
+      "!packages/icons/next",
       "!packages/theme/src/colors/palette.css",
       "!packages/theme/src/colors/scale.css"
     ]
@@ -69,7 +70,6 @@
         "!.windsurf/**",
         "!apps/desktop/out/**",
         "!apps/desktop/src/renderer/src/generated/**",
-        "!apps/desktop/src/renderer/src/lab/download/lab.js",
         "!apps/extension/.output/**",
         "!apps/extension/.wxt/**",
         "!apps/website/.next/**"

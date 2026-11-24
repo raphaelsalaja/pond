@@ -15,7 +15,6 @@ import {
   useSavedViews,
 } from "@/features/library/state/saved-views";
 import { useActiveViewId } from "@/features/library/state/view-store";
-import { isSaveCollectionPath } from "@/features/saves";
 import {
   buildTagMenuItems,
   tagOperations,
@@ -26,6 +25,7 @@ import { usePrefs } from "@/shared/state/prefs";
 import { offerEntries } from "./offer-entries";
 import { specEntries } from "./spec-entries";
 import type { MenuEntry } from "./types";
+import { useOnCollection } from "./use-on-collection";
 
 const TAG_SUGGESTED = new Set(["Rename Tag", "Merge Into", "Remove Tag"]);
 const VIEW_SUGGESTED = new Set(["Edit Filters", "Rename", "Duplicate"]);
@@ -206,9 +206,9 @@ export function usePageEntries(
   searching: boolean,
 ): MenuEntry[] {
   const nav = useLibraryNav();
-  const onCollection = isSaveCollectionPath(pathname);
+  const onCollection = useOnCollection(pathname);
   const tag = useTagEntries(
-    onCollection && nav.kind === "tag" ? nav.name : null,
+    onCollection && nav?.kind === "tag" ? nav.name : null,
     searching,
   );
   const view = useSavedViewEntries(onCollection, searching);

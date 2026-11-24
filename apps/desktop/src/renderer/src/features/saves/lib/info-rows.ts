@@ -1,9 +1,10 @@
-import { formatListKinds } from "@pond/schema/list-kinds";
+import { normalizeListKinds } from "@pond/schema/list-kinds";
 import {
   deriveTypeLabel,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
 import type { Save } from "@/features/saves/types";
+import { listKindLabel } from "@/features/sources/lib/list-kind-copy";
 import {
   formatBytes,
   formatCount,
@@ -31,12 +32,12 @@ export function collectInfoRows(save: Save): PaneRow[] {
     });
   }
 
-  const list = formatListKinds(save.listKinds);
-  if (list) {
+  const kinds = normalizeListKinds(save.listKinds);
+  if (kinds.length) {
     out.push({
       id: "list",
-      label: "Saved To",
-      value: list,
+      label: "List",
+      value: kinds.map((kind) => listKindLabel(save.source, kind)).join(", "),
     });
   }
 

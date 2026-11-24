@@ -1,154 +1,230 @@
 .root {
   --window-inset: 16px;
   --window-chrome-start: 12px;
-  /* Traffic-light padding plus the four 28px titlebar controls. */
-  --window-left-min: calc(var(--window-chrome-start) + 28px * 4 + 2px * 3);
-  --window-right-width: 0px;
-  --window-left-width: var(--window-left-min);
-  --window-right-track: 352px;
+  --window-chrome-end: calc(var(--ds-space-md) + var(--ds-border-width));
+  --window-bar-height: 44px;
+  --window-header-height: 44px;
   --window-left-track: 352px;
+  --window-right-track: 352px;
+  --window-left-width: 0px;
+  --window-right-width: 0px;
+  --window-leading-width: 0px;
+  --window-trailing-width: 0px;
   --window-background: var(--ds-background-primary);
+  --window-surface: var(--ds-background-primary);
   --window-edge-duration: var(--ds-duration-medium);
   --window-edge-easing: var(--ds-easing-decelerate);
 
   position: relative;
   display: grid;
-  grid-template-rows: auto 1fr auto;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas:
-    "top top top"
-    "left center right"
-    "bottom bottom bottom";
+  grid-template-rows: var(--window-bar-height) minmax(0, 1fr);
+  grid-template-columns:
+    var(--window-left-width)
+    minmax(0, 1fr)
+    var(--window-right-width);
   width: 100%;
   height: 100%;
   min-height: 0;
   overflow: hidden;
   background: var(--window-background);
-  interpolate-size: allow-keywords;
   transition:
     --window-left-width var(--window-edge-duration) var(--window-edge-easing),
     --window-right-width var(--window-edge-duration) var(--window-edge-easing);
-}
-
-.root[data-right-open] {
-  --window-right-width: var(--window-right-track);
 }
 
 .root[data-left-open] {
   --window-left-width: var(--window-left-track);
 }
 
-/* Drawn on the root so the dividers cross the top row and run the full window height. */
-.root[data-left-open]::before,
-.root[data-right-open]::after {
+.root[data-right-open] {
+  --window-right-width: var(--window-right-track);
+}
+
+/* One divider per column edge, from under the bar row to the bottom; a closed column parks it off screen. */
+.root::before,
+.root::after {
   position: absolute;
-  inset-block: 0;
-  z-index: 1;
+  top: var(--window-bar-height);
+  bottom: 0;
+  z-index: 2;
   width: var(--ds-border-width);
   pointer-events: none;
   content: "";
   background: var(--ds-border-subtle);
 }
 
-.root[data-left-open]::before {
+.root::before {
   left: calc(var(--window-left-width) - var(--ds-border-width));
 }
 
-.root[data-right-open]::after {
+.root::after {
   right: calc(var(--window-right-width) - var(--ds-border-width));
 }
 
-.top {
-  z-index: 2;
-  grid-area: top;
-  flex-shrink: 0;
-  height: 0;
-  overflow: hidden;
-  background: transparent;
-  opacity: 0;
-  transition:
-    height var(--window-edge-duration) var(--window-edge-easing),
-    opacity var(--window-edge-duration) var(--window-edge-easing);
-  -webkit-app-region: drag;
+/* Every column lays out the same three rows, so bars, headers and bodies line up across the window. */
+.grid {
+  display: grid;
+  grid-template-rows: var(--window-bar-height) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+
+  > * {
+    grid-row: 2 / -1;
+    grid-column: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  > .bar {
+    grid-row: 1;
+  }
+
+  > .header {
+    grid-row: 2;
+  }
+
+  > .body {
+    grid-row: 3;
+  }
 }
 
-.top[data-open] {
-  height: auto;
-  overflow: visible;
-  opacity: 1;
-}
-
-.left,
-.right {
+.side {
   position: relative;
   z-index: 1;
-  display: flex;
-  flex-direction: column;
+  grid-row: 1 / -1;
   min-width: 0;
-  min-height: 0;
-  /* Clip the closed track so the absolute card cannot paint over Center. */
-  overflow: hidden;
   pointer-events: none;
+
+  &[data-open] {
+    pointer-events: auto;
+  }
+
+  /* Pinned to the divider, so opening pushes the column in with its edge. */
+  > .grid {
+    position: absolute;
+    inset-block: 0;
+  }
+
+  &[data-slot="left"] {
+    grid-column: 1;
+
+    > .grid {
+      right: 0;
+      width: var(--window-left-track);
+    }
+  }
+
+  &[data-slot="right"] {
+    grid-column: 3;
+
+    > .grid {
+      left: 0;
+      width: var(--window-right-track);
+    }
+  }
 }
 
-.left {
-  grid-area: left;
-  width: var(--window-left-width);
-  min-width: var(--window-left-min);
+/* Isolated so page layers with a z-index never paint over the column handles that straddle its edges. */
+.center {
+  position: relative;
+  isolation: isolate;
+  grid-row: 1 / -1;
+  grid-column: 2;
+  overflow: hidden;
 }
 
-.right {
-  grid-area: right;
-  width: var(--window-right-width);
+/* Center and Details sit on a raised surface below the bar; the sidebar draws its own. */
+.center::before,
+.side[data-slot="right"] > .grid::before {
+  grid-row: 2 / -1;
+  grid-column: 1;
+  content: "";
+  background: var(--window-surface);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
-.left[data-open],
-.right[data-open] {
-  overflow: visible;
-  pointer-events: auto;
+.root[data-left-edge="rounded"] {
+  &::before {
+    display: none;
+  }
+
+  > .center::before {
+    border-left: var(--ds-border-width) solid var(--ds-border-subtle);
+    border-top-left-radius: var(--ds-radius-xl);
+  }
 }
 
-.edge-content {
+.leading,
+.trailing {
   position: absolute;
-  inset-block: 0;
-  min-height: 0;
-  contain: layout;
-  opacity: 0;
-  transition:
-    opacity var(--ds-duration-fast) var(--ds-easing-standard),
-    transform var(--ds-duration-snap) var(--ds-easing-decelerate);
+  top: 0;
+  z-index: 3;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  width: max-content;
+  height: var(--window-bar-height);
+  -webkit-app-region: drag;
+
+  > * {
+    -webkit-app-region: no-drag;
+  }
 }
 
-.left > .edge-content {
+/* Stays put when the sidebar closes, and spans the sidebar when it is open. */
+.leading {
   left: 0;
-  width: var(--window-left-track);
-  min-width: var(--window-left-track);
-  transform: translateX(-6px);
+  gap: var(--ds-space-md);
+  justify-content: space-between;
+  min-width: var(--window-left-width);
+  padding-inline: var(--window-chrome-start) var(--window-chrome-end);
 }
 
-.right > .edge-content {
+.trailing {
   right: 0;
+  gap: var(--ds-space-xs);
+  justify-content: flex-end;
+  min-width: var(--window-right-width);
+  padding-inline-end: var(--ds-space-lg);
+}
+
+.bar {
+  display: flex;
+  gap: var(--ds-space-md);
+  align-items: center;
+  min-width: 0;
+  padding-inline: var(--window-inset);
+  -webkit-app-region: drag;
+
+  > * {
+    -webkit-app-region: no-drag;
+  }
+}
+
+/* Margin, not padding: a later drag region overrides an earlier no-drag one in Electron, so the bar must not sit under the clusters. */
+.center > .bar {
+  margin-inline: max(
+      0px,
+      var(--window-leading-width) - var(--window-left-width)
+    )
+    max(0px, var(--window-trailing-width) - var(--window-right-width));
+}
+
+.header {
   display: flex;
   flex-direction: column;
-  width: var(--window-right-track);
-  min-width: var(--window-right-track);
-  transform: translateX(6px);
+
+  /* A page that leaves the row empty gives its height back to the body. */
+  &:not(:has(:not(:empty))) {
+    display: none;
+  }
 }
 
-.left[data-open] > .edge-content,
-.right[data-open] > .edge-content {
-  opacity: 1;
-  transform: translateX(0);
-  transition-delay: var(--ds-duration-fast), 0ms;
-}
-
-.center {
+.body {
   position: relative;
   display: flex;
   flex-direction: column;
-  grid-area: center;
-  min-width: 0;
-  min-height: 0;
   overflow: hidden;
 }
 
@@ -158,10 +234,10 @@
   --pill-height: 28px;
 
   position: absolute;
-  top: 0;
+  top: calc(var(--window-bar-height) + var(--window-header-height));
+  bottom: 0;
   z-index: 3;
   width: var(--handle-hit);
-  height: 100%;
   touch-action: none;
   cursor: col-resize;
   -webkit-app-region: no-drag;
@@ -191,7 +267,7 @@
       background var(--ds-duration-fast) var(--ds-easing-standard);
   }
 
-  /* The divider sits inside the pane edge, so center on its midline. */
+  /* The divider sits inside the column edge, so center on its midline. */
   &[data-edge="left"] {
     right: calc(var(--handle-hit) / -2 + var(--ds-border-width) / 2);
   }
@@ -219,40 +295,14 @@
     outline: none;
   }
 }
-.left[data-resizing],
-.right[data-resizing],
+
 .root[data-resizing],
-.root[data-resizing] .left,
-.root[data-resizing] .right,
-.root[data-instant],
-.root[data-instant] .edge-content {
+.root[data-instant] {
   transition: none;
-}
-
-.bottom {
-  grid-area: bottom;
-  height: 0;
-  padding-right: var(--window-inset);
-  padding-left: var(--window-inset);
-  overflow: hidden;
-  opacity: 0;
-  transition:
-    height var(--window-edge-duration) var(--window-edge-easing),
-    opacity var(--window-edge-duration) var(--window-edge-easing);
-}
-
-.bottom[data-open] {
-  height: auto;
-  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .root,
-  .top,
-  .left,
-  .right,
-  .edge-content,
-  .bottom,
   .handle::after {
     transition: none;
   }

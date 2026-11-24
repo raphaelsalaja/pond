@@ -1,447 +1,238 @@
+import { IconAscendingSorting, IconDescendingSorting } from "@pond/icons";
+import { Button, Switch, Toggle, ToggleGroup } from "@pond/ui";
+import { type ReactNode, useId } from "react";
+import { LIBRARY_SAVE_RADIUS_MAX } from "@/features/library/components/layouts/save-radius";
+import { Fields } from "../fields";
 import {
-  IconArrowDiagonalIn,
-  IconArrowsExpand,
-  IconAscendingSorting,
-  IconBulletList,
-  IconCircleInfo,
-  IconDescendingSorting,
-  IconFile,
-  IconFolderTree,
-  IconGlobe,
-  IconGrid,
-  IconGridLayoutCols,
-  IconGridLayoutRows,
-  IconSidebarLeft,
-  IconText,
-} from "@pond/icons";
-import { Input, Select, Toggle, ToggleGroup, Tooltip } from "@pond/ui";
-import { type ReactNode, useEffect, useId, useState } from "react";
-import {
-  setLibrarySaveGap,
-  useLibrarySaveGap,
-} from "@/features/library/components/layouts/save-gap";
-import type { SortDir } from "@/features/library/hooks/use-filtered-saves";
-import { useView } from "@/features/library/hooks/use-view";
-import type { LayoutValue } from "@/features/library/lib/view-prefs";
-import {
-  libraryChrome,
-  useSidebarOpen,
-} from "@/features/library/state/library-chrome";
-import {
-  setIncludeSubfolders,
-  useIncludeSubfolders,
-} from "@/features/library/state/view-store";
-import {
-  type ItemInfoField,
-  setItemInfoField,
-  setItemInfoVisible,
-  setListColumn,
-  useItemInfo,
-  useListColumns,
-} from "@/features/saves";
-import { usePrefs } from "@/shared/state/prefs";
-import { SORT_OPTIONS } from "../sort";
+  DETAILS,
+  FITS,
+  GAP_MAX,
+  INFO_FIELDS,
+  LAYOUTS,
+  PRESETS,
+  QUALITIES,
+  SIZE_MAX,
+  SIZE_MIN,
+  SORTS,
+} from "../options";
+import { useViewOptions } from "../use-view-options";
 import styles from "./styles.module.css";
 
-interface IconOption<Value extends string> {
-  value: Value;
-  label: string;
-  icon: ReactNode;
-  disabled?: boolean;
-}
-
-const LAYOUT_OPTIONS: Array<IconOption<LayoutValue>> = [
-  {
-    value: "waterfall",
-    label: "Waterfall",
-    icon: <IconGridLayoutCols size={14} />,
-  },
-  { value: "grid", label: "Grid", icon: <IconGrid size={14} /> },
-  {
-    value: "justified",
-    label: "Justified",
-    icon: <IconGridLayoutRows size={14} />,
-  },
-  { value: "list", label: "List", icon: <IconBulletList size={14} /> },
-];
-
-type CardDetail = "name" | "info" | "extension" | "source";
-
-type Panel = "subfolders" | "sidebar";
-
-const CARD_DETAIL_OPTIONS: Array<IconOption<CardDetail>> = [
-  { value: "name", label: "Show Name", icon: <IconText size={14} /> },
-  {
-    value: "info",
-    label: "Show Item Info",
-    icon: <IconCircleInfo size={14} />,
-  },
-  { value: "extension", label: "Show Extension", icon: <IconFile size={14} /> },
-  { value: "source", label: "Show Source Tag", icon: <IconGlobe size={14} /> },
-];
-
-const QUALITY_OPTIONS: Array<{
-  value: "fast" | "balanced" | "quality";
-  label: string;
-}> = [
-  { value: "fast", label: "Speed" },
-  { value: "balanced", label: "Balanced" },
-  { value: "quality", label: "Quality" },
-];
-
-const INFO_OPTIONS: Array<{ value: ItemInfoField; label: string }> = [
-  { value: "dimensions", label: "Dimensions" },
-  { value: "fileSize", label: "File Size" },
-  { value: "tags", label: "Tags" },
-  { value: "rating", label: "Rating" },
-  { value: "modified", label: "Date Modified" },
-  { value: "created", label: "Date Created" },
-  { value: "published", label: "Date Published" },
-];
-
-const DIRECTION_OPTIONS: Array<IconOption<SortDir>> = [
-  {
-    value: "asc",
-    label: "Ascending",
-    icon: <IconAscendingSorting size={14} />,
-  },
-  {
-    value: "desc",
-    label: "Descending",
-    icon: <IconDescendingSorting size={14} />,
-  },
-];
-
-const FIT_OPTIONS: Array<IconOption<"fit" | "fill">> = [
-  { value: "fit", label: "Fit", icon: <IconArrowDiagonalIn size={14} /> },
-  { value: "fill", label: "Fill", icon: <IconArrowsExpand size={14} /> },
-];
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  const titleId = useId();
-
+function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <section className={styles.section} aria-labelledby={titleId}>
-      <h3 className={styles.title} id={titleId}>
-        {title}
-      </h3>
+    <section role="group" aria-label={label} className={styles.section}>
       {children}
     </section>
   );
 }
 
-function SegmentedProperty<Value extends string>({
-  label,
-  options,
-  value,
-  multiple,
-  onValueChange,
-}: {
-  label: string;
-  options: ReadonlyArray<IconOption<Value>>;
-  value: ReadonlyArray<Value>;
-  multiple?: boolean;
-  onValueChange: (value: Value[]) => void;
-}) {
-  const labelId = useId();
-
+function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className={styles.property}>
-      <span className={styles.label} id={labelId}>
-        {label}
-      </span>
-      <ToggleGroup
-        variant="outline"
-        className={styles.segmented}
-        aria-labelledby={labelId}
-        multiple={multiple}
-        value={[...value]}
-        onValueChange={(next) =>
-          onValueChange(
-            options
-              .map((option) => option.value)
-              .filter((option) => next.includes(option)),
-          )
-        }
-      >
-        {options.map((option) => (
-          <Tooltip key={option.value} label={option.label} side="bottom">
-            <Toggle
-              type="button"
-              value={option.value}
-              disabled={option.disabled}
-              aria-label={option.label}
-            >
-              {option.icon}
-            </Toggle>
-          </Tooltip>
-        ))}
-      </ToggleGroup>
+    <div className={styles.row}>
+      <span className={styles.label}>{label}</span>
+      <div className={styles.controls}>{children}</div>
     </div>
   );
 }
 
-function NumericProperty({
-  label,
-  value,
-  onValueChange,
-}: {
-  label: string;
-  value: number;
-  onValueChange: (value: number) => void;
-}) {
-  const fieldId = useId();
-  const [draft, setDraft] = useState(String(value));
-
-  useEffect(() => setDraft(String(value)), [value]);
-
-  function commitDraft() {
-    const parsed = Number.parseInt(draft, 10);
-    if (!Number.isFinite(parsed)) {
-      setDraft(String(value));
-      return;
-    }
-    const next = Math.max(0, parsed);
-    setDraft(String(next));
-    onValueChange(next);
-  }
-
-  return (
-    <div className={styles.property}>
-      <label className={styles.label} htmlFor={fieldId}>
-        {label}
-      </label>
-      <Input.Root size="sm" variant="primary" className={styles.field}>
-        <Input.Field
-          id={fieldId}
-          type="number"
-          inputMode="numeric"
-          min={0}
-          step={1}
-          value={draft}
-          aria-label={`${label} value`}
-          onChange={(event) => setDraft(event.target.value)}
-          onBlur={commitDraft}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.nativeEvent.isComposing)
-              event.currentTarget.blur();
-            if (event.key === "Escape" && draft !== String(value)) {
-              event.stopPropagation();
-              setDraft(String(value));
-            }
-          }}
-        />
-        <Input.Suffix>px</Input.Suffix>
-      </Input.Root>
-    </div>
-  );
+function Control({ children }: { children: ReactNode }) {
+  return <div className={styles.control}>{children}</div>;
 }
 
-function SelectProperty<Value extends string>({
-  label,
-  items,
-  value,
-  onValueChange,
-}: {
-  label: string;
-  items: ReadonlyArray<{ value: Value; label: string }>;
-  value: Value;
-  onValueChange: (value: Value) => void;
-}) {
+function Layouts() {
+  const view = useViewOptions();
   return (
-    <Select.Root
-      items={items}
-      value={value}
-      onValueChange={(next) => {
-        const match = items.find((item) => item.value === next);
-        if (match) onValueChange(match.value);
+    <ToggleGroup
+      variant="pills"
+      aria-label="Layout"
+      className={styles.layouts}
+      value={[view.layout]}
+      onValueChange={([next]) => {
+        const match = LAYOUTS.find((option) => option.value === next);
+        if (match) view.setLayout(match.value);
       }}
     >
-      <div className={styles.property}>
-        <Select.Label className={styles.label}>{label}</Select.Label>
-        <Select.Trigger size="sm" width="full" className={styles.select}>
-          <Select.Value />
-        </Select.Trigger>
-      </div>
-      <Select.Portal>
-        <Select.Positioner align="end" sideOffset={6}>
-          <Select.Popup>
-            <Select.Items items={[...items]} />
-          </Select.Popup>
-        </Select.Positioner>
-      </Select.Portal>
-    </Select.Root>
+      {LAYOUTS.map((option) => (
+        <Toggle key={option.value} type="button" value={option.value}>
+          {option.icon}
+          {option.label}
+        </Toggle>
+      ))}
+    </ToggleGroup>
   );
 }
 
-function LayoutSection() {
-  const { state, actions } = useView();
-  const gap = useLibrarySaveGap();
-
+function Presets() {
+  const view = useViewOptions();
+  const title = useId();
   return (
-    <Section title="Layout">
-      <SegmentedProperty
-        label="View"
-        options={LAYOUT_OPTIONS}
-        value={[state.layout]}
+    <Section label="Presets">
+      <h3 id={title} className={styles.title}>
+        Presets
+      </h3>
+      <ToggleGroup
+        variant="pills"
+        aria-labelledby={title}
+        className={styles.presets}
+        value={view.preset ? [view.preset] : []}
         onValueChange={([next]) => {
-          if (next) actions.setLayout(next);
+          const match = PRESETS.find((preset) => preset.value === next);
+          if (match) view.applyPreset(match);
         }}
-      />
-      <NumericProperty
-        label="Size"
-        value={state.zoom}
-        onValueChange={actions.setZoom}
-      />
-      <NumericProperty
-        label="Gap"
-        value={gap}
-        onValueChange={setLibrarySaveGap}
-      />
+      >
+        {PRESETS.map((preset) => (
+          <Toggle key={preset.value} type="button" value={preset.value}>
+            {preset.label}
+          </Toggle>
+        ))}
+      </ToggleGroup>
     </Section>
   );
 }
 
-function DisplaySection() {
-  const { state, actions } = useView();
-  const [viewer, patchViewer] = usePrefs("viewer");
-  const listColumns = useListColumns();
-  const itemInfo = useItemInfo();
-  const list = state.layout === "list";
-  const shown = {
-    name: list ? listColumns.name : state.displayPrefs.name,
-    info: itemInfo.visible,
-    extension: state.displayPrefs.type,
-    source: state.displayPrefs.source,
-  } satisfies Record<CardDetail, boolean>;
-
-  function setShown(detail: CardDetail, on: boolean) {
-    if (detail === "name") {
-      if (list) setListColumn("name", on);
-      else actions.setDisplayPref("name", on);
-    } else if (detail === "info") setItemInfoVisible(on);
-    else if (detail === "extension") actions.setDisplayPref("type", on);
-    else actions.setDisplayPref("source", on);
-  }
-
+function SortBy() {
+  const view = useViewOptions();
+  const ascending = view.sortDir === "asc";
   return (
-    <Section title="Display">
-      <SegmentedProperty
-        label="Show"
-        multiple
-        options={CARD_DETAIL_OPTIONS}
-        value={CARD_DETAIL_OPTIONS.filter((option) => shown[option.value]).map(
-          (option) => option.value,
-        )}
-        onValueChange={(next) => {
-          for (const option of CARD_DETAIL_OPTIONS) {
-            const on = next.includes(option.value);
-            if (on !== shown[option.value]) setShown(option.value, on);
-          }
-        }}
-      />
-      <SelectProperty
-        label="Quality"
-        items={QUALITY_OPTIONS}
-        value={viewer.thumbnailQuality}
-        onValueChange={(value) => {
-          void patchViewer({ thumbnailQuality: value });
-        }}
-      />
-      <SelectProperty
-        label="Item Info"
-        items={INFO_OPTIONS}
-        value={itemInfo.field}
-        onValueChange={setItemInfoField}
-      />
+    <Row label="Sort By">
+      <Button
+        icon
+        size="xs"
+        variant="ghost"
+        aria-label="Toggle Sort Direction"
+        onClick={() => view.setSortDir(ascending ? "desc" : "asc")}
+      >
+        {ascending ? <IconAscendingSorting /> : <IconDescendingSorting />}
+      </Button>
+      <Control>
+        <Fields.Select
+          label="Sort By"
+          items={SORTS}
+          value={view.sortKey}
+          onValueChange={view.setSortKey}
+        />
+      </Control>
+    </Row>
+  );
+}
+
+function CardOptions() {
+  const view = useViewOptions();
+  return (
+    <Section label="Card Options">
+      <h3 className={styles.title}>Card Options</h3>
+      <Row label="Shown Information">
+        <Control>
+          <Fields.Select
+            label="Shown Information"
+            items={INFO_FIELDS}
+            value={view.infoField}
+            disabled={!view.details.info}
+            onValueChange={view.setInfoField}
+          />
+        </Control>
+      </Row>
+      <Row label="Corner Radius">
+        <Control>
+          <Fields.Measure
+            label="Corner Radius"
+            value={view.rounding}
+            min={0}
+            max={LIBRARY_SAVE_RADIUS_MAX}
+            onValueChange={view.setRounding}
+          />
+        </Control>
+      </Row>
+      <Row label="Thumbnail Fit">
+        <Control>
+          <Fields.Select
+            label="Thumbnail Fit"
+            items={FITS}
+            value={view.fit}
+            onValueChange={view.setFit}
+          />
+        </Control>
+      </Row>
+      <Row label="Thumbnail Quality">
+        <Control>
+          <Fields.Select
+            label="Thumbnail Quality"
+            items={QUALITIES}
+            value={view.quality}
+            onValueChange={view.setQuality}
+          />
+        </Control>
+      </Row>
     </Section>
   );
 }
 
-function SortingSection() {
-  const { state, actions } = useView();
-
+function DisplayProperties() {
+  const view = useViewOptions();
   return (
-    <Section title="Sorting">
-      <SegmentedProperty
-        label="Direction"
-        options={DIRECTION_OPTIONS}
-        value={[state.sort.dir]}
-        onValueChange={([dir]) => {
-          if (dir) actions.setSort({ key: state.sort.key, dir });
-        }}
-      />
-      <SelectProperty
-        label="Sort"
-        items={SORT_OPTIONS}
-        value={state.sort.key}
-        onValueChange={(key) => actions.setSort({ key, dir: state.sort.dir })}
-      />
-    </Section>
-  );
-}
-
-function ThumbnailSection() {
-  const [viewer, patchViewer] = usePrefs("viewer");
-  const includeSubfolders = useIncludeSubfolders();
-  const sidebarOpen = useSidebarOpen();
-  const panels = {
-    subfolders: includeSubfolders,
-    sidebar: sidebarOpen,
-  } satisfies Record<Panel, boolean>;
-  const panelOptions: Array<IconOption<Panel>> = [
-    {
-      value: "subfolders",
-      label: "Show Subfolder Contents",
-      icon: <IconFolderTree size={14} />,
-    },
-    {
-      value: "sidebar",
-      label: "Show Sidebar",
-      icon: <IconSidebarLeft size={14} />,
-    },
-  ];
-
-  function setPanel(panel: Panel, on: boolean) {
-    if (panel === "subfolders") setIncludeSubfolders(on);
-    else libraryChrome.toggleSidebar();
-  }
-
-  return (
-    <Section title="Thumbnail">
-      <SegmentedProperty
-        label="Fit"
-        options={FIT_OPTIONS}
-        value={[viewer.galleryFit]}
-        onValueChange={([galleryFit]) => {
-          if (galleryFit) void patchViewer({ galleryFit });
-        }}
-      />
-      <SegmentedProperty
-        label="Show"
-        multiple
-        options={panelOptions}
-        value={panelOptions
-          .filter((option) => panels[option.value])
-          .map((option) => option.value)}
-        onValueChange={(next) => {
-          for (const option of panelOptions) {
-            const on = next.includes(option.value);
-            if (on !== panels[option.value]) setPanel(option.value, on);
-          }
-        }}
-      />
+    <Section label="Display Properties">
+      <h3 className={styles.title}>Display Properties</h3>
+      {DETAILS.map((detail) => (
+        <Row key={detail.value} label={detail.label}>
+          <Switch.Root
+            aria-label={detail.label}
+            checked={view.details[detail.value]}
+            onCheckedChange={(on) => view.setDetail(detail.value, on)}
+          />
+        </Row>
+      ))}
     </Section>
   );
 }
 
 export function ViewOptions() {
+  const view = useViewOptions();
+  const list = view.layout === "list";
   return (
     <div className={styles.panel}>
-      <LayoutSection />
-      <DisplaySection />
-      <SortingSection />
-      <ThumbnailSection />
+      <Section label="Layout">
+        <Layouts />
+      </Section>
+      <Presets />
+      <Section label="Sorting and Size">
+        <SortBy />
+        <Row label="Size">
+          <Control>
+            <Fields.Measure
+              label="Size"
+              value={view.size}
+              min={SIZE_MIN}
+              max={SIZE_MAX}
+              disabled={list}
+              onValueChange={view.setSize}
+            />
+          </Control>
+        </Row>
+        <Row label="Gap">
+          <Control>
+            <Fields.Measure
+              label="Gap"
+              value={view.gap}
+              min={0}
+              max={GAP_MAX}
+              disabled={list}
+              onValueChange={view.setGap}
+            />
+          </Control>
+        </Row>
+      </Section>
+      <Section label="Folders">
+        <h3 className={styles.title}>Folders</h3>
+        <Row label="Show Subfolder Contents">
+          <Switch.Root
+            aria-label="Show Subfolder Contents"
+            checked={view.subfolders}
+            onCheckedChange={view.setSubfolders}
+          />
+        </Row>
+      </Section>
+      <CardOptions />
+      <DisplayProperties />
     </div>
   );
 }

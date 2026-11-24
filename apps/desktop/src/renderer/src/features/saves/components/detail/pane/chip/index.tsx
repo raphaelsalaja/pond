@@ -1,5 +1,5 @@
 import { IconXmark } from "@pond/icons";
-import { Button, cssVars } from "@pond/ui";
+import { Button } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 import styles from "./styles.module.css";
@@ -18,8 +18,6 @@ interface ItemProps extends Omit<ComponentPropsWithoutRef<"span">, "children"> {
   removeLabel: string;
   onRemove: () => void;
   onOpen?: () => void;
-  variant?: "raised" | "outline";
-  dot?: string;
 }
 
 function Item({
@@ -30,17 +28,13 @@ function Item({
   removeLabel,
   onRemove,
   onOpen,
-  variant = "raised",
-  dot,
   className,
-  style,
   ...props
 }: ItemProps) {
   const mixed = count !== total;
   const title = props.title ?? (crumb ? `${crumb} › ${label}` : label);
   const content = (
     <>
-      {dot ? <span aria-hidden className={styles.dot} /> : null}
       {crumb ? (
         <>
           <span className={styles.crumb}>{crumb}</span>
@@ -61,8 +55,6 @@ function Item({
     <span
       className={cn(styles.item, className)}
       data-mixed={mixed || undefined}
-      data-variant={variant}
-      style={dot ? { ...style, ...cssVars({ "--chip-dot": dot }) } : style}
       {...props}
     >
       {onOpen ? (
@@ -83,6 +75,7 @@ function Item({
         icon
         size="xs"
         variant="ghost"
+        className={styles.remove}
         aria-label={removeLabel}
         onClick={onRemove}
       >

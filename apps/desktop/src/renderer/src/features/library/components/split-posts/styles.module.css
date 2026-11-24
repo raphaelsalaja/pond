@@ -34,7 +34,7 @@
   aspect-ratio: 1;
   padding: 8px;
   overflow: hidden;
-  background: var(--ds-surface-secondary);
+  background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-xl);
 }
 
@@ -66,5 +66,5 @@
 }
 
 .trigger:hover .cover {
-  background: var(--ds-surface-tertiary);
+  background: var(--ds-surface-secondary);
 }

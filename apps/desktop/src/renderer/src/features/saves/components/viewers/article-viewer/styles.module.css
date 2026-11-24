@@ -146,7 +146,7 @@
   & blockquote {
     padding-left: 1em;
     color: var(--ds-foreground-secondary);
-    border-left: 3px solid var(--ds-border-strong);
+    border-left: 2px solid var(--ds-border-strong);
   }
 
   & cite {

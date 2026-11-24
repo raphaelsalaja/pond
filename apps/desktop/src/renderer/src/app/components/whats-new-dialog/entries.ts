@@ -13,6 +13,24 @@ const sources = import.meta.glob<string>(
   },
 );
 
+const media = import.meta.glob<string>(
+  "../../../../../../../../changelog/media/*",
+  {
+    query: "?url",
+    import: "default",
+    eager: true,
+  },
+);
+
+const MEDIA_URLS = new Map(
+  Object.entries(media).map(([path, url]) => [path.split("/").at(-1), url]),
+);
+
+/** The bundled URL for an entry's `media` file, or undefined when the file is missing. */
+export function mediaUrl(entry: ChangelogEntry): string | undefined {
+  return MEDIA_URLS.get(entry.media);
+}
+
 function parseAll(files: Record<string, string>): ChangelogEntry[] {
   const entries: ChangelogEntry[] = [];
   for (const [path, source] of Object.entries(files)) {

@@ -1,5 +1,4 @@
-import { IconCanvas } from "@pond/icons";
-import { Empty, Loader } from "@pond/ui";
+import { Empty, EmptyPreview, Loader } from "@pond/ui";
 import type { Canvas } from "@shared/canvas-contracts";
 import { ReactFlowProvider } from "@xyflow/react";
 import { useEffect, useState } from "react";
@@ -45,12 +44,20 @@ export function CanvasPage({ id }: { id: string }) {
       ) : current ? (
         <Empty.Root className={styles.empty}>
           <Empty.Media>
-            <IconCanvas size={14} />
+            <EmptyPreview.Root shape="board" layout="single">
+              <EmptyPreview.Column>
+                <EmptyPreview.Row>
+                  <EmptyPreview.Thumb />
+                  <EmptyPreview.Line width={40} />
+                </EmptyPreview.Row>
+                <EmptyPreview.Block />
+              </EmptyPreview.Column>
+            </EmptyPreview.Root>
           </Empty.Media>
           <Empty.Title>
             {current.status === "missing"
-              ? "Canvas not found"
-              : "Canvas could not be opened"}
+              ? "Canvas Not Found"
+              : "Canvas Could Not Be Opened"}
           </Empty.Title>
           <Empty.Description>
             {current.status === "missing"
@@ -68,7 +75,7 @@ export function CanvasPage({ id }: { id: string }) {
           <Empty.Media>
             <Loader.Spinner />
           </Empty.Media>
-          <Empty.Title>Loading canvas</Empty.Title>
+          <Empty.Title>Loading Canvas</Empty.Title>
         </Empty.Root>
       )}
     </div>

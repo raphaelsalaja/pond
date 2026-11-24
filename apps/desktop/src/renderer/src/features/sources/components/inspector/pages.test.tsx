@@ -115,7 +115,7 @@ it("says when a source has never fetched", async () => {
   await render(<SourceActivity id="acc-1" source="twitter" />);
   await act(async () => {
     await vi.waitFor(() =>
-      expect(host.textContent).toContain("No fetches yet"),
+      expect(host.textContent).toContain("No Fetches Yet"),
     );
   });
 });

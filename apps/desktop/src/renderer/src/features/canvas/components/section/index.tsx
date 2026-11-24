@@ -9,6 +9,7 @@ import { createCanvas, sectionItems } from "../../lib/menu";
 import {
   useCanvasEditingId,
   useCanvases,
+  useCanvasesLoaded,
   useHydrateCanvases,
 } from "../../state/canvases";
 import { CanvasRow } from "../row";
@@ -16,6 +17,7 @@ import { CanvasRow } from "../row";
 export function CanvasesSection({ activeId }: { activeId: string | null }) {
   useHydrateCanvases();
   const list = useCanvases();
+  const loaded = useCanvasesLoaded();
   const editingId = useCanvasEditingId();
   const [sidebar] = usePrefs("sidebar");
   useRevealSidebarSection("canvases", editingId !== null);
@@ -53,6 +55,9 @@ export function CanvasesSection({ activeId }: { activeId: string | null }) {
           />
         ))}
       </Sidebar.GroupContent>
+      {loaded && list.length === 0 ? (
+        <Sidebar.Empty>No canvases yet</Sidebar.Empty>
+      ) : null}
     </Sidebar.Group>
   );
 }

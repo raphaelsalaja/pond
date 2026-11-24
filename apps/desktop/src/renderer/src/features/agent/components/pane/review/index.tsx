@@ -1,5 +1,5 @@
 import { IconCircleCheck, IconCircleXmark, IconTrash } from "@pond/icons";
-import { Button, Reveal, Swap } from "@pond/ui";
+import { Button, HoverHighlight, Reveal, Swap } from "@pond/ui";
 import { Prompt } from "@pond/ui/prompt";
 import type { AssistantChange } from "@shared/assistant";
 import {
@@ -112,6 +112,7 @@ function LibraryReview({
           actions={all}
         />
       ))}
+      <HoverHighlight render={<li />} />
     </ul>
   );
   const act = (action: "apply" | "dismiss") =>

@@ -1,0 +1,40 @@
+.highlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform var(--ds-duration-snap) var(--ds-easing-snap),
+    width var(--ds-duration-snap) var(--ds-easing-snap),
+    height var(--ds-duration-snap) var(--ds-easing-snap),
+    opacity var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &::before {
+    position: absolute;
+    inset: var(--hover-highlight-inset, 0px) 0;
+    content: "";
+    background: var(--hover-highlight-fill, var(--ds-surface-primary));
+    border-radius: inherit;
+  }
+
+  &[data-visible] {
+    opacity: 1;
+  }
+
+  /* Appearing or following a scroll jumps straight to the row, then fades in. */
+  &[data-snap] {
+    transition-property: opacity;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .highlight {
+    transition-property: opacity;
+  }
+}
+
+:global(html[data-reduce-motion="true"]) .highlight {
+  transition-property: opacity;
+}

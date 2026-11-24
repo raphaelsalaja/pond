@@ -39,6 +39,11 @@ import {
 
 export type Combinator = "and" | "or";
 
+export interface Sort {
+  key: string;
+  dir: SortDir;
+}
+
 function deriveQuery(
   rows: Predicate[],
   combinator: Combinator,
@@ -75,8 +80,10 @@ interface ViewStoreState {
   presentationFolderId: string | null;
   randomSeed: string;
   layout: LayoutValue;
+  /** The folder or saved-view presentation, else the global pref; `urlSort` wins over it. */
   sortKey: string;
   sortDir: SortDir;
+  urlSort: Sort | null;
   zoom: number;
   capture: boolean;
   activeViewId: string | null;
@@ -125,51 +132,37 @@ function readPersistedFilters(): PersistedFilters {
   }
 }
 
-/** Saved views own their rules, so only ad-hoc filters survive a reload. */
-function persistedFiltersKey(state: ViewStoreState): string {
-  return JSON.stringify(
-    state.activeViewId
-      ? { rows: [], combinator: "and", semanticQuery: null }
-      : {
-          rows: state.rows.filter(predicateIsActive),
-          combinator: state.combinator,
-          semanticQuery: state.semanticQuery,
-        },
-  );
+/** Filters now live in the URL; builds that kept them in a pref hand them over once, on the first launch. */
+export function takeLegacyFilters(): PersistedFilters | null {
+  const legacy = readPersistedFilters();
+  if (!readViewPref("filterRules")) return null;
+  writeViewPref("filterRules", "");
+  return legacy.rows.length > 0 || legacy.semanticQuery ? legacy : null;
 }
-
-const initialFilters = readPersistedFilters();
 
 const store = new Store<ViewStoreState>({
   q: "",
   searchInput: "",
   searchAllView: null,
-  rows: initialFilters.rows,
-  combinator: initialFilters.combinator,
-  query: deriveQuery(initialFilters.rows, initialFilters.combinator),
+  rows: [],
+  combinator: "and",
+  query: EMPTY_QUERY,
   inheritedQuery: EMPTY_QUERY,
   presentationFolderId: null,
   randomSeed: readViewPref("seed") ?? "pond",
   layout: readInitialLayout(),
   sortKey: readViewPref("sort") ?? "savedAt",
   sortDir: readViewPref("dir") === "asc" ? "asc" : "desc",
+  urlSort: null,
   zoom: readInitialZoom(),
   capture: false,
   activeViewId: null,
   includeSubfolders: readViewPref("subfolders") !== "0",
-  semanticQuery: initialFilters.semanticQuery,
+  semanticQuery: null,
   visualProbe: null,
 });
 
 applyZoomVar(store.state.zoom);
-
-let persistedFilters = persistedFiltersKey(store.state);
-store.subscribe(() => {
-  const next = persistedFiltersKey(store.state);
-  if (next === persistedFilters) return;
-  persistedFilters = next;
-  writeViewPref("filterRules", next);
-});
 
 export function useViewStore(): ViewStoreState {
   return useSelector(store, (s) => s);
@@ -177,6 +170,51 @@ export function useViewStore(): ViewStoreState {
 
 export function getViewState(): ViewStoreState {
   return store.state;
+}
+
+export function subscribeViewStore(listener: () => void): () => void {
+  const subscription = store.subscribe(listener);
+  return () => subscription.unsubscribe();
+}
+
+export function currentSort(state: ViewStoreState = store.state): Sort {
+  return state.urlSort ?? { key: state.sortKey, dir: state.sortDir };
+}
+
+/** What the URL says about the grid, applied by `view-url` when the location changes. */
+export interface LocationView {
+  q: string;
+  query: Query;
+  semanticQuery: string | null;
+  searchAllView: string | null;
+  urlSort: Sort | null;
+}
+
+export function applyLocationView(next: LocationView, fresh: boolean): void {
+  const rows = next.query.rules.filter(
+    (clause): clause is Predicate => !("rules" in clause),
+  );
+  store.setState((s) => ({
+    ...s,
+    q: next.q,
+    searchInput: s.q === next.q && !fresh ? s.searchInput : next.q,
+    rows,
+    combinator: next.query.combinator === "or" ? "or" : "and",
+    query: next.query,
+    semanticQuery: next.semanticQuery,
+    searchAllView: next.searchAllView,
+    urlSort: next.urlSort,
+    visualProbe: fresh ? null : s.visualProbe,
+  }));
+}
+
+/** Leaving `/views/$viewId` drops the view's identity and the rules it inherits. */
+export function clearSavedView(): void {
+  store.setState((s) =>
+    s.activeViewId === null && s.inheritedQuery === EMPTY_QUERY
+      ? s
+      : { ...s, activeViewId: null, inheritedQuery: EMPTY_QUERY },
+  );
 }
 
 export function useFilterQuery(): Query {
@@ -246,11 +284,11 @@ export function searchCurrentView(): void {
 }
 
 export function useSortKey(): string {
-  return useSelector(store, (s) => s.sortKey);
+  return useSelector(store, (s) => currentSort(s).key);
 }
 
 export function useSortDir(): SortDir {
-  return useSelector(store, (s) => s.sortDir);
+  return useSelector(store, (s) => currentSort(s).dir);
 }
 function _setSearchText(q: string): void {
   store.setState((s) => (s.q === q ? s : { ...s, q }));
@@ -308,9 +346,7 @@ export function resetFilters(): void {
     searchAllView: null,
     rows: [],
     query: EMPTY_QUERY,
-    inheritedQuery: EMPTY_QUERY,
     combinator: "and",
-    activeViewId: null,
     semanticQuery: null,
     visualProbe: null,
   }));
@@ -518,7 +554,12 @@ export function setSort(next: { key: string; dir: SortDir }): void {
     writeViewPref("sort", next.key);
     writeViewPref("dir", next.dir);
   }
-  store.setState((s) => ({ ...s, sortKey: next.key, sortDir: next.dir }));
+  store.setState((s) => ({
+    ...s,
+    sortKey: next.key,
+    sortDir: next.dir,
+    urlSort: null,
+  }));
   persistPresentation();
 }
 
@@ -543,17 +584,17 @@ const SORT_KEY_CYCLE: readonly string[] = [
 ];
 
 export function toggleSortDir(): void {
-  const { sortKey, sortDir } = store.state;
-  setSort({ key: sortKey, dir: sortDir === "asc" ? "desc" : "asc" });
+  const { key, dir } = currentSort();
+  setSort({ key, dir: dir === "asc" ? "desc" : "asc" });
 }
 
 export function cycleSortKey(): void {
-  const { sortKey, sortDir } = store.state;
-  const idx = SORT_KEY_CYCLE.indexOf(sortKey);
+  const { key, dir } = currentSort();
+  const idx = SORT_KEY_CYCLE.indexOf(key);
   const next =
     SORT_KEY_CYCLE[(idx < 0 ? 0 : idx + 1) % SORT_KEY_CYCLE.length] ??
     "savedAt";
-  setSort({ key: next, dir: sortDir });
+  setSort({ key: next, dir });
 }
 
 export function adjustZoom(delta: number): void {
@@ -597,6 +638,7 @@ export function restoreDefaults(): void {
     layout: "waterfall",
     sortKey: "savedAt",
     sortDir: "desc",
+    urlSort: null,
     zoom: ZOOM_DEFAULT,
     semanticQuery: null,
     visualProbe: null,

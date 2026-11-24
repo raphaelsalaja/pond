@@ -5,8 +5,7 @@
   gap: var(--ds-space-lg);
   align-items: center;
   box-sizing: border-box;
-  /* Same height as the sidebar and Details header bars, so pane borders run as one line. */
-  height: 44px;
+  height: var(--window-header-height, 44px);
   padding-inline: var(--ds-space-md);
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 }

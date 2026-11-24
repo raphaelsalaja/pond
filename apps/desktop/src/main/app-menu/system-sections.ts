@@ -49,8 +49,12 @@ export function buildWindowSection(context: AppMenuContext): AppMenuItem {
     submenu: [
       { role: "minimize" },
       { role: "zoom" },
-      { role: "close" },
-      { role: "togglefullscreen" },
+      ...(!context.isMac ? ([{ role: "close" }] satisfies AppMenuItem[]) : []),
+      { type: "separator" },
+      {
+        label: "Library Window",
+        click: context.openLibraryWindow,
+      },
       ...(context.isMac
         ? ([{ type: "separator" }, { role: "front" }] satisfies AppMenuItem[])
         : []),
@@ -69,9 +73,18 @@ export function buildDeveloperSections(context: AppMenuContext): AppMenuItem[] {
         { role: "forceReload" },
         { role: "toggleDevTools" },
         { type: "separator" },
-        { label: "Download Lab", click: context.navTo("/lab/download") },
-        { label: "Fish Lab", click: context.navTo("/lab/fish") },
-        { label: "Sidebar Lab", click: context.navTo("/lab/sidebar") },
+        {
+          label: "Toggle React Scan",
+          click: context.developer.toggleReactScan,
+        },
+        {
+          label: "Update Flow",
+          click: context.navTo("/dev/update-flow"),
+        },
+        {
+          label: "What's New Variants",
+          click: context.navTo("/dev/whats-new"),
+        },
       ],
     },
   ];
@@ -98,18 +111,12 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
         ),
       },
       {
-        label: "Responsible Use",
-        click: context.openExternalUrl(
-          "https://pond.raphaelsalaja.com/responsible-use",
-        ),
-      },
-      {
         label: "Keyboard Shortcuts",
         click: context.sendMenuAction("help.shortcuts"),
       },
       {
-        label: "Export Debug Report",
-        click: context.sendMenuAction("help.export-debug-report"),
+        label: "What's New",
+        click: context.sendMenuAction("help.whats-new"),
       },
       { type: "separator" },
       {
@@ -119,25 +126,21 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
         ),
       },
       {
-        label: "What's New",
-        click: context.sendMenuAction("help.whats-new"),
+        label: "Export Debug Report",
+        click: context.sendMenuAction("help.export-debug-report"),
       },
-      {
-        label: "Email",
-        click: context.openExternalUrl("mailto:raphaelsalaja@gmail.com"),
-      },
-      {
-        label: "Buy Me a Coffee",
-        click: context.openExternalUrl(
-          "https://buymeacoffee.com/raphaelsalaja",
-        ),
-      },
-      { type: "separator" },
       {
         label: context.isMac
           ? "Show Logs in Finder"
           : "Show Logs in File Explorer",
         click: context.showLogs,
+      },
+      { type: "separator" },
+      {
+        label: "Responsible Use",
+        click: context.openExternalUrl(
+          "https://pond.raphaelsalaja.com/responsible-use",
+        ),
       },
     ],
   };

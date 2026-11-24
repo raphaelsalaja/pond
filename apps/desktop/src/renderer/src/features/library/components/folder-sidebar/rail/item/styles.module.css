@@ -2,8 +2,17 @@
   position: relative;
 }
 
+.icon {
+  display: flex;
+
+  /* An 18px icon centered in a 32px item puts its top-right corner under the dot. */
+  &[data-cutout] {
+    mask-image: radial-gradient(circle at 17px 1px, transparent 4.5px, black 5px);
+  }
+}
+
 .dot {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 5px;
+  right: 5px;
 }

@@ -4,8 +4,16 @@ import { useLayoutEffect, useRef } from "react";
 import styles from "./styles.module.css";
 
 export interface ToggleGroupProps extends Base.Props {
-  /** `list` stacks full-width rows for picking one item from a longer set. */
-  variant?: "raised" | "outline" | "tiles" | "list" | "rail";
+  /** `list` stacks full-width rows for picking one item from a longer set. `pictures` expects each Toggle to hold a drawing, then its label. `segmented` is a squared, full-width track for inspector panels. */
+  variant?:
+    | "raised"
+    | "outline"
+    | "tiles"
+    | "list"
+    | "pictures"
+    | "pills"
+    | "rail"
+    | "segmented";
 }
 
 function pressedToggle(root: HTMLElement): HTMLElement | null {
@@ -42,7 +50,9 @@ export function ToggleGroup({
   ...props
 }: ToggleGroupProps) {
   const indicatorRef = useRef<HTMLSpanElement>(null);
-  const indicated = !multiple && (variant === "raised" || variant === "rail");
+  const indicated =
+    !multiple &&
+    (variant === "raised" || variant === "rail" || variant === "segmented");
 
   useLayoutEffect(() => {
     if (!indicated) return;

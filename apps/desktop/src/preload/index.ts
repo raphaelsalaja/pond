@@ -217,6 +217,12 @@ const api = {
     ipcRenderer.send(IPC.rendererReady);
   },
 
+  onReactScanToggle(callback: () => void): () => void {
+    const listener = () => callback();
+    ipcRenderer.on(IPC.devReactScan, listener);
+    return () => ipcRenderer.off(IPC.devReactScan, listener);
+  },
+
   /** Electron 41 removed File.path; resolve dropped/picked files here so main can read them without the bytes crossing IPC. */
   pathForFile(file: File): string {
     return webUtils.getPathForFile(file);

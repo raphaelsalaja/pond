@@ -5,6 +5,7 @@ import { assistant } from "@/features/agent/state/assistant";
 import { fish as fishStore, useFish } from "@/features/fish";
 
 export const Route = createFileRoute("/_library/fish/$fishId")({
+  staticData: { details: "fish" },
   component: FishPage,
 });
 

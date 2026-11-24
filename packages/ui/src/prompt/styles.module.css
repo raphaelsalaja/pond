@@ -81,11 +81,11 @@
   transition: background var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   &:active {
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-surface-secondary);
   }
 
   &[data-selected] {

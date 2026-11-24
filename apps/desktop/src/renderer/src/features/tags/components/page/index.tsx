@@ -1,5 +1,12 @@
 import { IconFolder, IconPlus, IconStar, IconTag } from "@pond/icons";
-import { Button, Empty, Input, Tooltip } from "@pond/ui";
+import {
+  Button,
+  Empty,
+  EmptyPreview,
+  HoverHighlight,
+  Input,
+  Tooltip,
+} from "@pond/ui";
 import { DataTable } from "@pond/ui/data-table";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -9,6 +16,7 @@ import { TagItem } from "@/features/tags/components/manager/item";
 import { tagsColumns } from "@/features/tags/components/manager/lib/columns";
 import { TagsTableContext } from "@/features/tags/components/manager/lib/context";
 import type { TagsRowData } from "@/features/tags/components/manager/lib/types";
+import { TagsIntro } from "@/features/tags/components/intro";
 import { TagPicker } from "@/features/tags/components/picker";
 import { useTagCreation } from "@/features/tags/hooks/use-tag-creation";
 import { useTagsData } from "@/features/tags/hooks/use-tag-manager";
@@ -17,6 +25,7 @@ import {
   tagCreation,
   useTagCreationRequest,
 } from "@/features/tags/state/creation";
+import { useTagsLoaded } from "@/features/tags/state/tags";
 import { tagsScope, useTagsScope } from "@/features/tags/state/tags-scope";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
@@ -213,6 +222,7 @@ function VirtualTagIndex({ lines }: { lines: IndexLine[] }) {
           </div>
         );
       })}
+      <HoverHighlight />
     </div>
   );
 }
@@ -227,6 +237,7 @@ export function TagsPage() {
     groupSummaries,
     total,
   } = useTagsData();
+  const tagsLoaded = useTagsLoaded();
   const [allTags, patchAllTags] = usePrefs("allTags");
   const scope = useTagsScope();
   const setScope = tagsScope.set;
@@ -385,6 +396,16 @@ export function TagsPage() {
     });
   }
 
+  if (
+    tagsLoaded &&
+    total === 0 &&
+    groupSummaries.length === 0 &&
+    !q &&
+    !creating
+  ) {
+    return <TagsIntro onCreate={() => beginCreate("tag")} />;
+  }
+
   return (
     <DataTable.Provider
       data={data}
@@ -509,18 +530,25 @@ export function TagsPage() {
                 </div>
               ) : alphabet.length > 0 ? (
                 <VirtualTagIndex lines={indexLines} />
-              ) : total === 0 && !q ? (
+              ) : !tagsLoaded ? null : total === 0 && !q ? (
                 <Empty.Root className={styles.empty}>
                   <Empty.Media>
-                    <IconTag size={14} />
+                    <EmptyPreview.Root shape="chip">
+                      <EmptyPreview.Row>
+                        <EmptyPreview.Icon>
+                          <IconTag size={12} />
+                        </EmptyPreview.Icon>
+                        <EmptyPreview.Line width={44} />
+                      </EmptyPreview.Row>
+                    </EmptyPreview.Root>
                   </Empty.Media>
-                  <Empty.Title>No tags yet</Empty.Title>
+                  <Empty.Title>No Tags Yet</Empty.Title>
                   <Empty.Description>
                     Create your first tag to start organizing your library.
                   </Empty.Description>
                   <Empty.Action>
                     <Button
-                      variant="primary"
+                      variant="secondary"
                       size="sm"
                       onClick={() => beginCreate("tag")}
                     >
@@ -539,15 +567,33 @@ export function TagsPage() {
                   aria-live="polite"
                 >
                   <Empty.Media>
-                    {scope === "starred" ? (
-                      <IconStar size={14} />
-                    ) : scope === "ungrouped" ? (
-                      <IconTag size={14} />
-                    ) : (
-                      <IconFolder size={14} />
-                    )}
+                    <EmptyPreview.Root
+                      shape="chip"
+                      layout={
+                        scope === "starred"
+                          ? "single"
+                          : scope === "ungrouped"
+                            ? "stack"
+                            : "list"
+                      }
+                    >
+                      <EmptyPreview.Row>
+                        <EmptyPreview.Icon>
+                          {scope === "starred" ? (
+                            <IconStar size={12} />
+                          ) : scope === "ungrouped" ? (
+                            <IconTag size={12} />
+                          ) : (
+                            <IconFolder size={12} />
+                          )}
+                        </EmptyPreview.Icon>
+                        <EmptyPreview.Line
+                          width={scope === "starred" ? 40 : 46}
+                        />
+                      </EmptyPreview.Row>
+                    </EmptyPreview.Root>
                   </Empty.Media>
-                  <Empty.Title>No tags in {scopeLabel}</Empty.Title>
+                  <Empty.Title>No Tags in {scopeLabel}</Empty.Title>
                   <Empty.Description>
                     {scope === "starred"
                       ? "Starred tags appear here."
@@ -563,14 +609,14 @@ export function TagsPage() {
                           group: activeGroupRow.group,
                         }}
                       >
-                        <TagPicker.Trigger variant="primary" size="sm">
+                        <TagPicker.Trigger variant="secondary" size="sm">
                           Add Tags
                         </TagPicker.Trigger>
                         <TagPicker.Content align="center" />
                       </TagPicker.Root>
                     ) : scope === "ungrouped" ? (
                       <Button
-                        variant="primary"
+                        variant="secondary"
                         size="sm"
                         onClick={() => beginCreate("tag")}
                       >
@@ -578,7 +624,7 @@ export function TagsPage() {
                       </Button>
                     ) : (
                       <Button
-                        variant="primary"
+                        variant="secondary"
                         size="sm"
                         onClick={() => setScope("all")}
                       >

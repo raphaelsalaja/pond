@@ -2,7 +2,7 @@ import type { RecentMenuEntry } from "../../shared/constants";
 import type { AppMenuContext, AppMenuItem } from "./types";
 
 export function buildGoSection(context: AppMenuContext): AppMenuItem {
-  const { accelerator, navTo, sendMenuAction } = context;
+  const { accelerator, sendMenuAction } = context;
 
   return {
     label: "Go",
@@ -25,41 +25,41 @@ export function buildGoSection(context: AppMenuContext): AppMenuItem {
         click: sendMenuAction("nav.inbox"),
       },
       {
-        label: "Library",
+        label: "All Saves",
         accelerator: accelerator("nav.library"),
         registerAccelerator: false,
-        click: navTo("/"),
+        click: sendMenuAction("nav.library"),
       },
+      {
+        label: "Uncategorized",
+        click: sendMenuAction("nav.uncategorized"),
+      },
+      {
+        label: "Untagged",
+        click: sendMenuAction("nav.untagged"),
+      },
+      {
+        label: "Tags",
+        click: sendMenuAction("nav.tags"),
+      },
+      { type: "separator" },
       {
         label: "Sources",
         accelerator: accelerator("nav.sources"),
         registerAccelerator: false,
-        click: navTo("/sources"),
+        click: sendMenuAction("nav.sources"),
       },
       {
         label: "Downloads",
         accelerator: accelerator("nav.downloads"),
         registerAccelerator: false,
-        click: navTo("/downloads"),
+        click: sendMenuAction("nav.downloads"),
       },
       {
         label: "Trash",
         accelerator: accelerator("nav.trash"),
         registerAccelerator: false,
-        click: navTo("/trash"),
-      },
-      {
-        label: "Settings",
-        accelerator: accelerator("nav.settings"),
-        registerAccelerator: false,
-        click: navTo("/settings"),
-      },
-      { type: "separator" },
-      {
-        label: "Search",
-        accelerator: accelerator("library.search"),
-        registerAccelerator: false,
-        click: sendMenuAction("library.search"),
+        click: sendMenuAction("nav.trash"),
       },
     ],
   };

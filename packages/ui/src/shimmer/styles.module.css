@@ -1,14 +1,22 @@
 .root {
+  --shimmer-base: var(--ds-accent);
+  --shimmer-highlight: var(--ds-accent-foreground);
+
   color: transparent;
   background: linear-gradient(
     90deg,
-    var(--ds-accent) 35%,
-    var(--ds-accent-foreground) 50%,
-    var(--ds-accent) 65%
+    var(--shimmer-base) 35%,
+    var(--shimmer-highlight) 50%,
+    var(--shimmer-base) 65%
   );
   background-clip: text;
   background-size: 300% 100%;
   animation: shimmer-sweep 2s linear infinite;
+
+  &[data-tone="neutral"] {
+    --shimmer-base: var(--ds-foreground-tertiary);
+    --shimmer-highlight: var(--ds-foreground-primary);
+  }
 }
 
 @keyframes shimmer-sweep {
@@ -23,7 +31,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .root {
-    color: var(--ds-accent-foreground);
+    color: var(--shimmer-highlight);
     background: none;
     animation: none;
   }

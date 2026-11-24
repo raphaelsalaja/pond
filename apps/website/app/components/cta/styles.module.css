@@ -29,9 +29,9 @@
 
 .root[data-variant="soft"] {
   color: var(--ds-foreground-primary);
-  background: var(--ds-background-tertiary);
+  background: var(--ds-surface-secondary);
 
   &:hover {
-    background: var(--ds-background-tertiary);
+    background: var(--ds-surface-tertiary);
   }
 }

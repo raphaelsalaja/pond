@@ -1,10 +1,10 @@
 import type { FunctionComponent, SVGProps } from "react";
 
-export interface IconProps extends SVGProps<SVGSVGElement> {
+/** The stroke is part of the drawing, so callers can't override it. */
+export interface IconProps
+  extends Omit<SVGProps<SVGSVGElement>, "strokeWidth"> {
   /** Rendered width and height. Numbers are pixels. */
   size?: number | string;
-  /** On-screen stroke in pixels for line glyphs at 18px and below; scales with the glyph above 18px. Defaults thinner below 18px. */
-  strokeWidth?: number | string;
   title?: string;
 }
 

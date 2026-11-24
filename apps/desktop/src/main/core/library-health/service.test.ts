@@ -130,6 +130,7 @@ async function fixture(
       readCheck: store.read,
       writeCheck: store.write,
       media: async () => MEDIA,
+      folderExists: (id) => !options.index?.missing.includes(id),
     });
   return { root, missing, create, service: create() };
 }

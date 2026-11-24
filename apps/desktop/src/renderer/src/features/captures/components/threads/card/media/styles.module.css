@@ -82,7 +82,7 @@
   position: absolute;
   bottom: 8px;
   left: 8px;
-  padding: 1px var(--ds-space-sm);
+  padding: var(--ds-space-2xs) var(--ds-space-sm);
   font-size: var(--ds-text-small);
   font-weight: 600;
   color: white;

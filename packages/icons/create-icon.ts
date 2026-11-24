@@ -16,13 +16,8 @@ function grows(size: number | string) {
   return Number(size) > GRID;
 }
 
-function strokeWidthFor(
-  stroke: number | string | undefined,
-  size: number | string,
-) {
-  const explicit = stroke === undefined ? Number.NaN : Number(stroke);
-  const pixels = Number.isFinite(explicit) ? explicit : STROKE;
-  return grows(size) ? pixels / GLYPH_SCALE : pixels;
+function strokeWidthFor(size: number | string) {
+  return grows(size) ? STROKE / GLYPH_SCALE : STROKE;
 }
 
 /** Props every shape inside an icon frame needs so its stroke matches the drawn glyphs. */
@@ -40,7 +35,6 @@ interface IconFrameProps extends IconProps {
 export function IconFrame({
   variant,
   size = GRID,
-  strokeWidth,
   title,
   children,
   ...props
@@ -52,7 +46,7 @@ export function IconFrame({
           stroke: "currentColor",
           strokeLinecap: "round" as const,
           strokeLinejoin: "round" as const,
-          strokeWidth: strokeWidthFor(strokeWidth, size),
+          strokeWidth: strokeWidthFor(size),
         }
       : { fill: "currentColor" };
   return createElement(

@@ -7,22 +7,33 @@ const SORT = [
   { value: "title", label: "Title" },
 ];
 
+const SORT_WITH_SHORTCUTS = SORT.map((item, index) => ({
+  ...item,
+  shortcut: index + 1,
+}));
+
 function SortSelect({
   defaultValue,
   disabled,
+  variant,
+  size,
+  items = SORT,
 }: {
   defaultValue?: string;
   disabled?: boolean;
+  variant?: "secondary" | "chip";
+  size?: "sm" | "md";
+  items?: { value: string; label: string; shortcut?: number }[];
 }) {
   return (
-    <Select.Root items={SORT} defaultValue={defaultValue} disabled={disabled}>
-      <Select.Trigger aria-label="Sort Saves">
+    <Select.Root items={items} defaultValue={defaultValue} disabled={disabled}>
+      <Select.Trigger variant={variant} size={size} aria-label="Sort Saves">
         <Select.Value placeholder="Sort By" />
       </Select.Trigger>
       <Select.Portal>
         <Select.Positioner>
           <Select.Popup>
-            <Select.Items items={SORT} />
+            <Select.Items items={items} />
           </Select.Popup>
         </Select.Positioner>
       </Select.Portal>
@@ -43,7 +54,7 @@ export const docs: ComponentDocs = {
     {
       name: "Select.Trigger",
       description:
-        "The button that opens the list. Takes Button `variant`, `size` and `width`.",
+        "The button that opens the list. `variant` is `secondary` or `chip`, `size` is `sm` or `md` (chip only), and `width` is `full` or `auto`.",
     },
     {
       name: "Select.Value",
@@ -58,8 +69,9 @@ export const docs: ComponentDocs = {
       description: "Renders options, groups and separators from a spec.",
     },
     {
-      name: "Select.Item / ItemText / ItemIndicator",
-      description: "One option, its text and its check mark.",
+      name: "Select.Item / ItemText / ItemIndicator / ItemShortcut",
+      description:
+        "One option, its text, its check mark and an optional shortcut hint. `Select.Items` renders `shortcut` from the spec.",
     },
     {
       name: "Select.Group / GroupLabel / Separator",
@@ -96,6 +108,22 @@ export const docs: ComponentDocs = {
     {
       name: "Selected",
       render: () => <SortSelect defaultValue="newest" />,
+    },
+    {
+      name: "Chip",
+      render: () => <SortSelect defaultValue="newest" variant="chip" />,
+    },
+    {
+      name: "Chip, Medium",
+      render: () => (
+        <SortSelect defaultValue="newest" variant="chip" size="md" />
+      ),
+    },
+    {
+      name: "Shortcuts",
+      render: () => (
+        <SortSelect defaultValue="newest" items={SORT_WITH_SHORTCUTS} />
+      ),
     },
     {
       name: "Disabled",

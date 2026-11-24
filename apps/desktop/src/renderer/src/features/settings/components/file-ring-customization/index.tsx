@@ -29,7 +29,7 @@ import {
   type FileRingItem,
   fileRingItemKey,
 } from "@pond/schema/file-ring";
-import { Button, Dialog, Empty, Menu, Settings } from "@pond/ui";
+import { Button, Dialog, Empty, EmptyPreview, Menu, Settings } from "@pond/ui";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   RING_ACTIONS,
@@ -331,9 +331,18 @@ function FileRingDialog({
             ) : (
               <Empty.Root size="card" className={styles.empty} role="status">
                 <Empty.Media>
-                  <IconFolder size={14} />
+                  <EmptyPreview.Root>
+                    <EmptyPreview.Row>
+                      <EmptyPreview.Icon>
+                        <IconFolder size={12} />
+                      </EmptyPreview.Icon>
+                      <EmptyPreview.Line width={44} />
+                      <EmptyPreview.Space />
+                      <EmptyPreview.Line width={22} tone="mid" />
+                    </EmptyPreview.Row>
+                  </EmptyPreview.Root>
                 </Empty.Media>
-                <Empty.Title>No ring items</Empty.Title>
+                <Empty.Title>No Ring Items</Empty.Title>
                 <Empty.Description>
                   Add a folder or action to file into while you drag.
                 </Empty.Description>

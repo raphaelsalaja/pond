@@ -76,10 +76,10 @@
 }
 
 .stop {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   background: currentcolor;
-  border-radius: 1.5px;
+  border-radius: 2px;
 }
 
 @keyframes blink {

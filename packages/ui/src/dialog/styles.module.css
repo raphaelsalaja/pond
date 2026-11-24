@@ -7,7 +7,7 @@
   position: fixed;
   inset: 0;
   background: var(--ds-scrim);
-  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
+  transition: opacity var(--ds-duration-medium) var(--ds-easing-decelerate);
   -webkit-app-region: no-drag;
 
   &[data-starting-style],
@@ -30,14 +30,14 @@
   color: var(--ds-foreground-primary);
   outline: none;
   background: var(--ds-background-elevated);
-  border-radius: var(--ds-radius-2xl);
+  border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-dialog);
   transform: translate(-50%, var(--dialog-offset-y, -50%));
-  transform-origin: top center;
+  transform-origin: center;
   -webkit-app-region: no-drag;
   transition:
-    opacity var(--ds-duration-snap) var(--ds-easing-standard),
-    transform var(--ds-duration-bounce) var(--ds-easing-bounce);
+    opacity var(--ds-duration-medium) var(--ds-easing-decelerate),
+    transform var(--ds-duration-medium) var(--ds-easing-decelerate);
 }
 
 .portal[data-contained] .popup {
@@ -49,21 +49,14 @@
   transition:
     width var(--ds-duration-medium) var(--ds-easing-standard),
     height var(--ds-duration-medium) var(--ds-easing-standard),
-    opacity var(--ds-duration-snap) var(--ds-easing-standard),
-    transform var(--ds-duration-bounce) var(--ds-easing-bounce);
+    opacity var(--ds-duration-medium) var(--ds-easing-decelerate),
+    transform var(--ds-duration-medium) var(--ds-easing-decelerate);
 }
 
-.popup[data-starting-style] {
-  opacity: 0;
-  transform: translate(-50%, var(--dialog-offset-y, -50%)) scale(0.94);
-}
-
+.popup[data-starting-style],
 .popup[data-ending-style] {
   opacity: 0;
   transform: translate(-50%, var(--dialog-offset-y, -50%)) scale(0.97);
-  transition:
-    opacity var(--ds-duration-snap) var(--ds-easing-standard),
-    transform var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 /* The popup spans the window but lets presses through, so only its content is inside and the rest dismisses. */
@@ -99,6 +92,39 @@
   max-height: none;
 }
 
+.popup[data-size="full"] {
+  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  background: var(--ds-background-primary);
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    transform: none;
+  }
+
+  /* Keeps the window draggable by its title bar while the popup covers it. */
+  &::before {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 44px;
+    content: "";
+    -webkit-app-region: drag;
+  }
+}
+
+.portal[data-contained] .popup[data-size="full"] {
+  max-width: none;
+  max-height: none;
+}
+
 .header {
   display: flex;
   flex: none;
@@ -114,9 +140,9 @@
 .title {
   max-width: 100%;
   margin: 0;
-  font-size: var(--ds-text-title);
-  font-weight: var(--ds-weight-bold);
-  line-height: var(--ds-leading-title);
+  font-size: var(--ds-text-heading);
+  font-weight: var(--ds-weight-strong);
+  line-height: var(--ds-leading-heading);
   color: var(--ds-foreground-primary);
   text-align: start;
 }
@@ -142,7 +168,7 @@
 
   &:hover:not(:disabled) {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   &:disabled {
@@ -185,7 +211,7 @@
   font-size: var(--ds-text-body);
   font-weight: var(--ds-weight-regular);
   line-height: var(--ds-leading-body);
-  color: var(--ds-foreground-secondary);
+  color: var(--ds-foreground-primary);
 }
 
 .popup > .description,

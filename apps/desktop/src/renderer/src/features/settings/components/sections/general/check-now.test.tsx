@@ -94,8 +94,10 @@ it("opens the update dialog from Settings without waiting to leave the page", as
     finishCheck({ ok: true, version: "2.0.0" });
   });
   await vi.waitFor(() => {
-    expect(document.body.textContent).toContain("Update Available");
-    expect(document.body.textContent).toContain("Pond 2.0.0 is downloading.");
+    expect(document.body.textContent).toContain("Downloading Update");
+    expect(document.body.textContent).toContain(
+      "Keep working while Pond 2.0.0 downloads.",
+    );
   });
   expect(host.textContent).not.toContain("Pond 2.0.0 is available.");
 });

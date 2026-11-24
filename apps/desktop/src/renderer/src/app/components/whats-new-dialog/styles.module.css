@@ -1,25 +1,60 @@
 .popup {
-  --page-dialog-width: 600px;
+  --page-dialog-width: 560px;
 
-  max-height: min(640px, calc(100dvh - 32px));
+  max-height: min(880px, calc(100dvh - 64px));
 }
 
+/* Equal outer tracks keep the What's New link centered whatever the date's width. */
 .header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   min-height: 52px;
-  padding: 0 var(--ds-space-2xl);
-  border-bottom: 1px solid var(--ds-border-subtle);
+  padding: 0 var(--ds-space-xl);
 }
 
-.title {
-  font-size: var(--ds-text-body);
-}
-
-.version {
-  margin-left: var(--ds-space-sm);
+.date,
+.count {
+  font-size: var(--ds-text-small);
   font-weight: var(--ds-weight-regular);
+  font-variant-numeric: tabular-nums;
   color: var(--ds-foreground-tertiary);
 }
 
+.link {
+  grid-column: 2;
+}
+
 .content {
-  padding-block: var(--ds-space-xl) var(--ds-space-2xl);
+  gap: 0;
+  padding: var(--ds-space-md) var(--ds-space-2xl) var(--ds-space-2xl);
+}
+
+.media {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-top: var(--ds-space-lg);
+  object-fit: cover;
+  background: var(--ds-surface-primary);
+  border-radius: var(--ds-radius-md);
+}
+
+.summary {
+  margin-top: var(--ds-space-lg);
+  color: var(--ds-foreground-secondary);
+}
+
+.list {
+  margin-top: 0;
+  padding-bottom: var(--ds-space-md);
+}
+
+.details {
+  margin: var(--ds-space-2xl) calc(-1 * var(--ds-space-lg)) 0;
+  padding-top: var(--ds-space-lg);
+  border-top: 1px solid var(--ds-border-subtle);
+}
+
+.earlier {
+  font-size: var(--ds-text-body);
 }

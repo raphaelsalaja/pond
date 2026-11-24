@@ -427,6 +427,15 @@ export function MenuBridge() {
           return;
 
         case "save.refresh": {
+          const ids = selection.snapshot();
+          if (ids.length > 1) {
+            void (async () => {
+              for (const sid of ids) {
+                await window.pond.refreshSave(sid);
+              }
+            })();
+            return;
+          }
           const save = currentSave();
           if (!save) return;
           void refreshSaveMetadata(save);
@@ -434,6 +443,11 @@ export function MenuBridge() {
         }
 
         case "save.trash": {
+          const ids = selection.snapshot();
+          if (ids.length > 1) {
+            void moveSelectionToTrash(ids);
+            return;
+          }
           const save = currentSave();
           if (!save) return;
           void moveSavesToTrash([save.id]);
@@ -451,24 +465,6 @@ export function MenuBridge() {
           const save = currentSave();
           if (!save) return;
           void purgeForever(save);
-          return;
-        }
-
-        case "save.bulk-trash": {
-          const ids = selection.snapshot();
-          if (ids.length === 0) return;
-          void moveSelectionToTrash(ids);
-          return;
-        }
-
-        case "save.bulk-refresh": {
-          const ids = selection.snapshot();
-          if (ids.length === 0) return;
-          void (async () => {
-            for (const sid of ids) {
-              await window.pond.refreshSave(sid);
-            }
-          })();
           return;
         }
       }

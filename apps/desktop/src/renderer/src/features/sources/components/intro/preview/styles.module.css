@@ -1,0 +1,36 @@
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-lg);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 14px 84px 44px auto;
+  gap: var(--ds-space-md);
+  align-items: center;
+}
+
+.menu {
+  position: absolute;
+  top: 76px;
+  left: 164px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2xs);
+  width: 112px;
+  padding: var(--ds-space-xs);
+}
+
+.item {
+  display: flex;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  padding: var(--ds-space-xs) var(--ds-space-sm);
+  color: var(--intro-faint);
+  border-radius: var(--ds-radius-sm);
+
+  &[data-active] {
+    background: var(--ds-background-secondary);
+  }
+}

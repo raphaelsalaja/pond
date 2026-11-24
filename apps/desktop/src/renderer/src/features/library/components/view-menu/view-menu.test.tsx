@@ -18,12 +18,22 @@ function query<T extends Element>(selector: string): T {
   return node;
 }
 
-function typeInto(input: HTMLInputElement, value: string) {
-  Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value",
-  )?.set?.call(input, value);
-  input.dispatchEvent(new Event("input", { bubbles: true }));
+function button(label: string): HTMLButtonElement {
+  const match = Array.from(
+    document.querySelectorAll<HTMLButtonElement>('[role="dialog"] button'),
+  ).find(
+    (node) =>
+      node.getAttribute("aria-label") === label ||
+      node.textContent?.trim() === label,
+  );
+  if (!match) throw new Error(`Missing button ${label}`);
+  return match;
+}
+
+function toggle(label: string): HTMLElement {
+  return query<HTMLElement>(
+    `[role="dialog"] [role="switch"][aria-label="${label}"]`,
+  );
 }
 
 describe("view menu", () => {
@@ -37,12 +47,13 @@ describe("view menu", () => {
     setLibrarySaveGap(16);
     setSort({ key: "savedAt", dir: "desc" });
     setDisplayPref("source", true);
+    setDisplayPref("fileCount", true);
   }
 
   async function open() {
     await act(async () => root.render(<ViewMenu />));
     await act(async () =>
-      query<HTMLButtonElement>('[aria-label="View Options"]').click(),
+      query<HTMLButtonElement>('button[aria-label="View Options"]').click(),
     );
   }
 
@@ -68,134 +79,78 @@ describe("view menu", () => {
     vi.unstubAllGlobals();
   });
 
-  it("shows layout, display, sorting, and thumbnail in one popup", async () => {
-    await act(async () => root.render(<ViewMenu />));
-    expect(document.querySelectorAll("button[aria-haspopup]").length).toBe(1);
-
+  it("opens a popup with every group", async () => {
     await open();
 
-    const popup = query<HTMLElement>(
+    const dialog = query<HTMLElement>(
       '[role="dialog"][aria-label="View Options"]',
     );
-    const titles = Array.from(popup.querySelectorAll("section > h3")).map(
-      (node) => node.textContent,
-    );
-    expect(titles).toEqual(["Layout", "Display", "Sorting", "Thumbnail"]);
-    for (const section of popup.querySelectorAll("section")) {
-      const title = section.querySelector("h3");
-      expect(section.getAttribute("aria-labelledby")).toBe(title?.id);
-    }
-
-    expect(
-      query<HTMLInputElement>('input[aria-label="Size value"]').value,
-    ).toBe("130");
-    expect(query<HTMLInputElement>('input[aria-label="Gap value"]').value).toBe(
-      "16",
-    );
-    expect(popup.textContent).toContain("Quality");
-    expect(popup.textContent).toContain("Item Info");
-    expect(popup.textContent).toContain("Date Saved");
-    expect(
-      query('button[aria-label="Descending"]').getAttribute("aria-pressed"),
-    ).toBe("true");
-    expect(query('button[aria-label="Show Sidebar"]')).not.toBeNull();
+    const groups = Array.from(
+      dialog.querySelectorAll('section[role="group"]'),
+    ).map((node) => node.getAttribute("aria-label"));
+    expect(groups).toEqual([
+      "Layout",
+      "Presets",
+      "Sorting and Size",
+      "Folders",
+      "Card Options",
+      "Display Properties",
+    ]);
   });
 
-  it("switches layouts from the view control", async () => {
+  it("switches layouts from the pills", async () => {
     await open();
 
-    const justified = query<HTMLButtonElement>(
-      'button[aria-label="Justified"]',
-    );
-    const grid = query<HTMLButtonElement>('button[aria-label="Grid"]');
-    expect(justified.getAttribute("aria-pressed")).toBe("true");
-    expect(grid.getAttribute("aria-pressed")).toBe("false");
+    const grid = button("Grid");
+    expect(button("Justified").getAttribute("aria-pressed")).toBe("true");
 
     await act(async () => grid.click());
 
     expect(getViewState().layout).toBe("grid");
-    expect(justified.getAttribute("aria-pressed")).toBe("false");
     expect(grid.getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("commits exact size and gap values on blur without a range", async () => {
+  it("applies a preset", async () => {
     await open();
 
-    const size = query<HTMLInputElement>('input[aria-label="Size value"]');
-    const gap = query<HTMLInputElement>('input[aria-label="Gap value"]');
+    await act(async () => button("Dense").click());
 
-    await act(async () => {
-      typeInto(size, "520");
-      typeInto(gap, "120");
-    });
-    await act(async () => {
-      size.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
-      gap.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
-    });
-
-    expect(window.localStorage.getItem("pond.gridZoom")).toBe("520");
-    expect(window.localStorage.getItem("pond.itemGap")).toBe("120");
-    expect(size.value).toBe("520");
-    expect(gap.value).toBe("120");
+    expect(getViewState().layout).toBe("grid");
+    expect(getViewState().zoom).toBe(110);
   });
 
-  it("floors negative values at zero", async () => {
+  it("flips the sort direction", async () => {
     await open();
 
-    const gap = query<HTMLInputElement>('input[aria-label="Gap value"]');
-    await act(async () => typeInto(gap, "-8"));
-    await act(async () => {
-      gap.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
-    });
+    await act(async () => button("Toggle Sort Direction").click());
 
-    expect(window.localStorage.getItem("pond.itemGap")).toBe("0");
-    expect(gap.value).toBe("0");
-  });
-
-  it("restores the current value when Escape is pressed", async () => {
-    await open();
-
-    const size = query<HTMLInputElement>('input[aria-label="Size value"]');
-    await act(async () => typeInto(size, "200"));
-    await act(async () => {
-      size.dispatchEvent(
-        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
-      );
-    });
-    expect(size.value).toBe("130");
-
-    await act(async () => {
-      size.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
-    });
-    expect(getViewState().zoom).toBe(130);
-  });
-
-  it("changes sort direction without resetting the key", async () => {
-    setSort({ key: "title", dir: "desc" });
-    await open();
-
-    await act(async () =>
-      query<HTMLButtonElement>('button[aria-label="Ascending"]').click(),
-    );
-
-    expect(getViewState().sortKey).toBe("title");
-    expect(getViewState().sortDir).toBe("asc");
+    expect(getViewState().sort).toEqual({ key: "savedAt", dir: "asc" });
   });
 
   it("toggles card details independently", async () => {
     await open();
 
-    const source = query<HTMLButtonElement>(
-      'button[aria-label="Show Source Tag"]',
-    );
-    const name = query<HTMLButtonElement>('button[aria-label="Show Name"]');
-    const nameBefore = name.getAttribute("aria-pressed");
-    expect(source.getAttribute("aria-pressed")).toBe("true");
+    const source = toggle("Source");
+    const name = toggle("Name");
+    const nameBefore = name.getAttribute("aria-checked");
+    expect(source.getAttribute("aria-checked")).toBe("true");
 
     await act(async () => source.click());
 
-    expect(source.getAttribute("aria-pressed")).toBe("false");
+    expect(source.getAttribute("aria-checked")).toBe("false");
     expect(window.localStorage.getItem("pond.display.source")).toBe("0");
-    expect(name.getAttribute("aria-pressed")).toBe(nameBefore);
+    expect(name.getAttribute("aria-checked")).toBe(nameBefore);
+  });
+
+  it("hides the file count on cards", async () => {
+    await open();
+
+    const count = toggle("File Count");
+    expect(count.getAttribute("aria-checked")).toBe("true");
+
+    await act(async () => count.click());
+
+    expect(count.getAttribute("aria-checked")).toBe("false");
+    expect(window.localStorage.getItem("pond.display.fileCount")).toBe("0");
   });
 });

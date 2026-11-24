@@ -68,9 +68,6 @@ export const statusFeed = {
   error(label: string, message: string): void {
     failed(label, message);
   },
-  note(label: string, message?: string): void {
-    finished(label, message);
-  },
 };
 
 export function useStatusFeed(): readonly ActivityEntry[] {

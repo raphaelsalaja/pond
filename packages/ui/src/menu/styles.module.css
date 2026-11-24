@@ -83,7 +83,7 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 
@@ -147,7 +147,7 @@
   margin-top: calc(-1 * var(--popup-padding-block));
   margin-bottom: var(--popup-separator-space);
   font-size: var(--ds-text-body);
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-regular);
   color: var(--ds-foreground-secondary);
   caret-color: var(--ds-accent);
   appearance: none;

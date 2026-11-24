@@ -15,7 +15,6 @@ it("exposes create, switch, backup, restore, merge, and verify", () => {
     "Merge Library",
     "Empty Trash",
     "Restore All from Trash",
-    "Clear History",
   ]);
 });
 

@@ -1,5 +1,6 @@
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { useEffect } from "react";
+import { CANVASES_PATH, canvases } from "@/features/canvas";
 import { downloadDialog } from "@/features/downloads";
 import {
   createNote,
@@ -122,7 +123,10 @@ export function AppHotkeys() {
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.canvases")],
-        callback: () => showSidebarPanel("canvases"),
+        callback: () => {
+          showSidebarPanel("canvases");
+          if (!canvases.snapshot().length) go(CANVASES_PATH);
+        },
       },
       {
         sequence: [...bindingSequence(shortcuts, "nav.sources")],

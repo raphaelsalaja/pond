@@ -7,22 +7,30 @@ import {
 
 describe("search view", () => {
   it.each([
-    ["library", { kind: "all" }, { kind: "library" }],
-    ["library", { kind: "random" }, { kind: "library" }],
-    ["library", { kind: "folder", id: "a" }, { kind: "folder", id: "a" }],
-    ["library", { kind: "tag", name: "ui" }, { kind: "tag", name: "ui" }],
-    ["library", { kind: "uncategorized" }, { kind: "uncategorized" }],
-    ["untagged", { kind: "untagged" }, { kind: "untagged" }],
-    ["recentlyAdded", { kind: "recentlyAdded" }, { kind: "recentlyAdded" }],
-    ["recents", { kind: "recents" }, { kind: "recents" }],
-    ["trash", { kind: "trash" }, { kind: "trash" }],
-  ] as const)("reads %s with %o as %o", (mode, nav, view) => {
-    expect(searchViewFor(mode, nav)).toEqual(view);
+    [{ kind: "all" }, { kind: "library" }],
+    [{ kind: "random" }, { kind: "library" }],
+    [{ kind: "folder", id: "a" }, { kind: "folder", id: "a" }],
+    [{ kind: "tag", name: "ui" }, { kind: "tag", name: "ui" }],
+    [{ kind: "uncategorized" }, { kind: "uncategorized" }],
+    [{ kind: "untagged" }, { kind: "untagged" }],
+    [{ kind: "recentlyAdded" }, { kind: "recentlyAdded" }],
+    [{ kind: "recents" }, { kind: "recents" }],
+    [{ kind: "trash" }, { kind: "trash" }],
+  ] as const)("reads %o as %o", (nav, view) => {
+    expect(searchViewFor(nav)).toEqual(view);
   });
 
-  it("offers All Saves only from views narrower than the Library", () => {
+  it("reads a page with no collection as the Library", () => {
+    expect(searchViewFor(null)).toEqual({ kind: "library" });
+  });
+
+  it("offers All Saves only from folders and tags", () => {
     expect(canSearchAllSaves({ kind: "folder", id: "a" })).toBe(true);
-    expect(canSearchAllSaves({ kind: "recents" })).toBe(true);
+    expect(canSearchAllSaves({ kind: "tag", name: "a" })).toBe(true);
+    expect(canSearchAllSaves({ kind: "recents" })).toBe(false);
+    expect(canSearchAllSaves({ kind: "recentlyAdded" })).toBe(false);
+    expect(canSearchAllSaves({ kind: "untagged" })).toBe(false);
+    expect(canSearchAllSaves({ kind: "uncategorized" })).toBe(false);
     expect(canSearchAllSaves({ kind: "library" })).toBe(false);
     expect(canSearchAllSaves({ kind: "trash" })).toBe(false);
   });

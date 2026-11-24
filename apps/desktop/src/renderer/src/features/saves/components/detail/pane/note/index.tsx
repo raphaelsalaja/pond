@@ -2,6 +2,7 @@ import {
   type InspectorDrafts,
   InspectorTextField,
 } from "@/shared/components/inspector-text-field";
+import { DetailSection } from "../detail-section";
 import styles from "./styles.module.css";
 
 export function SaveNote({
@@ -16,19 +17,19 @@ export function SaveNote({
   commit(value: string): Promise<void>;
 }) {
   return (
-    <div className={styles.root}>
-      <span className={styles.label}>Note</span>
+    <DetailSection title="Note">
       <InspectorTextField
+        className={styles.field}
         drafts={drafts}
         cacheKey={cacheKey}
         label="Notes"
         value={value}
         multiline
-        variant="secondary"
+        variant="raised"
         padding="compact"
         placeholder="Add a note"
         commit={commit}
       />
-    </div>
+    </DetailSection>
   );
 }

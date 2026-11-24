@@ -25,10 +25,18 @@ function Icon({ className, ...props }: IconProps) {
   return <span className={cn(styles.icon, className)} aria-hidden {...props} />;
 }
 
-interface LabelProps extends ComponentPropsWithoutRef<"span"> {}
+interface LabelProps extends ComponentPropsWithoutRef<"span"> {
+  width?: "capped" | "auto";
+}
 
-function Label({ className, ...props }: LabelProps) {
-  return <span className={cn(styles.label, className)} {...props} />;
+function Label({ className, width = "capped", ...props }: LabelProps) {
+  return (
+    <span
+      className={cn(styles.label, className)}
+      data-width={width === "auto" ? width : undefined}
+      {...props}
+    />
+  );
 }
 
 function Operator({
@@ -156,7 +164,6 @@ function Filter({
         >
           <IconXmark
             size={12}
-            strokeWidth={2}
             className={styles["filter-clear-icon"]}
           />
         </Button>

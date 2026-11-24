@@ -46,14 +46,7 @@ export {
   showInLibrary,
   showMatchingInLibrary,
 } from "./lib/library-links";
-export { parseMode, type SaveListMode } from "./lib/list";
-export {
-  getLastListPath,
-  getLastListSearch,
-  isSaveCollectionPath,
-  listPathForLocation,
-  rememberListPath,
-} from "./lib/list-path";
+export { modeForNav, type SaveListMode } from "./lib/list";
 export { storedFileViewerKind } from "./lib/media/file-viewer";
 export {
   buildSaveMenu,

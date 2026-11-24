@@ -69,16 +69,3 @@
   pointer-events: none;
   user-select: none;
 }
-
-.thinking {
-  flex: none;
-  font-size: var(--ds-text-small);
-  color: var(--ds-foreground-tertiary);
-}
-
-.status {
-  padding-inline: 0 var(--ds-space-sm);
-  padding-bottom: var(--ds-space-xs);
-  font-size: var(--ds-text-body);
-  color: var(--ds-foreground-tertiary);
-}

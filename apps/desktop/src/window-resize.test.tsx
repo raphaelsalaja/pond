@@ -30,7 +30,6 @@ function Fixture({
     <Window.Root leftOpen={open} style={style}>
       <Window.Left
         aria-label="Sidebar"
-        open={open}
         minWidth={220}
         maxWidth={420}
         width={width}

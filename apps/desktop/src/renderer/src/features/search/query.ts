@@ -8,5 +8,4 @@ export {
 } from "./lib/account-aliases";
 export { describePredicate, fieldIcon } from "./lib/fields";
 export { defaultPredicateFor, predicateIsActive } from "./lib/filter-helpers";
-export { listBaseFromPath } from "./lib/schemas";
 export { DATE_PRESETS } from "./lib/syntax";

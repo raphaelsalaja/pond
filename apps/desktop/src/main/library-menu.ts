@@ -12,7 +12,6 @@ export function libraryMenuLabels(isMac: boolean) {
     "Merge Library",
     "Empty Trash",
     "Restore All from Trash",
-    "Clear History",
   ] as const;
 }
 

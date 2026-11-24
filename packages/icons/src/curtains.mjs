@@ -1,6 +1,5 @@
 const rod = "M 2.375 2.375 H 15.625";
 
-/** The drawn panels hang from a rod that runs past them, split where they meet. */
 export default ({ poly }, s) => [
   rod,
   poly(
@@ -13,6 +12,7 @@ export default ({ poly }, s) => [
     { corners: { 1: s.box, 2: s.box } },
   ),
   "M 9 2.375 V 15.625",
+  "M 6.125 2.375 V 6.625 M 11.875 2.375 V 6.625",
 ];
 
 /** Each panel is drawn on the left and mirrored. */

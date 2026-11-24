@@ -18,7 +18,6 @@ import {
   useInboxReview,
   useInboxReviewScope,
   useInboxSelection,
-  useInboxView,
 } from "@/features/library/state/inbox-review";
 import { savesStore } from "@/features/saves/pool";
 import { usePrefs } from "@/shared/state/prefs";
@@ -91,7 +90,6 @@ const TYPE_SECTIONS: Record<"save" | NotificationKind, string> = {
   save: "Saves",
   attention: "Needs Attention",
   activity: "Activity",
-  announcement: "Announcements",
 };
 
 const TYPE_ORDER = Object.values(TYPE_SECTIONS);
@@ -127,11 +125,10 @@ function group(entries: Entry[], by: Display["groupBy"]): Entry[] {
     );
 }
 
-/** Saves and notifications for the current tab, without the running-work rows. */
+/** Saves and notifications, without the running-work rows. */
 function useInboxEntries(): Entry[] {
   const queue = useInboxReview();
   const scope = useInboxReviewScope();
-  const view = useInboxView();
   const selected = useInboxSelection();
   const notifications = useNotifications();
   const [display] = usePrefs("inboxDisplay");
@@ -146,13 +143,11 @@ function useInboxEntries(): Entry[] {
     const current = selected === null ? (queue?.index ?? -1) : -1;
     /** The open item stays listed after it's read, so unread-only never pulls it out from under you. */
     const shown = (entry: Entry) =>
-      (!display.unreadOnly ||
-        entry.unread ||
-        (entry.type === "save"
-          ? entry.index === current
-          : entry.key === selected)) &&
-      (!display.priorityInbox ||
-        isPriority(entry) === (view === "priority"));
+      !display.unreadOnly ||
+      entry.unread ||
+      (entry.type === "save"
+        ? entry.index === current
+        : entry.key === selected);
 
     const saves = ids.flatMap((id, index): Entry[] => {
       const entry: Entry = {
@@ -177,7 +172,7 @@ function useInboxEntries(): Entry[] {
       return shown(entry) ? [entry] : [];
     });
     return group(merge(saves, listed, display), display.groupBy);
-  }, [ids, savedAt, queue, notifications, scope, view, selected, display]);
+  }, [ids, savedAt, queue, notifications, scope, selected, display]);
 }
 
 export function useInboxItems(): InboxItem[] {

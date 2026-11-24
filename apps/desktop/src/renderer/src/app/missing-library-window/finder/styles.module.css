@@ -65,7 +65,7 @@
 
 .bar {
   width: 32px;
-  height: 5px;
+  height: 6px;
   background: var(--ds-surface-tertiary);
   border-radius: var(--ds-radius-full);
 

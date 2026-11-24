@@ -68,11 +68,12 @@
 
   &:hover {
     color: var(--ds-foreground-primary);
+    background: var(--ds-surface-secondary);
   }
 
   &[data-active] {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-tertiary);
   }
 
   &:focus-visible {

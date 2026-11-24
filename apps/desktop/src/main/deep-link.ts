@@ -58,16 +58,16 @@ export function handleDeepLink(
     if (parsed.hostname === "" || parsed.hostname === "library") {
       route = "/";
     } else if (parsed.hostname === "inbox") {
-      route = "/?inbox=1";
+      route = "/inbox";
     } else if (parsed.hostname === "item") {
       const id = parsed.pathname.replace(/^\//, "");
       if (id) route = `/save/${encodeURIComponent(id)}`;
     } else if (parsed.hostname === "folder") {
       const id = parsed.pathname.replace(/^\//, "");
-      if (id) route = `/?folder=${encodeURIComponent(id)}`;
+      if (id) route = `/folders/${encodeURIComponent(id)}`;
     } else if (parsed.hostname === "view") {
       const id = parsed.pathname.replace(/^\//, "");
-      if (id) route = `/?view=${encodeURIComponent(id)}`;
+      if (id) route = `/views/${encodeURIComponent(id)}`;
     } else if (parsed.hostname === "search") {
       const q = parsed.searchParams.get("q") ?? "";
       route = `/?q=${encodeURIComponent(q)}`;

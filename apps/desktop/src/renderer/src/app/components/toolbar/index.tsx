@@ -1,17 +1,5 @@
-import {
-  IconAlbum2,
-  IconCanvas,
-  IconDots,
-  IconGear3,
-  IconHistory,
-  IconLayers,
-  IconNodes3,
-  IconTag,
-  IconTagSlash,
-  IconTrashXmark,
-  IconWindowDownload,
-} from "@pond/icons";
-import { Button, Menu } from "@pond/ui";
+import { IconAlbum2, IconDots } from "@pond/icons";
+import { Button, Menu, Window } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
 import { lazy, Suspense, useState } from "react";
 import { ChromeHistoryNav } from "@/app/components/chrome-toolbar";
@@ -21,6 +9,7 @@ import { FolderCustomizeDialog } from "@/features/library/components/folder-cust
 import { NewMenu } from "@/features/library/components/new-menu";
 import { SearchButton } from "@/features/library/components/search-button";
 import { SidebarToggle } from "@/features/library/components/sidebar-toggle";
+import { useSplitPostTitle } from "@/features/library/hooks/use-split-posts";
 import {
   folderColorMenuItems,
   folderIconMenuItems,
@@ -28,26 +17,24 @@ import {
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { useFolders } from "@/features/library/state/folders";
 import {
-  libraryChrome,
   useDetailsOpen,
-  useLibraryNav,
   useSidebarOpen,
 } from "@/features/library/state/library-chrome";
 import {
-  resetFilters,
-  useHasActiveSearch,
-} from "@/features/library/state/view-store";
+  useHiddenSidebar,
+  useShellDetails,
+} from "@/features/library/state/shell-layout";
+import { useHasActiveSearch } from "@/features/library/state/view-store";
 import { useSave } from "@/features/saves/hooks/use-saves";
-import { getLastListPath } from "@/features/saves/lib/list-path";
-import { saveIdFromPath } from "@/features/saves/lib/save-nav";
-import { setViewerToolbarHost } from "@/features/saves/state/viewer-toolbar";
+import { closeSave, useOpenSaveId } from "@/features/saves/lib/save-nav";
 import { useViewFilteredCount } from "@/features/saves/state/view-context";
 import { useSourceDetailName } from "@/features/sources/state/source-detail";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
+import { useRouteMeta } from "@/shared/lib/route-meta";
 import { usePrefs } from "@/shared/state/prefs";
 import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
-import { computeLabel } from "./labels";
+import { saveLabel } from "./labels";
 import styles from "./styles.module.css";
 
 const FishChatActions = lazy(() =>
@@ -56,55 +43,34 @@ const FishChatActions = lazy(() =>
   })),
 );
 
-const ROOT_ICONS = {
-  "/": IconAlbum2,
-  "/sources": IconNodes3,
-  "/tags": IconTag,
-  "/untagged": IconTagSlash,
-  "/recents": IconHistory,
-  "/downloads": IconWindowDownload,
-  "/trash": IconTrashXmark,
-  "/split-posts": IconLayers,
-  "/settings": IconGear3,
-} as const;
-
-function RootIcon({ path }: { path: string }) {
-  const Icon =
-    Object.entries(ROOT_ICONS).find(([route]) => route === path)?.[1] ??
-    (path.startsWith("/settings")
-      ? IconGear3
-      : path.startsWith("/source/")
-        ? IconNodes3
-        : path.startsWith("/canvas/")
-          ? IconCanvas
-          : IconAlbum2);
-  return <Icon size={14} aria-hidden="true" />;
-}
-
 function Breadcrumbs() {
   const router = useRouter();
   const pathname = useRouteLocation((location) => location.pathname);
-  const nav = useLibraryNav();
+  const meta = useRouteMeta();
+  const { nav } = meta;
   const folderRows = useFolders();
   const [folderViews] = usePrefs("folderViews");
   const [customizingFolderId, setCustomizingFolderId] = useState<string | null>(
     null,
   );
-  const saveId = saveIdFromPath(pathname);
+  const saveId = useOpenSaveId();
   const save = useSave(saveId);
-  const listPath = getLastListPath();
-  const canvas = useCanvas(canvasIdFromPath(saveId ? listPath : pathname));
+  const canvas = useCanvas(canvasIdFromPath(pathname));
   const sourceName = useSourceDetailName();
+  const postLabel = useSplitPostTitle(nav?.kind === "post" ? nav.key : null);
   const hasActiveSearch = useHasActiveSearch();
   const filteredCount = useViewFilteredCount();
   const crumbs = buildBreadcrumbs({
+    meta,
     pathname,
-    listPath,
-    nav,
     folders: folderRows,
-    saveLabel: computeLabel(pathname, save),
-    canvasLabel: canvas?.name,
-    sourceLabel: sourceName ?? undefined,
+    saveOpen: saveId !== null,
+    labels: {
+      save: saveLabel(save),
+      canvas: canvas?.name,
+      source: sourceName ?? undefined,
+      post: postLabel,
+    },
     searchResultCount: hasActiveSearch ? filteredCount : undefined,
   });
   const hidden = crumbs.length > 3 ? crumbs.slice(1, -2) : [];
@@ -113,9 +79,8 @@ function Breadcrumbs() {
     : undefined;
 
   function navigate(crumb: Breadcrumb) {
-    if (crumb.nav) libraryChrome.setNav(crumb.nav);
-    if (crumb.nav?.kind === "all" && crumb.path === "/") resetFilters();
-    router.history.push(crumb.path);
+    if (crumb.path === pathname) closeSave();
+    else router.history.push(crumb.path);
   }
 
   function folderMenu(crumb: Breadcrumb) {
@@ -219,7 +184,8 @@ function Breadcrumbs() {
           }
           const current = index === crumbs.length - 1;
           const menu = folderMenu(crumb);
-          const icon = index > 0 ? null : <RootIcon path={crumb.path} />;
+          const Icon = crumb.icon ?? IconAlbum2;
+          const icon = index > 0 ? null : <Icon size={14} aria-hidden="true" />;
           const segment = current ? (
             <span
               className={styles.current}
@@ -279,39 +245,44 @@ function Breadcrumbs() {
   );
 }
 
-export function Toolbar() {
+function Leading() {
   const sidebarOpen = useSidebarOpen();
-  const detailsOpen = useDetailsOpen();
-  const pathname = useRouteLocation((location) => location.pathname);
-  const viewingSave = saveIdFromPath(pathname) !== null;
-  const viewingFish = fishIdFromPath(pathname) !== null;
+  const sidebarHidden = useHiddenSidebar();
   return (
-    <div className={styles.bar}>
-      <div className={styles.chrome}>
-        <div className={styles.tools}>
-          <SidebarToggle open={sidebarOpen} />
-          <ChromeHistoryNav />
-        </div>
-        <div className={styles.tools}>
-          <SearchButton />
-          <NewMenu />
-        </div>
+    <Window.Leading>
+      <div className={styles.tools}>
+        {sidebarHidden ? null : <SidebarToggle open={sidebarOpen} />}
+        <ChromeHistoryNav />
       </div>
-      <div className={styles.main}>
-        {viewingSave ? (
-          <div className={styles.viewer} ref={setViewerToolbarHost} />
-        ) : viewingFish ? null : (
-          <Breadcrumbs />
-        )}
+      <div className={styles.tools}>
+        <SearchButton />
+        <NewMenu />
       </div>
-      <div className={styles.actions}>
-        {viewingFish ? (
-          <Suspense fallback={null}>
-            <FishChatActions />
-          </Suspense>
-        ) : null}
-        <SidebarToggle side="right" open={detailsOpen} />
-      </div>
-    </div>
+    </Window.Leading>
   );
 }
+
+function Bar() {
+  const viewingFish = useRouteLocation(
+    (location) => fishIdFromPath(location.pathname) !== null,
+  );
+  return <Window.Bar>{viewingFish ? null : <Breadcrumbs />}</Window.Bar>;
+}
+
+function Trailing() {
+  const detailsOpen = useDetailsOpen();
+  const details = useShellDetails();
+  return (
+    <Window.Trailing>
+      {details === "fish" ? (
+        <Suspense fallback={null}>
+          <FishChatActions />
+        </Suspense>
+      ) : null}
+      {details ? <SidebarToggle side="right" open={detailsOpen} /> : null}
+    </Window.Trailing>
+  );
+}
+
+/** Leading and Trailing pin to the window corners; Bar goes inside `Window.Center`. */
+export const Toolbar = { Leading, Bar, Trailing };

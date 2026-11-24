@@ -27,6 +27,7 @@ export const IPC = {
   syncAction: "pond:sync-action",
   appInfo: "pond:app-info",
   rendererReady: "pond:renderer-ready",
+  devReactScan: "pond:dev-react-scan",
   nav: "pond:nav",
   windowFullScreen: "pond:window-full-screen",
   prefsChanged: "pond:prefs-changed",
@@ -144,16 +145,12 @@ export type MenuActionId =
   | "save.copy-name"
   | "save.copy-file-path"
   | "save.copy-pond-link"
-  | "save.copy-tags"
-  | "save.paste-tags"
   | "save.rename"
   | "save.add-tag"
   | "save.refresh"
   | "save.trash"
   | "save.untrash"
   | "save.delete-forever"
-  | "save.bulk-trash"
-  | "save.bulk-refresh"
   | "save.export-files"
   | "save.export-converted"
   | "save.export-eagle-package"
@@ -199,9 +196,6 @@ export type MenuActionId =
   | "library.verify-integrity"
   | "find.search"
   | "find.search-all"
-  | "find.go-to-folder"
-  | "find.add-to-folders"
-  | "find.add-to-last-folder"
   | "find.filters.toggle"
   | "find.filters.reset"
   | "find.visual-search"

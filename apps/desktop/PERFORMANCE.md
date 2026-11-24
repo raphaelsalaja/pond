@@ -60,6 +60,31 @@ Process memory snapshots are bytes from `process.memoryUsage()`, not peaks or
 retained-memory measurements. GC is not forced. RSS/heap/external allocations in a
 test worker do not represent the complete Electron app, GPU, or all native memory.
 
+## Render budgets
+
+Render budget tests assert which components re-render after an interaction. They
+use the fiber walk from [bippy](https://github.com/aidenybai/bippy), the engine
+under React Scan. `test/renderer-setup.ts` installs the hook before react-dom
+loads, so every renderer test can record renders.
+
+```tsx
+import { recordRenders } from "@/shared/test/render-count";
+
+const renders = recordRenders();
+await act(async () => harness.button("Delta").click());
+expect(Object.keys(renders.byKey("FolderTreeRowInner")).sort()).toEqual([
+  "Alpha",
+  "Delta",
+]);
+```
+
+The recorder counts a component only when React called its render. A memo
+bailout counts as zero; a context consumer re-render counts. `byKey` splits
+counts by React key, so list rows can be told apart. Recorders reset after each
+test. Add a `render-budget.test.tsx` next to any memoized list item or row whose
+re-renders scale with the size of the Library. Assert the set of rows that
+rendered, not the number of commits.
+
 ## Existing-runtime end-to-end capture (approval required)
 
 1. Agree the synthetic Library, hardware, workload, and capture window with the

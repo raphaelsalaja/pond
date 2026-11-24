@@ -187,7 +187,7 @@
 .saves {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--ds-space-2xs);
   min-width: 0;
 }
 

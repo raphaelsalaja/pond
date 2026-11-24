@@ -197,7 +197,7 @@ export function ComposerView({
                     exit={{ opacity: 0, y: -6, scale: 0.8, filter: "blur(2px)" }}
                     transition={reduced ? { duration: 0 } : GLYPH_EASE}
                   >
-                    <IconArrowUp size={16} strokeWidth={2} />
+                    <IconArrowUp size={16} />
                   </motion.span>
                 )}
               </AnimatePresence>

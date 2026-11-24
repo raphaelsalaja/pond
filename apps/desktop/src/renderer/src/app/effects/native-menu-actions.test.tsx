@@ -1,18 +1,14 @@
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-} from "@tanstack/react-router";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { searchViewKey } from "@/features/library/lib/search-view";
-import { libraryChrome } from "@/features/library/state/library-chrome";
 import {
   getViewState,
   resetFilters,
   setSearchDraft,
 } from "@/features/library/state/view-store";
-import { setAppRouter } from "@/shared/lib/app-router";
+import {
+  currentLocation,
+  openLibraryAt,
+} from "@/shared/test/library-router";
 import {
   handleNativeMenuAction,
   shouldIgnoreMenuAction,
@@ -75,29 +71,13 @@ it("allows an explicit menu command while an editor has focus", () => {
 });
 
 describe("Search All Saves", () => {
-  async function openAt(path: string) {
-    const rootRoute = createRootRoute();
-    const router = createRouter({
-      routeTree: rootRoute.addChildren(
-        ["/", "/trash"].map((route) =>
-          createRoute({ getParentRoute: () => rootRoute, path: route }),
-        ),
-      ),
-      history: createMemoryHistory({ initialEntries: [path] }),
-    });
-    setAppRouter(router);
-    await router.load();
-    return router;
-  }
-
   beforeEach(() => {
     resetFilters();
   });
 
   it("widens a folder search in place", async () => {
-    libraryChrome.setNav({ kind: "folder", id: "design" });
     setSearchDraft("poster");
-    const router = await openAt("/");
+    const router = await openLibraryAt("/folders/design");
 
     handleNativeMenuAction("find.search-all");
 
@@ -105,24 +85,20 @@ describe("Search All Saves", () => {
       q: "poster",
       searchAllView: searchViewKey({ kind: "folder", id: "design" }),
     });
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "design",
-    });
-    expect(router.history.location.pathname).toBe("/");
+    expect(currentLocation(router).pathname).toBe("/folders/design");
 
     handleNativeMenuAction("find.search");
     expect(getViewState().searchAllView).toBeNull();
   });
 
   it("leaves Trash for the Library instead of mixing deleted Saves in", async () => {
-    libraryChrome.setNav({ kind: "trash" });
-    const router = await openAt("/trash");
+    setSearchDraft("poster");
+    const router = await openLibraryAt("/trash");
 
     handleNativeMenuAction("find.search-all");
 
     expect(getViewState().searchAllView).toBeNull();
-    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
-    expect(router.history.location.pathname).toBe("/");
+    expect(currentLocation(router).pathname).toBe("/");
+    expect(currentLocation(router).search).toMatchObject({ q: "poster" });
   });
 });

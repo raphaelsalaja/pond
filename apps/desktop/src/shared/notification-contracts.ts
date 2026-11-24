@@ -8,20 +8,11 @@ const NOTIFICATION_IDS_MAX = 1_000;
 
 export const NotificationIdSchema = z.string().trim().min(1).max(200);
 
-export const NotificationKindSchema = z.enum([
-  "announcement",
-  "attention",
-  "activity",
-]);
+export const NotificationKindSchema = z.enum(["attention", "activity"]);
 export type NotificationKind = z.infer<typeof NotificationKindSchema>;
 
 export const NotificationTargetSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("save"), saveId: z.string().min(1).max(500) }),
-  z.object({
-    type: z.literal("health"),
-    categoryId: z.string().min(1).max(64),
-  }),
-  z.object({ type: z.literal("announcement"), id: z.string().min(1).max(200) }),
   z.object({ type: z.literal("settings"), section: z.string().min(1).max(64) }),
 ]);
 export type NotificationTarget = z.infer<typeof NotificationTargetSchema>;

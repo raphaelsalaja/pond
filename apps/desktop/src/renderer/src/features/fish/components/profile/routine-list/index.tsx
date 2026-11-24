@@ -1,4 +1,4 @@
-import { Badge, Button, Switch } from "@pond/ui";
+import { Badge, Button, HoverHighlight, Switch } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { describeWhen, isRoutineDue, nextRun } from "@shared/fish-routine";
 import { setRoutinePaused } from "../../../lib/menu";
@@ -53,7 +53,7 @@ export function RoutineList({ fish }: { fish: FishSummary }) {
   return (
     <ul className={styles.list}>
       {fish.routines.map((routine) => (
-        <li key={routine.id} className={styles.row}>
+        <li key={routine.id} className={styles.row} data-hover-row="">
           <Button
             variant="bare"
             className={styles.open}
@@ -75,6 +75,7 @@ export function RoutineList({ fish }: { fish: FishSummary }) {
           />
         </li>
       ))}
+      <HoverHighlight render={<li />} />
     </ul>
   );
 }

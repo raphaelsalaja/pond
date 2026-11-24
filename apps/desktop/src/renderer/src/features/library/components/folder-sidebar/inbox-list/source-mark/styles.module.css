@@ -1,0 +1,5 @@
+.favicon {
+  flex: none;
+  object-fit: cover;
+  border-radius: var(--ds-radius-xs);
+}

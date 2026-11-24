@@ -11,11 +11,10 @@ import {
   type SearchView,
   searchViewFor,
 } from "@/features/library/lib/search-view";
-import { commandMenu } from "@/features/library/state/command-menu";
-import { libraryChrome } from "@/features/library/state/library-chrome";
 import { libraryHeader } from "@/features/library/state/library-header";
 import { savedViews } from "@/features/library/state/saved-views";
 import {
+  currentSort,
   getViewState,
   reseedRandomSort,
   resetFilters,
@@ -31,11 +30,6 @@ import {
   waitingInInbox,
 } from "@/features/saves/lib/inbox-actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
-import { parseMode } from "@/features/saves/lib/list";
-import {
-  isSaveCollectionPath,
-  listPathForLocation,
-} from "@/features/saves/lib/list-path";
 import { rateSaves } from "@/features/saves/lib/rating";
 import { REVERSE_SEARCH_ENGINES } from "@/features/saves/lib/reverse-image-search";
 import { selectResults } from "@/features/saves/lib/select-results";
@@ -60,6 +54,7 @@ import { requestUpdateCheck } from "@/features/settings/update-check";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 import { openSettings } from "@/shared/lib/open-settings";
+import { currentRouteMeta } from "@/shared/lib/route-meta";
 import { notify } from "@/shared/lib/toast";
 import { whatsNewDialog } from "@/shared/state/whats-new";
 
@@ -132,7 +127,7 @@ async function removeFromCurrentFolder(): Promise<void> {
   const ids = requireSelection();
   if (ids.length === 0) return;
   const nav = saveLibraryBridge.getNav();
-  if (nav.kind !== "folder") {
+  if (nav?.kind !== "folder") {
     notify({
       id: "native-menu-folder",
       title: "Open a folder first",
@@ -153,12 +148,9 @@ function openFilter(field: FieldId): void {
 }
 
 function currentSearchView(): SearchView | null {
-  const pathname = getAppRouter()?.state.location.pathname;
-  if (!pathname || !isSaveCollectionPath(pathname)) return null;
-  return searchViewFor(
-    parseMode(listPathForLocation(pathname)) ?? "library",
-    libraryChrome.getState().nav,
-  );
+  const meta = currentRouteMeta();
+  if (meta?.surface !== "grid") return null;
+  return searchViewFor(meta.nav);
 }
 
 function searchAllSavesInPlace(): void {
@@ -167,9 +159,9 @@ function searchAllSavesInPlace(): void {
     searchAllSaves(view);
     return;
   }
-  searchCurrentView();
-  libraryChrome.setNav({ kind: "all" });
-  getAppRouter()?.history.push("/");
+  const q = getViewState().q;
+  const router = getAppRouter();
+  router?.history.push(`/${router.options.stringifySearch(q ? { q } : {})}`);
 }
 
 function openSearch(scope: SearchScope): void {
@@ -285,13 +277,11 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
         void window.pond.query("saves.copyInternalLinks", { ids });
       return true;
     }
-    case "save.copy-tags":
     case "organize.copy-tags": {
       const ids = requireSelection();
       if (ids.length > 0) void copyTagsForSelection(ids);
       return true;
     }
-    case "save.paste-tags":
     case "organize.paste-tags": {
       const ids = requireSelection();
       if (ids.length > 0) void pasteTagsForSelection(ids);
@@ -322,10 +312,6 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
     case "find.search-all":
       openSearch("all");
       return true;
-    case "find.go-to-folder":
-      commandMenu.open();
-      return true;
-    case "find.add-to-folders":
     case "organize.add-to-folders": {
       const ids = requireSelection();
       if (ids.length > 0) saveLibraryBridge.openFolderPicker(ids);
@@ -346,7 +332,6 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
       if (ids.length > 0) void toggleFavorite(ids);
       return true;
     }
-    case "find.add-to-last-folder":
     case "organize.add-to-last-folder":
       void addToLastFolder();
       return true;
@@ -386,8 +371,7 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
       return true;
     }
     case "view.random": {
-      const state = getViewState();
-      setSort({ key: "random", dir: state.sortDir });
+      setSort({ key: "random", dir: currentSort().dir });
       reseedRandomSort();
       return true;
     }

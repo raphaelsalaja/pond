@@ -6,12 +6,13 @@ import { Window } from ".";
 
 function PanesExample() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(true);
   const [sidebar, setSidebar] = useState(200);
   const [details, setDetails] = useState(220);
   return (
     <Window.Root
       leftOpen={sidebarOpen}
-      rightOpen
+      rightOpen={detailsOpen}
       style={{
         ...cssVars({
           "--window-left-track": `${sidebar}px`,
@@ -20,25 +21,29 @@ function PanesExample() {
         height: 240,
       }}
     >
+      <Window.Leading>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setSidebarOpen((open) => !open)}
+        >
+          Sidebar
+        </Button>
+      </Window.Leading>
       <Window.Left
         aria-label="Sidebar"
-        open={sidebarOpen}
         minWidth={160}
         maxWidth={320}
         width={sidebar}
         onResize={setSidebar}
         onCollapse={() => setSidebarOpen(false)}
       >
-        Sidebar
+        <Window.Body>Folders</Window.Body>
       </Window.Left>
       <Window.Center>
-        {sidebarOpen ? (
-          "Content"
-        ) : (
-          <Button variant="secondary" onClick={() => setSidebarOpen(true)}>
-            Show Sidebar
-          </Button>
-        )}
+        <Window.Bar>Location</Window.Bar>
+        <Window.Header>Page controls</Window.Header>
+        <Window.Body>Content</Window.Body>
       </Window.Center>
       <Window.Right
         aria-label="Details"
@@ -47,9 +52,19 @@ function PanesExample() {
         width={details}
         resizeLabel="Resize Details"
         onResize={setDetails}
+        onCollapse={() => setDetailsOpen(false)}
       >
-        Details
+        <Window.Body>Details</Window.Body>
       </Window.Right>
+      <Window.Trailing>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setDetailsOpen((open) => !open)}
+        >
+          Details
+        </Button>
+      </Window.Trailing>
     </Window.Root>
   );
 }
@@ -59,14 +74,23 @@ export const docs: ComponentDocs = {
   name: "Window",
   tier: "navigation",
   summary:
-    "The app frame: a top bar, a sidebar, the main content, a details column and a bottom bar. Drag or use the keyboard on a column edge to resize it.",
+    "The app frame: a sidebar, the main content and a details column, each split into a bar, a header and a body that line up across the window. Opening a column pushes the content aside. Drag or use the keyboard on a column edge to resize it.",
   parts: [
     {
       name: "Root",
       description:
-        "The grid. `leftOpen` and `rightOpen` control the columns, and `--window-left-track` and `--window-right-track` set their widths.",
+        "The grid. `leftOpen` and `rightOpen` control the columns, `--window-left-track` and `--window-right-track` set their widths, and `instant` skips the animation for one change.",
     },
-    { name: "Top", description: "The title bar row. Drags the window." },
+    {
+      name: "Leading",
+      description:
+        "Controls pinned to the top left. Spans the sidebar when it's open and stays in place when it closes.",
+    },
+    {
+      name: "Trailing",
+      description:
+        "Controls pinned to the top right. Spans the details column when it's open.",
+    },
     {
       name: "Left",
       description:
@@ -81,7 +105,17 @@ export const docs: ComponentDocs = {
       description:
         "The details column. Same sizing props as Left. Name its edge with `resizeLabel`.",
     },
-    { name: "Bottom", description: "A bar under the three columns." },
+    {
+      name: "Bar",
+      description:
+        "The title bar row of a column. Drags the window. In Center it starts after Leading and ends before Trailing.",
+    },
+    {
+      name: "Header",
+      description:
+        "The row under the bar, `--window-header-height` tall in every column. Collapses when it has no content.",
+    },
+    { name: "Body", description: "The rest of the column." },
   ],
   keyboard: [
     {

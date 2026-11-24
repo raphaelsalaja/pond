@@ -1,8 +1,8 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { beginLibraryLayoutTransition } from "@/features/library/lib/library-layout-transition";
-import { navigationHistory } from "@/features/library/state/navigation-history";
 import type { LibraryNav } from "@/shared/lib/library-nav";
+import { currentRouteMeta, useRouteMeta } from "@/shared/lib/route-meta";
 
 export type { LibraryNav } from "@/shared/lib/library-nav";
 
@@ -56,7 +56,6 @@ export type SidebarPanel =
   | "tags";
 
 interface ChromeState {
-  nav: LibraryNav;
   sidebarPanel: SidebarPanel;
   sidebarOpen: boolean;
   sidebarWidth: number;
@@ -65,7 +64,6 @@ interface ChromeState {
 }
 
 const store = new Store<ChromeState>({
-  nav: { kind: "all" },
   sidebarPanel: "library",
   sidebarOpen: readFlag("pond.sidebar", true),
   sidebarWidth: readWidth(
@@ -86,10 +84,6 @@ const store = new Store<ChromeState>({
 export const libraryChrome = {
   getState(): ChromeState {
     return store.state;
-  },
-  setNav(nav: LibraryNav): void {
-    navigationHistory.record(nav);
-    store.setState((s) => ({ ...s, nav }));
   },
   setSidebarPanel(sidebarPanel: SidebarPanel): void {
     store.setState((s) =>
@@ -139,8 +133,14 @@ export const libraryChrome = {
   },
 };
 
-export function useLibraryNav(): LibraryNav {
-  return useSelector(store, (s) => s.nav);
+/** The collection the committed route shows; `null` on pages like Settings or a Canvas. */
+export function useLibraryNav(): LibraryNav | null {
+  return useRouteMeta().nav;
+}
+
+/** The collection the latest navigation is heading to, for event handlers. */
+export function getLibraryNav(): LibraryNav | null {
+  return currentRouteMeta()?.nav ?? null;
 }
 
 export function useSidebarPanel(): SidebarPanel {

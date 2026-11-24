@@ -1,24 +1,18 @@
 import {
-  IconAlbum2,
+  IconArrowDown,
   IconClock,
   IconClockPlus,
   IconFolderBan,
   IconFolderOpen,
-  IconInbox,
-  IconNodes3,
   IconTagSlash,
   IconTrash,
-  IconWindowDownload,
 } from "@pond/icons";
-import { Button, Empty } from "@pond/ui";
+import { Button, Empty, EmptyPreview } from "@pond/ui";
 import {
   importPaths,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
-import {
-  libraryChrome,
-  useLibraryNav,
-} from "@/features/library/state/library-chrome";
+import { useLibraryNav } from "@/features/library/state/library-chrome";
 import type { SaveListMode } from "@/features/saves";
 import { openSources } from "@/features/sources";
 import { ButtonLink } from "@/shared/components/button-link";
@@ -29,15 +23,21 @@ export function LibraryEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconAlbum2 size={14} />
+        <EmptyPreview.Root shape="tile" layout="spread">
+          <EmptyPreview.Column>
+            <EmptyPreview.Block />
+            <EmptyPreview.Line width={36} />
+            <EmptyPreview.Line width={24} tone="thin" />
+          </EmptyPreview.Column>
+        </EmptyPreview.Root>
       </Empty.Media>
-      <Empty.Title>No saves yet</Empty.Title>
+      <Empty.Title>No Saves Yet</Empty.Title>
       <Empty.Description>
         Connect your first source to start building your library.
       </Empty.Description>
       <Empty.Action>
         <Button
-          variant="primary"
+          variant="secondary"
           size="sm"
           onClick={() => openSources({ type: "new-source" })}
         >
@@ -52,14 +52,21 @@ export function TrashEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <IconTrash size={14} />
+        <EmptyPreview.Root shape="tile" layout="single">
+          <EmptyPreview.Column>
+            <EmptyPreview.Block>
+              <IconTrash size={12} />
+            </EmptyPreview.Block>
+            <EmptyPreview.Line width={32} />
+          </EmptyPreview.Column>
+        </EmptyPreview.Root>
       </Empty.Media>
-      <Empty.Title>Trash is empty</Empty.Title>
+      <Empty.Title>Trash Is Empty</Empty.Title>
       <Empty.Description>
         Deleted saves appear here until they are removed permanently.
       </Empty.Description>
       <Empty.Action>
-        <ButtonLink to="/" variant="primary" size="sm">
+        <ButtonLink to="/" variant="secondary" size="sm">
           Open Library
         </ButtonLink>
       </Empty.Action>
@@ -73,7 +80,7 @@ export function LibraryLoading() {
       <Empty.Media>
         <div className={styles.spinner} aria-hidden="true" />
       </Empty.Media>
-      <Empty.Title>Loading library</Empty.Title>
+      <Empty.Title>Loading Library</Empty.Title>
       <Empty.Description>Getting your saves ready.</Empty.Description>
     </Empty.Root>
   );
@@ -83,19 +90,22 @@ export function UncategorizedEmpty() {
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconFolderBan size={14} />
+        <EmptyPreview.Root shape="tile">
+          <EmptyPreview.Column>
+            <EmptyPreview.Block>
+              <IconFolderBan size={12} />
+            </EmptyPreview.Block>
+            <EmptyPreview.Line width={36} />
+            <EmptyPreview.Line width={22} tone="thin" />
+          </EmptyPreview.Column>
+        </EmptyPreview.Root>
       </Empty.Media>
-      <Empty.Title>No uncategorized saves</Empty.Title>
+      <Empty.Title>No Uncategorized Saves</Empty.Title>
       <Empty.Description>
         Saves that aren't in a folder appear here.
       </Empty.Description>
       <Empty.Action>
-        <ButtonLink
-          to="/"
-          variant="primary"
-          size="sm"
-          onClick={() => libraryChrome.setNav({ kind: "all" })}
-        >
+        <ButtonLink to="/" variant="secondary" size="sm">
           Open Library
         </ButtonLink>
       </Empty.Action>
@@ -105,13 +115,22 @@ export function UncategorizedEmpty() {
 
 export function InboxEmpty() {
   const nav = useLibraryNav();
-  if (nav.kind === "inbox" && nav.snoozed) {
+  if (nav?.kind === "inbox" && nav.snoozed) {
     return (
       <Empty.Root role="status" aria-live="polite">
         <Empty.Media>
-          <IconClock size={14} />
+          <EmptyPreview.Root>
+            <EmptyPreview.Row>
+              <EmptyPreview.Icon>
+                <IconClock size={12} />
+              </EmptyPreview.Icon>
+              <EmptyPreview.Line width={46} />
+              <EmptyPreview.Space />
+              <EmptyPreview.Line width={24} tone="mid" />
+            </EmptyPreview.Row>
+          </EmptyPreview.Root>
         </Empty.Media>
-        <Empty.Title>No snoozed saves</Empty.Title>
+        <Empty.Title>No Snoozed Saves</Empty.Title>
         <Empty.Description>
           Saves you snooze wait here, then return to the Inbox on time.
         </Empty.Description>
@@ -121,9 +140,15 @@ export function InboxEmpty() {
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconInbox size={14} />
+        <EmptyPreview.Root shape="panel">
+          <EmptyPreview.Column>
+            <EmptyPreview.Block />
+            <EmptyPreview.Line width={52} />
+            <EmptyPreview.Line width={34} tone="thin" />
+          </EmptyPreview.Column>
+        </EmptyPreview.Root>
       </Empty.Media>
-      <Empty.Title>You're all caught up</Empty.Title>
+      <Empty.Title>You're All Caught Up</Empty.Title>
       <Empty.Description>
         New saves wait here until you process them.
       </Empty.Description>
@@ -142,16 +167,25 @@ export function FolderEmpty({
     return (
       <Empty.Root role="status" aria-live="polite">
         <Empty.Media>
-          <IconWindowDownload size={14} />
+          <EmptyPreview.Root layout="list">
+            <EmptyPreview.Row>
+              <EmptyPreview.Icon>
+                <IconArrowDown size={12} />
+              </EmptyPreview.Icon>
+              <EmptyPreview.Line width={56} />
+              <EmptyPreview.Space />
+              <EmptyPreview.Line width={22} tone="light" />
+            </EmptyPreview.Row>
+          </EmptyPreview.Root>
         </Empty.Media>
         <Empty.Title>
-          {`Downloading ${formatPlural(downloading, { one: "save", other: "saves" })}`}
+          {`Downloading ${formatPlural(downloading, { one: "Save", other: "Saves" })}`}
         </Empty.Title>
         <Empty.Description>
           They appear in this folder as each download finishes.
         </Empty.Description>
         <Empty.Action>
-          <ButtonLink to="/downloads" variant="primary" size="sm">
+          <ButtonLink to="/downloads" variant="secondary" size="sm">
             Open Downloads
           </ButtonLink>
         </Empty.Action>
@@ -161,16 +195,23 @@ export function FolderEmpty({
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <IconFolderOpen size={14} />
+        <EmptyPreview.Root shape="tile" layout="spread">
+          <EmptyPreview.Column>
+            <EmptyPreview.Block>
+              <IconFolderOpen size={12} />
+            </EmptyPreview.Block>
+            <EmptyPreview.Line width={34} />
+          </EmptyPreview.Column>
+        </EmptyPreview.Root>
       </Empty.Media>
-      <Empty.Title>No saves in this folder</Empty.Title>
+      <Empty.Title>No Saves in This Folder</Empty.Title>
       <Empty.Description>
         Paste or drop files, images, and links here.
       </Empty.Description>
       {folderId ? (
         <Empty.Action>
           <Button
-            variant="primary"
+            variant="secondary"
             size="sm"
             onClick={() =>
               void runNewAction(() => importPaths("files", folderId))
@@ -190,37 +231,58 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
   const content =
     mode === "untagged"
       ? {
-          icon: IconTagSlash,
-          title: "No untagged saves",
+          visual: (
+            <EmptyPreview.Root shape="tile">
+              <EmptyPreview.Column>
+                <EmptyPreview.Block>
+                  <IconTagSlash size={12} />
+                </EmptyPreview.Block>
+                <EmptyPreview.Line width={30} />
+                <EmptyPreview.Line width={20} tone="thin" />
+              </EmptyPreview.Column>
+            </EmptyPreview.Root>
+          ),
+          title: "No Untagged Saves",
           description: "Saves without tags appear here.",
         }
       : mode === "recents"
         ? {
-            icon: IconClock,
-            title: "No recent saves",
+            visual: (
+              <EmptyPreview.Root layout="list">
+                <EmptyPreview.Row>
+                  <EmptyPreview.Thumb />
+                  <EmptyPreview.Line width={46} />
+                  <EmptyPreview.Space />
+                  <EmptyPreview.Line width={24} tone="light" />
+                </EmptyPreview.Row>
+              </EmptyPreview.Root>
+            ),
+            title: "No Recent Saves",
             description: "Recently opened saves appear here.",
           }
-        : mode === "recentlyAdded"
-          ? {
-              icon: IconClockPlus,
-              title: "No new saves",
-              description: "Saves from the last 7 days appear here.",
-            }
-          : {
-              icon: IconNodes3,
-              title: "No saves from this source",
-              description: "Saves synced from this source appear here.",
-            };
+        : {
+            visual: (
+              <EmptyPreview.Root shape="tile" layout="spread">
+                <EmptyPreview.Column>
+                  <EmptyPreview.Block>
+                    <IconClockPlus size={12} />
+                  </EmptyPreview.Block>
+                  <EmptyPreview.Line width={38} />
+                  <EmptyPreview.Line width={24} tone="thin" />
+                </EmptyPreview.Column>
+              </EmptyPreview.Root>
+            ),
+            title: "No New Saves",
+            description: "Saves from the last 7 days appear here.",
+          };
 
   return (
     <Empty.Root role="status" aria-live="polite">
-      <Empty.Media>
-        <content.icon size={14} />
-      </Empty.Media>
+      <Empty.Media>{content.visual}</Empty.Media>
       <Empty.Title>{content.title}</Empty.Title>
       <Empty.Description>{content.description}</Empty.Description>
       <Empty.Action>
-        <ButtonLink to="/" variant="primary" size="sm">
+        <ButtonLink to="/" variant="secondary" size="sm">
           Open Library
         </ButtonLink>
       </Empty.Action>

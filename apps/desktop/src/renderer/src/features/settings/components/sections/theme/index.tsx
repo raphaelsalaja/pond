@@ -61,7 +61,7 @@ export function PresetSelect({
         </Select.Value>
       </Select.Trigger>
       <Select.Portal>
-        <Select.Positioner sideOffset={6}>
+        <Select.Positioner>
           <Select.Popup>
             <Select.Items items={items} />
           </Select.Popup>

@@ -66,6 +66,28 @@ function fileFontPreloadPlugin(): Plugin {
   };
 }
 
+/** React Scan only sees renderers that register after its hook, so the installer runs before main.tsx loads react-dom. */
+function reactScanHookPlugin(): Plugin {
+  return {
+    name: "pond:react-scan-hook",
+    apply: "serve",
+    transformIndexHtml: {
+      order: "pre",
+      handler: (_html, ctx) =>
+        ctx.filename.endsWith("/renderer/index.html")
+          ? [
+              {
+                tag: "script",
+                attrs: { type: "module" },
+                children: 'import "react-scan/install-hook";',
+                injectTo: "head-prepend",
+              },
+            ]
+          : undefined,
+    },
+  };
+}
+
 export default defineConfig({
   main: {
     plugins: [cjsShimPlugin()],
@@ -158,6 +180,7 @@ export default defineConfig({
       }),
       react(),
       fileFontPreloadPlugin(),
+      reactScanHookPlugin(),
     ],
     resolve: {
       /** Workspace packages and nested @base-ui peers otherwise pull a second React and crash Tooltip.Provider with an invalid hook call. */
@@ -181,6 +204,8 @@ export default defineConfig({
         "react-dom",
         "react/jsx-runtime",
         "react/jsx-dev-runtime",
+        "react-scan",
+        "react-scan/install-hook",
         "@pond/ui > @base-ui/react",
         "@huggingface/transformers",
         "@ai-sdk/react",

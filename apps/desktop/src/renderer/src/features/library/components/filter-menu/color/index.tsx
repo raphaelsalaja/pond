@@ -55,7 +55,7 @@ export function ColorFilter({
             thumbClassName={styles.thumb}
           />
           <ColorField.Hue
-            width={13}
+            width={12}
             height={150}
             className={styles.hue}
             thumbClassName={styles.thumb}

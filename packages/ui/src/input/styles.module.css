@@ -31,7 +31,7 @@
     --input-radius: var(--ds-radius-sm);
     --input-padding-inline: var(--ds-space-sm);
     --input-icon-size: 12px;
-    --input-icon-inset: 5px;
+    --input-icon-inset: var(--ds-space-sm);
     --input-icon-padding-start: var(--ds-space-2xl);
   }
 
@@ -55,11 +55,13 @@
     --input-icon-padding-start: 28px;
   }
 
-  /* A pill's end cap is a semicircle, so the icon centers in it and the far side mirrors that inset. */
+  /* A pill's end cap is a semicircle, so the icon centers in it, snapped down to the 2px grid, and the far side mirrors that inset. */
   &:where([data-rounding="full"]) {
     --input-radius: var(--ds-radius-full);
-    --input-icon-inset: calc(
-      (var(--input-min-height) - var(--input-icon-size)) / 2
+    --input-icon-inset: round(
+      down,
+      (var(--input-min-height) - var(--input-icon-size)) / 2,
+      2px
     );
     --input-icon-padding-start: calc(
       var(--input-icon-inset) * 2 + var(--input-icon-size)

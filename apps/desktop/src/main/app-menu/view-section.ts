@@ -1,50 +1,31 @@
 import type { AppMenuContext, AppMenuItem } from "./types";
 
+const FILTERS = [
+  ["Color", "color"],
+  ["Date Saved", "savedAt"],
+  ["Folder", "folder"],
+  ["Rating", "rating"],
+  ["Shape", "shape"],
+  ["Tag", "tags"],
+  ["Type", "type"],
+  ["Format", "format"],
+  ["File Size", "fileSize"],
+  ["Resolution", "width"],
+  ["Duration", "duration"],
+  ["Annotation", "caption"],
+  ["Note", "note"],
+  ["URL", "url"],
+  ["BPM", "bpm"],
+  ["Camera", "cameraModel"],
+  ["Font", "fontFamily"],
+] as const;
+
 export function buildViewSection(context: AppMenuContext): AppMenuItem {
   const { accelerator, sendMenuAction } = context;
 
   return {
     label: "View",
     submenu: [
-      {
-        label: "Inbox",
-        click: sendMenuAction("nav.inbox"),
-      },
-      {
-        label: "All Saves",
-        accelerator: accelerator("nav.library"),
-        registerAccelerator: false,
-        click: sendMenuAction("nav.library"),
-      },
-      {
-        label: "Tags",
-        click: sendMenuAction("nav.tags"),
-      },
-      {
-        label: "Uncategorized",
-        click: sendMenuAction("nav.uncategorized"),
-      },
-      {
-        label: "Untagged",
-        click: sendMenuAction("nav.untagged"),
-      },
-      {
-        label: "Random",
-        click: sendMenuAction("view.random"),
-      },
-      {
-        label: "Trash",
-        accelerator: accelerator("nav.trash"),
-        registerAccelerator: false,
-        click: sendMenuAction("nav.trash"),
-      },
-      { type: "separator" },
-      {
-        label: "Cycle Layout",
-        accelerator: accelerator("view.layout-cycle"),
-        registerAccelerator: false,
-        click: sendMenuAction("view.layout.cycle"),
-      },
       {
         label: "Waterfall",
         accelerator: accelerator("view.layout-waterfall"),
@@ -69,6 +50,16 @@ export function buildViewSection(context: AppMenuContext): AppMenuItem {
         registerAccelerator: false,
         click: sendMenuAction("view.layout.list"),
       },
+      {
+        label: "Cycle Layout",
+        accelerator: accelerator("view.layout-cycle"),
+        registerAccelerator: false,
+        click: sendMenuAction("view.layout.cycle"),
+      },
+      {
+        label: "Random",
+        click: sendMenuAction("view.random"),
+      },
       { type: "separator" },
       {
         label: "Toggle Sidebar",
@@ -82,51 +73,32 @@ export function buildViewSection(context: AppMenuContext): AppMenuItem {
         registerAccelerator: false,
         click: sendMenuAction("view.inspector.toggle"),
       },
+      { type: "separator" },
       {
-        label: "Grayscale Overlay",
-        accelerator: accelerator("view.grayscale"),
-        registerAccelerator: false,
-        click: sendMenuAction("view.grayscale"),
+        label: "Toggle Filters",
+        click: sendMenuAction("find.filters.toggle"),
       },
+      {
+        label: "Reset Filters",
+        click: sendMenuAction("find.filters.reset"),
+      },
+      {
+        label: "Filter By",
+        submenu: FILTERS.map(([label, field]) => ({
+          label,
+          click: sendMenuAction(`find.filter.${field}`),
+        })),
+      },
+      { type: "separator" },
       {
         label: "Show Subfolder Content",
         click: sendMenuAction("view.subfolders.toggle"),
       },
       {
-        label: "Appearance",
-        submenu: [
-          {
-            label: "Light",
-            click: sendMenuAction("theme.light"),
-          },
-          {
-            label: "Dark",
-            click: sendMenuAction("theme.dark"),
-          },
-          {
-            label: "Match System",
-            click: sendMenuAction("theme.system"),
-          },
-        ],
-      },
-      { type: "separator" },
-      {
-        label: "Open with Default App",
-        accelerator: accelerator("save.open"),
+        label: "Grayscale Overlay",
+        accelerator: accelerator("view.grayscale"),
         registerAccelerator: false,
-        click: sendMenuAction("save.open-with-default"),
-      },
-      {
-        label: "Open Link in Browser",
-        accelerator: accelerator("save.open-url"),
-        registerAccelerator: false,
-        click: sendMenuAction("save.open-original"),
-      },
-      {
-        label: context.isMac ? "Reveal in Finder" : "Reveal in File Explorer",
-        accelerator: accelerator("save.reveal"),
-        registerAccelerator: false,
-        click: sendMenuAction("save.reveal"),
+        click: sendMenuAction("view.grayscale"),
       },
       { type: "separator" },
       {
@@ -147,6 +119,26 @@ export function buildViewSection(context: AppMenuContext): AppMenuItem {
         registerAccelerator: false,
         click: sendMenuAction("view.zoom-reset"),
       },
+      { type: "separator" },
+      {
+        label: "Appearance",
+        submenu: [
+          {
+            label: "Light",
+            click: sendMenuAction("theme.light"),
+          },
+          {
+            label: "Dark",
+            click: sendMenuAction("theme.dark"),
+          },
+          {
+            label: "Match System",
+            click: sendMenuAction("theme.system"),
+          },
+        ],
+      },
+      { type: "separator" },
+      { role: "togglefullscreen" },
     ],
   };
 }

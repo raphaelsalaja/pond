@@ -10,7 +10,7 @@ interface ItemProps {
   icon: ReactNode;
   shortcut?: ShortcutId | undefined;
   count?: number | undefined;
-  /** Overrides the count's accent dot: `live` for running work, `negative` for something that needs you. */
+  /** Shows the dot without a count: `live` for running work, `negative` turns it red for something that needs you. */
   dot?: "live" | "negative" | undefined;
   current?: boolean;
   onSelect: () => void;
@@ -27,6 +27,7 @@ export function Item({
   onSelect,
 }: ItemProps) {
   const name = count ? `${label}, ${count}` : label;
+  const signal = Boolean(dot || count);
   const pressed = useRef(false);
 
   return (
@@ -56,12 +57,13 @@ export function Item({
           pressed.current = false;
         }}
       >
-        {icon}
-        {dot || count ? (
+        <span className={styles.icon} data-cutout={signal || undefined}>
+          {icon}
+        </span>
+        {signal ? (
           <Badge.Dot
             className={styles.dot}
             tone={dot === "negative" ? "negative" : "accent"}
-            live={dot === "live"}
           />
         ) : null}
       </Toggle>

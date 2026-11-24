@@ -26,8 +26,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 17px;
-  height: 17px;
+  min-width: 16px;
+  height: 16px;
   padding: 0 var(--ds-space-2xs);
   font-size: var(--ds-text-micro);
   font-weight: var(--ds-weight-regular);
@@ -40,7 +40,7 @@
   border-radius: var(--ds-radius-xs);
 
   &[data-glyph] {
-    width: 17px;
+    width: 16px;
     padding: 0;
   }
 

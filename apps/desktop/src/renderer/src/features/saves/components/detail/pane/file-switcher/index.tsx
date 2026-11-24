@@ -1,22 +1,33 @@
 import { IconArrowLeft, IconArrowRight } from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
-import { useSaveViewerNavigation } from "@/features/saves/state/save-viewer";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import styles from "./styles.module.css";
 
-export function FileSwitcher({ saveId }: { saveId: string }) {
-  const navigation = useSaveViewerNavigation();
-  const shown =
-    navigation !== null && navigation.saveId === saveId && navigation.count > 1;
+export interface FilePager {
+  index: number;
+  count: number;
+  onPrevious(): void;
+  onNext(): void;
+}
 
-  if (!shown) return null;
-  const { index, count, onPrevious, onNext } = navigation;
+export function FileSwitcher({
+  pager,
+  shortcuts = false,
+}: {
+  pager: FilePager;
+  /** The viewer's slide shortcuts only apply while it's open. */
+  shortcuts?: boolean;
+}) {
+  const { index, count, onPrevious, onNext } = pager;
+  if (count < 2) return null;
 
   return (
     <div className={styles.switcher}>
       <Tooltip
         label="Previous Slide"
-        shortcut={<ShortcutKeys id="viewer.prev-slide" />}
+        shortcut={
+          shortcuts ? <ShortcutKeys id="viewer.prev-slide" /> : undefined
+        }
       >
         <Button
           icon
@@ -34,7 +45,9 @@ export function FileSwitcher({ saveId }: { saveId: string }) {
       </span>
       <Tooltip
         label="Next Slide"
-        shortcut={<ShortcutKeys id="viewer.next-slide" />}
+        shortcut={
+          shortcuts ? <ShortcutKeys id="viewer.next-slide" /> : undefined
+        }
       >
         <Button
           icon

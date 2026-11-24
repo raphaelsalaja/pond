@@ -1,5 +1,5 @@
 import {
-  IconEye2,
+  IconEye,
   IconFolder,
   IconFolderSearch,
   IconLayers,
@@ -73,7 +73,7 @@ export function sidebarMenuItems({
     {
       type: "submenu",
       label: "Show Hidden",
-      icon: <IconEye2 />,
+      icon: <IconEye />,
       disabled: hidden.length === 0,
       items: [
         ...hidden.map(

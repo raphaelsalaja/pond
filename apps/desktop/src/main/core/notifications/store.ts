@@ -9,10 +9,26 @@ import {
 } from "../../../shared/notification-contracts";
 import { renameWithRetry } from "../../lib/rename-retry";
 
+const LOG_VERSION = 2;
+
+/** Rows of a retired kind drop on load instead of emptying the whole log. */
+const StoredRowsSchema = z.array(z.unknown()).transform((rows) =>
+  rows.flatMap((row) => {
+    const item = InboxNotificationSchema.safeParse(row);
+    return item.success ? [item.data] : [];
+  }),
+);
+
 const StoredLogSchema = z.object({
-  version: z.literal(1),
-  notifications: z.array(InboxNotificationSchema),
+  version: z.union([z.literal(1), z.literal(LOG_VERSION)]),
+  notifications: StoredRowsSchema,
 });
+
+/** Version 1 copied every toast into the log as activity, so those rows drop on upgrade. */
+function upgrade(log: z.infer<typeof StoredLogSchema>): InboxNotification[] {
+  if (log.version === LOG_VERSION) return log.notifications;
+  return log.notifications.filter((item) => item.kind !== "activity");
+}
 
 export interface NotificationLogDependencies {
   directory(): string;
@@ -69,7 +85,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
     }
     try {
       const parsed = StoredLogSchema.safeParse(JSON.parse(text));
-      return parsed.success ? parsed.data.notifications : [];
+      return parsed.success ? upgrade(parsed.data) : [];
     } catch {
       return [];
     }
@@ -84,7 +100,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
     const temporary = `${target}.${process.pid}.tmp`;
     await writeFile(
       temporary,
-      JSON.stringify({ version: 1, notifications: items }),
+      JSON.stringify({ version: LOG_VERSION, notifications: items }),
       "utf8",
     );
     await renameWithRetry(temporary, target);

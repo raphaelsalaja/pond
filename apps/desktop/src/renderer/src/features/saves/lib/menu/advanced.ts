@@ -151,7 +151,7 @@ export function buildSupplementalItems(
           const nav = saveLibraryBridge.getNav();
           void window.pond.openCombineImagesWindow({
             ids,
-            folderId: nav.kind === "folder" ? nav.id : null,
+            folderId: nav?.kind === "folder" ? nav.id : null,
           });
         },
       },

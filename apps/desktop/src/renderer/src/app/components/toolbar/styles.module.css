@@ -1,37 +1,3 @@
-.bar {
-  display: grid;
-  grid-template-columns:
-    minmax(max-content, var(--window-left-width))
-    minmax(0, 1fr)
-    minmax(max-content, var(--window-right-width));
-  flex-shrink: 0;
-  align-items: center;
-  width: 100%;
-  height: 44px;
-  min-width: 0;
-  overflow-x: clip;
-  overflow-y: visible;
-  -webkit-app-region: drag;
-}
-
-.chrome {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--ds-space-md);
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: 100%;
-  /* Matches the sidebar panel's border and inset so history buttons sit above its header actions. */
-  padding-right: calc(var(--ds-space-md) + var(--ds-border-width));
-  padding-left: var(--ds-space-lg);
-  -webkit-app-region: drag;
-}
-
-:global(html[data-platform="mac"]:not([data-full-screen])) .chrome {
-  padding-left: 96px;
-}
-
 .tools {
   display: flex;
   gap: var(--ds-space-2xs);
@@ -43,28 +9,6 @@
   max-width: 100%;
   min-width: 0;
   -webkit-app-region: no-drag;
-}
-
-.main {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  height: 100%;
-  margin-right: var(--window-inset);
-  margin-left: var(--window-inset);
-  transition: margin-left var(--window-edge-duration) var(--window-edge-easing);
-}
-
-.viewer {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  min-width: 0;
-  height: 100%;
-
-  & [data-viewer-bar-slot] {
-    -webkit-app-region: no-drag;
-  }
 }
 
 .trail {
@@ -144,21 +88,4 @@
 
 .more {
   color: var(--ds-foreground-tertiary);
-}
-
-.actions {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--ds-space-xs);
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-  padding-right: var(--ds-space-lg);
-  -webkit-app-region: no-drag;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .main {
-    transition: none;
-  }
 }

@@ -60,7 +60,7 @@
 }
 
 .badge {
-  padding: 1px var(--ds-space-sm);
+  padding: var(--ds-space-2xs) var(--ds-space-sm);
   font-size: var(--ds-text-small);
   font-weight: var(--ds-weight-strong);
   color: var(--ds-accent-foreground);

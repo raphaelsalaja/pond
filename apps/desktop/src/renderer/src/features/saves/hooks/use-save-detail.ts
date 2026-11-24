@@ -31,9 +31,11 @@ export function useSaveDetail(id: string): SaveDetailView {
   const save = useSave(id);
   const [sync] = usePrefs("sync");
 
+  const rawJson = save?.rawJson;
   useEffect(() => {
+    void rawJson;
     void ensureRawJson(id);
-  }, [id]);
+  }, [id, rawJson]);
 
   return useMemo<SaveDetailView>(() => {
     if (!save) {

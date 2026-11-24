@@ -8,14 +8,14 @@ import {
   useSavedViews,
 } from "@/features/library/state/saved-views";
 import {
-  resetFilters,
   searchCurrentView,
   setSearchInput,
 } from "@/features/library/state/view-store";
 import { useRecents } from "@/features/saves";
-import { saveIdFromPath } from "@/features/saves/navigation";
+import { useOpenSaveId } from "@/features/saves/navigation";
 import type { Save } from "@/features/saves/types";
 import type { SaveLookup } from "@/features/search";
+import { getAppRouter } from "@/shared/lib/app-router";
 import { COMMANDS } from "./commands";
 import { useContextEntries } from "./context-entries";
 import { buildModel, rankEntries } from "./rank";
@@ -103,9 +103,8 @@ function searchLibraryEntry(query: string, scope: ViewScope | null): MenuEntry {
         searchCurrentView();
         setSearchInput([], query, query);
       } else {
-        resetFilters();
-        setSearchInput([], query, query);
-        selectLibraryNav({ kind: "all" });
+        const router = getAppRouter();
+        router?.history.push(`/${router.options.stringifySearch({ q: query })}`);
       }
       libraryHeader.focusSearch();
     },
@@ -132,7 +131,7 @@ export function useMenuModel({
   const views = useSavedViews();
   const recents = useRecents();
   const contextEntries = useContextEntries(pathname, Boolean(query));
-  const openId = saveIdFromPath(pathname);
+  const openId = useOpenSaveId();
   const scope = useViewScope(pathname);
   const viewLookup = useViewLookup(page ? "" : query, scope);
   const viewSaves = useSavesById(viewLookup.ids, scope?.deleted);
@@ -166,10 +165,7 @@ export function useMenuModel({
           group: "Saved Views",
           label: view.name,
           icon: <IconMagnifier aria-hidden />,
-          run: () => {
-            selectLibraryNav({ kind: "all" });
-            savedViews.select(view.id);
-          },
+          run: () => savedViews.select(view.id),
         })),
     [views],
   );

@@ -1,4 +1,6 @@
 .panel {
+  --control-width: 128px;
+
   display: flex;
   flex-direction: column;
 }
@@ -6,78 +8,70 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-lg);
-  padding: var(--ds-space-lg);
-  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+  padding: var(--ds-space-md) var(--ds-space-xl);
+
+  &:first-child {
+    padding-top: var(--ds-space-xl);
+  }
 
   &:last-child {
-    border-bottom: 0;
+    padding-bottom: var(--ds-space-lg);
+  }
+
+  & + & {
+    border-top: var(--ds-border-width) solid var(--ds-border-subtle);
   }
 }
 
-.title {
-  margin: 0 0 var(--ds-space-xs);
-  font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-medium);
-  line-height: normal;
-  color: var(--ds-foreground-primary);
+/* Outranks the group's own flex display so the pills sit two by two. */
+.panel :is(.layouts, .presets)[data-variant] {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
 
-.property {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  gap: var(--ds-space-md);
+.presets {
+  padding-top: var(--ds-space-xs);
+}
+
+.row {
+  display: flex;
+  gap: var(--ds-space-lg);
   align-items: center;
-  min-width: 0;
+  justify-content: space-between;
+  height: var(--ds-size-md);
 }
 
 .label {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
   font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-regular);
-  line-height: normal;
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-foreground-tertiary);
   white-space: nowrap;
 }
 
-.segmented {
-  width: 100%;
+.controls {
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-sm);
+  align-items: center;
 }
 
-.segmented > button {
-  flex: 1;
+.control {
+  display: flex;
+  width: var(--control-width);
+
+  & > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
 }
 
-.property > .select {
-  font-weight: var(--ds-weight-regular);
-}
-
-.property > .field {
-  width: 100%;
-  min-width: 0;
-}
-
-.field [data-slot="field"] {
-  min-width: 0;
-  font-weight: var(--ds-weight-regular);
-  font-variant-numeric: tabular-nums;
-}
-
-.field [data-slot="suffix"] {
-  padding-right: var(--ds-space-md);
-  padding-left: var(--ds-space-xs);
-  font-weight: var(--ds-weight-regular);
-  color: var(--ds-foreground-tertiary);
-}
-
-.field input::-webkit-outer-spin-button,
-.field input::-webkit-inner-spin-button {
+.title {
+  display: flex;
+  align-items: center;
+  height: var(--ds-size-sm);
   margin: 0;
-  appearance: none;
-}
-
-.field input[type="number"] {
-  appearance: textfield;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
 }

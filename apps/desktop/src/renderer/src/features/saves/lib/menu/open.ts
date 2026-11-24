@@ -25,22 +25,17 @@ import {
   revealFilesForSelection,
 } from "@/features/saves/lib/selection";
 import { openReferenceWindow } from "@/features/saves/lib/viewer-actions";
-import { getAppRouter } from "@/shared/lib/app-router";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 
 function openFolderLocation(folderId: string): void {
-  saveLibraryBridge.resetFilters();
-  saveLibraryBridge.setNav({ kind: "folder", id: folderId });
-  getAppRouter()?.history.push("/");
+  saveLibraryBridge.showNav({ kind: "folder", id: folderId });
 }
 
 function openAllSaves(): void {
-  saveLibraryBridge.resetFilters();
-  saveLibraryBridge.setNav({ kind: "all" });
-  getAppRouter()?.history.push("/");
+  saveLibraryBridge.showNav({ kind: "all" });
 }
 
 function fileLocationItems(

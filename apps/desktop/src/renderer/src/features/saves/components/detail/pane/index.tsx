@@ -1,16 +1,8 @@
-import {
-  IconCursor,
-  IconScanImage,
-  IconTag,
-  IconTriangleWarning,
-} from "@pond/icons";
-import { sensitiveContentBand } from "@pond/schema/content-safety";
-import { Button, Empty, Pane, Rating, Tabs } from "@pond/ui";
+import { IconCursor, IconScanImage, IconTag } from "@pond/icons";
+import { Button, Empty, EmptyPreview, Pane, Tabs } from "@pond/ui";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
 import { useEffect, useMemo, useState } from "react";
 import { DISABLED_HINTS, TASK_ENABLED } from "@/features/enrichment";
-import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
-import { SaveInfoSections } from "@/features/saves/components/detail/info-sections";
 import { KebabMenu } from "@/features/saves/components/detail/kebab";
 import { RelatedSaves } from "@/features/saves/components/detail/related-saves";
 import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
@@ -20,37 +12,33 @@ import {
   type SaveFolderReference,
   saveLibraryBridge,
 } from "@/features/saves/lib/library-bridge";
-import { sensitiveContentMenuItem } from "@/features/saves/lib/menu/sensitive";
 import { bulkMutation } from "@/features/saves/lib/mutate";
+import { loadRelated } from "@/features/saves/lib/related";
 import { pool } from "@/features/saves/state/pool";
-import { useSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
-import { tagDot, useTagGroups, useTags } from "@/features/tags";
-import { Section } from "@/shared/components/inspector-section";
+import {
+  useSaveViewerFileIndex,
+  useSaveViewerNavigation,
+} from "@/features/saves/state/save-viewer";
+import { useTagGroups, useTags } from "@/features/tags";
 import {
   type InspectorDrafts,
   InspectorTextField,
 } from "@/shared/components/inspector-text-field";
-import { PropertyList } from "@/shared/components/property-list";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { FolderIcon, type FolderIconId } from "@/shared/lib/folder-icons";
-import { formatBytes } from "@/shared/lib/format";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 import { AssignMenu, type AssignOption } from "./assign-menu";
 import { AssignmentChip } from "./chip";
+import { DetailSection } from "./detail-section";
 import { EnrichedText } from "./enriched-text";
-import { ratingMenu, SaveFacts } from "./facts";
-import { FavoriteRow } from "./favorite";
-import { FileSwitcher } from "./file-switcher";
+import { FavoriteButton } from "./favorite";
+import { type FilePager, FileSwitcher } from "./file-switcher";
 import { SaveIdentity } from "./identity";
-import { InboxSection } from "./inbox";
 import { SaveNote } from "./note";
-import { SavePreviews } from "./previews";
-import { SourceCard } from "./source-card";
+import { SavePreviews, stackCards } from "./previews";
+import { SaveProperties } from "./properties";
 import styles from "./styles.module.css";
-import { SuggestedTags } from "./suggested-tags";
-
 export interface SaveInspectorProps {
   saveId: string;
   saveIds?: readonly string[];
@@ -64,7 +52,7 @@ export interface SaveInspectorProps {
   }[];
 }
 
-type InspectorTab = "details" | "related";
+type InspectorView = "details" | "related";
 
 type InspectorFolder = NonNullable<SaveInspectorProps["folders"]>[number];
 const EMPTY_INSPECTOR_FOLDERS: readonly InspectorFolder[] = [];
@@ -94,9 +82,18 @@ export function EmptySaveInspector() {
     <section className={styles.root} aria-label="Details">
       <Empty.Root size="card" role="status">
         <Empty.Media>
-          <IconCursor size={14} />
+          <EmptyPreview.Root shape="panel" layout="single">
+            <EmptyPreview.Column>
+              <EmptyPreview.Block height={44}>
+                <IconCursor size={12} />
+              </EmptyPreview.Block>
+              <EmptyPreview.Line width={56} />
+              <EmptyPreview.Line width={40} tone="thin" />
+              <EmptyPreview.Line width={48} tone="thin" />
+            </EmptyPreview.Column>
+          </EmptyPreview.Root>
         </Empty.Media>
-        <Empty.Title>Nothing selected</Empty.Title>
+        <Empty.Title>Nothing Selected</Empty.Title>
         <Empty.Description>Select a save to see its details.</Empty.Description>
       </Empty.Root>
     </section>
@@ -121,11 +118,8 @@ export function SaveInspector({
     message: string;
     retry(): Promise<void>;
   } | null>(null);
-  const [stagedFolderIds, setStagedFolderIds] =
-    useState<ReadonlySet<string> | null>(null);
-  const [applyingFolderBatch, setApplyingFolderBatch] = useState(false);
   const fileIndex = useSaveViewerFileIndex();
-  const [tab, setTab] = useState<InspectorTab>("details");
+  const [view, setView] = useState<InspectorView>("details");
   const byId = new Map(available.map((save) => [save.id, save]));
   const saves = ids.flatMap((id) => {
     const save = byId.get(id);
@@ -134,8 +128,29 @@ export function SaveInspector({
   const complete = saves.length === ids.length;
   const single = ids.length === 1 ? saves[0] : undefined;
   const indexed = single?.clipModel === mediaEmbeddingVersion();
-  const activeTab: InspectorTab = single ? tab : "details";
   const folderEntries = useMemo(() => folderOptions(folders), [folders]);
+  const viewerNavigation = useSaveViewerNavigation();
+  const viewing = single !== undefined && viewerNavigation?.saveId === single.id;
+  const cards = useMemo(() => (single ? stackCards(single) : []), [single]);
+  const [slide, setSlide] = useState({ saveId, index: 0 });
+  const slideIndex =
+    slide.saveId === saveId
+      ? Math.min(slide.index, Math.max(cards.length - 1, 0))
+      : 0;
+  const pager: FilePager =
+    viewing && viewerNavigation
+      ? viewerNavigation
+      : {
+          index: slideIndex,
+          count: cards.length,
+          onPrevious: () =>
+            setSlide({ saveId, index: Math.max(0, slideIndex - 1) }),
+          onNext: () =>
+            setSlide({
+              saveId,
+              index: Math.min(cards.length - 1, slideIndex + 1),
+            }),
+        };
 
   useEffect(() => {
     void attempt;
@@ -212,7 +227,9 @@ export function SaveInspector({
     state: applied.has(key) ? "on" : tagCounts.has(key) ? "mixed" : "off",
   }));
   const suggestedTags = new Set(
-    (single?.suggestedTags ?? []).map((name) => name.toLowerCase()),
+    (single?.suggestedTags ?? [])
+      .map((name) => name.toLowerCase())
+      .filter((key) => !applied.has(key)),
   );
   const folderNames = new Map(
     folders.map((folder) => [folder.id, folder.name]),
@@ -225,14 +242,6 @@ export function SaveInspector({
     state:
       folder.count === ids.length ? "on" : folder.count > 0 ? "mixed" : "off",
   }));
-  const pendingSuggestions = (single?.suggestedTags ?? []).filter(
-    (name) => !applied.has(name.toLowerCase()),
-  );
-  const sensitivity = sensitiveContentBand(single?.sensitiveScore);
-  async function applySuggestedTags() {
-    await bulkMutation([...ids], { kind: "suggested-tags" });
-    await reloadSaves([...ids]);
-  }
   async function changeTag(name: string, remove = false) {
     const targets = [...ids];
     await bulkMutation(targets, {
@@ -258,14 +267,7 @@ export function SaveInspector({
       const folderId =
         createdId ?? (await window.pond.query("folders.create", { name })).id;
       createdId = folderId;
-      if (stagedFolderIds) {
-        await saveLibraryBridge.refreshFolders();
-        setStagedFolderIds(
-          (current) => current && new Set(current).add(folderId),
-        );
-      } else {
-        await assignFolder({ id: folderId, name }, true);
-      }
+      await assignFolder({ id: folderId, name }, true);
     });
   }
 
@@ -273,42 +275,30 @@ export function SaveInspector({
     void run(() => assignFolder(option, option.count !== ids.length));
   }
 
-  function toggleStagedFolder(option: AssignOption) {
-    if (option.state === "on") return;
-    setStagedFolderIds((current) => {
-      const next = new Set(current);
-      if (next.has(option.key)) next.delete(option.key);
-      else next.add(option.key);
-      return next;
-    });
-  }
+  const tagMenu = (
+    <AssignMenu
+      noun="Tag"
+      options={tagOptions}
+      suggested={suggestedTags}
+      onToggle={(option) => void run(() => changeTag(option.label))}
+      onCreate={(name) => void run(() => changeTag(name))}
+    />
+  );
 
-  async function applyStagedFolders() {
-    if (!stagedFolderIds?.size || applyingFolderBatch) return;
-    setFailure(null);
-    setApplyingFolderBatch(true);
-    try {
-      const staged = [...stagedFolderIds];
-      await changeSaveFolders({
-        saveIds: ids,
-        add: staged.map((id) => ({
-          id,
-          name: folderNames.get(id) ?? "Folder",
-        })),
-        remove: [],
-      });
-      setStagedFolderIds(null);
-    } catch (error) {
-      setFailure({
-        message: errorCopy(error, "Couldn't update the selection."),
-        retry: applyStagedFolders,
-      });
-    } finally {
-      setApplyingFolderBatch(false);
-    }
-  }
+  const assignedFolders = folderEntries.filter((folder) => folder.count > 0);
+  const folderMenu = (
+    <AssignMenu
+      noun="Folder"
+      options={folderAssignOptions}
+      onToggle={(option) => {
+        const folder = folders.find(({ id }) => id === option.key);
+        if (folder) toggleFolder(folder);
+      }}
+      onCreate={createFolder}
+    />
+  );
 
-  const details = (
+  const status = (
     <>
       {loadError ? (
         <div role="alert">
@@ -326,255 +316,190 @@ export function SaveInspector({
           <Button onClick={() => void run(failure.retry)}>Try Again</Button>
         </div>
       ) : null}
-      {complete ? (
-        <>
-          <SavePreviews saves={saves} fileIndex={fileIndex} />
-          {single ? <FileSwitcher saveId={single.id} /> : null}
-          {single?.dominantColors?.length ? (
-            <div className={styles.colors}>
-              {single.dominantColors.slice(0, 8).map((color) => (
-                <ColorSwatch
-                  key={color}
-                  color={color}
-                  primaryColor={single.primaryColor ?? null}
-                  saveId={single.id}
-                />
-              ))}
-            </div>
-          ) : null}
-          {single &&
-          (sensitivity === "likely-sensitive" ||
-            sensitivity === "possible-sensitive") ? (
-            <SpecContextMenu
-              buildItems={() => [
-                sensitiveContentMenuItem({
-                  ids: [single.id],
-                  saves: [single],
-                  allTrashed: single.deletedAt != null,
-                }),
-              ]}
-            >
-              <p className={styles.flag} data-band={sensitivity}>
-                <IconTriangleWarning size={14} aria-hidden />
-                {sensitivity === "likely-sensitive"
-                  ? "Likely sensitive content"
-                  : "Possibly sensitive content"}
-              </p>
-            </SpecContextMenu>
-          ) : null}
-          {!single ? (
-            <p className={styles.count}>
-              <strong>{ids.length}</strong> items selected
-            </p>
-          ) : null}
-          <InboxSection saves={saves} />
-          <SaveIdentity
-            key={targetKey}
-            save={single}
-            drafts={drafts}
-            cacheKey={targetKey}
-          />
-          {single ? (
-            <SourceCard save={single} />
-          ) : (
-            <Section title="Description">
-              <InspectorTextField
-                className={styles.prose}
-                drafts={drafts}
-                cacheKey={`${targetKey}:description`}
-                label="Description"
-                value={null}
-                multiline
-                disabled
-                variant="borderless"
-                padding="compact"
-                mixedPlaceholder="Multiple descriptions"
-                commit={async () => {}}
-              />
-            </Section>
-          )}
-          <SaveNote
-            value={notes}
-            drafts={drafts}
-            cacheKey={`${targetKey}:notes`}
-            commit={async (value) => {
-              await bulkMutation([...ids], {
-                kind: "notes",
-                notes: value || null,
-              });
-            }}
-          />
-          <Section
-            title="Tags"
-            empty={tagCounts.size === 0}
-            action={
-              <AssignMenu
-                noun="Tag"
-                options={tagOptions}
-                suggested={suggestedTags}
-                onToggle={(option) => void run(() => changeTag(option.label))}
-                onCreate={(name) => void run(() => changeTag(name))}
-              />
-            }
-          >
-            <AssignmentChip.List>
-              {[...tagCounts].map(([key, tag]) => (
-                <AssignmentChip.Item
-                  key={key}
-                  variant="outline"
-                  dot={tagDot(tag.name)}
-                  label={tag.name}
-                  crumb={tagGroupOf.get(key)}
-                  count={tag.count}
-                  total={ids.length}
-                  removeLabel={`Remove tag ${tag.name}`}
-                  onRemove={() => void run(() => changeTag(tag.name, true))}
-                  onOpen={() => saveLibraryBridge.openTaggedItems(tag.name)}
-                />
-              ))}
-            </AssignmentChip.List>
-          </Section>
-          <SuggestedTags
-            names={pendingSuggestions}
-            onAdd={(name) => void run(() => changeTag(name))}
-            onAddAll={() => void run(applySuggestedTags)}
-          />
-          <Section
-            title="Folders"
-            empty={!folders.some((folder) => folder.count > 0)}
-            action={
-              <AssignMenu
-                noun="Folder"
-                options={folderAssignOptions}
-                onToggle={(option) => {
-                  const folder = folders.find(({ id }) => id === option.key);
-                  if (folder) toggleFolder(folder);
-                }}
-                onCreate={createFolder}
-                onStartBatch={() => setStagedFolderIds(new Set())}
-                batch={
-                  stagedFolderIds
-                    ? {
-                        staged: stagedFolderIds,
-                        onToggle: toggleStagedFolder,
-                        onApply: () => void applyStagedFolders(),
-                        onCancel: () => setStagedFolderIds(null),
-                        applying: applyingFolderBatch,
-                      }
-                    : undefined
-                }
-              />
-            }
-          >
-            <AssignmentChip.List>
-              {folderEntries
-                .filter((folder) => folder.count > 0)
-                .map((folder) => (
-                  <AssignmentChip.Item
-                    key={folder.id}
-                    label={folder.name}
-                    crumb={
-                      folder.parentId
-                        ? folderNames.get(folder.parentId)
-                        : undefined
-                    }
-                    title={folder.path}
-                    count={folder.count}
-                    total={ids.length}
-                    removeLabel={`Remove folder ${folder.path}`}
-                    onRemove={() => void run(() => assignFolder(folder, false))}
-                  />
-                ))}
-            </AssignmentChip.List>
-          </Section>
-          {single?.caption?.trim() ? (
-            <EnrichedText title="Caption" text={single.caption} />
-          ) : null}
-          {single?.ocrText?.trim() ? (
-            <EnrichedText title="Text in Images" text={single.ocrText} />
-          ) : null}
-          {single?.transcript?.trim() ? (
-            <EnrichedText title="Transcript" text={single.transcript} />
-          ) : null}
-          {single ? (
-            <SaveInfoSections
-              save={single}
-              hideCoreProperties
-              omitFileAndDates
-              propertiesLead={
-                <>
-                  <SpecContextMenu
-                    buildItems={() => ratingMenu(rating ?? 0, setRating)}
-                  >
-                    <PropertyList.Row>
-                      <PropertyList.Label>Rating</PropertyList.Label>
-                      <div className={styles.rating}>
-                        <Rating value={rating} onValueChange={setRating} />
-                      </div>
-                    </PropertyList.Row>
-                  </SpecContextMenu>
-                  <FavoriteRow saves={saves} />
-                  <SaveFacts save={single} />
-                </>
-              }
-            />
-          ) : (
-            <Section title="Properties">
-              <PropertyList.Root layout="grid">
-                <PropertyList.Row>
-                  <PropertyList.Label>Size</PropertyList.Label>
-                  <PropertyList.Value>
-                    {formatBytes(
-                      saves.reduce(
-                        (total, save) =>
-                          total +
-                          (save.fileSize ??
-                            save.files.reduce(
-                              (sum, file) => sum + file.size,
-                              0,
-                            )),
-                        0,
-                      ),
-                    )}
-                  </PropertyList.Value>
-                </PropertyList.Row>
-                <PropertyList.Row>
-                  <PropertyList.Label>Rating</PropertyList.Label>
-                  <div className={styles.rating}>
-                    <Rating
-                      value={rating}
-                      onValueChange={(next) =>
-                        void run(async () => {
-                          await bulkMutation([...ids], {
-                            kind: "rating",
-                            rating: next,
-                          });
-                        })
-                      }
-                    />
-                    {rating === null ? (
-                      <span className={styles.muted}>Multiple ratings</span>
-                    ) : null}
-                  </div>
-                </PropertyList.Row>
-                <FavoriteRow saves={saves} />
-              </PropertyList.Root>
-            </Section>
-          )}
-        </>
-      ) : null}
     </>
   );
 
-  const tabs = (
-    <Tabs.List variant="secondary" aria-label="Details Views">
-      <Tabs.Tab value="details">Details</Tabs.Tab>
-      <Tabs.Tab value="related">Related</Tabs.Tab>
-    </Tabs.List>
+  const media = (
+    <>
+      <SavePreviews
+        saves={saves}
+        fileIndex={fileIndex}
+        activeKey={viewing ? null : (cards[slideIndex]?.key ?? null)}
+      />
+      {single ? <FileSwitcher pager={pager} shortcuts={viewing} /> : null}
+      {!single ? (
+        <p className={styles.count}>
+          <strong>{ids.length}</strong> items selected
+        </p>
+      ) : null}
+      <SaveIdentity
+        key={targetKey}
+        save={single}
+        drafts={drafts}
+        cacheKey={targetKey}
+      />
+    </>
   );
-  const kebab = single ? (
-    <KebabMenu save={single} fileIndex={fileIndex} />
-  ) : null;
+
+  const texts = single
+    ? [
+        { title: "Caption", text: single.caption },
+        { title: "Detected Text", text: single.ocrText },
+        { title: "Transcript", text: single.transcript },
+      ].filter((entry): entry is { title: string; text: string } =>
+        Boolean(entry.text?.trim()),
+      )
+    : [];
+
+  const sections = (
+    <div className={styles.sections}>
+      {single ? null : (
+        <DetailSection title="Description">
+          <InspectorTextField
+            className={styles.prose}
+            drafts={drafts}
+            cacheKey={`${targetKey}:description`}
+            label="Description"
+            value={null}
+            multiline
+            disabled
+            variant="borderless"
+            padding="compact"
+            mixedPlaceholder="Multiple descriptions"
+            commit={async () => {}}
+          />
+        </DetailSection>
+      )}
+      <SaveNote
+        value={notes}
+        drafts={drafts}
+        cacheKey={`${targetKey}:notes`}
+        commit={async (value) => {
+          await bulkMutation([...ids], {
+            kind: "notes",
+            notes: value || null,
+          });
+        }}
+      />
+      <DetailSection
+        title="Folders"
+        action={folderMenu}
+      >
+        {assignedFolders.length ? (
+          <AssignmentChip.List>
+            {assignedFolders.map((folder) => (
+              <AssignmentChip.Item
+                key={folder.id}
+                label={folder.name}
+                crumb={
+                  folder.parentId ? folderNames.get(folder.parentId) : undefined
+                }
+                title={folder.path}
+                count={folder.count}
+                total={ids.length}
+                removeLabel={`Remove folder ${folder.path}`}
+                onRemove={() => void run(() => assignFolder(folder, false))}
+              />
+            ))}
+          </AssignmentChip.List>
+        ) : (
+          <Empty.Root size="inline" variant="dashed">
+            <Empty.Description>No Folders Selected</Empty.Description>
+          </Empty.Root>
+        )}
+      </DetailSection>
+      <DetailSection title="Tags" action={tagMenu}>
+        {tagCounts.size > 0 ? (
+          <AssignmentChip.List>
+            {[...tagCounts].map(([key, tag]) => (
+              <AssignmentChip.Item
+                key={key}
+                label={tag.name}
+                crumb={tagGroupOf.get(key)}
+                count={tag.count}
+                total={ids.length}
+                removeLabel={`Remove tag ${tag.name}`}
+                onRemove={() => void run(() => changeTag(tag.name, true))}
+                onOpen={() => saveLibraryBridge.openTaggedItems(tag.name)}
+              />
+            ))}
+          </AssignmentChip.List>
+        ) : (
+          <Empty.Root size="inline" variant="dashed">
+            <Empty.Description>No Tags Selected</Empty.Description>
+          </Empty.Root>
+        )}
+      </DetailSection>
+      <SaveProperties saves={saves} rating={rating} onRate={setRating} />
+      {texts.map((entry) => (
+        <EnrichedText key={entry.title} title={entry.title} text={entry.text} />
+      ))}
+    </div>
+  );
+
+  const prefetchRelated = () => {
+    if (single && indexed) void loadRelated(single.id).catch(() => undefined);
+  };
+
+  const related = single && indexed ? (
+    <RelatedSaves saveId={single.id} />
+  ) : (
+    <Empty.Root size="card" role="status">
+      <Empty.Media>
+        <EmptyPreview.Root shape="tile" layout="spread">
+          <EmptyPreview.Column>
+            <EmptyPreview.Block>
+              <IconScanImage size={12} />
+            </EmptyPreview.Block>
+            <EmptyPreview.Line width={32} />
+          </EmptyPreview.Column>
+        </EmptyPreview.Root>
+      </Empty.Media>
+      <Empty.Title>Not Indexed Yet</Empty.Title>
+      <Empty.Description>
+        {TASK_ENABLED.clip(getPrefsSnapshot())
+          ? "Related saves appear once Visual Similarity indexes this save."
+          : DISABLED_HINTS.clip}
+      </Empty.Description>
+    </Empty.Root>
+  );
+
+  const details = (
+    <Pane.Body
+      density="compact"
+      className={styles.scroll}
+      data-scroll-fade="vertical"
+    >
+      {status}
+      {complete ? (
+        <>
+          {media}
+          {sections}
+        </>
+      ) : null}
+    </Pane.Body>
+  );
+  const actions = (
+    <>
+      <FavoriteButton saves={saves} />
+      {single ? <KebabMenu save={single} fileIndex={fileIndex} /> : null}
+    </>
+  );
+
+  if (!single) {
+    return (
+      <section
+        className={styles.root}
+        data-save-inspector={saveId}
+        aria-label="Details"
+      >
+        <Pane.Header className={styles.header} title="Details">
+          {actions}
+        </Pane.Header>
+        {details}
+      </section>
+    );
+  }
 
   return (
     <Tabs.Root
@@ -585,56 +510,38 @@ export function SaveInspector({
           aria-label="Details"
         />
       }
-      value={activeTab}
-      onValueChange={(value: InspectorTab) => setTab(value)}
+      value={view}
+      onValueChange={(value: InspectorView) => setView(value)}
     >
-      <Pane.Header className={styles.header} title={single ? tabs : "Details"}>
-        {kebab}
+      <Pane.Header
+        className={styles.header}
+        title={
+          <Tabs.List variant="secondary" aria-label="Details Views">
+            <Tabs.Tab value="details">Details</Tabs.Tab>
+            <Tabs.Tab
+              value="related"
+              onPointerEnter={prefetchRelated}
+              onFocus={prefetchRelated}
+            >
+              Related
+            </Tabs.Tab>
+          </Tabs.List>
+        }
+      >
+        {actions}
       </Pane.Header>
-      {single ? (
-        <>
-          <Tabs.Panel value="details" className={styles.panel}>
-            <Pane.Body
-              density="compact"
-              className={styles.scroll}
-              data-scroll-fade="vertical"
-            >
-              {details}
-            </Pane.Body>
-          </Tabs.Panel>
-          <Tabs.Panel value="related" className={styles.panel}>
-            <Pane.Body
-              density="compact"
-              className={styles.scroll}
-              data-scroll-fade="vertical"
-            >
-              {indexed ? (
-                <RelatedSaves saveId={single.id} />
-              ) : (
-                <Empty.Root size="card" role="status">
-                  <Empty.Media>
-                    <IconScanImage size={14} />
-                  </Empty.Media>
-                  <Empty.Title>Not indexed yet</Empty.Title>
-                  <Empty.Description>
-                    {TASK_ENABLED.clip(getPrefsSnapshot())
-                      ? "Related saves appear once Visual Similarity indexes this save."
-                      : DISABLED_HINTS.clip}
-                  </Empty.Description>
-                </Empty.Root>
-              )}
-            </Pane.Body>
-          </Tabs.Panel>
-        </>
-      ) : (
+      <Tabs.Panel value="details" keepMounted className={styles.panel}>
+        {details}
+      </Tabs.Panel>
+      <Tabs.Panel value="related" className={styles.panel}>
         <Pane.Body
           density="compact"
           className={styles.scroll}
           data-scroll-fade="vertical"
         >
-          {details}
+          {related}
         </Pane.Body>
-      )}
+      </Tabs.Panel>
     </Tabs.Root>
   );
 }

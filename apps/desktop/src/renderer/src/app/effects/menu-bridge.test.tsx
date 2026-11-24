@@ -1,17 +1,14 @@
 import { PrefsSchema } from "@pond/schema";
 import type { MenuActionEvent } from "@shared/constants";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-} from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { selectOnlySave } from "@/features/saves";
-import { setAppRouter } from "@/shared/lib/app-router";
+import {
+  currentLocation,
+  openLibraryAt,
+} from "@/shared/test/library-router";
 import { MenuBridge } from "./menu-bridge";
 
 describe("menu bridge inspector", () => {
@@ -43,22 +40,7 @@ describe("menu bridge inspector", () => {
   });
 
   it("toggles details on the library without opening a save", async () => {
-    const rootRoute = createRootRoute({ component: () => null });
-    const indexRoute = createRoute({
-      getParentRoute: () => rootRoute,
-      path: "/",
-      component: () => null,
-    });
-    const saveRoute = createRoute({
-      getParentRoute: () => rootRoute,
-      path: "/save/$saveId",
-      component: () => null,
-    });
-    const router = createRouter({
-      routeTree: rootRoute.addChildren([indexRoute, saveRoute]),
-      history: createMemoryHistory({ initialEntries: ["/"] }),
-    });
-    setAppRouter(router);
+    const router = await openLibraryAt("/");
     selectOnlySave("demo");
     libraryChrome.setDetailsOpen(true);
     await act(async () => {
@@ -69,6 +51,7 @@ describe("menu bridge inspector", () => {
       menuAction?.({ id: "view.inspector.toggle", source: "menu" });
     });
     expect(libraryChrome.getState().detailsOpen).toBe(!open);
-    expect(router.state.location.pathname).toBe("/");
+    expect(currentLocation(router).pathname).toBe("/");
+    expect(currentLocation(router).search).not.toHaveProperty("save");
   });
 });

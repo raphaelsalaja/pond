@@ -1,16 +1,15 @@
 import { DEFAULT_PREFS } from "@pond/schema";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRouter,
-  RouterProvider,
-} from "@tanstack/react-router";
+import { RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { folders } from "@/features/library/state/folders";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import {
+  createLibraryTestRouter,
+  currentLocation,
+  openLibraryAt,
+} from "@/shared/test/library-router";
 import { FolderBrowser } from ".";
 
 const folderRows = [
@@ -249,14 +248,10 @@ describe("folder browser", () => {
       return null;
     });
     await folders.refresh();
-    const rootRoute = createRootRoute({
+    const router = createLibraryTestRouter("/", {
       component: () => (
         <FolderBrowser parentId="root" contentCount={0} downloading={12} />
       ),
-    });
-    const router = createRouter({
-      routeTree: rootRoute,
-      history: createMemoryHistory({ initialEntries: ["/"] }),
     });
     await act(async () => {
       await router.load();
@@ -356,6 +351,7 @@ describe("folder browser", () => {
   });
 
   it("opens a child folder with the keyboard-accessible card button", async () => {
+    const router = await openLibraryAt("/");
     await act(async () => {
       root.render(<FolderBrowser parentId="root" contentCount={0} />);
     });
@@ -368,10 +364,7 @@ describe("folder browser", () => {
     });
     if (!button) throw new Error("Missing folder card");
     await act(async () => button.click());
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "child",
-    });
+    expect(currentLocation(router).pathname).toBe("/folders/child");
   });
 
   it("opens subfolder operations from a real context-menu event", async () => {

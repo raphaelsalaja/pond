@@ -67,7 +67,7 @@
     color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   &[data-outside] {

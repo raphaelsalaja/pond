@@ -43,7 +43,7 @@
   border-radius: var(--ds-radius-xs) var(--ds-radius-lg) var(--ds-radius-lg)
     var(--ds-radius-xs);
   box-shadow:
-    -5px 0 0 var(--epub-spine),
+    -4px 0 0 var(--epub-spine),
     0 10px 20px var(--ds-shadow-color);
 }
 

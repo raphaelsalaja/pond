@@ -25,12 +25,14 @@ import {
   useRef,
   useState,
 } from "react";
-import { Button, type ButtonProps } from "../button";
+import { Button, ButtonDefaults, type ButtonProps } from "../button";
 import { Tooltip } from "../tooltip";
 import { DialogPageContext, useDialogPage } from "./context";
 import styles from "./styles.module.css";
 
 const PAGE_EASE = [0.26, 0.08, 0.25, 1] as const;
+
+const FOOTER_BUTTONS = { size: "xs" } as const;
 
 type PortalContainer = HTMLElement | null;
 
@@ -153,8 +155,13 @@ function Backdrop({ className, ...props }: Base.Backdrop.Props) {
 
 type PopupProps = Base.Popup.Props &
   (
-    | { pageId: string; depth: number; variant?: never }
-    | { pageId?: never; depth?: never; variant?: "card" | "media" }
+    | { pageId: string; depth: number; variant?: never; size?: never }
+    | {
+        pageId?: never;
+        depth?: never;
+        variant?: "card" | "media";
+        size?: "default" | "full";
+      }
   );
 
 function Popup(props: PopupProps) {
@@ -164,6 +171,7 @@ function Popup(props: PopupProps) {
     pageId: _pageId,
     depth: _depth,
     variant = "card",
+    size,
     className,
     ...rest
   } = props;
@@ -171,6 +179,7 @@ function Popup(props: PopupProps) {
     <Base.Popup
       className={cn(styles.popup, className)}
       data-variant={variant}
+      data-size={size === "full" ? "full" : undefined}
       {...rest}
     />
   );
@@ -400,7 +409,7 @@ function Action({ className, position = "start", ...props }: ActionProps) {
 function Back(props: ComponentPropsWithoutRef<"button">) {
   return (
     <Action aria-label="Back" {...props}>
-      <IconChevronLeft size={12} strokeWidth={2} />
+      <IconChevronLeft size={12} />
     </Action>
   );
 }
@@ -408,7 +417,7 @@ function Back(props: ComponentPropsWithoutRef<"button">) {
 function Help(props: ComponentPropsWithoutRef<"button">) {
   return (
     <Action aria-label="Help" {...props}>
-      <IconCircleQuestion size={12} strokeWidth={2} />
+      <IconCircleQuestion size={12} />
     </Action>
   );
 }
@@ -423,7 +432,7 @@ function Close(props: Base.Close.Props) {
           data-position="end"
           aria-label="Close"
         >
-          <IconXmark size={12} strokeWidth={2} />
+          <IconXmark size={12} />
         </button>
       }
       {...props}
@@ -461,7 +470,9 @@ function Footer({
       {...props}
     >
       {leading ? <div className={styles.leading}>{leading}</div> : null}
-      <div className={styles.actions}>{children}</div>
+      <div className={styles.actions}>
+        <ButtonDefaults value={FOOTER_BUTTONS}>{children}</ButtonDefaults>
+      </div>
     </div>
   );
 }

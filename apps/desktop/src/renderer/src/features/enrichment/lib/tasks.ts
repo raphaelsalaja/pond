@@ -57,9 +57,6 @@ export async function autoTag(ids?: TaskScope): Promise<TaskResult> {
         })
       ).ids;
   const { changed } = await bulkMutation(targets, { kind: "suggested-tags" });
-  if (changed > 0) {
-    statusFeed.note(`Applied tags to ${formatPlural(changed, ITEMS)}`);
-  }
   return {
     ok: true,
     message:
@@ -121,7 +118,6 @@ function kickRescan(ids?: TaskScope): void {
 
 export function runEnrichment(): TaskResult {
   kickRescan();
-  statusFeed.note("Enrichment sweep started");
   return { ok: true, message: "Enrichment sweep started." };
 }
 
@@ -141,9 +137,6 @@ async function reprocessStamped(
   pool.bulkUpsert(updated);
   kickRescan(ids);
   const n = updated.length;
-  if (n > 0) {
-    statusFeed.note(`Reprocessing ${formatPlural(n, ITEMS)} in the background`);
-  }
   return {
     ok: true,
     message:

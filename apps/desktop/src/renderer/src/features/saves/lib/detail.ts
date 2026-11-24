@@ -8,7 +8,7 @@ import {
   findAccountRef,
 } from "@/features/search/query";
 
-type RowKind = "mono" | "author" | "account" | "platform" | "text";
+type RowKind = "author" | "account" | "platform" | "text";
 
 export interface DetailRow {
   id: string;
@@ -23,24 +23,13 @@ export interface DetailRow {
 
 const DETAIL_GROUPS = [
   {
-    title: "Properties",
-    ids: ["author", "from", "platform", "importedFrom", "type", "list"],
-  },
-  {
-    title: "Activity",
-    ids: [
-      "views",
-      "likes",
-      "comments",
-      "retweets",
-      "quotes",
-      "bookmarks",
-      "shares",
-    ],
+    title: "Origin",
+    ids: ["author", "from", "platform", "importedFrom", "list"],
   },
   {
     title: "File",
     ids: [
+      "type",
       "duration",
       "dimensions",
       "size",
@@ -53,7 +42,7 @@ const DETAIL_GROUPS = [
     ],
   },
   {
-    title: "EXIF",
+    title: "Camera",
     ids: [
       "cameraMake",
       "cameraModel",
@@ -65,6 +54,18 @@ const DETAIL_GROUPS = [
     ],
   },
   { title: "Dates", ids: ["taken", "published", "imported", "modified"] },
+  {
+    title: "Activity",
+    ids: [
+      "views",
+      "likes",
+      "comments",
+      "retweets",
+      "quotes",
+      "bookmarks",
+      "shares",
+    ],
+  },
 ] as const;
 
 export interface DetailGroup {
@@ -150,7 +151,7 @@ export function collectIdentityRows(
   refs: readonly AccountRef[] = [],
 ): DetailRow[] {
   const rows: DetailRow[] = [
-    { id: "id", label: "ID", value: save.id, kind: "mono" },
+    { id: "id", label: "ID", value: save.id, kind: "text" },
   ];
   if (save.author) {
     const author: DetailRow = {
@@ -203,9 +204,9 @@ export function groupDetailRows(rows: DetailRow[]): DetailGroup[] {
 
   const leftover = rows.filter((row) => !placed.has(row.id));
   if (leftover.length > 0) {
-    const properties = groups.find((group) => group.title === "Properties");
-    if (properties) properties.rows.push(...leftover);
-    else groups.unshift({ title: "Properties", rows: leftover });
+    const file = groups.find((group) => group.title === "File");
+    if (file) file.rows.push(...leftover);
+    else groups.push({ title: "File", rows: leftover });
   }
 
   return groups;

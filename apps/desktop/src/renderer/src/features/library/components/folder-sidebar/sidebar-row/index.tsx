@@ -1,6 +1,6 @@
 import { IconWindowDownload } from "@pond/icons";
 import type { SidebarBadgeStyle } from "@pond/schema";
-import { Sidebar } from "@pond/ui";
+import { Sidebar, VisuallyHidden } from "@pond/ui";
 import { forwardRef } from "react";
 import { formatCount } from "../counts";
 import styles from "./styles.module.css";
@@ -53,7 +53,7 @@ export const Row = forwardRef<HTMLButtonElement, RowProps>(function Row(
           {downloadingLabel ? (
             <>
               <IconWindowDownload size={12} aria-hidden />
-              <span className={styles["sr-only"]}>{downloadingLabel}</span>
+              <VisuallyHidden>{downloadingLabel}</VisuallyHidden>
             </>
           ) : null}
           {count != null ? formatCount(count) : null}

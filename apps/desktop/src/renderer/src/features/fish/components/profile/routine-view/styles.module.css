@@ -1,5 +1,5 @@
 .header {
-  height: var(--window-header-height, 56px);
+  height: var(--window-header-height, 44px);
   min-height: 0;
   padding: var(--ds-space-xs) var(--ds-space-2xl);
   border-bottom: none;

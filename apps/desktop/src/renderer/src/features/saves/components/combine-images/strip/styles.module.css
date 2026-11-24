@@ -36,8 +36,8 @@
 
   &[data-over] {
     box-shadow:
-      0 0 0 1px var(--ds-background-primary),
-      0 0 0 3px var(--ds-accent);
+      0 0 0 2px var(--ds-background-primary),
+      0 0 0 4px var(--ds-accent);
   }
 
   &:hover .remove,

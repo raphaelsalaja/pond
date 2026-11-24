@@ -45,6 +45,7 @@ export interface RenderRowArgs<T extends RowData> {
     id: string;
     "aria-rowindex": number;
     "data-cursor"?: "";
+    "data-hover-row": "";
     className: string;
     style: React.CSSProperties;
     onClick: (e: ReactMouseEvent) => void;

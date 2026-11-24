@@ -104,10 +104,13 @@
     jetbrains-mono, ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
   --ds-ui-font-size: var(--ds-text-body);
   --ds-code-font-size: var(--ds-text-small);
+  --ds-font-roundness: 25;
+  --ds-font-optical-size: 14;
 
   font-family: var(--ds-ui-font-family);
   font-size: var(--ds-ui-font-size);
   font-weight: var(--ds-weight-regular);
+  font-variation-settings: "ROND" var(--ds-font-roundness);
 
   font-feature-settings:
     "liga" 1,
@@ -122,6 +125,12 @@ pre,
 samp {
   font-family: var(--ds-code-font-family);
   font-size: var(--ds-code-font-size);
+}
+
+html[data-font-optical-size="fixed"] {
+  font-variation-settings:
+    "ROND" var(--ds-font-roundness),
+    "opsz" var(--ds-font-optical-size);
 }
 
 html[data-font-smoothing="antialiased"] {

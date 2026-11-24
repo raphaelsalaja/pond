@@ -1,4 +1,4 @@
-import type { Clause, Group, Predicate } from "@pond/schema/filters/types";
+import type { Group, Predicate } from "@pond/schema/filters/types";
 import { extractDates } from "@/features/search/lib/nl-chrono";
 import {
   accumulate,
@@ -142,9 +142,4 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
   ]);
   const query: FlatQuery = { combinator: "and", rules };
   return { query, residual: residual.join(" "), sort, limit };
-}
-
-export function flattenPredicates(clause: Clause): Predicate[] {
-  if ("rules" in clause) return clause.rules.flatMap(flattenPredicates);
-  return [clause];
 }

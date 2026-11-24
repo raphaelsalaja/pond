@@ -14,6 +14,7 @@ import {
   combineQueries,
   inheritedQueryFor,
 } from "@/features/library/lib/smart-folders";
+import { enterAll } from "@/features/library/operations/enter-folder";
 import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
@@ -29,13 +30,9 @@ import {
   useRevealSidebarSection,
 } from "@/features/settings";
 import { useTagGroups, useTags } from "@/features/tags";
-import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS } from "@/shared/lib/dnd-kit";
-import { activeLibraryDestination } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
-import { resetFilters, setQuery } from "../../state/view-store";
-import { selectLibraryNav } from "../folder-sidebar/navigation";
 import { SmartFolderEntry } from "./entry";
 import { creationItems, quickAccessIdsFor } from "./menu-items";
 import { smartFolderRows, smartFolderSortableIds } from "./reorder";
@@ -50,17 +47,9 @@ async function countMatches(query: Query): Promise<number> {
   return result.count;
 }
 
-export function SmartFoldersSection({
-  onSelect,
-  active = true,
-}: {
-  onSelect: () => void;
-  active?: boolean;
-}) {
+export function SmartFoldersSection({ active = true }: { active?: boolean }) {
   const views = useSavedViews();
-  const nav = useLibraryNav();
-  const pathname = useRouteLocation((location) => location.pathname);
-  const destination = activeLibraryDestination(pathname, nav);
+  const destination = useLibraryNav();
   const activeViewId = useActiveViewId();
   const [presentations] = usePrefs("savedViewViews");
   const [sidebar] = usePrefs("sidebar");
@@ -99,9 +88,8 @@ export function SmartFoldersSection({
       mode: "create",
       kind: editorRequest.kind,
       parentId: editorRequest.parentId,
-      onSaved: onSelect,
     });
-  }, [editorRequest, views, onSelect]);
+  }, [editorRequest, views]);
   const childrenByParent = useMemo(() => {
     const groups = new Set(
       views.filter((view) => view.kind === "group").map((view) => view.id),
@@ -121,11 +109,8 @@ export function SmartFoldersSection({
     (ids) => {
       if (ids.length === 1 && ids[0]) {
         savedViews.select(ids[0]);
-        onSelect();
       } else if (ids.length > 1) {
-        resetFilters();
-        selectLibraryNav({ kind: "all" });
-        setQuery({
+        enterAll({
           combinator: "or",
           rules: views
             .filter((view) => ids.includes(view.id))
@@ -133,7 +118,6 @@ export function SmartFoldersSection({
               combineQueries([inheritedQueryFor(view, views), view.query]),
             ),
         });
-        onSelect();
       }
     },
     destination,
@@ -156,10 +140,7 @@ export function SmartFoldersSection({
   const items = () =>
     creationItems(
       null,
-      () => {
-        setOpen(true);
-        onSelect();
-      },
+      () => setOpen(true),
       setEditor,
       savedViews.startEditing,
     );
@@ -246,7 +227,6 @@ export function SmartFoldersSection({
                   views={views}
                   childrenByParent={childrenByParent}
                   activeId={active ? activeViewId : null}
-                  onSelect={onSelect}
                   depth={0}
                   editingViewId={editingViewId}
                   onFinishRenaming={() => savedViews.finishEditing()}
@@ -262,6 +242,22 @@ export function SmartFoldersSection({
             </Sidebar.CollapsibleGroupContent>
           </SortableContext>
         </DndContext>
+        {open && views.length === 0 ? (
+          <Sidebar.Item
+            onClick={() =>
+              setEditor({
+                mode: "create",
+                kind: "smart_folder",
+                parentId: null,
+              })
+            }
+          >
+            <Sidebar.Icon>
+              <IconPlus />
+            </Sidebar.Icon>
+            <Sidebar.ItemLabel>New Smart Folder</Sidebar.ItemLabel>
+          </Sidebar.Item>
+        ) : null}
       </Sidebar.CollapsibleGroup>
       {editorDialog}
     </>
@@ -322,7 +318,7 @@ function SmartFolderEditor({
             kind: request.kind,
             parentId: request.parentId,
           });
-          request.onSaved();
+          request.onSaved?.();
         }
       }}
     />

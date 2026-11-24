@@ -1,0 +1,44 @@
+.flow {
+  display: flex;
+  gap: var(--ds-space-lg);
+  align-items: center;
+}
+
+.post {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--ds-space-xs);
+  width: 72px;
+  padding: var(--ds-space-xs) var(--ds-space-xs) var(--ds-space-sm);
+}
+
+.dots {
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+
+  & > span {
+    width: 4px;
+    height: 4px;
+    background: var(--intro-skeleton);
+    border-radius: var(--ds-radius-full);
+
+    &[data-active] {
+      background: var(--intro-faint);
+    }
+  }
+}
+
+.arrow {
+  display: flex;
+  flex: none;
+  color: var(--intro-faint);
+}
+
+.pieces {
+  display: grid;
+  flex: none;
+  grid-template-columns: repeat(2, 40px);
+  gap: var(--ds-space-sm);
+}

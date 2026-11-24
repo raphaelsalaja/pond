@@ -32,7 +32,7 @@
   background: none;
   border: 0;
   border-radius: var(--ds-radius-xl);
-  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
+  transition: color var(--ds-duration-fast) var(--ds-easing-standard);
 
   > svg {
     position: relative;

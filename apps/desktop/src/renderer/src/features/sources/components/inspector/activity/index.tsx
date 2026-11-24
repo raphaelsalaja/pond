@@ -1,6 +1,6 @@
 import { IconHistory } from "@pond/icons";
 import type { Source } from "@pond/schema/db";
-import { Button, Empty, Loader, Settings } from "@pond/ui";
+import { Button, Empty, EmptyPreview, Loader, Settings } from "@pond/ui";
 import {
   runFreshCount,
   type SourceRun,
@@ -64,10 +64,23 @@ export function SourceActivity({ id, source }: { id: string; source: Source }) {
     return (
       <Empty.Root size="card">
         <Empty.Media>
-          {history.isPending ? <Loader.Spinner /> : <IconHistory size={14} />}
+          {history.isPending ? (
+            <Loader.Spinner />
+          ) : (
+            <EmptyPreview.Root layout="list">
+              <EmptyPreview.Row>
+                <EmptyPreview.Icon>
+                  <IconHistory size={12} />
+                </EmptyPreview.Icon>
+                <EmptyPreview.Line width={46} />
+                <EmptyPreview.Space />
+                <EmptyPreview.Line width={24} tone="mid" />
+              </EmptyPreview.Row>
+            </EmptyPreview.Root>
+          )}
         </Empty.Media>
         <Empty.Title>
-          {history.isPending ? "Loading activity" : "No fetches yet"}
+          {history.isPending ? "Loading Activity" : "No Fetches Yet"}
         </Empty.Title>
         {history.isPending ? null : (
           <Empty.Description>

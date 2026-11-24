@@ -29,7 +29,11 @@ import { writeSaveInfo } from "../lib/library";
 import { saveDir } from "../paths";
 import { executeBatch, withMutationScope } from "./executor";
 import { extractFontMetadata, metadataFromOpenType } from "./font-metadata";
-import { extractImageMetadata, type ImageMetadata } from "./image-metadata";
+import {
+  extractImageKeywords,
+  extractImageMetadata,
+  type ImageMetadata,
+} from "./image-metadata";
 import { newSaveInbox } from "./inbox";
 import { extractMediaMetadata } from "./media-metadata";
 import { persistSave } from "./persist-save";
@@ -94,36 +98,6 @@ const MEDIA_TYPE_PRIORITY: readonly MediaType[] = [
   "text",
   "file",
 ];
-const MAX_IPTC_BYTES = 2 * 1024 * 1024;
-
-export function extractIptcKeywords(bytes: Buffer): string[] {
-  const keywords: string[] = [];
-  for (let offset = 0; offset <= bytes.length - 5; offset += 1) {
-    if (
-      bytes[offset] !== 0x1c ||
-      bytes[offset + 1] !== 0x02 ||
-      bytes[offset + 2] !== 0x19
-    )
-      continue;
-    const length = bytes.readUInt16BE(offset + 3);
-    if ((length & 0x8000) !== 0) continue;
-    const start = offset + 5;
-    const end = start + length;
-    if (end > bytes.length) continue;
-    const value = bytes.subarray(start, end);
-    let keyword: string;
-    try {
-      keyword = new TextDecoder("utf-8", { fatal: true }).decode(value);
-    } catch {
-      keyword = value.toString("latin1");
-    }
-    const normalized = keyword.trim();
-    if (normalized) keywords.push(normalized);
-    offset = end - 1;
-  }
-  return [...new Set(keywords)];
-}
-
 export function mediaTypeForImportedFiles(
   formats: readonly LibraryFileFormat[],
 ): MediaType | null {
@@ -519,7 +493,7 @@ async function inspectImportPath(
   if (format.mediaType === "image") {
     const [metadata, keywords] = await Promise.all([
       extractImageMetadata(path),
-      readIptcKeywords(path, info.size),
+      extractImageKeywords(path),
     ]);
     item.metadata = metadata;
     if (metadata.width) item.width = metadata.width;
@@ -552,25 +526,11 @@ async function inspectMemoryFiles(
       item.metadata = await extractImageMetadata(file.bytes);
       if (item.metadata.width) item.width = item.metadata.width;
       if (item.metadata.height) item.height = item.metadata.height;
-      item.keywords = extractIptcKeywords(
-        file.bytes.subarray(0, MAX_IPTC_BYTES),
-      );
+      item.keywords = await extractImageKeywords(file.bytes);
     }
     out.push(item);
   }
   return out;
-}
-
-async function readIptcKeywords(path: string, size: number): Promise<string[]> {
-  const length = Math.min(size, MAX_IPTC_BYTES);
-  const buffer = Buffer.alloc(length);
-  const handle = await open(path, "r");
-  try {
-    await handle.read(buffer, 0, length, 0);
-  } finally {
-    await handle.close();
-  }
-  return extractIptcKeywords(buffer);
 }
 
 async function readFilePrefix(path: string, length: number): Promise<Buffer> {

@@ -1,0 +1,33 @@
+.header {
+  display: flex;
+  gap: var(--ds-space-lg);
+  align-items: center;
+}
+
+.grid {
+  display: flex;
+  gap: var(--ds-space-md);
+}
+
+.column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+}
+
+.save {
+  position: absolute;
+  top: 80px;
+  left: 128px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-sm);
+  width: 92px;
+  padding: var(--ds-space-sm) var(--ds-space-sm) var(--ds-space-md);
+}
+
+.cursor {
+  top: 150px;
+  left: 200px;
+}

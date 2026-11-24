@@ -6,7 +6,7 @@ import { z } from "zod";
 import { showSavesInLibrary } from "@/features/library/lib/show-saves";
 import { openDuplicateReview } from "@/features/library/state/duplicate-review";
 import { folders } from "@/features/library/state/folders";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import { getLibraryNav } from "@/features/library/state/library-chrome";
 import { openOrganizationReview } from "@/features/library/state/organization-review";
 import { savedViews } from "@/features/library/state/saved-views";
 import {
@@ -25,8 +25,6 @@ import { errorCopy } from "@/shared/lib/error-copy";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
 import { notify, updateNotification } from "@/shared/lib/toast";
-import { markImportedFrom } from "@/shared/state/prompts";
-
 const SaveResultSchema = z.object({
   ok: z.boolean(),
   id: z.string().optional(),
@@ -207,7 +205,6 @@ export function createNewActions({
       if (result.reason === "cancelled") return;
       throw new Error(result.error);
     }
-    if (result.imported) markImportedFrom("mymind");
     notify({
       id: "new-import",
       title: result.imported
@@ -320,7 +317,6 @@ export function createNewActions({
       return;
     }
     await refreshFolders();
-    if (result.imported) markImportedFrom("eagle");
     updateNotification({
       id: notificationId,
       title: result.imported
@@ -359,7 +355,6 @@ export function createNewActions({
       );
     }
     await refreshFolders();
-    if (result.imported) markImportedFrom("eagle");
     notify({
       id: "new-import",
       title: result.imported
@@ -630,8 +625,8 @@ export const {
   selectSave: selectOnlySave,
   showSaves: (ids, folderId) => showSavesInLibrary(ids, folderId),
   currentFolderId: () => {
-    const nav = libraryChrome.getState().nav;
-    return nav.kind === "folder" ? nav.id : null;
+    const nav = getLibraryNav();
+    return nav?.kind === "folder" ? nav.id : null;
   },
   onEagleImportProgress: (callback) =>
     window.pond.onEagleImportProgress(callback),

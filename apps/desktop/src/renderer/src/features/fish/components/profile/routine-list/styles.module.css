@@ -1,4 +1,6 @@
 .list {
+  position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   padding: var(--ds-space-xs);
@@ -15,22 +17,6 @@
   align-items: center;
   padding: var(--ds-space-sm) var(--ds-space-md);
   border-radius: var(--ds-radius-md);
-  isolation: isolate;
-
-  &::before {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    content: "";
-    border-radius: inherit;
-    transition: background-color var(--ds-duration-fast)
-      var(--ds-easing-standard);
-  }
-
-  &:hover::before {
-    background: var(--ds-surface-secondary);
-  }
 }
 
 /* The button's hit area stretches over the row; the switch sits above it. */

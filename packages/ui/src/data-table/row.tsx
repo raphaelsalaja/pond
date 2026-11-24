@@ -108,6 +108,7 @@ function RowImpl<T extends RowData>({
     id: api.rowElementId(rowId),
     "aria-rowindex": rowIndex,
     "data-cursor": cursor ? "" : undefined,
+    "data-hover-row": "",
     className: styles.row ?? "",
     style: {
       gridTemplateColumns: api.gridTemplate,

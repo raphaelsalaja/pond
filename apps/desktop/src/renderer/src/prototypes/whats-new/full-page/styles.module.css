@@ -1,0 +1,66 @@
+.page {
+  animation: page-in var(--ds-duration-emphasized)
+    cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 64px var(--ds-space-2xl) var(--ds-space-2xl);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-md);
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-strong);
+  color: var(--ds-accent);
+}
+
+.title {
+  font-size: var(--ds-text-display);
+  line-height: var(--ds-leading-display);
+  text-wrap: balance;
+}
+
+.lede {
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-title);
+}
+
+.media {
+  aspect-ratio: 16 / 9;
+  margin-top: var(--ds-space-lg);
+  overflow: hidden;
+  border-radius: var(--ds-radius-xl);
+  box-shadow: 0 0 0 1px var(--ds-border-subtle);
+}
+
+.bar {
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-sm);
+  justify-content: flex-end;
+  padding: var(--ds-space-lg) var(--ds-space-2xl);
+  border-top: 1px solid var(--ds-border-subtle);
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,9 +1,8 @@
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { folders } from "@/features/library/state/folders";
-import { libraryChrome } from "@/features/library/state/library-chrome";
-import { navigationHistory } from "@/features/library/state/navigation-history";
-import { restoreLibraryNav } from "./navigation";
+import { getLibraryNav } from "@/features/library/state/library-chrome";
+import { currentLocation } from "@/shared/test/library-router";
 import {
   createFolderSidebarHarness,
   fishList,
@@ -82,8 +81,8 @@ describe("folder sidebar navigation", () => {
   it("opens Uncategorized from the sidebar", async () => {
     const router = await harness.mount();
     await act(async () => harness.button("Uncategorized").click());
-    expect(router.state.location.pathname).toBe("/");
-    expect(libraryChrome.getState().nav).toEqual({ kind: "uncategorized" });
+    expect(router.state.location.pathname).toBe("/uncategorized");
+    expect(getLibraryNav()).toEqual({ kind: "uncategorized" });
     expect(harness.button("Uncategorized").getAttribute("aria-current")).toBe(
       "page",
     );
@@ -111,10 +110,11 @@ describe("folder sidebar navigation", () => {
 
   it("opens the Inbox from the rail button named with its count", async () => {
     sidebarCounts.current.inbox = 13;
-    await harness.mount();
+    const router = await harness.mount();
     const inbox = await vi.waitFor(() => harness.button("Inbox, 13"));
     await act(async () => inbox.click());
-    expect(libraryChrome.getState().nav).toEqual({ kind: "inbox" });
+    expect(currentLocation(router).pathname).toBe("/inbox");
+    expect(getLibraryNav()).toEqual({ kind: "inbox" });
     expect(inbox.getAttribute("aria-current")).toBe("page");
   });
 
@@ -173,18 +173,16 @@ describe("folder sidebar navigation", () => {
   it("follows the open destination across folders and built-in collections", async () => {
     folderList.current = [folder("Repos"), folder("Design")];
     await folders.refresh();
-    navigationHistory.clear();
-    libraryChrome.setNav({ kind: "all" });
     const router = await harness.mount();
 
     expect(highlighted()).toEqual(["All"]);
 
     await act(async () => harness.button("Repos").click());
-    expect(router.state.location.pathname).toBe("/");
+    expect(router.state.location.pathname).toBe("/folders/Repos");
     expect(highlighted()).toEqual(["Repos"]);
 
     await act(async () => harness.button("Design").click());
-    expect(router.state.location.pathname).toBe("/");
+    expect(router.state.location.pathname).toBe("/folders/Design");
     expect(highlighted()).toEqual(["Design"]);
 
     await act(async () => harness.button("Downloads").click());
@@ -192,7 +190,7 @@ describe("folder sidebar navigation", () => {
     expect(highlighted()).toEqual(["Downloads"]);
 
     await act(async () => harness.button("Repos").click());
-    expect(router.state.location.pathname).toBe("/");
+    expect(router.state.location.pathname).toBe("/folders/Repos");
     expect(highlighted()).toEqual(["Repos"]);
 
     await act(async () => harness.button("Sources").click());
@@ -211,7 +209,7 @@ describe("folder sidebar navigation", () => {
     expect(highlighted()).toEqual(["Trash"]);
 
     await act(async () => harness.button("Uncategorized").click());
-    expect(router.state.location.pathname).toBe("/");
+    expect(router.state.location.pathname).toBe("/uncategorized");
     expect(highlighted()).toEqual(["Uncategorized"]);
 
     await act(async () => harness.button("Tags").click());
@@ -229,16 +227,9 @@ describe("folder sidebar navigation", () => {
     await act(async () => harness.button("Repos").click());
     await act(async () => harness.button("Downloads").click());
     expect(highlighted()).toEqual(["Downloads"]);
-    await act(async () => {
-      const previous = navigationHistory.back();
-      if (!previous) throw new Error("Expected to return to Repos");
-      restoreLibraryNav(previous);
-    });
-    expect(router.state.location.pathname).toBe("/");
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "Repos",
-    });
+    await act(async () => router.history.back());
+    expect(router.state.location.pathname).toBe("/folders/Repos");
+    expect(getLibraryNav()).toEqual({ kind: "folder", id: "Repos" });
     expect(highlighted()).toEqual(["Repos"]);
   });
 

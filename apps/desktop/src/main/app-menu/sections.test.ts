@@ -3,7 +3,7 @@ import { resolveShortcuts } from "../../shared/shortcuts";
 import { menuAccelerator } from "../lib/menu-accelerator";
 import { buildEditSection } from "./edit-section";
 import { buildFileSection } from "./file-section";
-import { buildFindSection } from "./find-section";
+import { buildLibrarySection } from "./library-section";
 import { buildGoSection, buildHistorySection } from "./navigation-sections";
 import { buildOrganizeSection } from "./organize-section";
 import {
@@ -29,6 +29,9 @@ function createContext({
   return {
     accelerator: (id) => id,
     appName: "Pond",
+    developer: {
+      toggleReactScan: noOp,
+    },
     edit: {
       copy: noOp,
       cut: noOp,
@@ -116,10 +119,8 @@ describe("app menu sections", () => {
         expect.objectContaining({ role: "quit" }),
       ]),
     );
-    expect(buildViewSection(context).submenu).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ label: "Reveal in File Explorer" }),
-      ]),
+    expect(buildWindowSection(context).submenu).toEqual(
+      expect.arrayContaining([expect.objectContaining({ role: "close" })]),
     );
   });
 
@@ -164,7 +165,6 @@ describe("app menu sections", () => {
       "Pond",
       "File",
       "Edit",
-      "Find",
       "Organize",
       "View",
       "Go",
@@ -184,6 +184,15 @@ describe("app menu sections", () => {
     };
     expect(buildWindowSection(context).submenu).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ label: "Library Window" }),
+        expect.objectContaining({ role: "front" }),
+      ]),
+    );
+    expect(buildWindowSection(context).submenu).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ role: "close" })]),
+    );
+    expect(buildViewSection(context).submenu).toEqual(
+      expect.arrayContaining([
         expect.objectContaining({ role: "togglefullscreen" }),
       ]),
     );
@@ -200,7 +209,7 @@ describe("app menu sections", () => {
     );
   });
 
-  it("dispatches native Find, Organize, File, and Edit actions", () => {
+  it("dispatches native File, Edit, Organize, and View actions", () => {
     const context = createContext({ isMac: true, isPackaged: true });
     const actions: string[] = [];
     context.sendMenuAction = (id) => {
@@ -210,8 +219,8 @@ describe("app menu sections", () => {
     const settingsItem = buildSettingsItem(context);
     buildFileSection(context);
     buildEditSection(context, settingsItem);
-    buildFindSection(context);
     buildOrganizeSection(context);
+    buildViewSection(context);
 
     expect(actions).toEqual(
       expect.arrayContaining([
@@ -231,7 +240,7 @@ describe("app menu sections", () => {
         "save.remove-current-folder",
         "find.search",
         "find.search-all",
-        "find.go-to-folder",
+        "library.search",
         "find.filters.toggle",
         "find.filters.reset",
         "find.visual-search",
@@ -269,7 +278,6 @@ describe("app menu sections", () => {
     expect(file).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ label: "Open Original in Browser" }),
-        expect.objectContaining({ label: "Add Tags" }),
         expect.objectContaining({ label: "Refresh from Source" }),
       ]),
     );
@@ -278,14 +286,26 @@ describe("app menu sections", () => {
     );
   });
 
+  it("lists each command in only one menu", () => {
+    const context = createContext({ isMac: true, isPackaged: true });
+    const actions: string[] = [];
+    context.sendMenuAction = (id) => {
+      actions.push(id);
+      return () => undefined;
+    };
+    buildAppMenuTemplate(context, []);
+    const repeated = actions.filter(
+      (id, index) => actions.indexOf(id) !== index,
+    );
+    expect(repeated).toEqual([]);
+  });
+
   it("groups File actions like the tray menu without navigation", () => {
     const context = createContext({ isMac: true, isPackaged: true });
     const file = buildFileSection(context).submenu;
     if (!Array.isArray(file)) throw new Error("Missing File submenu");
     const newMenu = file.find((item) => item.label === "New");
     const importMenu = file.find((item) => item.label === "Import");
-    const sourcesMenu = file.find((item) => item.label === "Sources");
-    const libraryMenu = file.find((item) => item.label === "Library");
 
     expect(newMenu).toMatchObject({
       submenu: [
@@ -317,17 +337,21 @@ describe("app menu sections", () => {
         { label: "Import Pond Package" },
       ],
     });
-    expect(sourcesMenu).toMatchObject({
-      submenu: [{ label: "New Source" }, { label: "New Watch" }],
-    });
-    expect(libraryMenu).toMatchObject({
-      submenu: [
-        { label: "Find Duplicates" },
-        { type: "separator" },
-        { label: "Rescan Library" },
-        { label: "Verify Integrity" },
-      ],
-    });
+    expect(file).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "Sources" }),
+        expect.objectContaining({ label: "Library" }),
+      ]),
+    );
+    expect(buildLibrarySection(context).submenu).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: "New Source" }),
+        expect.objectContaining({ label: "New Watch" }),
+        expect.objectContaining({ label: "Find Duplicates" }),
+        expect.objectContaining({ label: "Rescan Library" }),
+        expect.objectContaining({ label: "Verify Integrity" }),
+      ]),
+    );
     expect(file).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ label: "Navigate" })]),
     );
@@ -357,10 +381,10 @@ describe("app menu sections", () => {
     expect(
       file.find((item) => item.label === "Open with Default App")?.accelerator,
     ).toBe(undefined);
-    const go = buildGoSection(context).submenu;
-    if (!Array.isArray(go)) throw new Error("Missing Go submenu");
-    expect(go.find((item) => item.label === "Search")?.accelerator).toBe(
-      "CommandOrControl+K",
-    );
+    const edit = buildEditSection(context, buildSettingsItem(context)).submenu;
+    if (!Array.isArray(edit)) throw new Error("Missing Edit submenu");
+    expect(
+      edit.find((item) => item.label === "Search Pond")?.accelerator,
+    ).toBe("CommandOrControl+K");
   });
 });

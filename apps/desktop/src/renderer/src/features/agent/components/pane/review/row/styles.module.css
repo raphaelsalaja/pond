@@ -5,12 +5,8 @@
   padding: 0 var(--ds-space-sm);
   border-radius: var(--ds-radius-md);
 
-  &:has(button.main):hover {
-    background: var(--ds-surface-secondary);
-  }
-
   &:has(.main:active) {
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-surface-secondary);
   }
 }
 

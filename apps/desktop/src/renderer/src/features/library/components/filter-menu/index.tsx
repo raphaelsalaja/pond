@@ -106,7 +106,7 @@ export function FilterToggleView(data: FilterBarData) {
     ];
     const props = { choices, rows, onChange: updateLocalFilters, applied };
     return applied.length ? (
-      <SplitButton.Root variant="secondary" size="sm" aria-label="Filters">
+      <SplitButton.Root variant="ghost" size="sm" aria-label="Filters">
         <AppliedFilters {...props} />
         <AddFilter {...props} segment />
       </SplitButton.Root>
@@ -116,7 +116,7 @@ export function FilterToggleView(data: FilterBarData) {
   }
   return (
     <FilterToolbar.Toggle
-      variant="secondary"
+      variant="ghost"
       open={open}
       active={rows.length > 0 || Boolean(semantic) || Boolean(visual)}
       controlsId="library-filter-toolbar"

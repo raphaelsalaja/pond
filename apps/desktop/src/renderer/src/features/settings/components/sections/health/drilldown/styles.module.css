@@ -15,18 +15,6 @@
 .list {
   min-height: 0;
   max-height: min(52vh, 460px);
-  padding: 0;
-  margin: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  list-style: none;
-  border: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-radius: var(--ds-radius-md);
-}
-
-.empty,
-.note {
-  margin: 0;
-  font-size: var(--ds-text-small);
-  color: var(--ds-foreground-tertiary);
 }

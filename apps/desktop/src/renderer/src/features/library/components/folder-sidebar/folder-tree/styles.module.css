@@ -7,7 +7,6 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1px;
   overflow: visible;
 }
 
@@ -23,5 +22,4 @@
   left: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
 }

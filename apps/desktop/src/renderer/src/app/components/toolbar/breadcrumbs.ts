@@ -1,24 +1,41 @@
+import {
+  IconAlbum2,
+  IconCanvas,
+  IconLayers,
+  IconNodes3,
+  IconNut,
+} from "@pond/icons";
+import type { IconComponent } from "@pond/icons/types";
 import { SETTINGS_SECTIONS } from "@pond/schema";
 import type { Folder } from "@pond/schema/db";
-import type { LibraryNav } from "@/features/library/state/library-chrome";
-import { saveIdFromPath } from "@/features/saves/lib/save-nav";
-import { getSourceLabel } from "@/features/saves/lib/source-labels";
+import {
+  type LibraryNav,
+  pathForLibraryNav,
+} from "@/shared/lib/library-nav";
+import type { RouteMeta } from "@/shared/lib/route-meta";
 
 export interface Breadcrumb {
   label: string;
   path: string;
+  icon?: IconComponent;
   nav?: LibraryNav;
 }
 
+export interface BreadcrumbLabels {
+  save?: string;
+  canvas?: string;
+  fish?: string;
+  source?: string;
+  post?: string;
+}
+
 interface BreadcrumbInput {
+  meta: Pick<RouteMeta, "routeId" | "nav" | "crumb" | "params" | "surface">;
   pathname: string;
-  listPath: string;
-  nav: LibraryNav;
   folders: readonly Pick<Folder, "id" | "name" | "parentId">[];
-  saveLabel?: string;
-  canvasLabel?: string;
-  fishLabel?: string;
-  sourceLabel?: string;
+  /** Set while a Save is open over the route. */
+  saveOpen?: boolean;
+  labels?: BreadcrumbLabels;
   searchResultCount?: number;
 }
 
@@ -29,150 +46,109 @@ const SETTINGS_BY_ID = new Map(
   SETTINGS_SECTIONS.map((section) => [section.id, section]),
 );
 
-function settingsCrumbs(path: string): Breadcrumb[] {
-  const section = SETTINGS_BY_PATH.get(path);
-  const crumb = {
-    label: section?.label ?? "Settings",
-    path: `/settings/${path}`,
-  };
-  const parent = section?.parent ? SETTINGS_BY_ID.get(section.parent) : null;
-  return parent
-    ? [{ label: parent.label, path: `/settings/${parent.path}` }, crumb]
-    : [crumb];
+function settingsCrumbs(section: string | undefined): Breadcrumb[] {
+  const crumbs: Breadcrumb[] = [
+    { label: "Settings", path: "/settings", icon: IconNut },
+  ];
+  if (!section) return crumbs;
+  const entry = SETTINGS_BY_PATH.get(section);
+  const parent = entry?.parent ? SETTINGS_BY_ID.get(entry.parent) : null;
+  if (parent)
+    crumbs.push({ label: parent.label, path: `/settings/${parent.path}` });
+  crumbs.push({
+    label: entry?.label ?? "Settings",
+    path: `/settings/${section}`,
+  });
+  return crumbs;
 }
 
-const SPLIT_POSTS_CRUMB: Breadcrumb = {
-  label: "Split Posts",
-  path: "/split-posts",
-  nav: { kind: "splitPosts" },
+function crumbFor(nav: LibraryNav, label: string): Breadcrumb {
+  return { label, path: pathForLibraryNav(nav), nav };
+}
+
+const ALL: Breadcrumb = { ...crumbFor({ kind: "all" }, "All"), icon: IconAlbum2 };
+const SOURCES: Breadcrumb = {
+  ...crumbFor({ kind: "sources" }, "Sources"),
+  icon: IconNodes3,
+};
+const SPLIT_POSTS: Breadcrumb = {
+  ...crumbFor({ kind: "splitPosts" }, "Split Posts"),
+  icon: IconLayers,
 };
 
-type DestinationLabels = Pick<
-  BreadcrumbInput,
-  "canvasLabel" | "fishLabel" | "sourceLabel"
->;
-
-function destinationCrumbs(
-  base: string,
-  { canvasLabel, fishLabel, sourceLabel }: DestinationLabels,
-): Breadcrumb[] | null {
-  if (base.startsWith("/canvas/"))
-    return [{ label: canvasLabel || "Canvas", path: base }];
-  if (base.startsWith("/fish/"))
-    return [{ label: fishLabel || "Fish", path: base }];
-  if (base.startsWith("/sources/"))
-    return [
-      { label: "Sources", path: "/sources", nav: { kind: "sources" } },
-      { label: sourceLabel || "Source", path: base },
-    ];
-  switch (base) {
-    case "/sources":
-      return [{ label: "Sources", path: base, nav: { kind: "sources" } }];
-    case "/tags":
-      return [{ label: "Tags", path: base, nav: { kind: "tags" } }];
-    case "/untagged":
-      return [{ label: "Untagged", path: base, nav: { kind: "untagged" } }];
-    case "/recently-added":
-      return [
-        {
-          label: "Recently Added",
-          path: base,
-          nav: { kind: "recentlyAdded" },
-        },
-      ];
-    case "/recents":
-      return [{ label: "Recently Used", path: base, nav: { kind: "recents" } }];
-    case "/downloads":
-      return [{ label: "Downloads", path: base, nav: { kind: "downloads" } }];
-    case "/trash":
-      return [{ label: "Trash", path: base, nav: { kind: "trash" } }];
-    case "/split-posts":
-      return [SPLIT_POSTS_CRUMB];
-    default:
-      break;
+function folderCrumbs(
+  id: string,
+  folders: BreadcrumbInput["folders"],
+): Breadcrumb[] {
+  const byId = new Map(folders.map((folder) => [folder.id, folder]));
+  const ancestors: Breadcrumb[] = [];
+  const seen = new Set<string>();
+  let folder = byId.get(id);
+  while (folder && !seen.has(folder.id)) {
+    seen.add(folder.id);
+    ancestors.unshift(crumbFor({ kind: "folder", id: folder.id }, folder.name));
+    folder = folder.parentId ? byId.get(folder.parentId) : undefined;
   }
-  if (base.startsWith("/settings")) {
-    const crumbs: Breadcrumb[] = [{ label: "Settings", path: "/settings" }];
-    const [section] = base.slice("/settings/".length).split("/");
-    if (section) crumbs.push(...settingsCrumbs(section));
-    return crumbs;
-  }
-  if (base.startsWith("/source/")) {
-    return [
-      { label: "Sources", path: "/sources", nav: { kind: "sources" } },
-      {
-        label: getSourceLabel(base.slice("/source/".length)),
-        path: base,
-        nav: { kind: "all" },
-      },
-    ];
-  }
-  return null;
+  return ancestors.length
+    ? ancestors
+    : [crumbFor({ kind: "folder", id }, "Folder")];
 }
 
-export function buildBreadcrumbs({
-  pathname,
-  listPath,
-  nav,
-  folders,
-  saveLabel,
-  canvasLabel,
-  fishLabel,
-  sourceLabel,
-  searchResultCount,
-}: BreadcrumbInput): Breadcrumb[] {
-  const isSave = saveIdFromPath(pathname) !== null;
-  const base = isSave ? listPath : pathname;
-  const destination = destinationCrumbs(base, {
-    canvasLabel,
-    fishLabel,
-    sourceLabel,
-  });
-  const searchCrumb =
-    !isSave && searchResultCount !== undefined
-      ? { label: `Search results (${searchResultCount})`, path: base }
-      : null;
-  if (destination) {
-    if (searchCrumb && (base === "/trash" || base.startsWith("/source/")))
-      destination.push(searchCrumb);
-    if (isSave)
-      destination.push({ label: saveLabel || "Save", path: pathname });
-    return destination;
-  }
-  const crumbs: Breadcrumb[] = [
-    { label: "All", path: "/", nav: { kind: "all" } },
-  ];
-  if (base === "/" && nav.kind === "folder") {
-    const byId = new Map(folders.map((folder) => [folder.id, folder]));
-    const ancestors: Breadcrumb[] = [];
-    const seen = new Set<string>();
-    let folder = byId.get(nav.id);
-    while (folder && !seen.has(folder.id)) {
-      seen.add(folder.id);
-      ancestors.unshift({
-        label: folder.name,
-        path: "/",
-        nav: { kind: "folder", id: folder.id },
-      });
-      folder = folder.parentId ? byId.get(folder.parentId) : undefined;
+function navCrumbs(
+  nav: LibraryNav,
+  meta: BreadcrumbInput["meta"],
+  input: BreadcrumbInput,
+): Breadcrumb[] {
+  const labels = input.labels ?? {};
+  switch (nav.kind) {
+    case "folder":
+      return [ALL, ...folderCrumbs(nav.id, input.folders)];
+    case "inbox": {
+      const inbox = { ...crumbFor({ kind: "inbox" }, "Inbox"), icon: IconAlbum2 };
+      return nav.snoozed ? [inbox, crumbFor(nav, "Snoozed")] : [inbox];
     }
-    crumbs.push(
-      ...(ancestors.length ? ancestors : [{ label: "Folder", path: "/", nav }]),
-    );
-  } else if (base === "/" && nav.kind === "inbox") {
-    crumbs[0] = { label: "Inbox", path: "/", nav: { kind: "inbox" } };
-    if (nav.snoozed) crumbs.push({ label: "Snoozed", path: "/", nav });
-  } else if (base === "/" && nav.kind === "uncategorized") {
-    crumbs.push({ label: "Uncategorized", path: "/", nav });
-  } else if (base === "/" && nav.kind === "tag") {
-    crumbs.push({ label: nav.name, path: "/", nav });
-  } else if (base === "/" && nav.kind === "random") {
-    crumbs[0] = { label: "Random", path: "/", nav };
-  } else if (base === "/" && nav.kind === "post") {
-    crumbs[0] = SPLIT_POSTS_CRUMB;
-    crumbs.push({ label: nav.title || "Post", path: "/", nav });
+    case "uncategorized":
+      return [ALL, crumbFor(nav, "Uncategorized")];
+    case "tag":
+      return [ALL, crumbFor(nav, nav.name)];
+    case "post":
+      return [SPLIT_POSTS, crumbFor(nav, labels.post || "Post")];
+    default:
+      return meta.crumb
+        ? [{ ...crumbFor(nav, meta.crumb.label), icon: meta.crumb.icon }]
+        : [ALL];
   }
-  if (searchCrumb) crumbs.push(searchCrumb);
-  if (isSave) crumbs.push({ label: saveLabel || "Save", path: pathname });
+}
+
+function routeCrumbs(input: BreadcrumbInput): Breadcrumb[] {
+  const { meta, pathname, labels = {} } = input;
+  const routeId = meta.routeId ?? "";
+  if (routeId.startsWith("/_library/settings"))
+    return settingsCrumbs(meta.params.section);
+  if (routeId === "/_library/canvas/$id")
+    return [{ label: labels.canvas || "Canvas", path: pathname, icon: IconCanvas }];
+  if (routeId === "/_library/fish/$fishId")
+    return [{ label: labels.fish || "Fish", path: pathname }];
+  if (routeId === "/_library/sources_/$kind/$id")
+    return [SOURCES, { label: labels.source || "Source", path: pathname }];
+  if (meta.nav) return navCrumbs(meta.nav, meta, input);
+  if (meta.crumb)
+    return [{ label: meta.crumb.label, path: pathname, icon: meta.crumb.icon }];
+  return [ALL];
+}
+
+export function buildBreadcrumbs(input: BreadcrumbInput): Breadcrumb[] {
+  const crumbs = routeCrumbs(input);
+  if (
+    !input.saveOpen &&
+    input.meta.surface === "grid" &&
+    input.searchResultCount !== undefined
+  )
+    crumbs.push({
+      label: `Search results (${input.searchResultCount})`,
+      path: input.pathname,
+    });
+  if (input.saveOpen)
+    crumbs.push({ label: input.labels?.save || "Save", path: input.pathname });
   return crumbs;
 }

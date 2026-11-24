@@ -22,11 +22,12 @@ export interface SaveCanvasReference {
 }
 
 export interface SaveLibraryBridge {
-  getNav(): LibraryNav;
-  setNav(nav: LibraryNav): void;
+  getNav(): LibraryNav | null;
+  /** Opens the collection fresh, without the current search. */
+  showNav(nav: LibraryNav): void;
   resetFilters(): void;
   openTaggedItems(name: string): void;
-  showPost(post: { key: string; title: string }): void;
+  showPost(key: string): void;
   closeDetails(): void;
   openFolderPicker(ids: readonly string[], mode?: FolderPickerMode): void;
   openRename(ids: readonly string[]): void;
@@ -62,7 +63,7 @@ function unavailable(): never {
 
 let current: SaveLibraryBridge = {
   getNav: unavailable,
-  setNav: unavailable,
+  showNav: unavailable,
   resetFilters: unavailable,
   openTaggedItems: unavailable,
   showPost: unavailable,
@@ -94,10 +95,10 @@ export function registerSaveLibraryBridge(bridge: SaveLibraryBridge): void {
 
 export const saveLibraryBridge: SaveLibraryBridge = {
   getNav: () => current.getNav(),
-  setNav: (nav) => current.setNav(nav),
+  showNav: (nav) => current.showNav(nav),
   resetFilters: () => current.resetFilters(),
   openTaggedItems: (name) => current.openTaggedItems(name),
-  showPost: (post) => current.showPost(post),
+  showPost: (key) => current.showPost(key),
   closeDetails: () => current.closeDetails(),
   openFolderPicker: (ids, mode) => current.openFolderPicker(ids, mode),
   openRename: (ids) => current.openRename(ids),

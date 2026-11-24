@@ -609,7 +609,7 @@
   },
   "gear-3": {
     "state": "Coupled",
-    "to": "IconGear3"
+    "to": "IconNut"
   },
   "gif": {
     "state": "Coupled",

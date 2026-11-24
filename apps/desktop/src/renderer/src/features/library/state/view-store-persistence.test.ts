@@ -14,23 +14,32 @@ describe("filter persistence", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it("restores ad-hoc filters after a reload", async () => {
+  it("leaves ad-hoc filters to the URL instead of a pref", async () => {
     const first = await import("./view-store");
     first.updateLocalFilters([
       { field: "type", operator: "eq", value: "video" },
     ]);
     first.setSemanticQuery("a black cat");
+    expect(localStorage.getItem("pond.filterRules")).toBeNull();
 
     vi.resetModules();
     const second = await import("./view-store");
     const state = second.getViewState();
-    expect(state.rows).toEqual([
-      { field: "type", operator: "eq", value: "video" },
-    ]);
-    expect(state.query.rules).toEqual([
-      { field: "type", operator: "eq", value: "video" },
-    ]);
-    expect(state.semanticQuery).toBe("a black cat");
+    expect(state.rows).toEqual([]);
+    expect(state.semanticQuery).toBeNull();
+  });
+
+  it("hands filters from an older build over once", async () => {
+    const legacy = {
+      rows: [{ field: "type", operator: "eq", value: "video" }],
+      combinator: "and",
+      semanticQuery: "a black cat",
+    };
+    localStorage.setItem("pond.filterRules", JSON.stringify(legacy));
+    const { takeLegacyFilters } = await import("./view-store");
+    expect(takeLegacyFilters()).toEqual(legacy);
+    expect(localStorage.getItem("pond.filterRules")).toBe("");
+    expect(takeLegacyFilters()).toBeNull();
   });
 
   it("does not carry a saved view's rules into the next session", async () => {
@@ -48,9 +57,11 @@ describe("filter persistence", () => {
     expect(second.getViewState().rows).toEqual([]);
   });
 
-  it("ignores stored filters that no longer parse", async () => {
+  it("drops stored filters that no longer parse", async () => {
     localStorage.setItem("pond.filterRules", '{"rows":[{"field":"nope"}]}');
-    const { getViewState } = await import("./view-store");
+    const { getViewState, takeLegacyFilters } = await import("./view-store");
+    expect(takeLegacyFilters()).toBeNull();
+    expect(localStorage.getItem("pond.filterRules")).toBe("");
     expect(getViewState().rows).toEqual([]);
   });
 });

@@ -2,7 +2,7 @@
 .media {
   display: block;
   margin: auto;
-  border-radius: var(--ds-radius-xs);
+  border-radius: var(--card-radius, var(--ds-radius-xs));
   -webkit-user-drag: none;
 }
 

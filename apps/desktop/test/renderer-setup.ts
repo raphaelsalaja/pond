@@ -1,3 +1,9 @@
+/** Installs the DevTools hook before any test loads react-dom, so render counts see every commit. */
+import { afterEach } from "vitest";
+import { resetRenderRecorders } from "../src/renderer/src/shared/test/render-count";
+
+afterEach(resetRenderRecorders);
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 window.scrollTo = () => {};
 /** Pond ships only on macOS; jsdom's user agent otherwise reads as Linux and remaps `Mod` to Ctrl. */

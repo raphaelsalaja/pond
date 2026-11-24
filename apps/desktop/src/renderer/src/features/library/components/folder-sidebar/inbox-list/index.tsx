@@ -1,4 +1,4 @@
-import { Badge, Loader, Sidebar } from "@pond/ui";
+import { Loader, Sidebar } from "@pond/ui";
 import type { InboxNotification } from "@shared/notification-contracts";
 import { Fragment, type ReactNode } from "react";
 import { SaveThumb } from "@/features/library/components/command-menu/save-thumb";
@@ -20,38 +20,25 @@ import {
 } from "@/features/notifications";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import { displayTitleForSave } from "@/features/saves/lib/text";
-import { openSettings } from "@/shared/lib/open-settings";
+import { formatDayMonth } from "@/shared/lib/format";
 import { compactAge } from "@/shared/lib/relative-time";
 import { InboxHeader } from "./header";
+import { SourceMark } from "./source-mark";
 import styles from "./styles.module.css";
-
-/** Library work opens Library Health; other running work has nowhere to go until it settles. */
-const HEALTH_PROGRESS = new Set(["progress:library-check", "progress:processing"]);
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return "";
-  }
-}
 
 function Lines({
   title,
   detail,
-  unread,
   at,
 }: {
   title: string;
   detail: ReactNode;
-  unread: boolean;
   at: number;
 }) {
   return (
     <Sidebar.ItemText>
       <span className={styles.line}>
-        {unread ? <Badge.Dot tone="accent" /> : null}
-        <Sidebar.ItemLabel>{title}</Sidebar.ItemLabel>
+        <Sidebar.ItemLabel className={styles.label}>{title}</Sidebar.ItemLabel>
         {at > 0 ? (
           <time className={styles.time} dateTime={new Date(at).toISOString()}>
             {compactAge(at)}
@@ -83,6 +70,7 @@ function SaveItem({
     <Sidebar.Item
       size="lg"
       className={styles.item}
+      data-kind="save"
       data-status={current ? "active" : undefined}
       data-unread={unread || undefined}
       aria-current={current ? "true" : undefined}
@@ -92,12 +80,15 @@ function SaveItem({
       <Sidebar.Icon>
         {save ? <SaveThumb save={save} size={28} /> : null}
       </Sidebar.Icon>
-      <Lines
-        title={title}
-        detail={save ? hostOf(save.url) : null}
-        unread={unread}
-        at={at}
-      />
+      <Sidebar.ItemLabel className={styles.label}>{title}</Sidebar.ItemLabel>
+      <span className={styles.meta}>
+        {at > 0 ? (
+          <time className={styles.date} dateTime={new Date(at).toISOString()}>
+            {formatDayMonth(at)}
+          </time>
+        ) : null}
+        {save ? <SourceMark save={save} size={12} /> : null}
+      </span>
     </Sidebar.Item>
   );
 }
@@ -127,22 +118,26 @@ function NotificationItem({
       <Lines
         title={notification.title}
         detail={notification.body}
-        unread={unread}
         at={notification.updatedAt}
       />
     </Sidebar.Item>
   );
 }
 
-function ProgressItem({ progress }: { progress: InboxProgress }) {
-  const health = HEALTH_PROGRESS.has(progress.id);
+function ProgressItem({
+  progress,
+  current,
+}: {
+  progress: InboxProgress;
+  current: boolean;
+}) {
   return (
     <Sidebar.Item
       size="lg"
       className={styles.item}
-      data-inert={!health || undefined}
-      tabIndex={health ? undefined : -1}
-      onClick={health ? () => openSettings("health") : undefined}
+      data-status={current ? "active" : undefined}
+      aria-current={current ? "true" : undefined}
+      onClick={() => inboxPicker.select(progress.id)}
     >
       <Sidebar.Icon className={styles.glyph}>
         <Loader.Spinner />
@@ -150,8 +145,7 @@ function ProgressItem({ progress }: { progress: InboxProgress }) {
       <Lines
         title={progress.title}
         detail={progress.detail}
-        unread={false}
-        at={0}
+        at={progress.startedAt ?? 0}
       />
     </Sidebar.Item>
   );
@@ -168,7 +162,12 @@ function Item({
 }) {
   switch (item.type) {
     case "progress":
-      return <ProgressItem progress={item.progress} />;
+      return (
+        <ProgressItem
+          progress={item.progress}
+          current={selected === item.progress.id}
+        />
+      );
     case "notification":
       return (
         <NotificationItem

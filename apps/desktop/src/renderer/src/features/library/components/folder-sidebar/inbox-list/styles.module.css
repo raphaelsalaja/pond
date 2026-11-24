@@ -1,18 +1,19 @@
 .item {
-  &[data-unread] .line {
-    color: var(--ds-foreground-primary);
+  &[data-kind="save"] {
+    color: var(--ds-foreground-secondary);
   }
 
-  &[data-inert] {
-    pointer-events: none;
+  &[data-kind="save"] .label {
+    font-weight: var(--ds-weight-regular);
+  }
+
+  &[data-unread] .label {
+    font-weight: var(--ds-weight-strong);
+    color: var(--ds-foreground-primary);
   }
 
   &[data-tone="danger"] .glyph {
     color: var(--ds-danger);
-  }
-
-  &[data-tone="accent"] .glyph {
-    color: var(--ds-accent);
   }
 }
 
@@ -29,6 +30,21 @@
   gap: var(--ds-space-xs);
   align-items: center;
   min-width: 0;
+}
+
+.meta {
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  margin-left: var(--ds-space-sm);
+  font-size: var(--ds-text-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-tertiary);
+}
+
+.date {
+  font-weight: var(--ds-weight-medium);
 }
 
 .time {

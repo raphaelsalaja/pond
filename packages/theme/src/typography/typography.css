@@ -11,16 +11,22 @@
 
   --ds-text-micro: 10px;
   --ds-leading-micro: 14px;
+
   --ds-text-mini: 11px;
-  --ds-leading-mini: 14px;
+  --ds-leading-mini: 16px;
+
   --ds-text-small: 12px;
-  --ds-leading-small: 16px;
+  --ds-leading-small: 18px;
+
   --ds-text-body: 13px;
-  --ds-leading-body: 18px;
+  --ds-leading-body: 20px;
+
   --ds-text-heading: 14px;
-  --ds-leading-heading: 18px;
+  --ds-leading-heading: 24px;
+
   --ds-text-title: 16px;
   --ds-leading-title: 22px;
+
   --ds-text-display: 20px;
   --ds-leading-display: 26px;
 }

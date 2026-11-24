@@ -12,7 +12,7 @@ export const docs: ComponentDocs = {
     {
       name: "ToggleGroup",
       description:
-        "The group. `variant` is raised, outline, tiles, list or rail; list stacks vertically.",
+        "The group. `variant` is raised, outline, tiles, list, pictures, pills, rail or segmented. List stacks vertically, and each `pictures` toggle holds a drawing, then its label.",
     },
     { name: "Toggle", description: "One segment, identified by `value`." },
   ],
@@ -61,6 +61,30 @@ export const docs: ComponentDocs = {
           <Toggle value="oldest" size="sm">
             Oldest
           </Toggle>
+        </ToggleGroup>
+      ),
+    },
+    {
+      name: "Pictures",
+      render: () => (
+        <ToggleGroup
+          aria-label="Layout"
+          variant="pictures"
+          defaultValue={["grid"]}
+          style={{ width: 280 }}
+        >
+          {["Grid", "Rows", "List"].map((label) => (
+            <Toggle key={label} value={label.toLowerCase()}>
+              <span
+                aria-hidden
+                style={{
+                  height: 48,
+                  background: "var(--ds-surface-secondary)",
+                }}
+              />
+              <span>{label}</span>
+            </Toggle>
+          ))}
         </ToggleGroup>
       ),
     },

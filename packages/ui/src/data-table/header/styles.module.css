@@ -66,9 +66,9 @@
 .resize-handle {
   position: absolute;
   top: 0;
-  right: -3px;
+  right: calc(-1 * var(--ds-space-xs));
   z-index: 1;
-  width: 6px;
+  width: var(--ds-space-md);
   height: 100%;
   padding: 0;
   touch-action: none;
@@ -121,7 +121,7 @@
 
 .sort-button:hover,
 .sort-button[data-active] {
-  color: var(--ds-foreground-secondary);
+  color: var(--ds-foreground-primary);
 }
 
 .sort-caret {

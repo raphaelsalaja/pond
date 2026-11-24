@@ -3,7 +3,6 @@ import { classifyLibraryFile } from "@shared/file-format";
 import { describe, expect, it } from "vitest";
 import {
   classifyManualSave,
-  extractIptcKeywords,
   keepNote,
   mediaTypeForImportedFiles,
   storageKindForImport,
@@ -17,26 +16,6 @@ describe("keepNote", () => {
   it("treats a blank note as no note", () => {
     expect(keepNote(" \n\t")).toBeNull();
     expect(keepNote(undefined)).toBeNull();
-  });
-});
-
-describe("extractIptcKeywords", () => {
-  it("reads repeated IPTC keyword datasets", () => {
-    const dataset = (value: string) => {
-      const bytes = Buffer.from(value);
-      const length = Buffer.alloc(2);
-      length.writeUInt16BE(bytes.length);
-      return Buffer.concat([Buffer.from([0x1c, 0x02, 0x19]), length, bytes]);
-    };
-    expect(
-      extractIptcKeywords(
-        Buffer.concat([
-          Buffer.from("header"),
-          dataset("Travel"),
-          dataset("Sea"),
-        ]),
-      ),
-    ).toEqual(["Travel", "Sea"]);
   });
 });
 

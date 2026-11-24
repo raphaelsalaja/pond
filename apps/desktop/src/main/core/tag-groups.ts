@@ -47,26 +47,21 @@ const defaultMergeGroupRuntime: MergeGroupRuntime = {
   recordUndo: recordBatchForUndo,
 };
 
+/** SQLite's lower() only folds ASCII, so names compare in JS. */
 async function groupByLowerName(
   db: Db,
   lowered: string,
 ): Promise<TagGroup | undefined> {
-  const rows = await db
-    .select()
-    .from(tagGroupsTable)
-    .where(sql`lower(${tagGroupsTable.name}) = ${lowered}`);
-  return rows[0];
+  const rows = await db.select().from(tagGroupsTable);
+  return rows.find((group) => group.name.toLowerCase() === lowered);
 }
 
 async function tagByLowerName(
   db: Db,
   lowered: string,
 ): Promise<Tag | undefined> {
-  const rows = await db
-    .select()
-    .from(tagsTable)
-    .where(sql`lower(${tagsTable.name}) = ${lowered}`);
-  return rows[0];
+  const rows = await db.select().from(tagsTable);
+  return rows.find((tag) => tag.name.toLowerCase() === lowered);
 }
 
 export async function listGroups(): Promise<TagGroupWithMembers[]> {

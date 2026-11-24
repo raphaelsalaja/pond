@@ -26,10 +26,11 @@
     box-shadow: var(--ds-shadow-border);
   }
 
-  &[data-variant="tiles"] {
+  &[data-variant="tiles"],
+  &[data-variant="pictures"],
+  &[data-variant="pills"] {
     display: flex;
     gap: var(--ds-space-sm);
-    padding: 0;
     overflow: visible;
     background: none;
     border-radius: 0;
@@ -42,6 +43,26 @@
     overflow: visible;
     background: none;
     border-radius: 0;
+  }
+
+  &[data-variant="pills"] {
+    padding: 0;
+  }
+
+  &[data-variant="segmented"] {
+    --segmented-inset: 1px;
+    display: flex;
+    gap: 0;
+    width: 100%;
+    height: var(--ds-size-xs);
+    padding: var(--segmented-inset);
+    border-radius: calc(var(--ds-radius-sm) + var(--segmented-inset));
+
+    & > .indicator {
+      background: var(--ds-background-elevated);
+      border-radius: var(--ds-radius-sm);
+      box-shadow: var(--ds-shadow-control);
+    }
   }
 
   &[data-variant="rail"] {

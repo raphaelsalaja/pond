@@ -2,7 +2,7 @@ import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import { getLibraryNav } from "@/features/library/state/library-chrome";
 import { getViewState } from "@/features/library/state/view-store";
 import {
   createFolderSidebarHarness,
@@ -320,10 +320,10 @@ describe("folder sidebar tree", () => {
     const router = await harness.mount();
     await act(async () => harness.button("Recently Used").click());
     expect(router.state.location.pathname).toBe("/recents");
-    expect(libraryChrome.getState().nav).toEqual({ kind: "recents" });
+    expect(getLibraryNav()).toEqual({ kind: "recents" });
     await act(async () => harness.button("Random").click());
-    expect(router.state.location.pathname).toBe("/");
-    expect(libraryChrome.getState().nav).toEqual({ kind: "random" });
+    expect(router.state.location.pathname).toBe("/random");
+    expect(getLibraryNav()).toEqual({ kind: "random" });
   });
 
   it("opens folder customization in a dialog", async () => {

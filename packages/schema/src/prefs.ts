@@ -55,6 +55,9 @@ const preferences = z.object({
   light: lightThemeDefSchema.catch(DEFAULT_LIGHT_THEME),
   dark: darkThemeDefSchema.catch(DEFAULT_DARK_THEME),
   reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
+  fontRoundness: z.number().min(0).max(100).catch(25),
+  fontOpticalSizeAuto: z.boolean().catch(true),
+  fontOpticalSize: z.number().min(14).max(32).catch(14),
   tweetCover: z.enum(["media", "screenshot"]).catch("media"),
   soundsEnabled: z.boolean().catch(true),
 });
@@ -238,8 +241,6 @@ export const INBOX_ORDERINGS = ["newest", "priority"] as const;
 export const INBOX_GROUPINGS = ["none", "type", "date"] as const;
 
 const inboxDisplay = z.object({
-  /** Off drops the Priority and Other tabs and lists everything together. */
-  priorityInbox: z.boolean().catch(true),
   ordering: z.enum(INBOX_ORDERINGS).catch("newest"),
   groupBy: z.enum(INBOX_GROUPINGS).catch("none"),
   unreadFirst: z.boolean().catch(false),

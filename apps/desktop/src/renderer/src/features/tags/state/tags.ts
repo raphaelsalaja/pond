@@ -116,3 +116,7 @@ export function useTags(): ReadonlyArray<TagRow> {
   }, []);
   return useSelector(tagsStore, (s) => s.rows);
 }
+
+export function useTagsLoaded(): boolean {
+  return useSelector(tagsStore, (s) => s.loaded);
+}

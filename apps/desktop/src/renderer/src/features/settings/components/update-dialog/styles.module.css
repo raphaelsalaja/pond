@@ -1,0 +1,98 @@
+.column {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ds-space-2xl);
+  text-align: center;
+}
+
+.mark {
+  flex: none;
+  color: var(--ds-foreground-primary);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  max-width: 320px;
+  margin-top: 30px;
+}
+
+.copy > .title {
+  font-size: 15px;
+  font-weight: var(--ds-weight-strong);
+  line-height: 20px;
+  text-align: center;
+}
+
+.copy > .description {
+  font-size: var(--ds-text-body);
+  line-height: 18px;
+  text-align: center;
+  color: var(--ds-foreground-secondary);
+  text-wrap: balance;
+}
+
+/* Each step remounts its text and buttons under a new key, so they ease in without a presence wrapper. */
+.copy,
+.label,
+.actions {
+  animation: step-in var(--ds-duration-emphasized) cubic-bezier(0.23, 1, 0.32, 1)
+    both;
+}
+
+.column > .meter {
+  width: 240px;
+  gap: 15px;
+  margin-top: 22px;
+}
+
+.meter > .label {
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-regular);
+  line-height: 18px;
+}
+
+.column > .error {
+  margin-top: 15px;
+}
+
+.actions {
+  display: flex;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  min-height: var(--ds-size-md);
+  margin-top: 22px;
+  animation-delay: 60ms;
+}
+
+@keyframes step-in {
+  from {
+    filter: blur(2px);
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes step-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .copy,
+  .label,
+  .actions {
+    animation-name: step-fade;
+  }
+}
+
+:global(html[data-reduce-motion="true"]) :is(.copy, .label, .actions) {
+  animation-name: step-fade;
+}

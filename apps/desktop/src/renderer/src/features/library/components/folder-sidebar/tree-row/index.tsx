@@ -9,7 +9,6 @@ import { FolderContextMenu } from "@/features/library/components/folder-context-
 import type { FolderTool } from "@/features/library/components/folder-tools";
 import { enterFolder } from "@/features/library/operations/enter-folder";
 import { folders } from "@/features/library/state/folders";
-import type { LibraryNav } from "@/features/library/state/library-chrome";
 import { type FolderIconId, folderColorCss } from "@/shared/lib/folder-icons";
 import { formatPlural } from "@/shared/lib/format";
 import { FolderCover } from "../cover";
@@ -48,7 +47,6 @@ interface FolderTreeRowProps {
   hasChildren: boolean;
   includeSubfolders: boolean;
   dragging: boolean;
-  nav: LibraryNav;
   quickAccess: boolean;
   quickAccessFolderIds: string[];
   sameLevelHasChildren: boolean;
@@ -99,7 +97,6 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
           folderSortKey: props.folderSortKey,
           hasChildren: props.hasChildren,
           includeSubfolders: props.includeSubfolders,
-          nav: props.nav,
           quickAccess: props.quickAccess,
           quickAccessFolderIds: props.quickAccessFolderIds,
           sameLevelHasChildren: props.sameLevelHasChildren,
@@ -116,6 +113,7 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
     >
       <div
         className={styles.trigger}
+        data-hover-row={props.editing ? undefined : ""}
         data-folder-sortable={folder.id}
         data-drop={
           props.folderDrop?.id === folder.id ? props.folderDrop.kind : undefined
@@ -216,14 +214,6 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
   );
 }
 
-function sameNav(a: LibraryNav, b: LibraryNav): boolean {
-  if (a.kind !== b.kind) return false;
-  if (a.kind === "folder" && b.kind === "folder") return a.id === b.id;
-  if (a.kind === "tag" && b.kind === "tag") return a.name === b.name;
-  if (a.kind === "post" && b.kind === "post") return a.key === b.key;
-  return true;
-}
-
 /**
  * Skips closure props, so every callback the tree passes must be id-based or read its state through a ref.
  * @see FolderTree
@@ -258,8 +248,7 @@ function areFolderRowsEqual(
     a.folderSortDir !== b.folderSortDir ||
     a.folderSortKey !== b.folderSortKey ||
     a.quickAccessFolderIds !== b.quickAccessFolderIds ||
-    a.selectionItems !== b.selectionItems ||
-    !sameNav(a.nav, b.nav)
+    a.selectionItems !== b.selectionItems
   ) {
     return false;
   }

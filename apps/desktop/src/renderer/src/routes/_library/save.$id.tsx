@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { SaveDetailPage } from "@/features/library/components/save-detail-page";
-import { ensureSaves } from "@/features/saves/lib/ensure-saves";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+/** Older builds and the main process open a Save by path; it now opens over All. */
 export const Route = createFileRoute("/_library/save/$id")({
-  loader: ({ params }) => ensureSaves([params.id]),
-  component: SaveDetailPage,
+  beforeLoad: ({ params }) => {
+    throw redirect({ to: "/", search: { save: params.id }, replace: true });
+  },
 });

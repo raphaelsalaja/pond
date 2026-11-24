@@ -46,6 +46,7 @@
 
 .virtual {
   position: relative;
+  isolation: isolate;
 }
 
 .item {

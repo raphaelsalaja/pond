@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  listKindDescription,
-  listKindLabel,
-  sinceCopy,
-  sinceForPreset,
-} from "./import-scope";
+import { sinceCopy, sinceForPreset } from "./import-scope";
+import { listKindDescription, listKindLabel } from "./list-kind-copy";
 
 describe("listKindLabel", () => {
   it("names Vimeo's saved list Watch Later", () => {

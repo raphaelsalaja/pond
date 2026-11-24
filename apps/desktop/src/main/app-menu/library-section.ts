@@ -1,3 +1,7 @@
+import { SOURCES } from "@pond/schema/source-ids";
+import { EXTERNAL_SOURCE_IDS, sourceLabel } from "@pond/schema/sources";
+import { isWatchableSource, watchSourceLabel } from "@pond/schema/watches";
+import { FILE_MENU_DUPLICATES_LABELS } from "../file-menu";
 import { LIBRARY_MENU_LABELS } from "../library-menu";
 import { sourcesSubmenu } from "../sources-menu";
 import type { AppMenuContext, AppMenuItem } from "./types";
@@ -27,7 +31,45 @@ export function buildLibrarySection(context: AppMenuContext): AppMenuItem {
       },
       { type: "separator" },
       {
+        label: "Sync",
+        submenu: sourcesSubmenu({ accelerator, sendMenuAction }),
+      },
+      {
+        label: "New Source",
+        submenu: EXTERNAL_SOURCE_IDS.map((source) => ({
+          label: sourceLabel(source),
+          click: sendMenuAction(`library.connect-${source}`),
+        })),
+      },
+      {
+        label: "New Watch",
+        submenu: SOURCES.filter(isWatchableSource).map((source) => ({
+          label: watchSourceLabel(source),
+          click: sendMenuAction(`library.watch-${source}`),
+        })),
+      },
+      { type: "separator" },
+      {
+        label: "Find Duplicates",
+        submenu: [
+          {
+            label: FILE_MENU_DUPLICATES_LABELS[0],
+            click: sendMenuAction("library.find-duplicates-all"),
+          },
+          {
+            label: FILE_MENU_DUPLICATES_LABELS[1],
+            click: sendMenuAction("library.find-duplicates-list"),
+          },
+          {
+            label: FILE_MENU_DUPLICATES_LABELS[2],
+            click: sendMenuAction("library.find-duplicates-selected"),
+          },
+        ],
+      },
+      {
         label: LIBRARY_MENU_LABELS[4],
+        accelerator: accelerator("library.rescan"),
+        registerAccelerator: false,
         click: context.rescanLibrary,
       },
       {
@@ -53,11 +95,6 @@ export function buildLibrarySection(context: AppMenuContext): AppMenuItem {
       },
       { type: "separator" },
       {
-        label: "Sync",
-        submenu: sourcesSubmenu({ accelerator, sendMenuAction }),
-      },
-      { type: "separator" },
-      {
         label: LIBRARY_MENU_LABELS[10],
         accelerator: accelerator("trash.empty"),
         registerAccelerator: false,
@@ -66,11 +103,6 @@ export function buildLibrarySection(context: AppMenuContext): AppMenuItem {
       {
         label: LIBRARY_MENU_LABELS[11],
         click: sendMenuAction("trash.restore-all"),
-      },
-      { type: "separator" },
-      {
-        label: LIBRARY_MENU_LABELS[12],
-        click: sendMenuAction("history.clear"),
       },
     ],
   };

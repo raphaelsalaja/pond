@@ -1,15 +1,12 @@
 import magnifier from "./magnifier.mjs";
 
-/** The lens on the square keyline's upper left, the handle heavier and clear of the lens. */
+/** The lens on the square keyline's upper left, the handle growing straight out of its rim. */
 export default ({ circle, snap }, s) => {
   const r = 5;
   const c = s.keylines.square[0] + r;
-  const start = snap(c + (r + s.cut) * Math.SQRT1_2);
-  const end = 15;
-  return [
-    circle(c, c, r),
-    { d: `M ${start} ${start} L ${end} ${end}`, width: s.handle },
-  ];
+  const start = snap(c + r * Math.SQRT1_2);
+  const end = 15.25;
+  return [circle(c, c, r), `M ${start} ${start} L ${end} ${end}`];
 };
 
 /** A glint shows in the lens, 1.5 clear of the rim. */

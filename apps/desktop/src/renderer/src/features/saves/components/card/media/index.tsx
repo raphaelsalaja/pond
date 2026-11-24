@@ -272,7 +272,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       </div>
       {blurSensitive ? (
         <span className={styles.sensitive} aria-hidden>
-          <IconEyeSlash size={12} strokeWidth={1.5} />
+          <IconEyeSlash size={12} />
         </span>
       ) : null}
       <FailedBadge save={save} />

@@ -1,7 +1,7 @@
 import { IconCopy } from "@pond/icons";
 import { Button } from "@pond/ui";
-import { Section } from "@/shared/components/inspector-section";
 import { notify } from "@/shared/lib/toast";
+import { DetailSection } from "../detail-section";
 import styles from "./styles.module.css";
 
 export function EnrichedText({ title, text }: { title: string; text: string }) {
@@ -11,7 +11,7 @@ export function EnrichedText({ title, text }: { title: string; text: string }) {
   }
 
   return (
-    <Section
+    <DetailSection
       title={title}
       action={
         <Button
@@ -22,15 +22,15 @@ export function EnrichedText({ title, text }: { title: string; text: string }) {
           aria-label={`Copy ${title}`}
           onClick={() => void copy()}
         >
-          <IconCopy />
+          <IconCopy size={12} />
         </Button>
       }
     >
-      <div className={styles.root}>
+      <div className={styles.card}>
         <p className={styles.text} data-scroll-fade="vertical">
           {text}
         </p>
       </div>
-    </Section>
+    </DetailSection>
   );
 }

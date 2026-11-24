@@ -4,6 +4,7 @@ import {
   Chip,
   ColorField,
   Empty,
+  EmptyPreview,
   Input,
   Popover,
   Tooltip,
@@ -169,9 +170,17 @@ function IconChoices({
         ) : (
           <Empty.Root role="status" size="card" className={styles.empty}>
             <Empty.Media>
-              <IconMagnifier size={14} />
+              <EmptyPreview.Root shape="field" layout="single">
+                <EmptyPreview.Row>
+                  <EmptyPreview.Icon>
+                    <IconMagnifier size={12} />
+                  </EmptyPreview.Icon>
+                  <EmptyPreview.Line width={26} />
+                  <EmptyPreview.Line width={36} tone="mid" />
+                </EmptyPreview.Row>
+              </EmptyPreview.Root>
             </Empty.Media>
-            <Empty.Title>{`No results for “${query.trim()}”`}</Empty.Title>
+            <Empty.Title>{`No Results for “${query.trim()}”`}</Empty.Title>
             <Empty.Description>Try another word.</Empty.Description>
           </Empty.Root>
         )}

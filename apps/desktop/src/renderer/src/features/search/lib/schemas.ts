@@ -1,26 +1,29 @@
+import { QuerySchema } from "@pond/schema/filters";
 import { z } from "zod";
 
+/** Hand-written links like `/?q=2024` arrive JSON-parsed, so a numeric value is still text. */
+const text = z
+  .union([z.string(), z.number()])
+  .transform(String)
+  .optional()
+  .catch(undefined);
+
+/** Search params every Library route shares: the open Save and what narrows the grid. */
 export const librarySearchSchema = z.looseObject({
-  q: z.string().optional(),
-  view: z.enum(["waterfall", "grid", "justified"]).optional(),
-  sort: z
-    .enum([
-      "savedAt",
-      "createdAt",
-      "title",
-      "fileSize",
-      "fileCount",
-      "dimensions",
-      "creator",
-      "source",
-      "type",
-    ])
-    .optional(),
-  dir: z.enum(["asc", "desc"]).optional(),
-  capture: z.literal("1").optional(),
-  url: z.string().optional(),
+  save: text,
+  q: text,
+  filters: QuerySchema.optional().catch(undefined),
+  semantic: text,
+  sort: z.string().optional().catch(undefined),
+  dir: z.enum(["asc", "desc"]).optional().catch(undefined),
+  scope: z.literal("all").optional().catch(undefined),
 });
 
-export function listBaseFromPath(pathname: string): string {
-  return pathname.replace(/\/save\/[^/]+\/?$/, "").replace(/\/+$/, "") || "/";
-}
+export type LibrarySearch = z.infer<typeof librarySearchSchema>;
+
+/** Query-string forms older builds and the main process used before collections had paths. */
+export const legacyIndexSearchSchema = z.looseObject({
+  folder: text,
+  view: text,
+  inbox: z.unknown().optional(),
+});

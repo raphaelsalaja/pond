@@ -7,10 +7,9 @@ import {
   IconCircleWarning,
   IconCoffee,
   IconCrop,
-  IconGear3,
   IconImage,
   IconKeyboard,
-  IconLightbulb,
+  IconNut,
 } from "@pond/icons";
 import {
   IconBrandArena,
@@ -21,6 +20,7 @@ import {
   IconBrandGithub,
   IconBrandLinkedIn,
   IconBrandMarked,
+  IconBrandMymind,
   IconBrandSavee,
   IconBrandSubstack,
   IconBrandThreads,
@@ -163,7 +163,7 @@ const LOGOS = {
   bluesky: IconBrandBluesky,
   marked: IconBrandMarked,
   linkedin: IconBrandLinkedIn,
-  mymind: IconLightbulb,
+  mymind: IconBrandMymind,
 } satisfies Record<ExternalSource, ComponentType<SVGProps<SVGSVGElement>>>;
 
 function Harvest({
@@ -242,7 +242,7 @@ function MoreRows({ onShortcuts }: { onShortcuts: () => void }) {
         className={styles.row}
         onClick={() => void openPondSettings()}
       >
-        <IconGear3 size={16} />
+        <IconNut size={16} />
         <span className={styles.label}>Settings</span>
         <IconArrowUpRight size={12} className={styles.trailing} />
       </Button>

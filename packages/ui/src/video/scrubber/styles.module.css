@@ -129,7 +129,7 @@
 
 .thumb {
   position: absolute;
-  width: 3px;
+  width: 4px;
   height: 16px;
   background: var(--ds-media-foreground-primary);
   border-radius: var(--ds-radius-full);

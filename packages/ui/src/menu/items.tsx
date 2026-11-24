@@ -56,6 +56,25 @@ interface MenuCheckboxItem {
   closeOnClick?: boolean;
 }
 
+interface MenuRadioOption {
+  value: string;
+  label: ReactNode;
+  breadcrumb?: ReactNode[];
+  icon?: ReactNode;
+  keywords?: string;
+  disabled?: boolean;
+}
+
+interface MenuRadioItem {
+  type: "radio";
+  /** `null` checks no option, such as a mixed value across a selection. */
+  value: string | null;
+  onValueChange: (value: string) => void;
+  options: MenuRadioOption[];
+  hidden?: boolean;
+  closeOnClick?: boolean;
+}
+
 interface MenuLinkItem {
   type: "link";
   label: ReactNode;
@@ -80,6 +99,7 @@ export type MenuItemSpec =
   | MenuGroupItem
   | MenuSubmenuItem
   | MenuCheckboxItem
+  | MenuRadioItem
   | MenuLinkItem
   | MenuCustomItem;
 
@@ -108,6 +128,19 @@ interface MenuParts {
     children?: ReactNode;
     variant?: "checkbox" | "check";
   }>;
+  RadioGroup: React.ComponentType<{
+    value?: string | null;
+    onValueChange?: (value: string) => void;
+    children?: ReactNode;
+  }>;
+  RadioItem: React.ComponentType<{
+    value: string;
+    label?: string;
+    disabled?: boolean;
+    closeOnClick?: boolean;
+    children?: ReactNode;
+  }>;
+  RadioItemIndicator: React.ComponentType;
   LinkItem: React.ComponentType<{
     label?: string;
     href?: string;
@@ -175,7 +208,12 @@ function specKey(spec: MenuItemSpec, index: number): string | number {
 
 /** Base UI filters on the item's `label`, so keywords join the visible text there. */
 function filterLabel(
-  spec: MenuActionItem | MenuCheckboxItem | MenuLinkItem | MenuSubmenuItem,
+  spec:
+    | MenuActionItem
+    | MenuCheckboxItem
+    | MenuRadioOption
+    | MenuLinkItem
+    | MenuSubmenuItem,
 ): string | undefined {
   if (!spec.keywords) return undefined;
   const label = menuLabelText(spec.label);
@@ -183,7 +221,7 @@ function filterLabel(
 }
 
 function renderItemLabel(
-  spec: MenuActionItem | MenuCheckboxItem | MenuLinkItem,
+  spec: MenuActionItem | MenuCheckboxItem | MenuRadioOption | MenuLinkItem,
   parts: MenuParts,
 ) {
   if (!spec.breadcrumb?.length) {
@@ -260,6 +298,32 @@ function renderSpec(
           <parts.CheckboxItemIndicator variant="check" />
         ) : null}
       </parts.CheckboxItem>
+    );
+  }
+
+  if (spec.type === "radio") {
+    return (
+      <parts.RadioGroup
+        key={key}
+        value={spec.value}
+        onValueChange={spec.onValueChange}
+      >
+        {spec.options.map((option) => (
+          <parts.RadioItem
+            key={option.value}
+            value={option.value}
+            label={filterLabel(option)}
+            disabled={option.disabled}
+            closeOnClick={spec.closeOnClick}
+          >
+            {option.icon != null ? (
+              <parts.ItemIcon>{option.icon}</parts.ItemIcon>
+            ) : null}
+            {renderItemLabel(option, parts)}
+            <parts.RadioItemIndicator />
+          </parts.RadioItem>
+        ))}
+      </parts.RadioGroup>
     );
   }
 

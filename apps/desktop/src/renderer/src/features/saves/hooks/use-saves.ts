@@ -23,6 +23,18 @@ export function useSaves(): ReadonlyArray<Save> {
   return useSelector(savesStore, (s) => s.sorted);
 }
 
+/** The pool total can lag a sync insert, so a live Save in the pool also counts. */
+export function useLibraryEmpty(): boolean {
+  const settled = useSelector(
+    pagingStore,
+    (s) => s.ready && !s.loading && s.total === 0,
+  );
+  const pooled = useSelector(savesStore, (s) =>
+    s.sorted.some((save) => !save.deletedAt),
+  );
+  return settled && !pooled;
+}
+
 export function useBootReady(): boolean {
   return useSelector(pagingStore, (s) => s.ready);
 }

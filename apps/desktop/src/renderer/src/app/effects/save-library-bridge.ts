@@ -10,7 +10,10 @@ import { openDuplicateReview } from "@/features/library/state/duplicate-review";
 import { openFolderPicker } from "@/features/library/state/folder-picker";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import {
+  getLibraryNav,
+  libraryChrome,
+} from "@/features/library/state/library-chrome";
 import { openRenameDialog } from "@/features/library/state/rename-dialog";
 import {
   resetFilters,
@@ -19,13 +22,15 @@ import {
 } from "@/features/library/state/view-store";
 import { registerSaveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { closeSave } from "@/features/saves/lib/save-nav";
+import { getAppRouter } from "@/shared/lib/app-router";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
 
 registerSaveLibraryBridge({
-  getNav: () => libraryChrome.getState().nav,
-  setNav: (nav) => libraryChrome.setNav(nav),
+  getNav: getLibraryNav,
+  showNav: (nav) => getAppRouter()?.history.push(pathForLibraryNav(nav)),
   resetFilters,
   openTaggedItems: (name) => selectLibraryNav({ kind: "tag", name }),
-  showPost: (post) => selectLibraryNav({ kind: "post", ...post }),
+  showPost: (key) => selectLibraryNav({ kind: "post", key }),
   closeDetails: () => libraryChrome.setDetailsOpen(false),
   openFolderPicker,
   openRename: openRenameDialog,

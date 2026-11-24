@@ -1,5 +1,5 @@
 import { IconMagnifier } from "@pond/icons";
-import { Button, Empty, Input, Settings } from "@pond/ui";
+import { Button, Empty, EmptyPreview, Input, Settings } from "@pond/ui";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import {
@@ -230,9 +230,18 @@ export function ShortcutSettings({
       ) : (
         <Empty.Root>
           <Empty.Media>
-            <IconMagnifier size={14} />
+            <EmptyPreview.Root layout="list">
+              <EmptyPreview.Row>
+                <EmptyPreview.Icon>
+                  <IconMagnifier size={12} />
+                </EmptyPreview.Icon>
+                <EmptyPreview.Line width={36} />
+                <EmptyPreview.Space />
+                <EmptyPreview.Line width={20} tone="mid" />
+              </EmptyPreview.Row>
+            </EmptyPreview.Root>
           </Empty.Media>
-          <Empty.Title>{`No shortcuts for “${search.trim()}”`}</Empty.Title>
+          <Empty.Title>{`No Shortcuts for “${search.trim()}”`}</Empty.Title>
         </Empty.Root>
       )}
       {error ? (

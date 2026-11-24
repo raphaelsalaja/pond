@@ -12,7 +12,7 @@ export function SourcesLoading() {
       <Empty.Media>
         <Loader.Spinner />
       </Empty.Media>
-      <Empty.Title>Loading sources</Empty.Title>
+      <Empty.Title>Loading Sources</Empty.Title>
     </Empty.Root>
   );
 }

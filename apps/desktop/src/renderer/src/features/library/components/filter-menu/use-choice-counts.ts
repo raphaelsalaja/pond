@@ -8,6 +8,9 @@ import {
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { applyNavFilter } from "@/features/saves";
 import { useSaves } from "@/features/saves/pool";
+import type { LibraryNav } from "@/shared/lib/library-nav";
+
+const ALL: LibraryNav = { kind: "all" };
 
 export interface ChoiceCounts {
   counts: Map<string, number>;
@@ -18,7 +21,7 @@ export function useFieldCounts(
   fields: readonly FieldId[],
 ): Map<FieldId, ChoiceCounts> {
   const saves = useSaves();
-  const nav = useLibraryNav();
+  const nav = useLibraryNav() ?? ALL;
   const memberships = useFolderMemberships();
   const folders = useFolders();
   const key = fields.join(",");

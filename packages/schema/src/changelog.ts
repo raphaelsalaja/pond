@@ -16,6 +16,13 @@ function categoryForHeading(heading: string): ChangelogCategory | undefined {
   );
 }
 
+const VIDEO = /\.(mp4|webm)$/;
+
+/** True when an entry's media file plays as a video rather than showing as an image. */
+export function isVideoMedia(media: string): boolean {
+  return VIDEO.test(media);
+}
+
 const SectionSchema = z.strictObject({
   category: z.enum(CHANGELOG_CATEGORIES),
   items: z.array(z.string().min(1)).min(1),
@@ -27,6 +34,12 @@ export const ChangelogEntrySchema = z
     date: z.iso.date(),
     title: z.string().min(1),
     summary: z.string().min(1),
+    media: z
+      .string()
+      .regex(
+        /^[\w.-]+\.(png|jpe?g|webp|gif|mp4|webm)$/,
+        "Media must be a file name in changelog/media/, an image or an mp4 or webm video.",
+      ),
     sections: z.array(SectionSchema).min(1),
   })
   .refine(

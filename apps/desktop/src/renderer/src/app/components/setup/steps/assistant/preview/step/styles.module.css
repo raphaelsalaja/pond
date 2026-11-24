@@ -24,8 +24,8 @@
 }
 
 .spinner {
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
   border: 1.5px solid var(--ds-border-strong);
   border-top-color: var(--ds-foreground-secondary);
   border-radius: var(--ds-radius-full);

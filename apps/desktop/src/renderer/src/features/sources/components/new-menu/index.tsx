@@ -9,16 +9,13 @@ import {
   useSourceNewMenuOpen,
 } from "@/features/sources/state/source-new-menu";
 
-export function NewSourceMenu({
-  children: label = "New Source",
-  controlled = false,
+export function NewSourcePopup({
+  align = "end",
   onWatchedFolder,
 }: {
-  children?: string;
-  controlled?: boolean;
+  align?: "start" | "end";
   onWatchedFolder?: () => void;
 } = {}) {
-  const storedOpen = useSourceNewMenuOpen();
   const client = useQueryClient();
 
   function chooseWatchedFolder(): void {
@@ -30,6 +27,34 @@ export function NewSourceMenu({
       client.invalidateQueries({ queryKey: ["watched-folder"] }),
     );
   }
+
+  return (
+    <Menu.Portal>
+      <Menu.Positioner align={align} side="bottom">
+        <Menu.Popup>
+          <Menu.Items
+            items={buildSourceNewMenuItems({
+              onConnect: (source) => void startConnect(source),
+              onWatch: startWatch,
+              onFolder: chooseWatchedFolder,
+            })}
+          />
+        </Menu.Popup>
+      </Menu.Positioner>
+    </Menu.Portal>
+  );
+}
+
+export function NewSourceMenu({
+  children: label = "New Source",
+  controlled = false,
+  onWatchedFolder,
+}: {
+  children?: string;
+  controlled?: boolean;
+  onWatchedFolder?: () => void;
+} = {}) {
+  const storedOpen = useSourceNewMenuOpen();
 
   return (
     <Menu.Root
@@ -49,19 +74,7 @@ export function NewSourceMenu({
       >
         <IconPlus />
       </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner align="end" side="bottom">
-          <Menu.Popup>
-            <Menu.Items
-              items={buildSourceNewMenuItems({
-                onConnect: (source) => void startConnect(source),
-                onWatch: startWatch,
-                onFolder: chooseWatchedFolder,
-              })}
-            />
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
+      <NewSourcePopup onWatchedFolder={onWatchedFolder} />
     </Menu.Root>
   );
 }

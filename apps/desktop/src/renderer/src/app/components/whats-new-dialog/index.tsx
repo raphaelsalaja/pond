@@ -1,22 +1,26 @@
-import type { ChangelogEntry } from "@pond/schema/changelog";
-import { Button, Changelog, Dialog } from "@pond/ui";
-import { useEffect, useRef } from "react";
+import { IconArrowUpRight, IconChevronDown } from "@pond/icons";
+import {
+  type ChangelogCategory,
+  type ChangelogEntry,
+  isVideoMedia,
+} from "@pond/schema/changelog";
+import { Accordion, Button, Changelog, Dialog } from "@pond/ui";
+import { useReducedMotion } from "motion/react";
+import { useEffect } from "react";
 import { loadAppInfo } from "@/shared/lib/app-info";
-import { announcements } from "@/shared/state/announcements";
 import {
   readWhatsNewSeen,
   useWhatsNewDialog,
   whatsNewDialog,
   writeWhatsNewSeen,
 } from "@/shared/state/whats-new";
-import { CHANGELOG, unseenVersions } from "./entries";
+import { CHANGELOG, mediaUrl, unseenVersions } from "./entries";
 import styles from "./styles.module.css";
 
 const RELEASES_URL = "https://github.com/raphaelsalaja/pond/releases";
 const CHECK_DELAY_MS = 1500;
-const WHATS_NEW_NOTICE = "whats-new";
 
-/** Posts once per version change, after the Library has had a moment to load. */
+/** Offers once per version change, after the Library has had a moment to load. */
 function useAnnounceAfterUpdate(): void {
   useEffect(() => {
     let active = true;
@@ -40,13 +44,7 @@ function useAnnounceAfterUpdate(): void {
           writeWhatsNewSeen(version);
           return;
         }
-        announcements.post({
-          id: WHATS_NEW_NOTICE,
-          title: `What's New in v${latest.version}`,
-          description: latest.title,
-          open: () => whatsNewDialog.open(versions),
-          markSeen: () => writeWhatsNewSeen(version),
-        });
+        whatsNewDialog.offer(version, versions);
       } catch {}
     }, CHECK_DELAY_MS);
     return () => {
@@ -56,48 +54,134 @@ function useAnnounceAfterUpdate(): void {
   }, []);
 }
 
-function Entry({
-  entry,
-  showVersion,
+function formatDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function Items({
+  items,
+  className,
 }: {
-  entry: ChangelogEntry;
-  showVersion: boolean;
+  items: readonly string[];
+  className?: string;
 }) {
   return (
-    <Changelog.Entry>
-      {showVersion ? (
-        <Changelog.Meta>
-          <Changelog.Version>v{entry.version}</Changelog.Version>
-        </Changelog.Meta>
-      ) : null}
-      <Changelog.Body>
-        <Changelog.Title>{entry.title}</Changelog.Title>
-        <Changelog.Summary>{entry.summary}</Changelog.Summary>
-        {entry.sections.map((section) => (
-          <Changelog.Section key={section.category} category={section.category}>
-            <Changelog.Heading />
-            <Changelog.List>
-              {section.items.map((item) => (
-                <Changelog.Item key={item}>{item}</Changelog.Item>
-              ))}
-            </Changelog.List>
-          </Changelog.Section>
-        ))}
-      </Changelog.Body>
-    </Changelog.Entry>
+    <Changelog.List className={className}>
+      {items.map((item) => (
+        <Changelog.Item key={item}>{item}</Changelog.Item>
+      ))}
+    </Changelog.List>
+  );
+}
+
+/** Media illustrates the title beside it, so assistive tech skips it. */
+function Media({ entry }: { entry: ChangelogEntry }) {
+  const reduceMotion = useReducedMotion() ?? false;
+  const src = mediaUrl(entry);
+  if (!src) return null;
+  return isVideoMedia(entry.media) ? (
+    <video
+      className={styles.media}
+      src={src}
+      autoPlay={!reduceMotion}
+      muted
+      loop
+      playsInline
+      aria-hidden
+    />
+  ) : (
+    <img className={styles.media} src={src} alt="" />
+  );
+}
+
+function Headline({ entry }: { entry: ChangelogEntry }) {
+  return (
+    <>
+      <Dialog.Title className={styles.title}>{entry.title}</Dialog.Title>
+      <Media entry={entry} />
+      <Changelog.Summary className={styles.summary}>
+        {entry.summary}
+      </Changelog.Summary>
+    </>
+  );
+}
+
+const LABELS = {
+  important: "Important",
+  new: "New",
+  improved: "Improved",
+  fixed: "Fixed",
+} satisfies Record<ChangelogCategory, string>;
+
+function Details({
+  latest,
+  earlier,
+}: {
+  latest: ChangelogEntry;
+  earlier: readonly ChangelogEntry[];
+}) {
+  const important = latest.sections.some((s) => s.category === "important");
+
+  return (
+    <Accordion.Root
+      className={styles.details}
+      defaultValue={important ? ["important"] : []}
+    >
+      {latest.sections.map(({ category, items }) => (
+        <Accordion.Item key={category} value={category}>
+          <Accordion.Header>
+            <Accordion.Trigger>
+              {LABELS[category]}
+              <span className={styles.count}>{items.length}</span>
+              <IconChevronDown size={12} />
+            </Accordion.Trigger>
+          </Accordion.Header>
+          <Accordion.Panel>
+            <Items items={items} className={styles.list} />
+          </Accordion.Panel>
+        </Accordion.Item>
+      ))}
+      {earlier.map((entry) => (
+        <Accordion.Item key={entry.version} value={entry.version}>
+          <Accordion.Header>
+            <Accordion.Trigger>
+              Pond {entry.version}
+              <span className={styles.count}>{formatDate(entry.date)}</span>
+              <IconChevronDown size={12} />
+            </Accordion.Trigger>
+          </Accordion.Header>
+          <Accordion.Panel>
+            <Changelog.Title className={styles.earlier}>
+              {entry.title}
+            </Changelog.Title>
+            <Changelog.Summary>{entry.summary}</Changelog.Summary>
+            {entry.sections.map((section) => (
+              <Changelog.Section
+                key={section.category}
+                category={section.category}
+              >
+                <Changelog.Heading />
+                <Items items={section.items} />
+              </Changelog.Section>
+            ))}
+          </Accordion.Panel>
+        </Accordion.Item>
+      ))}
+    </Accordion.Root>
   );
 }
 
 export function WhatsNewDialog() {
   const { open, versions } = useWhatsNewDialog();
-  const doneRef = useRef<HTMLButtonElement>(null);
   useAnnounceAfterUpdate();
 
   const filtered = versions
     ? CHANGELOG.filter((entry) => versions.includes(entry.version))
     : CHANGELOG;
-  const entries = filtered.length > 0 ? filtered : CHANGELOG;
-  const latest = entries[0];
+  const [latest, ...earlier] = filtered.length > 0 ? filtered : CHANGELOG;
 
   return (
     <Dialog.Root
@@ -108,41 +192,28 @@ export function WhatsNewDialog() {
     >
       <Dialog.Portal>
         <Dialog.Backdrop />
-        <Dialog.Popup className={styles.popup} initialFocus={doneRef}>
+        <Dialog.Popup className={styles.popup}>
           <Dialog.Header className={styles.header}>
-            <Dialog.Title className={styles.title}>
-              What's New
-              {latest ? (
-                <span className={styles.version}>v{latest.version}</span>
-              ) : null}
-            </Dialog.Title>
-            <Dialog.Close />
-          </Dialog.Header>
-          <Dialog.Content className={styles.content}>
-            <Changelog.Root>
-              {entries.map((entry) => (
-                <Entry
-                  key={entry.version}
-                  entry={entry}
-                  showVersion={entries.length > 1}
-                />
-              ))}
-            </Changelog.Root>
-          </Dialog.Content>
-          <Dialog.Footer>
+            <span className={styles.date}>
+              {latest ? formatDate(latest.date) : null}
+            </span>
             <Button
-              variant="secondary"
+              size="xs"
+              variant="ghost"
+              className={styles.link}
               onClick={() => void window.pond.openExternal(RELEASES_URL)}
             >
-              All Releases
+              What's New
+              <IconArrowUpRight size={12} />
             </Button>
-            <Dialog.Confirm
-              ref={doneRef}
-              onClick={() => whatsNewDialog.close()}
-            >
-              Done
-            </Dialog.Confirm>
-          </Dialog.Footer>
+            <Dialog.Close />
+          </Dialog.Header>
+          {latest ? (
+            <Dialog.Content className={styles.content}>
+              <Headline entry={latest} />
+              <Details latest={latest} earlier={earlier} />
+            </Dialog.Content>
+          ) : null}
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

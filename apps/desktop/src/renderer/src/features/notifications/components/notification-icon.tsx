@@ -1,11 +1,10 @@
-import { IconCircleCheck, IconCircleWarning, IconSparkle } from "@pond/icons";
+import { IconCircleCheck, IconCircleWarning } from "@pond/icons";
 import type { NotificationKind } from "@shared/notification-contracts";
 
-export type NotificationTone = "danger" | "accent" | undefined;
+export type NotificationTone = "danger" | undefined;
 
 export function notificationTone(kind: NotificationKind): NotificationTone {
-  if (kind === "attention") return "danger";
-  return kind === "announcement" ? "accent" : undefined;
+  return kind === "attention" ? "danger" : undefined;
 }
 
 export function NotificationIcon({
@@ -18,8 +17,6 @@ export function NotificationIcon({
   switch (kind) {
     case "attention":
       return <IconCircleWarning size={size} />;
-    case "announcement":
-      return <IconSparkle size={size} />;
     case "activity":
       return <IconCircleCheck size={size} />;
   }

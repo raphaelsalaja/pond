@@ -55,8 +55,8 @@
 }
 
 .row[data-drop="into"] .item {
+  --sidebar-fill: var(--ds-surface-secondary);
   color: var(--ds-foreground-primary);
-  background: var(--ds-surface-tertiary);
 }
 
 .editor {
@@ -106,8 +106,7 @@
 }
 
 .row:hover .item:not([data-status="active"]) {
-  color: var(--ds-foreground-secondary);
-  background: var(--ds-surface-secondary);
+  color: var(--ds-foreground-primary);
 }
 
 @keyframes appear {

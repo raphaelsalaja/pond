@@ -64,6 +64,11 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
   return {
     accelerator,
     appName: app.name,
+    developer: {
+      toggleReactScan: withFocusedWebContents((contents) =>
+        contents.send(IPC.devReactScan),
+      ),
+    },
     edit: {
       copy: withFocusedWebContents((contents) => contents.copy()),
       cut: withFocusedWebContents((contents) => contents.cut()),

@@ -1,6 +1,6 @@
 import { Button as Base } from "@base-ui/react/button";
 import { clsx as cn } from "clsx";
-import { Children, isValidElement } from "react";
+import { Children, createContext, isValidElement, use } from "react";
 import { Loader } from "../loader";
 import { pop } from "../shared/pop";
 import styles from "./styles.module.css";
@@ -25,6 +25,11 @@ export interface ButtonProps extends Base.Props {
   loading?: boolean;
 }
 
+/** Defaults a container sets for the buttons inside it; a prop on the button still wins. */
+export const ButtonDefaults = createContext<
+  Pick<ButtonProps, "size" | "rounding">
+>({});
+
 type AccessibleName = { "aria-label": string } | { "aria-labelledby": string };
 
 type OptionalName = Pick<
@@ -45,9 +50,9 @@ export function Button<Icon extends boolean | undefined = undefined>(
 export function Button({
   className,
   variant = "primary",
-  size = "md",
+  size: sizeProp,
   density = "default",
-  rounding = "full",
+  rounding: roundingProp,
   width = "auto",
   icon,
   loading,
@@ -56,6 +61,9 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
+  const defaults = use(ButtonDefaults);
+  const size = sizeProp ?? defaults.size ?? "md";
+  const rounding = roundingProp ?? defaults.rounding ?? "full";
   const parts = Children.toArray(children);
   const labeled = parts.some(
     (part) => typeof part === "string" || typeof part === "number",

@@ -22,7 +22,7 @@
 }
 
 .path {
-  padding: 1px var(--ds-space-xs);
+  padding: var(--ds-space-2xs) var(--ds-space-xs);
   font-weight: var(--ds-weight-medium);
   color: var(--ds-danger-foreground);
   overflow-wrap: anywhere;

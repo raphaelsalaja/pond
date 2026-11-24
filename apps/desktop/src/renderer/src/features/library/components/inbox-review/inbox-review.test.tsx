@@ -1,17 +1,23 @@
 import "@/app/effects/save-library-bridge";
-import { act } from "react";
+import { RouterProvider } from "@tanstack/react-router";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { folders } from "@/features/library/state/folders";
 import { inboxReview } from "@/features/library/state/inbox-review";
-import { libraryChrome } from "@/features/library/state/library-chrome";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { ToastHost } from "@/shared/components/toast-host";
+import {
+  createLibraryTestRouter,
+  currentLocation,
+  type LibraryTestRouter,
+} from "@/shared/test/library-router";
 import { InboxReview } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
+let router: LibraryTestRouter;
 interface QueryInput {
   ids?: string[];
   folderId?: string;
@@ -61,8 +67,12 @@ function progress() {
   return document.querySelector('[aria-live="polite"]')?.textContent;
 }
 
-async function mount(node = <InboxReview />) {
-  await act(async () => root.render(node));
+async function mount(node: ReactNode = <InboxReview />) {
+  router = createLibraryTestRouter("/inbox", { component: () => node });
+  await act(async () => {
+    await router.load();
+    root.render(<RouterProvider router={router} />);
+  });
   await act(async () => {});
 }
 
@@ -130,14 +140,12 @@ beforeEach(async () => {
   addInboxSave("a", "First");
   addInboxSave("b", "Second");
   await folders.refresh();
-  libraryChrome.setNav({ kind: "inbox" });
 });
 
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   inboxReview.exit();
-  libraryChrome.setNav({ kind: "all" });
   pool.clear();
   vi.unstubAllGlobals();
 });
@@ -171,7 +179,7 @@ it("keeps with the right arrow and skips with the down arrow", async () => {
 
   await act(async () => press("ArrowDown"));
   expect(bulkEdits()).toHaveLength(1);
-  expect(stage()?.textContent).toContain("Review complete");
+  expect(stage()?.textContent).toContain("Review Complete");
   expect(stage()?.textContent).toContain("You kept 1 and skipped 1.");
 });
 
@@ -225,6 +233,6 @@ it("rewinds to the Save whose change the toast undid", async () => {
 it("closes on Escape and returns to the Library", async () => {
   await mount();
   await act(async () => press("Escape"));
+  expect(currentLocation(router).pathname).toBe("/");
   expect(stage()).toBeNull();
-  expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
 });

@@ -15,57 +15,55 @@ export type LibraryNav =
   | { kind: "tags" }
   | { kind: "untagged" }
   | { kind: "splitPosts" }
-  | { kind: "post"; key: string; title: string };
-
-const ALL: LibraryNav = { kind: "all" };
-const RECENTLY_ADDED: LibraryNav = { kind: "recentlyAdded" };
-const RECENTS: LibraryNav = { kind: "recents" };
-const TRASH: LibraryNav = { kind: "trash" };
-const DOWNLOADS: LibraryNav = { kind: "downloads" };
-const SOURCES: LibraryNav = { kind: "sources" };
-const TAGS: LibraryNav = { kind: "tags" };
-const UNTAGGED: LibraryNav = { kind: "untagged" };
-const SPLIT_POSTS: LibraryNav = { kind: "splitPosts" };
-
-const COLLECTION_PATHS = new Set([
-  "/",
-  "/trash",
-  "/downloads",
-  "/sources",
-  "/recents",
-  "/recently-added",
-  "/tags",
-  "/untagged",
-  "/split-posts",
-]);
+  | { kind: "post"; key: string };
 
 export function pathForLibraryNav(nav: LibraryNav): string {
   switch (nav.kind) {
+    case "inbox":
+      return nav.snoozed ? "/inbox/snoozed" : "/inbox";
+    case "all":
+      return "/";
+    case "recentlyAdded":
+      return "/recently-added";
+    case "recents":
+      return "/recents";
+    case "random":
+      return "/random";
+    case "uncategorized":
+      return "/uncategorized";
+    case "folder":
+      return `/folders/${encodeURIComponent(nav.id)}`;
+    case "tag":
+      return `/tags/${encodeURIComponent(nav.name)}`;
     case "trash":
       return "/trash";
     case "downloads":
       return "/downloads";
     case "sources":
       return "/sources";
-    case "recents":
-      return "/recents";
-    case "recentlyAdded":
-      return "/recently-added";
     case "tags":
       return "/tags";
     case "untagged":
       return "/untagged";
     case "splitPosts":
       return "/split-posts";
-    case "inbox":
-    case "all":
-    case "random":
-    case "uncategorized":
-    case "folder":
-    case "tag":
     case "post":
-      return "/";
+      return `/split-posts/${encodeURIComponent(nav.key)}`;
   }
+}
+
+export function savedViewPath(viewId: string): string {
+  return `/views/${encodeURIComponent(viewId)}`;
+}
+
+export function sameLibraryNav(a: LibraryNav, b: LibraryNav): boolean {
+  if (a.kind !== b.kind) return false;
+  if (a.kind === "folder" && b.kind === "folder") return a.id === b.id;
+  if (a.kind === "tag" && b.kind === "tag") return a.name === b.name;
+  if (a.kind === "post" && b.kind === "post") return a.key === b.key;
+  if (a.kind === "inbox" && b.kind === "inbox")
+    return Boolean(a.snoozed) === Boolean(b.snoozed);
+  return true;
 }
 
 /** The Inbox lists the Saves waiting for review, or the snoozed ones on their own. */
@@ -73,55 +71,4 @@ export function inboxScope(
   nav: Extract<LibraryNav, { kind: "inbox" }>,
 ): Exclude<InboxState, "processed"> {
   return nav.snoozed ? "snoozed" : "review";
-}
-
-export function isLibraryCollectionPath(pathname: string): boolean {
-  return COLLECTION_PATHS.has(pathname);
-}
-
-/**
- * The collection the sidebar should show as current.
- * A route that is itself a collection is the page on screen, so it wins over
- * `nav`. `/` has no collection of its own and uses `nav` for a folder, tag, or
- * All; a routed `nav` left behind on `/` is not that page. Fish and Canvas are
- * not library rows.
- */
-export function activeLibraryDestination(
-  pathname: string,
-  nav: LibraryNav,
-): LibraryNav | null {
-  if (pathname.startsWith("/fish/") || pathname.startsWith("/canvas/"))
-    return null;
-  switch (pathname) {
-    case "/downloads":
-      return DOWNLOADS;
-    case "/sources":
-      return SOURCES;
-    case "/tags":
-      return TAGS;
-    case "/untagged":
-      return UNTAGGED;
-    case "/trash":
-      return TRASH;
-    case "/recents":
-      return RECENTS;
-    case "/recently-added":
-      return RECENTLY_ADDED;
-    case "/split-posts":
-      return SPLIT_POSTS;
-    default:
-      break;
-  }
-  switch (nav.kind) {
-    case "inbox":
-    case "all":
-    case "folder":
-    case "uncategorized":
-    case "tag":
-    case "random":
-    case "post":
-      return nav;
-    default:
-      return pathname === "/" || pathname === "" ? ALL : nav;
-  }
 }

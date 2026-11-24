@@ -45,7 +45,7 @@ interface Press {
 const PANE = "pane";
 const STEP = 10;
 const LARGE_STEP = 40;
-/** How far past the minimum a drag must travel before it collapses the sidebar. */
+/** How far past the minimum a drag must travel before it collapses the column. */
 const COLLAPSE_OVERSHOOT = 48;
 /** A still press held longer than this is an aborted drag, not a click to collapse. */
 const CLICK_MAX_MS = 300;
@@ -122,10 +122,7 @@ export const windowHandle = definePrimitive({
       store.set({ width: next });
     });
 
-    const collapsible = () => {
-      const { edge, onCollapse } = context.options();
-      return edge === "left" && Boolean(onCollapse);
-    };
+    const collapsible = () => Boolean(context.options().onCollapse);
 
     const elements = () => {
       const handle = context.element("root");

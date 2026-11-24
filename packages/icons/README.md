@@ -22,10 +22,10 @@ are solid.
 Props:
 
 - `size` sets width and height. Default `18`.
-- `strokeWidth` applies to outline glyphs. It is the on-screen stroke in pixels.
-  Default `1.25` at every size up to 18px, matched to Linear's line weight.
-  Up to 18px the stroke is non-scaling, so it stays exact when CSS resizes the
-  icon instead of `size`. Above 18px the stroke grows with the glyph.
+- Outline glyphs draw a fixed `1.25` on-screen stroke, matched to Linear's line
+  weight. There is no `strokeWidth` prop, so every icon in the app shares one
+  weight. Up to 18px the stroke is non-scaling, so it stays exact when CSS
+  resizes the icon instead of `size`. Above 18px the stroke grows with the glyph.
 - The glyph renders at `GLYPH_SCALE` (1) of the box, set in
   `create-icon.ts`. Change it there to resize every glyph at once. Stroke
   widths stay in on-screen pixels.

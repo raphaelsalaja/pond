@@ -65,5 +65,17 @@ export function ThemeApplier() {
     setReduce(prefersReducedMotion);
   }, [prefs.reduceMotion, prefersReducedMotion]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--ds-font-roundness", String(prefs.fontRoundness));
+    root.style.setProperty(
+      "--ds-font-optical-size",
+      String(prefs.fontOpticalSize),
+    );
+    if (prefs.fontOpticalSizeAuto)
+      root.removeAttribute("data-font-optical-size");
+    else root.setAttribute("data-font-optical-size", "fixed");
+  }, [prefs.fontRoundness, prefs.fontOpticalSizeAuto, prefs.fontOpticalSize]);
+
   return null;
 }

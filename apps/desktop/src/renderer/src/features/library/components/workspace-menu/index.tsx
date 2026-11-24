@@ -1,10 +1,10 @@
 import {
   IconCheck,
   IconFaceSmile,
-  IconFolder,
   IconFolderOpen,
   IconFolderPlus,
-  IconLayers,
+  IconMerge,
+  IconNut,
 } from "@pond/icons";
 import { cssVars, Menu, Tooltip } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
@@ -18,48 +18,11 @@ import {
   switchLibrary,
 } from "@/features/library/lib/library-location";
 import { useSidebarWidth } from "@/features/library/state/library-chrome";
-import { requestUpdateCheck } from "@/features/settings/update-check";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
-import { BrowserExtensionDialog } from "@/shared/components/browser-extension-dialog";
 import { openSettings } from "@/shared/lib/open-settings";
-import { buildWorkspaceMenuItems } from "./spec";
 import styles from "./styles.module.css";
 
 type RecentLibrary = QueryResult<"library.recent">[number];
-
-function SwitchLibraryMenu({
-  libraries,
-  onCustomize,
-}: {
-  libraries: RecentLibrary[];
-  onCustomize: () => void;
-}) {
-  return (
-    <Menu.SubmenuRoot>
-      <Menu.SubmenuTrigger>
-        <Menu.ItemIcon>
-          <IconLayers />
-        </Menu.ItemIcon>
-        <Menu.ItemLabel>Switch Library</Menu.ItemLabel>
-      </Menu.SubmenuTrigger>
-      <Menu.Portal>
-        <Menu.Positioner
-          side="inline-end"
-          align="start"
-          sideOffset={-2}
-          alignOffset={-6}
-        >
-          <Menu.Popup>
-            <LibraryMenuContent
-              libraries={libraries}
-              onCustomize={onCustomize}
-            />
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.SubmenuRoot>
-  );
-}
 
 function LibraryMenuContent({
   libraries,
@@ -106,19 +69,13 @@ function LibraryMenuContent({
             ))
           ) : (
             <Menu.Item disabled>
-              <Menu.ItemLabel>No recent libraries</Menu.ItemLabel>
+              <Menu.ItemLabel>No Recent Libraries</Menu.ItemLabel>
             </Menu.Item>
           )}
         </Menu.List>
       </Menu.Group>
       <Menu.Separator />
       <Menu.Group>
-        <Menu.Item onClick={onCustomize}>
-          <Menu.ItemIcon>
-            <IconFaceSmile />
-          </Menu.ItemIcon>
-          <Menu.ItemLabel>Customize Library</Menu.ItemLabel>
-        </Menu.Item>
         <Menu.Item onClick={() => void createLibrary()}>
           <Menu.ItemIcon>
             <IconFolderPlus />
@@ -133,18 +90,26 @@ function LibraryMenuContent({
         </Menu.Item>
         <Menu.Item onClick={() => void mergeLibrary()}>
           <Menu.ItemIcon>
-            <IconFolder />
+            <IconMerge />
           </Menu.ItemIcon>
           <Menu.ItemLabel>Merge Library</Menu.ItemLabel>
         </Menu.Item>
       </Menu.Group>
       <Menu.Separator />
-      <Menu.Item onClick={() => openSettings("library")}>
-        <Menu.ItemIcon>
-          <IconFolder />
-        </Menu.ItemIcon>
-        <Menu.ItemLabel>Library Settings</Menu.ItemLabel>
-      </Menu.Item>
+      <Menu.Group>
+        <Menu.Item onClick={onCustomize}>
+          <Menu.ItemIcon>
+            <IconFaceSmile />
+          </Menu.ItemIcon>
+          <Menu.ItemLabel>Customize Library</Menu.ItemLabel>
+        </Menu.Item>
+        <Menu.Item onClick={() => openSettings("library")}>
+          <Menu.ItemIcon>
+            <IconNut />
+          </Menu.ItemIcon>
+          <Menu.ItemLabel>Library Settings</Menu.ItemLabel>
+        </Menu.Item>
+      </Menu.Group>
     </>
   );
 }
@@ -160,12 +125,7 @@ export function WorkspaceMenu() {
     queryKey: ["recent-libraries"],
     queryFn: () => window.pond.query("library.recent", {}),
   });
-  const [extensionOpen, setExtensionOpen] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
-  const items = buildWorkspaceMenuItems({
-    onBrowserExtension: () => setExtensionOpen(true),
-    onCheckForUpdates: () => requestUpdateCheck(),
-  });
   const name = info?.name || "Pond";
 
   return (
@@ -199,20 +159,14 @@ export function WorkspaceMenu() {
               className={styles.switcher}
               style={cssVars({ "--menu-width": `${sidebarWidth - 30}px` })}
             >
-              <SwitchLibraryMenu
+              <LibraryMenuContent
                 libraries={recent}
                 onCustomize={() => setCustomizeOpen(true)}
               />
-              <Menu.Separator />
-              <Menu.Items items={items} />
             </Menu.Popup>
           </Menu.Positioner>
         </Menu.Portal>
       </Menu.Root>
-      <BrowserExtensionDialog
-        open={extensionOpen}
-        onOpenChange={setExtensionOpen}
-      />
       {customizeOpen && info ? (
         <LibraryCustomizeDialog
           library={info}

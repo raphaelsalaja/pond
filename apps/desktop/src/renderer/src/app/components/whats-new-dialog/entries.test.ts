@@ -1,12 +1,18 @@
 import { parseChangelogEntry } from "@pond/schema/changelog";
 import { describe, expect, it } from "vitest";
-import { CHANGELOG, CHANGELOG_FILE_COUNT, unseenVersions } from "./entries";
+import {
+  CHANGELOG,
+  CHANGELOG_FILE_COUNT,
+  mediaUrl,
+  unseenVersions,
+} from "./entries";
 
 const ENTRY = `---
 version: 2.13.0
 date: 2026-10-09
 title: Find more in your library
 summary: Find related captures, search PDFs, and save batches more easily.
+media: 2.13.0.mp4
 ---
 
 ## New
@@ -27,6 +33,11 @@ describe("bundled changelog", () => {
     expect(CHANGELOG.length).toBe(CHANGELOG_FILE_COUNT);
     expect(CHANGELOG.length).toBeGreaterThan(0);
   });
+
+  it("bundles every entry's media from changelog/media/", () => {
+    const missing = CHANGELOG.filter((entry) => !mediaUrl(entry));
+    expect(missing.map((entry) => entry.media)).toEqual([]);
+  });
 });
 
 describe("parseChangelogEntry", () => {
@@ -37,6 +48,7 @@ describe("parseChangelogEntry", () => {
       title: "Find more in your library",
       summary:
         "Find related captures, search PDFs, and save batches more easily.",
+      media: "2.13.0.mp4",
       sections: [
         { category: "new", items: ["Search within PDFs with ⌘F."] },
         {
@@ -66,6 +78,12 @@ describe("parseChangelogEntry", () => {
   it("rejects a missing summary", () => {
     expect(() =>
       parseChangelogEntry(ENTRY.replace(/summary: .*\n/, "")),
+    ).toThrow();
+  });
+
+  it("rejects missing media", () => {
+    expect(() =>
+      parseChangelogEntry(ENTRY.replace(/media: .*\n/, "")),
     ).toThrow();
   });
 });

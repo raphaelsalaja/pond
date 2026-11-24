@@ -6,9 +6,29 @@
     0 3px 6px -2px oklch(0 0 0 / 0.02), 0 1px 1px oklch(0 0 0 / 0.04);
   --ds-shadow-color: oklch(0 0 0 / 0.205);
 
+  --ds-shadow-low:
+    0 3px 6px -2px oklch(0 0 0 / 0.02), 0 1px 1px 0 oklch(0 0 0 / 0.04);
+
+  --ds-shadow-menu:
+    0 6px 18px 0 oklch(0 0 0 / 0.02), 0 3px 9px 0 oklch(0 0 0 / 0.04),
+    0 1px 1px 0 oklch(0 0 0 / 0.04);
+
+  --ds-shadow-button:
+    inset 0 1px 1px oklch(1 0 0 / 0.07), 0 2px 3px oklch(0.27 0.02 256 / 0.2),
+    0 1px 1px oklch(0 0 0 / 0.24);
+  --ds-shadow-outline:
+    0 2px 3px -1px oklch(0 0 0 / 0.08), 0 1px 0 oklch(0 0 0 / 0.02);
+  --ds-gloss: linear-gradient(oklch(1 0 0 / 0.11), oklch(1 0 0 / 0));
+
   --ds-shadow-raised:
     0 0 0 var(--ds-border-width) var(--ds-border-subtle),
     0 1px 1px -1px oklch(0 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.05);
+
+  /* Inspector controls: a lit top edge over a soft contact shadow, no hairline border. */
+  --ds-shadow-control:
+    inset 0 1px oklch(1 0 0 / 0.53), inset 0 0 1px 1px oklch(1 0 0 / 0.53),
+    0 0.5px 1px oklch(0 0 0 / 0.094), 0 0 1px oklch(0 0 0 / 0.067),
+    0 0 4px -1px oklch(0 0 0 / 0.067);
 
   --ds-shadow-overlay:
     0 0 0 var(--ds-border-width) var(--ds-border-subtle),
@@ -17,16 +37,26 @@
 
   --ds-shadow-dialog:
     0 0 0 var(--ds-border-width) var(--ds-border-subtle),
-    0 8px 40px oklch(0 0 0 / 0.05), 0 12px 32px -16px oklch(0 0 0 / 0.15);
+    0 0 3px oklch(0 0 0 / 0.12), 0 16px 24px oklch(0 0 0 / 0.06);
 }
 
 /* Dark surfaces can't darken the page enough to read as depth, so edges move inside and drops deepen. */
 [data-theme="dark"] {
   --ds-shadow-color: oklch(0 0 0 / 0.36);
 
+  --ds-shadow-low: 0 0.5px 1px 1px oklch(0 0 0 / 0.3);
+
+  --ds-shadow-menu:
+    0 3px 8px 0 oklch(0 0 0 / 0.125), 0 2px 5px 0 oklch(0 0 0 / 0.125),
+    0 1px 1px 0 oklch(0 0 0 / 0.125);
+
   --ds-shadow-border: 0 0 0 1px var(--ds-border-subtle);
 
   --ds-shadow-raised: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
+
+  --ds-shadow-control:
+    inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle),
+    0 0.5px 1px oklch(0 0 0 / 0.3);
 
   --ds-shadow-overlay:
     0 0 0 1px var(--ds-border-subtle), 0 2px 3px -2px oklch(0 0 0 / 0.15),
@@ -34,5 +64,6 @@
 
   --ds-shadow-dialog:
     inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle),
-    0 8px 40px oklch(0 0 0 / 0.05), 0 12px 32px -16px oklch(0 0 0 / 0.15);
+    inset 0 0 4px oklch(1 0 0 / 0.05), 0 0 3px oklch(0 0 0 / 0.12),
+    0 16px 24px oklch(0 0 0 / 0.06);
 }

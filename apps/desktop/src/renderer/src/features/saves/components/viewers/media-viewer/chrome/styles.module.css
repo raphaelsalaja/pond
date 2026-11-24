@@ -26,7 +26,7 @@
 
 .top {
   top: 0;
-  height: var(--window-header-height, 56px);
+  height: var(--window-header-height, 44px);
 }
 
 .bottom {

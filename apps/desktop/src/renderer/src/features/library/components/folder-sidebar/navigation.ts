@@ -2,22 +2,20 @@ import {
   libraryChrome,
   type SidebarPanel,
 } from "@/features/library/state/library-chrome";
-import { resetFilters } from "@/features/library/state/view-store";
 import { getAppRouter } from "@/shared/lib/app-router";
-import {
-  isLibraryCollectionPath,
-  type LibraryNav,
-  pathForLibraryNav,
-} from "@/shared/lib/library-nav";
+import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
+import { hrefWithSearch } from "@/shared/lib/route-search";
 
-function goToLibraryPath(path: string): void {
-  getAppRouter()?.history.push(path);
-}
-
+/** Each collection opens unfiltered; All keeps the search, so a search can widen to every Save. */
 export function selectLibraryNav(nav: LibraryNav): void {
-  if (nav.kind !== "all") resetFilters();
-  libraryChrome.setNav(nav);
-  goToLibraryPath(pathForLibraryNav(nav));
+  const router = getAppRouter();
+  if (!router) return;
+  const path = pathForLibraryNav(nav);
+  const href =
+    nav.kind === "all"
+      ? (hrefWithSearch({ save: undefined, scope: undefined }, path) ?? path)
+      : path;
+  if (href !== router.latestLocation.href) router.history.push(href);
 }
 
 /** Rail pages are code-split, so a cold click would swap the sidebar before the page chunk arrives. */
@@ -28,14 +26,4 @@ export async function preloadLibraryNav(nav: LibraryNav): Promise<void> {
 export function showSidebarPanel(panel: SidebarPanel): void {
   libraryChrome.setSidebarPanel(panel);
   if (!libraryChrome.getState().sidebarOpen) libraryChrome.toggleSidebar();
-}
-
-/** Walks remembered library navigation and keeps the route on that collection. */
-export function restoreLibraryNav(nav: LibraryNav): void {
-  libraryChrome.setNav(nav);
-  const router = getAppRouter();
-  const pathname = router?.state.location.pathname;
-  if (!router || !pathname || !isLibraryCollectionPath(pathname)) return;
-  const next = pathForLibraryNav(nav);
-  if (next !== pathname) router.history.replace(next);
 }

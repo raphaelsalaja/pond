@@ -230,7 +230,7 @@ Each concept has one icon, and each icon answers one concept. A solid twin share
 | Selection | `checkbox-checked` | outline | select, selected, invert selection |
 | Server | `server` | outline | server, host, local, mcp |
 | Set Thumbnail | `image-plus` | outline | thumbnail, cover, set image, current frame |
-| Settings | `gear-3` | outline | settings, preferences, options |
+| Settings | `nut` | outline | settings, preferences, options, nut, gear |
 | Shapes | `figures` | outline | shapes, figures, draw |
 | Share | `share` | outline | share, share sheet, send to |
 | Shopping | `bag-shopping` | outline | shopping, product, store, buy |

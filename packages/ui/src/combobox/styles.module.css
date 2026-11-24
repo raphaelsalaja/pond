@@ -188,13 +188,13 @@
   color: var(--ds-foreground-primary);
   cursor: default;
   outline: none;
-  background: var(--ds-surface-secondary);
+  background: var(--ds-surface-primary);
   border-radius: var(--ds-radius-xs);
   transition: background var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:focus-within,
   &[data-highlighted] {
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-surface-secondary);
   }
 }
 
@@ -214,7 +214,7 @@
 
   &:hover {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-surface-primary);
   }
 }
 

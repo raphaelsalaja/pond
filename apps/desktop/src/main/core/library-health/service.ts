@@ -41,6 +41,7 @@ export interface LibraryHealthDependencies {
   readCheck(libraryId: string): Promise<LibraryHealthCheck | null>;
   writeCheck(libraryId: string, check: LibraryHealthCheck): Promise<void>;
   media(): Promise<MediaWarmSnapshot>;
+  folderExists(saveId: string): boolean;
 }
 
 /** Bounds the stored file and IPC payload; counts stay exact past the cap. */
@@ -78,9 +79,24 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
     return { ...record.job };
   }
 
+  /** Folders come and go between checks, so index findings that are no longer true drop out without a recheck. */
+  function settled(check: LibraryHealthCheck): LibraryHealthCheck {
+    if (!check.index) return check;
+    const { orphans, missing, unreadable } = check.index;
+    return {
+      ...check,
+      index: {
+        ...check.index,
+        orphans: orphans.filter((id) => deps.folderExists(id)),
+        missing: missing.filter((id) => !deps.folderExists(id)),
+        unreadable: unreadable.filter((id) => deps.folderExists(id)),
+      },
+    };
+  }
+
   async function overview(): Promise<LibraryHealthOverview> {
     const [check, media] = await Promise.all([current(), deps.media()]);
-    return { check, job: currentJob(), media };
+    return { check: check ? settled(check) : null, job: currentJob(), media };
   }
 
   function start(): LibraryHealthJob {

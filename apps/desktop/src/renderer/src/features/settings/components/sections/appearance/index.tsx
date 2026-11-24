@@ -104,7 +104,7 @@ export function AppearanceRow({ binding }: { binding: Binding }) {
             </Select.Value>
           </Select.Trigger>
           <Select.Portal>
-            <Select.Positioner sideOffset={6}>
+            <Select.Positioner>
               <Select.Popup>
                 <Select.Items
                   items={APPEARANCE_OPTIONS.map((o) => ({

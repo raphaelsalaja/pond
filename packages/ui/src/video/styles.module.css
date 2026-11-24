@@ -141,7 +141,7 @@
   color: var(--ds-foreground-primary);
 
   &:hover {
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   &:focus-visible {

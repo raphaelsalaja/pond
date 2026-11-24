@@ -2,8 +2,13 @@ import type { SavedView } from "@pond/schema/db";
 import { matches } from "@pond/schema/filters/match";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import {
+  currentLocation,
+  type LibraryTestRouter,
+  openLibraryAt,
+} from "@/shared/test/library-router";
 import { combineQueries } from "../lib/smart-folders";
-import { libraryChrome } from "./library-chrome";
 import { savedViews } from "./saved-views";
 import {
   getViewState,
@@ -12,6 +17,7 @@ import {
   setQuery,
   setSort,
 } from "./view-store";
+import { startViewUrlSync } from "./view-url";
 
 function view(
   id: string,
@@ -50,6 +56,8 @@ interface ViewCommand extends Partial<SavedView> {
 describe("saved smart folder operations", () => {
   let records: SavedView[];
   let failMutation: boolean;
+  let router: LibraryTestRouter;
+  let stopUrlSync: () => void;
   const query = vi.fn(async (name: string, input: ViewCommand) => {
     if (name === "savedViews.list") return records;
     if (failMutation) return { ok: false };
@@ -71,7 +79,8 @@ describe("saved smart folder operations", () => {
 
   beforeEach(async () => {
     resetFilters();
-    libraryChrome.setNav({ kind: "all" });
+    router = await openLibraryAt("/");
+    stopUrlSync = startViewUrlSync(router);
     records = [
       view("parent", null, "group", branding),
       view("child", "parent", "smart_folder"),
@@ -83,7 +92,19 @@ describe("saved smart folder operations", () => {
     await savedViews.refresh();
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    stopUrlSync();
+    vi.unstubAllGlobals();
+  });
+
+  it("opens the selected item at its own path", () => {
+    savedViews.select("child");
+    expect(currentLocation(router).pathname).toBe("/views/child");
+    expect(getViewState()).toMatchObject({
+      activeViewId: "child",
+      inheritedQuery: branding,
+    });
+  });
 
   it("refreshes inherited group filters while retaining unsaved child edits", async () => {
     savedViews.select("child");
@@ -126,6 +147,7 @@ describe("saved smart folder operations", () => {
   it("resets the active selection after deletion", async () => {
     savedViews.select("child");
     await savedViews.remove("child");
+    expect(currentLocation(router).pathname).toBe("/");
     expect(getViewState()).toMatchObject({
       activeViewId: null,
       query: EMPTY_QUERY,
@@ -166,7 +188,9 @@ describe("saved smart folder operations", () => {
   });
 
   it("captures folder scope and saved view presentation", async () => {
-    libraryChrome.setNav({ kind: "folder", id: "folder" });
+    await router.navigate({
+      href: pathForLibraryNav({ kind: "folder", id: "folder" }),
+    });
     setQuery(branding);
     setLayout("grid");
     setSort({ key: "title", dir: "asc" });

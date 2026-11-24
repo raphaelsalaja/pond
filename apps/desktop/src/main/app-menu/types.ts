@@ -7,6 +7,9 @@ export type AppMenuItem = MenuItemConstructorOptions;
 export interface AppMenuContext {
   accelerator: (id: ShortcutId) => string | undefined;
   appName: string;
+  developer: {
+    toggleReactScan: () => void;
+  };
   edit: {
     copy: () => void;
     cut: () => void;

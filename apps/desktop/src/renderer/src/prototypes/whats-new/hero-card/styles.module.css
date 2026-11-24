@@ -1,0 +1,35 @@
+.popup {
+  overflow: hidden;
+}
+
+.media {
+  flex: none;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--ds-space-sm);
+  min-height: 0;
+  padding: var(--ds-space-xl) var(--ds-space-xl) 0;
+  overflow-y: auto;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: var(--ds-text-small);
+  color: var(--ds-foreground-tertiary);
+}
+
+.title {
+  font-size: var(--ds-text-title);
+  text-wrap: balance;
+}
+
+.more {
+  padding-top: var(--ds-space-lg);
+}

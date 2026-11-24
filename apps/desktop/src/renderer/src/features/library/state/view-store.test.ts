@@ -5,7 +5,10 @@ import { type SearchView, searchViewKey } from "../lib/search-view";
 import { combineQueries } from "../lib/smart-folders";
 import {
   activateFolderPresentation,
+  applyLocationView,
   applySavedView,
+  clearSavedView,
+  currentSort,
   getViewState,
   resetFilters,
   searchAllSaves,
@@ -17,6 +20,7 @@ import {
   setSemanticQuery,
   setSort,
   setVisualProbe,
+  toggleSortDir,
   updateLocalFilters,
   updateRow,
 } from "./view-store";
@@ -68,6 +72,7 @@ function effectiveQuery(): Query {
 describe("smart folder selection", () => {
   beforeEach(() => {
     resetFilters();
+    clearSavedView();
     setSort({ key: "title", dir: "asc" });
     setLayout("list");
   });
@@ -225,7 +230,7 @@ describe("smart folder selection", () => {
     ).toBe(false);
   });
 
-  it("leaves the group scope when resetting filters", () => {
+  it("keeps the saved view and its inherited rules when resetting filters", () => {
     applySavedView({
       id: "child",
       query: childQuery,
@@ -234,8 +239,59 @@ describe("smart folder selection", () => {
     resetFilters();
     expect(getViewState()).toMatchObject({
       query: EMPTY_QUERY,
+      inheritedQuery: parentQuery,
+      activeViewId: "child",
+    });
+  });
+
+  it("leaves the group scope when the saved view closes", () => {
+    applySavedView({
+      id: "child",
+      query: childQuery,
+      inheritedQuery: parentQuery,
+    });
+    clearSavedView();
+    expect(getViewState()).toMatchObject({
       inheritedQuery: EMPTY_QUERY,
       activeViewId: null,
+    });
+  });
+});
+
+describe("sort precedence", () => {
+  beforeEach(() => {
+    resetFilters();
+    setSort({ key: "savedAt", dir: "desc" });
+  });
+
+  function applyUrlSort(urlSort: { key: string; dir: "asc" | "desc" } | null) {
+    applyLocationView(
+      {
+        q: "",
+        query: EMPTY_QUERY,
+        semanticQuery: null,
+        searchAllView: null,
+        urlSort,
+      },
+      true,
+    );
+  }
+
+  it("lets the URL sort win over the presentation sort", () => {
+    applyUrlSort({ key: "title", dir: "asc" });
+    expect(currentSort()).toEqual({ key: "title", dir: "asc" });
+    expect(getViewState()).toMatchObject({ sortKey: "savedAt", sortDir: "desc" });
+    applyUrlSort(null);
+    expect(currentSort()).toEqual({ key: "savedAt", dir: "desc" });
+  });
+
+  it("drops the URL sort once a sort is chosen", () => {
+    applyUrlSort({ key: "title", dir: "asc" });
+    toggleSortDir();
+    expect(getViewState()).toMatchObject({
+      urlSort: null,
+      sortKey: "title",
+      sortDir: "desc",
     });
   });
 });
@@ -243,6 +299,7 @@ describe("smart folder selection", () => {
 describe("folder presentation restoration", () => {
   it("restores independent folder settings and the global view on exit", () => {
     resetFilters();
+    clearSavedView();
     activateFolderPresentation(null);
     setLayout("waterfall");
     setSort({ key: "savedAt", dir: "desc" });

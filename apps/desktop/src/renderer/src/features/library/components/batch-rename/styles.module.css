@@ -124,7 +124,7 @@
 }
 
 .mark {
-  padding: 1px 0;
+  padding: var(--ds-space-2xs) 0;
   color: inherit;
   border-radius: var(--ds-radius-xs);
 

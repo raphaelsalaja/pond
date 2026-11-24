@@ -70,7 +70,7 @@
   border-radius: var(--ds-radius-lg);
 
   &:hover {
-    background: var(--ds-surface-primary);
+    background: var(--ds-surface-secondary);
   }
 }
 

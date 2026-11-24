@@ -42,7 +42,7 @@ export const PHASES = TIMELINE.map((entry) => entry.phase);
 export const REVIEW_INDEX = PHASES.indexOf("reply");
 
 export const WORD_S = 0.035;
-export const SPRING = { type: "spring", duration: 0.5, bounce: 0.15 } as const;
+export const SPRING = { type: "spring", duration: 0.5, bounce: 0 } as const;
 export const SWAP = {
   initial: { opacity: 0, y: 4, filter: "blur(3px)" },
   animate: { opacity: 1, y: 0, filter: "blur(0px)" },

@@ -1,23 +1,31 @@
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { z } from "zod";
 import { patchSaveRawJson, pool } from "@/features/saves/state/pool";
+import type { Save } from "@/features/saves/types";
 
 const RawJsonReplySchema = z.object({
   rawJson: StoredRawJsonSchema.transform(storedAsRawJson).nullish().catch(null),
 });
 
 const inflight = new Set<string>();
-const loaded = new Set<string>();
+/** List rows carry a trimmed capture, so only objects fetched here count as the full one. */
+const full = new WeakSet<NonNullable<Save["rawJson"]>>();
+
+function hasFullRawJson(id: string): boolean {
+  const rawJson = pool.get(id)?.rawJson;
+  return rawJson === null || (rawJson !== undefined && full.has(rawJson));
+}
 
 export async function ensureRawJson(id: string): Promise<void> {
-  if (!id || loaded.has(id) || inflight.has(id)) return;
+  if (!id || inflight.has(id) || hasFullRawJson(id)) return;
   inflight.add(id);
   try {
     const res = RawJsonReplySchema.parse(
       await window.pond.query("saves.rawJson", { id }),
     );
-    loaded.add(id);
-    if (pool.get(id)) patchSaveRawJson(id, res.rawJson ?? null);
+    const rawJson = res.rawJson ?? null;
+    if (rawJson) full.add(rawJson);
+    if (pool.get(id)) patchSaveRawJson(id, rawJson);
   } catch {
   } finally {
     inflight.delete(id);

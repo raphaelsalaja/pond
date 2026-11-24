@@ -14,7 +14,7 @@ import {
 
 export const appearanceSection = defineCustomSection({
   title: "Appearance",
-  description: "App icon, theme, colors, sounds, and accessibility.",
+  description: "App icon, theme, colors, font, sounds, and accessibility.",
   groups: [
     group.prefs("preferences", {
       title: "Theme",
@@ -104,6 +104,39 @@ export const appearanceSection = defineCustomSection({
           visible: (v) =>
             v.appearance !== "light" && customColorsVisible("dark")(v),
           render: (b) => <ThemeContrastRow binding={b} side="dark" />,
+        },
+      ],
+    }),
+    group.prefs("preferences", {
+      title: "Font",
+      items: [
+        {
+          control: "range",
+          key: "fontRoundness",
+          title: "Roundness",
+          description: "0 cuts letter ends square, 100 makes them fully round.",
+          keywords: ["font", "type", "allo", "round", "sharp", "corners"],
+          min: 0,
+          max: 100,
+          step: 1,
+        },
+        {
+          control: "switch",
+          key: "fontOpticalSizeAuto",
+          title: "Automatic Optical Size",
+          description: "Tunes letter shapes and spacing to each text size.",
+          keywords: ["font", "type", "allo", "opsz", "spacing", "display"],
+        },
+        {
+          control: "range",
+          key: "fontOpticalSize",
+          title: "Optical Size",
+          description: "14 is the open text cut, 32 the tighter display cut.",
+          keywords: ["font", "type", "allo", "opsz", "spacing", "display"],
+          disabled: (v) => v.fontOpticalSizeAuto !== false,
+          min: 14,
+          max: 32,
+          step: 1,
         },
       ],
     }),

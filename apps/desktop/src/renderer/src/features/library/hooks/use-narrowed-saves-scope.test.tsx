@@ -1,10 +1,16 @@
 import { PrefsSchema } from "@pond/schema";
 import { LibraryQueryRequestSchema } from "@shared/library-query";
-import { act } from "react";
+import { RouterProvider } from "@tanstack/react-router";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SaveListMode } from "@/features/saves";
-import { libraryChrome } from "../state/library-chrome";
+import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
+import {
+  type LibraryTestRouter,
+  openLibraryAt,
+} from "@/shared/test/library-router";
+import { getLibraryNav } from "../state/library-chrome";
 import {
   resetFilters,
   searchAllSaves,
@@ -14,6 +20,7 @@ import {
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
 const prefs = PrefsSchema.parse({});
+const design: LibraryNav = { kind: "folder", id: "design" };
 
 function Probe({ mode }: { mode: SaveListMode }) {
   const paging = useNarrowedSaves(mode, "");
@@ -23,14 +30,24 @@ function Probe({ mode }: { mode: SaveListMode }) {
 describe("library search scope", () => {
   let host: HTMLDivElement;
   let root: Root;
+  let router: LibraryTestRouter;
 
   function scope() {
     const raw = host.querySelector("output")?.getAttribute("data-request");
     return LibraryQueryRequestSchema.parse(JSON.parse(raw ?? "{}")).scope;
   }
 
-  async function render(mode: SaveListMode) {
-    await act(async () => root.render(<Probe mode={mode} />));
+  async function render(mode: SaveListMode, nav: LibraryNav = design) {
+    router = await openLibraryAt(pathForLibraryNav(nav));
+    const Shell = ({ children }: { children: ReactNode }) => (
+      <>
+        {children}
+        <Probe mode={mode} />
+      </>
+    );
+    await act(async () =>
+      root.render(<RouterProvider router={router} InnerWrap={Shell} />),
+    );
   }
 
   beforeEach(() => {
@@ -53,7 +70,6 @@ describe("library search scope", () => {
       onPrefsChanged: () => () => {},
     });
     resetFilters();
-    libraryChrome.setNav({ kind: "folder", id: "design" });
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -63,7 +79,6 @@ describe("library search scope", () => {
     await act(async () => root.unmount());
     host.remove();
     resetFilters();
-    libraryChrome.setNav({ kind: "all" });
     vi.unstubAllGlobals();
   });
 
@@ -77,12 +92,9 @@ describe("library search scope", () => {
     await render("library");
     await act(async () => setSearchDraft("poster"));
 
-    await act(async () => searchAllSaves({ kind: "folder", id: "design" }));
+    await act(async () => searchAllSaves(design));
     expect(scope()?.folderIds).toBeUndefined();
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "design",
-    });
+    expect(getLibraryNav()).toEqual(design);
 
     await act(async () => searchCurrentView());
     expect(scope()?.folderIds).toContain("design");
@@ -91,17 +103,16 @@ describe("library search scope", () => {
   it("returns to the current view after moving to another folder", async () => {
     await render("library");
     await act(async () => setSearchDraft("poster"));
-    await act(async () => searchAllSaves({ kind: "folder", id: "design" }));
+    await act(async () => searchAllSaves(design));
 
     await act(async () =>
-      libraryChrome.setNav({ kind: "folder", id: "archive" }),
+      router.history.push(pathForLibraryNav({ kind: "folder", id: "archive" })),
     );
     expect(scope()?.folderIds).toContain("archive");
   });
 
   it("keeps a Trash search on deleted Saves", async () => {
-    libraryChrome.setNav({ kind: "trash" });
-    await render("trash");
+    await render("trash", { kind: "trash" });
     await act(async () => setSearchDraft("poster"));
     await act(async () => searchAllSaves({ kind: "trash" }));
     expect(scope()?.deletedOnly).toBe(true);

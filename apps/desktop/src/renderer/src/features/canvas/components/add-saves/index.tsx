@@ -1,6 +1,6 @@
 import { IconMagnifier } from "@pond/icons";
 import { domainFromUrl } from "@pond/schema/domain";
-import { Button, Empty, Input, Popover, Tooltip } from "@pond/ui";
+import { Button, Empty, EmptyPreview, Input, Popover, Tooltip } from "@pond/ui";
 import { type ReactElement, useEffect, useState } from "react";
 import { SaveTile } from "@/features/saves";
 import { ensureSaves, useSave } from "@/features/saves/pool";
@@ -107,10 +107,18 @@ function Picker({ onCanvas, onAdd }: PickerProps) {
       {ids && ids.length === 0 ? (
         <Empty.Root size="card" className={styles.empty}>
           <Empty.Media>
-            <IconMagnifier size={14} />
+            <EmptyPreview.Root shape="field" layout="single">
+              <EmptyPreview.Row>
+                <EmptyPreview.Icon>
+                  <IconMagnifier size={12} />
+                </EmptyPreview.Icon>
+                <EmptyPreview.Line width={30} />
+                <EmptyPreview.Line width={44} tone="mid" />
+              </EmptyPreview.Row>
+            </EmptyPreview.Root>
           </Empty.Media>
           <Empty.Title>
-            {query.trim() ? `No results for “${query.trim()}”` : "No saves yet"}
+            {query.trim() ? `No Results for “${query.trim()}”` : "No Saves Yet"}
           </Empty.Title>
         </Empty.Root>
       ) : (

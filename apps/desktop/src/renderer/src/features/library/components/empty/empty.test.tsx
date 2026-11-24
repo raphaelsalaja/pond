@@ -49,10 +49,10 @@ describe("FolderEmpty", () => {
   it("invites adding files instead of clearing a search", async () => {
     await act(async () => root.render(<FolderEmpty folderId="posters" />));
     const text = host.textContent ?? "";
-    expect(text).toContain("No saves in this folder");
+    expect(text).toContain("No Saves in This Folder");
     expect(text).toContain("Paste or drop files, images, and links here.");
     expect(text).not.toContain("Import Folders");
-    expect(text).not.toContain("No results found");
+    expect(text).not.toContain("No Results Found");
     expect(text).not.toContain("Clear Search and Filters");
     const buttons = [...host.querySelectorAll("button")];
     expect(buttons.map((button) => button.textContent)).toEqual(["Add Files"]);
@@ -88,11 +88,11 @@ describe("FolderEmpty", () => {
   it("says saves are downloading when the folder is waiting on them", async () => {
     const router = await mountInRouter(<FolderEmpty downloading={3} />);
     const text = host.textContent ?? "";
-    expect(text).toContain("Downloading 3 saves");
+    expect(text).toContain("Downloading 3 Saves");
     expect(text).toContain(
       "They appear in this folder as each download finishes.",
     );
-    expect(text).not.toContain("No saves in this folder");
+    expect(text).not.toContain("No Saves in This Folder");
     const link = host.querySelector<HTMLAnchorElement>('a[role="link"]');
     expect(link?.textContent).toBe("Open Downloads");
     expect(link?.getAttribute("href")).toBe("/downloads");

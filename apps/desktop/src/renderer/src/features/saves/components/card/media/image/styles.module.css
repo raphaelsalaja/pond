@@ -6,7 +6,7 @@
   max-height: 100%;
   margin: auto;
   object-fit: contain;
-  border-radius: var(--ds-radius-xs);
+  border-radius: var(--card-radius, var(--ds-radius-xs));
   opacity: 0;
 
   &[data-fit="fill"] {

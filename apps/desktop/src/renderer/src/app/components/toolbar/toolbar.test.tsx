@@ -1,31 +1,48 @@
 import { PrefsSchema } from "@pond/schema";
 import type { NavigationDirection } from "@shared/constants";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from "@tanstack/react-router";
-import { act } from "react";
+import { type AnyRoute, createRoute, RouterProvider } from "@tanstack/react-router";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { commandMenu } from "@/features/library/state/command-menu";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
-import { navigationHistory } from "@/features/library/state/navigation-history";
 import {
-  applySavedView,
-  getViewState,
   resetFilters,
   setSearchInput,
 } from "@/features/library/state/view-store";
-import { rememberListPath } from "@/features/saves/lib/list-path";
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { libraryViewContext } from "@/features/saves/state/view-context";
-import { setAppRouter } from "@/shared/lib/app-router";
+import { openLibraryAt } from "@/shared/test/library-router";
 import { Toolbar } from "./";
+
+function pages(parent: AnyRoute): AnyRoute[] {
+  return [
+    createRoute({
+      getParentRoute: () => parent,
+      path: "fish/$fishId",
+      staticData: { details: "fish" },
+    }),
+    createRoute({
+      getParentRoute: () => parent,
+      path: "settings",
+      staticData: { details: null },
+    }),
+  ];
+}
+
+function Shell({ children }: { children: ReactNode }) {
+  return (
+    <>
+      {children}
+      <Toolbar.Leading />
+      <Toolbar.Bar />
+      <Toolbar.Trailing />
+    </>
+  );
+}
 
 describe("breadcrumb toolbar", () => {
   let host: HTMLDivElement;
@@ -77,9 +94,6 @@ describe("breadcrumb toolbar", () => {
     if (!save) throw new Error("Invalid save fixture");
     pool.upsert(save);
     libraryViewContext.set([], "library");
-    libraryChrome.setNav({ kind: "all" });
-    navigationHistory.clear();
-    rememberListPath("/");
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -101,34 +115,10 @@ describe("breadcrumb toolbar", () => {
   }
 
   async function mount(path = "/") {
-    const rootRoute = createRootRoute({ component: Toolbar });
-    const children = [
-      "/",
-      "/save/$saveId",
-      "/sources",
-      "/fish/$fishId",
-      "/tags",
-      "/untagged",
-      "/recents",
-      "/downloads",
-      "/trash",
-      "/settings",
-    ].map((path) =>
-      createRoute({
-        getParentRoute: () => rootRoute,
-        path,
-        component: () => null,
-      }),
+    const router = await openLibraryAt(path, pages);
+    await act(async () =>
+      root.render(<RouterProvider router={router} InnerWrap={Shell} />),
     );
-    const router = createRouter({
-      routeTree: rootRoute.addChildren(children),
-      history: createMemoryHistory({ initialEntries: [path] }),
-    });
-    setAppRouter(router);
-    await act(async () => {
-      await router.load();
-      root.render(<RouterProvider router={router} />);
-    });
     return router;
   }
 
@@ -187,39 +177,32 @@ describe("breadcrumb toolbar", () => {
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
       "Search results (2)",
     );
-    await act(async () => button("All").click());
-    expect(getViewState().q).toBe("");
-    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
   });
 
-  it("navigates to parent folders and clears filters only at All", async () => {
-    applySavedView({ id: "view", query: { combinator: "and", rules: [] } });
-    libraryChrome.setNav({ kind: "folder", id: "child" });
-    const router = await mount();
+  it("navigates to parent folders and back to All", async () => {
+    const router = await mount("/folders/child");
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
       "Interfaces",
     );
     await act(async () => button("Design").click());
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "parent",
-    });
-    expect(router.state.location.pathname).toBe("/");
-    expect(getViewState().activeViewId).toBe("view");
+    expect(router.state.location.pathname).toBe("/folders/parent");
+    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
+      "Design",
+    );
     await act(async () => button("All").click());
-    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
-    expect(getViewState().q).toBe("");
-    expect(getViewState().activeViewId).toBeNull();
+    expect(router.state.location.pathname).toBe("/");
   });
 
-  it("leaves an open Save's toolbar row to the viewer bar", async () => {
-    await mount("/save/demo");
-    expect(host.querySelector('nav[aria-label="Breadcrumb"]')).toBeNull();
+  it("keeps the breadcrumb on an open Save", async () => {
+    await mount("/?save=demo");
+    expect(host.querySelector('nav[aria-label="Breadcrumb"]')).not.toBeNull();
+    expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
+      "A saved design",
+    );
   });
 
   it("keeps hidden ancestors accessible through the overflow menu", async () => {
-    libraryChrome.setNav({ kind: "folder", id: "deep" });
-    await mount();
+    const router = await mount("/folders/deep");
     await act(async () => button("Show Parent Folders").click());
     const parent = [...document.querySelectorAll('[role="menuitem"]')].find(
       (node) => node.textContent === "Design",
@@ -227,15 +210,11 @@ describe("breadcrumb toolbar", () => {
     if (!(parent instanceof HTMLElement))
       throw new Error("Missing parent folder");
     await act(async () => parent.click());
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "parent",
-    });
+    expect(router.state.location.pathname).toBe("/folders/parent");
   });
 
   it("opens folder operations from a breadcrumb context-menu event", async () => {
-    libraryChrome.setNav({ kind: "folder", id: "child" });
-    await mount();
+    await mount("/folders/child");
     const crumb = host.querySelector('[aria-current="page"]');
     if (!(crumb instanceof HTMLElement))
       throw new Error("Missing current folder breadcrumb");
@@ -293,22 +272,20 @@ describe("breadcrumb toolbar", () => {
           }),
         );
       });
-    libraryChrome.setNav({ kind: "folder", id: "parent" });
     const router = await mount("/");
-    await act(async () => router.history.push("/save/demo"));
+    await act(async () => router.history.push("/folders/parent"));
+    await act(async () => router.history.push("/folders/parent?save=demo"));
+    await sideButton(3);
+    expect(router.state.location.pathname).toBe("/folders/parent");
+    expect(router.state.location.search).not.toHaveProperty("save");
     await sideButton(3);
     expect(router.state.location.pathname).toBe("/");
     await sideButton(3);
-    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
-    await sideButton(3);
-    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
+    expect(router.state.location.pathname).toBe("/");
     await sideButton(4);
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "parent",
-    });
+    expect(router.state.location.pathname).toBe("/folders/parent");
     await sideButton(4);
-    expect(router.state.location.pathname).toBe("/save/demo");
+    expect(router.state.location.search).toMatchObject({ save: "demo" });
   });
 
   it("follows back and forward swipes from the main process", async () => {
@@ -328,70 +305,57 @@ describe("breadcrumb toolbar", () => {
   });
 
   it("leaves an open save before walking folder history", async () => {
-    libraryChrome.setNav({ kind: "folder", id: "parent" });
-    libraryChrome.setNav({ kind: "folder", id: "child" });
-    const previousFolder = navigationHistory.back();
-    expect(previousFolder).toEqual({ kind: "folder", id: "parent" });
-    if (previousFolder) libraryChrome.setNav(previousFolder);
     const router = await mount("/");
-    await act(async () => router.history.push("/save/demo"));
+    await act(async () => router.history.push("/folders/parent"));
+    await act(async () => router.history.push("/folders/parent?save=demo"));
+    await act(async () => button("Back").click());
+    expect(router.state.location.pathname).toBe("/folders/parent");
+    expect(router.state.location.search).not.toHaveProperty("save");
+    await act(async () => button("Forward").click());
+    expect(router.state.location.search).toMatchObject({ save: "demo" });
+    await act(async () => button("Back").click());
     await act(async () => button("Back").click());
     expect(router.state.location.pathname).toBe("/");
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "parent",
-    });
     await act(async () => button("Forward").click());
-    expect(router.state.location.pathname).toBe("/save/demo");
-    await act(async () => button("Back").click());
-    await act(async () => button("Back").click());
-    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
+    expect(router.state.location.pathname).toBe("/folders/parent");
     await act(async () => button("Forward").click());
-    expect(router.state.location.pathname).toBe("/");
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "parent",
-    });
-    await act(async () => button("Forward").click());
-    expect(router.state.location.pathname).toBe("/save/demo");
-    expect(libraryChrome.getState().nav).toEqual({
-      kind: "folder",
-      id: "parent",
-    });
+    expect(router.state.location.pathname).toBe("/folders/parent");
+    expect(router.state.location.search).toMatchObject({ save: "demo" });
   });
 
-  it("does not offer folder history while a direct save route is open", async () => {
-    libraryChrome.setNav({ kind: "folder", id: "parent" });
-    await mount("/save/demo");
+  it("does not offer history on a Save opened at launch", async () => {
+    await mount("/?save=demo");
     expect(button("Back").disabled).toBe(true);
     expect(button("Forward").disabled).toBe(true);
   });
 
   it("discards the save-forward branch after fresh folder navigation", async () => {
-    libraryChrome.setNav({ kind: "folder", id: "parent" });
     const router = await mount("/");
-    await act(async () => router.history.push("/save/demo"));
+    await act(async () => router.history.push("/folders/parent"));
+    await act(async () => router.history.push("/folders/parent?save=demo"));
     await act(async () => button("Back").click());
     await act(async () => button("Back").click());
-    await act(() => libraryChrome.setNav({ kind: "folder", id: "child" }));
+    await act(async () => selectLibraryNav({ kind: "folder", id: "child" }));
     expect(button("Forward").disabled).toBe(true);
-    expect(router.state.location.pathname).toBe("/");
+    expect(router.state.location.pathname).toBe("/folders/child");
   });
 
-  it("offers the details toggle on every page", async () => {
+  it("offers the details toggle only on pages with a Details column", async () => {
     const labels = () =>
       [...host.querySelectorAll("button")].map((node) =>
         node.getAttribute("aria-label"),
       );
     const router = await mount("/");
     expect(labels()).toContain("Toggle Details");
-    await act(async () => router.history.push("/save/demo"));
+    await act(async () => router.history.push("/?save=demo"));
     expect(labels()).toContain("Toggle Details");
     expect(labels()).not.toContain("Fish");
     await act(async () => router.history.push("/tags"));
     expect(labels()).toContain("Toggle Details");
     await act(async () => router.history.push("/settings"));
-    expect(labels()).toContain("Toggle Details");
+    expect(labels()).not.toContain("Toggle Details");
+    await act(async () => router.history.push("/sources"));
+    expect(labels()).not.toContain("Toggle Details");
   });
 
   it("toggles the details column from the library toolbar", async () => {

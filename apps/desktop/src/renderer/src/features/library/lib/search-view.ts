@@ -1,5 +1,4 @@
 import type { Folder } from "@pond/schema/db";
-import type { SaveListMode } from "@/features/saves";
 import type { LibraryNav } from "@/shared/lib/library-nav";
 
 export type SearchScope = "all" | "current";
@@ -14,17 +13,13 @@ export type SearchView =
   | { kind: "recents" }
   | { kind: "trash" };
 
-export function searchViewFor(mode: SaveListMode, nav: LibraryNav): SearchView {
-  switch (mode) {
+export function searchViewFor(nav: LibraryNav | null): SearchView {
+  switch (nav?.kind) {
     case "trash":
     case "recents":
     case "recentlyAdded":
     case "untagged":
-      return { kind: mode };
-    default:
-      break;
-  }
-  switch (nav.kind) {
+      return { kind: nav.kind };
     case "folder":
       return { kind: "folder", id: nav.id };
     case "tag":
@@ -47,9 +42,9 @@ export function searchViewKey(view: SearchView): string {
   }
 }
 
-/** Trash holds only deleted Saves, so widening it would mix them with live ones. */
+/** Built-in views are slices of the Library you jump between, so only folders and tags you made offer a wider search. */
 export function canSearchAllSaves(view: SearchView): boolean {
-  return view.kind !== "library" && view.kind !== "trash";
+  return view.kind === "folder" || view.kind === "tag";
 }
 
 export function searchViewName(

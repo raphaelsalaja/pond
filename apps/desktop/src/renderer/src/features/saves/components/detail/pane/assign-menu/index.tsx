@@ -1,9 +1,8 @@
 import { IconPlus } from "@pond/icons";
-import { Button, Chip, Keyboard, Menu } from "@pond/ui";
+import { Button, Chip, Menu } from "@pond/ui";
 import type { ReactNode } from "react";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
 import { placeCreateOptionLast } from "@/shared/lib/picker-order";
-import { chordGlyphs } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
 
 export interface AssignOption {
@@ -20,17 +19,7 @@ interface AssignMenuProps {
   suggested?: ReadonlySet<string>;
   onToggle(option: AssignOption): void;
   onCreate?(name: string): void;
-  onStartBatch?(): void;
-  batch?: {
-    staged: ReadonlySet<string>;
-    onToggle(option: AssignOption): void;
-    onApply(): void;
-    onCancel(): void;
-    applying?: boolean;
-  };
 }
-
-const APPLY_CHORD = "Mod+Enter";
 
 function sortKey(option: AssignOption): string {
   return option.crumb ? `${option.crumb} ${option.label}` : option.label;
@@ -42,8 +31,6 @@ export function AssignMenu({
   suggested,
   onToggle,
   onCreate,
-  onStartBatch,
-  batch,
 }: AssignMenuProps) {
   const { query, onValueChange, reset } = useMenuFilterQuery();
   const plural = `${noun}s`;
@@ -72,33 +59,17 @@ export function AssignMenu({
     creatable ? { kind: "create" as const, name: query.trim() } : null,
   );
   const row = (option: AssignOption) => {
-    const staged = batch?.staged.has(option.key) ?? false;
-    const assigned = option.state === "on";
     const mixed = option.state === "mixed";
     return (
       <Menu.CheckboxItem
         key={option.key}
         closeOnClick={false}
-        checked={batch ? assigned || staged : assigned}
-        disabled={Boolean(batch && assigned)}
+        checked={option.state === "on"}
         data-selection={option.state}
-        aria-description={
-          assigned
-            ? batch
-              ? "Already assigned"
-              : undefined
-            : mixed
-              ? "Some selected"
-              : undefined
-        }
-        onCheckedChange={() =>
-          batch ? batch.onToggle(option) : onToggle(option)
-        }
+        aria-description={mixed ? "Some selected" : undefined}
+        onCheckedChange={() => onToggle(option)}
       >
-        <Menu.CheckboxItemIndicator
-          reveal="active"
-          indeterminate={mixed && !staged}
-        />
+        <Menu.CheckboxItemIndicator reveal="active" indeterminate={mixed} />
         <Menu.ItemIcon>{option.icon}</Menu.ItemIcon>
         <Menu.ItemLabel
           title={
@@ -120,8 +91,6 @@ export function AssignMenu({
       </Menu.CheckboxItem>
     );
   };
-  const stagedCount = batch?.staged.size ?? 0;
-  const addLabel = `Add to ${stagedCount} ${stagedCount === 1 ? noun : plural}`;
   return (
     <Menu.FilterProvider
       filter={null}
@@ -130,12 +99,8 @@ export function AssignMenu({
       autoHighlight
     >
       <Menu.Root
-        onOpenChange={(open, details) => {
+        onOpenChange={(open) => {
           if (open) reset();
-          else if (batch && details.reason === "escape-key") {
-            details.cancel();
-            batch.onCancel();
-          } else batch?.onCancel();
         }}
       >
         <Menu.Trigger
@@ -157,26 +122,7 @@ export function AssignMenu({
               <Menu.Input
                 aria-label={`Search ${plural}`}
                 placeholder="Search…"
-                onKeyDown={(event) => {
-                  if (
-                    !batch ||
-                    event.key !== "Enter" ||
-                    !(event.metaKey || event.ctrlKey)
-                  )
-                    return;
-                  event.preventDefault();
-                  event.preventBaseUIHandler();
-                  if (stagedCount && !batch.applying) batch.onApply();
-                }}
               />
-              {onStartBatch && !batch ? (
-                <>
-                  <Menu.Item closeOnClick={false} onClick={onStartBatch}>
-                    <Menu.ItemLabel>Select Multiple</Menu.ItemLabel>
-                  </Menu.Item>
-                  <Menu.Separator />
-                </>
-              ) : null}
               <Menu.FilterList className={styles.list}>
                 {picks.length ? (
                   <>
@@ -211,29 +157,6 @@ export function AssignMenu({
                   </Menu.Item>
                 ) : null}
               </Menu.FilterList>
-              {batch ? (
-                <div className={styles.actions}>
-                  <Keyboard.Cluster
-                    className={styles.hint}
-                    keys={chordGlyphs(APPLY_CHORD)}
-                    density="flat"
-                  />
-                  <Button size="xs" variant="ghost" onClick={batch.onCancel}>
-                    Cancel
-                  </Button>
-                  <Button
-                    size="xs"
-                    variant="primary"
-                    disabled={!stagedCount}
-                    loading={batch.applying}
-                    aria-label={addLabel}
-                    aria-keyshortcuts="Meta+Enter"
-                    onClick={batch.onApply}
-                  >
-                    {addLabel}
-                  </Button>
-                </div>
-              ) : null}
             </Chip.Popup>
           </Menu.Positioner>
         </Menu.Portal>

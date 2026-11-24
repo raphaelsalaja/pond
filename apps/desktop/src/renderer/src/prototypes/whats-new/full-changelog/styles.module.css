@@ -1,0 +1,26 @@
+.popup {
+  height: min(640px, calc(100% - 48px));
+}
+
+.header {
+  min-height: 52px;
+  padding: 0 var(--ds-space-2xl);
+  border-bottom: 1px solid var(--ds-border-subtle);
+}
+
+.title {
+  font-size: var(--ds-text-body);
+}
+
+.version {
+  margin-left: var(--ds-space-sm);
+  font-weight: var(--ds-weight-regular);
+  color: var(--ds-foreground-tertiary);
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  padding: var(--ds-space-xl) var(--ds-space-2xl) var(--ds-space-2xl);
+  overflow-y: auto;
+}

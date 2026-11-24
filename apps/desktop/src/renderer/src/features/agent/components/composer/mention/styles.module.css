@@ -1,7 +1,7 @@
 .mention {
   display: inline-flex;
   max-width: 100%;
-  margin-inline: 1px;
+  margin-inline: var(--ds-space-2xs);
   vertical-align: middle;
   user-select: none;
 }

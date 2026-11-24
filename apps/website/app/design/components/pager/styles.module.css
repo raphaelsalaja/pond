@@ -19,7 +19,7 @@
   transition: background-color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
-    background: var(--ds-surface-primary);
+    background: var(--ds-surface-secondary);
   }
 
   &[data-direction="next"] {

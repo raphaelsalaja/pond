@@ -3,8 +3,10 @@ export {
   closeSave,
   followDeparture,
   openSave,
-  saveIdFromPath,
+  openSaveId,
+  saveIdFromSearch,
   stepSave,
+  useOpenSaveId,
 } from "./lib/save-nav";
 export { resultNavigation, useResultTotal } from "./state/result-navigation";
 export {

@@ -23,14 +23,19 @@
   box-shadow: var(--ds-shadow-raised);
 
   /* A leading icon sits as if centered in a circle the chip's height, so the capsule reads concentric. */
-  &:has(> [aria-hidden]:first-child) {
+  &:not([data-icon]):has(> [aria-hidden]:first-child) {
     padding-left: calc((var(--chip-height) - 12px) / 2);
+  }
+
+  &[data-icon] {
+    justify-content: center;
+    width: var(--chip-height);
+    padding-inline: 0;
   }
 
   &:has(> .clear) {
     padding-right: var(--chip-inset);
   }
-
   &[data-tone="mention"] {
     --chip-height: calc(var(--ds-size-xs) - 4px);
     gap: var(--ds-space-xs);
@@ -62,6 +67,12 @@
     color: var(--ds-foreground-secondary);
     background: transparent;
     box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-strong);
+  }
+
+  /* Dashed so a suggestion never reads as a tag that's already applied. */
+  &[data-tone="suggested"] {
+    border: 1px dashed var(--ds-border-strong);
+    box-shadow: none;
   }
 
   &[data-tone="removed"] {

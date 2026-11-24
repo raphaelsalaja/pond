@@ -58,16 +58,16 @@ export function buildOrganizeSection(context: AppMenuContext): AppMenuItem {
         click: sendMenuAction("organize.add-to-last-folder"),
       },
       {
+        label: "Remove from Current Folder",
+        click: sendMenuAction("save.remove-current-folder"),
+      },
+      { type: "separator" },
+      {
         label: "Add Tags",
         accelerator: accelerator("save.add-tag"),
         registerAccelerator: false,
         click: sendMenuAction("organize.add-tag"),
       },
-      {
-        label: "Clear Tags",
-        click: sendMenuAction("organize.clear-tags"),
-      },
-      { type: "separator" },
       {
         label: "Copy Tags",
         accelerator: accelerator("save.copy-tags"),
@@ -79,6 +79,10 @@ export function buildOrganizeSection(context: AppMenuContext): AppMenuItem {
         accelerator: accelerator("save.paste-tags"),
         registerAccelerator: false,
         click: sendMenuAction("organize.paste-tags"),
+      },
+      {
+        label: "Clear Tags",
+        click: sendMenuAction("organize.clear-tags"),
       },
       { type: "separator" },
       {

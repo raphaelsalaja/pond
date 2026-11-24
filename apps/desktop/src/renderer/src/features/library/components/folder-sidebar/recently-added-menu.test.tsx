@@ -7,7 +7,7 @@ import {
   formatLocalDay,
   startOfLocalDay,
 } from "@/features/library/lib/local-day";
-import { libraryChrome } from "@/features/library/state/library-chrome";
+import { getLibraryNav } from "@/features/library/state/library-chrome";
 import { getViewState, setQuery } from "@/features/library/state/view-store";
 import { topLevelMenuLabels as labels } from "@/shared/test/menu-labels";
 import {
@@ -107,7 +107,7 @@ describe("recently added date shortcuts", () => {
     await act(async () => harness.menuItem("Added Yesterday").click());
     const yesterday = addLocalDays(new Date(), -1);
     expect(router.state.location.pathname).toBe("/recently-added");
-    expect(libraryChrome.getState().nav).toEqual({ kind: "recentlyAdded" });
+    expect(getLibraryNav()).toEqual({ kind: "recentlyAdded" });
     expect(getViewState().rows).toEqual([
       {
         field: "savedAt",
@@ -150,7 +150,7 @@ describe("recently added date shortcuts", () => {
       expect(document.querySelector('[aria-label="Choose Date"]')).toBeNull(),
     );
     expect(router.state.location.pathname).toBe("/");
-    expect(libraryChrome.getState().nav).toEqual({ kind: "all" });
+    expect(getLibraryNav()).toEqual({ kind: "all" });
     expect(getViewState().rows).toEqual([IMAGES]);
   });
 });

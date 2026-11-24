@@ -24,9 +24,8 @@
     border-radius: var(--ds-radius-md);
   }
 
-  &[data-index]:hover,
-  &[data-index]:focus-within {
-    background: var(--ds-background-secondary);
+  &[data-index]:is(:focus-visible, :has(:focus-visible)) {
+    background: var(--ds-surface-primary);
   }
 
   &[data-index][data-selected] {

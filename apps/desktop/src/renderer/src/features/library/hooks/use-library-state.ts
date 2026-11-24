@@ -5,14 +5,10 @@ import {
   useSearchText,
 } from "@/features/library/state/view-store";
 import type { ViewMode } from "@/features/library/types";
-import {
-  listPathForLocation,
-  parseMode,
-  type SaveListMode,
-} from "@/features/saves";
+import { useLibraryNav } from "@/features/library/state/library-chrome";
+import { modeForNav, type SaveListMode } from "@/features/saves";
 import { useBootReady } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
-import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { useStableStrings } from "../../../shared/hooks/use-stable-array";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
@@ -26,7 +22,6 @@ interface LibraryState {
   hasActiveFilter: boolean;
   searchText: string;
   viewMode: ViewMode;
-  unknown: boolean;
   paging: ReturnType<typeof useNarrowedSaves>;
 }
 
@@ -36,12 +31,7 @@ export function useLibraryState(): LibraryState {
   const searchText = useSearchText();
   const filterQuery = useEffectiveFilterQuery();
 
-  const parentBase = useRouteLocation((location) =>
-    listPathForLocation(location.pathname),
-  );
-  const recognized = parseMode(parentBase);
-  const mode: SaveListMode = recognized ?? "library";
-  const unknown = recognized === null;
+  const mode = modeForNav(useLibraryNav());
 
   const sourceFilter = "";
   const hasActiveSearch = searchText.trim().length > 0;
@@ -64,7 +54,6 @@ export function useLibraryState(): LibraryState {
     hasActiveFilter,
     searchText,
     viewMode,
-    unknown,
     paging,
   };
 }

@@ -1,4 +1,15 @@
+import type { MenuActionId } from "../../shared/constants";
 import type { AppMenuContext, AppMenuItem } from "./types";
+
+const REVERSE_IMAGE_ENGINES = [
+  ["Google Lens", "google-lens"],
+  ["Bing", "bing"],
+  ["Yandex", "yandex"],
+  ["TinEye", "tineye"],
+  ["SauceNAO", "saucenao"],
+  ["Baidu", "baidu"],
+  ["Sogou", "sogou"],
+] as const;
 
 export function buildEditSection(
   context: AppMenuContext,
@@ -49,13 +60,13 @@ export function buildEditSection(
         click: sendMenuAction("selection.select-all"),
       },
       {
-        label: "Clear Save Selection",
+        label: "Deselect All",
         accelerator: accelerator("grid.clear"),
         registerAccelerator: false,
         click: sendMenuAction("selection.clear"),
       },
       {
-        label: "Invert Save Selection",
+        label: "Invert Selection",
         click: sendMenuAction("selection.invert"),
       },
       { type: "separator" },
@@ -92,36 +103,40 @@ export function buildEditSection(
             registerAccelerator: false,
             click: sendMenuAction("save.copy-id"),
           },
-          {
-            label: "Copy Tags",
-            accelerator: accelerator("save.copy-tags"),
-            registerAccelerator: false,
-            click: sendMenuAction("save.copy-tags"),
-          },
-          {
-            label: "Paste Tags",
-            accelerator: accelerator("save.paste-tags"),
-            registerAccelerator: false,
-            click: sendMenuAction("save.paste-tags"),
-          },
         ],
       },
       { type: "separator" },
       {
-        label: "Move Selected to Trash",
-        click: sendMenuAction("save.bulk-trash"),
+        label: "Search Current View",
+        accelerator: accelerator("library.find"),
+        registerAccelerator: false,
+        click: sendMenuAction("find.search"),
       },
       {
-        label: "Refresh Selected",
-        click: sendMenuAction("save.bulk-refresh"),
+        label: "Search All Saves",
+        click: sendMenuAction("find.search-all"),
       },
       {
-        label: "Remove from Current Folder",
-        click: sendMenuAction("save.remove-current-folder"),
+        label: "Search Pond",
+        accelerator: accelerator("library.search"),
+        registerAccelerator: false,
+        click: sendMenuAction("library.search"),
       },
       {
-        label: "Switch Library",
-        click: sendMenuAction("library.open"),
+        label: "Search by Image",
+        submenu: [
+          {
+            label: "Similar Saves",
+            click: sendMenuAction("find.visual-search"),
+          },
+          { type: "separator" },
+          ...REVERSE_IMAGE_ENGINES.map(([label, engine]) => ({
+            label,
+            click: sendMenuAction(
+              `find.reverse-image.${engine}` satisfies MenuActionId,
+            ),
+          })),
+        ],
       },
       ...(!context.isMac ? [{ type: "separator" as const }, settingsItem] : []),
     ],

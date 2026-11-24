@@ -12,7 +12,7 @@
 }
 
 .thumbnail:hover {
-  background: var(--ds-surface-secondary);
+  background: var(--ds-surface-primary);
 }
 
 .thumbnail[data-active] {

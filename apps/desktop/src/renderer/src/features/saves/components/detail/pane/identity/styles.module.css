@@ -1,22 +1,12 @@
-.root {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-lg);
-}
+.title {
+  text-align: center;
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-sm);
-  min-width: 0;
-}
+  & textarea {
+    text-align: inherit;
+  }
 
-.label {
-  font-size: var(--ds-text-small);
-  font-weight: var(--ds-weight-regular);
-  color: var(--ds-foreground-tertiary);
-}
-
-.open {
-  margin-inline-end: var(--ds-space-xs);
+  /* Compact centers one line in 28px, which lands on 5px; keep the pane on the spacing scale. */
+  & textarea[data-multiline][data-padding] {
+    padding-block: var(--ds-space-sm);
+  }
 }
