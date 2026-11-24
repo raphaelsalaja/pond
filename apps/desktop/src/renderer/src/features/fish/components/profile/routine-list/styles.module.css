@@ -53,7 +53,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: var(--ds-text-body);
-  line-height: 18px;
+  line-height: var(--ds-leading-body);
   color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
@@ -88,11 +88,4 @@
 .switch {
   position: relative;
   z-index: 1;
-}
-
-.empty {
-  margin: 0;
-  font-size: var(--ds-text-small);
-  line-height: 1.45;
-  color: var(--ds-foreground-tertiary);
 }

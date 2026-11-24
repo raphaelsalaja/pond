@@ -1,5 +1,5 @@
-import { IconChevronLeft, IconTrash, IconXmark } from "@pond/icons";
-import { Button, Pane, Tooltip } from "@pond/ui";
+import { IconChevronLeft, IconTrash } from "@pond/icons";
+import { Button, Tooltip } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { describeWhen, nextRun } from "@shared/fish-routine";
 import { Section } from "@/shared/components/inspector-section";
@@ -11,6 +11,8 @@ import {
 } from "../../../lib/menu";
 import { rowTime } from "../../../lib/row";
 import { nextRunValue } from "../../../lib/runs";
+import { useNow } from "../../../lib/use-now";
+import { FishPane } from "../pane";
 import styles from "./styles.module.css";
 
 interface RoutineViewProps {
@@ -31,33 +33,22 @@ export function RoutineView({
 }: RoutineViewProps) {
   const run = routine.lastRun;
   const working = Boolean(fish.activity);
-  const now = new Date();
+  const now = useNow();
   const nextAt = routine.paused
     ? null
     : nextRun(routine.when, run?.at ?? routine.createdAt, now.getTime());
   return (
     <>
-      <Pane.Header
-        className={styles.header}
+      <FishPane.Header
         title={
           <Button type="button" size="sm" variant="ghost" onClick={onBack}>
             <IconChevronLeft size={14} />
             {fish.name}
           </Button>
         }
-      >
-        <Button
-          type="button"
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Close Details"
-          onClick={onClose}
-        >
-          <IconXmark />
-        </Button>
-      </Pane.Header>
-      <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
+        onClose={onClose}
+      />
+      <FishPane.Body>
         <h2 className={styles.title}>{routine.name}</h2>
         <Section title="Instruction" collapsible={false}>
           <p className={styles.text}>{routine.instruction}</p>
@@ -90,7 +81,7 @@ export function RoutineView({
               <PropertyList.Row>
                 <PropertyList.Label>Ran</PropertyList.Label>
                 <PropertyList.Value>
-                  {rowTime(run.at, new Date())}
+                  {rowTime(run.at, now)}
                 </PropertyList.Value>
               </PropertyList.Row>
               <PropertyList.Row>
@@ -100,7 +91,7 @@ export function RoutineView({
             </PropertyList.Root>
           </Section>
         ) : null}
-      </Pane.Body>
+      </FishPane.Body>
       <div className={styles.footer}>
         <Button
           type="button"

@@ -1,5 +1,4 @@
-import { IconXmark } from "@pond/icons";
-import { Button, Pane, Tabs } from "@pond/ui";
+import { Tabs } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { useEffect, useRef, useState } from "react";
 import { Section } from "@/shared/components/inspector-section";
@@ -17,6 +16,7 @@ import {
 } from "../../state/fish";
 import { FishActivity } from "./activity";
 import { FishAppearance } from "./appearance";
+import { FishPane } from "./pane";
 import { RoutineList } from "./routine-list";
 import { RoutineView } from "./routine-view";
 import { FishSelect } from "./select";
@@ -32,6 +32,7 @@ interface FishProfileProps {
   folders: ReadonlyArray<FishProfileFolder>;
   tagNames: ReadonlyArray<string>;
   onClose: () => void;
+  onNewRoutine?: () => void;
   onEditRoutine?: (routine: FishRoutine) => void;
   onOpenChat?: (chatId: string) => void;
 }
@@ -41,6 +42,7 @@ export function FishProfile({
   folders,
   tagNames,
   onClose,
+  onNewRoutine,
   onEditRoutine,
   onOpenChat,
 }: FishProfileProps) {
@@ -48,16 +50,13 @@ export function FishProfile({
   const openRoutineId = useOpenRoutineId(fishId);
   const [drafts] = useState<InspectorDrafts>(() => new Map());
   const editingId = useFishEditingId();
-  const rootRef = useRef<HTMLElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingId !== fishId) return;
     const frame = requestAnimationFrame(() => {
-      const name = rootRef.current?.querySelector<HTMLInputElement>(
-        'input[aria-label="Name"]',
-      );
-      name?.focus();
-      name?.select();
+      nameRef.current?.focus();
+      nameRef.current?.select();
       fishStore.finishEditing();
     });
     return () => cancelAnimationFrame(frame);
@@ -82,31 +81,15 @@ export function FishProfile({
 
   return (
     <Tabs.Root
-      render={
-        <section
-          ref={rootRef}
-          className={styles.root}
-          aria-label={target.name}
-        />
-      }
+      render={<section className={styles.root} aria-label={target.name} />}
       defaultValue="details"
     >
-      <Pane.Header className={styles.header} title={null}>
-        <Button
-          type="button"
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Close Details"
-          onClick={onClose}
-        >
-          <IconXmark />
-        </Button>
-      </Pane.Header>
+      <FishPane.Header onClose={onClose} />
       <div className={styles.hero}>
         <FishAppearance fish={target} />
         <InspectorTextField
           className={styles.name}
+          inputRef={nameRef}
           drafts={drafts}
           cacheKey={`${target.id}:name`}
           label="Name"
@@ -129,23 +112,27 @@ export function FishProfile({
       </Tabs.List>
       <div className={styles.panels}>
         <Tabs.Panel value="details" className={styles.panel}>
-          <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
-            <Details fish={target} drafts={drafts} />
-          </Pane.Body>
+          <FishPane.Body>
+            <Details
+              fish={target}
+              drafts={drafts}
+              onNewRoutine={onNewRoutine}
+            />
+          </FishPane.Body>
         </Tabs.Panel>
         <Tabs.Panel value="library" className={styles.panel}>
-          <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
+          <FishPane.Body>
             <Scope fish={target} folders={folders} tagNames={tagNames} />
-          </Pane.Body>
+          </FishPane.Body>
         </Tabs.Panel>
         <Tabs.Panel value="activity" className={styles.panel}>
-          <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
+          <FishPane.Body>
             <FishActivity
               fish={target}
-              sectionClassName={styles.section}
+              onNewRoutine={onNewRoutine}
               onOpenChat={onOpenChat}
             />
-          </Pane.Body>
+          </FishPane.Body>
         </Tabs.Panel>
       </div>
     </Tabs.Root>
@@ -155,17 +142,15 @@ export function FishProfile({
 function Details({
   fish,
   drafts,
+  onNewRoutine,
 }: {
   fish: FishSummary;
   drafts: InspectorDrafts;
+  onNewRoutine?: () => void;
 }) {
   return (
     <>
-      <Section
-        title="Instructions"
-        className={styles.section}
-        collapsible={false}
-      >
+      <Section title="Instructions" collapsible={false}>
         <InspectorTextField
           drafts={drafts}
           cacheKey={`${fish.id}:instructions`}
@@ -180,7 +165,7 @@ function Details({
           }}
         />
       </Section>
-      <Section title="Model" className={styles.section} collapsible={false}>
+      <Section title="Model" collapsible={false}>
         <ModelPicker
           layout="field"
           provider={fish.model?.provider ?? ""}
@@ -189,8 +174,8 @@ function Details({
           onUseDefault={() => updateFish(fish, { model: null })}
         />
       </Section>
-      <Section title="Routines" className={styles.section} collapsible={false}>
-        <RoutineList fish={fish} />
+      <Section title="Routines" collapsible={false}>
+        <RoutineList fish={fish} onNewRoutine={onNewRoutine} />
       </Section>
     </>
   );
@@ -216,11 +201,11 @@ function Scope({
   }));
 
   return (
-    <Section title="Reads" className={styles.section} collapsible={false}>
+    <Section title="Reads From" collapsible={false}>
       <div className={styles.fields}>
         <FishSelect.Multi
           label="Folders"
-          empty="Any Folder"
+          empty={folderItems.length ? "Any Folder" : "No Folders Yet"}
           value={folderIds}
           items={folderItems}
           onChange={(next) =>
@@ -229,7 +214,7 @@ function Scope({
         />
         <FishSelect.Multi
           label="Tags"
-          empty="Any Tag"
+          empty={tagItems.length ? "Any Tag" : "No Tags Yet"}
           value={tags}
           items={tagItems}
           onChange={(next) =>

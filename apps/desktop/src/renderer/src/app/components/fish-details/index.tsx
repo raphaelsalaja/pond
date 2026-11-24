@@ -34,6 +34,7 @@ export function FishDetails() {
       folders={folders}
       tagNames={tags.map((tag) => tag.name)}
       onClose={() => libraryChrome.setDetailsOpen(false)}
+      onNewRoutine={() => draftInChat("Set up a routine: ")}
       onEditRoutine={(routine) =>
         draftInChat(`Edit your routine: ${routine.name}. `)
       }

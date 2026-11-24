@@ -22,7 +22,8 @@
 }
 
 .sentence {
-  line-height: 20px;
+  font-size: var(--ds-text-body);
+  line-height: var(--ds-leading-body);
   color: var(--ds-foreground-primary);
   overflow-wrap: anywhere;
 }

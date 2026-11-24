@@ -1,4 +1,5 @@
 import { Select } from "@pond/ui";
+import { FISH_SCOPE_CAP } from "@shared/fish-contracts";
 import styles from "./styles.module.css";
 
 interface MultiProps {
@@ -17,7 +18,7 @@ function Multi({ label, empty, value, items, onChange }: MultiProps) {
       value={value}
       items={items}
       disabled={!items.length}
-      onValueChange={(next) => onChange(next.slice(0, 200))}
+      onValueChange={(next) => onChange(next.slice(0, FISH_SCOPE_CAP))}
     >
       <div className={styles.field}>
         <Select.Label>{label}</Select.Label>

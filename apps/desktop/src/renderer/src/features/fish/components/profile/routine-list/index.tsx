@@ -1,8 +1,9 @@
-import { Badge, Button, HoverHighlight, Switch } from "@pond/ui";
+import { Badge, Button, Empty, HoverHighlight, Switch } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { describeWhen, isRoutineDue, nextRun } from "@shared/fish-routine";
 import { setRoutinePaused } from "../../../lib/menu";
 import { lastRunText, nextRunText } from "../../../lib/runs";
+import { useNow } from "../../../lib/use-now";
 import { fish as fishStore } from "../../../state/fish";
 import styles from "./styles.module.css";
 
@@ -46,10 +47,31 @@ function RunLine({
   );
 }
 
-export function RoutineList({ fish }: { fish: FishSummary }) {
-  const now = new Date();
+export function RoutineList({
+  fish,
+  onNewRoutine,
+}: {
+  fish: FishSummary;
+  onNewRoutine?: () => void;
+}) {
+  const now = useNow();
   if (!fish.routines.length)
-    return <p className={styles.empty}>Ask in chat to set a routine.</p>;
+    return (
+      <Empty.Root size="card">
+        <Empty.Title>No Routines Yet</Empty.Title>
+        <Empty.Description>
+          Ask {fish.name} in chat to run work on a schedule or when saves
+          arrive.
+        </Empty.Description>
+        {onNewRoutine ? (
+          <Empty.Action>
+            <Button variant="secondary" size="sm" onClick={onNewRoutine}>
+              New Routine
+            </Button>
+          </Empty.Action>
+        ) : null}
+      </Empty.Root>
+    );
   return (
     <ul className={styles.list}>
       {fish.routines.map((routine) => (

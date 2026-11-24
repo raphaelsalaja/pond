@@ -2,6 +2,7 @@ import { Badge, Button, Empty, EmptyPreview } from "@pond/ui";
 import type { FishSummary } from "@shared/fish-contracts";
 import { Section } from "@/shared/components/inspector-section";
 import { fishRuns, runGroup, runSentence, runsByDay } from "../../../lib/runs";
+import { useNow } from "../../../lib/use-now";
 import styles from "./styles.module.css";
 
 const badges = {
@@ -12,13 +13,14 @@ const badges = {
 
 export function FishActivity({
   fish,
-  sectionClassName,
+  onNewRoutine,
   onOpenChat,
 }: {
   fish: FishSummary;
-  sectionClassName?: string;
+  onNewRoutine?: () => void;
   onOpenChat?: (chatId: string) => void;
 }) {
+  const now = useNow();
   const runs = fishRuns(fish);
   if (!runs.length)
     return (
@@ -40,15 +42,17 @@ export function FishActivity({
             ? `${fish.name}'s runs show up here.`
             : `Ask ${fish.name} in chat to set a routine, and its runs show up here.`}
         </Empty.Description>
+        {!fish.routines.length && onNewRoutine ? (
+          <Empty.Action>
+            <Button variant="secondary" size="sm" onClick={onNewRoutine}>
+              New Routine
+            </Button>
+          </Empty.Action>
+        ) : null}
       </Empty.Root>
     );
-  return runsByDay(runs).map(({ day, runs }) => (
-    <Section
-      key={day}
-      title={day}
-      className={sectionClassName}
-      collapsible={false}
-    >
+  return runsByDay(runs, now).map(({ day, runs }) => (
+    <Section key={day} title={day} collapsible={false}>
       <ul className={styles.runs}>
         {runs.map((run) => {
           const badge = badges[runGroup(run)];
@@ -76,7 +80,7 @@ export function FishActivity({
                   variant="ghost"
                   onClick={() => onOpenChat(chatId)}
                 >
-                  Open
+                  Open Chat
                 </Button>
               ) : null}
             </li>
