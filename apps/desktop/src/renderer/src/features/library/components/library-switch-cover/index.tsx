@@ -34,17 +34,8 @@ export function LibrarySwitchCover() {
     return null;
   }
 
-  return createPortal(
-    <div
-      className={styles.cover}
-      data-failed={failed || undefined}
-      role={failed ? "alertdialog" : "status"}
-      aria-busy={!failed}
-      aria-labelledby="library-switch-title"
-      aria-describedby={
-        failed || state.waiting ? "library-switch-detail" : undefined
-      }
-    >
+  const content = (
+    <>
       <div className={styles.drag} aria-hidden="true" />
       <Empty.Root className={styles.empty}>
         <Empty.Media className={styles.media}>
@@ -81,7 +72,25 @@ export function LibrarySwitchCover() {
           </Empty.Action>
         ) : null}
       </Empty.Root>
-    </div>,
+    </>
+  );
+
+  return createPortal(
+    failed ? (
+      <div
+        className={styles.cover}
+        data-failed
+        role="alertdialog"
+        aria-labelledby="library-switch-title"
+        aria-describedby="library-switch-detail"
+      >
+        {content}
+      </div>
+    ) : (
+      <div className={styles.cover} role="status" aria-busy="true">
+        {content}
+      </div>
+    ),
     document.body,
   );
 }
