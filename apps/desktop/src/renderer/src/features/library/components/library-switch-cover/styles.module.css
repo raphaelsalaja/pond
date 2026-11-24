@@ -1,0 +1,66 @@
+/* Popups share this clamped ceiling; the cover portals last so it paints above them. */
+.cover {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  background: var(--ds-background-primary);
+  animation: cover-in var(--ds-duration-fast) var(--ds-easing-decelerate) both;
+}
+
+.drag {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 44px;
+  -webkit-app-region: drag;
+}
+
+.empty {
+  --empty-media-size: 64px;
+  --empty-description-max-width: 48ch;
+
+  animation: none;
+}
+
+.media {
+  width: var(--empty-media-size);
+  height: var(--empty-media-size);
+}
+
+.icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: cover-pulse 1.4s ease-in-out infinite;
+
+  .cover[data-failed] & {
+    animation: none;
+  }
+}
+
+@keyframes cover-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes cover-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover,
+  .icon {
+    animation: none;
+  }
+}

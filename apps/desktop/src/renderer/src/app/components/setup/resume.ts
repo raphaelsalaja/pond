@@ -1,7 +1,7 @@
-/** Not Library-scoped: moving the Library can change its id across the relaunch. */
+/** Not Library-scoped: moving the Library can change its id across the reopen. */
 const RESUME_KEY = "pondSetupResume";
 
-/** Renaming or moving the Library relaunches Pond, so setup remembers to reopen on the import step. */
+/** Renaming or moving the Library reloads the window, so setup remembers to reopen on the import step. */
 export const setupResume = {
   mark(): void {
     try {

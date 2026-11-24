@@ -28,6 +28,10 @@ export async function runLibraryTransfer<T>(
   }
 }
 
+export function libraryTransfersRunning(): boolean {
+  return active.size > 0;
+}
+
 export async function stopLibraryTransfers(): Promise<void> {
   paused = true;
   await Promise.all(active);
