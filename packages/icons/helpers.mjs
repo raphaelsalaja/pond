@@ -96,7 +96,7 @@ export function arc(cx, cy, r, a0, a1) {
   return `M ${pt(p(a0))} A ${n(r)} ${n(r)} 0 ${large} ${a1 > a0 ? 1 : 0} ${pt(p(a1))}`;
 }
 
-export function starPoints(cx, cy, outer, inner, count = 5) {
+function starPoints(cx, cy, outer, inner, count = 5) {
   return Array.from({ length: count * 2 }, (_, i) => {
     const a = ((-90 + (i * 180) / count) * Math.PI) / 180;
     const r = i % 2 ? inner : outer;

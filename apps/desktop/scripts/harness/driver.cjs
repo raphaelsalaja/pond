@@ -201,7 +201,9 @@ function driver(main, { sandbox, onStep = () => {} }) {
         if (!el) return null;
         el.scrollIntoView({ block: "nearest", inline: "nearest" });
         const r = el.getBoundingClientRect();
-        return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), draggable: Boolean(el.closest('[draggable="true"]')) };
+        const x = Math.round(r.left + r.width / 2);
+        const y = Math.round(r.top + r.height / 2);
+        return { x, y, hit: el.contains(document.elementFromPoint(x, y)), draggable: Boolean(el.closest('[draggable="true"]')) };
       })()`,
     );
     if (!point) throw new Error(`No element matches ${selector}`);
@@ -277,7 +279,19 @@ function driver(main, { sandbox, onStep = () => {} }) {
     async click(selector, options = {}) {
       const win = windowFor(options.window);
       await waitFor(selector, options.timeout ?? 10000, options);
-      const point = await center(win, selector);
+      /** A closing pane can still cover the target or reflow it, so click only once it is on top and has stopped moving. */
+      let last = null;
+      const point = await waitFor(
+        async () => {
+          const next = await center(win, selector);
+          const settled =
+            next.hit && last && next.x === last.x && next.y === last.y;
+          last = next;
+          return settled ? next : null;
+        },
+        options.timeout ?? 10000,
+        options,
+      );
       await mouse(point.x, point.y, "click", options);
     },
     mouse,
