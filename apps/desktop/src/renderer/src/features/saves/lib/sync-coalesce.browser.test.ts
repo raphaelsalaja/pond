@@ -1,11 +1,15 @@
+import type { WireSave } from "@shared/wire";
 import { describe, expect, it, vi } from "vitest";
 import { pool } from "@/features/saves/state/pool";
+import { bridge } from "@/shared/test/pond-bridge";
 import { applyActionCoalesced } from "./sync-coalesce";
 
-const frame = () =>
-  new Promise((r) => {
-    setTimeout(r, 20);
+/** Coalesced actions flush on the next animation frame, ahead of any callback registered after them. */
+function frame() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
   });
+}
 
 describe("applyActionCoalesced", () => {
   it("ignores an update for a save it has never seen", async () => {
@@ -61,54 +65,53 @@ describe("applyActionCoalesced", () => {
       nextRunAt: 0,
       updatedAt: 1,
     };
-    const query = vi.fn(async () => [
-      {
+    const row = {
+      id: "known-3",
+      url: "https://example.com/gone",
+      status: "failed",
+      tasks: [
+        {
+          ...task,
+          status: "dead",
+          lastError: "TerminalError: web fetch 404",
+        },
+      ],
+    };
+    /** SAFETY: reloadSaves parses rows through SavePatchesSchema, which fills every column this row omits. */
+    bridge.use({ query: { "saves.getMany": () => [row as WireSave] } });
+    applyActionCoalesced({
+      modelName: "save",
+      modelId: "known-3",
+      action: "I",
+      data: {
         id: "known-3",
         url: "https://example.com/gone",
-        status: "failed",
-        tasks: [
-          {
-            ...task,
-            status: "dead",
-            lastError: "TerminalError: web fetch 404",
-          },
-        ],
+        status: "ingesting",
+        tasks: [{ ...task, status: "running", lastError: null }],
       },
-    ]);
-    vi.stubGlobal("window", { pond: { query } });
-    try {
-      applyActionCoalesced({
-        modelName: "save",
-        modelId: "known-3",
-        action: "I",
-        data: {
-          id: "known-3",
-          url: "https://example.com/gone",
-          status: "ingesting",
-          tasks: [{ ...task, status: "running", lastError: null }],
-        },
-      });
-      await frame();
-      applyActionCoalesced({
-        modelName: "save",
-        modelId: "known-3",
-        action: "U",
-        data: { status: "failed" },
-      });
-      await frame();
-      expect(query).toHaveBeenCalledWith("saves.getMany", { ids: ["known-3"] });
+    });
+    await frame();
+    applyActionCoalesced({
+      modelName: "save",
+      modelId: "known-3",
+      action: "U",
+      data: { status: "failed" },
+    });
+    await frame();
+    expect(window.pond.query).toHaveBeenCalledWith("saves.getMany", {
+      ids: ["known-3"],
+    });
+    await vi.waitFor(() => {
       expect(pool.get("known-3")?.tasks?.[0]?.status).toBe("dead");
+    });
 
-      applyActionCoalesced({
-        modelName: "save",
-        modelId: "known-3",
-        action: "U",
-        data: { title: "Gone" },
-      });
-      await frame();
-      expect(query).toHaveBeenCalledTimes(1);
-    } finally {
-      vi.unstubAllGlobals();
-    }
+    applyActionCoalesced({
+      modelName: "save",
+      modelId: "known-3",
+      action: "U",
+      data: { title: "Gone" },
+    });
+    await frame();
+    expect(window.pond.query).toHaveBeenCalledTimes(1);
   });
 });

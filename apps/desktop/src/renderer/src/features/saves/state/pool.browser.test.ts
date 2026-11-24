@@ -1,4 +1,6 @@
+import type { WireSave } from "@shared/wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ensureSaves } from "../lib/ensure-saves";
 import { normalise } from "../lib/reconcile";
 import type { Save } from "../types";
@@ -201,7 +203,6 @@ describe("bounded pool", () => {
   beforeEach(() => pool.clear());
   afterEach(() => {
     vi.useRealTimers();
-    vi.unstubAllGlobals();
     selection.clear();
     resultNavigation.setSource({ ids: [] });
   });
@@ -279,12 +280,19 @@ describe("bounded pool", () => {
     pool.bulkUpsert(rows(overCap));
     trimPool();
     expect(pool.get("row-0")).toBeUndefined();
-    const query = vi.fn(async (_name: string, input: { ids: Array<string> }) =>
-      input.ids.map((id) => ({ id, savedAt: 0, createdAt: 1 })),
-    );
-    vi.stubGlobal("window", { pond: { query } });
+    bridge.use({
+      query: {
+        "saves.getMany": ({ ids }) => {
+          const fetched = ids.map((id) => ({ id, savedAt: 0, createdAt: 1 }));
+          /** SAFETY: ensureSaves parses rows through SavePatchesSchema, which fills every column these rows omit. */
+          return fetched as Array<WireSave>;
+        },
+      },
+    });
     await ensureSaves(["row-0", `row-${overCap - 1}`]);
-    expect(query.mock.calls).toEqual([["saves.getMany", { ids: ["row-0"] }]]);
+    expect(vi.mocked(window.pond.query).mock.calls).toEqual([
+      ["saves.getMany", { ids: ["row-0"] }],
+    ]);
     expect(pool.get("row-0")?.id).toBe("row-0");
     expect(pool.snapshot().at(-1)?.id).toBe("row-0");
     expect(pool.snapshot()).toHaveLength(POOL_TRIM_TARGET + 1);

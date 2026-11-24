@@ -11,17 +11,19 @@ const STORE = "snapshot";
 const VERSION = 1;
 const SNAPSHOT_LIMIT = 250;
 
-let dbPromise: Promise<IDBDatabase> | null = null;
+const dbPromises = new Map<string, Promise<IDBDatabase>>();
 
 function openDb(): Promise<IDBDatabase> {
-  if (dbPromise) {
-    return dbPromise;
+  const name = libraryScopedKey(DB_BASE_NAME);
+  const cached = dbPromises.get(name);
+  if (cached) {
+    return cached;
   }
-  dbPromise = new Promise((resolve, reject) => {
+  const opened = new Promise<IDBDatabase>((resolve, reject) => {
     try {
       /** An unscoped snapshot can hold another Library's Saves, so it is never read. */
       indexedDB.deleteDatabase(DB_BASE_NAME);
-      const req = indexedDB.open(libraryScopedKey(DB_BASE_NAME), VERSION);
+      const req = indexedDB.open(name, VERSION);
       req.onupgradeneeded = () => {
         const d = req.result;
         if (!d.objectStoreNames.contains(STORE)) {
@@ -35,7 +37,8 @@ function openDb(): Promise<IDBDatabase> {
       reject(error);
     }
   });
-  return dbPromise;
+  dbPromises.set(name, opened);
+  return opened;
 }
 
 export async function readSnapshot(): Promise<Array<SavePatch | null>> {

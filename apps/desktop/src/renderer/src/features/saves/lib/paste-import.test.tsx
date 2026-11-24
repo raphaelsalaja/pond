@@ -1,15 +1,21 @@
-import { act } from "react";
+import type { SavesImportFilesResult } from "@shared/saves-import-contracts";
+import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import "@/app/effects/save-library-bridge";
 import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import type { LibraryTestRouter } from "@/app/test/library-router";
+import {
+  closeDuplicateImportReview,
+  useDuplicateImportReview,
+} from "@/features/saves/state/duplicate-import-review";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { ToastHost } from "@/shared/components/toast-host";
 import { routeMeta } from "@/shared/lib/route-meta";
 import { toastManager } from "@/shared/lib/toast";
+import { bridge } from "@/shared/test/pond-bridge";
 import { runPasteImport } from "./paste-import";
 
 let root: Root;
@@ -35,7 +41,6 @@ afterEach(async () => {
   toastManager.close();
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 function toastText(): string {
@@ -50,30 +55,32 @@ function showAction(): HTMLButtonElement | undefined {
   ].find((button) => button.textContent === "Show in Library");
 }
 
-interface ImportReply {
-  ok: boolean;
-  ids?: Array<string>;
-  failedPaths?: Array<string>;
-  error?: string;
-  reason?: string;
+function replyToImport(reply: SavesImportFilesResult) {
+  bridge.use({
+    query: {
+      "saves.reviewImportDuplicates": () => ({ candidates: [] }),
+      "saves.importFiles": () => reply,
+    },
+  });
 }
 
-function stubImport(reply: ImportReply) {
-  const query = vi.fn(async (operation: string) => {
-    if (operation === "saves.reviewImportDuplicates") {
-      return { candidates: [] };
+/** Cancels the duplicate review as soon as it opens, as its Cancel button does. */
+function CancelDuplicateReview() {
+  const request = useDuplicateImportReview();
+  useEffect(() => {
+    if (request) {
+      closeDuplicateImportReview();
     }
-    if (operation === "saves.stageClipboard") {
-      return { ok: true, paths: ["/tmp/pond-clip/clipboard.png"] };
-    }
-    return reply;
-  });
-  vi.stubGlobal("pond", { query });
-  return query;
+  }, [request]);
+  return null;
 }
 
 it("selects exactly the imported Saves in their folder, keeping the failure count", async () => {
-  stubImport({ ok: true, ids: ["a", "b"], failedPaths: ["/tmp/broken.png"] });
+  replyToImport({
+    ok: true,
+    ids: ["a", "b"],
+    failedPaths: ["/tmp/broken.png"],
+  });
   await act(async () => {
     await runPasteImport(
       {
@@ -95,12 +102,14 @@ it("selects exactly the imported Saves in their folder, keeping the failure coun
 });
 
 it("selects the pasted links that were added in All, not the ones that failed", async () => {
-  const query = vi.fn(async (_operation: string, input: { url: string }) =>
-    input.url === "https://one.test/"
-      ? { ok: true, id: "one" }
-      : { ok: false, error: "unsupported_url" },
-  );
-  vi.stubGlobal("pond", { query });
+  bridge.use({
+    query: {
+      "saves.quickAdd": ({ url }) =>
+        url === "https://one.test/"
+          ? { ok: true, id: "one" }
+          : { ok: false, error: "unsupported_url" },
+    },
+  });
   router = await openLibraryAt("/folders/elsewhere");
   await act(async () => {
     await runPasteImport({
@@ -116,7 +125,7 @@ it("selects the pasted links that were added in All, not the ones that failed", 
 });
 
 it("reselects the Saves once the destination publishes its results", async () => {
-  stubImport({ ok: true, ids: ["a", "b"] });
+  replyToImport({ ok: true, ids: ["a", "b"] });
   await act(async () => {
     await runPasteImport(
       { kind: "files", paths: ["/tmp/a.png", "/tmp/b.png"] },
@@ -131,7 +140,7 @@ it("reselects the Saves once the destination publishes its results", async () =>
 });
 
 it("offers no Show in Library when nothing was imported", async () => {
-  stubImport({ ok: false, error: "no_files" });
+  replyToImport({ ok: false, error: "no_files" });
   await act(async () => {
     await runPasteImport({ kind: "files", paths: ["/tmp/missing.png"] });
   });
@@ -140,10 +149,40 @@ it("offers no Show in Library when nothing was imported", async () => {
 });
 
 it("stays quiet when the import was cancelled", async () => {
-  stubImport({ ok: false, reason: "cancelled" });
-  await act(async () => {
-    await runPasteImport({ kind: "clipboard" });
+  const staged = "/tmp/pond-clip/clipboard.png";
+  bridge.use({
+    query: {
+      "saves.stageClipboard": () => ({ ok: true, paths: [staged] }),
+      "saves.reviewImportDuplicates": () => ({
+        candidates: [
+          {
+            path: staged,
+            filename: "clipboard.png",
+            existingId: "existing",
+            existingTitle: null,
+            inTrash: false,
+          },
+        ],
+      }),
+      "saves.discardStagedClipboard": () => ({ ok: true }),
+    },
   });
+  let pending: Promise<Array<string>> | undefined;
+  await act(async () => {
+    root.render(
+      <>
+        <ToastHost />
+        <CancelDuplicateReview />
+      </>,
+    );
+    pending = runPasteImport({ kind: "clipboard" });
+  });
+  /** Awaited outside act so the review request can render and be cancelled. */
+  await expect(pending).resolves.toEqual([]);
+  expect(window.pond.query).not.toHaveBeenCalledWith(
+    "saves.importFiles",
+    expect.anything(),
+  );
   expect(toastText()).toBe("");
   expect(showAction()).toBeUndefined();
 });

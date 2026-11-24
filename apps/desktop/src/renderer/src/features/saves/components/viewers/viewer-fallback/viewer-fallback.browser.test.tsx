@@ -8,6 +8,7 @@ import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/c
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ViewerFallback } from ".";
 
 const save: Save = {
@@ -40,18 +41,10 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  vi.stubGlobal("pond", {
+  bridge.use({
     openSaveFile: async () => ({ ok: true }),
-    query: async () => PrefsSchema.parse({}),
-    tx: async () => ({ ok: true }),
+    query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
+    tx: async () => {},
   });
   resultNavigation.setSource({
     ids: ["before", save.id, "after"],
@@ -66,7 +59,6 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   resultNavigation.setSource({ ids: [] });
-  vi.unstubAllGlobals();
 });
 
 it("keeps failure content and original actions inside the existing chrome", async () => {
@@ -124,18 +116,20 @@ it("ends a failed generated file preview in the shared fallback", async () => {
   pool.upsert(documentSave);
   resultNavigation.setSource({ ids: [documentSave.id], total: 1 });
 
-  await act(async () => {
+  act(() => {
     root.render(<StoredFileViewer save={documentSave} file={file} />);
   });
+  expect(host.querySelector("img")?.getAttribute("src")).toContain(
+    "reference.docx",
+  );
 
-  const image = host.querySelector("img");
-  if (!image) {
-    throw new Error("Missing generated document preview");
-  }
-  await act(async () => {
-    image.dispatchEvent(new Event("error", { bubbles: true }));
+  /** Chromium can't load `pond://`, so the generated preview fails for real. */
+  await vi.waitFor(async () => {
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(host.querySelector("[data-viewer-fallback]")).not.toBeNull();
   });
-
   expect(host.textContent).toContain("This preview could not be rendered.");
   expect(
     host.querySelector('button[aria-label="Open in Default App"]'),
@@ -151,7 +145,7 @@ it("ends a failed generated file preview in the shared fallback", async () => {
     throw new Error("Missing replacement fixture");
   }
   pool.upsert(replacement);
-  await act(async () => {
+  act(() => {
     root.render(<StoredFileViewer save={replacement} file={replacementFile} />);
   });
 

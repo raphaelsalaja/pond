@@ -1,6 +1,7 @@
 import type { RecentSaveVisit } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { z } from "zod";
 import { protectSaves } from "@/features/saves/state/pool";
@@ -36,7 +37,9 @@ function hydrate(): void {
         );
       }
     })
-    .catch(() => {});
+    .catch((cause: unknown) =>
+      log.warn("[pond recents] recent visits load failed", cause),
+    );
 }
 
 hydrate();

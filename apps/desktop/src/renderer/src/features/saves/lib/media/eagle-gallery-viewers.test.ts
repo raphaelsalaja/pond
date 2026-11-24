@@ -43,19 +43,18 @@ function save(extension: string): Save {
 
 describe("Eagle Format Gallery viewers", () => {
   it.each([
-    ["png", "raster", "original"],
-    ["dng", "raster", "generated"],
-    ["docx", "raster", "generated"],
-    ["mp4", "temporal", undefined],
-    ["pdf", "specialist", undefined],
-  ] as const)(
-    "describes .%s with its %s interaction surface",
-    (extension, surface, source) => {
-      const capability = viewerCapabilityFor(file(extension));
-      expect(capability).toMatchObject({ surface });
-      if (source) {
-        expect(capability).toMatchObject({ source });
-      }
+    { extension: "png", expected: { surface: "raster", source: "original" } },
+    { extension: "dng", expected: { surface: "raster", source: "generated" } },
+    {
+      extension: "docx",
+      expected: { surface: "raster", source: "generated" },
+    },
+    { extension: "mp4", expected: { surface: "temporal" } },
+    { extension: "pdf", expected: { surface: "specialist" } },
+  ])(
+    "describes .$extension with its $expected.surface interaction surface",
+    ({ extension, expected }) => {
+      expect(viewerCapabilityFor(file(extension))).toMatchObject(expected);
     },
   );
 

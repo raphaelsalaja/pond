@@ -1,13 +1,16 @@
 import { PrefsSchema } from "@pond/schema";
 import { act, useLayoutEffect } from "react";
+import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { libraryViewContext } from "@/features/saves/state/view-context";
 import type { Save } from "@/features/saves/types";
+import { loadPrefs } from "@/shared/state/prefs";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ChromePortal, ViewerChrome } from ".";
 import { MediaViewer } from "..";
 
@@ -42,28 +45,26 @@ const save: Save = {
 let host: HTMLDivElement;
 let root: Root;
 
-beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+/** Chromium fails `pond://` media in a later task, so read the first commit before the viewer falls back. */
+function renderNow(node: ReactNode): void {
+  act(() => {
+    root.render(node);
+  });
+}
+
+beforeEach(async () => {
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => PrefsSchema.parse({}),
+      "saves.mediaTiming": () => ({ frameRate: null }),
+      "video.preparePreview": () => ({ ok: false, error: "Unsupported" }),
     },
-  );
-  vi.stubGlobal("pond", {
-    query: async () => PrefsSchema.parse({}),
-    tx: async () => ({ ok: true }),
+    tx: async () => {},
   });
-  Object.defineProperty(HTMLMediaElement.prototype, "play", {
-    configurable: true,
-    value: () => Promise.resolve(),
-  });
-  Object.defineProperty(HTMLMediaElement.prototype, "pause", {
-    configurable: true,
-    value: () => {},
-  });
+  await loadPrefs();
   host = document.createElement("div");
+  host.style.width = "1280px";
+  host.style.height = "800px";
   document.body.append(host);
   root = createRoot(host);
   pool.upsert(save);
@@ -77,15 +78,12 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
   libraryViewContext.set([], "library");
   resultNavigation.setSource({ ids: [] });
 });
 
-it("places image inspector controls in the integrated top toolbar", async () => {
-  await act(async () => {
-    root.render(<MediaViewer save={save} />);
-  });
+it("places image inspector controls in the integrated top toolbar", () => {
+  renderNow(<MediaViewer save={save} />);
   const frame = host.querySelector("[data-background]");
   const fit = [...host.querySelectorAll("button")].find(
     (button) => button.getAttribute("aria-label") === "Fit to Window",
@@ -149,10 +147,8 @@ it("mounts toolbars in the chrome bar before stage layout effects measure", asyn
   expect(bars.bottom?.parentElement).toBe(viewerRoot);
 });
 
-it("shows only media when controls are disabled", async () => {
-  await act(async () => {
-    root.render(<MediaViewer save={save} showControls={false} />);
-  });
+it("shows only media when controls are disabled", () => {
+  renderNow(<MediaViewer save={save} showControls={false} />);
 
   expect(host.querySelector("[aria-label='Image']")).toBeTruthy();
   expect(host.querySelector("[data-slot]")).toBeNull();
@@ -186,7 +182,7 @@ it("suppresses portal toolbars and direct HUD overlays when controls are disable
   expect(host.querySelector('[aria-label="Table of contents"]')).toBeNull();
 });
 
-it("leaves slide arrows out of a gallery's top bar", async () => {
+it("leaves slide arrows out of a gallery's top bar", () => {
   const first = save.files[0];
   if (!first) {
     throw new Error("Missing fixture file");
@@ -208,9 +204,7 @@ it("leaves slide arrows out of a gallery's top bar", async () => {
     ids: ["before", "gallery-save", "after"],
     total: 493,
   });
-  await act(async () => {
-    root.render(<MediaViewer save={gallery} />);
-  });
+  renderNow(<MediaViewer save={gallery} />);
   const labeled = (label: string) =>
     [...host.querySelectorAll("button")].find(
       (button) => button.getAttribute("aria-label") === label,
@@ -231,7 +225,7 @@ it("leaves slide arrows out of a gallery's top bar", async () => {
   expect(zoom?.closest("[data-blossom-slide]")).toBeNull();
 });
 
-it("composes video result count and actions into one top bar", async () => {
+it("composes video result count and actions into one top bar", () => {
   const videoFile = {
     path: "clip.mp4",
     kind: "video" as const,
@@ -257,9 +251,7 @@ it("composes video result count and actions into one top bar", async () => {
   pool.upsert(videoSave);
   resultNavigation.setSource({ ids: ["video-save"], total: 1 });
 
-  await act(async () => {
-    root.render(<MediaViewer save={videoSave} />);
-  });
+  renderNow(<MediaViewer save={videoSave} />);
 
   const top = host.querySelector('[data-slot="top"]');
   expect(top?.querySelectorAll('[role="toolbar"]')).toHaveLength(1);

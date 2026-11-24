@@ -1,8 +1,8 @@
-// @vitest-environment jsdom
-
+import type { OkResult } from "@shared/query-contracts-shared";
 import { afterEach, expect, it, vi } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
+import { bridge } from "@/shared/test/pond-bridge";
 import { normalise, SavePatchSchema } from "./reconcile";
 import {
   beginSaveDrag,
@@ -19,8 +19,11 @@ afterEach(() => {
   selection.clear();
   clearDraggingSaveIds();
   pool.clear();
-  vi.unstubAllGlobals();
 });
+
+function startDragReplies(result: OkResult) {
+  bridge.use({ query: { "saves.startDrag": () => result } });
+}
 
 interface TestSaveDragDataTransfer extends SaveDragDataTransfer {
   readonly dragImage: Element | null;
@@ -136,8 +139,7 @@ it("clears the drag session when the browser dispatches dragend", () => {
 });
 
 it("hands saves with files to a native drag and cancels the browser drag", () => {
-  const query = vi.fn(async () => ({ ok: true }));
-  vi.stubGlobal("pond", { query });
+  startDragReplies({ ok: true });
   seedImage("photo");
   const data = transfer();
   const event = start(data, true);
@@ -145,7 +147,7 @@ it("hands saves with files to a native drag and cancels the browser drag", () =>
   beginSaveDrag("photo", event);
 
   expect(event.preventDefault).toHaveBeenCalledOnce();
-  expect(query).toHaveBeenCalledWith("saves.startDrag", {
+  expect(window.pond.query).toHaveBeenCalledWith("saves.startDrag", {
     ids: ["photo"],
     fileIndex: 0,
     fileIndexes: { photo: 0 },
@@ -156,15 +158,14 @@ it("hands saves with files to a native drag and cancels the browser drag", () =>
 });
 
 it("sends each save's own file index in a native drag", () => {
-  const query = vi.fn(async () => ({ ok: true }));
-  vi.stubGlobal("pond", { query });
+  startDragReplies({ ok: true });
   seedImage("one");
   seedImage("two");
   selection.set(["one", "two"]);
 
   beginSaveDrag("one", start(transfer(), true));
 
-  expect(query).toHaveBeenCalledWith("saves.startDrag", {
+  expect(window.pond.query).toHaveBeenCalledWith("saves.startDrag", {
     ids: ["one", "two"],
     fileIndex: 0,
     fileIndexes: { one: 0, two: 0 },
@@ -172,7 +173,7 @@ it("sends each save's own file index in a native drag", () => {
 });
 
 it("ignores a released pointer until the native drag has crossed the window", () => {
-  vi.stubGlobal("pond", { query: vi.fn(async () => ({ ok: true })) });
+  startDragReplies({ ok: true });
   seedImage("photo");
   beginSaveDrag("photo", start(transfer(), true));
 
@@ -186,7 +187,7 @@ it("ignores a released pointer until the native drag has crossed the window", ()
 });
 
 it("ends a native drag on the next click or Escape", () => {
-  vi.stubGlobal("pond", { query: vi.fn(async () => ({ ok: true })) });
+  startDragReplies({ ok: true });
   seedImage("photo");
   beginSaveDrag("photo", start(transfer(), true));
   window.dispatchEvent(new PointerEvent("pointerdown"));
@@ -207,9 +208,7 @@ function hasTitle(detail: unknown): detail is { title: string } {
 }
 
 it("ends the drag and explains why when Pond can't start it", async () => {
-  vi.stubGlobal("pond", {
-    query: vi.fn(async () => ({ ok: false, error: "No preview" })),
-  });
+  startDragReplies({ ok: false, error: "No preview" });
   const titles: Array<string> = [];
   const onNotification = (event: Event) => {
     if ("detail" in event && hasTitle(event.detail)) {
@@ -226,14 +225,13 @@ it("ends the drag and explains why when Pond can't start it", async () => {
 });
 
 it("drags a file-backed save as an in-app payload by default, not a native drag", () => {
-  const query = vi.fn(async () => ({ ok: true }));
-  vi.stubGlobal("pond", { query });
+  startDragReplies({ ok: true });
   seedImage("photo");
   const data = transfer();
 
   beginSaveDrag("photo", start(data));
 
-  expect(query).not.toHaveBeenCalled();
+  expect(window.pond.query).not.toHaveBeenCalled();
   expect(data.getData(SAVE_DRAG_TYPE)).toBe("photo");
   expect(isLibrarySaveDrag(data)).toBe(true);
   expect(saveDropIds(data)).toEqual(["photo"]);

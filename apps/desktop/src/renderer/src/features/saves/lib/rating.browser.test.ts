@@ -1,7 +1,11 @@
-import { afterEach, expect, it, vi } from "vitest";
+import type { BulkQueryResults } from "@shared/bulk-contracts";
+import { afterEach, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { pool } from "../state/pool";
 import { rateSaves } from "./rating";
 import { normalise, SavePatchSchema } from "./reconcile";
+
+type BulkEditResult = BulkQueryResults["saves.bulkEdit"];
 
 function seed(id: string, rating: number | null) {
   const save = normalise(SavePatchSchema.parse({ id, title: id, rating }));
@@ -12,7 +16,6 @@ function seed(id: string, rating: number | null) {
 }
 afterEach(() => {
   pool.clear();
-  vi.unstubAllGlobals();
 });
 it("rates every explicit ID while updating only loaded cards optimistically", async () => {
   seed("a", 1);
@@ -20,24 +23,23 @@ it("rates every explicit ID while updating only loaded cards optimistically", as
     "a",
     ...Array.from({ length: 300 }, (_, index) => `cold-${index}`),
   ];
-  const pending = Promise.withResolvers<{ changed: number }>();
-  const query = vi.fn(() => pending.promise);
-  vi.stubGlobal("window", { pond: { query } });
+  const pending = Promise.withResolvers<BulkEditResult>();
+  bridge.use({ query: { "saves.bulkEdit": () => pending.promise } });
   const operation = rateSaves([...ids, "a"], 4);
   expect(pool.get("a")?.rating).toBe(4);
   expect(pool.snapshot()).toHaveLength(1);
-  expect(query).toHaveBeenCalledWith("saves.bulkEdit", {
+  expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
     ids,
     operation: { kind: "rating", rating: 4 },
   });
-  pending.resolve({ changed: ids.length });
+  pending.resolve({ changed: ids.length, undoId: null });
   await operation;
 });
 it("rolls back and rejects failures so rate-and-advance cannot move ahead", async () => {
   seed("a", 3);
-  vi.stubGlobal("window", {
-    pond: {
-      query: async () => {
+  bridge.use({
+    query: {
+      "saves.bulkEdit": async () => {
         throw new Error("Disk unavailable");
       },
     },
@@ -47,10 +49,11 @@ it("rolls back and rejects failures so rate-and-advance cannot move ahead", asyn
 });
 it("clears ratings with zero and rejects invalid values before IPC", async () => {
   seed("a", 3);
-  const query = vi.fn(async () => ({ changed: 1 }));
-  vi.stubGlobal("window", { pond: { query } });
+  bridge.use({
+    query: { "saves.bulkEdit": () => ({ changed: 1, undoId: null }) },
+  });
   await rateSaves(["a"], 0);
   expect(pool.get("a")?.rating).toBeNull();
   await expect(rateSaves(["a"], 6)).rejects.toThrow("between 0 and 5");
-  expect(query).toHaveBeenCalledTimes(1);
+  expect(window.pond.query).toHaveBeenCalledTimes(1);
 });

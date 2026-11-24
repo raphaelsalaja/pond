@@ -33,7 +33,12 @@ function Fixture({
   });
   return (
     <>
-      <div ref={frame} role="application" aria-label="Crop" />
+      <div
+        ref={frame}
+        role="application"
+        aria-label="Crop"
+        style={{ width: 100, height: 100 }}
+      />
       <button type="button">Outside</button>
     </>
   );
@@ -62,9 +67,6 @@ it("handles crop resizing before document hotkeys and leaves other controls alon
     if (!frame) {
       throw new Error("Missing crop frame");
     }
-    vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(
-      new DOMRect(0, 0, 100, 100),
-    );
     await act(async () =>
       frame.dispatchEvent(
         new KeyboardEvent("keydown", {

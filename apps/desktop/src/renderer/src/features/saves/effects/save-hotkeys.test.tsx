@@ -23,6 +23,7 @@ import {
   shortcutConflict,
   shortcutGlyphs,
 } from "@/shared/lib/shortcuts";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SaveHotkeys } from "./save-hotkeys";
 
 function image(path: string): SaveFile {
@@ -98,10 +99,12 @@ describe("Split Into Saves hotkey", () => {
   beforeEach(() => {
     calls.length = 0;
     configureShortcuts({ profile: "pond", overrides: {} });
-    vi.stubGlobal("pond", {
-      query: async (name: string, input: { ids?: ReadonlyArray<string> }) => {
-        calls.push({ name, ids: input.ids ?? [] });
-        return { ok: true, split: 1, created: 1 };
+    bridge.use({
+      query: {
+        "saves.split": ({ ids }) => {
+          calls.push({ name: "saves.split", ids });
+          return { ok: true, split: 1, created: 1 };
+        },
       },
     });
     host = document.createElement("div");
@@ -116,7 +119,6 @@ describe("Split Into Saves hotkey", () => {
     host.remove();
     pool.clear();
     clearSaveSelection();
-    vi.unstubAllGlobals();
   });
 
   async function mount() {
@@ -247,13 +249,17 @@ describe("Triage hotkeys", () => {
     calls.length = 0;
     configureShortcuts({ profile: "pond", overrides: {} });
     document.documentElement.setAttribute("data-reduce-motion", "true");
-    vi.stubGlobal("pond", {
-      query: async (name: string, input: TriageInput) => {
-        calls.push({ name, input });
-        if (name === "saves.bulkEdit") {
-          return { changed: input.ids?.length ?? 0, undoId: "step-1" };
-        }
-        return [];
+    bridge.use({
+      query: {
+        "saves.bulkEdit": (input) => {
+          calls.push({ name: "saves.bulkEdit", input });
+          return { changed: input.ids.length, undoId: "step-1" };
+        },
+        "saves.getMany": (input) => {
+          calls.push({ name: "saves.getMany", input });
+          return [];
+        },
+        "feedback.emit": () => ({ ok: true }),
       },
     });
     pool.clear();
@@ -290,7 +296,6 @@ describe("Triage hotkeys", () => {
     document.documentElement.removeAttribute("data-reduce-motion");
     pool.clear();
     clearSaveSelection();
-    vi.unstubAllGlobals();
   });
 
   it("binds triage actions without colliding in either profile", () => {
@@ -422,12 +427,12 @@ describe("Inbox hotkeys", () => {
   beforeEach(async () => {
     edits.length = 0;
     configureShortcuts({ profile: "pond", overrides: {} });
-    vi.stubGlobal("pond", {
-      query: async (name: string, input: EditInput) => {
-        if (name === "saves.bulkEdit") {
+    bridge.use({
+      query: {
+        "saves.bulkEdit": (input) => {
           edits.push(input);
-        }
-        return { changed: input.ids?.length ?? 0 };
+          return { changed: input.ids.length, undoId: null };
+        },
       },
     });
     host = document.createElement("div");
@@ -460,7 +465,6 @@ describe("Inbox hotkeys", () => {
     host.remove();
     pool.clear();
     clearSaveSelection();
-    vi.unstubAllGlobals();
   });
 
   it("binds P and H without colliding in either profile", () => {

@@ -4,38 +4,27 @@ import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { LivePhotoViewer } from "./";
 
-it.each([true, false])(
-  "renders only supplied caption tracks (captions: %s)",
-  async (captions) => {
+it.each([
+  {
+    captions: "with",
+    extra: { "captions.vtt": "WEBVTT\n\n00:00.000 --> 00:01.000\nBirdsong\n" },
+    track: expect.stringMatching(/^blob:/),
+    revoked: 3,
+  },
+  { captions: "without", extra: {}, track: null, revoked: 2 },
+])(
+  "renders only supplied caption tracks ($captions captions)",
+  async ({ extra, track, revoked }) => {
     const archive = new JSZip()
       .file("photo.jpg", "image")
       .file("motion.mov", "movie");
-    if (captions) {
-      archive.file(
-        "captions.vtt",
-        "WEBVTT\n\n00:00.000 --> 00:01.000\nBirdsong\n",
-      );
+    for (const [name, body] of Object.entries(extra)) {
+      archive.file(name, body);
     }
-    const buffer = await archive.generateAsync({ type: "arraybuffer" });
-    vi.stubGlobal("fetch", async () => new Response(buffer));
-    const createDescriptor = Object.getOwnPropertyDescriptor(
-      URL,
-      "createObjectURL",
+    const fixture = URL.createObjectURL(
+      await archive.generateAsync({ type: "blob" }),
     );
-    const revokeDescriptor = Object.getOwnPropertyDescriptor(
-      URL,
-      "revokeObjectURL",
-    );
-    let sequence = 0;
-    Object.defineProperty(URL, "createObjectURL", {
-      configurable: true,
-      value: () => `blob:live-photo-${++sequence}`,
-    });
-    const revoke = vi.fn();
-    Object.defineProperty(URL, "revokeObjectURL", {
-      configurable: true,
-      value: revoke,
-    });
+    const revoke = vi.spyOn(URL, "revokeObjectURL");
     const host = document.createElement("div");
     document.body.append(host);
     const root = createRoot(host);
@@ -43,7 +32,7 @@ it.each([true, false])(
       await act(async () =>
         root.render(
           <LivePhotoViewer
-            url="pond://fixture/photo.livp"
+            url={fixture}
             onUnavailable={() => {
               throw new Error("Fixture unavailable");
             }}
@@ -66,22 +55,13 @@ it.each([true, false])(
       expect(
         host.querySelector('track[kind="captions"]')?.getAttribute("src") ??
           null,
-      ).toBe(captions ? "blob:live-photo-3" : null);
+      ).toEqual(track);
     } finally {
       await act(async () => root.unmount());
-      expect(revoke).toHaveBeenCalledTimes(captions ? 3 : 2);
+      expect(revoke).toHaveBeenCalledTimes(revoked);
       host.remove();
-      if (createDescriptor) {
-        Object.defineProperty(URL, "createObjectURL", createDescriptor);
-      } else {
-        Reflect.deleteProperty(URL, "createObjectURL");
-      }
-      if (revokeDescriptor) {
-        Object.defineProperty(URL, "revokeObjectURL", revokeDescriptor);
-      } else {
-        Reflect.deleteProperty(URL, "revokeObjectURL");
-      }
-      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+      URL.revokeObjectURL(fixture);
     }
   },
 );

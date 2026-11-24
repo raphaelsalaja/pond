@@ -11,10 +11,11 @@ import {
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import {
   NOTE_BODY_PLACEHOLDER,
   NOTE_TITLE_PLACEHOLDER,
@@ -58,31 +59,18 @@ function editorFromHost(root: HTMLElement) {
 describe("text viewer", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const tx = vi.fn(async () => undefined);
+  let described: PromiseWithResolvers<void>;
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    Object.defineProperty(Range.prototype, "getBoundingClientRect", {
-      configurable: true,
-      value: () => new DOMRect(0, 0, 40, 16),
-    });
-    Object.defineProperty(Range.prototype, "getClientRects", {
-      configurable: true,
-      value: () => [],
-    });
-    tx.mockClear();
     pool.clear();
-    vi.stubGlobal("pond", {
-      tx,
-      query: vi.fn(async () => ({ ok: true })),
-      openExternal: vi.fn(async () => undefined),
+    described = Promise.withResolvers<void>();
+    bridge.use({
+      tx: async (transaction) => {
+        if ("patch" in transaction && "description" in transaction.patch) {
+          described.resolve();
+        }
+      },
+      openExternal: async () => ({ ok: true }),
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -93,7 +81,6 @@ describe("text viewer", () => {
     await act(async () => root.unmount());
     host.remove();
     pool.clear();
-    vi.unstubAllGlobals();
   });
 
   it("shows Untitled and the body placeholder on a blank local note", async () => {
@@ -127,7 +114,7 @@ describe("text viewer", () => {
       title.dispatchEvent(new Event("input", { bubbles: true }));
       title.blur();
     });
-    expect(tx).toHaveBeenCalledWith(
+    expect(window.pond.tx).toHaveBeenCalledWith(
       expect.objectContaining({
         id: "note",
         patch: { title: "Brief" },
@@ -151,11 +138,9 @@ describe("text viewer", () => {
       });
     });
     await act(async () => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 500);
-      });
+      await described.promise;
     });
-    expect(tx).toHaveBeenCalledWith(
+    expect(window.pond.tx).toHaveBeenCalledWith(
       expect.objectContaining({
         id: "note",
         patch: { description: "Hello pond" },

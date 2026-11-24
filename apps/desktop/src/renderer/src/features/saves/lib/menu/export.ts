@@ -216,6 +216,7 @@ async function pollCompression(
 
 export function buildExportItems(
   context: SaveMenuContext,
+  isMac = IS_MAC,
 ): Array<MenuItemSpec> {
   const { ids, hasFiles, fileIndex, isWebp } = context;
   return [
@@ -274,7 +275,7 @@ export function buildExportItems(
       label: "Compress Videos",
       icon: glyph(IconVideo),
       /** Windows and Linux may lack the HEVC decoder the compressed copies need. */
-      hidden: !IS_MAC || compressibleVideoCount(context) === 0,
+      hidden: !isMac || compressibleVideoCount(context) === 0,
       onClick: () => confirmCompressVideos(ids),
     },
     {

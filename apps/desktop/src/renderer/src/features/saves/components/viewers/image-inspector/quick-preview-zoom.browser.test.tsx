@@ -2,9 +2,10 @@ import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { pool } from "@/features/saves/state/pool";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ImageInspector } from "./";
 import { IMAGE_INSPECTOR_SAVE } from "./image-inspector-test-harness";
 
@@ -12,7 +13,9 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal("pond", { query: async () => PrefsSchema.parse({}) });
+  bridge.use({
+    query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
+  });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -21,7 +24,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 async function renderQuickPreview(src: string) {
@@ -45,23 +47,29 @@ async function renderQuickPreview(src: string) {
   if (!frame || !position) {
     throw new Error("Missing image inspection frame");
   }
-  vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 0, 400, 400),
-  );
+  Object.assign(frame.style, {
+    position: "fixed",
+    left: "0px",
+    top: "0px",
+    width: "400px",
+    height: "400px",
+  });
   Object.defineProperties(frame, {
     setPointerCapture: { value: () => {} },
     hasPointerCapture: { value: () => false },
   });
+  await nextFrame();
   return { frame, position };
 }
 
-const nextFrame = () =>
-  act(
+function nextFrame() {
+  return act(
     async () =>
       new Promise<void>((resolve) => {
         requestAnimationFrame(() => resolve());
       }),
   );
+}
 
 const click = (target: Element, x = 200, y = 200) =>
   act(async () => {

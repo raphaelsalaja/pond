@@ -154,10 +154,21 @@ export async function purgeSave(id: string): Promise<void> {
   emitFeedback("saveDeletion");
 }
 
+export interface BulkMutationDeps {
+  bulkEdit: (input: BulkEdit) => Promise<BulkEditResult>;
+  onDeletion: () => void;
+}
+
+const bulkMutationDeps: BulkMutationDeps = {
+  bulkEdit: (input) => window.pond.query("saves.bulkEdit", input),
+  onDeletion: () => emitFeedback("saveDeletion"),
+};
+
 export async function bulkMutation(
   ids: ReadonlyArray<string>,
   operation: BulkEdit["operation"],
   opts: MutateOpts = {},
+  deps: BulkMutationDeps = bulkMutationDeps,
 ): Promise<BulkEditResult> {
   const targets = [...new Set(ids)];
   if (!targets.length) {
@@ -198,7 +209,7 @@ export async function bulkMutation(
     pool.bulkUpsert(updates);
   }
   try {
-    const result = await window.pond.query("saves.bulkEdit", {
+    const result = await deps.bulkEdit({
       ids: targets,
       operation,
       ...opts,
@@ -207,7 +218,7 @@ export async function bulkMutation(
       result.changed > 0 &&
       (operation.kind === "trash" || operation.kind === "purge")
     ) {
-      emitFeedback("saveDeletion");
+      deps.onDeletion();
     }
     return { changed: result.changed, undoId: result.undoId ?? null };
   } catch (error) {

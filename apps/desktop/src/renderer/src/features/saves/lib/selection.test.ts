@@ -1,6 +1,8 @@
+import type { WireSave } from "@shared/wire";
 import { afterEach, expect, it, vi } from "vitest";
 import { selection } from "@/features/saves/state/selection";
 import { tagClipboard } from "@/features/tags";
+import { bridge } from "@/shared/test/pond-bridge";
 import { pool } from "../state/pool";
 import { normalise, SavePatchSchema } from "./reconcile";
 import {
@@ -26,7 +28,6 @@ afterEach(() => {
   pool.clear();
   selection.clear();
   tagClipboard.clear();
-  vi.unstubAllGlobals();
 });
 function hasTitle(detail: unknown): detail is { title: string } {
   return (
@@ -44,15 +45,15 @@ function notificationTitle(event: Event): string | undefined {
 }
 it("adds tags and retries using all selected IDs without hydrating the renderer pool", async () => {
   seed();
-  const query = vi.fn(async (method: string) =>
-    method === "saves.bulkEdit"
-      ? { changed: 301 }
-      : { ok: true, requeued: 301 },
-  );
-  vi.stubGlobal("window", { pond: { query } });
+  bridge.use({
+    query: {
+      "saves.bulkEdit": () => ({ changed: 301, undoId: null }),
+      "saves.retryFailed": () => ({ ok: true, requeued: 301 }),
+    },
+  });
   await addTagsToSelection(ids, ["Reviewed"]);
   await retryFailedSelection(ids);
-  expect(query.mock.calls).toEqual([
+  expect(vi.mocked(window.pond.query).mock.calls).toEqual([
     [
       "saves.bulkEdit",
       { ids, operation: { kind: "tags", tags: ["Reviewed"] } },
@@ -74,44 +75,44 @@ it("confirms a tag copy but lets the pasted tags speak for themselves", async ()
   }
   pool.upsert(save);
   const titles: Array<string | undefined> = [];
-  const query = vi.fn(async () => ({ changed: 301 }));
-  vi.stubGlobal("window", {
-    pond: { query },
-    dispatchEvent: (event: Event) => titles.push(notificationTitle(event)),
+  const listener = (event: Event) => titles.push(notificationTitle(event));
+  window.addEventListener("pond:notification", listener);
+  bridge.use({
+    query: { "saves.bulkEdit": () => ({ changed: 301, undoId: null }) },
   });
 
-  await copyTagsForSelection(["tagged"]);
-  expect(titles).toEqual(["Tags copied"]);
+  try {
+    await copyTagsForSelection(["tagged"]);
+    expect(titles).toEqual(["Tags copied"]);
 
-  await pasteTagsForSelection(ids);
-  expect(query).toHaveBeenCalledWith("saves.bulkEdit", {
-    ids,
-    operation: { kind: "tags", tags: ["Reviewed"] },
-  });
-  expect(titles).toEqual(["Tags copied"]);
+    await pasteTagsForSelection(ids);
+    expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
+      ids,
+      operation: { kind: "tags", tags: ["Reviewed"] },
+    });
+    expect(titles).toEqual(["Tags copied"]);
+  } finally {
+    window.removeEventListener("pond:notification", listener);
+  }
 });
 it("hydrates cold metadata before copying every selected URL", async () => {
   seed();
   let copied = "";
   const requested: Array<Array<string>> = [];
-  vi.stubGlobal("window", {
-    pond: {
-      query: async (
-        method: string,
-        input: { ids?: Array<string>; text?: string },
-      ) => {
-        if (method === "saves.getMany") {
-          requested.push(input.ids ?? []);
-          return (input.ids ?? []).map((id) => ({
-            id,
-            url: `https://example.com/${id.slice(5)}`,
-          }));
-        }
-        if (method === "clipboard.writeText") {
-          copied = input.text ?? "";
-          return { ok: true };
-        }
-        throw new Error(`Unexpected query ${method}`);
+  bridge.use({
+    query: {
+      "saves.getMany": (input) => {
+        requested.push(input.ids);
+        const rows = input.ids.map((id) => ({
+          id,
+          url: `https://example.com/${id.slice(5)}`,
+        }));
+        /** SAFETY: ensureSaves parses rows through SavePatchesSchema, which fills every column these rows omit. */
+        return rows as Array<WireSave>;
+      },
+      "clipboard.writeText": ({ text }) => {
+        copied = text;
+        return { ok: true };
       },
     },
   });
@@ -123,9 +124,9 @@ it("hydrates cold metadata before copying every selected URL", async () => {
 it("keeps the full selection available when a bulk mutation fails", async () => {
   seed();
   selection.set(ids);
-  vi.stubGlobal("window", {
-    pond: {
-      query: async () => {
+  bridge.use({
+    query: {
+      "saves.bulkEdit": async () => {
         throw new Error("Disk unavailable");
       },
     },

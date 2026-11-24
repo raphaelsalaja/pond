@@ -7,6 +7,7 @@ import type { ViewerNavigation } from "@/features/saves/components/viewers/viewe
 import { pool } from "@/features/saves/state/pool";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import type { Save, SaveFile } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SaveViewer } from ".";
 
 function file(path: string, kind: string, mimeType: string): SaveFile {
@@ -196,9 +197,6 @@ describe("SaveViewer", () => {
       },
     );
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
-    vi.stubGlobal("fetch", async () => {
-      throw new Error("Offline fixture");
-    });
     vi.stubGlobal(
       "FontFace",
       class {
@@ -211,10 +209,15 @@ describe("SaveViewer", () => {
       configurable: true,
       value: { add() {}, delete() {} },
     });
-    vi.stubGlobal("pond", {
+    bridge.use({
       openSaveFile: async () => ({ ok: true }),
-      query: async () => PrefsSchema.parse({}),
-      tx: async () => ({ ok: true }),
+      query: {
+        "settings.getPrefs": () => PrefsSchema.parse({}),
+        "saves.fontStatus": () => ({ activated: false }),
+        "saves.mediaTiming": () => ({ frameRate: null }),
+        "video.preparePreview": () => ({ ok: false, error: "Unsupported" }),
+      },
+      tx: async () => {},
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -402,16 +405,8 @@ describe("SaveViewer", () => {
   it("offers Download Video until the video file arrives", async () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
-    const queries: Array<string> = [];
-    vi.stubGlobal("pond", {
-      openSaveFile: async () => ({ ok: true }),
-      query: async (name: string) => {
-        queries.push(name);
-        return name === "saves.downloadVideo"
-          ? { ok: true, queued: 1 }
-          : PrefsSchema.parse({});
-      },
-      tx: async () => ({ ok: true }),
+    bridge.use({
+      query: { "saves.downloadVideo": () => ({ ok: true, queued: 1 }) },
     });
     const poster = file("poster.jpg", "poster", "image/jpeg");
     const save: Save = {
@@ -431,7 +426,9 @@ describe("SaveViewer", () => {
       throw new Error("Missing Download Video button");
     }
     await act(async () => download.click());
-    expect(queries).toContain("saves.downloadVideo");
+    expect(window.pond.query).toHaveBeenCalledWith("saves.downloadVideo", {
+      ids: ["poster-only"],
+    });
     expect(buttonByText(host, "Downloading")?.disabled).toBe(true);
 
     const downloaded: Save = {

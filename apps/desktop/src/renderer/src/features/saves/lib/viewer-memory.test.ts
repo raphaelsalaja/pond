@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   actualToSlider,
   FIT_POSE,
@@ -10,14 +10,8 @@ import {
 } from "./viewer-memory";
 
 describe("viewer continuity", () => {
-  const storage = new Map<string, string>();
-  beforeAll(() =>
-    vi.stubGlobal("localStorage", {
-      getItem: (key: string) => storage.get(key) ?? null,
-      setItem: (key: string, value: string) => storage.set(key, value),
-    }),
-  );
-  afterAll(() => vi.unstubAllGlobals());
+  beforeAll(() => localStorage.clear());
+  afterAll(() => localStorage.clear());
   it("keeps the point under the pointer fixed when zooming", () => {
     const before = { zoom: 2, x: 40, y: -30 };
     const point = { x: 100, y: 80 };
