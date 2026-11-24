@@ -86,6 +86,11 @@ import {
   recoverUnreadableLibrary,
 } from "./library-recovery";
 import {
+  startLibraryBackgroundWork,
+  stopLibraryBackgroundWork,
+  watchLibraryFolder,
+} from "./library-services";
+import {
   consoleLoggingEnabled,
   protocolRegistration,
   resolveLaunchHidden,
@@ -188,10 +193,6 @@ const initialDeepLink = deepLinkArg(process.argv);
 
 let nativeServer: NetServer | null = null;
 let safariServer: NetServer | null = null;
-let stopMediaWarmer: (() => void) | null = null;
-let stopFingerprintWorker: (() => void) | null = null;
-let stopLibraryDisplacementWatch: (() => void) | null = null;
-
 let signalRendererReady: (() => void) | null = null;
 const rendererReady = new Promise<void>((resolve) => {
   signalRendererReady = resolve;
@@ -445,19 +446,7 @@ async function postLaunchInit(): Promise<void> {
     await registerSummonHotkey();
   }
 
-  void import("./core/library-displacement")
-    .then((module) => {
-      stopLibraryDisplacementWatch = module.startLibraryDisplacementWatch();
-    })
-    .catch((err) =>
-      log.warn("[pond] library displacement watch failed to start", err),
-    );
-
-  if (process.platform === "darwin" && !process.env.POND_SANDBOX) {
-    void import("./core/library-folder-icon")
-      .then((module) => module.applyLibraryFolderIcon(libraryRoot()))
-      .catch((err) => log.warn("[pond] library folder icon failed", err));
-  }
+  watchLibraryFolder();
 
   try {
     await syncLibraryRootMetadata();
@@ -563,49 +552,7 @@ async function startDeferredMaintenance(): Promise<void> {
     void resumeReconcilerAfterSuspend();
   });
 
-  const [scanModule, mediaModule, enrichmentModule, fingerprintModule] =
-    await Promise.all([
-      import("./core/scan"),
-      import("./core/media-warm/service"),
-      import("./core/enrichment-sidecar"),
-      import("./core/duplicates/fingerprint-worker"),
-    ]);
-  stopMediaWarmer = mediaModule.stopMediaWarmer;
-  stopFingerprintWorker = fingerprintModule.stopFingerprintWorker;
-  registerSyncActionListener(() => fingerprintModule.kickFingerprintWorker());
-
-  void scanModule
-    .reconcileLibrary()
-    .catch((err) => log.warn("[pond] scan failed", err))
-    .finally(() => {
-      mediaModule.startMediaWarmer();
-      void fingerprintModule
-        .startFingerprintWorker()
-        .catch((err) => log.warn("[pond] fingerprint worker failed", err));
-    })
-    .then(async () =>
-      (await import("./core/refresh/archive-backfill")).startArchiveBackfill(),
-    )
-    .catch((err) => log.warn("[pond] archive backfill failed", err))
-    .then(async () =>
-      (
-        await import("./core/refresh/threads-card-backfill")
-      ).startThreadsCardBackfill(),
-    )
-    .catch((err) => log.warn("[pond] native card backfill failed", err))
-    .then(async () =>
-      (
-        await import("./core/refresh/source-icon-backfill")
-      ).backfillSourceIcons(),
-    )
-    .catch((err) => log.warn("[pond] source icon backfill failed", err))
-    .then(async () =>
-      (await import("./core/refresh/article-backfill")).startArticleBackfill(),
-    )
-    .catch((err) => log.warn("[pond] article backfill failed", err));
-  void enrichmentModule
-    .backfillEnrichmentSidecars()
-    .catch((err) => log.warn("[pond] enrichment sidecar backfill failed", err));
+  await startLibraryBackgroundWork();
 }
 
 function snapshotBundleJsons(): void {
@@ -713,8 +660,7 @@ function armQuitStall(): void {
 }
 
 async function shutdownForQuit(): Promise<void> {
-  stopMediaWarmer?.();
-  stopFingerprintWorker?.();
+  stopLibraryBackgroundWork();
   globalShortcut.unregisterAll();
   try {
     await waitForLibraryLocationChanges();
@@ -730,8 +676,6 @@ async function shutdownForQuit(): Promise<void> {
   }
   try {
     stopStorageWatcher();
-    stopLibraryDisplacementWatch?.();
-    stopLibraryDisplacementWatch = null;
   } catch (error) {
     log.warn("[pond] storage watcher stop failed", error);
   }

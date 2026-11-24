@@ -18,6 +18,7 @@ import {
 } from "react";
 import { ConversionDialogHost } from "@/features/library/components/conversion-dialog/host";
 import { FolderPickerHost } from "@/features/library/components/folder-picker";
+import { LibrarySwitchCover } from "@/features/library/components/library-switch-cover";
 import { RenameDialogHost } from "@/features/library/components/rename-dialog/host";
 import { UpdateDialog } from "@/features/settings/components/update-dialog";
 import { usePrefs } from "@/shared/state/prefs";
@@ -232,6 +233,7 @@ function LibraryApp() {
               <SupportDialog />
               <FishIntroDialog />
               <ToastHost />
+              <LibrarySwitchCover />
             </Dialog.PortalProvider>
           </Tooltip.Provider>
         </QueryClientProvider>

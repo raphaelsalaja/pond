@@ -21,6 +21,7 @@ import {
   snapshotSourceGate,
 } from "./rate-governor";
 import {
+  LibrarySwitchInterrupt,
   metrics,
   NON_FATAL_OPS,
   WorkerWatchdogError,
@@ -127,6 +128,31 @@ export async function handleFailure(
       nextRunAt: null,
       recordedAttempts: task.attempts,
       settled: false,
+    };
+  }
+  if (cause instanceof LibrarySwitchInterrupt) {
+    const db = await getDb();
+    const now = new Date();
+    const result = db
+      .update(tasks)
+      .set({
+        status: "pending",
+        deferredReason: null,
+        nextRunAt: now,
+        leaseOwner: null,
+        leaseToken: null,
+        leaseExpiresAt: null,
+        heartbeatAt: null,
+        startedAt: null,
+        updatedAt: now,
+      })
+      .where(guard)
+      .run();
+    return {
+      outcome: "deferred",
+      nextRunAt: now.getTime(),
+      recordedAttempts: task.attempts,
+      settled: result.changes === 1,
     };
   }
   if (cause instanceof FinalizeIncompleteError) {

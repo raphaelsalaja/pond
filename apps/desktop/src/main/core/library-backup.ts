@@ -140,6 +140,11 @@ async function validateReferences(
   }
 }
 
+export async function isLibraryBackup(directory: string): Promise<boolean> {
+  const manifest = await stat(join(directory, MANIFEST)).catch(() => null);
+  return Boolean(manifest?.isFile());
+}
+
 export async function verifyLibraryBackup(directory: string) {
   const root = await realpath(directory);
   const files = await inventory(root);

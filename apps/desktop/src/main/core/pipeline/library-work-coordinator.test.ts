@@ -19,6 +19,10 @@ function setup(wasPaused: boolean) {
       order.push("pause-and-drain");
       return wasPaused;
     }),
+    interruptAndDrainReconciler: vi.fn(async () => {
+      order.push("interrupt-and-drain");
+      return wasPaused;
+    }),
     suspendMutations: asyncStep("suspend-mutations"),
     resumeMutations: syncStep("resume-mutations"),
     resumeLibraryTransfers: syncStep("resume-transfers"),
@@ -52,6 +56,22 @@ it("drains queue work before a Library switch and restores admission afterward",
     "resume-reconciler",
     "start-auto-import",
   ]);
+  expect(operations.setReconcilerPaused).toHaveBeenCalledWith(false);
+});
+
+it("interrupts running downloads instead of waiting on them when asked", async () => {
+  const { coordinator, operations, order } = setup(false);
+
+  await coordinator.suspend("interrupt");
+  await coordinator.resume();
+
+  expect(order.slice(0, 4)).toEqual([
+    "stop-auto-import",
+    "stop-transfers",
+    "interrupt-and-drain",
+    "suspend-mutations",
+  ]);
+  expect(operations.pauseAndDrainReconciler).not.toHaveBeenCalled();
   expect(operations.setReconcilerPaused).toHaveBeenCalledWith(false);
 });
 
