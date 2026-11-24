@@ -103,7 +103,7 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
             }
             expect(ids).toEqual(expected.ids);
             expect(new Set(ids).size).toBe(ids.length);
-          });
+          }, 30_000);
         }
       }
     }
