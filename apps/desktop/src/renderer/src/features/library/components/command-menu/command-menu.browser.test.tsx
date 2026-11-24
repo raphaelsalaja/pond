@@ -13,31 +13,38 @@ import { clearRecents, normalise, useTrackVisit } from "@/features/saves";
 import { resultNavigation, selection } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/pool";
 import type { SaveHit, SaveLookup } from "@/features/search";
+import { bridge } from "@/shared/test/pond-bridge";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();
 let viewIds: Array<string> = [];
-const viewRequests: Array<LibraryQueryRequest | undefined> = [];
+const viewRequests: Array<LibraryQueryRequest> = [];
 
-async function query(method: string, request?: LibraryQueryRequest) {
-  if (method === "tags.list") {
-    return [{ id: "tag-poster", name: "poster" }];
-  }
-  if (method === "tagGroups.list") {
-    return [];
-  }
-  if (method === "saves.queryPage") {
-    viewRequests.push(request);
-    return { ids: viewIds, total: viewIds.length };
-  }
-  return PrefsSchema.parse({});
-}
+const posterTag = {
+  id: "tag-poster",
+  name: "poster",
+  description: null,
+  starred: false,
+  archived: false,
+  lastUsedAt: null,
+  usageCount: 0,
+  createdAt: new Date(0),
+};
 
 function wait(ms: number) {
   return act(
     () =>
       new Promise((resolve) => {
         setTimeout(resolve, ms);
+      }),
+  );
+}
+
+function nextFrame() {
+  return act(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
       }),
   );
 }
@@ -170,18 +177,24 @@ describe("command menu", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal("pond", { query, onSyncAction: () => () => {} });
-    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-      callback(0);
-      return 1;
+    bridge.use({
+      query: {
+        "settings.getPrefs": () => PrefsSchema.parse({}),
+        "tags.list": () => [posterTag],
+        "tagGroups.list": () => [],
+        "clipboard.writeText": () => ({ ok: true }),
+        "saves.queryPage": (request) => {
+          viewRequests.push(request);
+          return {
+            ids: viewIds,
+            total: viewIds.length,
+            nextCursor: null,
+            libraryId: "library",
+            revision: 0,
+          };
+        },
+      },
     });
-    vi.stubGlobal("cancelAnimationFrame", () => {});
-    vi.stubGlobal("matchMedia", () => ({
-      matches: false,
-      addEventListener() {},
-      removeEventListener() {},
-    }));
-    Element.prototype.scrollIntoView = vi.fn();
     openSave.mockClear();
     clearRecents();
     commandMenu.close();
@@ -202,7 +215,6 @@ describe("command menu", () => {
     resultNavigation.setSource({ ids: [] });
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function open(path = "/") {
@@ -222,6 +234,7 @@ describe("command menu", () => {
       root.render(<RouterProvider router={router} />);
     });
     await act(async () => commandMenu.open());
+    await nextFrame();
     return input();
   }
 
@@ -244,6 +257,7 @@ describe("command menu", () => {
     expect(document.body.textContent).toContain("Recently viewed poster");
     expect(active()).toBe("recent:recent-save");
     await press("Enter");
+    await nextFrame();
     expect(openSave).toHaveBeenCalledWith("recent-save");
   });
 
@@ -360,6 +374,7 @@ describe("command menu", () => {
     expect(document.body.textContent).toContain("Design systems field notes");
     await pressUntil("save:save-1");
     await press("Enter");
+    await nextFrame();
     expect(openSave).toHaveBeenCalledWith("save-1");
     expect(document.querySelector('[role="dialog"][data-open]')).toBeNull();
   });
@@ -447,7 +462,7 @@ describe("command menu", () => {
     await press("Tab");
     await type("copy name");
     await press("Enter");
-    await wait(0);
+    await nextFrame();
     expect(selection.snapshot()).toEqual(["save-1"]);
   });
 

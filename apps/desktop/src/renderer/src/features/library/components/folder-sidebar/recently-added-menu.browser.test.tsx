@@ -14,7 +14,7 @@ import {
   buildRecentlyAddedMenuItems,
   recentlyAddedDays,
 } from "./recently-added-menu";
-import { createFolderSidebarHarness, sidebarCounts } from "./test-harness";
+import { createFolderSidebarHarness } from "./test-harness";
 
 /** The calendar popover can take seconds to open on loaded CI runners. */
 const OPEN_TIMEOUT = 15_000;
@@ -70,7 +70,7 @@ describe("recently added date shortcuts", () => {
   afterEach(() => harness.cleanup());
 
   async function openMenu() {
-    sidebarCounts.current.recentlyAdded = 3;
+    harness.set({ sidebarCounts: { recentlyAdded: 3 } });
     const router = await harness.mount();
     await vi.waitFor(() =>
       expect(harness.button("Recently Added").textContent).toContain("3"),

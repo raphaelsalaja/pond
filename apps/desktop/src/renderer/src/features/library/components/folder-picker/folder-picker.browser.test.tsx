@@ -1,29 +1,37 @@
 import "@/app/effects/save-library-bridge";
+import type { QueryInput } from "@shared/query-contracts";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { FolderPickerHost } from ".";
 import { closeFolderPicker, openFolderPicker } from "../../state/folder-picker";
 import { folders } from "../../state/folders";
 import {
   createFolderSidebarHarness,
   folder,
-  folderList,
-  pondQuery,
 } from "../folder-sidebar/test-harness";
 
 const RECENT_KEY = "pond:recent-folder-destinations";
 const harness = createFolderSidebarHarness();
 let host: HTMLDivElement;
 let root: Root;
+let assigned: Array<QueryInput<"folders.assign">>;
 beforeEach(async () => {
   await harness.setup();
-  folderList.current = [
-    folder("Alpha"),
-    folder("Beta"),
-    folder("Child", "Alpha"),
-  ];
+  harness.set({
+    folders: [folder("Alpha"), folder("Beta"), folder("Child", "Alpha")],
+  });
+  assigned = [];
+  bridge.use({
+    query: {
+      "folders.assign": (input) => {
+        assigned.push(input);
+        return { ok: true, undoId: null };
+      },
+    },
+  });
   await folders.refresh();
   host = document.createElement("div");
   document.body.append(host);
@@ -56,7 +64,7 @@ it("shows the folder tree and assigns a folder as soon as it is picked", async (
   expect(control("Add to Folders").getAttribute("role")).toBe("dialog");
   expect(control("Child").getAttribute("aria-level")).toBe("2");
   await act(async () => control("Beta").click());
-  expect(pondQuery).toHaveBeenCalledWith("folders.assign", {
+  expect(window.pond.query).toHaveBeenCalledWith("folders.assign", {
     saveIds: ["save-1"],
     addIds: ["Beta"],
     removeIds: [],
@@ -64,6 +72,15 @@ it("shows the folder tree and assigns a folder as soon as it is picked", async (
 });
 
 it("creates a folder from the search", async () => {
+  const created = Promise.withResolvers<QueryInput<"folders.create">>();
+  bridge.use({
+    query: {
+      "folders.create": (input) => {
+        created.resolve(input);
+        return folder(input.name, input.parentId ?? null);
+      },
+    },
+  });
   const search = document.querySelector<HTMLInputElement>(
     'input[aria-label="Search Folders"]',
   );
@@ -85,11 +102,7 @@ it("creates a folder from the search", async () => {
     throw new Error("Missing Create row");
   }
   await act(async () => create.click());
-  await vi.waitFor(() =>
-    expect(pondQuery).toHaveBeenCalledWith("folders.create", {
-      name: "Moodboards",
-    }),
-  );
+  expect(await created.promise).toEqual({ name: "Moodboards" });
 });
 
 async function reopen(mode: "multiple" | "recent") {
@@ -119,16 +132,12 @@ async function key(target: Element, init: KeyboardEventInit) {
   });
 }
 
-function assignCalls() {
-  return pondQuery.mock.calls.filter(([name]) => name === "folders.assign");
-}
-
 it("adds to a recent folder by its number", async () => {
   localStorage.setItem(RECENT_KEY, "Beta\nAlpha");
   await reopen("recent");
   expect(control("Add to Recent Folder").getAttribute("role")).toBe("dialog");
   await key(control("Recent Folders"), { key: "2" });
-  expect(pondQuery).toHaveBeenCalledWith("folders.assign", {
+  expect(window.pond.query).toHaveBeenCalledWith("folders.assign", {
     saveIds: ["save-1"],
     addIds: ["Alpha"],
     removeIds: [],
@@ -154,17 +163,14 @@ it("stages folders and applies them together from the keyboard", async () => {
   );
   await act(async () => control("Alpha").click());
   await act(async () => control("Beta").click());
-  expect(assignCalls()).toEqual([]);
+  expect(assigned).toEqual([]);
   const apply = [...document.querySelectorAll("button")].find(
     (button) => button.textContent === "Add to 2 Folders",
   );
   expect(apply?.tabIndex).toBe(0);
   await key(search(), { key: "Enter", metaKey: true });
-  expect(assignCalls()).toEqual([
-    [
-      "folders.assign",
-      { saveIds: ["save-1"], addIds: ["Alpha", "Beta"], removeIds: [] },
-    ],
+  expect(assigned).toEqual([
+    { saveIds: ["save-1"], addIds: ["Alpha", "Beta"], removeIds: [] },
   ]);
 });
 
@@ -182,5 +188,5 @@ it("leaves staging on Escape without closing the picker", async () => {
   await act(async () => control("Beta").click());
   await key(search(), { key: "Escape" });
   expect(control("Add to Folders").getAttribute("role")).toBe("dialog");
-  expect(assignCalls()).toEqual([]);
+  expect(assigned).toEqual([]);
 });

@@ -1,7 +1,9 @@
+import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { AppearancePicker } from ".";
 
 let host: HTMLDivElement;
@@ -10,25 +12,16 @@ const onIconChange = vi.fn();
 const onColorChange = vi.fn();
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+  bridge.use({
+    query: {
+      "settings.getPrefs": () =>
+        PrefsSchema.parse({
+          folderAppearance: {
+            recentIcons: ["heart"],
+            recentColors: ["#336699", "pink"],
+          },
+        }),
     },
-  );
-  vi.stubGlobal("pond", {
-    query: vi.fn(async (name: string) =>
-      name === "settings.getPrefs"
-        ? {
-            folderAppearance: {
-              recentIcons: ["heart"],
-              recentColors: ["#336699", "pink"],
-            },
-          }
-        : { ok: true },
-    ),
   });
   onIconChange.mockReset();
   onColorChange.mockReset();
@@ -40,7 +33,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 async function open(): Promise<void> {

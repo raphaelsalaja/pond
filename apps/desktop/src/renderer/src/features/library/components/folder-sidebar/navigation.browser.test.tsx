@@ -3,14 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { currentLocation } from "@/app/test/library-router";
 import { folders } from "@/features/library/state/folders";
 import { getLibraryNav } from "@/features/library/state/library-chrome";
-import {
-  createFolderSidebarHarness,
-  fishList,
-  folder,
-  folderList,
-  queueSummary,
-  sidebarCounts,
-} from "./test-harness";
+import { createFolderSidebarHarness, folder } from "./test-harness";
 
 describe("folder sidebar navigation", () => {
   const harness = createFolderSidebarHarness();
@@ -23,23 +16,25 @@ describe("folder sidebar navigation", () => {
   }
 
   it("opens a fish from the Fish group", async () => {
-    fishList.current = [
-      {
-        id: "default",
-        name: "Koi",
-        color: "orange",
-        species: "koi",
-        instructions: "",
-        scope: { folderIds: [], tags: [] },
-        model: null,
-        routines: [],
-        lastRun: null,
-        createdAt: 0,
-        updatedAt: 0,
-        activity: null,
-        latest: null,
-      },
-    ];
+    harness.set({
+      fish: [
+        {
+          id: "default",
+          name: "Koi",
+          color: "orange",
+          species: "koi",
+          instructions: "",
+          scope: { folderIds: [], tags: [] },
+          model: null,
+          routines: [],
+          lastRun: null,
+          createdAt: 0,
+          updatedAt: 0,
+          activity: null,
+          latest: null,
+        },
+      ],
+    });
     const router = await harness.mount();
     await act(async () => {});
     await act(async () => harness.button("Fish").click());
@@ -54,7 +49,7 @@ describe("folder sidebar navigation", () => {
   });
 
   it("names the Downloads count on its rail button", async () => {
-    queueSummary.current = { ...queueSummary.current, actionable: 3 };
+    harness.set({ queueSummary: { actionable: 3 } });
     const router = await harness.mount();
     const button = await vi.waitFor(() => harness.button("Downloads, 3"));
     await act(async () => button.click());
@@ -104,7 +99,7 @@ describe("folder sidebar navigation", () => {
   });
 
   it("shows counts on library destinations", async () => {
-    sidebarCounts.current.recentlyUsed = 4;
+    harness.set({ sidebarCounts: { recentlyUsed: 4 } });
     await harness.mount();
     expect(harness.button("Recently Used").textContent).toContain("4");
     for (const label of ["All", "Uncategorized", "Untagged"]) {
@@ -113,7 +108,7 @@ describe("folder sidebar navigation", () => {
   });
 
   it("opens the Inbox from the rail button named with its count", async () => {
-    sidebarCounts.current.inbox = 13;
+    harness.set({ sidebarCounts: { inbox: 13 } });
     const router = await harness.mount();
     const inbox = await vi.waitFor(() => harness.button("Inbox, 13"));
     await act(async () => inbox.click());
@@ -176,7 +171,7 @@ describe("folder sidebar navigation", () => {
   }
 
   it("follows the open destination across folders and built-in collections", async () => {
-    folderList.current = [folder("Repos"), folder("Design")];
+    harness.set({ folders: [folder("Repos"), folder("Design")] });
     await folders.refresh();
     const router = await harness.mount();
 

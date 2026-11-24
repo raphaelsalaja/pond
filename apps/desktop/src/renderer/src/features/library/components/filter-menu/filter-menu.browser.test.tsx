@@ -23,6 +23,7 @@ import {
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import { pagingStore } from "@/features/saves/state/bootstrap";
+import { bridge } from "@/shared/test/pond-bridge";
 import { FilterBarView, FilterToggleView } from "./";
 import { entryFields, FILTER_MENU, FILTER_SECTIONS } from "./options";
 import { filterToolbar } from "./toolbar-state";
@@ -71,15 +72,9 @@ describe("filter toolbar", () => {
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    vi.stubGlobal("pond", { query: async () => PrefsSchema.parse({}) });
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
+    bridge.use({
+      query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
+    });
     resetFilters();
     filterToolbar.setOpen(true);
     filterToolbar.setLayout("pinned");
@@ -94,7 +89,6 @@ describe("filter toolbar", () => {
     host.remove();
     resetFilters();
     savedViews.finishEditing();
-    vi.unstubAllGlobals();
   });
 
   const data = {
@@ -229,9 +223,9 @@ describe("filter toolbar", () => {
   it("creates an Untitled saved view and starts inline naming", async () => {
     const views: Array<SavedView> = [];
     const created: Array<QueryInput<"savedViews.create">> = [];
-    vi.stubGlobal("pond", {
-      query: async (name: string, input: QueryInput<"savedViews.create">) => {
-        if (name === "savedViews.create") {
+    bridge.use({
+      query: {
+        "savedViews.create": (input) => {
           created.push(input);
           views.push({
             id: "view-1",
@@ -247,11 +241,8 @@ describe("filter toolbar", () => {
             createdAt: new Date(),
           });
           return { ok: true, id: "view-1" };
-        }
-        if (name === "savedViews.list") {
-          return views;
-        }
-        return PrefsSchema.parse({});
+        },
+        "savedViews.list": () => views,
       },
     });
     const router = await render();

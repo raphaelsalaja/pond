@@ -1,4 +1,5 @@
 import { useSelector } from "@tanstack/react-store";
+import log from "electron-log/renderer";
 import { useEffect, useMemo } from "react";
 import {
   ensureSaves,
@@ -23,7 +24,9 @@ export function useSavesById(
   useRetainedSaves(ids);
   useEffect(() => {
     if (key) {
-      void ensureSaves(key.split("\n")).catch(() => {});
+      void ensureSaves(key.split("\n")).catch((cause: unknown) => {
+        log.warn("[pond search] loading saves failed", cause);
+      });
     }
   }, [key]);
   const found = useSelector(

@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import {
   createMemoryHistory,
   createRootRoute,
@@ -10,6 +9,7 @@ import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setAppRouter } from "@/shared/lib/app-router";
 import { menuLabels, topLevelMenuLabels } from "@/shared/test/menu-labels";
+import { bridge } from "@/shared/test/pond-bridge";
 import { buildHelpMenuItems, HelpMenu } from "./help-menu";
 
 function findItem(items: ReturnType<typeof buildHelpMenuItems>, label: string) {
@@ -76,9 +76,6 @@ describe("help menu spec", () => {
   });
 });
 
-const query = vi.fn(async (_name: string) => ({ ok: true }));
-const openExternal = vi.fn(async (_url: string) => ({ ok: true }));
-
 function storeButton(dialog: Element | null, label: string) {
   const button = [...(dialog?.querySelectorAll("button") ?? [])].find(
     (entry) => entry.textContent === label,
@@ -94,17 +91,8 @@ describe("help menu", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("pond", {
-      query,
-      openExternal,
+    bridge.use({
+      openExternal: async () => ({ ok: true }),
       appInfo: async () => ({
         name: "Pond",
         version: "1.0.0",
@@ -113,9 +101,11 @@ describe("help menu", () => {
         username: "rafa",
         isPackaged: true,
       }),
+      query: {
+        "updates.checkNow": () => ({ ok: true }),
+        "updates.currentNotice": () => null,
+      },
     });
-    query.mockClear();
-    openExternal.mockClear();
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -124,7 +114,6 @@ describe("help menu", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function clickItem(label: string) {
@@ -154,17 +143,17 @@ describe("help menu", () => {
   it("opens each browser's store listing from the extension dialog", async () => {
     const dialog = await openExtensionDialog();
     await act(async () => storeButton(dialog, "Add to Chrome").click());
-    expect(openExternal).toHaveBeenLastCalledWith(
+    expect(window.pond.openExternal).toHaveBeenLastCalledWith(
       "https://chromewebstore.google.com/detail/ghigndnldiagchoaifgndleogpkendbc",
     );
     await act(async () => storeButton(dialog, "Add to Firefox").click());
-    expect(openExternal).toHaveBeenLastCalledWith(
+    expect(window.pond.openExternal).toHaveBeenLastCalledWith(
       "https://addons.mozilla.org/firefox/addon/desktop%40pond.so/",
     );
   });
 
   it("says so when a store page doesn't open", async () => {
-    openExternal.mockResolvedValueOnce({ ok: false });
+    bridge.use({ openExternal: async () => ({ ok: false }) });
     const dialog = await openExtensionDialog();
     await act(async () => storeButton(dialog, "Add to Chrome").click());
     await vi.waitFor(() =>
@@ -178,7 +167,7 @@ describe("help menu", () => {
     const history = createMemoryHistory({ initialEntries: ["/"] });
     setAppRouter(createRouter({ routeTree: createRootRoute(), history }));
     await clickItem("Check for Updates");
-    expect(query).toHaveBeenCalledWith("updates.checkNow", {});
+    expect(window.pond.query).toHaveBeenCalledWith("updates.checkNow", {});
     expect(history.location.href).not.toContain("/settings");
   });
 });

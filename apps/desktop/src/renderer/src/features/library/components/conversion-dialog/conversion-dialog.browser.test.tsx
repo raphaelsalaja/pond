@@ -1,5 +1,8 @@
 import { isHTMLElement, isHTMLTag } from "@pond/ui/dom";
-import type { ConversionJob } from "@shared/conversion-contracts";
+import type {
+  ConversionJob,
+  ConversionPreset,
+} from "@shared/conversion-contracts";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
@@ -7,6 +10,7 @@ import {
   closeConversionDialog,
   openConversionDialog,
 } from "@/features/library/state/conversion-dialog";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ConversionDialogHost } from "./host";
 
 function button(label: string) {
@@ -20,14 +24,6 @@ function button(label: string) {
 }
 
 it("opens the consolidated export dialog on original files without conversion fields", async () => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -54,33 +50,19 @@ it("opens the consolidated export dialog on original files without conversion fi
       root.unmount();
     });
     host.remove();
-    vi.unstubAllGlobals();
   }
 });
 
 it("saves a preset from a popover inside the export dialog", async () => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  const saved: Array<unknown> = [];
-  vi.stubGlobal("pond", {
-    query: async (name: string, input: { preset?: unknown }) => {
-      if (name === "conversion.presets") {
-        return [];
-      }
-      if (name === "conversion.capabilities") {
-        return [];
-      }
-      if (name === "conversion.savePreset") {
-        saved.push(input.preset);
-        return input.preset;
-      }
-      throw new Error(`Unexpected ${name}`);
+  const saved: Array<ConversionPreset> = [];
+  bridge.use({
+    query: {
+      "conversion.presets": () => [],
+      "conversion.capabilities": () => [],
+      "conversion.savePreset": ({ preset }) => {
+        saved.push(preset);
+        return preset;
+      },
     },
   });
   const host = document.createElement("div");
@@ -148,19 +130,10 @@ it("saves a preset from a popover inside the export dialog", async () => {
       root.unmount();
     });
     host.remove();
-    vi.unstubAllGlobals();
   }
 });
 
 it("shows conversion progress and cancellation while preserving completed output information", async () => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
   const job: ConversionJob = {
     id: "job",
     kind: "export",
@@ -178,34 +151,24 @@ it("shows conversion progress and cancellation while preserving completed output
     bytesAfter: 0,
     error: null,
   };
-  const calls: Array<string> = [];
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      calls.push(name);
-      if (name === "conversion.presets") {
-        return [];
-      }
-      if (name === "conversion.capabilities") {
-        return [
-          {
-            format: "webp",
-            category: "image",
-            adapter: "sharp",
-            extension: "webp",
-            mimeType: "image/webp",
-            available: true,
-            unavailableReason: null,
-            supportsLossless: true,
-          },
-        ];
-      }
-      if (name === "conversion.start" || name === "conversion.status") {
-        return job;
-      }
-      if (name === "conversion.cancel") {
-        return { ...job, status: "cancelled" };
-      }
-      throw new Error(`Unexpected ${name}`);
+  bridge.use({
+    query: {
+      "conversion.presets": () => [],
+      "conversion.capabilities": () => [
+        {
+          format: "webp",
+          category: "image",
+          adapter: "sharp",
+          extension: "webp",
+          mimeType: "image/webp",
+          available: true,
+          unavailableReason: null,
+          supportsLossless: true,
+        },
+      ],
+      "conversion.start": () => job,
+      "conversion.status": () => job,
+      "conversion.cancel": () => ({ ...job, status: "cancelled" }),
     },
   });
   const host = document.createElement("div");
@@ -242,13 +205,14 @@ it("shows conversion progress and cancellation while preserving completed output
     await act(async () => button("Cancel").click());
     expect(document.body.textContent).toContain("Export Canceled");
     expect(document.body.textContent).toContain("Completed files remain");
-    expect(calls).toContain("conversion.cancel");
+    expect(window.pond.query).toHaveBeenCalledWith("conversion.cancel", {
+      id: "job",
+    });
   } finally {
     act(() => {
       closeConversionDialog();
       root.unmount();
     });
     host.remove();
-    vi.unstubAllGlobals();
   }
 });

@@ -5,6 +5,7 @@ import type {
   ConversionPreset,
 } from "@shared/conversion-contracts";
 import { useSelector } from "@tanstack/react-store";
+import log from "electron-log/renderer";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { closeConversionDialog } from "@/features/library/state/conversion-dialog";
@@ -108,7 +109,9 @@ export function ConversionDialog({
   }
   useRetainedSaves(ids);
   useEffect(() => {
-    void ensureSaves(ids).catch(() => undefined);
+    void ensureSaves(ids).catch((cause: unknown) => {
+      log.warn("[pond export] loading saves failed", cause);
+    });
   }, [ids]);
   useEffect(() => {
     if (!converting || conversionOptionsLoaded) {

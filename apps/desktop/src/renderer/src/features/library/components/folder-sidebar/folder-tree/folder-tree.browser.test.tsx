@@ -4,13 +4,8 @@ import { saveFolderPresentation } from "@/features/library/state/folder-presenta
 import { folders } from "@/features/library/state/folders";
 import { getLibraryNav } from "@/features/library/state/library-chrome";
 import { getViewState } from "@/features/library/state/view-store";
-import {
-  createFolderSidebarHarness,
-  folder,
-  folderList,
-  pondQuery,
-  sidebarCounts,
-} from "../test-harness";
+import { bridge } from "@/shared/test/pond-bridge";
+import { createFolderSidebarHarness, folder } from "../test-harness";
 
 function pointer(type: string, clientY: number) {
   const event = new MouseEvent(type, {
@@ -58,7 +53,7 @@ describe("folder sidebar tree", () => {
   afterEach(() => harness.cleanup());
 
   it("starts inline naming from the shared folder state", async () => {
-    folderList.current = [folder("Untitled")];
+    harness.set({ folders: [folder("Untitled")] });
     await folders.refresh();
     await harness.mount();
     await act(async () => folders.startEditing("Untitled"));
@@ -71,7 +66,9 @@ describe("folder sidebar tree", () => {
   });
 
   it("selects folder ranges, browses their union, and preserves a batch context menu", async () => {
-    folderList.current = [folder("Alpha"), folder("Beta"), folder("Charlie")];
+    harness.set({
+      folders: [folder("Alpha"), folder("Beta"), folder("Charlie")],
+    });
     await folders.refresh();
     await harness.mount();
     await act(async () => harness.button("Alpha").click());
@@ -113,7 +110,7 @@ describe("folder sidebar tree", () => {
   });
 
   it("supports ranges and bulk context operations in Quick Access", async () => {
-    folderList.current = [folder("Quick Alpha"), folder("Quick Beta")];
+    harness.set({ folders: [folder("Quick Alpha"), folder("Quick Beta")] });
     await folders.refresh();
     await saveFolderPresentation("Quick Alpha", { quickAccess: true });
     await saveFolderPresentation("Quick Beta", { quickAccess: true });
@@ -145,7 +142,7 @@ describe("folder sidebar tree", () => {
   });
 
   it("keeps collapsed folder content out of the keyboard tree", async () => {
-    folderList.current = [folder("Alpha")];
+    harness.set({ folders: [folder("Alpha")] });
     await folders.refresh();
     await harness.mount();
     await act(async () => harness.button("Folders").click());
@@ -157,7 +154,7 @@ describe("folder sidebar tree", () => {
   });
 
   it("opens a searchable folder context menu with Eagle operations", async () => {
-    folderList.current = [folder("Shots")];
+    harness.set({ folders: [folder("Shots")] });
     await folders.refresh();
     await harness.mount();
     await act(async () => {
@@ -237,25 +234,15 @@ describe("folder sidebar tree", () => {
 
   it("hands a dropped sidebar row to its new layout without snap-back motion", async () => {
     await harness.mount();
-    const rows = [
+    const [first, , , fourth] = [
       ...harness.host.querySelectorAll<HTMLElement>("[data-sidebar-sortable]"),
-    ];
-    for (const row of rows) {
-      vi.spyOn(row, "getBoundingClientRect").mockImplementation(() => {
-        const currentRows = [
-          ...harness.host.querySelectorAll<HTMLElement>(
-            "[data-sidebar-sortable]",
-          ),
-        ];
-        const index = currentRows.indexOf(row);
-        return DOMRect.fromRect({
-          x: 0,
-          y: index * 40,
-          width: 260,
-          height: 40,
-        });
-      });
+    ].map((row) => row.getBoundingClientRect());
+    if (!first || !fourth) {
+      throw new Error("Expected sortable sidebar rows");
     }
+    const start = first.top + first.height / 2;
+    const end = fourth.top + fourth.height / 2;
+    const shift = fourth.top + fourth.height - (first.top + first.height);
     const all = harness.button("All");
     const allRow = all.closest<HTMLElement>("[data-sidebar-sortable]");
     if (!allRow) {
@@ -271,18 +258,18 @@ describe("folder sidebar tree", () => {
     });
 
     await act(async () => {
-      all.dispatchEvent(pointer("pointerdown", 20));
+      all.dispatchEvent(pointer("pointerdown", start));
     });
     await act(async () => {
-      document.dispatchEvent(pointer("pointermove", 30));
+      document.dispatchEvent(pointer("pointermove", start + 10));
     });
     expect(allRow?.hasAttribute("data-dragging")).toBe(true);
     await act(async () => {
-      document.dispatchEvent(pointer("pointermove", 180));
+      document.dispatchEvent(pointer("pointermove", end));
     });
-    expect(allRow?.style.transform).toContain("120");
+    expect(allRow?.style.transform).toContain(`${shift}px`);
     await act(async () => {
-      document.dispatchEvent(pointer("pointerup", 180));
+      document.dispatchEvent(pointer("pointerup", end));
     });
     observer.disconnect();
 
@@ -304,7 +291,7 @@ describe("folder sidebar tree", () => {
   });
 
   it("opens Quick Access folder operations from its row", async () => {
-    folderList.current = [folder("Shots")];
+    harness.set({ folders: [folder("Shots")] });
     await folders.refresh();
     await saveFolderPresentation("Shots", {
       quickAccess: true,
@@ -346,7 +333,7 @@ describe("folder sidebar tree", () => {
   });
 
   it("opens folder customization in a dialog", async () => {
-    folderList.current = [folder("Shots")];
+    harness.set({ folders: [folder("Shots")] });
     await folders.refresh();
     await harness.mount();
     await act(async () => {
@@ -393,11 +380,11 @@ describe("folder sidebar tree", () => {
         ?.click(),
     );
 
-    expect(pondQuery).toHaveBeenCalledWith("folders.setColor", {
+    expect(window.pond.query).toHaveBeenCalledWith("folders.setColor", {
       id: "Shots",
       color: "pink",
     });
-    expect(pondQuery).toHaveBeenCalledWith(
+    expect(window.pond.query).toHaveBeenCalledWith(
       "settings.setPrefs",
       expect.objectContaining({
         folderViews: expect.objectContaining({
@@ -405,7 +392,7 @@ describe("folder sidebar tree", () => {
         }),
       }),
     );
-    expect(pondQuery).toHaveBeenCalledWith("folders.metadata.set", {
+    expect(window.pond.query).toHaveBeenCalledWith("folders.metadata.set", {
       folderId: "Shots",
       description: "Reference material",
       externalLink: "https://example.com/project",
@@ -413,7 +400,7 @@ describe("folder sidebar tree", () => {
   });
 
   it("sorts the folder list from the Folders group header menu", async () => {
-    folderList.current = [folder("Zulu"), folder("Alpha")];
+    harness.set({ folders: [folder("Zulu"), folder("Alpha")] });
     await folders.refresh();
     await harness.mount();
 
@@ -443,7 +430,7 @@ describe("folder sidebar tree", () => {
   });
 
   it("opens the removal confirmation and deletes the folder", async () => {
-    folderList.current = [folder("Shots")];
+    harness.set({ folders: [folder("Shots")] });
     await folders.refresh();
     await harness.mount();
     await act(async () => {
@@ -457,34 +444,34 @@ describe("folder sidebar tree", () => {
         }),
       );
     });
-    await act(async () => {
-      harness.menuItem("Remove Folder").click();
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
+    await act(async () => harness.menuItem("Remove Folder").click());
+    const checkbox = await vi.waitFor(() => {
+      const node = document.querySelector<HTMLElement>('[role="checkbox"]');
+      if (!node) {
+        throw new Error("Missing Trash checkbox");
+      }
+      return node;
     });
-    const checkbox = document.querySelector<HTMLElement>('[role="checkbox"]');
-    if (!checkbox) {
-      throw new Error("Missing Trash checkbox");
-    }
     await act(async () => checkbox.click());
     const remove = [...document.querySelectorAll("button")].find(
       (button) => button.textContent?.trim() === "Remove",
     );
     expect(remove).toBeDefined();
     await act(async () => remove?.click());
-    expect(pondQuery).toHaveBeenCalledWith("folders.delete", {
+    expect(window.pond.query).toHaveBeenCalledWith("folders.delete", {
       id: "Shots",
       trashContainedSaves: true,
     });
   });
 
   it("places folder carets beside the folder icon and collapses nested rows", async () => {
-    folderList.current = [
-      folder("Travel"),
-      folder("Tickets", "Travel"),
-      folder("Receipts", "Travel"),
-    ];
+    harness.set({
+      folders: [
+        folder("Travel"),
+        folder("Tickets", "Travel"),
+        folder("Receipts", "Travel"),
+      ],
+    });
     await folders.refresh();
     await harness.mount();
     const toggle = harness.iconButton("Collapse Travel");
@@ -508,7 +495,7 @@ describe("folder sidebar tree", () => {
   });
 
   it("expands a collapsed folder so a new subfolder can be named", async () => {
-    folderList.current = [folder("Travel"), folder("Tickets", "Travel")];
+    harness.set({ folders: [folder("Travel"), folder("Tickets", "Travel")] });
     await folders.refresh();
     await harness.mount();
     await act(async () => harness.iconButton("Collapse Travel").click());
@@ -528,9 +515,13 @@ describe("folder sidebar tree", () => {
       );
     });
     const created = folder("Untitled", "Travel");
-    pondQuery.mockImplementationOnce(async () => {
-      folderList.current = [...folderList.current, created];
-      return created;
+    bridge.use({
+      query: {
+        "folders.create": () => {
+          harness.set({ folders: [...harness.fixtures.folders, created] });
+          return created;
+        },
+      },
     });
     await act(async () => harness.menuItem("New Subfolder").click());
 
@@ -554,18 +545,20 @@ describe("folder sidebar tree", () => {
       harness.iconButton("Collapse Travel").getAttribute("aria-expanded"),
     ).toBe("true");
     expect(harness.button("Tickets")).toBeDefined();
-    expect(pondQuery).toHaveBeenCalledWith("folders.create", {
+    expect(window.pond.query).toHaveBeenCalledWith("folders.create", {
       name: "Untitled",
       parentId: "Travel",
     });
   });
 
   it("opens collapsed ancestors when a nested folder is named", async () => {
-    folderList.current = [
-      folder("Travel"),
-      folder("Europe", "Travel"),
-      folder("Notes", "Europe"),
-    ];
+    harness.set({
+      folders: [
+        folder("Travel"),
+        folder("Europe", "Travel"),
+        folder("Notes", "Europe"),
+      ],
+    });
     localStorage.setItem(
       "pond:collapsed-folders",
       JSON.stringify(["Travel", "Europe"]),
@@ -597,7 +590,7 @@ describe("folder sidebar tree", () => {
   });
 
   it("opens folder operations from the disclosure button", async () => {
-    folderList.current = [folder("Travel"), folder("Tickets", "Travel")];
+    harness.set({ folders: [folder("Travel"), folder("Tickets", "Travel")] });
     await folders.refresh();
     await harness.mount();
     await act(async () => {
@@ -616,32 +609,34 @@ describe("folder sidebar tree", () => {
   });
 
   it("shows positive counts only at visible folder branch boundaries", async () => {
-    folderList.current = [
-      folder("Jil Sander"),
-      folder("Runway Year", "Jil Sander"),
-      folder("Autumn Winter", "Runway Year"),
-      folder("Archive", "Jil Sander"),
-      folder("Empty", "Jil Sander"),
-    ];
-    sidebarCounts.current = {
-      library: 6006,
-      uncategorized: 0,
-      untagged: 0,
-      recentlyAdded: 0,
-      recentlyUsed: 0,
-      splitPosts: 0,
-      trash: 0,
-      inbox: 0,
-      inboxSnoozed: 0,
-      folders: {
-        "Jil Sander": 6006,
-        "Runway Year": 206,
-        "Autumn Winter": 206,
-        Archive: 5800,
-        Empty: 0,
+    harness.set({
+      folders: [
+        folder("Jil Sander"),
+        folder("Runway Year", "Jil Sander"),
+        folder("Autumn Winter", "Runway Year"),
+        folder("Archive", "Jil Sander"),
+        folder("Empty", "Jil Sander"),
+      ],
+      sidebarCounts: {
+        library: 6006,
+        uncategorized: 0,
+        untagged: 0,
+        recentlyAdded: 0,
+        recentlyUsed: 0,
+        splitPosts: 0,
+        trash: 0,
+        inbox: 0,
+        inboxSnoozed: 0,
+        folders: {
+          "Jil Sander": 6006,
+          "Runway Year": 206,
+          "Autumn Winter": 206,
+          Archive: 5800,
+          Empty: 0,
+        },
+        foldersDownloading: {},
       },
-      foldersDownloading: {},
-    };
+    });
     await folders.refresh();
     await harness.mount();
 
@@ -666,24 +661,26 @@ describe("folder sidebar tree", () => {
   });
 
   it("marks folders whose saves are still downloading", async () => {
-    folderList.current = [
-      folder("Pinterest"),
-      folder("Kitchens", "Pinterest"),
-      folder("Gardens", "Pinterest"),
-    ];
-    sidebarCounts.current = {
-      library: 3,
-      uncategorized: 0,
-      untagged: 0,
-      recentlyAdded: 0,
-      recentlyUsed: 0,
-      splitPosts: 0,
-      trash: 0,
-      inbox: 0,
-      inboxSnoozed: 0,
-      folders: { Pinterest: 3, Gardens: 3 },
-      foldersDownloading: { Pinterest: 12, Kitchens: 12 },
-    };
+    harness.set({
+      folders: [
+        folder("Pinterest"),
+        folder("Kitchens", "Pinterest"),
+        folder("Gardens", "Pinterest"),
+      ],
+      sidebarCounts: {
+        library: 3,
+        uncategorized: 0,
+        untagged: 0,
+        recentlyAdded: 0,
+        recentlyUsed: 0,
+        splitPosts: 0,
+        trash: 0,
+        inbox: 0,
+        inboxSnoozed: 0,
+        folders: { Pinterest: 3, Gardens: 3 },
+        foldersDownloading: { Pinterest: 12, Kitchens: 12 },
+      },
+    });
     await folders.refresh();
     await harness.mount();
     expect(row("Kitchens")?.textContent).toBe("Kitchens12 downloading");

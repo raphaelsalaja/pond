@@ -5,7 +5,7 @@ import { RouterContextProvider } from "@tanstack/react-router";
 import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openLibraryAt } from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
@@ -110,13 +110,6 @@ describe("filter editors", () => {
   let host: HTMLDivElement;
   let rows: Array<Predicate>;
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        disconnect() {}
-      },
-    );
     pool.clear();
     for (const [id, tags] of [
       ["one", ["design", "motion"]],
@@ -146,7 +139,6 @@ describe("filter editors", () => {
     await act(async () => root.unmount());
     host.remove();
     pool.clear();
-    vi.unstubAllGlobals();
   });
   async function render(
     field: Predicate["field"],

@@ -1,12 +1,7 @@
 import { act } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { savedViews } from "@/features/library/state/saved-views";
-import {
-  createFolderSidebarHarness,
-  pondQuery,
-  savedView,
-  savedViewList,
-} from "./test-harness";
+import { createFolderSidebarHarness, savedView } from "./test-harness";
 
 function pointer(type: string, clientY: number): MouseEvent {
   const event = new MouseEvent(type, {
@@ -31,10 +26,12 @@ describe("smart folder reordering", () => {
   afterEach(() => harness.cleanup());
 
   it("reorders a smart folder before its sibling and keeps the parent", async () => {
-    savedViewList.current = [
-      { ...savedView("Alpha", "smart_folder"), sortOrder: 0 },
-      { ...savedView("Beta", "smart_folder"), sortOrder: 1 },
-    ];
+    harness.set({
+      savedViews: [
+        { ...savedView("Alpha", "smart_folder"), sortOrder: 0 },
+        { ...savedView("Beta", "smart_folder"), sortOrder: 1 },
+      ],
+    });
     await savedViews.refresh();
     await harness.mount();
     const rows = [
@@ -46,27 +43,28 @@ describe("smart folder reordering", () => {
       "Alpha",
       "Beta",
     ]);
-    rows.forEach((row, index) => {
-      vi.spyOn(row, "getBoundingClientRect").mockReturnValue(
-        DOMRect.fromRect({ x: 0, y: index * 40, width: 220, height: 40 }),
-      );
+    const [alpha, beta] = rows.map((row) => row.getBoundingClientRect());
+    if (!alpha || !beta) {
+      throw new Error("Missing smart folder rows");
+    }
+    await act(async () => {
+      harness
+        .button("Beta")
+        .dispatchEvent(pointer("pointerdown", beta.top + beta.height / 2));
     });
     await act(async () => {
-      harness.button("Beta").dispatchEvent(pointer("pointerdown", 60));
+      document.dispatchEvent(pointer("pointermove", beta.top + 10));
     });
     await act(async () => {
-      document.dispatchEvent(pointer("pointermove", 50));
+      document.dispatchEvent(pointer("pointermove", alpha.top + 4));
     });
     await act(async () => {
-      document.dispatchEvent(pointer("pointermove", 4));
+      document.dispatchEvent(pointer("pointerup", alpha.top + 4));
     });
-    await act(async () => {
-      document.dispatchEvent(pointer("pointerup", 4));
-    });
-    expect(pondQuery).toHaveBeenCalledWith("savedViews.reorder", {
+    expect(window.pond.query).toHaveBeenCalledWith("savedViews.reorder", {
       ids: ["Beta", "Alpha"],
     });
-    expect(pondQuery).not.toHaveBeenCalledWith(
+    expect(window.pond.query).not.toHaveBeenCalledWith(
       "savedViews.update",
       expect.anything(),
     );

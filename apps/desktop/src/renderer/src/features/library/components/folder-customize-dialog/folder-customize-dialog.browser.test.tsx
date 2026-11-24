@@ -1,28 +1,27 @@
+import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { FolderCustomizeDialog } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+  bridge.use({
+    query: {
+      "folders.metadata.get": ({ folderId }) => ({
+        folderId,
+        description: null,
+        externalLink: null,
+      }),
+      "folders.rename": () => ({ ok: true }),
+      "folders.list": () => [],
+      "folders.memberships": () => [],
+      "settings.getPrefs": () => PrefsSchema.parse({}),
     },
-  );
-  vi.stubGlobal("pond", {
-    query: vi.fn(async (name: string) => {
-      if (name === "folders.metadata.get") {
-        return { description: null, externalLink: null };
-      }
-      return { ok: true };
-    }),
   });
   host = document.createElement("div");
   document.body.append(host);
@@ -32,7 +31,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 function render(): Promise<void> {

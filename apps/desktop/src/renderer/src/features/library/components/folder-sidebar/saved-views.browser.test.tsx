@@ -6,12 +6,8 @@ import {
   getViewState,
   updateLocalFilters,
 } from "@/features/library/state/view-store";
-import {
-  createFolderSidebarHarness,
-  pondQuery,
-  savedView,
-  savedViewList,
-} from "./test-harness";
+import { bridge } from "@/shared/test/pond-bridge";
+import { createFolderSidebarHarness, savedView } from "./test-harness";
 
 function setInput(input: HTMLInputElement, value: string): void {
   const setter = Object.getOwnPropertyDescriptor(
@@ -29,12 +25,14 @@ describe("folder sidebar saved views", () => {
   afterEach(() => harness.cleanup());
 
   async function mountUnreadView(): Promise<void> {
-    savedViewList.current = [
-      {
-        ...savedView("view-1", "saved_view"),
-        name: "Unread",
-      },
-    ];
+    harness.set({
+      savedViews: [
+        {
+          ...savedView("view-1", "saved_view"),
+          name: "Unread",
+        },
+      ],
+    });
     await savedViews.refresh();
     await harness.mount();
   }
@@ -42,10 +40,10 @@ describe("folder sidebar saved views", () => {
   async function deleteFromMenu(): Promise<void> {
     await act(async () => harness.menuItem("Delete").click());
     expect(document.querySelector('[role="alertdialog"]')).toBeNull();
-    expect(pondQuery).toHaveBeenCalledWith("savedViews.delete", {
+    expect(window.pond.query).toHaveBeenCalledWith("savedViews.delete", {
       id: "view-1",
     });
-    expect(pondQuery).toHaveBeenCalledWith("savedViews.list", {});
+    expect(window.pond.query).toHaveBeenCalledWith("savedViews.list", {});
   }
 
   it("renames a saved view inline from the hover menu", async () => {
@@ -75,7 +73,7 @@ describe("folder sidebar saved views", () => {
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
       );
     });
-    expect(pondQuery).toHaveBeenCalledWith("savedViews.rename", {
+    expect(window.pond.query).toHaveBeenCalledWith("savedViews.rename", {
       id: "view-1",
       name: "Later",
     });
@@ -134,7 +132,7 @@ describe("folder sidebar saved views", () => {
   });
 
   it("opens group operations from the disclosure button", async () => {
-    savedViewList.current = [savedView("Branding", "group")];
+    harness.set({ savedViews: [savedView("Branding", "group")] });
     await savedViews.refresh();
     await harness.mount();
     await act(async () => {
@@ -217,14 +215,18 @@ describe("folder sidebar saved views", () => {
       if (!create) {
         throw new Error("Missing Create button");
       }
-      pondQuery.mockImplementationOnce(async () => {
-        savedViewList.current = [
-          { ...savedView("created", kind), name: "Untitled" },
-        ];
-        return { ok: true, id: "created" };
+      bridge.use({
+        query: {
+          "savedViews.create": () => {
+            harness.set({
+              savedViews: [{ ...savedView("created", kind), name: "Untitled" }],
+            });
+            return { ok: true, id: "created" };
+          },
+        },
       });
       await act(async () => create.click());
-      expect(pondQuery).toHaveBeenCalledWith(
+      expect(window.pond.query).toHaveBeenCalledWith(
         "savedViews.create",
         expect.objectContaining({ kind, parentId: null, name: "Untitled" }),
       );
@@ -241,11 +243,17 @@ describe("folder sidebar saved views", () => {
     await act(async () =>
       harness.iconButton("New Smart Folder, Group, or Saved View").click(),
     );
-    pondQuery.mockImplementationOnce(async () => {
-      savedViewList.current = [
-        { ...savedView("created", "saved_view"), name: "Untitled" },
-      ];
-      return { ok: true, id: "created" };
+    bridge.use({
+      query: {
+        "savedViews.create": () => {
+          harness.set({
+            savedViews: [
+              { ...savedView("created", "saved_view"), name: "Untitled" },
+            ],
+          });
+          return { ok: true, id: "created" };
+        },
+      },
     });
     await act(async () => harness.menuItem("New Saved View").click());
     await vi.waitFor(() => {
@@ -256,7 +264,7 @@ describe("folder sidebar saved views", () => {
       expect(document.activeElement).toBe(input);
     });
     expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(pondQuery).toHaveBeenCalledWith(
+    expect(window.pond.query).toHaveBeenCalledWith(
       "savedViews.create",
       expect.objectContaining({
         kind: "saved_view",
@@ -271,11 +279,17 @@ describe("folder sidebar saved views", () => {
     if (!input) {
       throw new Error("Missing inline name input");
     }
-    pondQuery.mockImplementationOnce(async () => {
-      savedViewList.current = [
-        { ...savedView("created", "saved_view"), name: "Reading" },
-      ];
-      return { ok: true };
+    bridge.use({
+      query: {
+        "savedViews.rename": () => {
+          harness.set({
+            savedViews: [
+              { ...savedView("created", "saved_view"), name: "Reading" },
+            ],
+          });
+          return { ok: true };
+        },
+      },
     });
     await act(async () => {
       setInput(input, "Reading");
@@ -283,7 +297,7 @@ describe("folder sidebar saved views", () => {
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
       );
     });
-    expect(pondQuery).toHaveBeenCalledWith("savedViews.rename", {
+    expect(window.pond.query).toHaveBeenCalledWith("savedViews.rename", {
       id: "created",
       name: "Reading",
     });
@@ -291,11 +305,13 @@ describe("folder sidebar saved views", () => {
   });
 
   it("nests entries in groups and collapses their keyboard targets", async () => {
-    savedViewList.current = [
-      savedView("Branding", "group"),
-      savedView("Images", "smart_folder", "Branding"),
-      savedView("Review", "saved_view", "Branding"),
-    ];
+    harness.set({
+      savedViews: [
+        savedView("Branding", "group"),
+        savedView("Images", "smart_folder", "Branding"),
+        savedView("Review", "saved_view", "Branding"),
+      ],
+    });
     await savedViews.refresh();
     await harness.mount();
     await act(async () => harness.button("Images").click());
@@ -331,10 +347,9 @@ describe("folder sidebar saved views", () => {
       combinator: "and",
       rules: [{ field: "tags", operator: "some", value: ["branding"] }],
     };
-    savedViewList.current = [
-      group,
-      savedView("Images", "smart_folder", group.id),
-    ];
+    harness.set({
+      savedViews: [group, savedView("Images", "smart_folder", group.id)],
+    });
     await savedViews.refresh();
     await harness.mount();
     await act(async () => harness.button("Images").click());
@@ -343,16 +358,22 @@ describe("folder sidebar saved views", () => {
     await act(async () =>
       harness.iconButton("More Actions for Images").click(),
     );
-    pondQuery.mockImplementationOnce(async () => {
-      savedViewList.current = savedViewList.current.map((view) =>
-        view.id === "Images"
-          ? { ...view, query: { combinator: "and", rules: [...rules] } }
-          : view,
-      );
-      return { ok: true };
+    bridge.use({
+      query: {
+        "savedViews.update": () => {
+          harness.set({
+            savedViews: harness.fixtures.savedViews.map((view) =>
+              view.id === "Images"
+                ? { ...view, query: { combinator: "and", rules: [...rules] } }
+                : view,
+            ),
+          });
+          return { ok: true };
+        },
+      },
     });
     await act(async () => harness.menuItem("Save Filters").click());
-    expect(pondQuery).toHaveBeenCalledWith("savedViews.update", {
+    expect(window.pond.query).toHaveBeenCalledWith("savedViews.update", {
       id: "Images",
       patch: { query: { combinator: "and", rules: [...rules] } },
     });

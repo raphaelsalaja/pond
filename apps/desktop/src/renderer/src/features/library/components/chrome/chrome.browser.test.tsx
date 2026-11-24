@@ -1,29 +1,20 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import {
   resetFilters,
   setSearchInput,
 } from "@/features/library/state/view-store";
 import { SearchComposer } from "@/features/search";
 import { SearchChrome } from "@/shared/components/search-chrome";
+import { bridge } from "@/shared/test/pond-bridge";
 
 it("shows the source filter once", async () => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => PrefsSchema.parse({}),
     },
-  );
-  vi.stubGlobal("pond", {
-    query: async (name: string) =>
-      name === "settings.getPrefs" ? PrefsSchema.parse({}) : [],
-    onSyncAction: () => () => {},
-    onSaveUpdated: () => () => {},
-    onSyncStatus: () => () => {},
   });
   const host = document.createElement("div");
   document.body.append(host);
@@ -46,6 +37,5 @@ it("shows the source filter once", async () => {
     await act(async () => root.unmount());
     resetFilters();
     host.remove();
-    vi.unstubAllGlobals();
   }
 });

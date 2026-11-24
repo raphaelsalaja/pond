@@ -1,4 +1,5 @@
 import { DEFAULT_PREFS } from "@pond/schema";
+import type { WireSave } from "@shared/wire";
 import { RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -11,6 +12,7 @@ import {
 } from "@/app/test/library-router";
 import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { folders } from "@/features/library/state/folders";
+import { bridge } from "@/shared/test/pond-bridge";
 import { FolderBrowser } from ".";
 
 const folderRows = [
@@ -32,41 +34,80 @@ const folderRows = [
   },
 ];
 
-async function queryImpl(name: string) {
-  if (name === "folders.list") {
-    return folderRows;
-  }
-  if (name === "folders.memberships") {
-    return [];
-  }
-  if (name === "settings.getPrefs") {
-    return DEFAULT_PREFS;
-  }
-  if (name === "folders.summaries") {
-    return [
-      {
-        id: "child",
-        directSaveCount: 3,
-        childFolderCount: 1,
-        previewSaveIds: ["preview-a", "preview-b", "preview-c", "preview-d"],
-      },
-    ];
-  }
-  if (name === "saves.getMany") {
-    return [];
-  }
-  return null;
+/** SAFETY: the pool and folder cards read only the fields these rows fill, and `normalise` defaults the rest. */
+function wire(row: Partial<WireSave>): WireSave {
+  return row as WireSave;
 }
+
+const previewRows = [
+  wire({
+    id: "preview-a",
+    source: "local",
+    sourceId: "preview-a",
+    url: "pond:local/preview-a",
+    title: "contents",
+    mediaType: "text",
+    files: [
+      {
+        kind: "thumbnail",
+        path: "thumbnail.png",
+        mimeType: "image/png",
+        sha256: "abcdef1234567890",
+        size: 10,
+      },
+    ],
+    tags: [],
+    savedAt: 2,
+    createdAt: 2,
+  }),
+  wire({
+    id: "preview-b",
+    source: "local",
+    sourceId: "preview-b",
+    url: "pond:local/preview-b",
+    title: "metadata",
+    mediaType: "file",
+    files: [
+      {
+        kind: "file",
+        path: "metadata.plist",
+        mimeType: "application/octet-stream",
+        sha256: "abcdef1234567890",
+        size: 10,
+      },
+    ],
+    tags: [],
+    savedAt: 1,
+    createdAt: 1,
+  }),
+];
 
 describe("folder browser", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const query = vi.fn<(name: string) => Promise<object | null>>(queryImpl);
 
   beforeEach(async () => {
-    vi.stubGlobal("pond", {
-      query,
-      onSyncAction: vi.fn(() => () => {}),
+    bridge.use({
+      query: {
+        "folders.list": () => folderRows,
+        "folders.memberships": () => [],
+        "settings.getPrefs": () => DEFAULT_PREFS,
+        "folders.summaries": () => [
+          {
+            id: "child",
+            directSaveCount: 3,
+            downloadingCount: 0,
+            childFolderCount: 1,
+            previewSaveIds: [
+              "preview-a",
+              "preview-b",
+              "preview-c",
+              "preview-d",
+            ],
+          },
+        ],
+        "saves.getMany": () => [],
+      },
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -77,10 +118,7 @@ describe("folder browser", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    query.mockReset();
-    query.mockImplementation(queryImpl);
     setLibrarySaveGap(16);
-    vi.unstubAllGlobals();
   });
 
   it("shows child folders separately from contents", async () => {
@@ -99,77 +137,25 @@ describe("folder browser", () => {
     expect(host.textContent).toContain("Contents (3)");
     expect(host.textContent).toContain("Save grid");
     expect(host.querySelector("ul")?.style.gap).toBe("0px");
-    expect(query).toHaveBeenCalledWith("saves.getMany", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.getMany", {
       ids: ["preview-a", "preview-b", "preview-c", "preview-d"],
     });
   });
 
   it("shows up to four item previews, including files that need a generated thumbnail", async () => {
-    query.mockImplementation(async (name: string) => {
-      if (name === "folders.list") {
-        return folderRows;
-      }
-      if (name === "folders.memberships") {
-        return [];
-      }
-      if (name === "settings.getPrefs") {
-        return DEFAULT_PREFS;
-      }
-      if (name === "folders.summaries") {
-        return [
+    bridge.use({
+      query: {
+        "folders.summaries": () => [
           {
             id: "child",
             directSaveCount: 2,
+            downloadingCount: 0,
             childFolderCount: 0,
             previewSaveIds: ["preview-a", "preview-b"],
           },
-        ];
-      }
-      if (name === "saves.getMany") {
-        return [
-          {
-            id: "preview-a",
-            source: "local",
-            sourceId: "preview-a",
-            url: "pond:local/preview-a",
-            title: "contents",
-            mediaType: "text",
-            files: [
-              {
-                kind: "thumbnail",
-                path: "thumbnail.png",
-                mimeType: "image/png",
-                sha256: "abcdef1234567890",
-                size: 10,
-              },
-            ],
-            tags: [],
-            savedAt: 2,
-            createdAt: 2,
-          },
-          {
-            id: "preview-b",
-            source: "local",
-            sourceId: "preview-b",
-            url: "pond:local/preview-b",
-            title: "metadata",
-            mediaType: "file",
-            files: [
-              {
-                kind: "file",
-                path: "metadata.plist",
-                mimeType: "application/octet-stream",
-                sha256: "abcdef1234567890",
-                size: 10,
-              },
-            ],
-            tags: [],
-            savedAt: 1,
-            createdAt: 1,
-          },
-        ];
-      }
-      return null;
+        ],
+        "saves.getMany": () => previewRows,
+      },
     });
     await act(async () => {
       root.render(<FolderBrowser parentId="root" contentCount={0} />);
@@ -188,9 +174,9 @@ describe("folder browser", () => {
   });
 
   it("labels an empty folder as 0 items and keeps the folder cover", async () => {
-    query.mockImplementation(async (name: string) => {
-      if (name === "folders.list") {
-        return [
+    bridge.use({
+      query: {
+        "folders.list": () => [
           {
             id: "empty",
             parentId: "root",
@@ -199,28 +185,17 @@ describe("folder browser", () => {
             sortOrder: 0,
             createdAt: new Date(0),
           },
-        ];
-      }
-      if (name === "folders.memberships") {
-        return [];
-      }
-      if (name === "settings.getPrefs") {
-        return DEFAULT_PREFS;
-      }
-      if (name === "folders.summaries") {
-        return [
+        ],
+        "folders.summaries": () => [
           {
             id: "empty",
             directSaveCount: 0,
+            downloadingCount: 0,
             childFolderCount: 0,
             previewSaveIds: [],
           },
-        ];
-      }
-      if (name === "saves.getMany") {
-        return [];
-      }
-      return null;
+        ],
+      },
     });
     await folders.refresh();
     await act(async () => {
@@ -240,9 +215,9 @@ describe("folder browser", () => {
   });
 
   it("labels a folder whose saves are still downloading", async () => {
-    query.mockImplementation(async (name: string) => {
-      if (name === "folders.list") {
-        return [
+    bridge.use({
+      query: {
+        "folders.list": () => [
           {
             id: "board",
             parentId: "root",
@@ -251,16 +226,8 @@ describe("folder browser", () => {
             sortOrder: 0,
             createdAt: new Date(0),
           },
-        ];
-      }
-      if (name === "folders.memberships") {
-        return [];
-      }
-      if (name === "settings.getPrefs") {
-        return DEFAULT_PREFS;
-      }
-      if (name === "folders.summaries") {
-        return [
+        ],
+        "folders.summaries": () => [
           {
             id: "board",
             directSaveCount: 0,
@@ -268,12 +235,8 @@ describe("folder browser", () => {
             childFolderCount: 0,
             previewSaveIds: [],
           },
-        ];
-      }
-      if (name === "saves.getMany") {
-        return [];
-      }
-      return null;
+        ],
+      },
     });
     await folders.refresh();
     const router = createLibraryTestRouter("/", {

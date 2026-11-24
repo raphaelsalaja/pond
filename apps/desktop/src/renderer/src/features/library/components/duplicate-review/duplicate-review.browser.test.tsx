@@ -5,12 +5,15 @@ import type {
   DuplicateRelation,
   DuplicateScan,
 } from "@shared/duplicate-contracts";
+import type { QueryInput } from "@shared/query-contracts";
+import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import type { ReactElement } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
+import { bridge } from "@/shared/test/pond-bridge";
 import { DuplicateReview } from "./";
 
 function row(id: string) {
@@ -83,43 +86,39 @@ function scanOf(
   };
 }
 
+/** SAFETY: the pool reads only the fields `row()` fills, and `normalise` defaults the rest. */
+function wire(fields: Partial<WireSave>): WireSave {
+  return fields as WireSave;
+}
+
 function setup(
   groups: Array<{ relation: DuplicateRelation; ids: Array<string> }>,
   pending = 0,
 ) {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(700);
-  vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(1200);
   for (const id of groups.flatMap((group) => group.ids)) {
     const save = normalise(row(id));
     if (save) {
       pool.upsert(save);
     }
   }
-  const query = vi.fn(async (name: string, input: { ids?: Array<string> }) => {
-    if (name === "saves.findDuplicates") {
-      return scanOf(groups, pending);
-    }
-    if (name === "saves.getMany") {
-      return (input.ids ?? []).map(row);
-    }
-    if (name === "settings.getPrefs") {
-      return PrefsSchema.parse({});
-    }
-    if (name === "saves.dismissDuplicates") {
-      return { ok: true, dismissed: 1 };
-    }
-    return { ok: true, trashed: 1 };
+  const merges: Array<QueryInput<"saves.mergeDuplicates">> = [];
+  const dismissals: Array<QueryInput<"saves.dismissDuplicates">> = [];
+  bridge.use({
+    query: {
+      "saves.findDuplicates": () => scanOf(groups, pending),
+      "saves.getMany": ({ ids }) => ids.map((id) => wire(row(id))),
+      "settings.getPrefs": () => PrefsSchema.parse({}),
+      "saves.dismissDuplicates": (input) => {
+        dismissals.push(input);
+        return { ok: true, dismissed: 1 };
+      },
+      "saves.mergeDuplicates": (input) => {
+        merges.push(input);
+        return { ok: true, trashed: 1 };
+      },
+    },
   });
-  vi.stubGlobal("pond", { query });
-  return query;
+  return { merges, dismissals };
 }
 
 async function render(element: ReactElement, run: () => Promise<void>) {
@@ -132,8 +131,6 @@ async function render(element: ReactElement, run: () => Promise<void>) {
   } finally {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
   }
 }
 
@@ -153,14 +150,8 @@ function primaryButton() {
   );
 }
 
-function calls(query: ReturnType<typeof setup>, name: string) {
-  return query.mock.calls
-    .filter(([called]) => called === name)
-    .map(([, input]) => input);
-}
-
 it("marks one keeper and merges the rest of the group into it", async () => {
-  const query = setup([
+  const { dismissals } = setup([
     { relation: "exact", ids: ["match-a", "match-b", "match-c"] },
   ]);
   await render(<DuplicateReview saveId="match-a" />, async () => {
@@ -175,17 +166,17 @@ it("marks one keeper and merges the rest of the group into it", async () => {
       1,
     );
     await act(async () => primaryButton()?.click());
-    expect(query).toHaveBeenCalledWith("saves.mergeDuplicates", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.mergeDuplicates", {
       keepId: "match-b",
       ids: ["match-a", "match-b", "match-c"],
     });
-    expect(calls(query, "saves.dismissDuplicates")).toEqual([]);
+    expect(dismissals).toEqual([]);
     expect(document.body.textContent).toContain("No duplicates found");
   });
 });
 
 it("merges every checked group and keeps unchecked groups separate", async () => {
-  const query = setup([
+  const { merges, dismissals } = setup([
     { relation: "exact", ids: ["one-a", "one-b"] },
     { relation: "exact", ids: ["two-a", "two-b"] },
     { relation: "exact", ids: ["three-a", "three-b"] },
@@ -197,11 +188,11 @@ it("merges every checked group and keeps unchecked groups separate", async () =>
     expect(groups).toHaveLength(3);
     await act(async () => groups[1]?.click());
     await act(async () => primaryButton()?.click());
-    expect(calls(query, "saves.mergeDuplicates")).toEqual([
+    expect(merges).toEqual([
       { keepId: "one-a", ids: ["one-a", "one-b"] },
       { keepId: "three-a", ids: ["three-a", "three-b"] },
     ]);
-    expect(calls(query, "saves.dismissDuplicates")).toEqual([
+    expect(dismissals).toEqual([
       { pairs: [{ ids: ["two-a", "two-b"], relation: "exact" }] },
     ]);
     expect(document.body.textContent).not.toContain("two-b");
@@ -210,15 +201,17 @@ it("merges every checked group and keeps unchecked groups separate", async () =>
 });
 
 it("keeps a group separate without merging anything", async () => {
-  const query = setup([{ relation: "near", ids: ["solo-a", "solo-b"] }]);
+  const { merges, dismissals } = setup([
+    { relation: "near", ids: ["solo-a", "solo-b"] },
+  ]);
   await render(<DuplicateReview saveId={null} />, async () => {
     await act(async () =>
       document.querySelector<HTMLElement>("section [role=checkbox]")?.click(),
     );
     expect(primaryButton()?.textContent).toBe("Keep Separate");
     await act(async () => primaryButton()?.click());
-    expect(calls(query, "saves.mergeDuplicates")).toEqual([]);
-    expect(calls(query, "saves.dismissDuplicates")).toEqual([
+    expect(merges).toEqual([]);
+    expect(dismissals).toEqual([
       { pairs: [{ ids: ["solo-a", "solo-b"], relation: "near" }] },
     ]);
   });
@@ -249,11 +242,11 @@ it("says why each group matched and only merges exact and near groups", async ()
 });
 
 it("asks Pond for groups touching the requested ids", async () => {
-  const query = setup([{ relation: "exact", ids: ["keep-a", "keep-b"] }]);
+  setup([{ relation: "exact", ids: ["keep-a", "keep-b"] }]);
   await render(
     <DuplicateReview saveId={null} ids={["keep-a", "keep-b"]} />,
     async () => {
-      expect(query).toHaveBeenCalledWith("saves.findDuplicates", {
+      expect(window.pond.query).toHaveBeenCalledWith("saves.findDuplicates", {
         ids: ["keep-a", "keep-b"],
       });
       expect(document.body.textContent).toContain("keep-a");

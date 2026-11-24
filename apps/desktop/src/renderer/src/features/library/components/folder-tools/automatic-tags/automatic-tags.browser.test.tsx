@@ -3,44 +3,37 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { AutomaticTagsDialog } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
-const query = vi.fn(async (name: string) => {
-  if (name === "folders.rules.get") {
-    return { tags: ["Logos"], inheritedTags: ["Brand"] };
-  }
-  if (name === "settings.getPrefs") {
-    return PrefsSchema.parse({});
-  }
-  if (name === "tags.list") {
-    return ["Logos", "Posters"].map((tag) => ({
-      id: tag,
-      name: tag,
-      starred: false,
-      description: null,
-      lastUsedAt: null,
-      usageCount: 0,
-      createdAt: null,
-    }));
-  }
-  if (name === "tagGroups.list" || name === "folders.list") {
-    return [];
-  }
-  return { ok: true, affected: 0 };
-});
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+  bridge.use({
+    query: {
+      "folders.rules.get": () => ({
+        tags: ["Logos"],
+        inheritedTags: ["Brand"],
+      }),
+      "folders.rules.set": () => ({ ok: true, affected: 0 }),
+      "settings.getPrefs": () => PrefsSchema.parse({}),
+      "tags.list": () =>
+        ["Logos", "Posters"].map((tag) => ({
+          id: tag,
+          name: tag,
+          starred: false,
+          archived: false,
+          description: null,
+          lastUsedAt: null,
+          usageCount: 0,
+          createdAt: new Date(0),
+        })),
+      "tagGroups.list": () => [],
+      "folders.list": () => [],
+      "folders.memberships": () => [],
     },
-  );
-  vi.stubGlobal("pond", { query, onSyncAction: () => () => {} });
+  });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -49,8 +42,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  query.mockClear();
-  vi.unstubAllGlobals();
 });
 
 it("stages tag changes in the shared tag picker and saves them together", async () => {
@@ -73,7 +64,7 @@ it("stages tag changes in the shared tag picker and saves them together", async 
   );
   const posters = document.querySelector<HTMLElement>('[aria-label="Posters"]');
   await act(async () => posters?.click());
-  expect(query).not.toHaveBeenCalledWith(
+  expect(window.pond.query).not.toHaveBeenCalledWith(
     "folders.rules.set",
     expect.anything(),
   );
@@ -81,7 +72,7 @@ it("stages tag changes in the shared tag picker and saves them together", async 
     (button) => button.textContent === "Save",
   );
   await act(async () => save?.click());
-  expect(query).toHaveBeenCalledWith("folders.rules.set", {
+  expect(window.pond.query).toHaveBeenCalledWith("folders.rules.set", {
     id: "folder",
     tags: ["Logos", "Posters"],
     applyExisting: false,
