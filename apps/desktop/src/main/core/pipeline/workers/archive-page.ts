@@ -451,7 +451,9 @@ async function crawlSite(
   } catch {
     /** A crawl that recorded nothing leaves no WARC; the empty buffer stands in. */
   } finally {
-    void rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    void rm(tmpDir, { recursive: true, force: true }).catch((cause: unknown) => {
+      log.warn("[pond pipeline:archive-page] temp cleanup failed", cause);
+    });
   }
   return { pages, warcBytes, authWalled };
 }

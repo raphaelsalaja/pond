@@ -7,7 +7,7 @@ import { promisify } from "node:util";
 import type { SaveFile } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import ffmpegPath from "ffmpeg-static";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { saveDirIn } from "../paths";
 import { runFfmpeg } from "./convert-media";
@@ -630,9 +630,14 @@ it("reads durations from FFmpeg probe output", () => {
   expect(parseDuration("no duration here")).toBeNull();
 });
 
-it.skipIf(!ffmpegPath)(
-  "re-encodes a real H.264 file into a smaller, playable HEVC file",
-  async () => {
+describe.skipIf(!ffmpegPath)("real FFmpeg re-encode", () => {
+  let before = 0;
+  let result: Awaited<ReturnType<typeof compressExistingVideos>> | null = null;
+  const commits: Array<Transaction> = [];
+  let encoded: VideoProbe | null = null;
+
+  /** Encoding a sample clip and re-encoding it to HEVC is a cold start past the default hook budget. */
+  beforeAll(async () => {
     const ffmpeg = ffmpegPath;
     if (!ffmpeg) {
       throw new Error("FFmpeg unavailable");
@@ -672,11 +677,10 @@ it.skipIf(!ffmpegPath)(
       );
       return parseVideoProbe(output);
     };
-    const commits: Array<Transaction> = [];
     const encodedPath = join(root, "encoded.mp4");
-    const before = (await stat(source)).size;
+    before = (await stat(source)).size;
 
-    const result = await compressExistingVideos(
+    result = await compressExistingVideos(
       {
         ids: ["save-1"],
         quality: "balanced",
@@ -725,9 +729,12 @@ it.skipIf(!ffmpegPath)(
         },
       },
     );
+    encoded = await probe(encodedPath);
+  }, 60_000);
 
-    expect(result.changed).toBe(1);
-    expect(result.bytesAfter).toBeLessThan(before * 0.9);
+  it("re-encodes a real H.264 file into a smaller, playable HEVC file", () => {
+    expect(result?.changed).toBe(1);
+    expect(result?.bytesAfter).toBeLessThan(before * 0.9);
     const [transaction] = commits;
     if (transaction?.kind !== "update" || transaction.model !== "save") {
       throw new Error("Expected one Save update.");
@@ -735,10 +742,9 @@ it.skipIf(!ffmpegPath)(
     expect(transaction.fileMoves?.map((file) => file.filename)).toEqual([
       "video-1.mp4",
     ]);
-    expect(await probe(encodedPath)).toMatchObject({
+    expect(encoded).toMatchObject({
       videoCodec: "hevc",
       audioCodec: "aac",
     });
-  },
-  60_000,
-);
+  });
+});

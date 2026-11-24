@@ -1,5 +1,5 @@
 import type { Capture, RawJson } from "@pond/schema/raw";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { CaptureIncompleteError } from "../extractors/errors";
 import {
   createCaptureTweetRunner,
@@ -50,68 +50,71 @@ const rendered = {
   height: 10,
 };
 
+type TweetShotArgs = Parameters<TestPorts["screenshotTweetDual"]>[0];
+type ThreadsShotArgs = Parameters<TestPorts["screenshotThreadsDual"]>[0];
+type PersistOptions = Parameters<TestPorts["persistSave"]>[2];
+
 function makePorts(
   initial: CaptureTweetSave,
   screenshotResult: TweetDualResult,
+  { nativeCardMisses = false }: { nativeCardMisses?: boolean } = {},
 ) {
   let stored = initial;
-  const persistSave = vi.fn(
-    async (...[, patch]: Parameters<TestPorts["persistSave"]>) => {
+  const persisted: Array<PersistOptions> = [];
+  const tweetShots: Array<TweetShotArgs> = [];
+  const threadsShots: Array<ThreadsShotArgs> = [];
+  const renders = { tweet: 0, threads: 0, bluesky: 0 };
+  const card = nativeCardMisses ? null : rendered;
+  const ports = {
+    readSave: async () => stored,
+    persistSave: async (
+      ...[, patch, options]: Parameters<TestPorts["persistSave"]>
+    ) => {
+      persisted.push(options);
       if (patch.rawJson) {
         stored = { ...stored, rawJson: patch.rawJson };
       }
     },
-  );
-  const screenshotTweetDual = vi.fn(
-    async (
-      ..._args: Parameters<TestPorts["screenshotTweetDual"]>
-    ): Promise<TweetDualResult> => screenshotResult,
-  );
-  const screenshotThreadsDual = vi.fn(
-    async (
-      ..._args: Parameters<TestPorts["screenshotThreadsDual"]>
-    ): Promise<Awaited<ReturnType<TestPorts["screenshotThreadsDual"]>>> =>
-      screenshotResult,
-  );
-  const renderTweetCardPng = vi.fn(
-    async (
-      ..._args: Parameters<TestPorts["renderTweetCardPng"]>
-    ): Promise<Awaited<ReturnType<TestPorts["renderTweetCardPng"]>>> =>
-      rendered,
-  );
-  const renderThreadsCardPng = vi.fn(
-    async (
-      ..._args: Parameters<TestPorts["renderThreadsCardPng"]>
-    ): Promise<Awaited<ReturnType<TestPorts["renderThreadsCardPng"]>>> =>
-      rendered,
-  );
-  const renderBlueskyCardPng = vi.fn(
-    async (
-      ..._args: Parameters<TestPorts["renderBlueskyCardPng"]>
-    ): Promise<Awaited<ReturnType<TestPorts["renderBlueskyCardPng"]>>> =>
-      rendered,
-  );
-  const inlineCaptureAvatars = vi.fn(async (capture: Capture) => ({ capture }));
-  const ports = {
-    readSave: async () => stored,
-    persistSave,
-    screenshotTweetDual,
-    screenshotThreadsDual,
-    renderTweetCardPng,
-    renderThreadsCardPng,
-    renderBlueskyCardPng,
-    inlineCaptureAvatars,
+    screenshotTweetDual: async (
+      args: TweetShotArgs,
+    ): Promise<TweetDualResult> => {
+      tweetShots.push(args);
+      return screenshotResult;
+    },
+    screenshotThreadsDual: async (
+      args: ThreadsShotArgs,
+    ): Promise<Awaited<ReturnType<TestPorts["screenshotThreadsDual"]>>> => {
+      threadsShots.push(args);
+      return screenshotResult;
+    },
+    renderTweetCardPng: async (): Promise<
+      Awaited<ReturnType<TestPorts["renderTweetCardPng"]>>
+    > => {
+      renders.tweet += 1;
+      return card;
+    },
+    renderThreadsCardPng: async (): Promise<
+      Awaited<ReturnType<TestPorts["renderThreadsCardPng"]>>
+    > => {
+      renders.threads += 1;
+      return card;
+    },
+    renderBlueskyCardPng: async (): Promise<
+      Awaited<ReturnType<TestPorts["renderBlueskyCardPng"]>>
+    > => {
+      renders.bluesky += 1;
+      return card;
+    },
+    inlineCaptureAvatars: async (capture: Capture) => ({ capture }),
   } satisfies TestPorts;
 
   return {
     getStored: () => stored,
-    persistSave,
+    persisted,
     runCaptureTweet: createCaptureTweetRunner(ports),
-    screenshotTweetDual,
-    screenshotThreadsDual,
-    renderTweetCardPng,
-    renderThreadsCardPng,
-    renderBlueskyCardPng,
+    tweetShots,
+    threadsShots,
+    renders,
   };
 }
 
@@ -146,23 +149,26 @@ describe("runCaptureTweet for Bluesky", () => {
     await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
       captured: 2,
     });
-    expect(harness.renderBlueskyCardPng).toHaveBeenCalledTimes(2);
-    expect(harness.renderTweetCardPng).not.toHaveBeenCalled();
+    expect(harness.renders.bluesky).toBe(2);
+    expect(harness.renders.tweet).toBe(0);
     expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(false);
   });
 
   it("never opens a live screenshot when the native card misses", async () => {
-    const harness = makePorts(blueskySave(), {
-      light: { ok: true, png: rendered },
-      dark: { ok: true, png: rendered },
-    });
-    harness.renderBlueskyCardPng.mockResolvedValue(null);
+    const harness = makePorts(
+      blueskySave(),
+      {
+        light: { ok: true, png: rendered },
+        dark: { ok: true, png: rendered },
+      },
+      { nativeCardMisses: true },
+    );
 
     await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
       captured: 0,
     });
-    expect(harness.screenshotTweetDual).not.toHaveBeenCalled();
-    expect(harness.screenshotThreadsDual).not.toHaveBeenCalled();
+    expect(harness.tweetShots).toEqual([]);
+    expect(harness.threadsShots).toEqual([]);
   });
 });
 
@@ -241,8 +247,8 @@ describe("runCaptureTweet reply parent enrichment", () => {
     expect(harness.getStored().rawJson?.capture?.replyTo?.description).toBe(
       "Parent post",
     );
-    const actorReasons = harness.persistSave.mock.calls.map(
-      ([, , options]) => options.actorReason,
+    const actorReasons = harness.persisted.map(
+      (options) => options.actorReason,
     );
     expect(actorReasons).not.toContain(
       "pipeline:capture-tweet:tweet_reply_parent_light",
@@ -253,16 +259,18 @@ describe("runCaptureTweet reply parent enrichment", () => {
   });
 
   it("screenshots a reply without the parent post when the native card misses", async () => {
-    const harness = makePorts(save(replyRaw()), {
-      light: { ok: true, png: rendered },
-      dark: { ok: true, png: rendered },
-    });
-    harness.renderTweetCardPng.mockResolvedValue(null);
+    const harness = makePorts(
+      save(replyRaw()),
+      {
+        light: { ok: true, png: rendered },
+        dark: { ok: true, png: rendered },
+      },
+      { nativeCardMisses: true },
+    );
 
     await harness.runCaptureTweet("save-1");
 
-    const calls = harness.screenshotTweetDual.mock.calls.map(([args]) => args);
-    const reply = calls.find((args) => args.sourceId === "2");
+    const reply = harness.tweetShots.find((args) => args.sourceId === "2");
     expect(reply).toBeDefined();
     expect(reply).not.toHaveProperty("parentId");
   });
@@ -286,14 +294,14 @@ describe("runCaptureTweet reply parent enrichment", () => {
         light: { ok: true, png: rendered },
         dark: { ok: true, png: rendered },
       },
+      { nativeCardMisses: true },
     );
-    harness.renderThreadsCardPng.mockResolvedValue(null);
 
     await harness.runCaptureTweet("save-1");
 
-    const reply = harness.screenshotThreadsDual.mock.calls
-      .map(([args]) => args)
-      .find((args) => args.sourceId === "ReplyCode");
+    const reply = harness.threadsShots.find(
+      (args) => args.sourceId === "ReplyCode",
+    );
     expect(reply).toBeDefined();
     expect(reply).not.toHaveProperty("parentId");
   });
@@ -315,7 +323,7 @@ describe("runCaptureTweet reply parent enrichment", () => {
     await expect(runTask("save-1")).rejects.toThrow(
       "capture_tweet: reply parent still pending",
     );
-    expect(harness.screenshotTweetDual).toHaveBeenCalledTimes(2);
+    expect(harness.tweetShots).toHaveLength(2);
     expect(harness.getStored().rawJson?.captureTweetVersion).toBe(14);
     expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(false);
   });
@@ -328,7 +336,7 @@ describe("runCaptureTweet reply parent enrichment", () => {
     const runTask = createCaptureTweetTask(harness.runCaptureTweet);
 
     await expect(runTask("save-1")).resolves.toBeUndefined();
-    expect(harness.screenshotTweetDual).toHaveBeenCalledOnce();
+    expect(harness.tweetShots).toHaveLength(1);
     expect(
       harness.getStored().rawJson?.capture?.extras?.replyParentUnavailable,
     ).toBe(true);
@@ -370,10 +378,10 @@ describe("runCaptureTweet reply parent enrichment", () => {
     });
 
     await harness.runCaptureTweet("save-1");
-    expect(harness.renderTweetCardPng).not.toHaveBeenCalled();
+    expect(harness.renders.tweet).toBe(0);
 
     await harness.runCaptureTweet("save-1", { force: true });
-    expect(harness.renderTweetCardPng).toHaveBeenCalled();
+    expect(harness.renders.tweet).toBeGreaterThan(0);
   });
 
   it("stops before a screenshot when capture is already cancelled", async () => {
@@ -385,6 +393,6 @@ describe("runCaptureTweet reply parent enrichment", () => {
     const runTask = createCaptureTweetTask(harness.runCaptureTweet);
 
     await expect(runTask("save-1", signal)).resolves.toBeUndefined();
-    expect(harness.screenshotTweetDual).not.toHaveBeenCalled();
+    expect(harness.tweetShots).toEqual([]);
   });
 });

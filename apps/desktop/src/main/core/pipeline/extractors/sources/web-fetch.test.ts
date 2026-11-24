@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { fetchHtml } from "./web-fetch";
 
 function htmlResponse(body: string, status = 200) {
@@ -13,75 +13,60 @@ function networkError(code: string) {
   return Object.assign(new TypeError("fetch failed"), { cause });
 }
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
 describe("fetchHtml", () => {
   it("returns the page markup when the request succeeds", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(htmlResponse("<html/>")));
-
-    await expect(fetchHtml("https://example.com/")).resolves.toBe("<html/>");
+    await expect(
+      fetchHtml("https://example.com/", async () => htmlResponse("<html/>")),
+    ).resolves.toBe("<html/>");
   });
 
   it("reports no html on a bot wall so the caller can render the page", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(htmlResponse("", 403)));
-
-    await expect(fetchHtml("https://example.com/")).resolves.toBeNull();
+    await expect(
+      fetchHtml("https://example.com/", async () => htmlResponse("", 403)),
+    ).resolves.toBeNull();
   });
 
   it("reports no html when the response headers exceed the client limit", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(networkError("UND_ERR_HEADERS_OVERFLOW")),
-    );
-
-    // YouTube sends more than undici's 16 KiB of headers; a browser does not.
+    /** YouTube sends more than undici's 16 KiB of headers; a browser does not. */
     await expect(
-      fetchHtml("https://www.youtube.com/@XanderGouws"),
+      fetchHtml("https://www.youtube.com/@XanderGouws", async () => {
+        throw networkError("UND_ERR_HEADERS_OVERFLOW");
+      }),
     ).resolves.toBeNull();
   });
 
   it("keeps other network failures transient and names the cause", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(networkError("ECONNRESET")),
-    );
-
-    await expect(fetchHtml("https://example.com/")).rejects.toThrow(
-      "web fetch failed: fetch failed (ECONNRESET)",
-    );
+    await expect(
+      fetchHtml("https://example.com/", async () => {
+        throw networkError("ECONNRESET");
+      }),
+    ).rejects.toThrow("web fetch failed: fetch failed (ECONNRESET)");
   });
 
   it("treats a server error as transient and a missing page as terminal", async () => {
-    const stub = vi.fn().mockResolvedValue(htmlResponse("", 503));
-    vi.stubGlobal("fetch", stub);
-    await expect(fetchHtml("https://example.com/")).rejects.toThrow(
-      "web fetch 503",
-    );
+    await expect(
+      fetchHtml("https://example.com/", async () => htmlResponse("", 503)),
+    ).rejects.toThrow("web fetch 503");
 
-    stub.mockResolvedValue(htmlResponse("", 404));
-    await expect(fetchHtml("https://example.com/")).rejects.toThrow(
+    const missing = async () => htmlResponse("", 404);
+    await expect(fetchHtml("https://example.com/", missing)).rejects.toThrow(
       "web fetch 404",
     );
-    await expect(fetchHtml("https://example.com/")).rejects.not.toThrow(
-      "web fetch failed",
-    );
+    await expect(
+      fetchHtml("https://example.com/", missing),
+    ).rejects.not.toThrow("web fetch failed");
   });
 
   it("rejects content that is not a page", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        new Response("{}", {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        }),
+    await expect(
+      fetchHtml(
+        "https://example.com/api",
+        async () =>
+          new Response("{}", {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          }),
       ),
-    );
-
-    await expect(fetchHtml("https://example.com/api")).rejects.toThrow(
-      "non-html content-type",
-    );
+    ).rejects.toThrow("non-html content-type");
   });
 });

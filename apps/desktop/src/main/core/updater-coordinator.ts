@@ -134,7 +134,12 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
       });
     }, 2000);
     dependencies.scheduleInterval(() => {
-      void updater.check().catch(() => {});
+      void updater.check().catch((cause: unknown) => {
+        dependencies.warn(
+          "[pond updater] scheduled check failed",
+          cause instanceof Error ? cause : new Error("Unknown updater error"),
+        );
+      });
     }, SIX_HOURS_MS);
   }
 

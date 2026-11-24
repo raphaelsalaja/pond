@@ -312,6 +312,8 @@ async function probeStagedHandle(
     void session
       .fromPartition(staging)
       .clearStorageData()
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond session-import] staging cleanup failed", source, cause);
+      });
   }
 }

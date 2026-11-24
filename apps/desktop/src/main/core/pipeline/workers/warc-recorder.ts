@@ -17,6 +17,9 @@ const FULL_BODY_TIMEOUT_MS = 30_000;
 /** Full bodies share one archive budget, so reads are serialized to avoid buffering the same remaining bytes concurrently. */
 const FULL_BODY_CONCURRENCY = 1;
 
+/** The race already surfaced this rejection, or the timeout won and the late rejection has no caller left to hear it. */
+function ignoreRaceLoser(): void {}
+
 export async function withTimeout<T>(
   promise: Promise<T>,
   ms: number,
@@ -34,7 +37,7 @@ export async function withTimeout<T>(
     ]);
   } finally {
     clearTimeout(timer);
-    promise.catch(() => {});
+    promise.catch(ignoreRaceLoser);
   }
 }
 
@@ -368,11 +371,12 @@ export class WarcRecorder {
         this.reservedBytes -= body.byteLength;
       }
     });
-    this.writeChain = task.catch((cause: unknown) => {
+    const written = task.catch((cause: unknown) => {
       log.warn("[pond warc] record write failed", meta.url, cause);
     });
+    this.writeChain = written;
     this.pending.add(task);
-    void task.catch(() => {}).finally(() => this.pending.delete(task));
+    void written.finally(() => this.pending.delete(task));
   }
 
   /** Refetches range-loaded and DOM-referenced media through the page's session so each URL is stored whole. */

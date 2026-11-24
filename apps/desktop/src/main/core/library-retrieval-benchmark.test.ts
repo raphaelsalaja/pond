@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { arch, cpus, platform, release } from "node:os";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import { z } from "zod";
 import { embeddingDimensions } from "../../shared/embeddings";
 import { eventTables, libraryTables } from "../database/tables";
@@ -14,6 +14,13 @@ interface RetrievalTimings {
   adapter: Array<number>;
   exactSql: Array<number>;
   guardedBlobSql: Array<number>;
+}
+
+interface PhaseRun {
+  elapsed: number;
+  ids: Array<string>;
+  fallback: boolean;
+  distances: Array<number>;
 }
 
 const warmups = 5;
@@ -32,6 +39,14 @@ function vector(angle: number) {
     i === 0 ? Math.cos(angle) : i === 1 ? Math.sin(angle) : 0,
   );
 }
+
+let commit = "";
+
+beforeAll(() => {
+  commit = execFileSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf8",
+  }).trim();
+});
 
 for (const size of [1000, 10_000, 50_000]) {
   it.skipIf(process.env.POND_BENCH_LIBRARY !== "1")(
@@ -106,9 +121,7 @@ for (const size of [1000, 10_000, 50_000]) {
         })();
         const setupMs = performance.now() - setupStarted;
         const metadata = {
-          commit: execFileSync("git", ["rev-parse", "HEAD"], {
-            encoding: "utf8",
-          }).trim(),
+          commit,
           date: new Date().toISOString(),
           node: process.versions.node,
           electron: process.versions.electron,
@@ -216,6 +229,58 @@ for (const size of [1000, 10_000, 50_000]) {
             const memoryBefore = process.memoryUsage();
             const reference = exactRows();
             expect(reference.map((row) => row.id)).toEqual(expected);
+            const measure: Record<
+              keyof RetrievalTimings,
+              () => Promise<PhaseRun>
+            > = {
+              async adapter() {
+                const started = performance.now();
+                const result = await executeAdapter();
+                const elapsed = performance.now() - started;
+                return {
+                  elapsed,
+                  ids: result.hits.map((hit) => hit.id),
+                  fallback: false,
+                  distances: [],
+                };
+              },
+              async exactSql() {
+                const started = performance.now();
+                const result = exactRows();
+                const elapsed = performance.now() - started;
+                return {
+                  elapsed,
+                  ids: result.map((row) => row.id),
+                  fallback: false,
+                  distances: [],
+                };
+              },
+              async guardedBlobSql() {
+                const started = performance.now();
+                const proposed = candidate();
+                const elapsed = performance.now() - started;
+                return {
+                  elapsed,
+                  ids: proposed.rows.map((row) => row.id),
+                  fallback: proposed.fallback,
+                  distances: proposed.rows.map((row) => row.distance),
+                };
+              },
+            };
+            const expectedIds: Record<keyof RetrievalTimings, Array<string>> =
+              {
+                adapter: expected.slice(0, 12),
+                exactSql: expected,
+                guardedBlobSql: expected,
+              };
+            const expectedDistances: Record<
+              keyof RetrievalTimings,
+              Array<number>
+            > = {
+              adapter: [],
+              exactSql: [],
+              guardedBlobSql: reference.map((row) => row.distance),
+            };
             for (const name of [
               "adapter",
               "exactSql",
@@ -236,37 +301,16 @@ for (const size of [1000, 10_000, 50_000]) {
                 if (performance.now() >= deadline) {
                   break;
                 }
-                const started = performance.now();
-                if (name === "adapter") {
-                  const result = await executeAdapter();
-                  const elapsed = performance.now() - started;
-                  expect(result.hits.map((hit) => hit.id)).toEqual(
-                    expected.slice(0, 12),
-                  );
-                  if (repetition >= warmups) {
-                    timings[name].push(elapsed);
-                  }
-                } else if (name === "exactSql") {
-                  const result = exactRows();
-                  const elapsed = performance.now() - started;
-                  expect(result.map((row) => row.id)).toEqual(expected);
-                  if (repetition >= warmups) {
-                    timings[name].push(elapsed);
-                  }
-                } else {
-                  const proposed = candidate();
-                  const elapsed = performance.now() - started;
-                  expect(proposed.rows.map((row) => row.id)).toEqual(expected);
-                  expect(proposed.fallback).toBe(false);
-                  for (const [index, row] of proposed.rows.entries()) {
-                    expect(row.distance).toBeCloseTo(
-                      reference[index]?.distance ?? -1,
-                      6,
-                    );
-                  }
-                  if (repetition >= warmups) {
-                    timings[name].push(elapsed);
-                  }
+                const observed = await measure[name]();
+                expect(observed.ids).toEqual(expectedIds[name]);
+                expect(observed.fallback).toBe(false);
+                expect(observed.distances).toEqual(
+                  expectedDistances[name].map((distance) =>
+                    expect.closeTo(distance, 6),
+                  ),
+                );
+                if (repetition >= warmups) {
+                  timings[name].push(observed.elapsed);
                 }
                 completed++;
               }

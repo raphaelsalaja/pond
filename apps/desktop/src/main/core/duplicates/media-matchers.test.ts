@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   describeDuplicate,
   describeDuplicateGroup,
@@ -199,38 +199,51 @@ async function printOf(path: string) {
 
 const ffmpeg = binariesAvailable().ffmpeg;
 
+type VideoPrint = Awaited<ReturnType<typeof printOf>>;
+
 describe.skipIf(!ffmpeg)("video fingerprints from real files", () => {
-  it("matches a downscaled re-encode and not a different clip", async () => {
+  let root = "";
+  let prints: Array<VideoPrint> = [];
+
+  /** Encoding three 12 s clips and printing them is a cold start well past the default hook budget. */
+  beforeAll(async () => {
     const bin = ffmpeg ?? "ffmpeg";
-    const root = await mkdtemp(join(tmpdir(), "pond-video-print-"));
+    root = await mkdtemp(join(tmpdir(), "pond-video-print-"));
     const quiet = ["-hide_banner", "-loglevel", "error", "-y"];
     const source = (filter: string, out: string) =>
       run(bin, [...quiet, "-f", "lavfi", "-i", filter, "-t", "12", out]);
-    try {
-      const original = join(root, "original.mp4");
-      const smaller = join(root, "smaller.mp4");
-      const other = join(root, "other.mp4");
-      await source("testsrc2=size=320x240:rate=25", original);
-      await run(bin, [
-        ...quiet,
-        "-i",
-        original,
-        "-vf",
-        "scale=160:120",
-        "-b:v",
-        "150k",
-        smaller,
-      ]);
-      await source("mandelbrot=size=320x240:rate=25", other);
-      const [a, b, c] = await Promise.all([
-        printOf(original),
-        printOf(smaller),
-        printOf(other),
-      ]);
-      expect(compareVideoPrints(a, b)).not.toBeNull();
-      expect(compareVideoPrints(a, c)).toBeNull();
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
+    const original = join(root, "original.mp4");
+    const smaller = join(root, "smaller.mp4");
+    const other = join(root, "other.mp4");
+    await source("testsrc2=size=320x240:rate=25", original);
+    await run(bin, [
+      ...quiet,
+      "-i",
+      original,
+      "-vf",
+      "scale=160:120",
+      "-b:v",
+      "150k",
+      smaller,
+    ]);
+    await source("mandelbrot=size=320x240:rate=25", other);
+    prints = await Promise.all([
+      printOf(original),
+      printOf(smaller),
+      printOf(other),
+    ]);
   }, 60_000);
+
+  afterAll(async () => {
+    await rm(root, { recursive: true, force: true });
+  });
+
+  it("matches a downscaled re-encode and not a different clip", () => {
+    const [a, b, c] = prints;
+    if (!a || !b || !c) {
+      throw new Error("Missing video prints");
+    }
+    expect(compareVideoPrints(a, b)).not.toBeNull();
+    expect(compareVideoPrints(a, c)).toBeNull();
+  });
 });

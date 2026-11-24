@@ -1,7 +1,7 @@
 import type { SaveFile } from "@pond/schema/db";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import sharp from "sharp";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ensureRemotePoster } from "./ensure-poster";
 import type { RemotePosterSave } from "./ensure-poster";
 
@@ -37,23 +37,41 @@ function jpeg(width: number, height: number) {
     .toBuffer();
 }
 
-async function setup() {
-  const bytes = await sharp({
-    create: { width: 4, height: 3, channels: 3, background: "#000" },
-  })
-    .jpeg()
-    .toBuffer();
-  const fetchAvatarToTxFile = vi.fn(async () => ({
-    file: { filename: "poster.jpg", bytes, mimeType: "image/jpeg" },
-  }));
-  const persistSave = vi.fn(async () => null);
-  const ensureSaveThumbnail = vi.fn(async () => {});
+type PosterFetch = (
+  url: string,
+) => Promise<ReturnType<typeof image> | { miss: "permanent" }>;
+
+function recordingRuntime(fetchPoster: PosterFetch) {
+  const fetched: Array<string> = [];
+  const persisted: Array<[string, unknown, unknown]> = [];
+  const thumbnails: Array<[string, unknown, unknown]> = [];
   return {
-    runtime: { fetchAvatarToTxFile, persistSave, ensureSaveThumbnail },
-    fetchAvatarToTxFile,
-    persistSave,
-    ensureSaveThumbnail,
+    fetched,
+    persisted,
+    thumbnails,
+    runtime: {
+      fetchAvatarToTxFile: async (url: string) => {
+        fetched.push(url);
+        return fetchPoster(url);
+      },
+      persistSave: async (id: string, patch: object, options: object) => {
+        persisted.push([id, patch, options]);
+        return null;
+      },
+      ensureSaveThumbnail: async (
+        saveId: string,
+        save?: object | null,
+        options?: object,
+      ) => {
+        thumbnails.push([saveId, save, options]);
+      },
+    },
   };
+}
+
+async function setup() {
+  const bytes = await jpeg(4, 3);
+  return recordingRuntime(async () => image(bytes));
 }
 
 function save(overrides: Partial<RemotePosterSave> = {}): RemotePosterSave {
@@ -62,35 +80,34 @@ function save(overrides: Partial<RemotePosterSave> = {}): RemotePosterSave {
 
 describe("ensureRemotePoster", () => {
   it("writes the captured poster when the save has no video file", async () => {
-    const { runtime, fetchAvatarToTxFile, persistSave, ensureSaveThumbnail } =
-      await setup();
+    const { runtime, fetched, persisted, thumbnails } = await setup();
 
     await ensureRemotePoster("s1", save(), false, runtime);
 
-    expect(fetchAvatarToTxFile).toHaveBeenCalledWith(POSTER_URL);
-    expect(persistSave).toHaveBeenCalledWith(
-      "s1",
-      {},
-      expect.objectContaining({
-        replaceFilesWithKind: "poster",
-        newFiles: [
-          expect.objectContaining({
-            kind: "poster",
-            filename: "poster-1.jpg",
-            mimeType: "image/jpeg",
-            width: 4,
-            height: 3,
-          }),
-        ],
-      }),
-    );
-    expect(ensureSaveThumbnail).toHaveBeenCalledWith("s1", null, {
-      force: true,
-    });
+    expect(fetched).toEqual([POSTER_URL]);
+    expect(persisted).toEqual([
+      [
+        "s1",
+        {},
+        expect.objectContaining({
+          replaceFilesWithKind: "poster",
+          newFiles: [
+            expect.objectContaining({
+              kind: "poster",
+              filename: "poster-1.jpg",
+              mimeType: "image/jpeg",
+              width: 4,
+              height: 3,
+            }),
+          ],
+        }),
+      ],
+    ]);
+    expect(thumbnails).toEqual([["s1", null, { force: true }]]);
   });
 
   it("does nothing when no poster URL is known", async () => {
-    const { runtime, fetchAvatarToTxFile, persistSave } = await setup();
+    const { runtime, fetched, persisted } = await setup();
 
     await ensureRemotePoster(
       "s1",
@@ -105,8 +122,8 @@ describe("ensureRemotePoster", () => {
       runtime,
     );
 
-    expect(fetchAvatarToTxFile).not.toHaveBeenCalled();
-    expect(persistSave).not.toHaveBeenCalled();
+    expect(fetched).toEqual([]);
+    expect(persisted).toEqual([]);
   });
 
   it("uses a portrait Shorts file and skips a landscape original-aspect file", async () => {
@@ -116,17 +133,15 @@ describe("ensureRemotePoster", () => {
     const hq = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
     const oar2 = `https://i.ytimg.com/vi/${id}/oar2.jpg`;
     const oardefault = `https://i.ytimg.com/vi/${id}/oardefault.jpg`;
-    const fetchAvatarToTxFile = vi.fn(async (url: string) => {
+    const { runtime, fetched, persisted } = recordingRuntime(async (url) => {
       if (url === oar2) {
         return image(landscape);
       }
       if (url === oardefault) {
         return image(portrait);
       }
-      return { miss: "permanent" as const };
+      return { miss: "permanent" };
     });
-    const persistSave = vi.fn(async () => null);
-    const ensureSaveThumbnail = vi.fn(async () => {});
 
     await ensureRemotePoster(
       "s1",
@@ -148,32 +163,30 @@ describe("ensureRemotePoster", () => {
         }),
       }),
       false,
-      { fetchAvatarToTxFile, persistSave, ensureSaveThumbnail },
+      runtime,
     );
 
-    expect(fetchAvatarToTxFile.mock.calls.map((call) => call[0])).toEqual([
-      oar2,
-      oardefault,
+    expect(fetched).toEqual([oar2, oardefault]);
+    expect(persisted).toEqual([
+      [
+        "s1",
+        {},
+        expect.objectContaining({
+          newFiles: [expect.objectContaining({ width: 2, height: 4 })],
+        }),
+      ],
     ]);
-    expect(persistSave).toHaveBeenCalledWith(
-      "s1",
-      {},
-      expect.objectContaining({
-        newFiles: [expect.objectContaining({ width: 2, height: 4 })],
-      }),
-    );
   });
 
   it("keeps the current thumbnail when every Shorts candidate is landscape", async () => {
     const landscape = await jpeg(4, 2);
     const id = "dQw4w9WgXcQ";
     const hq = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-    const fetchAvatarToTxFile = vi.fn(async (url: string) =>
+    const { runtime, persisted } = recordingRuntime(async (url) =>
       url === `https://i.ytimg.com/vi/${id}/oardefault.jpg`
-        ? { miss: "permanent" as const }
+        ? { miss: "permanent" }
         : image(landscape),
     );
-    const persistSave = vi.fn(async () => null);
 
     await ensureRemotePoster(
       "s1",
@@ -195,26 +208,24 @@ describe("ensureRemotePoster", () => {
         }),
       }),
       false,
-      {
-        fetchAvatarToTxFile,
-        persistSave,
-        ensureSaveThumbnail: vi.fn(async () => {}),
-      },
+      runtime,
     );
 
-    expect(persistSave).toHaveBeenCalledWith(
-      "s1",
-      {},
-      expect.objectContaining({
-        newFiles: [expect.objectContaining({ width: 4, height: 2 })],
-      }),
-    );
+    expect(persisted).toEqual([
+      [
+        "s1",
+        {},
+        expect.objectContaining({
+          newFiles: [expect.objectContaining({ width: 4, height: 2 })],
+        }),
+      ],
+    ]);
   });
 
   it("does not probe upright files for a longer YouTube video", async () => {
     const id = "dQw4w9WgXcQ";
     const hq = `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
-    const { runtime, fetchAvatarToTxFile } = await setup();
+    const { runtime, fetched } = await setup();
 
     await ensureRemotePoster(
       "s1",
@@ -239,12 +250,11 @@ describe("ensureRemotePoster", () => {
       runtime,
     );
 
-    expect(fetchAvatarToTxFile).toHaveBeenCalledTimes(1);
-    expect(fetchAvatarToTxFile).toHaveBeenCalledWith(hq);
+    expect(fetched).toEqual([hq]);
   });
 
   it("keeps an existing poster unless forced", async () => {
-    const { runtime, fetchAvatarToTxFile, persistSave } = await setup();
+    const { runtime, fetched, persisted } = await setup();
 
     await ensureRemotePoster(
       "s1",
@@ -252,7 +262,7 @@ describe("ensureRemotePoster", () => {
       false,
       runtime,
     );
-    expect(fetchAvatarToTxFile).not.toHaveBeenCalled();
+    expect(fetched).toEqual([]);
 
     await ensureRemotePoster(
       "s1",
@@ -260,6 +270,6 @@ describe("ensureRemotePoster", () => {
       true,
       runtime,
     );
-    expect(persistSave).toHaveBeenCalledOnce();
+    expect(persisted).toHaveLength(1);
   });
 });

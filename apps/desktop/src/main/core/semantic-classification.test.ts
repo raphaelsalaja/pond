@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { normalizedEmbeddingVector } from "../../shared/embeddings";
 import { savesReadQueries } from "../ipc/queries/saves-read";
 import { classifyLabelsWithStore } from "./semantic-classification";
@@ -14,22 +14,21 @@ function vector(first: number, second: number): Array<number> {
 
 describe("classifyLabelsWithStore", () => {
   it("scores user labels against current media vectors deterministically", async () => {
+    const candidateModels: Array<string> = [];
+    const embedded: Array<Array<string>> = [];
     const store: SemanticClassificationStore = {
-      candidates: vi.fn(async (_ids, model) => {
-        expect(model).toBe("current-media-model");
+      candidates: async (_ids, model) => {
+        candidateModels.push(model);
         return [
           { id: "save-b", vector: vector(0, 1) },
           { id: "save-a", vector: vector(1, 0) },
         ];
-      }),
+      },
     };
-    const embed = vi.fn(async (texts: Array<string>) => {
-      expect(texts).toEqual([
-        "task: classification | query: Design",
-        "task: classification | query: Recipes",
-      ]);
+    const embed = async (texts: Array<string>) => {
+      embedded.push(texts);
       return [vector(1, 0), vector(0, 1)];
-    });
+    };
 
     await expect(
       classifyLabelsWithStore(
@@ -60,6 +59,13 @@ describe("classifyLabelsWithStore", () => {
       ],
       excludedIds: ["missing"],
     });
+    expect(candidateModels).toEqual(["current-media-model"]);
+    expect(embedded).toEqual([
+      [
+        "task: classification | query: Design",
+        "task: classification | query: Recipes",
+      ],
+    ]);
   });
 });
 

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import ffmpegPath from "ffmpeg-static";
 import sharp from "sharp";
-import { expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ConversionPresetSchema } from "../../shared/conversion-contracts";
 import { buildFfmpegConversionArguments, convertMedia } from "./convert-media";
 
@@ -83,105 +83,136 @@ it("resizes and converts copies with collision-safe names while preserving the o
   }
 });
 
-it.skipIf(!ffmpegPath)(
-  "converts a local video clip into a correctly sized animated GIF",
-  async () => {
-    const ffmpeg = ffmpegPath;
-    if (!ffmpeg) {
-      throw new Error("FFmpeg unavailable");
-    }
-    const directory = await mkdtemp(join(tmpdir(), "pond-gif-test-"));
-    try {
-      const source = join(directory, "clip.mp4");
-      await promisify(execFile)(ffmpeg, [
-        "-hide_banner",
-        "-loglevel",
-        "error",
-        "-f",
-        "lavfi",
-        "-i",
-        "testsrc=size=80x40:rate=10",
-        "-t",
-        "1",
-        "-pix_fmt",
-        "yuv420p",
-        source,
-      ]);
-      const preset = ConversionPresetSchema.parse({
-        id: "gif",
-        name: "GIF",
-        format: "gif",
-        width: 40,
-        duration: 0.5,
-        fps: 10,
-      });
+function requireFfmpeg(): string {
+  if (!ffmpegPath) {
+    throw new Error("FFmpeg unavailable");
+  }
+  return ffmpegPath;
+}
+
+describe.skipIf(!ffmpegPath)("video clip conversion", () => {
+  let directory = "";
+  let source = "";
+
+  beforeAll(async () => {
+    directory = await mkdtemp(join(tmpdir(), "pond-gif-test-"));
+    source = join(directory, "clip.mp4");
+    await promisify(execFile)(requireFfmpeg(), [
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-f",
+      "lavfi",
+      "-i",
+      "testsrc=size=80x40:rate=10",
+      "-t",
+      "1",
+      "-pix_fmt",
+      "yuv420p",
+      source,
+    ]);
+  });
+
+  afterAll(async () => {
+    await rm(directory, { recursive: true, force: true });
+  });
+
+  it("converts a local video clip into a correctly sized animated GIF", async () => {
+    const preset = ConversionPresetSchema.parse({
+      id: "gif",
+      name: "GIF",
+      format: "gif",
+      width: 40,
+      duration: 0.5,
+      fps: 10,
+    });
+    const output = await convertMedia({
+      source,
+      ffmpegPath: requireFfmpeg(),
+      directory,
+      preset,
+      signal: new AbortController().signal,
+    });
+    const metadata = await sharp(output, { animated: true }).metadata();
+    expect(metadata.format).toBe("gif");
+    expect(metadata.width).toBe(40);
+    expect(metadata.pageHeight).toBe(20);
+    expect(metadata.pages).toBe(5);
+  });
+});
+
+const PROFESSIONAL_FORMATS = ["exr", "hdr", "tga", "bmp", "ico"] as const;
+
+describe.skipIf(!ffmpegPath)("professional still-image export", () => {
+  let directory = "";
+  const exported: Array<{
+    format: string;
+    bytes: number;
+    decodeError: string | null;
+  }> = [];
+
+  beforeAll(async () => {
+    const ffmpeg = requireFfmpeg();
+    directory = await mkdtemp(join(tmpdir(), "pond-pro-format-test-"));
+    const source = join(directory, "source.png");
+    await sharp({
+      create: {
+        width: 32,
+        height: 16,
+        channels: 4,
+        background: { r: 10, g: 20, b: 30, alpha: 1 },
+      },
+    })
+      .png()
+      .toFile(source);
+    for (const format of PROFESSIONAL_FORMATS) {
       const output = await convertMedia({
         source,
         ffmpegPath: ffmpeg,
         directory,
-        preset,
+        preset: ConversionPresetSchema.parse({
+          id: format,
+          name: format.toUpperCase(),
+          format,
+        }),
         signal: new AbortController().signal,
       });
-      const metadata = await sharp(output, { animated: true }).metadata();
-      expect(metadata.format).toBe("gif");
-      expect(metadata.width).toBe(40);
-      expect(metadata.pageHeight).toBe(20);
-      expect(metadata.pages).toBe(5);
-    } finally {
-      await rm(directory, { recursive: true, force: true });
+      const decodeError = await promisify(execFile)(ffmpeg, [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        output,
+        "-f",
+        "null",
+        "-",
+      ]).then(
+        () => null,
+        (cause: unknown) => String(cause),
+      );
+      exported.push({
+        format,
+        bytes: (await readFile(output)).byteLength,
+        decodeError,
+      });
     }
-  },
-);
+  });
 
-it.skipIf(!ffmpegPath)(
-  "exports installed professional still-image formats through FFmpeg",
-  async () => {
-    const ffmpeg = ffmpegPath;
-    if (!ffmpeg) {
-      throw new Error("FFmpeg unavailable");
+  afterAll(async () => {
+    await rm(directory, { recursive: true, force: true });
+  });
+
+  it("exports installed professional still-image formats through FFmpeg", () => {
+    expect(
+      exported.map(({ format, decodeError }) => ({ format, decodeError })),
+    ).toEqual(
+      PROFESSIONAL_FORMATS.map((format) => ({ format, decodeError: null })),
+    );
+    for (const { bytes } of exported) {
+      expect(bytes).toBeGreaterThan(0);
     }
-    const directory = await mkdtemp(join(tmpdir(), "pond-pro-format-test-"));
-    try {
-      const source = join(directory, "source.png");
-      await sharp({
-        create: {
-          width: 32,
-          height: 16,
-          channels: 4,
-          background: { r: 10, g: 20, b: 30, alpha: 1 },
-        },
-      })
-        .png()
-        .toFile(source);
-      for (const format of ["exr", "hdr", "tga", "bmp", "ico"] as const) {
-        const output = await convertMedia({
-          source,
-          ffmpegPath: ffmpeg,
-          directory,
-          preset: ConversionPresetSchema.parse({
-            id: format,
-            name: format.toUpperCase(),
-            format,
-          }),
-          signal: new AbortController().signal,
-        });
-        await promisify(execFile)(ffmpeg, [
-          "-hide_banner",
-          "-loglevel",
-          "error",
-          "-i",
-          output,
-          "-f",
-          "null",
-          "-",
-        ]);
-        expect((await readFile(output)).byteLength).toBeGreaterThan(0);
-      }
-    } finally {
-      await rm(directory, { recursive: true, force: true });
-    }
-  },
-);
+  });
+});
 
 it.skipIf(!ffmpegPath)(
   "rejects professional formats that fail runtime validation",

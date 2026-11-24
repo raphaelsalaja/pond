@@ -67,7 +67,9 @@ export async function watchNow(
   inFlight.set(watchId, { controller, startedAt, watchdog, source });
   void patchWatchSync(watchId, {
     runningSince: new Date(startedAt).toISOString(),
-  }).catch(() => {});
+  }).catch((cause: unknown) => {
+    log.warn("[pond watch] running mark failed", watchId, cause);
+  });
   const ev: SyncRunEvent = startSyncEvent({
     source,
     accountId: watchId,
@@ -113,7 +115,11 @@ export async function watchNow(
       clearTimeout(entry.watchdog);
     }
     inFlight.delete(watchId);
-    void patchWatchSync(watchId, { runningSince: null }).catch(() => {});
+    void patchWatchSync(watchId, { runningSince: null }).catch(
+      (cause: unknown) => {
+        log.warn("[pond watch] running clear failed", watchId, cause);
+      },
+    );
     ev.durationMs = Date.now() - startedAt;
     ev.lockHeldMs = ev.durationMs;
     ev.watchdogTripped = watchdogTripped;

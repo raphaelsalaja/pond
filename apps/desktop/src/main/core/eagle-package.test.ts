@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import JSZip from "jszip";
 import sharp from "sharp";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { isWindowsSymlinkPrivilegeError } from "../test/symlink";
 import { exportEaglePackage, importEaglePackage } from "./eagle-package";
@@ -182,14 +182,22 @@ async function directoryFixture(items = ["one"]) {
   return { root, packageRoot };
 }
 
-describe("Eagle package transfer", () => {
-  it("round trips archive metadata, tags, folders, originals and thumbnails", async () => {
+describe("Eagle package round trip", () => {
+  let destination = "";
+  let exported: Awaited<ReturnType<typeof exportEaglePackage>> | null = null;
+  let archive: JSZip | null = null;
+
+  /** The first sharp encode and zip pass are a cold start, so the export runs once here. */
+  beforeAll(async () => {
     const fixture = await exportFixture();
-    const destination = join(fixture.root, "Selection.eaglepack");
-    const exported = await exportEaglePackage(fixture.input, destination);
+    destination = join(fixture.root, "Selection.eaglepack");
+    exported = await exportEaglePackage(fixture.input, destination);
+    archive = await JSZip.loadAsync(await readFile(destination));
+  }, 30_000);
+
+  it("round trips archive metadata, tags, folders, originals and thumbnails", async () => {
     expect(exported).toEqual({ path: destination, exported: 2 });
-    const archive = await JSZip.loadAsync(await readFile(destination));
-    const packFile = archive.file("pack.json");
+    const packFile = archive?.file("pack.json");
     if (!packFile) {
       throw new Error("Missing pack.json");
     }
@@ -200,7 +208,7 @@ describe("Eagle package transfer", () => {
       })
       .passthrough()
       .parse(JSON.parse(await packFile.async("string")));
-    const thumbnailFile = archive.file("save-1.info/photo.jpg_thumbnail.png");
+    const thumbnailFile = archive?.file("save-1.info/photo.jpg_thumbnail.png");
     if (!thumbnailFile) {
       throw new Error("Missing exported thumbnail");
     }
@@ -229,7 +237,10 @@ describe("Eagle package transfer", () => {
     await expect(
       importEaglePackage(destination, target.runtime),
     ).resolves.toEqual({ imported: 0, skipped: 1 });
-  }, 30_000);
+  });
+});
+
+describe("Eagle package transfer", () => {
 
   it("imports a synthetic Eagle directory and preserves nested mappings", async () => {
     const fixture = await directoryFixture();

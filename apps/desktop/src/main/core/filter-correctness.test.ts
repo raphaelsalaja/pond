@@ -271,7 +271,8 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
         );
       expect(rows.map((row) => row.id)).toEqual(
         examples
-          .flatMap((save) => (matches(query, save) ? [save.id] : []))
+          .filter((save) => matches(query, save))
+          .map((save) => save.id)
           .sort(),
       );
       expect(queryIsFullySqlSupported(query)).toBe(true);
@@ -280,9 +281,12 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
     }
   });
 
-  it.each(["product", "link"])(
+  it.each([
+    ["product", "shop"],
+    ["link", "site"],
+  ])(
     "agrees with in-memory evaluation for the %s type",
-    (type) => {
+    (type, expected) => {
       const rows = [...examples, ...webExamples];
       const query: Query = {
         combinator: "and",
@@ -302,12 +306,10 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
               .prepare(`SELECT id FROM saves WHERE ${compiled.sql} ORDER BY id`)
               .all(...compiled.params),
           );
-        expect(found.map((row) => row.id)).toEqual([
-          type === "product" ? "shop" : "site",
-        ]);
+        expect(found.map((row) => row.id)).toEqual([expected]);
         expect(
-          rows.flatMap((save) => (matches(query, save) ? [save.id] : [])),
-        ).toEqual([type === "product" ? "shop" : "site"]);
+          rows.filter((save) => matches(query, save)).map((save) => save.id),
+        ).toEqual([expected]);
       } finally {
         db.close();
       }

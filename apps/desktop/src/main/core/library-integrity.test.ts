@@ -114,10 +114,15 @@ describe("Library integrity repair previews", () => {
     ).resolves.toBeNull();
   });
 
+  const mismatch = expect.objectContaining({
+    summary: "Thumbnail doesn't match this save",
+    action: expect.objectContaining({ kind: "thumbnail", source: "photo.png" }),
+  });
+
   it.each([
-    { name: "a resized copy", reverse: false, custom: false, flagged: false },
-    { name: "another image", reverse: true, custom: false, flagged: true },
-    { name: "a picked image", reverse: true, custom: true, flagged: false },
+    { name: "a resized copy", reverse: false, custom: false, expected: null },
+    { name: "another image", reverse: true, custom: false, expected: mismatch },
+    { name: "a picked image", reverse: true, custom: true, expected: null },
   ])("compares a thumbnail of $name with the original", async (fixture) => {
     const root = await fixtureRoot();
     const directory = join(root, "items", "save-1.info");
@@ -141,14 +146,7 @@ describe("Library integrity repair previews", () => {
       runtime: runtime(root),
     });
 
-    if (fixture.flagged) {
-      expect(issue).toMatchObject({
-        summary: "Thumbnail doesn't match this save",
-        action: { kind: "thumbnail", source: "photo.png" },
-      });
-    } else {
-      expect(issue).toBeNull();
-    }
+    expect(issue).toEqual(fixture.expected);
   });
 
   it("flags a text card left beside an image", async () => {

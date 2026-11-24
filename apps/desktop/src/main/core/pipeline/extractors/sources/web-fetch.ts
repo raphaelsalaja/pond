@@ -14,12 +14,15 @@ const HEADERS_OVERFLOW = "UND_ERR_HEADERS_OVERFLOW";
  * Fetches a page as HTML without a browser. Resolves null on 403: bot walls
  * fingerprint the TLS handshake, so only a real browser gets through.
  */
-export async function fetchHtml(url: string): Promise<string | null> {
+export async function fetchHtml(
+  url: string,
+  request: (url: string, init: RequestInit) => Promise<Response> = fetch,
+): Promise<string | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await request(url, {
       redirect: "follow",
       signal: controller.signal,
       headers: {

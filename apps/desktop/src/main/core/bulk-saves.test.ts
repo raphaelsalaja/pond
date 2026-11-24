@@ -61,6 +61,10 @@ function fixture() {
 describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
   it("builds one rating/tag/trash/purge operation across SQL chunks without renderer metadata", async () => {
     const f = fixture();
+    const committed = new Map<
+      string,
+      { batch: Array<Transaction>; undo: Array<Array<Transaction>> }
+    >();
     for (const operation of [
       { kind: "rating", rating: 5 },
       { kind: "tags", tags: ["#Reviewed", "Reviewed"] },
@@ -68,6 +72,7 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
       { kind: "trash" },
       { kind: "purge" },
     ] as const) {
+      const undoBefore = f.undo.length;
       const result = await bulkEditSaves(
         {
           ids: [...f.ids, "save-0"],
@@ -88,17 +93,18 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
       expect(
         new Set(batch.filter((tx) => tx.model === "save").map((tx) => tx.id)),
       ).toEqual(new Set(f.ids));
-      if (operation.kind !== "purge") {
-        expect(f.undo.at(-1)).toEqual(batch);
-      } else {
-        expect(f.undo).toHaveLength(f.batches.length - 1);
-      }
-      if (operation.kind === "tags") {
-        expect(
-          batch.filter((tx) => tx.kind === "create" && tx.model === "tag"),
-        ).toHaveLength(2);
-      }
+      committed.set(operation.kind, { batch, undo: f.undo.slice(undoBefore) });
     }
+    for (const kind of ["rating", "tags", "suggested-tags", "trash"]) {
+      const step = committed.get(kind);
+      expect(step?.undo).toEqual([step?.batch]);
+    }
+    expect(committed.get("purge")?.undo).toEqual([]);
+    expect(
+      committed
+        .get("tags")
+        ?.batch.filter((tx) => tx.kind === "create" && tx.model === "tag"),
+    ).toHaveLength(2);
   });
   it("does not silently commit a partial selection when a cold ID vanished", async () => {
     const f = fixture();

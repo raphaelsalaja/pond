@@ -14,15 +14,29 @@ it.each([
   ["pond/ideas", "board", "https://www.pinterest.com/pond/ideas.rss"],
   ["pond/ideas", undefined, "https://www.pinterest.com/pond/ideas.rss"],
 ] as const)("reads the feed for %s", async (handle, kind, address) => {
-  const fetchPage = vi.fn<FetchWatchPage>(async (_url, init) => {
-    expect(init.credentials).toBe("omit");
-    expect(new Headers(init.headers).get("user-agent")).toContain("PondBot");
+  const requests: Array<{
+    url: string;
+    credentials: RequestCredentials | undefined;
+    userAgent: string | null;
+  }> = [];
+  const fetchPage: FetchWatchPage = async (url, init) => {
+    requests.push({
+      url,
+      credentials: init.credentials,
+      userAgent: new Headers(init.headers).get("user-agent"),
+    });
     return new Response(RSS);
-  });
+  };
 
   const result = await listPinterestWatch(handle, kind, undefined, fetchPage);
 
-  expect(fetchPage.mock.calls[0]?.[0]).toBe(address);
+  expect(requests).toEqual([
+    {
+      url: address,
+      credentials: "omit",
+      userAgent: expect.stringContaining("PondBot"),
+    },
+  ]);
   expect(result).toEqual({
     ok: true,
     entries: [

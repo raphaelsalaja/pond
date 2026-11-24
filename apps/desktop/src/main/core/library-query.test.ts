@@ -1,7 +1,7 @@
 import { EMPTY_QUERY } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import type { LibraryQueryRequest } from "../../shared/library-query";
 import { recentlyAddedSince } from "../../shared/recently-added";
 import { eventTables, libraryTables } from "../database/tables";
@@ -33,8 +33,12 @@ afterEach(() => {
   }
 });
 function setup() {
+  const library = seededLibrary();
+  opened.push(library.sqlite);
+  return library;
+}
+function seededLibrary() {
   const sqlite = new Database(":memory:");
-  opened.push(sqlite);
   initializePondSchema(sqlite, () => false);
   const db = Object.assign(
     drizzle(sqlite, { schema: { ...libraryTables, ...eventTables } }),
@@ -58,21 +62,34 @@ function setup() {
 }
 
 describe.skipIf(!nativeAvailable())("authoritative library query", () => {
+  let paging: ReturnType<typeof seededLibrary> | null = null;
+
+  beforeAll(() => {
+    paging = seededLibrary();
+    paging.sqlite.exec(`
+      update saves set saved_at = cast(cast(id as integer) / 7 as integer),
+        title = 'Title ' || (cast(id as integer) % 9),
+        rating = case when cast(id as integer)%3=0 then null else 2 end;
+      update saves set deleted_at=1 where id='0003';
+      update saves set status='ingesting' where id='0004';
+      insert into folders(id,name) values ('subset','Subset');
+      insert into save_folders(save_id,folder_id) select id,'subset' from saves where cast(id as integer)%2=0;
+    `);
+  });
+
+  afterAll(() => {
+    paging?.sqlite.close();
+  });
+
   for (const sortKey of ["savedAt", "title", "rating"]) {
     for (const sortDir of ["asc", "desc"] as const) {
       for (const pins of [[], ["0000", "0003", "0004", "1199", "missing"]]) {
         for (const scope of ["all", "folder", "empty"]) {
           it(`differential paging ${sortKey}/${sortDir}/${pins.length}/${scope}`, async () => {
-            const { db, sqlite } = setup();
-            sqlite.exec(`
-              update saves set saved_at = cast(cast(id as integer) / 7 as integer),
-                title = 'Title ' || (cast(id as integer) % 9),
-                rating = case when cast(id as integer)%3=0 then null else 2 end;
-              update saves set deleted_at=1 where id='0003';
-              update saves set status='ingesting' where id='0004';
-              insert into folders(id,name) values ('subset','Subset');
-              insert into save_folders(save_id,folder_id) select id,'subset' from saves where cast(id as integer)%2=0;
-            `);
+            if (!paging) {
+              throw new Error("Paging library was not seeded");
+            }
+            const { db } = paging;
             const request: LibraryQueryRequest = {
               query: EMPTY_QUERY,
               sortKey,
@@ -111,7 +128,7 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
             }
             expect(ids).toEqual(expected.ids);
             expect(new Set(ids).size).toBe(ids.length);
-          }, 30_000);
+          });
         }
       }
     }

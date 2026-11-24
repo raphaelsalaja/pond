@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { encodeImagePrint } from "../../lib/fingerprint/image-print";
 import { matchLibrary } from "./engine";
 import { MAX_FANOUT } from "./types";
@@ -150,15 +150,25 @@ describe("a large Library", () => {
     expect(elapsed).toBeLessThan(20_000);
   }, 60_000);
 
-  it("returns only the groups a scoped scan touches", () => {
-    const { groups } = matchLibrary(library.saves, {
-      classifyUrl: () => null,
-      fingerprints: library.fingerprints,
-      scope: new Set(["copy-3", "resized-9"]),
+  describe("a scoped scan", () => {
+    let scoped: ReturnType<typeof matchLibrary> | null = null;
+
+    /** Indexing 20,000 Saves is a cold start past the default hook budget. */
+    beforeAll(() => {
+      scoped = matchLibrary(library.saves, {
+        classifyUrl: () => null,
+        fingerprints: library.fingerprints,
+        scope: new Set(["copy-3", "resized-9"]),
+      });
+    }, 60_000);
+
+    it("returns only the groups a scoped scan touches", () => {
+      expect(scoped?.groups.map((group) => [group.relation, group.ids])).toEqual(
+        [
+          ["exact", ["copy-3", "save-21"]],
+          ["near", ["photo-9", "resized-9"]],
+        ],
+      );
     });
-    expect(groups.map((group) => [group.relation, group.ids])).toEqual([
-      ["exact", ["copy-3", "save-21"]],
-      ["near", ["photo-9", "resized-9"]],
-    ]);
-  }, 60_000);
+  });
 });

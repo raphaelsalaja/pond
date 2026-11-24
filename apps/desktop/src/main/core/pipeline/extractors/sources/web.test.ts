@@ -1,21 +1,31 @@
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import { WebPageExtractor } from "./web";
 
 const fetchedHtml = "<html><head><title>Fetched page</title></head></html>";
 const renderedHtml = "<html><head><title>Rendered page</title></head></html>";
 
+function renderRecorder() {
+  const renders: Array<[string, AbortSignal | undefined]> = [];
+  return {
+    renders,
+    renderHtml: async (url: string, signal?: AbortSignal) => {
+      renders.push([url, signal]);
+      return renderedHtml;
+    },
+  };
+}
+
 it("uses a browser render when the direct fetch reaches a bot wall", async () => {
-  const fetchHtml = vi.fn().mockResolvedValue(null);
-  const renderHtml = vi.fn().mockResolvedValue(renderedHtml);
-  const extractor = new WebPageExtractor({ fetchHtml, renderHtml });
+  const { renders, renderHtml } = renderRecorder();
+  const extractor = new WebPageExtractor({
+    fetchHtml: async () => null,
+    renderHtml,
+  });
 
   await expect(
     extractor.extract({ url: new URL("https://example.com/article") }),
   ).resolves.toMatchObject({ title: "Rendered page" });
-  expect(renderHtml).toHaveBeenCalledExactlyOnceWith(
-    "https://example.com/article",
-    undefined,
-  );
+  expect(renders).toEqual([["https://example.com/article", undefined]]);
 });
 
 const amazonCover = (attrs: string) =>
@@ -23,8 +33,8 @@ const amazonCover = (attrs: string) =>
 
 function extractFrom(url: string, html: string) {
   const extractor = new WebPageExtractor({
-    fetchHtml: vi.fn().mockResolvedValue(html),
-    renderHtml: vi.fn(),
+    fetchHtml: async () => html,
+    renderHtml: renderRecorder().renderHtml,
   });
   return extractor.extract({ url: new URL(url) });
 }
@@ -211,16 +221,16 @@ it("keeps the og:image when the JSON-LD describes an article", async () => {
 });
 
 it("does not acquire a browser when the direct fetch succeeds", async () => {
-  const renderHtml = vi.fn().mockResolvedValue(renderedHtml);
+  const { renders, renderHtml } = renderRecorder();
   const extractor = new WebPageExtractor({
-    fetchHtml: vi.fn().mockResolvedValue(fetchedHtml),
+    fetchHtml: async () => fetchedHtml,
     renderHtml,
   });
 
   await expect(
     extractor.extract({ url: new URL("https://example.com/article") }),
   ).resolves.toMatchObject({ title: "Fetched page" });
-  expect(renderHtml).not.toHaveBeenCalled();
+  expect(renders).toEqual([]);
 });
 
 it("titles a search results page with its query instead of the engine's favicon", async () => {
