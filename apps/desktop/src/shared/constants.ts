@@ -64,6 +64,7 @@ export const IPC = {
   menuAction: "pond:menu-action",
   navigationSwipe: "pond:navigation-swipe",
   libraryId: "pond:library-id",
+  librarySwitch: "pond:library-switch",
   menuRecents: "pond:menu-recents",
   haptic: "pond:haptic",
   menuOpenSave: "pond:menu-open-save",

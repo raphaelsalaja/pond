@@ -14,3 +14,9 @@ export function untrackRunningIngest(taskId: string): void {
 export function abortRunningIngest(taskId: string): void {
   runningIngest.get(taskId)?.abort();
 }
+
+export function abortAllRunningIngest(reason: Error): void {
+  for (const controller of runningIngest.values()) {
+    controller.abort(reason);
+  }
+}

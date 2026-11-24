@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { isWindowsSymlinkPrivilegeError } from "../test/symlink";
 import {
   createLibraryBackup,
+  isLibraryBackup,
   restoreLibraryBackup,
   verifyLibraryBackup,
 } from "./library-backup";
@@ -130,6 +131,17 @@ describe("verified library backup", () => {
         destination: `${destination}-again`,
       }),
     ).rejects.toThrow("missing or damaged");
+  });
+
+  it("tells a backup from a library without reading their originals", async () => {
+    const { root, source, item, destination } = await fixture();
+    await createLibraryBackup({ source, destination });
+    const restored = join(root, "Restored.pond");
+    await restoreLibraryBackup({ source: destination, destination: restored });
+    await writeFile(join(item, "original.jpg"), "damaged");
+    expect(await isLibraryBackup(destination)).toBe(true);
+    expect(await isLibraryBackup(restored)).toBe(false);
+    expect(await isLibraryBackup(source)).toBe(false);
   });
 
   it("refuses destinations inside or around the source library", async () => {

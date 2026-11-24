@@ -21,7 +21,7 @@ import {
 import { libraryRoot as libraryRootDir } from "../../paths";
 import { ensurePondSuffix } from "./library-location-paths";
 import {
-  relaunchSoon,
+  reopenLibrary,
   resumeLibraryWork,
   suspendLibraryWork,
 } from "./library-location-runtime";
@@ -144,7 +144,7 @@ export const libraryBackupQueries = {
           destination: ensurePondSuffix(destination.filePath),
         });
         await relocateLibrary(restored.path, "adopt");
-        await relaunchSoon();
+        await reopenLibrary();
         return { ok: true as const, ...restored };
       } catch (error) {
         await resumeLibraryWork();

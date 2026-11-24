@@ -29,7 +29,7 @@ import {
   recentLibrariesFile,
 } from "./library-location-paths";
 import {
-  relaunchSoon,
+  reopenLibrary,
   resumeLibraryWork,
   suspendLibraryWork,
 } from "./library-location-runtime";
@@ -98,7 +98,7 @@ export const libraryLocationMaintenanceQueries = {
           });
           await relocateLibrary(renamed.path, "adopt");
           renameRecentLibrary(recentLibrariesFile(), source, renamed.path);
-          await relaunchSoon();
+          await reopenLibrary();
           return { ok: true as const, path: renamed.path };
         } catch (error) {
           await rollbackLibraryRename(
@@ -188,7 +188,7 @@ export const libraryLocationMaintenanceQueries = {
           destResolved,
         );
         removeRecentLibrary(recentLibrariesFile(), srcResolved);
-        await relaunchSoon();
+        await reopenLibrary();
         const moved = {
           ok: true as const,
           path: result.path,

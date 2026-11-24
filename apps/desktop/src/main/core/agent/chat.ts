@@ -111,6 +111,16 @@ export function stopMessage(chatId: string, requestId: string): OkResult {
   return { ok: true };
 }
 
+export function stopAllMessages(): void {
+  for (const run of active.values()) {
+    run.controller.abort();
+  }
+}
+
+export function hasActiveMessages(): boolean {
+  return active.size > 0;
+}
+
 export async function sendMessage(
   input: AssistantSend,
   deps: ChatDependencies = chatDependencies,

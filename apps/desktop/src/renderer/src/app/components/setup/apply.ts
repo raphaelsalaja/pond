@@ -130,7 +130,7 @@ function libraryChange(
   return { name, moved: moved && !kept, renamed: renamed && !kept };
 }
 
-/** Moving or renaming the Library relaunches Pond into it. */
+/** Moving or renaming the Library reopens Pond on it. */
 export function relaunchesLibrary(
   choices: SetupChoices,
   library: LibraryFacts,
@@ -140,7 +140,7 @@ export function relaunchesLibrary(
   return moved || renamed;
 }
 
-/** Moves or renames the Library when asked; both relaunch Pond into it, so this runs last. */
+/** Moves or renames the Library when asked; both reload the window, so this runs last. */
 async function saveLibrary(
   choices: SetupChoices,
   library: LibraryFacts,
@@ -166,8 +166,8 @@ async function saveLibrary(
 }
 
 /**
- * Opens a Library picked on disk; Pond relaunches into it and setup runs again with that Library's preferences.
- * @remarks Resolves to null when cancelled, an error message, or "" while Pond relaunches.
+ * Opens a Library picked on disk; Pond reopens on it and setup runs again with that Library's preferences.
+ * @remarks Resolves to null when cancelled, an error message, or "" while Pond reopens.
  */
 export async function openExistingLibrary(): Promise<string | null> {
   try {
