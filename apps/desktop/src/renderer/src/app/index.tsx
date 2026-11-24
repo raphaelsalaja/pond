@@ -44,6 +44,7 @@ import { SetupHost } from "./components/setup";
 import { SupportDialog } from "./components/support-dialog";
 import { WhatsNewDialog } from "./components/whats-new-dialog";
 import { AgentLibraryBridge } from "./effects/agent-library-bridge";
+import { DecodedImageRelease } from "./effects/decoded-image-release";
 import { FishOpenBridge } from "./effects/fish-open-bridge";
 import { MachinePace } from "./effects/machine-pace";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
@@ -206,6 +207,7 @@ function LibraryApp() {
               <ErrorBoundary>
                 <AppContent />
               </ErrorBoundary>
+              <DecodedImageRelease />
               <Dialog.Host />
               <FolderPickerHost />
               <RenameDialogHost />

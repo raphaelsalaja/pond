@@ -54,6 +54,7 @@
     "smoke:desktop": "electron ./scripts/smoke-desktop.cjs",
     "smoke:journeys": "electron ./scripts/journeys.cjs",
     "smoke:memory": "electron ./scripts/measure-memory.cjs",
+    "sample:memory": "node ./scripts/sample-live-memory.cjs",
     "smoke:safari-extension": "electron ./scripts/smoke-safari-extension.cjs",
     "smoke:folder-tags": "electron ./scripts/smoke-folder-tags.cjs",
     "smoke:library-trust": "electron ./scripts/smoke-library-trust.cjs",

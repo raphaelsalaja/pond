@@ -5,6 +5,7 @@ import {
   contextBridge,
   type IpcRendererEvent,
   ipcRenderer,
+  webFrame,
   webUtils,
 } from "electron";
 import type { AgentStreamEvent } from "../shared/agent-stream";
@@ -440,6 +441,10 @@ const api = {
       cb(payload);
     ipcRenderer.on(IPC.sessionImportFailed, listener);
     return () => ipcRenderer.off(IPC.sessionImportFailed, listener);
+  },
+
+  releaseDecodedImages(): void {
+    webFrame.clearCache();
   },
 
   machinePace(): Promise<MachinePaceWire> {
