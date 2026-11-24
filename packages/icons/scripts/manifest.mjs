@@ -42,7 +42,7 @@ const points = (part) =>
   part.flatMap(([tag, attrs]) => flatten(segments(tag, attrs), 0.1));
 
 /** Share of `part` that lies on the strokes of `nodes`, from 0 to 1. */
-export function coverage(part, nodes) {
+function coverage(part, nodes) {
   const lines = outline(nodes);
   const all = points(part);
   if (all.length === 0) return 0;
@@ -92,9 +92,9 @@ export function partMisses(file, names, nodes, parts, { dir = "parts" } = {}) {
   return misses;
 }
 
-export const styleOf = (entry) =>
+const styleOf = (entry) =>
   entry.variants?.find((variant) => !variant.state)?.style;
-export const hasOpen = (entry) =>
+const hasOpen = (entry) =>
   Boolean(entry.variants?.some((variant) => variant.state === "open"));
 
 /** A solid twin shares its outline's concept; any other repeat is a miss. */

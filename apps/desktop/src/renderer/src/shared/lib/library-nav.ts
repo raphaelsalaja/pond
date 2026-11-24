@@ -56,16 +56,6 @@ export function savedViewPath(viewId: string): string {
   return `/views/${encodeURIComponent(viewId)}`;
 }
 
-export function sameLibraryNav(a: LibraryNav, b: LibraryNav): boolean {
-  if (a.kind !== b.kind) return false;
-  if (a.kind === "folder" && b.kind === "folder") return a.id === b.id;
-  if (a.kind === "tag" && b.kind === "tag") return a.name === b.name;
-  if (a.kind === "post" && b.kind === "post") return a.key === b.key;
-  if (a.kind === "inbox" && b.kind === "inbox")
-    return Boolean(a.snoozed) === Boolean(b.snoozed);
-  return true;
-}
-
 /** The Inbox lists the Saves waiting for review, or the snoozed ones on their own. */
 export function inboxScope(
   nav: Extract<LibraryNav, { kind: "inbox" }>,

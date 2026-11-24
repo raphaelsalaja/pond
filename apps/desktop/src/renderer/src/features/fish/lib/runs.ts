@@ -60,7 +60,7 @@ function startOfDay(at: number): number {
 }
 
 /** "today at 9:00 AM", "yesterday at 8:00 AM", "on Monday", "on Mar 3". */
-export function relativeMoment(at: number, now = new Date()): string {
+function relativeMoment(at: number, now = new Date()): string {
   const date = new Date(at);
   const time = date.toLocaleTimeString(undefined, {
     hour: "numeric",

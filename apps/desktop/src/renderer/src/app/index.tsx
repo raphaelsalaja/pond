@@ -24,7 +24,6 @@ import { usePrefs } from "@/shared/state/prefs";
 import type { PondApi } from "../../../preload";
 import { ExtensionCaptureToast } from "../features/captures/effects/extension-capture-toast";
 import { EnrichmentSweep } from "../features/enrichment/effects/enrichment-sweep";
-import { CommandMenuHost } from "../features/library/components/command-menu";
 import { useHydrateFolders } from "../features/library/state/folders";
 import { startViewUrlSync } from "../features/library/state/view-url";
 import { syncPrimaryFromSearch } from "../features/saves/lib/save-nav";
@@ -218,7 +217,6 @@ function LibraryApp() {
               <WhatsNewDialog />
               <SupportDialog />
               <FishIntroDialog />
-              <CommandMenuHost />
               <ToastHost />
             </Dialog.PortalProvider>
           </Tooltip.Provider>

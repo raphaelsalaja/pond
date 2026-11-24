@@ -236,5 +236,3 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
     returnDueSnoozes,
   };
 }
-
-export type NotificationLog = ReturnType<typeof createNotificationLog>;

@@ -1,7 +1,6 @@
 import {
   embeddingDocument,
   embeddingSearchQuery,
-  embeddingSimilarityText,
   textEmbeddingVersion,
 } from "@shared/embeddings";
 import {
@@ -18,10 +17,6 @@ export function embedDocument(
   text: string,
 ): Promise<Float32Array> {
   return inferEmbedText(embeddingDocument(title, text));
-}
-
-export function embedTexts(texts: string[]): Promise<Float32Array[]> {
-  return inferEmbedTexts(texts.map(embeddingSimilarityText));
 }
 
 export function embedSearchQueries(texts: string[]): Promise<Float32Array[]> {

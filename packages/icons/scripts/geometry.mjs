@@ -156,7 +156,7 @@ function roundRect(attrs) {
 }
 
 /** Every shape as one path, so circles and rects compare with paths. */
-export function toPath(tag, attrs) {
+function toPath(tag, attrs) {
   if (tag === "path") return attrs.d;
   if (tag === "rect") return roundRect(attrs);
   const cx = num(attrs.cx);
@@ -167,7 +167,7 @@ export function toPath(tag, attrs) {
 
 export const segments = (tag, attrs) => pathSegments(toPath(tag, attrs));
 
-export function pointAt(segment, t) {
+function pointAt(segment, t) {
   if (segment.kind === "line") {
     const [a, b] = [segment.from, segment.to];
     return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
@@ -209,25 +209,4 @@ export function flatten(list, step = 0.05) {
     for (let i = 0; i <= count; i++) points.push(pointAt(segment, i / count));
   }
   return points;
-}
-
-function toSegment(p, a, b) {
-  const dx = b[0] - a[0];
-  const dy = b[1] - a[1];
-  const length = dx * dx + dy * dy;
-  const dot = (p[0] - a[0]) * dx + (p[1] - a[1]) * dy;
-  const t = length ? Math.max(0, Math.min(1, dot / length)) : 0;
-  return Math.hypot(p[0] - (a[0] + dx * t), p[1] - (a[1] + dy * t));
-}
-
-/** Distance from a point to the nearest edge of a flattened outline, segment by segment. */
-export function distance(point, list) {
-  let best = Number.POSITIVE_INFINITY;
-  for (const segment of list) {
-    const line = flatten([segment], 0.05);
-    for (let i = 1; i < line.length; i++) {
-      best = Math.min(best, toSegment(point, line[i - 1], line[i]));
-    }
-  }
-  return best;
 }

@@ -353,7 +353,7 @@ export const assistantQuestion = z
   );
 export type AssistantQuestion = z.infer<typeof assistantQuestion>;
 
-export const assistantSuggestions = z
+const assistantSuggestions = z
   .array(z.string().trim().min(1).max(40))
   .min(1)
   .max(3);

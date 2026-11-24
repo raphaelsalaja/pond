@@ -10,7 +10,7 @@ interface SaveSearch {
 }
 
 /** Numeric ids arrive JSON-parsed from hand-written links. */
-export function saveIdFromSearch(search: SaveSearch): string | null {
+function saveIdFromSearch(search: SaveSearch): string | null {
   return searchText.parse(search.save) || null;
 }
 

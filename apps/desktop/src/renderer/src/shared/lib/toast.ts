@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 export const TOAST_TIMEOUT_MS = 2500;
 
-export const ASK_TOAST_ID = "ask";
+const ASK_TOAST_ID = "ask";
 
 export type ToastTone = "neutral" | "accent" | "gold";
 

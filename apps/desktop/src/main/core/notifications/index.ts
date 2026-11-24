@@ -6,9 +6,6 @@ import { appDataRoot } from "../../paths";
 import { currentLibraryId } from "../prefs-scope";
 import { createNotificationLog } from "./store";
 
-export type { NotificationLog } from "./store";
-export { capNotifications, createNotificationLog } from "./store";
-
 export const notificationLog = createNotificationLog({
   directory: () => join(appDataRoot(), "notifications"),
   libraryId: currentLibraryId,

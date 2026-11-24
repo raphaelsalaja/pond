@@ -5,13 +5,6 @@
     "apps/desktop": {
       "entry": [
         "src/renderer/src/routes/**/*.{ts,tsx}",
-        "src/renderer/src/main.tsx",
-        "src/renderer/src/capture.tsx",
-        "src/renderer/src/combine-images.tsx",
-        "src/renderer/src/file-ring.tsx",
-        "src/renderer/src/quick-capture.tsx",
-        "src/renderer/src/missing-library.tsx",
-        "src/renderer/src/preview.ts",
         "scripts/*.{mjs,cjs,ts}",
         "scripts/sandbox-import-scope/{index,preload}.cjs",
         "scripts/proof-scenarios/*.cjs",
@@ -54,8 +47,11 @@
       "project": ["**/*.{ts,tsx,mjs,cjs}"],
       "ignoreDependencies": ["@pond/theme"]
     },
-    "packages/schema": {
-      "entry": ["scripts/*.ts"]
+    "packages/icons": {
+      "entry": ["src/**/*.mjs", "scripts/*.mjs", "lab/lab.js"]
+    },
+    "packages/ui": {
+      "entry": ["lab/lab.js"]
     },
     "packages/cli": {
       "project": ["src/**/*.ts"],

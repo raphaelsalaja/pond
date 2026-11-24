@@ -6,7 +6,7 @@ export const NOTIFICATION_CAP = 500;
 
 const NOTIFICATION_IDS_MAX = 1_000;
 
-export const NotificationIdSchema = z.string().trim().min(1).max(200);
+const NotificationIdSchema = z.string().trim().min(1).max(200);
 
 export const NotificationKindSchema = z.enum(["attention", "activity"]);
 export type NotificationKind = z.infer<typeof NotificationKindSchema>;

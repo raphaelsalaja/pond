@@ -19,8 +19,6 @@ export const librarySearchSchema = z.looseObject({
   scope: z.literal("all").optional().catch(undefined),
 });
 
-export type LibrarySearch = z.infer<typeof librarySearchSchema>;
-
 /** Query-string forms older builds and the main process used before collections had paths. */
 export const legacyIndexSearchSchema = z.looseObject({
   folder: searchText,

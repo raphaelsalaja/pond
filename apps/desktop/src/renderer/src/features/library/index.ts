@@ -3,12 +3,9 @@ export { viewAccountItems } from "./lib/view-account-items";
 export { enterAll } from "./operations/enter-folder";
 export { useCommandContext } from "./state/command-context";
 export { folders, useFolders } from "./state/folders";
-export { libraryChrome } from "./state/library-chrome";
 export { useSearchNonce } from "./state/library-header";
 export {
-  getOverlays,
   resetFilters,
-  setQuery,
   setSearchDraft,
   setSearchInput,
   useFilterQuery,

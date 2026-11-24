@@ -9,6 +9,7 @@ import { EditableHotkeyGuard } from "@/app/effects/editable-hotkey-guard";
 import { MenuBridge } from "@/app/effects/menu-bridge";
 import { UndoRedoBridge } from "@/app/effects/undo-redo-bridge";
 import { useDownloadDialog } from "@/features/downloads/state/download-dialog";
+import { CommandMenuHost } from "@/features/library/components/command-menu";
 import { FolderSidebar } from "@/features/library/components/folder-sidebar";
 import { FolderTemplateDialogHost } from "@/features/library/components/folder-template-dialog";
 import { NewMenuDialogHost } from "@/features/library/components/new-menu";
@@ -80,6 +81,7 @@ function AppHosts() {
       <SaveTagPickerHost />
       <SnoozeDialogHost />
       <ThumbnailViewerHost />
+      <CommandMenuHost />
     </>
   );
 }

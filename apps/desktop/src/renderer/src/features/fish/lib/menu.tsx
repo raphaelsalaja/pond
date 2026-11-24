@@ -51,13 +51,13 @@ export function arrangeFish(placements: FishPlacement[]): void {
 }
 
 /** Moves a fish to the end of a shelf: a section id or `LOOSE`. */
-export function moveFishTo(id: string, shelf: string): Promise<void> {
+function moveFishTo(id: string, shelf: string): Promise<void> {
   const sections = fish.sections();
   const layout = fishLayout(fish.snapshot(), sections);
   return fish.arrange(layoutPlacements(moveFish(layout, id, shelf), sections));
 }
 
-export function createFish(section?: string): void {
+function createFish(section?: string): void {
   void runFishAction(async () => {
     const created = await fish.create();
     if (section) await moveFishTo(created.id, section);
@@ -66,7 +66,7 @@ export function createFish(section?: string): void {
   });
 }
 
-export function createSection(then?: (section: FishSection) => void): void {
+function createSection(then?: (section: FishSection) => void): void {
   Dialog.prompt({
     title: "New Section",
     placeholder: "Name",

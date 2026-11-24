@@ -7,7 +7,7 @@ import { CHANGELOG } from "@/app/components/whats-new-dialog/entries";
 export { default as clip } from "./media/pond.mp4";
 export { default as poster } from "./media/pond-poster.jpg";
 
-export const RELEASES_URL = "https://github.com/raphaelsalaja/pond/releases";
+const RELEASES_URL = "https://github.com/raphaelsalaja/pond/releases";
 
 /** Three unseen releases, as after skipping two updates. Every variant reads these. */
 export const RELEASES: readonly ChangelogEntry[] = CHANGELOG.slice(0, 3);

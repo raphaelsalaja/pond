@@ -19,7 +19,7 @@ import { snoozeOptions } from "@/shared/lib/snooze";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 
-export function buildSnoozeItems(ids: readonly string[]): MenuItemSpec[] {
+function buildSnoozeItems(ids: readonly string[]): MenuItemSpec[] {
   return [
     ...snoozeOptions().map(
       (option): MenuItemSpec => ({

@@ -2,7 +2,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 /** Matches `--ds-radius-xs`, the corner cards used before it was a setting. */
-export const LIBRARY_SAVE_RADIUS = 4;
+const LIBRARY_SAVE_RADIUS = 4;
 export const LIBRARY_SAVE_RADIUS_MAX = 24;
 
 const RADIUS_KEY = "pond.cardRadius";
