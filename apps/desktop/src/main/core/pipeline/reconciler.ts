@@ -601,7 +601,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
       await completeQueueGenerationIfSettled(task.generationId);
     }
     ev.outcome = result.settled ? result.outcome : "skipped";
-    ev.error = toErrorInfo(err);
+    ev.error = toErrorInfo(error);
     ev.nextRunAt = result.nextRunAt;
     ev.attempts = result.recordedAttempts;
   } finally {

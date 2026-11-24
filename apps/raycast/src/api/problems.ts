@@ -12,7 +12,7 @@ export class PondProblem extends Error {
   }
 }
 
-export function isPondProblem(error: Error): error is PondProblem {
+function isPondProblem(error: Error): error is PondProblem {
   return error.name === "PondProblem";
 }
 

@@ -219,7 +219,7 @@ function runOnnxSmoke(packageDir) {
     ),
   );
   const common = requireOnnx.resolve("onnxruntime-common");
-  const nodePath = common.slice(
+  const modulesDir = common.slice(
     0,
     common.lastIndexOf(`${nodePath.sep}onnxruntime-common${nodePath.sep}`),
   );
@@ -228,7 +228,7 @@ function runOnnxSmoke(packageDir) {
     [nodePath.join(__dirname, "onnx-cpu-smoke.cjs"), packageDir],
     {
       encoding: "utf8",
-      env: { ...process.env, NODE_PATH: nodePath },
+      env: { ...process.env, NODE_PATH: modulesDir },
       timeout: 60_000,
       windowsHide: true,
     },
