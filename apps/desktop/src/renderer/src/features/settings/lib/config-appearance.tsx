@@ -11,10 +11,12 @@ import {
   defineCustomSection,
   group,
 } from "@/features/settings/lib/engine-types";
+import { IS_MAC } from "@/shared/lib/platform";
 
 export const appearanceSection = defineCustomSection({
   title: "Appearance",
-  description: "App icon, theme, colors, font, sounds, and accessibility.",
+  description:
+    "App icon, theme, window, colors, font, sounds, and accessibility.",
   groups: [
     group.prefs("preferences", {
       title: "Theme",
@@ -104,6 +106,46 @@ export const appearanceSection = defineCustomSection({
           visible: (v) =>
             v.appearance !== "light" && customColorsVisible("dark")(v),
           render: (b) => <ThemeContrastRow binding={b} side="dark" />,
+        },
+      ],
+    }),
+    group.prefs("window", {
+      title: "Window",
+      visible: () => IS_MAC,
+      items: [
+        {
+          control: "switch",
+          key: "translucent",
+          title: "Translucent Window",
+          description: "Blurs your desktop behind the sidebar and toolbar.",
+          keywords: ["vibrancy", "transparency", "blur", "glass", "material"],
+        },
+        {
+          control: "select",
+          key: "translucentMaterial",
+          title: "Material",
+          description: "Each macOS material blurs and darkens differently.",
+          keywords: ["vibrancy", "transparency", "blur", "glass"],
+          disabled: (v) => v.translucent === false,
+          options: [
+            { value: "sidebar", label: "Sidebar" },
+            { value: "under-window", label: "Under Window" },
+            { value: "hud", label: "HUD" },
+            { value: "popover", label: "Popover" },
+            { value: "menu", label: "Menu" },
+          ],
+        },
+        {
+          control: "range",
+          key: "translucentTint",
+          title: "Tint",
+          description: "0 shows the bare material, 100 covers it with your theme.",
+          keywords: ["vibrancy", "transparency", "opacity", "blur"],
+          disabled: (v) => v.translucent === false,
+          min: 0,
+          max: 100,
+          step: 5,
+          suffix: "%",
         },
       ],
     }),

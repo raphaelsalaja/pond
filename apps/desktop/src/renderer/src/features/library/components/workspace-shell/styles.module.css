@@ -9,6 +9,15 @@
   --window-chrome-start: 96px;
 }
 
+/* Tints the macOS sidebar material behind the window instead of covering it. */
+:global(html[data-translucent]) .shell {
+  --window-background: color-mix(
+    in oklab,
+    var(--ds-background-secondary) var(--window-tint, 20%),
+    transparent
+  );
+}
+
 .content {
   display: flex;
   flex: 1;
