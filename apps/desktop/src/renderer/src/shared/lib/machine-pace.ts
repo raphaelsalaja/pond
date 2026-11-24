@@ -4,6 +4,7 @@ import {
   THERMAL_RELIEF_MS,
 } from "@shared/machine-pace";
 import type { MachinePace, ThermalState } from "@shared/machine-pace";
+import log from "electron-log/renderer";
 
 const idle = (): MachinePace => ({
   hidden: false,
@@ -103,7 +104,9 @@ function bindHost(
         onHost(parsed.data);
       }
     })
-    .catch(() => {});
+    .catch((cause: unknown) => {
+      log.warn("[pond machine-pace] reading the host pace failed", cause);
+    });
   const detach = api.onMachinePace((wire) => {
     const parsed = MachinePaceWireSchema.safeParse(wire);
     if (parsed.success) {

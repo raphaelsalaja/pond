@@ -1,4 +1,5 @@
 import "@/app/effects/save-library-bridge";
+import "@/features/saves/components/detail/pane";
 import { PrefsSchema } from "@pond/schema";
 import { RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
@@ -11,6 +12,7 @@ import { folders } from "@/features/library/state/folders";
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
+import { bridge } from "@/shared/test/pond-bridge";
 import { inspectorSaveIds, SaveDetails } from "./";
 
 function Shell({ children }: { children: ReactNode }) {
@@ -75,23 +77,16 @@ describe("SaveDetails", () => {
   let root: Root;
 
   beforeEach(async () => {
-    vi.stubGlobal("pond", {
-      query: async (name: string) => {
-        if (name === "settings.getPrefs") {
-          return PrefsSchema.parse({});
-        }
-        if (name === "folders.list" || name === "folders.memberships") {
-          return [];
-        }
-        if (name === "tags.list" || name === "tagGroups.list") {
-          return [];
-        }
-        if (name === "saves.getMany") {
-          return [];
-        }
-        return [];
+    bridge.use({
+      query: {
+        "settings.getPrefs": () => PrefsSchema.parse({}),
+        "folders.list": () => [],
+        "folders.memberships": () => [],
+        "tags.list": () => [],
+        "tagGroups.list": () => [],
+        "saves.getMany": () => [],
+        "saves.rawJson": ({ id }) => ({ id, rawJson: null }),
       },
-      onSyncAction: () => () => {},
     });
     await folders.refresh();
     pool.clear();
@@ -118,7 +113,6 @@ describe("SaveDetails", () => {
     host.remove();
     selection.clear();
     primarySelection.set(null);
-    vi.unstubAllGlobals();
   });
 
   async function mount(path = "/") {
@@ -139,14 +133,8 @@ describe("SaveDetails", () => {
   it("inspects the library selection without opening the save", async () => {
     selection.set(["demo"]);
     primarySelection.set("demo");
-    await import("@/features/saves/components/detail/pane");
     await mount("/");
-    await act(async () => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
-    });
-    expect(host.textContent).toContain("One");
+    await vi.waitFor(() => expect(host.textContent).toContain("One"));
   });
 
   it("inspects a multi-save library selection", async () => {
@@ -163,15 +151,11 @@ describe("SaveDetails", () => {
     pool.upsert(extra);
     selection.set(["demo", "other"]);
     primarySelection.set("demo");
-    await import("@/features/saves/components/detail/pane");
     await mount("/");
-    await act(async () => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
+    await vi.waitFor(() => {
+      expect(host.textContent).toContain("One1/2");
+      expect(host.textContent).toContain("Two1/2");
     });
-    expect(host.textContent).toContain("One1/2");
-    expect(host.textContent).toContain("Two1/2");
   });
 
   it("inspects the open Save over the library selection", async () => {
@@ -188,14 +172,8 @@ describe("SaveDetails", () => {
     pool.upsert(extra);
     selection.set(["other"]);
     primarySelection.set("other");
-    await import("@/features/saves/components/detail/pane");
     await mount("/?save=demo");
-    await act(async () => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 0);
-      });
-    });
-    expect(host.textContent).toContain("One");
+    await vi.waitFor(() => expect(host.textContent).toContain("One"));
     expect(host.textContent).not.toContain("Two");
   });
 });

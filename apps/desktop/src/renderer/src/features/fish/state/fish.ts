@@ -8,6 +8,7 @@ import type {
 } from "@shared/fish-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
 
@@ -227,14 +228,18 @@ export function useOpenRoutineId(fishId: string | null): string | null {
   );
 }
 
+function warnRefreshFailed(cause: unknown): void {
+  log.warn("[pond fish] refresh failed", cause);
+}
+
 /** One subscription to main's fish events serves every mounted consumer. */
 export function useHydrateFish(): void {
   useEffect(() => {
     if (subscribers++ === 0) {
-      void fish.refresh().catch(() => undefined);
+      void fish.refresh().catch(warnRefreshFailed);
       unsubscribe = window.pond.onFish((event) => {
         if (event.kind === "changed" || event.activity === null) {
-          void fish.refresh().catch(() => undefined);
+          void fish.refresh().catch(warnRefreshFailed);
           if (event.kind === "changed") {
             return;
           }

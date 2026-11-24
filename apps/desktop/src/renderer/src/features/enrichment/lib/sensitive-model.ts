@@ -46,7 +46,10 @@ async function fetchModel(): Promise<ArrayBuffer> {
     console.warn("[sensitive-content] model cache unavailable", error);
   }
   for (const url of RETIRED_MODEL_URLS) {
-    cache?.delete(url).catch(() => {});
+    cache?.delete(url).catch((cause: unknown) => {
+      // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
+      console.warn("[sensitive-content] retired model cleanup failed", cause);
+    });
   }
   const cached = await cache?.match(request);
   if (cached) {

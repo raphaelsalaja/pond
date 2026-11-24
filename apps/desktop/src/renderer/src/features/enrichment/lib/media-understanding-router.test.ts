@@ -55,13 +55,14 @@ function setup(
     model: "ollama/gemma4:e2b:caption:v1",
   },
 ) {
-  const runFlorence = vi.fn(async () => "Florence caption");
-  const understandMedia = vi.fn(async () => result);
-  const router = createMediaUnderstandingRouter({
+  const dependencies = {
     florenceModelVersion: () => "florence:v2",
-    runFlorence,
-    understandMedia,
-  });
+    runFlorence: async () => "Florence caption",
+    understandMedia: async () => result,
+  };
+  const runFlorence = vi.spyOn(dependencies, "runFlorence");
+  const understandMedia = vi.spyOn(dependencies, "understandMedia");
+  const router = createMediaUnderstandingRouter(dependencies);
   return { router, runFlorence, understandMedia };
 }
 

@@ -40,16 +40,18 @@ function save(captionModel: string | null = null): Save {
   };
 }
 
-function router(): MediaUnderstandingRouter {
+function router(
+  run: MediaUnderstandingRouter["run"] = async () => ({
+    text: "A red bicycle.",
+    model: "ollama/gemma4:e2b:caption:v1",
+  }),
+): MediaUnderstandingRouter {
   return {
     primaryModel: (task, ai) =>
       ai.mediaUnderstandingMode === "gemma4"
         ? `ollama/gemma4:e2b:${task}:v1`
         : "florence:v2",
-    run: vi.fn(async () => ({
-      text: "A red bicycle.",
-      model: "ollama/gemma4:e2b:caption:v1",
-    })),
+    run,
   };
 }
 
@@ -76,8 +78,7 @@ describe("caption enricher", () => {
   });
 
   it("treats an unreadable-media skip as already processed", async () => {
-    const selectedRouter = router();
-    selectedRouter.run = vi.fn(async () => ({
+    const selectedRouter = router(async () => ({
       text: "",
       model: "ollama/gemma4:e2b:caption:v1",
     }));
@@ -93,6 +94,7 @@ describe("caption enricher", () => {
 
   it("persists the router output and model stamp", async () => {
     const selectedRouter = router();
+    const run = vi.spyOn(selectedRouter, "run");
     const enricher = createCaptionEnricher(selectedRouter);
 
     await expect(enricher.run(save(), prefs("gemma4"))).resolves.toEqual({
@@ -105,7 +107,7 @@ describe("caption enricher", () => {
         captionModel: "ollama/gemma4:e2b:caption:v1",
       },
     });
-    expect(selectedRouter.run).toHaveBeenCalledExactlyOnceWith({
+    expect(run).toHaveBeenCalledExactlyOnceWith({
       saveId: "save-1",
       imageUrl: "pond://save-1/image.png",
       task: "caption",
@@ -114,8 +116,7 @@ describe("caption enricher", () => {
   });
 
   it("does not manufacture a patch when the router fails", async () => {
-    const selectedRouter = router();
-    selectedRouter.run = vi.fn(async () => {
+    const selectedRouter = router(async () => {
       throw new Error("model_unavailable");
     });
     const enricher = createCaptionEnricher(selectedRouter);

@@ -48,14 +48,15 @@ function dependencies(
   };
 }
 
+async function failingEmbed(): Promise<Array<Float32Array>> {
+  throw new Error("embed failed");
+}
+
 describe("suggested tags vocab", () => {
   it("does not rebuild a failed vocab on the next save", async () => {
-    const embedSearchQueries = vi.fn(async () => {
-      throw new Error("embed failed");
-    });
-    const enricher = createSuggestedTagsEnricher(
-      dependencies({ embedSearchQueries }),
-    );
+    const deps = dependencies({ embedSearchQueries: failingEmbed });
+    const embedSearchQueries = vi.spyOn(deps, "embedSearchQueries");
+    const enricher = createSuggestedTagsEnricher(deps);
 
     await expect(enricher.run(save())).rejects.toThrow("embed failed");
     await expect(enricher.run(save({ id: "save-2" }))).rejects.toThrow(
@@ -66,15 +67,12 @@ describe("suggested tags vocab", () => {
 
   it("rebuilds after the tag list changes", async () => {
     let tags = [{ name: "ceramic" }, { name: "glaze" }];
-    const embedSearchQueries = vi.fn(async () => {
-      throw new Error("embed failed");
+    const deps = dependencies({
+      listTags: async () => tags,
+      embedSearchQueries: failingEmbed,
     });
-    const enricher = createSuggestedTagsEnricher(
-      dependencies({
-        listTags: async () => tags,
-        embedSearchQueries,
-      }),
-    );
+    const embedSearchQueries = vi.spyOn(deps, "embedSearchQueries");
+    const enricher = createSuggestedTagsEnricher(deps);
 
     await expect(enricher.run(save())).rejects.toThrow("embed failed");
     tags = [{ name: "ceramic" }, { name: "glaze" }, { name: "kiln" }];
@@ -91,15 +89,12 @@ describe("suggested tags vocab", () => {
 
   it("rebuilds after the cooldown elapses", async () => {
     let now = 0;
-    const embedSearchQueries = vi.fn(async () => {
-      throw new Error("embed failed");
+    const deps = dependencies({
+      embedSearchQueries: failingEmbed,
+      now: () => now,
     });
-    const enricher = createSuggestedTagsEnricher(
-      dependencies({
-        embedSearchQueries,
-        now: () => now,
-      }),
-    );
+    const embedSearchQueries = vi.spyOn(deps, "embedSearchQueries");
+    const enricher = createSuggestedTagsEnricher(deps);
 
     await expect(enricher.run(save())).rejects.toThrow("embed failed");
     now = SUGGESTED_TAGS_VOCAB_RETRY_MS - 1;
@@ -117,15 +112,9 @@ describe("suggested tags vocab", () => {
 
   it("rebuilds a successful vocab when tags are added", async () => {
     let tags = [{ name: "ceramic" }];
-    const embedSearchQueries = vi.fn(async (texts: Array<string>) =>
-      texts.map(() => unit(0)),
-    );
-    const enricher = createSuggestedTagsEnricher(
-      dependencies({
-        listTags: async () => tags,
-        embedSearchQueries,
-      }),
-    );
+    const deps = dependencies({ listTags: async () => tags });
+    const embedSearchQueries = vi.spyOn(deps, "embedSearchQueries");
+    const enricher = createSuggestedTagsEnricher(deps);
 
     await enricher.run(save());
     await enricher.run(save({ id: "save-2", suggestedTagsModel: null }));

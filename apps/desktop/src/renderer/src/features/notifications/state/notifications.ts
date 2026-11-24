@@ -2,6 +2,7 @@ import type { InboxNotification } from "@shared/notification-contracts";
 import type { OkSuccess } from "@shared/query-contracts-shared";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 
 interface NotificationsState {
@@ -13,6 +14,10 @@ const store = new Store<NotificationsState>({ items: [], loaded: false });
 let subscribers = 0;
 let unsubscribe: (() => void) | null = null;
 let ticket = 0;
+
+function warnRefreshFailed(cause: unknown): void {
+  log.warn("[pond notifications] refresh failed", cause);
+}
 
 async function refresh(): Promise<void> {
   const request = ++ticket;
@@ -30,7 +35,7 @@ function optimistic(
 ): void {
   ticket += 1;
   store.setState((state) => ({ ...state, items: change(state.items) }));
-  void send().catch(() => refresh().catch(() => undefined));
+  void send().catch(() => refresh().catch(warnRefreshFailed));
 }
 
 function patch(
@@ -114,9 +119,9 @@ export const notifications = {
 export function useHydrateNotifications(): void {
   useEffect(() => {
     if (subscribers++ === 0) {
-      void refresh().catch(() => undefined);
+      void refresh().catch(warnRefreshFailed);
       unsubscribe = window.pond.onNotifications(() => {
-        void refresh().catch(() => undefined);
+        void refresh().catch(warnRefreshFailed);
       });
     }
     return () => {

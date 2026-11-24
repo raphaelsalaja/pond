@@ -1,7 +1,7 @@
 import { act, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { lazyWithPreload } from "./lazy-with-preload";
 
 let host: HTMLDivElement;
@@ -23,8 +23,11 @@ afterEach(async () => {
 });
 
 it("renders a preloaded module on the first commit without a fallback", async () => {
-  const load = vi.fn(async () => Greeting);
-  const Lazy = lazyWithPreload(load);
+  let loads = 0;
+  const Lazy = lazyWithPreload(async () => {
+    loads += 1;
+    return Greeting;
+  });
   await Lazy.preload();
   act(() =>
     root.render(
@@ -34,7 +37,7 @@ it("renders a preloaded module on the first commit without a fallback", async ()
     ),
   );
   expect(host.textContent).toBe("Hello Koi");
-  expect(load).toHaveBeenCalledOnce();
+  expect(loads).toBe(1);
 });
 
 it("suspends until the module loads when nothing preloaded it", async () => {
@@ -53,8 +56,11 @@ it("suspends until the module loads when nothing preloaded it", async () => {
 });
 
 it("loads the module once across preloads and renders", async () => {
-  const load = vi.fn(async () => Greeting);
-  const Lazy = lazyWithPreload(load);
+  let loads = 0;
+  const Lazy = lazyWithPreload(async () => {
+    loads += 1;
+    return Greeting;
+  });
   void Lazy.preload();
   await act(async () =>
     root.render(
@@ -64,5 +70,5 @@ it("loads the module once across preloads and renders", async () => {
     ),
   );
   await Lazy.preload();
-  expect(load).toHaveBeenCalledOnce();
+  expect(loads).toBe(1);
 });

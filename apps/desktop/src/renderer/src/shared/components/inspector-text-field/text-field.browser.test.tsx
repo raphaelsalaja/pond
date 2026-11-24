@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { InspectorTextField } from ".";
 import type { InspectorDrafts } from ".";
 
@@ -37,6 +37,14 @@ async function render(
     ),
   );
 }
+function recorder() {
+  const values: Array<string> = [];
+  async function commit(value: string): Promise<void> {
+    values.push(value);
+  }
+  return { values, commit };
+}
+
 function field() {
   const node = host.querySelector("textarea");
   if (!node) {
@@ -60,36 +68,34 @@ async function blur() {
 }
 
 it("grows multiline inspector fields with their content", async () => {
-  await render(
-    "a",
-    "Notes",
-    vi.fn(async (_value: string) => {}),
-  );
+  await render("a", "Notes", async () => {});
   expect(field().dataset.sizing).toBe("content");
 });
 
 it("does not replace mixed notes until edited, then commits only the bound targets", async () => {
-  const first = vi.fn(async (_value: string) => {});
-  const second = vi.fn(async (_value: string) => {});
-  await render("a,b", null, first);
+  const first = recorder();
+  const second = recorder();
+  await render("a,b", null, first.commit);
   expect(field().placeholder).toBe("Multiple notes");
   await blur();
-  expect(first).not.toHaveBeenCalled();
+  expect(first.values).toEqual([]);
   await fill("Shared notes");
   await blur();
-  await render("c", "Other note", second);
-  expect(first).toHaveBeenCalledExactlyOnceWith("Shared notes");
-  expect(second).not.toHaveBeenCalled();
+  await render("c", "Other note", second.commit);
+  expect(first.values).toEqual(["Shared notes"]);
+  expect(second.values).toEqual([]);
   expect(field().value).toBe("Other note");
 });
 
 it("retains failed notes across selection changes and retries the original value", async () => {
   let fail = true;
-  const commit = vi.fn(async (_value: string) => {
+  const attempts: Array<string> = [];
+  const commit = async (value: string) => {
+    attempts.push(value);
     if (fail) {
       throw new Error("Disk full");
     }
-  });
+  };
   await render("a", "Original", commit);
   await fill("Keep this draft");
   await blur();
@@ -99,13 +105,12 @@ it("retains failed notes across selection changes and retries the original value
   expect(field().value).toBe("Keep this draft");
   fail = false;
   await act(async () => host.querySelector("button")?.click());
-  expect(commit).toHaveBeenCalledTimes(2);
-  expect(commit).toHaveBeenLastCalledWith("Keep this draft");
+  expect(attempts).toEqual(["Keep this draft", "Keep this draft"]);
   expect(drafts.size).toBe(0);
 });
 
 it("cancels a draft with Escape without writing", async () => {
-  const commit = vi.fn(async (_value: string) => {});
+  const { values, commit } = recorder();
   await render("a", "Original", commit);
   await fill("Discard this");
   await act(async () => {
@@ -115,11 +120,11 @@ it("cancels a draft with Escape without writing", async () => {
     );
   });
   expect(field().value).toBe("Original");
-  expect(commit).not.toHaveBeenCalled();
+  expect(values).toEqual([]);
 });
 
 it("keeps a single-line field open on Enter while text is composing", async () => {
-  const commit = vi.fn(async (_value: string) => {});
+  const { values, commit } = recorder();
   await act(async () =>
     root.render(
       <InspectorTextField
@@ -156,17 +161,18 @@ it("keeps a single-line field open on Enter while text is composing", async () =
 
   await press(true);
   expect(document.activeElement).toBe(input);
-  expect(commit).not.toHaveBeenCalled();
+  expect(values).toEqual([]);
 
   await press(false);
   expect(document.activeElement).not.toBe(input);
-  expect(commit).toHaveBeenCalledExactlyOnceWith("旅行");
+  expect(values).toEqual(["旅行"]);
 });
 
 it("clamps long text behind Read More until expanded", async () => {
-  const scroll = vi
-    .spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get")
-    .mockReturnValue(200);
+  const description = Array.from(
+    { length: 20 },
+    (_, line) => `Line ${line + 1} of a long description`,
+  ).join("\n");
   await act(async () =>
     root.render(
       <InspectorTextField
@@ -175,7 +181,7 @@ it("clamps long text behind Read More until expanded", async () => {
         label="Description"
         multiline
         clamp={4}
-        value="A long description"
+        value={description}
         commit={async () => {}}
       />,
     ),
@@ -190,5 +196,4 @@ it("clamps long text behind Read More until expanded", async () => {
 
   expect(host.firstElementChild?.hasAttribute("data-clamped")).toBe(false);
   expect(host.textContent).not.toContain("Read More");
-  scroll.mockRestore();
 });

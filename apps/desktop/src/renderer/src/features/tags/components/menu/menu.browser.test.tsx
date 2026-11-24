@@ -1,7 +1,8 @@
 import { PickerPanel } from "@pond/ui";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { TagMenu, TagMenuView } from "./";
 
 function tag(id: string, name: string) {
@@ -31,63 +32,52 @@ function listOptions(): Array<string> {
 }
 
 it("keeps an inline tag draft after a failed create and applies it only after retry succeeds", async () => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
   let fail = true;
   const created: Array<string> = [];
-  vi.stubGlobal("pond", {
-    onSyncAction: () => () => {},
-    query: async (name: string, input: { name?: string }) => {
-      if (name === "tags.list") {
-        return [
-          {
-            id: "recent",
-            name: "Recent Tag",
-            starred: false,
-            description: null,
-            lastUsedAt: 10,
-            usageCount: 0,
-            createdAt: null,
-          },
-          {
-            id: "other",
-            name: "Other Tag",
-            starred: false,
-            description: null,
-            lastUsedAt: null,
-            usageCount: 0,
-            createdAt: null,
-          },
-        ];
-      }
-      if (name === "tagGroups.list") {
-        return [
-          {
-            id: "work",
-            name: "Work",
-            description: null,
-            color: null,
-            sortOrder: 0,
-            collapsed: false,
-            tagIds: ["recent"],
-            tagNames: ["Recent Tag"],
-          },
-        ];
-      }
-      if (name === "tags.create") {
+  bridge.use({
+    query: {
+      "tags.list": () => [
+        {
+          id: "recent",
+          name: "Recent Tag",
+          starred: false,
+          archived: false,
+          description: null,
+          lastUsedAt: new Date(10),
+          usageCount: 0,
+          createdAt: new Date(0),
+        },
+        {
+          id: "other",
+          name: "Other Tag",
+          starred: false,
+          archived: false,
+          description: null,
+          lastUsedAt: null,
+          usageCount: 0,
+          createdAt: new Date(0),
+        },
+      ],
+      "tagGroups.list": () => [
+        {
+          id: "work",
+          name: "Work",
+          description: null,
+          color: null,
+          sortOrder: 0,
+          collapsed: false,
+          createdAt: new Date(0),
+          tagIds: ["recent"],
+          tagNames: ["Recent Tag"],
+        },
+      ],
+      "tags.create": async ({ name }) => {
         if (fail) {
           throw new Error("Library unavailable");
         }
-        created.push(input.name ?? "");
-        return { id: "new", name: input.name };
-      }
-      throw new Error(`Unexpected query ${name}`);
+        created.push(name);
+        return { ok: true };
+      },
     },
   });
   const applied: Array<string> = [];
@@ -174,19 +164,10 @@ it("keeps an inline tag draft after a failed create and applies it only after re
       root.unmount();
     });
     host.remove();
-    vi.unstubAllGlobals();
   }
 });
 
 it("lists tag groups as expandable parents with their tags nested under them", async () => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
   const tags = [tag("sunset", "Sunset"), tag("loose", "Loose")];
   const groups = [
     {
@@ -246,28 +227,17 @@ it("lists tag groups as expandable parents with their tags nested under them", a
       root.unmount();
     });
     host.remove();
-    vi.unstubAllGlobals();
   }
 });
 
 it("puts Create after matching tags and keeps Enter on the first match", async () => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
   const created: Array<string> = [];
-  vi.stubGlobal("pond", {
-    onSyncAction: () => () => {},
-    query: async (name: string, input: { name?: string }) => {
-      if (name === "tags.create") {
-        created.push(input.name ?? "");
-        return { id: "new", name: input.name };
-      }
-      throw new Error(`Unexpected query ${name}`);
+  bridge.use({
+    query: {
+      "tags.create": ({ name }) => {
+        created.push(name);
+        return { ok: true };
+      },
     },
   });
   const applied: Array<string> = [];
@@ -338,6 +308,5 @@ it("puts Create after matching tags and keeps Enter on the first match", async (
       root.unmount();
     });
     host.remove();
-    vi.unstubAllGlobals();
   }
 });

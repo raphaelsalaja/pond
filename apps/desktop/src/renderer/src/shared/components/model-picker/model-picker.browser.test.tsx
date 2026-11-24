@@ -4,70 +4,60 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ModelPicker } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      if (name === "agent.listAvailableModels") {
-        return {
-          providers: [
-            {
-              provider: "openai",
-              ok: true,
-              models: [
-                {
-                  id: "gpt-5.6-sol",
-                  name: "GPT-5.6 Sol",
-                  description: "Built for complex coding and knowledge work.",
-                  contextWindow: 200_000,
-                  maxOutputTokens: 8192,
-                  capabilities: ["fast"],
-                  reasoningOptions: ["low", "high"],
-                },
-                {
-                  id: "legacy-test",
-                  name: "Legacy Test",
-                },
-              ],
-            },
-            {
-              provider: "anthropic",
-              ok: true,
-              models: [
-                {
-                  id: "claude-test",
-                  name: "Claude Test",
-                  description: "A described Anthropic model.",
-                  contextWindow: 256_000,
-                },
-              ],
-            },
-            {
-              provider: "ollama",
-              ok: true,
-              models: [{ id: "gemma4:26b", name: "gemma4:26b" }],
-            },
-            {
-              provider: "opencode-go",
-              ok: true,
-              models: [{ id: "kimi-k2.6", name: "Kimi K2.6" }],
-            },
-          ],
-        };
-      }
-      return { ok: true };
+  bridge.use({
+    query: {
+      "agent.listAvailableModels": () => ({
+        providers: [
+          {
+            provider: "openai",
+            ok: true,
+            models: [
+              {
+                id: "gpt-5.6-sol",
+                name: "GPT-5.6 Sol",
+                description: "Built for complex coding and knowledge work.",
+                contextWindow: 200_000,
+                maxOutputTokens: 8192,
+                capabilities: ["fast"],
+                reasoningOptions: ["low", "high"],
+              },
+              {
+                id: "legacy-test",
+                name: "Legacy Test",
+              },
+            ],
+          },
+          {
+            provider: "anthropic",
+            ok: true,
+            models: [
+              {
+                id: "claude-test",
+                name: "Claude Test",
+                description: "A described Anthropic model.",
+                contextWindow: 256_000,
+              },
+            ],
+          },
+          {
+            provider: "ollama",
+            ok: true,
+            models: [{ id: "gemma4:26b", name: "gemma4:26b" }],
+          },
+          {
+            provider: "opencode-go",
+            ok: true,
+            models: [{ id: "kimi-k2.6", name: "Kimi K2.6" }],
+          },
+        ],
+      }),
     },
   });
   host = document.createElement("div");
@@ -78,7 +68,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 function menuItem(label: string) {
@@ -177,12 +166,6 @@ it("splits provider and model choices into separate submenus", async () => {
   if (!selectedModel || !modelMenu) {
     throw new Error("Missing selected model menu item");
   }
-  vi.spyOn(selectedModel, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 180),
-  );
-  vi.spyOn(modelMenu, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 40),
-  );
   await act(async () => {
     selectedModel?.dispatchEvent(
       new MouseEvent("mouseover", { bubbles: true }),
@@ -195,7 +178,13 @@ it("splits provider and model choices into separate submenus", async () => {
     "Built for complex coding and knowledge work.",
   );
   expect(document.body.textContent).toContain("200K tokens");
-  expect(document.querySelector("aside")?.style.insetBlockStart).toBe("140px");
+  const offset =
+    selectedModel.getBoundingClientRect().top -
+    modelMenu.getBoundingClientRect().top;
+  expect(offset).toBeGreaterThan(0);
+  expect(document.querySelector("aside")?.style.insetBlockStart).toBe(
+    `${offset}px`,
+  );
 
   const input = document.querySelector<HTMLInputElement>(
     'input[placeholder="Search…"]',
@@ -252,22 +241,24 @@ it("updates Fast, Context, and declared Reasoning controls", async () => {
 });
 
 it("keeps unsupported controls visibly unavailable", async () => {
-  vi.stubGlobal("pond", {
-    query: async () => ({
-      providers: [
-        {
-          provider: "openai",
-          ok: true,
-          models: [
-            {
-              id: "gpt-5.6-sol",
-              name: "GPT-5.6 Sol",
-              description: "A model without optional run controls.",
-            },
-          ],
-        },
-      ],
-    }),
+  bridge.use({
+    query: {
+      "agent.listAvailableModels": () => ({
+        providers: [
+          {
+            provider: "openai",
+            ok: true,
+            models: [
+              {
+                id: "gpt-5.6-sol",
+                name: "GPT-5.6 Sol",
+                description: "A model without optional run controls.",
+              },
+            ],
+          },
+        ],
+      }),
+    },
   });
   await renderPicker();
   await openPicker();

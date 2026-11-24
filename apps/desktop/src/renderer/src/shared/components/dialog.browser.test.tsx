@@ -4,45 +4,36 @@ import { clsx as cn } from "clsx";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  expect,
+  it,
+  vi,
+} from "vitest";
+import type { MockInstance } from "vitest";
+import { cdp } from "vitest/browser";
 
 let root: Root;
 let host: HTMLDivElement;
-const observers: Array<{
-  targets: Array<Element>;
-  disconnected: boolean;
-  callback: () => void;
-}> = [];
+let observe: MockInstance<ResizeObserver["observe"]>;
+let disconnect: MockInstance<ResizeObserver["disconnect"]>;
+
+beforeAll(async () => {
+  await cdp().send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+  });
+});
+
+afterAll(async () => {
+  await cdp().send("Emulation.setEmulatedMedia", { features: [] });
+});
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      record: (typeof observers)[number];
-      constructor(callback: () => void) {
-        this.record = { callback, disconnected: false, targets: [] };
-        observers.push(this.record);
-      }
-      observe(target: Element) {
-        this.record.targets.push(target);
-      }
-      unobserve(target: Element) {
-        this.record.targets = this.record.targets.filter(
-          (item) => item !== target,
-        );
-      }
-      disconnect() {
-        this.record.disconnected = true;
-      }
-    },
-  );
-  vi.stubGlobal("matchMedia", () => ({
-    matches: true,
-    addEventListener() {},
-    removeEventListener() {},
-    addListener() {},
-    removeListener() {},
-  }));
+  observe = vi.spyOn(ResizeObserver.prototype, "observe");
+  disconnect = vi.spyOn(ResizeObserver.prototype, "disconnect");
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -51,9 +42,37 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  observers.length = 0;
-  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
+
+/** Indexes of the first `observe` call of each live observer watching an element with this text. */
+function liveObservers(text: string): Array<number> {
+  const disconnected = new Set(disconnect.mock.contexts);
+  const seen = new Set(disconnected);
+  const live: Array<number> = [];
+  observe.mock.calls.forEach(([target], index) => {
+    const observer = observe.mock.contexts[index];
+    if (target.textContent === text && !seen.has(observer)) {
+      seen.add(observer);
+      live.push(index);
+    }
+  });
+  return live;
+}
+
+/** Every element observed by the observer that made the `observe` call at `index`. */
+function observedWith(index: number): Array<Element> {
+  const observer = observe.mock.contexts[index];
+  return observe.mock.calls.flatMap(([target], call) =>
+    observe.mock.contexts[call] === observer ? [target] : [],
+  );
+}
+
+function sizeTo(element: HTMLElement, height: number) {
+  element.style.boxSizing = "border-box";
+  element.style.flex = "none";
+  element.style.height = `${height}px`;
+}
 
 function button(label: string) {
   const found = Array.from(document.querySelectorAll("button")).find(
@@ -136,7 +155,11 @@ it("uses compact confirmation actions in the footer", async () => {
 
 it("keeps a prompt open and blocks duplicate submissions while saving", async () => {
   const { promise, resolve: finish } = Promise.withResolvers<void>();
-  const onConfirm = vi.fn(() => promise);
+  let confirms = 0;
+  const onConfirm = () => {
+    confirms += 1;
+    return promise;
+  };
   await act(async () => root.render(<Dialog.Host />));
   await act(async () =>
     Dialog.prompt({
@@ -151,7 +174,7 @@ it("keeps a prompt open and blocks duplicate submissions while saving", async ()
     submit.click();
     submit.click();
   });
-  expect(onConfirm).toHaveBeenCalledTimes(1);
+  expect(confirms).toBe(1);
   expect(
     document.querySelector('[role="dialog"]')?.hasAttribute("data-open"),
   ).toBe(true);
@@ -201,10 +224,13 @@ it("passes the confirmation checkbox value to the action", async () => {
 });
 
 it("preserves prompt values after failure and supports retry", async () => {
-  const onConfirm = vi
-    .fn()
-    .mockRejectedValueOnce(new Error("Couldn't rename. Try again."))
-    .mockResolvedValueOnce(undefined);
+  const attempts: Array<string> = [];
+  const onConfirm = async (value: string) => {
+    attempts.push(value);
+    if (attempts.length === 1) {
+      throw new Error("Couldn't rename. Try again.");
+    }
+  };
   await act(async () => root.render(<Dialog.Host />));
   await act(async () =>
     Dialog.prompt({
@@ -221,7 +247,7 @@ it("preserves prompt values after failure and supports retry", async () => {
   expect(document.querySelector("input")?.value).toBe("Ideas");
   expect(document.querySelector('[role="dialog"][data-open]')).not.toBeNull();
   await act(async () => button("Rename").click());
-  expect(onConfirm).toHaveBeenNthCalledWith(2, "Ideas");
+  expect(attempts).toEqual(["Ideas", "Ideas"]);
   expect(document.querySelector('[role="dialog"][data-open]')).toBeNull();
 });
 
@@ -248,10 +274,13 @@ it("resets a prompt when it is reopened with another payload", async () => {
 });
 
 it("handles confirmation failures without dismissing the dialog", async () => {
-  const onConfirm = vi
-    .fn()
-    .mockRejectedValueOnce(new Error("Couldn't remove. Try again."))
-    .mockResolvedValueOnce(undefined);
+  let removals = 0;
+  const onConfirm = async () => {
+    removals += 1;
+    if (removals === 1) {
+      throw new Error("Couldn't remove. Try again.");
+    }
+  };
   await act(async () => root.render(<Dialog.Host />));
   await act(async () =>
     Dialog.confirm({
@@ -273,7 +302,11 @@ it("handles confirmation failures without dismissing the dialog", async () => {
 
 it("blocks duplicate confirmations and Escape while an action is pending", async () => {
   const { promise, resolve: finish } = Promise.withResolvers<void>();
-  const onConfirm = vi.fn(() => promise);
+  let confirms = 0;
+  const onConfirm = () => {
+    confirms += 1;
+    return promise;
+  };
   await act(async () => root.render(<Dialog.Host />));
   await act(async () =>
     Dialog.confirm({
@@ -292,7 +325,7 @@ it("blocks duplicate confirmations and Escape while an action is pending", async
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
     ),
   );
-  expect(onConfirm).toHaveBeenCalledTimes(1);
+  expect(confirms).toBe(1);
   expect(
     document.querySelector('[role="alertdialog"][data-open]'),
   ).not.toBeNull();
@@ -323,49 +356,24 @@ function Pages({ page, footer = false }: { page: number; footer?: boolean }) {
 it("keeps measuring the active page after the outgoing page unmounts", async () => {
   await act(async () => root.render(<Pages page={0} />));
   await act(async () => root.render(<Pages page={1} />));
-  await act(
-    async () =>
-      new Promise((resolve) => {
-        setTimeout(resolve, 350);
-      }),
+  await vi.waitFor(() =>
+    expect(document.querySelectorAll("[data-dialog-page]")).toHaveLength(1),
   );
-  const active = observers.filter(
-    (observer) =>
-      observer.targets.some((target) => target.textContent === "Page 1") &&
-      !observer.disconnected,
-  );
+  const active = liveObservers("Page 1");
   expect(active).toHaveLength(1);
-  const page = active[0]?.targets.find(
-    (target) => target.textContent === "Page 1",
+  const popup = document.querySelector<HTMLElement>('[role="dialog"]');
+  const page = popup?.querySelector<HTMLElement>("[data-dialog-page]");
+  const header = popup?.querySelector("header");
+  if (!popup || !page || !header) {
+    throw new Error("Missing dialog parts");
+  }
+  expect(observedWith(active[0] ?? -1)).toContain(page);
+  sizeTo(header, 64);
+  sizeTo(page, 300);
+  await vi.waitFor(() =>
+    expect(popup.style.getPropertyValue("--height")).toBe("364px"),
   );
-  if (!page) {
-    throw new Error("Missing active page observer");
-  }
-  const header = document.querySelector('[role="dialog"] header');
-  if (!header) {
-    throw new Error("Missing dialog header");
-  }
-  Object.defineProperty(header, "offsetHeight", {
-    configurable: true,
-    value: 64,
-  });
-  Object.defineProperty(page, "offsetHeight", {
-    configurable: true,
-    value: 300,
-  });
-  await act(async () => active[0]?.callback());
-  expect(
-    document
-      .querySelector<HTMLElement>('[role="dialog"]')
-      ?.style.getPropertyValue("--height"),
-  ).toBe("364px");
-  expect(
-    observers.filter(
-      (observer) =>
-        observer.targets.some((target) => target.textContent === "Page 0") &&
-        !observer.disconnected,
-    ),
-  ).toHaveLength(0);
+  expect(liveObservers("Page 0")).toHaveLength(0);
 });
 
 it("uses native keyboard semantics for the page close button", async () => {
@@ -383,30 +391,18 @@ it("includes the header and persistent footer when sizing a page", async () => {
   if (!popup || !page || !header || !footer) {
     throw new Error("Missing dialog parts");
   }
-  Object.defineProperty(page, "offsetHeight", {
-    configurable: true,
-    value: 192,
-  });
-  Object.defineProperty(header, "offsetHeight", {
-    configurable: true,
-    value: 80,
-  });
-  Object.defineProperty(footer, "offsetHeight", {
-    configurable: true,
-    value: 72,
-  });
-  const observer = observers.find(
-    (entry) => entry.targets.includes(page) && !entry.disconnected,
+  const [observer] = liveObservers("Page 0");
+  expect(observedWith(observer ?? -1)).toContain(footer);
+  sizeTo(page, 192);
+  sizeTo(header, 80);
+  sizeTo(footer, 72);
+  await vi.waitFor(() =>
+    expect(popup.style.getPropertyValue("--height")).toBe("344px"),
   );
-  expect(observer?.targets).toContain(footer);
-  await act(async () => observer?.callback());
-  expect(popup.style.getPropertyValue("--height")).toBe("344px");
-  Object.defineProperty(footer, "offsetHeight", {
-    configurable: true,
-    value: 100,
-  });
-  await act(async () => observer?.callback());
-  expect(popup.style.getPropertyValue("--height")).toBe("372px");
+  sizeTo(footer, 100);
+  await vi.waitFor(() =>
+    expect(popup.style.getPropertyValue("--height")).toBe("372px"),
+  );
 });
 
 it("renders a static header close without submitting its form", async () => {

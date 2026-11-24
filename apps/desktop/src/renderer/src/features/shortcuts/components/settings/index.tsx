@@ -1,5 +1,6 @@
 import { IconMagnifier } from "@pond/icons";
 import { Button, Empty, EmptyPreview, Input, Settings } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
@@ -41,7 +42,9 @@ export function ShortcutSettings({
           setNativeErrors(status.errors);
         }
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond shortcuts] global shortcut status failed", cause);
+      });
     return () => {
       active = false;
     };

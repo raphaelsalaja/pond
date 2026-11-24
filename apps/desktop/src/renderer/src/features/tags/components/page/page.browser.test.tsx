@@ -1,3 +1,4 @@
+import type { Tag } from "@pond/schema/db";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { isHTMLElement, isHTMLTag } from "@pond/ui/dom";
 import { RouterProvider } from "@tanstack/react-router";
@@ -5,7 +6,7 @@ import type { AnyRoute } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createLibraryTestRouter } from "@/app/test/library-router";
 import { getLibraryNav } from "@/features/library/state/library-chrome";
 import {
@@ -15,9 +16,8 @@ import {
 } from "@/features/library/state/view-store";
 import { startViewUrlSync } from "@/features/library/state/view-url";
 import { tagCreation } from "@/features/tags/state/creation";
-import type { TagGroupRow } from "@/features/tags/state/tag-groups";
-import type { TagRow } from "@/features/tags/state/tags";
 import { tagsScope } from "@/features/tags/state/tags-scope";
+import { bridge } from "@/shared/test/pond-bridge";
 import { TagsSidebar } from "../sidebar";
 import { TagsPage } from "./";
 
@@ -26,11 +26,12 @@ const fixtures = {
     id: String(index),
     name,
     starred: index === 0,
+    archived: false,
     description: null,
     lastUsedAt: null,
     usageCount: 0,
-    createdAt: null,
-  })) satisfies Array<TagRow>,
+    createdAt: new Date(0),
+  })) satisfies Array<Tag>,
   groups: [
     {
       id: "design",
@@ -39,10 +40,11 @@ const fixtures = {
       color: null,
       sortOrder: 0,
       collapsed: false,
+      createdAt: new Date(0),
       tagIds: ["0"],
       tagNames: ["Animation"],
     },
-  ] satisfies Array<TagGroupRow>,
+  ],
   saves: [],
 };
 
@@ -61,47 +63,35 @@ describe("library Tags page", () => {
   let root: Root;
   let stopViewUrlSync: (() => void) | null = null;
   const createdTags = new Set(["animation", "typography"]);
-  const query = vi.fn(async (name: string, params?: { name?: string }) => {
-    if (name === "tags.list") {
-      return fixtures.tags;
-    }
-    if (name === "tagGroups.list") {
-      return fixtures.groups;
-    }
-    if (name === "tags.create") {
-      const tagName = (params?.name ?? "").toLowerCase();
-      if (createdTags.has(tagName)) {
-        throw new Error("UNIQUE constraint failed: tags.name");
-      }
-      createdTags.add(tagName);
-      return { ok: true };
-    }
-    return { ok: true };
-  });
+  const createAttempts: Array<string> = [];
 
   beforeEach(() => {
-    vi.stubGlobal("scrollTo", vi.fn());
-    vi.stubGlobal("pond", { query, onSyncAction: () => () => {} });
-    vi.stubGlobal("matchMedia", () => ({
-      matches: false,
-      addEventListener() {},
-      removeEventListener() {},
-    }));
-    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(900);
-    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(800);
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
+    bridge.use({
+      query: {
+        "tags.list": () => fixtures.tags,
+        "tagGroups.list": () => fixtures.groups,
+        "tags.create": async ({ name }) => {
+          createAttempts.push(name);
+          const tagName = name.toLowerCase();
+          if (createdTags.has(tagName)) {
+            throw new Error("UNIQUE constraint failed: tags.name");
+          }
+          createdTags.add(tagName);
+          return { ok: true };
+        },
+        "tagGroups.create": () => ({ ok: true }),
+        "tagGroups.update": () => ({ ok: true }),
+        "tagGroups.addTags": ({ tags }) => ({ ok: true, affected: tags.length }),
       },
-    );
-    query.mockClear();
+    });
+    createAttempts.length = 0;
     createdTags.clear();
     createdTags.add("animation");
     createdTags.add("typography");
     host = document.createElement("div");
+    host.style.display = "flex";
+    host.style.width = "900px";
+    host.style.height = "800px";
     document.body.append(host);
     root = createRoot(host);
   });
@@ -113,8 +103,6 @@ describe("library Tags page", () => {
     host.remove();
     tagsScope.set("all");
     resetFilters();
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
   });
 
   async function mount() {
@@ -204,7 +192,7 @@ describe("library Tags page", () => {
         new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
       );
     });
-    expect(query).not.toHaveBeenCalledWith(
+    expect(window.pond.query).not.toHaveBeenCalledWith(
       "tagGroups.update",
       expect.anything(),
     );
@@ -215,7 +203,7 @@ describe("library Tags page", () => {
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
       );
     });
-    expect(query).toHaveBeenCalledWith("tagGroups.update", {
+    expect(window.pond.query).toHaveBeenCalledWith("tagGroups.update", {
       name: "Design",
       patch: { description: "Updated" },
     });
@@ -300,7 +288,9 @@ describe("library Tags page", () => {
         new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
       );
     });
-    expect(query).toHaveBeenCalledWith("tagGroups.create", { name: "Design" });
+    expect(window.pond.query).toHaveBeenCalledWith("tagGroups.create", {
+      name: "Design",
+    });
   });
 
   it("opens the inline draft requested from global New Tag actions", async () => {
@@ -339,10 +329,8 @@ describe("library Tags page", () => {
       );
     });
 
-    expect(query.mock.calls.filter(([name]) => name === "tags.create")).toEqual(
-      [["tags.create", { name: "Brand" }]],
-    );
-    expect(query).toHaveBeenCalledWith("tagGroups.addTags", {
+    expect(createAttempts).toEqual(["Brand"]);
+    expect(window.pond.query).toHaveBeenCalledWith("tagGroups.addTags", {
       tags: ["Brand"],
       group: "Design",
     });
@@ -374,8 +362,10 @@ describe("library Tags page", () => {
       );
     });
 
-    expect(query).toHaveBeenCalledWith("tags.create", { name: "Motion" });
-    expect(query).toHaveBeenCalledWith("tagGroups.addTags", {
+    expect(window.pond.query).toHaveBeenCalledWith("tags.create", {
+      name: "Motion",
+    });
+    expect(window.pond.query).toHaveBeenCalledWith("tagGroups.addTags", {
       tags: ["Motion"],
       group: "Design",
     });
@@ -403,8 +393,10 @@ describe("library Tags page", () => {
       );
     });
 
-    expect(query).toHaveBeenCalledWith("tags.create", { name: "Reading" });
-    expect(query).not.toHaveBeenCalledWith(
+    expect(window.pond.query).toHaveBeenCalledWith("tags.create", {
+      name: "Reading",
+    });
+    expect(window.pond.query).not.toHaveBeenCalledWith(
       "tagGroups.addTags",
       expect.anything(),
     );
@@ -440,7 +432,9 @@ describe("library Tags page", () => {
       );
     });
 
-    expect(query).toHaveBeenCalledWith("tags.create", { name: "Reading" });
+    expect(window.pond.query).toHaveBeenCalledWith("tags.create", {
+      name: "Reading",
+    });
     expect(host.querySelector('[aria-current="true"]')?.textContent).toContain(
       "Uncategorized",
     );

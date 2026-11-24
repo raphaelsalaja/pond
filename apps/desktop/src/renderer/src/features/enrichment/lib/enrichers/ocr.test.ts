@@ -39,16 +39,18 @@ function save(ocrModel: string | null = null): Save {
   };
 }
 
-function router(): MediaUnderstandingRouter {
+function router(
+  run: MediaUnderstandingRouter["run"] = async () => ({
+    text: "TOTAL 12.50",
+    model: "lmstudio/gemma4:e4b:ocr:v1",
+  }),
+): MediaUnderstandingRouter {
   return {
     primaryModel: (task, ai) =>
       ai.mediaUnderstandingMode === "gemma4"
         ? `lmstudio/gemma4:e4b:${task}:v1`
         : "florence:v2",
-    run: vi.fn(async () => ({
-      text: "TOTAL 12.50",
-      model: "lmstudio/gemma4:e4b:ocr:v1",
-    })),
+    run,
   };
 }
 
@@ -72,11 +74,11 @@ describe("OCR enricher", () => {
   });
 
   it("persists empty OCR as null with the completed model stamp", async () => {
-    const selectedRouter = router();
-    selectedRouter.run = vi.fn(async () => ({
+    const selectedRouter = router(async () => ({
       text: "",
       model: "lmstudio/gemma4:e4b:ocr:v1",
     }));
+    const run = vi.spyOn(selectedRouter, "run");
     const enricher = createOcrEnricher(selectedRouter);
     const selectedPrefs = {
       ...prefs("gemma4"),
@@ -94,7 +96,7 @@ describe("OCR enricher", () => {
         ocrModel: "lmstudio/gemma4:e4b:ocr:v1",
       },
     });
-    expect(selectedRouter.run).toHaveBeenCalledExactlyOnceWith({
+    expect(run).toHaveBeenCalledExactlyOnceWith({
       saveId: "save-1",
       imageUrl: "pond://save-1/image.png",
       task: "ocr",

@@ -2,7 +2,7 @@ import { Tooltip } from "@pond/ui";
 import { act, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { TableFilterBar, TableFilterChip, TableFilterToggle } from "./index";
 
 function Harness() {
@@ -36,19 +36,6 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      disconnect() {}
-      unobserve() {}
-    },
-  );
-  vi.stubGlobal("matchMedia", () => ({
-    matches: false,
-    addEventListener() {},
-    removeEventListener() {},
-  }));
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -57,7 +44,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 function button(label: string) {

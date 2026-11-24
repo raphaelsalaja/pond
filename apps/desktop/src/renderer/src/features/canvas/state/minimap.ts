@@ -3,28 +3,40 @@ import { Store } from "@tanstack/store";
 
 const STORAGE_KEY = "pond.canvasMinimap";
 
-function readShown(): boolean {
+export type MinimapStorage = Pick<Storage, "getItem" | "setItem">;
+
+function browserStorage(): MinimapStorage {
+  return window.localStorage;
+}
+
+function readShown(storage: () => MinimapStorage): boolean {
   try {
-    return window.localStorage.getItem(STORAGE_KEY) !== "0";
+    return storage().getItem(STORAGE_KEY) !== "0";
   } catch {
     return true;
   }
 }
 
-const store = new Store({ shown: readShown() });
+export function createMinimap(storage: () => MinimapStorage = browserStorage) {
+  const store = new Store({ shown: readShown(storage) });
+  return {
+    store,
+    shown: (): boolean => store.state.shown,
+    toggle: (): void => {
+      const shown = !store.state.shown;
+      try {
+        storage().setItem(STORAGE_KEY, shown ? "1" : "0");
+      } catch {
+        /** Storage can be full or blocked; the toggle still applies for this session. */
+      }
+      store.setState(() => ({ shown }));
+    },
+  };
+}
 
-export const minimap = {
-  shown: (): boolean => store.state.shown,
-  toggle: (): void => {
-    const shown = !store.state.shown;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, shown ? "1" : "0");
-    } catch {
-      /** Storage can be full or blocked; the toggle still applies for this session. */
-    }
-    store.setState(() => ({ shown }));
-  },
-};
+const { store, ...controls } = createMinimap();
+
+export const minimap = controls;
 
 export function useMinimapShown(): boolean {
   return useSelector(store, (state) => state.shown);

@@ -45,16 +45,33 @@ function isPaneWidthTransition(event: TransitionEvent): boolean {
   return slot === "left" || slot === "right";
 }
 
+export type SettledSizeHost = {
+  observe: (element: HTMLElement, onResize: () => void) => () => void;
+  requestFrame: (callback: () => void) => number;
+  cancelFrame: (id: number) => void;
+};
+
+const browserHost: SettledSizeHost = {
+  observe: (element, onResize) => {
+    const observer = new ResizeObserver(onResize);
+    observer.observe(element);
+    return () => observer.disconnect();
+  },
+  requestFrame: (callback) => requestAnimationFrame(callback),
+  cancelFrame: (id) => cancelAnimationFrame(id),
+};
+
 export function observeSettledSize(
   element: HTMLElement,
   onSize: () => void,
   options: { continuous?: boolean } = {},
+  host: SettledSizeHost = browserHost,
 ): () => void {
   let frame = 0;
   let timer = 0;
   const cancelScheduled = () => {
     if (frame) {
-      cancelAnimationFrame(frame);
+      host.cancelFrame(frame);
       frame = 0;
     }
     if (timer) {
@@ -83,11 +100,11 @@ export function observeSettledSize(
       if (frame) {
         return;
       }
-      frame = requestAnimationFrame(apply);
+      frame = host.requestFrame(apply);
       return;
     }
     if (frame) {
-      cancelAnimationFrame(frame);
+      host.cancelFrame(frame);
       frame = 0;
     }
     if (timer) {
@@ -106,18 +123,17 @@ export function observeSettledSize(
   };
 
   apply();
-  const observer = new ResizeObserver(schedule);
-  observer.observe(element);
+  const stopObserving = host.observe(element, schedule);
   const root = element.closest("[data-slot=window]");
   root?.addEventListener("transitionend", onTransitionEnd);
   root?.addEventListener("transitioncancel", onTransitionEnd);
 
   return () => {
-    observer.disconnect();
+    stopObserving();
     root?.removeEventListener("transitionend", onTransitionEnd);
     root?.removeEventListener("transitioncancel", onTransitionEnd);
     if (frame) {
-      cancelAnimationFrame(frame);
+      host.cancelFrame(frame);
     }
     if (timer) {
       clearTimeout(timer);

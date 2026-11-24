@@ -12,30 +12,6 @@ describe("spec menu search", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-      callback(0);
-      return 1;
-    });
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
-      configurable: true,
-      get() {
-        return 240;
-      },
-    });
-    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
-      configurable: true,
-      get() {
-        return 280;
-      },
-    });
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -44,8 +20,29 @@ describe("spec menu search", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
+
+  function menuBody() {
+    const body = document.querySelector("[data-menu-body]");
+    const popup = body?.parentElement;
+    if (!isHTMLElement(body) || !isHTMLElement(popup)) {
+      throw new Error("Missing menu body");
+    }
+    return { body, popup };
+  }
+
+  function contentHeight(body: HTMLElement) {
+    const content = body.firstElementChild;
+    if (!isHTMLElement(content)) {
+      throw new Error("Missing menu content");
+    }
+    const style = getComputedStyle(body);
+    return (
+      content.offsetHeight +
+      Number.parseFloat(style.paddingTop) +
+      Number.parseFloat(style.paddingBottom)
+    );
+  }
 
   async function open(
     items: Array<MenuItemSpec> = [
@@ -69,18 +66,18 @@ describe("spec menu search", () => {
 
   it("sizes the operations list to its content height", async () => {
     await open();
-    const body = document.querySelector("[data-menu-body]");
-    expect(body?.getAttribute("data-sized")).toBe("true");
-    expect(
-      isHTMLElement(body) ? body.style.getPropertyValue("--body-height") : "",
-    ).toBe("240px");
-    const popup = body?.parentElement;
-    expect(
-      isHTMLElement(popup)
-        ? popup.style.getPropertyValue("--popup-locked-width")
-        : "",
-    ).toBe("280px");
-    const positioner = popup?.parentElement;
+    const { body, popup } = menuBody();
+    await vi.waitFor(() =>
+      expect(body.getAttribute("data-sized")).toBe("true"),
+    );
+    expect(body.style.getPropertyValue("--body-height")).toBe(
+      `${contentHeight(body)}px`,
+    );
+    expect(popup.offsetWidth).toBeGreaterThanOrEqual(280);
+    expect(popup.style.getPropertyValue("--popup-locked-width")).toBe(
+      `${popup.offsetWidth}px`,
+    );
+    const positioner = popup.parentElement;
     expect(
       isHTMLElement(positioner)
         ? positioner.style.getPropertyValue("--ds-popup-min-width")
@@ -143,6 +140,11 @@ describe("spec menu search", () => {
 
   it("keeps a sized height when the query matches nothing", async () => {
     await open();
+    const { popup } = menuBody();
+    await vi.waitFor(() =>
+      expect(popup.style.getPropertyValue("--popup-locked-width")).not.toBe(""),
+    );
+    const lockedWidth = popup.style.getPropertyValue("--popup-locked-width");
     const search = document.querySelector('[aria-label="Search operations"]');
     if (!isHTMLTag(search, "input")) {
       throw new Error("Missing search");
@@ -156,16 +158,16 @@ describe("spec menu search", () => {
       search.dispatchEvent(new InputEvent("input", { bubbles: true }));
     });
     expect(document.body.textContent).toContain("No matching operations");
-    const body = document.querySelector("[data-menu-body]");
-    expect(body?.getAttribute("data-sized")).toBe("true");
-    expect(
-      isHTMLElement(body) ? body.style.getPropertyValue("--body-height") : "",
-    ).toBe("240px");
-    const popup = body?.parentElement;
-    expect(
-      isHTMLElement(popup)
-        ? popup.style.getPropertyValue("--popup-locked-width")
-        : "",
-    ).toBe("280px");
+    const { body } = menuBody();
+    expect(body.getAttribute("data-sized")).toBe("true");
+    await vi.waitFor(() =>
+      expect(body.style.getPropertyValue("--body-height")).toBe(
+        `${contentHeight(body)}px`,
+      ),
+    );
+    expect(contentHeight(body)).toBeGreaterThan(0);
+    expect(popup.style.getPropertyValue("--popup-locked-width")).toBe(
+      lockedWidth,
+    );
   });
 });

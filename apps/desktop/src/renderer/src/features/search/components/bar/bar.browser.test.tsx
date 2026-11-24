@@ -4,13 +4,14 @@ import type { LexicalEditor } from "lexical";
 import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   resetFilters,
   setSearchInput,
   useFilterQuery,
   useSearchInput,
 } from "@/features/library";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SearchComposer } from "./";
 import { $writeSearchString } from "./lib/editor-state";
 
@@ -44,28 +45,8 @@ describe("search editor synchronization", () => {
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("pond", {
-      query: async (name: string) =>
-        name === "settings.getPrefs" ? PrefsSchema.parse({}) : [],
-      onSyncAction: () => () => {},
-      onSyncStatus: () => () => {},
-      onSaveUpdated: () => () => {},
-    });
-    Object.defineProperty(Range.prototype, "getBoundingClientRect", {
-      configurable: true,
-      value: () => new DOMRect(),
-    });
-    Object.defineProperty(Range.prototype, "getClientRects", {
-      configurable: true,
-      value: () => [],
+    bridge.use({
+      query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
     });
     resetFilters();
     host = document.createElement("div");
@@ -76,7 +57,6 @@ describe("search editor synchronization", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   it("updates a mounted editor from menu selections without stealing focus", async () => {

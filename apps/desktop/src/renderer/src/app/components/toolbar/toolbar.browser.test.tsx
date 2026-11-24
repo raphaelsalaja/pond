@@ -21,6 +21,7 @@ import {
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { libraryViewContext } from "@/features/saves/state/view-context";
+import { bridge } from "@/shared/test/pond-bridge";
 import { Toolbar } from "./";
 
 function pages(parent: AnyRoute): Array<AnyRoute> {
@@ -75,26 +76,14 @@ function Shell({ children }: { children: ReactNode }) {
 describe("breadcrumb toolbar", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const swipeListeners = new Set<(direction: NavigationDirection) => void>();
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("pond", {
-      onSyncAction: () => () => {},
-      query: async (name: string) => {
-        if (name === "settings.getPrefs") {
-          return PrefsSchema.parse({});
-        }
-        if (name === "folders.list") {
-          return [
+    bridge.use({
+      query: {
+        "settings.getPrefs": () => PrefsSchema.parse({}),
+        "folders.list": () =>
+          [
             { id: "parent", name: "Design", parentId: null },
             { id: "child", name: "Interfaces", parentId: "parent" },
             { id: "deep", name: "Mobile", parentId: "child" },
@@ -103,14 +92,8 @@ describe("breadcrumb toolbar", () => {
             color: null,
             sortOrder: 0,
             createdAt: new Date(),
-          }));
-        }
-        return [];
-      },
-      onAgentChunk: () => () => {},
-      onNavigationSwipe: (cb: (direction: NavigationDirection) => void) => {
-        swipeListeners.add(cb);
-        return () => swipeListeners.delete(cb);
+          })),
+        "folders.memberships": () => [],
       },
     });
     resetFilters();
@@ -135,7 +118,6 @@ describe("breadcrumb toolbar", () => {
   afterEach(() => {
     act(() => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   function labels() {
@@ -320,9 +302,7 @@ describe("breadcrumb toolbar", () => {
   it("follows back and forward swipes from the main process", async () => {
     const swipe = (direction: NavigationDirection) =>
       act(async () => {
-        for (const listener of swipeListeners) {
-          listener(direction);
-        }
+        bridge.emit("onNavigationSwipe", direction);
       });
     const router = await mount("/");
     await act(async () => router.history.push("/sources"));
@@ -331,7 +311,7 @@ describe("breadcrumb toolbar", () => {
     await swipe("forward");
     expect(router.state.location.pathname).toBe("/sources");
     act(() => root.unmount());
-    expect(swipeListeners.size).toBe(0);
+    expect(bridge.listening("onNavigationSwipe")).toBe(false);
     root = createRoot(host);
   });
 

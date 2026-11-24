@@ -6,11 +6,21 @@ import { InlineNameEditor } from "./index";
 
 let root: Root;
 let container: HTMLDivElement;
-const onSave = vi.fn(async (_name: string) => {});
+const saved: Array<string> = [];
+let failNextSave = false;
 const onFinish = vi.fn();
 
+async function onSave(name: string): Promise<void> {
+  saved.push(name);
+  if (failNextSave) {
+    failNextSave = false;
+    throw new Error("offline");
+  }
+}
+
 beforeEach(async () => {
-  onSave.mockReset();
+  saved.length = 0;
+  failNextSave = false;
   onFinish.mockReset();
   container = document.createElement("div");
   document.body.append(container);
@@ -29,7 +39,6 @@ beforeEach(async () => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
-  vi.unstubAllGlobals();
 });
 function field() {
   const input = container.querySelector("input");
@@ -54,32 +63,32 @@ it("saves the trimmed name once on Enter followed by blur", async () => {
   field().value = "  Travel  ";
   await press("Enter");
   await act(async () => field().blur());
-  expect(onSave).toHaveBeenCalledExactlyOnceWith("Travel");
+  expect(saved).toEqual(["Travel"]);
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("saves when focus leaves the editor", async () => {
   field().value = "Recipes";
   await act(async () => field().blur());
-  expect(onSave).toHaveBeenCalledExactlyOnceWith("Recipes");
+  expect(saved).toEqual(["Recipes"]);
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("keeps the current name on Escape", async () => {
   field().value = "Changed";
   await press("Escape");
   await act(async () => field().blur());
-  expect(onSave).not.toHaveBeenCalled();
+  expect(saved).toEqual([]);
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("does not commit Enter while text is composing", async () => {
   field().value = "旅行";
   await press("Enter", true);
-  expect(onSave).not.toHaveBeenCalled();
+  expect(saved).toEqual([]);
   expect(onFinish).not.toHaveBeenCalled();
 });
 it("keeps the existing name when the input is empty", async () => {
   field().value = "   ";
   await press("Enter");
-  expect(onSave).not.toHaveBeenCalled();
+  expect(saved).toEqual([]);
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("cancels an empty create instead of keeping a blank name", async () => {
@@ -96,11 +105,11 @@ it("cancels an empty create instead of keeping a blank name", async () => {
   );
   field().value = "   ";
   await press("Enter");
-  expect(onSave).not.toHaveBeenCalled();
+  expect(saved).toEqual([]);
   expect(onFinish).toHaveBeenCalledOnce();
 });
 it("keeps the editor available after a failed save", async () => {
-  onSave.mockRejectedValueOnce(new Error("offline"));
+  failNextSave = true;
   field().value = "Travel";
   await press("Enter");
   expect(onFinish).not.toHaveBeenCalled();

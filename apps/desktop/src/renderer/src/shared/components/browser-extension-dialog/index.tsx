@@ -59,9 +59,11 @@ const UNSIGNED_STEPS = [
 export function BrowserExtensionDialog({
   open,
   onOpenChange,
+  mac = IS_MAC,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mac?: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [safari, setSafari] = useState<SafariExtensionStatus | null>(null);
@@ -76,14 +78,14 @@ export function BrowserExtensionDialog({
   }
 
   const refreshSafari = useCallback(() => {
-    if (!IS_MAC) {
+    if (!mac) {
       return;
     }
     void window.pond
       .query("extension.safariStatus", {})
       .then(setSafari)
       .catch(() => setSafari(null));
-  }, []);
+  }, [mac]);
 
   useEffect(() => {
     if (!open) {
@@ -157,7 +159,7 @@ export function BrowserExtensionDialog({
                   </Button>
                 </li>
               ))}
-              {IS_MAC ? (
+              {mac ? (
                 <li className={styles.store}>
                   <div className={styles.text}>
                     <span className={styles.name}>

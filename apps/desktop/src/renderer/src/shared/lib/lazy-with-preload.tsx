@@ -1,3 +1,4 @@
+import log from "electron-log/renderer";
 import { lazy, useState } from "react";
 import type { ComponentType } from "react";
 
@@ -33,7 +34,9 @@ export function lazyWithPreload<P extends object>(
 export function preloadWhenIdle(...preloads: Array<Preload>) {
   const run = () => {
     for (const preload of preloads) {
-      void preload().catch(() => {});
+      void preload().catch((cause: unknown) => {
+        log.warn("[pond preload] chunk preload failed", cause);
+      });
     }
   };
   if (globalThis.requestIdleCallback) {

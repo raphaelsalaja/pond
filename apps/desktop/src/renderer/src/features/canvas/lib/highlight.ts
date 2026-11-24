@@ -1,3 +1,4 @@
+import log from "electron-log/renderer";
 import { useEffect, useState } from "react";
 
 export interface CodeToken {
@@ -52,7 +53,9 @@ export function useHighlight(
           })),
         ),
       });
-    })().catch(() => undefined);
+    })().catch((cause: unknown) => {
+      log.warn("[pond canvas] code highlighting failed", cause);
+    });
     return () => {
       live = false;
     };

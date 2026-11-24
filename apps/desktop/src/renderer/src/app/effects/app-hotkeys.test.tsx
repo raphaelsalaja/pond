@@ -17,7 +17,7 @@ import {
   getViewState,
   searchAllSaves,
 } from "@/features/library/state/view-store";
-import type { ShortcutId } from "../../../../shared/shortcuts";
+import { bridge } from "@/shared/test/pond-bridge";
 import { AppHotkeys } from "./app-hotkeys";
 import { EditableHotkeyGuard } from "./editable-hotkey-guard";
 
@@ -50,19 +50,11 @@ function attr(name: string): string {
 describe("app hotkeys in text fields", () => {
   let host: HTMLDivElement;
   let root: Root;
-  let shortcutAction: ((id: ShortcutId) => void) | undefined;
 
   beforeEach(() => {
-    vi.stubGlobal("pond", {
-      query: async (name: string) =>
-        name === "settings.getPrefs" ? PrefsSchema.parse({}) : [],
-      onShortcutAction: (callback: (id: ShortcutId) => void) => {
-        shortcutAction = callback;
-        return () => {
-          shortcutAction = undefined;
-        };
-      },
-      syncRunAll: async () => {},
+    bridge.use({
+      query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
+      syncRunAll: async () => ({ ok: true }),
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -77,7 +69,6 @@ describe("app hotkeys in text fields", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function mount(field?: HTMLElement) {
@@ -257,7 +248,9 @@ describe("app hotkeys in text fields", () => {
     const input = document.createElement("input");
     await mount(input);
     const layout = getViewState().layout;
-    await act(async () => shortcutAction?.("view.layout-cycle"));
+    await act(async () =>
+      bridge.emit("onShortcutAction", "view.layout-cycle"),
+    );
     expect(getViewState().layout).toBe(layout);
   });
 
@@ -281,7 +274,9 @@ describe("app hotkeys in text fields", () => {
   it("runs a global shortcut command outside an input", async () => {
     await mount();
     const layout = getViewState().layout;
-    await act(async () => shortcutAction?.("view.layout-cycle"));
+    await act(async () =>
+      bridge.emit("onShortcutAction", "view.layout-cycle"),
+    );
     expect(getViewState().layout).not.toBe(layout);
   });
 });
