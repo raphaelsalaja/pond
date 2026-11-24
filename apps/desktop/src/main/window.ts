@@ -1,3 +1,4 @@
+import type { Prefs, WindowMaterial } from "@pond/schema/db";
 import type { BrowserWindowConstructorOptions } from "electron";
 import { BrowserWindow, nativeTheme, shell } from "electron";
 import log from "electron-log/main.js";
@@ -91,11 +92,23 @@ export function queueTrayRefresh(): void {
   }, 150);
 }
 
+const CLEAR_BACKGROUND = "#00000000";
+const appliedMaterial = new WeakMap<BrowserWindow, WindowMaterial | null>();
+
+function windowMaterial(prefs: Prefs | null): WindowMaterial | null {
+  if (process.platform !== "darwin" || !prefs?.window.translucent) return null;
+  return prefs.window.translucentMaterial;
+}
+
 export async function syncShellChrome(): Promise<void> {
   const win = mainWindowState.current;
   if (!win || win.isDestroyed()) return;
 
-  const resolved = await resolveTheme();
+  const [resolved, prefs] = await Promise.all([
+    resolveTheme(),
+    getPrefs().catch(() => null),
+  ]);
+  const material = windowMaterial(prefs);
   const background =
     resolved?.background ??
     (resolved?.mode === "dark" || (!resolved && nativeTheme.shouldUseDarkColors)
@@ -103,7 +116,12 @@ export async function syncShellChrome(): Promise<void> {
       : "#ffffff");
 
   if (win.isDestroyed()) return;
-  win.setBackgroundColor(background);
+  if (process.platform === "darwin" && appliedMaterial.get(win) !== material) {
+    win.setVibrancy(material);
+    appliedMaterial.set(win, material);
+  }
+  /** An opaque window color would cover the vibrancy material. */
+  win.setBackgroundColor(material ? CLEAR_BACKGROUND : background);
 }
 
 export async function resolveShellHint(): Promise<ShellHint> {
@@ -144,6 +162,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     "./core/app-icon"
   );
   const appIcon = resolveAppIconPath(prefs?.window.appIcon ?? DEFAULT_APP_ICON);
+  const material = windowMaterial(prefs);
 
   const options: BrowserWindowConstructorOptions = {
     width: restored?.width ?? 1280,
@@ -153,7 +172,9 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     minWidth: MIN_WINDOW_WIDTH,
     minHeight: MIN_WINDOW_HEIGHT,
     show: false,
-    backgroundColor: themedBackground,
+    backgroundColor: material ? CLEAR_BACKGROUND : themedBackground,
+    vibrancy: material ?? undefined,
+    visualEffectState: material ? "followWindow" : undefined,
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
     trafficLightPosition: isMac ? { x: 16, y: 15 } : undefined,
@@ -175,6 +196,11 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   const win = new BrowserWindow(options);
   markStartup("window-created");
   mainWindowState.current = win;
+  appliedMaterial.set(win, material);
+  win.once(
+    "closed",
+    subscribePrefs(() => void syncShellChrome()),
+  );
   win.once("closed", () => {
     if (mainWindowState.current === win) mainWindowState.current = null;
     if (!isQuitting) void settleDockAfterClose();

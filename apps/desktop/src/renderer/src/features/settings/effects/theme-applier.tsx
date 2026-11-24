@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useMediaMatch } from "rooks";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
 import { paintTheme } from "@/shared/lib/paint-theme";
+import { IS_MAC } from "@/shared/lib/platform";
 import { usePrefs } from "@/shared/state/prefs";
 
 const SHELL_KEY = libraryScopedKey("pondShell");
@@ -26,6 +27,7 @@ function persistShell(patch: ShellHint) {
 
 export function ThemeApplier() {
   const [prefs] = usePrefs("preferences");
+  const [windowPrefs] = usePrefs("window");
   const prefersDark = useMediaMatch("(prefers-color-scheme: dark)");
   const prefersP3 = useMediaMatch("(color-gamut: p3)");
   const prefersReducedMotion = useMediaMatch(
@@ -76,6 +78,16 @@ export function ThemeApplier() {
       root.removeAttribute("data-font-optical-size");
     else root.setAttribute("data-font-optical-size", "fixed");
   }, [prefs.fontRoundness, prefs.fontOpticalSizeAuto, prefs.fontOpticalSize]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (IS_MAC && windowPrefs.translucent) {
+      root.setAttribute("data-translucent", "");
+    } else {
+      root.removeAttribute("data-translucent");
+    }
+    root.style.setProperty("--window-tint", `${windowPrefs.translucentTint}%`);
+  }, [windowPrefs.translucent, windowPrefs.translucentTint]);
 
   return null;
 }

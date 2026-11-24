@@ -247,6 +247,16 @@ const inboxDisplay = z.object({
   unreadOnly: z.boolean().catch(false),
 });
 
+export const WINDOW_MATERIALS = [
+  "sidebar",
+  "under-window",
+  "hud",
+  "popover",
+  "menu",
+] as const;
+
+export type WindowMaterial = (typeof WINDOW_MATERIALS)[number];
+
 const windowSlice = z.object({
   closeToTray: z.boolean().catch(false),
   launchHidden: z.boolean().catch(false),
@@ -258,6 +268,9 @@ const windowSlice = z.object({
   appIcon: z.string().min(1).catch(DEFAULT_APP_ICON),
   appIconMatchesLibrary: z.boolean().catch(false),
   interfaceZoom: z.number().int().min(50).max(200).catch(100),
+  translucent: z.boolean().catch(true),
+  translucentMaterial: z.enum(WINDOW_MATERIALS).catch("sidebar"),
+  translucentTint: z.number().int().min(0).max(100).catch(20),
 });
 
 const system = z.object({
