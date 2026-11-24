@@ -1,5 +1,5 @@
 import type { Capture } from "@pond/schema/raw";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { TerminalError } from "../../../pipeline/extractors/errors";
 import { fetchArenaCapture, withLinkedPageCapture } from "./api";
 import type { ArenaBlock } from "./api";
@@ -41,9 +41,14 @@ function deps(
   block: ArenaBlock,
   extractPage: (url: URL) => Promise<Capture> = async () => page(),
 ) {
+  const pageReads: Array<string> = [];
   return {
-    fetchBlock: vi.fn(async () => ({ ok: true as const, value: block })),
-    extractPage: vi.fn(extractPage),
+    pageReads,
+    fetchBlock: async () => ({ ok: true as const, value: block }),
+    extractPage: async (url: URL) => {
+      pageReads.push(url.href);
+      return extractPage(url);
+    },
   };
 }
 
@@ -53,7 +58,7 @@ describe("Are.na Link blocks", () => {
 
     const result = await fetchArenaCapture({ sourceId: "2824521" }, d);
 
-    expect(d.extractPage.mock.calls.map(([url]) => url.href)).toEqual([LINKED]);
+    expect(d.pageReads).toEqual([LINKED]);
     expect(result).toEqual({
       ok: true,
       capture: expect.objectContaining({
@@ -152,7 +157,7 @@ describe("Are.na Link blocks", () => {
 
     await fetchArenaCapture({ sourceId: "2824521" }, d);
 
-    expect(d.extractPage).not.toHaveBeenCalled();
+    expect(d.pageReads).toEqual([]);
   });
 });
 
@@ -168,7 +173,7 @@ describe("other Are.na blocks", () => {
 
     const result = await fetchArenaCapture({ sourceId: "29774986" }, d);
 
-    expect(d.extractPage).not.toHaveBeenCalled();
+    expect(d.pageReads).toEqual([]);
     expect(result).toMatchObject({
       ok: true,
       capture: {
@@ -189,7 +194,7 @@ describe("other Are.na blocks", () => {
 
     const result = await fetchArenaCapture({ sourceId: "4929062" }, d);
 
-    expect(d.extractPage).not.toHaveBeenCalled();
+    expect(d.pageReads).toEqual([]);
     expect(result).toMatchObject({
       ok: true,
       capture: {
@@ -210,11 +215,15 @@ describe("other Are.na blocks", () => {
       media: [{ url: ARENA_SHOT, type: "image" }],
       extras: { blockClass: "Link" },
     };
-    const extractPage = vi.fn(async () => page());
+    const pageReads: Array<string> = [];
+    const extractPage = async (url: URL) => {
+      pageReads.push(url.href);
+      return page();
+    };
 
     const capture = await withLinkedPageCapture(stored, undefined, extractPage);
 
-    expect(extractPage).toHaveBeenCalledOnce();
+    expect(pageReads).toEqual([LINKED]);
     expect(capture).toMatchObject({
       source: "arena",
       url: LINKED,

@@ -113,18 +113,22 @@ describe("runtime controls", () => {
     expect(run.events.at(-1)).toMatch(/^start:/);
   });
 
-  it.each([false, true])(
-    "applies runtime preferences with packaged=%s",
-    async (packaged) => {
+  it.each([
+    { packaged: false, login: [] },
+    {
+      packaged: true,
+      login: [`login:${DEFAULT_PREFS.quickCapture.launchAtLogin}`],
+    },
+  ])(
+    "applies runtime preferences with packaged=$packaged",
+    async ({ packaged, login }) => {
       const run = setup(packaged);
       await run.controls.applyPrefsAtRuntime();
       expect(run.events).toEqual([
         "invalidate",
         "read",
         `tray:${DEFAULT_PREFS.quickCapture.menuBarIcon}`,
-        ...(packaged
-          ? [`login:${DEFAULT_PREFS.quickCapture.launchAtLogin}`]
-          : []),
+        ...login,
         `close-to-tray:${DEFAULT_PREFS.window.closeToTray === true}`,
         `icon:${DEFAULT_PREFS.window.appIcon}`,
       ]);

@@ -84,17 +84,16 @@ describe("yt-dlp progress", () => {
   });
 
   it("kills a silent process as stalled before the hard cap", async () => {
-    const started = Date.now();
     const result = await runWithTimeout(
       process.execPath,
-      ["-e", "setTimeout(() => {}, 5_000)"],
+      ["-e", "setTimeout(() => {}, 2_000)"],
       80,
       undefined,
       undefined,
-      5000,
+      60_000,
     );
+    /** The child exits 0 on its own long before the 60 s cap, so 124 can only come from the stall timer. */
     expect(result.code).toBe(124);
-    expect(Date.now() - started).toBeLessThan(1000);
   });
   it("distinguishes audio and video streams of the same playlist file", () => {
     const updates: Array<DownloadActivityUpdate> = [];

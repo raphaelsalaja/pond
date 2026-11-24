@@ -152,12 +152,15 @@ function cancelEviction(slot: PoolSlot): void {
   }
 }
 
+/** The next lease navigates the window again, which aborts this blank load. */
+function ignoreInterruptedBlank(): void {}
+
 function blankAndScheduleEviction(slot: PoolSlot): void {
   cancelEviction(slot);
   if (slot.win.isDestroyed()) {
     return;
   }
-  void slot.win.loadURL("about:blank").catch(() => {});
+  void slot.win.loadURL("about:blank").catch(ignoreInterruptedBlank);
   slot.evictTimer = setTimeout(() => {
     slot.evictTimer = null;
     if (!slot.busy && !slot.win.isDestroyed()) {

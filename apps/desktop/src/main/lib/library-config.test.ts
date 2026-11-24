@@ -1,4 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { once } from "node:events";
 import {
   existsSync,
@@ -10,7 +11,16 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import {
   readBundleJson,
   readBundleJsonAsync,
@@ -53,12 +63,18 @@ describe("asynchronous bundle files", () => {
     });
   });
 
-  it.skipIf(process.platform === "win32")(
-    "runs a timer before a waiting file read completes",
-    async () => {
-      const file = join(root, "slow.json");
+  describe.skipIf(process.platform === "win32")("behind a FIFO", () => {
+    let fifoDir = "";
+    let file = "";
+    let writer: ChildProcess | undefined;
+    let exited: Promise<Array<unknown>> = Promise.resolve([]);
+
+    beforeAll(() => {
+      fifoDir = join(tmpdir(), `pond-bundle-fifo-${Date.now()}-${Math.random()}`);
+      mkdirSync(fifoDir, { recursive: true });
+      file = join(fifoDir, "slow.json");
       execFileSync("mkfifo", [file]);
-      const writer = spawn(
+      writer = spawn(
         process.execPath,
         [
           "-e",
@@ -72,11 +88,19 @@ describe("asynchronous bundle files", () => {
         ],
         { stdio: ["ignore", "ignore", "inherit", "ipc"] },
       );
-      const exited = once(writer, "exit");
+      exited = once(writer, "exit");
+    });
+
+    afterAll(() => {
+      writer?.kill();
+      rmSync(fifoDir, { recursive: true, force: true });
+    });
+
+    it("runs a timer before a waiting file read completes", async () => {
       let timerRan = false;
       const timer = setTimeout(() => {
         timerRan = true;
-        writer.send("write");
+        writer?.send("write");
       }, 0);
       try {
         expect((await readBundleJsonAsync(file))?.data).toEqual({
@@ -86,10 +110,9 @@ describe("asynchronous bundle files", () => {
         expect(await exited).toEqual([0, null]);
       } finally {
         clearTimeout(timer);
-        writer.kill();
       }
-    },
-  );
+    });
+  });
 });
 
 afterEach(() => {
@@ -145,16 +168,19 @@ describe("writeBundleJson / readBundleJson", () => {
 });
 
 describe("rotateBundleBackups", () => {
-  it("snapshots present files and prunes to the last 10", async () => {
+  it("snapshots present files and prunes to the last 10", () => {
     const file = join(root, "settings.json");
     writeBundleJson(file, { n: 0 });
     const backupDir = join(root, "backup");
 
-    for (let i = 0; i < 12; i++) {
-      rotateBundleBackups(backupDir, [file, join(root, "missing.json")]);
-      await new Promise((r) => {
-        setTimeout(r, 2);
-      });
+    vi.useFakeTimers({ now: new Date("2026-01-01T00:00:00.000Z") });
+    try {
+      for (let i = 0; i < 12; i++) {
+        rotateBundleBackups(backupDir, [file, join(root, "missing.json")]);
+        vi.advanceTimersByTime(2);
+      }
+    } finally {
+      vi.useRealTimers();
     }
 
     const dirs = readdirSync(backupDir);

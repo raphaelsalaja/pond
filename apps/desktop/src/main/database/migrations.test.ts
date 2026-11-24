@@ -11,7 +11,7 @@ import {
   SQLiteSyncDialect,
   SQLiteTable,
 } from "drizzle-orm/sqlite-core";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { migratePond } from "./migrations";
 import { libraryTables } from "./tables";
@@ -204,20 +204,33 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     }
   });
 
-  it("creates scheduler indexes and reruns without changes", () => {
-    const root = mkdtempSync(join(tmpdir(), "pond-migration-"));
-    try {
-      const created = new Database(join(root, "index.db"));
+  describe("on a library file", () => {
+    let root = "";
+    let created: Database.Database | null = null;
+
+    beforeAll(() => {
+      root = mkdtempSync(join(tmpdir(), "pond-migration-"));
+      created = new Database(join(root, "index.db"));
       migratePond(created);
+    });
+
+    afterAll(() => {
+      created?.close();
+      rmSync(root, { recursive: true, force: true });
+    });
+
+    it("creates scheduler indexes and reruns without changes", () => {
+      const db = created;
+      if (!db) {
+        throw new Error("Expected a migrated library file");
+      }
       const schemaSql = () =>
-        created
-          .prepare("SELECT name, sql FROM sqlite_master ORDER BY name")
-          .all();
+        db.prepare("SELECT name, sql FROM sqlite_master ORDER BY name").all();
       const before = schemaSql();
-      migratePond(created);
+      migratePond(db);
       expect(schemaSql()).toEqual(before);
 
-      const indexes = created
+      const indexes = db
         .prepare("PRAGMA index_list(tasks)")
         .all()
         .map((row) => z.object({ name: z.string() }).parse(row).name);
@@ -230,14 +243,11 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
         ]),
       );
       expect(
-        created
+        db
           .prepare("PRAGMA index_list(saves)")
           .all()
           .map((row) => z.object({ name: z.string() }).parse(row).name),
       ).toContain("saves_split_post_idx");
-      created.close();
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  }, 30_000);
+    });
+  });
 });

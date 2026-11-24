@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { mkdtemp, readdir, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { binariesAvailable } from "../core/refresh/binaries";
 import {
   embeddingFrameTimestamps,
@@ -45,14 +45,19 @@ describe("video frame sampling", () => {
     expect(sampleFrameTimestamps(Number.NaN, 12)).toEqual([]);
   });
 
-  it("cleans every extracted frame and fails closed", async () => {
-    const ffmpeg = binariesAvailable().ffmpeg;
-    if (!ffmpeg) {
-      throw new Error("Expected the bundled ffmpeg");
-    }
-    const root = await mkdtemp(join(tmpdir(), "pond-frame-fixture-"));
-    try {
-      const video = join(root, "neutral.mp4");
+  describe("with ffmpeg fixtures", () => {
+    let root = "";
+    let video = "";
+    let audio = "";
+
+    beforeAll(async () => {
+      const ffmpeg = binariesAvailable().ffmpeg;
+      if (!ffmpeg) {
+        throw new Error("Expected the bundled ffmpeg");
+      }
+      root = await mkdtemp(join(tmpdir(), "pond-frame-fixture-"));
+      video = join(root, "neutral.mp4");
+      audio = join(root, "audio-only.m4a");
       await run(ffmpeg, [
         "-hide_banner",
         "-loglevel",
@@ -65,7 +70,25 @@ describe("video frame sampling", () => {
         "yuv420p",
         video,
       ]);
+      await run(ffmpeg, [
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-f",
+        "lavfi",
+        "-i",
+        "sine=frequency=440:duration=2",
+        audio,
+      ]);
+    });
 
+    afterAll(async () => {
+      if (root) {
+        await rm(root, { recursive: true, force: true });
+      }
+    });
+
+    it("cleans every extracted frame and fails closed", async () => {
       const extracted = await extractSampledFrames(video, 3);
       expect(extracted?.frames).toHaveLength(3);
       const firstPath = extracted?.frames[0]?.path;
@@ -79,17 +102,6 @@ describe("video frame sampling", () => {
           name.startsWith("pond-frames-"),
         ),
       );
-      const audio = join(root, "audio-only.m4a");
-      await run(ffmpeg, [
-        "-hide_banner",
-        "-loglevel",
-        "error",
-        "-f",
-        "lavfi",
-        "-i",
-        "sine=frequency=440:duration=2",
-        audio,
-      ]);
       await expect(extractSampledFrames(audio, 3)).resolves.toBe(null);
       const afterFailure = new Set(
         (await readdir(tmpdir())).filter((name) =>
@@ -100,8 +112,6 @@ describe("video frame sampling", () => {
       await expect(
         extractSampledFrames(join(root, "missing.mp4"), 3),
       ).resolves.toBe(null);
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
+    });
   });
 });

@@ -1,3 +1,4 @@
+import type { ImportCollection } from "@pond/schema/db";
 import { describe, expect, it, vi } from "vitest";
 import { walkEveryCollection } from "./every-collection";
 
@@ -5,10 +6,14 @@ const DESIGN = { id: "c1", name: "Design" };
 
 describe("walkEveryCollection", () => {
   it("walks every listed collection and keeps names for the Folders", async () => {
-    const walk = vi.fn(async () => ({
-      ok: true as const,
-      entries: [{ sourceId: "t1", collectionIds: ["c1"] }],
-    }));
+    const walked: Array<ReadonlyArray<ImportCollection>> = [];
+    const walk = async (collections: ReadonlyArray<ImportCollection>) => {
+      walked.push(collections);
+      return {
+        ok: true as const,
+        entries: [{ sourceId: "t1", collectionIds: ["c1"] }],
+      };
+    };
     await expect(
       walkEveryCollection("Folders", {
         list: async () => ({
@@ -22,7 +27,7 @@ describe("walkEveryCollection", () => {
       entries: [{ sourceId: "t1", collectionIds: ["c1"] }],
       gap: null,
     });
-    expect(walk).toHaveBeenCalledWith([DESIGN]);
+    expect(walked).toEqual([[DESIGN]]);
   });
 
   it("turns a failed list or walk into a gap note", async () => {

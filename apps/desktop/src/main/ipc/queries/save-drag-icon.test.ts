@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, beforeAll, expect, it } from "vitest";
 import {
   renderSaveDragIcon,
   saveDragFileIconSize,
@@ -51,30 +51,28 @@ it("leaves the count off a single save", () => {
 });
 
 /** The first SVG text render initializes fonts, which takes several seconds on Windows runners. */
-it(
-  "rasterizes a thumbnail into a 2x PNG and skips a save with nothing to show",
-  {
-    timeout: 60_000,
-  },
-  async () => {
-    const root = await mkdtemp(join(tmpdir(), "pond-drag-icon-"));
-    roots.push(root);
-    const thumbnail = join(root, "clip.mp4_thumbnail.webp");
-    await writeFile(
-      thumbnail,
-      await sharp({
-        create: { width: 40, height: 30, channels: 3, background: "#336699" },
-      })
-        .webp()
-        .toBuffer(),
-    );
+beforeAll(async () => {
+  await renderSaveDragIcon([null, null], 2);
+}, 60_000);
 
-    const icon = await renderSaveDragIcon([thumbnail], 1);
-    expect(icon).not.toBeNull();
-    await expect(
-      sharp(icon ?? Buffer.alloc(0)).metadata(),
-    ).resolves.toMatchObject({ format: "png", width: 192, height: 152 });
-    await expect(renderSaveDragIcon([null], 1)).resolves.toBeNull();
-    await expect(renderSaveDragIcon([null, null], 2)).resolves.not.toBeNull();
-  },
-);
+it("rasterizes a thumbnail into a 2x PNG and skips a save with nothing to show", async () => {
+  const root = await mkdtemp(join(tmpdir(), "pond-drag-icon-"));
+  roots.push(root);
+  const thumbnail = join(root, "clip.mp4_thumbnail.webp");
+  await writeFile(
+    thumbnail,
+    await sharp({
+      create: { width: 40, height: 30, channels: 3, background: "#336699" },
+    })
+      .webp()
+      .toBuffer(),
+  );
+
+  const icon = await renderSaveDragIcon([thumbnail], 1);
+  expect(icon).not.toBeNull();
+  await expect(
+    sharp(icon ?? Buffer.alloc(0)).metadata(),
+  ).resolves.toMatchObject({ format: "png", width: 192, height: 152 });
+  await expect(renderSaveDragIcon([null], 1)).resolves.toBeNull();
+  await expect(renderSaveDragIcon([null, null], 2)).resolves.not.toBeNull();
+});

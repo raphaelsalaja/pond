@@ -41,23 +41,23 @@ describe("inboxEntries", () => {
 describe("importSharedFiles", () => {
   it("imports inbox files and removes their drop folders", async () => {
     const { root, drop, file } = await inbox();
-    const importFiles = vi.fn(async () => ({
-      ok: true as const,
-      ids: ["s1"],
-      failedPaths: [],
-    }));
+    const imported: Array<ReadonlyArray<string>> = [];
+    const importFiles = async (input: { paths: ReadonlyArray<string> }) => {
+      imported.push(input.paths);
+      return { ok: true as const, ids: ["s1"], failedPaths: [] };
+    };
     const result = await importSharedFiles([file], { root, importFiles });
-    expect(importFiles).toHaveBeenCalledWith({ paths: [file] });
+    expect(imported).toEqual([[file]]);
     expect(result).toEqual({ ids: ["s1"] });
     expect(existsSync(drop)).toBe(false);
   });
 
   it("removes drop folders when the import fails", async () => {
     const { root, drop, file } = await inbox();
-    const importFiles = vi.fn(async () => ({
+    const importFiles = async () => ({
       ok: false as const,
       error: "no_files",
-    }));
+    });
     await expect(
       importSharedFiles([file], { root, importFiles }),
     ).rejects.toThrow("no_files");

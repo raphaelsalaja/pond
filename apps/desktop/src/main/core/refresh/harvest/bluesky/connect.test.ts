@@ -3,19 +3,23 @@ import { connectByHandle } from "./connect";
 import type { ConnectDeps, NewHandleAccount } from "./connect";
 
 function deps(over: Partial<ConnectDeps> = {}): ConnectDeps {
-  return {
-    resolve: vi.fn(async () => ({
+  const d: ConnectDeps = {
+    resolve: async () => ({
       did: "did:plc:abc",
       handle: "alice.bsky.social",
-    })),
-    findByIdentity: vi.fn(async () => null),
-    create: vi.fn(async (account: NewHandleAccount) => ({
+    }),
+    findByIdentity: async () => null,
+    create: async (account: NewHandleAccount) => ({
       id: "acc1",
       ...account,
-    })),
-    started: vi.fn(),
+    }),
+    started: () => {},
     ...over,
   };
+  vi.spyOn(d, "resolve");
+  vi.spyOn(d, "create");
+  vi.spyOn(d, "started");
+  return d;
 }
 
 describe("connectByHandle", () => {
@@ -35,7 +39,7 @@ describe("connectByHandle", () => {
   });
 
   it("reuses the Account for a DID it already knows", async () => {
-    const d = deps({ findByIdentity: vi.fn(async () => ({ id: "old" })) });
+    const d = deps({ findByIdentity: async () => ({ id: "old" }) });
     expect(await connectByHandle("alice.bsky.social", d)).toEqual({
       ok: true,
       accountId: "old",
@@ -51,7 +55,7 @@ describe("connectByHandle", () => {
   });
 
   it("rejects a handle that does not resolve", async () => {
-    const d = deps({ resolve: vi.fn(async () => null) });
+    const d = deps({ resolve: async () => null });
     expect(await connectByHandle("nobody.example", d)).toEqual({
       ok: false,
       reason: "not_found",

@@ -17,6 +17,7 @@ const DOWNLOAD_TIMEOUT_MS = 30_000;
 interface FetchMediaOptions extends TransferOptions {
   fileCount?: number;
   imageMaxBytes?: number | null;
+  fetcher?: MediaFetcher;
   /** Fetches through the harvest session, whose cookies hold a bot challenge the harvest window already solved. */
   challengeFetcher?: MediaFetcher;
 }

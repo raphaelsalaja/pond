@@ -10,13 +10,17 @@ import { archiveSiteForSave, startArchiveBackfill } from "./archive-backfill";
 
 describe("archive backfill", () => {
   it("does not queue archives when automatic archiving is off", async () => {
-    const autoArchive = vi.fn(async () => false);
+    let asked = 0;
+    const autoArchive = async () => {
+      asked += 1;
+      return false;
+    };
 
     await expect(startArchiveBackfill(autoArchive)).resolves.toEqual({
       ok: true,
       queued: 0,
     });
-    expect(autoArchive).toHaveBeenCalled();
+    expect(asked).toBeGreaterThan(0);
   });
 });
 

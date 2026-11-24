@@ -84,6 +84,9 @@ import {
 import { runOnSourcePage } from "./page-run";
 import { leaseWindow } from "./pool";
 
+/** A poll that lands mid-navigation fails; the next tick reads the stats again. */
+function ignoreMissedProgressPoll(): void {}
+
 interface SourceListArgs extends ListHarvestArgs {
   accountKey?: string;
   /** Instagram and TikTok: walks one saved collection. */
@@ -291,7 +294,7 @@ export async function harvestSourceList(
               opts.onProgress(stats);
             }
           })
-          .catch(() => {});
+          .catch(ignoreMissedProgressPoll);
       }, 1500);
     }
 

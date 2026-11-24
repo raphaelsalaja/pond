@@ -1,5 +1,5 @@
 import type { JsonValue } from "@pond/schema/json";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { arenaAccessToken, readArenaBlocks } from "./list";
 import type { ArenaGet } from "./list";
 
@@ -39,12 +39,12 @@ function json(body: JsonValue, status = 200): Response {
 
 function client(pages: Record<string, Response>) {
   const requested: Array<URL> = [];
-  const get: ArenaGet = vi.fn(async (raw) => {
+  const get: ArenaGet = async (raw) => {
     const url = new URL(raw);
     requested.push(url);
     const key = `${url.pathname}?page=${url.searchParams.get("page")}`;
     return pages[key] ?? json({ error: "missing" }, 404);
-  });
+  };
   return { get, requested };
 }
 

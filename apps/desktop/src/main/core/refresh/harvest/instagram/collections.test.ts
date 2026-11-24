@@ -1,7 +1,7 @@
 import { runInNewContext } from "node:vm";
 import { isJsonValue } from "@pond/schema/json";
 import type { JsonObject } from "@pond/schema/json";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { readCollectionsReply } from "../lib/collections-reply";
 import type {
   CollectionsReply,
@@ -613,27 +613,37 @@ describe("listInstagramCollections", () => {
   };
 
   it("reads from the home page when that works", async () => {
-    const readAt = vi.fn(async () => ({ ok: true as const, collections: [] }));
+    const urls: Array<string> = [];
+    const readAt = async (url: string): Promise<CollectionsResult> => {
+      urls.push(url);
+      return { ok: true, collections: [] };
+    };
     await expect(listInstagramCollections(readAt)).resolves.toEqual({
       ok: true,
       collections: [],
     });
-    expect(readAt).toHaveBeenCalledTimes(1);
-    expect(readAt).toHaveBeenCalledWith("https://www.instagram.com/");
+    expect(urls).toEqual(["https://www.instagram.com/"]);
   });
 
   it("retries on your Saved page, where the current query ids load", async () => {
-    const readAt = vi
-      .fn<(url: string) => Promise<CollectionsResult>>()
-      .mockResolvedValueOnce(failed)
-      .mockResolvedValueOnce({ ok: true, collections: [] });
+    const replies: Array<CollectionsResult> = [
+      failed,
+      { ok: true, collections: [] },
+    ];
+    const urls: Array<string> = [];
+    const readAt = async (url: string): Promise<CollectionsResult> => {
+      urls.push(url);
+      const reply = replies.shift();
+      if (!reply) {
+        throw new Error(`unexpected read of ${url}`);
+      }
+      return reply;
+    };
     await expect(listInstagramCollections(readAt)).resolves.toEqual({
       ok: true,
       collections: [],
     });
-    expect(readAt).toHaveBeenLastCalledWith(
-      "https://www.instagram.com/oluwa.rafa/saved/",
-    );
+    expect(urls.at(-1)).toBe("https://www.instagram.com/oluwa.rafa/saved/");
   });
 
   it("doesn't retry a sign-out or a failure without a username", async () => {
@@ -645,9 +655,13 @@ describe("listInstagramCollections", () => {
       },
       { ok: false as const, reason: "unknown" as const },
     ]) {
-      const readAt = vi.fn(async () => result);
+      const urls: Array<string> = [];
+      const readAt = async (url: string): Promise<CollectionsResult> => {
+        urls.push(url);
+        return result;
+      };
       await expect(listInstagramCollections(readAt)).resolves.toEqual(result);
-      expect(readAt).toHaveBeenCalledTimes(1);
+      expect(urls).toHaveLength(1);
     }
   });
 });

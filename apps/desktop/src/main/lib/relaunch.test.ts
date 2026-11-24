@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
-import { describe, expect, it } from "vitest";
+import type { SpawnSyncReturns } from "node:child_process";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   appRelaunchEnv,
   appRelaunchOptions,
@@ -175,9 +176,10 @@ describe("spawnRelaunch", () => {
     expect(reported).toEqual(new Error("spawn failed"));
   });
 
-  it.runIf(process.platform === "linux")(
-    "closes inherited descriptors before exec",
-    () => {
+  describe.runIf(process.platform === "linux")("on Linux", () => {
+    let result: SpawnSyncReturns<string> | undefined;
+
+    beforeAll(() => {
       const { command, args } = relaunchCommand({
         command: "/bin/sh",
         args: [
@@ -187,18 +189,20 @@ describe("spawnRelaunch", () => {
           'for f in /proc/$$/fd/*; do n=$(basename "$f"); if [ -e "$f" ]; then echo "$n"; fi; done',
         ],
       });
-      const result = spawnSync(command, args, {
+      result = spawnSync(command, args, {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe", ...Array(12).fill("pipe")],
       });
+    });
 
-      expect(result.status).toBe(0);
-      const fds = String(result.stdout)
+    it("closes inherited descriptors before exec", () => {
+      expect(result?.status).toBe(0);
+      const fds = String(result?.stdout)
         .split(/\s+/)
         .filter(Boolean)
         .map(Number);
       expect(fds).toContain(1);
       expect(fds.filter((fd) => fd > 2)).toEqual([]);
-    },
-  );
+    });
+  });
 });

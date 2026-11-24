@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   createWindowsUserSidResolver,
   nativeSocketPath,
@@ -56,11 +56,15 @@ describe("nativeSocketPath", () => {
 
   it("deduplicates concurrent SID lookups and caches successful results", async () => {
     const gate = Promise.withResolvers<string>();
-    const load = vi.fn(() => gate.promise);
+    let loads = 0;
+    const load = () => {
+      loads += 1;
+      return gate.promise;
+    };
     const resolveSid = createWindowsUserSidResolver(load);
     const first = nativeSocketPath("win32", resolveSid);
     const second = nativeSocketPath("win32", resolveSid);
-    expect(load).toHaveBeenCalledOnce();
+    expect(loads).toBe(1);
     gate.resolve("S-1-5-21-10-20-30-1001");
     await expect(Promise.all([first, second])).resolves.toEqual([
       String.raw`\\.\pipe\pond-native-host-S-1-5-21-10-20-30-1001`,
@@ -69,24 +73,33 @@ describe("nativeSocketPath", () => {
     await expect(nativeSocketPath("win32", resolveSid)).resolves.toBe(
       String.raw`\\.\pipe\pond-native-host-S-1-5-21-10-20-30-1001`,
     );
-    expect(load).toHaveBeenCalledOnce();
+    expect(loads).toBe(1);
   });
 
   it("clears a timed-out in-flight lookup so a retry can recover", async () => {
     const timedOut = Promise.withResolvers<string>();
-    const load = vi
-      .fn<() => Promise<string>>()
-      .mockReturnValueOnce(timedOut.promise)
-      .mockResolvedValueOnce("S-1-5-21-10-20-30-1001");
+    const answers = [
+      timedOut.promise,
+      Promise.resolve("S-1-5-21-10-20-30-1001"),
+    ];
+    let loads = 0;
+    const load = () => {
+      const answer = answers[loads];
+      loads += 1;
+      if (!answer) {
+        throw new Error("unexpected SID lookup");
+      }
+      return answer;
+    };
     const resolveSid = createWindowsUserSidResolver(load);
     const first = resolveSid();
     const second = resolveSid();
-    expect(load).toHaveBeenCalledOnce();
+    expect(loads).toBe(1);
     timedOut.reject(new Error("whoami timed out"));
     await expect(first).rejects.toThrow("whoami timed out");
     await expect(second).rejects.toThrow("whoami timed out");
     await expect(resolveSid()).resolves.toBe("S-1-5-21-10-20-30-1001");
-    expect(load).toHaveBeenCalledTimes(2);
+    expect(loads).toBe(2);
   });
 
   it("bounds the operating-system SID lookup", () => {

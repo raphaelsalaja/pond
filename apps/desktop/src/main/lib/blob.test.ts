@@ -1,6 +1,7 @@
 import sharp from "sharp";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { fetchMediaBatch, isReadableImage } from "./blob";
+import type { MediaFetcher } from "./download-transfer";
 
 const png = () =>
   sharp({
@@ -58,43 +59,33 @@ const challenge = () =>
 describe("bot challenges", () => {
   const url = "https://site.example/_next/image?url=%2Fa.png&w=3840";
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it("retries a challenged download in the harvest session", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => challenge()),
-    );
     const image = await png();
-    const challengeFetcher = vi.fn(
-      async () =>
-        new Response(new Uint8Array(image), {
-          headers: { "content-type": "image/png" },
-        }),
-    );
+    const sessionUrls: Array<string> = [];
+    const challengeFetcher: MediaFetcher = async (requested) => {
+      sessionUrls.push(requested);
+      return new Response(new Uint8Array(image), {
+        headers: { "content-type": "image/png" },
+      });
+    };
 
-    const [entry] = await fetchMediaBatch([url], { challengeFetcher });
+    const [entry] = await fetchMediaBatch([url], {
+      fetcher: async () => challenge(),
+      challengeFetcher,
+    });
 
-    expect(challengeFetcher).toHaveBeenCalledTimes(1);
+    expect(sessionUrls).toEqual([url]);
     expect(entry?.file?.bytes).toEqual(image);
     expect(entry?.miss).toBeUndefined();
   });
 
   it("reports a challenge the harvest session cannot pass", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(
-        async () =>
-          new Response("", {
-            status: 403,
-            headers: { "cf-mitigated": "challenge" },
-          }),
-      ),
-    );
-
     const [entry] = await fetchMediaBatch([url], {
+      fetcher: async () =>
+        new Response("", {
+          status: 403,
+          headers: { "cf-mitigated": "challenge" },
+        }),
       challengeFetcher: async () => challenge(),
     });
 
@@ -102,15 +93,18 @@ describe("bot challenges", () => {
   });
 
   it("still retries an ordinary rate limit later", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => new Response("", { status: 429 })),
-    );
-    const challengeFetcher = vi.fn();
+    const sessionUrls: Array<string> = [];
+    const challengeFetcher: MediaFetcher = async (requested) => {
+      sessionUrls.push(requested);
+      return challenge();
+    };
 
-    const [entry] = await fetchMediaBatch([url], { challengeFetcher });
+    const [entry] = await fetchMediaBatch([url], {
+      fetcher: async () => new Response("", { status: 429 }),
+      challengeFetcher,
+    });
 
-    expect(challengeFetcher).not.toHaveBeenCalled();
+    expect(sessionUrls).toEqual([]);
     expect(entry).toMatchObject({ file: null, miss: "transient" });
   });
 });

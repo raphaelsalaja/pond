@@ -1,10 +1,8 @@
 import type { JsonValue } from "@pond/schema/json";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { readSaveeCapture, readSaveeItems } from "./api";
 import type { SaveePost } from "./api";
-
-const post = vi.fn<SaveePost>();
 
 function json(body: JsonValue, status = 200): Response {
   return new Response(JSON.stringify(body), { status });
@@ -50,7 +48,9 @@ function call(body: string): GraphqlCall {
 }
 
 function serve(pages: Record<string, JsonValue>, viewer: JsonValue = VIEWER) {
-  post.mockImplementation(async (body) => {
+  const bodies: Array<string> = [];
+  const post: SaveePost = async (body) => {
+    bodies.push(body);
     const { query, variables } = call(body);
     if (query.startsWith("query PondViewer")) {
       return json(viewer);
@@ -60,16 +60,13 @@ function serve(pages: Record<string, JsonValue>, viewer: JsonValue = VIEWER) {
       return json(pages[cursor] ?? page([], null));
     }
     return json({ errors: [{ message: "unknown query" }] }, 400);
-  });
+  };
+  return { post, bodies };
 }
-
-beforeEach(() => {
-  post.mockReset();
-});
 
 describe("readSaveeItems", () => {
   it("joins pages by nextCursor for the signed-in username", async () => {
-    serve({
+    const { post, bodies } = serve({
       first: page(
         [
           item("c", "2026-10-26T10:00:00.000Z"),
@@ -86,15 +83,15 @@ describe("readSaveeItems", () => {
       "b",
       "a",
     ]);
-    const usernames = post.mock.calls
-      .map(([body]) => call(body))
+    const usernames = bodies
+      .map((body) => call(body))
       .filter((c) => c.query.startsWith("query PondUserItems"))
       .map((c) => c.variables.username);
     expect(usernames).toEqual(["me", "me"]);
   });
 
   it("stops after two pages of items it already has", async () => {
-    serve({
+    const { post } = serve({
       first: page([item("c", "2026-10-26T10:00:00.000Z")], "cur1"),
       cur1: page([item("b", "2026-10-25T10:00:00.000Z")], "cur2"),
       cur2: page([item("a", "2026-10-24T10:00:00.000Z")], null),
@@ -107,7 +104,7 @@ describe("readSaveeItems", () => {
   });
 
   it("stops at the first item saved before the since limit", async () => {
-    serve({
+    const { post } = serve({
       first: page(
         [
           item("c", "2026-10-26T10:00:00.000Z"),
@@ -124,7 +121,7 @@ describe("readSaveeItems", () => {
   });
 
   it("maps an unauthenticated session to auth_required", async () => {
-    serve(
+    const { post } = serve(
       {},
       {
         data: null,
@@ -140,7 +137,7 @@ describe("readSaveeItems", () => {
   });
 
   it("maps a missing viewer to auth_required", async () => {
-    serve({}, { data: { auth: null } });
+    const { post } = serve({}, { data: { auth: null } });
     expect(await readSaveeItems({ knownIds: [] }, post)).toEqual({
       ok: false,
       reason: "auth_required",
@@ -148,9 +145,8 @@ describe("readSaveeItems", () => {
   });
 
   it("maps a 429 to rate_limited", async () => {
-    post.mockImplementation(
-      async () => new Response("slow down", { status: 429 }),
-    );
+    const post: SaveePost = async () =>
+      new Response("slow down", { status: 429 });
     expect(await readSaveeItems({ knownIds: [] }, post)).toEqual({
       ok: false,
       reason: "rate_limited",
@@ -160,7 +156,7 @@ describe("readSaveeItems", () => {
 
 describe("readSaveeCapture", () => {
   it("builds a capture from the item query", async () => {
-    post.mockImplementation(async (body) => {
+    const post: SaveePost = async (body) => {
       const { query, variables } = call(body);
       if (
         query.startsWith("query PondItem") &&
@@ -171,7 +167,7 @@ describe("readSaveeCapture", () => {
         });
       }
       return json({ errors: [{ message: "unknown query" }] }, 400);
-    });
+    };
     const result = await readSaveeCapture("h4W8146", post);
     expect(result.ok && result.capture).toMatchObject({
       id: "h4W8146",
@@ -182,9 +178,8 @@ describe("readSaveeCapture", () => {
   });
 
   it("reports an item that is gone", async () => {
-    post.mockImplementation(async () =>
-      json({ data: { itemByShortID: null } }),
-    );
+    const post: SaveePost = async () =>
+      json({ data: { itemByShortID: null } });
     expect(await readSaveeCapture("gone", post)).toEqual({
       ok: false,
       reason: "not_found",

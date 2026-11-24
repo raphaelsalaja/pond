@@ -1,6 +1,7 @@
 import { IMPORT_MEDIA_KINDS } from "@pond/schema/db";
 import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { sourceLabel } from "@pond/schema/sources";
+import log from "electron-log/main.js";
 import { z } from "zod";
 import {
   importScopeOptions,
@@ -215,7 +216,8 @@ export const accountsQueries = {
         const result = await connectMymind(params);
         if (result.ok) {
           void syncAccount(result.account.id, { trigger: "manual" }).catch(
-            () => {},
+            (cause: unknown) =>
+              log.warn("[pond accounts] mymind follow-up sync threw", cause),
           );
         }
         return result;
@@ -320,7 +322,10 @@ export const accountsQueries = {
         await import("../../core/refresh/harvest/bluesky/session");
       const result = await signInToBluesky(account);
       if (result.ok) {
-        void syncAccount(account.id, { trigger: "manual" }).catch(() => {});
+        void syncAccount(account.id, { trigger: "manual" }).catch(
+          (cause: unknown) =>
+            log.warn("[pond accounts] bluesky follow-up sync threw", cause),
+        );
         return { ok: true as const, handle: result.handle };
       }
       if (result.reason === "cancelled") {

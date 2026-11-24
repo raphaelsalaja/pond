@@ -1,9 +1,17 @@
 import type { JsonValue } from "@pond/schema/json";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { readVimeoCapture, readVimeoLists } from "./api";
 import type { VimeoGet } from "./api";
 
-const get = vi.fn<VimeoGet>();
+const missing: VimeoGet = async () => new Response("missing", { status: 404 });
+
+let respond: VimeoGet = missing;
+const calls: Array<Parameters<VimeoGet>> = [];
+
+const get: VimeoGet = async (url, headers) => {
+  calls.push([url, headers]);
+  return respond(url, headers);
+};
 
 const SIGNED_IN = { user: { link: "https://vimeo.com/urza" }, jwt: "tok" };
 
@@ -34,7 +42,7 @@ function listHtml(page: ListPage): string {
 }
 
 function serve(site: Site) {
-  get.mockImplementation(async (raw) => {
+  respond = async (raw) => {
     const url = new URL(raw);
     if (url.pathname === "/_next/viewer") {
       return json(site.viewer ?? SIGNED_IN);
@@ -50,7 +58,7 @@ function serve(site: Site) {
     }
     const page = site.pages.get(url.pathname);
     return new Response(page ? listHtml(page) : "<ol></ol>");
-  });
+  };
 }
 
 function ids(
@@ -59,8 +67,9 @@ function ids(
   return result.ok ? result.entries.map((e) => e.sourceId) : [];
 }
 
-beforeEach(() => {
-  get.mockReset();
+afterEach(() => {
+  respond = missing;
+  calls.length = 0;
 });
 
 describe("readVimeoLists", () => {
@@ -85,9 +94,9 @@ describe("readVimeoLists", () => {
       }),
       expect.objectContaining({ sourceId: "12", listKinds: ["saved"] }),
     ]);
-    const pageCall = get.mock.calls.find(([u]) => u.includes("/likes/"));
+    const pageCall = calls.find(([u]) => u.includes("/likes/"));
     expect(pageCall?.[1]["x-requested-with"]).toBe("XMLHttpRequest");
-    const apiCall = get.mock.calls.find(([u]) => u.includes("api.vimeo.com"));
+    const apiCall = calls.find(([u]) => u.includes("api.vimeo.com"));
     expect(apiCall?.[1].authorization).toBe("jwt tok");
   });
 
@@ -103,7 +112,7 @@ describe("readVimeoLists", () => {
       get,
     );
     expect(ids(result)).toEqual(["12"]);
-    expect(get.mock.calls.some(([u]) => u.includes("/likes/"))).toBe(false);
+    expect(calls.some(([u]) => u.includes("/likes/"))).toBe(false);
   });
 
   it("keeps bare entries when hydration fails", async () => {
@@ -168,21 +177,19 @@ describe("readVimeoLists", () => {
 
 describe("readVimeoCapture", () => {
   it("reads one video from the API", async () => {
-    get.mockImplementation(async (raw) =>
+    respond = async (raw) =>
       raw.includes("/_next/viewer")
         ? json({ user: null, jwt: "anon" })
-        : json({ uri: "/videos/76979871", name: "Vimeo Player" }),
-    );
+        : json({ uri: "/videos/76979871", name: "Vimeo Player" });
     const result = await readVimeoCapture("76979871", get);
     expect(result.ok && result.capture.title).toBe("Vimeo Player");
   });
 
   it("treats a region block as not found", async () => {
-    get.mockImplementation(async (raw) =>
+    respond = async (raw) =>
       raw.includes("/_next/viewer")
         ? json({ user: null, jwt: "anon" })
-        : json({ error_code: 5451 }, 404),
-    );
+        : json({ error_code: 5451 }, 404);
     expect(await readVimeoCapture("76979871", get)).toEqual({
       ok: false,
       reason: "not_found",

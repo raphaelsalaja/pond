@@ -74,6 +74,9 @@ function abortedDual(): TweetDualScreenshotResult {
   return { light: fail, dark: fail };
 }
 
+/** Cancel only needs the page gone; a blank load the pool interrupts has done that. */
+function ignoreInterruptedBlank(): void {}
+
 /** Cancel has to drop the page, or the article script keeps the window until it finishes. */
 function watchAbort(
   win: BrowserWindow,
@@ -87,7 +90,7 @@ function watchAbort(
       return;
     }
     win.webContents.stop();
-    void win.loadURL("about:blank").catch(() => {});
+    void win.loadURL("about:blank").catch(ignoreInterruptedBlank);
   };
   if (signal.aborted) {
     onAbort();

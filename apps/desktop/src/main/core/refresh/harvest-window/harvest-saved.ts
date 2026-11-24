@@ -27,6 +27,9 @@ import {
 } from "./navigation";
 import { leaseWindow } from "./pool";
 
+/** A poll that lands mid-navigation fails; the next tick reads the stats again. */
+function ignoreMissedProgressPoll(): void {}
+
 interface SavedHarvestProgress {
   phase: "hydrate" | "scroll";
   seen: number;
@@ -240,7 +243,7 @@ async function harvestThreadsFeed(
             scrolls: stats.scrolls,
           });
         })
-        .catch(() => {});
+        .catch(ignoreMissedProgressPoll);
     }, 1500);
 
     const runExpr = (expr: string): Promise<JsonValue> =>

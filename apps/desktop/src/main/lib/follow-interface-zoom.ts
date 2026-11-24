@@ -1,3 +1,5 @@
+import log from "electron-log/main.js";
+
 type ZoomPrefs = { window: { interfaceZoom: number } };
 
 /** Page zoom keeps pointer and layout coordinates in one space; root CSS `zoom` misplaces slider thumbs and popovers. */
@@ -20,6 +22,10 @@ export function followInterfaceZoom(
   };
   contents.once("destroyed", prefs.subscribePrefs(apply));
   contents.on("did-finish-load", () => {
-    void prefs.getPrefs().then(apply, () => {});
+    void prefs
+      .getPrefs()
+      .then(apply, (cause: unknown) =>
+        log.warn("[pond zoom] reading interface zoom failed", cause),
+      );
   });
 }

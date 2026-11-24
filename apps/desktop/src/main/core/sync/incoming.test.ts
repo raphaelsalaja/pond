@@ -4,8 +4,7 @@ import { join } from "node:path";
 import { DEFAULT_SOURCE_SYNC_PREFS, saveFolders } from "@pond/schema/db";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
-import { app } from "electron";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb, getDb } from "../../db";
 import { invalidatePaths, resolvePaths } from "../../paths";
 import { enqueue } from "../pipeline/enqueue";
@@ -39,14 +38,12 @@ describe.skipIf(!nativeSqliteAvailable())("incoming folder assignment", () => {
 
   beforeAll(() => {
     dir = mkdtempSync(join(tmpdir(), "pond-incoming-"));
-    vi.spyOn(app, "getPath").mockReturnValue(dir);
     invalidatePaths();
-    resolvePaths(join(dir, "Incoming.pond"));
+    resolvePaths(join(dir, "Incoming.pond"), dir);
   });
 
   afterAll(async () => {
     closeDb();
-    vi.restoreAllMocks();
     invalidatePaths();
     try {
       rmSync(dir, { recursive: true, force: true });

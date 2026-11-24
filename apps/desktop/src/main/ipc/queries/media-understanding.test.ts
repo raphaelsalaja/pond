@@ -62,22 +62,27 @@ function setup(
     service?: MediaUnderstanding;
   } = {},
 ) {
-  const caption = vi.fn(async () => ({
-    text: "A red bicycle beside a wall.",
-    model: "ollama/gemma4:e2b:caption:v1",
-  }));
-  const ocr = vi.fn(async () => ({
-    text: "TOTAL 12.50",
-    model: "ollama/gemma4:e2b:ocr:v1",
-  }));
-  const service = overrides.service ?? { caption, ocr };
-  const readLibraryMedia = vi.fn(
-    async () => overrides.bytes ?? Buffer.from("image"),
-  );
-  const libraryMediaMetadata = vi.fn(async () => ({
-    originalSize:
-      overrides.metadataSize ?? overrides.bytes?.byteLength ?? "image".length,
-  }));
+  const service: MediaUnderstanding = overrides.service ?? {
+    caption: async () => ({
+      text: "A red bicycle beside a wall.",
+      model: "ollama/gemma4:e2b:caption:v1",
+    }),
+    ocr: async () => ({
+      text: "TOTAL 12.50",
+      model: "ollama/gemma4:e2b:ocr:v1",
+    }),
+  };
+  const caption = vi.spyOn(service, "caption");
+  const ocr = vi.spyOn(service, "ocr");
+  const media = {
+    readLibraryMedia: async () => overrides.bytes ?? Buffer.from("image"),
+    libraryMediaMetadata: async () => ({
+      originalSize:
+        overrides.metadataSize ?? overrides.bytes?.byteLength ?? "image".length,
+    }),
+  };
+  const readLibraryMedia = vi.spyOn(media, "readLibraryMedia");
+  const libraryMediaMetadata = vi.spyOn(media, "libraryMediaMetadata");
   const queries = createMediaUnderstandingQueries({
     getPrefs: async () => overrides.prefs ?? prefs(),
     keyFor: async () => null,

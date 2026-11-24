@@ -8,9 +8,8 @@ import { saves } from "@pond/schema/db";
 import type { NativeResponse } from "@pond/schema/native";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
-import { app } from "electron";
 import sharp from "sharp";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { executeBatch } from "../core/executor";
 import { createManualSave } from "../core/manual-import";
 import { enqueue } from "../core/pipeline/enqueue";
@@ -97,14 +96,12 @@ describe.skipIf(!nativeSqliteAvailable())(
 
     beforeAll(() => {
       dir = mkdtempSync(join(tmpdir(), "pond-trash-resave-"));
-      vi.spyOn(app, "getPath").mockReturnValue(dir);
       invalidatePaths();
-      resolvePaths(join(dir, "Trash Resave.pond"));
+      resolvePaths(join(dir, "Trash Resave.pond"), dir);
     });
 
     afterAll(() => {
       closeDb();
-      vi.restoreAllMocks();
       invalidatePaths();
       try {
         rmSync(dir, { recursive: true, force: true });

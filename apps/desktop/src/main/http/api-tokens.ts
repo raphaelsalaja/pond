@@ -6,6 +6,7 @@ import {
 } from "node:crypto";
 import { ApiTokenInfoSchema } from "@pond/schema/api";
 import type { ApiTokenInfo, ApiTokenScope } from "@pond/schema/api";
+import log from "electron-log/main.js";
 import { z } from "zod";
 import { KEYCHAIN_API_TOKENS } from "../../shared/constants";
 import { getSecret, setSecret } from "../keychain";
@@ -125,7 +126,9 @@ export function createApiTokenStore(
           entry.id === match.id ? { ...entry, lastUsedAt: usedAt } : entry,
         ),
         result: undefined,
-      })).catch(() => {});
+      })).catch((cause: unknown) =>
+        log.warn("[pond api] token last-used update failed", cause),
+      );
     }
     return publicInfo(match);
   }

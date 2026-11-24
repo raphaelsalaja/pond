@@ -45,12 +45,15 @@ export function invalidatePaths(): void {
   cached = null;
 }
 
-export function resolvePaths(libraryRootOverride?: string): PondPaths {
-  if (cached && !libraryRootOverride) {
+export function resolvePaths(
+  libraryRootOverride?: string,
+  appDataOverride?: string,
+): PondPaths {
+  if (cached && !libraryRootOverride && !appDataOverride) {
     return cached;
   }
 
-  const appData = ensureDir(app.getPath("userData"));
+  const appData = ensureDir(appDataOverride ?? app.getPath("userData"));
   /** Keep Pond derivatives separate from Chromium's case-insensitive `Cache` directory. */
   const cache = ensureDir(join(appData, "pond-cache"));
   const indexesDir = ensureDir(join(appData, "indexes"));

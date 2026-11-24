@@ -8,18 +8,27 @@ import {
 } from "./api";
 import type { SubstackGet } from "./api";
 
-const fetchMock = vi.fn<SubstackGet>();
+const missing: SubstackGet = async () =>
+  new Response("missing", { status: 404 });
+
+let respond: SubstackGet = missing;
+const requested: Array<string> = [];
+
+const get: SubstackGet = async (raw, accept) => {
+  requested.push(raw);
+  return respond(raw, accept);
+};
 
 function harvestSubstackLists(args: ListHarvestArgs) {
-  return readSubstackLists(args, fetchMock);
+  return readSubstackLists(args, get);
 }
 
 function harvestSubstackSubscriptions(since: string, limit: number) {
-  return readSubstackSubscriptions({ since, limit }, fetchMock);
+  return readSubstackSubscriptions({ since, limit }, get);
 }
 
 function fetchSubstackCapture(sourceId: string) {
-  return readSubstackCapture(sourceId, fetchMock);
+  return readSubstackCapture(sourceId, get);
 }
 
 const PROFILE = {
@@ -49,7 +58,7 @@ function feed(...items: Array<{ slug: string; date: string }>): Response {
 type Route = (url: URL) => Response | undefined;
 
 function serve(...routes: Array<Route>) {
-  fetchMock.mockImplementation(async (raw) => {
+  respond = async (raw) => {
     const url = new URL(raw);
     if (url.pathname === "/api/v1/user/profile/self") {
       return json(PROFILE);
@@ -61,11 +70,11 @@ function serve(...routes: Array<Route>) {
       }
     }
     return new Response("missing", { status: 404 });
-  });
+  };
 }
 
 function calledPaths(): Array<string> {
-  return fetchMock.mock.calls.map(([raw]) => {
+  return requested.map((raw) => {
     const url = new URL(raw);
     return `${url.host}${url.pathname}`;
   });
@@ -76,13 +85,14 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  fetchMock.mockReset();
+  respond = missing;
+  requested.length = 0;
   vi.useRealTimers();
 });
 
 describe("harvestSubstackLists", () => {
   it("needs a signed-in session", async () => {
-    fetchMock.mockResolvedValue(json({ error: "auth" }, 401));
+    respond = async () => json({ error: "auth" }, 401);
     await expect(harvestSubstackLists({ knownIds: [] })).resolves.toEqual({
       ok: false,
       reason: "auth_required",
