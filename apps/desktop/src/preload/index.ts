@@ -18,6 +18,7 @@ import { FILE_RING_OVERLAY_IPC } from "../shared/file-ring-overlay-contracts";
 import { FilterQuery } from "../shared/filter-query";
 import type { FishEvent, FishOpen } from "../shared/fish-contracts";
 import type { HapticPattern } from "../shared/haptics";
+import type { LibrarySwitchEvent } from "../shared/library-switch-contracts";
 import { MachinePaceWireSchema } from "../shared/machine-pace";
 import type { MachinePaceWire } from "../shared/machine-pace";
 import type { NotificationEvent } from "../shared/notification-contracts";
@@ -527,6 +528,13 @@ const api = {
       cb(event);
     ipcRenderer.on(IPC.notifications, listener);
     return () => ipcRenderer.off(IPC.notifications, listener);
+  },
+
+  onLibrarySwitch(cb: (event: LibrarySwitchEvent) => void): () => void {
+    const listener = (_: IpcRendererEvent, event: LibrarySwitchEvent) =>
+      cb(event);
+    ipcRenderer.on(IPC.librarySwitch, listener);
+    return () => ipcRenderer.off(IPC.librarySwitch, listener);
   },
 
   agentStream(

@@ -70,6 +70,16 @@ export async function pauseAndDrainReconciler(
   return (await loadReconciler()).pauseAndDrainReconciler(timeoutMs);
 }
 
+export async function interruptAndDrainReconciler(
+  timeoutMs?: number,
+): Promise<boolean> {
+  return (await loadReconciler()).interruptAndDrainReconciler(timeoutMs);
+}
+
+export async function reinitializeReconciler(): Promise<void> {
+  await (await loadReconciler()).reinitializeReconciler();
+}
+
 export async function suspendReconciler(): Promise<void> {
   await (await loadReconciler()).suspendReconciler();
 }
