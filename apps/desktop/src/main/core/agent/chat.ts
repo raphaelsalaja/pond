@@ -87,6 +87,7 @@ const chatDependencies = {
     const { loadLocalAttachments } = await import("./local-attachments");
     return loadLocalAttachments(ids);
   },
+  now: () => performance.now(),
 };
 export type ChatDependencies = typeof chatDependencies;
 
@@ -96,6 +97,9 @@ const active = new Map<
   string,
   { requestId: string; controller: AbortController }
 >();
+
+/** Image loading starts early; its rejection surfaces at the later await, after the user message is saved. */
+function ignoreUntilAwaited(): void {}
 
 /** A reply with breaks is stored as its ordered messages; its content stays readable as one reply. */
 function replyRow(assembled: string): {
@@ -128,7 +132,7 @@ export async function sendMessage(
   }
   const controller = new AbortController();
   active.set(chatId, { requestId, controller });
-  const startedAt = performance.now();
+  const startedAt = deps.now();
   let lastActivity: AssistantActivity | undefined;
   let fish: Fish | undefined;
   const emit = (chunk: AssistantEvent) => {
@@ -255,8 +259,7 @@ export async function sendMessage(
     controller.signal.throwIfAborted();
     const attachments = context.sources();
     const imagesPending = deps.imagesForSaves(attachmentIds);
-    /** Rejection is surfaced at the await after the user message is saved; this only covers earlier throws. */
-    imagesPending.catch(() => undefined);
+    imagesPending.catch(ignoreUntilAwaited);
     const files = await deps.loadLocalAttachments(input.fileAttachmentIds);
     const userMetadata: AssistantMetadata = {
       attachments: attachments.filter((save) =>
@@ -434,7 +437,7 @@ ${personalizationContext}`.trim(),
       role: "assistant",
       content: reply.content,
       metadata: {
-        elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)),
+        elapsedMs: Math.max(0, Math.round(deps.now() - startedAt)),
         messages: reply.messages,
         sources: context.sources(),
         changes: context.changes(),
@@ -461,7 +464,7 @@ ${personalizationContext}`.trim(),
         role: "assistant",
         content: reply.content,
         metadata: {
-          elapsedMs: Math.max(0, Math.round(performance.now() - startedAt)),
+          elapsedMs: Math.max(0, Math.round(deps.now() - startedAt)),
           messages: reply.messages,
           sources: context?.sources(),
           changes: context?.changes(),

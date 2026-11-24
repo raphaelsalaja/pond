@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import JSZip from "jszip";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { writePondMcpBundle } from "./mcp-bundle";
 
@@ -59,16 +59,23 @@ describe("Claude Desktop bundle", () => {
     });
   });
 
-  it("starts Pond without Electron's Node mode flag", async () => {
-    const root = await unpack(
-      await writePondMcpBundle(process.execPath, [
-        "-e",
-        "process.exit(process.env.ELECTRON_RUN_AS_NODE ? 1 : 7)",
-      ]),
-    );
-    const run = spawnSync(process.execPath, [join(root, "server/index.js")], {
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
+  describe("launch", () => {
+    let status: number | null = null;
+
+    beforeAll(async () => {
+      const root = await unpack(
+        await writePondMcpBundle(process.execPath, [
+          "-e",
+          "process.exit(process.env.ELECTRON_RUN_AS_NODE ? 1 : 7)",
+        ]),
+      );
+      status = spawnSync(process.execPath, [join(root, "server/index.js")], {
+        env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" },
+      }).status;
     });
-    expect(run.status).toBe(7);
+
+    it("starts Pond without Electron's Node mode flag", () => {
+      expect(status).toBe(7);
+    });
   });
 });

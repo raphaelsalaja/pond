@@ -93,7 +93,10 @@ describe("local runtime coordinator", () => {
     const coordinator = createLocalRuntimeCoordinator();
     const active = deferred<void>();
     const waitingController = new AbortController();
-    const waitingOperation = vi.fn(async () => {});
+    let waitingRan = false;
+    const waitingOperation = async () => {
+      waitingRan = true;
+    };
     const first = coordinator.run(
       {
         runtime,
@@ -119,7 +122,7 @@ describe("local runtime coordinator", () => {
     );
     active.resolve();
     await first;
-    expect(waitingOperation).not.toHaveBeenCalled();
+    expect(waitingRan).toBe(false);
   });
 
   it("aborts executing work when its finite timeout expires", async () => {

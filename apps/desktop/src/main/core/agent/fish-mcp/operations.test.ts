@@ -1,3 +1,4 @@
+import type { JsonObject } from "@pond/schema/json";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { FishMcpServerConfig } from "../../../../shared/fish-mcp-contracts";
@@ -113,9 +114,12 @@ describe("mcpOperations", () => {
   });
 
   it("executes through the manager", async () => {
-    const call = vi.fn(async () => ({ text: "3 issues" }));
-    const [op] = mcpOperations(tools, call);
+    const calls: Array<[string, string, JsonObject]> = [];
+    const [op] = mcpOperations(tools, async (serverId, tool, args) => {
+      calls.push([serverId, tool, args]);
+      return { text: "3 issues" };
+    });
     expect(await op?.execute({ repo: "a/b" })).toEqual({ text: "3 issues" });
-    expect(call).toHaveBeenCalledWith("s1", "list_issues", { repo: "a/b" });
+    expect(calls).toEqual([["s1", "list_issues", { repo: "a/b" }]]);
   });
 });

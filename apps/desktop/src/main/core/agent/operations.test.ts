@@ -14,11 +14,15 @@ import type { OperationCatalog, PondOperation } from "./operations";
 
 function fixture() {
   let libraryId = "library-one";
-  const execute = vi.fn(async (args: JsonObject) => ({
-    name: args.name ?? "existing",
-    ok: true,
-  }));
-  const propose = vi.fn((_request: AgentOperationRequest) => "review-one");
+  const handlers = {
+    execute: async (args: JsonObject) => ({
+      name: args.name ?? "existing",
+      ok: true,
+    }),
+    propose: (_request: AgentOperationRequest) => "review-one",
+  };
+  const execute = vi.spyOn(handlers, "execute");
+  const propose = vi.spyOn(handlers, "propose");
   const controller = new AbortController();
   const catalog: OperationCatalog = {
     libraryId: () => libraryId,
@@ -205,7 +209,11 @@ it("preserves operation failures rather than reporting completion", async () => 
 });
 
 it("pages a large result without executing its operation twice", async () => {
-  const execute = vi.fn(async () => ({ text: "reference ".repeat(3000) }));
+  let executions = 0;
+  const execute = async () => {
+    executions += 1;
+    return { text: "reference ".repeat(3000) };
+  };
   const catalog: OperationCatalog = {
     libraryId: () => "library",
     operations: [
@@ -247,7 +255,7 @@ it("pages a large result without executing its operation twice", async () => {
   expect(JSON.parse(first.text + second.text)).toEqual({
     text: "reference ".repeat(3000),
   });
-  expect(execute).toHaveBeenCalledOnce();
+  expect(executions).toBe(1);
 });
 
 const readOp = (name: string): PondOperation => ({

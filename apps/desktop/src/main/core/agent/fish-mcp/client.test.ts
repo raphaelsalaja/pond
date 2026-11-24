@@ -14,18 +14,32 @@ const server: FishMcpServerConfig = {
   toolAccess: {},
 };
 
+type ManagerDeps = Parameters<typeof createFishMcpManager>[0];
+
 function pendingConnect() {}
 
 function fakeClient(tools: Array<Omit<McpTool, "inputSchema">>) {
-  return {
-    listTools: vi.fn(async () => ({
-      tools: tools.map((t) => ({ inputSchema: { type: "object" }, ...t })),
-    })),
-    callTool: vi.fn(async (): Promise<McpCallResult> => ({
-      content: [{ type: "text", text: "done" }],
-    })),
-    close: vi.fn(async () => {}),
+  const replies: Array<McpCallResult> = [];
+  const closing = Promise.withResolvers<void>();
+  const connection = {
+    async listTools() {
+      return {
+        tools: tools.map((t) => ({ inputSchema: { type: "object" }, ...t })),
+      };
+    },
+    async callTool(): Promise<McpCallResult> {
+      return replies.shift() ?? { content: [{ type: "text", text: "done" }] };
+    },
+    async close() {
+      closing.resolve();
+    },
   } satisfies McpConnection;
+  return {
+    connection,
+    replies,
+    closed: closing.promise,
+    close: vi.spyOn(connection, "close"),
+  };
 }
 
 function manager(
@@ -33,19 +47,29 @@ function manager(
     { name: "list_issues", annotations: { readOnlyHint: true } },
   ]),
 ) {
-  const deps = {
-    list: vi.fn(async () => [server]),
-    secrets: vi.fn(async () => ({})),
-    connect: vi.fn(
-      async (
-        _server: FishMcpServerConfig,
-        _secrets: Record<string, string>,
-        _onClose: () => void,
-      ): Promise<McpConnection> => client,
-    ),
-    now: vi.fn(() => 0),
+  const state: {
+    servers: Array<FishMcpServerConfig>;
+    secrets: Record<string, string>;
+    connect: ManagerDeps["connect"];
+    now: number;
+  } = {
+    servers: [server],
+    secrets: {},
+    connect: async () => client.connection,
+    now: 0,
   };
-  return { client, deps, manager: createFishMcpManager(deps) };
+  const deps: ManagerDeps = {
+    list: async () => state.servers,
+    secrets: async () => state.secrets,
+    connect: (...args) => state.connect(...args),
+    now: () => state.now,
+  };
+  return {
+    client,
+    state,
+    connect: vi.spyOn(deps, "connect"),
+    manager: createFishMcpManager(deps),
+  };
 }
 
 afterEach(() => {
@@ -54,26 +78,26 @@ afterEach(() => {
 
 describe("fish MCP manager", () => {
   it("connects enabled servers once and lists their tools", async () => {
-    const { deps, manager: m } = manager();
+    const { connect, manager: m } = manager();
     await m.ensure();
     await m.ensure();
-    expect(deps.connect).toHaveBeenCalledTimes(1);
+    expect(connect).toHaveBeenCalledTimes(1);
     expect(m.tools()).toEqual([
       { server, tool: expect.objectContaining({ name: "list_issues" }) },
     ]);
   });
 
   it("shares one connection between overlapping turns", async () => {
-    const { deps, manager: m } = manager();
+    const { connect, manager: m } = manager();
     await Promise.all([m.ensure(), m.ensure()]);
-    expect(deps.connect).toHaveBeenCalledTimes(1);
+    expect(connect).toHaveBeenCalledTimes(1);
   });
 
   it("passes the stored secrets to the connection", async () => {
-    const { deps, manager: m } = manager();
-    deps.secrets.mockResolvedValue({ GITHUB_TOKEN: "x" });
+    const { connect, state, manager: m } = manager();
+    state.secrets = { GITHUB_TOKEN: "x" };
     await m.ensure();
-    expect(deps.connect).toHaveBeenCalledWith(
+    expect(connect).toHaveBeenCalledWith(
       server,
       { GITHUB_TOKEN: "x" },
       expect.any(Function),
@@ -81,16 +105,18 @@ describe("fish MCP manager", () => {
   });
 
   it("skips disabled servers", async () => {
-    const { deps, manager: m } = manager();
-    deps.list.mockResolvedValue([{ ...server, enabled: false }]);
+    const { connect, state, manager: m } = manager();
+    state.servers = [{ ...server, enabled: false }];
     await m.ensure();
-    expect(deps.connect).not.toHaveBeenCalled();
+    expect(connect).not.toHaveBeenCalled();
     expect(m.status()[0]).toMatchObject({ state: "off" });
   });
 
   it("records a failed connection and keeps going", async () => {
-    const { deps, manager: m } = manager();
-    deps.connect.mockRejectedValue(new Error("spawn npx ENOENT"));
+    const { state, manager: m } = manager();
+    state.connect = async () => {
+      throw new Error("spawn npx ENOENT");
+    };
     await m.ensure();
     expect(m.status()[0]).toMatchObject({
       state: "failed",
@@ -101,13 +127,12 @@ describe("fish MCP manager", () => {
 
   it("gives up after 10 seconds and closes a connection that arrives late", async () => {
     vi.useFakeTimers();
-    const { client, deps, manager: m } = manager();
+    const { client, state, manager: m } = manager();
     let resolveConnect: (value: McpConnection) => void = pendingConnect;
-    deps.connect.mockReturnValue(
-      new Promise<McpConnection>((resolve) => {
-        resolveConnect = resolve;
-      }),
-    );
+    const late = new Promise<McpConnection>((resolve) => {
+      resolveConnect = resolve;
+    });
+    state.connect = () => late;
     const ensuring = m.ensure();
     await vi.advanceTimersByTimeAsync(10_000);
     await ensuring;
@@ -115,8 +140,9 @@ describe("fish MCP manager", () => {
       state: "failed",
       error: "github didn't start within 10 seconds.",
     });
-    resolveConnect(client);
-    await vi.waitFor(() => expect(client.close).toHaveBeenCalled());
+    resolveConnect(client.connection);
+    await client.closed;
+    expect(client.close).toHaveBeenCalled();
   });
 
   it("returns tool text and throws on isError", async () => {
@@ -125,7 +151,7 @@ describe("fish MCP manager", () => {
     expect(await m.call("s1", "list_issues", { repo: "a/b" })).toEqual({
       text: "done",
     });
-    client.callTool.mockResolvedValueOnce({
+    client.replies.push({
       isError: true,
       content: [{ type: "text", text: "rate limited" }],
     });
@@ -138,7 +164,7 @@ describe("fish MCP manager", () => {
   it("returns structured content and marks non-text parts", async () => {
     const { client, manager: m } = manager();
     await m.ensure();
-    client.callTool.mockResolvedValueOnce({
+    client.replies.push({
       content: [{ type: "text", text: "chart" }, { type: "image" }],
       structuredContent: { count: 3 },
     });
@@ -149,9 +175,9 @@ describe("fish MCP manager", () => {
   });
 
   it("marks a server that stops as failed so the next turn reconnects", async () => {
-    const { deps, manager: m } = manager();
+    const { connect, manager: m } = manager();
     await m.ensure();
-    const onClose = deps.connect.mock.calls[0]?.[2];
+    const onClose = connect.mock.calls[0]?.[2];
     onClose?.();
     expect(m.status()[0]).toMatchObject({
       state: "failed",
@@ -159,14 +185,14 @@ describe("fish MCP manager", () => {
     });
     expect(m.tools()).toEqual([]);
     await m.ensure();
-    expect(deps.connect).toHaveBeenCalledTimes(2);
+    expect(connect).toHaveBeenCalledTimes(2);
   });
 
   it("ignores the close it caused itself", async () => {
-    const { deps, manager: m } = manager();
+    const { connect, manager: m } = manager();
     await m.ensure();
     await m.reset("s1");
-    deps.connect.mock.calls[0]?.[2]?.();
+    connect.mock.calls[0]?.[2]?.();
     expect(m.status()).toEqual([]);
   });
 
@@ -178,29 +204,29 @@ describe("fish MCP manager", () => {
   });
 
   it("closes idle servers", async () => {
-    const { client, deps, manager: m } = manager();
+    const { client, state, manager: m } = manager();
     await m.ensure();
-    deps.now.mockReturnValue(11 * 60_000);
+    state.now = 11 * 60_000;
     await m.sweep();
     expect(client.close).toHaveBeenCalled();
     expect(m.tools()).toEqual([]);
   });
 
   it("closes servers that were removed", async () => {
-    const { client, deps, manager: m } = manager();
+    const { client, state, manager: m } = manager();
     await m.ensure();
-    deps.list.mockResolvedValue([]);
+    state.servers = [];
     await m.ensure();
     expect(client.close).toHaveBeenCalled();
     expect(m.status()).toEqual([]);
   });
 
   it("reconnects after a config change", async () => {
-    const { deps, manager: m } = manager();
+    const { connect, manager: m } = manager();
     await m.ensure();
     await m.reset("s1");
     await m.ensure();
-    expect(deps.connect).toHaveBeenCalledTimes(2);
+    expect(connect).toHaveBeenCalledTimes(2);
   });
 
   it("closes everything on quit", async () => {

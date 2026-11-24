@@ -1,3 +1,4 @@
+import type { JsonObject } from "@pond/schema/json";
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { expect, it, vi } from "vitest";
@@ -5,7 +6,7 @@ import { z } from "zod";
 import type { AssistantSource } from "../../../shared/assistant";
 import { splitMessages } from "../../../shared/assistant-text";
 import { completeWithTools as complete } from "./complete";
-import type { CompletionInput } from "./complete";
+import type { CompletionInput, ToolResult, ToolSpec } from "./complete";
 import { contextDependencies, libraryContext } from "./context";
 import type { LocalRuntimeCoordinator } from "./local-runtime-coordinator";
 import {
@@ -21,6 +22,7 @@ import type { OperationCatalog } from "./operations";
 const dump = String.raw`{"saves":[{"id":"film","title":"Film","url":"https://example.com","description":"Transcript\nShow transcript"}]}`;
 
 function request(model = textModel("Hi! How can I help?")): CompletionInput {
+  const pacing = { waitForTextChunk: async () => {} };
   return {
     provider: "openai",
     model: "gpt-5.6-sol",
@@ -31,12 +33,24 @@ function request(model = textModel("Hi! How can I help?")): CompletionInput {
     languageModel: model,
     abortController: new AbortController(),
     onText: vi.fn(),
-    waitForTextChunk: vi.fn().mockResolvedValue(undefined),
+    waitForTextChunk: vi.spyOn(pacing, "waitForTextChunk"),
   };
 }
 
-function tool(name: string, execute = vi.fn()) {
+function tool(
+  name: string,
+  execute: ToolSpec["execute"] = vi.fn(),
+): ToolSpec {
   return { name, description: name, schema: z.looseObject({}), execute };
+}
+
+function recordingTool(result: ToolResult) {
+  const calls: Array<JsonObject> = [];
+  const execute: ToolSpec["execute"] = async (args) => {
+    calls.push(args);
+    return result;
+  };
+  return { calls, execute };
 }
 
 const filmSources: Array<AssistantSource> = Array.from(
@@ -159,10 +173,19 @@ it("lets the model refine an empty search and curate results before answering", 
     }),
     textChunks("See [this study](#save-2)."),
   );
-  const search = vi
-    .fn<typeof contextDependencies.searchLibrary>()
-    .mockResolvedValueOnce({ saves: [] })
-    .mockResolvedValueOnce({ saves: filmRows.slice(0, 2) });
+  const searchReplies = [{ saves: [] }, { saves: filmRows.slice(0, 2) }];
+  const searches: Array<Parameters<typeof contextDependencies.searchLibrary>> =
+    [];
+  const search: typeof contextDependencies.searchLibrary = async (
+    ...args
+  ) => {
+    searches.push(args);
+    const reply = searchReplies.shift();
+    if (!reply) {
+      throw new Error("Unexpected search");
+    }
+    return reply;
+  };
   const input = request(model);
   const context = libraryContext(
     {
@@ -186,7 +209,7 @@ it("lets the model refine an empty search and curate results before answering", 
       sources: context.sources,
     }),
   ).toBe("See [this study](#save-2).");
-  expect(search.mock.calls).toEqual([
+  expect(searches).toEqual([
     [{ query: "ceramic cups", limit: 3 }, {}],
     [{ query: "pottery", limit: 5 }, {}],
   ]);
@@ -205,17 +228,17 @@ it("lets the model explain empty results without substituting a canned reply", a
     toolCallChunks("search-1", "searchLibrary", { query: "ceramics" }),
     textChunks(answer),
   );
-  const search = vi.fn().mockResolvedValue({ saves: [] });
+  const search = recordingTool({ saves: [] });
   const show = vi.fn();
   expect(
     await complete({
       ...request(model),
       messages: [{ role: "user", content: "Find my ceramics references" }],
       attachments: filmSources.slice(0, 1),
-      tools: [tool("searchLibrary", search), tool("showSaves", show)],
+      tools: [tool("searchLibrary", search.execute), tool("showSaves", show)],
     }),
   ).toBe(answer);
-  expect(search).toHaveBeenCalledExactlyOnceWith({ query: "ceramics" });
+  expect(search.calls).toEqual([{ query: "ceramics" }]);
   expect(show).not.toHaveBeenCalled();
   expect(model.doStreamCalls).toHaveLength(2);
 });
@@ -322,17 +345,17 @@ it.each([
   "kanye pics",
 ])("lets the model decide whether to use tools: %s", async (content) => {
   const model = textModel("Hello");
-  const search = vi.fn().mockResolvedValue({ saves: [] });
+  const search = recordingTool({ saves: [] });
   const show = vi.fn();
   const input = {
     ...request(model),
     messages: [{ role: "user" as const, content }],
-    tools: [tool("searchLibrary", search), tool("showSaves", show)],
+    tools: [tool("searchLibrary", search.execute), tool("showSaves", show)],
   };
   expect(await complete(input)).toBe("Hello");
   expect(model.doStreamCalls).toHaveLength(1);
   expect(promptDump(model)).toContain(content);
-  expect(search).not.toHaveBeenCalled();
+  expect(search.calls).toEqual([]);
   expect(show).not.toHaveBeenCalled();
   expect(input.onText).toHaveBeenCalledExactlyOnceWith("Hello");
 });
@@ -459,7 +482,9 @@ it("does not publish a response after cancellation", async () => {
 
 it("stops publishing validated chunks after cancellation", async () => {
   const input = request(textModel("A short answer."));
-  input.waitForTextChunk = vi.fn(async () => input.abortController.abort());
+  input.waitForTextChunk = async () => {
+    input.abortController.abort();
+  };
   await expect(complete(input)).rejects.toThrow();
   expect(input.onText).toHaveBeenCalledExactlyOnceWith("A ");
 });
@@ -546,7 +571,11 @@ it("discovers app capabilities through the SDK loop and prepares one exact actio
     }),
     textChunks("The export is ready for review."),
   );
-  const execute = vi.fn(async () => ({ jobId: "job" }));
+  let executed = 0;
+  const execute = async () => {
+    executed += 1;
+    return { jobId: "job" };
+  };
   const catalog: OperationCatalog = {
     libraryId: () => "library",
     operations: [
@@ -587,7 +616,7 @@ it("discovers app capabilities through the SDK loop and prepares one exact actio
       tools: context.tools,
     }),
   ).toBe("The export is ready for review.");
-  expect(execute).not.toHaveBeenCalled();
+  expect(executed).toBe(0);
   expect(context.changes()).toHaveLength(1);
   expect(context.changes()[0]).toMatchObject({
     title: "Export the image for the web",
@@ -615,20 +644,26 @@ it("sends the heads-up before a tool call as its own message while the tool runs
     ],
     textChunks("Nothing matched posters."),
   );
+  const published: Array<string> = [];
   const input = {
     ...request(model),
     messages: [{ role: "user" as const, content: "Find my posters" }],
+    onText: (delta: string) => {
+      published.push(delta);
+    },
   };
-  const search = vi.fn().mockImplementation(async () => {
-    expect(input.onText).toHaveBeenCalledWith("Looking now.\n[[next]]\n");
+  const publishedBeforeSearch: Array<Array<string>> = [];
+  const search: ToolSpec["execute"] = async () => {
+    publishedBeforeSearch.push([...published]);
     return { results: [] };
-  });
+  };
   const reply = await complete({
     ...input,
     tools: [tool("searchLibrary", search)],
   });
 
-  expect(search).toHaveBeenCalledOnce();
+  expect(publishedBeforeSearch).toHaveLength(1);
+  expect(publishedBeforeSearch[0]).toContain("Looking now.\n[[next]]\n");
   expect(splitMessages(reply)).toEqual([
     "Looking now.",
     "Nothing matched posters.",
@@ -636,7 +671,7 @@ it("sends the heads-up before a tool call as its own message while the tool runs
 });
 
 it("sends 'send me 3 separate messages' as three ordered messages after its tool calls", async () => {
-  const search = vi.fn().mockResolvedValue({ results: [] });
+  const search = recordingTool({ results: [] });
   const model = scriptedModel(
     toolCallChunks("search-1", "searchLibrary", { query: "greetings" }),
     textChunks("Hey!\n[[next]]\nHere's the second.\n[[next]]\nAnd the third."),
@@ -646,11 +681,11 @@ it("sends 'send me 3 separate messages' as three ordered messages after its tool
     messages: [
       { role: "user" as const, content: "send me 3 separate messages" },
     ],
-    tools: [tool("searchLibrary", search)],
+    tools: [tool("searchLibrary", search.execute)],
   };
   const reply = await complete(input);
 
-  expect(search).toHaveBeenCalledOnce();
+  expect(search.calls).toHaveLength(1);
   expect(promptDump(model)).toContain("[[next]]");
   expect(splitMessages(reply)).toEqual([
     "Hey!",

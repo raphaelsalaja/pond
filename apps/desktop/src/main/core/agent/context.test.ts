@@ -156,28 +156,35 @@ it("keeps distinct curated groups and deduplicates repeats regardless of order",
 });
 
 it("registers ranked semantic evidence with stable citation references", async () => {
-  const searchLibrary = vi.fn(async () => ({
-    saves: [
-      {
-        id: "ranked-first",
-        title: "URL parser",
-        source: "web" as const,
-        url: "https://example.com/first",
-        author: null,
-        notes: "Parser implementation",
-        description: "Relevant code evidence",
-      },
-      {
-        id: "ranked-second",
-        title: "URL notes",
-        source: "web" as const,
-        url: "https://example.com/second",
-        author: null,
-        notes: null,
-        description: "Supporting evidence",
-      },
-    ],
-  }));
+  const searches: Array<Parameters<typeof contextDependencies.searchLibrary>> =
+    [];
+  const searchLibrary: typeof contextDependencies.searchLibrary = async (
+    ...args
+  ) => {
+    searches.push(args);
+    return {
+      saves: [
+        {
+          id: "ranked-first",
+          title: "URL parser",
+          source: "web" as const,
+          url: "https://example.com/first",
+          author: null,
+          notes: "Parser implementation",
+          description: "Relevant code evidence",
+        },
+        {
+          id: "ranked-second",
+          title: "URL notes",
+          source: "web" as const,
+          url: "https://example.com/second",
+          author: null,
+          notes: null,
+          description: "Supporting evidence",
+        },
+      ],
+    };
+  };
   const context = libraryContext(
     {
       scope: { saveIds: ["ranked-first", "ranked-second"] },
@@ -191,10 +198,12 @@ it("registers ranked semantic evidence with stable citation references", async (
     .find((tool) => tool.name === "searchLibrary")
     ?.execute({ query: "URL parser", task: "code", limit: 500 });
 
-  expect(searchLibrary).toHaveBeenCalledExactlyOnceWith(
-    { query: "URL parser", task: "code", limit: 500 },
-    { saveIds: ["ranked-first", "ranked-second"] },
-  );
+  expect(searches).toEqual([
+    [
+      { query: "URL parser", task: "code", limit: 500 },
+      { saveIds: ["ranked-first", "ranked-second"] },
+    ],
+  ]);
   expect(result).toEqual({
     saves: [
       expect.objectContaining({ id: "ranked-first", reference: "#save-1" }),
@@ -208,11 +217,18 @@ it("registers ranked semantic evidence with stable citation references", async (
 });
 
 it("gates image description with the current model's vision capability", async () => {
-  const describeSaves = vi.fn(async () => ({
-    ids: ["known"],
-    images: 1,
-    message: "Pixels are available.",
-  }));
+  const described: Array<Parameters<typeof contextDependencies.describeSaves>> =
+    [];
+  const describeSaves: typeof contextDependencies.describeSaves = async (
+    ...args
+  ) => {
+    described.push(args);
+    return {
+      ids: ["known"],
+      images: 1,
+      message: "Pixels are available.",
+    };
+  };
   const createContext = (canUseVision: boolean) =>
     libraryContext(
       {
@@ -235,7 +251,7 @@ it("gates image description with the current model's vision capability", async (
   expect(await unavailable?.execute({ ids: ["known"] })).toEqual({
     error: "Choose a vision model in Settings Models.",
   });
-  expect(describeSaves).not.toHaveBeenCalled();
+  expect(described).toEqual([]);
 
   const available = createContext(true).tools.find(
     (tool) => tool.name === "describeSaves",
@@ -243,7 +259,7 @@ it("gates image description with the current model's vision capability", async (
   await expect(available?.execute({ ids: ["known"] })).resolves.toMatchObject({
     images: 1,
   });
-  expect(describeSaves).toHaveBeenCalledExactlyOnceWith({ ids: ["known"] });
+  expect(described).toEqual([[{ ids: ["known"] }]]);
 });
 
 it("names the filters that emptied a search", () => {

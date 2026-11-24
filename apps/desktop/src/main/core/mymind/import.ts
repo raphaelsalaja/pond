@@ -121,6 +121,9 @@ function sourceUrl(object: MymindObject): string | undefined {
   throw new Error("mymind returned an invalid source URL.");
 }
 
+/** Abort only needs the pending read unblocked; the download's `finally` cancels and releases it again. */
+function ignoreAbortCancelFailure(): void {}
+
 async function downloadBlob(
   response: Response,
   directory: string,
@@ -142,7 +145,7 @@ async function downloadBlob(
   const path = join(directory, filename);
   const file = await open(path, "wx");
   const reader = response.body.getReader();
-  const cancel = () => void reader.cancel().catch(() => {});
+  const cancel = () => void reader.cancel().catch(ignoreAbortCancelFailure);
   signal?.addEventListener("abort", cancel, { once: true });
   try {
     while (true) {

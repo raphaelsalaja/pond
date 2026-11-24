@@ -101,6 +101,9 @@ function parseObject(line: string): MymindObject {
   }
 }
 
+/** Abort only needs the pending read unblocked; the reader's `finally` cancels and releases it again. */
+function ignoreAbortCancelFailure(): void {}
+
 async function* readObjects(
   response: Response,
   signal?: AbortSignal,
@@ -117,7 +120,7 @@ async function* readObjects(
   const decoder = new TextDecoder();
   let pending = "";
   const cancel = () => {
-    void reader.cancel().catch(() => {});
+    void reader.cancel().catch(ignoreAbortCancelFailure);
   };
   signal?.addEventListener("abort", cancel, { once: true });
   try {

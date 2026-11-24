@@ -16,19 +16,24 @@ import type { LibraryScope } from "./tools";
 
 interface ChatTestState {
   prefs: typeof DEFAULT_PREFS;
-  complete: ReturnType<typeof vi.fn<ChatDependencies["completeWithTools"]>>;
-  append: ReturnType<typeof vi.fn<ChatDependencies["appendMessage"]>>;
-  broadcast: ReturnType<typeof vi.fn<ChatDependencies["broadcast"]>>;
-  key: ReturnType<typeof vi.fn<ChatDependencies["keyFor"]>>;
-  loadFiles: ReturnType<typeof vi.fn<ChatDependencies["loadLocalAttachments"]>>;
-  prepare: ReturnType<typeof vi.fn<ChatDependencies["prepareTools"]>>;
-  read: ReturnType<typeof vi.fn<ToolSpec["execute"]>>;
+  reply: ChatDependencies["completeWithTools"];
+  key: string | null;
+  files: Awaited<ReturnType<ChatDependencies["loadLocalAttachments"]>>;
+  prepareError: Error | undefined;
+  clock: number;
   history: Array<AssistantMessage>;
   question: AssistantQuestion | undefined;
   fish: Fish;
   presence: Array<[string, FishPresence]>;
   scopes: Array<LibraryScope>;
 }
+const replyWithText: ChatDependencies["completeWithTools"] = async (
+  input,
+) => {
+  input.onText("Reply");
+  return "Reply";
+};
+const readSave: ToolSpec["execute"] = async () => ({});
 const koi: Fish = {
   id: DEFAULT_FISH_ID,
   name: "Koi",
@@ -47,13 +52,11 @@ const mock: ChatTestState = {
   presence: [],
   scopes: [],
   prefs: structuredClone(DEFAULT_PREFS),
-  complete: vi.fn<ChatDependencies["completeWithTools"]>(),
-  append: vi.fn<ChatDependencies["appendMessage"]>(),
-  broadcast: vi.fn<ChatDependencies["broadcast"]>(),
-  key: vi.fn<ChatDependencies["keyFor"]>(),
-  loadFiles: vi.fn<ChatDependencies["loadLocalAttachments"]>(),
-  prepare: vi.fn<ChatDependencies["prepareTools"]>(async () => {}),
-  read: vi.fn<ToolSpec["execute"]>().mockResolvedValue({}),
+  reply: replyWithText,
+  key: "test-key",
+  files: [],
+  prepareError: undefined,
+  clock: 0,
   history: [],
   question: undefined,
 };
@@ -66,12 +69,19 @@ const dependencies: ChatDependencies = {
   },
   listFolders: async () => [],
   imagesForSaves: async () => [],
-  loadLocalAttachments: mock.loadFiles,
-  prepareTools: mock.prepare,
-  broadcast: mock.broadcast,
-  keyFor: mock.key,
-  completeWithTools: mock.complete,
-  appendMessage: mock.append,
+  loadLocalAttachments: async () => mock.files,
+  prepareTools: async () => {
+    const error = mock.prepareError;
+    mock.prepareError = undefined;
+    if (error) {
+      throw error;
+    }
+  },
+  broadcast: () => {},
+  keyFor: async () => mock.key,
+  completeWithTools: (input) => mock.reply(input),
+  appendMessage: async () => "persisted-user",
+  now: () => mock.clock,
   listMessages: async () => mock.history,
   loadModelTranscript: async () => [],
   loadModelCatalog: async () => ({
@@ -143,7 +153,7 @@ const libraryContextFake = (): ReturnType<
       name: "readSave",
       description: "Read a Save",
       schema: z.object({ id: z.string() }),
-      execute: mock.read,
+      execute: readSave,
     },
   ],
   sources: () => [],
@@ -160,6 +170,13 @@ const libraryContextFake = (): ReturnType<
     },
   ],
 });
+const spy = {
+  complete: vi.spyOn(dependencies, "completeWithTools"),
+  append: vi.spyOn(dependencies, "appendMessage"),
+  broadcast: vi.spyOn(dependencies, "broadcast"),
+  loadFiles: vi.spyOn(dependencies, "loadLocalAttachments"),
+  prepare: vi.spyOn(dependencies, "prepareTools"),
+};
 const sendMessage = (input: AssistantSend) => send(input, dependencies);
 const request: AssistantSend = {
   chatId: "chat",
@@ -180,7 +197,7 @@ it("speaks as the chat's fish, follows its instructions, and searches only its s
     scope: { folderIds: [], tags: ["poster"] },
   };
   await sendMessage(request);
-  const context = mock.complete.mock.calls.at(-1)?.[0].context;
+  const context = spy.complete.mock.calls.at(-1)?.[0].context;
   expect(context).toContain('"Librarian"');
   expect(context).toContain("File new Saves by theme.");
   expect(context).toContain('tags "poster"');
@@ -193,13 +210,13 @@ it("speaks as the chat's fish, follows its instructions, and searches only its s
 });
 
 it("connects MCP servers before the model runs and replies even when that fails", async () => {
-  mock.prepare.mockRejectedValueOnce(new Error("spawn npx ENOENT"));
+  mock.prepareError = new Error("spawn npx ENOENT");
   expect(await sendMessage(request)).toMatchObject({ accepted: true });
-  expect(mock.append).toHaveBeenLastCalledWith(
+  expect(spy.append).toHaveBeenLastCalledWith(
     expect.objectContaining({ role: "assistant", content: "Reply" }),
   );
-  const [prepared] = mock.prepare.mock.invocationCallOrder;
-  const [completed] = mock.complete.mock.invocationCallOrder;
+  const [prepared] = spy.prepare.mock.invocationCallOrder;
+  const [completed] = spy.complete.mock.invocationCallOrder;
   expect(prepared).toBeLessThan(completed ?? 0);
 });
 
@@ -217,16 +234,16 @@ it("includes saved personalization in each reply and stops including cleared fie
   mock.prefs.agent.userProfile = "I design libraries.";
   mock.prefs.agent.responseInstructions = "Keep replies concise.";
   await sendMessage(request);
-  expect(mock.complete.mock.calls.at(-1)?.[0].context).toContain(
+  expect(spy.complete.mock.calls.at(-1)?.[0].context).toContain(
     "I design libraries.",
   );
-  expect(mock.complete.mock.calls.at(-1)?.[0].context).toContain(
+  expect(spy.complete.mock.calls.at(-1)?.[0].context).toContain(
     "Keep replies concise.",
   );
   mock.prefs.agent.userProfile = "";
   mock.prefs.agent.responseInstructions = "";
   await sendMessage({ ...request, requestId: "without-profile" });
-  expect(mock.complete.mock.calls.at(-1)?.[0].context).not.toContain(
+  expect(spy.complete.mock.calls.at(-1)?.[0].context).not.toContain(
     "User-provided personalization",
   );
 });
@@ -234,26 +251,22 @@ it("includes saved personalization in each reply and stops including cleared fie
 it.each([false, true])(
   "persists total run time, including a failed reply: %s",
   async (fails) => {
-    const clock = vi.spyOn(performance, "now").mockReturnValue(1000);
-    mock.complete.mockImplementation(async (input) => {
-      clock.mockReturnValue(91_000);
+    mock.clock = 1000;
+    mock.reply = async (input) => {
+      mock.clock = 91_000;
       if (fails) {
         throw new Error("Provider unavailable");
       }
       input.onText("Reply");
       return "Reply";
-    });
-    try {
-      await sendMessage(request);
-      expect(mock.append).toHaveBeenLastCalledWith(
-        expect.objectContaining({
-          role: "assistant",
-          metadata: expect.objectContaining({ elapsedMs: 90_000 }),
-        }),
-      );
-    } finally {
-      clock.mockRestore();
-    }
+    };
+    await sendMessage(request);
+    expect(spy.append).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        role: "assistant",
+        metadata: expect.objectContaining({ elapsedMs: 90_000 }),
+      }),
+    );
   },
 );
 
@@ -270,20 +283,18 @@ beforeEach(() => {
     languageModel: "openai",
     modelIds: {},
   };
-  mock.key.mockResolvedValue("test-key");
-  mock.loadFiles.mockResolvedValue([]);
-  mock.append.mockResolvedValue("persisted-user");
-  mock.complete.mockImplementation(async (input) => {
-    input.onText("Reply");
-    return "Reply";
-  });
+  mock.key = "test-key";
+  mock.files = [];
+  mock.prepareError = undefined;
+  mock.clock = 0;
+  mock.reply = replyWithText;
 });
 
 describe("Assistant requests", () => {
   it("sends to the chosen provider without a cloud consent gate", async () => {
     expect(await sendMessage(request)).toMatchObject({ accepted: true });
-    expect(mock.append).toHaveBeenCalledTimes(2);
-    expect(mock.append).toHaveBeenLastCalledWith(
+    expect(spy.append).toHaveBeenCalledTimes(2);
+    expect(spy.append).toHaveBeenLastCalledWith(
       expect.objectContaining({
         metadata: expect.objectContaining({
           results: [{ title: "References", saveIds: ["film"] }],
@@ -298,8 +309,8 @@ describe("Assistant requests", () => {
         }),
       }),
     );
-    expect(mock.complete).toHaveBeenCalledOnce();
-    expect(mock.complete.mock.calls[0]?.[0].model).toBe("gpt-5.6-sol");
+    expect(spy.complete).toHaveBeenCalledOnce();
+    expect(spy.complete.mock.calls[0]?.[0].model).toBe("gpt-5.6-sol");
   });
   it("loads registered local files without adding them to the library", async () => {
     const file = {
@@ -309,7 +320,7 @@ describe("Assistant requests", () => {
       size: 4,
       data: Buffer.from("test"),
     };
-    mock.loadFiles.mockResolvedValue([file]);
+    mock.files = [file];
 
     await sendMessage({
       ...request,
@@ -317,11 +328,11 @@ describe("Assistant requests", () => {
       fileAttachmentIds: [file.id],
     });
 
-    expect(mock.loadFiles).toHaveBeenCalledExactlyOnceWith([file.id]);
-    expect(mock.complete).toHaveBeenCalledWith(
+    expect(spy.loadFiles).toHaveBeenCalledExactlyOnceWith([file.id]);
+    expect(spy.complete).toHaveBeenCalledWith(
       expect.objectContaining({ files: [file] }),
     );
-    expect(mock.append).toHaveBeenNthCalledWith(
+    expect(spy.append).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
         metadata: expect.objectContaining({
@@ -345,7 +356,7 @@ describe("Assistant requests", () => {
       modelIds: { openai: "gpt-5.4-mini" },
     };
     expect(await sendMessage(request)).toMatchObject({ accepted: true });
-    expect(mock.complete.mock.calls[0]?.[0].model).toBe("gpt-5.4-mini");
+    expect(spy.complete.mock.calls[0]?.[0].model).toBe("gpt-5.4-mini");
   });
   it("uses the model and controls snapshotted by the composer", async () => {
     await sendMessage({
@@ -357,7 +368,7 @@ describe("Assistant requests", () => {
         reasoning: "high",
       },
     });
-    expect(mock.complete.mock.calls[0]?.[0]).toMatchObject({
+    expect(spy.complete.mock.calls[0]?.[0]).toMatchObject({
       model: "gpt-visible",
       controls: {
         fast: true,
@@ -376,16 +387,16 @@ describe("Assistant requests", () => {
         reasoning: "high",
       },
     });
-    expect(mock.complete.mock.calls[0]?.[0].controls).toEqual({
+    expect(spy.complete.mock.calls[0]?.[0].controls).toEqual({
       fast: false,
       contextTokens: 64_000,
       reasoning: "provider-default",
     });
   });
   it("checks provider keys before adding a user message", async () => {
-    mock.key.mockResolvedValue(null);
+    mock.key = null;
     expect(await sendMessage(request)).toHaveProperty("error");
-    expect(mock.append).not.toHaveBeenCalled();
+    expect(spy.append).not.toHaveBeenCalled();
   });
   it("rejects empty attachment scope instead of searching the whole library", async () => {
     expect(
@@ -394,14 +405,14 @@ describe("Assistant requests", () => {
         scope: { kind: "attachments" },
       }),
     ).toHaveProperty("error");
-    expect(mock.complete).not.toHaveBeenCalled();
+    expect(spy.complete).not.toHaveBeenCalled();
   });
   it("cancels only the matching request and preserves partial text", async () => {
     let started!: () => void;
     const ready = new Promise<void>((resolve) => {
       started = resolve;
     });
-    mock.complete.mockImplementation(async (input) => {
+    mock.reply = async (input) => {
       input.onText("Partial reply");
       started();
       await new Promise((_, reject) => {
@@ -412,7 +423,7 @@ describe("Assistant requests", () => {
         );
       });
       return "";
-    });
+    };
     const result = sendMessage(request);
     await ready;
     expect(stopMessage("chat", "different-request")).toEqual({
@@ -427,14 +438,14 @@ describe("Assistant requests", () => {
     ).toHaveProperty("error");
     expect(stopMessage("chat", "request")).toEqual({ ok: true });
     expect(await result).toMatchObject({ stopped: true, accepted: true });
-    expect(mock.append).toHaveBeenLastCalledWith(
+    expect(spy.append).toHaveBeenLastCalledWith(
       expect.objectContaining({
         content: "Partial reply",
         metadata: expect.objectContaining({ stopped: true }),
       }),
     );
     expect(
-      mock.broadcast.mock.calls.some(
+      spy.broadcast.mock.calls.some(
         ([, chunk]) =>
           z.object({ type: z.string() }).parse(chunk).type === "done",
       ),
@@ -451,11 +462,11 @@ it("persists a question even when there is no duplicate prose answer", async () 
     question: "Which topic?",
     options: ["Film", "Architecture"],
   };
-  mock.complete.mockResolvedValue("");
+  mock.reply = async () => "";
   expect(await sendMessage(request)).toMatchObject({
     accepted: true,
   });
-  expect(mock.append).toHaveBeenLastCalledWith(
+  expect(spy.append).toHaveBeenLastCalledWith(
     expect.objectContaining({
       role: "assistant",
       content: "",
@@ -479,14 +490,14 @@ it("links a freeform reply to the latest unanswered question", async () => {
     },
   ];
   await sendMessage({ ...request, content: "Typography" });
-  expect(mock.append).toHaveBeenNthCalledWith(
+  expect(spy.append).toHaveBeenNthCalledWith(
     1,
     expect.objectContaining({
       content: "Typography",
       metadata: expect.objectContaining({ replyToQuestion: "question" }),
     }),
   );
-  expect(mock.complete.mock.calls[0]?.[0].messages[0]?.content).toContain(
+  expect(spy.complete.mock.calls[0]?.[0].messages[0]?.content).toContain(
     "Which topic?",
   );
 });
@@ -496,8 +507,8 @@ it("rejects stale or foreign question replies before appending", async () => {
     replyToQuestion: "foreign",
   });
   expect(result.error).toMatch(/no longer awaiting/);
-  expect(mock.append).not.toHaveBeenCalled();
-  expect(mock.complete).not.toHaveBeenCalled();
+  expect(spy.append).not.toHaveBeenCalled();
+  expect(spy.complete).not.toHaveBeenCalled();
 });
 
 it("sends Save images to a selected local vision model", async () => {
@@ -538,7 +549,7 @@ it("sends Save images to a selected local vision model", async () => {
 
   expect(result).toMatchObject({ accepted: true });
   expect(result.error).toBeUndefined();
-  expect(mock.complete).toHaveBeenCalledWith(
+  expect(spy.complete).toHaveBeenCalledWith(
     expect.objectContaining({
       provider: "ollama",
       model: "gemma4:e2b",
@@ -585,7 +596,7 @@ it("rejects Save images before transport for a selected text-only local model", 
   );
 
   expect(result.error).toBe("Choose a vision model in Settings Models.");
-  expect(mock.complete).not.toHaveBeenCalled();
+  expect(spy.complete).not.toHaveBeenCalled();
 });
 
 it("rejects local image files before transport for a selected text-only model", async () => {
@@ -595,7 +606,7 @@ it("rejects local image files before transport for a selected text-only model", 
     languageModel: "ollama",
     modelIds: { ollama: "llama3.2" },
   };
-  mock.loadFiles.mockResolvedValue([
+  mock.files = [
     {
       id: "image-file",
       name: "reference.png",
@@ -603,7 +614,7 @@ it("rejects local image files before transport for a selected text-only model", 
       size: 4,
       data: Buffer.from("test"),
     },
-  ]);
+  ];
 
   const result = await send(
     {
@@ -633,7 +644,7 @@ it("rejects local image files before transport for a selected text-only model", 
   );
 
   expect(result.error).toBe("Choose a vision model in Settings Models.");
-  expect(mock.complete).not.toHaveBeenCalled();
+  expect(spy.complete).not.toHaveBeenCalled();
 });
 
 it("gives the next reply the current review outcome and created IDs", async () => {
@@ -667,12 +678,12 @@ it("gives the next reply the current review outcome and created IDs", async () =
     },
   ];
   await sendMessage(request);
-  expect(mock.complete).toHaveBeenCalledWith(
+  expect(spy.complete).toHaveBeenCalledWith(
     expect.objectContaining({
       context: expect.stringContaining('"status":"applied"'),
     }),
   );
-  expect(mock.complete).toHaveBeenCalledWith(
+  expect(spy.complete).toHaveBeenCalledWith(
     expect.objectContaining({
       context: expect.stringContaining('"id":"created-folder"'),
     }),
@@ -683,14 +694,14 @@ describe("separate messages", () => {
   const ask = { ...request, content: "send me 3 separate messages" };
 
   it("saves 'send me 3 separate messages' as exactly three ordered messages", async () => {
-    mock.complete.mockImplementation(async (input) => {
+    mock.reply = async (input) => {
       const reply =
         "Hey!\n[[next]]\nHere's the second.\n[[next]]\nAnd the third.";
       input.onText(reply);
       return reply;
-    });
+    };
     await sendMessage(ask);
-    expect(mock.append).toHaveBeenLastCalledWith(
+    expect(spy.append).toHaveBeenLastCalledWith(
       expect.objectContaining({
         role: "assistant",
         content: "Hey!\n\nHere's the second.\n\nAnd the third.",
@@ -703,12 +714,12 @@ describe("separate messages", () => {
 
   it("keeps a numbered reply as one message, exactly as written", async () => {
     const numbered = "1. Hey!\n2. Here's the second.\n3. And the third.";
-    mock.complete.mockImplementation(async (input) => {
+    mock.reply = async (input) => {
       input.onText(numbered);
       return numbered;
-    });
+    };
     await sendMessage(ask);
-    const saved = mock.append.mock.calls.at(-1)?.[0];
+    const saved = spy.append.mock.calls.at(-1)?.[0];
     expect(saved?.content).toBe(numbered);
     expect(saved?.metadata?.messages).toBeUndefined();
   });
@@ -726,14 +737,14 @@ describe("separate messages", () => {
     ];
     await sendMessage(request);
     expect(
-      mock.complete.mock.calls.at(-1)?.[0].messages.map((row) => row.content),
+      spy.complete.mock.calls.at(-1)?.[0].messages.map((row) => row.content),
     ).toContain("One\n[[next]]\nTwo");
   });
 });
 
 describe("routines", () => {
   it("sets up a routine from chat and records it on the reply", async () => {
-    mock.complete.mockImplementation(async (input) => {
+    mock.reply = async (input) => {
       const create = input.tools.find((tool) => tool.name === "createRoutine");
       await create?.execute({
         name: "Weekday morning ping",
@@ -742,12 +753,12 @@ describe("routines", () => {
       });
       input.onText("Done. Weekdays around 8:00 AM.");
       return "Done.";
-    });
+    };
     await sendMessage({ ...request, content: "Ping me every weekday at 8" });
-    expect(mock.complete.mock.calls.at(-1)?.[0].context).toContain(
+    expect(spy.complete.mock.calls.at(-1)?.[0].context).toContain(
       "You have no routines yet.",
     );
-    expect(mock.append).toHaveBeenLastCalledWith(
+    expect(spy.append).toHaveBeenLastCalledWith(
       expect.objectContaining({
         role: "assistant",
         metadata: expect.objectContaining({
@@ -769,7 +780,7 @@ describe("routines", () => {
       ...request,
       routine: { trigger: "schedule", routineId: "ping", name: "Ping" },
     });
-    const tools = mock.complete.mock.calls.at(-1)?.[0].tools ?? [];
+    const tools = spy.complete.mock.calls.at(-1)?.[0].tools ?? [];
     expect(tools.map((tool) => tool.name)).not.toContain("createRoutine");
   });
 });

@@ -76,6 +76,9 @@ function deadline<T>(work: Promise<T>, ms: number, message: string) {
   });
 }
 
+/** The connect failure itself is logged where the deadline rejects. */
+function ignoreLoggedConnectFailure(): void {}
+
 function messageOf(cause: unknown): string {
   return cause instanceof Error ? cause.message : String(cause);
 }
@@ -141,7 +144,11 @@ export function createFishMcpManager(deps: ManagerDeps) {
       );
       Object.assign(entry, { client, tools, state: "connected" });
     } catch (error) {
-      void connecting.then((client) => client.close()).catch(() => {});
+      void connecting
+        .then((client) => client.close(), ignoreLoggedConnectFailure)
+        .catch((cause: unknown) => {
+          log.warn("[pond fish-mcp] late close failed", server.name, cause);
+        });
       log.warn("[pond fish-mcp] connect failed", server.name, error);
       Object.assign(entry, { state: "failed", error: messageOf(error) });
     }

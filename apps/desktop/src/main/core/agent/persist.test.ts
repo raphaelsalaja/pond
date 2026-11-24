@@ -3,16 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { agentChats, agentMessages } from "@pond/schema/db";
 import Database from "better-sqlite3";
-import { app } from "electron";
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { AssistantMetadata } from "../../../shared/assistant";
 import { closeDb, getDb } from "../../db";
 import { invalidatePaths, resolvePaths } from "../../paths";
@@ -59,14 +50,12 @@ describe.skipIf(!nativeAvailable())("rewindLastTurn", () => {
 
   beforeAll(() => {
     dir = mkdtempSync(join(tmpdir(), "pond-agent-persist-"));
-    vi.spyOn(app, "getPath").mockReturnValue(dir);
     invalidatePaths();
-    resolvePaths(join(dir, "Agent Persist.pond"));
+    resolvePaths(join(dir, "Agent Persist.pond"), dir);
   });
 
   afterAll(() => {
     closeDb();
-    vi.restoreAllMocks();
     invalidatePaths();
     try {
       rmSync(dir, { recursive: true, force: true });
