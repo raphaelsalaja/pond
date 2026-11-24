@@ -136,7 +136,8 @@ jobs:
 
   macos:
     needs: draft
-    runs-on: macos-latest
+    # icon.icon uses the Icon Composer 2.0 refractivity feature, which needs Xcode 27 actool.
+    runs-on: xcode-27
 
     permissions:
       contents: write

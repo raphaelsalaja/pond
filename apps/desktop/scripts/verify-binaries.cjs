@@ -10,7 +10,11 @@ exports.default = (context) => verify(context);
 
 async function verify(
   context,
-  { runFfmpeg = runFfmpegVersion, runOnnx = runOnnxSmoke } = {},
+  {
+    runFfmpeg = runFfmpegVersion,
+    runOnnx = runOnnxSmoke,
+    readArchs = lipoArchs,
+  } = {},
 ) {
   const platform = normalizePlatform(context.electronPlatformName);
   const resourcesDir = resolveResourcesDir(context, platform);
@@ -22,6 +26,7 @@ async function verify(
   if (platform === "linux") verifySharpLinuxRuntime(resourcesDir, arch);
   if (platform === "win32") verifySharpWindowsRuntime(resourcesDir, arch);
   if (platform === "win32" || platform === "linux") assertAppIcon(context);
+  if (platform === "darwin") assertIconCatalog(resourcesDir);
   assertTintIcons(resourcesDir);
   const onnxShipped = verifyOnnxRuntime(resourcesDir, platform, arch);
   const ffmpegPath = join(resourcesDir, "bin", ffmpegName(platform));
@@ -62,7 +67,7 @@ async function verify(
     assertPresent(nativeHostPath, "pond-native-host");
   }
   if (platform === "darwin" && process.platform === "darwin") {
-    verifyMacSlices(resourcesDir, arch);
+    verifyMacSlices(resourcesDir, arch, readArchs);
   }
 
   console.log(`[pond verify] bundled ffmpeg OK (${platform})`);
@@ -115,6 +120,20 @@ function assertAppIcon(context) {
       `[pond verify] missing app icon in ${buildResources}. ` +
         "Run prepare-app-icon so the installer does not ship the Electron icon.",
     );
+  }
+}
+
+/** Without the catalog, macOS 26+ draws icon.icns and the icon ignores Dark, Clear, and Tinted styles. */
+function assertIconCatalog(resourcesDir) {
+  const catalog = join(resourcesDir, "Assets.car");
+  if (!existsSync(catalog)) {
+    throw new Error(
+      `[pond verify] missing ${catalog}. ` +
+        "Run prepare-app-icon with Xcode 27 or later so actool can compile icon.icon.",
+    );
+  }
+  if (statSync(catalog).size === 0) {
+    throw new Error(`[pond verify] ${catalog} is empty.`);
   }
 }
 

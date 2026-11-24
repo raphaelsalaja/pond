@@ -108,7 +108,7 @@ async function writeAssetCatalog(source, catalogPath) {
     );
     if (result.status !== 0) {
       console.warn(
-        "[pond] actool 26+ unavailable; packager will use icns only",
+        "[pond] actool 27+ unavailable or failed to compile icon.icon; packager will use icns only",
       );
       return;
     }
