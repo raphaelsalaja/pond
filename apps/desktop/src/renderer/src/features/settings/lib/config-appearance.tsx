@@ -139,7 +139,8 @@ export const appearanceSection = defineCustomSection({
           control: "range",
           key: "translucentTint",
           title: "Tint",
-          description: "0 shows the bare material, 100 covers it with your theme.",
+          description:
+            "0 shows the bare material, 100 covers it with your theme.",
           keywords: ["vibrancy", "transparency", "opacity", "blur"],
           disabled: (v) => v.translucent === false,
           min: 0,

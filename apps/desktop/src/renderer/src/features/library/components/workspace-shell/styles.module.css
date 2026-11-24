@@ -4,11 +4,6 @@
   --window-background: var(--ds-background-secondary);
 }
 
-/* Clears the traffic lights. */
-:global(html[data-platform="mac"]:not([data-full-screen])) .shell {
-  --window-chrome-start: 96px;
-}
-
 /* Tints the macOS sidebar material behind the window instead of covering it. */
 :global(html[data-translucent]) .shell {
   --window-background: color-mix(
@@ -16,6 +11,11 @@
     var(--ds-background-secondary) var(--window-tint, 20%),
     transparent
   );
+}
+
+/* Clears the traffic lights. */
+:global(html[data-platform="mac"]:not([data-full-screen])) .shell {
+  --window-chrome-start: 96px;
 }
 
 .content {
