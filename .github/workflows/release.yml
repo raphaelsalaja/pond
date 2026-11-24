@@ -167,6 +167,9 @@ jobs:
       - name: Generated files are up to date
         run: pnpm generate && git diff --exit-code
 
+      - name: Install browser for UI tests
+        run: pnpm --filter @pond/ui exec playwright install chromium
+
       - name: Verify workspace
         run: pnpm check
 
