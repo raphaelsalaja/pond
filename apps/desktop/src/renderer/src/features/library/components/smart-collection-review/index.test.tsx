@@ -1,17 +1,20 @@
+import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SmartCollectionReview } from "./";
 
-afterEach(() => {
-  vi.unstubAllGlobals();
-  vi.restoreAllMocks();
-});
-
 it("rejects and closes a cluster preview without writing to the Library", async () => {
-  const query = vi.fn(async (name: string) => {
-    if (name === "saves.semanticClusters") {
-      return {
+  /** SAFETY: the review reads only each Save's id and title. */
+  const representatives = [
+    { id: "design-a", title: "Design A" },
+    { id: "design-b", title: "Design B" },
+    { id: "design-c", title: "Design C" },
+  ] as Array<WireSave>;
+  bridge.use({
+    query: {
+      "saves.semanticClusters": () => ({
         clusters: [
           {
             id: "design-a",
@@ -20,18 +23,10 @@ it("rejects and closes a cluster preview without writing to the Library", async 
           },
         ],
         unclustered: ["outlier"],
-      };
-    }
-    if (name === "saves.getMany") {
-      return [
-        { id: "design-a", title: "Design A" },
-        { id: "design-b", title: "Design B" },
-        { id: "design-c", title: "Design C" },
-      ];
-    }
-    throw new Error(`Unexpected query: ${name}`);
+      }),
+      "saves.getMany": () => representatives,
+    },
   });
-  vi.stubGlobal("pond", { query });
   const onClose = vi.fn();
   const host = document.createElement("div");
   document.body.append(host);
@@ -51,11 +46,14 @@ it("rejects and closes a cluster preview without writing to the Library", async 
     );
 
     expect(onClose).toHaveBeenCalledOnce();
-    expect(query).not.toHaveBeenCalledWith(
+    expect(window.pond.query).not.toHaveBeenCalledWith(
       "folders.createWithSaves",
       expect.anything(),
     );
-    expect(query).not.toHaveBeenCalledWith("saves.bulkEdit", expect.anything());
+    expect(window.pond.query).not.toHaveBeenCalledWith(
+      "saves.bulkEdit",
+      expect.anything(),
+    );
   } finally {
     await act(async () => root.unmount());
     host.remove();
@@ -69,42 +67,37 @@ function button(label: string) {
 }
 
 it("applies accepted labels as add-only tag edits", async () => {
-  const query = vi.fn(
-    async (
-      name: string,
-      input: { saveIds?: Array<string>; ids?: Array<string> },
-    ) => {
-      if (name === "saves.semanticClusters") {
-        return { clusters: [], unclustered: ["save-a", "save-b"] };
-      }
-      if (name === "saves.classifyLabels") {
-        return {
-          items: [
-            {
-              id: "save-a",
-              scores: [
-                { label: "Design", score: 0.91 },
-                { label: "Research", score: 0.2 },
-              ],
-            },
-            {
-              id: "save-b",
-              scores: [
-                { label: "Research", score: 0.82 },
-                { label: "Design", score: 0.1 },
-              ],
-            },
-          ],
-          excludedIds: [],
-        };
-      }
-      if (name === "saves.bulkEdit") {
-        return { changed: input.ids?.length ?? 0 };
-      }
-      throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: {
+      "saves.semanticClusters": () => ({
+        clusters: [],
+        unclustered: ["save-a", "save-b"],
+      }),
+      "saves.classifyLabels": () => ({
+        items: [
+          {
+            id: "save-a",
+            scores: [
+              { label: "Design", score: 0.91 },
+              { label: "Research", score: 0.2 },
+            ],
+          },
+          {
+            id: "save-b",
+            scores: [
+              { label: "Research", score: 0.82 },
+              { label: "Design", score: 0.1 },
+            ],
+          },
+        ],
+        excludedIds: [],
+      }),
+      "saves.bulkEdit": (input) => ({
+        changed: input.ids.length,
+        undoId: null,
+      }),
     },
-  );
-  vi.stubGlobal("pond", { query });
+  });
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -138,17 +131,17 @@ it("applies accepted labels as add-only tag edits", async () => {
     await act(async () => button("Preview Labels")?.click());
     await act(async () => button("Apply Labels")?.click());
 
-    expect(query).toHaveBeenCalledWith("saves.bulkEdit", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
       ids: ["save-a"],
       actorReason: "semantic-label-preview",
       operation: { kind: "tags", tags: ["Design"], mode: "add" },
     });
-    expect(query).toHaveBeenCalledWith("saves.bulkEdit", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
       ids: ["save-b"],
       actorReason: "semantic-label-preview",
       operation: { kind: "tags", tags: ["Research"], mode: "add" },
     });
-    expect(query).not.toHaveBeenCalledWith(
+    expect(window.pond.query).not.toHaveBeenCalledWith(
       "saves.bulkEdit",
       expect.objectContaining({
         operation: expect.objectContaining({ mode: "replace" }),
@@ -161,9 +154,9 @@ it("applies accepted labels as add-only tag edits", async () => {
 });
 
 it("creates a folder only after the cluster is accepted", async () => {
-  const query = vi.fn(async (name: string) => {
-    if (name === "saves.semanticClusters") {
-      return {
+  bridge.use({
+    query: {
+      "saves.semanticClusters": () => ({
         clusters: [
           {
             id: "design-a",
@@ -172,20 +165,21 @@ it("creates a folder only after the cluster is accepted", async () => {
           },
         ],
         unclustered: [],
-      };
-    }
-    if (name === "saves.getMany") {
-      return [];
-    }
-    if (name === "folders.createWithSaves") {
-      return { id: "folder-design", name: "Design Systems" };
-    }
-    if (name === "folders.list" || name === "folders.memberships") {
-      return [];
-    }
-    throw new Error(`Unexpected query: ${name}`);
+      }),
+      "saves.getMany": () => [],
+      "folders.createWithSaves": () => ({
+        id: "folder-design",
+        parentId: null,
+        name: "Design Systems",
+        color: null,
+        sortOrder: 0,
+        createdAt: new Date(0),
+        undoId: null,
+      }),
+      "folders.list": () => [],
+      "folders.memberships": () => [],
+    },
   });
-  vi.stubGlobal("pond", { query });
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -198,7 +192,7 @@ it("creates a folder only after the cluster is accepted", async () => {
     ].find((button) => button.textContent?.trim() === "Create Folder");
     await act(async () => create?.click());
 
-    expect(query).toHaveBeenCalledWith("folders.createWithSaves", {
+    expect(window.pond.query).toHaveBeenCalledWith("folders.createWithSaves", {
       name: "Design Systems",
       parentId: null,
       saveIds: ["design-a", "design-b", "design-c"],
@@ -210,10 +204,15 @@ it("creates a folder only after the cluster is accepted", async () => {
 });
 
 it("shows product copy instead of an internal error when the preview fails", async () => {
-  const query = vi.fn(async () => {
-    throw new TypeError("Cannot read properties of null (reading 'clusters')");
+  bridge.use({
+    query: {
+      "saves.semanticClusters": async () => {
+        throw new TypeError(
+          "Cannot read properties of null (reading 'clusters')",
+        );
+      },
+    },
   });
-  vi.stubGlobal("pond", { query });
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);

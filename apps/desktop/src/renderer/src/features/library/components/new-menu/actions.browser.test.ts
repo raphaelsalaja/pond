@@ -12,31 +12,40 @@ import {
 import { libraryViewContext } from "@/features/saves";
 import { selection } from "@/features/saves/navigation";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
+import { bridge } from "@/shared/test/pond-bridge";
 import { createNewActions } from "./actions";
 import type { NewActionServices } from "./actions";
 
 let notificationSequence = 0;
-const notify = vi.fn<NewActionServices["notify"]>(
-  (options) => `${options.id}:test-${++notificationSequence}`,
-);
+let folderId: string | null = null;
+let eagleImportProgress: ((progress: EagleImportProgress) => void) | null =
+  null;
 const updateNotification = vi.fn<NewActionServices["updateNotification"]>();
-const folders = { refresh: vi.fn(async () => {}) };
 const startEditingFolder = vi.fn<NewActionServices["startEditingFolder"]>();
 const openTagCreation = vi.fn<NewActionServices["openTagCreation"]>();
 const openSavedViewEditor = vi.fn<NewActionServices["openSavedViewEditor"]>();
 const openSource = vi.fn<NewActionServices["openSource"]>();
 const selectSave = vi.fn<NewActionServices["selectSave"]>();
 const showSaves = vi.fn<NewActionServices["showSaves"]>();
-const currentFolderId = vi.fn<NewActionServices["currentFolderId"]>(() => null);
-let eagleImportProgress: ((progress: EagleImportProgress) => void) | null =
-  null;
 const unsubscribeEagleImportProgress = vi.fn();
-const onEagleImportProgress = vi.fn<NewActionServices["onEagleImportProgress"]>(
-  (callback) => {
+const services: NewActionServices = {
+  notify: (options) => `${options.id}:test-${++notificationSequence}`,
+  updateNotification,
+  refreshFolders: async () => {},
+  startEditingFolder,
+  openTagCreation,
+  openSavedViewEditor,
+  openSource,
+  selectSave,
+  showSaves,
+  currentFolderId: () => folderId,
+  onEagleImportProgress: (callback) => {
     eagleImportProgress = callback;
     return unsubscribeEagleImportProgress;
   },
-);
+};
+const notify = vi.spyOn(services, "notify");
+const refreshFolders = vi.spyOn(services, "refreshFolders");
 const {
   createNote,
   createBlankDocument,
@@ -57,19 +66,7 @@ const {
   rescanLibrary,
   runNewAction,
   verifyIntegrity,
-} = createNewActions({
-  notify,
-  updateNotification,
-  refreshFolders: folders.refresh,
-  startEditingFolder,
-  openTagCreation,
-  openSavedViewEditor,
-  openSource,
-  selectSave,
-  showSaves,
-  currentFolderId,
-  onEagleImportProgress,
-});
+} = createNewActions(services);
 
 function clickShowInLibrary(): void {
   const options = notify.mock.lastCall?.[0];
@@ -77,19 +74,24 @@ function clickShowInLibrary(): void {
   options?.action?.onClick();
 }
 
-const query = vi.fn();
+function eagleDetails() {
+  return {
+    deletedSkipped: 0,
+    lockedFolders: [],
+    droppedFields: [],
+    approximatedRules: [],
+    shortcuts: { status: "missing" as const, importable: 0, imported: 0 },
+  };
+}
 
 describe("new menu actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     notificationSequence = 0;
-    query.mockReset();
-    currentFolderId.mockReturnValue(null);
+    folderId = null;
     eagleImportProgress = null;
-    vi.stubGlobal("window", { pond: { query } });
   });
   afterEach(() => {
-    vi.unstubAllGlobals();
     closeDuplicateReview();
     closeOrganizationReview();
     selection.clear();
@@ -97,21 +99,25 @@ describe("new menu actions", () => {
   });
 
   it("does not import or notify when a picker is cancelled", async () => {
-    query.mockResolvedValue({ paths: [] });
+    bridge.use({ query: { "saves.pickImportPaths": () => ({ paths: [] }) } });
     await importPaths("folders");
-    expect(query).toHaveBeenCalledExactlyOnceWith("saves.pickImportPaths", {
-      kind: "folders",
-    });
+    expect(window.pond.query).toHaveBeenCalledExactlyOnceWith(
+      "saves.pickImportPaths",
+      { kind: "folders" },
+    );
     expect(notify).not.toHaveBeenCalled();
   });
 
   it("imports selected paths through the existing importer", async () => {
-    query
-      .mockResolvedValueOnce({ paths: ["/tmp/images"] })
-      .mockResolvedValueOnce({ candidates: [] })
-      .mockResolvedValueOnce({ ok: true, ids: ["one", "two"] });
+    bridge.use({
+      query: {
+        "saves.pickImportPaths": () => ({ paths: ["/tmp/images"] }),
+        "saves.reviewImportDuplicates": () => ({ candidates: [] }),
+        "saves.importFiles": () => ({ ok: true, ids: ["one", "two"] }),
+      },
+    });
     await importPaths("folders");
-    expect(query).toHaveBeenLastCalledWith("saves.importFiles", {
+    expect(window.pond.query).toHaveBeenLastCalledWith("saves.importFiles", {
       paths: ["/tmp/images"],
     });
     expect(notify).toHaveBeenCalledWith(
@@ -123,12 +129,18 @@ describe("new menu actions", () => {
   });
 
   it("shows the Saves a clipboard import returned", async () => {
-    query
-      .mockResolvedValueOnce({ ok: true, paths: ["/tmp/pond-clip/a.png"] })
-      .mockResolvedValueOnce({ candidates: [] })
-      .mockResolvedValueOnce({ ok: true, ids: ["pasted"] });
+    bridge.use({
+      query: {
+        "saves.stageClipboard": () => ({
+          ok: true,
+          paths: ["/tmp/pond-clip/a.png"],
+        }),
+        "saves.reviewImportDuplicates": () => ({ candidates: [] }),
+        "saves.importFiles": () => ({ ok: true, ids: ["pasted"] }),
+      },
+    });
     await importClipboard();
-    expect(query).toHaveBeenLastCalledWith("saves.importFiles", {
+    expect(window.pond.query).toHaveBeenLastCalledWith("saves.importFiles", {
       paths: ["/tmp/pond-clip/a.png"],
       origin: "clipboard",
     });
@@ -140,12 +152,15 @@ describe("new menu actions", () => {
   });
 
   it("files picked for a folder land in that folder", async () => {
-    query
-      .mockResolvedValueOnce({ paths: ["/tmp/poster.png"] })
-      .mockResolvedValueOnce({ candidates: [] })
-      .mockResolvedValueOnce({ ok: true, ids: ["one"] });
+    bridge.use({
+      query: {
+        "saves.pickImportPaths": () => ({ paths: ["/tmp/poster.png"] }),
+        "saves.reviewImportDuplicates": () => ({ candidates: [] }),
+        "saves.importFiles": () => ({ ok: true, ids: ["one"] }),
+      },
+    });
     await importPaths("files", "posters");
-    expect(query).toHaveBeenLastCalledWith("saves.importFiles", {
+    expect(window.pond.query).toHaveBeenLastCalledWith("saves.importFiles", {
       paths: ["/tmp/poster.png"],
       folderIds: ["posters"],
     });
@@ -157,10 +172,13 @@ describe("new menu actions", () => {
   });
 
   it("reports unsupported file selections without claiming success", async () => {
-    query
-      .mockResolvedValueOnce({ paths: ["/tmp/unsupported"] })
-      .mockResolvedValueOnce({ candidates: [] })
-      .mockResolvedValueOnce({ ok: false, error: "no_files" });
+    bridge.use({
+      query: {
+        "saves.pickImportPaths": () => ({ paths: ["/tmp/unsupported"] }),
+        "saves.reviewImportDuplicates": () => ({ candidates: [] }),
+        "saves.importFiles": () => ({ ok: false, error: "no_files" }),
+      },
+    });
     await expect(importPaths("files")).rejects.toThrow(
       "No files were imported",
     );
@@ -168,7 +186,14 @@ describe("new menu actions", () => {
   });
 
   it("reports an empty clipboard", async () => {
-    query.mockResolvedValue({ ok: false, error: "empty_clipboard" });
+    bridge.use({
+      query: {
+        "saves.stageClipboard": () => ({
+          ok: false,
+          error: "empty_clipboard",
+        }),
+      },
+    });
     await expect(importClipboard()).rejects.toThrow(
       "Copy an image or files first",
     );
@@ -190,14 +215,22 @@ describe("new menu actions", () => {
     await expect(importLinks(input)).rejects.toThrow(
       "Enter valid website links",
     );
-    expect(query).not.toHaveBeenCalled();
+    expect(window.pond.query).not.toHaveBeenCalled();
   });
 
   it("keeps only failed links for retry, including rejected queries", async () => {
-    query
-      .mockResolvedValueOnce({ ok: true, id: "one" })
-      .mockResolvedValueOnce({ ok: false, error: "unsupported_url" })
-      .mockRejectedValueOnce(new Error("offline"));
+    bridge.use({
+      query: {
+        "saves.quickAdd": async ({ url } = {}) => {
+          if (url === "https://three.test") {
+            throw new Error("offline");
+          }
+          return url === "https://one.test"
+            ? { ok: true, id: "one" }
+            : { ok: false, error: "unsupported_url" };
+        },
+      },
+    });
     expect(
       await importLinks("https://one.test https://two.test https://three.test"),
     ).toEqual(["https://two.test", "https://three.test"]);
@@ -209,21 +242,32 @@ describe("new menu actions", () => {
   });
 
   it("stays quiet when every link failed", async () => {
-    query.mockResolvedValueOnce({ ok: false, error: "unsupported_url" });
+    bridge.use({
+      query: {
+        "saves.quickAdd": () => ({ ok: false, error: "unsupported_url" }),
+      },
+    });
     await importLinks("https://one.test");
     expect(notify).not.toHaveBeenCalled();
   });
 
   it("leaves added links in the library without selecting them", async () => {
-    query.mockResolvedValueOnce({ ok: true, id: "first" });
+    bridge.use({
+      query: { "saves.quickAdd": () => ({ ok: true, id: "first" }) },
+    });
     await importLinks("https://one.test");
     expect(selectSave).not.toHaveBeenCalled();
   });
 
   it("reports a batch of links as one download", async () => {
-    query
-      .mockResolvedValueOnce({ ok: true, id: "first" })
-      .mockResolvedValueOnce({ ok: true, id: "second" });
+    bridge.use({
+      query: {
+        "saves.quickAdd": ({ url } = {}) => ({
+          ok: true,
+          id: url === "https://one.test" ? "first" : "second",
+        }),
+      },
+    });
     await importLinks("https://one.test https://two.test");
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Downloading 2 links" }),
@@ -231,9 +275,11 @@ describe("new menu actions", () => {
   });
 
   it("creates an untitled note in the library without opening it", async () => {
-    query.mockResolvedValue({ ok: true, id: "note-id" });
+    bridge.use({
+      query: { "saves.createManual": () => ({ ok: true, id: "note-id" }) },
+    });
     await createNote();
-    expect(query).toHaveBeenCalledWith("saves.createManual", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.createManual", {
       title: null,
       note: null,
       mediaType: "text",
@@ -243,30 +289,41 @@ describe("new menu actions", () => {
   });
 
   it("assigns a new note to the current folder", async () => {
-    currentFolderId.mockReturnValue("folder-1");
-    query
-      .mockResolvedValueOnce({ ok: true, id: "note-id" })
-      .mockResolvedValueOnce({ ok: true });
+    folderId = "folder-1";
+    bridge.use({
+      query: {
+        "saves.createManual": () => ({ ok: true, id: "note-id" }),
+        "folders.addSaves": () => ({ ok: true, undoId: null }),
+      },
+    });
     await createNote();
-    expect(query).toHaveBeenCalledWith("folders.addSaves", {
+    expect(window.pond.query).toHaveBeenCalledWith("folders.addSaves", {
       folderId: "folder-1",
       saveIds: ["note-id"],
     });
   });
 
   it("does not select a failed note", async () => {
-    query.mockResolvedValue({ ok: false, error: "empty_input" });
+    bridge.use({
+      query: {
+        "saves.createManual": () => ({ ok: false, error: "empty_input" }),
+      },
+    });
     await expect(createNote()).rejects.toThrow("Couldn't save");
     expect(selectSave).not.toHaveBeenCalled();
   });
 
   it("creates a blank document through the document query", async () => {
-    query.mockResolvedValue({ ok: true, id: "doc-id" });
-    await createBlankDocument("word");
-    expect(query).toHaveBeenCalledWith("saves.createBlankDocument", {
-      kind: "word",
-      folderId: null,
+    bridge.use({
+      query: {
+        "saves.createBlankDocument": () => ({ ok: true, id: "doc-id" }),
+      },
     });
+    await createBlankDocument("word");
+    expect(window.pond.query).toHaveBeenCalledWith(
+      "saves.createBlankDocument",
+      { kind: "word", folderId: null },
+    );
     expect(selectSave).toHaveBeenCalledWith("doc-id");
   });
 
@@ -303,20 +360,42 @@ describe("new menu actions", () => {
   });
 
   it("creates an untitled folder and starts inline naming", async () => {
-    query.mockResolvedValue({ id: "created" });
+    bridge.use({
+      query: {
+        "folders.create": (input) => ({
+          id: "created",
+          name: input.name,
+          parentId: input.parentId ?? null,
+          color: null,
+          sortOrder: 0,
+          createdAt: new Date(0),
+        }),
+      },
+    });
     await newFolder("parent");
-    expect(query).toHaveBeenCalledWith("folders.create", {
+    expect(window.pond.query).toHaveBeenCalledWith("folders.create", {
       name: "Untitled",
       parentId: "parent",
     });
-    expect(folders.refresh).toHaveBeenCalledOnce();
+    expect(refreshFolders).toHaveBeenCalledOnce();
     expect(startEditingFolder).toHaveBeenCalledWith("created");
   });
 
   it("creates root folders without a parent field", async () => {
-    query.mockResolvedValue({ id: "created" });
+    bridge.use({
+      query: {
+        "folders.create": (input) => ({
+          id: "created",
+          name: input.name,
+          parentId: null,
+          color: null,
+          sortOrder: 0,
+          createdAt: new Date(0),
+        }),
+      },
+    });
     await newFolder();
-    expect(query).toHaveBeenCalledWith("folders.create", {
+    expect(window.pond.query).toHaveBeenCalledWith("folders.create", {
       name: "Untitled",
     });
   });
@@ -324,13 +403,13 @@ describe("new menu actions", () => {
   it("opens the inline tag group draft", () => {
     newTag("tag-group");
     expect(openTagCreation).toHaveBeenCalledWith("group");
-    expect(query).not.toHaveBeenCalled();
+    expect(window.pond.query).not.toHaveBeenCalled();
   });
 
   it("opens the full smart-folder rule editor", () => {
     newSmartFolder();
     expect(openSavedViewEditor).toHaveBeenCalledWith("smart_folder");
-    expect(query).not.toHaveBeenCalled();
+    expect(window.pond.query).not.toHaveBeenCalled();
   });
 
   it("opens the correct source setup flow", () => {
@@ -341,19 +420,31 @@ describe("new menu actions", () => {
   });
 
   it("refreshes folders after importing Eagle and reports partial results", async () => {
-    query
-      .mockResolvedValueOnce({ ok: true, path: "/tmp/design.library" })
-      .mockImplementationOnce(async (_name, input) => {
-        eagleImportProgress?.({
-          id: input.progressId,
-          processed: 6,
-          total: 10,
-          imported: 2,
-          skipped: 3,
-          failed: 1,
-        });
-        return { ok: true, imported: 2, skipped: 3, failed: 1 };
-      });
+    bridge.use({
+      query: {
+        "saves.pickEagleLibrary": () => ({
+          ok: true,
+          path: "/tmp/design.library",
+        }),
+        "saves.importEagleLibrary": (input) => {
+          eagleImportProgress?.({
+            id: input.progressId ?? "",
+            processed: 6,
+            total: 10,
+            imported: 2,
+            skipped: 3,
+            failed: 1,
+          });
+          return {
+            ok: true,
+            imported: 2,
+            skipped: 3,
+            failed: 1,
+            ...eagleDetails(),
+          };
+        },
+      },
+    });
     await importEagle();
     expect(updateNotification).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -368,7 +459,7 @@ describe("new menu actions", () => {
       }),
     );
     expect(unsubscribeEagleImportProgress).toHaveBeenCalledOnce();
-    expect(folders.refresh).toHaveBeenCalledOnce();
+    expect(refreshFolders).toHaveBeenCalledOnce();
     expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({
         title: "Imported 2 items",
@@ -378,14 +469,19 @@ describe("new menu actions", () => {
   });
 
   it("replaces import progress with an error if Eagle import fails", async () => {
-    query
-      .mockResolvedValueOnce({ ok: true, path: "/tmp/wrong" })
-      .mockResolvedValueOnce({
-        ok: false,
-        imported: 0,
-        skipped: 0,
-        error: "not_eagle_library",
-      });
+    bridge.use({
+      query: {
+        "saves.pickEagleLibrary": () => ({ ok: true, path: "/tmp/wrong" }),
+        "saves.importEagleLibrary": () => ({
+          ok: false,
+          error: "not_eagle_library",
+          imported: 0,
+          skipped: 0,
+          failed: 0,
+          ...eagleDetails(),
+        }),
+      },
+    });
     await runNewAction(importEagle);
     expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -397,17 +493,28 @@ describe("new menu actions", () => {
   });
 
   it("does not import or notify when a Pond package picker is cancelled", async () => {
-    query.mockResolvedValue({ ok: false, reason: "cancelled" });
+    bridge.use({
+      query: {
+        "saves.importPackage": () => ({ ok: false, reason: "cancelled" }),
+      },
+    });
     await importPondPackage();
-    expect(query).toHaveBeenCalledExactlyOnceWith("saves.importPackage", {});
+    expect(window.pond.query).toHaveBeenCalledExactlyOnceWith(
+      "saves.importPackage",
+      {},
+    );
     expect(notify).not.toHaveBeenCalled();
-    expect(folders.refresh).not.toHaveBeenCalled();
+    expect(refreshFolders).not.toHaveBeenCalled();
   });
 
   it("refreshes folders after importing a Pond package", async () => {
-    query.mockResolvedValue({ ok: true, imported: 4, skipped: 2 });
+    bridge.use({
+      query: {
+        "saves.importPackage": () => ({ ok: true, imported: 4, skipped: 2 }),
+      },
+    });
     await importPondPackage();
-    expect(folders.refresh).toHaveBeenCalledOnce();
+    expect(refreshFolders).toHaveBeenCalledOnce();
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Imported 4 Saves",
@@ -418,13 +525,21 @@ describe("new menu actions", () => {
   });
 
   it("refreshes folders after importing an Eagle package", async () => {
-    query.mockResolvedValue({ ok: true, imported: 3, skipped: 1 });
+    bridge.use({
+      query: {
+        "saves.importEaglePackage": () => ({
+          ok: true,
+          imported: 3,
+          skipped: 1,
+        }),
+      },
+    });
     await importEaglePackage();
-    expect(query).toHaveBeenCalledExactlyOnceWith(
+    expect(window.pond.query).toHaveBeenCalledExactlyOnceWith(
       "saves.importEaglePackage",
       {},
     );
-    expect(folders.refresh).toHaveBeenCalledOnce();
+    expect(refreshFolders).toHaveBeenCalledOnce();
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Imported 3 Saves",
@@ -434,22 +549,33 @@ describe("new menu actions", () => {
   });
 
   it("does not notify when the data export picker is cancelled", async () => {
-    query.mockResolvedValue({ ok: false, reason: "cancelled" });
+    bridge.use({
+      query: {
+        "saves.importDataExport": () => ({ ok: false, reason: "cancelled" }),
+      },
+    });
     await importDataExport();
-    expect(query).toHaveBeenCalledExactlyOnceWith("saves.importDataExport", {});
+    expect(window.pond.query).toHaveBeenCalledExactlyOnceWith(
+      "saves.importDataExport",
+      {},
+    );
     expect(notify).not.toHaveBeenCalled();
   });
 
   it("names the platforms and asks you to connect missing Sources", async () => {
-    query.mockResolvedValue({
-      ok: true,
-      imported: 12,
-      skipped: 3,
-      platforms: ["X", "Instagram", "YouTube"],
-      connect: ["twitter", "instagram"],
+    bridge.use({
+      query: {
+        "saves.importDataExport": () => ({
+          ok: true,
+          imported: 12,
+          skipped: 3,
+          platforms: ["X", "Instagram", "YouTube"],
+          connect: ["twitter", "instagram"],
+        }),
+      },
     });
     await importDataExport();
-    expect(folders.refresh).toHaveBeenCalledOnce();
+    expect(refreshFolders).toHaveBeenCalledOnce();
     expect(notify).toHaveBeenCalledWith(
       expect.objectContaining({
         title: "Imported 12 Saves from X, Instagram, and YouTube",
@@ -459,12 +585,16 @@ describe("new menu actions", () => {
   });
 
   it("reports skipped Saves when every Source is connected", async () => {
-    query.mockResolvedValue({
-      ok: true,
-      imported: 0,
-      skipped: 4,
-      platforms: ["Reddit"],
-      connect: [],
+    bridge.use({
+      query: {
+        "saves.importDataExport": () => ({
+          ok: true,
+          imported: 0,
+          skipped: 4,
+          platforms: ["Reddit"],
+          connect: [],
+        }),
+      },
     });
     await importDataExport();
     expect(notify).toHaveBeenCalledWith(
@@ -476,21 +606,39 @@ describe("new menu actions", () => {
   });
 
   it("surfaces an unreadable data export", async () => {
-    query.mockResolvedValue({ ok: false, error: "Not an export." });
+    bridge.use({
+      query: {
+        "saves.importDataExport": () => ({
+          ok: false,
+          error: "Not an export.",
+        }),
+      },
+    });
     await expect(importDataExport()).rejects.toThrow("Not an export.");
   });
 
   it("reports a completed library rescan", async () => {
-    query.mockResolvedValue({ updated: 3, total: 1200 });
+    bridge.use({
+      query: {
+        "library.rescan": () => ({ updated: 3, total: 1200, missingFiles: [] }),
+      },
+    });
     await rescanLibrary();
-    expect(query).toHaveBeenCalledExactlyOnceWith("library.rescan", {});
+    expect(window.pond.query).toHaveBeenCalledExactlyOnceWith(
+      "library.rescan",
+      {},
+    );
     expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({ title: "Updated 3 of 1,200 saves" }),
     );
   });
 
   it("says the library is up to date when rescan changes nothing", async () => {
-    query.mockResolvedValue({ updated: 0, total: 1200 });
+    bridge.use({
+      query: {
+        "library.rescan": () => ({ updated: 0, total: 1200, missingFiles: [] }),
+      },
+    });
     await rescanLibrary();
     expect(updateNotification).toHaveBeenLastCalledWith(
       expect.objectContaining({ title: "Library is up to date" }),
@@ -498,14 +646,18 @@ describe("new menu actions", () => {
   });
 
   it("reports a healthy integrity check", async () => {
-    query.mockResolvedValue({
-      ok: true,
-      missing: [],
-      orphans: [],
-      errors: {},
+    bridge.use({
+      query: {
+        "library.verifyIntegrity": () => ({
+          ok: true,
+          missing: [],
+          orphans: [],
+          errors: {},
+        }),
+      },
     });
     await verifyIntegrity();
-    expect(query).toHaveBeenCalledExactlyOnceWith(
+    expect(window.pond.query).toHaveBeenCalledExactlyOnceWith(
       "library.verifyIntegrity",
       {},
     );
@@ -515,11 +667,15 @@ describe("new menu actions", () => {
   });
 
   it("says what failed when files are missing", async () => {
-    query.mockResolvedValue({
-      ok: true,
-      missing: ["a", "b"],
-      orphans: ["c"],
-      errors: {},
+    bridge.use({
+      query: {
+        "library.verifyIntegrity": () => ({
+          ok: true,
+          missing: ["a", "b"],
+          orphans: ["c"],
+          errors: {},
+        }),
+      },
     });
     await verifyIntegrity();
     expect(updateNotification).toHaveBeenLastCalledWith(
@@ -531,9 +687,13 @@ describe("new menu actions", () => {
   });
 
   it("surfaces a failed integrity check", async () => {
-    query.mockResolvedValue({
-      ok: false,
-      error: "Something went wrong. Try again.",
+    bridge.use({
+      query: {
+        "library.verifyIntegrity": () => ({
+          ok: false,
+          error: "Something went wrong. Try again.",
+        }),
+      },
     });
     await verifyIntegrity();
     expect(updateNotification).toHaveBeenLastCalledWith(

@@ -70,7 +70,9 @@ function InboxPage({
   const ids = queue?.ids;
   useEffect(() => {
     if (ids) {
-      void ensureSaves(ids).catch(() => {});
+      void ensureSaves(ids).catch((cause: unknown) => {
+        console.warn("[pond inbox] loading review saves failed", cause);
+      });
     }
   }, [ids]);
 

@@ -148,27 +148,31 @@ export function takeLegacyFilters(): PersistedFilters | null {
   return legacy.rows.length > 0 || legacy.semanticQuery ? legacy : null;
 }
 
-const store = new Store<ViewStoreState>({
-  q: "",
-  searchInput: "",
-  searchAllView: null,
-  rows: [],
-  combinator: "and",
-  query: EMPTY_QUERY,
-  inheritedQuery: EMPTY_QUERY,
-  presentationFolderId: null,
-  randomSeed: readViewPref("seed") ?? "pond",
-  layout: readInitialLayout(),
-  sortKey: readViewPref("sort") ?? "savedAt",
-  sortDir: readViewPref("dir") === "asc" ? "asc" : "desc",
-  urlSort: null,
-  zoom: readInitialZoom(),
-  capture: false,
-  activeViewId: null,
-  includeSubfolders: readViewPref("subfolders") !== "0",
-  semanticQuery: null,
-  visualProbe: null,
-});
+export function initialViewState(): ViewStoreState {
+  return {
+    q: "",
+    searchInput: "",
+    searchAllView: null,
+    rows: [],
+    combinator: "and",
+    query: EMPTY_QUERY,
+    inheritedQuery: EMPTY_QUERY,
+    presentationFolderId: null,
+    randomSeed: readViewPref("seed") ?? "pond",
+    layout: readInitialLayout(),
+    sortKey: readViewPref("sort") ?? "savedAt",
+    sortDir: readViewPref("dir") === "asc" ? "asc" : "desc",
+    urlSort: null,
+    zoom: readInitialZoom(),
+    capture: false,
+    activeViewId: null,
+    includeSubfolders: readViewPref("subfolders") !== "0",
+    semanticQuery: null,
+    visualProbe: null,
+  };
+}
+
+const store = new Store<ViewStoreState>(initialViewState());
 
 applyZoomVar(store.state.zoom);
 

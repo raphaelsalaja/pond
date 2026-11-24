@@ -1,9 +1,10 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
+import { bridge } from "@/shared/test/pond-bridge";
 import { NewMenu, NewMenuDialogHost } from "./";
 
 const labels = ["New", "Import", "Sources", "Library"];
@@ -13,16 +14,10 @@ describe("new menu", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
+    bridge.use({
+      query: {
+        "saves.listBlankDocuments": () => ({ kinds: [], icons: {} }),
       },
-    );
-    vi.stubGlobal("pond", {
-      query: vi.fn(async () => ({ kinds: [] })),
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -33,7 +28,6 @@ describe("new menu", () => {
     newMenuDialog.close();
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function openMenu() {

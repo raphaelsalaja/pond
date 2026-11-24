@@ -157,7 +157,9 @@ export function HoverPreview() {
             }
             current = saveId;
           }
-        })().catch(() => {});
+        })().catch((cause: unknown) => {
+          console.warn("[pond preview] neighbor navigation failed", cause);
+        });
       }),
     [],
   );
@@ -177,7 +179,9 @@ export function HoverPreview() {
           await showSave(next);
         }
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        console.warn("[pond preview] step failed", cause);
+      });
   };
   const stepHotkey =
     (binding: PreviewStepBinding, delta: number) => (event: KeyboardEvent) => {
@@ -382,7 +386,12 @@ export function HoverPreview() {
                     void viewerRef.current
                       ?.querySelector<HTMLElement>("[data-viewer-root]")
                       ?.requestFullscreen()
-                      .catch(() => {});
+                      .catch((cause: unknown) => {
+                        console.warn(
+                          "[pond preview] full screen failed",
+                          cause,
+                        );
+                      });
                   }
             }
           >
@@ -445,7 +454,9 @@ export function HoverPreview() {
                   key={save.id}
                   save={save}
                   onNavigate={(id) => {
-                    void showSave(id).catch(() => {});
+                    void showSave(id).catch((cause: unknown) => {
+                      console.warn("[pond preview] navigation failed", cause);
+                    });
                   }}
                   onPositionChange={onPositionChange}
                   navRef={viewerNav}

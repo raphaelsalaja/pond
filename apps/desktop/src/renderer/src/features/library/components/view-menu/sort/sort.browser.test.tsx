@@ -2,7 +2,7 @@ import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { openLibraryAt } from "@/app/test/library-router";
 import {
   getViewState,
@@ -31,14 +31,6 @@ describe("sort section", () => {
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
     restoreDefaults();
     host = document.createElement("div");
     document.body.append(host);
@@ -49,7 +41,6 @@ describe("sort section", () => {
     await act(async () => root.unmount());
     host.remove();
     restoreDefaults();
-    vi.unstubAllGlobals();
   });
 
   async function render() {

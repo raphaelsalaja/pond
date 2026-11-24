@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { LibraryCustomizeDialog } from ".";
 
 const LOGO = "data:image/png;base64,bG9nbw==";
@@ -15,27 +16,20 @@ let root: Root;
 const onClose = vi.fn();
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+  bridge.use({
+    query: {
+      "library.identity.pickIcon": () => ({
+        ok: true,
+        image: { src: SOURCE, width: 400, height: 200 },
+      }),
+      "library.identity.cropIcon": () => ({ ok: true, icon: LOGO }),
+      "library.identity.pondLogo": () => ({ ok: true, icon: POND_LOGO }),
+      "library.identity.update": () => ({ ok: true, accent: null }),
+      "library.rename": ({ name }) => ({
+        ok: true,
+        path: `/Users/rafa/${name}.pond`,
+      }),
     },
-  );
-  vi.stubGlobal("pond", {
-    query: vi.fn(async (name: string) => {
-      if (name === "library.identity.pickIcon") {
-        return { ok: true, image: { src: SOURCE, width: 400, height: 200 } };
-      }
-      if (name === "library.identity.cropIcon") {
-        return { ok: true, icon: LOGO };
-      }
-      if (name === "library.identity.pondLogo") {
-        return { ok: true, icon: POND_LOGO };
-      }
-      return { ok: true };
-    }),
   });
   onClose.mockClear();
   host = document.createElement("div");
@@ -46,7 +40,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 function render(mark: LibraryMarkSource | null = null): Promise<void> {

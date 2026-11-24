@@ -1,9 +1,11 @@
+import { PrefsSchema } from "@pond/schema";
 import type { MenuItemSpec } from "@pond/ui";
 import type { OkResult } from "@shared/query-contracts-shared";
 import type { WirePrefsPatch } from "@shared/wire";
 import type { ReactNode } from "react";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { loadPrefs } from "@/shared/state/prefs";
+import { bridge } from "@/shared/test/pond-bridge";
 import {
   folderColorMenuItems,
   folderIconMenuItems,
@@ -16,27 +18,23 @@ let prefs: WirePrefsPatch = {
   },
 };
 let colorResult: OkResult = { ok: true };
-const query = vi.fn(async (name: string, input: WirePrefsPatch) => {
-  if (name === "settings.getPrefs") {
-    return prefs;
-  }
-  if (name === "settings.setPrefs") {
-    prefs = {
-      ...prefs,
-      ...input,
-      folderAppearance: {
-        ...prefs.folderAppearance,
-        ...input.folderAppearance,
-      },
-    };
-    return { prefs };
-  }
-  if (name === "folders.setColor") {
-    return colorResult;
-  }
-  return [];
-});
+const writes: Array<WirePrefsPatch> = [];
+const waiters: Array<{
+  match: (write: WirePrefsPatch) => boolean;
+  resolve: () => void;
+}> = [];
 const notifications: Array<string> = [];
+let notified = Promise.withResolvers<void>();
+
+function written(match: (write: WirePrefsPatch) => boolean): Promise<void> {
+  if (writes.some(match)) {
+    return Promise.resolve();
+  }
+  const { promise, resolve } = Promise.withResolvers<void>();
+  waiters.push({ match, resolve });
+  return promise;
+}
+
 function hasTitle(detail: unknown): detail is { title: string } {
   return (
     typeof detail === "object" &&
@@ -48,21 +46,47 @@ function hasTitle(detail: unknown): detail is { title: string } {
 const onNotification = (event: Event) => {
   if ("detail" in event && hasTitle(event.detail)) {
     notifications.push(event.detail.title);
+    notified.resolve();
   }
 };
 
 beforeEach(async () => {
-  query.mockClear();
   colorResult = { ok: true };
+  writes.length = 0;
+  waiters.length = 0;
   notifications.length = 0;
-  vi.stubGlobal("pond", { query });
+  notified = Promise.withResolvers<void>();
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => PrefsSchema.parse(prefs),
+      "settings.setPrefs": (input = {}) => {
+        writes.push(input);
+        prefs = {
+          ...prefs,
+          ...input,
+          folderAppearance: {
+            ...prefs.folderAppearance,
+            ...input.folderAppearance,
+          },
+        };
+        for (const waiter of waiters) {
+          if (waiter.match(input)) {
+            waiter.resolve();
+          }
+        }
+        return { ok: true, prefs: PrefsSchema.parse(prefs) };
+      },
+      "folders.setColor": () => colorResult,
+      "folders.list": () => [],
+      "folders.memberships": () => [],
+    },
+  });
   window.addEventListener("pond:notification", onNotification);
   await loadPrefs();
 });
 
 afterEach(() => {
   window.removeEventListener("pond:notification", onNotification);
-  vi.unstubAllGlobals();
 });
 
 function group(items: Array<MenuItemSpec>): Array<MenuItemSpec> {
@@ -84,14 +108,8 @@ function pick(items: Array<MenuItemSpec>, label: string): void {
   match.onCheckedChange?.(true);
 }
 
-function writes(): Array<WirePrefsPatch> {
-  return query.mock.calls.flatMap(([name, input]) =>
-    name === "settings.setPrefs" ? [input] : [],
-  );
-}
-
 function recentWrites(): Array<WirePrefsPatch["folderAppearance"]> {
-  return writes().flatMap((write) => write.folderAppearance ?? []);
+  return writes.flatMap((write) => write.folderAppearance ?? []);
 }
 
 it("lists recent and current custom colors by hex", () => {
@@ -109,10 +127,9 @@ it("records a color once the folder accepts it", async () => {
     glyphs: false,
   });
   pick(items, "#336699");
-  await vi.waitFor(() =>
-    expect(recentWrites()).toEqual([{ recentColors: ["#336699", "pink"] }]),
-  );
-  expect(query).toHaveBeenCalledWith("folders.setColor", {
+  await written((write) => write.folderAppearance !== undefined);
+  expect(recentWrites()).toEqual([{ recentColors: ["#336699", "pink"] }]);
+  expect(window.pond.query).toHaveBeenCalledWith("folders.setColor", {
     id: "folder",
     color: "#336699",
   });
@@ -125,9 +142,8 @@ it("reports a rejected color without recording it", async () => {
     glyphs: false,
   });
   pick(items, "Teal");
-  await vi.waitFor(() =>
-    expect(notifications).toEqual(["Couldn't update folder color"]),
-  );
+  await notified.promise;
+  expect(notifications).toEqual(["Couldn't update folder color"]);
   expect(recentWrites()).toEqual([]);
 });
 
@@ -139,12 +155,14 @@ it("adds recent and current icons after the menu's fixed set", async () => {
   });
   expect(labels(group(items))).toEqual(["Heart", "Rocket", "Camera"]);
   pick(items, "Rocket");
-  await vi.waitFor(() =>
-    expect(recentWrites()).toEqual([
-      { recentIcons: ["rocket", "heart", "folder"] },
-    ]),
-  );
-  expect(writes()).toContainEqual({
+  await Promise.all([
+    written((write) => write.folderAppearance !== undefined),
+    written((write) => write.folderViews !== undefined),
+  ]);
+  expect(recentWrites()).toEqual([
+    { recentIcons: ["rocket", "heart", "folder"] },
+  ]);
+  expect(writes).toContainEqual({
     folderViews: { folder: expect.objectContaining({ icon: "rocket" }) },
   });
 });

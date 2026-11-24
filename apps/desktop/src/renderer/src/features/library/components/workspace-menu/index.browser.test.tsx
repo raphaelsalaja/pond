@@ -1,80 +1,53 @@
+import type { QueryInput } from "@shared/query-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
+import { bridge } from "@/shared/test/pond-bridge";
 import { WorkspaceMenu } from ".";
-
-const query = vi.fn(async (name: string) => {
-  if (name === "library.info") {
-    return {
-      path: "/Users/rafa/Memes.pond",
-      name: "Memes",
-      icon: null,
-      accent: null,
-    };
-  }
-  if (name === "library.recent") {
-    return [
-      {
-        path: "/Users/rafa/Memes.pond",
-        name: "Memes",
-        available: true,
-        active: true,
-        lastOpened: 2,
-        icon: null,
-        accent: null,
-      },
-      {
-        path: "/Users/rafa/Work.pond",
-        name: "Work",
-        available: true,
-        active: false,
-        lastOpened: 1,
-        icon: null,
-        accent: null,
-      },
-    ];
-  }
-  if (name === "library.pickFolder") {
-    return { ok: true, path: "/Users/rafa/Libraries" };
-  }
-  if (name === "library.createAt") {
-    return { ok: true, path: "/Users/rafa/Libraries/My Pond.pond" };
-  }
-  return { ok: true };
-});
-
-const openExternal = vi.fn(async (_url: string) => ({ ok: true }));
 
 describe("workspace menu", () => {
   let host: HTMLDivElement;
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
+    bridge.use({
+      query: {
+        "library.info": () => ({
+          path: "/Users/rafa/Memes.pond",
+          name: "Memes",
+          icon: null,
+          mark: null,
+          accent: null,
+        }),
+        "library.recent": () => [
+          {
+            path: "/Users/rafa/Memes.pond",
+            name: "Memes",
+            available: true,
+            active: true,
+            lastOpened: 2,
+            icon: null,
+            accent: null,
+          },
+          {
+            path: "/Users/rafa/Work.pond",
+            name: "Work",
+            available: true,
+            active: false,
+            lastOpened: 1,
+            icon: null,
+            accent: null,
+          },
+        ],
+        "library.pickFolder": () => ({
+          ok: true,
+          path: "/Users/rafa/Libraries",
+        }),
       },
-    );
-    vi.stubGlobal("pond", {
-      query,
-      openExternal,
-      appInfo: async () => ({
-        name: "Pond",
-        version: "1.0.0",
-        platform: "darwin",
-        arch: "arm64",
-        username: "rafa",
-        isPackaged: true,
-      }),
     });
-    query.mockClear();
-    openExternal.mockClear();
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -83,7 +56,6 @@ describe("workspace menu", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function openMenu() {
@@ -114,6 +86,16 @@ describe("workspace menu", () => {
     );
   }
 
+  function menuItem(label: string): HTMLElement {
+    const item = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ].find((entry) => entry.textContent?.includes(label));
+    if (!item) {
+      throw new Error(`Missing ${label}`);
+    }
+    return item;
+  }
+
   it("shows a compact library menu", async () => {
     await openLibraryMenu();
     const text = document.body.textContent ?? "";
@@ -132,64 +114,69 @@ describe("workspace menu", () => {
     expect(text).not.toContain("Switch Library");
     expect(text).not.toContain("Check for Updates");
     for (const label of ["Create Library", "Open Library", "Merge Library"]) {
-      const item = [...document.querySelectorAll('[role="menuitem"]')].find(
-        (entry) => entry.textContent?.includes(label),
-      );
-      expect(item?.querySelector("svg")).not.toBeNull();
+      expect(menuItem(label).querySelector("svg")).not.toBeNull();
     }
   });
 
   it("switches to a recent library", async () => {
+    const switched = Promise.withResolvers<QueryInput<"library.switchTo">>();
+    bridge.use({
+      query: {
+        "library.switchTo": (input) => {
+          switched.resolve(input);
+          return { ok: true, path: input.path };
+        },
+      },
+    });
     await openLibraryMenu();
     await vi.waitFor(() => expect(document.body.textContent).toContain("Work"));
-    const work = [
-      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-    ].find((item) => item.textContent?.includes("Work"));
-    if (!work) {
-      throw new Error("Missing Work library");
-    }
+    const work = menuItem("Work");
     await act(async () => work.click());
-    await vi.waitFor(() =>
-      expect(query).toHaveBeenCalledWith("library.switchTo", {
-        path: "/Users/rafa/Work.pond",
-      }),
-    );
+    await expect(switched.promise).resolves.toEqual({
+      path: "/Users/rafa/Work.pond",
+    });
   });
 
   it("creates a new library", async () => {
+    const created = Promise.withResolvers<QueryInput<"library.createAt">>();
+    bridge.use({
+      query: {
+        "library.createAt": (input) => {
+          created.resolve(input);
+          return { ok: true, path: `${input.path}/${input.name}.pond` };
+        },
+      },
+    });
     await openLibraryMenu();
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Create Library"),
     );
-    const item = [
-      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-    ].find((entry) => entry.textContent?.includes("Create Library"));
-    if (!item) {
-      throw new Error("Missing Create Library action");
-    }
+    const item = menuItem("Create Library");
     await act(async () => item.click());
-    await vi.waitFor(() =>
-      expect(query).toHaveBeenCalledWith("library.createAt", {
-        path: "/Users/rafa/Libraries",
-        name: "My Pond",
-      }),
-    );
+    await expect(created.promise).resolves.toEqual({
+      path: "/Users/rafa/Libraries",
+      name: "My Pond",
+    });
   });
 
   it("merges another library", async () => {
+    const merged = Promise.withResolvers<
+      QueryInput<"library.mergeFrom"> | undefined
+    >();
+    bridge.use({
+      query: {
+        "library.mergeFrom": (input) => {
+          merged.resolve(input);
+          return { ok: true };
+        },
+      },
+    });
     await openLibraryMenu();
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Merge Library"),
     );
-    const item = [
-      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-    ].find((entry) => entry.textContent?.includes("Merge Library"));
-    if (!item) {
-      throw new Error("Missing Merge Library action");
-    }
+    const item = menuItem("Merge Library");
     await act(async () => item.click());
-    await vi.waitFor(() =>
-      expect(query).toHaveBeenCalledWith("library.mergeFrom", {}),
-    );
+    await expect(merged.promise).resolves.toEqual({});
   });
 });

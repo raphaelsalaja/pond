@@ -1,5 +1,5 @@
 import { PrefsSchema } from "@pond/schema";
-import type { LibraryQueryRequest } from "@shared/library-query";
+import type { WireSyncAction } from "@shared/wire";
 import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -16,9 +16,22 @@ import {
   useIsDepartingSave,
 } from "@/features/saves/state/tag-picker";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import { bridge } from "@/shared/test/pond-bridge";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
 const prefs = PrefsSchema.parse({});
+const tagged: WireSyncAction = {
+  id: 1,
+  batchId: null,
+  modelName: "save",
+  modelId: "leaving",
+  action: "U",
+  data: null,
+  prevData: null,
+  actor: "user",
+  actorReason: null,
+  createdAt: 0,
+};
 
 function save(id: string) {
   const row = normalise({
@@ -53,7 +66,6 @@ describe("tagging in a filtered view", () => {
   let root: Root;
   let router: LibraryTestRouter;
   let ids = ["keep", "leaving"];
-  let sync: (() => void) | null = null;
 
   async function renderProbe() {
     await act(async () => {
@@ -67,45 +79,28 @@ describe("tagging in a filtered view", () => {
 
   beforeEach(async () => {
     ids = ["keep", "leaving"];
-    sync = null;
     router = await openLibraryAt(pathForLibraryNav({ kind: "untagged" }));
     pool.upsert(save("keep"));
     pool.upsert(save("leaving"));
     closeSaveTagPicker();
-    vi.stubGlobal("pond", {
-      query: vi.fn(async (name: string, _input?: LibraryQueryRequest) => {
-        if (name === "settings.getPrefs") {
-          return prefs;
-        }
-        if (name === "settings.setPrefs") {
-          return { prefs };
-        }
-        if (name === "saves.queryPage") {
-          return {
-            ids: [...ids],
-            total: ids.length,
-            revision: 1,
-            libraryId: "library",
-            nextCursor: null,
-          };
-        }
-        if (name === "saves.queryIds") {
-          return { ids: [...ids] };
-        }
-        if (name === "saves.getMany") {
-          return [];
-        }
-        return [];
-      }),
-      onSyncAction: (listener: () => void) => {
-        sync = listener;
-        return () => {
-          if (sync === listener) {
-            sync = null;
-          }
-        };
+    bridge.use({
+      query: {
+        "settings.getPrefs": () => prefs,
+        "settings.setPrefs": () => ({ ok: true, prefs }),
+        "saves.queryPage": () => ({
+          ids: [...ids],
+          total: ids.length,
+          revision: 1,
+          libraryId: "library",
+          nextCursor: null,
+        }),
+        "saves.queryIds": () => ({
+          ids: [...ids],
+          revision: 1,
+          libraryId: "library",
+        }),
+        "saves.getMany": () => [],
       },
-      onPrefsChanged: () => () => {},
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -113,12 +108,12 @@ describe("tagging in a filtered view", () => {
   });
 
   afterEach(async () => {
+    vi.useRealTimers();
     await act(async () => root.unmount());
     host.remove();
     closeSaveTagPicker();
     syncDepartingSaveIds([]);
     pool.clear();
-    vi.unstubAllGlobals();
   });
 
   it("keeps a save mounted until the tag picker closes when tagging removes it from the view", async () => {
@@ -128,12 +123,12 @@ describe("tagging in a filtered view", () => {
     await renderProbe();
 
     ids = ["keep"];
-    sync?.();
+    vi.useFakeTimers();
+    bridge.emit("onSyncAction", tagged);
     await act(async () => {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 150);
-      });
+      await vi.advanceTimersByTimeAsync(150);
     });
+    vi.useRealTimers();
 
     expect(host.querySelector("[data-ids]")?.getAttribute("data-ids")).toBe(
       "keep leaving",

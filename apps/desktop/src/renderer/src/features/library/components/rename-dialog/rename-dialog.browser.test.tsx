@@ -1,4 +1,5 @@
 import { isHTMLTag } from "@pond/ui/dom";
+import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
@@ -7,38 +8,28 @@ import {
   closeRenameDialog,
   openRenameDialog,
 } from "@/features/library/state/rename-dialog";
+import { bridge } from "@/shared/test/pond-bridge";
 import { RenameDialogHost } from "./host";
 
 let root: Root;
 let host: HTMLDivElement;
-const query = vi.fn(async (name: string) => {
-  if (name === "saves.batchRename") {
-    return { ok: true, renamed: 2 };
-  }
-  if (name === "saves.getMany") {
-    return ["IMG_2041", "IMG_2042"].map((title) => ({
-      id: `save-${title}`,
-      source: "local",
-      sourceId: title,
-      url: `file:///${title}.png`,
-      title,
-      status: "complete",
-    }));
-  }
-  return [];
-});
+/** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
+const rows = ["IMG_2041", "IMG_2042"].map((title) => ({
+  id: `save-${title}`,
+  source: "local",
+  sourceId: title,
+  url: `file:///${title}.png`,
+  title,
+  status: "complete",
+})) as Array<WireSave>;
 
 beforeEach(() => {
-  query.mockClear();
-  vi.stubGlobal("pond", { query });
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+  bridge.use({
+    query: {
+      "saves.batchRename": () => ({ ok: true, renamed: 2 }),
+      "saves.getMany": () => rows,
     },
-  );
+  });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -50,7 +41,6 @@ afterEach(async () => {
     root.unmount();
   });
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 async function openDialog() {
@@ -113,7 +103,7 @@ it("previews and applies a numbered format", async () => {
 
   await act(async () => button("Rename").click());
 
-  expect(query).toHaveBeenCalledWith("saves.batchRename", {
+  expect(window.pond.query).toHaveBeenCalledWith("saves.batchRename", {
     ids: ["save-IMG_2041", "save-IMG_2042"],
     pattern: "{title} {n}",
     start: 7,
@@ -136,7 +126,7 @@ it("replaces literal text and changes case", async () => {
   expect(previewNames()).toEqual(["trip-2041", "trip-2042"]);
 
   await act(async () => button("Rename").click());
-  expect(query).toHaveBeenCalledWith("saves.batchRename", {
+  expect(window.pond.query).toHaveBeenCalledWith("saves.batchRename", {
     ids: ["save-IMG_2041", "save-IMG_2042"],
     pattern: "{title}",
     start: undefined,

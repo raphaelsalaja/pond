@@ -1,34 +1,33 @@
+import { PrefsSchema } from "@pond/schema";
 import type { WirePrefsPatch } from "@shared/wire";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { beforeEach, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import {
   rememberFolderColor,
   rememberFolderIcon,
   withRecent,
 } from "./folder-appearance";
 
-const query = vi.fn();
 let stored: WirePrefsPatch = {
   folderAppearance: { recentIcons: ["star"], recentColors: ["pink"] },
 };
 
 beforeEach(() => {
-  query.mockReset();
-  query.mockImplementation(async (name: string, input: WirePrefsPatch) => {
-    if (name !== "settings.setPrefs") {
-      return stored;
-    }
-    stored = {
-      folderAppearance: {
-        ...stored.folderAppearance,
-        ...input.folderAppearance,
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => PrefsSchema.parse(stored),
+      "settings.setPrefs": (input = {}) => {
+        stored = {
+          folderAppearance: {
+            ...stored.folderAppearance,
+            ...input.folderAppearance,
+          },
+        };
+        return { ok: true, prefs: PrefsSchema.parse(stored) };
       },
-    };
-    return { prefs: stored };
+    },
   });
-  vi.stubGlobal("pond", { query });
 });
-
-afterEach(() => vi.unstubAllGlobals());
 
 it("puts the newest pick first without duplicates", () => {
   expect(withRecent(["a", "b", "c"], "c")).toEqual(["c", "a", "b"]);
@@ -42,21 +41,26 @@ it("keeps one picker row of recents", () => {
 
 it("records icons and normalized custom colors", async () => {
   await rememberFolderIcon("album");
-  expect(query).toHaveBeenCalledWith("settings.setPrefs", {
+  expect(window.pond.query).toHaveBeenCalledWith("settings.setPrefs", {
     folderAppearance: { recentIcons: ["album", "star"] },
   });
   await rememberFolderColor("#AB12CD");
-  expect(query).toHaveBeenCalledWith("settings.setPrefs", {
+  expect(window.pond.query).toHaveBeenCalledWith("settings.setPrefs", {
     folderAppearance: { recentColors: ["#ab12cd", "pink"] },
   });
 });
 
 it("skips the default color", async () => {
   await rememberFolderColor(null);
-  expect(query).not.toHaveBeenCalled();
+  expect(window.pond.query).not.toHaveBeenCalled();
 });
 
 it("never rejects when the write fails", async () => {
-  query.mockRejectedValue(new Error("offline"));
+  const offline = async () => {
+    throw new Error("offline");
+  };
+  bridge.use({
+    query: { "settings.getPrefs": offline, "settings.setPrefs": offline },
+  });
   await expect(rememberFolderIcon("star")).resolves.toBeUndefined();
 });

@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { libraryHeader } from "@/features/library/state/library-header";
 import {
@@ -64,14 +64,6 @@ describe("view menu", () => {
   }
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
     reset();
     host = document.createElement("div");
     document.body.append(host);
@@ -82,7 +74,6 @@ describe("view menu", () => {
     await act(async () => root.unmount());
     host.remove();
     reset();
-    vi.unstubAllGlobals();
   });
 
   it("opens a popup with every group", async () => {

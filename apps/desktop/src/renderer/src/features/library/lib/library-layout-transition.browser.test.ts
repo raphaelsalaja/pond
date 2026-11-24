@@ -4,65 +4,60 @@ import {
   completeLibraryLayoutTransition,
 } from "./library-layout-transition";
 
-function rect(
+function place(
+  node: HTMLElement,
   left: number,
   top: number,
   width: number,
   height: number,
-): DOMRect {
-  return new DOMRect(left, top, width, height);
+): void {
+  node.style.left = `${left}px`;
+  node.style.top = `${top}px`;
+  node.style.width = `${width}px`;
+  node.style.height = `${height}px`;
+}
+
+function card(id: string): HTMLLIElement {
+  const node = document.createElement("li");
+  node.dataset.libraryCard = "";
+  node.dataset.saveId = id;
+  node.style.position = "absolute";
+  return node;
 }
 
 describe("library layout transition", () => {
   afterEach(() => {
     document.body.replaceChildren();
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
   });
 
   it("FLIPs only mounted cards that intersected the viewport", () => {
-    vi.stubGlobal(
-      "matchMedia",
-      vi.fn(() => ({ matches: false })),
-    );
-
     const root = document.createElement("div");
     root.dataset.slot = "window";
     const viewport = document.createElement("main");
     viewport.dataset.libraryGridViewport = "";
+    viewport.style.position = "fixed";
+    place(viewport, 0, 0, 500, 500);
     const grid = document.createElement("ul");
-    const visible = document.createElement("li");
-    visible.dataset.libraryCard = "";
-    visible.dataset.saveId = "visible";
-    const offscreen = document.createElement("li");
-    offscreen.dataset.libraryCard = "";
-    offscreen.dataset.saveId = "offscreen";
+    const visible = card("visible");
+    const offscreen = card("offscreen");
+    place(visible, 20, 30, 100, 120);
+    place(offscreen, 20, 700, 100, 120);
     grid.append(visible, offscreen);
     viewport.append(grid);
     root.append(viewport);
     document.body.append(root);
-
-    viewport.getBoundingClientRect = () => rect(0, 0, 500, 500);
-    let visibleRect = rect(20, 30, 100, 120);
-    visible.getBoundingClientRect = () => visibleRect;
-    offscreen.getBoundingClientRect = () => rect(20, 700, 100, 120);
-    const visibleAnimate = vi.fn(() => ({
-      id: "",
-      cancel: vi.fn(),
-    }));
-    Object.defineProperty(visible, "animate", { value: visibleAnimate });
-    Object.defineProperty(offscreen, "animate", { value: vi.fn() });
-    visible.getAnimations = () => [];
-    offscreen.getAnimations = () => [];
+    const visibleAnimate = vi.spyOn(visible, "animate");
+    const offscreenAnimate = vi.spyOn(offscreen, "animate");
 
     beginLibraryLayoutTransition();
     expect(root.hasAttribute("data-layout-transition")).toBe(true);
-    visibleRect = rect(70, 80, 200, 240);
+    place(visible, 70, 80, 200, 240);
     completeLibraryLayoutTransition(grid);
 
     expect(root.hasAttribute("data-layout-transition")).toBe(false);
     expect(visibleAnimate).toHaveBeenCalledTimes(1);
-    expect(offscreen.animate).not.toHaveBeenCalled();
+    expect(offscreenAnimate).not.toHaveBeenCalled();
     expect(visibleAnimate).toHaveBeenCalledWith(
       [
         {

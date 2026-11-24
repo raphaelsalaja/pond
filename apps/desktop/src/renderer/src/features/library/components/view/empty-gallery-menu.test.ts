@@ -1,11 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { menuLabels } from "@/shared/test/menu-labels";
+import { bridge } from "@/shared/test/pond-bridge";
 import { buildEmptyGalleryMenu } from "./empty-gallery-menu";
 
 describe("empty gallery menu", () => {
   beforeEach(() => {
-    vi.stubGlobal("pond", {
-      query: vi.fn(async () => ({ kinds: [] })),
+    bridge.use({
+      query: {
+        "saves.listBlankDocuments": () => ({ kinds: [], icons: {} }),
+      },
     });
   });
   it("shares the New menu spec", () => {

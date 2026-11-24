@@ -3,7 +3,7 @@ import type { Query } from "@pond/schema/filters/types";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { RuleDialog } from "./rule-dialog";
 import type { RuleDialogProps } from "./rule-dialog";
 import {
@@ -59,14 +59,6 @@ describe("smart folder rule dialog", () => {
   let root: Root;
   let host: HTMLDivElement;
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -74,7 +66,6 @@ describe("smart folder rule dialog", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
   async function render(patch: Partial<RuleDialogProps> = {}) {
     await act(async () =>
