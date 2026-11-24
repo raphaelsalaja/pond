@@ -11,4 +11,6 @@ export {
   canvases,
   canvasIdFromPath,
   useCanvas,
+  useCanvasEditingId,
+  useHydrateCanvases,
 } from "./state/canvases";

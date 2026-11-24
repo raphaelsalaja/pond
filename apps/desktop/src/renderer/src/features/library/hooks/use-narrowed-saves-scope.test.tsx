@@ -4,12 +4,12 @@ import { RouterProvider } from "@tanstack/react-router";
 import { act, createContext, type ReactNode, use } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SaveListMode } from "@/features/saves";
-import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
 import {
   type LibraryTestRouter,
   openLibraryAt,
-} from "@/shared/test/library-router";
+} from "@/app/test/library-router";
+import type { SaveListMode } from "@/features/saves";
+import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
 import { getLibraryNav } from "../state/library-chrome";
 import {
   resetFilters,

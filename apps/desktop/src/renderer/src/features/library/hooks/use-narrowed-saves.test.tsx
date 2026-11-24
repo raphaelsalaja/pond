@@ -7,6 +7,11 @@ import { RouterContextProvider } from "@tanstack/react-router";
 import { act, useEffect, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  currentLocation,
+  type LibraryTestRouter,
+  openLibraryAt,
+} from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { followDeparture } from "@/features/saves/lib/save-nav";
 import {
@@ -17,11 +22,6 @@ import {
 import { pool } from "@/features/saves/pool";
 import { clearRecents, useTrackVisit } from "@/features/saves/state/recents";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
-import {
-  currentLocation,
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/shared/test/library-router";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
 const SAVE_ID = "recent-save";

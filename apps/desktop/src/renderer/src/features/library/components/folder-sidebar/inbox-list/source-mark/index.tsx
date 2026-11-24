@@ -1,4 +1,4 @@
-import { pickSourceIconUrl } from "@/features/saves/lib/media/url";
+import { pickSourceIconUrl } from "@/features/saves/media";
 import type { Save } from "@/features/saves/types";
 import { BrandTile } from "@/features/sources";
 import styles from "./styles.module.css";

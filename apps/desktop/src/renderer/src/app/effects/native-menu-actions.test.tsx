@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import { searchViewKey } from "@/features/library/lib/search-view";
 import {
   getViewState,
   resetFilters,
   setSearchDraft,
 } from "@/features/library/state/view-store";
-import { currentLocation, openLibraryAt } from "@/shared/test/library-router";
 import {
   handleNativeMenuAction,
   shouldIgnoreMenuAction,

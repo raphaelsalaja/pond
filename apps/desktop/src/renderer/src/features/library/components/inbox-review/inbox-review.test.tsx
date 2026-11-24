@@ -4,16 +4,16 @@ import { RouterProvider } from "@tanstack/react-router";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import {
+  createLibraryTestRouter,
+  currentLocation,
+  type LibraryTestRouter,
+} from "@/app/test/library-router";
 import { folders } from "@/features/library/state/folders";
 import { inboxReview } from "@/features/library/state/inbox-review";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { ToastHost } from "@/shared/components/toast-host";
-import {
-  createLibraryTestRouter,
-  currentLocation,
-  type LibraryTestRouter,
-} from "@/shared/test/library-router";
 import { InboxReview } from ".";
 
 let host: HTMLDivElement;

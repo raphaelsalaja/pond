@@ -19,7 +19,7 @@ import {
   subscribeViewStore,
   takeLegacyFilters,
 } from "@/features/library/state/view-store";
-import { librarySearchSchema } from "@/features/search/lib/schemas";
+import { librarySearchSchema } from "@/features/search/schemas";
 import type { RouteLocation } from "@/shared/hooks/use-route-location";
 import { type RouteMeta, routeMeta } from "@/shared/lib/route-meta";
 import {

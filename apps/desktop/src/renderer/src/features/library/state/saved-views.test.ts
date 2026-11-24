@@ -2,12 +2,12 @@ import type { SavedView } from "@pond/schema/db";
 import { matches } from "@pond/schema/filters/match";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { pathForLibraryNav } from "@/shared/lib/library-nav";
 import {
   currentLocation,
   type LibraryTestRouter,
   openLibraryAt,
-} from "@/shared/test/library-router";
+} from "@/app/test/library-router";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
 import { combineQueries } from "../lib/smart-folders";
 import { savedViews } from "./saved-views";
 import {

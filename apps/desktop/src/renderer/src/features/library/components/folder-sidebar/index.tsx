@@ -5,11 +5,9 @@ import {
   CanvasesSection,
   canvases,
   canvasIdFromPath,
-} from "@/features/canvas";
-import {
   useCanvasEditingId,
   useHydrateCanvases,
-} from "@/features/canvas/state/canvases";
+} from "@/features/canvas";
 import { DownloadsSidebar } from "@/features/downloads";
 import {
   FishSection,
@@ -38,11 +36,11 @@ import {
 import { useRailOnlySidebar } from "@/features/library/state/shell-layout";
 import { useActiveViewId } from "@/features/library/state/view-store";
 import { SourcesSidebar } from "@/features/sources";
-import { SourceDetailSidebar } from "@/features/sources/components/inspector";
 import {
   parseSourceDetailPath,
+  SourceDetailSidebar,
   SourceDetailsPageSchema,
-} from "@/features/sources/state/source-detail";
+} from "@/features/sources/detail";
 import { TagsSidebar } from "@/features/tags";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { getAppRouter } from "@/shared/lib/app-router";
@@ -70,7 +68,7 @@ function keepPortaledContextMenus(event: MouseEvent<HTMLDivElement>) {
 }
 
 const SettingsSidebar = lazyWithPreload(() =>
-  import("@/features/settings/components/sidebar").then(
+  import("@/features/settings/sidebar").then(
     (module) => module.SettingsSidebar,
   ),
 );

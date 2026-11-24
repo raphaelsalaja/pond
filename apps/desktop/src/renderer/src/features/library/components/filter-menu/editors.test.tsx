@@ -4,9 +4,9 @@ import { RouterContextProvider } from "@tanstack/react-router";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { openLibraryAt } from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
-import { openLibraryAt } from "@/shared/test/library-router";
 import { FilterCategory } from "./category";
 import { choiceOptions, type FilterOption, presetOptions } from "./options";
 

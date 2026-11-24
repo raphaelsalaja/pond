@@ -5,6 +5,7 @@ import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import {
   savedViews,
   useEditingSavedViewId,
@@ -20,7 +21,6 @@ import {
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import { pagingStore } from "@/features/saves/state/bootstrap";
-import { currentLocation, openLibraryAt } from "@/shared/test/library-router";
 import { FilterBarView, FilterToggleView } from "./";
 import { entryFields, FILTER_MENU, FILTER_SECTIONS } from "./options";
 import { filterToolbar } from "./toolbar-state";
@@ -435,7 +435,9 @@ describe("filter toolbar", () => {
           "type:video",
         ),
       );
-      expect(host.querySelector("fieldset")).toBeNull();
+      expect(
+        host.querySelector('fieldset:not([aria-label="Filters"])'),
+      ).toBeNull();
       await act(async () => button("1 Filter").click());
       const labels = menuItems().map((node) => node.textContent);
       expect(labels.some((label) => label?.startsWith("Type"))).toBe(true);

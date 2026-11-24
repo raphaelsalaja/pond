@@ -9,7 +9,12 @@ export {
   pickPrimaryFile,
   pickPrimaryUnit,
 } from "./lib/media/units";
-export { buildPondUrl, previewThumbUrlFor, thumbUrlFor } from "./lib/media/url";
+export {
+  buildPondUrl,
+  pickSourceIconUrl,
+  previewThumbUrlFor,
+  thumbUrlFor,
+} from "./lib/media/url";
 export { shouldBlurSensitiveThumbnail } from "./lib/sensitive-content";
 export {
   aspectFor,

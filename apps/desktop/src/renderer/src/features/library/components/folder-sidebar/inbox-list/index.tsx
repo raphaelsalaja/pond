@@ -18,8 +18,8 @@ import {
   NotificationIcon,
   notificationTone,
 } from "@/features/notifications";
-import { useSave } from "@/features/saves/hooks/use-saves";
-import { displayTitleForSave } from "@/features/saves/lib/text";
+import { displayTitleForSave } from "@/features/saves";
+import { useSave } from "@/features/saves/pool";
 import { formatDayMonth } from "@/shared/lib/format";
 import { compactAge } from "@/shared/lib/relative-time";
 import { InboxHeader } from "./header";

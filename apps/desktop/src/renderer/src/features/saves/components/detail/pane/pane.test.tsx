@@ -5,6 +5,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { z } from "zod";
+import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import {
   getViewState,
   resetFilters,
@@ -15,7 +16,6 @@ import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { primarySelection } from "@/features/saves/state/selection";
-import { currentLocation, openLibraryAt } from "@/shared/test/library-router";
 import { SaveInspector } from ".";
 
 let host: HTMLDivElement;

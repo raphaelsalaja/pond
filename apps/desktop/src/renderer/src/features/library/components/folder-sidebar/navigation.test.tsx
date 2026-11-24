@@ -1,8 +1,8 @@
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { currentLocation } from "@/app/test/library-router";
 import { folders } from "@/features/library/state/folders";
 import { getLibraryNav } from "@/features/library/state/library-chrome";
-import { currentLocation } from "@/shared/test/library-router";
 import {
   createFolderSidebarHarness,
   fishList,

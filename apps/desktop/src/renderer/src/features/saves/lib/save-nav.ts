@@ -1,7 +1,7 @@
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
-import { searchText } from "@/features/search/lib/schemas";
+import { searchText } from "@/features/search/schemas";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import {
   latestSearch,

@@ -14,7 +14,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { z } from "zod";
-import { folders, getOverlays } from "@/features/library";
+import { folders, getOverlays } from "@/features/library/view-state";
 import { stopAssistant } from "./assistant-runtime";
 import { hydratePondChat, pondChatSession } from "./pond-chat";
 

@@ -10,6 +10,10 @@ import { createRoute, RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { vi } from "vitest";
+import {
+  createLibraryTestRouter,
+  type LibraryTestRouter,
+} from "@/app/test/library-router";
 import { folders } from "@/features/library/state/folders";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { savedViews } from "@/features/library/state/saved-views";
@@ -18,10 +22,6 @@ import { startViewUrlSync } from "@/features/library/state/view-url";
 import type { SaveDragDataTransfer } from "@/features/saves";
 import { selection } from "@/features/saves/navigation";
 import { ToastHost } from "@/shared/components/toast-host";
-import {
-  createLibraryTestRouter,
-  type LibraryTestRouter,
-} from "@/shared/test/library-router";
 import { FolderSidebar } from ".";
 
 interface SavedViewFixtures {
@@ -88,6 +88,7 @@ export const pondQuery = vi.fn(async (name: string, patch?: WirePrefsPatch) => {
   if (name === "tags.list" || name === "tagGroups.list") return [];
   if (name === "canvases.list") return [];
   if (name === "fish.list") return fishList.current;
+  if (name === "fish.sections") return [];
   if (name === "folders.list") return folderList.current;
   if (name === "folders.create") return folder("Untitled");
   if (name === "folders.memberships") return [];

@@ -9,6 +9,7 @@ import {
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { openLibraryAt } from "@/app/test/library-router";
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { commandMenu } from "@/features/library/state/command-menu";
 import { folders } from "@/features/library/state/folders";
@@ -20,7 +21,6 @@ import {
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { libraryViewContext } from "@/features/saves/state/view-context";
-import { openLibraryAt } from "@/shared/test/library-router";
 import { Toolbar } from "./";
 
 function pages(parent: AnyRoute): AnyRoute[] {

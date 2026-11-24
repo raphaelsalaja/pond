@@ -4,6 +4,10 @@ import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  type LibraryTestRouter,
+  openLibraryAt,
+} from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import {
@@ -13,10 +17,6 @@ import {
   useIsDepartingSave,
 } from "@/features/saves/state/tag-picker";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
-import {
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/shared/test/library-router";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
 const prefs = PrefsSchema.parse({});

@@ -17,6 +17,7 @@ export {
   fishPath,
   useFish,
   useFishEditingId,
+  useFishList,
   useHydrateFish,
   useOpenRoutineId,
 } from "./state/fish";

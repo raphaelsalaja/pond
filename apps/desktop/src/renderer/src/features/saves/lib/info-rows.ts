@@ -4,7 +4,7 @@ import {
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
 import type { Save } from "@/features/saves/types";
-import { listKindLabel } from "@/features/sources/lib/list-kind-copy";
+import { listKindLabel } from "@/features/sources/list-kind";
 import {
   formatBytes,
   formatCount,

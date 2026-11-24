@@ -5,13 +5,13 @@ import { act, useSyncExternalStore } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
+import { createLibraryTestRouter } from "@/app/test/library-router";
 import { useCommandContext } from "@/features/library/state/command-context";
 import { commandMenu } from "@/features/library/state/command-menu";
 import { clearRecents, normalise, useTrackVisit } from "@/features/saves";
 import { resultNavigation, selection } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/pool";
 import type { SaveHit, SaveLookup } from "@/features/search";
-import { createLibraryTestRouter } from "@/shared/test/library-router";
 import { CommandMenuHost } from "./";
 
 const openSave = vi.fn();

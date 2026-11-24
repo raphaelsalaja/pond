@@ -87,7 +87,7 @@ export function HoverHighlight({
 
   return useRender({
     render,
-    ref: [ref, highlightRef],
+    ref: ref ? [ref, highlightRef] : highlightRef,
     defaultTagName: "div",
     props: {
       "aria-hidden": true,

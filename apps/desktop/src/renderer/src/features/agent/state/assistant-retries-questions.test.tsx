@@ -1,8 +1,8 @@
 import type { AgentStreamRequest } from "@shared/assistant";
 import { act } from "react";
 import { expect, it, vi } from "vitest";
+import { openLibraryAt } from "@/app/test/library-router";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
-import { openLibraryAt } from "@/shared/test/library-router";
 import { assistant } from "./assistant";
 import {
   agentStreamBridge,

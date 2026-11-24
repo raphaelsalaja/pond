@@ -2,16 +2,16 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
+import {
+  currentLocation,
+  type LibraryTestRouter,
+  openLibraryAt,
+} from "@/app/test/library-router";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { ToastHost } from "@/shared/components/toast-host";
 import { routeMeta } from "@/shared/lib/route-meta";
 import { toastManager } from "@/shared/lib/toast";
-import {
-  currentLocation,
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/shared/test/library-router";
 import { runPasteImport } from "./paste-import";
 
 let root: Root;

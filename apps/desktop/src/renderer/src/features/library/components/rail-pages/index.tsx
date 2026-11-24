@@ -20,9 +20,7 @@ const PAGES = {
     import("@/features/tags/page").then((module) => module.TagsPage),
   ),
   sources: lazyWithPreload(() =>
-    import("@/features/sources/components/page").then(
-      (module) => module.SourcesPage,
-    ),
+    import("@/features/sources/page").then((module) => module.SourcesPage),
   ),
   downloads: lazyWithPreload(() =>
     import("@/features/downloads/page").then((module) => module.DownloadsPage),

@@ -3,13 +3,13 @@ import { RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
-import { folders } from "@/features/library/state/folders";
 import {
   createLibraryTestRouter,
   currentLocation,
   openLibraryAt,
-} from "@/shared/test/library-router";
+} from "@/app/test/library-router";
+import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
+import { folders } from "@/features/library/state/folders";
 import { FolderBrowser } from ".";
 
 const folderRows = [

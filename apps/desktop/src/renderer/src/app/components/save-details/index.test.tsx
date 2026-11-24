@@ -4,11 +4,11 @@ import { RouterProvider } from "@tanstack/react-router";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { openLibraryAt } from "@/app/test/library-router";
 import { folders } from "@/features/library/state/folders";
 import { normalise } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
-import { openLibraryAt } from "@/shared/test/library-router";
 import { inspectorSaveIds, SaveDetails } from "./";
 
 function Shell({ children }: { children: ReactNode }) {

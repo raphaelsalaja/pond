@@ -3,6 +3,7 @@ import { Dialog, type MenuItemSpec } from "@pond/ui";
 import { isValidElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
+import { openLibraryAt } from "@/app/test/library-router";
 import {
   closeConversionDialog,
   conversionDialogStore,
@@ -18,7 +19,6 @@ import {
 import type { Save } from "@/features/saves/types";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
-import { openLibraryAt } from "@/shared/test/library-router";
 import {
   menuLabelsWithoutIcons,
   topLevelMenuLabels as topLevelLabels,

@@ -3,6 +3,7 @@ import { type AnyRoute, RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createLibraryTestRouter } from "@/app/test/library-router";
 import { getLibraryNav } from "@/features/library/state/library-chrome";
 import {
   getViewState,
@@ -14,7 +15,6 @@ import { tagCreation } from "@/features/tags/state/creation";
 import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
 import { tagsScope } from "@/features/tags/state/tags-scope";
-import { createLibraryTestRouter } from "@/shared/test/library-router";
 import { TagsSidebar } from "../sidebar";
 import { TagsPage } from "./";
 

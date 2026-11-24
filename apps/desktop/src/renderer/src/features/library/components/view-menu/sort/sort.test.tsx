@@ -2,12 +2,12 @@ import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { openLibraryAt } from "@/app/test/library-router";
 import {
   getViewState,
   restoreDefaults,
   setSort,
 } from "@/features/library/state/view-store";
-import { openLibraryAt } from "@/shared/test/library-router";
 import { SortSection } from "./";
 
 describe("sort section", () => {
