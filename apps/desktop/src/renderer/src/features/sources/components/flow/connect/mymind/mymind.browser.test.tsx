@@ -15,14 +15,6 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -33,32 +25,31 @@ afterEach(async () => {
   host.remove();
   sourceFlow.close();
   mymindConnectFlow.clear();
-  vi.unstubAllGlobals();
 });
 
 type FormProps = ComponentProps<typeof MymindConnectForm>;
 
 function props(overrides: Partial<FormProps> = {}): FormProps {
-  return {
-    connect: vi.fn(
-      async (): Promise<QueryResult<"accounts.connectMymind">> => ({
-        ok: true,
-        account: {
-          id: "mymind-account",
-          source: "mymind",
-          identityKey: null,
-          label: null,
-          handle: null,
-          addedAt: "2026-11-06T12:00:00.000Z",
-          sync: DEFAULT_SOURCE_SYNC_PREFS,
-        },
-      }),
-    ),
+  const input: FormProps = {
+    connect: async () => ({
+      ok: true,
+      account: {
+        id: "mymind-account",
+        source: "mymind",
+        identityKey: null,
+        label: null,
+        handle: null,
+        addedAt: "2026-11-06T12:00:00.000Z",
+        sync: DEFAULT_SOURCE_SYNC_PREFS,
+      },
+    }),
     onConnected: vi.fn(),
-    importOlder: vi.fn(async () => {}),
+    importOlder: vi.fn(),
     openExtensions: vi.fn(),
     ...overrides,
   };
+  vi.spyOn(input, "connect");
+  return input;
 }
 
 async function render(input: FormProps) {
@@ -120,12 +111,10 @@ it("connects with a key and preserves the Account when reconnecting", async () =
 
 it("shows a connection error and permits a retry", async () => {
   const input = props({
-    connect: vi.fn(
-      async (): Promise<QueryResult<"accounts.connectMymind">> => ({
-        ok: false,
-        error: "The key was rejected.",
-      }),
-    ),
+    connect: async (): Promise<QueryResult<"accounts.connectMymind">> => ({
+      ok: false,
+      error: "The key was rejected.",
+    }),
   });
   await render(input);
   await enterCredentials();
@@ -170,11 +159,8 @@ it("clears credentials on close and ignores a late connection reply", async () =
 });
 
 it("opens key setup without a browser connection request", async () => {
-  const query = vi.fn();
-  const connectSource = vi.fn();
-  vi.stubGlobal("pond", { query, connectSource });
   await startConnect("mymind");
   expect(sourceFlow.current()).toBe("connect-mymind");
-  expect(query).not.toHaveBeenCalled();
-  expect(connectSource).not.toHaveBeenCalled();
+  expect(window.pond.query).not.toHaveBeenCalled();
+  expect(window.pond.connectSource).not.toHaveBeenCalled();
 });

@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { downloadsColumnsLayout } from "@/features/downloads/state/downloads-columns";
 import { DownloadOptionsMenu } from "./";
 
@@ -10,14 +10,6 @@ describe("download options", () => {
   let host: HTMLDivElement;
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
     downloadsColumnsLayout.reset();
     host = document.createElement("div");
     document.body.append(host);
@@ -28,7 +20,6 @@ describe("download options", () => {
     await act(async () => root.unmount());
     host.remove();
     downloadsColumnsLayout.reset();
-    vi.unstubAllGlobals();
   });
 
   it("keeps sort and display properties together", async () => {

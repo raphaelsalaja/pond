@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { SourceDetailsPage } from "@/features/sources/state/source-detail";
+import { bridge } from "@/shared/test/pond-bridge";
 import {
   SourceDetail,
   SourceDetailNavView,
@@ -23,30 +24,6 @@ let host: HTMLDivElement;
 let root: TestRoot;
 
 beforeEach(() => {
-  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-    callback(0);
-    return 1;
-  });
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      disconnect() {}
-      unobserve() {}
-    },
-  );
-  Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
-    configurable: true,
-    get() {
-      return 240;
-    },
-  });
-  Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
-    configurable: true,
-    get() {
-      return 280;
-    },
-  });
   host = document.createElement("div");
   document.body.append(host);
   const base = createRoot(host);
@@ -59,7 +36,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 function DetailHarness(props: SourceDetailsProps) {
@@ -364,13 +340,23 @@ it("dims a disabled action row without hiding it", async () => {
 });
 
 it("keeps a failed nickname edit available and retries it on the next blur", async () => {
-  const save = vi
-    .fn<(value: string) => Promise<void>>()
-    .mockRejectedValueOnce(new Error("Offline"))
-    .mockResolvedValueOnce();
+  const saved: Array<string> = [];
+  const nickname = {
+    save: async (value: string) => {
+      saved.push(value);
+      if (saved.length === 1) {
+        throw new Error("Offline");
+      }
+    },
+  };
+  const save = vi.spyOn(nickname, "save");
   await act(async () => {
     root.render(
-      <DetailHarness source="arena" nickname="Alex" onNicknameSave={save} />,
+      <DetailHarness
+        source="arena"
+        nickname="Alex"
+        onNicknameSave={nickname.save}
+      />,
     );
   });
   const field = nicknameField();
@@ -424,17 +410,14 @@ it("shows watch properties", async () => {
 });
 
 it("shows watched folder details with its folder actions", async () => {
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      if (name === "autoImport.status") {
-        return {
-          enabled: true,
-          path: "/Users/me/Inbox",
-          mode: "copy",
-          history: [{ at: Date.now(), name: "a.png", mode: "copy", ok: true }],
-        };
-      }
-      throw new Error(name);
+  bridge.use({
+    query: {
+      "autoImport.status": () => ({
+        enabled: true,
+        path: "/Users/me/Inbox",
+        mode: "copy",
+        history: [{ at: Date.now(), name: "a.png", mode: "copy", ok: true }],
+      }),
     },
   });
   const client = new QueryClient();

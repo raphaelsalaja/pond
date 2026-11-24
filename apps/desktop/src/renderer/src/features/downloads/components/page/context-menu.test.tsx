@@ -1,5 +1,6 @@
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
+import { bridge } from "@/shared/test/pond-bridge";
 import { buildDownloadMenuItems } from "./context-menu";
 
 function row(
@@ -88,30 +89,22 @@ function click(rows: Array<DownloadRow>, label: string) {
 }
 
 it("offers Copy Error whenever the download recorded an error", () => {
-  const query = vi.fn(async () => ({ ok: true }));
-  vi.stubGlobal("pond", { query });
-  try {
-    click(
-      [{ ...row("retrying"), lastError: "TransientError: scrape timeout" }],
-      "Copy Error",
-    );
-    expect(query).toHaveBeenCalledWith("clipboard.writeText", {
-      text: "Scrape timeout",
-    });
-  } finally {
-    vi.unstubAllGlobals();
-  }
+  bridge.use({ query: { "clipboard.writeText": () => ({ ok: true }) } });
+  click(
+    [{ ...row("retrying"), lastError: "TransientError: scrape timeout" }],
+    "Copy Error",
+  );
+  expect(window.pond.query).toHaveBeenCalledWith("clipboard.writeText", {
+    text: "Scrape timeout",
+  });
 });
 
 it("opens the source link in the browser", () => {
-  const openExternal = vi.fn(async () => ({ ok: true }));
-  vi.stubGlobal("pond", { openExternal });
-  try {
-    click([row("dead")], "Open Link");
-    expect(openExternal).toHaveBeenCalledWith("https://example.com/dead");
-  } finally {
-    vi.unstubAllGlobals();
-  }
+  bridge.use({ openExternal: async () => ({ ok: true }) });
+  click([row("dead")], "Open Link");
+  expect(window.pond.openExternal).toHaveBeenCalledWith(
+    "https://example.com/dead",
+  );
   const local = { ...row("failed"), url: "pond:local/file" };
   expect(visible([local]).map((item) => item.label)).not.toContain("Open Link");
 });

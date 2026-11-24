@@ -1,4 +1,5 @@
 import { cssVars } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect, useMemo } from "react";
 import {
   layoutAspectFor,
@@ -23,7 +24,9 @@ function useRecentIds(row: SourceTableRow): Array<string> {
   const key = ids.join(",");
   useEffect(() => {
     if (key) {
-      void ensureSaves(key.split(",")).catch(() => undefined);
+      void ensureSaves(key.split(",")).catch((cause: unknown) => {
+        log.warn("[pond sources] recent saves load failed", cause);
+      });
     }
   }, [key]);
   useRetainedSaves(ids);

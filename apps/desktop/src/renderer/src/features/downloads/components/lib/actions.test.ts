@@ -78,28 +78,29 @@ it("does not offer Undo when no downloads changed", async () => {
   };
   downloadsSelection.set([row]);
 
-  await trashDownloadRows([row], fake.dependencies);
+  await expect(trashDownloadRows([row], fake.dependencies)).resolves.toBe(
+    false,
+  );
 
-  await new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
   expect(downloadsSelection.size()).toBe(1);
   expect(fake.notices).toEqual([]);
 });
 
 it("handles a rejected Undo request", async () => {
   const fake = createTrashFake("trashed");
+  const reported = Promise.withResolvers<void>();
   fake.dependencies.undo = async () => {
     throw new Error("Undo unavailable");
   };
 
-  await trashDownloadRows([row], fake.dependencies);
-  await vi.waitFor(() => expect(fake.notices).toHaveLength(1));
+  await trashDownloadRows([row], {
+    ...fake.dependencies,
+    undoFailed: () => reported.resolve(),
+  });
+  expect(fake.notices).toHaveLength(1);
   fake.notices[0]?.action?.onClick();
 
-  await new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
+  await reported.promise;
 });
 
 it("reloads hidden downloads after Undo restores them", async () => {
@@ -132,12 +133,11 @@ it("keeps the selection and skips the Undo notice when Trash fails", async () =>
   const fake = createTrashFake("rejected");
   downloadsSelection.set([row]);
 
-  await trashDownloadRows([row], fake.dependencies);
+  await expect(trashDownloadRows([row], fake.dependencies)).resolves.toBe(
+    false,
+  );
 
   expect(fake.trashed).toEqual([["save-1"]]);
-  await new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
   expect(downloadsSelection.size()).toBe(1);
   expect(fake.notices).toEqual([]);
 });

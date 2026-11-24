@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { Dialog } from "@pond/ui";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
@@ -7,6 +6,7 @@ import {
   watchedFolderRevision,
 } from "@/features/sources/state/watched-folder-flow";
 import { menuLabels } from "@/shared/test/menu-labels";
+import { bridge } from "@/shared/test/pond-bridge";
 import { buildFolderMenu, buildFolderRows } from "./folder-menu";
 
 function noop() {}
@@ -21,10 +21,6 @@ function deleteCheckbox(mode: "copy" | "move") {
 }
 
 describe("buildFolderMenu", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it("offers pause while watching and resume when off", () => {
     const target = {
       name: "PNG",
@@ -45,12 +41,11 @@ describe("buildFolderMenu", () => {
   });
 
   it("pauses the folder and refreshes", async () => {
-    const query = vi.fn(async () => ({ ok: true }));
-    vi.stubGlobal("pond", { query });
-    const onChanged = vi.fn();
+    bridge.use({ query: { "autoImport.set": () => ({ ok: true }) } });
+    const changed = Promise.withResolvers<void>();
     const pause = buildFolderMenu(
       { name: "PNG", imported: 200, watching: true, mode: "copy" },
-      onChanged,
+      () => changed.resolve(),
     )
       .flatMap((item) => (item.type === "group" ? item.items : []))
       .find((item) => "label" in item && item.label === "Pause Watching");
@@ -58,12 +53,14 @@ describe("buildFolderMenu", () => {
       throw new Error("Missing pause");
     }
     pause.onClick?.();
-    await vi.waitFor(() => expect(onChanged).toHaveBeenCalled());
-    expect(query).toHaveBeenCalledWith("autoImport.set", { enabled: false });
+    await changed.promise;
+    expect(window.pond.query).toHaveBeenCalledWith("autoImport.set", {
+      enabled: false,
+    });
   });
 
   it("checks delete after import in move mode and confirms turning it on", () => {
-    const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
+    const confirm = vi.spyOn(Dialog, "confirm");
     expect(deleteCheckbox("move")).toMatchObject({ checked: true });
     const item = deleteCheckbox("copy");
     if (item?.type !== "checkbox") {
@@ -96,9 +93,12 @@ describe("buildFolderRows", () => {
     return row;
   }
 
+  beforeEach(() => {
+    bridge.use({ query: { "autoImport.set": () => ({ ok: true }) } });
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.unstubAllGlobals();
   });
 
   it("shows delete after import as a switch that follows the mode", () => {
@@ -110,30 +110,32 @@ describe("buildFolderRows", () => {
   });
 
   it("confirms before deleting imported files from the folder", async () => {
-    const query = vi.fn(async () => ({ ok: true }));
-    vi.stubGlobal("pond", { query });
-    const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
+    const confirm = vi.spyOn(Dialog, "confirm");
     const onChanged = vi.fn();
     deleteAfterImport("copy", onChanged).toggle?.onCheckedChange(true);
-    expect(query).not.toHaveBeenCalled();
+    expect(window.pond.query).not.toHaveBeenCalled();
     const options = confirm.mock.calls[0]?.[0];
     if (!options) {
       throw new Error("Missing confirmation");
     }
     await options.onConfirm({ checked: false });
-    expect(query).toHaveBeenCalledWith("autoImport.set", { mode: "move" });
+    expect(window.pond.query).toHaveBeenCalledWith("autoImport.set", {
+      mode: "move",
+    });
     expect(onChanged).toHaveBeenCalled();
   });
 
   it("turns delete after import off without confirming", async () => {
-    const query = vi.fn(async () => ({ ok: true }));
-    vi.stubGlobal("pond", { query });
     const confirm = vi.spyOn(Dialog, "confirm");
-    const onChanged = vi.fn();
-    deleteAfterImport("move", onChanged).toggle?.onCheckedChange(false);
-    await vi.waitFor(() => expect(onChanged).toHaveBeenCalled());
+    const changed = Promise.withResolvers<void>();
+    deleteAfterImport("move", () => changed.resolve()).toggle?.onCheckedChange(
+      false,
+    );
+    await changed.promise;
     expect(confirm).not.toHaveBeenCalled();
-    expect(query).toHaveBeenCalledWith("autoImport.set", { mode: "copy" });
+    expect(window.pond.query).toHaveBeenCalledWith("autoImport.set", {
+      mode: "copy",
+    });
   });
 });
 
@@ -144,20 +146,26 @@ describe("pickWatchedFolder", () => {
 
   afterEach(() => {
     watchedFolderFlow.clear();
-    vi.unstubAllGlobals();
   });
 
   it("ignores a cancelled picker", async () => {
-    vi.stubGlobal("pond", {
-      query: vi.fn(async () => ({ ok: false, path: null })),
+    bridge.use({
+      query: {
+        "autoImport.pickFolder": () => ({ ok: false, reason: "cancelled" }),
+      },
     });
     await pickWatchedFolder();
     expect(watchedFolderRevision()).toBe(0);
   });
 
   it("refreshes after choosing a folder", async () => {
-    vi.stubGlobal("pond", {
-      query: vi.fn(async () => ({ ok: true, path: "/Users/raphael/Inbox" })),
+    bridge.use({
+      query: {
+        "autoImport.pickFolder": () => ({
+          ok: true,
+          path: "/Users/raphael/Inbox",
+        }),
+      },
     });
     await pickWatchedFolder();
     expect(watchedFolderRevision()).toBe(1);

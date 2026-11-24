@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { sourceNewMenu } from "@/features/sources/state/source-new-menu";
 import { watchFlow } from "@/features/sources/state/watch-flow";
+import { bridge } from "@/shared/test/pond-bridge";
 import { NewSourceMenu } from ".";
 
 const labels = ["New Source", "New Watch", "New Folder"];
@@ -17,17 +18,9 @@ describe("new source menu", () => {
   const onWatchedFolder = vi.fn();
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("pond", {
-      query: vi.fn(async () => ({ accounts: [] })),
-      connectSource: vi.fn(async () => ({ ok: true })),
+    bridge.use({
+      query: { "accounts.list": () => ({ accounts: [] }) },
+      connectSource: async () => ({ ok: true, mode: "external" }),
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -44,7 +37,6 @@ describe("new source menu", () => {
     watchFlow.clear();
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function renderMenu(controlled = false) {

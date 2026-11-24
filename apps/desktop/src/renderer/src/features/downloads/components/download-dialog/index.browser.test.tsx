@@ -11,8 +11,9 @@ import type {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { downloadDialog } from "@/features/downloads/state/download-dialog";
+import { bridge } from "@/shared/test/pond-bridge";
 import { DownloadDialogHost } from "./index";
 
 const VIDEO: DownloadSingleProbe = {
@@ -60,26 +61,12 @@ const FILE: DownloadFileProbe = {
   existingSaveId: null,
 };
 
-interface StubInput {
-  url?: string;
-  urls?: Array<string>;
-  files?: Array<string>;
-}
-
-interface Call {
+type Call = {
   name: string;
-  input: StubInput;
-}
+  input: object | undefined;
+};
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
   // The dialog store lives for the whole file. Close it so the next open
   // starts a new session instead of reusing a dialog left open by the last case.
   downloadDialog.close();
@@ -88,7 +75,6 @@ beforeEach(() => {
 afterEach(() => {
   downloadDialog.close();
   document.body.replaceChildren();
-  vi.unstubAllGlobals();
 });
 
 function buttonLabelled(label: string) {
@@ -108,48 +94,57 @@ async function renderDialog(
   links: Array<string>,
 ) {
   const calls: Array<Call> = [];
+  const record = (name: string, input?: object) => {
+    calls.push({ name, input });
+  };
   // `window.pond` is read when a query runs, so one module instance is enough.
   // Re-importing the dialog per test (`vi.resetModules()`) evaluates the Motion
   // and sources graph inside the 5s test budget. On a busy Windows runner that
   // exceeds the timeout, and the next test then clears the cache while the
   // first import is still evaluating, so the component and this store diverge.
-  vi.stubGlobal("pond", {
-    async query(name: string, input: StubInput) {
-      calls.push({ name, input });
-      if (name === "downloader.clipboardLinks") {
+  bridge.use({
+    query: {
+      "downloader.clipboardLinks": (input) => {
+        record("downloader.clipboardLinks", input);
         return { urls: [] };
-      }
-      if (name === "downloader.frames") {
+      },
+      "downloader.frames": (input) => {
+        record("downloader.frames", input);
         return { frames: [] };
-      }
-      if (name === "downloader.exportFolder") {
+      },
+      "downloader.exportFolder": (input) => {
+        record("downloader.exportFolder", input);
         return { path: "/Users/me/Downloads", name: "Downloads" };
-      }
-      if (name === "downloader.export") {
+      },
+      "downloader.export": (input) => {
+        record("downloader.export", input);
         return {
           ok: true,
           destination: "file",
           path: "/Users/me/Downloads/A talk about ponds.webm",
         };
-      }
-      if (name === "downloader.probe") {
+      },
+      "downloader.probe": (input) => {
+        record("downloader.probe", input);
         const { url } = DownloadProbeInputSchema.parse(input);
         return probes[url] ?? { ok: false, reason: "failed", message: "Nope." };
-      }
-      if (name === "saves.quickAdd") {
+      },
+      "saves.quickAdd": (input) => {
+        record("saves.quickAdd", input);
         return { ok: true, id: "save-post" };
-      }
-      if (name === "downloader.exportFiles") {
+      },
+      "downloader.exportFiles": (input) => {
+        record("downloader.exportFiles", input);
         return {
           ok: true,
-          paths: (input.files ?? []).map((_, index) => `/tmp/${index}.jpg`),
+          paths: input.files.map((_, index) => `/tmp/${index}.jpg`),
         };
-      }
-      if (name === "downloader.start") {
+      },
+      "downloader.start": (input) => {
+        record("downloader.start", input);
         const { urls } = DownloadStartInputSchema.parse(input);
         return { ids: urls.map((_, index) => `save-${index}`), failed: [] };
-      }
-      throw new Error(`Unexpected query: ${name}`);
+      },
     },
   });
   const host = document.createElement("div");

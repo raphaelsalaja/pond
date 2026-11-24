@@ -8,6 +8,7 @@ import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceFlow } from "@/features/sources/state/source-flow";
+import { bridge } from "@/shared/test/pond-bridge";
 import {
   accountMenuTarget,
   buildSourceActionMenu,
@@ -119,20 +120,19 @@ function findItem(
 }
 
 beforeEach(() => {
-  vi.stubGlobal("pond", {
-    clearPendingSession: vi.fn(async () => undefined),
-    connectSource: vi.fn(async () => ({ ok: true })),
-    openExternal: vi.fn(async () => ({ ok: true })),
-    refreshBackfillStart: vi.fn(async () => ({ ok: true })),
-    syncCancel: vi.fn(async () => ({ ok: true, running: false })),
-    syncRunNow: vi.fn(async () => ({ ok: true })),
-    query: vi.fn(async () => ({ ok: true })),
+  bridge.use({
+    clearPendingSession: async () => ({ ok: true }),
+    connectSource: async () => ({ ok: true, mode: "external" }),
+    openExternal: async () => ({ ok: true }),
+    refreshBackfillStart: async () => ({ ok: true, total: 0 }),
+    syncCancel: async () => ({ ok: true, running: false }),
+    syncRunNow: async () => ({ ok: true }),
+    query: { "clipboard.writeText": () => ({ ok: true }) },
   });
 });
 
 afterEach(() => {
   sourceFlow.close();
-  vi.unstubAllGlobals();
 });
 
 describe("buildSourceActionMenu", () => {
@@ -147,21 +147,18 @@ describe("buildSourceActionMenu", () => {
     if (!older || !("onClick" in older)) {
       throw new Error("Missing export action");
     }
-    vi.stubGlobal("pond", {
-      ...window.pond,
-      query: vi.fn(async () => ({ ok: true, imported: 0, skipped: 0 })),
+    const imported = Promise.withResolvers<void>();
+    bridge.use({
+      query: {
+        "saves.importMymind": () => {
+          imported.resolve();
+          return { ok: true, imported: 0, skipped: 0 };
+        },
+      },
     });
     older.onClick?.();
-    /** The click lazy-loads the library import module, which compiles cold in a small test shard. */
-    await vi.waitFor(
-      () => {
-        expect(window.pond.query).toHaveBeenCalledWith(
-          "saves.importMymind",
-          {},
-        );
-      },
-      { timeout: 10_000 },
-    );
+    await imported.promise;
+    expect(window.pond.query).toHaveBeenCalledWith("saves.importMymind", {});
     expect(window.pond.syncRunNow).not.toHaveBeenCalled();
     expect(buildSourceActionRows(target).fetch.map((row) => row.title)).toEqual(
       ["Fetch New Saves", "Import Older Saves"],
@@ -243,7 +240,7 @@ describe("buildSourceActionMenu", () => {
   });
 
   it("asks before replacing every save's media", async () => {
-    const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
+    const confirm = vi.spyOn(Dialog, "confirm");
     const media = findItem(
       buildSourceActionMenu(account()),
       "Fetch Original Media",
@@ -294,9 +291,7 @@ describe("buildSourceActionMenu", () => {
     if (!start || !("onClick" in start)) {
       throw new Error("Missing Choose What to Import");
     }
-    const open = vi
-      .spyOn(sourceDetail, "openAccount")
-      .mockImplementation(() => {});
+    const open = vi.spyOn(sourceDetail, "openAccount");
     start.onClick?.();
     expect(open).toHaveBeenCalledWith("acc-instagram", "filters");
     open.mockRestore();
@@ -373,10 +368,16 @@ describe("buildSourceActionMenu", () => {
     if (!signIn || !("onClick" in signIn)) {
       throw new Error("Missing Sign In Again");
     }
+    const requested = Promise.withResolvers<string>();
+    bridge.use({
+      connectSource: async (source) => {
+        requested.resolve(source);
+        return { ok: true, mode: "external" };
+      },
+    });
     signIn.onClick?.();
     expect(sourceFlow.current()).toBe("connect-wait");
-    await vi.waitFor(() => {
-      expect(window.pond.connectSource).toHaveBeenCalledWith("instagram");
-    });
+    await expect(requested.promise).resolves.toBe("instagram");
+    expect(window.pond.connectSource).toHaveBeenCalledWith("instagram");
   });
 });

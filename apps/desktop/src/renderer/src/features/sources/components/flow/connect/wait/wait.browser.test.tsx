@@ -1,4 +1,6 @@
+import { DEFAULT_SOURCE_SYNC_PREFS } from "@pond/schema/db";
 import { Dialog } from "@pond/ui";
+import type { QueryResult } from "@shared/query-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -7,60 +9,40 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { connectFlow } from "@/features/sources/state/connect-flow";
 import { sourceDetail } from "@/features/sources/state/source-detail";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ConnectActions, ConnectWaitSection } from "./";
 
 let root: Root;
 let host: HTMLDivElement;
 
-const twitterAccount = {
+type AccountRow = QueryResult<"accounts.list">["accounts"][number];
+
+const twitterAccount: AccountRow = {
   id: "acc-twitter",
   source: "twitter",
   handle: "raph",
+  identityKey: null,
   label: null,
   addedAt: "2026-01-01T00:00:00.000Z",
-  sync: { lastSyncedAt: null, lastError: null, knownCount: 0 },
+  sync: DEFAULT_SOURCE_SYNC_PREFS,
   connected: true,
   syncing: false,
 };
 
-function stubPond(
-  onImported?: (
-    cb: (payload: { source: string; accountId: string }) => void,
-  ) => void,
-  onImportFailed?: (
-    cb: (payload: { source: string; reason: string }) => void,
-  ) => void,
-) {
-  vi.stubGlobal("pond", {
-    query: async () => ({ accounts: [twitterAccount] }),
+function registerPond(accounts: Array<AccountRow> = [twitterAccount]) {
+  bridge.use({
+    query: {
+      "accounts.list": () => ({ accounts }),
+      "sources.extensionLastSeen": () => ({ at: null }),
+    },
     connectSource: async () => ({ ok: true, mode: "external" }),
     syncRunNow: async () => ({ ok: true }),
     clearPendingSession: async () => ({ ok: true }),
-    onSessionImported: (
-      cb: (payload: { source: string; accountId: string }) => void,
-    ) => {
-      onImported?.(cb);
-      return () => {};
-    },
-    onSessionImportFailed: (
-      cb: (payload: { source: string; reason: string }) => void,
-    ) => {
-      onImportFailed?.(cb);
-      return () => {};
-    },
   });
 }
 
 beforeEach(() => {
-  stubPond();
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
+  registerPond();
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -70,16 +52,8 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   connectFlow.clear();
-  vi.stubGlobal("pond", {
-    query: async () => ({ accounts: [] }),
-    connectSource: async () => ({ ok: true, mode: "external" }),
-    syncRunNow: async () => ({ ok: true }),
-    clearPendingSession: async () => ({ ok: true }),
-    onSessionImported: () => () => {},
-    onSessionImportFailed: () => () => {},
-  });
+  registerPond([]);
   await refetchAccounts();
-  vi.unstubAllGlobals();
 });
 
 it("marks the wait screen connected when a new account arrives", async () => {
@@ -97,12 +71,6 @@ it("marks the wait screen connected when a new account arrives", async () => {
 });
 
 it("marks the wait screen connected when an existing account is reimported", async () => {
-  let imported:
-    | ((payload: { source: string; accountId: string }) => void)
-    | undefined;
-  stubPond((cb) => {
-    imported = cb;
-  });
   connectFlow.start("twitter", ["acc-twitter"]);
   await act(async () => {
     root.render(
@@ -115,12 +83,12 @@ it("marks the wait screen connected when an existing account is reimported", asy
     await Promise.resolve();
   });
   expect(host.textContent).toContain("Sign in to Twitter in your browser.");
-  const sessionImported = imported;
-  if (!sessionImported) {
-    throw new Error("session import listener was not attached");
-  }
+  expect(bridge.listening("onSessionImported")).toBe(true);
   await act(async () => {
-    sessionImported({ source: "twitter", accountId: "acc-twitter" });
+    bridge.emit("onSessionImported", {
+      source: "twitter",
+      accountId: "acc-twitter",
+    });
   });
   await vi.waitFor(() => {
     expect(host.textContent).toContain("Pond is syncing your saved posts now.");
@@ -128,7 +96,6 @@ it("marks the wait screen connected when an existing account is reimported", asy
 });
 
 it("explains the local connection before the account arrives", async () => {
-  stubPond();
   connectFlow.start("twitter", ["acc-twitter"]);
   await act(async () => {
     root.render(
@@ -155,20 +122,6 @@ it("explains the local connection before the account arrives", async () => {
 });
 
 it("keeps waiting when a signed-out browser profile sends its session", async () => {
-  let importFailed:
-    | ((payload: { source: string; reason: string }) => void)
-    | undefined;
-  let imported:
-    | ((payload: { source: string; accountId: string }) => void)
-    | undefined;
-  stubPond(
-    (cb) => {
-      imported = cb;
-    },
-    (cb) => {
-      importFailed = cb;
-    },
-  );
   connectFlow.start("twitter", ["acc-twitter"]);
   await act(async () => {
     root.render(
@@ -178,13 +131,10 @@ it("keeps waiting when a signed-out browser profile sends its session", async ()
     );
   });
 
-  const notifyImportFailed = importFailed;
-  const notifyImported = imported;
-  if (!notifyImportFailed || !notifyImported) {
-    throw new Error("session import listeners were not attached");
-  }
+  expect(bridge.listening("onSessionImportFailed")).toBe(true);
+  expect(bridge.listening("onSessionImported")).toBe(true);
   await act(async () => {
-    notifyImportFailed({
+    bridge.emit("onSessionImportFailed", {
       source: "twitter",
       reason: "no_auth_cookies_in_payload",
     });
@@ -197,7 +147,10 @@ it("keeps waiting when a signed-out browser profile sends its session", async ()
   expect(host.textContent).not.toContain("Couldn't connect");
 
   await act(async () => {
-    notifyImported({ source: "twitter", accountId: "acc-twitter" });
+    bridge.emit("onSessionImported", {
+      source: "twitter",
+      accountId: "acc-twitter",
+    });
   });
   await vi.waitFor(() => {
     expect(host.textContent).toContain("Pond is syncing your saved posts now.");
@@ -205,22 +158,14 @@ it("keeps waiting when a signed-out browser profile sends its session", async ()
 });
 
 it("asks what to import before a new account syncs", async () => {
-  const syncRunNow = vi.fn(async () => ({ ok: true }));
-  stubPond();
-  vi.stubGlobal("pond", {
-    ...window.pond,
-    query: async () => ({
-      accounts: [
-        {
-          ...twitterAccount,
-          id: "acc-instagram",
-          source: "instagram",
-          sync: { ...twitterAccount.sync, importPending: true },
-        },
-      ],
-    }),
-    syncRunNow,
-  });
+  registerPond([
+    {
+      ...twitterAccount,
+      id: "acc-instagram",
+      source: "instagram",
+      sync: { ...twitterAccount.sync, importPending: true },
+    },
+  ]);
   connectFlow.start("instagram", []);
   await act(async () => {
     root.render(
@@ -237,14 +182,12 @@ it("asks what to import before a new account syncs", async () => {
     expect(host.textContent).toContain("Next, choose what Pond imports.");
   });
   expect(host.textContent).not.toContain("Pond is syncing");
-  expect(syncRunNow).not.toHaveBeenCalled();
+  expect(window.pond.syncRunNow).not.toHaveBeenCalled();
 
   const next = Array.from(host.querySelectorAll("button")).find(
     (element) => element.textContent === "Continue",
   );
-  const open = vi
-    .spyOn(sourceDetail, "openAccount")
-    .mockImplementation(() => {});
+  const open = vi.spyOn(sourceDetail, "openAccount");
   await act(async () => next?.click());
   expect(open).toHaveBeenCalledWith("acc-instagram");
   open.mockRestore();
@@ -255,11 +198,9 @@ it.each([
   ["reaches Pond during the wait", Number.MAX_SAFE_INTEGER, false],
 ])("says when the extension %s", async (_label, at, silent) => {
   vi.useFakeTimers();
-  stubPond();
-  vi.stubGlobal("pond", {
-    ...window.pond,
-    query: async (name: string) =>
-      name === "sources.extensionLastSeen" ? { at } : { accounts: [] },
+  registerPond([]);
+  bridge.use({
+    query: { "sources.extensionLastSeen": () => ({ at }) },
   });
   connectFlow.start("instagram", []);
   await act(async () => {
@@ -279,9 +220,7 @@ it.each([
 });
 
 it("fails when Pond cannot open the sign-in page", async () => {
-  stubPond();
-  vi.stubGlobal("pond", {
-    ...window.pond,
+  bridge.use({
     connectSource: async () => ({ ok: false, mode: "external" }),
   });
   connectFlow.start("instagram", []);
@@ -306,15 +245,8 @@ async function connectByHandle(
     | { ok: true; accountId: string }
     | { ok: false; reason: "invalid" | "not_found" | "unavailable" },
 ) {
-  const connectSource = vi.fn(async () => ({ ok: true, mode: "external" }));
-  const connectSourceHandle = vi.fn(async () => reply);
-  stubPond();
-  vi.stubGlobal("pond", {
-    ...window.pond,
-    query: async () => ({ accounts: [] }),
-    connectSource,
-    connectSourceHandle,
-  });
+  registerPond([]);
+  bridge.use({ connectSourceHandle: async () => reply });
   connectFlow.start("bluesky", []);
   await act(async () => {
     root.render(
@@ -337,19 +269,15 @@ async function connectByHandle(
   await act(async () => {
     host.querySelector("form")?.requestSubmit();
   });
-  return { connectSource, connectSourceHandle };
 }
 
 it("asks a handle Source for its handle instead of opening a browser", async () => {
-  const { connectSource, connectSourceHandle } = await connectByHandle({
-    ok: true,
-    accountId: "acc-bluesky",
-  });
+  await connectByHandle({ ok: true, accountId: "acc-bluesky" });
   expect(host.textContent).toContain("Your Bluesky Handle");
   expect(host.textContent).toContain("Read your liked posts");
   expect(host.textContent).not.toContain("Get Extension");
-  expect(connectSource).not.toHaveBeenCalled();
-  expect(connectSourceHandle).toHaveBeenCalledWith(
+  expect(window.pond.connectSource).not.toHaveBeenCalled();
+  expect(window.pond.connectSourceHandle).toHaveBeenCalledWith(
     "bluesky",
     "alice.bsky.social",
   );

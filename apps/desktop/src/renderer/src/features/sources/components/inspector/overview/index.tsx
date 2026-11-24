@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import { Button, Settings } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect, useMemo, useState } from "react";
 import { viewAccountItems } from "@/features/library";
 import { SaveStrip } from "@/features/library/save-strip";
@@ -57,7 +58,9 @@ export function SourceOverview({
   const recentKey = recent.join(",");
   useEffect(() => {
     if (recentKey) {
-      void ensureSaves(recentKey.split(",")).catch(() => undefined);
+      void ensureSaves(recentKey.split(",")).catch((cause: unknown) => {
+        log.warn("[pond sources] recent saves load failed", cause);
+      });
     }
   }, [recentKey]);
 

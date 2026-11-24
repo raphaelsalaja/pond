@@ -121,6 +121,7 @@ export async function skipDownloadRows(
 interface TrashNotificationDependencies {
   notify: typeof notify;
   undo: () => Promise<{ ok: boolean }>;
+  undoFailed?: () => void;
 }
 
 interface TrashDownloadDependencies extends TrashNotificationDependencies {
@@ -174,6 +175,7 @@ function notifyTrashedDownloads(
   afterUndo?: () => Promise<void>,
 ): void {
   downloadsSelection.clear();
+  const undoFailed = dependencies.undoFailed ?? reportUndoFailure;
   dependencies.notify({
     id: "trash-downloads",
     title:
@@ -187,12 +189,12 @@ function notifyTrashedDownloads(
           .undo()
           .then(async (result) => {
             if (!result.ok) {
-              reportUndoFailure();
+              undoFailed();
               return;
             }
             await afterUndo?.();
           })
-          .catch(reportUndoFailure);
+          .catch(undoFailed);
       },
     },
   });

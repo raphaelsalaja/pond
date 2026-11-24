@@ -1,5 +1,6 @@
 import { Button, Dialog } from "@pond/ui";
 import { extractLinks } from "@shared/downloader-contracts";
+import log from "electron-log/renderer";
 import type {
   DownloadFileProbe,
   DownloadPostProbe,
@@ -397,7 +398,9 @@ export function DownloadFlow({
         setInput(url);
         void read([url]);
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond downloads] clipboard link read failed", cause);
+      });
   });
   useEffect(() => {
     openLinks(links);

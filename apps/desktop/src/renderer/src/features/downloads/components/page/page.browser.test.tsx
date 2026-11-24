@@ -1,5 +1,7 @@
 import "@/app/effects/save-library-bridge";
+import { PrefsSchema } from "@pond/schema";
 import { Tooltip } from "@pond/ui";
+import type { WireSave } from "@shared/wire";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
@@ -11,13 +13,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { z } from "zod";
 import { downloadsColumnsLayout } from "@/features/downloads/state/downloads-columns";
 import { downloadsFilters } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { primarySelection } from "@/features/saves/navigation";
 import { savesStore } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
+import type { QueryHandlers } from "@/shared/test/pond-bridge";
 import { DownloadsPage } from "./";
 import { hydrateLiveDownloadSaves } from "./hydrate-live-saves";
 
@@ -67,74 +70,41 @@ function setSaves(saves: Array<Save>) {
     revision: state.revision + 1,
   }));
 }
+/** SAFETY: the pool and the Downloads table read only the fields `save()` fills. */
+function asWire(saves: Array<Save>): Array<WireSave> {
+  return saves as Array<WireSave>;
+}
 let host: HTMLDivElement;
 let root: Root;
 let client: QueryClient;
-const query = vi.fn();
-const IdsArgSchema = z
-  .object({ ids: z.array(z.unknown()) })
-  .transform(({ ids }) =>
-    ids.filter((id): id is string => typeof id === "string"),
-  )
-  .catch([]);
-async function defaultQuery(name: string) {
-  if (name === "settings.getPrefs") {
-    return {};
-  }
-  if (name === "downloads.activity") {
-    return [];
-  }
-  if (name === "downloads.history") {
-    return { rows: [], nextCursor: null };
-  }
-  if (name === "pipeline.status") {
-    return { paused: false };
-  }
-  if (name === "pipeline.inflight") {
-    return [];
-  }
-  if (name === "downloads.ingestingOrFailed") {
-    return [];
-  }
-  if (name === "saves.getMany") {
-    return [];
-  }
-  if (name === "queue.sourceGates") {
-    return [];
-  }
-  if (name === "transferJobs.list") {
-    return [];
-  }
-  throw new Error(`Unexpected query: ${name}`);
+let cancelled: Array<Array<string>>;
+function defaultQueries(): QueryHandlers {
+  return {
+    "settings.getPrefs": () => PrefsSchema.parse({}),
+    "downloads.activity": () => [],
+    "downloads.history": () => ({ rows: [], nextCursor: null }),
+    "pipeline.status": () => ({ paused: false, inflight: 0 }),
+    "pipeline.inflight": () => [],
+    "downloads.ingestingOrFailed": () => [],
+    "saves.getMany": () => [],
+    "queue.sourceGates": () => [],
+    "transferJobs.list": () => [],
+  };
 }
-const pipelinePause = vi.fn(async (paused: boolean) => ({ ok: true, paused }));
-const pipelineCancelSaves = vi.fn(async (ids: ReadonlyArray<string>) => ({
-  ok: true,
-  cancelled: ids.length,
-}));
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      disconnect() {}
-      unobserve() {}
-    },
-  );
-  vi.stubGlobal("matchMedia", () => ({
-    matches: false,
-    addEventListener() {},
-    removeEventListener() {},
-  }));
-  vi.clearAllMocks();
   downloadsFilters.reset();
   downloadsColumnsLayout.reset();
   primarySelection.set(null);
-  Object.assign(window, {
-    pond: { query, pipelinePause, pipelineCancelSaves },
+  cancelled = [];
+  bridge.use({
+    query: defaultQueries(),
+    pipelinePause: async (paused) => ({ ok: true, paused }),
+    pipelineCancelSaves: async (ids) => {
+      cancelled.push([...ids]);
+      return { ok: true, cancelled: ids.length };
+    },
   });
-  query.mockImplementation(defaultQuery);
   setSaves([
     save("Running video", "ingesting", "running"),
     save("Waiting video", "ingesting", "pending"),
@@ -156,7 +126,6 @@ afterEach(async () => {
   });
   client.clear();
   host.remove();
-  vi.unstubAllGlobals();
 });
 async function render() {
   const router = createRouter({
@@ -240,83 +209,65 @@ async function clickFilterOption(label: string) {
 it("shows live downloads that paging missed without hydrating the whole library", async () => {
   const queued = save("Old failure", "failed", "dead");
   setSaves([save("Recent clip", "complete")]);
-  query.mockImplementation(
-    async (name: string, args?: { ids?: Array<string> }) => {
-      if (name === "settings.getPrefs") {
-        return {};
-      }
-      if (name === "downloads.activity") {
-        return [];
-      }
-      if (name === "downloads.history") {
-        return { rows: [], nextCursor: null };
-      }
-      if (name === "pipeline.status") {
-        return { paused: false };
-      }
-      if (name === "pipeline.inflight") {
-        return [];
-      }
-      if (name === "downloads.ingestingOrFailed") {
-        return [queued.id];
-      }
-      if (name === "saves.getMany") {
-        expect(args?.ids).toEqual([queued.id]);
-        return [queued];
-      }
-      if (name === "saves.list") {
-        throw new Error("must not hydrate the full save pool");
-      }
-      throw new Error(`Unexpected query: ${name}`);
+  const requested: Array<Array<string>> = [];
+  bridge.use({
+    query: {
+      "downloads.ingestingOrFailed": () => [queued.id],
+      "saves.getMany": ({ ids }) => {
+        requested.push(ids);
+        return asWire([queued]);
+      },
     },
-  );
+  });
   await render();
-  expect(query).toHaveBeenCalledWith("downloads.ingestingOrFailed", {});
-  expect(query).not.toHaveBeenCalledWith("saves.list", expect.anything());
+  expect(window.pond.query).toHaveBeenCalledWith(
+    "downloads.ingestingOrFailed",
+    {},
+  );
+  expect(window.pond.query).not.toHaveBeenCalledWith(
+    "saves.list",
+    expect.anything(),
+  );
+  expect(requested).toContainEqual([queued.id]);
+  expect(requested).toEqual(requested.map(() => [queued.id]));
   expect(host.textContent).toContain("Old failure");
   expect(host.querySelector('[title="Recent clip"]')).toBeNull();
 });
 
 it("does not refetch queue saves that are already in the library pool", async () => {
-  query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") {
-      return {};
-    }
-    if (name === "downloads.activity") {
-      return [];
-    }
-    if (name === "downloads.history") {
-      return { rows: [], nextCursor: null };
-    }
-    if (name === "pipeline.status") {
-      return { paused: false };
-    }
-    if (name === "pipeline.inflight") {
-      return [];
-    }
-    if (name === "downloads.ingestingOrFailed") {
-      return ["Running video", "Waiting video", "Failed video"];
-    }
-    if (name === "saves.getMany") {
-      return [];
-    }
-    throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: {
+      "downloads.ingestingOrFailed": () => [
+        "Running video",
+        "Waiting video",
+        "Failed video",
+      ],
+    },
   });
 
   await render();
 
-  expect(query).not.toHaveBeenCalledWith("saves.getMany", expect.anything());
+  expect(window.pond.query).not.toHaveBeenCalledWith(
+    "saves.getMany",
+    expect.anything(),
+  );
 });
 
 it("hydrates large queues in renderer-sized batches", async () => {
   setSaves([]);
   const ids = Array.from({ length: 401 }, (_, index) => `save-${index}`);
+  const batches: Array<Array<string>> = [];
+  bridge.use({
+    query: {
+      "saves.getMany": (input) => {
+        batches.push(input.ids);
+        return [];
+      },
+    },
+  });
 
   await hydrateLiveDownloadSaves(ids, () => false);
 
-  const batches = query.mock.calls.flatMap(([name, args]) =>
-    name === "saves.getMany" ? [IdsArgSchema.parse(args)] : [],
-  );
   expect(batches.map((batch) => batch.length)).toEqual([200, 200, 1]);
 });
 
@@ -327,7 +278,7 @@ it("keeps running work active when the queue is paused without showing action ba
   expect(host.querySelector('[aria-label="Queue details"]')).toBeNull();
   expect(host.querySelector("footer")).toBeNull();
   await click('[aria-label="Pause Queue"]');
-  expect(pipelinePause).toHaveBeenCalledWith(true);
+  expect(window.pond.pipelinePause).toHaveBeenCalledWith(true);
   expect(
     host.querySelector('[data-status="running"]')?.hasAttribute("data-moving"),
   ).toBe(true);
@@ -474,8 +425,8 @@ it("shows bulk actions for the selection and cancels it in one request", async (
   await act(async () => barButton("Cancel").click());
   await settle();
 
-  expect(pipelineCancelSaves).toHaveBeenCalledTimes(1);
-  expect([...(pipelineCancelSaves.mock.calls[0]?.[0] ?? [])].sort()).toEqual([
+  expect(cancelled).toHaveLength(1);
+  expect([...(cancelled[0] ?? [])].sort()).toEqual([
     "Running video",
     "Waiting video",
   ]);
@@ -483,14 +434,15 @@ it("shows bulk actions for the selection and cancels it in one request", async (
 });
 
 it("retries only failed rows and skips the rest from the selection toolbar", async () => {
-  query.mockImplementation(async (name: string) => {
-    if (name === "saves.retryFailed") {
-      return { ok: true, requeued: 1 };
-    }
-    if (name === "saves.skipIngest") {
-      return { ok: true, skipped: 3 };
-    }
-    return defaultQuery(name);
+  const skipped: Array<Array<string>> = [];
+  bridge.use({
+    query: {
+      "saves.retryFailed": () => ({ ok: true, requeued: 1 }),
+      "saves.skipIngest": ({ ids }) => {
+        skipped.push(ids);
+        return { ok: true, skipped: 3 };
+      },
+    },
   });
   await render();
 
@@ -498,7 +450,7 @@ it("retries only failed rows and skips the rest from the selection toolbar", asy
   await click('[title="Running video"]', { metaKey: true });
   await act(async () => barButton("Retry").click());
   await settle();
-  expect(query).toHaveBeenCalledWith("saves.retryFailed", {
+  expect(window.pond.query).toHaveBeenCalledWith("saves.retryFailed", {
     ids: ["Failed video"],
   });
   expect(downloadsSelection.size()).toBe(0);
@@ -512,10 +464,7 @@ it("retries only failed rows and skips the rest from the selection toolbar", asy
   });
   await act(async () => barButton("Skip").click());
   await settle();
-  const skipped = query.mock.calls.find(
-    ([name]) => name === "saves.skipIngest",
-  );
-  expect(IdsArgSchema.parse(skipped?.[1]).sort()).toEqual([
+  expect([...(skipped[0] ?? [])].sort()).toEqual([
     "Failed video",
     "Running video",
     "Waiting video",
@@ -557,8 +506,8 @@ it("applies a context menu action to every selected download", async () => {
   );
   await settle();
 
-  expect(pipelineCancelSaves).toHaveBeenCalledTimes(1);
-  expect([...(pipelineCancelSaves.mock.calls[0]?.[0] ?? [])].sort()).toEqual([
+  expect(cancelled).toHaveLength(1);
+  expect([...(cancelled[0] ?? [])].sort()).toEqual([
     "Running video",
     "Waiting video",
   ]);
@@ -588,22 +537,9 @@ it("lists waiting and completed rows in the same table", async () => {
 });
 
 it("shows completed history in the table without opening a group", async () => {
-  query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") {
-      return {};
-    }
-    if (name === "pipeline.status") {
-      return { paused: false };
-    }
-    if (
-      name === "downloads.activity" ||
-      name === "downloads.ingestingOrFailed" ||
-      name === "pipeline.inflight"
-    ) {
-      return [];
-    }
-    if (name === "downloads.history") {
-      return {
+  bridge.use({
+    query: {
+      "downloads.history": () => ({
         rows: [
           {
             id: 2,
@@ -633,9 +569,8 @@ it("shows completed history in the table without opening a group", async () => {
           },
         ],
         nextCursor: null,
-      };
-    }
-    throw new Error(`Unexpected query: ${name}`);
+      }),
+    },
   });
   downloadsFilters.setStatuses(new Set());
   await render();
@@ -648,9 +583,9 @@ it("shows completed history in the table without opening a group", async () => {
 
 it("hides completed downloads by default and shows them on request", async () => {
   setSaves([]);
-  query.mockImplementation(async (name: string) => {
-    if (name === "downloads.history") {
-      return {
+  bridge.use({
+    query: {
+      "downloads.history": () => ({
         rows: [
           {
             id: 1,
@@ -667,9 +602,8 @@ it("hides completed downloads by default and shows them on request", async () =>
           },
         ],
         nextCursor: { ts: 1000, id: 1 },
-      };
-    }
-    return defaultQuery(name);
+      }),
+    },
   });
   await render();
   expect(host.querySelector('[title="Saved clip"]')).toBeNull();
@@ -770,9 +704,9 @@ it("explains a download waiting on its hourly limit", async () => {
       ],
     }),
   ]);
-  query.mockImplementation(async (name: string) => {
-    if (name === "queue.sourceGates") {
-      return [
+  bridge.use({
+    query: {
+      "queue.sourceGates": () => [
         {
           source: "twitter",
           state: "closed",
@@ -784,9 +718,8 @@ it("explains a download waiting on its hourly limit", async () => {
           maxPerDay: 600,
           recoveryProbe: false,
         },
-      ];
-    }
-    return defaultQuery(name);
+      ],
+    },
   });
   await render();
   await act(async () => {
@@ -835,14 +768,11 @@ it("refreshes a download once its last running task settles", async () => {
   let inflight = ["Instagram reel"];
   let current = running;
   setSaves([running]);
-  query.mockImplementation(async (name: string) => {
-    if (name === "pipeline.inflight") {
-      return inflight;
-    }
-    if (name === "saves.getMany") {
-      return [current];
-    }
-    return defaultQuery(name);
+  bridge.use({
+    query: {
+      "pipeline.inflight": () => inflight,
+      "saves.getMany": () => asWire([current]),
+    },
   });
 
   try {
@@ -865,7 +795,7 @@ it("refreshes a download once its last running task settles", async () => {
       });
     });
 
-    expect(query).toHaveBeenCalledWith("saves.getMany", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.getMany", {
       ids: ["Instagram reel"],
     });
     expect(row()?.textContent).toContain("Failed");
@@ -917,35 +847,15 @@ it("moves every unfinished download to Trash and leaves finished saves", async (
     save("Failed video", "failed", "dead"),
     save("Finished video", "complete"),
   ]);
-  query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") {
-      return {};
-    }
-    if (name === "downloads.activity") {
-      return [];
-    }
-    if (name === "downloads.history") {
-      return { rows: [], nextCursor: null };
-    }
-    if (name === "pipeline.status") {
-      return { paused: false };
-    }
-    if (name === "pipeline.inflight") {
-      return [];
-    }
-    if (name === "downloads.ingestingOrFailed") {
-      return [
+  bridge.use({
+    query: {
+      "downloads.ingestingOrFailed": () => [
         "Running video",
         "Waiting video",
         "Failed video",
         "Older hidden failure",
-      ];
-    }
-    if (name === "saves.getMany") {
-      return [];
-    }
-    if (name === "downloads.clearUnfinished") {
-      return {
+      ],
+      "downloads.clearUnfinished": () => ({
         changed: 4,
         ids: [
           "Running video",
@@ -953,12 +863,9 @@ it("moves every unfinished download to Trash and leaves finished saves", async (
           "Failed video",
           "Older hidden failure",
         ],
-      };
-    }
-    if (name === "feedback.emit") {
-      return { ok: true };
-    }
-    throw new Error(`Unexpected query: ${name}`);
+      }),
+      "feedback.emit": () => ({ ok: true }),
+    },
   });
 
   await render();
@@ -967,8 +874,14 @@ it("moves every unfinished download to Trash and leaves finished saves", async (
   await clickFilterOption("Failed");
   await clickButton("Clear Unfinished");
 
-  expect(query).toHaveBeenCalledWith("downloads.clearUnfinished", {});
-  expect(query).not.toHaveBeenCalledWith("saves.bulkEdit", expect.anything());
+  expect(window.pond.query).toHaveBeenCalledWith(
+    "downloads.clearUnfinished",
+    {},
+  );
+  expect(window.pond.query).not.toHaveBeenCalledWith(
+    "saves.bulkEdit",
+    expect.anything(),
+  );
   expect(savesStore.state.byId.get("Finished video")?.deletedAt).toBeNull();
 });
 
@@ -977,36 +890,17 @@ it("prevents duplicate clear requests while moving downloads to Trash", async ()
   const trashFinished = new Promise<void>((resolve) => {
     finishTrash = resolve;
   });
-  query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") {
-      return {};
-    }
-    if (name === "downloads.activity") {
-      return [];
-    }
-    if (name === "downloads.history") {
-      return { rows: [], nextCursor: null };
-    }
-    if (name === "pipeline.status") {
-      return { paused: false };
-    }
-    if (name === "pipeline.inflight") {
-      return [];
-    }
-    if (name === "downloads.ingestingOrFailed") {
-      return ["Running video"];
-    }
-    if (name === "saves.getMany") {
-      return [];
-    }
-    if (name === "downloads.clearUnfinished") {
-      await trashFinished;
-      return { changed: 1, ids: ["Running video"] };
-    }
-    if (name === "feedback.emit") {
-      return { ok: true };
-    }
-    throw new Error(`Unexpected query: ${name}`);
+  let clearRequests = 0;
+  bridge.use({
+    query: {
+      "downloads.ingestingOrFailed": () => ["Running video"],
+      "downloads.clearUnfinished": async () => {
+        clearRequests += 1;
+        await trashFinished;
+        return { changed: 1, ids: ["Running video"] };
+      },
+      "feedback.emit": () => ({ ok: true }),
+    },
   });
 
   await render();
@@ -1027,9 +921,7 @@ it("prevents duplicate clear requests while moving downloads to Trash", async ()
   expect(button.hasAttribute("disabled")).toBe(true);
   await act(async () => button.click());
 
-  expect(
-    query.mock.calls.filter(([name]) => name === "downloads.clearUnfinished"),
-  ).toHaveLength(1);
+  expect(clearRequests).toBe(1);
   await act(async () => {
     finishTrash?.();
     await trashFinished;
@@ -1037,46 +929,27 @@ it("prevents duplicate clear requests while moving downloads to Trash", async ()
 });
 
 it("ignores hydration rows captured before unfinished downloads were cleared", async () => {
-  let finishHydration: ((rows: Array<Save>) => void) | undefined;
-  const hydration = new Promise<Array<Save>>((resolve) => {
+  let finishHydration: ((rows: Array<WireSave>) => void) | undefined;
+  const hydration = new Promise<Array<WireSave>>((resolve) => {
     finishHydration = resolve;
   });
   setSaves([save("Running video", "ingesting", "running")]);
-  query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") {
-      return {};
-    }
-    if (name === "downloads.activity") {
-      return [];
-    }
-    if (name === "downloads.history") {
-      return { rows: [], nextCursor: null };
-    }
-    if (name === "pipeline.status") {
-      return { paused: false };
-    }
-    if (name === "pipeline.inflight") {
-      return [];
-    }
-    if (name === "downloads.ingestingOrFailed") {
-      return ["Older failure"];
-    }
-    if (name === "saves.getMany") {
-      return hydration;
-    }
-    if (name === "downloads.clearUnfinished") {
-      return { changed: 2, ids: ["Running video", "Older failure"] };
-    }
-    if (name === "feedback.emit") {
-      return { ok: true };
-    }
-    throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: {
+      "downloads.ingestingOrFailed": () => ["Older failure"],
+      "saves.getMany": () => hydration,
+      "downloads.clearUnfinished": () => ({
+        changed: 2,
+        ids: ["Running video", "Older failure"],
+      }),
+      "feedback.emit": () => ({ ok: true }),
+    },
   });
 
   await render();
   await clickButton("Clear Unfinished");
   await act(async () => {
-    finishHydration?.([save("Older failure", "failed", "dead")]);
+    finishHydration?.(asWire([save("Older failure", "failed", "dead")]));
     await hydration;
     await new Promise((resolve) => {
       setTimeout(resolve, 0);
@@ -1088,46 +961,27 @@ it("ignores hydration rows captured before unfinished downloads were cleared", a
 });
 
 it("ignores in-flight reloads captured before running downloads were cleared", async () => {
-  let finishReload: ((rows: Array<Save>) => void) | undefined;
-  const reload = new Promise<Array<Save>>((resolve) => {
+  let finishReload: ((rows: Array<WireSave>) => void) | undefined;
+  const reload = new Promise<Array<WireSave>>((resolve) => {
     finishReload = resolve;
   });
   setSaves([save("Running video", "ingesting", "running")]);
-  query.mockImplementation(async (name: string) => {
-    if (name === "settings.getPrefs") {
-      return {};
-    }
-    if (name === "downloads.activity") {
-      return [];
-    }
-    if (name === "downloads.history") {
-      return { rows: [], nextCursor: null };
-    }
-    if (name === "pipeline.status") {
-      return { paused: false };
-    }
-    if (name === "pipeline.inflight") {
-      return ["Running video"];
-    }
-    if (name === "downloads.ingestingOrFailed") {
-      return [];
-    }
-    if (name === "saves.getMany") {
-      return reload;
-    }
-    if (name === "downloads.clearUnfinished") {
-      return { changed: 1, ids: ["Running video"] };
-    }
-    if (name === "feedback.emit") {
-      return { ok: true };
-    }
-    throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: {
+      "pipeline.inflight": () => ["Running video"],
+      "saves.getMany": () => reload,
+      "downloads.clearUnfinished": () => ({
+        changed: 1,
+        ids: ["Running video"],
+      }),
+      "feedback.emit": () => ({ ok: true }),
+    },
   });
 
   await render();
   await clickButton("Clear Unfinished");
   await act(async () => {
-    finishReload?.([save("Running video", "ingesting", "running")]);
+    finishReload?.(asWire([save("Running video", "ingesting", "running")]));
     await reload;
     await new Promise((resolve) => {
       setTimeout(resolve, 0);
@@ -1150,9 +1004,9 @@ it("bounds the initial render before the downloads table is measured", async () 
 });
 
 it("shows Library Transfers as rows in the Downloads table", async () => {
-  query.mockImplementation(async (name: string) => {
-    if (name === "transferJobs.list") {
-      return [
+  bridge.use({
+    query: {
+      "transferJobs.list": () => [
         {
           id: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
           request: {
@@ -1170,9 +1024,8 @@ it("shows Library Transfers as rows in the Downloads table", async () => {
           startedAt: Date.now(),
           updatedAt: Date.now(),
         },
-      ];
-    }
-    return defaultQuery(name);
+      ],
+    },
   });
   await render();
   expect(rowNames()[0]).toBe(

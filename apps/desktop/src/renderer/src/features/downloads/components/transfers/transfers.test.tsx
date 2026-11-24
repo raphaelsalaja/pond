@@ -3,7 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { TransferJobsPanel } from "./";
 
 const failedId = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
@@ -32,11 +33,8 @@ function job(status: TransferJob["status"], error: string | null): TransferJob {
 let host: HTMLDivElement;
 let root: Root;
 let client: QueryClient;
-const query = vi.fn();
 
 beforeEach(() => {
-  query.mockReset();
-  Object.assign(window, { pond: { query } });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -101,16 +99,16 @@ async function waitForText(text: string, present: boolean) {
 it("dismisses a failed library transfer and hides the section", async () => {
   const failed = job("failed", "One of the selected Saves no longer exists.");
   let jobs = [failed];
-  query.mockImplementation(async (name: string, input?: { id: string }) => {
-    if (name === "transferJobs.list") {
-      return jobs;
-    }
-    if (name === "transferJobs.dismiss") {
-      expect(input).toEqual({ id: failed.id });
-      jobs = [];
-      return { ok: true };
-    }
-    throw new Error(`Unexpected query: ${name}`);
+  const dismissed: Array<{ id: string }> = [];
+  bridge.use({
+    query: {
+      "transferJobs.list": () => jobs,
+      "transferJobs.dismiss": (input) => {
+        dismissed.push(input);
+        jobs = [];
+        return { ok: true };
+      },
+    },
   });
   await renderPanel();
   await waitForText("One of the selected Saves no longer exists.", true);
@@ -119,15 +117,12 @@ it("dismisses a failed library transfer and hides the section", async () => {
   expect(button("Cancel")).toBeUndefined();
   await clickButton("Dismiss");
   await waitForText("Library Transfers", false);
-  expect(query).toHaveBeenCalledWith("transferJobs.dismiss", { id: failed.id });
+  expect(dismissed).toEqual([{ id: failed.id }]);
 });
 
 it("offers cancel instead of dismiss while a transfer is running", async () => {
-  query.mockImplementation(async (name: string) => {
-    if (name === "transferJobs.list") {
-      return [job("running", null)];
-    }
-    throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: { "transferJobs.list": () => [job("running", null)] },
   });
   await renderPanel();
   await waitForText("In progress", true);
@@ -138,14 +133,14 @@ it("offers cancel instead of dismiss while a transfer is running", async () => {
 
 it("keeps the failed transfer when dismiss is refused", async () => {
   const failed = job("failed", "One of the selected Saves no longer exists.");
-  query.mockImplementation(async (name: string) => {
-    if (name === "transferJobs.list") {
-      return [failed];
-    }
-    if (name === "transferJobs.dismiss") {
-      return { ok: false, error: "This transfer is still running." };
-    }
-    throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: {
+      "transferJobs.list": () => [failed],
+      "transferJobs.dismiss": () => ({
+        ok: false,
+        error: "This transfer is still running.",
+      }),
+    },
   });
   await renderPanel();
   await waitForText("One of the selected Saves no longer exists.", true);

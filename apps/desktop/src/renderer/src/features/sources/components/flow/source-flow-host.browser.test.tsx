@@ -9,21 +9,6 @@ let root: Root;
 let host: HTMLDivElement;
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  vi.stubGlobal("matchMedia", () => ({
-    matches: true,
-    addEventListener() {},
-    removeEventListener() {},
-    addListener() {},
-    removeListener() {},
-  }));
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -32,8 +17,14 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
+
+/** The overlay unmounts once its exit transition finishes. */
+async function overlayClosed() {
+  await vi.waitFor(() => {
+    expect(document.querySelector('[role="presentation"]')).toBeNull();
+  });
+}
 
 function button(label: string) {
   const found = Array.from(document.querySelectorAll("button")).find(
@@ -70,13 +61,13 @@ it.each(["close", "escape", "back"] as const)(
       }
     });
     expect(sourceFlow.current()).toBeNull();
-    expect(document.querySelector('[role="presentation"]')).toBeNull();
+    await overlayClosed();
     expect(document.querySelector("[data-base-ui-inert]")).toBeNull();
     await act(async () => sourceFlow.open("connect-wait"));
     expect(document.querySelector('[role="dialog"]')?.textContent).toContain(
       "Add Connection",
     );
     await act(async () => button("Cancel").click());
-    expect(document.querySelector('[role="presentation"]')).toBeNull();
+    await overlayClosed();
   },
 );

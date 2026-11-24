@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SourceActivity } from "./activity";
 import { SourceSchedule } from "./schedule";
 
@@ -23,7 +24,6 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   client.clear();
-  vi.unstubAllGlobals();
 });
 
 async function render(node: ReactNode) {
@@ -35,13 +35,7 @@ async function render(node: ReactNode) {
 }
 
 it("pauses scheduled fetches for one source", async () => {
-  const query = vi.fn(async (name: string) => {
-    if (name === "sources.setSchedule") {
-      return { ok: true };
-    }
-    throw new Error(name);
-  });
-  vi.stubGlobal("pond", { query });
+  bridge.use({ query: { "sources.setSchedule": () => ({ ok: true }) } });
   const onChanged = vi.fn();
   await render(
     <SourceSchedule
@@ -58,7 +52,7 @@ it("pauses scheduled fetches for one source", async () => {
   expect(toggle.getAttribute("aria-checked")).toBe("true");
   expect(host.textContent).toContain("Every 6 Hours");
   await act(async () => toggle.click());
-  expect(query).toHaveBeenCalledWith("sources.setSchedule", {
+  expect(window.pond.query).toHaveBeenCalledWith("sources.setSchedule", {
     kind: "account",
     id: "acc-1",
     paused: true,
@@ -69,12 +63,9 @@ it("pauses scheduled fetches for one source", async () => {
 });
 
 it("lists each fetch with what it found", async () => {
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      if (name !== "sync.history") {
-        throw new Error(name);
-      }
-      return {
+  bridge.use({
+    query: {
+      "sync.history": () => ({
         runs: [
           {
             id: 2,
@@ -103,7 +94,7 @@ it("lists each fetch with what it found", async () => {
             watchdogTripped: false,
           },
         ],
-      };
+      }),
     },
   });
   await render(<SourceActivity id="acc-1" source="twitter" />);
@@ -120,7 +111,7 @@ it("lists each fetch with what it found", async () => {
 });
 
 it("says when a source has never fetched", async () => {
-  vi.stubGlobal("pond", { query: async () => ({ runs: [] }) });
+  bridge.use({ query: { "sync.history": () => ({ runs: [] }) } });
   await render(<SourceActivity id="acc-1" source="twitter" />);
   await act(async () => {
     await vi.waitFor(() =>

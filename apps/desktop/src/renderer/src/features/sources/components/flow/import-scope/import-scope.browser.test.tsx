@@ -7,6 +7,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { localDay } from "@/features/sources/lib/import-scope";
 import { importScopeFlow } from "@/features/sources/state/import-scope-flow";
 import type { ImportScopeAccount } from "@/features/sources/state/import-scope-flow";
+import { bridge } from "@/shared/test/pond-bridge";
 import {
   ImportScopeFilters,
   ImportScopeLists,
@@ -16,8 +17,7 @@ import {
 
 let root: Root;
 let host: HTMLDivElement;
-let query: ReturnType<typeof vi.fn>;
-let syncRunNow: ReturnType<typeof vi.fn>;
+let scopeSaved: PromiseWithResolvers<void>;
 
 const BOARDS = [
   { id: "915", name: "Design References", itemCount: 42 },
@@ -25,32 +25,18 @@ const BOARDS = [
 ];
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+  scopeSaved = Promise.withResolvers<void>();
+  bridge.use({
+    query: {
+      "accounts.importOptions": () => ({ ok: true, collections: BOARDS }),
+      "accounts.list": () => ({ accounts: [] }),
+      "accounts.setImportScope": () => {
+        scopeSaved.resolve();
+        return { ok: true };
+      },
     },
-  );
-  vi.stubGlobal("matchMedia", () => ({
-    matches: true,
-    addEventListener() {},
-    removeEventListener() {},
-    addListener() {},
-    removeListener() {},
-  }));
-  query = vi.fn(async (name: string) => {
-    if (name === "accounts.importOptions") {
-      return { ok: true, collections: BOARDS };
-    }
-    if (name === "accounts.list") {
-      return { accounts: [] };
-    }
-    return { ok: true };
+    syncRunNow: async () => ({ ok: true }),
   });
-  syncRunNow = vi.fn(async () => ({ ok: true }));
-  vi.stubGlobal("pond", { query, syncRunNow });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -60,8 +46,13 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   importScopeFlow.clear();
-  vi.unstubAllGlobals();
 });
+
+async function saved(): Promise<void> {
+  await act(async () => {
+    await scopeSaved.promise;
+  });
+}
 
 function Harness({ account }: { account: ImportScopeAccount }) {
   useImportScopeDraft(account);
@@ -169,19 +160,18 @@ it("saves a new Account's choices without starting the import", async () => {
     sync: { importPending: true },
   });
   expect(button("Start Import").disabled).toBe(false);
-  expect(query).not.toHaveBeenCalledWith(
+  expect(window.pond.query).not.toHaveBeenCalledWith(
     "accounts.setImportScope",
     expect.anything(),
   );
   await act(async () => toggle("Liked Posts").click());
-  await vi.waitFor(() =>
-    expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  await saved();
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
       accountId: "acc-instagram",
       scope: { listKinds: ["saved"] },
       start: false,
-    }),
-  );
-  expect(syncRunNow).not.toHaveBeenCalled();
+  });
+  expect(window.pond.syncRunNow).not.toHaveBeenCalled();
   expect(button("Start Import")).toBeTruthy();
 });
 
@@ -203,19 +193,18 @@ it("saves an active Account's choices as you change them", async () => {
     sync: { importScope: { listKinds: ["saved"] } },
   });
   expect(host.textContent).not.toContain("Start Import");
-  expect(query).not.toHaveBeenCalledWith(
+  expect(window.pond.query).not.toHaveBeenCalledWith(
     "accounts.setImportScope",
     expect.anything(),
   );
   await act(async () => toggle("Liked Posts").click());
-  await vi.waitFor(() =>
-    expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  await saved();
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
       accountId: "acc-instagram",
       scope: {},
       start: false,
-    }),
-  );
-  expect(syncRunNow).not.toHaveBeenCalled();
+  });
+  expect(window.pond.syncRunNow).not.toHaveBeenCalled();
 });
 
 it("saves an active Account with every list turned off", async () => {
@@ -225,13 +214,12 @@ it("saves an active Account with every list turned off", async () => {
     sync: { importScope: { listKinds: ["saved"] } },
   });
   await act(async () => toggle("Saved Posts").click());
-  await vi.waitFor(() =>
-    expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  await saved();
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
       accountId: "acc-instagram",
       scope: { listKinds: [] },
       start: false,
-    }),
-  );
+  });
   expect(host.querySelector('[role="alert"]')).toBeNull();
 });
 
@@ -255,12 +243,12 @@ it("starts the first import with only the lists you keep", async () => {
   await act(async () => toggle("Liked Posts").click());
   await act(async () => button("Start Import").click());
 
-  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-instagram",
     scope: { listKinds: ["saved"] },
     start: true,
   });
-  expect(syncRunNow).toHaveBeenCalledWith("acc-instagram");
+  expect(window.pond.syncRunNow).toHaveBeenCalledWith("acc-instagram");
 });
 
 it("starts a Threads import with Saved Posts and Liked Posts on", async () => {
@@ -274,7 +262,7 @@ it("starts a Threads import with Saved Posts and Liked Posts on", async () => {
   await act(async () => toggle("Liked Posts").click());
   await act(async () => button("Start Import").click());
 
-  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-threads",
     scope: { listKinds: ["saved"] },
     start: true,
@@ -285,18 +273,17 @@ it("keeps both Threads lists on for an Account connected before list choices", a
   await renderFor({ id: "acc-threads", source: "threads", sync: {} });
   expect(toggle("Saved Posts").getAttribute("aria-checked")).toBe("true");
   expect(toggle("Liked Posts").getAttribute("aria-checked")).toBe("true");
-  expect(query).not.toHaveBeenCalledWith(
+  expect(window.pond.query).not.toHaveBeenCalledWith(
     "accounts.setImportScope",
     expect.anything(),
   );
   await act(async () => toggle("Saved Posts").click());
-  await vi.waitFor(() =>
-    expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  await saved();
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
       accountId: "acc-threads",
       scope: { listKinds: ["liked"] },
       start: false,
-    }),
-  );
+  });
 });
 
 it("won't start an import that would bring in nothing", async () => {
@@ -334,7 +321,7 @@ it("imports chosen Pinterest boards into Folders", async () => {
     expect(toggle("Add to Folders").getAttribute("aria-checked")).toBe("true");
   });
   await act(async () => button("Start Import").click());
-  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: { collections: [{ id: "915", name: "Design References" }] },
     start: true,
@@ -349,7 +336,7 @@ it("files every board when you turn on Add to Folders without picking any", asyn
   });
   await act(async () => toggle("Add to Folders").click());
   await act(async () => button("Start Import").click());
-  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: { addToFolders: true },
     start: true,
@@ -364,7 +351,7 @@ it("keeps chosen boards out of Folders when you turn it off", async () => {
   });
   await act(async () => toggle("Add to Folders").click());
   await act(async () => {});
-  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-pinterest",
     scope: {
       collections: [{ id: "915", name: "Design" }],
@@ -375,21 +362,21 @@ it("keeps chosen boards out of Folders when you turn it off", async () => {
 });
 
 it("explains a board list Pond couldn't load", async () => {
-  query.mockImplementation(async (name: string) =>
-    name === "accounts.importOptions"
-      ? {
-          ok: false,
-          error:
-            "Pinterest signed you out. Reconnect the Account to load your boards.",
-        }
-      : { ok: true },
-  );
+  bridge.use({
+    query: {
+      "accounts.importOptions": () => ({
+        ok: false,
+        error:
+          "Pinterest signed you out. Reconnect the Account to load your boards.",
+      }),
+    },
+  });
   await renderFor({
     id: "acc-pinterest",
     source: "pinterest",
     sync: { importScope: { collections: [{ id: "915", name: "Design" }] } },
   });
-  expect(query).not.toHaveBeenCalledWith(
+  expect(window.pond.query).not.toHaveBeenCalledWith(
     "accounts.importOptions",
     expect.anything(),
   );
@@ -403,17 +390,18 @@ it("explains a board list Pond couldn't load", async () => {
 it("runs one retry at a time while the list loads", async () => {
   let finish: (value: { ok: true; collections: Array<never> }) => void = noop;
   let attempts = 0;
-  query.mockImplementation(async (name: string) => {
-    if (name !== "accounts.importOptions") {
-      return { ok: true };
-    }
-    attempts += 1;
-    if (attempts === 1) {
-      return { ok: false, error: "Pond couldn't load your collections." };
-    }
-    return new Promise((resolve) => {
-      finish = resolve;
-    });
+  bridge.use({
+    query: {
+      "accounts.importOptions": () => {
+        attempts += 1;
+        if (attempts === 1) {
+          return { ok: false, error: "Pond couldn't load your collections." };
+        }
+        return new Promise((resolve) => {
+          finish = resolve;
+        });
+      },
+    },
   });
   await renderFor({
     id: "acc-instagram",
@@ -439,12 +427,12 @@ it("saves a change for an active Account without starting a sync", async () => {
   await act(async () => toggle("Saved Posts").click());
   await act(async () => {});
 
-  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-instagram",
     scope: {},
     start: false,
   });
-  expect(syncRunNow).not.toHaveBeenCalled();
+  expect(window.pond.syncRunNow).not.toHaveBeenCalled();
 });
 
 it("syncs once you leave after picking collections, so older saves get filed", async () => {
@@ -454,22 +442,21 @@ it("syncs once you leave after picking collections, so older saves get filed", a
     sync: { importScope: { listKinds: ["saved"] } },
   });
   await pick("Collections", "Design References");
-  await vi.waitFor(() =>
-    expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  await saved();
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
       accountId: "acc-instagram",
       scope: {
         listKinds: ["saved"],
         collections: [{ id: "915", name: "Design References" }],
       },
       start: false,
-    }),
-  );
+  });
   await act(async () => {});
-  expect(syncRunNow).not.toHaveBeenCalled();
+  expect(window.pond.syncRunNow).not.toHaveBeenCalled();
 
   await act(async () => root.unmount());
-  expect(syncRunNow).toHaveBeenCalledTimes(1);
-  expect(syncRunNow).toHaveBeenCalledWith("acc-instagram");
+  expect(window.pond.syncRunNow).toHaveBeenCalledTimes(1);
+  expect(window.pond.syncRunNow).toHaveBeenCalledWith("acc-instagram");
   root = createRoot(host);
 });
 
@@ -482,7 +469,7 @@ it("doesn't sync when you leave without changing collections", async () => {
   await act(async () => toggle("Liked Posts").click());
   await act(async () => {});
   await act(async () => root.unmount());
-  expect(syncRunNow).not.toHaveBeenCalled();
+  expect(window.pond.syncRunNow).not.toHaveBeenCalled();
   root = createRoot(host);
 });
 
@@ -496,7 +483,7 @@ it("leaves the first sync to Start Import", async () => {
   await act(async () => {});
   await act(async () => button("Start Import").click());
   await act(async () => root.unmount());
-  expect(syncRunNow).toHaveBeenCalledTimes(1);
+  expect(window.pond.syncRunNow).toHaveBeenCalledTimes(1);
   root = createRoot(host);
 });
 
@@ -508,7 +495,7 @@ it("starts a TikTok import from Liked Videos alone", async () => {
   });
   await act(async () => toggle("Favorites").click());
   await act(async () => button("Start Import").click());
-  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-tiktok",
     scope: { listKinds: ["liked"] },
     start: true,
@@ -585,7 +572,7 @@ it("saves media and date filters with the scope", async () => {
   });
   await act(async () => day.click());
   await act(async () => button("Start Import").click());
-  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-reddit",
     scope: { mediaKinds: ["image", "video"], since: first },
     start: true,
@@ -603,7 +590,7 @@ it("goes back to every post type when you remove the last chip", async () => {
   );
   await act(async () => remove?.click());
   await act(async () => {});
-  expect(query).toHaveBeenCalledWith("accounts.setImportScope", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
     accountId: "acc-reddit",
     scope: {},
     start: false,
@@ -611,14 +598,18 @@ it("goes back to every post type when you remove the last chip", async () => {
 });
 
 it("locks Bluesky Bookmarks until you sign in, then unlocks them", async () => {
-  query.mockImplementation(async (name: string) => {
-    if (name === "accounts.blueskySession") {
-      return { ok: true, signedIn: false, handle: null };
-    }
-    if (name === "accounts.blueskySignIn") {
-      return { ok: true, handle: "alice.bsky.social" };
-    }
-    return { ok: true };
+  bridge.use({
+    query: {
+      "accounts.blueskySession": () => ({
+        ok: true,
+        signedIn: false,
+        handle: null,
+      }),
+      "accounts.blueskySignIn": () => ({
+        ok: true,
+        handle: "alice.bsky.social",
+      }),
+    },
   });
   await renderFor({
     id: "acc-bluesky",
@@ -634,7 +625,7 @@ it("locks Bluesky Bookmarks until you sign in, then unlocks them", async () => {
   await vi.waitFor(() =>
     expect(host.textContent).toContain("Signed in as @alice.bsky.social"),
   );
-  expect(query).toHaveBeenCalledWith("accounts.blueskySignIn", {
+  expect(window.pond.query).toHaveBeenCalledWith("accounts.blueskySignIn", {
     accountId: "acc-bluesky",
   });
   await vi.waitFor(() =>
@@ -645,18 +636,19 @@ it("locks Bluesky Bookmarks until you sign in, then unlocks them", async () => {
 });
 
 it("shows why a Bluesky sign-in didn't take", async () => {
-  query.mockImplementation(async (name: string) => {
-    if (name === "accounts.blueskySession") {
-      return { ok: true, signedIn: false, handle: null };
-    }
-    if (name === "accounts.blueskySignIn") {
-      return {
+  bridge.use({
+    query: {
+      "accounts.blueskySession": () => ({
+        ok: true,
+        signedIn: false,
+        handle: null,
+      }),
+      "accounts.blueskySignIn": () => ({
         ok: false,
         error:
           "You signed in as @bob.bsky.social. Sign in as @alice.bsky.social to import its bookmarks.",
-      };
-    }
-    return { ok: true };
+      }),
+    },
   });
   await renderFor({
     id: "acc-bluesky",

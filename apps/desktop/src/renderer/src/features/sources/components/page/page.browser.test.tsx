@@ -1,5 +1,8 @@
+import { DEFAULT_SOURCE_SYNC_PREFS } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
 import { Tooltip } from "@pond/ui";
 import { isHTMLTag } from "@pond/ui/dom";
+import type { QueryResult } from "@shared/query-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -10,7 +13,11 @@ import { sourceFlow } from "@/features/sources/state/source-flow";
 import { sourcesColumnsLayout } from "@/features/sources/state/sources-columns";
 import { sourcesFilters } from "@/features/sources/state/sources-filters";
 import { sourcesSelection } from "@/features/sources/state/sources-selection";
+import { bridge } from "@/shared/test/pond-bridge";
+import type { QueryHandlers } from "@/shared/test/pond-bridge";
 import { SourcesPage } from "./";
+
+type AccountRow = QueryResult<"accounts.list">["accounts"][number];
 
 const accounts = [
   account("ig", "instagram", "oluwa.rafa"),
@@ -18,17 +25,32 @@ const accounts = [
   account("yt", "youtube", "pond"),
 ];
 
-function account(id: string, source: string, handle: string) {
+function account(id: string, source: Source, handle: string): AccountRow {
   return {
     id,
     source,
     handle,
+    identityKey: null,
     label: null,
     avatarUrl: null,
     addedAt: "2026-01-01T00:00:00.000Z",
-    sync: { lastSyncedAt: null, lastError: null, knownCount: 4 },
+    sync: { ...DEFAULT_SOURCE_SYNC_PREFS, knownCount: 4 },
     connected: true,
     syncing: false,
+  };
+}
+
+function sourceQueries(rows: Array<AccountRow>): QueryHandlers {
+  return {
+    "accounts.list": () => ({ accounts: rows }),
+    "watches.list": () => ({ watches: [] }),
+    "autoImport.status": () => ({
+      enabled: false,
+      path: "",
+      mode: "copy",
+      history: [],
+    }),
+    "sources.overview": () => ({ saves: 0, bytes: 0, recent: [] }),
   };
 }
 
@@ -84,32 +106,9 @@ describe("Sources page selection", () => {
   let host: HTMLDivElement;
   let root: Root;
   let client: QueryClient;
-  const query = vi.fn();
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        disconnect() {}
-        unobserve() {}
-      },
-    );
-    vi.stubGlobal("matchMedia", () => ({
-      matches: false,
-      addEventListener() {},
-      removeEventListener() {},
-    }));
-    query.mockImplementation(async (name: string) => {
-      if (name === "accounts.list") {
-        return { accounts };
-      }
-      if (name === "watches.list") {
-        return { watches: [] };
-      }
-      return { ok: true };
-    });
-    vi.stubGlobal("pond", { query });
+    bridge.use({ query: sourceQueries(accounts) });
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -126,15 +125,7 @@ describe("Sources page selection", () => {
   });
 
   afterEach(async () => {
-    query.mockImplementation(async (name: string) => {
-      if (name === "accounts.list") {
-        return { accounts: [] };
-      }
-      if (name === "watches.list") {
-        return { watches: [] };
-      }
-      return { ok: true };
-    });
+    bridge.use({ query: sourceQueries([]) });
     await refetchAccounts();
     sourcesSelection.clear();
     sourcesColumnsLayout.reset();
@@ -143,7 +134,6 @@ describe("Sources page selection", () => {
     await act(async () => root.unmount());
     client.clear();
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function render(expectedRows = 3) {
@@ -208,8 +198,13 @@ describe("Sources page selection", () => {
   });
 
   it("fetches every ticked source from the selection bar", async () => {
-    const syncRunNow = vi.fn(async (_id: string) => ({ ok: true }));
-    vi.stubGlobal("pond", { query, syncRunNow });
+    const fetched: Array<string> = [];
+    bridge.use({
+      syncRunNow: async (id) => {
+        fetched.push(id);
+        return { ok: true };
+      },
+    });
     await render();
     expect(toolbar()).toBeNull();
 
@@ -224,10 +219,7 @@ describe("Sources page selection", () => {
       'button[aria-label="Fetch New Saves"]',
     );
     await act(async () => fetch?.click());
-    expect(syncRunNow.mock.calls.map(([id]) => id).toSorted()).toEqual([
-      "ig",
-      "yt",
-    ]);
+    expect(fetched.toSorted()).toEqual(["ig", "yt"]);
 
     const clear = toolbar()?.querySelector<HTMLButtonElement>(
       'button[aria-label="Clear Selection"]',
@@ -237,14 +229,8 @@ describe("Sources page selection", () => {
   });
 
   it("disables Fetch All until the global run finishes", async () => {
-    let finish: ((result: { ok: true }) => void) | null = null;
-    const syncRunAll = vi.fn(
-      () =>
-        new Promise<{ ok: true }>((resolve) => {
-          finish = resolve;
-        }),
-    );
-    vi.stubGlobal("pond", { query, syncRunAll });
+    const run = Promise.withResolvers<{ ok: true }>();
+    bridge.use({ syncRunAll: () => run.promise });
     await render();
 
     const fetch = host.querySelector<HTMLButtonElement>(
@@ -256,11 +242,11 @@ describe("Sources page selection", () => {
     await act(async () => fetch.click());
     await act(async () => fetch.click());
 
-    expect(syncRunAll).toHaveBeenCalledTimes(1);
+    expect(window.pond.syncRunAll).toHaveBeenCalledTimes(1);
     expect(fetch.disabled).toBe(true);
     expect(fetch.getAttribute("aria-busy")).toBe("true");
 
-    await act(async () => finish?.({ ok: true }));
+    await act(async () => run.resolve({ ok: true }));
     expect(fetch.disabled).toBe(false);
   });
 
@@ -383,22 +369,15 @@ describe("Sources page selection", () => {
   });
 
   it("lists the watched folder as a Local source", async () => {
-    query.mockImplementation(async (name: string) => {
-      if (name === "accounts.list") {
-        return { accounts };
-      }
-      if (name === "watches.list") {
-        return { watches: [] };
-      }
-      if (name === "autoImport.status") {
-        return {
+    bridge.use({
+      query: {
+        "autoImport.status": () => ({
           enabled: false,
           path: "/Users/raphael/Inbox",
           mode: "copy",
           history: [{ at: Date.now(), name: "a.jpg", mode: "copy", ok: true }],
-        };
-      }
-      return { ok: true };
+        }),
+      },
     });
     await render(4);
     const folder = rowWith("Inbox");
