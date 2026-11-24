@@ -51,7 +51,7 @@ export async function startLibraryBackgroundWork(): Promise<void> {
   }
 
   const step =
-    (label: string, run: () => Promise<unknown>) => async (): Promise<void> => {
+    (label: string, run: () => Promise<void>) => async (): Promise<void> => {
       if (!live()) {
         return;
       }
@@ -71,32 +71,28 @@ export async function startLibraryBackgroundWork(): Promise<void> {
         .catch((error) => log.warn("[pond] fingerprint worker failed", error));
     })
     .then(
-      step("archive backfill", async () =>
-        (
-          await import("./core/refresh/archive-backfill")
-        ).startArchiveBackfill(),
-      ),
+      step("archive backfill", async () => {
+        const module = await import("./core/refresh/archive-backfill");
+        await module.startArchiveBackfill();
+      }),
     )
     .then(
-      step("native card backfill", async () =>
-        (
-          await import("./core/refresh/threads-card-backfill")
-        ).startThreadsCardBackfill(),
-      ),
+      step("native card backfill", async () => {
+        const module = await import("./core/refresh/threads-card-backfill");
+        await module.startThreadsCardBackfill();
+      }),
     )
     .then(
-      step("source icon backfill", async () =>
-        (
-          await import("./core/refresh/source-icon-backfill")
-        ).backfillSourceIcons(),
-      ),
+      step("source icon backfill", async () => {
+        const module = await import("./core/refresh/source-icon-backfill");
+        await module.backfillSourceIcons();
+      }),
     )
     .then(
-      step("article backfill", async () =>
-        (
-          await import("./core/refresh/article-backfill")
-        ).startArticleBackfill(),
-      ),
+      step("article backfill", async () => {
+        const module = await import("./core/refresh/article-backfill");
+        await module.startArticleBackfill();
+      }),
     );
   void enrichmentModule
     .backfillEnrichmentSidecars()

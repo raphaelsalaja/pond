@@ -40,7 +40,6 @@ export function LibrarySwitchCover() {
       data-failed={failed || undefined}
       role={failed ? "alertdialog" : "status"}
       aria-busy={!failed}
-      aria-modal={failed || undefined}
       aria-labelledby="library-switch-title"
       aria-describedby={
         failed || state.waiting ? "library-switch-detail" : undefined

@@ -59,10 +59,6 @@ const CropIconParams = z.object({
   }),
 });
 
-function switchError(error: unknown): string {
-  return error instanceof Error ? error.message : "Couldn't open that library.";
-}
-
 function cropLogo(image: NativeImage, crop: LogoCrop): string {
   const rect = pixelCrop(image.getSize(), crop);
   return image
@@ -204,7 +200,10 @@ export const libraryLocationOpenQueries = {
         announceLibrarySwitch({
           phase: "failed",
           library,
-          error: switchError(error),
+          error:
+            error instanceof Error
+              ? error.message
+              : "Couldn't open that library.",
         });
         if (error instanceof LibraryMetadataError) {
           return { ok: false as const, error: error.message };
@@ -285,7 +284,13 @@ export const libraryLocationOpenQueries = {
           );
         }
       } catch (error) {
-        return { ok: false as const, error: switchError(error) };
+        return {
+          ok: false as const,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Couldn't open that library.",
+        };
       }
 
       const library = await librarySwitchTarget(dest);
@@ -297,7 +302,10 @@ export const libraryLocationOpenQueries = {
         result = await relocateLibrary(dest, "adopt");
       } catch (error) {
         await resumeLibraryWork();
-        const message = switchError(error);
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Couldn't open that library.";
         announceLibrarySwitch({ phase: "failed", library, error: message });
         return { ok: false as const, error: message };
       }
