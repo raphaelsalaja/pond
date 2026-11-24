@@ -26,9 +26,9 @@ const MEDIA_URLS = new Map(
   Object.entries(media).map(([path, url]) => [path.split("/").at(-1), url]),
 );
 
-/** The bundled URL for an entry's `media` file, or undefined when the file is missing. */
+/** The bundled URL for an entry's `media` file, or undefined when the entry has none. */
 export function mediaUrl(entry: ChangelogEntry): string | undefined {
-  return MEDIA_URLS.get(entry.media);
+  return entry.media ? MEDIA_URLS.get(entry.media) : undefined;
 }
 
 function parseAll(files: Record<string, string>): ChangelogEntry[] {
