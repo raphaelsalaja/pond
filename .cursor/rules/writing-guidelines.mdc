@@ -40,5 +40,5 @@ Voice from [Vercel](https://github.com/vercel-labs/writing-guidelines) and Linea
 
 - MUST: Specific over vague. "Your personal social media archiver", not a work-platform slogan
 - MUST: Lead with the claim, then the mechanism
-- MUST: Changelog entries live in `changelog/<version>.md`: a sentence-case title, a one-sentence summary, a `media` image or video from `changelog/media/`, then `Important`, `New`, `Improved`, `Fixed` sections in that order, one-sentence bullets
+- MUST: Changelog entries live in `changelog/<version>.md`: a sentence-case title, a one-sentence summary, then `Important`, `New`, `Improved`, `Fixed` sections in that order, one-sentence bullets. Add `media` only when the entry has an image or video in `changelog/media/`
 - NEVER: Drop a code block without saying what it does. Language tag on every fence

@@ -35,7 +35,9 @@ describe("bundled changelog", () => {
   });
 
   it("bundles every entry's media from changelog/media/", () => {
-    const missing = CHANGELOG.filter((entry) => !mediaUrl(entry));
+    const missing = CHANGELOG.filter(
+      (entry) => entry.media && !mediaUrl(entry),
+    );
     expect(missing.map((entry) => entry.media)).toEqual([]);
   });
 });
@@ -81,10 +83,10 @@ describe("parseChangelogEntry", () => {
     ).toThrow();
   });
 
-  it("rejects missing media", () => {
-    expect(() =>
-      parseChangelogEntry(ENTRY.replace(/media: .*\n/, "")),
-    ).toThrow();
+  it("allows an entry without media", () => {
+    const entry = parseChangelogEntry(ENTRY.replace(/media: .*\n/, ""));
+    expect(entry.media).toBeUndefined();
+    expect(entry.version).toBe("2.13.0");
   });
 });
 

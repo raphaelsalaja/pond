@@ -39,7 +39,8 @@ export const ChangelogEntrySchema = z
       .regex(
         /^[\w.-]+\.(png|jpe?g|webp|gif|mp4|webm)$/,
         "Media must be a file name in changelog/media/, an image or an mp4 or webm video.",
-      ),
+      )
+      .optional(),
     sections: z.array(SectionSchema).min(1),
   })
   .refine(
