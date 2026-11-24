@@ -16,10 +16,7 @@ import {
 } from "../categories";
 import { HealthDrilldown } from "../drilldown";
 import { STATUS_TONES } from "../tones";
-import {
-  useCategoryRunning,
-  useHealthCategories,
-} from "../use-library-health";
+import { useCategoryRunning, useHealthCategories } from "../use-library-health";
 import styles from "./styles.module.css";
 
 const COUNT_PHRASES = {

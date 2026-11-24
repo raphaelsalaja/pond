@@ -17,4 +17,7 @@ const body = ({ poly }, s) =>
 
 export default (h, s) => [lid(h.rect, s), body(h, s)];
 
-export const open = (h, s) => [move(turn(lid(h.rect, s), -6, 9, 5.5), 0, -1.5), body(h, s)];
+export const open = (h, s) => [
+  move(turn(lid(h.rect, s), -6, 9, 5.5), 0, -1.5),
+  body(h, s),
+];

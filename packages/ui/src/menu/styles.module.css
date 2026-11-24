@@ -149,8 +149,8 @@
   font-size: var(--ds-text-body);
   font-weight: var(--ds-weight-regular);
   color: var(--ds-foreground-secondary);
-  caret-color: var(--ds-accent);
   appearance: none;
+  caret-color: var(--ds-accent);
   outline: none;
   background: transparent;
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);

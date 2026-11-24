@@ -59,13 +59,13 @@ import type {
 import type { LogoCrop, LogoSource } from "./logo-crop";
 import type { McpInstallHost } from "./mcp-hosts";
 import type {
-  NotificationQueryInputs,
-  NotificationQueryResults,
-} from "./notification-contracts";
-import type {
   MediaProcessingQueryInputs,
   MediaProcessingQueryResults,
 } from "./media-processing-contracts";
+import type {
+  NotificationQueryInputs,
+  NotificationQueryResults,
+} from "./notification-contracts";
 import type {
   BatchRenameInput,
   CancellableResult,

@@ -26,7 +26,7 @@ export function FishActivity({
         <Empty.Media>
           <EmptyPreview.Root layout="list">
             <EmptyPreview.Row>
-              <EmptyPreview.Thumb shape="round" />
+              <EmptyPreview.Thumb variant="round" />
               <EmptyPreview.Lines>
                 <EmptyPreview.Line width={60} />
                 <EmptyPreview.Line width={38} tone="thin" />

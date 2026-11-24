@@ -177,7 +177,10 @@ describe("SavePreviews", () => {
     Object.fromEntries(
       [...host.querySelectorAll("[data-slot]")].map((card) => [
         card.getAttribute("data-slot"),
-        card.querySelector("img")?.getAttribute("src")?.match(/(\w)\.jpg/)?.[1],
+        card
+          .querySelector("img")
+          ?.getAttribute("src")
+          ?.match(/(\w)\.jpg/)?.[1],
       ]),
     );
 

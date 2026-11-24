@@ -23,7 +23,7 @@ export function LibraryEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <EmptyPreview.Root shape="tile" layout="spread">
+        <EmptyPreview.Root kind="tile" layout="spread">
           <EmptyPreview.Column>
             <EmptyPreview.Block />
             <EmptyPreview.Line width={36} />
@@ -52,7 +52,7 @@ export function TrashEmpty() {
   return (
     <Empty.Root>
       <Empty.Media>
-        <EmptyPreview.Root shape="tile" layout="single">
+        <EmptyPreview.Root kind="tile" layout="single">
           <EmptyPreview.Column>
             <EmptyPreview.Block>
               <IconTrash size={12} />
@@ -90,7 +90,7 @@ export function UncategorizedEmpty() {
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <EmptyPreview.Root shape="tile">
+        <EmptyPreview.Root kind="tile">
           <EmptyPreview.Column>
             <EmptyPreview.Block>
               <IconFolderBan size={12} />
@@ -140,7 +140,7 @@ export function InboxEmpty() {
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <EmptyPreview.Root shape="panel">
+        <EmptyPreview.Root kind="panel">
           <EmptyPreview.Column>
             <EmptyPreview.Block />
             <EmptyPreview.Line width={52} />
@@ -195,7 +195,7 @@ export function FolderEmpty({
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <EmptyPreview.Root shape="tile" layout="spread">
+        <EmptyPreview.Root kind="tile" layout="spread">
           <EmptyPreview.Column>
             <EmptyPreview.Block>
               <IconFolderOpen size={12} />
@@ -232,7 +232,7 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
     mode === "untagged"
       ? {
           visual: (
-            <EmptyPreview.Root shape="tile">
+            <EmptyPreview.Root kind="tile">
               <EmptyPreview.Column>
                 <EmptyPreview.Block>
                   <IconTagSlash size={12} />
@@ -262,7 +262,7 @@ export function LibrarySectionEmpty({ mode }: { mode: LibrarySection }) {
           }
         : {
             visual: (
-              <EmptyPreview.Root shape="tile" layout="spread">
+              <EmptyPreview.Root kind="tile" layout="spread">
                 <EmptyPreview.Column>
                   <EmptyPreview.Block>
                     <IconClockPlus size={12} />

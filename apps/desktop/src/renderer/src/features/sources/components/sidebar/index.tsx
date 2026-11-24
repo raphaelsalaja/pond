@@ -27,13 +27,13 @@ import {
   useSourcesFilters,
 } from "@/features/sources/state/sources-filters";
 
-const STATUS_ICONS: Record<SourceStatusId, ReactNode> = {
+const STATUS_ICONS = {
   active: <IconCircleCheck />,
   syncing: <IconRefresh />,
   failed: <IconCircleWarning />,
   paused: <IconMediaPause />,
   offline: <IconCircleXmark />,
-};
+} satisfies Record<SourceStatusId, ReactNode>;
 
 const TYPES: { label: string; icon: ReactNode }[] = [
   { label: "Account", icon: <IconUser /> },

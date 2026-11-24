@@ -5,7 +5,7 @@ const rise = half / 2;
 const box = ({ poly }, s, top, bottom) => {
   const [l, r] = [9 - half, 9 + half];
   const near = top + 2 * rise;
-  return poly(
+  const outline = poly(
     [
       [9, top],
       [r, top + rise],
@@ -14,8 +14,12 @@ const box = ({ poly }, s, top, bottom) => {
       [l, bottom - rise],
       [l, top + rise],
     ],
-    { closed: true, corners: { 0: s.ease, 1: 0.5, 2: s.ease, 3: 0.5, 4: s.ease, 5: 0.5 } },
-  ) + ` M ${l} ${top + rise} L 9 ${near} L ${r} ${top + rise} M 9 ${near} V ${bottom}`;
+    {
+      closed: true,
+      corners: { 0: s.ease, 1: 0.5, 2: s.ease, 3: 0.5, 4: s.ease, 5: 0.5 },
+    },
+  );
+  return `${outline} M ${l} ${top + rise} L 9 ${near} L ${r} ${top + rise} M 9 ${near} V ${bottom}`;
 };
 
 export default (h, s) => box(h, s, 2.375, 15.625);
@@ -45,7 +49,10 @@ export const open = ({ poly }, s) => {
         [9, 15.625],
         [l, 15.625 - rise],
       ],
-      { closed: true, corners: { 0: 0.5, 1: 0.5, 2: 0.5, 3: s.ease, 4: 0.5, 5: s.ease } },
+      {
+        closed: true,
+        corners: { 0: 0.5, 1: 0.5, 2: 0.5, 3: s.ease, 4: 0.5, 5: s.ease },
+      },
     ),
     `M 9 ${body + 2 * rise} V 15.625`,
   ];

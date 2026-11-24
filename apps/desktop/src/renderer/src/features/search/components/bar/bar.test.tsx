@@ -13,7 +13,11 @@ import {
 import { SearchComposer } from "./";
 import { $writeSearchString } from "./lib/editor-state";
 
-const harness: { editor: LexicalEditor | null } = { editor: null };
+interface Harness {
+  editor: LexicalEditor | null;
+}
+
+const harness: Harness = { editor: null };
 function CaptureEditor() {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
@@ -194,9 +198,7 @@ describe("search editor synchronization", () => {
       JSON.parse(host.querySelector("[data-filter-state]")?.textContent ?? "{}")
         .rules,
     ).toEqual([rule]);
-    await act(async () =>
-      harness.editor?.update(() => $writeSearchString("")),
-    );
+    await act(async () => harness.editor?.update(() => $writeSearchString("")));
     expect(input?.textContent?.trim()).toBe("");
     expect(
       JSON.parse(host.querySelector("[data-filter-state]")?.textContent ?? "{}")

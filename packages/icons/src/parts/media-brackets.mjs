@@ -12,5 +12,10 @@ export default (s, arm = 3.375) => {
       ],
       { corners: { 1: s.box } },
     );
-  return [corner(x0, y0, 1, 1), corner(x1, y0, -1, 1), corner(x1, y1, -1, -1), corner(x0, y1, 1, -1)];
+  return [
+    corner(x0, y0, 1, 1),
+    corner(x1, y0, -1, 1),
+    corner(x1, y1, -1, -1),
+    corner(x0, y1, 1, -1),
+  ];
 };

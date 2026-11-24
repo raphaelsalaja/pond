@@ -35,10 +35,10 @@ export interface Recipe {
   veil: number;
 }
 
-export const SOFT: { light: Recipe; dark: Recipe } = {
+export const SOFT = {
   light: { fill: 29.6, normal: 0.25, lighten: 0.6, darken: 0.4, veil: 0.5 },
   dark: { fill: 29.6, normal: 0, lighten: 0.4, darken: 0.6, veil: 0.6 },
-};
+} satisfies Record<"light" | "dark", Recipe>;
 
 /** Where the mask leaves 1 and reaches 0, as fractions of the edge. */
 export const TOP = { start: 0.34, end: 0.97 };

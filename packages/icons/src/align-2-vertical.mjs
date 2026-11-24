@@ -1,3 +1,3 @@
 import align from "./parts/arrows-align.mjs";
 
-export default (h, s) => align(s, "vertical");
+export default (_h, s) => align(s, "vertical");

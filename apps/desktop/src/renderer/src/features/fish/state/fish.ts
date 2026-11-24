@@ -108,7 +108,9 @@ export const fish = {
   },
   async setSections(sections: FishSection[]): Promise<void> {
     store.setState((state) => ({ ...state, sections }));
-    await rollbackOnFailure(window.pond.query("fish.setSections", { sections }));
+    await rollbackOnFailure(
+      window.pond.query("fish.setSections", { sections }),
+    );
   },
   open(id: string): void {
     getAppRouter()?.history.push(fishPath(id));

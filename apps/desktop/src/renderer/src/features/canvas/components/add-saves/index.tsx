@@ -107,7 +107,7 @@ function Picker({ onCanvas, onAdd }: PickerProps) {
       {ids && ids.length === 0 ? (
         <Empty.Root size="card" className={styles.empty}>
           <Empty.Media>
-            <EmptyPreview.Root shape="field" layout="single">
+            <EmptyPreview.Root kind="field" layout="single">
               <EmptyPreview.Row>
                 <EmptyPreview.Icon>
                   <IconMagnifier size={12} />

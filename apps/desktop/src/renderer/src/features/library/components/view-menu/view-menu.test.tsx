@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { libraryHeader } from "@/features/library/state/library-header";
 import {
+  currentSort,
   getViewState,
   setLayout,
   setSort,
@@ -85,9 +86,9 @@ describe("view menu", () => {
     const dialog = query<HTMLElement>(
       '[role="dialog"][aria-label="View Options"]',
     );
-    const groups = Array.from(
-      dialog.querySelectorAll('section[role="group"]'),
-    ).map((node) => node.getAttribute("aria-label"));
+    const groups = Array.from(dialog.querySelectorAll("fieldset")).map((node) =>
+      node.getAttribute("aria-label"),
+    );
     expect(groups).toEqual([
       "Layout",
       "Presets",
@@ -124,7 +125,7 @@ describe("view menu", () => {
 
     await act(async () => button("Toggle Sort Direction").click());
 
-    expect(getViewState().sort).toEqual({ key: "savedAt", dir: "asc" });
+    expect(currentSort()).toEqual({ key: "savedAt", dir: "asc" });
   });
 
   it("toggles card details independently", async () => {

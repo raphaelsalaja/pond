@@ -1,3 +1,3 @@
 import { flip } from "./parts/arrows-frame.mjs";
 
-export default (h, s) => flip(s);
+export default (_h, s) => flip(s);

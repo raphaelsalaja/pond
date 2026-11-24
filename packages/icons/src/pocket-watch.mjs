@@ -17,5 +17,8 @@ export default (h, s) => watch(h, s, 9, 10.125, 5.5);
 export const open = (h, s) => {
   const [cx, cy, r] = [10.75, 10.25, 4.875];
   const [x, rx] = [cx - r, 1.5];
-  return [watch(h, s, cx, cy, r), `M ${x - 2 * rx} ${cy} A ${rx} ${r} 0 1 0 ${x} ${cy} A ${rx} ${r} 0 1 0 ${x - 2 * rx} ${cy} Z`];
+  return [
+    watch(h, s, cx, cy, r),
+    `M ${x - 2 * rx} ${cy} A ${rx} ${r} 0 1 0 ${x} ${cy} A ${rx} ${r} 0 1 0 ${x - 2 * rx} ${cy} Z`,
+  ];
 };

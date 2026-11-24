@@ -1,5 +1,14 @@
-import { Activity, Suspense, useEffect, useState } from "react";
-import { type RailPage, useRailPage } from "@/features/library/state/shell-layout";
+import {
+  Activity,
+  type ComponentType,
+  Suspense,
+  useEffect,
+  useState,
+} from "react";
+import {
+  type RailPage,
+  useRailPage,
+} from "@/features/library/state/shell-layout";
 import { useOpenSaveId } from "@/features/saves/navigation";
 import {
   lazyWithPreload,
@@ -18,7 +27,7 @@ const PAGES = {
   downloads: lazyWithPreload(() =>
     import("@/features/downloads/page").then((module) => module.DownloadsPage),
   ),
-} satisfies Record<RailPage, unknown>;
+} satisfies Record<RailPage, ComponentType>;
 
 /** Rail pages stay mounted once visited, so switching back skips the remount and refetch; `Activity` pauses their effects while hidden. */
 export function RailPages() {

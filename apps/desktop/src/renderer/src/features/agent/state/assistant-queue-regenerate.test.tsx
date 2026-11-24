@@ -1,4 +1,5 @@
 import type { AgentStreamRequest } from "@shared/assistant";
+import type { QueryResults } from "@shared/query-contracts";
 import { act } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { assistant } from "./assistant";
@@ -16,12 +17,18 @@ afterEach(() => {
 const lastText = (request: AgentStreamRequest | undefined) =>
   JSON.stringify(request?.messages.at(-1)?.parts ?? []);
 
+interface QueryParams {
+  chatId?: string;
+}
+
+type QueryReply = QueryResults["agent.regenerate"] | never[];
+
 function stubPond(
   reply: (request: AgentStreamRequest) => StreamReply | Promise<StreamReply>,
-  query: (name: string, params?: unknown) => unknown = () => [],
+  query: (name: string, params?: QueryParams) => QueryReply = () => [],
 ) {
   const requests: AgentStreamRequest[] = [];
-  const queryMock = vi.fn(async (name: string, params?: unknown) =>
+  const queryMock = vi.fn(async (name: string, params?: QueryParams) =>
     query(name, params),
   );
   vi.stubGlobal("pond", {
@@ -43,6 +50,7 @@ const createHarness = () =>
     error: state.error,
   }));
 
+/** Wraps the send so awaiting this helper doesn't adopt it and wait for the reply. */
 async function startReply(chatId: string) {
   let pending: Promise<void> = Promise.resolve();
   await act(async () => {
@@ -50,7 +58,7 @@ async function startReply(chatId: string) {
     assistant.setDraft("First");
     pending = assistant.send("openai");
   });
-  return pending;
+  return { pending };
 }
 
 it("queues messages sent mid-reply and sends them together once it settles", async () => {
@@ -61,7 +69,7 @@ it("queues messages sent mid-reply and sends them together once it settles", asy
   const harness = createHarness();
   await harness.mount();
   try {
-    const pending = await startReply("queue-chat");
+    const { pending } = await startReply("queue-chat");
     await vi.waitFor(() => expect(requests).toHaveLength(1));
     await act(async () => {
       assistant.setDraft("Second");
@@ -70,9 +78,7 @@ it("queues messages sent mid-reply and sends them together once it settles", asy
       await assistant.queue("openai");
     });
     expect(harness.host.textContent).toContain('"draft":""');
-    expect(harness.host.textContent).toContain(
-      '"queued":"Second\\n\\nThird"',
-    );
+    expect(harness.host.textContent).toContain('"queued":"Second\\n\\nThird"');
     expect(requests).toHaveLength(1);
 
     await act(async () => {
@@ -97,7 +103,7 @@ it("drops a removed queued message", async () => {
   const harness = createHarness();
   await harness.mount();
   try {
-    const pending = await startReply("unqueue-chat");
+    const { pending } = await startReply("unqueue-chat");
     await vi.waitFor(() => expect(requests).toHaveLength(1));
     await act(async () => {
       assistant.setDraft("Never mind");
@@ -122,7 +128,7 @@ it("stops the running reply when you send the queued message now", async () => {
   const harness = createHarness();
   await harness.mount();
   try {
-    const pending = await startReply("send-now-chat");
+    const { pending } = await startReply("send-now-chat");
     await vi.waitFor(() => expect(requests).toHaveLength(1));
     await act(async () => {
       assistant.setDraft("Go now");
@@ -137,6 +143,11 @@ it("stops the running reply when you send the queued message now", async () => {
       first.resolve({});
       await pending;
     });
+    await vi.waitFor(() => expect(requests).toHaveLength(2));
+    expect(lastText(requests[1])).toContain("Go now");
+    await vi.waitFor(() =>
+      expect(harness.host.textContent).toContain('"busy":false'),
+    );
   } finally {
     first.resolve({});
     await harness.unmount();
@@ -175,7 +186,11 @@ it("shows why a reply can't be regenerated", async () => {
     () => ({ text: "Unused." }),
     (name) =>
       name === "agent.regenerate"
-        ? { ok: false, error: "This reply has applied changes. Undo them before running it again." }
+        ? {
+            ok: false,
+            error:
+              "This reply has applied changes. Undo them before running it again.",
+          }
         : [],
   );
   const harness = createHarness();

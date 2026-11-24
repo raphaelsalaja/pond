@@ -47,7 +47,7 @@ export function MatchesEmpty({
   return (
     <Empty.Root role="status" aria-live="polite">
       <Empty.Media>
-        <EmptyPreview.Root shape="field" layout="single">
+        <EmptyPreview.Root kind="field" layout="single">
           <EmptyPreview.Row>
             <EmptyPreview.Icon>
               <IconMagnifier size={12} />

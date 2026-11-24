@@ -78,13 +78,13 @@ export interface Preset extends Option<string> {
   infoField?: ItemInfoField;
 }
 
-const BARE: Record<CardDetail, boolean> = {
+const BARE = {
   name: false,
   info: false,
   extension: false,
   source: false,
   count: false,
-};
+} satisfies Record<CardDetail, boolean>;
 
 export const PRESETS: Preset[] = [
   {

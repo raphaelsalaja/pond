@@ -186,17 +186,13 @@ describe("folder sidebar tree", () => {
       ),
     ).toEqual([
       "all",
-      "inbox",
       "uncategorized",
       "untagged",
       "recentlyAdded",
       "recentlyUsed",
-      "tags",
       "random",
       "splitPosts",
       "trash",
-      "sources",
-      "downloads",
     ]);
   });
 
@@ -270,18 +266,14 @@ describe("folder sidebar tree", () => {
         row.getAttribute("data-sidebar-sortable"),
       ),
     ).toEqual([
-      "inbox",
       "uncategorized",
       "untagged",
-      "all",
       "recentlyAdded",
+      "all",
       "recentlyUsed",
-      "tags",
       "random",
       "splitPosts",
       "trash",
-      "sources",
-      "downloads",
     ]);
     expect(transitions).toContain("transform 0ms linear");
   });

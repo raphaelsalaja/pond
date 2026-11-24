@@ -9,11 +9,7 @@ export function Suggestions({
   onPick: (suggestion: string) => void;
 }) {
   return (
-    <div
-      className={styles.suggestions}
-      role="group"
-      aria-label="Suggested Replies"
-    >
+    <fieldset className={styles.suggestions} aria-label="Suggested Replies">
       {suggestions.map((suggestion) => (
         <Button
           key={suggestion}
@@ -24,6 +20,6 @@ export function Suggestions({
           {suggestion}
         </Button>
       ))}
-    </div>
+    </fieldset>
   );
 }

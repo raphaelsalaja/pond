@@ -1,6 +1,10 @@
 export default ({ circle, rect }, s) => {
   const [x0, y0, x1, y1] = s.keylines.square;
-  return [rect(x0, y0, x1 - x0, y1 - y0, s.box), circle(9, 7.375, 2), "M 5.75 12.375 H 12.25"];
+  return [
+    rect(x0, y0, x1 - x0, y1 - y0, s.box),
+    circle(9, 7.375, 2),
+    "M 5.75 12.375 H 12.25",
+  ];
 };
 
 /** The body shortens to the slot and a print slides out beneath it. */

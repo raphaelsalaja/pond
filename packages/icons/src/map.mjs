@@ -14,7 +14,19 @@ export default ({ poly }, s) => {
         [a, y1 - drop],
         [x0, y1],
       ],
-      { closed: true, corners: { 0: s.ease, 1: s.ease, 2: s.ease, 3: s.ease, 4: s.ease, 5: s.ease, 6: s.ease, 7: s.ease } },
+      {
+        closed: true,
+        corners: {
+          0: s.ease,
+          1: s.ease,
+          2: s.ease,
+          3: s.ease,
+          4: s.ease,
+          5: s.ease,
+          6: s.ease,
+          7: s.ease,
+        },
+      },
     ),
     `M ${a} ${y0} V ${y1 - drop}`,
     `M ${b} ${y0 + drop} V ${y1}`,
@@ -22,7 +34,7 @@ export default ({ poly }, s) => {
 };
 
 /** Unfolded flat, a pin marking the spot. */
-export const open = ({ circle, rect }, s) => {
+export const open = ({ rect }, s) => {
   const [x0, y0, x1, y1] = s.keylines.wide;
   const [cx, cy, r, tip] = [9, 8.125, 2, 12];
   return [

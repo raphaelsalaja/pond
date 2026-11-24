@@ -108,9 +108,9 @@
 
 .title {
   overflow: hidden;
+  text-overflow: ellipsis;
   font-weight: var(--ds-weight-medium);
   color: var(--ds-foreground-primary);
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

@@ -1,6 +1,6 @@
 import { arrow } from "./parts/arrows-head.mjs";
 
-export default (h, s) => {
+export default (_h, s) => {
   const [x0, y0, x1, y1] = s.keylines.square;
   const [a, b] = [6.75, 11.25];
   return [

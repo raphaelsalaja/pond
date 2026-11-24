@@ -1,4 +1,5 @@
 import type { InboxNotification } from "@shared/notification-contracts";
+import type { OkSuccess } from "@shared/query-contracts-shared";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
@@ -23,7 +24,7 @@ async function refresh(): Promise<void> {
 /** Changes show at once; main's broadcast then brings the stored log back in line. */
 function optimistic(
   change: (items: readonly InboxNotification[]) => InboxNotification[],
-  send: () => Promise<unknown>,
+  send: () => Promise<OkSuccess>,
 ): void {
   ticket += 1;
   store.setState((state) => ({ ...state, items: change(state.items) }));
@@ -33,7 +34,7 @@ function optimistic(
 function patch(
   ids: readonly string[],
   change: (item: InboxNotification) => InboxNotification,
-  send: () => Promise<unknown>,
+  send: () => Promise<OkSuccess>,
 ): void {
   const wanted = new Set(ids);
   optimistic(
@@ -58,7 +59,8 @@ export const notifications = {
     patch(
       ids,
       (item) => ({ ...item, readAt: read ? (item.readAt ?? now) : undefined }),
-      () => window.pond.query("notifications.markRead", { ids: [...ids], read }),
+      () =>
+        window.pond.query("notifications.markRead", { ids: [...ids], read }),
     );
   },
   markAllRead(): void {

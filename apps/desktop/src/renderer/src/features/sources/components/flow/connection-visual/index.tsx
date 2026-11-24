@@ -44,11 +44,7 @@ export function ConnectionVisual({ source, state }: ConnectionVisualProps) {
           className={styles.result}
           data-glow-origin={state === "connected" || undefined}
         >
-          {state === "connected" ? (
-            <IconCheck />
-          ) : (
-            <IconXmark />
-          )}
+          {state === "connected" ? <IconCheck /> : <IconXmark />}
         </span>
       ) : null}
     </div>

@@ -174,11 +174,7 @@ function Hud({
             edits={
               edits === "full" ? (
                 <>
-                  <ViewerHud.Tool
-                    label="Flip"
-                    disabled={busy}
-                    onClick={onFlip}
-                  >
+                  <ViewerHud.Tool label="Flip" disabled={busy} onClick={onFlip}>
                     <IconFlipHorizontal2 />
                   </ViewerHud.Tool>
                   <ViewerHud.Tool

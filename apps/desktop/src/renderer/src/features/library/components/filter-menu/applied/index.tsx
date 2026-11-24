@@ -37,8 +37,7 @@ export function AppliedFilters({
   const semantic = useSemanticQuery();
   const visual = useVisualProbe();
   const activeViewId = useActiveViewId();
-  const label =
-    applied.length === 1 ? "1 Filter" : `${applied.length} Filters`;
+  const label = applied.length === 1 ? "1 Filter" : `${applied.length} Filters`;
   const optionsFor = (field: FieldId) => choices[field] ?? presetOptions(field);
   const removeItem = (onRemove: () => void) => (
     <>
@@ -57,9 +56,7 @@ export function AppliedFilters({
         if (next) libraryHeader.closePopover();
       }}
     >
-      <Menu.Trigger render={<SplitButton.Action />}>
-        {label}
-      </Menu.Trigger>
+      <Menu.Trigger render={<SplitButton.Action />}>{label}</Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner side="bottom" align="end" sideOffset={8}>
           <FilterPopup className={styles.popup} aria-label="Applied Filters">
@@ -69,7 +66,9 @@ export function AppliedFilters({
                   <OverlaySubmenu
                     key={id}
                     overlay={id}
-                    detail={id === "semantic" ? `“${semantic ?? ""}”` : visual?.label}
+                    detail={
+                      id === "semantic" ? `“${semantic ?? ""}”` : visual?.label
+                    }
                   >
                     {removeItem(() =>
                       id === "semantic"

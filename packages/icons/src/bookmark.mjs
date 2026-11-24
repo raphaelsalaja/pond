@@ -9,7 +9,10 @@ export default ({ poly }, s) => {
       [9, 12.25],
       [x0, y1],
     ],
-    { closed: true, corners: { 0: s.box, 1: s.box, 2: s.ease, 3: s.ease, 4: s.ease } },
+    {
+      closed: true,
+      corners: { 0: s.box, 1: s.box, 2: s.ease, 3: s.ease, 4: s.ease },
+    },
   );
 };
 
@@ -28,7 +31,10 @@ export const open = ({ poly }, s) => {
         [9, tail - 3.375],
         [x0, tail],
       ],
-      { closed: true, corners: { 0: s.box, 1: s.box, 2: s.ease, 3: s.ease, 4: s.ease } },
+      {
+        closed: true,
+        corners: { 0: s.box, 1: s.box, 2: s.ease, 3: s.ease, 4: s.ease },
+      },
     ),
     `M ${lo} ${y1} H ${hi}`,
   ];

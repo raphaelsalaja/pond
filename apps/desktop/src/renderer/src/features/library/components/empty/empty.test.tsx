@@ -102,7 +102,7 @@ describe("FolderEmpty", () => {
 
   it("uses the singular for one download", async () => {
     await mountInRouter(<FolderEmpty downloading={1} />);
-    expect(host.textContent).toContain("Downloading 1 save");
-    expect(host.textContent).not.toContain("1 saves");
+    expect(host.textContent).toContain("Downloading 1 Save");
+    expect(host.textContent).not.toContain("1 Saves");
   });
 });

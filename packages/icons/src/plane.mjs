@@ -13,8 +13,30 @@ const half = [
 ];
 
 const points = [...half, ...half.map(([x, y]) => [18 - x, y]).reverse()];
-const corners = (s) => ({ 0: 1.5, 1: s.ease, 2: 0.5, 3: 0.5, 4: s.ease, 5: s.ease, 6: 0.5, 7: 0.5, 8: 0.5, 9: 0.5, 10: s.ease, 11: s.ease, 12: 0.5, 13: 0.5, 14: s.ease, 15: 1.5 });
+const corners = (s) => ({
+  0: 1.5,
+  1: s.ease,
+  2: 0.5,
+  3: 0.5,
+  4: s.ease,
+  5: s.ease,
+  6: 0.5,
+  7: 0.5,
+  8: 0.5,
+  9: 0.5,
+  10: s.ease,
+  11: s.ease,
+  12: 0.5,
+  13: 0.5,
+  14: s.ease,
+  15: 1.5,
+});
 
-export default ({ poly }, s) => poly(points, { closed: true, corners: corners(s) });
+export default ({ poly }, s) =>
+  poly(points, { closed: true, corners: corners(s) });
 
-export const open = ({ poly }, s) => poly(turn(points, 45, 0.92, [9, 9.25]), { closed: true, corners: corners(s) });
+export const open = ({ poly }, s) =>
+  poly(turn(points, 45, 0.92, [9, 9.25]), {
+    closed: true,
+    corners: corners(s),
+  });

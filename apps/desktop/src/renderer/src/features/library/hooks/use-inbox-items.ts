@@ -6,19 +6,19 @@ import type {
 import { shallow, useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
 import {
-  type InboxProgress,
-  isSnoozed,
-  isUnread,
-  useInboxProgress,
-  useNotifications,
-} from "@/features/notifications";
-import {
   inboxPicker,
   inboxReview,
   useInboxReview,
   useInboxReviewScope,
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
+import {
+  type InboxProgress,
+  isSnoozed,
+  isUnread,
+  useInboxProgress,
+  useNotifications,
+} from "@/features/notifications";
 import { savesStore } from "@/features/saves/pool";
 import { usePrefs } from "@/shared/state/prefs";
 
@@ -68,9 +68,7 @@ function merge(
 ): Entry[] {
   const byRank = (a: Entry, b: Entry) => rank(a, display) - rank(b, display);
   const queue = saves.toSorted(byRank);
-  const sorted = notifications.toSorted(
-    (a, b) => byRank(a, b) || b.at - a.at,
-  );
+  const sorted = notifications.toSorted((a, b) => byRank(a, b) || b.at - a.at);
   const items: Entry[] = [];
   let next = 0;
   for (const save of queue) {
@@ -86,11 +84,11 @@ function merge(
   return [...items, ...sorted.slice(next)];
 }
 
-const TYPE_SECTIONS: Record<"save" | NotificationKind, string> = {
+const TYPE_SECTIONS = {
   save: "Saves",
   attention: "Needs Attention",
   activity: "Activity",
-};
+} satisfies Record<"save" | NotificationKind, string>;
 
 const TYPE_ORDER = Object.values(TYPE_SECTIONS);
 
@@ -120,9 +118,7 @@ function group(entries: Entry[], by: Display["groupBy"]): Entry[] {
             ]
           : dateSection(entry.at, today),
     }))
-    .toSorted(
-      (a, b) => order.indexOf(a.section) - order.indexOf(b.section),
-    );
+    .toSorted((a, b) => order.indexOf(a.section) - order.indexOf(b.section));
 }
 
 /** Saves and notifications, without the running-work rows. */

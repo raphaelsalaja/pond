@@ -71,7 +71,7 @@ describe("parseExif", () => {
 });
 
 function dataset(record: number, id: number, value: string | Buffer): Buffer {
-  const bytes = typeof value === "string" ? Buffer.from(value) : value;
+  const bytes = Buffer.from(value);
   const header = Buffer.from([0x1c, record, id, 0, 0]);
   header.writeUInt16BE(bytes.length, 3);
   return Buffer.concat([header, bytes]);

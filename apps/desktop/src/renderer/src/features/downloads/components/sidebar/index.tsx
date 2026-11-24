@@ -22,14 +22,14 @@ import {
 } from "@/features/downloads/state/downloads-filters";
 import { useSaves } from "@/features/saves/pool";
 
-const STATUS_ICONS: Record<StatusFilter, ReactNode> = {
+const STATUS_ICONS = {
   active: <IconMediaPlay />,
   waiting: <IconCircleDashedClock />,
   failed: <IconCircleWarning />,
   cancelled: <IconCircleXmark />,
   skipped: <IconBan />,
   complete: <IconCircleCheck />,
-};
+} satisfies Record<StatusFilter, ReactNode>;
 
 function sameStatuses(
   a: ReadonlySet<StatusFilter>,

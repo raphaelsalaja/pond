@@ -123,9 +123,9 @@ it("shows an answered question as a receipt that unfolds to the answer", async (
   await renderQuestion({ answered: "List" });
   expect(host.textContent).toBe("ListWhich layout?");
   expect(buttonNamed("Continue")).toBeUndefined();
-  const toggle = host.querySelector("button[aria-expanded]");
+  const toggle = host.querySelector<HTMLButtonElement>("button[aria-expanded]");
   expect(toggle?.getAttribute("aria-expanded")).toBe("false");
-  await act(async () => (toggle as HTMLButtonElement | null)?.click());
+  await act(async () => toggle?.click());
   expect(toggle?.getAttribute("aria-expanded")).toBe("true");
   expect(host.textContent).toBe("ListWhich layout?Which layout?List");
 });

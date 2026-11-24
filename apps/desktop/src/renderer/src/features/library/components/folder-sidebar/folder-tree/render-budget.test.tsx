@@ -2,7 +2,11 @@ import { act } from "react";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { folders } from "@/features/library/state/folders";
 import { recordRenders } from "@/shared/test/render-count";
-import { createFolderSidebarHarness, folder, folderList } from "../test-harness";
+import {
+  createFolderSidebarHarness,
+  folder,
+  folderList,
+} from "../test-harness";
 
 const harness = createFolderSidebarHarness();
 

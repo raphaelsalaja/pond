@@ -1,7 +1,7 @@
+import type { AssistantChange } from "@shared/assistant";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
-import type { AssistantChange } from "@shared/assistant";
 import type { AssistantState } from "@/features/agent/state/assistant";
 import { toUIMessage } from "@/features/agent/state/pond-messages";
 import { review } from "@/features/agent/state/review";
@@ -24,6 +24,7 @@ afterEach(async () => {
 
 /** Card buttons carry a decorative shortcut hint; read the words only. */
 function buttonLabel(button: Element) {
+  /** SAFETY: a deep clone of an Element is an Element. */
   const copy = button.cloneNode(true) as Element;
   for (const hidden of copy.querySelectorAll("[aria-hidden]")) hidden.remove();
   return copy.textContent;
@@ -276,9 +277,9 @@ it("asks for Empty Trash in its own destructive card", async () => {
   await renderReview([purge("pending")]);
   const card = host.querySelector('[aria-label="Empty Trash?"]');
   expect(card).not.toBeNull();
-  expect([...(card?.querySelectorAll("button") ?? [])].map(buttonLabel)).toEqual(
-    ["Keep Trash", "Empty Trash"],
-  );
+  expect(
+    [...(card?.querySelectorAll("button") ?? [])].map(buttonLabel),
+  ).toEqual(["Keep Trash", "Empty Trash"]);
   expect(host.querySelector('[aria-label^="Apply"]')).toBeNull();
 });
 
@@ -303,10 +304,14 @@ it("applies and dismisses a pending review from the keyboard", async () => {
     after: ["Clock"],
   };
   await renderReview([change]);
-  const card = host.querySelector('[aria-label="Apply 1 change to your library?"]');
+  const card = host.querySelector(
+    '[aria-label="Apply 1 change to your library?"]',
+  );
   const press = (init: KeyboardEventInit) =>
     act(async () =>
-      card?.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, ...init })),
+      card?.dispatchEvent(
+        new KeyboardEvent("keydown", { bubbles: true, ...init }),
+      ),
     );
   await press({ key: "Enter", metaKey: true });
   expect(run).toHaveBeenLastCalledWith("reply", [change], "apply", undefined);

@@ -10,7 +10,10 @@ export default ({ poly }, s) => {
         [14.25, 7.875],
         [7.375, ground],
       ],
-      { closed: true, corners: { 0: s.ease / 2, 1: s.ease, 2: s.ease, 3: s.ease, 4: 0 } },
+      {
+        closed: true,
+        corners: { 0: s.ease / 2, 1: s.ease, 2: s.ease, 3: s.ease, 4: 0 },
+      },
     ),
     "M 6.5 8.625 L 10 12.125",
     `M 7.375 ${ground} H 15.625`,

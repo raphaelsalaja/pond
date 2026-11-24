@@ -1,4 +1,4 @@
-import { IconFrame, iconShapeProps } from "@pond/icons/create-icon";
+import { IconFrame, iconStrokeProps } from "@pond/icons/create-icon";
 import type { IconComponent, IconProps } from "@pond/icons/types";
 import { animate, useReducedMotionConfig } from "motion/react";
 import {
@@ -59,7 +59,7 @@ export function IconMorph({ icon: Icon, ...props }: IconMorphProps) {
 
   const { plan, t } = frame;
   const variant = Icon.glyph.style;
-  const fixed = iconShapeProps(variant, props.size);
+  const fixed = iconStrokeProps(variant, props.size);
   const fade = (amount: number): CSSProperties => ({
     opacity: amount,
     transform: `scale(${SHRUNK + (1 - SHRUNK) * amount})`,
@@ -71,9 +71,9 @@ export function IconMorph({ icon: Icon, ...props }: IconMorphProps) {
       {plan.still.map(([tag, attrs], index) =>
         createElement(tag, { key: `still-${index}`, ...fixed, ...attrs }),
       )}
-      {plan.tracks.map((track, index) => (
+      {plan.tracks.map((track) => (
         <path
-          key={`track-${index}`}
+          key={track.id}
           {...fixed}
           {...track.paint}
           d={polyline(
@@ -85,21 +85,21 @@ export function IconMorph({ icon: Icon, ...props }: IconMorphProps) {
           )}
         />
       ))}
-      {plan.leaving.map((shape, index) => (
+      {plan.leaving.map((leaving) => (
         <path
-          key={`leave-${index}`}
+          key={leaving.id}
           {...fixed}
-          {...shape.paint}
-          d={shape.d}
+          {...leaving.paint}
+          d={leaving.d}
           style={fade(1 - t)}
         />
       ))}
-      {plan.entering.map((shape, index) => (
+      {plan.entering.map((entering) => (
         <path
-          key={`enter-${index}`}
+          key={entering.id}
           {...fixed}
-          {...shape.paint}
-          d={shape.d}
+          {...entering.paint}
+          d={entering.d}
           style={fade(t)}
         />
       ))}

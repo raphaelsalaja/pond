@@ -10,7 +10,10 @@ export default ({ poly }, s) => {
         [x1 - 0.5, y1],
         [x0 + 0.5, y1],
       ],
-      { closed: true, corners: { 0: s.ease, 1: s.ease, 2: s.ease, 3: s.box, 4: s.box } },
+      {
+        closed: true,
+        corners: { 0: s.ease, 1: s.ease, 2: s.ease, 3: s.box, 4: s.box },
+      },
     ),
     poly(
       [
@@ -40,6 +43,19 @@ export const open = ({ poly }, s) => {
       [7.25, 11],
       [10.75, 11],
     ],
-    { closed: true, corners: { 0: s.ease / 2, 1: s.box, 2: s.ease, 3: s.ease, 4: s.ease, 5: s.box, 6: s.ease / 2, 7: 1.75, 8: 1.75 } },
+    {
+      closed: true,
+      corners: {
+        0: s.ease / 2,
+        1: s.box,
+        2: s.ease,
+        3: s.ease,
+        4: s.ease,
+        5: s.box,
+        6: s.ease / 2,
+        7: 1.75,
+        8: 1.75,
+      },
+    },
   );
 };

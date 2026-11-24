@@ -49,7 +49,8 @@
   composes: popup from "../shared/styles/popup/styles.module.css";
   border-radius: var(--ds-radius-md);
   box-shadow:
-    var(--ds-shadow-overlay), 0 15px 35px -5px var(--ds-shadow-color);
+    var(--ds-shadow-overlay),
+    0 15px 35px -5px var(--ds-shadow-color);
 }
 
 .arrow {

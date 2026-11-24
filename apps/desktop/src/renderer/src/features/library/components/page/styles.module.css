@@ -1,7 +1,7 @@
 .viewer {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  box-sizing: border-box;
   height: var(--window-header-height);
   padding-inline: var(--window-inset);
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);

@@ -11,7 +11,17 @@ export default ({ poly }, s) => {
         [4, base],
         [6.875, 7.5],
       ],
-      { closed: true, corners: { 0: s.ease, 1: s.ease, 2: s.ease / 2, 3: s.ease, 4: s.ease, 5: s.ease / 2 } },
+      {
+        closed: true,
+        corners: {
+          0: s.ease,
+          1: s.ease,
+          2: s.ease / 2,
+          3: s.ease,
+          4: s.ease,
+          5: s.ease / 2,
+        },
+      },
     ),
     `M 9 ${base} V ${y1}`,
   ];

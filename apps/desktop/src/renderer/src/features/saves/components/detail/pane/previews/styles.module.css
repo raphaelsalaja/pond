@@ -21,6 +21,7 @@
     opacity: 0;
   }
 }
+
 .preview {
   position: relative;
   display: flex;
@@ -31,10 +32,13 @@
   height: 100%;
   margin: 0;
 
-  /* The clip keeps the blur from bleeding past the image's rounded edge. */
-  &[data-sensitive] img {
-    clip-path: inset(0 round var(--ds-radius-md));
-    filter: blur(32px);
+  & img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border: 1px solid var(--ds-border-subtle);
+    border-radius: var(--ds-radius-md);
   }
 }
 
@@ -53,15 +57,6 @@
   transform: translate(-50%, -50%);
 }
 
-.preview img {
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-  border: 1px solid var(--ds-border-subtle);
-  border-radius: var(--ds-radius-md);
-}
-
 .open {
   max-width: 100%;
   max-height: 100%;
@@ -74,6 +69,12 @@
   &:hover img {
     border-color: var(--ds-border-strong);
   }
+}
+
+/* The clip keeps the blur from bleeding past the image's rounded edge. */
+.preview[data-sensitive] img {
+  filter: blur(32px);
+  clip-path: inset(0 round var(--ds-radius-md));
 }
 
 /* Sized from the expected aspect so the frame holds its shape before the image decodes. */

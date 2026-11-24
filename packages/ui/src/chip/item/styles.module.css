@@ -1,3 +1,11 @@
+.clear {
+  flex: none;
+}
+
+:is(.item, .action, .link) > .clear {
+  --button-height-xs: calc(var(--chip-height) - 2 * var(--chip-inset));
+}
+
 .item,
 .action,
 .link {
@@ -108,12 +116,4 @@
       background: var(--ds-surface-primary);
     }
   }
-}
-
-.clear {
-  flex: none;
-}
-
-:is(.item, .action, .link) > .clear {
-  --button-height-xs: calc(var(--chip-height) - 2 * var(--chip-inset));
 }

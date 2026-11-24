@@ -4,7 +4,10 @@ import pencil from "./pencil.mjs";
 export default ({ poly }, s) => {
   const tip = [3.125, 14.875];
   const w = 1.75;
-  const at = (a, b) => [tip[0] + (a + b) * Math.SQRT1_2, tip[1] + (b - a) * Math.SQRT1_2];
+  const at = (a, b) => [
+    tip[0] + (a + b) * Math.SQRT1_2,
+    tip[1] + (b - a) * Math.SQRT1_2,
+  ];
   const shoulder = 3.5;
   const end = 15;
   const ferrule = 11.75;
@@ -18,4 +21,7 @@ export default ({ poly }, s) => {
 };
 
 /** A written line runs under the pencil, clear of its lower edge. */
-export const open = (h, s) => [pencil(h, s), `M 9 ${s.keylines.square[3]} H ${s.keylines.square[2]}`];
+export const open = (h, s) => [
+  pencil(h, s),
+  `M 9 ${s.keylines.square[3]} H ${s.keylines.square[2]}`,
+];

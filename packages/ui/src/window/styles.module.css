@@ -75,18 +75,6 @@
     min-width: 0;
     min-height: 0;
   }
-
-  > .bar {
-    grid-row: 1;
-  }
-
-  > .header {
-    grid-row: 2;
-  }
-
-  > .body {
-    grid-row: 3;
-  }
 }
 
 .side {
@@ -128,10 +116,10 @@
 /* Isolated so page layers with a z-index never paint over the column handles that straddle its edges. */
 .center {
   position: relative;
-  isolation: isolate;
   grid-row: 1 / -1;
   grid-column: 2;
   overflow: hidden;
+  isolation: isolate;
 }
 
 /* Center and Details sit on a raised surface below the bar; the sidebar draws its own. */
@@ -206,7 +194,8 @@
 .center > .bar {
   margin-inline: max(
       0px,
-      var(--window-leading-width) - var(--window-left-width)
+      var(--window-leading-width) -
+      var(--window-left-width)
     )
     max(0px, var(--window-trailing-width) - var(--window-right-width));
 }
@@ -226,6 +215,18 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.grid > .bar {
+  grid-row: 1;
+}
+
+.grid > .header {
+  grid-row: 2;
+}
+
+.grid > .body {
+  grid-row: 3;
 }
 
 /* Straddles the column edge so the grab area is wider than the pill. */

@@ -12,6 +12,9 @@ export default ({ poly }, s) => {
       [left, 11.125],
       [left, neck],
     ],
-    { closed: true, corners: { 0: 1, 1: 1, 2: s.ease, 3: 0.5, 4: 0.5, 5: s.ease } },
+    {
+      closed: true,
+      corners: { 0: 1, 1: 1, 2: s.ease, 3: 0.5, 4: 0.5, 5: s.ease },
+    },
   );
 };

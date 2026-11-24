@@ -44,7 +44,7 @@ export function CanvasPage({ id }: { id: string }) {
       ) : current ? (
         <Empty.Root className={styles.empty}>
           <Empty.Media>
-            <EmptyPreview.Root shape="board" layout="single">
+            <EmptyPreview.Root kind="board" layout="single">
               <EmptyPreview.Column>
                 <EmptyPreview.Row>
                   <EmptyPreview.Thumb />

@@ -12,11 +12,11 @@
   gap: var(--ds-space-xs);
   min-width: 0;
   margin-block: var(--ds-space-sm);
+  anchor-scope: --message-bubble;
   font-size: var(--ds-text-body);
   font-weight: var(--ds-weight-regular);
   line-height: 24px;
   color: var(--ds-foreground-primary);
-  anchor-scope: --message-bubble;
 }
 
 .message[data-enter="true"] {
@@ -44,10 +44,6 @@
   width: 100%;
 }
 
-.message[data-from="user"] .body {
-  align-items: flex-end;
-}
-
 .body {
   display: flex;
   flex-direction: column;
@@ -55,6 +51,10 @@
   align-items: stretch;
   width: 100%;
   min-width: 0;
+}
+
+.message[data-from="user"] .body {
+  align-items: flex-end;
 }
 
 .body > * {
@@ -70,36 +70,34 @@
   width: fit-content;
   max-width: var(--message-max-width);
   padding: var(--message-padding-block) var(--ds-space-lg);
+  anchor-name: --message-bubble;
   line-height: var(--message-line-height);
   color: var(--message-foreground);
   overflow-wrap: anywhere;
   background: var(--message-fill);
   border-radius: var(--message-radius);
-  anchor-name: --message-bubble;
-}
-
-.message[data-from="assistant"] .bubble {
-  & + .bubble {
-    border-start-start-radius: var(--ds-radius-sm);
-  }
-
-  &:has(+ .bubble) {
-    border-end-start-radius: var(--ds-radius-sm);
-  }
 }
 
 .message[data-from="user"] .bubble {
   align-self: flex-end;
   color: var(--message-accent-foreground, var(--ds-foreground-inverse));
   background: var(--message-accent, var(--ds-background-inverse));
+}
 
-  & + .bubble {
-    border-start-end-radius: var(--ds-radius-sm);
-  }
+.message[data-from="assistant"] .bubble + .bubble {
+  border-start-start-radius: var(--ds-radius-sm);
+}
 
-  &:has(+ .bubble) {
-    border-end-end-radius: var(--ds-radius-sm);
-  }
+.message[data-from="assistant"] .bubble:has(+ .bubble) {
+  border-end-start-radius: var(--ds-radius-sm);
+}
+
+.message[data-from="user"] .bubble + .bubble {
+  border-start-end-radius: var(--ds-radius-sm);
+}
+
+.message[data-from="user"] .bubble:has(+ .bubble) {
+  border-end-end-radius: var(--ds-radius-sm);
 }
 
 .actions {
@@ -136,10 +134,6 @@
   }
 }
 
-.message:is(:hover, :focus-within) .actions {
-  opacity: 1;
-}
-
 .message > .actions {
   position: absolute;
   top: anchor(center, 50%);
@@ -155,6 +149,10 @@
 .message[data-from="user"] > .actions {
   right: anchor(left, 100%);
   margin-inline-end: var(--ds-space-md);
+}
+
+.message:is(:hover, :focus-within) .actions {
+  opacity: 1;
 }
 
 .markdown blockquote,

@@ -1,7 +1,9 @@
 import dot from "./parts/dot.mjs";
 
-const windows = (h, s) => [5.625, 9.375].flatMap((y) => [5.625, 9.375].map((x) => dot(h, s, x, y)));
-const annex = "M 12.625 7.25 H 13.375 A 2.25 2.25 0 0 1 15.625 9.5 V 13.375 A 2.25 2.25 0 0 1 13.375 15.625 H 12.625";
+const windows = (h, s) =>
+  [5.625, 9.375].flatMap((y) => [5.625, 9.375].map((x) => dot(h, s, x, y)));
+const annex =
+  "M 12.625 7.25 H 13.375 A 2.25 2.25 0 0 1 15.625 9.5 V 13.375 A 2.25 2.25 0 0 1 13.375 15.625 H 12.625";
 const door = "M 6.125 15.625 V 14 A 1.375 1.375 0 0 1 8.875 14 V 15.625";
 
 export default (h, s) => [

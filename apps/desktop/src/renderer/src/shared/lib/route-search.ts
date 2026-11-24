@@ -1,10 +1,28 @@
+import type { Query } from "@pond/schema/filters/types";
+import type { JsonValue } from "@pond/schema/json";
 import { getAppRouter } from "@/shared/lib/app-router";
 
-export type SearchPatch = Readonly<Record<string, unknown>>;
+/** The router JSON-parses each search param, and filter queries are written back as objects. */
+export type SearchValue = JsonValue | Query;
+export type RouteSearch = Readonly<Record<string, SearchValue>>;
+export type SearchPatch = Readonly<Record<string, SearchValue | undefined>>;
 
 /** The latest location's search, which already reflects a write made earlier in the same tick. */
-export function latestSearch(): Record<string, unknown> {
+export function latestSearch(): RouteSearch {
   return getAppRouter()?.latestLocation.search ?? {};
+}
+
+/** Applies `patch` to `search`; an `undefined` value drops the key. */
+export function patchSearch(
+  search: RouteSearch,
+  patch: SearchPatch,
+): RouteSearch {
+  const next = new Map(Object.entries(search));
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === undefined) next.delete(key);
+    else next.set(key, value);
+  }
+  return Object.fromEntries(next);
 }
 
 /** Applies `patch` to the latest location; an `undefined` value drops the key. */
@@ -15,11 +33,7 @@ export function hrefWithSearch(
   const router = getAppRouter();
   if (!router) return null;
   const location = router.latestLocation;
-  const search: Record<string, unknown> = { ...location.search };
-  for (const [key, value] of Object.entries(patch)) {
-    if (value === undefined) delete search[key];
-    else search[key] = value;
-  }
+  const search = patchSearch(location.search, patch);
   return `${pathname ?? location.pathname}${router.options.stringifySearch(search)}`;
 }
 

@@ -16,8 +16,11 @@ export function useSourceTableRows() {
     loading: accountsLoading,
     refetch: refetchAccounts,
   } = useAccounts();
-  const { watches, loading: watchesLoading, refetch: refetchWatches } =
-    useWatches();
+  const {
+    watches,
+    loading: watchesLoading,
+    refetch: refetchWatches,
+  } = useWatches();
   const watchedFolder = useWatchedFolder();
   const byAccount = useSyncByAccount();
 

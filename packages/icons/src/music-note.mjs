@@ -1,4 +1,7 @@
-export default ({ circle }) => [circle(6.375, 13.125, 2.5), "M 8.875 13.125 V 2.375 C 9.5 5.125 13.5 4.5 12.75 9"];
+export default ({ circle }) => [
+  circle(6.375, 13.125, 2.5),
+  "M 8.875 13.125 V 2.375 C 9.5 5.125 13.5 4.5 12.75 9",
+];
 
 /** Two beamed notes, heads smaller so the pair keeps the single note's footprint. */
 export const open = ({ circle }) => [

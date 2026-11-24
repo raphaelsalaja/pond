@@ -11,7 +11,10 @@ export default (s, flip = false) => {
       [a + width, (top + bottom) / 2],
       [a, bottom],
     ].map(([x, y]) => [flip ? 18 - x : x, y]);
-    return poly(points, { closed: true, corners: { 0: s.ease, 1: s.ease, 2: s.ease } });
+    return poly(points, {
+      closed: true,
+      corners: { 0: s.ease, 1: s.ease, 2: s.ease },
+    });
   };
   return starts.map(triangle);
 };

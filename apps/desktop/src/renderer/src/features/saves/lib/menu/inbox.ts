@@ -13,9 +13,9 @@ import {
   removeFromInbox,
   snoozeSaves,
 } from "@/features/saves/lib/inbox-actions";
-import { snoozeOptions } from "@/shared/lib/snooze";
 import { openSnoozeDialog } from "@/features/saves/state/snooze-dialog";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
+import { snoozeOptions } from "@/shared/lib/snooze";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 

@@ -1,5 +1,5 @@
-import dot from "./parts/dot.mjs";
 import bubble from "./chat-bubble.mjs";
+import dot from "./parts/dot.mjs";
 
 export default ({ poly }, s) => {
   const [x0, , x1] = s.keylines.square;
@@ -15,8 +15,22 @@ export default ({ poly }, s) => {
       [5.5, base],
       [x0, base],
     ],
-    { closed: true, corners: { 0: s.box, 1: s.box, 2: s.box, 3: s.ease / 2, 4: s.ease / 2, 5: 0, 6: s.box } },
+    {
+      closed: true,
+      corners: {
+        0: s.box,
+        1: s.box,
+        2: s.box,
+        3: s.ease / 2,
+        4: s.ease / 2,
+        5: 0,
+        6: s.box,
+      },
+    },
   );
 };
 
-export const open = (h, s) => [bubble(h, s), [5.75, 9, 12.25].map((x) => dot(h, s, x, 8, 1))];
+export const open = (h, s) => [
+  bubble(h, s),
+  [5.75, 9, 12.25].map((x) => dot(h, s, x, 8, 1)),
+];

@@ -39,7 +39,8 @@ export const docs: ComponentDocs = {
     },
     {
       name: "SplitButton.Action",
-      description: "The default action. A Button in the root's variant and size.",
+      description:
+        "The default action. A Button in the root's variant and size.",
     },
     {
       name: "SplitButton.Trigger",

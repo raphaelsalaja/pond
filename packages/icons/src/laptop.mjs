@@ -1,7 +1,11 @@
 /** The screen stands clear of the deck line, so the lid never reads as a hat brim. */
-const deck = ({ keylines }) => `M ${keylines.wide[0]} 14.125 H ${keylines.wide[2]}`;
+const deck = ({ keylines }) =>
+  `M ${keylines.wide[0]} 14.125 H ${keylines.wide[2]}`;
 
-export default ({ rect }, s) => [rect(3.875, 4.375, 10.25, 7.25, s.box), deck(s)];
+export default ({ rect }, s) => [
+  rect(3.875, 4.375, 10.25, 7.25, s.box),
+  deck(s),
+];
 
 /** The lid tips back, wider at the top. */
 export const open = ({ poly }, s) => [

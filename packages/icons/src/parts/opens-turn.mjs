@@ -4,7 +4,10 @@ import { snap } from "../../helpers.mjs";
 export default (d, cx, cy, deg) => {
   const a = (deg * Math.PI) / 180;
   const [c, s] = [Math.cos(a), Math.sin(a)];
-  const p = (x, y) => [snap(cx + (x - cx) * c - (y - cy) * s), snap(cy + (x - cx) * s + (y - cy) * c)];
+  const p = (x, y) => [
+    snap(cx + (x - cx) * c - (y - cy) * s),
+    snap(cy + (x - cx) * s + (y - cy) * c),
+  ];
   const t = d.match(/[MLHVAZ]|-?\d*\.?\d+/g);
   const num = () => +t[i++];
   const out = [];

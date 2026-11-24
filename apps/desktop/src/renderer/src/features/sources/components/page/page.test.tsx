@@ -358,7 +358,7 @@ describe("Sources page selection", () => {
     expect(rowWith("@pond")).toBeTruthy();
   });
 
-  it("lists the watched folder as a Folder source", async () => {
+  it("lists the watched folder as a Local source", async () => {
     query.mockImplementation(async (name: string) => {
       if (name === "accounts.list") return { accounts };
       if (name === "watches.list") return { watches: [] };
@@ -374,8 +374,7 @@ describe("Sources page selection", () => {
     });
     await render(4);
     const folder = rowWith("Inbox");
-    expect(folder.textContent).toContain("Folder");
-    expect(folder.textContent).toContain("Local");
+    expect(folder.textContent).toContain("Local /Inbox");
     expect(folder.textContent).toContain("Paused");
 
     await click(folder);

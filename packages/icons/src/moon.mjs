@@ -14,4 +14,7 @@ const crescent = ({ snap }, s) => {
 
 export default crescent;
 
-export const open = (h, s) => [crescent(h, s), "M 13.5 2.375 Q 13.875 4.25 15.625 4.625 Q 13.875 5 13.5 6.875 Q 13.125 5 11.375 4.625 Q 13.125 4.25 13.5 2.375 Z"];
+export const open = (h, s) => [
+  crescent(h, s),
+  "M 13.5 2.375 Q 13.875 4.25 15.625 4.625 Q 13.875 5 13.5 6.875 Q 13.125 5 11.375 4.625 Q 13.125 4.25 13.5 2.375 Z",
+];

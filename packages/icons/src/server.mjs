@@ -2,7 +2,12 @@ import dot from "./parts/dot.mjs";
 
 export default (h, s) => {
   const [x0, y0, x1, y1] = s.keylines.square;
-  return [h.rect(x0, y0, x1 - x0, y1 - y0, s.box), `M ${x0} 9 H ${x1}`, dot(h, s, 5.625, 5.75, 1), dot(h, s, 5.625, 12.25, 1)];
+  return [
+    h.rect(x0, y0, x1 - x0, y1 - y0, s.box),
+    `M ${x0} 9 H ${x1}`,
+    dot(h, s, 5.625, 5.75, 1),
+    dot(h, s, 5.625, 12.25, 1),
+  ];
 };
 
 /** A unit slides out on its rails. */

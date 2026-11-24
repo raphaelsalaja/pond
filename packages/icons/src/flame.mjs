@@ -5,4 +5,9 @@ const flame = (tip, cy, r) =>
 
 export default () => [flame(2.375, 10.75, 4.875), flame(8.5, 11.125, 1.75)];
 
-export const open = (h, s) => [flame(2.375, 10.75, 4.875), flame(8.5, 11.125, 1.75), dot(h, s, 3.875, 4), dot(h, s, 14.125, 4)];
+export const open = (h, s) => [
+  flame(2.375, 10.75, 4.875),
+  flame(8.5, 11.125, 1.75),
+  dot(h, s, 3.875, 4),
+  dot(h, s, 14.125, 4),
+];

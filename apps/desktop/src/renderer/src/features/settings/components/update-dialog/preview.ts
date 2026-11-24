@@ -11,7 +11,11 @@ import {
 const CURRENT = "2.3.0";
 const NEXT = "2.4.0";
 
-export type UpdateButtonPreview = "available" | "downloading" | "downloaded" | "none";
+export type UpdateButtonPreview =
+  | "available"
+  | "downloading"
+  | "downloaded"
+  | "none";
 
 let run = 0;
 
@@ -68,7 +72,7 @@ export async function playUpdatePreview(): Promise<void> {
 /** Sets the rail button's state without opening the overlay. */
 export function showUpdateButtonPreview(state: UpdateButtonPreview): void {
   run += 1;
-  const notices: Record<UpdateButtonPreview, UpdateNotice | null> = {
+  const notices = {
     available: { phase: "available", version: NEXT, downloading: false },
     downloading: {
       phase: "available",
@@ -78,7 +82,7 @@ export function showUpdateButtonPreview(state: UpdateButtonPreview): void {
     },
     downloaded: { phase: "downloaded", version: NEXT },
     none: null,
-  };
+  } satisfies Record<UpdateButtonPreview, UpdateNotice | null>;
   const notice = notices[state];
   if (notice) presentUpdateNotice(notice);
   else updateNoticeStore.setState(() => null);

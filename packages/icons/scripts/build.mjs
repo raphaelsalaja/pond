@@ -191,7 +191,9 @@ function stagedMisses(root, label) {
   const path = resolve(root, "manifest.json");
   if (!existsSync(path)) return [];
   const misses = [];
-  for (const [name, entry] of Object.entries(JSON.parse(readFileSync(path, "utf8")))) {
+  for (const [name, entry] of Object.entries(
+    JSON.parse(readFileSync(path, "utf8")),
+  )) {
     const names = entry.parts ?? [];
     for (const [file, used] of [
       ["outline-18.svg", names],
@@ -200,9 +202,15 @@ function stagedMisses(root, label) {
       const drawing = resolve(root, name, file);
       if (!existsSync(drawing) || used.length === 0) continue;
       misses.push(
-        ...partMisses(`${label}/${name}/${file}`, used, parse(drawing).nodes, seedParts, {
-          dir: "seed/parts",
-        }),
+        ...partMisses(
+          `${label}/${name}/${file}`,
+          used,
+          parse(drawing).nodes,
+          seedParts,
+          {
+            dir: "seed/parts",
+          },
+        ),
       );
     }
   }
@@ -232,8 +240,12 @@ misses.push(
   }),
 );
 /** Staged trees are drafts that never ship, so their drift warns instead of stopping the build. */
-const staged = [...stagedMisses(seedRoot, "seed"), ...stagedMisses(nextRoot, "next")];
-if (staged.length > 0) console.warn(`${staged.length} drifts in the seed/ and next/ drafts.`);
+const staged = [
+  ...stagedMisses(seedRoot, "seed"),
+  ...stagedMisses(nextRoot, "next"),
+];
+if (staged.length > 0)
+  console.warn(`${staged.length} drifts in the seed/ and next/ drafts.`);
 const reportPath = resolve(packageRoot, "REPORT.md");
 if (misses.length > 0) {
   writeFileSync(reportPath, report(misses));
@@ -312,7 +324,8 @@ function writeLab() {
     };
     if (files.outline || files.fill) staged[name] = files;
   }
-  const readJson = (path) => (existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : {});
+  const readJson = (path) =>
+    existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : {};
   const data = {
     manifest,
     migration,
@@ -331,9 +344,14 @@ function writeLab() {
     nextManifest: readJson(resolve(nextRoot, "manifest.json")),
     nextFamilies: readJson(resolve(packageRoot, "draw/families.json")),
     nextAttempts: Object.fromEntries(
-      (existsSync(resolve(nextRoot, ".meta")) ? readdirSync(resolve(nextRoot, ".meta")) : [])
+      (existsSync(resolve(nextRoot, ".meta"))
+        ? readdirSync(resolve(nextRoot, ".meta"))
+        : []
+      )
         .filter((file) => file.endsWith(".json"))
-        .flatMap((file) => Object.entries(readJson(resolve(nextRoot, ".meta", file))))
+        .flatMap((file) =>
+          Object.entries(readJson(resolve(nextRoot, ".meta", file))),
+        )
         .filter(([, entry]) => entry.attempts?.length)
         .map(([name, entry]) => [name, entry.attempts]),
     ),

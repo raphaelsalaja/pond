@@ -14,5 +14,10 @@ export default ({ circle, snap }, s) => {
     const k = r + gap;
     return `M ${snap(p[0] + u[0] * k)} ${snap(p[1] + u[1] * k)} L ${snap(q[0] - u[0] * k)} ${snap(q[1] - u[1] * k)}`;
   };
-  return [...nodes.map(([x, y]) => circle(x, y, r)), link(nodes[0], nodes[1]), link(nodes[1], nodes[2]), link(nodes[2], nodes[0])];
+  return [
+    ...nodes.map(([x, y]) => circle(x, y, r)),
+    link(nodes[0], nodes[1]),
+    link(nodes[1], nodes[2]),
+    link(nodes[2], nodes[0]),
+  ];
 };

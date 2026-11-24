@@ -14,13 +14,13 @@ const piece = (s, a, b, notchLeft, notchRight) => {
   return `M ${a + (notchLeft ? R : r)} ${y0} ${right} ${left} Z`;
 };
 
-export default (h, s) => {
+export default (_h, s) => {
   const [x0, , x1] = s.keylines.wide;
   return [piece(s, x0, x1, true, true), `M 11.375 ${y0} V ${y1}`];
 };
 
 /** Open, the stub tears off. */
-export const open = (h, s) => {
+export const open = (_h, s) => {
   const [x0, , x1] = s.keylines.wide;
   return [piece(s, x0, 10.125, true, false), piece(s, 12.625, x1, false, true)];
 };

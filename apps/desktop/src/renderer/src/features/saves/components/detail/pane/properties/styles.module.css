@@ -12,6 +12,12 @@
   justify-content: flex-end;
 }
 
+.text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .action {
   display: flex;
   gap: var(--ds-space-xs);
@@ -24,19 +30,14 @@
     text-decoration: underline dotted var(--ds-border-strong);
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
-    transition: text-decoration-color var(--ds-duration-fast) var(--ds-easing-standard);
+    transition: text-decoration-color var(--ds-duration-fast)
+      var(--ds-easing-standard);
   }
 
   &:hover .text,
   &[data-popup-open] .text {
     text-decoration-color: var(--ds-foreground-secondary);
   }
-}
-
-.text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Swatch triggers are 24px wide; the negative margins leave 4px between 16px circles and align the last one to the edge. */

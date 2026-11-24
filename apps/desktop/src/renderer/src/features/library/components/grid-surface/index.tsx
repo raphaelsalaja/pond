@@ -11,12 +11,12 @@ import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { SaveSelectionBar } from "@/features/saves";
 import { useOpenSaveId } from "@/features/saves/navigation";
 import { useLibraryEmpty } from "@/features/saves/pool";
-import type { LibraryNav } from "@/shared/lib/library-nav";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import {
   ScrollRestorationContext,
   useScrollRestoration,
 } from "@/shared/hooks/use-scroll-restoration";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 import styles from "./styles.module.css";
 
 /** These places keep their own empty state even in an empty Library. */

@@ -2,24 +2,33 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import "@/app/effects/save-library-bridge";
-import { getLibraryNav } from "@/features/library/state/library-chrome";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { ToastHost } from "@/shared/components/toast-host";
+import { routeMeta } from "@/shared/lib/route-meta";
 import { toastManager } from "@/shared/lib/toast";
-import { openLibraryAt } from "@/shared/test/library-router";
+import {
+  currentLocation,
+  type LibraryTestRouter,
+  openLibraryAt,
+} from "@/shared/test/library-router";
 import { runPasteImport } from "./paste-import";
 
 let root: Root;
 let host: HTMLDivElement;
+let router: LibraryTestRouter;
 
 beforeEach(async () => {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  await openLibraryAt("/");
+  router = await openLibraryAt("/");
   await act(async () => root.render(<ToastHost />));
 });
+
+function shownNav() {
+  return routeMeta(router, currentLocation(router).pathname).nav;
+}
 
 afterEach(async () => {
   resultNavigation.setSource({ ids: [] });
@@ -75,11 +84,11 @@ it("selects exactly the imported Saves in their folder, keeping the failure coun
   });
   expect(toastText()).toContain('Saved 2 items to "Moodboard"');
   expect(toastText()).toContain("1 file couldn't be imported.");
-  expect(getLibraryNav()).toEqual({ kind: "all" });
+  expect(shownNav()).toEqual({ kind: "all" });
   expect(selection.snapshot()).toEqual([]);
 
   await act(async () => showAction()?.click());
-  expect(getLibraryNav()).toEqual({ kind: "folder", id: "folder-1" });
+  expect(shownNav()).toEqual({ kind: "folder", id: "folder-1" });
   expect(selection.snapshot()).toEqual(["a", "b"]);
   expect(primarySelection.get()).toBe("a");
 });
@@ -91,7 +100,7 @@ it("selects the pasted links that were added in All, not the ones that failed", 
       : { ok: false, error: "unsupported_url" },
   );
   vi.stubGlobal("pond", { query });
-  await openLibraryAt("/folders/elsewhere");
+  router = await openLibraryAt("/folders/elsewhere");
   await act(async () => {
     await runPasteImport({
       kind: "urls",
@@ -101,7 +110,7 @@ it("selects the pasted links that were added in All, not the ones that failed", 
   expect(toastText()).toContain("Downloading");
 
   await act(async () => showAction()?.click());
-  expect(getLibraryNav()).toEqual({ kind: "all" });
+  expect(shownNav()).toEqual({ kind: "all" });
   expect(selection.snapshot()).toEqual(["one"]);
 });
 

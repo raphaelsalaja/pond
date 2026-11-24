@@ -86,7 +86,7 @@ export function Preview({
       {images.length === 0 ? (
         <Empty.Root size="card" className={styles.empty}>
           <Empty.Media>
-            <EmptyPreview.Root shape="board" layout="single">
+            <EmptyPreview.Root kind="board" layout="single">
               <EmptyPreview.Row>
                 <EmptyPreview.Thumb />
                 <EmptyPreview.Thumb />

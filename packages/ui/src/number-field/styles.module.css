@@ -18,10 +18,10 @@
   font-variant-numeric: tabular-nums;
   line-height: normal;
   color: var(--ds-foreground-primary);
+  outline: none;
   background: var(--ds-background-elevated);
   border: 0;
   border-radius: var(--ds-radius-sm);
-  outline: none;
   box-shadow: var(--ds-shadow-control);
   transition: box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
 

@@ -1,6 +1,6 @@
-import ring from "./parts/ring.mjs";
-import turn from "./parts/opens-turn.mjs";
 import globe from "./globe.mjs";
+import turn from "./parts/opens-turn.mjs";
+import ring from "./parts/ring.mjs";
 
 export default (h, s) => {
   const [cx, cy, r] = s.keylines.circle;

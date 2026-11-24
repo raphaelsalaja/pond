@@ -12,7 +12,7 @@ const SplitContext = createContext<{ variant: Variant; size: Size }>({
   size: "md",
 });
 
-interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
+interface RootProps extends React.ComponentPropsWithoutRef<"fieldset"> {
   variant?: Variant;
   size?: Size;
 }
@@ -26,8 +26,7 @@ function Root({
   const value = useMemo(() => ({ variant, size }), [variant, size]);
   return (
     <SplitContext value={value}>
-      <div
-        role="group"
+      <fieldset
         data-variant={variant}
         className={cn(styles.root, className)}
         {...props}

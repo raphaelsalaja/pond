@@ -8,4 +8,8 @@ const bottle = ({ rect }, s, x) => [
 
 export default (h, s) => bottle(h, s, 3.875);
 
-export const open = (h, s) => [bottle(h, s, 2.375), dot(h, s, 12.75, 3.75), dot(h, s, 14.875, 6.375)];
+export const open = (h, s) => [
+  bottle(h, s, 2.375),
+  dot(h, s, 12.75, 3.75),
+  dot(h, s, 14.875, 6.375),
+];

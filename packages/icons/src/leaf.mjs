@@ -6,7 +6,10 @@ const lens = (snap, a, b, sag) => {
   return `M ${p(a)} A ${r} ${r} 0 0 1 ${p(b)} A ${r} ${r} 0 0 1 ${p(a)} Z`;
 };
 
-export default ({ snap }) => [lens(snap, [5.25, 12.75], [15.375, 2.625], 2.75), "M 2.625 15.375 L 11.75 6.25"];
+export default ({ snap }) => [
+  lens(snap, [5.25, 12.75], [15.375, 2.625], 2.75),
+  "M 2.625 15.375 L 11.75 6.25",
+];
 
 export const open = ({ snap }) => [
   "M 9 15.625 V 9.5",

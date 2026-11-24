@@ -1,3 +1,4 @@
+import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,6 +7,7 @@ import {
   restoreDefaults,
   setSort,
 } from "@/features/library/state/view-store";
+import { openLibraryAt } from "@/shared/test/library-router";
 import { SortSection } from "./";
 
 describe("sort section", () => {
@@ -35,7 +37,14 @@ describe("sort section", () => {
   });
 
   async function render() {
-    await act(async () => root.render(<SortSection />));
+    const router = await openLibraryAt("/");
+    await act(async () =>
+      root.render(
+        <RouterContextProvider router={router}>
+          <SortSection />
+        </RouterContextProvider>,
+      ),
+    );
   }
 
   function control(label: string) {

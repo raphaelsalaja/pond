@@ -45,8 +45,8 @@
 
   & path {
     stroke: var(--ds-border-strong);
-    stroke-linecap: round;
     stroke-width: 1.25;
+    stroke-linecap: round;
   }
 }
 

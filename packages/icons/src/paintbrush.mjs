@@ -9,13 +9,13 @@ const brush = (o, reach) => {
   ];
 };
 
-export default (h, s) => {
+export default (_h, s) => {
   const [x0, , , y1] = s.keylines.square;
   return brush([x0 + 0.75, y1 - 0.75], 12);
 };
 
 /** Lifted mid-stroke over the line it just painted. */
-export const open = (h, s) => {
+export const open = (_h, s) => {
   const [x0, , x1, y1] = s.keylines.square;
   return [brush([x0 + 1.125, y1 - 2.875], 10), `M ${x0} ${y1} H ${x1 - 5.125}`];
 };

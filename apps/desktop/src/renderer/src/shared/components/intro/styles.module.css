@@ -1,10 +1,10 @@
 .page {
-  container: intro / size;
   display: flex;
   flex: 1;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  container: intro / size;
   overflow-y: auto;
 }
 
@@ -121,7 +121,6 @@
 
 .panel {
   position: relative;
-  isolation: isolate;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -131,19 +130,7 @@
   margin-inline: 6px;
   background: var(--ds-background-secondary);
   border-radius: var(--ds-radius-lg);
-}
-
-.heading {
-  display: flex;
-  flex: none;
-  gap: var(--ds-space-sm);
-  align-items: center;
-  color: var(--intro-faint);
-
-  & > .label {
-    font-size: var(--ds-text-mini);
-    color: var(--intro-ink);
-  }
+  isolation: isolate;
 }
 
 .card {
@@ -179,7 +166,7 @@
   background: var(--intro-skeleton);
   border-radius: var(--ds-radius-md);
 
-  &[data-shape="round"] {
+  &[data-variant="round"] {
     border-radius: var(--ds-radius-full);
   }
 }
@@ -194,14 +181,27 @@
 .label {
   min-width: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--ds-text-micro);
   line-height: var(--ds-leading-micro);
   color: var(--intro-ink);
-  text-overflow: ellipsis;
   white-space: nowrap;
 
   &[data-tone="faint"] {
     color: var(--intro-faint);
+  }
+}
+
+.heading {
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  color: var(--intro-faint);
+
+  & > .label {
+    font-size: var(--ds-text-mini);
+    color: var(--intro-ink);
   }
 }
 

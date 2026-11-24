@@ -2,7 +2,11 @@
   --preview-ink: var(--ds-foreground-primary);
   --preview-ghost: color-mix(in srgb, var(--preview-ink) 7%, transparent);
   --preview-ghost-mid: color-mix(in srgb, var(--preview-ink) 11%, transparent);
-  --preview-ghost-light: color-mix(in srgb, var(--preview-ink) 4.5%, transparent);
+  --preview-ghost-light: color-mix(
+    in srgb,
+    var(--preview-ink) 4.5%,
+    transparent
+  );
   --preview-glyph: color-mix(in srgb, var(--preview-ink) 26%, transparent);
 
   --preview-w: 132px;
@@ -14,14 +18,14 @@
   display: flex;
   gap: 6px;
 
-  &[data-shape="tile"] {
+  &[data-kind="tile"] {
     --preview-w: 64px;
     --preview-h: 72px;
     --preview-inset: 5px;
     --preview-step: 6px;
   }
 
-  &[data-shape="chip"] {
+  &[data-kind="chip"] {
     --preview-w: 92px;
     --preview-h: 26px;
     --preview-inset: 8px;
@@ -29,7 +33,7 @@
     --preview-radius: 13px;
   }
 
-  &[data-shape="panel"] {
+  &[data-kind="panel"] {
     --preview-w: 88px;
     --preview-h: 104px;
     --preview-inset: 6px;
@@ -37,7 +41,7 @@
     --preview-radius: 10px;
   }
 
-  &[data-shape="field"] {
+  &[data-kind="field"] {
     --preview-w: 144px;
     --preview-h: 28px;
     --preview-inset: 8px;
@@ -45,7 +49,7 @@
     --preview-radius: 14px;
   }
 
-  &[data-shape="board"] {
+  &[data-kind="board"] {
     --preview-w: 136px;
     --preview-h: 80px;
     --preview-inset: 8px;
@@ -66,14 +70,6 @@
   &[data-layout="list"] {
     flex-direction: column;
     gap: 5px;
-  }
-
-  &[data-layout="stack"]:hover .card[data-layer="3"] {
-    translate: 0 -3px;
-  }
-
-  &[data-layout="stack"]:hover .card[data-layer="2"] {
-    translate: 0 -1.5px;
   }
 }
 
@@ -121,6 +117,14 @@
     top: calc(var(--preview-step) * 2);
     left: 0;
     animation-delay: 120ms;
+  }
+
+  .root[data-layout="stack"]:hover &[data-layer="3"] {
+    translate: 0 -3px;
+  }
+
+  .root[data-layout="stack"]:hover &[data-layer="2"] {
+    translate: 0 -1.5px;
   }
 }
 
@@ -182,7 +186,7 @@
   background-color: var(--preview-ghost-mid);
   border-radius: 3px;
 
-  &[data-shape="round"] {
+  &[data-variant="round"] {
     border-radius: var(--ds-radius-full);
   }
 }
@@ -194,8 +198,8 @@
   justify-content: center;
   width: 100%;
   height: var(--preview-height);
-  background-color: var(--preview-ghost-light);
   color: var(--preview-glyph);
+  background-color: var(--preview-ghost-light);
   border-radius: calc(var(--preview-radius) - 5px);
 
   &[data-fill] {

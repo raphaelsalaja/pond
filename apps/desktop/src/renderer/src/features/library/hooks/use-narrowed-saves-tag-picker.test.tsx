@@ -1,5 +1,6 @@
 import { PrefsSchema } from "@pond/schema";
 import type { LibraryQueryRequest } from "@shared/library-query";
+import { RouterContextProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,6 +12,11 @@ import {
   syncDepartingSaveIds,
   useIsDepartingSave,
 } from "@/features/saves/state/tag-picker";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import {
+  type LibraryTestRouter,
+  openLibraryAt,
+} from "@/shared/test/library-router";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
 const prefs = PrefsSchema.parse({});
@@ -44,12 +50,24 @@ function Probe() {
 describe("tagging in a filtered view", () => {
   let host: HTMLDivElement;
   let root: Root;
+  let router: LibraryTestRouter;
   let ids = ["keep", "leaving"];
   let sync: (() => void) | null = null;
 
-  beforeEach(() => {
+  async function renderProbe() {
+    await act(async () => {
+      root.render(
+        <RouterContextProvider router={router}>
+          <Probe />
+        </RouterContextProvider>,
+      );
+    });
+  }
+
+  beforeEach(async () => {
     ids = ["keep", "leaving"];
     sync = null;
+    router = await openLibraryAt(pathForLibraryNav({ kind: "untagged" }));
     pool.upsert(save("keep"));
     pool.upsert(save("leaving"));
     closeSaveTagPicker();
@@ -93,14 +111,10 @@ describe("tagging in a filtered view", () => {
   });
 
   it("keeps a save mounted until the tag picker closes when tagging removes it from the view", async () => {
-    await act(async () => {
-      root.render(<Probe />);
-    });
+    await renderProbe();
     await settle("keep leaving");
     openSaveTagPicker(["leaving"], "leaving");
-    await act(async () => {
-      root.render(<Probe />);
-    });
+    await renderProbe();
 
     ids = ["keep"];
     sync?.();
@@ -116,9 +130,7 @@ describe("tagging in a filtered view", () => {
     ).toBe("true");
 
     closeSaveTagPicker();
-    await act(async () => {
-      root.render(<Probe />);
-    });
+    await renderProbe();
     expect(host.querySelector("[data-ids]")?.getAttribute("data-ids")).toBe(
       "keep",
     );

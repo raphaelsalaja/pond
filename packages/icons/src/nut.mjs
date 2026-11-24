@@ -7,7 +7,10 @@ const hex = ({ poly }, s) => {
     const a = ((-90 + k * 60) * Math.PI) / 180;
     return [9 + R * Math.cos(a), 9 + R * Math.sin(a)];
   });
-  return poly(pts, { closed: true, corners: Object.fromEntries(pts.map((_, i) => [i, s.ease])) });
+  return poly(pts, {
+    closed: true,
+    corners: Object.fromEntries(pts.map((_, i) => [i, s.ease])),
+  });
 };
 
 export default (h, s) => [hex(h, s), h.circle(9, 9, 2.5)];

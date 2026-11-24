@@ -37,7 +37,11 @@ export const open = ({ poly }, s) => {
         [x1, y1],
         [x0, y1],
       ],
-      { closed: true, radius: s.ease, corners: { 0: s.box, 5: s.box, 6: s.box, 7: s.box } },
+      {
+        closed: true,
+        radius: s.ease,
+        corners: { 0: s.box, 5: s.box, 6: s.box, 7: s.box },
+      },
     ),
     poly(
       [

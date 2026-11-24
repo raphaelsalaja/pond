@@ -134,12 +134,12 @@ describe("sidebar background menu", () => {
     }
   });
 
-  it("opens from the Harvesting label", async () => {
+  it("opens from the Library group label", async () => {
     await harness.mount();
     const label = [...harness.host.querySelectorAll("*")].find(
-      (node) => node.children.length === 0 && node.textContent === "Harvesting",
+      (node) => node.children.length === 0 && node.textContent === "Library",
     );
-    if (!label) throw new Error("Missing Harvesting label");
+    if (!label) throw new Error("Missing Library label");
     await rightClick(label);
     expect(hasMenuItem("Sections")).toBe(true);
   });

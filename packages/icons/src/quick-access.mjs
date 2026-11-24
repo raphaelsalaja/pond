@@ -1,5 +1,5 @@
 /** The command key, as one path. */
-export default (h, s) => {
+export default (_h, s) => {
   const [x0, , x1] = s.keylines.square;
   const r = 2.125;
   const [a, b] = [x0 + r, x1 - r];

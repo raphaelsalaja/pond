@@ -18,7 +18,10 @@ const note = ({ poly }, s, fold) => {
         [x1 - fold, y1],
         [x0, y1],
       ],
-      { closed: true, corners: { 0: s.box, 1: s.box, 2: s.ease / 2, 3: s.ease / 2, 4: s.box } },
+      {
+        closed: true,
+        corners: { 0: s.box, 1: s.box, 2: s.ease / 2, 3: s.ease / 2, 4: s.box },
+      },
     ),
     { d: `${corner} Z`, fill: true },
   ];

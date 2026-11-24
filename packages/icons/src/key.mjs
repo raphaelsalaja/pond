@@ -11,7 +11,12 @@ const key = ({ circle, snap }) => {
     const a = along(d);
     return `M ${p(a)} L ${p([a[0] + len * k, a[1] + len * k])}`;
   };
-  return [circle(...c, r), `M ${p(along(r))} L ${p(along(12.75))}`, tooth(11.75, 1.75), tooth(9, 1.5)];
+  return [
+    circle(...c, r),
+    `M ${p(along(r))} L ${p(along(12.75))}`,
+    tooth(11.75, 1.75),
+    tooth(9, 1.5),
+  ];
 };
 
 export default key;

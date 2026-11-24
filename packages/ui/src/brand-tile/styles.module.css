@@ -20,13 +20,13 @@
   }
 
   &::after {
-    content: "";
     position: absolute;
     inset: 0;
+    pointer-events: none;
+    content: "";
+    background: var(--ds-brand-tile-gloss);
     border-radius: inherit;
     corner-shape: inherit;
-    background: var(--ds-brand-tile-gloss);
     box-shadow: var(--ds-brand-tile-rim);
-    pointer-events: none;
   }
 }

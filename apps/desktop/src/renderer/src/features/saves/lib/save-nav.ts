@@ -1,15 +1,17 @@
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
+import { searchText } from "@/features/search/lib/schemas";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
-import { latestSearch, writeSearch } from "@/shared/lib/route-search";
+import {
+  latestSearch,
+  type RouteSearch,
+  writeSearch,
+} from "@/shared/lib/route-search";
 
 /** Numeric ids arrive JSON-parsed from hand-written links. */
-export function saveIdFromSearch(search: Record<string, unknown>): string | null {
-  const value = search.save;
-  if (typeof value === "string" && value) return value;
-  if (typeof value === "number") return String(value);
-  return null;
+export function saveIdFromSearch(search: RouteSearch): string | null {
+  return searchText.parse(search.save) || null;
 }
 
 /** The Save open over the current route, read from the committed location. */
@@ -56,7 +58,7 @@ export function closeSave(): void {
   writeSearch({ save: undefined });
 }
 
-export function syncPrimaryFromSearch(search: Record<string, unknown>): void {
+export function syncPrimaryFromSearch(search: RouteSearch): void {
   const primary = saveIdFromSearch(search) ?? selection.getCursor();
   if (primarySelection.get() !== primary) primarySelection.set(primary);
 }

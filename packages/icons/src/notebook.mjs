@@ -24,5 +24,9 @@ export const open = ({ poly }, s) => {
       ],
       { closed: true, corners: { 0: s.ease, 1: s.box, 2: s.box, 3: s.ease } },
     );
-  return [page(x0, 9 - gap), page(x1, 9 + gap), rings.map((y) => `M 6.75 ${y} H 11.25`)];
+  return [
+    page(x0, 9 - gap),
+    page(x1, 9 + gap),
+    rings.map((y) => `M 6.75 ${y} H 11.25`),
+  ];
 };

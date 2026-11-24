@@ -1,6 +1,10 @@
 .root {
   display: inline-flex;
   align-items: center;
+  min-inline-size: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
   isolation: isolate;
 }
 

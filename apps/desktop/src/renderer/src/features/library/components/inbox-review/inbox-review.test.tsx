@@ -1,4 +1,5 @@
 import "@/app/effects/save-library-bridge";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -69,9 +70,16 @@ function progress() {
 
 async function mount(node: ReactNode = <InboxReview />) {
   router = createLibraryTestRouter("/inbox", { component: () => node });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   await act(async () => {
     await router.load();
-    root.render(<RouterProvider router={router} />);
+    root.render(
+      <QueryClientProvider client={client}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
   });
   await act(async () => {});
 }
@@ -111,6 +119,7 @@ beforeEach(async () => {
         ];
       if (name === "folders.memberships" || name === "tags.list") return [];
       if (name === "saves.getMany") return [];
+      if (name === "libraryHealth.overview") return null;
       if (name === "saves.queryPage") return { ids: ["a", "b"] };
       if (name === "saves.sidebarCounts")
         return {

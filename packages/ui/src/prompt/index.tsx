@@ -212,16 +212,10 @@ function Receipt({
       ) : null}
       <span className={styles.text}>
         <span className={styles.label}>{label}</span>
-        {detail ? (
-          <span className={styles.detail}>{detail}</span>
-        ) : null}
+        {detail ? <span className={styles.detail}>{detail}</span> : null}
       </span>
       {onOpenChange ? (
-        <IconChevronDown
-          size={12}
-          className={styles.chevron}
-          aria-hidden
-        />
+        <IconChevronDown size={12} className={styles.chevron} aria-hidden />
       ) : null}
     </>
   );
@@ -246,9 +240,7 @@ function Receipt({
       ) : (
         <span className={styles.main}>{content}</span>
       )}
-      {action ? (
-        <span className={styles.action}>{action}</span>
-      ) : null}
+      {action ? <span className={styles.action}>{action}</span> : null}
     </div>
   );
 }

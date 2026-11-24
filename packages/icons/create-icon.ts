@@ -21,7 +21,10 @@ function strokeWidthFor(size: number | string) {
 }
 
 /** Props every shape inside an icon frame needs so its stroke matches the drawn glyphs. */
-export function iconShapeProps(variant: IconStyle, size: number | string = GRID) {
+export function iconStrokeProps(
+  variant: IconStyle,
+  size: number | string = GRID,
+) {
   return variant !== "fill" && !grows(size)
     ? { vectorEffect: "non-scaling-stroke" }
     : null;
@@ -73,7 +76,7 @@ export function createIcon(
 ): IconComponent {
   // biome-ignore lint/correctness/noComponentHookFactories: each generated icon module calls createIcon once at load.
   function Icon({ size = GRID, children: extra, ...props }: IconProps) {
-    const fixed = iconShapeProps(style, size);
+    const fixed = iconStrokeProps(style, size);
     return createElement(
       IconFrame,
       { variant: style, size, ...props },

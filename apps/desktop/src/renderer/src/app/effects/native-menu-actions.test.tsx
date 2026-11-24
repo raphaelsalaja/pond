@@ -5,10 +5,7 @@ import {
   resetFilters,
   setSearchDraft,
 } from "@/features/library/state/view-store";
-import {
-  currentLocation,
-  openLibraryAt,
-} from "@/shared/test/library-router";
+import { currentLocation, openLibraryAt } from "@/shared/test/library-router";
 import {
   handleNativeMenuAction,
   shouldIgnoreMenuAction,

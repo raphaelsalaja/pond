@@ -27,7 +27,11 @@ interface HeaderProps extends ComponentPropsWithoutRef<"header"> {
 
 function Header({ tone, className, ...props }: HeaderProps) {
   return (
-    <header className={cn(styles.head, className)} data-tone={tone} {...props} />
+    <header
+      className={cn(styles.head, className)}
+      data-tone={tone}
+      {...props}
+    />
   );
 }
 

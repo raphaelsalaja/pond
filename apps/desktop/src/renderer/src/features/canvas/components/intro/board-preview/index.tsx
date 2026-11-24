@@ -9,9 +9,7 @@ export function BoardPreview() {
     <Intro.Preview>
       <Intro.Window>
         <span className={styles.board} />
-        <Intro.Heading icon={<IconCanvas size={12} />}>
-          Moodboard
-        </Intro.Heading>
+        <Intro.Heading icon={<IconCanvas size={12} />}>Moodboard</Intro.Heading>
         <span className={styles.section}>
           <Intro.Label tone="faint">References</Intro.Label>
           <span className={styles.cards}>
@@ -33,7 +31,12 @@ export function BoardPreview() {
             </Intro.Card>
           </span>
         </span>
-        <svg className={styles.connector} viewBox="0 0 24 32" fill="none">
+        <svg
+          className={styles.connector}
+          viewBox="0 0 24 32"
+          fill="none"
+          aria-hidden="true"
+        >
           <path d="M0 30 C 14 30, 10 2, 24 2" />
         </svg>
         <Intro.Card className={styles.note}>

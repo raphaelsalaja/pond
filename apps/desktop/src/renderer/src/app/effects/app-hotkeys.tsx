@@ -3,16 +3,16 @@ import { useEffect } from "react";
 import { CANVASES_PATH, canvases } from "@/features/canvas";
 import { downloadDialog } from "@/features/downloads";
 import {
+  selectLibraryNav,
+  showSidebarPanel,
+} from "@/features/library/components/folder-sidebar/navigation";
+import {
   createNote,
   importPaths,
   newFolder,
   newTag,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
-import {
-  selectLibraryNav,
-  showSidebarPanel,
-} from "@/features/library/components/folder-sidebar/navigation";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";

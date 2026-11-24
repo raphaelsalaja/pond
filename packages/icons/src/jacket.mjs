@@ -9,7 +9,11 @@ const left = [
 ];
 const right = left.map(([x, y]) => [18 - x, y]).reverse();
 
-export default ({ poly }) => [poly([...left, [9, 4.375], ...right], { closed: true, radius: 1.25 }), "M 9 4.375 V 15.625", seams];
+export default ({ poly }) => [
+  poly([...left, [9, 4.375], ...right], { closed: true, radius: 1.25 }),
+  "M 9 4.375 V 15.625",
+  seams,
+];
 
 export const open = ({ poly }) => [
   poly([...left, [7, 15.625]], { closed: true, radius: 1.25 }),

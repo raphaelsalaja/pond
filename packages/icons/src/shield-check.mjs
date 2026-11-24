@@ -34,5 +34,8 @@ export const open = ({ poly }, s) => {
     [8.125, 11.25],
     [15.25, 4.125],
   ];
-  return [cut(shield(s), [near(check[1], check[2], s.stroke + 1)]), poly(check, { radius: s.ease })];
+  return [
+    cut(shield(s), [near(check[1], check[2], s.stroke + 1)]),
+    poly(check, { radius: s.ease }),
+  ];
 };

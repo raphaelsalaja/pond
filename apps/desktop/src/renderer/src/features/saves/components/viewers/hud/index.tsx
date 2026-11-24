@@ -129,11 +129,7 @@ function Bar({
       >
         {center}
       </Pill>
-      <Pill
-        className={styles.end}
-        variant={variant}
-        data-viewer-bar-slot="end"
-      >
+      <Pill className={styles.end} variant={variant} data-viewer-bar-slot="end">
         {end}
       </Pill>
     </Tools>

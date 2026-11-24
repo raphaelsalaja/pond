@@ -10,7 +10,10 @@ const pail = ({ poly }, s) =>
       [12.625, 15.625],
       [5.375, 15.625],
     ],
-    { closed: true, corners: { 0: s.ease / 2, 1: s.ease / 2, 2: s.box, 3: s.box } },
+    {
+      closed: true,
+      corners: { 0: s.ease / 2, 1: s.ease / 2, 2: s.box, 3: s.box },
+    },
   );
 
 /** The folded top narrows to a flat ridge, split by the seam where the flaps meet; the wire loops above. */

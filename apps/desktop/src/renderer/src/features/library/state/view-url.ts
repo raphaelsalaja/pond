@@ -1,5 +1,5 @@
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
-import type { AnyRouter, ParsedLocation } from "@tanstack/react-router";
+import type { AnyRouter } from "@tanstack/react-router";
 import {
   canSearchAllSaves,
   searchViewFor,
@@ -20,7 +20,13 @@ import {
   takeLegacyFilters,
 } from "@/features/library/state/view-store";
 import { librarySearchSchema } from "@/features/search/lib/schemas";
+import type { RouteLocation } from "@/shared/hooks/use-route-location";
 import { type RouteMeta, routeMeta } from "@/shared/lib/route-meta";
+import {
+  patchSearch,
+  type RouteSearch,
+  type SearchPatch,
+} from "@/shared/lib/route-search";
 
 const VIEW_ROUTE = "/_library/_grid/views/$viewId";
 
@@ -46,7 +52,7 @@ function stateView(): LocationView {
 }
 
 function locationView(
-  search: Record<string, unknown>,
+  search: RouteSearch,
   meta: RouteMeta,
   base: Query,
 ): LocationView {
@@ -60,11 +66,13 @@ function locationView(
       params.scope === "all" && canSearchAllSaves(view)
         ? searchViewKey(view)
         : null,
-    urlSort: params.sort ? { key: params.sort, dir: params.dir ?? "desc" } : null,
+    urlSort: params.sort
+      ? { key: params.sort, dir: params.dir ?? "desc" }
+      : null,
   };
 }
 
-function searchPatch(view: LocationView, base: Query): Record<string, unknown> {
+function searchPatch(view: LocationView, base: Query) {
   const unchanged =
     sameQuery(view.query, base) ||
     (view.query.rules.length === 0 && base.rules.length === 0);
@@ -75,7 +83,7 @@ function searchPatch(view: LocationView, base: Query): Record<string, unknown> {
     scope: view.searchAllView ? "all" : undefined,
     sort: view.urlSort?.key,
     dir: view.urlSort?.dir,
-  };
+  } satisfies SearchPatch;
 }
 
 /** Mirrors the grid's search, filters and sort between the view store and the URL, which wins. */
@@ -86,7 +94,7 @@ export function startViewUrlSync(router: AnyRouter): () => void {
   let waitingForViews = false;
   let legacy = takeLegacyFilters();
 
-  const current = (): ParsedLocation<Record<string, unknown>> =>
+  const current = (): RouteLocation =>
     router.parseLocation(router.history.location);
 
   const write = () => {
@@ -97,11 +105,10 @@ export function startViewUrlSync(router: AnyRouter): () => void {
     const key = JSON.stringify(view);
     if (key === written) return;
     written = key;
-    const search: Record<string, unknown> = { ...location.search };
-    for (const [name, value] of Object.entries(searchPatch(view, context.base))) {
-      if (value === undefined) delete search[name];
-      else search[name] = value;
-    }
+    const search = patchSearch(
+      location.search,
+      searchPatch(view, context.base),
+    );
     const href = `${location.pathname}${router.options.stringifySearch(search)}`;
     if (href !== location.href) router.history.replace(href);
   };
@@ -124,7 +131,10 @@ export function startViewUrlSync(router: AnyRouter): () => void {
         }
         base = view.query;
         if (fresh)
-          applySavedView({ ...view, inheritedQuery: inheritedQueryFor(view, views) });
+          applySavedView({
+            ...view,
+            inheritedQuery: inheritedQueryFor(view, views),
+          });
       } else if (fresh) {
         clearSavedView();
       }

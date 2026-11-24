@@ -52,7 +52,9 @@ describe("viewAccountItems", () => {
     expect(searchOf(router).search).toEqual({
       filters: {
         combinator: "and",
-        rules: [{ field: "account", operator: "in", value: ["acct-1", "acct-2"] }],
+        rules: [
+          { field: "account", operator: "in", value: ["acct-1", "acct-2"] },
+        ],
       },
     });
   });

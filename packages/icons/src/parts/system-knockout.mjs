@@ -4,12 +4,16 @@ const mul = (a, k) => [a[0] * k, a[1] * k];
 const len = (a) => Math.hypot(a[0], a[1]);
 const unit = (a) => mul(a, 1 / len(a));
 const left = ([x, y]) => [y, -x];
-const dir = (deg) => [Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180)];
+const dir = (deg) => [
+  Math.cos((deg * Math.PI) / 180),
+  Math.sin((deg * Math.PI) / 180),
+];
 const n = (v) => +(Math.round(v * 8) / 8).toFixed(3);
 const pt = ([x, y]) => `${n(x)} ${n(y)}`;
 
 /** A disc wound counterclockwise, so clockwise knockouts inside it punch through under the nonzero rule. */
-export const disc = (cx, cy, r) => `M ${pt([cx - r, cy])} A ${n(r)} ${n(r)} 0 1 0 ${pt([cx + r, cy])} A ${n(r)} ${n(r)} 0 1 0 ${pt([cx - r, cy])} Z`;
+export const disc = (cx, cy, r) =>
+  `M ${pt([cx - r, cy])} A ${n(r)} ${n(r)} 0 1 0 ${pt([cx + r, cy])} A ${n(r)} ${n(r)} 0 1 0 ${pt([cx - r, cy])} Z`;
 
 /** The clockwise outline of a round-capped stroke along `a`, `b`, `c`, its corner filleted the way `poly` does. */
 export function bend([a, b, c], radius, w) {

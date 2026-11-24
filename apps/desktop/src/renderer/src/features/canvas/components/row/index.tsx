@@ -28,10 +28,7 @@ export function CanvasRow({ canvas, active, renaming }: CanvasRowProps) {
       searchLabel="Search Canvas operations"
       buildItems={items}
     >
-      <div
-        className={styles.row}
-        data-hover-row={renaming ? undefined : ""}
-      >
+      <div className={styles.row} data-hover-row={renaming ? undefined : ""}>
         {renaming ? (
           <div className={styles.editor}>
             <Sidebar.Icon className={styles.icon}>

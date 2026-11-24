@@ -170,7 +170,7 @@ function IconChoices({
         ) : (
           <Empty.Root role="status" size="card" className={styles.empty}>
             <Empty.Media>
-              <EmptyPreview.Root shape="field" layout="single">
+              <EmptyPreview.Root kind="field" layout="single">
                 <EmptyPreview.Row>
                   <EmptyPreview.Icon>
                     <IconMagnifier size={12} />

@@ -36,13 +36,13 @@
 
 .scroll {
   position: relative;
-  isolation: isolate;
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
   padding-bottom: var(--ds-space-2xl);
   overflow-y: auto;
+  isolation: isolate;
 }
 
 .clamp {
@@ -56,7 +56,6 @@
   --sidebar-fill: transparent;
 
   position: relative;
-  isolation: isolate;
   display: block;
   max-width: calc(100% - 24px);
   padding: var(--ds-space-sm) var(--ds-space-sm) var(--ds-space-sm) 30px;
@@ -67,6 +66,7 @@
   white-space: nowrap;
   text-decoration: none;
   border-radius: var(--ds-radius-md);
+  isolation: isolate;
 
   &:hover {
     color: var(--ds-foreground-primary);
@@ -129,13 +129,13 @@ button.label {
   --sidebar-fill: transparent;
 
   position: relative;
-  isolation: isolate;
   width: max-content;
   max-width: 100%;
   height: auto;
   min-height: 0;
   padding: var(--ds-space-xs) var(--ds-space-md);
   cursor: var(--ds-cursor-interactive, pointer);
+  isolation: isolate;
 }
 
 button.label:hover {
@@ -206,11 +206,19 @@ button.label:hover {
   overflow: visible;
 }
 
+.tile .icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
 .item {
   --sidebar-fill: transparent;
 
   position: relative;
-  isolation: isolate;
   display: flex;
   align-items: center;
   width: 100%;
@@ -223,6 +231,7 @@ button.label:hover {
   color: var(--ds-foreground-tertiary);
   white-space: nowrap;
   border-radius: var(--ds-radius-md);
+  isolation: isolate;
   transition: color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
@@ -293,9 +302,9 @@ button.label:hover {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
   font-size: var(--sidebar-text);
   font-weight: var(--ds-weight-medium);
+  white-space: nowrap;
 }
 
 .stack {
@@ -321,8 +330,8 @@ button.label:hover {
   align-items: center;
   justify-content: center;
   width: 100%;
-  aspect-ratio: 1;
   min-width: 0;
+  aspect-ratio: 1;
   padding: var(--ds-space-xs);
   font-size: var(--sidebar-text);
   font-weight: var(--ds-weight-medium);
@@ -341,15 +350,6 @@ button.label:hover {
   &[data-popup-open] {
     color: var(--ds-foreground-primary);
     background: var(--ds-surface-secondary);
-  }
-
-  .icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
   }
 
   .text {

@@ -189,9 +189,9 @@
     box-sizing: border-box;
     width: 100%;
     overflow: hidden;
-    border-radius: var(--ds-radius-md);
     outline: 2px solid transparent;
     outline-offset: 2px;
+    border-radius: var(--ds-radius-md);
     box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
     transition:
       outline-color var(--ds-duration-snap) var(--ds-easing-standard),
@@ -265,15 +265,6 @@
   }
 }
 
-[data-pond-toggle-group][data-variant="pills"][data-multiple] > .root {
-  &[data-pressed],
-  &[data-pressed]:hover {
-    font-weight: var(--ds-weight-medium);
-    color: var(--ds-foreground-primary);
-    box-shadow: inset 0 0 0 var(--ds-border-width) transparent;
-  }
-}
-
 /* Rail items may sit inside a context-menu wrapper, so match any depth. */
 [data-pond-toggle-group][data-variant="rail"] .root {
   justify-content: center;
@@ -319,6 +310,15 @@
     color: var(--ds-foreground-primary);
     background: var(--ds-surface-secondary);
     box-shadow: none;
+  }
+}
+
+[data-pond-toggle-group][data-variant="pills"][data-multiple] > .root {
+  &[data-pressed],
+  &[data-pressed]:hover {
+    font-weight: var(--ds-weight-medium);
+    color: var(--ds-foreground-primary);
+    box-shadow: inset 0 0 0 var(--ds-border-width) transparent;
   }
 }
 

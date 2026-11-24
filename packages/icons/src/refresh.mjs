@@ -14,5 +14,10 @@ export default ({ arc, poly, snap }, s) => {
       { radius: s.ease / 2 },
     );
   };
-  return [arc(9, 9, r, 165, 315), head(315, 1), arc(9, 9, r, 345, 495), head(135, -1)];
+  return [
+    arc(9, 9, r, 165, 315),
+    head(315, 1),
+    arc(9, 9, r, 345, 495),
+    head(135, -1),
+  ];
 };

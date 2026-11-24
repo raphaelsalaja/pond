@@ -4,7 +4,10 @@ import slash from "./parts/slash.mjs";
 /** `tag.mjs` mirrored so the slash crosses its body, not its hole; the outline stops a stroke and a gap either side of the slash. */
 export default (h, s) => {
   const [lo, , hi] = s.keylines.square;
-  const map = ([x, y]) => [18 - (lo + ((x - 2) * (hi - lo)) / 21), lo + ((y - 2) * (hi - lo)) / 21];
+  const map = ([x, y]) => [
+    18 - (lo + ((x - 2) * (hi - lo)) / 21),
+    lo + ((y - 2) * (hi - lo)) / 21,
+  ];
   const [corner, back, tip, toe, heel] = [
     [2, 2],
     [12, 2],
@@ -24,7 +27,9 @@ export default (h, s) => {
     h.poly([across(toe, 1), heel, corner, back, across(back, 1)], {
       corners: { 1: round, 2: round, 3: round },
     }),
-    h.poly([across(back, -1), tip, toe, across(toe, -1)], { corners: { 1: 2.25, 2: 2.25 } }),
+    h.poly([across(back, -1), tip, toe, across(toe, -1)], {
+      corners: { 1: 2.25, 2: 2.25 },
+    }),
     dot(h, s, ...map([7.25, 7.25])),
     slash(s),
   ];

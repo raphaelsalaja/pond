@@ -13,6 +13,9 @@ export default ({ poly }, s) => {
       { closed: true, radius: s.ease },
     ),
     `M ${cx - half + inset} ${cy} H ${cx + half - inset}`,
-    { d: "M 14.375 10.625 L 15.5 12.5 A 1.375 1.375 0 1 1 13.25 12.5 Z", solid: true },
+    {
+      d: "M 14.375 10.625 L 15.5 12.5 A 1.375 1.375 0 1 1 13.25 12.5 Z",
+      solid: true,
+    },
   ];
 };

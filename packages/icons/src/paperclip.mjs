@@ -13,6 +13,9 @@ export default (h) => `M ${at(h, L - 3.5, -gap)} ${loops(h, 5.5)}`;
 
 export const open = (h) => {
   const k = Math.SQRT1_2;
-  const foot = [9 + (gap - L / 2) * k - gap * k, 9 - (gap - L / 2) * k - gap * k];
+  const foot = [
+    9 + (gap - L / 2) * k - gap * k,
+    9 - (gap - L / 2) * k - gap * k,
+  ];
   return `M ${h.pt([foot[0], foot[1] - 6.5])} ${loops(h, 5.5)}`;
 };

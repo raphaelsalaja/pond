@@ -18,4 +18,9 @@ export default (h, s) => [
   line(rows[2], text, right),
 ];
 
-export const open = (h, s) => [check(h.poly, s, rows[0]), line(rows[0], text, right), check(h.poly, s, rows[2]), line(rows[2], text, right)];
+export const open = (h, s) => [
+  check(h.poly, s, rows[0]),
+  line(rows[0], text, right),
+  check(h.poly, s, rows[2]),
+  line(rows[2], text, right),
+];

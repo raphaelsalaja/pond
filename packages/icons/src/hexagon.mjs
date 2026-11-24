@@ -5,5 +5,8 @@ export default ({ poly }, s) => {
     const a = ((-90 + k * 60) * Math.PI) / 180;
     return [9 + R * Math.cos(a), 9 + R * Math.sin(a)];
   });
-  return poly(pts, { closed: true, corners: Object.fromEntries(pts.map((_, i) => [i, s.box])) });
+  return poly(pts, {
+    closed: true,
+    corners: Object.fromEntries(pts.map((_, i) => [i, s.box])),
+  });
 };

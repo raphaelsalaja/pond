@@ -14,11 +14,15 @@ describe("library chrome", () => {
 
   it("raises old sidebar widths to the tab-safe minimum", async () => {
     localStorage.setItem("pond.sidebarWidth", "180");
-    const { libraryChrome } = await import("./library-chrome");
-    expect(libraryChrome.getState().sidebarWidth).toBe(256);
+    const { libraryChrome, SIDEBAR_WIDTH_MIN } = await import(
+      "./library-chrome"
+    );
+    expect(libraryChrome.getState().sidebarWidth).toBe(SIDEBAR_WIDTH_MIN);
     libraryChrome.setSidebarWidth(200);
-    expect(libraryChrome.getState().sidebarWidth).toBe(256);
-    expect(localStorage.getItem("pond.sidebarWidth")).toBe("256");
+    expect(libraryChrome.getState().sidebarWidth).toBe(SIDEBAR_WIDTH_MIN);
+    expect(localStorage.getItem("pond.sidebarWidth")).toBe(
+      String(SIDEBAR_WIDTH_MIN),
+    );
   });
 
   it("preserves the saved sidebar width through closing and reopening", async () => {

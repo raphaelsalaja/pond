@@ -1,4 +1,7 @@
-export default ({ rect }, s) => [rect(5.375, 6.5, 7.25, 9.125, s.box), "M 9 6.5 V 3.875"];
+export default ({ rect }, s) => [
+  rect(5.375, 6.5, 7.25, 9.125, s.box),
+  "M 9 6.5 V 3.875",
+];
 
 export const open = ({ rect }, s) => [
   rect(5.375, 10.125, 7.25, 5.5, s.box),

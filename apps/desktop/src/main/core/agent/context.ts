@@ -173,11 +173,9 @@ export function libraryContext(
             : parsed.options[parsed.recommended];
         const options = [...new Set(parsed.options)];
         const recommended = pick === undefined ? -1 : options.indexOf(pick);
-        question = assistantQuestion.parse({
-          question: parsed.question,
-          options,
-          ...(recommended >= 0 ? { recommended } : {}),
-        });
+        const draft: AssistantQuestion = { question: parsed.question, options };
+        if (recommended >= 0) draft.recommended = recommended;
+        question = assistantQuestion.parse(draft);
         return {
           requested: true,
           message: "The question is shown to the user. Wait for their answer.",

@@ -60,11 +60,14 @@
     --input-radius: var(--ds-radius-full);
     --input-icon-inset: round(
       down,
-      (var(--input-min-height) - var(--input-icon-size)) / 2,
+      (var(--input-min-height) - var(--input-icon-size)) /
+      2,
       2px
     );
     --input-icon-padding-start: calc(
-      var(--input-icon-inset) * 2 + var(--input-icon-size)
+      var(--input-icon-inset) *
+      2 +
+      var(--input-icon-size)
     );
   }
 
@@ -222,7 +225,8 @@
 }
 
 /* Edges appear instantly and fade out, so hover never lags the pointer. */
-.root > :is(.field, .editor):is(
+.root
+  > :is(.field, .editor):is(
     :hover,
     :focus-visible,
     :focus-within,

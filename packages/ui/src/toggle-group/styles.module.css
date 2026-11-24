@@ -1,3 +1,26 @@
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-border);
+  transform: translate(0);
+  transition:
+    transform var(--ds-duration-spring) var(--ds-easing-spring),
+    width var(--ds-duration-spring) var(--ds-easing-spring),
+    height var(--ds-duration-spring) var(--ds-easing-spring);
+  will-change: transform, width;
+
+  &[data-snap] {
+    transition: none;
+  }
+}
+
 .root {
   --ds-focus-offset: var(--ds-focus-inset);
   position: relative;
@@ -75,29 +98,6 @@
     & > .indicator {
       border-radius: var(--ds-radius-md);
     }
-  }
-}
-
-.indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-  background: var(--ds-background-primary);
-  border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-border);
-  transform: translate(0);
-  transition:
-    transform var(--ds-duration-spring) var(--ds-easing-spring),
-    width var(--ds-duration-spring) var(--ds-easing-spring),
-    height var(--ds-duration-spring) var(--ds-easing-spring);
-  will-change: transform, width;
-
-  &[data-snap] {
-    transition: none;
   }
 }
 

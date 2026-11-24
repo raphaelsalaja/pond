@@ -241,10 +241,10 @@ it("shows the title, note, and property cards in one column", async () => {
   expect(
     host.querySelectorAll('[role="radiogroup"] [data-filled]'),
   ).toHaveLength(3);
-  expect(host.textContent).toContain("Saved");
+  expect(host.textContent).toContain("Added");
   expect(host.textContent).toContain("Modified");
-  expect(host.textContent).toContain("Dimensions 640 × 480");
-  expect(host.textContent).toContain("ID a");
+  expect(host.textContent).toContain("Dimensions640 × 480");
+  expect(host.textContent).toContain("IDa");
   expect(host.textContent).not.toContain("Additional Details");
   expect(host.querySelector("details:not([open])")).toBeNull();
   expect(
@@ -310,14 +310,14 @@ it("leaves Inbox processing to the Inbox", async () => {
   expect(host.querySelector('[aria-label="Remove from Inbox"]')).toBeNull();
 });
 
-it("hides Modified when it shows the same date as Saved", async () => {
+it("hides Modified when it shows the same date as Added", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
   const day = Date.UTC(2026, 0, 1, 12);
   pool.upsert({ ...current, savedAt: day, createdAt: day + 60_000 });
   await act(async () => root.render(<SaveInspector saveId="a" />));
 
-  expect(host.textContent).toContain("Saved");
+  expect(host.textContent).toContain("Added");
   expect(host.textContent).not.toContain("Modified");
 });
 
@@ -335,7 +335,7 @@ it("shows enrichment output and suggested tags", async () => {
   });
   await act(async () => root.render(<SaveInspector saveId="a" />));
 
-  expect(host.textContent).toContain("Sensitive Content Likely Sensitive");
+  expect(host.textContent).toContain("SensitivityLikely Sensitive");
   expect(host.textContent).toContain("A dashboard with charts");
   expect(host.textContent).toContain("Revenue 42%");
   expect(host.querySelector('[aria-label="Copy Caption"]')).not.toBeNull();
@@ -395,7 +395,7 @@ it("leaves focus where it was when Favorite is pressed", async () => {
   expect(press.defaultPrevented).toBe(true);
 });
 
-it("clears a sensitive flag from the warning", async () => {
+it("clears a sensitive flag from the Sensitivity property", async () => {
   const current = pool.get("a");
   if (!current) throw new Error("Missing Save fixture");
   pool.upsert({
@@ -404,9 +404,9 @@ it("clears a sensitive flag from the warning", async () => {
     sensitiveModel: "model@revision",
   });
   await act(async () => root.render(<SaveInspector saveId="a" />));
-  const flag = host.querySelector<HTMLElement>(
-    '[data-band="likely-sensitive"]',
-  );
+  const flag = [...host.querySelectorAll<HTMLElement>("span")].find(
+    (node) => node.textContent === "Sensitivity" && node.children.length === 0,
+  )?.parentElement;
   if (!flag) throw new Error("Missing sensitive flag");
   await act(async () => {
     flag.dispatchEvent(

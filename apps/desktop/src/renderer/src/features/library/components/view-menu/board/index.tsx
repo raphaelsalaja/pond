@@ -20,9 +20,9 @@ import styles from "./styles.module.css";
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <section role="group" aria-label={label} className={styles.section}>
+    <fieldset aria-label={label} className={styles.section}>
       {children}
-    </section>
+    </fieldset>
   );
 }
 

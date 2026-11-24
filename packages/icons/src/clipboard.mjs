@@ -21,4 +21,8 @@ export const board = ({ poly, rect }, s) => {
 
 export default (h, s) => board(h, s);
 
-export const open = (h, s) => [board(h, s), "M 6.375 9.25 H 11.625", "M 6.375 12.25 H 9.625"];
+export const open = (h, s) => [
+  board(h, s),
+  "M 6.375 9.25 H 11.625",
+  "M 6.375 12.25 H 9.625",
+];

@@ -7,7 +7,7 @@ const liquid = 12;
 
 /** Where a wall sits at height `y`, left wall from the neck to the foot. */
 const wall = (y) =>
-  snap( neck[0] - ((neck[0] - foot[0]) * (y - neck[2])) / (foot[2] - neck[2]));
+  snap(neck[0] - ((neck[0] - foot[0]) * (y - neck[2])) / (foot[2] - neck[2]));
 
 const flask = ({ poly }, s) => [
   "M 5.875 2.375 H 12.125",

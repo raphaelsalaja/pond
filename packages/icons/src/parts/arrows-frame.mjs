@@ -12,7 +12,12 @@ export const corners = (s, arm) => {
       ],
       { corners: { 1: s.box } },
     );
-  return [bracket(x0, y0, 1, 1), bracket(x1, y0, -1, 1), bracket(x1, y1, -1, -1), bracket(x0, y1, 1, -1)];
+  return [
+    bracket(x0, y0, 1, 1),
+    bracket(x1, y0, -1, 1),
+    bracket(x1, y1, -1, -1),
+    bracket(x0, y1, 1, -1),
+  ];
 };
 
 /** Two half frames either side of the mirror line; `turn` lays it on its side. */

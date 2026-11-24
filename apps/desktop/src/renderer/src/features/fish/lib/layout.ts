@@ -1,8 +1,4 @@
-import type {
-  Fish,
-  FishPlacement,
-  FishSection,
-} from "@shared/fish-contracts";
+import type { Fish, FishPlacement, FishSection } from "@shared/fish-contracts";
 
 export const PINNED = "pinned";
 export const LOOSE = "loose";

@@ -31,6 +31,13 @@ import {
 
 type FolderDragEvent = Pick<DragEndEvent, "active" | "activatorEvent" | "over">;
 
+/** `useSensor` memoizes on option identity; fresh objects re-render every sortable row on each tree render. */
+const POINTER_SENSOR_OPTIONS = { activationConstraint: { distance: 4 } };
+const KEYBOARD_SENSOR_OPTIONS = {
+  coordinateGetter: sortableKeyboardCoordinates,
+  keyboardCodes: SIDEBAR_SORTABLE_KEYBOARD_CODES,
+};
+
 interface UseFolderTreeDragInput {
   drag: ReturnType<typeof useFolderDragDrop>;
   folderRows: Folder[];
@@ -53,11 +60,8 @@ export function useFolderTreeDrag({
   const drop = useRef<FolderDropState | null>(null);
   const [haptics] = useState(createDragHaptics);
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-      keyboardCodes: SIDEBAR_SORTABLE_KEYBOARD_CODES,
-    }),
+    useSensor(PointerSensor, POINTER_SENSOR_OPTIONS),
+    useSensor(KeyboardSensor, KEYBOARD_SENSOR_OPTIONS),
   );
 
   useEffect(

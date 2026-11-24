@@ -33,7 +33,7 @@ export type RailItem = RailSection | RailPage;
 const SECTIONS: RailSection[] = ["fish", "library", "canvases"];
 const PAGES: RailPage[] = ["inbox", "tags", "sources", "downloads"];
 
-const LABELS: Record<RailItem, string> = {
+const LABELS = {
   library: "Library",
   fish: "Fish",
   canvases: "Canvases",
@@ -41,16 +41,16 @@ const LABELS: Record<RailItem, string> = {
   tags: "Tags",
   sources: "Sources",
   downloads: "Downloads",
-};
+} satisfies Record<RailItem, string>;
 
-const SHORTCUTS: Partial<Record<RailItem, ShortcutId>> = {
-  library: "nav.library",
-  fish: "nav.fish",
-  canvases: "nav.canvases",
-  inbox: "nav.inbox",
-  sources: "nav.sources",
-  downloads: "nav.downloads",
-};
+const SHORTCUTS = new Map<RailItem, ShortcutId>([
+  ["library", "nav.library"],
+  ["fish", "nav.fish"],
+  ["canvases", "nav.canvases"],
+  ["inbox", "nav.inbox"],
+  ["sources", "nav.sources"],
+  ["downloads", "nav.downloads"],
+]);
 
 export function isRailPage(kind: string): kind is RailPage {
   return PAGES.some((page) => page === kind);
@@ -102,13 +102,16 @@ export function Rail({ value, sections, onSectionChange }: RailProps) {
     refetchInterval: 2_000,
     enabled: sidebar.destinations.downloads,
   });
-  const badges: Partial<Record<RailPage, number | undefined>> = {
-    inbox: counts.inbox + inbox.priority,
-    downloads: queueSummary.data?.actionable,
-  };
-  const dots: Partial<Record<RailPage, "live" | "negative" | undefined>> = {
-    inbox: inbox.attention ? "negative" : inbox.working ? "live" : undefined,
-  };
+  const badges = new Map<RailPage, number | undefined>([
+    ["inbox", counts.inbox + inbox.priority],
+    ["downloads", queueSummary.data?.actionable],
+  ]);
+  const dots = new Map<RailPage, "live" | "negative" | undefined>([
+    [
+      "inbox",
+      inbox.attention ? "negative" : inbox.working ? "live" : undefined,
+    ],
+  ]);
   useEffect(
     () =>
       preloadWhenIdle(
@@ -124,9 +127,9 @@ export function Rail({ value, sections, onSectionChange }: RailProps) {
         value={kind}
         label={LABELS[kind]}
         icon={icon(kind)}
-        shortcut={SHORTCUTS[kind]}
-        count={badges[kind]}
-        dot={dots[kind]}
+        shortcut={SHORTCUTS.get(kind)}
+        count={badges.get(kind)}
+        dot={dots.get(kind)}
         current={value === kind}
         onSelect={() => selectLibraryNav({ kind })}
       />
@@ -151,7 +154,7 @@ export function Rail({ value, sections, onSectionChange }: RailProps) {
                 value={section}
                 label={LABELS[section]}
                 icon={icon(section)}
-                shortcut={SHORTCUTS[section]}
+                shortcut={SHORTCUTS.get(section)}
                 onSelect={() => onSectionChange(section)}
               />
             ),

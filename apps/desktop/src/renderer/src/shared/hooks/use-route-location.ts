@@ -5,8 +5,9 @@ import {
 } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import type { RouteSearch } from "@/shared/lib/route-search";
 
-export type RouteLocation = ParsedLocation<Record<string, unknown>>;
+export type RouteLocation = ParsedLocation<RouteSearch>;
 
 const committed = new WeakMap<AnyRouter, Store<RouteLocation>>();
 

@@ -9,8 +9,14 @@ describe("search view", () => {
   it.each([
     [{ kind: "all" }, { kind: "library" }],
     [{ kind: "random" }, { kind: "library" }],
-    [{ kind: "folder", id: "a" }, { kind: "folder", id: "a" }],
-    [{ kind: "tag", name: "ui" }, { kind: "tag", name: "ui" }],
+    [
+      { kind: "folder", id: "a" },
+      { kind: "folder", id: "a" },
+    ],
+    [
+      { kind: "tag", name: "ui" },
+      { kind: "tag", name: "ui" },
+    ],
     [{ kind: "uncategorized" }, { kind: "uncategorized" }],
     [{ kind: "untagged" }, { kind: "untagged" }],
     [{ kind: "recentlyAdded" }, { kind: "recentlyAdded" }],

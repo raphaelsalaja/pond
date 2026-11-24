@@ -1,5 +1,5 @@
 /** The one icon whose strokes vary in width: three weights, thin to thick. */
-export default (h, s) => {
+export default (_h, s) => {
   const [x0, , x1] = s.keylines.glyph;
   return [
     `M ${x0} 4 H ${x1}`,

@@ -13,7 +13,7 @@ export const docs: ComponentDocs = {
     {
       name: "Swap",
       description:
-        "Keys its children by `value`. A new `value` fades the old content up and out and the new content in. `variant=\"icon\"` scales and blurs glyphs through each other instead.",
+        'Keys its children by `value`. A new `value` fades the old content up and out and the new content in. `variant="icon"` scales and blurs glyphs through each other instead.',
     },
   ],
   keyboard: [],

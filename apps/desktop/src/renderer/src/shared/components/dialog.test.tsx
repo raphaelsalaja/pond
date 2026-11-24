@@ -119,7 +119,7 @@ it("renders prompt inputs inside their styled root with an accessible name", asy
   expect(button("Cancel").type).toBe("button");
 });
 
-it("uses medium confirmation actions", async () => {
+it("uses compact confirmation actions in the footer", async () => {
   await act(async () =>
     root.render(
       <Dialog.Footer>
@@ -127,7 +127,7 @@ it("uses medium confirmation actions", async () => {
       </Dialog.Footer>,
     ),
   );
-  expect(button("Confirm").dataset.size).toBe("md");
+  expect(button("Confirm").dataset.size).toBe("xs");
 });
 
 it("keeps a prompt open and blocks duplicate submissions while saving", async () => {

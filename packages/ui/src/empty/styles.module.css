@@ -97,10 +97,10 @@
   pointer-events: none;
 
   & rect {
-    x: 0.5px;
-    y: 0.5px;
     width: calc(100% - 1px);
     height: calc(100% - 1px);
+    x: 0.5px;
+    y: 0.5px;
     rx: calc(var(--ds-radius-xl) - 0.5px);
     fill: none;
     stroke: var(--ds-border-strong);

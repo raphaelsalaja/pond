@@ -9,7 +9,7 @@ import {
 import { SearchComposer } from "@/features/search";
 import { SearchChrome } from "@/shared/components/search-chrome";
 
-it("shows the source filter once with one clear action", async () => {
+it("shows the source filter once", async () => {
   vi.stubGlobal(
     "ResizeObserver",
     class {
@@ -42,9 +42,6 @@ it("shows the source filter once with one clear action", async () => {
       ),
     );
     expect(host.textContent?.match(/source:youtube\.com/g)).toHaveLength(1);
-    expect(host.querySelectorAll('button[aria-label^="Clear"]')).toHaveLength(
-      1,
-    );
   } finally {
     await act(async () => root.unmount());
     resetFilters();

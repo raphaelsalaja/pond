@@ -13,4 +13,7 @@ const lamp = ({ poly }, s) => [
 
 export default lamp;
 
-export const open = (h, s) => [lamp(h, s), "M 4.75 11 L 3.25 12.5 M 13.25 11 L 14.75 12.5"];
+export const open = (h, s) => [
+  lamp(h, s),
+  "M 4.75 11 L 3.25 12.5 M 13.25 11 L 14.75 12.5",
+];

@@ -1,7 +1,7 @@
 import { PrefsSchema } from "@pond/schema";
 import { LibraryQueryRequestSchema } from "@shared/library-query";
 import { RouterProvider } from "@tanstack/react-router";
-import { act, type ReactNode } from "react";
+import { act, createContext, type ReactNode, use } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SaveListMode } from "@/features/saves";
@@ -27,6 +27,17 @@ function Probe({ mode }: { mode: SaveListMode }) {
   return <output data-request={paging.queryKey} />;
 }
 
+const ProbeMode = createContext<SaveListMode>("library");
+
+function Shell({ children }: { children: ReactNode }) {
+  return (
+    <>
+      {children}
+      <Probe mode={use(ProbeMode)} />
+    </>
+  );
+}
+
 describe("library search scope", () => {
   let host: HTMLDivElement;
   let root: Root;
@@ -39,14 +50,12 @@ describe("library search scope", () => {
 
   async function render(mode: SaveListMode, nav: LibraryNav = design) {
     router = await openLibraryAt(pathForLibraryNav(nav));
-    const Shell = ({ children }: { children: ReactNode }) => (
-      <>
-        {children}
-        <Probe mode={mode} />
-      </>
-    );
     await act(async () =>
-      root.render(<RouterProvider router={router} InnerWrap={Shell} />),
+      root.render(
+        <ProbeMode value={mode}>
+          <RouterProvider router={router} InnerWrap={Shell} />
+        </ProbeMode>,
+      ),
     );
   }
 

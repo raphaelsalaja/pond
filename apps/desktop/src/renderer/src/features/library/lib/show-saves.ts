@@ -3,12 +3,13 @@ import { selectSaves } from "@/features/saves";
 import { resultNavigation } from "@/features/saves/navigation";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
+import type { RouteSearch } from "@/shared/lib/route-search";
 
 /** Whether the grid already shows `nav` as `selectLibraryNav` would leave it, so no new results will be published. */
 function alreadyShowing(nav: LibraryNav): boolean {
   const location = getAppRouter()?.latestLocation;
   if (!location || location.pathname !== pathForLibraryNav(nav)) return false;
-  const { save: _save, ...search }: Record<string, unknown> = location.search;
+  const { save: _save, ...search }: RouteSearch = location.search;
   if (nav.kind === "all") return search.scope === undefined;
   return Object.keys(search).length === 0;
 }

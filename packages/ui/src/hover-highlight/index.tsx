@@ -13,7 +13,7 @@ export function HoverHighlight({
   ref,
   ...props
 }: useRender.ComponentProps<"div">) {
-  const highlightRef = useRef<HTMLElement>(null);
+  const highlightRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const highlight = highlightRef.current;
@@ -52,7 +52,7 @@ export function HoverHighlight({
     const move = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
       pointer = { x: event.clientX, y: event.clientY };
-      place(event.target as Element, false);
+      place(event.target instanceof Element ? event.target : null, false);
     };
     const leave = () => {
       pointer = null;

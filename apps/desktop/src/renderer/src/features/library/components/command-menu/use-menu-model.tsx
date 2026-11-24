@@ -104,7 +104,9 @@ function searchLibraryEntry(query: string, scope: ViewScope | null): MenuEntry {
         setSearchInput([], query, query);
       } else {
         const router = getAppRouter();
-        router?.history.push(`/${router.options.stringifySearch({ q: query })}`);
+        router?.history.push(
+          `/${router.options.stringifySearch({ q: query })}`,
+        );
       }
       libraryHeader.focusSearch();
     },

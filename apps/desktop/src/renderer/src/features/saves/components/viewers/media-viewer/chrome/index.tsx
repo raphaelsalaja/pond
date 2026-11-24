@@ -141,9 +141,7 @@ export function ViewerChrome({
           <div className={styles.stage}>
             <HudHost enabled={enabled}>{children}</HudHost>
           </div>
-          {enabled ? (
-            <div className={styles.bottom} data-bar="bottom" />
-          ) : null}
+          {enabled ? <div className={styles.bottom} data-bar="bottom" /> : null}
         </div>
       </HudBarVariant>
     </ChromeContext>

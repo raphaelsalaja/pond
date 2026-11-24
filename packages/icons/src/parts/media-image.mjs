@@ -9,7 +9,9 @@ export default (h, s, hole = at.hole) => {
   const peak = [6.5, 7.75];
   return [
     box([x0, y0, x1, y1], s.box, hole),
-    poly([[x0, 11.25], peak, clip(peak, [12.75, y1], hole)], { radius: s.ease }),
+    poly([[x0, 11.25], peak, clip(peak, [12.75, y1], hole)], {
+      radius: s.ease,
+    }),
     dot(h, s, 12, 7),
   ];
 };

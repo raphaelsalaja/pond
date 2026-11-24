@@ -13,7 +13,11 @@ const body = (top, dx = 0) =>
   ].map(([x, y]) => [x + dx, y]);
 
 export default ({ poly }, s) => [
-  poly(body(2.375), { closed: true, radius: s.ease, corners: { 4: s.box, 5: s.box } }),
+  poly(body(2.375), {
+    closed: true,
+    radius: s.ease,
+    corners: { 4: s.box, 5: s.box },
+  }),
   "M 7.375 4.75 H 10.625",
 ];
 
@@ -22,7 +26,10 @@ export const open = ({ poly, rect }, s) => {
   const b = body(4.75, -1.5);
   const [cx, cy] = [13.5, 4.125];
   return [
-    poly([b[1], ...b.slice(2), b[0]], { radius: s.ease, corners: { 3: s.box, 4: s.box } }),
+    poly([b[1], ...b.slice(2), b[0]], {
+      radius: s.ease,
+      corners: { 3: s.box, 4: s.box },
+    }),
     turn(rect(cx - 1.625, cy - 1.125, 3.25, 2.25, 0.75), 25, cx, cy),
   ];
 };

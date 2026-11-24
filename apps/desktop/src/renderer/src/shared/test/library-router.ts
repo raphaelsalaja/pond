@@ -8,9 +8,9 @@ import {
 } from "@tanstack/react-router";
 import { librarySearchSchema } from "@/features/search/lib/schemas";
 import { Route as FolderRoute } from "@/routes/_library/_grid/folders.$folderId";
-import { Route as IndexRoute } from "@/routes/_library/_grid/index";
 import { Route as InboxRoute } from "@/routes/_library/_grid/inbox";
 import { Route as SnoozedRoute } from "@/routes/_library/_grid/inbox.snoozed";
+import { Route as IndexRoute } from "@/routes/_library/_grid/index";
 import { Route as RandomRoute } from "@/routes/_library/_grid/random";
 import { Route as RecentlyAddedRoute } from "@/routes/_library/_grid/recently-added";
 import { Route as RecentsRoute } from "@/routes/_library/_grid/recents";
@@ -73,6 +73,7 @@ export function createLibraryTestRouter(
     id: "_grid",
     staticData: { surface: "grid" },
   });
+  /** SAFETY: each child takes the options of its own route file, whose union `createRoute` can't infer. */
   const gridChildren = GRID_ROUTES.map(([childPath, file]) =>
     createRoute({
       getParentRoute: () => grid,

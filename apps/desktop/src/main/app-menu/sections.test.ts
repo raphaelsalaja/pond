@@ -383,8 +383,8 @@ describe("app menu sections", () => {
     ).toBe(undefined);
     const edit = buildEditSection(context, buildSettingsItem(context)).submenu;
     if (!Array.isArray(edit)) throw new Error("Missing Edit submenu");
-    expect(
-      edit.find((item) => item.label === "Search Pond")?.accelerator,
-    ).toBe("CommandOrControl+K");
+    expect(edit.find((item) => item.label === "Search Pond")?.accelerator).toBe(
+      "CommandOrControl+K",
+    );
   });
 });

@@ -1,7 +1,11 @@
 /** A folding fan on one pivot: a quarter spread closed, a half disc open; ribs start clear of the pivot. */
 const fan = ({ arc, snap }, pivot, r, span, ribs) => {
   const [px, py] = pivot;
-  const p = (a, d) => [snap(px + d * Math.cos((a * Math.PI) / 180)), snap(py + d * Math.sin((a * Math.PI) / 180))].join(" ");
+  const p = (a, d) =>
+    [
+      snap(px + d * Math.cos((a * Math.PI) / 180)),
+      snap(py + d * Math.sin((a * Math.PI) / 180)),
+    ].join(" ");
   const [a0, a1] = [-90 - span, -90 + span];
   return [
     `M ${p(a0, r)} ${arc(px, py, r, a0, a1).replace(/^M [^A]+/, "")} L ${px} ${py} Z`,

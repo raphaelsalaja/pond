@@ -3,7 +3,7 @@ import type { IconComponent, IconNode } from "@pond/icons/types";
 type Attrs = Readonly<Record<string, string>>;
 type Point = readonly [number, number];
 
-interface Shape {
+interface Contour {
   points: Point[];
   closed: boolean;
   /** Non-geometry attributes, such as a solid dot's fill. */
@@ -11,6 +11,7 @@ interface Shape {
 }
 
 export interface Track {
+  id: string;
   from: Point[];
   to: Point[];
   closed: boolean;
@@ -18,6 +19,7 @@ export interface Track {
 }
 
 export interface Fade {
+  id: string;
   d: string;
   paint: Attrs;
 }
@@ -67,7 +69,7 @@ function measure(d: string): SVGPathElement | null {
     svg.append(probe);
     doc.body.append(svg);
   }
-  if (typeof probe.getTotalLength !== "function") return null;
+  if (!("getTotalLength" in probe)) return null;
   probe.setAttribute("d", d);
   return probe;
 }
@@ -132,8 +134,8 @@ function sample(d: string): Point[] | null {
   return points;
 }
 
-function shapesOf(nodes: IconNode): Shape[] | null {
-  const shapes: Shape[] = [];
+function contoursOf(nodes: IconNode): Contour[] | null {
+  const contours: Contour[] = [];
   for (const [tag, attrs] of nodes) {
     const d = toPath(tag, attrs);
     if (!d) return null;
@@ -144,10 +146,10 @@ function shapesOf(nodes: IconNode): Shape[] | null {
       const closed = /z\s*$/i.test(sub.trim());
       const points = sample(sub);
       if (!points) return null;
-      shapes.push({ points, closed, paint });
+      contours.push({ points, closed, paint });
     }
   }
-  return shapes;
+  return contours;
 }
 
 function cost(a: Point[], b: Point[]) {
@@ -174,7 +176,7 @@ function rotations(points: Point[]): Point[][] {
 }
 
 /** Picks the start point and direction on the ring side so each point travels the shortest way. */
-function align(from: Shape, to: Shape): [Point[], Point[]] {
+function align(from: Contour, to: Contour): [Point[], Point[]] {
   const pairs: [Point[], Point[]][] = to.closed
     ? rotations(to.points).map((points) => [from.points, points])
     : from.closed
@@ -197,14 +199,16 @@ function align(from: Shape, to: Shape): [Point[], Point[]] {
 
 export function polyline(points: readonly Point[], closed: boolean) {
   const body = points
-    .map(([x, y], index) => `${index ? "L" : "M"}${x.toFixed(3)} ${y.toFixed(3)}`)
+    .map(
+      ([x, y], index) => `${index ? "L" : "M"}${x.toFixed(3)} ${y.toFixed(3)}`,
+    )
     .join("");
   return closed ? `${body}Z` : body;
 }
 
 const plans = new Map<string, MorphPlan | null>();
 
-/** Unchanged shapes hold still, changed ones travel point by point, and leftovers fade in place. */
+/** Unchanged contours hold still, changed ones travel point by point, and leftovers fade in place. */
 export function planMorph(
   from: IconComponent,
   to: IconComponent,
@@ -233,8 +237,8 @@ export function planMorph(
   }
   const arriving = b.nodes.filter((_, index) => !used.has(index));
 
-  const source = shapesOf(moving);
-  const target = shapesOf(arriving);
+  const source = contoursOf(moving);
+  const target = contoursOf(arriving);
   if (!source || !target) {
     plans.set(key, null);
     return null;
@@ -257,17 +261,31 @@ export function planMorph(
     if (!s || !t || takenFrom.has(i) || takenTo.has(j)) continue;
     takenFrom.add(i);
     takenTo.add(j);
-    tracks.push({ from, to, closed: s.closed && t.closed, paint: t.paint });
+    tracks.push({
+      id: `${i}>${j}`,
+      from,
+      to,
+      closed: s.closed && t.closed,
+      paint: t.paint,
+    });
   }
-  const fade = (shape: Shape): Fade => ({
-    d: polyline(shape.points, shape.closed),
-    paint: shape.paint,
-  });
+  const fades = (contours: Contour[], taken: Set<number>, side: string) =>
+    contours.flatMap((contour, index): Fade[] =>
+      taken.has(index)
+        ? []
+        : [
+            {
+              id: `${side}${index}`,
+              d: polyline(contour.points, contour.closed),
+              paint: contour.paint,
+            },
+          ],
+    );
   const plan: MorphPlan = {
     still,
     tracks,
-    leaving: source.filter((_, i) => !takenFrom.has(i)).map(fade),
-    entering: target.filter((_, j) => !takenTo.has(j)).map(fade),
+    leaving: fades(source, takenFrom, "from"),
+    entering: fades(target, takenTo, "to"),
   };
   plans.set(key, plan);
   return plan;

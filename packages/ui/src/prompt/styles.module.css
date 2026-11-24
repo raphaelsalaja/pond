@@ -48,13 +48,6 @@
   margin-top: var(--ds-space-2xs);
 }
 
-.title + .choices,
-.description + .choices,
-.description + ul,
-.title + ul {
-  margin-top: var(--ds-space-xl);
-}
-
 .choices {
   display: flex;
   flex-direction: column;
@@ -63,6 +56,13 @@
   padding: 0;
   margin: 0 calc(var(--ds-space-sm) * -1);
   border: 0;
+}
+
+.title + .choices,
+.description + .choices,
+.description + ul,
+.title + ul {
+  margin-top: var(--ds-space-xl);
 }
 
 .choice {
@@ -274,9 +274,9 @@
 .detail {
   min-width: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--ds-text-small);
   color: var(--ds-foreground-tertiary);
-  text-overflow: ellipsis;
 }
 
 .chevron {

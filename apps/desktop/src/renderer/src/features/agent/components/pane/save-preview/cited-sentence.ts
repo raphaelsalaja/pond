@@ -38,8 +38,10 @@ export function citedSentence(citation: Element): Range | null {
       if (text.slice(afterCitation).trim()) afterCitation = text.length;
       continue;
     }
-    pieces.push({ node: node as Text, start: text.length });
-    text += (node as Text).data;
+    /** SAFETY: the walker only visits nodes `SHOW_TEXT` lets through, which are all Text. */
+    const textNode = node as Text;
+    pieces.push({ node: textNode, start: text.length });
+    text += textNode.data;
   }
   const end = text.trimEnd().length;
   const base = text.slice(afterCitation, end).trim() ? afterCitation : 0;
@@ -59,12 +61,12 @@ export function citedSentence(citation: Element): Range | null {
 }
 
 export function showCitedSentence(citation: Element) {
-  if (typeof Highlight === "undefined" || !CSS.highlights) return;
+  if (!("Highlight" in globalThis) || !CSS.highlights) return;
   const range = citedSentence(citation);
   if (range) CSS.highlights.set(HIGHLIGHT, new Highlight(range));
   else CSS.highlights.delete(HIGHLIGHT);
 }
 
 export function hideCitedSentence() {
-  if (typeof CSS !== "undefined") CSS.highlights?.delete(HIGHLIGHT);
+  if ("CSS" in globalThis) CSS.highlights?.delete(HIGHLIGHT);
 }

@@ -1,5 +1,5 @@
-import turn from "./parts/opens-turn.mjs";
 import bell from "./bell.mjs";
+import turn from "./parts/opens-turn.mjs";
 
 export default (_, s) => {
   const [x0, y0, x1] = s.keylines.tall;

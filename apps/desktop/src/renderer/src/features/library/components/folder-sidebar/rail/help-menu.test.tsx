@@ -92,7 +92,18 @@ describe("help menu", () => {
         disconnect() {}
       },
     );
-    vi.stubGlobal("pond", { query, openExternal });
+    vi.stubGlobal("pond", {
+      query,
+      openExternal,
+      appInfo: async () => ({
+        name: "Pond",
+        version: "1.0.0",
+        platform: "darwin",
+        arch: "arm64",
+        username: "rafa",
+        isPackaged: true,
+      }),
+    });
     query.mockClear();
     openExternal.mockClear();
     host = document.createElement("div");

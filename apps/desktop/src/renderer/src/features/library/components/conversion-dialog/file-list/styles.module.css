@@ -1,6 +1,5 @@
 .list {
   position: relative;
-  isolation: isolate;
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-2xs);
@@ -9,6 +8,7 @@
   margin: 0;
   overflow-y: auto;
   list-style: none;
+  isolation: isolate;
 }
 
 .empty {

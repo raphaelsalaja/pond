@@ -19,7 +19,11 @@ import {
   useHydrateFish,
 } from "@/features/fish";
 import { SmartFoldersSection } from "@/features/library/components/smart-folders";
-import { useEditingFolderId, useFolders } from "@/features/library/state/folders";
+import {
+  useEditingFolderId,
+  useFolders,
+} from "@/features/library/state/folders";
+import { lastGridHref } from "@/features/library/state/last-grid";
 import {
   type LibraryNav,
   libraryChrome,
@@ -32,7 +36,6 @@ import {
   useHydrateSavedViews,
 } from "@/features/library/state/saved-views";
 import { useRailOnlySidebar } from "@/features/library/state/shell-layout";
-import { lastGridHref } from "@/features/library/state/last-grid";
 import { useActiveViewId } from "@/features/library/state/view-store";
 import { SourcesSidebar } from "@/features/sources";
 import { SourceDetailSidebar } from "@/features/sources/components/inspector";
@@ -79,7 +82,12 @@ type RoutePanel = Extract<
 
 const SOURCES_NAV: LibraryNav = { kind: "sources" };
 
-const lastOpened: { canvases: string | null; fish: string | null } = {
+interface LastOpened {
+  canvases: string | null;
+  fish: string | null;
+}
+
+const lastOpened: LastOpened = {
   canvases: null,
   fish: null,
 };

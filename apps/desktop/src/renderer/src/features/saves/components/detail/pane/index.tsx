@@ -82,7 +82,7 @@ export function EmptySaveInspector() {
     <section className={styles.root} aria-label="Details">
       <Empty.Root size="card" role="status">
         <Empty.Media>
-          <EmptyPreview.Root shape="panel" layout="single">
+          <EmptyPreview.Root kind="panel" layout="single">
             <EmptyPreview.Column>
               <EmptyPreview.Block height={44}>
                 <IconCursor size={12} />
@@ -130,7 +130,8 @@ export function SaveInspector({
   const indexed = single?.clipModel === mediaEmbeddingVersion();
   const folderEntries = useMemo(() => folderOptions(folders), [folders]);
   const viewerNavigation = useSaveViewerNavigation();
-  const viewing = single !== undefined && viewerNavigation?.saveId === single.id;
+  const viewing =
+    single !== undefined && viewerNavigation?.saveId === single.id;
   const cards = useMemo(() => (single ? stackCards(single) : []), [single]);
   const [slide, setSlide] = useState({ saveId, index: 0 });
   const slideIndex =
@@ -381,10 +382,7 @@ export function SaveInspector({
           });
         }}
       />
-      <DetailSection
-        title="Folders"
-        action={folderMenu}
-      >
+      <DetailSection title="Folders" action={folderMenu}>
         {assignedFolders.length ? (
           <AssignmentChip.List>
             {assignedFolders.map((folder) => (
@@ -441,28 +439,29 @@ export function SaveInspector({
     if (single && indexed) void loadRelated(single.id).catch(() => undefined);
   };
 
-  const related = single && indexed ? (
-    <RelatedSaves saveId={single.id} />
-  ) : (
-    <Empty.Root size="card" role="status">
-      <Empty.Media>
-        <EmptyPreview.Root shape="tile" layout="spread">
-          <EmptyPreview.Column>
-            <EmptyPreview.Block>
-              <IconScanImage size={12} />
-            </EmptyPreview.Block>
-            <EmptyPreview.Line width={32} />
-          </EmptyPreview.Column>
-        </EmptyPreview.Root>
-      </Empty.Media>
-      <Empty.Title>Not Indexed Yet</Empty.Title>
-      <Empty.Description>
-        {TASK_ENABLED.clip(getPrefsSnapshot())
-          ? "Related saves appear once Visual Similarity indexes this save."
-          : DISABLED_HINTS.clip}
-      </Empty.Description>
-    </Empty.Root>
-  );
+  const related =
+    single && indexed ? (
+      <RelatedSaves saveId={single.id} />
+    ) : (
+      <Empty.Root size="card" role="status">
+        <Empty.Media>
+          <EmptyPreview.Root kind="tile" layout="spread">
+            <EmptyPreview.Column>
+              <EmptyPreview.Block>
+                <IconScanImage size={12} />
+              </EmptyPreview.Block>
+              <EmptyPreview.Line width={32} />
+            </EmptyPreview.Column>
+          </EmptyPreview.Root>
+        </Empty.Media>
+        <Empty.Title>Not Indexed Yet</Empty.Title>
+        <Empty.Description>
+          {TASK_ENABLED.clip(getPrefsSnapshot())
+            ? "Related saves appear once Visual Similarity indexes this save."
+            : DISABLED_HINTS.clip}
+        </Empty.Description>
+      </Empty.Root>
+    );
 
   const details = (
     <Pane.Body

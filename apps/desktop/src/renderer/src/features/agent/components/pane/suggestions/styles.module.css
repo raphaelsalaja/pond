@@ -2,5 +2,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--ds-space-sm);
-  margin-top: var(--ds-space-md);
+  min-width: 0;
+  padding: 0;
+  margin: var(--ds-space-md) 0 0;
+  border: 0;
 }

@@ -14,11 +14,7 @@ import { openSave } from "@/features/saves/navigation";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { openSettings } from "@/shared/lib/open-settings";
 import { formatSnoozeTime, snoozeOptions } from "@/shared/lib/snooze";
-import {
-  isSnoozed,
-  isUnread,
-  notifications,
-} from "../../state/notifications";
+import { isSnoozed, isUnread, notifications } from "../../state/notifications";
 import { NotificationIcon, notificationTone } from "../notification-icon";
 import { ignoresKey, navigationKey } from "./keys";
 import { Detail } from "./layout";
@@ -170,20 +166,14 @@ export function NotificationDetail({
           </Button>
         </Tooltip>
         <SpecMenu buildItems={() => snoozeItems(notification, onLeave)}>
-          <Tooltip
-            label="Snooze"
-            shortcut={<Keyboard.Cluster keys={["H"]} />}
-          >
+          <Tooltip label="Snooze" shortcut={<Keyboard.Cluster keys={["H"]} />}>
             <Menu.Trigger ref={snoozeRef} size="sm" variant="secondary">
               <IconCircleDashedClock size={12} />
               Snooze
             </Menu.Trigger>
           </Tooltip>
         </SpecMenu>
-        <Tooltip
-          label="Delete"
-          shortcut={<Keyboard.Cluster keys={["⌫"]} />}
-        >
+        <Tooltip label="Delete" shortcut={<Keyboard.Cluster keys={["⌫"]} />}>
           <Button
             icon
             size="sm"

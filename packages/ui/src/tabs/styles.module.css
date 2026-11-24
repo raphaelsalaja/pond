@@ -10,6 +10,7 @@
 }
 
 .tab {
+  --ds-focus-offset: var(--ds-focus-inset);
   display: inline-flex;
   flex-shrink: 0;
   gap: var(--ds-space-xs);
@@ -27,7 +28,6 @@
   border: 0;
   border-radius: var(--ds-radius-full);
   box-shadow: var(--ds-shadow-border);
-  --ds-focus-offset: var(--ds-focus-inset);
 
   transition:
     color var(--ds-duration-fast) var(--ds-easing-standard),

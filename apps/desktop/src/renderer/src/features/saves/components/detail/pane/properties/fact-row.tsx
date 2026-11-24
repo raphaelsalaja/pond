@@ -66,10 +66,16 @@ export function ControlRow({
   const row = (
     <PropertyList.Row>
       <PropertyList.Label>{label}</PropertyList.Label>
-      <PropertyList.Value className={styles.value}>{children}</PropertyList.Value>
+      <PropertyList.Value className={styles.value}>
+        {children}
+      </PropertyList.Value>
     </PropertyList.Row>
   );
-  return menu ? <SpecContextMenu buildItems={menu}>{row}</SpecContextMenu> : row;
+  return menu ? (
+    <SpecContextMenu buildItems={menu}>{row}</SpecContextMenu>
+  ) : (
+    row
+  );
 }
 
 export function AuthorAvatar({

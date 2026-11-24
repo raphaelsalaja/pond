@@ -9,4 +9,7 @@ const shoulders = ({ keylines }) => {
 export default ({ circle }, s) => [circle(9, 5.75, 3), shoulders(s)];
 
 /** Active, the person steps left for a presence dot clear of the head. */
-export const open = (h, s) => [move([h.circle(9, 5.75, 3), shoulders(s)], -1, 0), dot(h, s, 14.25, 3.75)];
+export const open = (h, s) => [
+  move([h.circle(9, 5.75, 3), shoulders(s)], -1, 0),
+  dot(h, s, 14.25, 3.75),
+];

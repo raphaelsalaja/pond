@@ -1,17 +1,17 @@
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
-type Shape = "row" | "tile" | "chip" | "panel" | "field" | "board";
+type Kind = "row" | "tile" | "chip" | "panel" | "field" | "board";
 type Layout = "stack" | "single" | "spread" | "list";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
-  shape?: Shape;
+  kind?: Kind;
   layout?: Layout;
 }
 
 /** Ghost cards shaped like the thing that will land here: stacked, alone, side by side or listed. */
 function Root({
-  shape = "row",
+  kind = "row",
   layout = "stack",
   className,
   children,
@@ -20,7 +20,7 @@ function Root({
   return (
     <div
       className={cn(styles.root, className)}
-      data-shape={shape}
+      data-kind={kind}
       data-layout={layout}
       {...props}
     >
@@ -75,7 +75,10 @@ function Line({ width, tone, className, style, ...props }: LineProps) {
     <i
       className={cn(styles.line, className)}
       data-tone={tone}
-      style={{ ...style, "--preview-width": `${width}px` } as React.CSSProperties}
+      style={
+        /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
+        { ...style, "--preview-width": `${width}px` } as React.CSSProperties
+      }
       {...props}
     />
   );
@@ -92,11 +95,17 @@ function Space() {
 }
 
 interface ThumbProps extends React.ComponentPropsWithoutRef<"i"> {
-  shape?: "round";
+  variant?: "round";
 }
 
-function Thumb({ shape, className, ...props }: ThumbProps) {
-  return <i className={cn(styles.thumb, className)} data-shape={shape} {...props} />;
+function Thumb({ variant, className, ...props }: ThumbProps) {
+  return (
+    <i
+      className={cn(styles.thumb, className)}
+      data-variant={variant}
+      {...props}
+    />
+  );
 }
 
 interface BlockProps extends React.ComponentPropsWithoutRef<"span"> {
@@ -109,7 +118,13 @@ function Block({ height, className, style, ...props }: BlockProps) {
     <span
       className={cn(styles.block, className)}
       data-fill={height ? undefined : true}
-      style={{ ...style, "--preview-height": height ? `${height}px` : undefined } as React.CSSProperties}
+      style={
+        /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
+        {
+          ...style,
+          "--preview-height": height ? `${height}px` : undefined,
+        } as React.CSSProperties
+      }
       {...props}
     />
   );
@@ -126,15 +141,23 @@ interface ChipsProps extends React.ComponentPropsWithoutRef<"span"> {
 }
 
 function Chips({ widths, className, ...props }: ChipsProps) {
+  const seen = new Map<number, number>();
   return (
     <span className={cn(styles.chips, className)} {...props}>
-      {widths.map((width, index) => (
-        <i
-          key={index}
-          className={styles.chip}
-          style={{ "--preview-width": `${width}px` } as React.CSSProperties}
-        />
-      ))}
+      {widths.map((width) => {
+        const repeat = (seen.get(width) ?? 0) + 1;
+        seen.set(width, repeat);
+        return (
+          <i
+            key={`${width}-${repeat}`}
+            className={styles.chip}
+            style={
+              /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
+              { "--preview-width": `${width}px` } as React.CSSProperties
+            }
+          />
+        );
+      })}
     </span>
   );
 }

@@ -180,11 +180,7 @@ function Details({
           }}
         />
       </Section>
-      <Section
-        title="Model"
-        className={styles.section}
-        collapsible={false}
-      >
+      <Section title="Model" className={styles.section} collapsible={false}>
         <ModelPicker
           layout="field"
           provider={fish.model?.provider ?? ""}
@@ -193,11 +189,7 @@ function Details({
           onUseDefault={() => updateFish(fish, { model: null })}
         />
       </Section>
-      <Section
-        title="Routines"
-        className={styles.section}
-        collapsible={false}
-      >
+      <Section title="Routines" className={styles.section} collapsible={false}>
         <RoutineList fish={fish} />
       </Section>
     </>
@@ -224,11 +216,7 @@ function Scope({
   }));
 
   return (
-    <Section
-      title="Reads"
-      className={styles.section}
-      collapsible={false}
-    >
+    <Section title="Reads" className={styles.section} collapsible={false}>
       <div className={styles.fields}>
         <FishSelect.Multi
           label="Folders"

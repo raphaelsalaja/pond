@@ -1,9 +1,9 @@
 .root {
+  --progress-height: 4px;
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-sm);
   width: 100%;
-  --progress-height: 4px;
 
   &[data-size="md"] {
     --progress-height: 8px;

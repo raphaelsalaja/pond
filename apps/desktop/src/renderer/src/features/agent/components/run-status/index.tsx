@@ -8,7 +8,7 @@ export function RunStatus({
   children,
 }: {
   icon?: ReactNode;
-  children: ReactNode;
+  children: string;
 }) {
   const reduced = useReducedMotionConfig();
   return (
@@ -19,10 +19,7 @@ export function RunStatus({
         data-reduced-motion={reduced || undefined}
       >
         {icon}
-        <Swap
-          value={typeof children === "string" ? children : ""}
-          className={styles.label}
-        >
+        <Swap value={children} className={styles.label}>
           <Shimmer.Root className={styles["working-label"]}>
             {children}
           </Shimmer.Root>

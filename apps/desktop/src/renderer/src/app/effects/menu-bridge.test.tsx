@@ -5,10 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { selectOnlySave } from "@/features/saves";
-import {
-  currentLocation,
-  openLibraryAt,
-} from "@/shared/test/library-router";
+import { currentLocation, openLibraryAt } from "@/shared/test/library-router";
 import { MenuBridge } from "./menu-bridge";
 
 describe("menu bridge inspector", () => {

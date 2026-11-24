@@ -14,7 +14,14 @@ const mod = (v) => ((v % TAU) + TAU) % TAU;
 export const line = (a, b) => ({ kind: "line", a, b });
 
 /** An elliptical arc in screen angles; a positive turn runs clockwise on screen. */
-export const arc = (c, rx, ry, t0, turn) => ({ kind: "arc", c, rx, ry, t0, turn });
+export const arc = (c, rx, ry, t0, turn) => ({
+  kind: "arc",
+  c,
+  rx,
+  ry,
+  t0,
+  turn,
+});
 
 export const ring = (cx, cy, r) => arc([cx, cy], r, r, Math.PI, TAU);
 
@@ -36,10 +43,16 @@ const point = (seg, u) =>
     ? add(seg.a, mul(sub(seg.b, seg.a), u))
     : seg.kind === "cubic"
       ? split(seg.p, u)[0][3]
-      : [seg.c[0] + seg.rx * Math.cos(seg.t0 + seg.turn * u), seg.c[1] + seg.ry * Math.sin(seg.t0 + seg.turn * u)];
+      : [
+          seg.c[0] + seg.rx * Math.cos(seg.t0 + seg.turn * u),
+          seg.c[1] + seg.ry * Math.sin(seg.t0 + seg.turn * u),
+        ];
 
 /** The lines and arcs `poly` would draw for the same points and options. */
-export function outline(points, { closed = false, radius = 0, corners = {} } = {}) {
+export function outline(
+  points,
+  { closed = false, radius = 0, corners = {} } = {},
+) {
   const count = points.length;
   const at = (i) => points[(i + count) % count];
   const fillet = (i) => {
@@ -49,7 +62,9 @@ export function outline(points, { closed = false, radius = 0, corners = {} } = {
     const [a, b, c] = [at(i - 1), at(i), at(i + 1)];
     const u = unit(sub(a, b));
     const v = unit(sub(c, b));
-    const angle = Math.acos(Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1])));
+    const angle = Math.acos(
+      Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1])),
+    );
     if (angle > Math.PI - 1e-3) return null;
     const la = len(sub(a, b));
     const lc = len(sub(c, b));
@@ -75,19 +90,25 @@ export function outline(points, { closed = false, radius = 0, corners = {} } = {
     cursor = p;
   };
   const indices = closed ? [...points.keys(), 0] : [...points.keys()];
-  indices.forEach((i, k) => {
+  for (const [k, i] of indices.entries()) {
     const edge = !closed && (k === 0 || k === indices.length - 1);
     const f = edge ? null : fillet(i);
-    if (!f) return lineTo(points[i]);
-    if (closed && k === indices.length - 1) return lineTo(f.from);
+    if (!f) {
+      lineTo(points[i]);
+      continue;
+    }
     lineTo(f.from);
+    if (closed && k === indices.length - 1) continue;
     segs.push(f.seg);
     cursor = f.to;
-  });
+  }
   return segs;
 }
 
-export const hole = (cx = at.cx, cy = at.cy, r = at.hole) => (p) => Math.hypot(p[0] - cx, p[1] - cy) < r;
+export const hole =
+  (cx = at.cx, cy = at.cy, r = at.hole) =>
+  (p) =>
+    Math.hypot(p[0] - cx, p[1] - cy) < r;
 
 /** Points closer than `w` to the infinite line through `a` and `b`. */
 export const band = (a, b, w) => {
@@ -100,7 +121,10 @@ export const near = (a, b, w) => {
   const d = sub(b, a);
   const l2 = d[0] * d[0] + d[1] * d[1];
   return (p) => {
-    const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1]) / l2));
+    const t = Math.max(
+      0,
+      Math.min(1, ((p[0] - a[0]) * d[0] + (p[1] - a[1]) * d[1]) / l2),
+    );
     return len(sub(p, add(a, mul(d, t)))) < w;
   };
 };
@@ -129,7 +153,9 @@ const pieces = (seg, inside) => {
     }
   }
   if (!prev) out.push([start, 1]);
-  return out.filter(([a, b]) => b - a > 1e-6).map(([u0, u1]) => ({ seg, u0, u1 }));
+  return out
+    .filter(([a, b]) => b - a > 1e-6)
+    .map(([u0, u1]) => ({ seg, u0, u1 }));
 };
 
 const emit = (p) => {
@@ -141,7 +167,8 @@ const emit = (p) => {
     return [`C ${pt(b)} ${pt(c)} ${pt(d)}`];
   }
   const turn = p.seg.turn * (p.u1 - p.u0);
-  const cmd = (q, t) => `A ${n(p.seg.rx)} ${n(p.seg.ry)} 0 ${Math.abs(t) > Math.PI ? 1 : 0} ${t > 0 ? 1 : 0} ${pt(q)}`;
+  const cmd = (q, t) =>
+    `A ${n(p.seg.rx)} ${n(p.seg.ry)} 0 ${Math.abs(t) > Math.PI ? 1 : 0} ${t > 0 ? 1 : 0} ${pt(q)}`;
   if (Math.abs(turn) < Math.PI * 1.5) return [cmd(end, turn)];
   const mid = point(p.seg, (p.u0 + p.u1) / 2);
   return [cmd(mid, turn / 2), cmd(end, turn / 2)];
@@ -151,13 +178,25 @@ const emit = (p) => {
 export function cut(segs, holes = [hole()], { closed = true } = {}) {
   const inside = (p) => holes.some((h) => h(p));
   let kept = segs.flatMap((seg) => pieces(seg, inside));
-  const whole = kept.length === segs.length && kept.every((p) => p.u0 === 0 && p.u1 === 1);
+  const whole =
+    kept.length === segs.length && kept.every((p) => p.u0 === 0 && p.u1 === 1);
   if (closed && !whole && kept.length > 1) {
     const first = kept[0];
     const last = kept[kept.length - 1];
-    if (first.seg === segs[0] && first.u0 === 0 && last.seg === segs[segs.length - 1] && last.u1 === 1) {
+    if (
+      first.seg === segs[0] &&
+      first.u0 === 0 &&
+      last.seg === segs[segs.length - 1] &&
+      last.u1 === 1
+    ) {
       let k = kept.length - 1;
-      while (k > 0 && kept[k - 1].u1 === 1 && kept[k].u0 === 0 && segs.indexOf(kept[k - 1].seg) === segs.indexOf(kept[k].seg) - 1) k--;
+      while (
+        k > 0 &&
+        kept[k - 1].u1 === 1 &&
+        kept[k].u0 === 0 &&
+        segs.indexOf(kept[k - 1].seg) === segs.indexOf(kept[k].seg) - 1
+      )
+        k--;
       kept = [...kept.slice(k), ...kept.slice(0, k)];
     }
   }

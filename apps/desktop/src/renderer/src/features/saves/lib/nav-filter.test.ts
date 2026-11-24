@@ -64,11 +64,8 @@ it("keeps a split post's Saves and nothing else", () => {
   });
   const saves = [split("a", "DAbC"), split("b", "dabc"), split("c", "DAbC")];
   expect(
-    applyNavFilter(
-      saves,
-      { kind: "post", key: "instagram:DAbC" },
-      {},
-      [],
-    ).map((save) => save.id),
+    applyNavFilter(saves, { kind: "post", key: "instagram:DAbC" }, {}, []).map(
+      (save) => save.id,
+    ),
   ).toEqual(["a", "c"]);
 });

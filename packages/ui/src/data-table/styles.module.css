@@ -1,46 +1,14 @@
 .container {
-  --data-table-selected: color-mix(in oklab, var(--ds-accent-tint) 70%, transparent);
+  --data-table-selected: color-mix(
+    in oklab,
+    var(--ds-accent-tint) 70%,
+    transparent
+  );
   --data-table-gutter: 0px;
   --data-table-cell-padding: var(--ds-space-lg);
   width: 100%;
   min-width: 0;
   user-select: none;
-}
-
-.container[data-rows="inset"] {
-  --data-table-gutter: var(--ds-space-md);
-  --data-table-header-border: 0;
-
-  & .sheet {
-    position: relative;
-    isolation: isolate;
-  }
-
-  & .row {
-    position: relative;
-    border-bottom: 0;
-    border-radius: var(--ds-radius-md);
-  }
-
-  & .row:hover:not([data-selected]) {
-    background: transparent;
-  }
-
-  /* A pinned cell only needs its own fill to cover columns scrolled under it. */
-  & .viewport:not([data-scrolled-x]) .cell[data-pinned] {
-    --pin-bg: transparent;
-    --pin-tint: transparent;
-  }
-
-  & .row[data-selected]:not([data-selected-start]) {
-    border-start-start-radius: 0;
-    border-start-end-radius: 0;
-  }
-
-  & .row[data-selected]:not([data-selected-end]) {
-    border-end-start-radius: 0;
-    border-end-end-radius: 0;
-  }
 }
 
 .container :is(input, textarea, [contenteditable="true"]) {
@@ -145,6 +113,42 @@
 
 .row[data-selected]:hover .cell[data-pinned] {
   --pin-tint: var(--ds-accent-tint);
+}
+
+.container[data-rows="inset"] {
+  --data-table-gutter: var(--ds-space-md);
+  --data-table-header-border: 0;
+
+  & .sheet {
+    position: relative;
+    isolation: isolate;
+  }
+
+  & .row {
+    position: relative;
+    border-bottom: 0;
+    border-radius: var(--ds-radius-md);
+  }
+
+  & .row:hover:not([data-selected]) {
+    background: transparent;
+  }
+
+  /* A pinned cell only needs its own fill to cover columns scrolled under it. */
+  & .viewport:not([data-scrolled-x]) .cell[data-pinned] {
+    --pin-bg: transparent;
+    --pin-tint: transparent;
+  }
+
+  & .row[data-selected]:not([data-selected-start]) {
+    border-start-start-radius: 0;
+    border-start-end-radius: 0;
+  }
+
+  & .row[data-selected]:not([data-selected-end]) {
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+  }
 }
 
 .cell[data-align="end"] {

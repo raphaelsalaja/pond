@@ -1,3 +1,7 @@
+.glyph {
+  color: var(--ds-foreground-tertiary);
+}
+
 .item {
   &[data-kind="save"] {
     color: var(--ds-foreground-secondary);
@@ -15,10 +19,6 @@
   &[data-tone="danger"] .glyph {
     color: var(--ds-danger);
   }
-}
-
-.glyph {
-  color: var(--ds-foreground-tertiary);
 }
 
 .section {

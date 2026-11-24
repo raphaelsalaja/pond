@@ -10,13 +10,13 @@ import {
 import { DataTable } from "@pond/ui/data-table";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { TagsIntro } from "@/features/tags/components/intro";
 import { TagsBulkActionBar } from "@/features/tags/components/manager/bulk-actions";
 import { DraftRow } from "@/features/tags/components/manager/draft-row";
 import { TagItem } from "@/features/tags/components/manager/item";
 import { tagsColumns } from "@/features/tags/components/manager/lib/columns";
 import { TagsTableContext } from "@/features/tags/components/manager/lib/context";
 import type { TagsRowData } from "@/features/tags/components/manager/lib/types";
-import { TagsIntro } from "@/features/tags/components/intro";
 import { TagPicker } from "@/features/tags/components/picker";
 import { useTagCreation } from "@/features/tags/hooks/use-tag-creation";
 import { useTagsData } from "@/features/tags/hooks/use-tag-manager";
@@ -228,15 +228,8 @@ function VirtualTagIndex({ lines }: { lines: IndexLine[] }) {
 }
 
 export function TagsPage() {
-  const {
-    q,
-    setQ,
-    data,
-    namesFromIds,
-    groupOptions,
-    groupSummaries,
-    total,
-  } = useTagsData();
+  const { q, setQ, data, namesFromIds, groupOptions, groupSummaries, total } =
+    useTagsData();
   const tagsLoaded = useTagsLoaded();
   const [allTags, patchAllTags] = usePrefs("allTags");
   const scope = useTagsScope();
@@ -533,7 +526,7 @@ export function TagsPage() {
               ) : !tagsLoaded ? null : total === 0 && !q ? (
                 <Empty.Root className={styles.empty}>
                   <Empty.Media>
-                    <EmptyPreview.Root shape="chip">
+                    <EmptyPreview.Root kind="chip">
                       <EmptyPreview.Row>
                         <EmptyPreview.Icon>
                           <IconTag size={12} />
@@ -568,7 +561,7 @@ export function TagsPage() {
                 >
                   <Empty.Media>
                     <EmptyPreview.Root
-                      shape="chip"
+                      kind="chip"
                       layout={
                         scope === "starred"
                           ? "single"

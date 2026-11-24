@@ -8,7 +8,8 @@ const BASE_MIN = 0.5;
 const CUT = 3;
 /** A badge clears its host out of this hole, matching `src/parts/badge.mjs`. */
 const BADGE = { cx: 13.125, cy: 13.125, hole: 5 };
-const inBadge = ([x, y]) => Math.hypot(x - BADGE.cx, y - BADGE.cy) <= BADGE.hole + TOLERANCE;
+const inBadge = ([x, y]) =>
+  Math.hypot(x - BADGE.cx, y - BADGE.cy) <= BADGE.hole + TOLERANCE;
 export const cuts = (part) => /^(badge-|slash$)/.test(part);
 
 function outline(nodes) {
@@ -58,7 +59,11 @@ export function partMisses(file, names, nodes, parts, { dir = "parts" } = {}) {
   for (const part of names) {
     const source = parts.get(part);
     if (!source) {
-      misses.push({ file, rule: "part-unknown", message: `no ${dir}/${part}.svg` });
+      misses.push({
+        file,
+        rule: "part-unknown",
+        message: `no ${dir}/${part}.svg`,
+      });
       continue;
     }
     const cutters = cuts(part)
@@ -66,9 +71,14 @@ export function partMisses(file, names, nodes, parts, { dir = "parts" } = {}) {
       : names
           .filter((other) => cuts(other) && parts.has(other))
           .flatMap((other) => outline(parts.get(other)));
-    const badged = !cuts(part) && names.some((other) => other.startsWith("badge-") && parts.has(other));
+    const badged =
+      !cuts(part) &&
+      names.some((other) => other.startsWith("badge-") && parts.has(other));
     const off = points(source).filter(
-      (point) => !near(point, lines) && !near(point, cutters, CUT) && !(badged && inBadge(point)),
+      (point) =>
+        !near(point, lines) &&
+        !near(point, cutters, CUT) &&
+        !(badged && inBadge(point)),
     );
     if (off.length > 0) {
       const [x, y] = off[0].map((value) => Math.round(value * 1000) / 1000);

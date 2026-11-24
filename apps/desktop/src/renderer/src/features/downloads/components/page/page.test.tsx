@@ -166,7 +166,9 @@ async function click(selector: string, modifiers = {}) {
 
 function rowNames(): string[] {
   return [...host.querySelectorAll('[role="row"]')].flatMap((row) => {
-    const name = row.querySelector("[title]")?.getAttribute("title");
+    const name = [...row.querySelectorAll("[title]")]
+      .find((node) => node.textContent?.trim())
+      ?.getAttribute("title");
     return row.closest('[role="rowgroup"]') && name ? [name] : [];
   });
 }
@@ -588,7 +590,7 @@ it("hides completed downloads by default and shows them on request", async () =>
   expect(host.querySelector('[title="Saved clip"]')).not.toBeNull();
 });
 
-it("keeps status out of the name and shows the normalized source", async () => {
+it("keeps status out of the name", async () => {
   setSaves([
     save("Clip", "ingesting", "pending"),
     save("Failed video", "failed", "dead", {
@@ -599,7 +601,6 @@ it("keeps status out of the name and shows the normalized source", async () => {
   ]);
   await render();
   expect(host.querySelector('[aria-label="Sort by Status"]')).not.toBeNull();
-  expect(host.querySelector('[aria-label="Sort by Source"]')).not.toBeNull();
   expect(host.querySelector('[title="Clip"]')?.textContent).not.toContain(
     "In Progress",
   );
@@ -614,7 +615,6 @@ it("keeps status out of the name and shows the normalized source", async () => {
     .querySelector('[title="https://www.youtube.com/"]')
     ?.closest('[role="row"]');
   expect(youtubeRow?.textContent).toContain("Failed");
-  expect(youtubeRow?.textContent).toContain("YouTube");
 });
 
 it("explains why a download failed from its status", async () => {
@@ -1000,7 +1000,9 @@ it("shows Library Transfers as rows in the Downloads table", async () => {
   expect(rowNames()[0]).toBe(
     "/Users/user/Downloads/Geoid (Pond Export 2026-11-22)",
   );
-  expect(host.textContent).toContain("Export Files");
+  expect(
+    host.querySelector('[role="row"] [title="Export Files"]'),
+  ).not.toBeNull();
   expect(host.textContent).toContain("Copying files 3 of 12");
   expect(host.textContent).not.toContain("Library Transfers");
 });

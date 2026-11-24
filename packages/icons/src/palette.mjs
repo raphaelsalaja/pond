@@ -17,7 +17,11 @@ const disc = ({ snap }) => {
   return `M ${p1.join(" ")} A ${R} ${R} 0 1 1 ${p2.join(" ")} A ${bite.r} ${bite.r} 0 0 0 ${p1.join(" ")} Z`;
 };
 
-const paints = (h, s) => [dot(h, s, 6.25, 6.75), dot(h, s, 10.25, 5.625), dot(h, s, 5.625, 10.75)];
+const paints = (h, s) => [
+  dot(h, s, 6.25, 6.75),
+  dot(h, s, 10.25, 5.625),
+  dot(h, s, 5.625, 10.75),
+];
 
 export default (h, s) => [disc(h), ...paints(h, s)];
 

@@ -192,9 +192,24 @@ export function ComposerView({
                   <motion.span
                     key="send"
                     className={styles.glyph}
-                    initial={{ opacity: 0, y: 6, scale: 0.8, filter: "blur(2px)" }}
-                    animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-                    exit={{ opacity: 0, y: -6, scale: 0.8, filter: "blur(2px)" }}
+                    initial={{
+                      opacity: 0,
+                      y: 6,
+                      scale: 0.8,
+                      filter: "blur(2px)",
+                    }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      scale: 1,
+                      filter: "blur(0px)",
+                    }}
+                    exit={{
+                      opacity: 0,
+                      y: -6,
+                      scale: 0.8,
+                      filter: "blur(2px)",
+                    }}
                     transition={reduced ? { duration: 0 } : GLYPH_EASE}
                   >
                     <IconArrowUp size={16} />

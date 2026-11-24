@@ -29,14 +29,28 @@ export const calendar = (_, s) => {
     ],
     { closed: true, radius: s.box },
   );
-  return [cut(box), `M ${x0} ${head} H ${x1}`, "M 6 2.375 V 4.75", "M 12 2.375 V 4.75"];
+  return [
+    cut(box),
+    `M ${x0} ${head} H ${x1}`,
+    "M 6 2.375 V 4.75",
+    "M 12 2.375 V 4.75",
+  ];
 };
 
-export const star = (h, s) => cut(outline(h.starPoints(9, 9.5, 7.125, 3.375), { closed: true, radius: s.radius }));
+export const star = (h, s) =>
+  cut(
+    outline(h.starPoints(9, 9.5, 7.125, 3.375), {
+      closed: true,
+      radius: s.radius,
+    }),
+  );
 
 export const tag = (_, s) => {
   const [lo, , hi] = s.keylines.square;
-  const map = ([x, y]) => [lo + ((x - 2) * (hi - lo)) / 21, lo + ((y - 2) * (hi - lo)) / 21];
+  const map = ([x, y]) => [
+    lo + ((x - 2) * (hi - lo)) / 21,
+    lo + ((y - 2) * (hi - lo)) / 21,
+  ];
   const pts = [
     [2, 2],
     [12, 2],
@@ -44,14 +58,24 @@ export const tag = (_, s) => {
     [13, 23],
     [2, 12],
   ].map(map);
-  return { outline: outline(pts, { closed: true, radius: s.radius, corners: { 2: 2.25, 3: 2.25 } }), hole: map([7.25, 7.25]) };
+  return {
+    outline: outline(pts, {
+      closed: true,
+      radius: s.radius,
+      corners: { 2: 2.25, 3: 2.25 },
+    }),
+    hole: map([7.25, 7.25]),
+  };
 };
 
 export const user = ({ circle }, s) => {
   const [x0, , x1, y1] = s.keylines.square;
   const a = [x0 + 1.5, y1];
   const b = [x1 - 1.5, y1];
-  const body = [arc([9, y1], (b[0] - a[0]) / 2, 4.5, Math.PI, Math.PI), line(b, a)];
+  const body = [
+    arc([9, y1], (b[0] - a[0]) / 2, 4.5, Math.PI, Math.PI),
+    line(b, a),
+  ];
   return [circle(9, 5.75, 3), cut(body)];
 };
 

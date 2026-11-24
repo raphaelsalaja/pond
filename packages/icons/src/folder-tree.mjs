@@ -1,6 +1,6 @@
 /** A trunk on the left branches into two small folders. */
 export default ({ poly }, s) => {
-  const [x0, y0, x1, y1] = s.keylines.square;
+  const [, y0, x1, y1] = s.keylines.square;
   const left = 7.375;
   const tall = 5;
   const small = (top) =>
@@ -13,7 +13,17 @@ export default ({ poly }, s) => {
         [x1, top + tall],
         [left, top + tall],
       ],
-      { closed: true, corners: { 0: s.ease, 1: s.ease / 2, 2: s.ease / 2, 3: s.ease, 4: s.ease, 5: s.ease } },
+      {
+        closed: true,
+        corners: {
+          0: s.ease,
+          1: s.ease / 2,
+          2: s.ease / 2,
+          3: s.ease,
+          4: s.ease,
+          5: s.ease,
+        },
+      },
     );
   const lower = y1 - tall;
   const mid = (top) => top + (tall + 1) / 2;

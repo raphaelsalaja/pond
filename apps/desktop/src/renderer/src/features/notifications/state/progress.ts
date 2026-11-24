@@ -40,7 +40,8 @@ export function useInboxProgress(): InboxProgress[] {
       rows.push({
         id: `progress:activity:${entry.id}`,
         title: entry.label,
-        about: "Running in this window. The result shows up in the Inbox when it's done.",
+        about:
+          "Running in this window. The result shows up in the Inbox when it's done.",
         startedAt: entry.startedAt,
         health: false,
       });

@@ -25,7 +25,10 @@ export const open = (h, s) => {
         [x1, base],
         [hinge, base],
       ],
-      { closed: true, corners: { 0: s.ease / 2, 1: s.box, 2: s.box, 3: s.ease / 2 } },
+      {
+        closed: true,
+        corners: { 0: s.ease / 2, 1: s.box, 2: s.box, 3: s.ease / 2 },
+      },
     ),
     h.poly(
       [

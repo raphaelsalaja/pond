@@ -1,6 +1,6 @@
 import { head } from "./parts/arrows-head.mjs";
 
-export default (h, s) => {
+export default (_h, s) => {
   const [x0, , x1] = s.keylines.glyph;
   const [y, base] = [7.75, 13.125];
   return [

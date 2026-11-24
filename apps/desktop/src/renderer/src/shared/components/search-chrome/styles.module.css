@@ -1,10 +1,10 @@
 .bar {
+  box-sizing: border-box;
   display: grid;
   flex: none;
   grid-template-columns: minmax(0, 440px) 1fr;
   gap: var(--ds-space-lg);
   align-items: center;
-  box-sizing: border-box;
   height: var(--window-header-height, 44px);
   padding-inline: var(--ds-space-md);
   border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);

@@ -13,6 +13,12 @@
   margin-inline: auto;
 }
 
+.icon {
+  display: flex;
+  flex: none;
+  color: var(--ds-foreground-tertiary);
+}
+
 .head {
   display: flex;
   gap: var(--ds-space-md);
@@ -24,19 +30,13 @@
   }
 }
 
-.icon {
-  display: flex;
-  flex: none;
-  color: var(--ds-foreground-tertiary);
-}
-
 .title {
   flex: 1;
   min-width: 0;
   margin: 0;
   font-size: var(--ds-text-title);
-  line-height: var(--ds-leading-title);
   font-weight: var(--ds-weight-strong);
+  line-height: var(--ds-leading-title);
   color: var(--ds-foreground-primary);
   overflow-wrap: anywhere;
 }
@@ -69,4 +69,3 @@
   gap: var(--ds-space-sm);
   margin-top: var(--ds-space-xs);
 }
-

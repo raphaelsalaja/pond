@@ -27,7 +27,10 @@ export const open = ({ poly }, s) => {
         [x1, y1],
         [x0, y1],
       ],
-      { closed: true, corners: { 0: s.ease, 1: s.ease, 2: s.ease, 3: s.box, 4: s.box } },
+      {
+        closed: true,
+        corners: { 0: s.ease, 1: s.ease, 2: s.ease, 3: s.box, 4: s.box },
+      },
     ),
     poly(
       [

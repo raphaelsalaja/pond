@@ -1,5 +1,5 @@
 /** Equilateral; the vertices sit outside the grid so the rounded tips fill the square keyline. */
-export const shape = (s) => {
+export const vertices = (s) => {
   const r = s.box;
   const [x0, , x1] = s.keylines.square;
   const base = 15.125;
@@ -16,6 +16,6 @@ export const shape = (s) => {
 };
 
 export default ({ poly }, s) => {
-  const { r, points } = shape(s);
+  const { r, points } = vertices(s);
   return poly(points, { closed: true, corners: { 0: r, 1: r, 2: r } });
 };

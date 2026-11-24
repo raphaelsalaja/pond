@@ -1,10 +1,12 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { Predicate } from "@pond/schema/filters/types";
+import { RouterContextProvider } from "@tanstack/react-router";
 import { act, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
+import { openLibraryAt } from "@/shared/test/library-router";
 import { FilterCategory } from "./category";
 import { choiceOptions, type FilterOption, presetOptions } from "./options";
 
@@ -82,16 +84,19 @@ describe("filter editors", () => {
         ])
       : presetOptions(field),
   ) {
+    const router = await openLibraryAt("/");
     await act(async () =>
       root.render(
-        <Harness
-          field={field}
-          initial={initial}
-          options={options}
-          onRows={(value) => {
-            rows = value;
-          }}
-        />,
+        <RouterContextProvider router={router}>
+          <Harness
+            field={field}
+            initial={initial}
+            options={options}
+            onRows={(value) => {
+              rows = value;
+            }}
+          />
+        </RouterContextProvider>,
       ),
     );
     const label = FIELD_META[field].label;

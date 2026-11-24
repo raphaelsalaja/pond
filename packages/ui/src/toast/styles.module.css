@@ -60,7 +60,10 @@
 
   &[data-expanded] {
     --y: calc(
-      var(--toast-offset-y) * -1 - var(--toast-index) * var(--toast-gap)
+      var(--toast-offset-y) *
+      -1 -
+      var(--toast-index) *
+      var(--toast-gap)
     );
     --scale: 1;
 
@@ -118,14 +121,21 @@
   }
 }
 
+.actions {
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-sm);
+  justify-content: flex-end;
+}
+
 .content {
+  box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
   gap: var(--ds-space-md);
   align-items: flex-start;
-  box-sizing: border-box;
-  height: 100%;
   min-width: 0;
+  height: 100%;
   padding: var(--ds-space-lg) var(--ds-space-md) var(--ds-space-lg)
     var(--ds-space-lg);
   overflow: hidden;
@@ -241,13 +251,6 @@
   &[data-status="error"] {
     color: var(--ds-danger);
   }
-}
-
-.actions {
-  display: flex;
-  flex: none;
-  gap: var(--ds-space-sm);
-  justify-content: flex-end;
 }
 
 /* The 24px button sits on an 18px title line, so it pulls out vertically to keep the row at the title's height. */

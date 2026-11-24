@@ -280,7 +280,10 @@ describe("sort precedence", () => {
   it("lets the URL sort win over the presentation sort", () => {
     applyUrlSort({ key: "title", dir: "asc" });
     expect(currentSort()).toEqual({ key: "title", dir: "asc" });
-    expect(getViewState()).toMatchObject({ sortKey: "savedAt", sortDir: "desc" });
+    expect(getViewState()).toMatchObject({
+      sortKey: "savedAt",
+      sortDir: "desc",
+    });
     applyUrlSort(null);
     expect(currentSort()).toEqual({ key: "savedAt", dir: "desc" });
   });

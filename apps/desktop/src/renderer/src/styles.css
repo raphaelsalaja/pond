@@ -109,8 +109,8 @@
 
   font-family: var(--ds-ui-font-family);
   font-size: var(--ds-ui-font-size);
-  font-weight: var(--ds-weight-regular);
   font-variation-settings: "ROND" var(--ds-font-roundness);
+  font-weight: var(--ds-weight-regular);
 
   font-feature-settings:
     "liga" 1,

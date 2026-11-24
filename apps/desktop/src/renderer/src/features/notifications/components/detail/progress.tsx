@@ -20,7 +20,7 @@ export function ProgressDetail({
 
   useEffect(() => {
     ref.current?.focus({ preventScroll: true });
-  }, [progress.id]);
+  }, []);
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (ignoresKey(event)) return;

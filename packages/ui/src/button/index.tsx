@@ -65,9 +65,7 @@ export function Button({
   const size = sizeProp ?? defaults.size ?? "md";
   const rounding = roundingProp ?? defaults.rounding ?? "full";
   const parts = Children.toArray(children);
-  const labeled = parts.some(
-    (part) => typeof part === "string" || typeof part === "number",
-  );
+  const labeled = parts.some((part) => !isValidElement(part));
   return (
     <Base
       {...props}

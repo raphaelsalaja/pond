@@ -436,7 +436,6 @@ describe("buildSaveMenu", () => {
     }
   });
 
-  it("shows the whole post from a split Save", () => {
   it("shows the whole post from a split Save", async () => {
     const router = await openLibraryAt("/");
     const options = {

@@ -1,6 +1,5 @@
 .list {
   position: relative;
-  isolation: isolate;
   display: flex;
   flex-direction: column;
   padding: var(--ds-space-xs);
@@ -8,6 +7,7 @@
   list-style: none;
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-border);
+  isolation: isolate;
 }
 
 .row {

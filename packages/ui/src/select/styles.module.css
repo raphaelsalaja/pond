@@ -1,3 +1,11 @@
+.icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-foreground-tertiary);
+}
+
 .trigger {
   --ds-focus-offset: 0px;
 
@@ -154,20 +162,12 @@
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  text-align: start;
   text-overflow: ellipsis;
+  text-align: start;
 
   &[data-placeholder] {
     color: var(--ds-foreground-tertiary);
   }
-}
-
-.icon {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  color: var(--ds-foreground-tertiary);
 }
 
 .label {
@@ -200,7 +200,7 @@
   transform-origin: var(--transform-origin);
   transition:
     opacity var(--ds-duration-menu-open-opacity)
-      var(--ds-easing-menu-open-opacity),
+    var(--ds-easing-menu-open-opacity),
     scale var(--ds-duration-menu-open) var(--ds-easing-menu-open);
   -webkit-app-region: no-drag;
 
@@ -240,8 +240,8 @@
   padding: var(--ds-space-sm) 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scroll-padding-block: var(--ds-space-sm);
   outline: none;
+  scroll-padding-block: var(--ds-space-sm);
 
   &:has(.heading) {
     --scroll-fade-start-size: 0px;

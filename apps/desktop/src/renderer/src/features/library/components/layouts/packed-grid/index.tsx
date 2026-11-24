@@ -156,6 +156,7 @@ export function PackedGrid({
   }
   const multiSelectActive = useMultiSelectActive();
   const radius = useLibrarySaveRadius();
+  /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
   const style = useMemo(
     () =>
       ({

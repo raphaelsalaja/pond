@@ -1,11 +1,11 @@
 import { useMemo } from "react";
+import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
   useEffectiveFilterQuery,
   useLayout,
   useSearchText,
 } from "@/features/library/state/view-store";
 import type { ViewMode } from "@/features/library/types";
-import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { modeForNav, type SaveListMode } from "@/features/saves";
 import { useBootReady } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";

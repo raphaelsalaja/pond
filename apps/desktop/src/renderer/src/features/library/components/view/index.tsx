@@ -22,7 +22,6 @@ import { splitPinned } from "@/features/library/lib/pinned-sections";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
-import type { LibraryNav } from "@/shared/lib/library-nav";
 import { resetFilters } from "@/features/library/state/view-store";
 import {
   clearSaveSelection,
@@ -36,6 +35,7 @@ import { resultNavigation } from "@/features/saves/navigation";
 import { useSavePaging } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { buildEmptyGalleryMenu } from "./empty-gallery-menu";
 import { importFolderFor } from "./import-folder";

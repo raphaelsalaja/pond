@@ -98,7 +98,9 @@ describe("workspace menu", () => {
     });
     const trigger = host.querySelector("button");
     if (!trigger) throw new Error("Missing workspace menu trigger");
-    await vi.waitFor(() => expect(trigger.textContent).toContain("Memes"));
+    await vi.waitFor(() =>
+      expect(trigger.getAttribute("aria-label")).toBe("Memes"),
+    );
     await act(async () => trigger.click());
   }
 

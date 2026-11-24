@@ -8,10 +8,7 @@ import {
 import type { IconComponent } from "@pond/icons/types";
 import { SETTINGS_SECTIONS } from "@pond/schema";
 import type { Folder } from "@pond/schema/db";
-import {
-  type LibraryNav,
-  pathForLibraryNav,
-} from "@/shared/lib/library-nav";
+import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
 import type { RouteMeta } from "@/shared/lib/route-meta";
 
 export interface Breadcrumb {
@@ -66,7 +63,10 @@ function crumbFor(nav: LibraryNav, label: string): Breadcrumb {
   return { label, path: pathForLibraryNav(nav), nav };
 }
 
-const ALL: Breadcrumb = { ...crumbFor({ kind: "all" }, "All"), icon: IconAlbum2 };
+const ALL: Breadcrumb = {
+  ...crumbFor({ kind: "all" }, "All"),
+  icon: IconAlbum2,
+};
 const SOURCES: Breadcrumb = {
   ...crumbFor({ kind: "sources" }, "Sources"),
   icon: IconNodes3,
@@ -104,7 +104,10 @@ function navCrumbs(
     case "folder":
       return [ALL, ...folderCrumbs(nav.id, input.folders)];
     case "inbox": {
-      const inbox = { ...crumbFor({ kind: "inbox" }, "Inbox"), icon: IconAlbum2 };
+      const inbox = {
+        ...crumbFor({ kind: "inbox" }, "Inbox"),
+        icon: IconAlbum2,
+      };
       return nav.snoozed ? [inbox, crumbFor(nav, "Snoozed")] : [inbox];
     }
     case "uncategorized":
@@ -126,7 +129,9 @@ function routeCrumbs(input: BreadcrumbInput): Breadcrumb[] {
   if (routeId.startsWith("/_library/settings"))
     return settingsCrumbs(meta.params.section);
   if (routeId === "/_library/canvas/$id")
-    return [{ label: labels.canvas || "Canvas", path: pathname, icon: IconCanvas }];
+    return [
+      { label: labels.canvas || "Canvas", path: pathname, icon: IconCanvas },
+    ];
   if (routeId === "/_library/fish/$fishId")
     return [{ label: labels.fish || "Fish", path: pathname }];
   if (routeId === "/_library/sources_/$kind/$id")

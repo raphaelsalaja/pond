@@ -45,13 +45,13 @@
 }
 
 .list {
-  margin-top: 0;
   padding-bottom: var(--ds-space-md);
+  margin-top: 0;
 }
 
 .details {
-  margin: var(--ds-space-2xl) calc(-1 * var(--ds-space-lg)) 0;
   padding-top: var(--ds-space-lg);
+  margin: var(--ds-space-2xl) calc(-1 * var(--ds-space-lg)) 0;
   border-top: 1px solid var(--ds-border-subtle);
 }
 

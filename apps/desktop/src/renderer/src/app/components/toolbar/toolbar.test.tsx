@@ -1,6 +1,11 @@
 import { PrefsSchema } from "@pond/schema";
 import type { NavigationDirection } from "@shared/constants";
-import { type AnyRoute, createRoute, RouterProvider } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  type AnyRoute,
+  createRoute,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -115,9 +120,16 @@ describe("breadcrumb toolbar", () => {
   }
 
   async function mount(path = "/") {
-    const router = await openLibraryAt(path, pages);
+    const router = await openLibraryAt(path, { routes: pages });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     await act(async () =>
-      root.render(<RouterProvider router={router} InnerWrap={Shell} />),
+      root.render(
+        <QueryClientProvider client={client}>
+          <RouterProvider router={router} InnerWrap={Shell} />
+        </QueryClientProvider>,
+      ),
     );
     return router;
   }

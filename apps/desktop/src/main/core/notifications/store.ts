@@ -42,9 +42,7 @@ type Change = (
   now: number,
 ) => InboxNotification[] | null;
 
-function newestFirst(
-  items: readonly InboxNotification[],
-): InboxNotification[] {
+function newestFirst(items: readonly InboxNotification[]): InboxNotification[] {
   return [...items].sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
@@ -135,7 +133,9 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
     const wanted = new Set(ids);
     return mutate((items, now) => {
       if (!items.some((item) => wanted.has(item.id))) return null;
-      return items.map((item) => (wanted.has(item.id) ? patch(item, now) : item));
+      return items.map((item) =>
+        wanted.has(item.id) ? patch(item, now) : item,
+      );
     });
   }
 

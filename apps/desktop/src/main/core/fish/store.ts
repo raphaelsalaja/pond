@@ -242,7 +242,9 @@ export function markFishSeen(
     lastRun: current.lastRun && seen(current.lastRun),
     runs: current.runs?.map(seen),
     routines: current.routines.map((routine) =>
-      routine.lastRun ? { ...routine, lastRun: seen(routine.lastRun) } : routine,
+      routine.lastRun
+        ? { ...routine, lastRun: seen(routine.lastRun) }
+        : routine,
     ),
   });
   write(
@@ -273,7 +275,8 @@ export function listFishSections(
   const file = sectionsFile(root);
   const stored = readBundleJson<unknown>(file);
   if (!stored) {
-    if (existsSync(file)) throw new Error("Your fish sections could not be read.");
+    if (existsSync(file))
+      throw new Error("Your fish sections could not be read.");
     return [];
   }
   return z.array(FishSectionSchema).parse(stored.data);
@@ -319,17 +322,12 @@ export function arrangeFish(
     if (!fish || placed.has(fish.id)) continue;
     placed.add(fish.id);
     const section =
-      !placement.pinned &&
-      placement.section &&
-      sections.has(placement.section)
+      !placement.pinned && placement.section && sections.has(placement.section)
         ? placement.section
         : undefined;
     arranged.push({ ...fish, pinned: placement.pinned, section });
   }
-  write(root, [
-    ...arranged,
-    ...school.filter((fish) => !placed.has(fish.id)),
-  ]);
+  write(root, [...arranged, ...school.filter((fish) => !placed.has(fish.id))]);
 }
 
 function requireRoutine(fish: Fish, routineId: string): FishRoutine {

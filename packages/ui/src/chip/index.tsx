@@ -162,10 +162,7 @@ function Filter({
           aria-label={clearLabel}
           onClick={onClear}
         >
-          <IconXmark
-            size={12}
-            className={styles["filter-clear-icon"]}
-          />
+          <IconXmark size={12} className={styles["filter-clear-icon"]} />
         </Button>
       ) : null}
     </div>

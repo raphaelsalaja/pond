@@ -103,16 +103,18 @@
   }
 
   /* An icon's side bearing already reads as space, so that side of the label pulls in. */
-  &:where([data-icon-start]:not([data-variant="link"], [data-variant="bare"])):has(
-      > svg:first-child,
-      > .spinner:first-child + svg
-    ) {
-    padding-inline-start: calc(var(--button-padding) - var(--button-icon-offset));
+  &:where(
+      [data-icon-start]:not([data-variant="link"], [data-variant="bare"])
+    ):has(> svg:first-child, > .spinner:first-child + svg) {
+    padding-inline-start: calc(
+      var(--button-padding) -
+      var(--button-icon-offset)
+    );
   }
 
-  &:where([data-icon-end]:not([data-variant="link"], [data-variant="bare"])):has(
-      > svg:last-child
-    ) {
+  &:where(
+      [data-icon-end]:not([data-variant="link"], [data-variant="bare"])
+    ):has(> svg:last-child) {
     padding-inline-end: calc(var(--button-padding) - var(--button-icon-offset));
   }
 

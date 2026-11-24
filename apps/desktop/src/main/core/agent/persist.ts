@@ -190,7 +190,8 @@ export async function rewindLastTurn(chatId: string): Promise<RewoundTurn> {
   if (applied)
     return {
       ok: false,
-      error: "This reply has applied changes. Undo them before running it again.",
+      error:
+        "This reply has applied changes. Undo them before running it again.",
     };
   const db = await getDb();
   await db.delete(agentMessages).where(

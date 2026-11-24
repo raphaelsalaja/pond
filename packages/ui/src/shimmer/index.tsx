@@ -7,11 +7,7 @@ interface RootProps extends React.ComponentPropsWithoutRef<"span"> {
 
 function Root({ className, tone = "accent", ...props }: RootProps) {
   return (
-    <span
-      className={cn(styles.root, className)}
-      data-tone={tone}
-      {...props}
-    />
+    <span className={cn(styles.root, className)} data-tone={tone} {...props} />
   );
 }
 

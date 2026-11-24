@@ -20,10 +20,10 @@
 
 .rows {
   position: relative;
-  isolation: isolate;
   max-height: 360px;
   overflow-y: auto;
   overscroll-behavior: contain;
+  isolation: isolate;
 }
 
 .row {

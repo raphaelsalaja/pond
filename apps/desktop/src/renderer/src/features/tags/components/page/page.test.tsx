@@ -102,6 +102,7 @@ describe("library Tags page", () => {
 
   async function mount() {
     const router = createLibraryTestRouter("/tags");
+    /** SAFETY: every value in `routesById` is a route; this only widens its id keys to `string`. */
     const tagsRoute = (router.routesById as Record<string, AnyRoute>)[
       "/_library/tags"
     ];

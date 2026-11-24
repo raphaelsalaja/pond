@@ -20,5 +20,9 @@ export default (h, s) => {
 export const open = (h, s) => {
   const [lo, , hi] = s.keylines.square;
   const tip = lo + 0.875;
-  return [...rings.map((x) => h.circle(x, cy, r)), blade(h, rings[0], [hi - 0.875, tip]), blade(h, rings[1], [lo + 0.875, tip])];
+  return [
+    ...rings.map((x) => h.circle(x, cy, r)),
+    blade(h, rings[0], [hi - 0.875, tip]),
+    blade(h, rings[1], [lo + 0.875, tip]),
+  ];
 };

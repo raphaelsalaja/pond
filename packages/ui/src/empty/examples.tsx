@@ -23,7 +23,7 @@ export const docs: ComponentDocs = {
     {
       name: "EmptyPreview.Root",
       description:
-        'Ghost cards shaped like the thing that fills the place. `shape` picks `row`, `tile`, `chip`, `panel`, `field` or `board`. `layout` picks `stack`, `single`, `spread` or `list`. Shrinks inside `size="card"`.',
+        'Ghost cards shaped like the thing that fills the place. `kind` picks `row`, `tile`, `chip`, `panel`, `field` or `board`. `layout` picks `stack`, `single`, `spread` or `list`. Shrinks inside `size="card"`.',
     },
     {
       name: "EmptyPreview.Row, Column, Line, Lines, Space, Thumb, Block, Icon, Chips",
@@ -58,7 +58,7 @@ export const docs: ComponentDocs = {
       render: () => (
         <Empty.Root>
           <Empty.Media>
-            <EmptyPreview.Root shape="tile" layout="single">
+            <EmptyPreview.Root kind="tile" layout="single">
               <EmptyPreview.Column>
                 <EmptyPreview.Block>
                   <IconTrash size={12} />
@@ -77,7 +77,7 @@ export const docs: ComponentDocs = {
       render: () => (
         <Empty.Root size="card">
           <Empty.Media>
-            <EmptyPreview.Root shape="panel">
+            <EmptyPreview.Root kind="panel">
               <EmptyPreview.Column>
                 <EmptyPreview.Block />
                 <EmptyPreview.Line width={52} />
@@ -105,7 +105,7 @@ export const docs: ComponentDocs = {
       render: () => (
         <Empty.Root>
           <Empty.Media>
-            <EmptyPreview.Root shape="tile" layout="spread">
+            <EmptyPreview.Root kind="tile" layout="spread">
               <EmptyPreview.Column>
                 <EmptyPreview.Block />
                 <EmptyPreview.Line width={36} />

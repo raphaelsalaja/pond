@@ -46,11 +46,7 @@ import {
   shelfOf,
 } from "../../lib/layout";
 import { arrangeFish, newItems, sectionItems } from "../../lib/menu";
-import {
-  useFishList,
-  useFishSections,
-  useHydrateFish,
-} from "../../state/fish";
+import { useFishList, useFishSections, useHydrateFish } from "../../state/fish";
 import { FishRow } from "../row";
 import { SectionGroup } from "../section-group";
 import { Shelf, SortableFish } from "../sortable";
@@ -132,7 +128,9 @@ export function FishSection({ activeId }: { activeId: string | null }) {
       const target = base[to] ?? [];
       const overIndex = target.indexOf(overId);
       const moved = active.rect.current.translated;
-      const below = moved ? moved.top > over.rect.top + over.rect.height / 2 : false;
+      const below = moved
+        ? moved.top > over.rect.top + over.rect.height / 2
+        : false;
       return moveFish(
         base,
         id,
@@ -158,8 +156,7 @@ export function FishSection({ activeId }: { activeId: string | null }) {
       if (to >= 0)
         next = { ...base, [shelf]: arrayMove(ids, ids.indexOf(id), to) };
     }
-    if (!sameLayout(next, saved))
-      arrangeFish(layoutPlacements(next, sections));
+    if (!sameLayout(next, saved)) arrangeFish(layoutPlacements(next, sections));
   };
 
   const rows = (ids: readonly string[]) =>

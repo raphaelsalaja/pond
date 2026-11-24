@@ -27,7 +27,11 @@ it("opens a deduplicated union of selected folders and descendants", async () =>
   expect(router.state.location.search).toMatchObject({
     filters: {
       rules: [
-        { field: "folder", operator: "some", value: ["Alpha", "Child", "Beta"] },
+        {
+          field: "folder",
+          operator: "some",
+          value: ["Alpha", "Child", "Beta"],
+        },
       ],
     },
   });

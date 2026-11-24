@@ -1,7 +1,7 @@
 import dot from "./parts/dot.mjs";
 
 /** The vertices sit past the grid so the rounded tips land on the square keyline. */
-const shape = ({ poly }, s) => {
+const outline = ({ poly }, s) => {
   const R = 6.625 + s.box * (Math.SQRT2 - 1);
   return poly(
     [
@@ -14,6 +14,6 @@ const shape = ({ poly }, s) => {
   );
 };
 
-export default shape;
+export default outline;
 
-export const open = (h, s) => [shape(h, s), dot(h, s, 9, 9)];
+export const open = (h, s) => [outline(h, s), dot(h, s, 9, 9)];

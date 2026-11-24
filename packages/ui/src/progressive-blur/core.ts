@@ -23,12 +23,12 @@ export interface ProgressiveBlurOptions {
 
 const LEVELS = 4;
 const STOPS = 24;
-const DIRECTION: Record<Side, string> = {
+const DIRECTION = {
   top: "to bottom",
   bottom: "to top",
   left: "to right",
   right: "to left",
-};
+} satisfies Record<Side, string>;
 
 const clamp = (n: number) => Math.min(1, Math.max(0, n));
 
@@ -37,7 +37,9 @@ function mask(t: number, start: number, end: number) {
   if (t >= end) return 0;
   const u = ((t - start) / (end - start)) * (CURVE.length - 1);
   const i = Math.floor(u);
-  return CURVE[i] + (CURVE[i + 1] - CURVE[i]) * (u - i);
+  const a = CURVE[i] ?? 0;
+  const b = CURVE[i + 1] ?? a;
+  return a + (b - a) * (u - i);
 }
 
 function gradient(
@@ -60,9 +62,9 @@ function gradient(
 
 function sharp(m: number) {
   let i = 1;
-  while (i < SHARP.length - 1 && SHARP[i][0] < m) i++;
-  const [m0, s0] = SHARP[i - 1];
-  const [m1, s1] = SHARP[i];
+  while (i < SHARP.length - 1 && (SHARP[i]?.[0] ?? 1) < m) i++;
+  const [m0, s0] = SHARP[i - 1] ?? [0, 0];
+  const [m1, s1] = SHARP[i] ?? [1, 0];
   return s0 + (s1 - s0) * clamp((m - m0) / (m1 - m0));
 }
 
@@ -142,7 +144,11 @@ function layers(
   if (technique === "blend") {
     if (r.normal) out.push({ backdrop: wide, alpha: (m) => r.normal * m });
     if (r.lighten) {
-      out.push({ backdrop: wide, blend: "lighten", alpha: (m) => r.lighten * m });
+      out.push({
+        backdrop: wide,
+        blend: "lighten",
+        alpha: (m) => r.lighten * m,
+      });
     }
     if (r.darken) {
       out.push({ backdrop: wide, blend: "darken", alpha: (m) => r.darken * m });

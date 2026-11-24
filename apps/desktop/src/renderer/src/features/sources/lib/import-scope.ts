@@ -1,8 +1,4 @@
-import type {
-  ImportMediaKind,
-  ImportScope,
-  Source,
-} from "@pond/schema/db";
+import type { ImportMediaKind, ImportScope, Source } from "@pond/schema/db";
 import {
   type ImportCollectionKind,
   importScopeOptions,

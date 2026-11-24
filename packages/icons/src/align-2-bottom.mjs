@@ -1,3 +1,3 @@
 import align from "./parts/arrows-align.mjs";
 
-export default (h, s) => align(s, "bottom");
+export default (_h, s) => align(s, "bottom");

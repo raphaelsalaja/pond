@@ -1,14 +1,22 @@
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { agentChats, agentMessages } from "@pond/schema/db";
 import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { app } from "electron";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import type { AssistantMetadata } from "../../../shared/assistant";
-import { initializePondSchema } from "../../database/pond-schema";
+import { closeDb, getDb } from "../../db";
+import { invalidatePaths, resolvePaths } from "../../paths";
 import { listMessages, rewindLastTurn } from "./persist";
-
-const db = vi.hoisted(() => ({ current: null as unknown }));
-vi.mock("../../db", () => ({ getDb: async () => db.current }));
 
 function nativeAvailable(): boolean {
   try {
@@ -20,29 +28,16 @@ function nativeAvailable(): boolean {
   }
 }
 
-let raw: Database.Database;
-
-beforeEach(() => {
-  raw = new Database(":memory:");
-  initializePondSchema(raw, () => false);
-  const memory = drizzle(raw, { schema: { ...schema, ...events } });
-  db.current = Object.assign(memory, { $raw: raw });
-  memory.insert(schema.agentChats).values({ id: "chat" }).run();
-});
-
-afterEach(() => raw.close());
-
-function seed(
+async function seed(
   rows: Array<{
     role: "user" | "assistant";
     content: string;
     metadata?: AssistantMetadata;
   }>,
 ) {
-  const memory = drizzle(raw, { schema });
+  const db = await getDb();
   rows.forEach((row, index) => {
-    memory
-      .insert(schema.agentMessages)
+    db.insert(agentMessages)
       .values({
         id: `m${index}`,
         chatId: "chat",
@@ -58,8 +53,36 @@ function seed(
 const ids = async () => (await listMessages("chat")).map((row) => row.id);
 
 describe.skipIf(!nativeAvailable())("rewindLastTurn", () => {
+  let dir = "";
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), "pond-agent-persist-"));
+    vi.spyOn(app, "getPath").mockReturnValue(dir);
+    invalidatePaths();
+    resolvePaths(join(dir, "Agent Persist.pond"));
+  });
+
+  afterAll(() => {
+    closeDb();
+    vi.restoreAllMocks();
+    invalidatePaths();
+    try {
+      rmSync(dir, { recursive: true, force: true });
+    } catch (error) {
+      /** Pond keeps `global.db` open until the process ends, and Windows can't delete an open file. */
+      if (process.platform !== "win32") throw error;
+    }
+  });
+
+  beforeEach(async () => {
+    const db = await getDb();
+    db.delete(agentMessages).run();
+    db.delete(agentChats).run();
+    db.insert(agentChats).values({ id: "chat" }).run();
+  });
+
   it("drops the latest request and its replies and hands back the request", async () => {
-    seed([
+    await seed([
       { role: "user", content: "First" },
       { role: "assistant", content: "One" },
       { role: "user", content: "Second", metadata: { replyToQuestion: "q" } },
@@ -75,7 +98,7 @@ describe.skipIf(!nativeAvailable())("rewindLastTurn", () => {
   });
 
   it("refuses a request that has no reply yet", async () => {
-    seed([
+    await seed([
       { role: "user", content: "First" },
       { role: "assistant", content: "One" },
       { role: "user", content: "Second" },
@@ -85,7 +108,7 @@ describe.skipIf(!nativeAvailable())("rewindLastTurn", () => {
   });
 
   it("refuses a routine run", async () => {
-    seed([
+    await seed([
       {
         role: "user",
         content: "Tag new Saves",
@@ -98,7 +121,7 @@ describe.skipIf(!nativeAvailable())("rewindLastTurn", () => {
   });
 
   it("refuses a reply with applied changes", async () => {
-    seed([
+    await seed([
       { role: "user", content: "Tag it" },
       {
         role: "assistant",
@@ -121,7 +144,8 @@ describe.skipIf(!nativeAvailable())("rewindLastTurn", () => {
     ]);
     await expect(rewindLastTurn("chat")).resolves.toEqual({
       ok: false,
-      error: "This reply has applied changes. Undo them before running it again.",
+      error:
+        "This reply has applied changes. Undo them before running it again.",
     });
     expect(await ids()).toEqual(["m0", "m1"]);
   });

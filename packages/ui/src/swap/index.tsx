@@ -46,7 +46,11 @@ export function Swap({
 }
 
 const TEXT_TRANSITION: Transition = { duration: 0.15, ease: "easeInOut" };
-const ICON_TRANSITION: Transition = { type: "spring", duration: 0.3, bounce: 0 };
+const ICON_TRANSITION: Transition = {
+  type: "spring",
+  duration: 0.3,
+  bounce: 0,
+};
 
 function Item({
   variant,

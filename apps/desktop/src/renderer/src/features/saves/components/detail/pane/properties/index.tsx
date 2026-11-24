@@ -1,6 +1,6 @@
+import { IconCopy, IconDots } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { sensitiveContentBand } from "@pond/schema/content-safety";
-import { IconCopy, IconDots } from "@pond/icons";
 import { Menu, type MenuItemSpec, Rating } from "@pond/ui";
 import { ColorSwatch } from "@/features/saves/components/detail/color-swatch";
 import { useSaveDetail } from "@/features/saves/hooks/use-save-detail";
@@ -74,7 +74,12 @@ function propertyRows(rows: DetailRow[], save: Save): DetailRow[] {
   });
   const size = totalSize(save);
   if (size)
-    out.push({ id: "size", label: "Size", value: formatBytes(size), kind: "text" });
+    out.push({
+      id: "size",
+      label: "Size",
+      value: formatBytes(size),
+      kind: "text",
+    });
   const added = out.find((row) => row.id === "imported");
   return out.filter(
     (row) =>
@@ -82,10 +87,10 @@ function propertyRows(rows: DetailRow[], save: Save): DetailRow[] {
   );
 }
 
-const GROUP_TITLES: Record<string, string> = {
-  Origin: "Source",
-  File: "Metadata",
-};
+const GROUP_TITLES = new Map([
+  ["Origin", "Source"],
+  ["File", "Metadata"],
+]);
 
 interface MenuEntry {
   label: string;
@@ -93,8 +98,13 @@ interface MenuEntry {
   items: () => MenuItemSpec[];
 }
 
-function groupMenu(title: string, entries: readonly MenuEntry[]): MenuItemSpec[] {
-  const text = entries.map((entry) => `${entry.label}: ${entry.value}`).join("\n");
+function groupMenu(
+  title: string,
+  entries: readonly MenuEntry[],
+): MenuItemSpec[] {
+  const text = entries
+    .map((entry) => `${entry.label}: ${entry.value}`)
+    .join("\n");
   return [
     {
       label: `Copy ${title}`,
@@ -121,7 +131,7 @@ function Group({
   entries: readonly MenuEntry[];
   children: React.ReactNode;
 }) {
-  const title = GROUP_TITLES[label] ?? label;
+  const title = GROUP_TITLES.get(label) ?? label;
   return (
     <DetailSection
       title={title}
@@ -249,7 +259,9 @@ function SaveGroups({ save, rating, onRate }: RatingProps & { save: Save }) {
     sensitivity === "likely-sensitive" || sensitivity === "possible-sensitive";
   const colors = save.dominantColors?.slice(0, 8) ?? [];
   const sensitivityLabel =
-    sensitivity === "likely-sensitive" ? "Likely Sensitive" : "Possibly Sensitive";
+    sensitivity === "likely-sensitive"
+      ? "Likely Sensitive"
+      : "Possibly Sensitive";
   const sensitivityMenu = (): MenuItemSpec[] => [
     sensitiveContentMenuItem({
       ids: [save.id],
@@ -265,7 +277,13 @@ function SaveGroups({ save, rating, onRate }: RatingProps & { save: Save }) {
       items: () => rowMenu(row, save),
     })),
     ...(title === "File" && sensitive
-      ? [{ label: "Sensitivity", value: sensitivityLabel, items: sensitivityMenu }]
+      ? [
+          {
+            label: "Sensitivity",
+            value: sensitivityLabel,
+            items: sensitivityMenu,
+          },
+        ]
       : []),
   ];
 
@@ -320,7 +338,11 @@ function SelectionGroups({
     saves.reduce((total, save) => total + totalSize(save), 0),
   );
   const sizeMenu = (): MenuItemSpec[] => [
-    { label: "Copy Size", icon: <IconCopy />, onClick: () => copyFact("Size", size) },
+    {
+      label: "Copy Size",
+      icon: <IconCopy />,
+      onClick: () => copyFact("Size", size),
+    },
   ];
   return (
     <Group

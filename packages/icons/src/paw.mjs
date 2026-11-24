@@ -15,7 +15,10 @@ const pad = [
 ];
 
 const paw = (h, s, deg) => [
-  h.poly(turn(pad, deg, 1, [9, 10]), { closed: true, corners: { 0: 3.5, 1: 2.5, 2: 2.5 } }),
+  h.poly(turn(pad, deg, 1, [9, 10]), {
+    closed: true,
+    corners: { 0: 3.5, 1: 2.5, 2: 2.5 },
+  }),
   turn(toes, deg, 1, [9, 10]).map(([x, y]) => dot(h, s, x, y)),
 ];
 

@@ -1,6 +1,8 @@
 export default ({ arc, poly }, s) => {
   const [cx, cy, r] = s.keylines.circle;
-  const dashes = [-60, 0, 60, 120, 180, 240].map((a) => arc(cx, cy, r, a - 18, a + 18));
+  const dashes = [-60, 0, 60, 120, 180, 240].map((a) =>
+    arc(cx, cy, r, a - 18, a + 18),
+  );
   return [
     ...dashes,
     poly(

@@ -47,10 +47,7 @@ async function runFishAction(
 }
 
 export function arrangeFish(placements: FishPlacement[]): void {
-  void runFishAction(
-    () => fish.arrange(placements),
-    "Couldn't move this fish",
-  );
+  void runFishAction(() => fish.arrange(placements), "Couldn't move this fish");
 }
 
 /** Moves a fish to the end of a shelf: a section id or `LOOSE`. */
@@ -98,7 +95,9 @@ function renameSection(section: FishSection): void {
             fish
               .sections()
               .map((entry) =>
-                entry.id === section.id ? { ...entry, name: name.trim() } : entry,
+                entry.id === section.id
+                  ? { ...entry, name: name.trim() }
+                  : entry,
               ),
           ),
         "Couldn't rename the section",

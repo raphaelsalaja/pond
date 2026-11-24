@@ -28,20 +28,12 @@ import {
   type SettingsGroup,
   type SettingsSection,
 } from "@pond/schema";
-import {
-  EXTERNAL_SOURCE_IDS,
-  type ExternalSource,
-} from "@pond/schema/sources";
+import { EXTERNAL_SOURCE_IDS, type ExternalSource } from "@pond/schema/sources";
+import type { ReactNode } from "react";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { sourceSectionId } from "@/features/settings/lib/download-sources";
 import { SECTION_CONFIGS } from "@/features/settings/lib/sections";
 import { BrandTile } from "@/features/sources";
-
-function sourceTile(source: ExternalSource): IconComponent {
-  return function SourceTile() {
-    return <BrandTile source={source} size={14} />;
-  };
-}
 
 const ICONS = new Map<string, IconComponent>([
   ["general", General],
@@ -64,19 +56,29 @@ const ICONS = new Map<string, IconComponent>([
   ["sources", Sources],
   ["images", Images],
   ["videos", Videos],
-  ...EXTERNAL_SOURCE_IDS.map((source): [string, IconComponent] => [
-    sourceSectionId(source),
-    sourceTile(source),
-  ]),
 ]);
 
+const SOURCE_SECTIONS = new Map(
+  EXTERNAL_SOURCE_IDS.map((source): [string, ExternalSource] => [
+    sourceSectionId(source),
+    source,
+  ]),
+);
+
+function sectionIcon(id: string): ReactNode {
+  const Icon = ICONS.get(id);
+  if (Icon) return <Icon />;
+  const source = SOURCE_SECTIONS.get(id);
+  return source ? <BrandTile source={source} size={14} /> : null;
+}
+
 export interface SectionDef extends SettingsSection {
-  icon: IconComponent;
+  icon: ReactNode;
   config: SectionConfig;
 }
 
 export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
-  const icon = ICONS.get(section.id);
+  const icon = sectionIcon(section.id);
   const config = SECTION_CONFIGS.get(section.id);
   if (!icon || !config) {
     throw new Error(`settings registry missing renderer for "${section.id}"`);

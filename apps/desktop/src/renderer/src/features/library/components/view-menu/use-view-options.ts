@@ -23,6 +23,7 @@ import {
 import { usePrefs } from "@/shared/state/prefs";
 import {
   type CardDetail,
+  DETAILS,
   type Fit,
   PRESETS,
   type Preset,
@@ -39,13 +40,13 @@ export function useViewOptions() {
   const subfolders = useIncludeSubfolders();
   const list = state.layout === "list";
 
-  const details: Record<CardDetail, boolean> = {
+  const details = {
     name: list ? listColumns.name : state.displayPrefs.name,
     info: itemInfo.visible,
     extension: state.displayPrefs.type,
     source: state.displayPrefs.source,
     count: state.displayPrefs.fileCount,
-  };
+  } satisfies Record<CardDetail, boolean>;
 
   function writeDetail(detail: CardDetail, on: boolean, inList: boolean) {
     if (detail === "name") {
@@ -70,8 +71,8 @@ export function useViewOptions() {
       void patchViewer({ galleryFit: preset.fit });
     }
     const inList = preset.layout === "list";
-    for (const [detail, on] of Object.entries(preset.details)) {
-      writeDetail(detail as CardDetail, on, inList);
+    for (const { value: detail } of DETAILS) {
+      writeDetail(detail, preset.details[detail], inList);
     }
     if (preset.infoField) setItemInfoField(preset.infoField);
   }
@@ -83,8 +84,8 @@ export function useViewOptions() {
       (preset.gap === undefined || preset.gap === gap) &&
       preset.rounding === rounding &&
       preset.fit === viewer.galleryFit &&
-      (Object.keys(preset.details) as CardDetail[]).every(
-        (detail) => preset.details[detail] === details[detail],
+      DETAILS.every(
+        ({ value: detail }) => preset.details[detail] === details[detail],
       ) &&
       (!preset.infoField || preset.infoField === itemInfo.field),
   )?.value;

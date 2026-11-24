@@ -24,7 +24,16 @@ export const aligned = (anchor, spans) =>
 export const vertical = (place) => {
   const gap = 4.5;
   const spans = [9.5, 6.5];
-  const ys = place === "top" ? [left + gap, left + 2 * gap] : place === "bottom" ? [right - 2 * gap, right - gap] : [9 - gap / 2, 9 + gap / 2];
-  const bars = place === "top" ? [left] : place === "bottom" ? [right] : [left, right];
-  return [...bars.map((y) => line(y, left, right)), ...ys.map((y, i) => line(y, 9 - spans[i] / 2, 9 + spans[i] / 2))];
+  const ys =
+    place === "top"
+      ? [left + gap, left + 2 * gap]
+      : place === "bottom"
+        ? [right - 2 * gap, right - gap]
+        : [9 - gap / 2, 9 + gap / 2];
+  const bars =
+    place === "top" ? [left] : place === "bottom" ? [right] : [left, right];
+  return [
+    ...bars.map((y) => line(y, left, right)),
+    ...ys.map((y, i) => line(y, 9 - spans[i] / 2, 9 + spans[i] / 2)),
+  ];
 };

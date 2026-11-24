@@ -267,9 +267,7 @@ function AgentPaneContent({
                       latest={message.id === lastAssistantId}
                       onAnswer={answerQuestion}
                       onRegenerate={
-                        message.id === lastAssistantId &&
-                        !running &&
-                        provider
+                        message.id === lastAssistantId && !running && provider
                           ? regenerate
                           : undefined
                       }

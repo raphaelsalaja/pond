@@ -123,7 +123,7 @@ function InboxPage({
                   </EmptyPreview.Row>
                 </EmptyPreview.Root>
               ) : (
-                <EmptyPreview.Root shape="panel">
+                <EmptyPreview.Root kind="panel">
                   <EmptyPreview.Column>
                     <EmptyPreview.Block />
                     <EmptyPreview.Line width={52} />

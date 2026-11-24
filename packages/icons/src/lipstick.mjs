@@ -9,7 +9,11 @@ const bullet = (poly, s, base, low, high, x0 = 6.875, x1 = 11.125) =>
     { corners: { 1: s.ease, 2: s.ease } },
   );
 
-export default ({ rect, poly }, s) => [rect(5.25, 8.75, 7.5, 6.875, s.ease), "M 5.25 11.25 H 12.75", bullet(poly, s, 8.75, 5, 2.375)];
+export default ({ rect, poly }, s) => [
+  rect(5.25, 8.75, 7.5, 6.875, s.ease),
+  "M 5.25 11.25 H 12.75",
+  bullet(poly, s, 8.75, 5, 2.375),
+];
 
 /** Twisted up, the inner sleeve shows between the case and the bullet. */
 export const open = ({ rect, poly }, s) => [

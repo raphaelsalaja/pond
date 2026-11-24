@@ -10,7 +10,12 @@ const cone = ({ poly }, s) =>
     { closed: true, corners: { 0: 0.75, 1: s.ease, 2: s.ease } },
   );
 
-export default (h, s) => [cone(h, s), "M 11.625 6.125 L 13.75 4", dot(h, s, 10.25, 3.25), dot(h, s, 14.75, 8.75)];
+export default (h, s) => [
+  cone(h, s),
+  "M 11.625 6.125 L 13.75 4",
+  dot(h, s, 10.25, 3.25),
+  dot(h, s, 14.75, 8.75),
+];
 
 /** More confetti bursts out. */
 export const open = (h, s) => [

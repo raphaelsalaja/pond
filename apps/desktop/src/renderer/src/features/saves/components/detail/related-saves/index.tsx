@@ -59,8 +59,7 @@ export function RelatedSaves({ saveId }: { saveId: string }) {
   const [failed, setFailed] = useState(false);
   const [slow, setSlow] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const items =
-    result.saveId === saveId ? result.items : peekRelated(saveId);
+  const items = result.saveId === saveId ? result.items : peekRelated(saveId);
   useRetainedSaves(items?.map((item) => item.id) ?? []);
 
   useEffect(() => {

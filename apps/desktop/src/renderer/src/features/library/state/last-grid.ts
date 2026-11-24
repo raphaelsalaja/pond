@@ -1,4 +1,5 @@
 import type { RouteLocation } from "@/shared/hooks/use-route-location";
+import type { RouteSearch } from "@/shared/lib/route-search";
 
 let lastHref = "/";
 let lastOutsideInbox = "/";
@@ -15,7 +16,7 @@ export function lastGridHrefOutsideInbox(): string {
 
 export function rememberGridLocation(
   location: RouteLocation,
-  stringifySearch: (search: Record<string, unknown>) => string,
+  stringifySearch: (search: RouteSearch) => string,
   inbox: boolean,
 ): void {
   const { save: _save, ...search } = location.search;

@@ -10,6 +10,9 @@ const scroll = (s, r) => {
   ];
 };
 
-export default (h, s) => scroll(s, 2);
+export default (_h, s) => scroll(s, 2);
 
-export const open = (h, s) => [scroll(s, 1.5), "M 7.75 6.5 H 11.25 M 7.75 9 H 11.25"];
+export const open = (_h, s) => [
+  scroll(s, 1.5),
+  "M 7.75 6.5 H 11.25 M 7.75 9 H 11.25",
+];

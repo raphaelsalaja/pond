@@ -202,7 +202,9 @@ function Side({
 }
 
 function Left({ minWidth = 180, maxWidth = 420, ...props }: SideProps) {
-  return <Side edge="left" minWidth={minWidth} maxWidth={maxWidth} {...props} />;
+  return (
+    <Side edge="left" minWidth={minWidth} maxWidth={maxWidth} {...props} />
+  );
 }
 
 function Right({ minWidth = 280, maxWidth = 560, ...props }: SideProps) {

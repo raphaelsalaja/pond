@@ -49,8 +49,8 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    flex: none;
     box-sizing: border-box;
+    flex: none;
     width: calc(100% + var(--ds-space-md) * 2);
     height: var(--window-header-height, 44px);
     padding-inline: var(--ds-space-md);

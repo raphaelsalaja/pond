@@ -165,7 +165,7 @@ export function TagsSection() {
             ) : total === 0 ? (
               <Empty.Root>
                 <Empty.Media>
-                  <EmptyPreview.Root shape="chip">
+                  <EmptyPreview.Root kind="chip">
                     <EmptyPreview.Row>
                       <EmptyPreview.Icon>
                         <IconTag size={12} />

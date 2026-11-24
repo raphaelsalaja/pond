@@ -85,9 +85,7 @@ export function SettingsSidebarView({
         data-status={active ? "active" : undefined}
         aria-current={active ? "page" : undefined}
       >
-        <Sidebar.Icon>
-          <section.icon />
-        </Sidebar.Icon>
+        <Sidebar.Icon>{section.icon}</Sidebar.Icon>
         <Sidebar.ItemLabel>{section.label}</Sidebar.ItemLabel>
       </Sidebar.Item>
     );

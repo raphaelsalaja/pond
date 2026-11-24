@@ -20,7 +20,10 @@ function scopeKey(request: LibraryQueryRequest): string {
 
 const CACHED_PAGES = 16;
 /** Revisiting a collection draws its last page at once, then the reload replaces it. */
-const caches = new WeakMap<QuerySessionRuntime, Map<string, LibraryQueryPage>>();
+const caches = new WeakMap<
+  QuerySessionRuntime,
+  Map<string, LibraryQueryPage>
+>();
 
 function pagesFor(runtime: QuerySessionRuntime): Map<string, LibraryQueryPage> {
   const existing = caches.get(runtime);

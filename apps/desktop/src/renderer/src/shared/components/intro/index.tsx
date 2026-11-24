@@ -130,14 +130,14 @@ function Bar({
 interface BlockProps extends ComponentPropsWithoutRef<"span"> {
   width?: number | string;
   height?: number | string;
-  shape?: "rounded" | "round";
+  variant?: "rounded" | "round";
 }
 
 /** An image or avatar, drawn as a skeleton. */
 function Block({
   width,
   height,
-  shape = "rounded",
+  variant = "rounded",
   className,
   style,
   ...props
@@ -145,7 +145,7 @@ function Block({
   return (
     <span
       className={cn(styles.block, className)}
-      data-shape={shape}
+      data-variant={variant}
       style={{ width, height, ...style }}
       {...props}
     />
@@ -165,11 +165,7 @@ interface LabelProps extends ComponentPropsWithoutRef<"span"> {
 
 function Label({ tone = "default", className, ...props }: LabelProps) {
   return (
-    <span
-      className={cn(styles.label, className)}
-      data-tone={tone}
-      {...props}
-    />
+    <span className={cn(styles.label, className)} data-tone={tone} {...props} />
   );
 }
 
@@ -192,7 +188,13 @@ interface CursorProps extends ComponentPropsWithoutRef<"span"> {}
 function Cursor({ className, ...props }: CursorProps) {
   return (
     <span className={cn(styles.cursor, className)} {...props}>
-      <svg width="11" height="15" viewBox="0 0 11 15" fill="none">
+      <svg
+        width="11"
+        height="15"
+        viewBox="0 0 11 15"
+        fill="none"
+        aria-hidden="true"
+      >
         <path d="M1 1v11.5l3-3 2.25 4.75 2-1-2.25-4.5H10.5z" />
       </svg>
       <span className={styles.you}>You</span>

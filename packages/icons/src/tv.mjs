@@ -19,4 +19,8 @@ const set = ({ poly, rect }, s) => {
 export default (h, s) => set(h, s);
 
 /** On air: a signal rises from the screen. */
-export const open = (h, s) => [set(h, s), h.arc(9, 12, 3.25, 225, 315), dot(h, s, 9, 12)];
+export const open = (h, s) => [
+  set(h, s),
+  h.arc(9, 12, 3.25, 225, 315),
+  dot(h, s, 9, 12),
+];

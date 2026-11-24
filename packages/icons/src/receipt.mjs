@@ -2,7 +2,10 @@ const [left, right, teeth, depth] = [4, 14, 4, 1.25];
 
 const zigzag = (bottom) => {
   const step = (right - left) / teeth;
-  return Array.from({ length: teeth * 2 + 1 }, (_, i) => [right - (i * step) / 2, i % 2 ? bottom : bottom - depth]);
+  return Array.from({ length: teeth * 2 + 1 }, (_, i) => [
+    right - (i * step) / 2,
+    i % 2 ? bottom : bottom - depth,
+  ]);
 };
 
 export default ({ poly }, s) => {
@@ -24,7 +27,9 @@ export const open = ({ poly, rect }, s) => {
   const slot = 3;
   return [
     rect(x0, y0, x1 - x0, slot, slot / 2),
-    poly([[right, y0 + slot], ...zigzag(y1), [left, y0 + slot]], { radius: s.ease }),
+    poly([[right, y0 + slot], ...zigzag(y1), [left, y0 + slot]], {
+      radius: s.ease,
+    }),
     "M 6.75 8.75 H 11.25",
     "M 6.75 11.25 H 11.25",
   ];

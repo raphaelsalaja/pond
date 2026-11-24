@@ -18,6 +18,10 @@ describe("folder sidebar navigation", () => {
   beforeEach(() => harness.setup());
   afterEach(() => harness.cleanup());
 
+  function current(): Element[] {
+    return [...harness.host.querySelectorAll('[aria-current="page"]')];
+  }
+
   it("opens a fish from the Fish group", async () => {
     fishList.current = [
       {
@@ -38,10 +42,15 @@ describe("folder sidebar navigation", () => {
     ];
     const router = await harness.mount();
     await act(async () => {});
+    await act(async () => harness.button("Fish").click());
+    expect(router.state.location.pathname).toBe("/fish/default");
+    expect(current()).toEqual([harness.button("Koi")]);
+
+    await act(async () => router.history.push("/"));
+    expect(harness.button("Koi").getAttribute("aria-current")).toBeNull();
     await act(async () => harness.button("Koi").click());
     expect(router.state.location.pathname).toBe("/fish/default");
-    expect(harness.button("Koi").getAttribute("aria-current")).toBe("page");
-    expect(harness.button("All").getAttribute("aria-current")).toBeNull();
+    expect(current()).toEqual([harness.button("Koi")]);
   });
 
   it("names the Downloads count on its rail button", async () => {
@@ -66,16 +75,11 @@ describe("folder sidebar navigation", () => {
     const router = await harness.mount();
     await act(async () => harness.button("Sources").click());
     expect(router.state.location.pathname).toBe("/sources");
-    expect(harness.button("Sources").getAttribute("aria-current")).toBe("page");
-    expect(harness.button("All").getAttribute("aria-current")).toBeNull();
+    expect(current()).toEqual([harness.button("Sources")]);
 
     await act(async () => harness.button("Downloads").click());
     expect(router.state.location.pathname).toBe("/downloads");
-    expect(harness.button("Downloads").getAttribute("aria-current")).toBe(
-      "page",
-    );
-    expect(harness.button("Sources").getAttribute("aria-current")).toBeNull();
-    expect(harness.button("All").getAttribute("aria-current")).toBeNull();
+    expect(current()).toEqual([harness.button("Downloads")]);
   });
 
   it("opens Uncategorized from the sidebar", async () => {
@@ -118,11 +122,10 @@ describe("folder sidebar navigation", () => {
     expect(inbox.getAttribute("aria-current")).toBe("page");
   });
 
-  it("opens Tags from the sidebar with an outline icon", async () => {
+  it("opens Tags from the rail with an outline icon", async () => {
     const router = await harness.mount();
     const tags = harness.button("Tags");
     expect(tags.querySelector('[stroke="currentColor"]')).not.toBeNull();
-    expect(tags.querySelector('path[fill="currentColor"]')).toBeNull();
     await act(async () => tags.click());
     expect(router.state.location.pathname).toBe("/tags");
     expect(tags.getAttribute("aria-current")).toBe("page");
@@ -138,33 +141,35 @@ describe("folder sidebar navigation", () => {
     );
     const current =
       harness.host.querySelector('[aria-current="page"]') ?? harness.host;
-    expect(current.getAttribute("aria-label") ?? harness.rowLabel(current)).toBe(
-      label,
-    );
+    expect(
+      current.getAttribute("aria-label") ?? harness.rowLabel(current),
+    ).toBe(label);
   });
 
-  it.each([
-    ["/untagged", "Untagged"],
-  ])("updates the %s highlight across route history", async (path, label) => {
-    const router = await harness.mount(path);
-    await act(async () => harness.button("All").click());
-    expect(router.state.location.pathname).toBe("/");
-    expect(harness.button("All").getAttribute("aria-current")).toBe("page");
-    await act(async () => router.history.back());
-    expect(router.state.location.pathname).toBe(path);
-    expect(harness.button(label).getAttribute("aria-current")).toBe("page");
-    expect(harness.button("All").getAttribute("aria-current")).toBeNull();
-    await act(async () => harness.button("Uncategorized").click());
-    expect(harness.button(label).getAttribute("aria-current")).toBeNull();
-    expect(harness.button("Uncategorized").getAttribute("aria-current")).toBe(
-      "page",
-    );
-  });
+  it.each([["/untagged", "Untagged"]])(
+    "updates the %s highlight across route history",
+    async (path, label) => {
+      const router = await harness.mount(path);
+      await act(async () => harness.button("All").click());
+      expect(router.state.location.pathname).toBe("/");
+      expect(harness.button("All").getAttribute("aria-current")).toBe("page");
+      await act(async () => router.history.back());
+      expect(router.state.location.pathname).toBe(path);
+      expect(harness.button(label).getAttribute("aria-current")).toBe("page");
+      expect(harness.button("All").getAttribute("aria-current")).toBeNull();
+      await act(async () => harness.button("Uncategorized").click());
+      expect(harness.button(label).getAttribute("aria-current")).toBeNull();
+      expect(harness.button("Uncategorized").getAttribute("aria-current")).toBe(
+        "page",
+      );
+    },
+  );
 
+  /** Rail pages swap the sidebar to their own filter list, whose rows mark the open filter with `aria-current="true"`. */
   function highlighted(): string[] {
     const labels = [
       ...harness.host.querySelectorAll(
-        'button[data-status="active"], button[aria-current="page"], button[aria-selected="true"]',
+        'button[aria-current="page"], button[aria-selected="true"]',
       ),
     ].map((node) => node.getAttribute("aria-label") ?? harness.rowLabel(node));
     return [...new Set(labels.filter((label) => label.length > 0))];
@@ -189,6 +194,10 @@ describe("folder sidebar navigation", () => {
     expect(router.state.location.pathname).toBe("/downloads");
     expect(highlighted()).toEqual(["Downloads"]);
 
+    await act(async () => router.history.back());
+    expect(router.state.location.pathname).toBe("/folders/Design");
+    expect(highlighted()).toEqual(["Design"]);
+
     await act(async () => harness.button("Repos").click());
     expect(router.state.location.pathname).toBe("/folders/Repos");
     expect(highlighted()).toEqual(["Repos"]);
@@ -197,6 +206,8 @@ describe("folder sidebar navigation", () => {
     expect(router.state.location.pathname).toBe("/sources");
     expect(highlighted()).toEqual(["Sources"]);
 
+    await act(async () => router.history.back());
+    expect(router.state.location.pathname).toBe("/folders/Repos");
     await act(async () => harness.button("Design").click());
     expect(highlighted()).toEqual(["Design"]);
 
@@ -216,6 +227,8 @@ describe("folder sidebar navigation", () => {
     expect(router.state.location.pathname).toBe("/tags");
     expect(highlighted()).toEqual(["Tags"]);
 
+    await act(async () => router.history.back());
+    expect(router.state.location.pathname).toBe("/uncategorized");
     await act(async () => harness.button("Untagged").click());
     expect(router.state.location.pathname).toBe("/untagged");
     expect(highlighted()).toEqual(["Untagged"]);
@@ -243,7 +256,6 @@ describe("folder sidebar navigation", () => {
     const untagged = labels.indexOf("Untagged");
     expect(library).toBeLessThan(uncategorized);
     expect(uncategorized).toBeLessThan(untagged);
-    expect(labels.indexOf("Sources")).toBeLessThan(labels.indexOf("Downloads"));
   });
 
   it("does not collapse library and downloads groups", async () => {

@@ -13,7 +13,17 @@ export const cone = (s) =>
       [5, 11.25],
       [s.keylines.wide[0], 11.25],
     ],
-    { closed: true, corners: { 0: s.ease, 1: s.ease / 2, 2: s.ease, 3: s.ease, 4: s.ease / 2, 5: s.ease } },
+    {
+      closed: true,
+      corners: {
+        0: s.ease,
+        1: s.ease / 2,
+        2: s.ease,
+        3: s.ease,
+        4: s.ease / 2,
+        5: s.ease,
+      },
+    },
   );
 
 export const waves = () => [

@@ -25,7 +25,9 @@ function Origin({ source }: { source: AssistantSource }) {
   const def = getSourceDefForIdentity(source.source);
   const Icon = def?.icon;
   const label =
-    def && def.source !== "web" ? def.label : (hostOf(source.url) ?? def?.label);
+    def && def.source !== "web"
+      ? def.label
+      : (hostOf(source.url) ?? def?.label);
   if (!label) return null;
   return (
     <span className={styles.origin}>

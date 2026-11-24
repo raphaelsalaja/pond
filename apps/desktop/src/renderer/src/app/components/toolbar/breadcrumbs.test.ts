@@ -12,7 +12,13 @@ const folders = [
 type Meta = Parameters<typeof buildBreadcrumbs>[0]["meta"];
 
 function grid(nav: LibraryNav, crumb: RouteMeta["crumb"] = null): Meta {
-  return { routeId: "/_library/_grid/x", nav, crumb, params: {}, surface: "grid" };
+  return {
+    routeId: "/_library/_grid/x",
+    nav,
+    crumb,
+    params: {},
+    surface: "grid",
+  };
 }
 
 function page(routeId: string, params: Record<string, string> = {}): Meta {
@@ -32,14 +38,21 @@ describe("library breadcrumbs", () => {
   it.each([
     [{ kind: "trash" }, { label: "Trash", icon: IconTrashXmark }, "Trash"],
     [{ kind: "sources" }, { label: "Sources", icon: IconNodes3 }, "Sources"],
-    [{ kind: "splitPosts" }, { label: "Split Posts", icon: IconLayers }, "Split Posts"],
+    [
+      { kind: "splitPosts" },
+      { label: "Split Posts", icon: IconLayers },
+      "Split Posts",
+    ],
   ] as const)("uses the route crumb for %o", (nav, crumb, label) => {
     expect(labels(grid(nav, crumb))).toEqual([label]);
   });
 
   it("names a page by its route crumb", () => {
     expect(
-      labels({ ...page("/_library/canvases"), crumb: { label: "Canvases", icon: IconLayers } }),
+      labels({
+        ...page("/_library/canvases"),
+        crumb: { label: "Canvases", icon: IconLayers },
+      }),
     ).toEqual(["Canvases"]);
   });
 
@@ -53,7 +66,11 @@ describe("library breadcrumbs", () => {
         labels: { post: "Studio" },
       }),
     ).toMatchObject([
-      { label: "Split Posts", path: "/split-posts", nav: { kind: "splitPosts" } },
+      {
+        label: "Split Posts",
+        path: "/split-posts",
+        nav: { kind: "splitPosts" },
+      },
       { label: "Studio", path: "/split-posts/instagram%3ADAbC", nav },
     ]);
   });
@@ -97,18 +114,25 @@ describe("library breadcrumbs", () => {
     ["videos", ["Settings", "Videos"]],
   ] as const)("labels the settings section %s", (section, expected) => {
     expect(
-      labels(page("/_library/settings/$section", { section }), `/settings/${section}`),
+      labels(
+        page("/_library/settings/$section", { section }),
+        `/settings/${section}`,
+      ),
     ).toEqual(expected);
   });
 
   it("keeps Settings as its own root", () => {
-    expect(labels(page("/_library/settings/"), "/settings")).toEqual(["Settings"]);
+    expect(labels(page("/_library/settings/"), "/settings")).toEqual([
+      "Settings",
+    ]);
   });
 
   it("nests a source download page under Sources", () => {
     expect(
       buildBreadcrumbs({
-        meta: page("/_library/settings/$section", { section: "sources-youtube" }),
+        meta: page("/_library/settings/$section", {
+          section: "sources-youtube",
+        }),
         pathname: "/settings/sources-youtube",
         folders,
       }).map(({ label, path }) => ({ label, path })),
@@ -155,7 +179,10 @@ describe("library breadcrumbs", () => {
   });
 
   it("adds a search crumb on the grid until a save opens", () => {
-    const meta = grid({ kind: "trash" }, { label: "Trash", icon: IconTrashXmark });
+    const meta = grid(
+      { kind: "trash" },
+      { label: "Trash", icon: IconTrashXmark },
+    );
     expect(labels(meta, "/trash", { searchResultCount: 3 })).toEqual([
       "Trash",
       "Search results (3)",
@@ -166,7 +193,10 @@ describe("library breadcrumbs", () => {
   });
 
   it("supports Uncategorized and tag locations", () => {
-    expect(labels(grid({ kind: "uncategorized" }))).toEqual(["All", "Uncategorized"]);
+    expect(labels(grid({ kind: "uncategorized" }))).toEqual([
+      "All",
+      "Uncategorized",
+    ]);
     expect(labels(grid({ kind: "tag", name: "Animation" }))).toEqual([
       "All",
       "Animation",

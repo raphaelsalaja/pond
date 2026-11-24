@@ -188,9 +188,8 @@ describe("saved smart folder operations", () => {
   });
 
   it("captures folder scope and saved view presentation", async () => {
-    await router.navigate({
-      href: pathForLibraryNav({ kind: "folder", id: "folder" }),
-    });
+    router.history.push(pathForLibraryNav({ kind: "folder", id: "folder" }));
+    await router.load();
     setQuery(branding);
     setLayout("grid");
     setSort({ key: "title", dir: "asc" });

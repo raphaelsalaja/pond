@@ -5,7 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { LibraryLoading } from "@/features/library/components/empty";
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
-import { postTitle, useSplitPosts } from "@/features/library/hooks/use-split-posts";
+import {
+  postTitle,
+  useSplitPosts,
+} from "@/features/library/hooks/use-split-posts";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
 import { Card, getSourceLabel } from "@/features/saves";
 import { useSave } from "@/features/saves/pool";
@@ -109,7 +112,7 @@ export function SplitPostsPage() {
         ) : posts.isError ? (
           <Empty.Root role="alert">
             <Empty.Media>
-              <EmptyPreview.Root shape="tile">
+              <EmptyPreview.Root kind="tile">
                 <EmptyPreview.Column>
                   <EmptyPreview.Block>
                     <IconLayers size={12} />

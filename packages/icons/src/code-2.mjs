@@ -23,4 +23,7 @@ const chevrons = (poly, s) => {
 
 export default ({ poly }, s) => [chevrons(poly, s), "M 9 3.375 V 14.625"];
 
-export const open = ({ poly }, s) => [chevrons(poly, s), "M 10.125 3.375 L 7.875 14.625"];
+export const open = ({ poly }, s) => [
+  chevrons(poly, s),
+  "M 10.125 3.375 L 7.875 14.625",
+];
