@@ -149,7 +149,7 @@ mac:
     # before an unsandboxed app may create the Safari socket in it.
     - from: resources/SafariExtension/app-group.node
       to: app-group.node
-    # Compiled from the Aqua tint's icon.icon by prepare-app-icon when actool 26+ is available.
+    # Compiled from the Aqua tint's icon.icon by prepare-app-icon when actool 27+ is available.
     - from: build/Assets.car
       to: Assets.car
   # App extensions: the Safari App Extension (scripts/build-safari-extension.mjs) and
