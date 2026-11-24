@@ -2,6 +2,7 @@ export interface LibraryWorkOperations {
   stopAutoImport: () => Promise<void>;
   stopLibraryTransfers: () => Promise<void>;
   pauseAndDrainReconciler: () => Promise<boolean>;
+  interruptAndDrainReconciler: () => Promise<boolean>;
   suspendMutations: () => Promise<void>;
   resumeMutations: () => void;
   resumeLibraryTransfers: () => void;
@@ -10,15 +11,21 @@ export interface LibraryWorkOperations {
   warn: (message: string, error: Error) => void;
 }
 
+/** `drain` lets running downloads finish; `interrupt` puts them back in the queue so a switch never waits on one. */
+export type LibraryWorkSuspension = "drain" | "interrupt";
+
 export function createLibraryWorkCoordinator(ops: LibraryWorkOperations) {
   let reconcilerWasPaused: boolean | null = null;
 
   return {
-    async suspend(): Promise<void> {
+    async suspend(mode: LibraryWorkSuspension = "drain"): Promise<void> {
       await ops.stopAutoImport();
       await ops.stopLibraryTransfers();
       if (reconcilerWasPaused === null) {
-        reconcilerWasPaused = await ops.pauseAndDrainReconciler();
+        reconcilerWasPaused =
+          mode === "interrupt"
+            ? await ops.interruptAndDrainReconciler()
+            : await ops.pauseAndDrainReconciler();
       }
       await ops.suspendMutations();
     },

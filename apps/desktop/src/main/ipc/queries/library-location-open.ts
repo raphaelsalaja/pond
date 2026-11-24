@@ -19,7 +19,7 @@ import {
 } from "../../../shared/logo-crop";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { createPondBundle } from "../../core/ensure-default-library";
-import { verifyLibraryBackup } from "../../core/library-backup";
+import { isLibraryBackup } from "../../core/library-backup";
 import { updateLibraryIdentity } from "../../core/library-identity";
 import { relocateLibrary } from "../../core/library-ops";
 import {
@@ -34,7 +34,10 @@ import { isSamePath } from "../../lib/path-identity";
 import { libraryRoot as libraryRootDir } from "../../paths";
 import { recentLibrariesFile } from "./library-location-paths";
 import {
-  relaunchSoon,
+  announceLibraryOpening,
+  announceLibrarySwitch,
+  librarySwitchTarget,
+  reopenLibrary,
   resumeLibraryWork,
   suspendLibraryWork,
 } from "./library-location-runtime";
@@ -185,23 +188,40 @@ export const libraryLocationOpenQueries = {
   "library.createAt": query(
     z.object({ path: StringParam, name: StringParam }),
     async (params): Promise<QueryResult<"library.createAt">> => {
+      const library = { name: params.name, icon: null };
+      announceLibraryOpening(library);
+      let result: Awaited<ReturnType<typeof createPondBundle>>;
       try {
-        await suspendLibraryWork();
+        await suspendLibraryWork("interrupt");
         await flushTagsDump();
-        const result = await createPondBundle(params.path, params.name);
-        if (!result.ok) {
-          await resumeLibraryWork();
-        } else {
-          await relaunchSoon();
-        }
-        return result;
+        result = createPondBundle(params.path, params.name);
       } catch (error) {
         await resumeLibraryWork();
+        announceLibrarySwitch({
+          phase: "failed",
+          library,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Couldn't open that library.",
+        });
         if (error instanceof LibraryMetadataError) {
           return { ok: false as const, error: error.message };
         }
         throw error;
       }
+      if (!result.ok) {
+        await resumeLibraryWork();
+        announceLibrarySwitch({
+          phase: "failed",
+          library,
+          error:
+            "Pond can't create a library in that folder. Try a different one.",
+        });
+        return result;
+      }
+      await reopenLibrary();
+      return result;
     },
   ),
 
@@ -257,25 +277,40 @@ export const libraryLocationOpenQueries = {
         return { ok: true as const, path: dest, mode: "adopt" as const };
       }
       try {
-        await suspendLibraryWork();
-        await flushTagsDump();
         readLibraryId(dest);
-        if ((await verifyLibraryBackup(dest)).verifiedManifest) {
+        if (await isLibraryBackup(dest)) {
           throw new Error(
             "Use Restore Backup to open a copy of this snapshot.",
           );
         }
-        const result = await relocateLibrary(dest, "adopt");
-        await relaunchSoon();
-        return { ok: true as const, ...result };
-      } catch (err) {
-        await resumeLibraryWork();
+      } catch (error) {
         return {
           ok: false as const,
           error:
-            err instanceof Error ? err.message : "Couldn't open that library.",
+            error instanceof Error
+              ? error.message
+              : "Couldn't open that library.",
         };
       }
+
+      const library = await librarySwitchTarget(dest);
+      announceLibraryOpening(library);
+      let result: Awaited<ReturnType<typeof relocateLibrary>>;
+      try {
+        await suspendLibraryWork("interrupt");
+        await flushTagsDump();
+        result = await relocateLibrary(dest, "adopt");
+      } catch (error) {
+        await resumeLibraryWork();
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Couldn't open that library.";
+        announceLibrarySwitch({ phase: "failed", library, error: message });
+        return { ok: false as const, error: message };
+      }
+      await reopenLibrary();
+      return { ok: true as const, ...result };
     },
   ),
 } satisfies QueryHandlerMap;

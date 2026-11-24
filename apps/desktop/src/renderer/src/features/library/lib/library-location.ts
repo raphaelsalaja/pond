@@ -1,4 +1,5 @@
 import { DEFAULT_LIBRARY_NAME } from "@shared/constants";
+import { librarySwitchFailed } from "@/features/library/state/library-switch";
 import { notify } from "@/shared/lib/toast";
 
 function reportFailure(
@@ -7,7 +8,9 @@ function reportFailure(
   title: string,
   fallback: string,
 ): void {
-  if (result.ok || result.reason === "cancelled") return;
+  if (result.ok || result.reason === "cancelled" || librarySwitchFailed()) {
+    return;
+  }
   notify({ id, title, description: result.error ?? fallback });
 }
 

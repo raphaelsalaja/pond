@@ -19,6 +19,7 @@ import {
 import { noteSuccess } from "./rate-governor";
 import {
   type DueTask,
+  LibrarySwitchInterrupt,
   MAX_BACKGROUND_INFLIGHT,
   MAX_GLOBAL_INFLIGHT,
   MAX_INTERACTIVE_INFLIGHT,
@@ -31,6 +32,7 @@ import {
   WorkerWatchdogError,
 } from "./reconciler-config";
 import {
+  abortAllRunningIngest,
   abortRunningIngest,
   trackRunningIngest,
   untrackRunningIngest,
@@ -126,6 +128,27 @@ export async function pauseAndDrainReconciler(
   } finally {
     if (timer) clearTimeout(timer);
   }
+}
+
+export async function interruptAndDrainReconciler(
+  timeoutMs?: number,
+): Promise<boolean> {
+  const wasPaused = paused;
+  pauseReconciler();
+  abortAllRunningIngest(new LibrarySwitchInterrupt());
+  try {
+    await pauseAndDrainReconciler(timeoutMs);
+  } catch (error) {
+    if (!wasPaused) resumeReconciler();
+    throw error;
+  }
+  return wasPaused;
+}
+
+/** Runs the startup lease and orphan recovery again after the open Library changes. */
+export async function reinitializeReconciler(): Promise<void> {
+  if (!started) return;
+  await track(initializeReconciler());
 }
 
 export function isReconcilerPaused(): boolean {
@@ -531,12 +554,16 @@ async function dispatchTask(task: DueTask): Promise<void> {
     ev.attempts = task.attempts + 1;
   } catch (err) {
     activity.finish("failed");
-    const result = await handleFailure(task, err);
+    const cause =
+      controller.signal.reason instanceof LibrarySwitchInterrupt
+        ? controller.signal.reason
+        : err;
+    const result = await handleFailure(task, cause);
     if (result.settled) {
       await completeQueueGenerationIfSettled(task.generationId);
     }
     ev.outcome = result.settled ? result.outcome : "skipped";
-    ev.error = toErrorInfo(err);
+    ev.error = toErrorInfo(cause);
     ev.nextRunAt = result.nextRunAt;
     ev.attempts = result.recordedAttempts;
   } finally {

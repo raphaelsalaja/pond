@@ -178,12 +178,26 @@ lease token and cancellation fence. Worker timeout, exit, or malformed output
 fails the attempt in main, where the normal retry policy applies. A worker
 with no job for thirty seconds exits, and the next job starts a new one. Browser
 session harvesting, page archives, tweet capture, text-card rendering, Library
-file writes, and every task-state transition remain main-owned. Library
-switches pause claims and drain accepted work before paths or database
+file writes, and every task-state transition remain main-owned. Opening another
+Library pauses claims and aborts running tasks with `LibrarySwitchInterrupt`;
+settlement returns them to pending without spending an attempt, and the old
+Library picks them up again next time it opens. Rename, move, and restore drain
+accepted work instead. Either way, tasks settle before paths or database
 ownership change. Mac suspend extends current leases; resume refreshes their
 heartbeats before claim admission restarts.
 
-Downloads activity is main-owned transient state, exposed through the typed `downloads.activity` query in the shared download activity contract. The reconciler owns task lifetimes; workers report observed phases and per-transfer measurements through their context. Direct media fetches report response and first-byte timings and streamed byte counts; yt-dlp reports its structured progress fields. Request telemetry includes only the method, hostname, status, and content type. Unobserved measurements remain absent. Snapshots bound recent task, transfer, and phase history, discard late worker callbacks after settlement, and clear when the development app switches libraries; production switches restart the process. The renderer polls this snapshot for the Downloads page instead of persisting or broadcasting each progress update.
+Library switches run in the same process. `reopenLibrary` in
+`ipc/queries/library-location-runtime` closes Library-scoped windows, stops
+background work (`main/library-services`), the storage watcher, health checks,
+Syncs and Agent replies, closes the database, and clears cached paths,
+preferences, and undo history. It then hydrates the new Library, recovers
+leases and Syncs, restarts the same services launch starts, and reloads the
+Library window. Imports, exports, and backups cannot pause, so a switch waits
+for them. Main broadcasts `IPC.librarySwitch` before suspending work, and the
+renderer's `LibrarySwitchCover` shows the target Library until the reload, or
+the reason it couldn't open.
+
+Downloads activity is main-owned transient state, exposed through the typed `downloads.activity` query in the shared download activity contract. The reconciler owns task lifetimes; workers report observed phases and per-transfer measurements through their context. Direct media fetches report response and first-byte timings and streamed byte counts; yt-dlp reports its structured progress fields. Request telemetry includes only the method, hostname, status, and content type. Unobserved measurements remain absent. Snapshots bound recent task, transfer, and phase history, discard late worker callbacks after settlement, and clear when another Library opens. The renderer polls this snapshot for the Downloads page instead of persisting or broadcasting each progress update.
 
 Smart Folders, Groups, and Saved Views share the existing saved view persistence and IPC operations, distinguished by kind and optional parent group. Main validates group membership and prevents cycles; deleting a group promotes its children atomically. The library feature owns their sidebar tree and selection. Editable filters stay separate from inherited ancestor conditions, which are combined with AND for library retrieval. Only Saved Views restore layout and sorting.
 
@@ -196,7 +210,7 @@ Fish are main-owned records in the Library's `fish.json`, validated against `sha
 The Raycast extension is a separate workspace app and never reads Library files
 directly. It uses the authenticated loopback HTTP API for search, capture,
 active Library information, recent Libraries, and Library switching. The
-desktop keeps lifecycle coordination and relaunch behavior in the main process.
+desktop keeps lifecycle coordination and the Library reopen in the main process.
 The Pond CLI launches the app through a platform adapter, waits for bounded
 readiness, then uses the same local client and operation previews.
 

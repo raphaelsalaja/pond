@@ -32,6 +32,14 @@ export class WorkerWatchdogError extends Error {
   }
 }
 
+/** Aborts running tasks when another Library opens; settlement puts them back in the queue without spending an attempt. */
+export class LibrarySwitchInterrupt extends Error {
+  constructor() {
+    super("Paused while another library opened");
+    this.name = "LibrarySwitchInterrupt";
+  }
+}
+
 interface WorkerContext {
   signal: AbortSignal;
   reportActivity: ReportDownloadActivity;
