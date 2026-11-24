@@ -4,8 +4,11 @@ const BOOKMARKS_SELECTOR = 'a[href="/i/bookmarks"], a[href="/i/bookmarks/all"]';
 const RELABELED_ATTR = "data-pond-relabeled";
 const NEW_LABEL = "Open Pond";
 
+/** A content script left behind by an extension reload can't reach the background, and the page has nowhere to show it. */
+function ignoreOrphaned() {}
+
 function openPond() {
-  void sendMessage("openPond", undefined).catch(() => {});
+  void sendMessage("openPond", undefined).catch(ignoreOrphaned);
 }
 
 function relabel(anchor: HTMLAnchorElement) {

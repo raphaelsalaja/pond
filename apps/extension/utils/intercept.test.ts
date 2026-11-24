@@ -1,19 +1,15 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { canonicalCaptureUrl, capture } from "./intercept";
+import type { PondMessage } from "./types";
 
-interface PostedCapture {
-  message: { payload: { url: string } };
-}
-
-const postMessage = vi.fn<(data: PostedCapture, origin: string) => void>();
-
-afterEach(() => {
-  postMessage.mockReset();
-  vi.unstubAllGlobals();
-});
-
-function captured(): Array<string> {
-  return postMessage.mock.calls.map(([data]) => data.message.payload.url);
+function recorder() {
+  const urls: Array<string> = [];
+  const send = (message: PondMessage) => {
+    if (message.kind === "capture") {
+      urls.push(message.payload.url);
+    }
+  };
+  return { urls, send };
 }
 
 describe("canonicalCaptureUrl", () => {
@@ -33,27 +29,33 @@ describe("canonicalCaptureUrl", () => {
 
 describe("capture", () => {
   it("sends one save when the click hook and the interceptor both report it", () => {
-    vi.stubGlobal("window", { postMessage });
-    capture("https://www.instagram.com/reel/DUP1/", "instagram:save", 1000);
+    const { urls, send } = recorder();
+    capture(
+      "https://www.instagram.com/reel/DUP1/",
+      "instagram:save",
+      1000,
+      send,
+    );
     capture(
       "https://www.instagram.com/p/DUP1/",
       "instagram:graphql-save",
       2500,
+      send,
     );
-    expect(captured()).toEqual(["https://www.instagram.com/reel/DUP1/"]);
+    expect(urls).toEqual(["https://www.instagram.com/reel/DUP1/"]);
   });
 
   it("keeps a like and a save of one post apart", () => {
-    vi.stubGlobal("window", { postMessage });
-    capture("https://www.instagram.com/p/BOTH/", "instagram:like", 1000);
-    capture("https://www.instagram.com/p/BOTH/", "instagram:save", 1100);
-    expect(captured()).toHaveLength(2);
+    const { urls, send } = recorder();
+    capture("https://www.instagram.com/p/BOTH/", "instagram:like", 1000, send);
+    capture("https://www.instagram.com/p/BOTH/", "instagram:save", 1100, send);
+    expect(urls).toHaveLength(2);
   });
 
   it("sends the same save again once the window has passed", () => {
-    vi.stubGlobal("window", { postMessage });
-    capture("https://www.threads.com/t/AGAIN", "threads:save", 1000);
-    capture("https://www.threads.com/t/AGAIN", "threads:save", 6000);
-    expect(captured()).toHaveLength(2);
+    const { urls, send } = recorder();
+    capture("https://www.threads.com/t/AGAIN", "threads:save", 1000, send);
+    capture("https://www.threads.com/t/AGAIN", "threads:save", 6000, send);
+    expect(urls).toHaveLength(2);
   });
 });

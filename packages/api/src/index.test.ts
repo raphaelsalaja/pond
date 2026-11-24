@@ -1,5 +1,5 @@
 import type { JsonValue } from "@pond/schema/json";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
   hostToSource,
@@ -41,15 +41,20 @@ function sentBody(init: RequestInit) {
   return z.json().parse(body);
 }
 
-function recorder(body: JsonValue) {
+function recordFetch(reply: () => Response) {
   const calls: Array<{ url: string; init: RequestInit }> = [];
-  const client = new PondApi({
-    token: "secret",
-    fetch: async (url, init = {}) => {
-      calls.push({ url: String(url), init });
-      return response({ status: "success", data: body });
-    },
-  });
+  const fetcher: typeof fetch = async (url, init = {}) => {
+    calls.push({ url: String(url), init });
+    return reply();
+  };
+  return { calls, fetch: fetcher };
+}
+
+function recorder(body: JsonValue) {
+  const { calls, fetch } = recordFetch(() =>
+    response({ status: "success", data: body }),
+  );
+  const client = new PondApi({ token: "secret", fetch });
   return { calls, client };
 }
 
@@ -68,7 +73,7 @@ describe("PondApi", () => {
   });
 
   it("authenticates and validates successful responses", async () => {
-    const fetcher = vi.fn(async () =>
+    const { calls, fetch } = recordFetch(() =>
       response({
         status: "success",
         data: {
@@ -79,58 +84,55 @@ describe("PondApi", () => {
         },
       }),
     );
-    const client = new PondApi({
-      token: async () => "secret",
-      fetch: fetcher,
-    });
+    const client = new PondApi({ token: async () => "secret", fetch });
     await expect(client.appInfo()).resolves.toMatchObject({ version: "1.2.3" });
-    expect(fetcher).toHaveBeenCalledWith(
-      "http://127.0.0.1:41610/api/v2/app/info",
-      expect.objectContaining({
+    expect(calls).toContainEqual({
+      url: "http://127.0.0.1:41610/api/v2/app/info",
+      init: expect.objectContaining({
         headers: expect.objectContaining({
           authorization: "Bearer secret",
         }),
       }),
-    );
+    });
   });
 
   it("returns thumbnail bytes with their image type", async () => {
-    const fetcher = vi.fn(
-      async () =>
+    const { calls, fetch } = recordFetch(
+      () =>
         new Response(new Uint8Array([137, 80, 78, 71]), {
           headers: { "content-type": "image/png" },
         }),
     );
-    const client = new PondApi({ token: "secret", fetch: fetcher });
+    const client = new PondApi({ token: "secret", fetch });
     await expect(client.thumbnail("save 1")).resolves.toEqual({
       type: "image/png",
       bytes: new Uint8Array([137, 80, 78, 71]),
       etag: null,
     });
-    expect(fetcher).toHaveBeenCalledWith(
-      "http://127.0.0.1:41610/api/v2/saves/thumb?id=save+1&size=original",
-      expect.objectContaining({
+    expect(calls).toContainEqual({
+      url: "http://127.0.0.1:41610/api/v2/saves/thumb?id=save+1&size=original",
+      init: expect.objectContaining({
         headers: expect.objectContaining({ authorization: "Bearer secret" }),
       }),
-    );
+    });
   });
 
   it("asks for a sized thumbnail and returns its ETag", async () => {
-    const fetcher = vi.fn(
-      async () =>
+    const { calls, fetch } = recordFetch(
+      () =>
         new Response(new Uint8Array([1]), {
           headers: { "content-type": "image/webp", etag: '"abc"' },
         }),
     );
-    const client = new PondApi({ fetch: fetcher });
+    const client = new PondApi({ fetch });
     await expect(client.thumbnail("save", "small")).resolves.toMatchObject({
       type: "image/webp",
       etag: '"abc"',
     });
-    expect(fetcher).toHaveBeenCalledWith(
-      "http://127.0.0.1:41610/api/v2/saves/thumb?id=save&size=small",
-      expect.anything(),
-    );
+    expect(calls).toContainEqual({
+      url: "http://127.0.0.1:41610/api/v2/saves/thumb?id=save&size=small",
+      init: expect.anything(),
+    });
   });
 
   it("returns no thumbnail for the no_thumbnail code", async () => {

@@ -51,17 +51,15 @@ function Fixture({
 
 /** Pointer moves land on the next animation frame, so each event waits for one. */
 async function pointer(target: HTMLElement, type: string, clientX: number) {
-  const event = new MouseEvent(type, {
+  const event = new PointerEvent(type, {
     bubbles: true,
     cancelable: true,
     button: 0,
     buttons: type === "pointerup" ? 0 : 1,
     clientX,
-  });
-  Object.defineProperties(event, {
-    pointerId: { value: 1 },
-    pointerType: { value: "mouse" },
-    isPrimary: { value: true },
+    pointerId: 1,
+    pointerType: "mouse",
+    isPrimary: true,
   });
   await act(async () => {
     target.dispatchEvent(event);
@@ -91,22 +89,8 @@ describe("sidebar resize handle", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
-      function (this: HTMLElement) {
-        const shell = this.closest<HTMLElement>('[data-slot="window"]');
-        const width = Number.parseFloat(
-          shell?.style.getPropertyValue("--window-left-track") ?? "300",
-        );
-        return new DOMRect(0, 0, width, 600);
-      },
-    );
     act(() => {
       root.render(<Fixture onResize={resized} onCollapse={collapsed} />);
-    });
-    Object.defineProperties(element('[data-slot="handle"]'), {
-      setPointerCapture: { value: vi.fn(), configurable: true },
-      releasePointerCapture: { value: vi.fn(), configurable: true },
-      hasPointerCapture: { value: vi.fn(() => true), configurable: true },
     });
   });
 
@@ -117,8 +101,6 @@ describe("sidebar resize handle", () => {
     container.remove();
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
   });
 
   it("resizes with the keyboard, reports current width and returns focus on collapse", async () => {

@@ -70,6 +70,12 @@ const subscribeNever = () => () => {};
 const readFullscreenEnabled = () => document.fullscreenEnabled;
 const readFullscreenUnsupported = () => false;
 
+/** A play cut short by a pause or refused by autoplay policy leaves the video paused, which the controls already show. */
+function keepPaused() {}
+
+/** A refused fullscreen change leaves the player where it was, which the controls already show. */
+function keepScreenMode() {}
+
 export interface MediaStateApi {
   state: MediaState;
   actions: MediaActions;
@@ -202,12 +208,12 @@ export function useMediaState(
           return;
         }
         if (v.paused) {
-          void v.play().catch(() => {});
+          void v.play().catch(keepPaused);
         } else {
           v.pause();
         }
       },
-      play: () => void videoRef.current?.play().catch(() => {}),
+      play: () => void videoRef.current?.play().catch(keepPaused),
       pause: () => videoRef.current?.pause(),
       seek,
       seekBy: (delta: number) => {
@@ -235,9 +241,9 @@ export function useMediaState(
           return;
         }
         if (document.fullscreenElement === target) {
-          void document.exitFullscreen().catch(() => {});
+          void document.exitFullscreen().catch(keepScreenMode);
         } else {
-          void target.requestFullscreen().catch(() => {});
+          void target.requestFullscreen().catch(keepScreenMode);
         }
       },
       stepFrame: (delta: number) => {

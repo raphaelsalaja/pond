@@ -1,28 +1,13 @@
-/** @vitest-environment jsdom */
-
 import { act, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { DatePicker, DatePopover } from ".";
 
-/** The popover takes seconds to open on loaded macOS CI runners. */
-const OPEN_TIMEOUT = 15_000;
-
-vi.setConfig({ testTimeout: OPEN_TIMEOUT * 2 });
-
 let root: Root;
 let host: HTMLDivElement;
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -31,7 +16,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 async function openPicker(props: {
@@ -44,16 +28,13 @@ async function openPicker(props: {
   });
   const trigger = host.querySelector<HTMLElement>('[aria-label^="Date"]');
   await act(async () => trigger?.click());
-  return vi.waitFor(
-    () => {
-      const grid = document.querySelector<HTMLElement>("table");
-      if (!grid) {
-        throw new Error("Calendar did not open");
-      }
-      return grid;
-    },
-    { timeout: OPEN_TIMEOUT },
-  );
+  return vi.waitFor(() => {
+    const grid = document.querySelector<HTMLElement>("table");
+    if (!grid) {
+      throw new Error("Calendar did not open");
+    }
+    return grid;
+  });
 }
 
 function Anchored({
@@ -143,14 +124,11 @@ it("opens beside its anchor and picks a day inside its range", async () => {
       <Anchored onOpenChange={onOpenChange} onValueChange={onValueChange} />,
     ),
   );
-  await vi.waitFor(
-    () => {
-      if (!document.querySelector('[aria-label="Choose Date"] table')) {
-        throw new Error("Calendar did not open");
-      }
-    },
-    { timeout: OPEN_TIMEOUT },
-  );
+  await vi.waitFor(() => {
+    if (!document.querySelector('[aria-label="Choose Date"] table')) {
+      throw new Error("Calendar did not open");
+    }
+  });
   expect(day("2026-10-09").getAttribute("aria-disabled")).toBe("true");
   expect(day("2026-10-18").getAttribute("aria-disabled")).toBe("true");
   expect(day("2026-10-14").getAttribute("aria-disabled")).toBeNull();

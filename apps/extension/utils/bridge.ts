@@ -8,6 +8,9 @@ import type { PondLogEntry } from "./types";
 
 const CAPTURES_PER_MINUTE = 30;
 
+/** A content script left behind by an extension reload can't reach the background, and the page has nowhere to show it. */
+function ignoreOrphaned() {}
+
 export async function bridge(source: ExternalSource): Promise<void> {
   let settings = await getSettings();
   watchSettings((next) => {
@@ -45,7 +48,7 @@ export async function bridge(source: ExternalSource): Promise<void> {
       if (!accepted || !allow(Date.now())) {
         return;
       }
-      void sendMessage("capture", accepted).catch(() => {});
+      void sendMessage("capture", accepted).catch(ignoreOrphaned);
       return;
     }
 
@@ -63,7 +66,7 @@ export async function bridge(source: ExternalSource): Promise<void> {
       if (detail !== undefined) {
         entry.data = detail;
       }
-      void sendMessage("log", entry).catch(() => {});
+      void sendMessage("log", entry).catch(ignoreOrphaned);
     }
   });
 }

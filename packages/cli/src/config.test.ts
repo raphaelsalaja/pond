@@ -5,21 +5,31 @@ import { describe, expect, it } from "vitest";
 import { configPath, configReadPaths, readConfig, writeConfig } from "./config";
 
 describe("CLI config", () => {
-  it("writes scoped credentials and applies owner-only POSIX permissions", async () => {
+  it("writes scoped credentials it reads back", async () => {
     const directory = await mkdtemp(join(tmpdir(), "pond-cli-"));
     const path = join(directory, "config.json");
     try {
       await writeConfig({ token: "secret" }, path);
       await expect(readConfig(path)).resolves.toEqual({ token: "secret" });
-      // Windows reports synthetic POSIX mode bits; access is governed by the
-      // inherited ACL of the user's private configuration directory.
-      if (process.platform !== "win32") {
-        expect((await stat(path)).mode & 0o777).toBe(0o600);
-      }
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
   });
+
+  /** Windows reports synthetic POSIX mode bits; the private config directory's inherited ACL governs access. */
+  it.skipIf(process.platform === "win32")(
+    "applies owner-only POSIX permissions",
+    async () => {
+      const directory = await mkdtemp(join(tmpdir(), "pond-cli-"));
+      const path = join(directory, "config.json");
+      try {
+        await writeConfig({ token: "secret" }, path);
+        expect((await stat(path)).mode & 0o777).toBe(0o600);
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
+    },
+  );
 });
 
 describe("CLI config location", () => {

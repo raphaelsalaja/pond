@@ -39,6 +39,9 @@ function itemAt(target: EventTarget | null): PageItem | null {
   return null;
 }
 
+/** A content script left behind by an extension reload can't reach the background, and the page has nowhere to show it. */
+function ignoreOrphaned() {}
+
 export default defineContentScript({
   matches: ["<all_urls>"],
   runAt: "document_idle",
@@ -66,7 +69,7 @@ export default defineContentScript({
         event.preventDefault();
         event.stopPropagation();
         void sendMessage("gesture", { kind: "alt-click", item }).catch(
-          () => {},
+          ignoreOrphaned,
         );
       },
       { capture: true },

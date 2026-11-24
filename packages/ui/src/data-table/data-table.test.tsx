@@ -36,11 +36,6 @@ const columns: Array<TableColumn<TestRow>> = [
   },
 ];
 
-class ResizeObserverStub {
-  observe() {}
-  disconnect() {}
-}
-
 async function click(node: HTMLElement, init: MouseEventInit = {}) {
   await act(() =>
     node.dispatchEvent(
@@ -55,7 +50,6 @@ describe("DataTable", () => {
 
   beforeEach(() => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-    vi.stubGlobal("ResizeObserver", ResizeObserverStub);
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -66,7 +60,6 @@ describe("DataTable", () => {
       root.unmount();
     });
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function renderTable(

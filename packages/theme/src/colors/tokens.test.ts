@@ -139,9 +139,20 @@ function build(
   return tokens;
 }
 
+/** Spaces a token may be written in: an sRGB theme stays in sRGB, a P3 theme may use either. */
+const WRITTEN_SPACES: Record<Gamut, Array<Gamut>> = {
+  srgb: ["srgb"],
+  p3: ["srgb", "p3"],
+};
+
 const cases = THEME_PRESETS.flatMap((preset) =>
   GAMUTS.flatMap((gamut) =>
-    CONTRASTS.map((contrast) => ({ id: preset.id, gamut, contrast })),
+    CONTRASTS.map((contrast) => ({
+      id: preset.id,
+      gamut,
+      contrast,
+      spaces: WRITTEN_SPACES[gamut],
+    })),
   ),
 );
 
@@ -194,13 +205,11 @@ describe("solveScales", () => {
 
   it.each(cases)(
     "$id at contrast $contrast in $gamut stays inside the gamut",
-    ({ id, gamut, contrast }) => {
+    ({ id, gamut, contrast, spaces }) => {
       const t = build(id, contrast, gamut);
       for (const value of Object.values(t.tokens)) {
         const { encoded, space } = paint(value);
-        if (gamut === "srgb") {
-          expect(space).toBe("srgb");
-        }
+        expect(spaces).toContain(space);
         for (const channel of encoded) {
           expect(channel).toBeGreaterThanOrEqual(0);
           expect(channel).toBeLessThanOrEqual(1);

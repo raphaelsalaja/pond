@@ -1,27 +1,18 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { DataTable } from "../../../packages/ui/src/data-table";
 
-class ElementResizeObserver implements ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+function nextFrame() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(resolve);
+  });
 }
 
 describe("virtual DataTable navigation", () => {
-  afterEach(() => {
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
-  });
   it("reveals a distant cursor while retaining focus on the grid", async () => {
-    vi.stubGlobal("ResizeObserver", ElementResizeObserver);
-    vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(100);
-    vi.spyOn(HTMLElement.prototype, "offsetWidth", "get").mockReturnValue(400);
-    vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockReturnValue(
-      3400,
-    );
     const host = document.createElement("div");
+    host.style.width = "400px";
     document.body.append(host);
     const root = createRoot(host);
     const rows = Array.from({ length: 100 }, (_, index) => ({
@@ -45,27 +36,24 @@ describe("virtual DataTable navigation", () => {
             <DataTable.Root aria-label="Virtual records" />
           </DataTable.Provider>,
         );
+        await nextFrame();
       });
       const grid = host.querySelector<HTMLElement>('[role="grid"]');
       const viewport = host.querySelector<HTMLElement>("[data-viewport]");
       if (!grid || !viewport) {
         throw new Error("Missing virtual table");
       }
-      const scrollTo = vi.fn((options: ScrollToOptions) => {
-        viewport.scrollTop = options.top ?? 0;
-        viewport.dispatchEvent(new Event("scroll"));
-      });
-      Object.defineProperty(viewport, "scrollTo", { value: scrollTo });
       grid.focus();
-      await act(() =>
+      await act(async () => {
         grid.dispatchEvent(
           new KeyboardEvent("keydown", {
             key: "End",
             bubbles: true,
             cancelable: true,
           }),
-        ),
-      );
+        );
+        await nextFrame();
+      });
       expect(selection).toEqual(["row-99"]);
       expect(document.activeElement).toBe(grid);
       const activeId = grid.getAttribute("aria-activedescendant");
@@ -79,9 +67,11 @@ describe("virtual DataTable navigation", () => {
       await act(async () => {
         viewport.scrollTop = 0;
         viewport.dispatchEvent(new Event("scroll"));
+        await nextFrame();
       });
       await act(async () => {
         grid.focus();
+        await nextFrame();
       });
       expect(viewport.scrollTop).toBeGreaterThan(0);
       expect(selection).toEqual(["row-99"]);

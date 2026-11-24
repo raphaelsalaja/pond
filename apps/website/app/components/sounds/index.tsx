@@ -15,6 +15,9 @@ function cueFor(control: Element): UiSoundName {
   return control.hasAttribute("data-variant") ? "tap" : "soft";
 }
 
+/** A click sound is decoration, so a cue the browser won't play is dropped. */
+function skipCue() {}
+
 export function Sounds() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -43,7 +46,7 @@ export function Sounds() {
       const detune = (Math.random() - 0.5) * 28;
       void ensureReady()
         .then(() => SOUND_PATCH.play(name, { detune, volume }))
-        .catch(() => {});
+        .catch(skipCue);
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);

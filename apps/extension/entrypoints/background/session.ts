@@ -3,6 +3,7 @@ import {
   sessionImportResponseSchema,
   sessionRefreshResponseSchema,
 } from "@pond/schema/session";
+import type { NativeRequest, NativeResponse } from "@pond/schema/native";
 import type { ExtensionCookie } from "@pond/schema/session";
 import { SOURCES } from "@pond/schema/source-ids";
 import type { Source } from "@pond/schema/source-ids";
@@ -55,6 +56,27 @@ const DEFAULT_SCHEDULER_STATE: SchedulerState = {
   pending: false,
   lastPushAt: 0,
   lastPushSource: null,
+};
+
+type CookieListener = Parameters<
+  typeof browser.cookies.onChanged.addListener
+>[0];
+
+/** What session following needs from the browser and the native host. */
+export type SessionApi = {
+  getCookies: (details: {
+    domain: string;
+  }) => Promise<Array<chrome.cookies.Cookie>>;
+  onCookieChanged: (listener: CookieListener) => void;
+  nativeCall: (request: NativeRequest) => Promise<NativeResponse>;
+};
+
+const browserSessionApi: SessionApi = {
+  getCookies: (details) => browser.cookies.getAll(details),
+  onCookieChanged: (listener) => {
+    browser.cookies.onChanged?.addListener(listener);
+  },
+  nativeCall,
 };
 
 function cookieFromBrowser(c: chrome.cookies.Cookie): ExtensionCookie {
@@ -114,7 +136,10 @@ export async function cookiesForUrl(
   }
 }
 
-async function pushSession(source: Source): Promise<PushSessionResult> {
+async function pushSession(
+  source: Source,
+  api: SessionApi,
+): Promise<PushSessionResult> {
   const domains = cookieDomainsForSource(source);
   if (domains.length === 0) {
     return { ok: false, reason: "no_cookies", detail: "source is public" };
@@ -123,7 +148,7 @@ async function pushSession(source: Source): Promise<PushSessionResult> {
   const raw: Array<chrome.cookies.Cookie> = [];
   try {
     const batches = await Promise.all(
-      domains.map((domain) => browser.cookies.getAll({ domain })),
+      domains.map((domain) => api.getCookies({ domain })),
     );
     const seen = new Set<string>();
     for (const cookie of batches.flat()) {
@@ -142,7 +167,7 @@ async function pushSession(source: Source): Promise<PushSessionResult> {
     };
   }
 
-  const result = await nativeCall({
+  const result = await api.nativeCall({
     type: "session.import",
     source,
     cookies: raw.map(cookieFromBrowser),
@@ -185,19 +210,19 @@ function queueSessionFollow(run: () => Promise<void>): Promise<void> {
   return next;
 }
 
-function forwardRotation(source: Source): Promise<void> {
-  return queueSessionFollow(() => refreshSession(source));
+function forwardRotation(source: Source, api: SessionApi): Promise<void> {
+  return queueSessionFollow(() => refreshSession(source, api));
 }
 
-async function refreshSession(source: Source): Promise<void> {
+async function refreshSession(source: Source, api: SessionApi): Promise<void> {
   const session = ROTATING_SESSIONS.get(source);
   const state = await readFollowState();
   if (!session || state.untracked.includes(source)) {
     return;
   }
 
-  const cookies = await browser.cookies.getAll({ domain: session.domain });
-  const result = await nativeCall({
+  const cookies = await api.getCookies({ domain: session.domain });
+  const result = await api.nativeCall({
     type: "session.refresh",
     source,
     cookies: cookies.slice(0, 500).map(cookieFromBrowser),
@@ -218,19 +243,21 @@ async function refreshSession(source: Source): Promise<void> {
 }
 
 /** Forwards each session your browser rotates, so Pond's copy of it stays signed in. */
-export function startSessionFollow(): void {
+export function startSessionFollow(
+  api: SessionApi = browserSessionApi,
+): void {
   const settling = new Map<Source, ReturnType<typeof setTimeout>>();
   void (async () => {
     for (const source of ROTATING_SESSIONS.keys()) {
       try {
-        await forwardRotation(source);
+        await forwardRotation(source, api);
       } catch (error) {
         // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
         console.warn("[pond] session refresh failed", source, error);
       }
     }
   })();
-  browser.cookies.onChanged?.addListener(({ cookie, removed }) => {
+  api.onCookieChanged(({ cookie, removed }) => {
     if (removed) {
       return;
     }
@@ -243,7 +270,7 @@ export function startSessionFollow(): void {
       source,
       setTimeout(() => {
         settling.delete(source);
-        void forwardRotation(source).catch((cause: unknown) => {
+        void forwardRotation(source, api).catch((cause: unknown) => {
           // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
           console.warn("[pond] session refresh failed", source, cause);
         });
@@ -257,14 +284,14 @@ export function startSessionFollow(): void {
     }
     void readFollowState().then(({ missed }) => {
       for (const source of missed) {
-        void forwardRotation(source);
+        void forwardRotation(source, api);
       }
     });
   });
 }
 
-async function fetchPendingSource(): Promise<PendingProbe> {
-  const result = await nativeCall({ type: "session.pending" });
+async function fetchPendingSource(api: SessionApi): Promise<PendingProbe> {
+  const result = await api.nativeCall({ type: "session.pending" });
   if (!result.ok) {
     return { kind: "offline" };
   }
@@ -300,7 +327,10 @@ async function markSchedulerIdle(): Promise<void> {
 }
 
 /** Hands signed-in cookies to Pond whenever it is waiting to connect a source. */
-export function startSessionConnect(onConnected: () => void): void {
+export function startSessionConnect(
+  onConnected: () => void,
+  api: SessionApi = browserSessionApi,
+): void {
   const maybeAutoPush = createSingleFlightTrigger(async (force) => {
     const now = Date.now();
     const state = await readSchedulerState();
@@ -308,7 +338,7 @@ export function startSessionConnect(onConnected: () => void): void {
       return;
     }
 
-    const probeResult = await fetchPendingSource();
+    const probeResult = await fetchPendingSource(api);
     if (probeResult.kind === "idle") {
       await markSchedulerIdle();
       return;
@@ -352,7 +382,7 @@ export function startSessionConnect(onConnected: () => void): void {
     nextState.lastPushSource = pending;
     nextState.lastPushAt = now;
     await writeSchedulerState(nextState);
-    const result = await pushSession(pending);
+    const result = await pushSession(pending, api);
     if (result.ok && result.data.connected) {
       await markSchedulerIdle();
       onConnected();

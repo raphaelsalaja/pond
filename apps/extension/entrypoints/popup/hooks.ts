@@ -19,6 +19,9 @@ export function shortcutKeys(shortcut: string): Array<string> {
   return Array.from(shortcut);
 }
 
+/** A failed lookup only means the popup shows no shortcut hints. */
+function keepNoShortcuts() {}
+
 /** Maps each command name to its keys, leaving out commands with no shortcut set. */
 export function useShortcuts(): ReadonlyMap<string, Array<string>> {
   const [shortcuts, setShortcuts] = useState<
@@ -38,7 +41,7 @@ export function useShortcuts(): ReadonlyMap<string, Array<string>> {
           ),
         ),
       )
-      .catch(() => {});
+      .catch(keepNoShortcuts);
   }, []);
   return shortcuts;
 }

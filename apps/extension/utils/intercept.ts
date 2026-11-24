@@ -38,6 +38,7 @@ export function capture(
   url: string,
   trigger: string,
   now: number = Date.now(),
+  send: (message: PondMessage) => void = emit,
 ): void {
   const intent = /:(?:like|upvote)$/.test(trigger) ? "like" : "save";
   const key = `${intent} ${canonicalCaptureUrl(url)}`;
@@ -51,7 +52,7 @@ export function capture(
     }
   }
   recentCaptures.set(key, now);
-  emit({ kind: "capture", payload: { url, trigger } });
+  send({ kind: "capture", payload: { url, trigger } });
 }
 
 export function log(
@@ -245,6 +246,9 @@ function dispatch(
   }
 }
 
+/** The page sees a failed fetch through the promise it holds, so the observer has nothing to add. */
+function leaveRejectionToPage() {}
+
 function patchFetch(reg: Registry): void {
   if (reg.patchedFetch) {
     return;
@@ -326,7 +330,7 @@ function patchFetch(reg: Registry): void {
           readText,
         });
       })
-      .catch(() => {});
+      .catch(leaveRejectionToPage);
 
     return promise;
   };
