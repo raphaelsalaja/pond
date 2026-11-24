@@ -402,7 +402,7 @@ export function FolderBrowser({
                   aria-expanded={!pinned.collapsed}
                   onClick={pinned.onToggle}
                 >
-                  <IconChevronRight size={12} strokeWidth={2} />
+                  <IconChevronRight size={12} />
                   Pinned ({formatNumber(pinned.count)})
                 </Button>
               </h2>

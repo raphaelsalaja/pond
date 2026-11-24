@@ -55,12 +55,15 @@ const REPAIR_NOUNS = {
   "physical-file-names": "file names",
   "invalid-content": "original files",
   "save-metadata": "Save records",
+  "eagle-previews": "Eagle previews",
 } satisfies Record<LibraryRepairKind, string>;
 
 /** Saves whose posters were retried, rechecked once the warmer lets go of them. */
 const awaitingPosters = new Set<string>();
 
-const running = new Store<ReadonlySet<HealthCategoryId>>(new Set());
+const running = new Store<ReadonlySet<HealthCategoryId>>(
+  new Set<HealthCategoryId>(),
+);
 
 export function useCategoryRunning(id: HealthCategoryId | null): boolean {
   return useSelector(running, (state) => id != null && state.has(id));

@@ -259,7 +259,17 @@ it("undoes every applied change from the receipt", async () => {
   );
   await renderReview([
     ...changes,
-    { ...changes[0], id: "save-9:tags", title: "Fixed", undoable: false },
+    {
+      id: "save-9:tags",
+      saveId: "save-0",
+      title: "Fixed",
+      reason: "",
+      status: "applied" as const,
+      field: "tags" as const,
+      before: [],
+      after: ["Clock"],
+      undoable: false,
+    },
   ]);
   const undo = [...host.querySelectorAll("button")].find(
     (button) => button.textContent === "Undo",

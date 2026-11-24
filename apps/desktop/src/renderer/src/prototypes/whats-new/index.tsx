@@ -46,7 +46,7 @@ function Variant({ label, note, children }: VariantProps) {
 
 export function WhatsNewPrototype() {
   return (
-    <prototype-switcher class={styles.switcher}>
+    <prototype-switcher className={styles.switcher}>
       <Variant
         label="Full Changelog"
         note="Wins when people want every fix in one place. Costs a long scroll, and the headline feature reads like a bullet."

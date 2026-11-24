@@ -23,7 +23,6 @@ import styles from "./styles.module.css";
 const PLACES_WITH_OWN_EMPTY = new Set<LibraryNav["kind"]>([
   "folder",
   "inbox",
-  "health",
   "trash",
 ]);
 

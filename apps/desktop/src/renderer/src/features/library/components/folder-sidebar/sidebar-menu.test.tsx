@@ -15,9 +15,7 @@ function submenu(items: MenuItemSpec[], label: string): MenuItemSpec[] {
 }
 
 function labels(items: MenuItemSpec[]): unknown[] {
-  return items.flatMap((item) =>
-    item.type === "separator" || item.type === "custom" ? [] : [item.label],
-  );
+  return items.flatMap((item) => ("label" in item ? [item.label] : []));
 }
 
 describe("sidebarMenuItems", () => {

@@ -6,11 +6,7 @@ import {
   thumbUrlFor,
   useAspectVersion,
 } from "@/features/saves/media";
-import {
-  ensureSaves,
-  useRetainedSaves,
-  useSave,
-} from "@/features/saves/pool";
+import { ensureSaves, useRetainedSaves, useSave } from "@/features/saves/pool";
 import { useSourceOverview } from "@/features/sources/hooks/use-source-activity";
 import type { SourceTableRow } from "../../lib/helpers";
 import styles from "./styles.module.css";

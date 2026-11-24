@@ -143,7 +143,7 @@ function Separator({ className, ...props }: Base.Separator.Props) {
   );
 }
 
-function Items<Value>({ items }: { items: SelectItemSpec<Value>[] }) {
+function Items<Value>({ items }: { items: readonly SelectItemSpec<Value>[] }) {
   return (
     <List>
       {renderSelectSpec(items, {

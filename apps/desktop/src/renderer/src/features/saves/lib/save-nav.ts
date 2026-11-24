@@ -3,14 +3,14 @@ import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { searchText } from "@/features/search/schemas";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
-import {
-  latestSearch,
-  type RouteSearch,
-  writeSearch,
-} from "@/shared/lib/route-search";
+import { latestSearch, writeSearch } from "@/shared/lib/route-search";
+
+interface SaveSearch {
+  readonly save?: unknown;
+}
 
 /** Numeric ids arrive JSON-parsed from hand-written links. */
-export function saveIdFromSearch(search: RouteSearch): string | null {
+export function saveIdFromSearch(search: SaveSearch): string | null {
   return searchText.parse(search.save) || null;
 }
 
@@ -58,7 +58,7 @@ export function closeSave(): void {
   writeSearch({ save: undefined });
 }
 
-export function syncPrimaryFromSearch(search: RouteSearch): void {
+export function syncPrimaryFromSearch(search: SaveSearch): void {
   const primary = saveIdFromSearch(search) ?? selection.getCursor();
   if (primarySelection.get() !== primary) primarySelection.set(primary);
 }

@@ -43,7 +43,8 @@ function withBreadcrumb(
     item.type === "separator" ||
     item.type === "custom" ||
     item.type === "group" ||
-    item.type === "submenu"
+    item.type === "submenu" ||
+    item.type === "radio"
   ) {
     return item;
   }
@@ -72,6 +73,22 @@ function collectLeaves(
     }
     if (item.type === "custom") {
       if (matchesCustom(terms)) out.push(item);
+      continue;
+    }
+    if (item.type === "radio") {
+      const options = item.options
+        .filter(
+          (option) =>
+            !option.disabled &&
+            matchesAll(
+              `${path} ${labelText(option.label)} ${option.keywords ?? ""}`,
+              terms,
+            ),
+        )
+        .map((option) =>
+          breadcrumb.length > 0 ? { ...option, breadcrumb } : option,
+        );
+      if (options.length > 0) out.push({ ...item, options });
       continue;
     }
     if (matchesAll(`${path} ${textOf(item)}`, terms)) {

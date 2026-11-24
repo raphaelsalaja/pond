@@ -13,10 +13,7 @@ import { buildHelpMenuItems, HelpMenu } from "./help-menu";
 
 function findItem(items: ReturnType<typeof buildHelpMenuItems>, label: string) {
   return items.find(
-    (candidate) =>
-      candidate.type !== "separator" &&
-      candidate.type !== "custom" &&
-      candidate.label === label,
+    (candidate) => "label" in candidate && candidate.label === label,
   );
 }
 

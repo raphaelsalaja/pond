@@ -41,7 +41,7 @@ describe("fishRuns", () => {
   it("falls back to the last run on fish without history", () => {
     const last = run();
     expect(fishRuns({ lastRun: last })).toEqual([last]);
-    expect(fishRuns({})).toEqual([]);
+    expect(fishRuns({ lastRun: null })).toEqual([]);
   });
 });
 

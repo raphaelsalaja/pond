@@ -79,7 +79,7 @@ function renderSpec<Value>(
 }
 
 export function renderSelectSpec<Value>(
-  items: SelectItemSpec<Value>[],
+  items: readonly SelectItemSpec<Value>[],
   parts: SelectParts<Value>,
 ): ReactNode {
   return items.map((spec, i) => renderSpec(spec, i, parts));
