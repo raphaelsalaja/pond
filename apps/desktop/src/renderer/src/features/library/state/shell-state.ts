@@ -50,7 +50,9 @@ function measuredOccupiedPaneWidth(viewport: HTMLElement): number {
   for (const side of ["left", "right"]) {
     width +=
       shell
-        ?.querySelector<HTMLElement>(`:scope > [data-slot=${side}]`)
+        ?.querySelector<HTMLElement>(
+          `:scope > [data-slot=panes] > [data-slot=${side}]`,
+        )
         ?.getBoundingClientRect().width ?? 0;
   }
   return width;

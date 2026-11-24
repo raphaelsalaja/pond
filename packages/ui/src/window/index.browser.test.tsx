@@ -15,16 +15,18 @@ function Panes() {
         height: 240,
       }}
     >
-      <Window.Left
-        aria-label="Sidebar"
-        minWidth={200}
-        maxWidth={320}
-        width={width}
-        onResize={setWidth}
-      >
-        Sidebar
-      </Window.Left>
-      <Window.Center>Content</Window.Center>
+      <Window.Panes>
+        <Window.Left
+          aria-label="Sidebar"
+          minWidth={200}
+          maxWidth={320}
+          width={width}
+          onResize={setWidth}
+        >
+          Sidebar
+        </Window.Left>
+        <Window.Center>Content</Window.Center>
+      </Window.Panes>
     </Window.Root>
   );
 }

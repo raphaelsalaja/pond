@@ -10,7 +10,10 @@ import { MenuBridge } from "@/app/effects/menu-bridge";
 import { UndoRedoBridge } from "@/app/effects/undo-redo-bridge";
 import { useDownloadDialog } from "@/features/downloads/state/download-dialog";
 import { CommandMenuHost } from "@/features/library/components/command-menu";
-import { FolderSidebar } from "@/features/library/components/folder-sidebar";
+import {
+  FolderRail,
+  FolderSidebar,
+} from "@/features/library/components/folder-sidebar";
 import { FolderTemplateDialogHost } from "@/features/library/components/folder-template-dialog";
 import { NewMenuDialogHost } from "@/features/library/components/new-menu";
 import { OrganizationRenameDialogHost } from "@/features/library/components/organization-rename-dialog";
@@ -110,24 +113,27 @@ export function RootShell() {
     <>
       <AppHosts />
       <AppShell.Root>
-        <Toolbar.Leading />
-        <AppShell.Sidebar>
-          <FolderSidebar />
-        </AppShell.Sidebar>
-        <Window.Center>
-          <Toolbar.Bar />
-          <Outlet />
-        </Window.Center>
-        <AppShell.Details>
-          {details === "fish" ? (
-            <Suspense fallback={null}>
-              <FishDetails />
-            </Suspense>
-          ) : (
-            <SaveDetails />
-          )}
-        </AppShell.Details>
-        <Toolbar.Trailing />
+        <Toolbar.Root />
+        <AppShell.Rail>
+          <FolderRail />
+        </AppShell.Rail>
+        <Window.Panes>
+          <AppShell.Sidebar>
+            <FolderSidebar />
+          </AppShell.Sidebar>
+          <Window.Center>
+            <Outlet />
+          </Window.Center>
+          <AppShell.Details>
+            {details === "fish" ? (
+              <Suspense fallback={null}>
+                <FishDetails />
+              </Suspense>
+            ) : (
+              <SaveDetails />
+            )}
+          </AppShell.Details>
+        </Window.Panes>
       </AppShell.Root>
       <Tray.Library />
       <SourceFlowHost />
