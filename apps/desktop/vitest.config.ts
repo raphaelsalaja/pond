@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
 const stub = (p: string) =>
@@ -29,6 +30,8 @@ const rendererTypeScriptTests = [
   "src/renderer/src/features/canvas/state/minimap.test.ts",
 ];
 
+const browserTests = "src/**/*.browser.test.{ts,tsx}";
+
 export default defineConfig({
   resolve: {
     alias: {
@@ -47,7 +50,7 @@ export default defineConfig({
         test: {
           name: "node",
           include: ["src/**/*.test.ts"],
-          exclude: rendererTypeScriptTests,
+          exclude: [...rendererTypeScriptTests, browserTests],
           environment: "node",
         },
       },
@@ -55,12 +58,27 @@ export default defineConfig({
         test: {
           name: "renderer",
           include: ["src/**/*.test.tsx", ...rendererTypeScriptTests],
+          exclude: [browserTests],
           environment: "jsdom",
           setupFiles: ["./test/renderer-setup.ts"],
           // The first jsdom test in a file pays for a cold module graph; the
           // Windows runner is roughly four times slower than Linux.
           testTimeout: 20_000,
           hookTimeout: 20_000,
+        },
+      },
+      {
+        test: {
+          name: "browser",
+          include: [browserTests],
+          setupFiles: ["./test/browser-setup.ts"],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright(),
+            instances: [{ browser: "chromium" }],
+            viewport: { width: 1280, height: 800 },
+          },
         },
       },
     ],

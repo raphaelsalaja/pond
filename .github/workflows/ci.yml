@@ -100,6 +100,9 @@ jobs:
         with:
           turbo-cache: desktop-test-${{ matrix.shard }}
 
+      - name: Install Chromium for browser tests
+        run: pnpm --filter @pond/desktop exec playwright install ${{ runner.os == 'Linux' && '--with-deps' || '' }} chromium
+
       - name: Desktop tests
         run: pnpm exec turbo run test --filter=@pond/desktop -- --shard=${{ matrix.shard }}/4
 
