@@ -22,6 +22,9 @@ function seekToStart(el: HTMLVideoElement) {
   }
 }
 
+/** Autoplay rejections are expected, and pausing before playback starts rejects `play()`. */
+function ignoreAutoplayRejection(): void {}
+
 export function HoverVideo({
   saveId,
   src,
@@ -89,9 +92,9 @@ export function HoverVideo({
     if (!el) {
       return;
     }
-    /** Autoplay rejections are expected, and some Chromium builds return undefined here. */
+    /** Some Chromium builds return undefined from `play()`. */
     const play = (): void => {
-      el.play()?.catch(() => {});
+      el.play()?.catch(ignoreAutoplayRejection);
     };
     const pause = (): void => {
       el.pause();

@@ -7,6 +7,7 @@ import {
   IconVolumeOff,
 } from "@pond/icons";
 import { Select, Slider } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
@@ -74,7 +75,9 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
           });
         }
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond audio] waveform analysis failed", cause);
+      });
     return () => {
       active = false;
       void context.close();

@@ -6,6 +6,7 @@ import {
 } from "@pond/icons";
 import { normalizeListKinds } from "@pond/schema/list-kinds";
 import type { MenuItemSpec } from "@pond/ui";
+import log from "electron-log/renderer";
 import type { DetailRow } from "@/features/saves/lib/detail";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import type { Save } from "@/features/saves/types";
@@ -17,7 +18,9 @@ interface RowAction {
 }
 
 function copy(value: string): void {
-  void navigator.clipboard.writeText(value).catch(() => undefined);
+  void navigator.clipboard.writeText(value).catch((cause: unknown) => {
+    log.warn("[pond detail] copying a property failed", cause);
+  });
 }
 
 function openProfile(row: DetailRow): RowAction | null {

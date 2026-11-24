@@ -1,9 +1,10 @@
 import "@/app/effects/save-library-bridge";
+import { PrefsSchema } from "@pond/schema";
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { SaveHotkeys } from "@/features/saves/effects/save-hotkeys";
 import { openTagPicker } from "@/features/saves/lib/actions";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
@@ -12,24 +13,9 @@ import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { closeSaveTagPicker } from "@/features/saves/state/tag-picker";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SaveTagPickerHost } from ".";
 import { SaveContextMenu } from "../context-menu";
-
-interface QueryInput {
-  ids?: ReadonlyArray<string>;
-  operation?: {
-    kind: string;
-    tags?: ReadonlyArray<string>;
-    mode?: string;
-  };
-}
-
-interface QueryCall {
-  name: string;
-  input: QueryInput;
-}
-
-const calls: Array<QueryCall> = [];
 
 function save(id: string, tags: Array<string> = []): Save {
   const row = normalise(
@@ -108,46 +94,24 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  calls.length = 0;
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  vi.stubGlobal("pond", {
-    onSyncAction: () => () => {},
-    onPrefsChanged: () => () => {},
-    query: async (name: string, input: QueryInput = {}) => {
-      calls.push({ name, input });
-      if (name === "tags.list") {
-        return [
-          {
-            id: "design",
-            name: "Design",
-            starred: false,
-            description: null,
-            lastUsedAt: null,
-            usageCount: 2,
-            createdAt: null,
-          },
-        ];
-      }
-      if (name === "tagGroups.list") {
-        return [];
-      }
-      if (name === "settings.getPrefs") {
-        return {};
-      }
-      if (name === "saves.listOpenWith") {
-        return { apps: [] };
-      }
-      if (name === "saves.bulkEdit") {
-        return { changed: 1 };
-      }
-      return {};
+  bridge.use({
+    query: {
+      "tags.list": () => [
+        {
+          id: "design",
+          name: "Design",
+          starred: false,
+          archived: false,
+          description: null,
+          lastUsedAt: null,
+          usageCount: 2,
+          createdAt: new Date(0),
+        },
+      ],
+      "tagGroups.list": () => [],
+      "settings.getPrefs": () => PrefsSchema.parse({}),
+      "saves.listOpenWith": () => ({ apps: [] }),
+      "saves.bulkEdit": () => ({ changed: 1, undoId: null }),
     },
   });
   pool.clear();
@@ -166,7 +130,6 @@ afterEach(async () => {
   selection.clear();
   primarySelection.set(null);
   pool.clear();
-  vi.unstubAllGlobals();
 });
 
 async function mount(row: Save) {
@@ -221,24 +184,18 @@ it("opens a tag picker from Add Tags and assigns the chosen tag", async () => {
   await act(async () => tagOption("Design").click());
   await settle();
   expect(pool.get("save-1")?.tags).toEqual(["Design"]);
-  expect(calls).toContainEqual({
-    name: "saves.bulkEdit",
-    input: {
-      ids: ["save-1"],
-      operation: { kind: "tags", tags: ["Design"], mode: "add" },
-    },
+  expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
+    ids: ["save-1"],
+    operation: { kind: "tags", tags: ["Design"], mode: "add" },
   });
   expect(tagSearch()).not.toBeNull();
 
   await act(async () => tagOption("Design").click());
   await settle();
   expect(pool.get("save-1")?.tags).toEqual([]);
-  expect(calls).toContainEqual({
-    name: "saves.bulkEdit",
-    input: {
-      ids: ["save-1"],
-      operation: { kind: "tags", tags: ["Design"], mode: "remove" },
-    },
+  expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
+    ids: ["save-1"],
+    operation: { kind: "tags", tags: ["Design"], mode: "remove" },
   });
 });
 

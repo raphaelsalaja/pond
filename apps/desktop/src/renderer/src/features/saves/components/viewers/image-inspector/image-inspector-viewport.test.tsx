@@ -1,5 +1,5 @@
 import { act } from "react";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import {
   IMAGE_INSPECTOR_SAVE,
@@ -48,13 +48,7 @@ it("shows persisted transforms and keeps a cancelled crop draft out of storage",
     throw new Error("Missing image inspection frame");
   }
   expect(frame.getAttribute("data-mode")).toBe("crop");
-  vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 0, 400, 400),
-  );
-  Object.defineProperties(frame, {
-    setPointerCapture: { value: () => {} },
-    hasPointerCapture: { value: () => false },
-  });
+  expect(inspector.prepareFrame()).toBe(frame);
   await act(async () => {
     frame.dispatchEvent(
       new MouseEvent("pointerdown", {

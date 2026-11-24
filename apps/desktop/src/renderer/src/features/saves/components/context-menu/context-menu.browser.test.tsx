@@ -3,11 +3,12 @@ import { isElement } from "@pond/ui/dom";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SaveCollectionContextMenu, SaveContextMenu } from ".";
 
 let host: HTMLDivElement;
@@ -15,14 +16,9 @@ let root: Root;
 let save: Save;
 
 beforeEach(() => {
-  vi.stubGlobal("pond", { query: async () => [] });
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      disconnect() {}
-    },
-  );
+  bridge.use({
+    query: { "saves.listOpenWith": () => ({ apps: [] }) },
+  });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -43,7 +39,6 @@ afterEach(async () => {
   host.remove();
   pool.clear();
   selection.clear();
-  vi.unstubAllGlobals();
 });
 
 function card() {

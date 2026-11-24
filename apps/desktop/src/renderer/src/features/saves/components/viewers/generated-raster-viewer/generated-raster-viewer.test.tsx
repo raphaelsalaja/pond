@@ -2,11 +2,12 @@ import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MediaViewer } from "@/features/saves/components/viewers/media-viewer";
 import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { GeneratedRasterViewer } from ".";
 
 function generatedSave(extension: string): Save {
@@ -42,18 +43,8 @@ describe("generated raster viewer", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("pond", {
-      query: async () => PrefsSchema.parse({}),
-      tx: async () => ({ ok: true }),
-      openSaveFile: async () => ({ ok: true }),
+    bridge.use({
+      query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -63,7 +54,6 @@ describe("generated raster viewer", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   it.each(["dng", "psd", "docx"])(

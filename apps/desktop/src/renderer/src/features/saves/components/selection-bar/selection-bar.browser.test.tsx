@@ -2,7 +2,7 @@ import { Tooltip } from "@pond/ui";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   clearSaveSelection,
   clickSave,
@@ -15,6 +15,7 @@ import { selection } from "@/features/saves/state/selection";
 import { libraryViewContext } from "@/features/saves/state/view-context";
 import type { Save } from "@/features/saves/types";
 import { configureShortcuts } from "@/shared/lib/shortcuts";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SaveSelectionBar } from "./";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
@@ -42,11 +43,6 @@ function save(id: string): Save {
 
 const IDS = ["a", "b", "c"];
 
-interface BulkEditInput {
-  ids?: ReadonlyArray<string>;
-  operation?: { kind: string; rating?: number };
-}
-
 async function settle() {
   await act(async () => {
     await new Promise((resolve) => {
@@ -58,7 +54,6 @@ async function settle() {
 describe("Library selection toolbar", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const calls: Array<{ name: string; input: BulkEditInput }> = [];
 
   function toolbar(): HTMLElement | null {
     return host.querySelector('[role="toolbar"][aria-label="Selected Saves"]');
@@ -75,21 +70,11 @@ describe("Library selection toolbar", () => {
   }
 
   beforeEach(async () => {
-    calls.length = 0;
     configureShortcuts({ profile: "pond", overrides: {} });
     document.documentElement.setAttribute("data-reduce-motion", "true");
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("pond", {
-      query: async (name: string, input: BulkEditInput) => {
-        calls.push({ name, input });
-        return { ok: true, changed: 0 };
+    bridge.use({
+      query: {
+        "saves.bulkEdit": () => ({ changed: 0, undoId: null }),
       },
     });
     for (const id of IDS) {
@@ -116,7 +101,6 @@ describe("Library selection toolbar", () => {
     resultNavigation.setSource({ key: "empty", ids: [] });
     libraryViewContext.set([], "library");
     document.documentElement.removeAttribute("data-reduce-motion");
-    vi.unstubAllGlobals();
   });
 
   it("stays hidden for a plain click and appears once a second Save is selected", async () => {
@@ -170,9 +154,9 @@ describe("Library selection toolbar", () => {
     await act(async () => item.click());
     await settle();
 
-    expect(calls).toContainEqual({
-      name: "saves.bulkEdit",
-      input: { ids: ["a", "b"], operation: { kind: "rating", rating: 3 } },
+    expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
+      ids: ["a", "b"],
+      operation: { kind: "rating", rating: 3 },
     });
   });
 
@@ -184,9 +168,9 @@ describe("Library selection toolbar", () => {
     await act(async () => action("Move to Trash").click());
     await settle();
 
-    expect(calls).toContainEqual({
-      name: "saves.bulkEdit",
-      input: { ids: ["a", "c"], operation: { kind: "trash" } },
+    expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
+      ids: ["a", "c"],
+      operation: { kind: "trash" },
     });
     expect(selection.size()).toBe(0);
   });

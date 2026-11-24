@@ -1,11 +1,12 @@
 import "@/app/effects/save-library-bridge";
+import { PrefsSchema } from "@pond/schema";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
+import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { z } from "zod";
 import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import {
   getViewState,
@@ -17,50 +18,27 @@ import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { primarySelection } from "@/features/saves/state/selection";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SaveInspector } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
 let stopViewUrlSync: (() => void) | undefined;
-const requests: Array<{
-  name: string;
-  input: Record<string, string | Array<string> | number>;
-}> = [];
-async function stubQuery(
-  name: string,
-  input: Record<string, string | Array<string> | number>,
-) {
-  requests.push({ name, input });
-  if (
-    name === "folders.list" ||
-    name === "folders.memberships" ||
-    name === "tags.list" ||
-    name === "tagGroups.list"
-  ) {
-    return [];
-  }
-  if (name === "folders.create") {
-    return { id: "created" };
-  }
-  if (name === "saves.rawJson") {
-    return {
-      rawJson:
-        pool.get(z.object({ id: z.string() }).parse(input).id)?.rawJson ?? null,
-    };
-  }
-  if (name === "saves.getMany") {
-    return [
-      SavePatchSchema.parse({
-        id: "cold",
-        notes: "Other",
-        source: "local",
-        url: "https://other.test",
-        tags: ["Shared"],
-        fileSize: 2048,
-      }),
-    ];
-  }
-  return { changed: 2 };
+
+/** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
+const coldRows = [
+  {
+    id: "cold",
+    notes: "Other",
+    source: "local",
+    url: "https://other.test",
+    tags: ["Shared"],
+    fileSize: 2048,
+  },
+] as Array<WireSave>;
+
+function queryCalls() {
+  return vi.mocked(window.pond.query).mock.calls;
 }
 
 beforeEach(() => {
@@ -69,10 +47,30 @@ beforeEach(() => {
   root = createRoot(host);
   pool.clear();
   setSaveViewerFileIndex(null);
-  requests.length = 0;
-  vi.stubGlobal("pond", {
-    onSyncAction: () => () => {},
-    query: stubQuery,
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => PrefsSchema.parse({}),
+      "folders.list": () => [],
+      "folders.memberships": () => [],
+      "tags.list": () => [],
+      "tagGroups.list": () => [],
+      "folders.create": ({ name }) => ({
+        id: "created",
+        parentId: null,
+        name,
+        color: null,
+        sortOrder: 0,
+        createdAt: new Date(0),
+      }),
+      "folders.assign": () => ({ ok: true, undoId: null }),
+      "saves.bulkEdit": () => ({ changed: 2, undoId: null }),
+      "saves.patchDerived": () => ({ ok: true }),
+      "saves.rawJson": ({ id }) => ({
+        id,
+        rawJson: pool.get(id)?.rawJson ?? null,
+      }),
+      "saves.getMany": () => coldRows,
+    },
   });
   const save = normalise(
     SavePatchSchema.parse({
@@ -102,7 +100,6 @@ afterEach(async () => {
   stopViewUrlSync?.();
   stopViewUrlSync = undefined;
   resetFilters();
-  vi.unstubAllGlobals();
 });
 
 function setInput(input: HTMLInputElement, value: string) {
@@ -123,9 +120,8 @@ it("loads the complete selection before displaying mixed notes, tags and total s
       />,
     ),
   );
-  expect(requests).toContainEqual({
-    name: "saves.getMany",
-    input: { ids: ["cold"] },
+  expect(window.pond.query).toHaveBeenCalledWith("saves.getMany", {
+    ids: ["cold"],
   });
   expect(host.textContent).toContain("One1/2");
   expect(host.textContent).toContain("Inspiration1/2");
@@ -310,9 +306,10 @@ it("removes only the clicked folder immediately for every selected Save", async 
       )
       ?.click(),
   );
-  expect(requests).toContainEqual({
-    name: "folders.assign",
-    input: { saveIds: ["a", "cold"], addIds: [], removeIds: ["folder"] },
+  expect(window.pond.query).toHaveBeenCalledWith("folders.assign", {
+    saveIds: ["a", "cold"],
+    addIds: [],
+    removeIds: ["folder"],
   });
   expect(host.textContent).not.toContain("Apply");
 });
@@ -392,9 +389,9 @@ it("toggles Favorite from the inspector without touching the rating", async () =
   expect(favorite.getAttribute("aria-pressed")).toBe("false");
   await act(async () => favorite.click());
 
-  expect(requests).toContainEqual({
-    name: "saves.bulkEdit",
-    input: { ids: ["a"], operation: { kind: "favorite", favorite: true } },
+  expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
+    ids: ["a"],
+    operation: { kind: "favorite", favorite: true },
   });
   expect(pool.get("a")).toMatchObject({ favorite: true, rating: 3 });
   await vi.waitFor(() =>
@@ -461,14 +458,11 @@ it("clears a sensitive flag from the Sensitivity property", async () => {
   await act(async () => action.click());
   expect(pool.get("a")?.sensitiveScore).toBe(0);
   expect(pool.get("a")?.sensitiveModel).toBe("manual:not-sensitive");
-  expect(requests).toContainEqual({
-    name: "saves.patchDerived",
-    input: {
-      id: "a",
-      patch: {
-        sensitiveScore: 0,
-        sensitiveModel: "manual:not-sensitive",
-      },
+  expect(window.pond.query).toHaveBeenCalledWith("saves.patchDerived", {
+    id: "a",
+    patch: {
+      sensitiveScore: 0,
+      sensitiveModel: "manual:not-sensitive",
     },
   });
 });
@@ -499,9 +493,10 @@ it("assigns a mixed folder immediately from the inspector menu", async () => {
   expect(checkbox.dataset.selection).toBe("mixed");
   expect(checkbox.getAttribute("aria-description")).toBe("Some selected");
   await act(async () => checkbox.click());
-  expect(requests).toContainEqual({
-    name: "folders.assign",
-    input: { saveIds: ["a", "cold"], addIds: ["folder"], removeIds: [] },
+  expect(window.pond.query).toHaveBeenCalledWith("folders.assign", {
+    saveIds: ["a", "cold"],
+    addIds: ["folder"],
+    removeIds: [],
   });
 });
 
@@ -534,17 +529,15 @@ it("adds each folder you tick while the menu stays open", async () => {
     await act(async () => row.click());
   }
 
-  expect(
-    requests.filter((request) => request.name === "folders.assign"),
-  ).toEqual([
-    {
-      name: "folders.assign",
-      input: { saveIds: ["a"], addIds: ["inspiration"], removeIds: [] },
-    },
-    {
-      name: "folders.assign",
-      input: { saveIds: ["a"], addIds: ["reference"], removeIds: [] },
-    },
+  expect(queryCalls().filter(([name]) => name === "folders.assign")).toEqual([
+    [
+      "folders.assign",
+      { saveIds: ["a"], addIds: ["inspiration"], removeIds: [] },
+    ],
+    [
+      "folders.assign",
+      { saveIds: ["a"], addIds: ["reference"], removeIds: [] },
+    ],
   ]);
   expect(
     document.querySelector('[aria-label="Search Folders"]')?.isConnected,
@@ -557,6 +550,15 @@ it("adds each folder you tick while the menu stays open", async () => {
 });
 
 it("assigns a folder created from the folder search", async () => {
+  const assigned = Promise.withResolvers<void>();
+  bridge.use({
+    query: {
+      "folders.assign": () => {
+        assigned.resolve();
+        return { ok: true, undoId: null };
+      },
+    },
+  });
   await act(async () => root.render(<SaveInspector saveId="a" folders={[]} />));
   const trigger = host.querySelector<HTMLButtonElement>(
     '[aria-label="Add Folder"]',
@@ -580,16 +582,15 @@ it("assigns a folder created from the folder search", async () => {
   }
   await act(async () => create.click());
 
-  expect(requests).toContainEqual({
-    name: "folders.create",
-    input: { name: "Moodboard" },
+  expect(window.pond.query).toHaveBeenCalledWith("folders.create", {
+    name: "Moodboard",
   });
-  await vi.waitFor(() =>
-    expect(requests).toContainEqual({
-      name: "folders.assign",
-      input: { saveIds: ["a"], addIds: ["created"], removeIds: [] },
-    }),
-  );
+  await act(async () => assigned.promise);
+  expect(window.pond.query).toHaveBeenCalledWith("folders.assign", {
+    saveIds: ["a"],
+    addIds: ["created"],
+    removeIds: [],
+  });
 });
 
 it("shows an assigned nested folder as one breadcrumb with its full path", async () => {
@@ -689,9 +690,8 @@ it("creates a folder from the search text", async () => {
     throw new Error("Missing create row");
   }
   await act(async () => create.click());
-  expect(requests).toContainEqual({
-    name: "folders.create",
-    input: { name: "Moodboard" },
+  expect(window.pond.query).toHaveBeenCalledWith("folders.create", {
+    name: "Moodboard",
   });
 });
 
@@ -705,8 +705,9 @@ it("explains why Related is empty before the save is indexed", async () => {
   }
   await act(async () => tab.click());
   expect(host.textContent).toContain("Not Indexed Yet");
-  expect(requests.some((request) => request.name === "saves.related")).toBe(
-    false,
+  expect(window.pond.query).not.toHaveBeenCalledWith(
+    "saves.related",
+    expect.anything(),
   );
 });
 
@@ -716,53 +717,40 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
     throw new Error("Missing Save fixture");
   }
   pool.upsert({ ...current, clipModel: mediaEmbeddingVersion() });
-  const query = vi.fn(
-    async (
-      name: string,
-      input: Record<string, string | Array<string> | number>,
-    ) => {
-      requests.push({ name, input });
-      if (name === "saves.related") {
-        return {
-          items: [
-            {
-              id: "related",
-              score: 0.9,
-              reason: "semantically-related",
-            },
-          ],
-        };
-      }
-      if (name === "saves.getMany") {
-        return [
-          SavePatchSchema.parse({
-            id: "related",
-            title: "Related Save",
-            source: "local",
-            url: "pond:local/related",
-            mediaType: "image",
-            files: [
-              {
-                kind: "original",
-                path: "related.jpg",
-                mimeType: "image/jpeg",
-                sha256: "0123456789abcdef",
-                size: 1024,
-              },
-            ],
-          }),
-        ];
-      }
-      if (name === "saves.rawJson") {
-        return { rawJson: null };
-      }
-      return [];
+  /** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
+  const relatedRows = [
+    {
+      id: "related",
+      title: "Related Save",
+      source: "local",
+      url: "pond:local/related",
+      mediaType: "image",
+      files: [
+        {
+          kind: "original",
+          path: "related.jpg",
+          mimeType: "image/jpeg",
+          sha256: "0123456789abcdef",
+          size: 1024,
+        },
+      ],
     },
-  );
-  vi.stubGlobal("pond", { query });
+  ] as Array<WireSave>;
+  bridge.use({
+    query: {
+      "saves.related": () => ({
+        items: [{ id: "related", score: 0.9, reason: "semantically-related" }],
+      }),
+      "saves.getMany": () => relatedRows,
+      "saves.rawJson": ({ id }) => ({ id, rawJson: null }),
+    },
+  });
 
   await act(async () => root.render(<SaveInspector saveId="a" />));
-  expect(query).not.toHaveBeenCalledWith("saves.related", expect.anything());
+  expect(window.pond.query).not.toHaveBeenCalledWith(
+    "saves.related",
+    expect.anything(),
+  );
 
   const trigger = [
     ...host.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
@@ -777,9 +765,12 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
     host.querySelector('[aria-label="Notes"]')?.closest("[hidden]"),
   ).not.toBeNull();
 
-  expect(query).toHaveBeenCalledWith("saves.related", { id: "a", limit: 12 });
+  expect(window.pond.query).toHaveBeenCalledWith("saves.related", {
+    id: "a",
+    limit: 12,
+  });
   expect(
-    query.mock.calls.every(([name]) =>
+    queryCalls().every(([name]) =>
       ["saves.rawJson", "saves.related", "saves.getMany"].includes(name),
     ),
   ).toBe(true);
@@ -811,19 +802,16 @@ it("opens tagged saves from a tag chip without removing the tag", async () => {
   }
 
   await act(async () => remove.click());
-  expect(requests).toContainEqual({
-    name: "saves.bulkEdit",
-    input: {
-      ids: ["a"],
-      operation: { kind: "tags", tags: ["One"], mode: "remove" },
-    },
+  expect(window.pond.query).toHaveBeenCalledWith("saves.bulkEdit", {
+    ids: ["a"],
+    operation: { kind: "tags", tags: ["One"], mode: "remove" },
   });
   expect(currentLocation(router).pathname).toBe("/");
   expect(currentLocation(router).search).toMatchObject({ save: "a" });
 
-  const callsBeforeOpen = requests.length;
+  const callsBeforeOpen = queryCalls().length;
   await act(async () => tag.click());
-  expect(requests).toHaveLength(callsBeforeOpen);
+  expect(window.pond.query).toHaveBeenCalledTimes(callsBeforeOpen);
   expect(currentLocation(router).pathname).toBe("/tags/One");
   expect(getViewState().query).toEqual(EMPTY_QUERY);
 });

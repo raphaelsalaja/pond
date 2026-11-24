@@ -1,5 +1,6 @@
 import "@/app/effects/save-library-bridge";
-import type { WireJson } from "@shared/wire";
+import { PrefsSchema } from "@pond/schema";
+import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
@@ -9,6 +10,7 @@ import {
   importClipboardWithDuplicateReview,
   importFilesWithDuplicateReview,
 } from "@/features/saves/state/duplicate-import-review";
+import { bridge } from "@/shared/test/pond-bridge";
 import { DuplicateImportReviewHost } from "./";
 
 let root: Root;
@@ -16,61 +18,48 @@ let host: HTMLDivElement;
 const first = "/Users/you/Downloads/a.png";
 const second = "/Users/you/Downloads/b.png";
 const paths = [first, second];
-const query = vi.fn(async (name: string, _args?: WireJson) => {
-  if (name === "saves.reviewImportDuplicates") {
-    return {
-      candidates: paths.map((path) => ({
-        path,
-        filename: path.split("/").pop(),
-        existingId: "save-sunset",
-        existingTitle: "Sunset",
-        inTrash: path === second,
-      })),
-    };
-  }
-  if (name === "saves.getMany") {
-    return [
+/** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
+const existingRows = [
+  {
+    id: "save-sunset",
+    source: "local",
+    sourceId: "sunset",
+    url: "file:///sunset.png",
+    title: "Sunset",
+    status: "complete",
+    files: [
       {
-        id: "save-sunset",
-        source: "local",
-        sourceId: "sunset",
-        url: "file:///sunset.png",
-        title: "Sunset",
-        status: "complete",
-        files: [
-          {
-            kind: "original",
-            path: "sunset.png",
-            sha256: "abc",
-            size: 2048,
-            mimeType: "image/png",
-            width: 1600,
-            height: 1000,
-          },
-        ],
+        kind: "original",
+        path: "sunset.png",
+        sha256: "abc",
+        size: 2048,
+        mimeType: "image/png",
+        width: 1600,
+        height: 1000,
       },
-    ];
-  }
-  if (name === "saves.stageClipboard") {
-    return { ok: true, paths };
-  }
-  if (name === "saves.importFiles") {
-    return { ok: true, ids: [] };
-  }
-  return [];
-});
+    ],
+  },
+] as Array<WireSave>;
 
 beforeEach(() => {
-  query.mockClear();
-  vi.stubGlobal("pond", { query });
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => PrefsSchema.parse({}),
+      "saves.reviewImportDuplicates": () => ({
+        candidates: paths.map((path) => ({
+          path,
+          filename: path.split("/").pop() ?? path,
+          existingId: "save-sunset",
+          existingTitle: "Sunset",
+          inTrash: path === second,
+        })),
+      }),
+      "saves.getMany": () => existingRows,
+      "saves.stageClipboard": () => ({ ok: true, paths }),
+      "saves.importFiles": () => ({ ok: true, ids: [] }),
+      "saves.discardStagedClipboard": () => ({ ok: true }),
     },
-  );
+  });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -82,7 +71,6 @@ afterEach(() => {
     root.unmount();
   });
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 function dialog() {
@@ -124,7 +112,9 @@ async function startImport(
 }
 
 function argsFor(operation: string) {
-  return query.mock.calls.find(([name]) => name === operation)?.[1];
+  return vi
+    .mocked(window.pond.query)
+    .mock.calls.find(([name]) => name === operation)?.[1];
 }
 
 function importArgs() {

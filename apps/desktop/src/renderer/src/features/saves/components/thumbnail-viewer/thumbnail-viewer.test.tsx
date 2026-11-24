@@ -2,13 +2,14 @@ import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import {
   closeThumbnailViewer,
   openThumbnailViewer,
 } from "@/features/saves/state/thumbnail-viewer";
 import type { Save, SaveFile } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ThumbnailViewerHost } from ".";
 
 function file(kind: string, path: string, sha256: string): SaveFile {
@@ -51,26 +52,9 @@ describe("ThumbnailViewerHost", () => {
   let root: Root;
 
   beforeEach(async () => {
-    vi.stubGlobal("pond", {
-      onPrefsChanged: () => () => {},
-      query: async (name: string) =>
-        name === "settings.getPrefs" ? PrefsSchema.parse({}) : { ok: true },
+    bridge.use({
+      query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
     });
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("matchMedia", () => ({
-      matches: false,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-    }));
     document.documentElement.dataset.theme = "light";
     host = document.createElement("div");
     document.body.append(host);
@@ -84,7 +68,6 @@ describe("ThumbnailViewerHost", () => {
     host.remove();
     pool.clear();
     document.documentElement.removeAttribute("data-theme");
-    vi.unstubAllGlobals();
   });
 
   it("shows the card's Thumbnail rather than the original", async () => {

@@ -23,6 +23,7 @@ interface ImageViewportOptions {
   defaultSize: "fit" | "actual";
   initialRatio: number | null;
   isDragging: () => boolean;
+  measureFrame: (frame: HTMLElement) => DOMRectReadOnly;
   mode: InspectorMode;
   naturalWidth: number;
   onNavigate: (delta: number) => void;
@@ -70,6 +71,7 @@ export function useImageViewport({
   defaultSize,
   initialRatio,
   isDragging,
+  measureFrame,
   mode,
   naturalWidth,
   onNavigate,
@@ -195,6 +197,7 @@ export function useImageViewport({
   const wheelState = useRef({
     active,
     isDragging,
+    measureFrame,
     mode,
     onNavigate,
     staticAtFit,
@@ -204,12 +207,21 @@ export function useImageViewport({
     wheelState.current = {
       active,
       isDragging,
+      measureFrame,
       mode,
       onNavigate,
       staticAtFit,
       wheelBehavior,
     };
-  }, [active, isDragging, mode, onNavigate, staticAtFit, wheelBehavior]);
+  }, [
+    active,
+    isDragging,
+    measureFrame,
+    mode,
+    onNavigate,
+    staticAtFit,
+    wheelBehavior,
+  ]);
 
   useEffect(() => {
     const element = frame.current;
@@ -260,7 +272,7 @@ export function useImageViewport({
       if (intent !== "zoom" && state.isDragging()) {
         return;
       }
-      const rect = element.getBoundingClientRect();
+      const rect = state.measureFrame(element);
       if (intent === "zoom") {
         const factor = wheelZoomFactor(
           event.deltaY,
@@ -310,12 +322,9 @@ export function useImageViewport({
   };
   const pointFromClient = (clientX: number, clientY: number) =>
     viewToImagePoint(
-      frame.current?.getBoundingClientRect() ?? {
-        left: 0,
-        top: 0,
-        width: 0,
-        height: 0,
-      },
+      frame.current
+        ? measureFrame(frame.current)
+        : { left: 0, top: 0, width: 0, height: 0 },
       latestPose.current,
       ratio,
       clientX,

@@ -2,6 +2,7 @@ import type { ImageCrop } from "@pond/schema/db";
 import { isElement } from "@pond/ui/dom";
 import { isStaticThumbnailFile } from "@shared/media-index";
 import { pickCardFile } from "@shared/save-file-names";
+import log from "electron-log/renderer";
 import { useEffect, useId, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
@@ -54,6 +55,11 @@ interface ImageInspectorProps {
   onNavigate?: (id: string) => void;
   edits?: "full" | "none";
   endActions?: ReactNode;
+  measureFrame?: (frame: HTMLElement) => DOMRectReadOnly;
+}
+
+function readFrameRect(frame: HTMLElement): DOMRectReadOnly {
+  return frame.getBoundingClientRect();
 }
 
 export function ImageInspector({
@@ -66,6 +72,7 @@ export function ImageInspector({
   onNavigate,
   edits = "full",
   endActions,
+  measureFrame = readFrameRect,
 }: ImageInspectorProps) {
   const [prefs] = usePrefs("viewer");
   /** Quick Preview hides the viewer chrome and uses browser-style click to zoom. */
@@ -117,7 +124,9 @@ export function ImageInspector({
           onNavigate(next);
         }
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond viewer] finding the next save failed", cause);
+      });
   };
   const {
     actual: viewActual,
@@ -142,6 +151,7 @@ export function ImageInspector({
           ? save.width / save.height
           : null,
     isDragging: () => dragRef.current !== null,
+    measureFrame,
     mode,
     naturalWidth: file?.width || save.width || 0,
     onNavigate: navigate,

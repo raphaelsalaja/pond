@@ -1,6 +1,7 @@
 import { IconMediaPlay } from "@pond/icons";
 import { Tooltip, useVideo, Video } from "@pond/ui";
 import { isElement } from "@pond/ui/dom";
+import log from "electron-log/renderer";
 import {
   useCallback,
   useEffect,
@@ -41,6 +42,15 @@ import styles from "./styles.module.css";
 const SURFACE_CONTROLS =
   "button, a, input, select, textarea, label, [role='button'], [role='slider'], [role='menuitem'], [role='option'], [role='combobox']";
 
+interface ViewerSize {
+  width: number;
+  height: number;
+}
+
+function measureViewer(root: HTMLElement): ViewerSize {
+  return { width: root.clientWidth, height: root.clientHeight };
+}
+
 interface VideoPlayerProps {
   src: string;
   saveId?: string;
@@ -55,6 +65,7 @@ interface VideoPlayerProps {
   onRatio?: (ratio: number) => void;
   onError?: () => void;
   renderToolbar?: (slots: VideoToolbarSlots) => ReactNode;
+  measure?: (root: HTMLElement) => ViewerSize;
 }
 
 /**
@@ -100,6 +111,7 @@ function VideoSurface({
   placeholder,
   onError,
   onLoadedMetadata,
+  measure,
   children,
 }: {
   src: string;
@@ -112,6 +124,7 @@ function VideoSurface({
   placeholder?: string;
   onError?: () => void;
   onLoadedMetadata: ReactEventHandler<HTMLVideoElement>;
+  measure: (root: HTMLElement) => ViewerSize;
   children?: ReactNode;
 }) {
   const { actions } = useVideo();
@@ -131,23 +144,22 @@ function VideoSurface({
     if (!root) {
       return;
     }
-    const measure = () => {
-      const width = root.clientWidth;
-      const height = root.clientHeight;
+    const update = () => {
+      const { width, height } = measure(root);
       setViewerSize((current) =>
         current.width === width && current.height === height
           ? current
           : { width, height },
       );
     };
-    measure();
+    update();
     if (!globalThis.ResizeObserver) {
       return;
     }
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver(update);
     observer.observe(root);
     return () => observer.disconnect();
-  }, []);
+  }, [measure]);
   const scale = videoScaleForRotation(
     viewerSize.width,
     viewerSize.height,
@@ -235,6 +247,7 @@ export function VideoPlayer({
   onRatio,
   onError,
   renderToolbar,
+  measure = measureViewer,
 }: VideoPlayerProps) {
   const save = useSave(saveId);
   const [viewer] = usePrefs("viewer");
@@ -270,7 +283,9 @@ export function VideoPlayer({
           setTiming({ key, frameRate: result.frameRate });
         }
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond video] reading media timing failed", cause);
+      });
     return () => {
       current = false;
     };
@@ -346,6 +361,7 @@ export function VideoPlayer({
         placeholder={cardThumbnailFor(src) ?? poster}
         onError={onError}
         onLoadedMetadata={onLoadedMetadata}
+        measure={measure}
       >
         <Poster.End src={poster} />
       </VideoSurface>

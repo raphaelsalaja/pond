@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+export type ImageDecodeState = Pick<
+  HTMLImageElement,
+  "complete" | "naturalWidth"
+>;
+
+function decodeState(image: HTMLImageElement): ImageDecodeState {
+  return image;
+}
+
 /** Reports a decoded image once per src, including images already in Chromium's memory cache. */
 export function useImageReady(
   src: string | null,
   onReady?: (image: HTMLImageElement) => void,
   onBroken?: () => void,
+  readState: (image: HTMLImageElement) => ImageDecodeState = decodeState,
 ) {
   const ref = useRef<HTMLImageElement>(null);
   const settledSrc = useRef<string | null>(null);
@@ -12,14 +22,18 @@ export function useImageReady(
 
   const markReady = useCallback(
     (image: HTMLImageElement) => {
-      if (!src || image.naturalWidth <= 0 || settledSrc.current === src) {
+      if (
+        !src ||
+        readState(image).naturalWidth <= 0 ||
+        settledSrc.current === src
+      ) {
         return;
       }
       settledSrc.current = src;
       setLoadedSrc(src);
       onReady?.(image);
     },
-    [onReady, src],
+    [onReady, readState, src],
   );
 
   const markBroken = useCallback(() => {
@@ -32,15 +46,15 @@ export function useImageReady(
 
   useEffect(() => {
     const image = ref.current;
-    if (!image?.complete) {
+    if (!image || !readState(image).complete) {
       return;
     }
-    if (image.naturalWidth > 0) {
+    if (readState(image).naturalWidth > 0) {
       markReady(image);
     } else {
       markBroken();
     }
-  }, [markBroken, markReady]);
+  }, [markBroken, markReady, readState]);
 
   return {
     ref,

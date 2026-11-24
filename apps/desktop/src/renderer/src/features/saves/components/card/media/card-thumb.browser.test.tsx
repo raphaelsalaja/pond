@@ -4,14 +4,14 @@ import { isHTMLElement } from "@pond/ui/dom";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import type { MediaUnit } from "@/features/saves/lib/media/units";
 import { cardThumbnailFor } from "@/features/saves/state/card-thumbnails";
 import type { Save } from "@/features/saves/types";
-import { loadPrefs } from "@/shared/state/prefs";
+import { loadPrefs, savePrefsSection } from "@/shared/state/prefs";
+import { bridge } from "@/shared/test/pond-bridge";
 import { PreparedCardThumb } from "./";
 
-const listeners = new Set<(prefs: Prefs) => void>();
 let viewer: Partial<Prefs["viewer"]> = {};
 
 function currentPrefs(): Prefs {
@@ -19,23 +19,21 @@ function currentPrefs(): Prefs {
   return { ...base, viewer: { ...base.viewer, ...viewer } };
 }
 
+function imageUrl(width: number, height: number): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  return canvas.toDataURL("image/png");
+}
+
 let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal("pond", {
-    onPrefsChanged(listener: (prefs: Prefs) => void) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-    query: async (name: string) => {
-      if (name === "settings.getPrefs") {
-        return currentPrefs();
-      }
-      if (name === "settings.setPrefs") {
-        return { ok: true, prefs: currentPrefs() };
-      }
-      return { ok: true };
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => currentPrefs(),
+      "settings.setPrefs": () => ({ ok: true, prefs: currentPrefs() }),
     },
   });
   host = document.createElement("div");
@@ -46,8 +44,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
 });
 
 const save: Save = {
@@ -85,23 +81,32 @@ const save: Save = {
   deletedAt: null,
 };
 
-const slides: Array<MediaUnit> = [
-  { key: "first.jpg", url: "pond://gallery/first.jpg", isVideo: false },
-  { key: "second.jpg", url: "pond://gallery/second.jpg", isVideo: false },
-];
+const first: MediaUnit = {
+  key: "first.jpg",
+  url: imageUrl(4, 3),
+  isVideo: false,
+};
+const second: MediaUnit = {
+  key: "second.jpg",
+  url: imageUrl(3, 4),
+  isVideo: false,
+};
+const slides: Array<MediaUnit> = [first, second];
+
+async function setViewerPrefs(next: Partial<Prefs["viewer"]>): Promise<void> {
+  viewer = next;
+  await savePrefsSection("viewer", next);
+}
 
 async function renderThumb(): Promise<HTMLElement> {
   await loadPrefs();
-  for (const listener of listeners) {
-    listener(currentPrefs());
-  }
   await act(async () => {
     root.render(
       <PreparedCardThumb
         save={save}
         mediaUnits={slides}
         pickOptions={{}}
-        unit={slides[0] ?? null}
+        unit={first}
         primary={save.files[0] ?? null}
       />,
     );
@@ -110,13 +115,12 @@ async function renderThumb(): Promise<HTMLElement> {
   if (!isHTMLElement(thumb)) {
     throw new Error("Missing card thumb");
   }
-  vi.spyOn(thumb, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 0, 200, 100),
-  );
   return thumb;
 }
 
-function moveTo(thumb: HTMLElement, clientX: number): Promise<void> {
+function moveTo(thumb: HTMLElement, fraction: number): Promise<void> {
+  const bounds = thumb.getBoundingClientRect();
+  const clientX = bounds.left + bounds.width * fraction;
   return act(async () => {
     thumb.dispatchEvent(
       new PointerEvent("pointermove", { bubbles: true, clientX, clientY: 40 }),
@@ -124,24 +128,31 @@ function moveTo(thumb: HTMLElement, clientX: number): Promise<void> {
   });
 }
 
+function loaded(image: HTMLImageElement): Promise<void> {
+  return act(async () => {
+    if (!image.complete) {
+      await new Promise((resolve) => {
+        image.addEventListener("load", resolve, { once: true });
+      });
+    }
+  });
+}
+
+function activeSlide(): string | null | undefined {
+  return host.querySelector("img[data-active='true']")?.getAttribute("src");
+}
+
 it("scrubs gallery thumbnails with the pointer when scrub on hover is selected", async () => {
-  viewer = { thumbnailBehavior: "scrub" };
+  await setViewerPrefs({ thumbnailBehavior: "scrub" });
   const thumb = await renderThumb();
-  expect(
-    host.querySelector("img[data-active='true']")?.getAttribute("src"),
-  ).toContain("first.jpg");
+  expect(activeSlide()).toBe(first.url);
 
-  await moveTo(thumb, 180);
+  await moveTo(thumb, 0.9);
 
-  expect(
-    host.querySelector("img[data-active='true']")?.getAttribute("src"),
-  ).toContain("second.jpg");
+  expect(activeSlide()).toBe(second.url);
 });
 
 it("keeps a post screenshot cover out of the viewer placeholder for the post's media", async () => {
-  vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(
-    100,
-  );
   const post: Save = {
     ...save,
     id: "post",
@@ -165,12 +176,12 @@ it("keeps a post screenshot cover out of the viewer placeholder for the post's m
   };
   const media: MediaUnit = {
     key: "media-1.jpg",
-    url: "pond://post/media-1.jpg",
+    url: imageUrl(8, 6),
     isVideo: false,
   };
   const cover: MediaUnit = {
     key: "tweet-light.png",
-    url: "pond://post/tweet-light.png",
+    url: imageUrl(6, 8),
     isVideo: false,
   };
 
@@ -187,19 +198,20 @@ it("keeps a post screenshot cover out of the viewer placeholder for the post's m
     );
   });
   const image = host.querySelector("img");
-  await act(async () => image?.dispatchEvent(new Event("load")));
+  if (!image) {
+    throw new Error("Missing card image");
+  }
+  await loaded(image);
 
-  expect(cardThumbnailFor(cover.url)).toBe(image?.src);
+  expect(cardThumbnailFor(cover.url)).toBe(image.src);
   expect(cardThumbnailFor(media.url)).toBeNull();
 });
 
 it("keeps gallery thumbnails on the first image when thumbnail behavior is still", async () => {
-  viewer = { thumbnailBehavior: "still" };
+  await setViewerPrefs({ thumbnailBehavior: "still" });
   const thumb = await renderThumb();
 
-  await moveTo(thumb, 180);
+  await moveTo(thumb, 0.9);
 
-  expect(
-    host.querySelector("img[data-active='true']")?.getAttribute("src"),
-  ).toContain("first.jpg");
+  expect(activeSlide()).toBe(first.url);
 });

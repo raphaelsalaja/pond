@@ -3,9 +3,10 @@ import type { SaveFile } from "@pond/schema/db";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ImageInspector } from ".";
 
 function imageFile(path: string, mimeType = "image/jpeg"): SaveFile {
@@ -43,19 +44,22 @@ function saveWith(id: string, files: Array<SaveFile>): Save {
 describe("current image thumbnail", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const query = vi.fn(async (name: string) => {
-    if (name === "settings.getPrefs") {
-      return PrefsSchema.parse({});
-    }
-    return { ok: true };
-  });
 
   beforeEach(() => {
-    query.mockClear();
-    vi.stubGlobal("pond", {
-      query,
-      tx: async () => ({ ok: true }),
-      appInfo: async () => ({ username: "Raphael Salaja" }),
+    bridge.use({
+      query: {
+        "settings.getPrefs": () => PrefsSchema.parse({}),
+        "saves.setImageThumbnail": () => ({ ok: true }),
+      },
+      tx: async () => {},
+      appInfo: async () => ({
+        name: "Pond",
+        version: "0.0.0",
+        platform: "linux",
+        arch: "arm64",
+        username: "Raphael Salaja",
+        isPackaged: false,
+      }),
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -65,7 +69,6 @@ describe("current image thumbnail", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function render(save: Save, fileIndex: number) {
@@ -105,10 +108,10 @@ describe("current image thumbnail", () => {
     expect(button).not.toBeNull();
     await act(async () => button?.click());
 
-    expect(query).toHaveBeenCalledWith("saves.setImageThumbnail", {
-      id: "carousel",
-      src: "pond://carousel/two.jpg",
-    });
+    expect(window.pond.query).toHaveBeenCalledWith(
+      "saves.setImageThumbnail",
+      { id: "carousel", src: "pond://carousel/two.jpg" },
+    );
   });
 
   it("hides the action when the save has a single image", async () => {

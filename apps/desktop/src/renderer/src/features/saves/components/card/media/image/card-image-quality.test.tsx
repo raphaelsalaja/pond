@@ -3,9 +3,10 @@ import { THUMBNAIL_CACHE_VERSION } from "@shared/media-index";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import type { Save } from "@/features/saves/types";
 import { loadPrefs } from "@/shared/state/prefs";
+import { bridge } from "@/shared/test/pond-bridge";
 import { CardImage } from ".";
 
 let host: HTMLDivElement;
@@ -37,10 +38,11 @@ const save: Save = {
 
 beforeEach(() => {
   decodes = [];
-  vi.stubGlobal("pond", {
-    query: async () =>
-      PrefsSchema.parse({ viewer: { thumbnailQuality: "quality" } }),
-    tx: async () => ({ ok: true }),
+  bridge.use({
+    query: {
+      "settings.getPrefs": () =>
+        PrefsSchema.parse({ viewer: { thumbnailQuality: "quality" } }),
+    },
   });
   Object.defineProperty(HTMLImageElement.prototype, "decode", {
     configurable: true,
@@ -59,7 +61,6 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
-  vi.unstubAllGlobals();
 });
 
 const shown = () => host.querySelector("img")?.getAttribute("src");

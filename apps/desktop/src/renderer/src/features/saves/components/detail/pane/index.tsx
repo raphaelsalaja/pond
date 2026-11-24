@@ -1,6 +1,7 @@
 import { IconCursor, IconScanImage, IconTag } from "@pond/icons";
 import { Button, Empty, EmptyPreview, Pane, Tabs } from "@pond/ui";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
+import log from "electron-log/renderer";
 import { useEffect, useMemo, useState } from "react";
 import { DISABLED_HINTS, TASK_ENABLED } from "@/features/enrichment";
 import { KebabMenu } from "@/features/saves/components/detail/kebab";
@@ -458,7 +459,9 @@ export function SaveInspector({
 
   const prefetchRelated = () => {
     if (single && indexed) {
-      void loadRelated(single.id).catch(() => undefined);
+      void loadRelated(single.id).catch((cause: unknown) => {
+        log.warn("[pond detail] related prefetch failed", cause);
+      });
     }
   };
 

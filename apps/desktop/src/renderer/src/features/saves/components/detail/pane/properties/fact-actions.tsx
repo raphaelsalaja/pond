@@ -7,6 +7,7 @@ import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { webTypeKey } from "@pond/schema/media-type";
 import type { MenuItemSpec } from "@pond/ui";
+import log from "electron-log/renderer";
 import { copyId, copyValue } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { pickPrimaryFile } from "@/features/saves/lib/media/units";
@@ -39,10 +40,6 @@ const DATE_FIELDS = new Map<string, DateField>([
   ],
   ["taken", { field: "takenAt", verb: "Taken", at: (save) => save.takenAt }],
 ]);
-
-function show(label: string, predicate: Predicate): FactAction {
-  return { label, run: () => saveLibraryBridge.showMatching(predicate) };
-}
 
 function presetLabel(field: FieldId, value: string): string | null {
   return (
@@ -77,7 +74,13 @@ function dayRange(value: SaveTime): [number, number] | null {
 export function factFilters(
   fact: { id: string; value: string; display: string },
   save: Save,
+  showMatching: (predicate: Predicate) => void = (predicate) =>
+    saveLibraryBridge.showMatching(predicate),
 ): Array<FactAction> {
+  const show = (label: string, predicate: Predicate): FactAction => ({
+    label,
+    run: () => showMatching(predicate),
+  });
   switch (fact.id) {
     case "type": {
       const out: Array<FactAction> = [];
@@ -210,7 +213,9 @@ export function ratingMenu(
 
 export function copyFact(label: string, value: string): void {
   void (label === "ID" ? copyId(value) : copyValue(label, value)).catch(
-    () => undefined,
+    (cause: unknown) => {
+      log.warn(`[pond detail] copying ${label} failed`, cause);
+    },
   );
 }
 

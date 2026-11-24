@@ -28,6 +28,9 @@ const ARROW_KEY_OWNER = [
   "[role='textbox']",
 ].join(", ");
 
+/** Pausing or leaving the viewer before the loop restarts rejects `play()`. */
+function ignoreInterruptedRestart(): void {}
+
 function owns(node: EventTarget | null): boolean {
   return isElement(node) && node.closest(ARROW_KEY_OWNER) !== null;
 }
@@ -118,7 +121,7 @@ export function MediaBridge({
     }
     const restart = () => {
       video.currentTime = loopRange[0];
-      void video.play().catch(() => {});
+      void video.play().catch(ignoreInterruptedRestart);
     };
     video.addEventListener("ended", restart);
     return () => video.removeEventListener("ended", restart);

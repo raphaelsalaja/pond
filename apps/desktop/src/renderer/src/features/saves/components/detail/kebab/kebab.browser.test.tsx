@@ -2,9 +2,10 @@ import { isHTMLElement } from "@pond/ui/dom";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import "@/app/effects/save-library-bridge";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { KebabMenu } from ".";
 
 const save: Save = {
@@ -38,20 +39,8 @@ describe("KebabMenu", () => {
   let root: Root;
 
   beforeEach(() => {
-    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-      callback(0);
-      return 1;
-    });
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("pond", {
-      query: async () => ({ apps: [] }),
+    bridge.use({
+      query: { "saves.listOpenWith": () => ({ apps: [] }) },
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -61,7 +50,6 @@ describe("KebabMenu", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   it("shows the focused detail actions", async () => {
@@ -73,7 +61,7 @@ describe("KebabMenu", () => {
 
     await act(async () => {
       trigger.click();
-      await Promise.resolve();
+      await new Promise((resolve) => requestAnimationFrame(resolve));
     });
     expect(document.body.textContent).not.toContain("Open Save");
     expect(document.body.textContent).toContain("Open With");
