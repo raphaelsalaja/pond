@@ -71,6 +71,36 @@ describe("verified library backup", () => {
     ).toBe("original image bytes");
   });
 
+  it("leaves AppleDouble sidecars and Finder metadata out of the verified copy", async () => {
+    const { source, item, destination } = await fixture();
+    await writeFile(join(source, "._metadata.json"), "root sidecar");
+    await writeFile(join(source, ".DS_Store"), "finder");
+    await writeFile(join(source, "items", "._save.info"), "folder sidecar");
+    await writeFile(join(item, "._info.json"), "info sidecar");
+    await writeFile(join(item, "._original.jpg"), "image sidecar");
+    await writeFile(join(item, ".DS_Store"), "item finder");
+
+    expect(await verifyLibraryBackup(source)).toEqual({
+      files: 3,
+      verifiedManifest: false,
+    });
+    const result = await createLibraryBackup({ source, destination });
+    expect(result.copied).toBe(3);
+    expect(await verifyLibraryBackup(destination)).toEqual({
+      files: 3,
+      verifiedManifest: true,
+    });
+    expect((await readdir(destination)).sort()).toEqual([
+      "items",
+      "metadata.json",
+      "pond-backup-manifest.json",
+    ]);
+    expect(await readdir(join(destination, "items"))).toEqual(["save.info"]);
+    expect(
+      (await readdir(join(destination, "items", "save.info"))).sort(),
+    ).toEqual(["info.json", "original.jpg"]);
+  });
+
   it("restores a separate editable library while leaving the verified snapshot untouched", async () => {
     const { root, source, destination } = await fixture();
     await createLibraryBackup({ source, destination });
