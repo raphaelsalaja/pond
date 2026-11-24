@@ -20,6 +20,7 @@ import {
   type InfoDoc,
   StoredInfoDocSchema,
 } from "../lib/library-format";
+import { isSaveFolderName } from "../lib/library-sidecars";
 import { type ExportItem, exportFiles } from "./export-files";
 import { verifyLibraryBackup } from "./library-backup";
 import { runLibraryTransfer } from "./library-transfers";
@@ -62,7 +63,7 @@ async function readSaves(root: string, includeTrash = false) {
     for (const entry of await readdir(join(root, bucket), {
       withFileTypes: true,
     }).catch(() => [])) {
-      if (!entry.isDirectory() || !entry.name.endsWith(".info")) continue;
+      if (!entry.isDirectory() || !isSaveFolderName(entry.name)) continue;
       const directory = join(root, bucket, entry.name);
       const infoPath = join(directory, "info.json");
       const info = StoredInfoDocSchema.parse(

@@ -44,6 +44,7 @@ import {
   StoredInfoDocSchema,
 } from "./library-format";
 import { libraryWriteBlock } from "./library-placement";
+import { isSaveFolderName } from "./library-sidecars";
 
 interface SaveMetadata {
   id: string;
@@ -319,21 +320,28 @@ export async function removeSave(id: string): Promise<void> {
   }
 }
 
+export async function listSaveFolderIds(savesDir: string): Promise<string[]> {
+  const ids: string[] = [];
+  for (const entry of await readdir(savesDir, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !isSaveFolderName(entry.name)) continue;
+    ids.push(entry.name.slice(0, -".info".length));
+  }
+  return ids;
+}
+
 export async function* scanLibrary(root?: string): AsyncGenerator<{
   id: string;
   mtimeMs: number;
 }> {
   const savesDir = root ? join(root, "items") : resolvePaths().savesDir;
-  let entries: string[] = [];
+  let ids: string[] = [];
   try {
-    entries = await readdir(savesDir);
+    ids = await listSaveFolderIds(savesDir);
   } catch {
     return;
   }
-  for (const entry of entries) {
-    if (!entry.endsWith(".info")) continue;
-    const id = entry.slice(0, -".info".length);
-    const dir = join(savesDir, entry);
+  for (const id of ids) {
+    const dir = join(savesDir, `${id}.info`);
     try {
       const info = await stat(join(dir, INFO_FILE));
       yield { id, mtimeMs: info.mtimeMs };

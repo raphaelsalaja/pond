@@ -1,14 +1,15 @@
 import { createReadStream, existsSync } from "node:fs";
 import { cp, mkdir, readdir, rm } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { basename, join, relative } from "node:path";
 import { saves, settings as settingsTable } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { eq, isNotNull, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb, getGlobalDb } from "../db";
-import { readSaveMetadata } from "../lib/library";
+import { listSaveFolderIds, readSaveMetadata } from "../lib/library";
 import { readOrCreateLibraryId } from "../lib/library-id";
 import { checkPointerSafety, readLibraryPointer } from "../lib/library-pointer";
+import { isLibrarySidecar } from "../lib/library-sidecars";
 import { isSamePath, normalizeLibraryPath } from "../lib/path-identity";
 import { libraryRoot, resolvePaths, trashRoot } from "../paths";
 import { executeBatch } from "./executor";
@@ -32,10 +33,7 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   const indexedSet = new Set(indexed);
 
   const paths = resolvePaths();
-  const entries = await readdir(paths.savesDir);
-  const onDiskIds = entries
-    .filter((e) => e.endsWith(".info"))
-    .map((e) => e.slice(0, -".info".length));
+  const onDiskIds = await listSaveFolderIds(paths.savesDir);
   const onDiskSet = new Set(onDiskIds);
 
   const orphans: string[] = [];
@@ -108,6 +106,7 @@ export async function relocateLibrary(
 
   if (mode === "copy") {
     for (const entry of await readdir(srcResolved)) {
+      if (isLibrarySidecar(entry)) continue;
       const from = join(srcResolved, entry);
       const to = join(destResolved, entry);
       if (existsSync(to)) {
@@ -115,7 +114,10 @@ export async function relocateLibrary(
         skipped += 1;
         continue;
       }
-      await cp(from, to, { recursive: true });
+      await cp(from, to, {
+        recursive: true,
+        filter: (source) => !isLibrarySidecar(basename(source)),
+      });
       copied += 1;
     }
   }
