@@ -1,8 +1,13 @@
 import { act } from "react";
 import { expect, it, vi } from "vitest";
 import { z } from "zod";
+import { bridge } from "@/shared/test/pond-bridge";
 import { assistant } from "./assistant";
-import { createAssistantHarness } from "./assistant.test-harness";
+import {
+  chatRow,
+  createAssistantHarness,
+  messageRow,
+} from "./assistant.test-harness";
 
 const ShownSchema = z
   .object({
@@ -13,34 +18,19 @@ const ShownSchema = z
   .partial();
 
 const chats = new Map([
-  [
-    "koi",
-    [
-      { id: "koi-latest", title: "Latest" },
-      { id: "koi-older", title: "Older" },
-    ],
-  ],
-  ["carp", [{ id: "carp-only", title: "Only" }]],
+  ["koi", [chatRow("koi-latest", "Latest"), chatRow("koi-older", "Older")]],
+  ["carp", [chatRow("carp-only", "Only")]],
   ["guppy", []],
 ]);
 
 it("opens each fish on its one conversation and keeps its draft", async () => {
-  vi.stubGlobal("pond", {
-    query: async (name: string, args: { fishId?: string; chatId?: string }) =>
-      name === "agent.chats"
-        ? (chats.get(args.fishId ?? "") ?? [])
-        : name === "agent.messages"
-          ? [
-              {
-                id: `${args.chatId}-reply`,
-                chatId: args.chatId,
-                role: "assistant",
-                content: "An answer",
-                metadata: null,
-              },
-            ]
-          : {},
-    onAgentChunk: () => () => {},
+  bridge.use({
+    query: {
+      "agent.chats": (input) => chats.get(input?.fishId ?? "") ?? [],
+      "agent.messages": ({ chatId }) => [
+        messageRow({ id: `${chatId}-reply`, chatId, content: "An answer" }),
+      ],
+    },
   });
   const harness = createAssistantHarness((state) => ({
     chatId: state.chatId,
@@ -79,6 +69,5 @@ it("opens each fish on its one conversation and keeps its draft", async () => {
     await harness.unmount();
     assistant.setDraft("");
     assistant.newChat();
-    vi.unstubAllGlobals();
   }
 });

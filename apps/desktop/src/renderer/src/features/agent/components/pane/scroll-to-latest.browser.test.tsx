@@ -6,17 +6,12 @@ import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Thread } from "../thread";
 
-class ResizeObserverStub {
-  observe() {}
-  disconnect() {}
-}
-
 let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal("ResizeObserver", ResizeObserverStub);
   host = document.createElement("div");
+  host.style.height = "200px";
   document.body.append(host);
   root = createRoot(host);
 });
@@ -24,7 +19,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 const frame = () =>
@@ -32,12 +26,18 @@ const frame = () =>
     requestAnimationFrame(() => resolve());
   });
 
+/** use-stick-to-bottom parks the viewport one pixel above its scroll end. */
+const bottom = (viewport: HTMLElement) =>
+  viewport.scrollHeight - 1 - viewport.clientHeight;
+
+const latest = () => host.querySelector('[aria-label="Read Latest Response"]');
+
 async function render(reducedMotion: "always" | "never" = "never") {
   await act(async () => {
     root.render(
       <MotionConfig reducedMotion={reducedMotion}>
         <Thread.Conversation composer={<div>Composer</div>}>
-          <p>Response</p>
+          <p style={{ height: "600px" }}>Response</p>
         </Thread.Conversation>
       </MotionConfig>,
     );
@@ -46,61 +46,53 @@ async function render(reducedMotion: "always" | "never" = "never") {
   if (!isHTMLTag(viewport, "div")) {
     throw new Error("Missing conversation viewport");
   }
-  Object.defineProperties(viewport, {
-    scrollHeight: { configurable: true, value: 600 },
-    clientHeight: { configurable: true, value: 200 },
-    scrollTop: { configurable: true, value: 399, writable: true },
+  await vi.waitFor(() => {
+    expect(viewport.scrollTop).toBe(bottom(viewport));
   });
   return viewport;
 }
 
-async function scrollTo(viewport: HTMLElement, top: number) {
-  await act(async () => {
-    viewport.scrollTop = top;
-    viewport.dispatchEvent(new Event("scroll"));
-    await new Promise((resolve) => {
-      setTimeout(resolve, 5);
-    });
+async function scrollUp(viewport: HTMLElement) {
+  viewport.scrollTop = 100;
+  await vi.waitFor(() => {
+    expect(latest()).not.toBeNull();
   });
-}
-
-const latest = () => host.querySelector('[aria-label="Read Latest Response"]');
-
-it("offers the icon-only latest response control once you scroll up", async () => {
-  const viewport = await render();
-  await scrollTo(viewport, 399);
-  expect(latest()).toBeNull();
-
-  await scrollTo(viewport, 100);
   const button = latest();
   if (!isHTMLTag(button, "button")) {
     throw new Error("Missing latest response control");
   }
+  return button;
+}
+
+it("offers the icon-only latest response control once you scroll up", async () => {
+  const viewport = await render();
+  expect(latest()).toBeNull();
+
+  const button = await scrollUp(viewport);
   expect(button.textContent).toBe("");
 
   await act(async () => button.click());
   expect(latest()).toBeNull();
 });
 
-it.each(["always", "never"] as const)(
-  "returns to the latest response under the %s reduced-motion policy",
-  async (reducedMotion) => {
-    const viewport = await render(reducedMotion);
-    await scrollTo(viewport, 399);
-    await scrollTo(viewport, 100);
-    const button = latest();
-    if (!isHTMLTag(button, "button")) {
-      throw new Error("Missing latest response control");
-    }
+it("jumps to the latest response under the always reduced-motion policy", async () => {
+  const viewport = await render("always");
+  const button = await scrollUp(viewport);
 
-    await act(async () => {
-      button.click();
-      await frame();
-    });
-    if (reducedMotion === "always") {
-      expect(viewport.scrollTop).toBe(399);
-    } else {
-      expect(viewport.scrollTop).toBeLessThan(399);
-    }
-  },
-);
+  await act(async () => {
+    button.click();
+    await frame();
+  });
+  expect(viewport.scrollTop).toBe(bottom(viewport));
+});
+
+it("glides toward the latest response under the never reduced-motion policy", async () => {
+  const viewport = await render("never");
+  const button = await scrollUp(viewport);
+
+  await act(async () => {
+    button.click();
+    await frame();
+  });
+  expect(viewport.scrollTop).toBeLessThan(bottom(viewport));
+});

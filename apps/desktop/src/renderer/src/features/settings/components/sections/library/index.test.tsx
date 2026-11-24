@@ -1,58 +1,19 @@
 import { isHTMLTag } from "@pond/ui/dom";
+import type { QueryInput, QueryResult } from "@shared/query-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { LibrarySettings } from ".";
 
 const customLogo = "data:image/png;base64,Y3VzdG9t";
 const customSource = "data:image/png;base64,c291cmNl";
-interface LibraryInfo {
-  path: string;
-  name: string;
-  icon: string | null;
-  accent: string;
-}
 
-let libraryInfo: LibraryInfo = {
-  path: "/Users/rafa/My Pond.pond",
-  name: "My Pond",
-  icon: null,
-  accent: "#008FFF",
-};
-
-const query = vi.fn(
-  async (
-    name: string,
-    params: { name?: string; icon?: string | null } = {},
-  ) => {
-    if (name === "library.info") {
-      return libraryInfo;
-    }
-    if (name === "library.recent") {
-      return [];
-    }
-    if (name === "library.identity.pickIcon") {
-      return {
-        ok: true,
-        image: { src: customSource, width: 300, height: 900 },
-      };
-    }
-    if (name === "library.identity.cropIcon") {
-      return { ok: true, icon: customLogo };
-    }
-    if (name === "library.identity.update") {
-      libraryInfo = { ...libraryInfo, ...params };
-      return { ok: true, ...libraryInfo };
-    }
-    if (name === "library.rename") {
-      libraryInfo = { ...libraryInfo, name: params.name ?? libraryInfo.name };
-      return { ok: true, path: libraryInfo.path };
-    }
-    return { ok: true };
-  },
-);
+let libraryInfo: QueryResult<"library.info">;
+let updated: PromiseWithResolvers<QueryInput<"library.identity.update">>;
+let renamed: PromiseWithResolvers<QueryInput<"library.rename">>;
 
 describe("library settings", () => {
   let host: HTMLDivElement;
@@ -63,10 +24,32 @@ describe("library settings", () => {
       path: "/Users/rafa/My Pond.pond",
       name: "My Pond",
       icon: null,
+      mark: null,
       accent: "#008FFF",
     };
-    query.mockClear();
-    vi.stubGlobal("pond", { query });
+    updated = Promise.withResolvers();
+    renamed = Promise.withResolvers();
+    bridge.use({
+      query: {
+        "library.info": () => libraryInfo,
+        "library.recent": () => [],
+        "library.identity.pickIcon": () => ({
+          ok: true,
+          image: { src: customSource, width: 300, height: 900 },
+        }),
+        "library.identity.cropIcon": () => ({ ok: true, icon: customLogo }),
+        "library.identity.update": (input) => {
+          libraryInfo = { ...libraryInfo, ...input };
+          updated.resolve(input);
+          return { ok: true, ...libraryInfo };
+        },
+        "library.rename": (input) => {
+          libraryInfo = { ...libraryInfo, name: input.name };
+          renamed.resolve(input);
+          return { ok: true, path: libraryInfo.path };
+        },
+      },
+    });
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -91,7 +74,6 @@ describe("library settings", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   it("shows logo and name controls inline", () => {
@@ -120,28 +102,24 @@ describe("library settings", () => {
       return button;
     });
     await act(async () => crop.click());
-    expect(query).toHaveBeenCalledWith("library.identity.cropIcon", {
-      src: customSource,
-      crop: { x: 0, y: 300, size: 300 },
-    });
-    await vi.waitFor(() =>
-      expect(query).toHaveBeenCalledWith("library.identity.update", {
-        icon: customLogo,
-      }),
+    expect(window.pond.query).toHaveBeenCalledWith(
+      "library.identity.cropIcon",
+      { src: customSource, crop: { x: 0, y: 300, size: 300 } },
     );
+    expect(await act(() => updated.promise)).toEqual({ icon: customLogo });
 
-    const reset = [...host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Reset",
-    );
-    if (!reset) {
-      throw new Error("Missing Reset button");
-    }
+    updated = Promise.withResolvers();
+    const reset = await vi.waitFor(() => {
+      const button = [...host.querySelectorAll("button")].find(
+        (candidate) => candidate.textContent === "Reset",
+      );
+      if (!button || button.disabled) {
+        throw new Error("Missing Reset button");
+      }
+      return button;
+    });
     await act(async () => reset.click());
-    await vi.waitFor(() =>
-      expect(query).toHaveBeenCalledWith("library.identity.update", {
-        icon: null,
-      }),
-    );
+    expect(await act(() => updated.promise)).toEqual({ icon: null });
   });
 
   it("renames the library when the name field loses focus", async () => {
@@ -160,10 +138,6 @@ describe("library settings", () => {
       field.focus();
       field.blur();
     });
-    await vi.waitFor(() =>
-      expect(query).toHaveBeenCalledWith("library.rename", {
-        name: "Archive",
-      }),
-    );
+    expect(await act(() => renamed.promise)).toEqual({ name: "Archive" });
   });
 });

@@ -1,30 +1,32 @@
-import type { AssistantMessage } from "@shared/assistant";
+import type { QueryResult } from "@shared/query-contracts";
 import { act } from "react";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { assistant } from "./assistant";
-import { createAssistantHarness } from "./assistant.test-harness";
+import {
+  chatRow,
+  createAssistantHarness,
+  messageRow,
+} from "./assistant.test-harness";
+
+type Messages = QueryResult<"agent.messages">;
 
 it("keeps the current conversation visible until the next chat is ready", async () => {
-  const next = Promise.withResolvers<Array<AssistantMessage>>();
-  vi.stubGlobal("pond", {
-    query: (name: string, args: { chatId?: string }) => {
-      if (name !== "agent.messages") {
-        return Promise.resolve([]);
-      }
-      if (args.chatId === "current") {
-        return Promise.resolve([
-          {
-            id: "current-message",
-            chatId: "current",
-            role: "assistant",
-            content: "Keep this conversation visible",
-            metadata: null,
-          },
-        ] satisfies Array<AssistantMessage>);
-      }
-      return next.promise;
+  const next = Promise.withResolvers<Messages>();
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": ({ chatId }) =>
+        chatId === "current"
+          ? [
+              messageRow({
+                id: "current-message",
+                chatId: "current",
+                content: "Keep this conversation visible",
+              }),
+            ]
+          : next.promise,
     },
-    onAgentChunk: () => () => {},
   });
   assistant.newChat();
   const harness = createAssistantHarness((state) => ({
@@ -46,13 +48,11 @@ it("keeps the current conversation visible until the next chat is ready", async 
     });
     await act(async () => {
       next.resolve([
-        {
+        messageRow({
           id: "next-message",
           chatId: "next",
-          role: "assistant",
           content: "The next conversation",
-          metadata: null,
-        },
+        }),
       ]);
       await switching;
     });
@@ -65,21 +65,18 @@ it("keeps the current conversation visible until the next chat is ready", async 
     next.resolve([]);
     await harness.unmount();
     assistant.newChat();
-    vi.unstubAllGlobals();
   }
 });
 
 it("ignores old history that arrives after switching chats", async () => {
-  const first = Promise.withResolvers<Array<AssistantMessage>>();
-  const second = Promise.withResolvers<Array<AssistantMessage>>();
-  vi.stubGlobal("pond", {
-    query: (name: string, args: { chatId?: string }) =>
-      name === "agent.messages"
-        ? args.chatId === "first"
-          ? first.promise
-          : second.promise
-        : Promise.resolve([]),
-    onAgentChunk: () => () => {},
+  const first = Promise.withResolvers<Messages>();
+  const second = Promise.withResolvers<Messages>();
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": ({ chatId }) =>
+        chatId === "first" ? first.promise : second.promise,
+    },
   });
   assistant.newChat();
   const harness = createAssistantHarness((state) => ({
@@ -97,25 +94,21 @@ it("ignores old history that arrives after switching chats", async () => {
     });
     await act(async () => {
       second.resolve([
-        {
+        messageRow({
           id: "new",
           chatId: "second",
-          role: "assistant",
           content: "Current conversation",
-          metadata: null,
-        },
+        }),
       ]);
       await newLoad;
     });
     await act(async () => {
       first.resolve([
-        {
+        messageRow({
           id: "old",
           chatId: "first",
-          role: "assistant",
           content: "Stale conversation",
-          metadata: null,
-        },
+        }),
       ]);
       await oldLoad;
     });
@@ -125,14 +118,15 @@ it("ignores old history that arrives after switching chats", async () => {
   } finally {
     await harness.unmount();
     assistant.newChat();
-    vi.unstubAllGlobals();
   }
 });
 
 it("restores each chat's draft, visible attachments, and the unstarted composer", async () => {
-  vi.stubGlobal("pond", {
-    query: async () => [],
-    onAgentChunk: () => () => {},
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": () => [],
+    },
   });
   const harness = createAssistantHarness((state) => ({
     draft: state.draft,
@@ -177,30 +171,20 @@ it("restores each chat's draft, visible attachments, and the unstarted composer"
     });
   } finally {
     await harness.unmount();
-    vi.unstubAllGlobals();
   }
 });
 
 it("deletes chats while preserving another chat's draft", async () => {
-  let chats = [
-    { id: "managed", title: "Original" },
-    { id: "other", title: "Other" },
-  ];
-  vi.stubGlobal("pond", {
-    query: async (name: string, params?: { chatId?: string }) => {
-      if (name === "agent.chats") {
-        return chats;
-      }
-      if (name === "agent.messages") {
-        return [];
-      }
-      if (name === "agent.deleteChat") {
-        chats = chats.filter((chat) => chat.id !== params?.chatId);
+  let chats = [chatRow("managed", "Original"), chatRow("other", "Other")];
+  bridge.use({
+    query: {
+      "agent.chats": () => chats,
+      "agent.messages": () => [],
+      "agent.deleteChat": ({ chatId }) => {
+        chats = chats.filter((chat) => chat.id !== chatId);
         return { ok: true };
-      }
-      return {};
+      },
     },
-    onAgentChunk: () => () => {},
   });
   const harness = createAssistantHarness((state) => ({
     chatId: state.chatId,
@@ -224,6 +208,5 @@ it("deletes chats while preserving another chat's draft", async () => {
   } finally {
     await harness.unmount();
     assistant.newChat();
-    vi.unstubAllGlobals();
   }
 });

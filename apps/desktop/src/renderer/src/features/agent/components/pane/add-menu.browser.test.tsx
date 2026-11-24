@@ -3,23 +3,13 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { AddMenu } from "./add-menu";
 
-const query = vi.fn();
 let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal("pond", { query });
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  query.mockReset();
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -28,7 +18,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 async function choose(label: string) {
@@ -53,7 +42,9 @@ it("attaches selected local files without importing Saves", async () => {
     mediaType: "application/pdf",
     size: 1024,
   };
-  query.mockResolvedValueOnce({ ok: true, files: [file] });
+  bridge.use({
+    query: { "agent.pickAttachments": () => ({ ok: true, files: [file] }) },
+  });
   const attach = vi.fn();
   await act(async () =>
     root.render(<AddMenu onAttach={attach} onAddSaves={vi.fn()} />),
@@ -61,12 +52,17 @@ it("attaches selected local files without importing Saves", async () => {
 
   await choose("Add Files");
 
-  expect(query).toHaveBeenCalledExactlyOnceWith("agent.pickAttachments", {});
+  expect(window.pond.query).toHaveBeenCalledExactlyOnceWith(
+    "agent.pickAttachments",
+    {},
+  );
   expect(attach).toHaveBeenCalledExactlyOnceWith([file]);
 });
 
 it("does nothing when the file picker is cancelled", async () => {
-  query.mockResolvedValue({ ok: true, files: [] });
+  bridge.use({
+    query: { "agent.pickAttachments": () => ({ ok: true, files: [] }) },
+  });
   const attach = vi.fn();
   await act(async () =>
     root.render(<AddMenu onAttach={attach} onAddSaves={vi.fn()} />),
@@ -74,7 +70,10 @@ it("does nothing when the file picker is cancelled", async () => {
 
   await choose("Add Files");
 
-  expect(query).toHaveBeenCalledExactlyOnceWith("agent.pickAttachments", {});
+  expect(window.pond.query).toHaveBeenCalledExactlyOnceWith(
+    "agent.pickAttachments",
+    {},
+  );
   expect(attach).not.toHaveBeenCalled();
 });
 
@@ -87,5 +86,5 @@ it("opens the Save search from Add Saves", async () => {
   await choose("Add Saves");
 
   expect(addSaves).toHaveBeenCalledOnce();
-  expect(query).not.toHaveBeenCalled();
+  expect(window.pond.query).not.toHaveBeenCalled();
 });

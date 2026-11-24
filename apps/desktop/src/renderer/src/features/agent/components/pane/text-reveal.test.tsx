@@ -1,27 +1,28 @@
 import { useTextReveal } from "@pond/ui";
+import type { TextRevealFrames } from "@pond/ui";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, expect, it } from "vitest";
 
 const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) {
     await cleanup();
   }
-  vi.unstubAllGlobals();
-  vi.restoreAllMocks();
 });
 
 function Probe({
   content,
   animate,
   finish,
+  clock,
 }: {
   content: string;
   animate: boolean;
   finish: boolean;
+  clock: TextRevealFrames;
 }) {
-  const { text, pending } = useTextReveal(content, animate, finish);
+  const { text, pending } = useTextReveal(content, animate, finish, clock);
   return <output data-pending={pending}>{text}</output>;
 }
 
@@ -29,12 +30,16 @@ function createReveal() {
   const frames = new Map<number, FrameRequestCallback>();
   let nextId = 0;
   let now = 0;
-  vi.spyOn(performance, "now").mockImplementation(() => now);
-  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-    frames.set(++nextId, callback);
-    return nextId;
-  });
-  vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+  const clock: TextRevealFrames = {
+    now: () => now,
+    request: (callback) => {
+      frames.set(++nextId, callback);
+      return nextId;
+    },
+    cancel: (id) => {
+      frames.delete(id);
+    },
+  };
   const host = document.createElement("div");
   const root = createRoot(host);
   let mounted = true;
@@ -59,7 +64,12 @@ function createReveal() {
     async render(content: string, animate: boolean, finish = false) {
       await act(async () =>
         root.render(
-          <Probe content={content} animate={animate} finish={finish} />,
+          <Probe
+            content={content}
+            animate={animate}
+            finish={finish}
+            clock={clock}
+          />,
         ),
       );
     },

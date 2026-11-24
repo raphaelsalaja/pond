@@ -1,18 +1,12 @@
 import { DEFAULT_PREFS } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SoundPreferences } from "./feedback";
 
 it("gives every sound switch its own accessible name", async () => {
-  vi.stubGlobal("pond", {
-    async query(name: string) {
-      if (name === "settings.getPrefs") {
-        return DEFAULT_PREFS;
-      }
-      throw new Error(`Unexpected query: ${name}`);
-    },
-  });
+  bridge.use({ query: { "settings.getPrefs": () => DEFAULT_PREFS } });
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -31,6 +25,5 @@ it("gives every sound switch its own accessible name", async () => {
   } finally {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   }
 });

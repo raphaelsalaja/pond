@@ -1,13 +1,14 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { userEvent } from "vitest/browser";
+import { bridge } from "@/shared/test/pond-bridge";
 import { AssistantResponse } from "./assistant-response";
 import { ConsultedSaves } from "./consulted-saves";
 
 beforeEach(() => {
-  vi.stubGlobal("pond", { query: async () => [] });
+  bridge.use({ query: { "saves.getMany": () => [] } });
 });
-afterAll(() => vi.unstubAllGlobals());
 
 const sources = Array.from({ length: 6 }, (_, i) => ({
   id: `save-${i}`,
@@ -75,11 +76,7 @@ it("expands verified results and adds the actual Save to the composer without op
 });
 
 it("copies the exact fenced code and does not render it as executable HTML", async () => {
-  const writeText = vi.fn().mockResolvedValue(undefined);
-  Object.defineProperty(navigator, "clipboard", {
-    configurable: true,
-    value: { writeText },
-  });
+  const writeText = vi.spyOn(navigator.clipboard, "writeText");
   await act(async () =>
     root.render(
       <AssistantResponse
@@ -90,13 +87,19 @@ it("copies the exact fenced code and does not render it as executable HTML", asy
   );
   expect(host.querySelector("script")).toBeNull();
   expect(host.textContent).toContain("html");
-  await act(async () =>
-    host.querySelector<HTMLButtonElement>('[aria-label="Copy Code"]')?.click(),
+  const copy = host.querySelector<HTMLButtonElement>(
+    '[aria-label="Copy Code"]',
   );
+  if (!copy) {
+    throw new Error("Missing Copy Code");
+  }
+  await userEvent.click(copy);
   expect(writeText).toHaveBeenCalledExactlyOnceWith(
     '<script>alert("no")</script>\n',
   );
-  expect(host.textContent).toContain("Copied");
+  await vi.waitFor(() => {
+    expect(host.textContent).toContain("Copied");
+  });
 });
 
 it("opens a verified citation directly without an intermediate dialog", async () => {

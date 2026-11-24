@@ -5,19 +5,19 @@ import {
 } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, expect, it } from "vitest";
 import { setAppRouter } from "@/shared/lib/app-router";
 import {
   DEFAULT_SETTINGS_SECTION,
   rememberSettingsSection,
 } from "@/shared/lib/open-settings";
 import { configureShortcuts } from "@/shared/lib/shortcuts";
+import { bridge } from "@/shared/test/pond-bridge";
 import { FileRingShortcutSetting } from "./";
 
 afterEach(() => {
   configureShortcuts({ profile: "pond", overrides: {} });
   rememberSettingsSection(DEFAULT_SETTINGS_SECTION);
-  vi.unstubAllGlobals();
 });
 
 async function render() {
@@ -40,8 +40,7 @@ async function render() {
 }
 
 it("offers setting a shortcut while the ring is unbound and still opens it", async () => {
-  const openFileRing = vi.fn(async () => {});
-  vi.stubGlobal("pond", { openFileRing });
+  bridge.use({ openFileRing: async () => {} });
   const router = createRouter({
     routeTree: createRootRoute(),
     history: createMemoryHistory(),
@@ -55,7 +54,7 @@ it("offers setting a shortcut while the ring is unbound and still opens it", asy
       "/settings/shortcuts#setting-shortcuts-app.file-ring",
     );
     await act(async () => view.button("Open Ring")?.click());
-    expect(openFileRing).toHaveBeenCalledOnce();
+    expect(window.pond.openFileRing).toHaveBeenCalledOnce();
   } finally {
     await view.unmount();
   }

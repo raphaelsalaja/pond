@@ -5,7 +5,7 @@ import type { AssistantProvider } from "@shared/assistant";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import {
   addedProvidersWith,
   isListedProvider,
@@ -50,21 +50,6 @@ function renderSettings(
       ),
   };
 }
-
-beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 it("hides unadded providers from Cloud and Local lists", async () => {
   const added: Array<AssistantProvider> = [];

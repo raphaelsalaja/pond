@@ -2,17 +2,25 @@ import { isElement } from "@pond/ui/dom";
 import type { AssistantChange } from "@shared/assistant";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterAll, afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { AssistantState } from "@/features/agent/state/assistant";
 import { toUIMessage } from "@/features/agent/state/pond-messages";
 import { review } from "@/features/agent/state/review";
+import { bridge } from "@/shared/test/pond-bridge";
 import { AgentMessage } from "./index";
 import { ResponseContent } from "./response-content";
 
 beforeEach(() => {
-  vi.stubGlobal("pond", { query: async () => [] });
+  bridge.use({
+    query: {
+      "saves.getMany": () => [],
+      "agent.review": () => ({ changes: [] }),
+      "folders.list": () => [],
+      "folders.memberships": () => [],
+      "clipboard.writeText": () => ({ ok: true }),
+    },
+  });
 });
-afterAll(() => vi.unstubAllGlobals());
 
 const host = document.createElement("div");
 document.body.append(host);
@@ -252,7 +260,7 @@ it("folds a decided review into a receipt that unfolds to its rows", async () =>
 });
 
 it("undoes every applied change from the receipt", async () => {
-  const run = vi.spyOn(review, "run").mockResolvedValue();
+  const run = vi.spyOn(review, "run");
   const changes = (["applied", "applied", "dismissed"] as const).map(
     (status, i) => ({
       id: `save-${i}:tags`,
@@ -289,6 +297,11 @@ it("undoes every applied change from the receipt", async () => {
     "undo",
     undefined,
   );
+  expect(window.pond.query).toHaveBeenCalledWith("agent.review", {
+    messageId: "reply",
+    changeIds: ["save-0:tags", "save-1:tags"],
+    action: "undo",
+  });
 });
 
 it("asks for Empty Trash in its own destructive card", async () => {
@@ -310,7 +323,7 @@ it("settles the Trash card into a receipt of what happened", async () => {
 });
 
 it("applies and dismisses a pending review from the keyboard", async () => {
-  const run = vi.spyOn(review, "run").mockResolvedValue();
+  const run = vi.spyOn(review, "run");
   const change: AssistantChange = {
     id: "save-1:tags",
     saveId: "save-1",
@@ -485,8 +498,6 @@ it("keeps a numbered single reply in one bubble", async () => {
 });
 
 it("copies the whole reply through Pond from beside the last bubble", async () => {
-  const query = vi.fn(async () => ({ ok: true }));
-  vi.stubGlobal("pond", { query });
   const messages = ["Hey!", "Here's the second."];
   await renderReply(messages.join("\n\n"), messages);
   const copy = host.querySelector<HTMLButtonElement>('[aria-label="Copy"]');
@@ -497,7 +508,7 @@ it("copies the whole reply through Pond from beside the last bubble", async () =
     Node.DOCUMENT_POSITION_FOLLOWING,
   );
   await act(async () => copy?.click());
-  expect(query).toHaveBeenCalledWith("clipboard.writeText", {
+  expect(window.pond.query).toHaveBeenCalledWith("clipboard.writeText", {
     text: "Hey!\n\nHere's the second.",
   });
 });

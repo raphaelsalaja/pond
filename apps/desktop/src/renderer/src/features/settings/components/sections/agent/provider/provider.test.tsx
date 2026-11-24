@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ProviderConnection } from "./";
 
 function buttonNamed(host: ParentNode, name: string) {
@@ -12,68 +13,94 @@ function buttonNamed(host: ParentNode, name: string) {
   );
 }
 
-it.each([true, false])(
-  "connects a local provider from Save, success=%s",
-  async (ok) => {
-    const operations: Array<string> = [];
-    let refreshed = false;
-    vi.stubGlobal("pond", {
-      query: async (name: string) => {
-        operations.push(name);
-        if (name === "agent.listModels") {
-          return { ok: true, models: [] };
-        }
-        return { ok, error: ok ? undefined : "Connection refused" };
-      },
-    });
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    try {
-      await act(async () =>
-        root.render(
-          <QueryClientProvider client={new QueryClient()}>
-            <ProviderConnection
-              catalog={{ id: "ollama", provider: "Ollama", needsKey: false }}
-              row={undefined}
-              agent={DEFAULT_PREFS.agent}
-              onPatchAgent={() => {}}
-              onRefresh={async () => {
-                refreshed = true;
-              }}
-            />
-          </QueryClientProvider>,
-        ),
-      );
-      expect(host.querySelector('[aria-label="Ollama options"]')).toBeNull();
-      expect(host.querySelector('[aria-label="API Key"]')).not.toBeNull();
-      expect(host.querySelector('[aria-label="Connected"]')).toBeNull();
-      expect(host.querySelector('[aria-label="Custom model ID"]')).toBeNull();
-      const save = buttonNamed(host, "Save");
-      if (!isHTMLTag(save, "button")) {
-        throw new Error("Missing Save");
-      }
-      await act(async () => save.click());
-      expect(operations).toContain("agent.saveKey");
-      expect(refreshed).toBe(ok);
-      if (ok) {
-        expect(host.querySelector('[aria-label="Edit Ollama"]')).not.toBeNull();
-        await vi.waitFor(() => {
-          expect(host.querySelector('input[type="password"]')).toBeNull();
-        });
-      } else {
-        expect(host.querySelector('[role="alert"]')?.textContent).toBe(
-          "Connection refused",
-        );
-        expect(host.querySelector('input[type="password"]')).not.toBeNull();
-      }
-    } finally {
+async function renderLocalProvider(onRefresh: () => Promise<void>) {
+  const host = document.createElement("div");
+  document.body.append(host);
+  const root = createRoot(host);
+  await act(async () =>
+    root.render(
+      <QueryClientProvider client={new QueryClient()}>
+        <ProviderConnection
+          catalog={{ id: "ollama", provider: "Ollama", needsKey: false }}
+          row={undefined}
+          agent={DEFAULT_PREFS.agent}
+          onPatchAgent={() => {}}
+          onRefresh={onRefresh}
+        />
+      </QueryClientProvider>,
+    ),
+  );
+  expect(host.querySelector('[aria-label="Ollama options"]')).toBeNull();
+  expect(host.querySelector('[aria-label="API Key"]')).not.toBeNull();
+  expect(host.querySelector('[aria-label="Connected"]')).toBeNull();
+  expect(host.querySelector('[aria-label="Custom model ID"]')).toBeNull();
+  const save = buttonNamed(host, "Save");
+  if (!isHTMLTag(save, "button")) {
+    throw new Error("Missing Save");
+  }
+  await act(async () => save.click());
+  return {
+    host,
+    async unmount() {
       await act(async () => root.unmount());
       host.remove();
-      vi.unstubAllGlobals();
-    }
-  },
-);
+    },
+  };
+}
+
+it("connects a local provider from Save", async () => {
+  let refreshed = false;
+  bridge.use({
+    query: {
+      "agent.saveKey": () => ({ ok: true }),
+      "agent.listModels": () => ({ ok: true, models: [] }),
+    },
+  });
+  const view = await renderLocalProvider(async () => {
+    refreshed = true;
+  });
+  try {
+    expect(window.pond.query).toHaveBeenCalledWith(
+      "agent.saveKey",
+      expect.anything(),
+    );
+    expect(refreshed).toBe(true);
+    expect(
+      view.host.querySelector('[aria-label="Edit Ollama"]'),
+    ).not.toBeNull();
+    await vi.waitFor(() => {
+      expect(view.host.querySelector('input[type="password"]')).toBeNull();
+    });
+  } finally {
+    await view.unmount();
+  }
+});
+
+it("keeps the form open with the reason a local provider failed to connect", async () => {
+  let refreshed = false;
+  bridge.use({
+    query: {
+      "agent.saveKey": () => ({ ok: false, error: "Connection refused" }),
+      "agent.listModels": () => ({ ok: true, models: [] }),
+    },
+  });
+  const view = await renderLocalProvider(async () => {
+    refreshed = true;
+  });
+  try {
+    expect(window.pond.query).toHaveBeenCalledWith(
+      "agent.saveKey",
+      expect.anything(),
+    );
+    expect(refreshed).toBe(false);
+    expect(view.host.querySelector('[role="alert"]')?.textContent).toBe(
+      "Connection refused",
+    );
+    expect(view.host.querySelector('input[type="password"]')).not.toBeNull();
+  } finally {
+    await view.unmount();
+  }
+});
 
 it("hides a saved credential until Edit reopens the form", async () => {
   const host = document.createElement("div");
@@ -127,8 +154,8 @@ it("hides a saved credential until Edit reopens the form", async () => {
 
 it("opens the provider API keys page from the card", async () => {
   const opened: Array<string> = [];
-  vi.stubGlobal("pond", {
-    openExternal: async (url: string) => {
+  bridge.use({
+    openExternal: async (url) => {
       opened.push(url);
       return { ok: true };
     },
@@ -164,7 +191,6 @@ it("opens the provider API keys page from the card", async () => {
   } finally {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   }
 });
 

@@ -2,37 +2,18 @@ import { DEFAULT_PREFS } from "@pond/schema";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { McpSection } from "./index";
 
-beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
 it("shows all setup hosts without detecting installs or expanding a disclosure", async () => {
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      if (name === "settings.getPrefs") {
-        return DEFAULT_PREFS;
-      }
-      if (name === "fishMcp.list") {
-        return [];
-      }
-      if (name === "agent.mcpSnippet") {
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => DEFAULT_PREFS,
+      "fishMcp.list": () => [],
+      "agent.mcpSnippet": () => {
         throw new Error("Snippet unavailable");
-      }
-      throw new Error(`Unexpected query: ${name}`);
+      },
     },
   });
   const host = document.createElement("div");

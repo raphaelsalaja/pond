@@ -1,15 +1,19 @@
 import { useChat } from "@ai-sdk/react";
-import type { AgentStreamRequest, AssistantMessage } from "@shared/assistant";
+import type { AgentStreamRequest } from "@shared/assistant";
+import type { QueryResult } from "@shared/query-contracts";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { openLibraryAt } from "@/app/test/library-router";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import { bridge } from "@/shared/test/pond-bridge";
 import { selection } from "../../saves/state/selection";
 import { assistant, useAssistant } from "./assistant";
 import {
   agentStreamBridge,
+  chatRow,
   createAssistantHarness,
+  messageRow,
 } from "./assistant.test-harness";
 import type { StreamReply } from "./assistant.test-harness";
 import { pondChatSession } from "./pond-chat";
@@ -38,13 +42,15 @@ it("renders a multi-chunk reply progressively", async () => {
   const chatId = "multi-chunk-render";
   const nextChunk = Promise.withResolvers<void>();
   const snapshots: Array<RenderSnapshot> = [];
-  vi.stubGlobal("pond", {
-    query: vi.fn(() => Promise.resolve([])),
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": () => [],
+    },
     agentStream: agentStreamBridge(() => ({
       text: ["One two three four five ", "six seven eight nine ten."],
       waitForTextChunk: () => nextChunk.promise,
     })),
-    onAgentChunk: () => () => {},
   });
   assistant.newChat();
   const host = document.createElement("div");
@@ -86,31 +92,23 @@ it("renders a multi-chunk reply progressively", async () => {
     nextChunk.resolve();
     await act(async () => root.unmount());
     assistant.newChat();
-    vi.unstubAllGlobals();
   }
 });
 
 it("keeps the singleton run across pane unmount and waits for saved metadata after stop", async () => {
   const response = Promise.withResolvers<StreamReply>();
-  let persisted: Array<AssistantMessage> = [];
-  let requestId = "";
-  const query = vi.fn((name: string) => {
-    if (name === "agent.messages") {
-      return Promise.resolve(persisted);
-    }
-    if (name === "agent.stop") {
-      return Promise.resolve({});
-    }
-    return Promise.resolve([]);
-  });
-  const agentStream = agentStreamBridge(async (request) => {
-    requestId = request.requestId;
-    return response.promise;
-  });
-  vi.stubGlobal("pond", {
-    query,
-    agentStream,
-    onAgentChunk: () => () => {},
+  const started = Promise.withResolvers<string>();
+  let persisted: QueryResult<"agent.messages"> = [];
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": () => persisted,
+      "agent.stop": () => ({ ok: true }),
+    },
+    agentStream: agentStreamBridge(async (request) => {
+      started.resolve(request.requestId);
+      return response.promise;
+    }),
   });
   assistant.newChat();
   const harness = createAssistantHarness((state) => ({
@@ -127,7 +125,8 @@ it("keeps the singleton run across pane unmount and waits for saved metadata aft
       assistant.setDraft("Find a film");
       pending = assistant.send("openai");
     });
-    await vi.waitFor(() => expect(requestId).not.toBe(""));
+    const requestId = await started.promise;
+    expect(requestId).not.toBe("");
     await harness.hide();
     await harness.mount();
     await act(async () => {
@@ -139,16 +138,19 @@ it("keeps the singleton run across pane unmount and waits for saved metadata aft
     });
     expect(harness.host.textContent).toContain('"busy":true');
     expect(harness.host.textContent).toContain('"chatId":"chat"');
-    expect(agentStream).toHaveBeenCalledOnce();
-    expect(query.mock.calls.some(([name]) => name === "agent.send")).toBe(
-      false,
+    expect(window.pond.agentStream).toHaveBeenCalledOnce();
+    expect(window.pond.query).not.toHaveBeenCalledWith(
+      "agent.send",
+      expect.anything(),
     );
-    expect(query.mock.calls.some(([name]) => name === "agent.stop")).toBe(true);
+    expect(window.pond.query).toHaveBeenCalledWith(
+      "agent.stop",
+      expect.anything(),
+    );
     persisted = [
-      {
+      messageRow({
         id: `${requestId}:assistant`,
         chatId: "chat",
-        role: "assistant",
         content: "A film",
         metadata: {
           stopped: true,
@@ -161,7 +163,7 @@ it("keeps the singleton run across pane unmount and waits for saved metadata aft
             },
           ],
         },
-      },
+      }),
     ];
     await act(async () => {
       response.resolve({});
@@ -175,20 +177,18 @@ it("keeps the singleton run across pane unmount and waits for saved metadata aft
     response.resolve({});
     await harness.unmount(async () => pending);
     assistant.newChat();
-    vi.unstubAllGlobals();
   }
 });
 
 it("cancels before a new chat finishes creating without dispatching a model request", async () => {
-  const created = Promise.withResolvers<{ id: string }>();
-  const query = vi.fn((name: string) =>
-    name === "agent.newChat" ? created.promise : Promise.resolve([]),
-  );
-  const agentStream = agentStreamBridge(() => ({}));
-  vi.stubGlobal("pond", {
-    query,
-    agentStream,
-    onAgentChunk: () => () => {},
+  const created = Promise.withResolvers<QueryResult<"agent.newChat">>();
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": () => [],
+      "agent.newChat": () => created.promise,
+    },
+    agentStream: agentStreamBridge(() => ({})),
   });
   assistant.newChat();
   const harness = createAssistantHarness((state) => ({
@@ -204,37 +204,36 @@ it("cancels before a new chat finishes creating without dispatching a model requ
     });
     await act(async () => assistant.stop());
     await act(async () => {
-      created.resolve({ id: "new-chat" });
+      created.resolve(chatRow("new-chat"));
       await pending;
     });
-    expect(agentStream).not.toHaveBeenCalled();
-    expect(query.mock.calls.some(([name]) => name === "agent.send")).toBe(
-      false,
+    expect(window.pond.agentStream).not.toHaveBeenCalled();
+    expect(window.pond.query).not.toHaveBeenCalledWith(
+      "agent.send",
+      expect.anything(),
     );
     expect(harness.host.textContent).toContain('"busy":false');
     expect(harness.host.textContent).toContain("Do not send this");
   } finally {
-    created.resolve({ id: "new-chat" });
+    created.resolve(chatRow("new-chat"));
     await harness.unmount(async () => pending);
     assistant.newChat();
-    vi.unstubAllGlobals();
   }
 });
 
 it("streams normal submissions without inferring context from selection pronouns", async () => {
-  const created = Promise.withResolvers<{ id: string }>();
-  const query = vi.fn((name: string) =>
-    name === "agent.newChat" ? created.promise : Promise.resolve([]),
-  );
+  const created = Promise.withResolvers<QueryResult<"agent.newChat">>();
   const requests: Array<AgentStreamRequest> = [];
-  const agentStream = agentStreamBridge((request) => {
-    requests.push(request);
-    return {};
-  });
-  vi.stubGlobal("pond", {
-    query,
-    agentStream,
-    onAgentChunk: () => () => {},
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": () => [],
+      "agent.newChat": () => created.promise,
+    },
+    agentStream: agentStreamBridge((request) => {
+      requests.push(request);
+      return {};
+    }),
   });
   const harness = createAssistantHarness(() => null);
   let pending = Promise.resolve();
@@ -251,7 +250,7 @@ it("streams normal submissions without inferring context from selection pronouns
       await router.navigate({
         href: pathForLibraryNav({ kind: "folder", id: "later-folder" }),
       });
-      created.resolve({ id: "snapshot-created" });
+      created.resolve(chatRow("snapshot-created"));
       await pending;
     });
     expect(requests).toHaveLength(1);
@@ -259,30 +258,30 @@ it("streams normal submissions without inferring context from selection pronouns
       scope: { kind: "library" },
       attachmentIds: [],
     });
-    expect(agentStream).toHaveBeenCalledOnce();
-    expect(query.mock.calls.some(([name]) => name === "agent.send")).toBe(
-      false,
+    expect(window.pond.agentStream).toHaveBeenCalledOnce();
+    expect(window.pond.query).not.toHaveBeenCalledWith(
+      "agent.send",
+      expect.anything(),
     );
   } finally {
-    created.resolve({ id: "snapshot-created" });
+    created.resolve(chatRow("snapshot-created"));
     await harness.unmount(async () => pending);
     selection.clear();
-    vi.unstubAllGlobals();
   }
 });
 
 it("sends attached Saves as context while searching the entire library", async () => {
   const response = Promise.withResolvers<StreamReply>();
-  const query = vi.fn(() => Promise.resolve([]));
   const requests: Array<AgentStreamRequest> = [];
-  const agentStream = agentStreamBridge(async (request) => {
-    requests.push(request);
-    return response.promise;
-  });
-  vi.stubGlobal("pond", {
-    query,
-    agentStream,
-    onAgentChunk: () => () => {},
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": () => [],
+    },
+    agentStream: agentStreamBridge(async (request) => {
+      requests.push(request);
+      return response.promise;
+    }),
   });
   const harness = createAssistantHarness((state) => ({
     draft: state.draft,
@@ -344,6 +343,5 @@ it("sends attached Saves as context while searching the entire library", async (
   } finally {
     response.resolve({ error: "Unavailable" });
     await harness.unmount(async () => pending);
-    vi.unstubAllGlobals();
   }
 });

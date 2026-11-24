@@ -1,10 +1,23 @@
 import { useReducedMotionConfig } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
+export interface TextRevealFrames {
+  now: () => number;
+  request: (callback: FrameRequestCallback) => number;
+  cancel: (id: number) => void;
+}
+
+const browserFrames: TextRevealFrames = {
+  now: () => performance.now(),
+  request: (callback) => requestAnimationFrame(callback),
+  cancel: (id) => cancelAnimationFrame(id),
+};
+
 export function useTextReveal(
   content: string,
   animate: boolean,
   finish = false,
+  frames: TextRevealFrames = browserFrames,
 ) {
   const reduced = useReducedMotionConfig();
   const [visible, setVisible] = useState(() => (animate ? "" : content));
@@ -28,7 +41,7 @@ export function useTextReveal(
       return;
     }
     let frame = 0;
-    let previous = performance.now();
+    let previous = frames.now();
     const tick = (now: number) => {
       const next = target.current;
       if (!next.startsWith(current.current)) {
@@ -53,12 +66,12 @@ export function useTextReveal(
       current.current += remaining.slice(0, count).join("");
       setVisible(current.current);
       if (current.current !== next) {
-        frame = requestAnimationFrame(tick);
+        frame = frames.request(tick);
       }
     };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [content, settled, started]);
+    frame = frames.request(tick);
+    return () => frames.cancel(frame);
+  }, [content, settled, started, frames]);
   const text =
     !settled && started && content.startsWith(visible) ? visible : content;
   return { text, pending: text !== content };

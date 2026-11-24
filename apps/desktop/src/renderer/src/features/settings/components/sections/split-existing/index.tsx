@@ -1,5 +1,6 @@
 import { Button, Dialog, Settings } from "@pond/ui";
 import { useQuery } from "@tanstack/react-query";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import {
   resumeSplitAll,
@@ -31,7 +32,9 @@ export function SplitExistingSaves() {
   const count = data?.count ?? 0;
 
   useEffect(() => {
-    void resumeSplitAll().catch(() => {});
+    void resumeSplitAll().catch((cause: unknown) => {
+      log.warn("[pond settings] resuming split failed", cause);
+    });
   }, []);
 
   useEffect(() => {

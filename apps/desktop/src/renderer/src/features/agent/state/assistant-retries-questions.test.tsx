@@ -1,48 +1,38 @@
 import type { AgentStreamRequest } from "@shared/assistant";
 import { act } from "react";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import { openLibraryAt } from "@/app/test/library-router";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import { bridge } from "@/shared/test/pond-bridge";
 import { assistant } from "./assistant";
 import {
   agentStreamBridge,
+  chatRow,
   createAssistantHarness,
+  messageRow,
+  streamRequests,
 } from "./assistant.test-harness";
 import type { StreamReply } from "./assistant.test-harness";
 
 it("keeps the composer draft and attachments and streams question answers", async () => {
-  const question = {
+  const question = messageRow({
     id: "question",
     chatId: "chat",
-    role: "assistant",
     content: "",
     metadata: {
       question: { question: "Which topic?", options: ["Film", "Architecture"] },
     },
-  };
-  const query = vi.fn(
-    async (
-      name: string,
-      _params?: { content?: string; allowCloudOnce?: boolean },
-    ) => {
-      if (name === "agent.messages") {
-        return [question];
-      }
-      if (name === "agent.chats") {
-        return [{ id: "chat", title: "Topics" }];
-      }
-      return {};
-    },
-  );
-  const requests: Array<AgentStreamRequest> = [];
-  const agentStream = agentStreamBridge((request) => {
-    requests.push(request);
-    return {};
   });
-  vi.stubGlobal("pond", {
-    query,
-    agentStream,
-    onAgentChunk: () => () => {},
+  const requests: Array<AgentStreamRequest> = [];
+  bridge.use({
+    query: {
+      "agent.messages": () => [question],
+      "agent.chats": () => [chatRow("chat", "Topics")],
+    },
+    agentStream: agentStreamBridge((request) => {
+      requests.push(request);
+      return {};
+    }),
   });
   const harness = createAssistantHarness((state) => ({
     draft: state.draft,
@@ -89,9 +79,10 @@ it("keeps the composer draft and attachments and streams question answers", asyn
       parts: [{ type: "text", text: "Architecture" }],
     });
     expect(requests[0]).not.toHaveProperty("allowCloudOnce");
-    expect(agentStream).toHaveBeenCalledOnce();
-    expect(query.mock.calls.some(([name]) => name === "agent.send")).toBe(
-      false,
+    expect(window.pond.agentStream).toHaveBeenCalledOnce();
+    expect(window.pond.query).not.toHaveBeenCalledWith(
+      "agent.send",
+      expect.anything(),
     );
     expect(harness.host.textContent).toContain('"draft":"Keep this draft"');
     expect(harness.host.textContent).toContain('"attached":1');
@@ -102,22 +93,21 @@ it("keeps the composer draft and attachments and streams question answers", asyn
     expect(harness.host.textContent).toContain('"attached":1');
   } finally {
     await harness.unmount();
-    vi.unstubAllGlobals();
   }
 });
 
 it("preserves new attachments and retries through the shared stream session", async () => {
   const failed = Promise.withResolvers<StreamReply>();
-  const requests: Array<AgentStreamRequest> = [];
-  const query = vi.fn((_name: string) => Promise.resolve([]));
-  const agentStream = agentStreamBridge(async (request) => {
-    requests.push(request);
-    return requests.length === 1 ? failed.promise : {};
-  });
-  vi.stubGlobal("pond", {
-    query,
-    agentStream,
-    onAgentChunk: () => () => {},
+  const { requests, record, request: requested } = streamRequests();
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": () => [],
+    },
+    agentStream: agentStreamBridge(async (request) => {
+      record(request);
+      return requests.length === 1 ? failed.promise : {};
+    }),
   });
   const harness = createAssistantHarness((state) => ({
     draft: state.draft,
@@ -147,7 +137,7 @@ it("preserves new attachments and retries through the shared stream session", as
         },
       });
     });
-    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    await requested(1);
     await act(async () => {
       assistant.attach([next]);
       failed.resolve({ error: "Unavailable" });
@@ -177,9 +167,10 @@ it("preserves new attachments and retries through the shared stream session", as
         reasoning: "medium",
       });
     }
-    expect(agentStream).toHaveBeenCalledTimes(2);
-    expect(query.mock.calls.some(([name]) => name === "agent.send")).toBe(
-      false,
+    expect(window.pond.agentStream).toHaveBeenCalledTimes(2);
+    expect(window.pond.query).not.toHaveBeenCalledWith(
+      "agent.send",
+      expect.anything(),
     );
     expect(JSON.parse(harness.host.textContent || "{}")).toEqual({
       draft: "",
@@ -189,6 +180,5 @@ it("preserves new attachments and retries through the shared stream session", as
   } finally {
     failed.resolve({ error: "Unavailable" });
     await harness.unmount(async () => pending);
-    vi.unstubAllGlobals();
   }
 });

@@ -8,14 +8,6 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      disconnect() {}
-    },
-  );
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -24,7 +16,6 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 const marks = [
@@ -59,8 +50,7 @@ it("draws one tick per turn and jumps to the turn you pick", () => {
   if (!viewport) {
     throw new Error("No viewport");
   }
-  const scrollTo = vi.fn();
-  viewport.scrollTo = scrollTo;
+  const scrollTo = vi.spyOn(viewport, "scrollTo");
   act(() => ticks[1]?.click());
   expect(scrollTo).toHaveBeenCalledOnce();
 });

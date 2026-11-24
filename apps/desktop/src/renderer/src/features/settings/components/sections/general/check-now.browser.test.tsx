@@ -1,31 +1,18 @@
 import { Dialog } from "@pond/ui";
 import { isHTMLTag } from "@pond/ui/dom";
+import type { QueryResult } from "@shared/query-contracts";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { UpdateDialog } from "@/features/settings/components/update-dialog";
+import { bridge } from "@/shared/test/pond-bridge";
 import { CheckNowRow } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
 
-function noop() {}
-
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  vi.stubGlobal("matchMedia", () => ({
-    matches: true,
-    addEventListener() {},
-    removeEventListener() {},
-  }));
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -34,21 +21,13 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 it("opens the update dialog from Settings without waiting to leave the page", async () => {
-  let finishCheck: (value: { ok: true; version: string }) => void = noop;
-  const pending = new Promise<{ ok: true; version: string }>((resolve) => {
-    finishCheck = resolve;
-  });
+  const check = Promise.withResolvers<QueryResult<"updates.checkNow">>();
   let checks = 0;
-  let notice: {
-    phase: "available";
-    version: string;
-    downloading: boolean;
-  } | null = null;
-  vi.stubGlobal("pond", {
+  let notice: QueryResult<"updates.currentNotice"> = null;
+  bridge.use({
     appInfo: async () => ({
       name: "Pond",
       version: "1.0.0",
@@ -57,16 +36,12 @@ it("opens the update dialog from Settings without waiting to leave the page", as
       username: "rafa",
       isPackaged: true,
     }),
-    onUpdateNotice: () => () => {},
-    query: (name: string) => {
-      if (name === "updates.checkNow") {
+    query: {
+      "updates.checkNow": () => {
         checks += 1;
-        return pending;
-      }
-      if (name === "updates.currentNotice") {
-        return notice;
-      }
-      throw new Error(name);
+        return check.promise;
+      },
+      "updates.currentNotice": () => notice,
     },
   });
 
@@ -98,7 +73,7 @@ it("opens the update dialog from Settings without waiting to leave the page", as
 
   notice = { phase: "available", version: "2.0.0", downloading: true };
   await act(async () => {
-    finishCheck({ ok: true, version: "2.0.0" });
+    check.resolve({ ok: true, version: "2.0.0" });
   });
   await vi.waitFor(() => {
     expect(document.body.textContent).toContain("Downloading Update");

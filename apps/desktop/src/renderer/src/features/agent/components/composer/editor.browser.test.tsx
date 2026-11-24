@@ -14,18 +14,13 @@ import type { Ref } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ComposerView } from "../composer-view";
 import { ComposerEditor } from "./";
 import type { ComposerEditorHandle } from "./";
 
 const send = vi.fn();
-const search = vi.fn();
-const save: AssistantSource = {
-  id: "film",
-  title: "Suspiria",
-  url: "https://example.com/film",
-  source: "arena",
-};
+let searched: PromiseWithResolvers<void>;
 let host: HTMLDivElement;
 let root: Root;
 function Harness({
@@ -127,32 +122,49 @@ async function mount(initial = "", running = false) {
     root.render(<Harness initial={initial} running={running} />),
   );
 }
+async function searchResults() {
+  await act(async () => {
+    await searched.promise;
+  });
+  await vi.waitFor(() => {
+    expect(document.querySelector('[role="option"]')?.textContent).toContain(
+      "Suspiria",
+    );
+  });
+}
+function paste(text: string) {
+  const clipboardData = new DataTransfer();
+  clipboardData.setData("text/plain", text);
+  return new ClipboardEvent("paste", {
+    bubbles: true,
+    cancelable: true,
+    clipboardData,
+  });
+}
 
 beforeEach(() => {
-  vi.stubGlobal("scrollBy", () => {});
-  vi.stubGlobal("pond", { query: search });
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  Object.defineProperty(Range.prototype, "getBoundingClientRect", {
-    configurable: true,
-    value: () => new DOMRect(0, 0, 40, 16),
-  });
-  Object.defineProperty(Range.prototype, "getClientRects", {
-    configurable: true,
-    value: () => [],
-  });
-  Object.defineProperty(Element.prototype, "scrollIntoView", {
-    configurable: true,
-    value: () => {},
-  });
   send.mockClear();
-  search.mockReset().mockResolvedValue({ saves: [save] });
+  searched = Promise.withResolvers<void>();
+  bridge.use({
+    query: {
+      "agent.searchSaves": () => {
+        searched.resolve();
+        return {
+          saves: [
+            {
+              id: "film",
+              title: "Suspiria",
+              url: "https://example.com/film",
+              source: "arena",
+              author: null,
+              notes: null,
+              description: null,
+            },
+          ],
+        };
+      },
+    },
+  });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -160,7 +172,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 it("renders and round-trips document Markdown without fetching remote images", async () => {
@@ -219,12 +230,8 @@ it("keeps code newlines and literal slash text inside code", async () => {
 it("inserts a Save mention chip from @ and keeps it in the draft", async () => {
   await mount();
   await type("Compare @sus");
-  await act(async () => {
-    await new Promise((resolve) => {
-      setTimeout(resolve, 180);
-    });
-  });
-  expect(search).toHaveBeenCalledWith("agent.searchSaves", {
+  await searchResults();
+  expect(window.pond.query).toHaveBeenCalledWith("agent.searchSaves", {
     query: "sus",
     limit: 12,
   });
@@ -241,13 +248,9 @@ it("opens the Save search when Add Saves types @ after a word", async () => {
   await act(async () => root.render(<Harness handle={handle} />));
   await type("Compare");
   await act(async () => handle.current?.mention());
-  await act(async () => {
-    await new Promise((resolve) => {
-      setTimeout(resolve, 180);
-    });
-  });
+  await searchResults();
   expect(editable().textContent).toBe("Compare @");
-  expect(search).toHaveBeenCalledWith("agent.searchSaves", {
+  expect(window.pond.query).toHaveBeenCalledWith("agent.searchSaves", {
     query: "",
     limit: 12,
   });
@@ -326,20 +329,10 @@ it("does not select a slash command when Enter commits IME composition", async (
 });
 
 it("pastes Markdown as blocks and pastes literal text within code", async () => {
-  class PasteEvent extends Event {
-    clipboardData: { getData: (type: string) => string };
-    constructor(text: string) {
-      super("paste", { bubbles: true, cancelable: true });
-      this.clipboardData = {
-        getData: (type) => (type === "text/plain" ? text : ""),
-      };
-    }
-  }
-  vi.stubGlobal("ClipboardEvent", PasteEvent);
   await mount();
   await act(async () => {
     editable().focus();
-    editable().dispatchEvent(new PasteEvent("## Brief\n\n- **one**\n- two"));
+    editable().dispatchEvent(paste("## Brief\n\n- **one**\n- two"));
   });
   expect(editable().querySelector("h2")?.textContent).toBe("Brief");
   expect(editable().querySelectorAll("li")).toHaveLength(2);
@@ -351,7 +344,7 @@ it("pastes Markdown as blocks and pastes literal text within code", async () => 
   await type("/code");
   await press("Enter");
   await act(async () => {
-    editable().dispatchEvent(new PasteEvent("**literal**\n- literal"));
+    editable().dispatchEvent(paste("**literal**\n- literal"));
   });
   expect(markdown()).toContain("**literal**\n- literal");
   expect(editable().querySelector("li")).toBeNull();

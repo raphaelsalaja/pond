@@ -1,13 +1,11 @@
 import { act } from "react";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { assistant } from "./assistant";
-import { createAssistantHarness } from "./assistant.test-harness";
+import { createAssistantHarness, messageRow } from "./assistant.test-harness";
 
 it("appends shortcut actions without replacing the draft and rejects oversized insertions", async () => {
-  vi.stubGlobal("pond", {
-    query: async () => [],
-    onAgentChunk: () => () => {},
-  });
+  bridge.use({ query: { "agent.chats": () => [] } });
   assistant.newChat();
   const harness = createAssistantHarness((state) => ({
     draft: state.draft,
@@ -33,7 +31,6 @@ it("appends shortcut actions without replacing the draft and rejects oversized i
   } finally {
     await harness.unmount();
     assistant.newChat();
-    vi.unstubAllGlobals();
   }
 });
 
@@ -44,22 +41,18 @@ it("keeps reference browsing scoped to a conversation without changing the draft
     source: "arena",
     url: "https://example.com",
   };
-  vi.stubGlobal("pond", {
-    query: async (name: string, args: { chatId?: string }) =>
-      name === "agent.chats"
-        ? []
-        : name === "agent.messages"
-          ? [
-              {
-                id: `${args.chatId}-reply`,
-                chatId: args.chatId,
-                role: "assistant",
-                content: "An answer",
-                metadata: { sources: [source] },
-              },
-            ]
-          : {},
-    onAgentChunk: () => () => {},
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": ({ chatId }) => [
+        messageRow({
+          id: `${chatId}-reply`,
+          chatId,
+          content: "An answer",
+          metadata: { sources: [source] },
+        }),
+      ],
+    },
   });
   assistant.newChat();
   const harness = createAssistantHarness((state) => ({
@@ -104,6 +97,5 @@ it("keeps reference browsing scoped to a conversation without changing the draft
     expect(JSON.parse(harness.host.textContent || "{}").reference).toBeNull();
   } finally {
     await harness.unmount();
-    vi.unstubAllGlobals();
   }
 });

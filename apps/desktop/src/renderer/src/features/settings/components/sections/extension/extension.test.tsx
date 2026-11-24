@@ -1,36 +1,38 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ExtensionSources } from "./";
 
 it("turns Twitter likes off while the Twitter Account imports bookmarks only", async () => {
-  vi.stubGlobal("pond", {
-    async query(name: string) {
-      if (name === "accounts.list") {
-        return {
-          accounts: [
-            {
-              id: "x-account",
-              source: "twitter",
-              handle: "@pond",
-              label: null,
-              addedAt: "2026-10-20T00:00:00.000Z",
-              sync: {
-                lastSyncedAt: null,
-                lastError: null,
-                knownCount: 0,
-                importScope: { listKinds: ["saved"] },
-              },
-              connected: true,
-              syncing: false,
+  bridge.use({
+    query: {
+      "accounts.list": () => ({
+        accounts: [
+          {
+            id: "x-account",
+            source: "twitter",
+            handle: "@pond",
+            identityKey: null,
+            label: null,
+            addedAt: "2026-10-20T00:00:00.000Z",
+            sync: {
+              lastSyncedAt: null,
+              lastError: null,
+              highWaterMark: null,
+              lastFullSyncAt: null,
+              knownCount: 0,
+              runningSince: null,
+              importScope: { listKinds: ["saved"] },
             },
-          ],
-        };
-      }
-      return PrefsSchema.parse({});
+            connected: true,
+            syncing: false,
+          },
+        ],
+      }),
+      "settings.getPrefs": () => PrefsSchema.parse({}),
     },
-    tx: async () => ({ ok: true }),
   });
   const host = document.createElement("div");
   document.body.append(host);
@@ -50,6 +52,5 @@ it("turns Twitter likes off while the Twitter Account imports bookmarks only", a
   } finally {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   }
 });

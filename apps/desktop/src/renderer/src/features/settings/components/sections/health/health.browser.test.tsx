@@ -2,13 +2,15 @@ import type {
   LibraryHealthCheck,
   MediaWarmSnapshot,
 } from "@shared/library-health-contracts";
+import type { QueryInput } from "@shared/query-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MotionConfig } from "motion/react";
 import { act } from "react";
 import type { ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { buildHealthCategories } from "./categories";
 import type { HealthCategory } from "./categories";
 import { HealthDrilldown } from "./drilldown";
@@ -65,26 +67,24 @@ const CHECK: LibraryHealthCheck = {
   indexError: null,
 };
 
-const query = vi.fn();
 let host: HTMLDivElement;
 let root: Root;
 let client: QueryClient;
+let checks: number;
+let rechecks: Array<QueryInput<"libraryHealth.recheck">>;
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  query.mockReset();
-  query.mockImplementation(async (name: string) => {
-    switch (name) {
-      case "libraryHealth.overview":
-        return { check: null, job: null, media: MEDIA };
-      case "libraryHealth.check":
+  checks = 0;
+  rechecks = [];
+  bridge.use({
+    query: {
+      "libraryHealth.overview": () => ({
+        check: null,
+        job: null,
+        media: MEDIA,
+      }),
+      "libraryHealth.check": () => {
+        checks += 1;
         return {
           id: "job",
           status: "running",
@@ -93,15 +93,16 @@ beforeEach(() => {
           startedAt: 1,
           error: null,
         };
-      case "pipeline.status":
-        return { paused: false };
-      case "libraryHealth.recheck":
+      },
+      "libraryHealth.recheck": (input) => {
+        rechecks.push(input);
         return CHECK;
-      default:
-        return [];
-    }
+      },
+      "pipeline.status": () => ({ paused: false, inflight: 0 }),
+      "pipeline.inflight": () => [],
+      "downloads.ingestingOrFailed": () => [],
+    },
   });
-  Object.assign(window, { pond: { query } });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -114,7 +115,6 @@ afterEach(async () => {
   await act(async () => root.unmount());
   client.clear();
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 async function settle() {
@@ -153,19 +153,15 @@ async function click(label: string) {
   await settle();
 }
 
-function calls(name: string) {
-  return query.mock.calls.filter(([called]) => called === name);
-}
-
 it("waits for you to check the library", async () => {
   await render(<HealthOverview />);
 
   expect(document.body.textContent).toContain("Not checked yet");
-  expect(calls("libraryHealth.check")).toEqual([]);
+  expect(checks).toBe(0);
 
   await click("Check Library");
 
-  expect(calls("libraryHealth.check")).toHaveLength(1);
+  expect(checks).toBe(1);
 });
 
 it("drills into a category and rechecks only the Saves you filter to", async () => {
@@ -201,9 +197,7 @@ it("drills into a category and rechecks only the Saves you filter to", async () 
   expect(document.body.textContent).not.toContain("Gone");
   await click("Recheck 1 Save");
 
-  expect(calls("libraryHealth.recheck")).toEqual([
-    ["libraryHealth.recheck", { saveIds: ["locked"] }],
-  ]);
+  expect(rechecks).toEqual([{ saveIds: ["locked"] }]);
 });
 
 function Drilldown({ category }: { category: HealthCategory }) {

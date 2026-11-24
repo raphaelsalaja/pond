@@ -32,7 +32,9 @@ export function useSourceCovers(ids: Array<string>) {
   useEffect(() => {
     const parsed: unknown = JSON.parse(key);
     if (key !== "[]" && isIdList(parsed)) {
-      void ensureSaves(parsed).catch(() => undefined);
+      void ensureSaves(parsed).catch((cause: unknown) => {
+        console.warn("[pond fish] loading source covers failed", cause);
+      });
     }
   }, [key]);
 }

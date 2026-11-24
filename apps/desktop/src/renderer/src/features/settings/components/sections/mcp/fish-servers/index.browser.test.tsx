@@ -1,4 +1,3 @@
-import type { JsonValue } from "@pond/schema/json";
 import type {
   FishMcpServerConfig,
   FishMcpServerStatus,
@@ -6,7 +5,8 @@ import type {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { FishServersSection } from "./index";
 import { ServerDialog } from "./server-dialog";
 
@@ -21,19 +21,17 @@ const github: FishMcpServerConfig = {
   toolAccess: {},
 };
 
-const calls: Array<[string, JsonValue]> = [];
-
 function stubPond(list: Array<FishMcpServerStatus>) {
-  vi.stubGlobal("pond", {
-    async query(name: string, params: JsonValue) {
-      calls.push([name, params]);
-      if (name === "fishMcp.list") {
-        return list;
-      }
-      if (name === "fishMcp.save") {
-        return list[0];
-      }
-      throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: {
+      "fishMcp.list": () => list,
+      "fishMcp.save": () => {
+        const [saved] = list;
+        if (!saved) {
+          throw new Error("No server to save");
+        }
+        return saved;
+      },
     },
   });
 }
@@ -64,22 +62,6 @@ async function render(node: React.ReactNode) {
     },
   };
 }
-
-beforeEach(() => {
-  calls.length = 0;
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 it("shows an empty list", async () => {
   stubPond([]);
@@ -132,10 +114,10 @@ it("turns a server off without sending secrets", async () => {
       throw new Error("Missing server switch");
     }
     await act(async () => toggle.click());
-    expect(calls).toContainEqual([
-      "fishMcp.save",
-      { server: { ...github, enabled: false }, secrets: {} },
-    ]);
+    expect(window.pond.query).toHaveBeenCalledWith("fishMcp.save", {
+      server: { ...github, enabled: false },
+      secrets: {},
+    });
   } finally {
     await view.unmount();
   }
@@ -155,7 +137,10 @@ it("explains an invalid name instead of saving", async () => {
     expect(document.body.textContent).toContain(
       "Use lowercase letters, numbers, and dashes.",
     );
-    expect(calls.map(([name]) => name)).not.toContain("fishMcp.save");
+    expect(window.pond.query).not.toHaveBeenCalledWith(
+      "fishMcp.save",
+      expect.anything(),
+    );
   } finally {
     await view.unmount();
   }

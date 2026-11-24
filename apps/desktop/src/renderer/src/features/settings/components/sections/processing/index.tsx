@@ -1,5 +1,6 @@
 import { IconCircleCheck, IconCircleWarning, IconPowerOff } from "@pond/icons";
 import { Button, Loader, Reveal, Settings, Tooltip } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect, useId, useState } from "react";
 import { useEnrichmentStatus } from "@/features/enrichment/status";
 import type {
@@ -332,7 +333,9 @@ export function ProcessingStatus() {
         }
         return undefined;
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond settings] missing originals refresh failed", cause);
+      });
     return () => {
       active = false;
     };

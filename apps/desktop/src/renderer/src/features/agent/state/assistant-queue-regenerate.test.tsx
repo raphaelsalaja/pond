@@ -1,45 +1,38 @@
 import type { AgentStreamRequest } from "@shared/assistant";
-import type { QueryResults } from "@shared/query-contracts";
 import { act } from "react";
 import { afterEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { assistant } from "./assistant";
 import {
   agentStreamBridge,
   createAssistantHarness,
+  streamRequests,
 } from "./assistant.test-harness";
 import type { StreamReply } from "./assistant.test-harness";
 
 afterEach(() => {
   assistant.newChat();
-  vi.unstubAllGlobals();
 });
 
 const lastText = (request: AgentStreamRequest | undefined) =>
   JSON.stringify(request?.messages.at(-1)?.parts ?? []);
 
-interface QueryParams {
-  chatId?: string;
-}
-
-type QueryReply = QueryResults["agent.regenerate"] | Array<never>;
-
 function stubPond(
   reply: (request: AgentStreamRequest) => StreamReply | Promise<StreamReply>,
-  query: (name: string, params?: QueryParams) => QueryReply = () => [],
 ) {
-  const requests: Array<AgentStreamRequest> = [];
-  const queryMock = vi.fn(async (name: string, params?: QueryParams) =>
-    query(name, params),
-  );
-  vi.stubGlobal("pond", {
-    query: queryMock,
+  const stream = streamRequests();
+  bridge.use({
+    query: {
+      "agent.chats": () => [],
+      "agent.messages": () => [],
+      "agent.stop": () => ({ ok: true }),
+    },
     agentStream: agentStreamBridge((request) => {
-      requests.push(request);
+      stream.record(request);
       return reply(request);
     }),
-    onAgentChunk: () => () => {},
   });
-  return { requests, query: queryMock };
+  return stream;
 }
 
 const createHarness = () =>
@@ -63,14 +56,14 @@ async function startReply(chatId: string) {
 
 it("queues messages sent mid-reply and sends them together once it settles", async () => {
   const first = Promise.withResolvers<StreamReply>();
-  const { requests } = stubPond((request) =>
-    lastText(request).includes("First") ? first.promise : { text: "Next." },
+  const { requests, request } = stubPond((sent) =>
+    lastText(sent).includes("First") ? first.promise : { text: "Next." },
   );
   const harness = createHarness();
   await harness.mount();
   try {
     const { pending } = await startReply("queue-chat");
-    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    await request(1);
     await act(async () => {
       assistant.setDraft("Second");
       await assistant.queue("openai");
@@ -87,7 +80,8 @@ it("queues messages sent mid-reply and sends them together once it settles", asy
       first.resolve({ text: "Done." });
       await pending;
     });
-    await vi.waitFor(() => expect(requests).toHaveLength(2));
+    await request(2);
+    expect(requests).toHaveLength(2);
     expect(lastText(requests[1])).toContain(String.raw`Second\n\nThird`);
     await vi.waitFor(() =>
       expect(harness.host.textContent).toContain('"busy":false'),
@@ -101,12 +95,12 @@ it("queues messages sent mid-reply and sends them together once it settles", asy
 
 it("drops a removed queued message", async () => {
   const first = Promise.withResolvers<StreamReply>();
-  const { requests } = stubPond(() => first.promise);
+  const { requests, request } = stubPond(() => first.promise);
   const harness = createHarness();
   await harness.mount();
   try {
     const { pending } = await startReply("unqueue-chat");
-    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    await request(1);
     await act(async () => {
       assistant.setDraft("Never mind");
       await assistant.queue("openai");
@@ -126,18 +120,18 @@ it("drops a removed queued message", async () => {
 
 it("stops the running reply when you send the queued message now", async () => {
   const first = Promise.withResolvers<StreamReply>();
-  const { requests, query } = stubPond(() => first.promise);
+  const { requests, request } = stubPond(() => first.promise);
   const harness = createHarness();
   await harness.mount();
   try {
     const { pending } = await startReply("send-now-chat");
-    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    await request(1);
     await act(async () => {
       assistant.setDraft("Go now");
       await assistant.queue("openai");
       assistant.sendQueuedNow();
     });
-    expect(query).toHaveBeenCalledWith(
+    expect(window.pond.query).toHaveBeenCalledWith(
       "agent.stop",
       expect.objectContaining({ chatId: "send-now-chat" }),
     );
@@ -145,7 +139,7 @@ it("stops the running reply when you send the queued message now", async () => {
       first.resolve({});
       await pending;
     });
-    await vi.waitFor(() => expect(requests).toHaveLength(2));
+    await request(2);
     expect(lastText(requests[1])).toContain("Go now");
     await vi.waitFor(() =>
       expect(harness.host.textContent).toContain('"busy":false'),
@@ -157,13 +151,17 @@ it("stops the running reply when you send the queued message now", async () => {
 });
 
 it("regenerates the latest reply from its request and keeps your draft", async () => {
-  const { requests, query } = stubPond(
-    () => ({ text: "A fresh reply." }),
-    (name) =>
-      name === "agent.regenerate"
-        ? { ok: true, content: "Again please", attachments: [], files: [] }
-        : [],
-  );
+  const { requests } = stubPond(() => ({ text: "A fresh reply." }));
+  bridge.use({
+    query: {
+      "agent.regenerate": () => ({
+        ok: true,
+        content: "Again please",
+        attachments: [],
+        files: [],
+      }),
+    },
+  });
   const harness = createHarness();
   await harness.mount();
   try {
@@ -172,7 +170,7 @@ it("regenerates the latest reply from its request and keeps your draft", async (
       assistant.setDraft("Unsent thought");
       await assistant.regenerate("openai");
     });
-    expect(query).toHaveBeenCalledWith("agent.regenerate", {
+    expect(window.pond.query).toHaveBeenCalledWith("agent.regenerate", {
       chatId: "regenerate-chat",
     });
     expect(requests).toHaveLength(1);
@@ -184,17 +182,16 @@ it("regenerates the latest reply from its request and keeps your draft", async (
 });
 
 it("shows why a reply can't be regenerated", async () => {
-  const { requests } = stubPond(
-    () => ({ text: "Unused." }),
-    (name) =>
-      name === "agent.regenerate"
-        ? {
-            ok: false,
-            error:
-              "This reply has applied changes. Undo them before running it again.",
-          }
-        : [],
-  );
+  const { requests } = stubPond(() => ({ text: "Unused." }));
+  bridge.use({
+    query: {
+      "agent.regenerate": () => ({
+        ok: false,
+        error:
+          "This reply has applied changes. Undo them before running it again.",
+      }),
+    },
+  });
   const harness = createHarness();
   await harness.mount();
   try {
