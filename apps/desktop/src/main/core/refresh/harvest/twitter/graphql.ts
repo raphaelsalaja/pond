@@ -94,6 +94,11 @@ const UserSchema = z
       .optional()
       .catch(undefined),
     avatar: z.object({ image_url: scrapedText }).optional().catch(undefined),
+    is_blue_verified: z.boolean().optional().catch(undefined),
+    verification: z
+      .object({ is_blue_verified: z.boolean().optional().catch(undefined) })
+      .optional()
+      .catch(undefined),
   })
   .optional()
   .catch(undefined);
@@ -353,7 +358,12 @@ export interface RichTweet {
   bookmarkedAt?: string;
   publishedAt?: string;
   fullText: string;
-  author: { handle: string; name: string; avatarUrl?: string };
+  author: {
+    handle: string;
+    name: string;
+    avatarUrl?: string;
+    verified?: boolean;
+  };
   media: RichTweetMedia[];
   metrics: RichTweetMetrics;
   quoted?: RichTweet;
@@ -448,6 +458,7 @@ function richTweetFromNode(tweet: TweetNode): RichTweet | null {
     name: pickAuthorName(tweet) ?? handle ?? "",
   };
   if (avatarUrl) author.avatarUrl = avatarUrl;
+  if (pickAuthorVerified(tweet)) author.verified = true;
 
   const rich: RichTweet = {
     tweetId,
@@ -582,6 +593,14 @@ function pickAuthorHandle(tweet: TweetNode): string | null {
 function pickAuthorName(tweet: TweetNode): string | null {
   const user = tweet.core?.user_results?.result;
   return user?.core?.name || (user?.legacy?.name ?? null);
+}
+
+function pickAuthorVerified(tweet: TweetNode): boolean {
+  const user = tweet.core?.user_results?.result;
+  return (
+    user?.verification?.is_blue_verified === true ||
+    user?.is_blue_verified === true
+  );
 }
 
 function pickAuthorAvatar(tweet: TweetNode): string | null {

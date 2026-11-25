@@ -30,6 +30,7 @@ function postDraft(rich: RichTweet, fallbackHandle = ""): RichPostDraft {
     name: rich.author.name || handle,
   };
   if (rich.author.avatarUrl) author.avatarUrl = rich.author.avatarUrl;
+  if (rich.author.verified) author.verified = true;
 
   const draft: RichPostDraft = {
     source: "twitter",

@@ -11,8 +11,9 @@ import { draftFromRichTweet } from "./draft";
 import { parseBookmarksResponses } from "./graphql";
 import { harvestSource } from "./item-source";
 import { inPageTwitterNormalize } from "./normalize";
+import { inPageTwitterSsr } from "./ssr";
 
-/** The post page's own TweetResultByRestId/TweetDetail bodies, which the preload hook keeps. */
+/** The post page's own TweetResultByRestId/TweetDetail bodies, from the preload hook or the server-rendered HTML. */
 const TweetResponsesSchema = z.object({
   tweetResponses: z.array(z.string()).min(1),
 });
@@ -41,18 +42,30 @@ export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
 
 export function buildExpression(tweetId: string): string {
   const normSrc = `(${inPageTwitterNormalize.toString()})()`;
+  const ssrSrc = `(${inPageTwitterSsr.toString()})()`;
   const fnSrc = harvestSource();
   return `(async () => {
     const norm = ${normSrc};
+    const ssr = ${ssrSrc};
     const fn = ${fnSrc};
     const tweetId = ${JSON.stringify(tweetId)};
+    const aboutPost = (b) => typeof b === 'string' && b.includes('"rest_id":"' + tweetId + '"');
+    const hooked = () => (globalThis.__pondTweetCaptures || []).map((c) => c && c.body).filter(aboutPost);
     /** x-web has no test ids to scrape, so prefer the post's GraphQL response the preload hook keeps. */
-    const responseDeadline = Date.now() + 10_000;
-    while (Date.now() < responseDeadline) {
-      const bodies = (globalThis.__pondTweetCaptures || [])
-        .map((c) => c && c.body)
-        .filter((b) => typeof b === 'string' && b.includes('"rest_id":"' + tweetId + '"'));
+    const hookDeadline = Date.now() + 1_500;
+    while (Date.now() < hookDeadline) {
+      if (hooked().length > 0) return { tweetResponses: hooked() };
+      await new Promise(r => setTimeout(r, 250));
+    }
+    /** A post page opened directly is server-rendered, so its responses only exist in the HTML. */
+    try {
+      const res = await fetch(location.href, { credentials: 'include' });
+      const bodies = res.ok ? ssr.ssrResponseBodies(await res.text()).filter(aboutPost) : [];
       if (bodies.length > 0) return { tweetResponses: bodies };
+    } catch (e) {}
+    const responseDeadline = Date.now() + 8_500;
+    while (Date.now() < responseDeadline) {
+      if (hooked().length > 0) return { tweetResponses: hooked() };
       await new Promise(r => setTimeout(r, 250));
     }
     const articleDeadline = Date.now() + 12_000;
