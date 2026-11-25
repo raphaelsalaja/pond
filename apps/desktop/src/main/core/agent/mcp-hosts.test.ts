@@ -53,6 +53,27 @@ describe("mcp hosts", () => {
     expect(pondMcpSnippet("/bin/pond", ["--mcp"]).json).toContain("--mcp");
   });
 
+  it("builds an OpenCode setup command from the launch", () => {
+    const commands = hostSetupCommands(
+      "opencode",
+      "/Applications/Pond.app/Contents/MacOS/Pond",
+      ["--mcp"],
+    );
+    expect(commands[0]?.value).toBe(
+      "opencode mcp add pond -- /Applications/Pond.app/Contents/MacOS/Pond --mcp",
+    );
+    expect(commands[1]?.value).toBe("opencode mcp list");
+  });
+
+  it("serializes the OpenCode snippet with the launch inside the command array", () => {
+    const snippet = pondMcpSnippet("/bin/pond", ["--mcp"], "opencode");
+    expect(JSON.parse(snippet.json)).toEqual({
+      mcp: {
+        servers: { pond: { type: "local", command: ["/bin/pond", "--mcp"] } },
+      },
+    });
+  });
+
   it("finds Pond in a client config by name or launch path", () => {
     expect(configListsPond(pondMcpSnippet("/bin/pond").json)).toBe(true);
     expect(

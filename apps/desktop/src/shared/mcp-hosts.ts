@@ -3,6 +3,7 @@ export const MCP_HOST_IDS = [
   "cursor",
   "codex",
   "gemini-cli",
+  "opencode",
   "claude-desktop",
   "vscode",
   "other",
@@ -71,6 +72,14 @@ export const MCP_HOST_CATALOG: readonly McpHostDefinition[] = [
     configPath: "~/.gemini/settings.json",
     hint: "Gemini CLI lists Pond after this command succeeds.",
     addLabel: "Add to Gemini CLI",
+  },
+  {
+    id: "opencode",
+    name: "OpenCode",
+    featured: false,
+    configPath: "~/.config/opencode/opencode.json",
+    hint: "OpenCode spawns command, so the launch line — including --mcp — is the command.",
+    addLabel: "Add to OpenCode",
   },
   {
     id: "claude-desktop",
@@ -155,6 +164,15 @@ export function hostSetupCommands(
         value: `gemini mcp add -s user pond ${launch}`,
       },
       { label: "Verify:", value: "gemini mcp list" },
+    ];
+  }
+  if (id === "opencode") {
+    return [
+      {
+        label: "Run in any terminal. OpenCode reads the command after --:",
+        value: `opencode mcp add pond -- ${launch}`,
+      },
+      { label: "Verify:", value: "opencode mcp list" },
     ];
   }
   return [];

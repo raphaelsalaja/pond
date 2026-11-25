@@ -57,7 +57,7 @@ import type {
   LibraryRepairQueryResults,
 } from "./library-repair-contracts";
 import type { LogoCrop, LogoSource } from "./logo-crop";
-import type { McpInstallHost } from "./mcp-hosts";
+import type { McpHostId, McpInstallHost } from "./mcp-hosts";
 import type {
   MediaProcessingQueryInputs,
   MediaProcessingQueryResults,
@@ -356,7 +356,7 @@ export interface QueryInputs
   "agent.listAvailableModels": EmptyInput;
   "agent.chats": { fishId?: string };
   "agent.newChat": { fishId?: string };
-  "agent.mcpSnippet": EmptyInput;
+  "agent.mcpSnippet": { host?: McpHostId };
   "agent.mcpClients": EmptyInput;
   "agent.openMcpInstall": { id: McpInstallHost };
   "library.info": EmptyInput;

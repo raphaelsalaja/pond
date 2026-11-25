@@ -16,7 +16,27 @@ const McpConfigSchema = z.object({
 export function pondMcpSnippet(
   command = process.execPath,
   args: string[] = ["--mcp"],
+  host: McpHostId = "other",
 ) {
+  /**
+   * OpenCode 2 spawns the whole `command` array as the process argv, so `--mcp` rides along in it.
+   * A separate `args` key is ignored, which is how a headless launch ends up starting the GUI.
+   */
+  if (host === "opencode") {
+    return {
+      command,
+      args,
+      json: JSON.stringify(
+        {
+          mcp: {
+            servers: { pond: { type: "local", command: [command, ...args] } },
+          },
+        },
+        null,
+        2,
+      ),
+    };
+  }
   return {
     command,
     args,
