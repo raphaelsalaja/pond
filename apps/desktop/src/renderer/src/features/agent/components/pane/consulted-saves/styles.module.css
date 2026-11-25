@@ -12,8 +12,10 @@
   animation: reveal-in var(--ds-duration-slow) var(--ds-easing-decelerate) both;
 }
 
-/* The card draws its own edge, so the popup pads around it instead of clipping it into the corners. */
-.popup {
+/* The card draws its own edge, so the popup pads around it instead of clipping it into the corners.
+   The shared popup stylesheet is emitted into several chunks, so a copy that loads later would put
+   menu spacing back; the doubled class wins on specificity instead of stylesheet order. */
+.popup.popup {
   --ds-popup-min-width: min(320px, calc(100vw - 32px));
   --ds-popup-width: min(380px, calc(100vw - 32px));
   --ds-popup-max-width: 420px;
@@ -141,10 +143,15 @@
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
-/* A content popup, not a menu: room around the type instead of menu-item padding. */
-.preview {
-  width: min(380px, calc(100vw - 32px));
-  padding: var(--ds-space-2xl);
+/* A content popup, not a menu: room around the type instead of menu-item padding. It extends the
+   shared popup through its variables, and the doubled class keeps that geometry when another copy
+   of the shared stylesheet loads later. */
+.preview.preview {
+  --ds-popup-min-width: min(320px, calc(100vw - 32px));
+  --ds-popup-width: min(380px, calc(100vw - 32px));
+  --ds-popup-max-width: 420px;
+  --popup-padding-block: var(--ds-space-2xl);
+  --popup-padding-inline: var(--ds-space-2xl);
   font-size: var(--ds-text-body);
 }
 
