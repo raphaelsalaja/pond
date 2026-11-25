@@ -153,7 +153,7 @@ async function runJob(job: Job) {
 
 async function tick() {
   if (busy) return;
-  const res = await fetch("/src/lab/figma/job.txt", { cache: "no-store" });
+  const res = await fetch("/src/dev/figma/job.txt", { cache: "no-store" });
   const text = (await res.text()).trim();
   if (!text.startsWith("{")) return;
   /** SAFETY: job.txt is a local capture request written in the `Job` format. */
