@@ -4,6 +4,7 @@ import { join } from "node:path";
 import * as schema from "@pond/schema/db";
 import * as events from "@pond/schema/events";
 import Database from "better-sqlite3";
+import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
 import * as database from "../db";
@@ -143,6 +144,16 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
   it("marks a save failed when its folder disappears so enrichment will not run", async () => {
     const f = await fixture();
     await f.scan();
+    f.db
+      .insert(schema.tasks)
+      .values({
+        id: "completed-harvest",
+        saveId: "image",
+        source: "local",
+        op: "harvest_metadata",
+        status: "done",
+      })
+      .run();
     expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
     await rm(f.directory, { recursive: true });
     const missing = await f.scan();
@@ -159,6 +170,30 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
     expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
     expect(restored.missingFiles).toEqual([]);
   });
+  it("does not hide a pipeline refresh failure when old originals are present", async () => {
+    const f = await fixture();
+    await f.scan();
+    f.db
+      .insert(schema.tasks)
+      .values({
+        id: "refresh-harvest",
+        saveId: "image",
+        source: "local",
+        op: "harvest_metadata",
+        status: "dead",
+        lastError: "TransientError: web fetch 429",
+      })
+      .run();
+    f.db
+      .update(schema.saves)
+      .set({ status: "failed" })
+      .where(eq(schema.saves.id, "image"))
+      .run();
+    await writeFile(f.path, JSON.stringify(f.metadata));
+    expect((await f.scan()).updated).toBe(1);
+    expect(f.db.select().from(schema.saves).get()?.status).toBe("failed");
+  });
+
   it("keeps a row complete when only its record is gone but its originals remain", async () => {
     const f = await fixture();
     await f.scan();
