@@ -37,9 +37,7 @@ export function SavePreset({
     <Popover.Root
       open={open}
       onOpenChange={(next) => {
-        if (busy) {
-          return;
-        }
+        if (busy) return;
         if (next) {
           setName(initialName);
           setInvalid(false);
@@ -70,9 +68,7 @@ export function SavePreset({
                     disabled={busy}
                     onValueChange={(value) => {
                       setName(value);
-                      if (value.trim()) {
-                        setInvalid(false);
-                      }
+                      if (value.trim()) setInvalid(false);
                     }}
                   />
                 </Input.Root>

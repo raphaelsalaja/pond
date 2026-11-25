@@ -56,9 +56,7 @@ function accountFor(provider: AgentProviderId): string {
 }
 
 function mask(key: string): string {
-  if (key.length < 8) {
-    return "••••";
-  }
+  if (key.length < 8) return "••••";
   return `${key.slice(0, 4)}…${key.slice(-4)}`;
 }
 
@@ -114,12 +112,8 @@ export async function saveKey(
     return { ok: false, error: "Paste a key first." };
   }
   const check = await verifyKey(provider, trimmed);
-  if (!check.ok) {
-    return check;
-  }
-  if (trimmed) {
-    await setSecret(accountFor(provider), trimmed);
-  }
+  if (!check.ok) return check;
+  if (trimmed) await setSecret(accountFor(provider), trimmed);
   const prefs = await getPrefs();
   await setPrefs({
     agent: {
@@ -177,9 +171,7 @@ export async function setKeyEnabled(
 export async function keyFor(
   provider: AgentProviderId,
 ): Promise<string | null> {
-  if (isCliProvider(provider) || provider === "apple") {
-    return null;
-  }
+  if (isCliProvider(provider) || provider === "apple") return null;
   return getSecret(accountFor(provider));
 }
 
@@ -202,9 +194,7 @@ export async function listProviderModels(
 ): Promise<ProviderModelsResult> {
   if (provider === "apple") {
     const status = await appleStatus();
-    if (!status.ok) {
-      return { ...status, models: [] };
-    }
+    if (!status.ok) return { ...status, models: [] };
     return {
       ok: true,
       models: [
@@ -225,9 +215,7 @@ export async function listProviderModels(
   }
   if (isCliProvider(provider)) {
     const check = await checkCliConnection(provider);
-    if (!check.ok) {
-      return { ...check, models: [] };
-    }
+    if (!check.ok) return { ...check, models: [] };
     const modelCapabilities = {
       text: true,
       vision: false,
@@ -306,9 +294,7 @@ export async function listAvailableModels(): Promise<{
             ...(prefs.agent.customModelIds?.[row.provider] ?? []),
           ],
         );
-        if (listed.ok) {
-          return { provider: row.provider, ...listed, models };
-        }
+        if (listed.ok) return { provider: row.provider, ...listed, models };
         return models.length > 0
           ? { provider: row.provider, ok: true, models, warning: listed.error }
           : { provider: row.provider, ...listed, models };
@@ -354,9 +340,7 @@ async function withOllamaModelDetails(
     rows.map(async (row) => {
       const parsedRow = jsonObject.safeParse(row);
       const id = z.string().min(1).safeParse(parsedRow.data?.id);
-      if (!parsedRow.success || !id.success) {
-        return row;
-      }
+      if (!parsedRow.success || !id.success) return row;
       try {
         const response = await fetcher(url, {
           method: "POST",
@@ -364,9 +348,7 @@ async function withOllamaModelDetails(
           body: JSON.stringify({ model: id.data }),
           signal,
         });
-        if (!response.ok) {
-          return row;
-        }
+        if (!response.ok) return row;
         const detail = ollamaModelDetail.safeParse(await response.json());
         return detail.success
           ? { ...parsedRow.data, capabilities: detail.data.capabilities }
@@ -394,9 +376,7 @@ export async function checkProviderKey(
         headers: { Authorization: `Bearer ${input.key}` },
         signal: AbortSignal.timeout(10_000),
       });
-      if (response.ok) {
-        return { ok: true };
-      }
+      if (response.ok) return { ok: true };
       if (response.status === 401 || response.status === 403) {
         return {
           ok: false,
@@ -419,9 +399,7 @@ export async function checkProviderKey(
     }
   }
   const fetched = await fetchProviderModels(input, fetcher);
-  if (fetched.ok || fetched.unsupported) {
-    return { ok: true };
-  }
+  if (fetched.ok || fetched.unsupported) return { ok: true };
   return { ok: false, error: fetched.error };
 }
 
@@ -445,24 +423,16 @@ export async function fetchProviderModels(
     headers.Authorization = `Bearer ${key}`;
   } else if (provider === "azure") {
     const resource = input.azureResourceName.trim();
-    if (!resource) {
-      return { ok: false, error: "Enter a resource name first." };
-    }
+    if (!resource) return { ok: false, error: "Enter a resource name first." };
     url = `https://${resource}.openai.azure.com/openai/v1/models`;
-    if (key) {
-      headers["api-key"] = key;
-    }
+    if (key) headers["api-key"] = key;
   } else if (provider === "openrouter") {
     url = OPENROUTER_MODELS_URL;
-    if (key) {
-      headers.Authorization = `Bearer ${key}`;
-    }
+    if (key) headers.Authorization = `Bearer ${key}`;
   } else if (isOpenAIModelsProvider(provider)) {
     const base = OPENAI_MODELS[provider];
     url = `${base.replace(/\/$/, "")}/models`;
-    if (key) {
-      headers.Authorization = `Bearer ${key}`;
-    }
+    if (key) headers.Authorization = `Bearer ${key}`;
   } else {
     const base =
       provider === "ollama"
@@ -470,13 +440,9 @@ export async function fetchProviderModels(
         : provider === "lmstudio"
           ? input.lmstudioBaseUrl
           : undefined;
-    if (!base) {
-      return { ok: false, error: "Enter an API base URL first." };
-    }
+    if (!base) return { ok: false, error: "Enter an API base URL first." };
     url = `${base.replace(/\/$/, "")}/models`;
-    if (key) {
-      headers.Authorization = `Bearer ${key}`;
-    }
+    if (key) headers.Authorization = `Bearer ${key}`;
   }
   const rows: Array<JsonValue> = [];
   const cursors = new Set<string>();
@@ -557,9 +523,7 @@ export async function fetchProviderModels(
                 : { data: discoveredRows },
           };
         }
-        if (cursors.has(cursor)) {
-          throw new Error("Repeated pagination cursor");
-        }
+        if (cursors.has(cursor)) throw new Error("Repeated pagination cursor");
         cursors.add(cursor);
         const next = new URL(endpoint);
         next.searchParams.set(

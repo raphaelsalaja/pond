@@ -48,9 +48,7 @@ async function inPageInstagramHarvest(
     /** A failed API read falls through to the DOM scrape below. */
   }
 
-  if (node) {
-    return norm.normalizeMediaNode(node);
-  }
+  if (node) return norm.normalizeMediaNode(node);
 
   const deadline = Date.now() + 12_000;
   while (Date.now() < deadline) {
@@ -66,9 +64,7 @@ async function inPageInstagramHarvest(
 
   function scrapeDom(shortcode: string): InstagramPost | null {
     function pickLargestSrcset(srcset: string | null) {
-      if (!srcset) {
-        return null;
-      }
+      if (!srcset) return null;
       const parts = srcset
         .split(",")
         .map((p) => p.trim())
@@ -77,30 +73,20 @@ async function inPageInstagramHarvest(
           return { u, w: sz ? Number.parseInt(sz, 10) : 0 };
         })
         .filter((p) => p.u);
-      if (!parts.length) {
-        return null;
-      }
+      if (!parts.length) return null;
       parts.sort((a, b) => b.w - a.w);
       return parts[0]?.u ?? null;
     }
 
     function looksLikeAvatar(url: string | null) {
-      if (!url) {
-        return true;
-      }
-      if (/\/t51\.82787-19\//.test(url)) {
-        return true;
-      }
-      if (/profile_pic/i.test(url)) {
-        return true;
-      }
+      if (!url) return true;
+      if (/\/t51\.82787-19\//.test(url)) return true;
+      if (/profile_pic/i.test(url)) return true;
       return false;
     }
 
     const article = document.querySelector("article");
-    if (!article) {
-      return null;
-    }
+    if (!article) return null;
 
     const out: InstagramPost = {};
     const meta: InstagramMeta = {};
@@ -113,9 +99,7 @@ async function inPageInstagramHarvest(
         "/",
         "",
       );
-      if (handle) {
-        out.author = `@${handle}`;
-      }
+      if (handle) out.author = `@${handle}`;
     }
 
     const captionH1 = article.querySelector("h1");
@@ -131,27 +115,19 @@ async function inPageInstagramHarvest(
     }
 
     const time = article.querySelector<HTMLTimeElement>("time[datetime]");
-    if (time?.dateTime) {
-      meta.publishedAt = time.dateTime;
-    }
+    if (time?.dateTime) meta.publishedAt = time.dateTime;
     const htmlLang = document.documentElement.lang?.trim();
-    if (htmlLang) {
-      meta.lang = htmlLang;
-    }
+    if (htmlLang) meta.lang = htmlLang;
     if (out.author) {
       const handle = out.author.replace(/^@/, "");
-      if (handle) {
-        meta.authorUrl = `https://www.instagram.com/${handle}/`;
-      }
+      if (handle) meta.authorUrl = `https://www.instagram.com/${handle}/`;
     }
 
     const media: Array<InstagramMedia> = [];
     const seen = new Set<string>();
     const push = (entry: InstagramMedia) => {
       const url = entry.url;
-      if (!url || /^blob:/i.test(url) || seen.has(url)) {
-        return;
-      }
+      if (!url || /^blob:/i.test(url) || seen.has(url)) return;
       seen.add(url);
       media.push(entry);
     };
@@ -159,29 +135,21 @@ async function inPageInstagramHarvest(
     for (const v of Array.from(
       article.querySelectorAll<HTMLVideoElement>("video"),
     )) {
-      if (v.poster) {
-        push({ url: v.poster, type: "video", poster: v.poster });
-      }
+      if (v.poster) push({ url: v.poster, type: "video", poster: v.poster });
     }
     let avatarUrl: string | null = null;
     for (const img of Array.from(
       article.querySelectorAll<HTMLImageElement>("img"),
     )) {
       const best = pickLargestSrcset(img.srcset) ?? img.currentSrc ?? img.src;
-      if (!best) {
-        continue;
-      }
+      if (!best) continue;
       if (looksLikeAvatar(best)) {
-        if (!avatarUrl) {
-          avatarUrl = best;
-        }
+        if (!avatarUrl) avatarUrl = best;
         continue;
       }
       push({ url: best, type: "image" });
     }
-    if (avatarUrl) {
-      meta.authorAvatar = avatarUrl;
-    }
+    if (avatarUrl) meta.authorAvatar = avatarUrl;
 
     const first = media[0];
     if (first) {
@@ -190,9 +158,7 @@ async function inPageInstagramHarvest(
       out.mediaType = first.type;
     }
 
-    if (Object.keys(meta).length > 0) {
-      out.meta = meta;
-    }
+    if (Object.keys(meta).length > 0) out.meta = meta;
 
     if (
       !out.author &&

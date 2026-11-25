@@ -31,9 +31,7 @@ function sanitize(options: CombineImagesOptions): CombineImagesOptions {
 export function readStoredOptions(): CombineImagesOptions {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return DEFAULT_OPTIONS;
-    }
+    if (!raw) return DEFAULT_OPTIONS;
     const parsed = CombineImagesOptionsSchema.safeParse({
       ...DEFAULT_OPTIONS,
       ...JSON.parse(raw),
@@ -62,9 +60,7 @@ export function withDirection(
   options: CombineImagesOptions,
   direction: Direction,
 ): CombineImagesOptions {
-  if (direction === options.direction) {
-    return options;
-  }
+  if (direction === options.direction) return options;
   return {
     ...options,
     direction,

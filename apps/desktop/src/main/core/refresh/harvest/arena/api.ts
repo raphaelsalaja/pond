@@ -243,26 +243,14 @@ function channelsFromBlock(block: ArenaBlock): Array<ArenaChannelInfo> {
     }
     const id = c.id !== undefined ? String(c.id) : undefined;
     const key = id ?? c.slug ?? c.title;
-    if (!key || seen.has(key)) {
-      continue;
-    }
+    if (!key || seen.has(key)) continue;
     seen.add(key);
     const entry: ArenaChannelInfo = {};
-    if (id) {
-      entry.id = id;
-    }
-    if (c.title !== undefined) {
-      entry.title = c.title;
-    }
-    if (c.slug !== undefined) {
-      entry.slug = c.slug;
-    }
-    if (c.href !== undefined) {
-      entry.href = c.href;
-    }
-    if (Object.keys(entry).length > 0) {
-      out.push(entry);
-    }
+    if (id) entry.id = id;
+    if (c.title !== undefined) entry.title = c.title;
+    if (c.slug !== undefined) entry.slug = c.slug;
+    if (c.href !== undefined) entry.href = c.href;
+    if (Object.keys(entry).length > 0) out.push(entry);
   }
   return out;
 }
@@ -304,14 +292,10 @@ export async function fetchArenaCapture(
   deps: ArenaCaptureDeps = defaultDeps,
 ): Promise<ArenaCaptureResult> {
   const fetched = await deps.fetchBlock(args.sourceId);
-  if (!fetched.ok) {
-    return { ok: false, reason: fetched.reason };
-  }
+  if (!fetched.ok) return { ok: false, reason: fetched.reason };
 
   const capture = captureFromBlock(fetched.value);
-  if (!capture) {
-    return { ok: false, reason: "no_match" };
-  }
+  if (!capture) return { ok: false, reason: "no_match" };
   return {
     ok: true,
     capture: await withLinkedPageCapture(
@@ -328,9 +312,7 @@ export async function withLinkedPageCapture(
   extractPage: ArenaCaptureDeps["extractPage"] = extractWebPage,
 ): Promise<Capture> {
   const linkUrl = arenaLinkUrl(capture);
-  if (!linkUrl) {
-    return capture;
-  }
+  if (!linkUrl) return capture;
   try {
     const page = await extractPage(new URL(linkUrl), signal);
     return withLinkedPage(capture, page);
@@ -353,30 +335,20 @@ function withLinkedPage(block: Capture, page: Capture): Capture {
     extras: { ...page.extras, ...block.extras },
   };
   const title = block.title ?? page.title;
-  if (title) {
-    merged.title = title;
-  }
+  if (title) merged.title = title;
   const description = block.description ?? page.description;
-  if (description) {
-    merged.description = clampDescription(description);
-  }
+  if (description) merged.description = clampDescription(description);
   const author = block.author ?? page.author;
-  if (author) {
-    merged.author = author;
-  }
+  if (author) merged.author = author;
   const publishedAt = block.publishedAt ?? page.publishedAt;
-  if (publishedAt) {
-    merged.publishedAt = publishedAt;
-  }
+  if (publishedAt) merged.publishedAt = publishedAt;
   return merged;
 }
 
 /** A page without a cover image falls back to its favicon; Are.na's screenshot of the page shows more. */
 function linkedPageMedia(block: Capture, page: Capture): Array<CaptureMedia> {
   const cover = page.media[0];
-  if (cover && cover.url !== page.extras?.faviconUrl) {
-    return page.media;
-  }
+  if (cover && cover.url !== page.extras?.faviconUrl) return page.media;
   return block.media.length > 0 ? block.media : page.media;
 }
 
@@ -403,24 +375,18 @@ function captureFromBlock(block: ArenaBlock): Capture | null {
       pickNonEmpty(u.avatar_image?.display) ??
       pickNonEmpty(u.avatar);
     const out: NonNullable<Capture["author"]> = {};
-    if (name) {
-      out.name = name;
-    }
+    if (name) out.name = name;
     if (slug) {
       out.handle = slug;
       out.profileUrl = `https://www.are.na/${slug}`;
     }
-    if (avatarUrl) {
-      out.avatarUrl = avatarUrl;
-    }
+    if (avatarUrl) out.avatarUrl = avatarUrl;
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
   const media = ((): Array<CaptureMedia> => {
     const picked = pickMediaUrlAndDims(block);
-    if (!picked.url) {
-      return [];
-    }
+    if (!picked.url) return [];
     const entry: CaptureMedia = {
       url: picked.url,
       type: picked.type === "video" ? "video" : "image",
@@ -441,14 +407,9 @@ function captureFromBlock(block: ArenaBlock): Capture | null {
     const out: CaptureMetrics = {};
     const connFromObj = block.connections?.count;
     const connFromCount = block.connections_count;
-    if (connFromObj !== undefined) {
-      out.connections = connFromObj;
-    } else if (connFromCount !== undefined) {
-      out.connections = connFromCount;
-    }
-    if (block.comment_count !== undefined) {
-      out.comments = block.comment_count;
-    }
+    if (connFromObj !== undefined) out.connections = connFromObj;
+    else if (connFromCount !== undefined) out.connections = connFromCount;
+    if (block.comment_count !== undefined) out.comments = block.comment_count;
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
@@ -459,9 +420,7 @@ function captureFromBlock(block: ArenaBlock): Capture | null {
       pickNonEmpty(block.source?.url),
     ];
     for (const candidate of candidates) {
-      if (!candidate) {
-        continue;
-      }
+      if (!candidate) continue;
       try {
         return { url: candidate, host: new URL(candidate).host };
       } catch {
@@ -474,12 +433,8 @@ function captureFromBlock(block: ArenaBlock): Capture | null {
   const channels = channelsFromBlock(block);
   const extras = ((): ArenaExtras | undefined => {
     const out: ArenaExtras = {};
-    if (block.class !== undefined) {
-      out.blockClass = block.class;
-    }
-    if (channels.length > 0) {
-      out.channels = channels;
-    }
+    if (block.class !== undefined) out.blockClass = block.class;
+    if (channels.length > 0) out.channels = channels;
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
@@ -491,35 +446,19 @@ function captureFromBlock(block: ArenaBlock): Capture | null {
     url,
     media,
   };
-  if (title) {
-    capture.title = title;
-  }
-  if (description) {
-    capture.description = clampDescription(description);
-  }
-  if (author) {
-    capture.author = author;
-  }
-  if (block.created_at) {
-    capture.publishedAt = block.created_at;
-  }
-  if (metrics) {
-    capture.metrics = metrics;
-  }
-  if (upstream) {
-    capture.upstream = upstream;
-  }
-  if (extras) {
-    capture.extras = extras;
-  }
+  if (title) capture.title = title;
+  if (description) capture.description = clampDescription(description);
+  if (author) capture.author = author;
+  if (block.created_at) capture.publishedAt = block.created_at;
+  if (metrics) capture.metrics = metrics;
+  if (upstream) capture.upstream = upstream;
+  if (extras) capture.extras = extras;
 
   return capture;
 }
 
 function pickNonEmpty(value: string | undefined): string | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
+  if (value === undefined) return undefined;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 }

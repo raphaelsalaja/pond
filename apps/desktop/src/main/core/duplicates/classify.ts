@@ -151,9 +151,7 @@ export function buildPairs(
       assigned.length,
       coverage,
     );
-    if (!relation) {
-      continue;
-    }
+    if (!relation) continue;
     pairs.push({
       ids: bucket.ids,
       relation,

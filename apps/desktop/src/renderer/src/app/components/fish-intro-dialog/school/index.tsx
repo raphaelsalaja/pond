@@ -34,9 +34,7 @@ function useActive(count: number): number {
   const [step, setStep] = useState(0);
 
   useEffect(() => {
-    if (reduced) {
-      return;
-    }
+    if (reduced) return;
     const timer = setInterval(() => setStep((s) => s + 1), STEP_MS);
     return () => clearInterval(timer);
   }, [reduced]);

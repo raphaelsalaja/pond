@@ -41,9 +41,7 @@ export function buildSaveMenu(
   options: BuildSaveMenuOptions,
 ): Array<MenuItemSpec> {
   const context = createSaveMenuContext(saveOrSaves, options);
-  if (!context) {
-    return [];
-  }
+  if (!context) return [];
 
   const openItems = buildOpenItems(context);
   const organizeItems = buildOrganizeItems(context);
@@ -174,9 +172,7 @@ export function buildSaveDetailMenu(
   options: BuildSaveMenuOptions,
 ): Array<MenuItemSpec> {
   const context = createSaveMenuContext(save, options);
-  if (!context) {
-    return [];
-  }
+  if (!context) return [];
 
   const openItems = buildOpenItems(context);
   const copyItems = buildCopyItems(context);

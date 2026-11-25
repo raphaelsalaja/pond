@@ -306,9 +306,7 @@ export async function writeNativeHostManifests(
         dependencies.exists(join("/Applications", name)) ||
         dependencies.exists(join(home, "Applications", name)),
     );
-    if (!dependencies.exists(parent) && !installed) {
-      continue;
-    }
+    if (!dependencies.exists(parent) && !installed) continue;
     const dir = join(home, relativeDirectory);
     try {
       dependencies.makeDirectory(dir);
@@ -343,9 +341,7 @@ function writeLinuxNativeHostManifests(
   ];
   for (const { dir, body } of targets) {
     /** The browser creates its own config root on first launch, so that directory is the install signal. */
-    if (!dependencies.exists(posix.dirname(dir))) {
-      continue;
-    }
+    if (!dependencies.exists(posix.dirname(dir))) continue;
     try {
       dependencies.makeDirectory(dir);
       dependencies.writeFile(posix.join(dir, HOST_FILENAME), body);
@@ -390,9 +386,7 @@ async function writeWindowsNativeHostManifest(
       continue;
     }
 
-    if (dependencies.installerRegistersKeys()) {
-      continue;
-    }
+    if (dependencies.installerRegistersKeys()) continue;
     await Promise.all(
       keys.map(async (key) => {
         try {

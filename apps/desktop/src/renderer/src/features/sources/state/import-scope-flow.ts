@@ -69,9 +69,7 @@ const EMPTY: ImportScopeFlowState = {
 
 function filingKey(source: Source, scope: ImportScope | undefined): string {
   const filing = collectionFiling(source, scope);
-  if (filing !== "picked") {
-    return filing === "every" ? "every" : "";
-  }
+  if (filing !== "picked") return filing === "every" ? "every" : "";
   const ids = (scope?.collections ?? []).map((c) => c.id).sort();
   return `picked:${ids.join(",")}`;
 }
@@ -197,28 +195,20 @@ export function draftImportScope(
     | "since"
   >,
 ): ImportScope | null {
-  if (!state.source) {
-    return null;
-  }
+  if (!state.source) return null;
   const options = importScopeOptions(state.source);
   const scope: ImportScope = {};
-  if (options.listKinds.length > 0) {
-    scope.listKinds = [...state.listKinds];
-  }
+  if (options.listKinds.length > 0) scope.listKinds = [...state.listKinds];
   if (options.collections && state.collections.length > 0) {
     scope.collections = [...state.collections];
-    if (!draftFiles(state)) {
-      scope.addToFolders = false;
-    }
+    if (!draftFiles(state)) scope.addToFolders = false;
   } else if (draftFiles(state)) {
     scope.addToFolders = true;
   }
   if (options.mediaKinds.length > 0 && state.mediaKinds.length > 0) {
     scope.mediaKinds = [...state.mediaKinds];
   }
-  if (options.since && state.since) {
-    scope.since = state.since;
-  }
+  if (options.since && state.since) scope.since = state.since;
   const normalized = normalizeImportScope(state.source, scope);
   return normalized.ok ? normalized.scope : null;
 }

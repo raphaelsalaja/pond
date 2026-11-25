@@ -139,9 +139,7 @@ function OpenWith({ save, fileIndex }: { save: Save; fileIndex: number }) {
       fileIndex,
       kind,
       onApps: (next) => {
-        if (current) {
-          setApps(next);
-        }
+        if (current) setApps(next);
       },
     });
     return () => {
@@ -149,9 +147,7 @@ function OpenWith({ save, fileIndex }: { save: Save; fileIndex: number }) {
     };
   }, [save.id, fileIndex, kind]);
   const app = apps.find((entry) => entry.isDefault) ?? apps[0];
-  if (!app) {
-    return null;
-  }
+  if (!app) return null;
   return (
     <Button
       size="sm"
@@ -164,9 +160,7 @@ function OpenWith({ save, fileIndex }: { save: Save; fileIndex: number }) {
 }
 
 function Share({ save, fileIndex }: { save: Save; fileIndex: number }) {
-  if (!CAN_SHARE) {
-    return null;
-  }
+  if (!CAN_SHARE) return null;
   return (
     <Tool
       label="Share"

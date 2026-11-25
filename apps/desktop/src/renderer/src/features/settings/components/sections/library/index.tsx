@@ -39,9 +39,7 @@ export function LibrarySettings() {
   const openRecent = useMutation({
     mutationFn: async (path: string) => {
       const result = await window.pond.query("library.switchTo", { path });
-      if (!result.ok) {
-        throw new Error(result.error ?? "Couldn't open library.");
-      }
+      if (!result.ok) throw new Error(result.error ?? "Couldn't open library.");
     },
   });
 
@@ -62,9 +60,7 @@ export function LibrarySettings() {
               value={recent.find((entry) => entry.active)?.path ?? ""}
               disabled={openRecent.isPending}
               onValueChange={(path) => {
-                if (path) {
-                  openRecent.mutate(path);
-                }
+                if (path) openRecent.mutate(path);
               }}
             >
               <Select.Trigger aria-label="Recent Libraries">
@@ -182,9 +178,7 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
   };
 
   const saveName = async () => {
-    if (!info || nameBusy) {
-      return;
-    }
+    if (!info || nameBusy) return;
     const nextName = name.trim().replace(/\.pond$/i, "");
     if (!nextName) {
       setNameError("Enter a library name.");
@@ -296,9 +290,7 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
 }
 
 function StatusNote({ error }: { error?: string | null }) {
-  if (!error) {
-    return null;
-  }
+  if (!error) return null;
   return (
     <span className={styles.error} role="alert">
       {error}

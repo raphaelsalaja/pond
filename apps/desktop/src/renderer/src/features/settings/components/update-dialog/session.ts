@@ -114,9 +114,7 @@ function successView(input: {
 export function presentUpdateNotice(notice: UpdateNotice): void {
   updateNoticeStore.setState(() => notice);
   const state = updateDialogStore.state;
-  if (!state.open || state.view?.kind !== "update") {
-    return;
-  }
+  if (!state.open || state.view?.kind !== "update") return;
   updateDialogStore.setState(() => ({
     open: true,
     view: { kind: "update", notice },
@@ -158,9 +156,7 @@ export function dismissUpdateDialog(): void {
 export function requestUpdateCheck(
   client: UpdateCheckClient = defaultClient,
 ): void {
-  if (inFlight) {
-    return;
-  }
+  if (inFlight) return;
   inFlight = true;
   const token = ++generation;
   updateDialogStore.setState(() => ({
@@ -177,9 +173,7 @@ async function settleUpdateCheck(
   try {
     const view = await loadUpdateView(client);
     updateDialogStore.setState((state) => {
-      if (token !== generation) {
-        return state;
-      }
+      if (token !== generation) return state;
       return { open: true, view };
     });
   } catch (error) {
@@ -188,18 +182,14 @@ async function settleUpdateCheck(
         ? error.message
         : CHECK_FAILED;
     updateDialogStore.setState((state) => {
-      if (token !== generation) {
-        return state;
-      }
+      if (token !== generation) return state;
       return {
         open: true,
         view: { kind: "failed", message, retry: true },
       };
     });
   } finally {
-    if (token === generation) {
-      inFlight = false;
-    }
+    if (token === generation) inFlight = false;
   }
 }
 

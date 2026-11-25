@@ -30,15 +30,9 @@ export async function startLaunchSync(
   deps: LaunchSyncDeps = liveDeps,
 ): Promise<LaunchSyncResult> {
   const prefs = await deps.getPrefs();
-  if (!prefs.sync.launch) {
-    return "disabled";
-  }
-  if (deps.isBlocked()) {
-    return "storage_blocked";
-  }
-  if (!deps.isOnline()) {
-    return "offline";
-  }
+  if (!prefs.sync.launch) return "disabled";
+  if (deps.isBlocked()) return "storage_blocked";
+  if (!deps.isOnline()) return "offline";
   void deps
     .syncAll()
     .catch((cause: unknown) =>

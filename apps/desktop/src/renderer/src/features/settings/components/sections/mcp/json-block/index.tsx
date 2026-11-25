@@ -23,9 +23,7 @@ export function JsonBlock({ json }: { json: string }) {
               const result = await window.pond.query("clipboard.writeText", {
                 text: json,
               });
-              if (!result.ok) {
-                throw new Error("Clipboard write failed");
-              }
+              if (!result.ok) throw new Error("Clipboard write failed");
               setCopied(true);
             } finally {
               setCopying(false);

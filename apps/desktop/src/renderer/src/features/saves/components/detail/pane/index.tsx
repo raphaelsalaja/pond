@@ -313,9 +313,7 @@ export function SaveInspector({
       options={folderAssignOptions}
       onToggle={(option) => {
         const folder = folders.find(({ id }) => id === option.key);
-        if (folder) {
-          toggleFolder(folder);
-        }
+        if (folder) toggleFolder(folder);
       }}
       onCreate={createFolder}
     />

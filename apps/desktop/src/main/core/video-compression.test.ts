@@ -103,9 +103,7 @@ function fakeLibrary(input: {
       hash: async () => encodedSha,
       size: async (path) => {
         const size = written.get(path);
-        if (size === undefined) {
-          throw new Error(`No file at ${path}`);
-        }
+        if (size === undefined) throw new Error(`No file at ${path}`);
         return size;
       },
       commit: async (transaction) => {
@@ -639,9 +637,7 @@ describe.skipIf(!ffmpegPath)("real FFmpeg re-encode", () => {
   /** Encoding a sample clip and re-encoding it to HEVC is a cold start past the default hook budget. */
   beforeAll(async () => {
     const ffmpeg = ffmpegPath;
-    if (!ffmpeg) {
-      throw new Error("FFmpeg unavailable");
-    }
+    if (!ffmpeg) throw new Error("FFmpeg unavailable");
     const root = await mkdtemp(join(tmpdir(), "pond-video-compression-"));
     roots.push(root);
     const saveDirectory = saveDirIn(root, "save-1");
@@ -720,9 +716,7 @@ describe.skipIf(!ffmpegPath)("real FFmpeg re-encode", () => {
             return;
           }
           const moved = transaction.fileMoves?.[0];
-          if (moved) {
-            await copyFile(moved.sourcePath, encodedPath);
-          }
+          if (moved) await copyFile(moved.sourcePath, encodedPath);
         },
         reportFailure: (_id, reason) => {
           throw new Error(reason);

@@ -56,13 +56,9 @@ function localDate(value: PredicateValue | undefined): string {
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}/)
     .safeParse(value);
-  if (!parsed.success) {
-    return "";
-  }
+  if (!parsed.success) return "";
   const date = new Date(parsed.data);
-  if (!Number.isFinite(date.getTime())) {
-    return "";
-  }
+  if (!Number.isFinite(date.getTime())) return "";
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
@@ -93,24 +89,14 @@ export function rangePredicate(
   end: string,
   multiplier = 1,
 ): Predicate | null {
-  if (!start && !end) {
-    return null;
-  }
+  if (!start && !end) return null;
   const date = FIELD_META[field].type === "date";
   const bound = (text: string, last: boolean): number => {
-    if (!date) {
-      return Number(text) * multiplier;
-    }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-      return Number.NaN;
-    }
+    if (!date) return Number(text) * multiplier;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return Number.NaN;
     const value = new Date(`${text}T00:00:00`);
-    if (!Number.isFinite(value.getTime())) {
-      return Number.NaN;
-    }
-    if (localDate(value.toISOString()) !== text) {
-      return Number.NaN;
-    }
+    if (!Number.isFinite(value.getTime())) return Number.NaN;
+    if (localDate(value.toISOString()) !== text) return Number.NaN;
     if (last) {
       value.setDate(value.getDate() + 1);
       value.setMilliseconds(-1);
@@ -183,12 +169,8 @@ export function CustomFilter({
   const factor = UNIT_FACTORS[unit];
   const draft = rangePredicate(field, start, end, factor);
   const sameBound = (text: string, value: PredicateValue | undefined) => {
-    if (date) {
-      return text === localDate(value);
-    }
-    if (text === "" || value === "") {
-      return text === value;
-    }
+    if (date) return text === localDate(value);
+    if (text === "" || value === "") return text === value;
     return (
       Math.abs(Number(text) * factor - Number(value)) <=
       Math.max(1, Math.abs(Number(value))) * 1e-10
@@ -212,11 +194,8 @@ export function CustomFilter({
       onSubmit={(event) => {
         event.preventDefault();
         schedule();
-        if (predicate) {
-          onApply(predicate);
-        } else if (!start && !end) {
-          onClear?.();
-        }
+        if (predicate) onApply(predicate);
+        else if (!start && !end) onClear?.();
       }}
     >
       {date ? (

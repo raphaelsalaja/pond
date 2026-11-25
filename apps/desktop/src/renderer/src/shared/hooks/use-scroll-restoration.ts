@@ -39,9 +39,7 @@ export function rememberScrollAnchor(
 function prune(): void {
   while (positions.size > MAX_POSITIONS) {
     const oldest = positions.keys().next().value;
-    if (oldest === undefined) {
-      break;
-    }
+    if (oldest === undefined) break;
     positions.delete(oldest);
   }
 }
@@ -71,9 +69,7 @@ export function useScrollRestoration(key: string) {
 
   useLayoutEffect(() => {
     const element = ref.current;
-    if (!element) {
-      return;
-    }
+    if (!element) return;
 
     let restoring = recallScroll(key) > 0;
     let restoreFrame = 0;
@@ -97,18 +93,12 @@ export function useScrollRestoration(key: string) {
       restoring = false;
       delete element.dataset.restoringScroll;
     };
-    if (restoring) {
-      restore();
-    }
+    if (restoring) restore();
 
     let saveFrame = 0;
     const save = () => {
-      if (restoring) {
-        return;
-      }
-      if (saveFrame !== 0) {
-        return;
-      }
+      if (restoring) return;
+      if (saveFrame !== 0) return;
       saveFrame = requestAnimationFrame(() => {
         saveFrame = 0;
         rememberScroll(key, element.scrollTop);
@@ -117,12 +107,8 @@ export function useScrollRestoration(key: string) {
     element.addEventListener("scroll", save, { passive: true });
 
     return () => {
-      if (restoreFrame !== 0) {
-        cancelAnimationFrame(restoreFrame);
-      }
-      if (saveFrame !== 0) {
-        cancelAnimationFrame(saveFrame);
-      }
+      if (restoreFrame !== 0) cancelAnimationFrame(restoreFrame);
+      if (saveFrame !== 0) cancelAnimationFrame(saveFrame);
       element.removeEventListener("scroll", save);
       delete element.dataset.restoringScroll;
       if (element.closest("[data-suppressed]") !== null) {

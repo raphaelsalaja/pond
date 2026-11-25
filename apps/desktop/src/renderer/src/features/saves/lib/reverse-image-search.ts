@@ -60,9 +60,7 @@ export async function reverseImageSearch(
   engineKey: string,
 ): Promise<void> {
   const engine = REVERSE_SEARCH_ENGINES.find((e) => e.key === engineKey);
-  if (!engine) {
-    return;
-  }
+  if (!engine) return;
   if ("usesImageUrl" in engine && !engine.usesImageUrl) {
     await window.pond.openExternal(engine.url(""));
     return;

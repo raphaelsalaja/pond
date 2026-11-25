@@ -48,9 +48,7 @@ export function SortSection({ onArrange }: { onArrange?: () => void }) {
         items={SORT_OPTIONS}
         value={key}
         onValueChange={(value) => {
-          if (value && isSortKey(value)) {
-            actions.setSort({ key: value, dir });
-          }
+          if (value && isSortKey(value)) actions.setSort({ key: value, dir });
         }}
       >
         <ViewMenuRow.Root>

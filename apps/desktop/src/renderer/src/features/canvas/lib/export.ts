@@ -81,9 +81,7 @@ export async function renderBoard({
         canvas.width = Math.round(width * scale);
         canvas.height = Math.round(height * scale);
         context = canvas.getContext("2d");
-        if (!context) {
-          throw new Error("Couldn't draw the canvas image.");
-        }
+        if (!context) throw new Error("Couldn't draw the canvas image.");
       }
       context.drawImage(
         tile,

@@ -63,9 +63,7 @@ async function inPageThreadsList(
     );
     for (const a of links) {
       const id = norm.extractPostCode(a.href);
-      if (!id || seen.has(id)) {
-        continue;
-      }
+      if (!id || seen.has(id)) continue;
       seen.add(id);
 
       let pathname = "";
@@ -88,15 +86,9 @@ async function inPageThreadsList(
       )
         .map((el) => (el.textContent ?? "").trim())
         .filter((t) => {
-          if (!t) {
-            return false;
-          }
-          if (handle && t.replace(/^@/, "") === handle) {
-            return false;
-          }
-          if (/^Translate$/i.test(t)) {
-            return false;
-          }
+          if (!t) return false;
+          if (handle && t.replace(/^@/, "") === handle) return false;
+          if (/^Translate$/i.test(t)) return false;
           return t.length > 1;
         });
       const text = texts[0];
@@ -108,17 +100,11 @@ async function inPageThreadsList(
         type: MediaType,
         poster?: string,
       ) => {
-        if (!url || url.startsWith("data:") || url.startsWith("blob:")) {
-          return;
-        }
-        if (norm.isBrandAsset(url) || seenMedia.has(url)) {
-          return;
-        }
+        if (!url || url.startsWith("data:") || url.startsWith("blob:")) return;
+        if (norm.isBrandAsset(url) || seenMedia.has(url)) return;
         seenMedia.add(url);
         const entry: ThreadsListMedia = { url, type };
-        if (poster) {
-          entry.poster = poster;
-        }
+        if (poster) entry.poster = poster;
         mediaUrls.push(entry);
       };
 
@@ -134,12 +120,8 @@ async function inPageThreadsList(
       )) {
         const best =
           norm.pickLargestSrcset(img.srcset) ?? img.currentSrc ?? img.src;
-        if (!best) {
-          continue;
-        }
-        if (norm.looksLikeAvatar(best, img.alt)) {
-          continue;
-        }
+        if (!best) continue;
+        if (norm.looksLikeAvatar(best, img.alt)) continue;
         push(best, "image");
       }
 
@@ -150,12 +132,8 @@ async function inPageThreadsList(
           ? cleanUrl
           : `https://www.threads.com${cleanUrl}`,
       };
-      if (text) {
-        entry.title = norm.titleFromText(text);
-      }
-      if (handle) {
-        entry.author = handle;
-      }
+      if (text) entry.title = norm.titleFromText(text);
+      if (handle) entry.author = handle;
       const firstMedia = mediaUrls[0];
       if (firstMedia) {
         entry.mediaUrl = firstMedia.url;

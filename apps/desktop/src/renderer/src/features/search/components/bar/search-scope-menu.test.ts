@@ -15,9 +15,7 @@ describe("search scope menu", () => {
     const title = items.find(
       (item) => "label" in item && item.label === "Name",
     );
-    if (title?.type !== "checkbox") {
-      throw new Error("Missing name scope");
-    }
+    if (title?.type !== "checkbox") throw new Error("Missing name scope");
     title.onCheckedChange?.(false);
     expect(onChange).toHaveBeenCalledWith({ ...scopes, title: false });
   });

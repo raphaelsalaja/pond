@@ -28,9 +28,7 @@ export function NoteShortcuts() {
           applyNoteBlock(editor, "quote");
           return true;
         }
-        if (!isMod(event)) {
-          return false;
-        }
+        if (!isMod(event)) return false;
         const key = event.key.toLowerCase();
         if (event.altKey) {
           const block: NoteBlock | null =

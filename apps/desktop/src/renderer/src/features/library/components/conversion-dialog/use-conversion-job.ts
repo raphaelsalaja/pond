@@ -21,16 +21,12 @@ async function exportSaves(
 ) {
   if (mode === "files") {
     const result = await exportSelectionFiles(ids);
-    if (!result.ok) {
-      throw new Error(result.message);
-    }
+    if (!result.ok) throw new Error(result.message);
     return;
   }
   if (mode === "csv") {
     const result = await exportSelectionCsv(ids);
-    if (!result.ok) {
-      throw new Error(result.message);
-    }
+    if (!result.ok) throw new Error(result.message);
     return;
   }
   if (mode === "eagle-package") {
@@ -59,15 +55,11 @@ export function useConversionJob() {
   const running = job?.status === "running";
 
   useEffect(() => {
-    if (job?.status !== "running") {
-      return;
-    }
+    if (job?.status !== "running") return;
     let stopped = false;
     let timer: ReturnType<typeof setTimeout>;
     async function poll() {
-      if (!job) {
-        return;
-      }
+      if (!job) return;
       try {
         const next = await window.pond.query("conversion.status", {
           id: job.id,
@@ -82,9 +74,7 @@ export function useConversionJob() {
           );
         }
       }
-      if (!stopped) {
-        timer = setTimeout(() => void poll(), 500);
-      }
+      if (!stopped) timer = setTimeout(() => void poll(), 500);
     }
     timer = setTimeout(() => void poll(), 200);
     return () => {
@@ -113,9 +103,7 @@ export function useConversionJob() {
           fileIndex,
           preset,
         });
-        if (result) {
-          setJob(result);
-        }
+        if (result) setJob(result);
         return;
       }
       await exportSaves(mode, ids);
@@ -124,9 +112,7 @@ export function useConversionJob() {
   }
 
   async function cancel() {
-    if (!job) {
-      return;
-    }
+    if (!job) return;
     try {
       setJob(await window.pond.query("conversion.cancel", { id: job.id }));
     } catch (error_) {

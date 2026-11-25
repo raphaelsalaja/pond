@@ -96,9 +96,7 @@ async function inPageSavedApi(
     const retryAfter = res.headers.get("retry-after");
     if (retryAfter) {
       const n = Number(retryAfter);
-      if (Number.isFinite(n)) {
-        return Math.max(0, n);
-      }
+      if (Number.isFinite(n)) return Math.max(0, n);
       const when = Date.parse(retryAfter);
       if (Number.isFinite(when)) {
         return Math.max(0, Math.round((when - Date.now()) / 1000));
@@ -135,9 +133,7 @@ async function inPageSavedApi(
 
   const getRequest = (): SavedRequestTemplate | null => {
     const req = globalThis.__pondThreadsSavedRequest;
-    if (!req?.url) {
-      return null;
-    }
+    if (!req?.url) return null;
     return req;
   };
 
@@ -164,9 +160,7 @@ async function inPageSavedApi(
         found = endCursor;
         return;
       }
-      for (const child of Object.values(value)) {
-        visit(child);
-      }
+      for (const child of Object.values(value)) visit(child);
     };
     visit(json);
     return found;
@@ -177,9 +171,7 @@ async function inPageSavedApi(
     const seen = new Set<string>();
     const visit = (value: JsonValue, skip: boolean): void => {
       if (Array.isArray(value)) {
-        for (const item of value) {
-          visit(item, skip);
-        }
+        for (const item of value) visit(item, skip);
         return;
       }
       if (!isObjectNode(value)) {
@@ -233,9 +225,7 @@ async function inPageSavedApi(
           return;
         }
       }
-      for (const child of Object.values(value)) {
-        visit(child);
-      }
+      for (const child of Object.values(value)) visit(child);
     };
     visit(json);
     return found;
@@ -260,9 +250,7 @@ async function inPageSavedApi(
         continue;
       }
       const ids = pagePostIds(json);
-      if (ids.length === 0) {
-        continue;
-      }
+      if (ids.length === 0) continue;
       preloaded.push({ url: location.href, body, status: 200 });
       preloadedIds = preloadedIds.concat(ids);
       if (listHasNextPage(json) === false) {
@@ -317,14 +305,10 @@ async function inPageSavedApi(
   for (const [k, v] of Object.entries(template.headers ?? {})) {
     headers[k] = v;
   }
-  if (!("accept" in headers)) {
-    headers.accept = "*/*";
-  }
+  if (!("accept" in headers)) headers.accept = "*/*";
 
   const parseVariables = (raw: string | null): JsonObject => {
-    if (!raw) {
-      return {};
-    }
+    if (!raw) return {};
     try {
       const parsed: unknown = JSON.parse(raw);
       return isJsonObject(parsed) ? parsed : {};
@@ -422,9 +406,7 @@ async function inPageSavedApi(
       headers,
       credentials: "include",
     };
-    if (built.body) {
-      init.body = built.body;
-    }
+    if (built.body) init.body = built.body;
     let res: Response;
     try {
       res = await fetch(built.url, init);
@@ -435,9 +417,7 @@ async function inPageSavedApi(
       reason = "http_error";
       break;
     }
-    if (pages === 0) {
-      firstStatus = res.status;
-    }
+    if (pages === 0) firstStatus = res.status;
     if (!res.ok) {
       if (res.status === 429) {
         return {
@@ -508,9 +488,7 @@ async function inPageSavedApi(
     await sleep(args.throttleMs + Math.random() * 150);
   }
 
-  if (Date.now() >= deadline) {
-    reason = "deadline";
-  }
+  if (Date.now() >= deadline) reason = "deadline";
 
   if (pages === 1 && postTotal === 0) {
     return { ok: false, reason: "fallback", detail: "empty_first_page" };

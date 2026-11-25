@@ -100,13 +100,9 @@ function themeDefsMatch(a: ThemeDef, b: ThemeDef): boolean {
 }
 
 export function isCustomTheme(presetId: string, def: ThemeDef): boolean {
-  if (presetId === CUSTOM_PRESET_ID) {
-    return true;
-  }
+  if (presetId === CUSTOM_PRESET_ID) return true;
   const preset = getPreset(presetId);
-  if (!preset) {
-    return true;
-  }
+  if (!preset) return true;
   return !themeDefsMatch(preset.def, def);
 }
 
@@ -140,12 +136,8 @@ export function resolveAppearance(
   prefs: ThemePrefsSlice,
   systemPrefersDark: boolean,
 ): "light" | "dark" {
-  if (prefs.preferences.appearance === "light") {
-    return "light";
-  }
-  if (prefs.preferences.appearance === "dark") {
-    return "dark";
-  }
+  if (prefs.preferences.appearance === "light") return "light";
+  if (prefs.preferences.appearance === "dark") return "dark";
   return systemPrefersDark ? "dark" : "light";
 }
 

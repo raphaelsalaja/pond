@@ -16,9 +16,7 @@ async function clipboardFilePaths(): Promise<Array<string>> {
   try {
     const items = await clipboard.read();
     for (const item of items) {
-      if (!item.types.includes("text/uri-list")) {
-        continue;
-      }
+      if (!item.types.includes("text/uri-list")) continue;
       const payload = await item.getType("text/uri-list");
       if ("arrayBuffer" in payload) {
         uriLists.push(await payload.text());
@@ -41,9 +39,7 @@ export async function readClipboardImage() {
   const items = await clipboard.read();
   for (const type of ["image/png", "image/jpeg"]) {
     const item = items.find((candidate) => candidate.types.includes(type));
-    if (!item) {
-      continue;
-    }
+    if (!item) continue;
     const payload = await item.getType(type);
     if (!("arrayBuffer" in payload)) {
       continue;
@@ -51,9 +47,7 @@ export async function readClipboardImage() {
     const image = nativeImage.createFromBuffer(
       Buffer.from(await payload.arrayBuffer()),
     );
-    if (!image.isEmpty()) {
-      return image;
-    }
+    if (!image.isEmpty()) return image;
   }
   return nativeImage.createEmpty();
 }
@@ -66,13 +60,9 @@ async function stageClipboard(): Promise<
   { ok: true; paths: Array<string> } | { ok: false; error: string }
 > {
   const filePaths = await clipboardFilePaths();
-  if (filePaths.length > 0) {
-    return { ok: true, paths: filePaths };
-  }
+  if (filePaths.length > 0) return { ok: true, paths: filePaths };
   const image = await readClipboardImage();
-  if (image.isEmpty()) {
-    return { ok: false, error: "empty_clipboard" };
-  }
+  if (image.isEmpty()) return { ok: false, error: "empty_clipboard" };
   try {
     const directory = await mkdtemp(join(tmpdir(), "pond-clip-"));
     const path = join(directory, "clipboard.png");
@@ -87,9 +77,7 @@ async function stageClipboard(): Promise<
 
 async function discardStagedClipboard(paths: ReadonlyArray<string>) {
   for (const path of paths) {
-    if (!stagedImages.delete(path)) {
-      continue;
-    }
+    if (!stagedImages.delete(path)) continue;
     try {
       await rm(dirname(path), { recursive: true, force: true });
     } catch (error) {

@@ -42,9 +42,7 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
@@ -161,9 +159,7 @@ describe.skipIf(!nativeSqliteAvailable())("download recovery", () => {
   it("preserves paused retries and removes unrelated orphan tasks", async () => {
     await seedFailedSave("retry");
     const retry = await createRetryGeneration(["retry"]);
-    if (!retry.generationId) {
-      throw new Error("missing retry generation");
-    }
+    if (!retry.generationId) throw new Error("missing retry generation");
     await setQueueGenerationPaused(retry.generationId, true);
     await seedFailedSave("orphan");
     const { $raw } = await getDb();
@@ -243,9 +239,7 @@ describe.skipIf(!nativeSqliteAvailable())("download recovery", () => {
       { generation_id: retried.generationId, status: "pending" },
     ]);
     const [harvest] = await claim();
-    if (!harvest) {
-      throw new Error("harvest was not claimed");
-    }
+    if (!harvest) throw new Error("harvest was not claimed");
     expect(await markDone(harvest)).toBe(true);
     const next = await claimDueTasks({
       owner: "test",

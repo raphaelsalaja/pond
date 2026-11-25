@@ -18,9 +18,7 @@ function awemeIdFromUrl(url: string): string | null {
     const u = new URL(url, location.href);
     for (const key of ID_KEYS) {
       const v = u.searchParams.get(key);
-      if (v) {
-        return v;
-      }
+      if (v) return v;
     }
     return null;
   } catch {
@@ -36,16 +34,12 @@ async function awemeIdFromBody(req: RequestLens): Promise<string | null> {
   } catch {
     return null;
   }
-  if (!body) {
-    return null;
-  }
+  if (!body) return null;
   try {
     const params = new URLSearchParams(body);
     for (const key of ID_KEYS) {
       const v = params.get(key);
-      if (v) {
-        return v;
-      }
+      if (v) return v;
     }
   } catch {
     /* not form-encoded */
@@ -54,13 +48,9 @@ async function awemeIdFromBody(req: RequestLens): Promise<string | null> {
   if (isRecord(json)) {
     for (const key of ID_KEYS) {
       const text = asText(json[key]);
-      if (text) {
-        return text;
-      }
+      if (text) return text;
       const numeric = asNumber(json[key]);
-      if (numeric !== undefined) {
-        return String(numeric);
-      }
+      if (numeric !== undefined) return String(numeric);
     }
   }
   return null;
@@ -95,9 +85,7 @@ function usernameFromDom(id: string): string | null {
     for (const a of anchors) {
       const href = a.getAttribute("href") ?? a.href;
       const m = href.match(/\/@([^/]+)\/video\/\d+/);
-      if (m?.[1]) {
-        return m[1];
-      }
+      if (m?.[1]) return m[1];
     }
     return null;
   } catch {
@@ -111,33 +99,23 @@ export function inject(): void {
 
   function walkForAweme(node: JsonValue): void {
     if (Array.isArray(node)) {
-      for (const child of node) {
-        walkForAweme(child);
-      }
+      for (const child of node) walkForAweme(child);
       return;
     }
-    if (!isRecord(node)) {
-      return;
-    }
+    if (!isRecord(node)) return;
     const id = node.aweme_id ?? node.awemeId ?? node.id;
     const author = node.author;
     if (id && isRecord(author)) {
       const handle = asText(
         author.unique_id ?? author.uniqueId ?? author.handle,
       );
-      if (handle) {
-        usernameByAwemeId.set(String(id), handle);
-      }
+      if (handle) usernameByAwemeId.set(String(id), handle);
     }
-    for (const child of Object.values(node)) {
-      walkForAweme(child);
-    }
+    for (const child of Object.values(node)) walkForAweme(child);
   }
 
   function emitVideo(id: string, trigger: string): void {
-    if (!id || emitted.has(id)) {
-      return;
-    }
+    if (!id || emitted.has(id)) return;
     emitted.add(id);
     const fromCache = usernameByAwemeId.get(id) ?? null;
     const fromDom = fromCache ? null : usernameFromDom(id);
@@ -156,9 +134,7 @@ export function inject(): void {
       DIGG_RE.test(req.url) ||
       FEED_RE.test(req.url),
     async onResponse(req, res) {
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
       if (DIGG_RE.test(req.url) && isFavoriteType(req.url)) {
         const id = awemeIdFromUrl(req.url) ?? (await awemeIdFromBody(req));
         if (id) {

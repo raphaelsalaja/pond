@@ -23,9 +23,7 @@ describe("GridCard", () => {
     const save = normalise(
       SavePatchSchema.parse({ id: "grid-card", url: "https://example.com" }),
     );
-    if (!save) {
-      throw new Error("Fixture must produce a save");
-    }
+    if (!save) throw new Error("Fixture must produce a save");
     const model: SaveCardModel = {
       save,
       unit: null,

@@ -38,9 +38,7 @@ export function encodeImagePrint(print: ImagePrint): Uint8Array {
 }
 
 export function decodeImagePrint(bytes: Uint8Array): ImagePrint | null {
-  if (bytes.byteLength !== 16) {
-    return null;
-  }
+  if (bytes.byteLength !== 16) return null;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   return { full: view.getBigUint64(0), center: view.getBigUint64(8) };
 }

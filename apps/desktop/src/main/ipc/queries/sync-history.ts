@@ -28,9 +28,7 @@ interface SyncRunHistoryEntry {
 
 function toEntry(row: PipelineEventRow): SyncRunHistoryEntry | null {
   const payload = row.payload;
-  if (payload.kind !== "sync.run.completed") {
-    return null;
-  }
+  if (payload.kind !== "sync.run.completed") return null;
   return {
     id: row.id,
     ts: row.ts.getTime(),
@@ -118,9 +116,7 @@ export const syncHistoryQueries = {
     }),
     async (params) => {
       const source = params.source;
-      if (!source) {
-        return { runs: [] };
-      }
+      if (!source) return { runs: [] };
       const accountId = params.accountId;
       const limit = clampWindow(params.limit ?? 25, 200, 25);
 

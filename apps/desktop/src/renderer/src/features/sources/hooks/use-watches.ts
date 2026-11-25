@@ -80,9 +80,7 @@ async function refetchWatches(): Promise<Array<WatchRow>> {
         lastSyncedAt: watch.sync.lastSyncedAt,
         lastError: watch.sync.lastError,
       };
-      if (watch.syncing) {
-        status.state = "running";
-      }
+      if (watch.syncing) status.state = "running";
       syncMonitor.seed(watch.id, watch.source, status);
     }
     return rows;
@@ -104,9 +102,7 @@ export function useWatches(): WatchesResult {
       }
     });
     return () => {
-      if (timer) {
-        clearTimeout(timer);
-      }
+      if (timer) clearTimeout(timer);
     };
   }, []);
 

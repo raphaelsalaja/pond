@@ -28,16 +28,11 @@ async function purgedSourceKeys(
   for (const entry of entries) {
     const source = entry.source ?? fallback;
     const ids = idsBySource.get(source);
-    if (ids) {
-      ids.push(entry.sourceId);
-    } else {
-      idsBySource.set(source, [entry.sourceId]);
-    }
+    if (ids) ids.push(entry.sourceId);
+    else idsBySource.set(source, [entry.sourceId]);
   }
   const keys = new Set<string>();
-  if (idsBySource.size === 0) {
-    return keys;
-  }
+  if (idsBySource.size === 0) return keys;
 
   const db = await getDb();
   for (const [source, ids] of idsBySource) {

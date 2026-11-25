@@ -34,14 +34,10 @@ export function SaveStrip({ ids, columns = 4, label }: SaveStripProps) {
 
   useLayoutEffect(() => {
     const node = ref.current;
-    if (!node) {
-      return;
-    }
+    if (!node) return;
     setWidth(node.clientWidth);
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) {
-        setWidth(entry.contentRect.width);
-      }
+      if (entry) setWidth(entry.contentRect.width);
     });
     observer.observe(node);
     return () => observer.disconnect();

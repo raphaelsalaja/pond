@@ -34,13 +34,9 @@ export function useCropKeyboard({
   }, [onApply]);
 
   useEffect(() => {
-    if (!active || mode !== "crop" || !draft) {
-      return;
-    }
+    if (!active || mode !== "crop" || !draft) return;
     const element = frame.current;
-    if (!element) {
-      return;
-    }
+    if (!element) return;
     const onKey = (event: KeyboardEvent) => {
       if (
         event.defaultPrevented ||
@@ -94,9 +90,7 @@ export function useCropKeyboard({
                   ? [0, 0, 0, py]
                   : [0, py, 0, 0]
                 : null;
-      if (!delta) {
-        return;
-      }
+      if (!delta) return;
       event.preventDefault();
       event.stopPropagation();
       const [dx, dy, dw, dh] = delta;

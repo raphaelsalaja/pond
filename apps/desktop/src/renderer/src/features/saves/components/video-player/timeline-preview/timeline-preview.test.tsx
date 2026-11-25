@@ -41,9 +41,7 @@ async function render(time: number) {
 it("stays visible and coalesces seeks while the time changes", async () => {
   await render(4);
   const video = host.querySelector("video");
-  if (!video) {
-    throw new Error("Missing preview video");
-  }
+  if (!video) throw new Error("Missing preview video");
   Object.defineProperties(video, {
     duration: { configurable: true, value: 60 },
     readyState: { configurable: true, value: HTMLMediaElement.HAVE_METADATA },

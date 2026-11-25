@@ -91,16 +91,10 @@ export function HoverPreview() {
         setOpen(false);
         return;
       }
-      if (event.defaultPrevented || !collectionOwnsKeyboard()) {
-        return;
-      }
-      if (openSaveId()) {
-        return;
-      }
+      if (event.defaultPrevented || !collectionOwnsKeyboard()) return;
+      if (openSaveId()) return;
       const selected = selection.getCursor();
-      if (!selected) {
-        return;
-      }
+      if (!selected) return;
       if (
         isHTMLElement(event.target) &&
         event.target.closest("button") &&
@@ -138,15 +132,11 @@ export function HoverPreview() {
     () =>
       window.pond.onPreviewNeighborRequested((request) => {
         void (async () => {
-          if (request.windowId === null) {
-            return;
-          }
+          if (request.windowId === null) return;
           let current = request.saveId;
           for (let checked = 0; checked < 50; checked++) {
             const saveId = await resultNavigation.next(current, request.delta);
-            if (!saveId) {
-              return;
-            }
+            if (!saveId) return;
             await ensureSaves([saveId]);
             const fileIndex = previewFileIndex(saveId, request.kind);
             if (fileIndex !== null) {
@@ -167,19 +157,13 @@ export function HoverPreview() {
   );
 
   const step = (delta: number, withinSave: boolean) => {
-    if (withinSave && viewerNav.current?.step(delta)) {
-      return;
-    }
+    if (withinSave && viewerNav.current?.step(delta)) return;
     navigation.current = navigation.current
       .then(async () => {
         const id = selection.getCursor();
-        if (!id) {
-          return;
-        }
+        if (!id) return;
         const next = await resultNavigation.next(id, delta);
-        if (next) {
-          await showSave(next);
-        }
+        if (next) await showSave(next);
       })
       .catch((cause: unknown) => {
         log.warn("[pond preview] step failed", cause);
@@ -254,9 +238,7 @@ export function HoverPreview() {
       }
     };
     const up = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() === "z") {
-        setHoverId(null);
-      }
+      if (event.key.toLowerCase() === "z") setHoverId(null);
       if (
         event.code === heldKey.current &&
         prefs.spaceAction === "preview" &&
@@ -284,26 +266,20 @@ export function HoverPreview() {
   const saveId = save?.id ?? null;
   const onPositionChange = useCallback(
     (next: ViewerPosition | null) => {
-      if (saveId) {
-        setPosition({ saveId, position: next });
-      }
+      if (saveId) setPosition({ saveId, position: next });
     },
     [saveId],
   );
   const attachPopup = useCallback(
     (node: HTMLDivElement | null) => {
       popupRef.current = node;
-      if (node && !compare) {
-        zoomToCard(node, selection.getCursor());
-      }
+      if (node && !compare) zoomToCard(node, selection.getCursor());
     },
     [compare],
   );
   useLayoutEffect(() => {
     const node = popupRef.current;
-    if (!open && node && !compare) {
-      zoomToCard(node, selection.getCursor());
-    }
+    if (!open && node && !compare) zoomToCard(node, selection.getCursor());
   }, [open, compare]);
 
   const close = () => {
@@ -352,9 +328,7 @@ export function HoverPreview() {
       modal={false}
       disablePointerDismissal={!peek || compare}
       onOpenChange={(next) => {
-        if (!next) {
-          close();
-        }
+        if (!next) close();
       }}
     >
       <Dialog.Portal>
@@ -482,9 +456,7 @@ function mediaFit(
   ...sources: ReadonlyArray<Pick<SaveFile, "width" | "height"> | null>
 ): CSSProperties | undefined {
   const size = sources.find((source) => source?.width && source.height);
-  if (!size?.width || !size.height) {
-    return undefined;
-  }
+  if (!size?.width || !size.height) return undefined;
   return cssVars({
     "--ratio": size.width / size.height,
     "--natural-width": `${size.width}px`,
@@ -495,9 +467,7 @@ function mediaFit(
 function zoomToCard(popup: HTMLElement, saveId: string | null): void {
   /** Measuring resolves the dialog's own starting scale first, so hold transitions until the card-sized start replaces it. */
   const opening = popup.hasAttribute("data-starting-style");
-  if (opening) {
-    popup.style.transition = "none";
-  }
+  if (opening) popup.style.transition = "none";
   const thumb = saveId
     ? document.querySelector(
         `[data-library-card][data-save-id="${CSS.escape(saveId)}"] [data-card-thumb]`,

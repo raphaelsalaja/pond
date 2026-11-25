@@ -41,12 +41,8 @@ export class BehanceProjectExtractor implements Extractor {
 
   handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
-    if (segments.length !== 1 || !first) {
-      return null;
-    }
-    if (BEHANCE_RESERVED.has(first.toLowerCase())) {
-      return null;
-    }
+    if (segments.length !== 1 || !first) return null;
+    if (BEHANCE_RESERVED.has(first.toLowerCase())) return null;
     return /^[A-Za-z0-9_-]{2,40}$/.test(first) ? first : null;
   }
 
@@ -65,9 +61,7 @@ export class BehanceProjectExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("behance", input.url.href);
-    if (!sourceId) {
-      throw new TerminalError("could not parse behance project");
-    }
+    if (!sourceId) throw new TerminalError("could not parse behance project");
     return captureFromSource({
       url: `https://www.behance.net/gallery/${sourceId}/${projectSlug(input.url)}`,
       source: "behance",

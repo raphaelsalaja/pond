@@ -57,9 +57,7 @@ export function AppliedFilters({
   return (
     <Menu.Root
       onOpenChange={(next) => {
-        if (next) {
-          libraryHeader.closePopover();
-        }
+        if (next) libraryHeader.closePopover();
       }}
     >
       <Menu.Trigger render={<SplitButton.Action />}>{label}</Menu.Trigger>

@@ -21,9 +21,7 @@ const entries = new Map<string, ViewerMemory>();
 let loaded = false;
 
 function load() {
-  if (loaded) {
-    return;
-  }
+  if (loaded) return;
   loaded = true;
   try {
     const parsed = z
@@ -46,9 +44,7 @@ function set(key: string, patch: ViewerMemory) {
   entries.set(key, { ...previous, ...patch });
   while (entries.size > 200) {
     const oldest = entries.keys().next().value;
-    if (oldest !== undefined) {
-      entries.delete(oldest);
-    }
+    if (oldest !== undefined) entries.delete(oldest);
   }
   try {
     window.localStorage.setItem(storageKey, JSON.stringify([...entries]));
@@ -110,15 +106,9 @@ export function viewerWheelIntent(event: {
   metaKey: boolean;
   wheelBehavior: ViewerWheelBehavior;
 }): ViewerWheelIntent {
-  if (event.ctrlKey || event.altKey || event.metaKey) {
-    return "zoom";
-  }
-  if (event.wheelBehavior === "zoom") {
-    return "zoom";
-  }
-  if (event.wheelBehavior === "navigate") {
-    return "navigate";
-  }
+  if (event.ctrlKey || event.altKey || event.metaKey) return "zoom";
+  if (event.wheelBehavior === "zoom") return "zoom";
+  if (event.wheelBehavior === "navigate") return "navigate";
   return "pan";
 }
 

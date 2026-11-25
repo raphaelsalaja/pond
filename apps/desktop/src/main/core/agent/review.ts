@@ -122,16 +122,12 @@ export async function reviewChanges(
     const changes = metadata.changes ?? [];
     const selected = new Set(input.changeIds);
     for (const change of changes) {
-      if (!selected.has(change.id)) {
-        continue;
-      }
+      if (!selected.has(change.id)) continue;
       const eligible =
         input.action === "undo"
           ? change.status === "applied"
           : change.status === "pending";
-      if (!eligible) {
-        continue;
-      }
+      if (!eligible) continue;
       try {
         if (input.action === "dismiss") {
           change.status = "dismissed";
@@ -140,9 +136,7 @@ export async function reviewChanges(
           change.status = input.action === "undo" ? "undone" : "applied";
         } else {
           const current = await deps.save(change.saveId);
-          if (!current) {
-            throw new Error("This Save is unavailable.");
-          }
+          if (!current) throw new Error("This Save is unavailable.");
           const value =
             change.field === "folders"
               ? await deps.folderIdsForSave(change.saveId)
@@ -206,9 +200,7 @@ async function writeChange(
       change.saveId,
       action === "undo" ? change.before : change.after,
     );
-    if (!result.ok) {
-      throw new Error("Could not update tags for this Save.");
-    }
+    if (!result.ok) throw new Error("Could not update tags for this Save.");
   } else if (change.field === "title" || change.field === "note") {
     const key = change.field === "note" ? "notes" : "title";
     const next = action === "undo" ? change.before : change.after;
@@ -273,9 +265,7 @@ async function writeAction(
     }
     const request = agentOperationRequest.parse(change.payload);
     /** An idle server closes after 10 minutes, so a late Apply reconnects before it looks the tool up. */
-    if (isMcpOperation(request.operation)) {
-      await deps.prepareTools();
-    }
+    if (isMcpOperation(request.operation)) await deps.prepareTools();
     const result = await deps.applyPondOperation(request);
     change.payload = { ...request, result: summarizeOperationResult(result) };
     return;
@@ -359,18 +349,14 @@ async function writeAction(
   } else if (change.action === "savedViewUpdate") {
     const views = await listViews();
     const view = views.find((row) => row.id === payload.id);
-    if (!view) {
-      throw new Error("This saved view no longer exists.");
-    }
+    if (!view) throw new Error("This saved view no longer exists.");
     await updateView(view.id, {
       query: payload.query ?? view.query,
     });
   } else if (change.action === "quickAdd") {
     const url = String(payload.url ?? change.after);
     const result = await enqueue(url, { trigger: "user:quickAdd" });
-    if ("id" in result) {
-      payload.id = result.id;
-    }
+    if ("id" in result) payload.id = result.id;
   } else if (change.action === "mergeDuplicates") {
     const result = await deps.mergeDuplicateSaves({
       keepId: String(payload.keepId ?? ""),
@@ -384,9 +370,7 @@ async function writeAction(
   } else if (change.action === "exportFiles" || change.action === "exportCsv") {
     const directory = String(payload.directory ?? "");
     const ids = payload.ids ?? [];
-    if (!directory) {
-      throw new Error("Choose an export folder first.");
-    }
+    if (!directory) throw new Error("Choose an export folder first.");
     await exportToDirectory(ids, directory, change.action === "exportCsv");
   } else if (change.action === "syncNow") {
     await syncAccount(String(payload.accountId ?? ""), { trigger: "manual" });
@@ -407,9 +391,7 @@ async function writeAction(
     await clipboard.writeText(row.url);
   } else if (change.action === "reveal") {
     const target = await resolveSaveFilePath(change.saveId, 0);
-    if (!target.ok) {
-      throw new Error("Could not reveal this Save.");
-    }
+    if (!target.ok) throw new Error("Could not reveal this Save.");
     shell.showItemInFolder(target.path);
   } else if (change.action === "batchRename") {
     const pattern = String(payload.pattern ?? "");
@@ -432,9 +414,7 @@ async function writeAction(
         id: row.id,
         family,
       });
-      if (title === row.title) {
-        continue;
-      }
+      if (title === row.title) continue;
       txs.push({
         kind: "update" as const,
         model: "save" as const,

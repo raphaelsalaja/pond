@@ -91,9 +91,7 @@ describe("deletedSourceKeys", () => {
 describe("trashedBaselineWhere", () => {
   it("selects trashed source ids for the account automatic fetch is reading", () => {
     const where = trashedBaselineWhere({ id: "acc", source: "twitter" });
-    if (!where) {
-      throw new Error("Expected a Trash filter.");
-    }
+    if (!where) throw new Error("Expected a Trash filter.");
     const query = new SQLiteSyncDialect().sqlToQuery(where);
     expect(query.sql).toContain('"saves"."deleted_at" is not null');
     expect(query.sql).toContain('"saves"."source" = ?');

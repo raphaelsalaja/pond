@@ -70,13 +70,9 @@ function $walkable(node: LexicalNode): boolean {
 function $draggableKeys(): Array<string> {
   const keys: Array<string> = [];
   const walk = (node: LexicalNode) => {
-    if ($isDraggable(node)) {
-      keys.push(node.getKey());
-    }
+    if ($isDraggable(node)) keys.push(node.getKey());
     if ($isElementNode(node) && ($isRootNode(node) || $walkable(node))) {
-      for (const child of node.getChildren()) {
-        walk(child);
-      }
+      for (const child of node.getChildren()) walk(child);
     }
   };
   walk($getRoot());
@@ -88,19 +84,12 @@ function $moveBlock(
   target: LexicalNode,
   after: boolean,
 ): void {
-  if (dragged === target) {
-    return;
-  }
+  if (dragged === target) return;
   if (dragged.getParent() !== target.getParent()) {
-    if (!($isListItemNode(dragged) && $isListItemNode(target))) {
-      return;
-    }
+    if (!($isListItemNode(dragged) && $isListItemNode(target))) return;
   }
-  if (after) {
-    target.insertAfter(dragged);
-  } else {
-    target.insertBefore(dragged);
-  }
+  if (after) target.insertAfter(dragged);
+  else target.insertBefore(dragged);
 }
 
 function $blockOf(node: LexicalNode | null | undefined): LexicalNode | null {
@@ -121,12 +110,8 @@ function $blockOf(node: LexicalNode | null | undefined): LexicalNode | null {
 
 function $selectedBlock(): LexicalNode | null {
   const selection = $getSelection();
-  if ($isRangeSelection(selection)) {
-    return $blockOf(selection.anchor.getNode());
-  }
-  if ($isNodeSelection(selection)) {
-    return $blockOf(selection.getNodes()[0]);
-  }
+  if ($isRangeSelection(selection)) return $blockOf(selection.anchor.getNode());
+  if ($isNodeSelection(selection)) return $blockOf(selection.getNodes()[0]);
   return null;
 }
 
@@ -138,9 +123,7 @@ function $neighbor(block: LexicalNode, direction: Direction) {
 
 function $moveBy(block: LexicalNode, direction: Direction): boolean {
   const neighbor = $neighbor(block, direction);
-  if (!neighbor) {
-    return false;
-  }
+  if (!neighbor) return false;
   $moveBlock(block, neighbor, direction > 0);
   return true;
 }
@@ -194,9 +177,7 @@ function blockAtPoint(
 
   editor.getEditorState().read(() => {
     const keys = $draggableKeys();
-    if (keys.length === 0) {
-      return;
-    }
+    if (keys.length === 0) return;
 
     if (edges) {
       const firstKey = keys.at(0);
@@ -215,9 +196,7 @@ function blockAtPoint(
 
     for (const key of keys) {
       const elem = editor.getElementByKey(key);
-      if (!elem) {
-        continue;
-      }
+      if (!elem) continue;
       const zoom = calculateZoomLevel(elem);
       const x = event.clientX / zoom;
       const y = event.clientY / zoom;
@@ -225,9 +204,7 @@ function blockAtPoint(
       const margin = collapsedMargins(elem);
       const top = box.top - margin.top;
       const bottom = box.bottom + margin.bottom;
-      if (x < frame.left || x > frame.right || y < top || y > bottom) {
-        continue;
-      }
+      if (x < frame.left || x > frame.right || y < top || y > bottom) continue;
       const next = (bottom - top) * (frame.right - frame.left);
       if (next < area) {
         match = elem;
@@ -252,9 +229,7 @@ function setHandle(
   const box = target.getBoundingClientRect();
   const style = window.getComputedStyle(target);
   let height = Number.parseInt(style.lineHeight, 10);
-  if (Number.isNaN(height)) {
-    height = box.height;
-  }
+  if (Number.isNaN(height)) height = box.height;
   const top =
     (box.top +
       (height - (handle.getBoundingClientRect().height || height)) / 2 -
@@ -315,24 +290,18 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
 
   useEffect(() => {
     function onMove(event: MouseEvent) {
-      if (menuOpen.current) {
-        return;
-      }
+      if (menuOpen.current) return;
       const target = event.target;
       if (!isHTMLElement(target)) {
         setBlock(null);
         return;
       }
-      if (onMenu(target)) {
-        return;
-      }
+      if (onMenu(target)) return;
       setBlock(blockAtPoint(editor, anchor, event));
     }
 
     function onLeave() {
-      if (menuOpen.current) {
-        return;
-      }
+      if (menuOpen.current) return;
       setBlock(null);
     }
 
@@ -345,9 +314,7 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
   }, [anchor, editor, onMenu, scroller]);
 
   useEffect(() => {
-    if (!handleRef.current) {
-      return;
-    }
+    if (!handleRef.current) return;
     setHandle(
       block,
       handleRef.current,
@@ -361,21 +328,13 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
       editor.registerCommand(
         DRAGOVER_COMMAND,
         (event) => {
-          if (!dragging.current) {
-            return false;
-          }
+          if (!dragging.current) return false;
           const [files] = eventFiles(event);
-          if (files) {
-            return false;
-          }
-          if (!isHTMLElement(event.target)) {
-            return false;
-          }
+          if (files) return false;
+          if (!isHTMLElement(event.target)) return false;
           const target = blockAtPoint(editor, anchor, event, true);
           const line = lineRef.current;
-          if (!target || !line) {
-            return false;
-          }
+          if (!target || !line) return false;
           setLine(line, target, event.clientY, anchor);
           event.preventDefault();
           return true;
@@ -385,26 +344,16 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
       editor.registerCommand(
         DROP_COMMAND,
         (event) => {
-          if (!dragging.current) {
-            return false;
-          }
+          if (!dragging.current) return false;
           const [files] = eventFiles(event);
-          if (files) {
-            return false;
-          }
+          if (files) return false;
           const key = event.dataTransfer?.getData(FORMAT) ?? "";
           const dragged = $getNodeByKey(key);
-          if (!dragged || !isHTMLElement(event.target)) {
-            return false;
-          }
+          if (!dragged || !isHTMLElement(event.target)) return false;
           const targetElem = blockAtPoint(editor, anchor, event, true);
-          if (!targetElem) {
-            return false;
-          }
+          if (!targetElem) return false;
           const target = $getNearestNodeFromDOMNode(targetElem);
-          if (!target) {
-            return false;
-          }
+          if (!target) return false;
           $moveBlock(
             dragged,
             target,
@@ -426,13 +375,9 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
           }
           const direction: Direction | null =
             event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : null;
-          if (!direction) {
-            return false;
-          }
+          if (!direction) return false;
           const selected = $selectedBlock();
-          if (!selected) {
-            return false;
-          }
+          if (!selected) return false;
           event.preventDefault();
           if ($moveBy(selected, direction)) {
             setAnnouncement($movedLabel(selected));
@@ -445,14 +390,10 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
   }, [anchor, editor]);
 
   function openMenu() {
-    if (!block) {
-      return;
-    }
+    if (!block) return;
     editor.getEditorState().read(() => {
       const node = $getNearestNodeFromDOMNode(block);
-      if (!node) {
-        return;
-      }
+      if (!node) return;
       setMenu({
         key: node.getKey(),
         canMoveUp: $neighbor(node, -1) !== null,
@@ -464,22 +405,16 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
 
   function moveFromMenu(direction: Direction) {
     const key = menu?.key;
-    if (!key) {
-      return;
-    }
+    if (!key) return;
     editor.update(() => {
       const node = $getNodeByKey(key);
-      if (node && $moveBy(node, direction)) {
-        setAnnouncement($movedLabel(node));
-      }
+      if (node && $moveBy(node, direction)) setAnnouncement($movedLabel(node));
     });
   }
 
   function onDragStart(event: ReactDragEvent<HTMLButtonElement>) {
     const transfer = event.dataTransfer;
-    if (!transfer || !block) {
-      return;
-    }
+    if (!transfer || !block) return;
     const transform = block.style.transform;
     styleBlock(block, { transform: "translateZ(0)", opacity: "0.4" });
     transfer.setDragImage(block, 0, 0);
@@ -528,9 +463,7 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
       <Menu.Root
         open={open}
         onOpenChange={(next) => {
-          if (!next) {
-            setOpen(false);
-          }
+          if (!next) setOpen(false);
         }}
       >
         <Menu.Portal>

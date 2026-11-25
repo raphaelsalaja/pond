@@ -21,9 +21,7 @@ export function spatialNeighbor(
   pageHeight: number,
 ): string | null {
   const current = items.find((item) => item.id === id);
-  if (!current) {
-    return null;
-  }
+  if (!current) return null;
   const horizontal = direction === "left" || direction === "right";
   const forward =
     direction === "right" || direction === "down" || direction === "page-down";
@@ -33,15 +31,11 @@ export function spatialNeighbor(
   let best: ResultRectangle | null = null;
   let bestScore = Number.POSITIVE_INFINITY;
   for (const item of items) {
-    if (item.id === id) {
-      continue;
-    }
+    if (item.id === id) continue;
     const dx = item.left + item.width / 2 - centerX;
     const dy = item.top + item.height / 2 - centerY;
     const distance = horizontal ? dx : dy;
-    if (forward ? distance <= 0.5 : distance >= -0.5) {
-      continue;
-    }
+    if (forward ? distance <= 0.5 : distance >= -0.5) continue;
     const overlap = horizontal
       ? item.top < current.top + current.height &&
         item.top + item.height > current.top

@@ -6,6 +6,4 @@ import { App } from "./app";
 
 initScrollFade();
 const root = document.getElementById("root");
-if (root) {
-  createRoot(root).render(<App />);
-}
+if (root) createRoot(root).render(<App />);

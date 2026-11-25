@@ -33,9 +33,7 @@ export type Query = Group;
 export const EMPTY_QUERY: Query = { combinator: "and", rules: [] };
 
 export function isEmptyQuery(q: Query | null | undefined): boolean {
-  if (!q) {
-    return true;
-  }
+  if (!q) return true;
   return q.rules.length === 0;
 }
 

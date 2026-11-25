@@ -94,19 +94,14 @@ function FolderPicker({ ids, mode: initialMode }: FolderPickerState) {
   function toggleStaged(folder: FolderMenuItem) {
     setStaged((current) => {
       const next = new Set(current);
-      if (next.has(folder.id)) {
-        next.delete(folder.id);
-      } else {
-        next.add(folder.id);
-      }
+      if (next.has(folder.id)) next.delete(folder.id);
+      else next.add(folder.id);
       return next;
     });
   }
 
   function applyStaged() {
-    if (!staged.size || applying) {
-      return;
-    }
+    if (!staged.size || applying) return;
     setApplying(true);
     void run(async () => {
       await changeSaveFolders({
@@ -125,9 +120,7 @@ function FolderPicker({ ids, mode: initialMode }: FolderPickerState) {
     <Dialog.Root
       open
       onOpenChange={(open, details) => {
-        if (open) {
-          return;
-        }
+        if (open) return;
         if (details.reason === "escape-key" && mode === "multiple") {
           details.cancel();
           stopStaging();

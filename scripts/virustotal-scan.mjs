@@ -34,18 +34,14 @@ let lastRequestAt = 0;
 
 async function request(pathOrUrl, init = {}) {
   const wait = lastRequestAt + REQUEST_SPACING_MS - Date.now();
-  if (wait > 0) {
-    await sleep(wait);
-  }
+  if (wait > 0) await sleep(wait);
   lastRequestAt = Date.now();
   const url = pathOrUrl.startsWith("https://") ? pathOrUrl : API + pathOrUrl;
   const response = await fetch(url, {
     ...init,
     headers: { "x-apikey": key, ...init.headers },
   });
-  if (response.status === 404) {
-    return null;
-  }
+  if (response.status === 404) return null;
   if (!response.ok) {
     throw new Error(
       `VirusTotal ${response.status} for ${pathOrUrl}: ${await response.text()}`,
@@ -79,9 +75,7 @@ async function waitForAnalysis(id) {
   const deadline = Date.now() + ANALYSIS_TIMEOUT_MS;
   while (Date.now() < deadline) {
     const response = await request(`/analyses/${id}`);
-    if (response?.data.attributes.status === "completed") {
-      return true;
-    }
+    if (response?.data.attributes.status === "completed") return true;
     await sleep(POLL_INTERVAL_MS);
   }
   return false;
@@ -93,9 +87,7 @@ async function scan(path) {
   if (!report) {
     console.log(`Uploading ${basename(path)}`);
     const finished = await waitForAnalysis(await upload(path));
-    if (!finished) {
-      console.log(`::warning::${basename(path)} is still queued.`);
-    }
+    if (!finished) console.log(`::warning::${basename(path)} is still queued.`);
     report = await request(`/files/${hash}`);
   }
   const attributes = report?.data.attributes ?? {};
@@ -123,9 +115,7 @@ async function scan(path) {
 }
 
 const scans = [];
-for (const file of files) {
-  scans.push(await scan(file));
-}
+for (const file of files) scans.push(await scan(file));
 
 const lines = [
   "## VirusTotal",
@@ -137,9 +127,7 @@ const lines = [
       `| [${scan.name}](https://www.virustotal.com/gui/file/${scan.hash}) | ${scan.flagged.length} / ${scan.finishedEngines} | ${scan.signed} | ${scan.watched.join(" | ")} |`,
   ),
 ];
-if (scans.some((scan) => scan.flagged.length > 0)) {
-  lines.push("");
-}
+if (scans.some((scan) => scan.flagged.length > 0)) lines.push("");
 for (const scan of scans) {
   for (const { engine, result } of scan.flagged) {
     lines.push(`- ${scan.name}: ${engine} reports \`${result}\``);

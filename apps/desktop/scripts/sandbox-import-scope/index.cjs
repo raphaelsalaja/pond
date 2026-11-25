@@ -92,9 +92,7 @@ function indexDbPath() {
 
 function sinceStartMs(since) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(since ?? "");
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
   return new Date(
     Number(match[1]),
     Number(match[2]) - 1,
@@ -117,9 +115,7 @@ function readSaves(accountId, since) {
     recent: [],
   };
   const file = indexDbPath();
-  if (!accountId || !file) {
-    return empty;
-  }
+  if (!accountId || !file) return empty;
   const Database = require("better-sqlite3");
   const db = new Database(file, { readonly: true, fileMustExist: true });
   try {
@@ -132,12 +128,8 @@ function readSaves(accountId, since) {
       )
       .all(accountId)) {
       saves.total += row.n;
-      if (row.status in saves) {
-        saves[row.status] += row.n;
-      }
-      if (row.filter in saves.filtered) {
-        saves.filtered[row.filter] += row.n;
-      }
+      if (row.status in saves) saves[row.status] += row.n;
+      if (row.filter in saves.filtered) saves.filtered[row.filter] += row.n;
     }
     const listKinds = { saved: 0, liked: 0, both: 0 };
     for (const row of db
@@ -300,9 +292,7 @@ async function importSession(source) {
     source,
     cookies,
   });
-  if (!response.ok) {
-    return { ok: false, message: response.error };
-  }
+  if (!response.ok) return { ok: false, message: response.error };
   const data = response.data;
   if (!data.connected) {
     return {
@@ -332,9 +322,7 @@ function registerGuideIpc() {
   ipcMain.handle("guide:import-session", (_, source) => importSession(source));
   ipcMain.handle("guide:sync-now", async (_, source) => {
     const account = await accountFor(source);
-    if (!account) {
-      return { ok: false, message: "Connect the Account first." };
-    }
+    if (!account) return { ok: false, message: "Connect the Account first." };
     await pondQuery(`window.pond.syncRunNow(${JSON.stringify(account.id)})`);
     return { ok: true, message: "Sync started." };
   });
@@ -390,9 +378,7 @@ async function runSelfTest() {
   const shot = path.join(tmpdir(), "pond-import-scope-guide.png");
   writeFileSync(shot, (await guide.webContents.capturePage()).toPNG());
   const hello = await nativeCall({ type: "hello" });
-  if (!hello.ok) {
-    throw new Error("Sandbox socket didn't answer");
-  }
+  if (!hello.ok) throw new Error("Sandbox socket didn't answer");
   const found = await evidence("twitter");
   if (found.account !== null || found.saves.total !== 0) {
     throw new Error("A fresh sandbox should have no X Account");
@@ -407,20 +393,14 @@ registerGuideIpc();
 let started = false;
 app.on("web-contents-created", (_, contents) => {
   contents.on("did-finish-load", () => {
-    if (started || !contents.getURL().includes("index.html")) {
-      return;
-    }
-    if (guide && contents === guide.webContents) {
-      return;
-    }
+    if (started || !contents.getURL().includes("index.html")) return;
+    if (guide && contents === guide.webContents) return;
     started = true;
     pondContents = contents;
     openGuide();
     console.log(`Import scope sandbox: ${sandbox}`);
     console.log(`Results: ${resultsMd}`);
-    if (!selfTest) {
-      return;
-    }
+    if (!selfTest) return;
     const timer = setTimeout(() => {
       console.error("SANDBOX_SELF_TEST_FAILED: timed out");
       app.exit(1);

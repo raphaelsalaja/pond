@@ -82,9 +82,7 @@ export const libraryMaintenanceQueries = {
 
   async "library.openInFinder"(): Promise<QueryResult<"library.openInFinder">> {
     const err = await shell.openPath(libraryRoot());
-    if (err) {
-      return { ok: false as const, error: err };
-    }
+    if (err) return { ok: false as const, error: err };
     return { ok: true as const };
   },
 
@@ -251,9 +249,7 @@ export const libraryMaintenanceQueries = {
         ? { mode: "fixed_servers", proxyRules: prefs.proxyUrl }
         : { mode: prefs.proxyMode === "direct" ? "direct" : "system" },
     );
-    if (prefs.dockVisibility === "always") {
-      await showDock();
-    }
+    if (prefs.dockVisibility === "always") await showDock();
     return { ok: true as const, restartRequired: true };
   },
 } satisfies QueryHandlerMap;

@@ -47,9 +47,7 @@ let scanGeneration = 0;
 
 function publish(patch: Partial<MediaIndexStatus>): void {
   const next = { ...status, ...patch };
-  if (JSON.stringify(next) === JSON.stringify(status)) {
-    return;
-  }
+  if (JSON.stringify(next) === JSON.stringify(status)) return;
   status = next;
 }
 
@@ -73,9 +71,7 @@ async function startMediaIndex(): Promise<void> {
 }
 
 export function startMediaWarmer(): void {
-  if (started) {
-    return;
-  }
+  if (started) return;
   started = true;
   stopped = false;
   thermal = currentThermalState();
@@ -106,29 +102,21 @@ function onThermalStateChange(event: { state: ThermalState }): void {
 }
 
 function currentThermalState(): ThermalState {
-  if (process.platform !== "darwin") {
-    return "unknown";
-  }
+  if (process.platform !== "darwin") return "unknown";
   return powerMonitor.getCurrentThermalState();
 }
 
 function kick(): void {
-  if (!scanComplete || candidates.length > 0) {
-    schedule(0);
-  }
+  if (!scanComplete || candidates.length > 0) schedule(0);
 }
 
 function clearScheduled(): void {
-  if (timer) {
-    clearTimeout(timer);
-  }
+  if (timer) clearTimeout(timer);
   timer = null;
 }
 
 function schedule(delay: number): void {
-  if (stopped || timer) {
-    return;
-  }
+  if (stopped || timer) return;
   timer = setTimeout(() => {
     timer = null;
     void tick();
@@ -146,9 +134,7 @@ function systemPauseReason(): MediaIndexPauseReason | null {
 }
 
 async function tick(): Promise<void> {
-  if (stopped) {
-    return;
-  }
+  if (stopped) return;
   const reason = systemPauseReason();
   if (reason) {
     publish({
@@ -161,9 +147,7 @@ async function tick(): Promise<void> {
   }
 
   if (candidates.length === 0 && !scanComplete) {
-    if (loadingPage) {
-      return;
-    }
+    if (loadingPage) return;
     loadingPage = true;
     const generation = scanGeneration;
     try {
@@ -174,9 +158,7 @@ async function tick(): Promise<void> {
     } finally {
       loadingPage = false;
     }
-    if (stopped) {
-      return;
-    }
+    if (stopped) return;
     if (generation !== scanGeneration) {
       schedule(0);
       return;
@@ -188,9 +170,7 @@ async function tick(): Promise<void> {
   }
 
   if (candidates.length === 0) {
-    if (activeJobs > 0) {
-      return;
-    }
+    if (activeJobs > 0) return;
     publish({
       state: failed.size > 0 ? "error" : "complete",
       currentTitle: null,
@@ -202,9 +182,7 @@ async function tick(): Promise<void> {
 
   while (activeJobs < MAX_INFLIGHT) {
     const candidate = candidates.shift();
-    if (!candidate) {
-      break;
-    }
+    if (!candidate) break;
     activeJobs += 1;
     void processOne(candidate);
   }
@@ -276,13 +254,9 @@ export async function retryMediaWarm(
   const queued: Array<MediaWarmCandidate> = [];
   for (const saveId of new Set(saveIds)) {
     const save = await readCandidateSave(saveId);
-    if (!save) {
-      continue;
-    }
+    if (!save) continue;
     for (const [key, failure] of failed) {
-      if (failure.saveId === saveId) {
-        failed.delete(key);
-      }
+      if (failure.saveId === saveId) failed.delete(key);
     }
     candidates = candidates.filter((c) => c.saveId !== saveId);
     queued.push(...mediaWarmCandidates(save));
@@ -300,9 +274,7 @@ async function processCandidate(candidate: MediaWarmCandidate): Promise<void> {
   if (candidate.kind === "poster") {
     await runEnsurePoster(candidate.saveId);
     const refreshed = await readCandidateSave(candidate.saveId);
-    if (!refreshed) {
-      return;
-    }
+    if (!refreshed) return;
     const next = mediaWarmCandidates(refreshed);
     if (next.length > 0) {
       candidates.unshift(...next);
@@ -311,9 +283,7 @@ async function processCandidate(candidate: MediaWarmCandidate): Promise<void> {
     return;
   }
   const save = await readCandidateSave(candidate.saveId);
-  if (!save) {
-    return;
-  }
+  if (!save) return;
   const { writeSaveBlurhash } = await import("../save-blurhash");
   await writeSaveBlurhash(save);
 }
@@ -339,9 +309,7 @@ async function loadCandidatePage(generation: number): Promise<void> {
     .where(after)
     .orderBy(desc(saves.savedAt), desc(saves.id))
     .limit(SCAN_PAGE_SIZE + 1);
-  if (generation !== scanGeneration) {
-    return;
-  }
+  if (generation !== scanGeneration) return;
   const page = rows.slice(0, SCAN_PAGE_SIZE);
   const last = page.at(-1);
   scanCursor = last

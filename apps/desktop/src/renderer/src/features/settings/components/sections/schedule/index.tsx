@@ -141,14 +141,10 @@ export function ScheduleEditor({
     pendingSave.current = pendingSave.current
       .then(() => onSave(schedule))
       .then(() => {
-        if (revision.current === currentRevision) {
-          setStatus("idle");
-        }
+        if (revision.current === currentRevision) setStatus("idle");
       })
       .catch(() => {
-        if (revision.current === currentRevision) {
-          setStatus("error");
-        }
+        if (revision.current === currentRevision) setStatus("error");
       });
   };
   return (
@@ -305,9 +301,7 @@ function ScheduleSelect<Value extends string>({
       value={value}
       items={items}
       onValueChange={(next) => {
-        if (next !== null) {
-          onChange(next);
-        }
+        if (next !== null) onChange(next);
       }}
     >
       <Select.Trigger size="sm" aria-label={label}>

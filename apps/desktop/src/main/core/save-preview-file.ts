@@ -28,22 +28,16 @@ export async function savePreviewFile(
   size: ApiThumbnailSize,
 ): Promise<{ path: string; type: string }> {
   const cover = pickCardFile(files);
-  if (!cover) {
-    noThumbnail();
-  }
+  if (!cover) noThumbnail();
   /** File names come from our own DB, but basename() keeps a corrupted row from escaping the Save directory. */
   const path = saveFile(id, basename(cover.path));
-  if (!existsSync(path)) {
-    noThumbnail();
-  }
+  if (!existsSync(path)) noThumbnail();
   if (size === "original") {
     const type =
       cover.mimeType?.startsWith("image/") === true
         ? cover.mimeType
         : IMAGE_TYPES.get(extname(cover.path).toLowerCase());
-    if (!type) {
-      noThumbnail();
-    }
+    if (!type) noThumbnail();
     return { path, type };
   }
   const thumb = await getOrCreateThumbnail({
@@ -52,8 +46,6 @@ export async function savePreviewFile(
     width: THUMBNAIL_WIDTHS[size],
     version: null,
   });
-  if (!thumb) {
-    noThumbnail();
-  }
+  if (!thumb) noThumbnail();
   return { path: thumb.path, type: "image/webp" };
 }

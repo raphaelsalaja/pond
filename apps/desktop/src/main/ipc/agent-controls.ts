@@ -263,11 +263,8 @@ export const agentControlOperations: Array<PondOperation> = [
     "review",
     pausedInput,
     async ({ paused }) => {
-      if (paused) {
-        pauseAll();
-      } else {
-        resumeAll();
-      }
+      if (paused) pauseAll();
+      else resumeAll();
       return { paused: isAllPaused() };
     },
   ),

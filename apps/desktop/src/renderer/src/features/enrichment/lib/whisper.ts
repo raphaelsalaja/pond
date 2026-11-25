@@ -33,21 +33,15 @@ export async function decodeMono16k(
     return result.audio;
   }
   const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Audio fetch failed (${response.status})`);
-  }
-  if (!response.body) {
-    throw new Error("Audio response has no body");
-  }
+  if (!response.ok) throw new Error(`Audio fetch failed (${response.status})`);
+  if (!response.body) throw new Error("Audio response has no body");
   const reader = response.body.getReader();
   const chunks: Array<Uint8Array> = [];
   let size = 0;
   try {
     while (true) {
       const { value, done } = await reader.read();
-      if (done) {
-        break;
-      }
+      if (done) break;
       size += value.byteLength;
       if (size > MAX_TRANSCRIPT_BYTES) {
         await reader.cancel();

@@ -53,9 +53,7 @@ export function createToolTracker(
     signal.throwIfAborted();
     const toolName = event.toolCall.toolName;
     const label = labels.get(toolName);
-    if (!label) {
-      return;
-    }
+    if (!label) return;
     const args = z
       .object({ query: z.string().catch("Recent Saves") })
       .catch({ query: "Recent Saves" })

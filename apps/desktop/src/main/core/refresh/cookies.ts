@@ -55,9 +55,7 @@ export async function writeNetscapeCookies(
     for (const bucket of buckets) {
       for (const c of bucket) {
         const key = `${c.domain ?? ""}|${c.name}|${c.path ?? "/"}`;
-        if (seen.has(key)) {
-          continue;
-        }
+        if (seen.has(key)) continue;
         seen.add(key);
         allCookies.push(c);
       }
@@ -74,9 +72,7 @@ export async function writeNetscapeCookies(
   ];
   for (const c of allCookies) {
     const line = formatNetscapeLine(c);
-    if (line) {
-      lines.push(line);
-    }
+    if (line) lines.push(line);
   }
   await writeFile(filePath, `${lines.join("\n")}\n`, "utf8");
 
@@ -84,13 +80,9 @@ export async function writeNetscapeCookies(
 }
 
 function formatNetscapeLine(c: Cookie): string | null {
-  if (!c.name || c.value === undefined) {
-    return null;
-  }
+  if (!c.name || c.value === undefined) return null;
   const domain = c.domain ?? "";
-  if (!domain) {
-    return null;
-  }
+  if (!domain) return null;
   const includeSubdomains = domain.startsWith(".") ? "TRUE" : "FALSE";
   const path = c.path ?? "/";
   const secure = c.secure ? "TRUE" : "FALSE";
@@ -101,9 +93,7 @@ function formatNetscapeLine(c: Cookie): string | null {
       : Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30;
   const safeName = sanitise(c.name);
   const safeValue = sanitise(c.value);
-  if (!safeName || safeValue === null) {
-    return null;
-  }
+  if (!safeName || safeValue === null) return null;
   return [
     domain,
     includeSubdomains,

@@ -56,11 +56,8 @@ export function ThemeApplier() {
   useEffect(() => {
     const root = document.documentElement;
     const setReduce = (reduce: boolean) => {
-      if (reduce) {
-        root.setAttribute("data-reduce-motion", "true");
-      } else {
-        root.removeAttribute("data-reduce-motion");
-      }
+      if (reduce) root.setAttribute("data-reduce-motion", "true");
+      else root.removeAttribute("data-reduce-motion");
     };
     if (prefs.reduceMotion === "always") {
       setReduce(true);

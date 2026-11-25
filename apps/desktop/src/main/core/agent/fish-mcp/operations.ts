@@ -32,9 +32,7 @@ function convert(tool: McpTool): z.ZodType {
 
 function inputSchemaFor(tool: McpTool): z.ZodType {
   const cached = schemas.get(tool);
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
   const schema = convert(tool);
   schemas.set(tool, schema);
   return schema;
@@ -52,9 +50,7 @@ export function mcpOperations(
   return tools.flatMap(({ server, tool }) => {
     const access = server.toolAccess[tool.name] ?? "review";
     const name = operationName(server.name, tool.name);
-    if (access === "off" || seen.has(name)) {
-      return [];
-    }
+    if (access === "off" || seen.has(name)) return [];
     seen.add(name);
     const summary =
       tool.description?.trim().slice(0, 1000).replace(/\.$/, "") || tool.name;

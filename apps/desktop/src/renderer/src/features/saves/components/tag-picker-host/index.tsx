@@ -25,12 +25,8 @@ function nextTags(
   remove: boolean,
 ): Array<string> {
   const lower = name.toLowerCase();
-  if (remove) {
-    return tags.filter((tag) => tag.toLowerCase() !== lower);
-  }
-  if (tags.some((tag) => tag.toLowerCase() === lower)) {
-    return [...tags];
-  }
+  if (remove) return tags.filter((tag) => tag.toLowerCase() !== lower);
+  if (tags.some((tag) => tag.toLowerCase() === lower)) return [...tags];
   return [...tags, name];
 }
 
@@ -40,9 +36,7 @@ async function toggleTagOnSaves(
   name: string,
 ): Promise<void> {
   const cleaned = name.trim();
-  if (!cleaned || ids.length === 0) {
-    return;
-  }
+  if (!cleaned || ids.length === 0) return;
   const lower = cleaned.toLowerCase();
   const before = savesFor(ids);
   const remove =
@@ -68,17 +62,13 @@ async function toggleTagOnSaves(
       },
     });
   } catch (error) {
-    if (before.length > 0) {
-      pool.bulkUpsert(before);
-    }
+    if (before.length > 0) pool.bulkUpsert(before);
     throw error;
   }
 }
 
 function cardElement(id: string | null): HTMLElement | null {
-  if (!id) {
-    return null;
-  }
+  if (!id) return null;
   const node = document.querySelector(`[data-save-id="${CSS.escape(id)}"]`);
   return isHTMLElement(node) ? node : null;
 }
@@ -105,19 +95,14 @@ function SaveTagPicker({
     const seen = new Set<string>();
     for (const name of save.tags) {
       const key = name.toLowerCase();
-      if (seen.has(key)) {
-        continue;
-      }
+      if (seen.has(key)) continue;
       seen.add(key);
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
   }
   for (const [key, count] of counts) {
-    if (saves.length > 0 && count === saves.length) {
-      applied.add(key);
-    } else {
-      mixed.add(key);
-    }
+    if (saves.length > 0 && count === saves.length) applied.add(key);
+    else mixed.add(key);
   }
   const recommended = saves.length === 1 ? (saves[0]?.suggestedTags ?? []) : [];
 
@@ -146,9 +131,7 @@ function SaveTagPicker({
             details.cancel();
             return;
           }
-          if (!next) {
-            closeSaveTagPicker();
-          }
+          if (!next) closeSaveTagPicker();
         }}
       >
         <PickerPanel.Portal>
@@ -186,12 +169,8 @@ function SaveTagPicker({
 export function SaveTagPickerHost() {
   const request = useSelector(saveTagPickerStore, (state) => state);
   const [session, setSession] = useState(request);
-  if (request && request.key !== session?.key) {
-    setSession(request);
-  }
-  if (!session) {
-    return null;
-  }
+  if (request && request.key !== session?.key) setSession(request);
+  if (!session) return null;
   return (
     <SaveTagPicker
       key={session.key}

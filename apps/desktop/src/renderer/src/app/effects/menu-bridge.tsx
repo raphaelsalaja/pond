@@ -91,12 +91,8 @@ export function MenuBridge() {
 
   useEffect(() => {
     return window.pond.onMenuAction(({ id, source }) => {
-      if (shouldIgnoreMenuAction(source, id)) {
-        return;
-      }
-      if (handleNativeMenuAction(id)) {
-        return;
-      }
+      if (shouldIgnoreMenuAction(source, id)) return;
+      if (handleNativeMenuAction(id)) return;
       if (id.startsWith("library.new-blank-")) {
         const kind = id.slice("library.new-blank-".length);
         if (isBlankDocumentKind(kind)) {
@@ -201,9 +197,7 @@ export function MenuBridge() {
         case "view.layout.justified":
         case "view.layout.list": {
           const next = id.slice("view.layout.".length);
-          if (isLayoutValue(next)) {
-            setLayout(next);
-          }
+          if (isLayoutValue(next)) setLayout(next);
           return;
         }
 
@@ -380,71 +374,55 @@ export function MenuBridge() {
 
         case "save.open-with-default": {
           const save = currentSave();
-          if (!save) {
-            return;
-          }
+          if (!save) return;
           void openDefaultApp(save);
           return;
         }
 
         case "save.open-original": {
           const save = currentSave();
-          if (!save?.url) {
-            return;
-          }
+          if (!save?.url) return;
           void window.pond.openExternal(save.url);
           return;
         }
 
         case "save.reveal": {
           const sid = primarySelection.get();
-          if (!sid) {
-            return;
-          }
+          if (!sid) return;
           void window.pond.revealSave(sid);
           return;
         }
 
         case "save.copy-url": {
           const save = currentSave();
-          if (!save?.url) {
-            return;
-          }
+          if (!save?.url) return;
           void copyUrl(save.url);
           return;
         }
 
         case "save.copy-media": {
           const save = currentSave();
-          if (!save) {
-            return;
-          }
+          if (!save) return;
           void copyPrimaryMedia(save);
           return;
         }
 
         case "save.copy-id": {
           const sid = primarySelection.get();
-          if (!sid) {
-            return;
-          }
+          if (!sid) return;
           void copyId(sid);
           return;
         }
 
         case "save.rename": {
           const save = currentSave();
-          if (save?.source !== "local") {
-            return;
-          }
+          if (save?.source !== "local") return;
           focusPaneTitle();
           return;
         }
 
         case "save.add-tag":
-          if (!primarySelection.get()) {
-            return;
-          }
+          if (!primarySelection.get()) return;
           openTagPicker();
           return;
 
@@ -459,9 +437,7 @@ export function MenuBridge() {
             return;
           }
           const save = currentSave();
-          if (!save) {
-            return;
-          }
+          if (!save) return;
           void refreshSaveMetadata(save);
           return;
         }
@@ -473,27 +449,21 @@ export function MenuBridge() {
             return;
           }
           const save = currentSave();
-          if (!save) {
-            return;
-          }
+          if (!save) return;
           void moveSavesToTrash([save.id]);
           return;
         }
 
         case "save.untrash": {
           const save = currentSave();
-          if (!save) {
-            return;
-          }
+          if (!save) return;
           void untrashSave(save);
           return;
         }
 
         case "save.delete-forever": {
           const save = currentSave();
-          if (!save) {
-            return;
-          }
+          if (!save) return;
           void purgeForever(save);
           return;
         }
@@ -509,8 +479,6 @@ export function MenuBridge() {
 
 function currentSave() {
   const id = primarySelection.get();
-  if (!id) {
-    return null;
-  }
+  if (!id) return null;
   return pool.get(id) ?? null;
 }

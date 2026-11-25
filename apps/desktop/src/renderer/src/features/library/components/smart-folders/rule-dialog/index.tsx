@@ -35,9 +35,7 @@ type PreviewState = {
 };
 
 function firstIncomplete(editor: HTMLElement | null): HTMLElement | null {
-  if (!editor) {
-    return null;
-  }
+  if (!editor) return null;
   const empty = [...editor.querySelectorAll("input")].find(
     (input) => !input.value.trim(),
   );
@@ -94,9 +92,7 @@ export function RuleDialog(props: RuleDialogProps) {
   });
 
   useEffect(() => {
-    if (!ready) {
-      return;
-    }
+    if (!ready) return;
     let current = true;
     const key = queryKey;
     const timer = window.setTimeout(() => {
@@ -123,9 +119,7 @@ export function RuleDialog(props: RuleDialogProps) {
           }
         },
         () => {
-          if (!current) {
-            return;
-          }
+          if (!current) return;
           setPreview((currentPreview) =>
             currentPreview.key === key && currentPreview.count !== null
               ? { ...currentPreview, revision: libraryRevision }
@@ -154,9 +148,7 @@ export function RuleDialog(props: RuleDialogProps) {
         : "Counting matches";
 
   const submit = async () => {
-    if (pending.current) {
-      return;
-    }
+    if (pending.current) return;
     const next = { name: !name.trim(), rules: !ready };
     setInvalid(next);
     if (next.name) {
@@ -185,16 +177,11 @@ export function RuleDialog(props: RuleDialogProps) {
     <Dialog.Root
       open={open}
       onOpenChange={(next, details) => {
-        if (pending.current) {
-          details.cancel();
-        } else {
-          setOpen(next);
-        }
+        if (pending.current) details.cancel();
+        else setOpen(next);
       }}
       onOpenChangeComplete={(next) => {
-        if (!next) {
-          onClose();
-        }
+        if (!next) onClose();
       }}
     >
       <Dialog.Portal>

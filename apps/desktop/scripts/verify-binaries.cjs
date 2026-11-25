@@ -22,21 +22,11 @@ async function verify(
   pruneOnnxRuntime(resourcesDir, platform, arch);
   pruneBetterSqlitePrebuilds(resourcesDir, platform, arch);
   await verifyRuntimePackages(resourcesDir);
-  if (platform === "darwin") {
-    verifySharpRuntime(resourcesDir, arch);
-  }
-  if (platform === "linux") {
-    verifySharpLinuxRuntime(resourcesDir, arch);
-  }
-  if (platform === "win32") {
-    verifySharpWindowsRuntime(resourcesDir, arch);
-  }
-  if (platform === "win32" || platform === "linux") {
-    assertAppIcon(context);
-  }
-  if (platform === "darwin") {
-    assertIconCatalog(resourcesDir);
-  }
+  if (platform === "darwin") verifySharpRuntime(resourcesDir, arch);
+  if (platform === "linux") verifySharpLinuxRuntime(resourcesDir, arch);
+  if (platform === "win32") verifySharpWindowsRuntime(resourcesDir, arch);
+  if (platform === "win32" || platform === "linux") assertAppIcon(context);
+  if (platform === "darwin") assertIconCatalog(resourcesDir);
   assertTintIcons(resourcesDir);
   const onnxShipped = verifyOnnxRuntime(resourcesDir, platform, arch);
   const ffmpegPath = nodePath.join(resourcesDir, "bin", ffmpegName(platform));
@@ -96,9 +86,7 @@ const MAC_SLICES = new Map([
 /** One runner packages both Mac builds, so each helper must carry the packed arch's slice. */
 function verifyMacSlices(resourcesDir, arch, readArchs = lipoArchs) {
   const wanted = MAC_SLICES.get(arch);
-  if (!wanted) {
-    return;
-  }
+  if (!wanted) return;
   for (const name of ["ffmpeg", "pond-native-host"]) {
     const path = nodePath.join(resourcesDir, "bin", name);
     const archs = readArchs(path);
@@ -267,9 +255,7 @@ function pruneBetterSqlitePrebuilds(resourcesDir, platform, arch) {
     "better-sqlite3",
     "prebuilds",
   );
-  if (!existsSync(prebuilds)) {
-    return;
-  }
+  if (!existsSync(prebuilds)) return;
   const expected = `${platform}-${arch}.node`;
   for (const filename of readdirSync(prebuilds)) {
     if (filename !== expected) {
@@ -279,9 +265,7 @@ function pruneBetterSqlitePrebuilds(resourcesDir, platform, arch) {
 }
 
 function normalizePlatform(electronPlatformName) {
-  if (electronPlatformName === "mas") {
-    return "darwin";
-  }
+  if (electronPlatformName === "mas") return "darwin";
   return electronPlatformName;
 }
 
@@ -449,9 +433,7 @@ function removeSharpPackages(root, arch) {
 }
 
 function listFiles(root) {
-  if (!existsSync(root)) {
-    return [];
-  }
+  if (!existsSync(root)) return [];
   return readdirSync(root, { recursive: true }).map((entry) =>
     nodePath.join(root, String(entry)),
   );

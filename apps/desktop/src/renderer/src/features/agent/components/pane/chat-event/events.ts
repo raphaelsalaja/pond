@@ -25,11 +25,7 @@ export function routineEventText(
 }
 
 export function routineChangeText(kind: AssistantRoutineEvent["kind"]): string {
-  if (kind === "created") {
-    return "Created routine";
-  }
-  if (kind === "updated") {
-    return "Updated routine";
-  }
+  if (kind === "created") return "Created routine";
+  if (kind === "updated") return "Updated routine";
   return "Deleted routine";
 }

@@ -19,20 +19,13 @@ function frequencies(layer: Layer): Array<number> {
   const freq = "frequency" in source ? source.frequency : undefined;
   const hertz = HertzSchema.safeParse(freq);
   const sweep = SweepSchema.safeParse(freq);
-  if (hertz.success) {
-    values.push(hertz.data);
-  } else if (sweep.success) {
-    values.push(sweep.data.start, sweep.data.end);
-  }
+  if (hertz.success) values.push(hertz.data);
+  else if (sweep.success) values.push(sweep.data.start, sweep.data.end);
   const filters = [layer.filter ?? []].flat();
   for (const filter of filters) {
-    if ("frequency" in filter) {
-      values.push(filter.frequency);
-    }
+    if ("frequency" in filter) values.push(filter.frequency);
     const peak = "envelope" in filter ? filter.envelope?.peak : undefined;
-    if (peak !== undefined) {
-      values.push(peak);
-    }
+    if (peak !== undefined) values.push(peak);
   }
   return values;
 }

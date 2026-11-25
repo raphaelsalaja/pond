@@ -144,9 +144,7 @@ async function inPageBookmarksApi(
     const retryAfter = res.headers.get("retry-after");
     if (retryAfter) {
       const n = Number(retryAfter);
-      if (Number.isFinite(n)) {
-        return Math.max(0, n);
-      }
+      if (Number.isFinite(n)) return Math.max(0, n);
       const when = Date.parse(retryAfter);
       if (Number.isFinite(when)) {
         return Math.max(0, Math.round((when - Date.now()) / 1000));
@@ -218,17 +216,12 @@ async function inPageBookmarksApi(
   for (const [k, v] of Object.entries(template.headers ?? {})) {
     headers[k] = v;
   }
-  if (!("accept" in headers)) {
-    headers.accept = "*/*";
-  }
+  if (!("accept" in headers)) headers.accept = "*/*";
 
   const buildUrl = (cursor: string | null): string => {
     const vars = { ...baseVariables };
-    if (cursor) {
-      vars.cursor = cursor;
-    } else {
-      delete vars.cursor;
-    }
+    if (cursor) vars.cursor = cursor;
+    else delete vars.cursor;
     const u = new URL(base.toString());
     u.searchParams.set("variables", JSON.stringify(vars));
     return u.toString();
@@ -258,12 +251,8 @@ async function inPageBookmarksApi(
   };
   const extractCursor = (json: BookmarksResponse): string | null => {
     for (const e of addedEntries(json)) {
-      if (!(e.entryId ?? e.entry_id)?.startsWith("cursor-bottom")) {
-        continue;
-      }
-      if (e.content?.value !== undefined) {
-        return e.content.value;
-      }
+      if (!(e.entryId ?? e.entry_id)?.startsWith("cursor-bottom")) continue;
+      if (e.content?.value !== undefined) return e.content.value;
     }
     return null;
   };
@@ -319,9 +308,7 @@ async function inPageBookmarksApi(
       reason = "http_error";
       break;
     }
-    if (pages === 0) {
-      firstStatus = res.status;
-    }
+    if (pages === 0) firstStatus = res.status;
     if (!res.ok) {
       if (res.status === 429) {
         return {
@@ -392,9 +379,7 @@ async function inPageBookmarksApi(
     await sleep(args.throttleMs + Math.random() * 150);
   }
 
-  if (Date.now() >= deadline) {
-    reason = "deadline";
-  }
+  if (Date.now() >= deadline) reason = "deadline";
 
   if (pages === 1 && tweetTotal === 0) {
     return { ok: false, reason: "fallback", detail: "empty_first_page" };

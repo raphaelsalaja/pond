@@ -283,9 +283,7 @@ describe("Sidebar.TreeItem slots", () => {
         <Sidebar.TreeItem
           value="inbox"
           onKeyDown={(event) => {
-            if (event.key === "ArrowDown") {
-              event.preventDefault();
-            }
+            if (event.key === "ArrowDown") event.preventDefault();
           }}
         >
           <Sidebar.TreeRow>

@@ -82,30 +82,21 @@ function watchAbort(
   win: BrowserWindow,
   signal: AbortSignal | undefined,
 ): () => void {
-  if (!signal) {
-    return () => {};
-  }
+  if (!signal) return () => {};
   const onAbort = () => {
-    if (win.isDestroyed()) {
-      return;
-    }
+    if (win.isDestroyed()) return;
     win.webContents.stop();
     void win.loadURL("about:blank").catch(ignoreInterruptedBlank);
   };
-  if (signal.aborted) {
-    onAbort();
-  } else {
-    signal.addEventListener("abort", onAbort, { once: true });
-  }
+  if (signal.aborted) onAbort();
+  else signal.addEventListener("abort", onAbort, { once: true });
   return () => signal.removeEventListener("abort", onAbort);
 }
 
 export async function screenshotTweetDual(
   args: TweetDualScreenshotArgs,
 ): Promise<TweetDualScreenshotResult> {
-  if (args.signal?.aborted) {
-    return abortedDual();
-  }
+  if (args.signal?.aborted) return abortedDual();
   const partition = await partitionForIngest("twitter", args.accountId);
   const lease = await leaseWindow("twitter", {
     partition,
@@ -114,9 +105,7 @@ export async function screenshotTweetDual(
   const detachAbort = watchAbort(lease.win, args.signal);
   let restoreEmulation: (() => Promise<void>) | null = null;
   try {
-    if (args.signal?.aborted) {
-      return abortedDual();
-    }
+    if (args.signal?.aborted) return abortedDual();
     restoreEmulation = await emulateColorScheme(lease.win, "light");
     const navOk = await navigateWithTimeout(
       lease.win,
@@ -124,9 +113,7 @@ export async function screenshotTweetDual(
       NAV_TIMEOUT_MS,
     );
     if (!navOk) {
-      if (args.signal?.aborted) {
-        return abortedDual();
-      }
+      if (args.signal?.aborted) return abortedDual();
       log.warn("[pond screenshot:tweet] navigate failed", args.url);
       const fail: TweetScreenshotResult = {
         ok: false,
@@ -162,14 +149,10 @@ export async function screenshotTweetDual(
       );
       page = harvested.page;
       pageFailureReason = harvested.failureReason;
-      if (page && page.media.length > 0) {
-        media = page.media;
-      }
+      if (page && page.media.length > 0) media = page.media;
     }
 
-    if (restoreEmulation) {
-      await restoreEmulation().catch(() => {});
-    }
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
     restoreEmulation = await emulateColorScheme(lease.win, "dark");
     const flipped = await waitForSchemeFlip(lease.win, "dark");
     if (!flipped) {
@@ -192,28 +175,16 @@ export async function screenshotTweetDual(
       );
       page = harvested.page;
       pageFailureReason = harvested.failureReason;
-      if (page && page.media.length > 0) {
-        media = page.media;
-      }
+      if (page && page.media.length > 0) media = page.media;
     }
 
-    if (args.signal?.aborted) {
-      return abortedDual();
-    }
+    if (args.signal?.aborted) return abortedDual();
     const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
     const dual: TweetDualScreenshotResult = { light, dark };
-    if (quotedUrl) {
-      dual.quotedUrl = quotedUrl;
-    }
-    if (media) {
-      dual.media = media;
-    }
-    if (page) {
-      dual.page = page;
-    }
-    if (pageFailureReason) {
-      dual.pageFailureReason = pageFailureReason;
-    }
+    if (quotedUrl) dual.quotedUrl = quotedUrl;
+    if (media) dual.media = media;
+    if (page) dual.page = page;
+    if (pageFailureReason) dual.pageFailureReason = pageFailureReason;
     return dual;
   } catch (error) {
     if (args.signal?.aborted) {
@@ -228,9 +199,7 @@ export async function screenshotTweetDual(
     return { light: fail, dark: fail };
   } finally {
     detachAbort();
-    if (restoreEmulation) {
-      await restoreEmulation().catch(() => {});
-    }
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
     lease.release();
   }
 }
@@ -238,9 +207,7 @@ export async function screenshotTweetDual(
 export async function screenshotThreadsDual(
   args: TweetDualScreenshotArgs,
 ): Promise<TweetDualScreenshotResult> {
-  if (args.signal?.aborted) {
-    return abortedDual();
-  }
+  if (args.signal?.aborted) return abortedDual();
   const partition = await partitionForIngest("threads", args.accountId);
   const lease = await leaseWindow("threads", {
     partition,
@@ -249,9 +216,7 @@ export async function screenshotThreadsDual(
   const detachAbort = watchAbort(lease.win, args.signal);
   let restoreEmulation: (() => Promise<void>) | null = null;
   try {
-    if (args.signal?.aborted) {
-      return abortedDual();
-    }
+    if (args.signal?.aborted) return abortedDual();
     restoreEmulation = await emulateColorScheme(lease.win, "light");
     const navOk = await navigateWithTimeout(
       lease.win,
@@ -259,9 +224,7 @@ export async function screenshotThreadsDual(
       NAV_TIMEOUT_MS,
     );
     if (!navOk) {
-      if (args.signal?.aborted) {
-        return abortedDual();
-      }
+      if (args.signal?.aborted) return abortedDual();
       log.warn("[pond screenshot:threads] navigate failed", args.url);
       const fail: TweetScreenshotResult = {
         ok: false,
@@ -297,14 +260,10 @@ export async function screenshotThreadsDual(
       );
       page = harvested.page;
       pageFailureReason = harvested.failureReason;
-      if (page && page.media.length > 0) {
-        media = page.media;
-      }
+      if (page && page.media.length > 0) media = page.media;
     }
 
-    if (restoreEmulation) {
-      await restoreEmulation().catch(() => {});
-    }
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
     restoreEmulation = await emulateColorScheme(lease.win, "dark");
     const flipped = await waitForSchemeFlip(lease.win, "dark");
     if (!flipped) {
@@ -330,28 +289,16 @@ export async function screenshotThreadsDual(
       );
       page = harvested.page;
       pageFailureReason = harvested.failureReason;
-      if (page && page.media.length > 0) {
-        media = page.media;
-      }
+      if (page && page.media.length > 0) media = page.media;
     }
 
-    if (args.signal?.aborted) {
-      return abortedDual();
-    }
+    if (args.signal?.aborted) return abortedDual();
     const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
     const dual: TweetDualScreenshotResult = { light, dark };
-    if (quotedUrl) {
-      dual.quotedUrl = quotedUrl;
-    }
-    if (media) {
-      dual.media = media;
-    }
-    if (page) {
-      dual.page = page;
-    }
-    if (pageFailureReason) {
-      dual.pageFailureReason = pageFailureReason;
-    }
+    if (quotedUrl) dual.quotedUrl = quotedUrl;
+    if (media) dual.media = media;
+    if (page) dual.page = page;
+    if (pageFailureReason) dual.pageFailureReason = pageFailureReason;
     return dual;
   } catch (error) {
     if (args.signal?.aborted) {
@@ -370,9 +317,7 @@ export async function screenshotThreadsDual(
     return { light: fail, dark: fail };
   } finally {
     detachAbort();
-    if (restoreEmulation) {
-      await restoreEmulation().catch(() => {});
-    }
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
     lease.release();
   }
 }
@@ -417,9 +362,7 @@ async function captureCurrentScheme(
       resized = true;
       await sleep(400);
       const remeasured = await readArticleRect(win, sourceId, kind, parentId);
-      if (remeasured) {
-        rect = remeasured;
-      }
+      if (remeasured) rect = remeasured;
     }
 
     if (!(await waitForCaptureMedia(win))) {
@@ -456,9 +399,7 @@ async function captureCurrentScheme(
           }
           const padded = await padScreenshot(rawBytes, size, colorScheme);
           const shot: TweetScreenshotResult = { ok: true, png: padded };
-          if (rect.quotedUrl) {
-            shot.quotedUrl = rect.quotedUrl;
-          }
+          if (rect.quotedUrl) shot.quotedUrl = rect.quotedUrl;
           return shot;
         },
       );
@@ -472,9 +413,7 @@ async function captureCurrentScheme(
       }
     }
   } finally {
-    if (cssKey) {
-      await win.webContents.removeInsertedCSS(cssKey).catch(() => {});
-    }
+    if (cssKey) await win.webContents.removeInsertedCSS(cssKey).catch(() => {});
   }
 }
 
@@ -643,8 +582,6 @@ async function readArticleRect(
     );
   }
   const rect = ArticleRectSchema.parse(raw);
-  if (!rect || rect.width < 8 || rect.height < 8) {
-    return null;
-  }
+  if (!rect || rect.width < 8 || rect.height < 8) return null;
   return rect;
 }

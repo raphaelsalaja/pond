@@ -12,15 +12,9 @@ import type { FilterOption } from "./options";
 import { isFilterSelected } from "./selection";
 
 export function emptyChoiceLabel(field: FieldId): string {
-  if (field === "tags") {
-    return "Untagged";
-  }
-  if (field === "folder") {
-    return "No Folder";
-  }
-  if (field === "format") {
-    return "No Format";
-  }
+  if (field === "tags") return "Untagged";
+  if (field === "folder") return "No Folder";
+  if (field === "format") return "No Format";
   return "No List";
 }
 
@@ -79,41 +73,27 @@ function bytes(value: number): string {
     ["MB", 1e6],
     ["KB", 1e3],
   ] as const) {
-    if (value >= size) {
-      return `${decimal.format(value / size)} ${unit}`;
-    }
+    if (value >= size) return `${decimal.format(value / size)} ${unit}`;
   }
   return `${integer.format(value)} B`;
 }
 
 function seconds(value: number): string {
-  if (value !== 0 && value % 3600 === 0) {
-    return `${value / 3600}h`;
-  }
-  if (value !== 0 && value % 60 === 0) {
-    return `${value / 60}min`;
-  }
+  if (value !== 0 && value % 3600 === 0) return `${value / 3600}h`;
+  if (value !== 0 && value % 60 === 0) return `${value / 60}min`;
   return `${value}s`;
 }
 
 function bare(field: FieldId, value: number): string {
-  if (field === "fileSize") {
-    return bytes(value);
-  }
-  if (field === "duration") {
-    return seconds(value);
-  }
+  if (field === "fileSize") return bytes(value);
+  if (field === "duration") return seconds(value);
   return `${PREFIXES.get(field) ?? ""}${integer.format(value)}${SUFFIXES.get(field) ?? ""}`;
 }
 
 function quantity(field: FieldId, value: number): string {
-  if (field === "rating" && value === 0) {
-    return "Unrated";
-  }
+  if (field === "rating" && value === 0) return "Unrated";
   const noun = NOUNS.get(field);
-  if (!noun) {
-    return bare(field, value);
-  }
+  if (!noun) return bare(field, value);
   return formatPlural(value, { one: noun[0], other: noun[1] });
 }
 
@@ -148,9 +128,7 @@ function dateText(value: PredicateValue | undefined): string {
 
 function dateSummary(rule: Predicate, exact: string | undefined): string {
   const name = FIELD_META[rule.field].label.replace(/^Date\s+/i, "");
-  if (exact) {
-    return `${name} ${exact}`;
-  }
+  if (exact) return `${name} ${exact}`;
   const { operator, value } = rule;
   if (operator === "between" && isPredicateList(value)) {
     const from = dateText(value[0]);
@@ -183,21 +161,11 @@ export function filterSummary(
           rule.operator === option.predicate.operator &&
           JSON.stringify(rule.value) === JSON.stringify(option.predicate.value),
       );
-      if (type === "date") {
-        return dateSummary(rule, exact?.label);
-      }
-      if (exact) {
-        return optionLabel(exact);
-      }
-      if (rule.operator === "empty") {
-        return emptyChoiceLabel(rule.field);
-      }
-      if (rule.operator === "contains") {
-        return `“${String(rule.value)}”`;
-      }
-      if (type === "number") {
-        return numberSummary(rule);
-      }
+      if (type === "date") return dateSummary(rule, exact?.label);
+      if (exact) return optionLabel(exact);
+      if (rule.operator === "empty") return emptyChoiceLabel(rule.field);
+      if (rule.operator === "contains") return `“${String(rule.value)}”`;
+      if (type === "number") return numberSummary(rule);
       if (type === "enum" || type === "stringArray") {
         const values = isPredicateList(rule.value) ? rule.value : [rule.value];
         const label = values
@@ -206,9 +174,7 @@ export function filterSummary(
             const option = options.find((choice) =>
               isFilterSelected([candidate], choice.predicate),
             );
-            if (option) {
-              return optionLabel(option);
-            }
+            if (option) return optionLabel(option);
             return rule.field === "format"
               ? String(value).toUpperCase()
               : String(value);

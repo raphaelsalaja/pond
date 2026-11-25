@@ -50,34 +50,24 @@ export function useGifPlayer(
     setPlaying(autoplay);
   }
   useEffect(() => {
-    if (!enabled || !window.ImageDecoder) {
-      return;
-    }
+    if (!enabled || !window.ImageDecoder) return;
     const abort = new AbortController();
     let current = true;
     let instance: BrowserImageDecoder | null = null;
     const load = async () => {
       const response = await fetch(src, { signal: abort.signal });
-      if (!response.ok) {
-        throw new Error("Couldn't load this GIF.");
-      }
+      if (!response.ok) throw new Error("Couldn't load this GIF.");
       const data = await response.arrayBuffer();
-      if (!current || !window.ImageDecoder) {
-        return;
-      }
+      if (!current || !window.ImageDecoder) return;
       instance = new window.ImageDecoder({ data, type: "image/gif" });
       await instance.tracks.ready;
-      if (!current) {
-        return;
-      }
+      if (!current) return;
       setFrameCount(instance.tracks.selectedTrack?.frameCount ?? 0);
       setFrameIndex(0);
       setDecoder(instance);
     };
     void load().catch(() => {
-      if (current) {
-        setError(true);
-      }
+      if (current) setError(true);
     });
     return () => {
       current = false;
@@ -86,9 +76,7 @@ export function useGifPlayer(
     };
   }, [src, enabled]);
   useEffect(() => {
-    if (!decoder || !frameCount) {
-      return;
-    }
+    if (!decoder || !frameCount) return;
     let current = true;
     let timer = 0;
     const draw = async () => {
@@ -114,9 +102,7 @@ export function useGifPlayer(
       }
     };
     void draw().catch(() => {
-      if (current) {
-        setError(true);
-      }
+      if (current) setError(true);
     });
     return () => {
       current = false;

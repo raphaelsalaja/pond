@@ -92,9 +92,7 @@ export function regionFromElement(
   const y = Math.min(viewport.height, Math.max(0, rect.y));
   const width = Math.min(viewport.width - x, Math.max(0, rect.width));
   const height = Math.min(viewport.height - y, Math.max(0, rect.height));
-  if (width < 1 || height < 1) {
-    return null;
-  }
+  if (width < 1 || height < 1) return null;
   return {
     x,
     y,

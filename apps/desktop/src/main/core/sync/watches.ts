@@ -30,9 +30,7 @@ export async function findWatchByHandle(
   kind?: WatchKind,
 ): Promise<WatchedAccount | null> {
   const wanted = normalizeHandle(handle);
-  if (!wanted) {
-    return null;
-  }
+  if (!wanted) return null;
   const watches = await listWatches();
   return (
     watches.find(
@@ -52,9 +50,7 @@ export async function createWatch(args: {
   via?: string | null;
 }): Promise<WatchedAccount> {
   const handle = normalizeHandle(args.handle);
-  if (!handle) {
-    throw new Error("watch handle is required");
-  }
+  if (!handle) throw new Error("watch handle is required");
   const watch: WatchedAccount = {
     id: ulid(),
     source: args.source,
@@ -64,9 +60,7 @@ export async function createWatch(args: {
     addedAt: new Date().toISOString(),
     sync: { ...DEFAULT_SOURCE_SYNC_PREFS },
   };
-  if (args.kind) {
-    watch.kind = args.kind;
-  }
+  if (args.kind) watch.kind = args.kind;
 
   await writeWatches((watches) => ({ ...watches, [watch.id]: watch }));
   log.info(
@@ -89,9 +83,7 @@ export async function patchWatch(
   let updated: WatchedAccount | null = null;
   await writeWatches((watches) => {
     const current = watches[watchId];
-    if (!current) {
-      return watches;
-    }
+    if (!current) return watches;
     updated = {
       ...current,
       ...patch,
@@ -117,9 +109,7 @@ export async function patchWatchSync(
   let next: SourceSyncPrefs = { ...DEFAULT_SOURCE_SYNC_PREFS, ...patch };
   await writeWatches((watches) => {
     const current = watches[watchId];
-    if (!current) {
-      return watches;
-    }
+    if (!current) return watches;
     next = { ...DEFAULT_SOURCE_SYNC_PREFS, ...current.sync, ...patch };
     return { ...watches, [watchId]: { ...current, sync: next } };
   });
@@ -128,9 +118,7 @@ export async function patchWatchSync(
 
 export async function removeWatch(watchId: string): Promise<void> {
   await writeWatches((watches) => {
-    if (!watches[watchId]) {
-      return watches;
-    }
+    if (!watches[watchId]) return watches;
     const next = { ...watches };
     delete next[watchId];
     return next;
@@ -145,8 +133,6 @@ async function writeWatches(
   const prefs = await getPrefs();
   const current = prefs.sync.watches ?? {};
   const next = update(current);
-  if (next === current) {
-    return;
-  }
+  if (next === current) return;
   await setPrefs({ sync: { watches: next } });
 }

@@ -29,9 +29,7 @@ it("keeps every missed Source when a cookie changes during startup", async () =>
         throw new Error("Unexpected native request");
       }
       requests.push(request.source);
-      if (requests.length === 1) {
-        await firstRequest;
-      }
+      if (requests.length === 1) await firstRequest;
       return { ok: false, error: "offline" };
     },
   };
@@ -39,9 +37,7 @@ it("keeps every missed Source when a cookie changes during startup", async () =>
   startSessionFollow(api);
   await vi.advanceTimersByTimeAsync(0);
   expect(requests).toEqual(["twitter"]);
-  if (!cookieListener) {
-    throw new Error("Cookie listener was not registered");
-  }
+  if (!cookieListener) throw new Error("Cookie listener was not registered");
   cookieListener({
     removed: false,
     cause: "explicit",
@@ -100,9 +96,7 @@ it("keeps a newly connected Source tracked during a pending refresh", async () =
         throw new Error("Unexpected native request");
       }
       refreshed.push(request.source);
-      if (request.source === "twitter") {
-        await firstRequest;
-      }
+      if (request.source === "twitter") await firstRequest;
       return { ok: true, data: { tracked: true, refreshed: true } };
     },
   };

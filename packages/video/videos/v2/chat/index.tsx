@@ -128,9 +128,7 @@ export function Chat({ t }: { t: number }) {
 
   const rise = ease.outQuint(progress(t, CUES.chatRise, 1000));
   const away = ease.inOut(progress(t, CUES.chatAway, 550));
-  if (t < CUES.chatRise - 50 || away >= 1) {
-    return null;
-  }
+  if (t < CUES.chatRise - 50 || away >= 1) return null;
 
   const scroll = keyed(t, [
     { at: 0, y: 0, move: 1 },

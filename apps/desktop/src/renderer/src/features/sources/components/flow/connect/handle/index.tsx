@@ -45,9 +45,7 @@ export function HandleForm({ label, notFound }: HandleFormProps) {
             autoCapitalize="none"
             onChange={(event) => {
               setHandle(event.target.value);
-              if (event.target.value.trim()) {
-                setMissing(false);
-              }
+              if (event.target.value.trim()) setMissing(false);
             }}
           />
         </Input.Root>

@@ -10,12 +10,8 @@ import type { Save } from "@/features/saves/types";
 import { notify } from "@/shared/lib/toast";
 
 export function saveMarkedSensitive(save: Save): boolean {
-  if (save.sensitiveModel === MANUAL_NOT_SENSITIVE_MODEL) {
-    return false;
-  }
-  if (save.sensitiveModel === MANUAL_LIKELY_SENSITIVE_MODEL) {
-    return true;
-  }
+  if (save.sensitiveModel === MANUAL_NOT_SENSITIVE_MODEL) return false;
+  if (save.sensitiveModel === MANUAL_LIKELY_SENSITIVE_MODEL) return true;
   const band = sensitiveContentBand(save.sensitiveScore);
   return band === "likely-sensitive" || band === "possible-sensitive";
 }
@@ -32,9 +28,7 @@ export async function setSensitiveDecision(
   sensitive: boolean,
 ): Promise<void> {
   const targets = [...new Set(ids)];
-  if (targets.length === 0) {
-    return;
-  }
+  if (targets.length === 0) return;
   const patch = manualSensitiveDecision(sensitive);
   const before = targets.flatMap((id) => {
     const save = pool.get(id);

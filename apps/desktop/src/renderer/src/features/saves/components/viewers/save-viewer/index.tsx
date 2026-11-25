@@ -89,9 +89,7 @@ function ViewerItemContent({
   chapters,
 }: ViewerItemContentProps) {
   const file = save.files[item.fileIndex];
-  if (!file) {
-    return null;
-  }
+  if (!file) return null;
 
   if (
     item.capability.surface === "raster" ||
@@ -167,9 +165,7 @@ export function SaveViewer({
         Math.max(0, items.length - 1),
       );
       const next = Math.min(items.length - 1, Math.max(0, current + delta));
-      if (items.length === 0 || next === current) {
-        return false;
-      }
+      if (items.length === 0 || next === current) return false;
       activeIndexRef.current = next;
       setPosition({ saveId: save.id, index: next });
       return true;
@@ -233,9 +229,7 @@ export function SaveViewer({
   }, [navigation, onNavigationChange]);
 
   useEffect(() => {
-    if (!navRef) {
-      return;
-    }
+    if (!navRef) return;
     navRef.current = { step };
     return () => {
       navRef.current = null;
@@ -245,16 +239,10 @@ export function SaveViewer({
   const previousUrl = preloadableImageUrl(items[boundedIndex - 1]);
   const nextUrl = preloadableImageUrl(items[boundedIndex + 1]);
   useEffect(() => {
-    if (!previousUrl && !nextUrl) {
-      return;
-    }
+    if (!previousUrl && !nextUrl) return;
     const timer = window.setTimeout(() => {
-      if (nextUrl) {
-        preloadImage(nextUrl);
-      }
-      if (previousUrl) {
-        preloadImage(previousUrl);
-      }
+      if (nextUrl) preloadImage(nextUrl);
+      if (previousUrl) preloadImage(previousUrl);
     }, PRELOAD_SETTLE_MS);
     return () => window.clearTimeout(timer);
   }, [previousUrl, nextUrl]);
@@ -273,9 +261,7 @@ export function SaveViewer({
   const stage = useHeldStage(target);
 
   const downloadable = needsVideoDownload(save);
-  if (!activeItem && !downloadable) {
-    return null;
-  }
+  if (!activeItem && !downloadable) return null;
 
   return (
     <MediaViewerFrame showControls={showControls}>

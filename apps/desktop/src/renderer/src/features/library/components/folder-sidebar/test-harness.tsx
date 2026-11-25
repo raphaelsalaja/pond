@@ -212,9 +212,7 @@ export function folderTransfer(id = ""): FolderTransfer {
     effectAllowed: "all",
     setData(type: string, value: string) {
       data.set(type, value);
-      if (!types.includes(type)) {
-        types.push(type);
-      }
+      if (!types.includes(type)) types.push(type);
     },
     getData(type: string) {
       return data.get(type) ?? "";
@@ -239,9 +237,7 @@ export function createFolderSidebarHarness() {
   let stopViewUrlSync: (() => void) | null = null;
 
   function getHost(): HTMLDivElement {
-    if (!host) {
-      throw new Error("Sidebar harness isn't set up");
-    }
+    if (!host) throw new Error("Sidebar harness isn't set up");
     return host;
   }
 
@@ -250,9 +246,7 @@ export function createFolderSidebarHarness() {
       return getHost();
     },
     get router(): LibraryTestRouter {
-      if (!router) {
-        throw new Error("Sidebar harness isn't mounted");
-      }
+      if (!router) throw new Error("Sidebar harness isn't mounted");
       return router;
     },
     /** Replaces the Library the sidebar reads; counts and queue summary merge into the current values. */
@@ -283,9 +277,7 @@ export function createFolderSidebarHarness() {
       root = createRoot(host);
     },
     async cleanup(): Promise<void> {
-      if (root) {
-        await act(async () => root?.unmount());
-      }
+      if (root) await act(async () => root?.unmount());
       stopViewUrlSync?.();
       stopViewUrlSync = null;
       host?.remove();
@@ -303,9 +295,7 @@ export function createFolderSidebarHarness() {
           node.getAttribute("aria-label") === label ||
           (node.textContent?.replace(/[\d,]+$/, "").trim() ?? "") === label,
       );
-      if (!match) {
-        throw new Error(`Missing sidebar button: ${label}`);
-      }
+      if (!match) throw new Error(`Missing sidebar button: ${label}`);
       return match;
     },
     iconButton(label: string): HTMLElement {
@@ -329,9 +319,7 @@ export function createFolderSidebarHarness() {
       return node;
     },
     async mount(path = "/"): Promise<LibraryTestRouter> {
-      if (!root) {
-        throw new Error("Sidebar harness isn't set up");
-      }
+      if (!root) throw new Error("Sidebar harness isn't set up");
       const next = createLibraryTestRouter(path, {
         component: RailAndSidebar,
         routes: (library) => [

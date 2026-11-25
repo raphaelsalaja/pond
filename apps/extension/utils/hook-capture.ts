@@ -9,22 +9,12 @@ export function acceptHookCapture(
   payload: PondCapturePayload,
   settings: PondSettings,
 ): PondCapturePayload | null {
-  if (!settings.enabled[source]) {
-    return null;
-  }
+  if (!settings.enabled[source]) return null;
   const trigger = payload.trigger ?? "";
-  if (!trigger.startsWith(`${source}:`)) {
-    return null;
-  }
-  if (isLikeTrigger(source, trigger) && !settings.likes[source]) {
-    return null;
-  }
-  if (!/^https:\/\//i.test(payload.url)) {
-    return null;
-  }
-  if (hostToSource(payload.url) !== source) {
-    return null;
-  }
+  if (!trigger.startsWith(`${source}:`)) return null;
+  if (isLikeTrigger(source, trigger) && !settings.likes[source]) return null;
+  if (!/^https:\/\//i.test(payload.url)) return null;
+  if (hostToSource(payload.url) !== source) return null;
   return { url: payload.url, trigger };
 }
 
@@ -50,9 +40,7 @@ export function createRateLimit(
     while (recent.length > 0 && now - (recent[0] ?? 0) >= windowMs) {
       recent.shift();
     }
-    if (recent.length >= limit) {
-      return false;
-    }
+    if (recent.length >= limit) return false;
     recent.push(now);
     return true;
   };

@@ -49,21 +49,15 @@ async function analyzeSaveMetadata(
     const mediaType = classifyLibraryFile(entry.path, entry.mimeType).mediaType;
     return ["image", "video", "audio"].includes(mediaType);
   });
-  if (!file) {
-    return false;
-  }
+  if (!file) return false;
   const mediaType = classifyLibraryFile(file.path, file.mimeType).mediaType;
-  if (!force && row.metadataVersion === 1) {
-    return false;
-  }
+  if (!force && row.metadataVersion === 1) return false;
   const path = saveFile(row.id, file.path);
   const metadata =
     mediaType === "image"
       ? await extractImageMetadata(path)
       : await extractMediaMetadata(path);
-  if (Object.keys(metadata).length === 0) {
-    return false;
-  }
+  if (Object.keys(metadata).length === 0) return false;
   await persistSave(
     row.id,
     { ...metadata, metadataVersion: 1 },
@@ -113,9 +107,7 @@ export const savesMutationQueries = {
       meta: { actor: "user", actorReason: "empty-trash" },
     }));
     await executeBatch(txs);
-    for (const transaction of txs) {
-      recordForUndo(transaction);
-    }
+    for (const transaction of txs) recordForUndo(transaction);
     return { ok: true, count: txs.length };
   },
 
@@ -135,9 +127,7 @@ export const savesMutationQueries = {
       meta: { actor: "user", actorReason: "restore-all" },
     }));
     await executeBatch(txs);
-    for (const transaction of txs) {
-      recordForUndo(transaction);
-    }
+    for (const transaction of txs) recordForUndo(transaction);
     return { ok: true, count: txs.length };
   },
 
@@ -164,9 +154,7 @@ export const savesMutationQueries = {
   "saves.setPhash": query(
     z.object({ id: StringParam, phash: NullableStringParam }),
     async (params): Promise<QueryResult<"saves.setPhash">> => {
-      if (!params.id) {
-        return SAVE_NOT_FOUND;
-      }
+      if (!params.id) return SAVE_NOT_FOUND;
       await persistSave(
         params.id,
         { phash: params.phash },
@@ -186,9 +174,7 @@ export const savesMutationQueries = {
       embeddingModel: NullableStringParam,
     }),
     async (params): Promise<QueryResult<"saves.setEmbedding">> => {
-      if (!params.id) {
-        return SAVE_NOT_FOUND;
-      }
+      if (!params.id) return SAVE_NOT_FOUND;
       const db = await getDb();
       await db
         .update(saves)
@@ -198,9 +184,7 @@ export const savesMutationQueries = {
         })
         .where(eq(saves.id, params.id));
       const vector = parseJsonVector(params.embedding);
-      if (vector) {
-        upsertVec(db.$raw, "text", params.id, vector);
-      }
+      if (vector) upsertVec(db.$raw, "text", params.id, vector);
       return { ok: true };
     },
   ),
@@ -217,15 +201,11 @@ export const savesMutationQueries = {
       const updated = await persistSave(params.id, params.patch, {
         actorReason: "enrichment:derived",
       });
-      if (!updated) {
-        return SAVE_NOT_FOUND;
-      }
+      if (!updated) return SAVE_NOT_FOUND;
       if (params.patch.clipEmbedding) {
         const db = await getDb();
         const vector = parseJsonVector(params.patch.clipEmbedding);
-        if (vector) {
-          upsertVec(db.$raw, "clip", params.id, vector);
-        }
+        if (vector) upsertVec(db.$raw, "clip", params.id, vector);
       }
       return { ok: true };
     },
@@ -236,11 +216,7 @@ export const savesMutationQueries = {
     const rows = await db.select().from(saves);
     const { analyzeSaveColors } = await import("../../core/save-colors");
     let updated = 0;
-    for (const row of rows) {
-      if (await analyzeSaveColors(row, false)) {
-        updated++;
-      }
-    }
+    for (const row of rows) if (await analyzeSaveColors(row, false)) updated++;
     return { ok: true as const, updated };
   },
 
@@ -248,11 +224,8 @@ export const savesMutationQueries = {
     const db = await getDb();
     const rows = await db.select().from(saves);
     let updated = 0;
-    for (const row of rows) {
-      if (await analyzeSaveMetadata(row, false)) {
-        updated++;
-      }
-    }
+    for (const row of rows)
+      if (await analyzeSaveMetadata(row, false)) updated++;
     return { ok: true as const, updated };
   },
 
@@ -261,9 +234,7 @@ export const savesMutationQueries = {
     async ({ id }): Promise<QueryResult<"saves.reanalyzeColors">> => {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
-      if (!row) {
-        return SAVE_NOT_FOUND;
-      }
+      if (!row) return SAVE_NOT_FOUND;
       const { analyzeSaveColors } = await import("../../core/save-colors");
       const updated = await analyzeSaveColors(row, true);
       return updated
@@ -283,9 +254,7 @@ export const savesMutationQueries = {
     async ({ id, color }): Promise<QueryResult<"saves.setPrimaryColor">> => {
       const db = await getDb();
       const row = db.select().from(saves).where(eq(saves.id, id)).get();
-      if (!row) {
-        return SAVE_NOT_FOUND;
-      }
+      if (!row) return SAVE_NOT_FOUND;
       const primaryColor = color?.toLowerCase() ?? null;
       if (
         primaryColor &&
@@ -374,9 +343,7 @@ export const savesMutationQueries = {
   "saves.ensureTextCover": query(
     z.object({ id: StringParam, force: FlagParam.default(false) }),
     async (params) => {
-      if (!params.id) {
-        return SAVE_NOT_FOUND;
-      }
+      if (!params.id) return SAVE_NOT_FOUND;
       const captured = await runRenderTextCover(params.id, {
         force: params.force,
       });

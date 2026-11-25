@@ -144,41 +144,21 @@ function isRetryingTask(task: WireTask): boolean {
 }
 
 function liveStatus(save: Save): DownloadStatus | null {
-  if (save.status === "skipped") {
-    return "skipped";
-  }
+  if (save.status === "skipped") return "skipped";
   if (save.status === "failed") {
-    if (wasCancelled(save)) {
-      return "cancelled";
-    }
-    if (save.tasks?.some((task) => task.status === "dead")) {
-      return "dead";
-    }
+    if (wasCancelled(save)) return "cancelled";
+    if (save.tasks?.some((task) => task.status === "dead")) return "dead";
     return "failed";
   }
-  if (save.status !== "ingesting") {
-    return null;
-  }
+  if (save.status !== "ingesting") return null;
   const tasks = save.tasks ?? [];
-  if (tasks.some((t) => t.status === "running")) {
-    return "running";
-  }
-  if (tasks.some((t) => t.status === "blocked")) {
-    return "blocked";
-  }
-  if (tasks.some((t) => t.status === "dead")) {
-    return "dead";
-  }
-  if (tasks.some((t) => t.status === "cancelled")) {
-    return "cancelled";
-  }
+  if (tasks.some((t) => t.status === "running")) return "running";
+  if (tasks.some((t) => t.status === "blocked")) return "blocked";
+  if (tasks.some((t) => t.status === "dead")) return "dead";
+  if (tasks.some((t) => t.status === "cancelled")) return "cancelled";
   const next = tasks.find((t) => t.status !== "done");
-  if (next && isRetryingTask(next)) {
-    return "retrying";
-  }
-  if (next?.status === "deferred") {
-    return "parked";
-  }
+  if (next && isRetryingTask(next)) return "retrying";
+  if (next?.status === "deferred") return "parked";
   return "waiting";
 }
 
@@ -196,12 +176,8 @@ function currentTask(save: Save): WireTask | null {
 function latestTaskError(save: Save): string | null {
   let latest: WireTask | null = null;
   for (const t of save.tasks ?? []) {
-    if (t.status === "done" || !t.lastError) {
-      continue;
-    }
-    if (!latest || t.updatedAt > latest.updatedAt) {
-      latest = t;
-    }
+    if (t.status === "done" || !t.lastError) continue;
+    if (!latest || t.updatedAt > latest.updatedAt) latest = t;
   }
   return latest?.lastError ?? null;
 }
@@ -244,9 +220,7 @@ export function projectLiveDownloads(
       continue;
     }
     const status = liveStatus(save);
-    if (!status) {
-      continue;
-    }
+    if (!status) continue;
     const tasks = save.tasks ?? [];
     const done = tasks.filter((t) => t.status === "done").length;
     const task = currentTask(save);
@@ -330,9 +304,7 @@ export function matchesDownloadFilters(
     return false;
   }
   const q = filters.q.trim().toLowerCase();
-  if (!q) {
-    return true;
-  }
+  if (!q) return true;
   const hay = [row.name, row.url, row.stage, row.error, row.source]
     .filter(Boolean)
     .join(" ")

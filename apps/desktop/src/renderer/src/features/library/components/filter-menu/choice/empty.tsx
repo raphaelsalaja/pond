@@ -26,9 +26,7 @@ export function EmptyChoice({
     const next = rows.filter((row) => row.field !== field);
     if (checked) {
       const predicate: Predicate = { field, operator: "empty", value: true };
-      if (excluded) {
-        predicate.negate = true;
-      }
+      if (excluded) predicate.negate = true;
       next.push(predicate);
     }
     onChange(next);

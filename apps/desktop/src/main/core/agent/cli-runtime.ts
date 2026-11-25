@@ -337,11 +337,7 @@ export function scrubbedEnvironment(
     }
   }
   const assign = (name: string, value: string) => {
-    for (const key of Object.keys(env)) {
-      if (fold(key) === name) {
-        delete env[key];
-      }
-    }
+    for (const key of Object.keys(env)) if (fold(key) === name) delete env[key];
     env[name] = value;
   };
   if (codexHome) {
@@ -415,15 +411,10 @@ export async function runCli(input: {
     let failure: Error | undefined;
     let forceKill: ReturnType<typeof setTimeout> | undefined;
     const kill = (signal: NodeJS.Signals) => {
-      if (!child.pid) {
-        return;
-      }
+      if (!child.pid) return;
       try {
-        if (process.platform !== "win32") {
-          process.kill(-child.pid, signal);
-        } else {
-          killProcessTree(child, signal);
-        }
+        if (process.platform !== "win32") process.kill(-child.pid, signal);
+        else killProcessTree(child, signal);
       } catch {
         /* The process group may already have exited. */
       }
@@ -440,9 +431,7 @@ export async function runCli(input: {
       input.timeoutMs ?? 5 * 60_000,
     );
     input.signal?.addEventListener("abort", abort, { once: true });
-    if (input.signal?.aborted) {
-      abort();
-    }
+    if (input.signal?.aborted) abort();
     child.stdout.setEncoding("utf8");
     child.stderr.setEncoding("utf8");
     const collect = (data: string, output: "stdout" | "stderr") => {
@@ -451,33 +440,23 @@ export async function runCli(input: {
         stop(new Error(`${command} returned too much output.`));
         return;
       }
-      if (output === "stdout") {
-        stdout += data;
-      } else {
-        stderr += data;
-      }
+      if (output === "stdout") stdout += data;
+      else stderr += data;
     };
     child.stdout.on("data", (data: string) => collect(data, "stdout"));
     child.stderr.on("data", (data: string) => collect(data, "stderr"));
     child.stdin.on("error", (error: NodeJS.ErrnoException) => {
-      if (error.code !== "EPIPE") {
-        stop(error);
-      }
+      if (error.code !== "EPIPE") stop(error);
     });
     child.on("error", (error) => {
       failure = error;
     });
     child.on("close", (code) => {
       clearTimeout(timer);
-      if (forceKill) {
-        clearTimeout(forceKill);
-      }
+      if (forceKill) clearTimeout(forceKill);
       input.signal?.removeEventListener("abort", abort);
-      if (failure) {
-        reject(failure);
-      } else {
-        resolve({ stdout, stderr, code });
-      }
+      if (failure) reject(failure);
+      else resolve({ stdout, stderr, code });
     });
     child.stdin.end(input.stdin ?? "");
   });
@@ -537,9 +516,7 @@ async function loadBundledCodexCatalog(
   codexHome: string,
   signal?: AbortSignal,
 ) {
-  if (bundledCodexCatalog) {
-    return bundledCodexCatalog;
-  }
+  if (bundledCodexCatalog) return bundledCodexCatalog;
   const result = await runCli({
     provider: "codex",
     args: ["debug", "models", "--bundled"],
@@ -548,9 +525,7 @@ async function loadBundledCodexCatalog(
     timeoutMs: 15_000,
     signal,
   });
-  if (result.code !== 0) {
-    throw new Error("Codex model catalog is unavailable.");
-  }
+  if (result.code !== 0) throw new Error("Codex model catalog is unavailable.");
   const parsed = codexCatalogSchema.parse(JSON.parse(result.stdout));
   bundledCodexCatalog ??= parsed;
   return bundledCodexCatalog;
@@ -605,19 +580,13 @@ export function listedCodexModels(
   models: Array<z.infer<typeof codexCatalogModelSchema>>,
 ): Array<CliModel> {
   return models.flatMap((model) => {
-    if (model.visibility !== "list") {
-      return [];
-    }
+    if (model.visibility !== "list") return [];
     const entry: CliModel = {
       id: model.slug,
       name: model.display_name || model.slug,
     };
-    if (model.description) {
-      entry.description = model.description;
-    }
-    if (model.context_window) {
-      entry.contextWindow = model.context_window;
-    }
+    if (model.description) entry.description = model.description;
+    if (model.context_window) entry.contextWindow = model.context_window;
     return [entry];
   });
 }
@@ -677,9 +646,7 @@ export async function prepareCodexRuntime(
     const fallback = models.toSorted(
       (left, right) => Number(right.priority ?? 0) - Number(left.priority ?? 0),
     )[0];
-    if (!fallback) {
-      throw new Error("Codex model catalog is unavailable.");
-    }
+    if (!fallback) throw new Error("Codex model catalog is unavailable.");
     models.push({
       ...fallback,
       slug: model,
@@ -703,15 +670,11 @@ export function codexRuntimeArgs(runtime: CodexRuntime) {
 }
 
 function supportsClaudeIsolation(result: CliResult): boolean {
-  if (result.code !== 0) {
-    return false;
-  }
+  if (result.code !== 0) return false;
   const version = `${result.stdout}\n${result.stderr}`.match(
     /\b(\d+)\.(\d+)\.(\d+)\b/,
   );
-  if (!version) {
-    return false;
-  }
+  if (!version) return false;
   const [, majorText = "0", minorText = "0", patchText = "0"] = version;
   const [major = 0, minor = 0, patch = 0] = [
     majorText,
@@ -894,9 +857,7 @@ export async function checkCliConnection(
         auth.success &&
         auth.data.loggedIn &&
         ["claude.ai", "oauth_token"].includes(auth.data.authMethod);
-      if (!subscriptionLogin) {
-        return { ok: false, error: loginHint(provider) };
-      }
+      if (!subscriptionLogin) return { ok: false, error: loginHint(provider) };
       const capability = await runCli({
         provider,
         cwd: homedir(),
@@ -910,9 +871,7 @@ export async function checkCliConnection(
           "--version",
         ],
       });
-      if (supportsClaudeIsolation(capability)) {
-        return { ok: true };
-      }
+      if (supportsClaudeIsolation(capability)) return { ok: true };
       return {
         ok: false,
         error: "Update Claude Code to v2.1.248 or later, then connect again.",

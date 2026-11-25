@@ -22,9 +22,7 @@ export function CanvasesSection({ activeId }: { activeId: string | null }) {
   const [sidebar] = usePrefs("sidebar");
   useRevealSidebarSection("canvases", editingId !== null);
 
-  if (!sidebar.sections.canvases) {
-    return null;
-  }
+  if (!sidebar.sections.canvases) return null;
 
   return (
     <Sidebar.Group>

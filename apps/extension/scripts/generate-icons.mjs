@@ -34,6 +34,4 @@ async function write(size) {
   console.log(`wrote ${out} (${size}×${size}, ${png.length} bytes)`);
 }
 
-for (const size of [16, 32, 48, 128]) {
-  await write(size);
-}
+for (const size of [16, 32, 48, 128]) await write(size);

@@ -348,9 +348,7 @@ export function alignItems(
       ALIGN_ICONS[align],
     ),
   );
-  if (!vertical) {
-    return horizontal;
-  }
+  if (!vertical) return horizontal;
   return [
     ...horizontal,
     { type: "separator" },

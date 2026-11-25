@@ -111,9 +111,7 @@ export async function watchNow(
     ev.error = toErrorInfo(error);
   } finally {
     const entry = inFlight.get(watchId);
-    if (entry) {
-      clearTimeout(entry.watchdog);
-    }
+    if (entry) clearTimeout(entry.watchdog);
     inFlight.delete(watchId);
     void patchWatchSync(watchId, { runningSince: null }).catch(
       (cause: unknown) => {
@@ -123,9 +121,7 @@ export async function watchNow(
     ev.durationMs = Date.now() - startedAt;
     ev.lockHeldMs = ev.durationMs;
     ev.watchdogTripped = watchdogTripped;
-    if (watchdogTripped) {
-      ev.outcome = "aborted";
-    }
+    if (watchdogTripped) ev.outcome = "aborted";
     void commitEvent(ev);
   }
 }
@@ -293,17 +289,11 @@ async function harvestWatch(
   if (source === "youtube" || source === "tiktok") {
     return listYtdlpWatch(source, handle, kind, signal);
   }
-  if (source === "pinterest") {
-    return listPinterestWatch(handle, kind, signal);
-  }
-  if (source === "cosmos") {
-    return listCosmosWatch(handle);
-  }
+  if (source === "pinterest") return listPinterestWatch(handle, kind, signal);
+  if (source === "cosmos") return listCosmosWatch(handle);
   if (WATCH_NEEDS_SESSION.includes(source)) {
     const partition = await resolveViaPartition(watch);
-    if (!partition) {
-      return { ok: false, reason: "auth_required" };
-    }
+    if (!partition) return { ok: false, reason: "auth_required" };
     return listProfileWatch(source, handle, partition, kind);
   }
   return { ok: false, reason: "unknown" };
@@ -318,11 +308,8 @@ function feedEntriesFilter(
   for (const entry of entries) {
     const source = entry.source ?? fallback;
     const ids = idsBySource.get(source);
-    if (ids) {
-      ids.push(entry.sourceId);
-    } else {
-      idsBySource.set(source, [entry.sourceId]);
-    }
+    if (ids) ids.push(entry.sourceId);
+    else idsBySource.set(source, [entry.sourceId]);
   }
   return (
     or(
@@ -352,12 +339,8 @@ async function persistWatchWatermark(
     lastError: null,
     knownCount: opts.total,
   };
-  if (opts.newestId) {
-    patch.highWaterMark = opts.newestId;
-  }
-  if (opts.firstCheck) {
-    patch.lastFullSyncAt = lastSyncedAt;
-  }
+  if (opts.newestId) patch.highWaterMark = opts.newestId;
+  if (opts.firstCheck) patch.lastFullSyncAt = lastSyncedAt;
   await patchWatchSync(watchId, patch);
   return lastSyncedAt;
 }

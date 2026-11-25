@@ -42,14 +42,10 @@ export function resolveWindowsCommand(
   for (const directory of (pathKey ? (env[pathKey] ?? "") : "").split(
     delimiter,
   )) {
-    if (!directory) {
-      continue;
-    }
+    if (!directory) continue;
     for (const candidate of names) {
       const path = join(directory, candidate);
-      if (exists(path)) {
-        return path;
-      }
+      if (exists(path)) return path;
     }
   }
   return null;

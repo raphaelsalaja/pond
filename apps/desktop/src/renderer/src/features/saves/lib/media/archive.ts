@@ -54,18 +54,12 @@ export async function loadArchiveManifest(
   save: Save,
 ): Promise<ArchiveManifest | null> {
   const file = archiveManifestFile(save);
-  if (!file) {
-    return null;
-  }
+  if (!file) return null;
   try {
     const res = await fetch(buildPondUrl(save.id, file));
-    if (!res.ok) {
-      return null;
-    }
+    if (!res.ok) return null;
     const parsed = ManifestSchema.safeParse(await res.json());
-    if (!parsed.success) {
-      return null;
-    }
+    if (!parsed.success) return null;
     return {
       ...parsed.data,
       scope: parsed.data.scope === "page" ? "page" : "site",
@@ -85,9 +79,7 @@ export function buildArchiveViewerUrl(
   manifest: ArchiveManifest,
 ): string | null {
   const warc = archiveWarcFile(save);
-  if (!warc) {
-    return null;
-  }
+  if (!warc) return null;
   const source = pondFileUrl(save.id, warc.path);
   const coll = `${save.id}-${manifest.archivedAt.replaceAll(/[^0-9]/g, "")}`;
   const params = new URLSearchParams({ source, url: pageUrl, coll });

@@ -42,9 +42,7 @@ export async function dropIntoFolder(
   }));
   const saveIds = matched.flatMap((file) => (file.id ? [file.id] : []));
   const outside = matched.flatMap((file) => (file.id ? [] : [file.path]));
-  if (saveIds.length > 0) {
-    await deps.addSaves(drop.folderId, saveIds);
-  }
+  if (saveIds.length > 0) await deps.addSaves(drop.folderId, saveIds);
   const imports =
     outside.length > 0
       ? await deps.importFiles(outside, drop.folderId)

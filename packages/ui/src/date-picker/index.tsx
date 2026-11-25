@@ -236,9 +236,7 @@ function Calendar({
   const next = addMonths(focused, 1);
 
   useEffect(() => {
-    if (!moved.current) {
-      return;
-    }
+    if (!moved.current) return;
     moved.current = false;
     grid.current
       ?.querySelector<HTMLElement>(`[data-day="${formatDay(focused)}"]`)
@@ -253,15 +251,11 @@ function Calendar({
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      if (!outside(focused)) {
-        onSelect(focused);
-      }
+      if (!outside(focused)) onSelect(focused);
       return;
     }
     const target = keyTarget(event, focused, weekStart);
-    if (!target) {
-      return;
-    }
+    if (!target) return;
     event.preventDefault();
     move(target);
   };
@@ -350,9 +344,7 @@ function Calendar({
                     onClick={disabled ? undefined : () => onSelect(day)}
                     onKeyDown={onKeyDown}
                     onFocus={() => {
-                      if (!sameDay(day, focused)) {
-                        setFocused(day);
-                      }
+                      if (!sameDay(day, focused)) setFocused(day);
                     }}
                   >
                     {day.getDate()}

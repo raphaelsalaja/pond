@@ -14,15 +14,9 @@ function catalogLoadError(
   models: Array<CatalogModel>,
   errors: Array<string>,
 ) {
-  if (models.length) {
-    return null;
-  }
-  if (isError) {
-    return "Could not load models. Try again.";
-  }
-  if (!errors.length) {
-    return null;
-  }
+  if (models.length) return null;
+  if (isError) return "Could not load models. Try again.";
+  if (!errors.length) return null;
   return errors.length === 1 ? errors[0] : "Could not load models. Try again.";
 }
 
@@ -57,9 +51,7 @@ export function useModelsCatalog(agent: AgentPrefs) {
   const pending = queries.some((query) => query.isPending);
   const rows = connected.flatMap((entry, index) => {
     const query = queries[index];
-    if (!query || query.isPending) {
-      return [];
-    }
+    if (!query || query.isPending) return [];
     return [
       {
         provider: entry.id,
@@ -102,9 +94,7 @@ export function useModelsCatalog(agent: AgentPrefs) {
       );
   const retry = () => {
     void connections.refetch();
-    for (const query of queries) {
-      void query.refetch();
-    }
+    for (const query of queries) void query.refetch();
   };
   return {
     connectionsPending: connections.isPending,

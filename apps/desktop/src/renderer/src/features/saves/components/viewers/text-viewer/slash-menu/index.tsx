@@ -196,9 +196,7 @@ const GROUPS: Array<Array<SlashOption>> = [
 
 function slashTrigger(text: string): MenuTextMatch | null {
   const match = /(?:^|\s)\/([^\s/]*)$/.exec(text);
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
   const query = match[1] ?? "";
   return {
     leadOffset: match.index + match[0].length - query.length - 1,
@@ -208,9 +206,7 @@ function slashTrigger(text: string): MenuTextMatch | null {
 }
 
 function matchesQuery(item: SlashOption, term: string): boolean {
-  if (!term) {
-    return true;
-  }
+  if (!term) return true;
   return (
     item.label.toLowerCase().includes(term) ||
     item.keywords.toLowerCase().includes(term) ||
@@ -223,9 +219,7 @@ export function SlashMenu() {
   const [editor] = useLexicalComposerContext();
   const [query, setQuery] = useState<string | null>(null);
   const groups = useMemo(() => {
-    if (query === null) {
-      return [];
-    }
+    if (query === null) return [];
     const term = query.toLowerCase();
     return GROUPS.flatMap((group) => {
       const items = group.filter((item) => matchesQuery(item, term));

@@ -33,9 +33,7 @@ function centerSlide(
 ) {
   const nodes = slideNodes(scroller);
   const slide = nodes[clamp(index, 0, nodes.length - 1)];
-  if (!slide) {
-    return;
-  }
+  if (!slide) return;
   const scrollerRect = scroller.getBoundingClientRect();
   const slideRect = slide.getBoundingClientRect();
   const delta =
@@ -76,9 +74,7 @@ export function useActiveSlide(
 ): number {
   const [active, setActive] = useState(0);
   useEffect(() => {
-    if (!scroller) {
-      return;
-    }
+    if (!scroller) return;
     let frame = 0;
     const compute = () => {
       cancelAnimationFrame(frame);
@@ -103,9 +99,7 @@ export function useCarouselNavigation(
 ) {
   const interactedRef = useRef(false);
   useEffect(() => {
-    if (!scroller) {
-      return;
-    }
+    if (!scroller) return;
     const mark = () => {
       interactedRef.current = true;
     };
@@ -119,18 +113,14 @@ export function useCarouselNavigation(
 
   /** Native scroll-snap doesn't settle the first slide to centre on load; "instant" because Blossom sets scroll-behavior:smooth and "auto" would animate the slide in from the left. */
   useEffect(() => {
-    if (!scroller || interactedRef.current) {
-      return;
-    }
+    if (!scroller || interactedRef.current) return;
     centerSlide(scroller, 0, "instant");
   }, [scroller]);
 
   const aimedIndexRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!scroller) {
-      return;
-    }
+    if (!scroller) return;
     const settle = () => {
       if (aimedIndexRef.current === centeredIndex(scroller)) {
         aimedIndexRef.current = null;
@@ -151,15 +141,11 @@ export function useCarouselNavigation(
 
   const step = useCallback(
     (delta: number): boolean => {
-      if (!scroller) {
-        return false;
-      }
+      if (!scroller) return false;
       const count = slideNodes(scroller).length;
       const from = aimedIndexRef.current ?? centeredIndex(scroller);
       const next = clamp(from + delta, 0, count - 1);
-      if (next === from) {
-        return false;
-      }
+      if (next === from) return false;
       interactedRef.current = true;
       aimedIndexRef.current = next;
       centerSlide(scroller, next, "smooth");

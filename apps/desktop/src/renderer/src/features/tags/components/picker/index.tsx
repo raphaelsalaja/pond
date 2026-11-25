@@ -48,9 +48,7 @@ function Root({
   const open = controlledOpen ?? internalOpen;
 
   const setOpen = (next: boolean) => {
-    if (controlledOpen === undefined) {
-      setInternalOpen(next);
-    }
+    if (controlledOpen === undefined) setInternalOpen(next);
     onOpenChange?.(next);
   };
 
@@ -99,17 +97,13 @@ function Content({
   const groups = useTagGroups();
 
   const liveGroup = useMemo(() => {
-    if (target.kind !== "group") {
-      return null;
-    }
+    if (target.kind !== "group") return null;
     return groups.find((g) => g.id === target.group.id) ?? target.group;
   }, [target, groups]);
 
   const tagsByLowerName = useMemo(() => {
     const map = new Map<string, (typeof tags)[number]>();
-    for (const t of tags) {
-      map.set(t.name.toLowerCase(), t);
-    }
+    for (const t of tags) map.set(t.name.toLowerCase(), t);
     return map;
   }, [tags]);
 
@@ -123,9 +117,7 @@ function Content({
   const toggle = useCallback(
     async (rawName: string, options?: { created?: boolean }) => {
       const cleaned = rawName.trim();
-      if (!cleaned) {
-        return;
-      }
+      if (!cleaned) return;
       const lower = cleaned.toLowerCase();
       if (target.kind === "save") {
         const save = target.save;

@@ -19,9 +19,7 @@ document.documentElement.setAttribute(
 );
 
 const root = document.getElementById("root");
-if (!root) {
-  throw new Error("#root element missing");
-}
+if (!root) throw new Error("#root element missing");
 createRoot(root).render(
   <StrictMode>
     <MissingLibraryWindow />

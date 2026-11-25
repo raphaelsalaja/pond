@@ -94,9 +94,7 @@ function Hud({
   });
   const [openedMode] = useState(mode);
   const [switched, setSwitched] = useState(false);
-  if (!switched && mode !== openedMode) {
-    setSwitched(true);
-  }
+  if (!switched && mode !== openedMode) setSwitched(true);
 
   if (!active) {
     return null;
@@ -274,9 +272,7 @@ function Gif({ active, gif, mode }: GifProps) {
     hotkeys,
   );
 
-  if (!active || !gif.ready || mode !== "view") {
-    return null;
-  }
+  if (!active || !gif.ready || mode !== "view") return null;
   const loopStart = clampGifFrame(gif.loop?.[0] ?? 0, gif.frameCount, gif.loop);
   const loopEnd = clampGifFrame(
     gif.loop?.[1] ?? gif.frameCount - 1,

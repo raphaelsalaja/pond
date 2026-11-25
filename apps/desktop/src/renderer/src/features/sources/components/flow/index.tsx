@@ -92,9 +92,7 @@ export function SourceFlowHost() {
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (next) {
-          return;
-        }
+        if (next) return;
         sourceFlow.close();
         connectFlow.clear();
         mymindConnectFlow.clear();

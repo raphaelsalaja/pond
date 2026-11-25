@@ -79,9 +79,7 @@ export function QuickCaptureOverlay() {
 
   useEffect(() => {
     void window.pondCapture?.ready().then((next) => {
-      if (!next) {
-        return;
-      }
+      if (!next) return;
       paintShell(next.shell);
       setSnapshot(next);
       setFields(initialFields(next));
@@ -106,9 +104,7 @@ export function QuickCaptureOverlay() {
   }
 
   async function submit() {
-    if (locked) {
-      return;
-    }
+    if (locked) return;
     if (!text.trim() && !paths.length) {
       setError("Add a link, some text, or a file.");
       return;
@@ -168,9 +164,7 @@ export function QuickCaptureOverlay() {
         event.preventDefault();
         setDragging(false);
         const api = window.pondCapture;
-        if (!api) {
-          return;
-        }
+        if (!api) return;
         void api.drag("drop");
         if (!locked) {
           addPaths(

@@ -10,9 +10,7 @@ function harness(options: { failLoad?: boolean } = {}) {
   const resource = createIdleResource({
     load: async () => {
       loads += 1;
-      if (options.failLoad) {
-        throw new Error("load failed");
-      }
+      if (options.failLoad) throw new Error("load failed");
       return {
         id: loads,
         dispose: () => {
@@ -31,9 +29,7 @@ function harness(options: { failLoad?: boolean } = {}) {
   });
   const fireIdle = async () => {
     for (const timer of timers.splice(0)) {
-      if (!timer.cancelled) {
-        timer.run();
-      }
+      if (!timer.cancelled) timer.run();
     }
     await Promise.resolve();
     await Promise.resolve();

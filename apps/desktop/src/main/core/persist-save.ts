@@ -27,9 +27,7 @@ export async function persistSave(
       newFiles: opts.newFiles,
       replaceFilesWithKind: opts.replaceFilesWithKind,
     });
-    if (!updated) {
-      return null;
-    }
+    if (!updated) return null;
 
     const filesChanged =
       (opts.newFiles?.length ?? 0) > 0 ||

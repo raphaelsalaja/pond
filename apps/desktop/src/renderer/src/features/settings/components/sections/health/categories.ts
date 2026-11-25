@@ -164,14 +164,10 @@ export function describeSize(size: number | null): string {
 
 function foundFromFiles(files: ReadonlyArray<HealthFileCheck>): string {
   const problems = files.filter((file) => file.finding !== "ok");
-  if (problems.length === 0) {
-    return "Every file checked out.";
-  }
+  if (problems.length === 0) return "Every file checked out.";
   const shown = problems.slice(0, 2).map(describeFinding).join(". ");
   const extra = problems.length - 2;
-  if (extra <= 0) {
-    return `${shown}.`;
-  }
+  if (extra <= 0) return `${shown}.`;
   const more = formatPlural(extra, {
     one: "more file has",
     other: "more files have",
@@ -593,9 +589,7 @@ function downloadResolution(
   if (item.row.status === "failed" || item.row.status === "dead") {
     return "retry";
   }
-  if (status === "blocked") {
-    return "user";
-  }
+  if (status === "blocked") return "user";
   return "wait";
 }
 
@@ -603,9 +597,7 @@ function downloadsCategory(input: HealthInput): HealthCategory {
   const entries: Array<HealthEntry> = [];
   for (const item of input.downloads) {
     const status = downloadStatus(item);
-    if (!status) {
-      continue;
-    }
+    if (!status) continue;
     const { row } = item;
     const attempts = row.task?.attempts ?? row.attempts;
     entries.push({

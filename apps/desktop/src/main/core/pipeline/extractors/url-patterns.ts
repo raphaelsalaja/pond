@@ -28,9 +28,7 @@ export function firstMatch(
   const s = url.href;
   for (const rx of patterns) {
     const m = rx.exec(s);
-    if (m) {
-      return m;
-    }
+    if (m) return m;
   }
   return null;
 }

@@ -70,14 +70,10 @@ function Picker({ onCanvas, onAdd }: PickerProps) {
       () => {
         void findSaveIds(query)
           .then((next) => {
-            if (live) {
-              setIds(next);
-            }
+            if (live) setIds(next);
           })
           .catch(() => {
-            if (live) {
-              setIds([]);
-            }
+            if (live) setIds([]);
           });
       },
       query ? 150 : 0,
@@ -165,9 +161,7 @@ interface ChoiceProps {
 
 function Choice({ id, placed, picked, onToggle }: ChoiceProps) {
   const save = useSave(id);
-  if (!save) {
-    return null;
-  }
+  if (!save) return null;
   const title =
     save.title?.trim() ||
     (save.url ? domainFromUrl(save.url) : null) ||

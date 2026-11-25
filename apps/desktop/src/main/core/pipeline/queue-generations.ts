@@ -233,9 +233,7 @@ export async function cancelQueueGeneration(
           WHERE id = ? AND status IN ('active', 'paused', 'cancelling')`,
         )
         .run(at, at, generationId);
-      if (generation.changes !== 1) {
-        return [];
-      }
+      if (generation.changes !== 1) return [];
       db.$raw
         .prepare(
           `UPDATE tasks
@@ -280,9 +278,7 @@ export async function cancelQueueGeneration(
 export async function completeQueueGenerationIfSettled(
   generationId: string | null,
 ): Promise<void> {
-  if (!generationId) {
-    return;
-  }
+  if (!generationId) return;
   const db = await getDb();
   const at = Date.now();
   db.$raw

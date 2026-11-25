@@ -18,12 +18,8 @@ const CHOICES: ReadonlyArray<{ value: AssistantChoice; label: string }> = [
 ];
 
 function defaultEndpoint(id: AssistantProvider) {
-  if (id === "ollama") {
-    return "http://127.0.0.1:11434/v1";
-  }
-  if (id === "lmstudio") {
-    return "http://127.0.0.1:1234/v1";
-  }
+  if (id === "ollama") return "http://127.0.0.1:11434/v1";
+  if (id === "lmstudio") return "http://127.0.0.1:1234/v1";
   return "";
 }
 
@@ -61,9 +57,7 @@ function ProviderSelect({
       value={value}
       onValueChange={(next) => {
         const match = providers.find((entry) => entry.id === next);
-        if (match) {
-          onChange(match.id);
-        }
+        if (match) onChange(match.id);
       }}
     >
       <Select.Trigger aria-label="Provider">
@@ -114,9 +108,7 @@ function Row({
 export function AssistantOptions({ choices, update }: StepProps) {
   const { assistant, provider, apiKey, endpoint } = choices;
   const choose = (next: AssistantChoice) => {
-    if (next === "later") {
-      return update({ assistant: next });
-    }
+    if (next === "later") return update({ assistant: next });
     const first = providersFor(next)[0]?.id ?? provider;
     update({
       assistant: next,
@@ -131,9 +123,7 @@ export function AssistantOptions({ choices, update }: StepProps) {
         value={[assistant]}
         onValueChange={(value) => {
           const next = CHOICES.find((choice) => choice.value === value[0]);
-          if (next) {
-            choose(next.value);
-          }
+          if (next) choose(next.value);
         }}
       >
         {CHOICES.map(({ value, label }) => (

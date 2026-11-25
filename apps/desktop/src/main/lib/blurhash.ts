@@ -33,9 +33,7 @@ export async function encodeBlurhash(
         .raw()
         .toBuffer({ resolveWithObject: true });
     const { data, info } = await decodePixels(input);
-    if (info.channels !== 4 || info.width < 1 || info.height < 1) {
-      return null;
-    }
+    if (info.channels !== 4 || info.width < 1 || info.height < 1) return null;
     return encode(
       new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength),
       info.width,

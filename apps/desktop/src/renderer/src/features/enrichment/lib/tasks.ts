@@ -43,9 +43,7 @@ export type TaskScope = ReadonlyArray<string> | undefined;
 
 function targetSaves(ids: TaskScope): Array<Save> {
   const live = pool.snapshot().filter((s) => !s.deletedAt);
-  if (!ids || ids.length === 0) {
-    return live;
-  }
+  if (!ids || ids.length === 0) return live;
   const set = new Set(ids);
   return live.filter((s) => set.has(s.id));
 }
@@ -138,9 +136,7 @@ async function reprocessStamped(
   const updated: Array<Save> = [];
   for (const save of targetSaves(ids)) {
     const next = clear(save);
-    if (next) {
-      updated.push(next);
-    }
+    if (next) updated.push(next);
   }
   pool.bulkUpsert(updated);
   kickRescan(ids);

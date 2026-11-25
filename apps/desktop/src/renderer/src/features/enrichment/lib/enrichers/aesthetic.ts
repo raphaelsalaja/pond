@@ -17,9 +17,7 @@ export const aestheticEnricher: Enricher = {
   },
   async run(save: Save) {
     const url = representativeImageUrl(save);
-    if (!url) {
-      return null;
-    }
+    if (!url) return null;
     const image = await loadImage(url);
     const labels = await clipAesthetic(image);
     const model = mediaModelVersion();

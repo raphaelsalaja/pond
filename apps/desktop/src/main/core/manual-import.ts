@@ -98,9 +98,7 @@ const MEDIA_TYPE_PRIORITY: ReadonlyArray<MediaType> = [
 export function mediaTypeForImportedFiles(
   formats: ReadonlyArray<LibraryFileFormat>,
 ): MediaType | null {
-  if (formats.length === 0) {
-    return null;
-  }
+  if (formats.length === 0) return null;
   const counts = new Map<MediaType, number>();
   for (const item of formats) {
     counts.set(item.mediaType, (counts.get(item.mediaType) ?? 0) + 1);
@@ -163,9 +161,7 @@ export function storageKindForImport(
 ): SaveFile["kind"] {
   switch (format.mediaType) {
     case "image":
-      if (format.previewKind === "generic") {
-        return "file";
-      }
+      if (format.previewKind === "generic") return "file";
       return "image";
     case "video":
       return "video";
@@ -289,9 +285,7 @@ async function importManualSave(
       readable.map((item) => item.format),
     ),
   });
-  if (!classified.ok) {
-    return { ok: false, error: classified.error };
-  }
+  if (!classified.ok) return { ok: false, error: classified.error };
 
   const { isTextSave, mediaType } = classified;
 
@@ -435,9 +429,7 @@ async function importManualSave(
         ];
         const nextTags = normalizeTagList([...tags, ...automaticTags]);
         const fontRegistry = await prepareTagRegistryUpdates(nextTags);
-        if (fontRegistry.length) {
-          await executeBatch(fontRegistry);
-        }
+        if (fontRegistry.length) await executeBatch(fontRegistry);
         const files = completed.files.map((file, index) =>
           index === 0
             ? {
@@ -457,9 +449,7 @@ async function importManualSave(
     await ensureSaveThumbnail(id, completed);
   } else {
     const finalRow = (await db.select().from(saves).where(eq(saves.id, id)))[0];
-    if (finalRow) {
-      await writeSaveInfo(finalRow);
-    }
+    if (finalRow) await writeSaveInfo(finalRow);
   }
 
   return { ok: true, id, failedFiles };
@@ -500,9 +490,7 @@ async function inspectImportPath(
   path: string,
 ): Promise<ReadableImport | undefined> {
   const info = await stat(path);
-  if (!info.isFile() || info.size === 0) {
-    return undefined;
-  }
+  if (!info.isFile() || info.size === 0) return undefined;
   const detectedMime = mime.lookup(path) || null;
   const format = classifyLibraryFileFromHeader(
     path,
@@ -524,12 +512,8 @@ async function inspectImportPath(
       extractImageKeywords(path),
     ]);
     item.metadata = metadata;
-    if (metadata.width) {
-      item.width = metadata.width;
-    }
-    if (metadata.height) {
-      item.height = metadata.height;
-    }
+    if (metadata.width) item.width = metadata.width;
+    if (metadata.height) item.height = metadata.height;
     item.keywords = keywords;
   }
   if (format.mediaType === "video" || format.mediaType === "audio") {
@@ -543,9 +527,7 @@ async function inspectMemoryFiles(
 ): Promise<Array<ReadableImport>> {
   const out: Array<ReadableImport> = [];
   for (const file of files) {
-    if (file.bytes.byteLength === 0) {
-      continue;
-    }
+    if (file.bytes.byteLength === 0) continue;
     const format = classifyLibraryFileFromHeader(
       file.filename,
       file.mimeType,
@@ -559,12 +541,8 @@ async function inspectMemoryFiles(
     };
     if (format.mediaType === "image") {
       item.metadata = await extractImageMetadata(file.bytes);
-      if (item.metadata.width) {
-        item.width = item.metadata.width;
-      }
-      if (item.metadata.height) {
-        item.height = item.metadata.height;
-      }
+      if (item.metadata.width) item.width = item.metadata.width;
+      if (item.metadata.height) item.height = item.metadata.height;
       item.keywords = await extractImageKeywords(file.bytes);
     }
     out.push(item);
@@ -611,16 +589,12 @@ export async function importedFilesComplete(
   const originals = (save.files ?? []).filter(
     (file) => !isAuxiliaryKind(file.kind),
   );
-  if (save.status !== "complete" || originals.length < expected) {
-    return false;
-  }
+  if (save.status !== "complete" || originals.length < expected) return false;
   for (const file of originals) {
     const actual = await libraryMediaMetadata(join(directory, file.path)).catch(
       () => null,
     );
-    if (!actual || actual.originalSize !== file.size) {
-      return false;
-    }
+    if (!actual || actual.originalSize !== file.size) return false;
   }
   return true;
 }

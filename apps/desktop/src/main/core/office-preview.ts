@@ -19,21 +19,15 @@ const THUMBNAIL_PATHS = [
 export async function extractOfficePreview(
   path: string,
 ): Promise<Buffer | null> {
-  if (!OFFICE_EXTENSIONS.has(extname(path).toLowerCase())) {
-    return null;
-  }
+  if (!OFFICE_EXTENSIONS.has(extname(path).toLowerCase())) return null;
   try {
     const { default: JSZip } = await import("jszip");
     const zip = await JSZip.loadAsync(await readFile(path));
     for (const name of THUMBNAIL_PATHS) {
       const entry = zip.file(name);
-      if (!entry) {
-        continue;
-      }
+      if (!entry) continue;
       const bytes = Buffer.from(await entry.async("nodebuffer"));
-      if (isJpegOrPng(bytes)) {
-        return bytes;
-      }
+      if (isJpegOrPng(bytes)) return bytes;
     }
     return null;
   } catch {
@@ -42,12 +36,8 @@ export async function extractOfficePreview(
 }
 
 function isJpegOrPng(bytes: Buffer): boolean {
-  if (bytes.length < 8) {
-    return false;
-  }
-  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    return true;
-  }
+  if (bytes.length < 8) return false;
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return true;
   return (
     bytes[0] === 0x89 &&
     bytes[1] === 0x50 &&

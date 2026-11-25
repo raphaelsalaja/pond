@@ -67,9 +67,7 @@ const SOURCE_SECTIONS = new Map(
 
 function sectionIcon(id: string): ReactNode {
   const Icon = ICONS.get(id);
-  if (Icon) {
-    return <Icon />;
-  }
+  if (Icon) return <Icon />;
   const source = SOURCE_SECTIONS.get(id);
   return source ? <BrandTile source={source} size={14} /> : null;
 }
@@ -107,9 +105,7 @@ function isIndexSection(section: SectionDef): boolean {
 
 const SECTIONS_BY_GROUP = new Map<SettingsGroup, Array<SectionDef>>();
 for (const section of SECTIONS) {
-  if (!isIndexSection(section)) {
-    continue;
-  }
+  if (!isIndexSection(section)) continue;
   const list = SECTIONS_BY_GROUP.get(section.group) ?? [];
   list.push(section);
   SECTIONS_BY_GROUP.set(section.group, list);
@@ -143,8 +139,6 @@ interface SettingsMasterGroup {
 export const SETTINGS_MASTER_GROUPS: Array<SettingsMasterGroup> =
   SETTINGS_GROUP_ORDER.flatMap((group) => {
     const sections = SECTIONS_BY_GROUP.get(group) ?? [];
-    if (sections.length === 0) {
-      return [];
-    }
+    if (sections.length === 0) return [];
     return [{ group, label: SETTINGS_GROUP_LABELS[group], sections }];
   });

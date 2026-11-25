@@ -59,9 +59,7 @@ export function useFieldCounts(
           : projected === null || projected === undefined || projected === ""
             ? []
             : [projected];
-        if (!values.length) {
-          tally.empty++;
-        }
+        if (!values.length) tally.empty++;
         for (const value of new Set(
           values.map((value) => String(value).toLowerCase()),
         )) {

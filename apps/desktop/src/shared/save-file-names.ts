@@ -136,9 +136,7 @@ export function assignHarvestedFilenames<T extends { filename: string }>(
   let images = 0;
   let videos = 0;
   return entries.map((entry) => {
-    if (!entry) {
-      return entry;
-    }
+    if (!entry) return entry;
     const ext = extensionOf(entry.filename);
     if (isHarvestedVideoName(entry.filename)) {
       return { ...entry, filename: videoFilename(videos++, ext) };
@@ -149,36 +147,16 @@ export function assignHarvestedFilenames<T extends { filename: string }>(
 
 export function inferKindFromFilename(filename: string): string {
   const name = basenameOf(filename);
-  if (name === THUMBNAIL_DARK_FILE) {
-    return THUMBNAIL_DARK_KIND;
-  }
-  if (isThumbnailFilename(name)) {
-    return THUMBNAIL_KIND;
-  }
-  if (name.startsWith("poster")) {
-    return POSTER_KIND;
-  }
-  if (name.startsWith("cover")) {
-    return IMAGE_KIND;
-  }
-  if (name.startsWith("video")) {
-    return VIDEO_KIND;
-  }
-  if (name.startsWith("media-")) {
-    return IMAGE_KIND;
-  }
-  if (name.startsWith("avatar")) {
-    return AVATAR_KIND;
-  }
-  if (name.startsWith("source-icon")) {
-    return SOURCE_ICON_KIND;
-  }
-  if (name === "archive-manifest.json") {
-    return "archive_manifest";
-  }
-  if (name.startsWith("archive")) {
-    return "archive";
-  }
+  if (name === THUMBNAIL_DARK_FILE) return THUMBNAIL_DARK_KIND;
+  if (isThumbnailFilename(name)) return THUMBNAIL_KIND;
+  if (name.startsWith("poster")) return POSTER_KIND;
+  if (name.startsWith("cover")) return IMAGE_KIND;
+  if (name.startsWith("video")) return VIDEO_KIND;
+  if (name.startsWith("media-")) return IMAGE_KIND;
+  if (name.startsWith("avatar")) return AVATAR_KIND;
+  if (name.startsWith("source-icon")) return SOURCE_ICON_KIND;
+  if (name === "archive-manifest.json") return "archive_manifest";
+  if (name.startsWith("archive")) return "archive";
   return "other";
 }
 
@@ -220,8 +198,6 @@ function basenameOf(path: string): string {
 function extensionOf(filename: string): string {
   const name = basenameOf(filename);
   const dot = name.lastIndexOf(".");
-  if (dot <= 0) {
-    return ".bin";
-  }
+  if (dot <= 0) return ".bin";
   return name.slice(dot).toLowerCase();
 }

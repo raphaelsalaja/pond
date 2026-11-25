@@ -29,9 +29,7 @@ export function listKindsFromTrigger(
   const suffix = trigger.includes(":")
     ? trigger.slice(trigger.lastIndexOf(":") + 1)
     : trigger;
-  if (suffix === "like" || suffix === "upvote") {
-    return ["liked"];
-  }
+  if (suffix === "like" || suffix === "upvote") return ["liked"];
   if (
     suffix === "save" ||
     suffix === "bookmark" ||
@@ -64,17 +62,13 @@ export async function mergeListKindsOntoExisting(
   const incoming = new Map<string, Array<ListKind>>();
   for (const entry of entries) {
     const next = normalizeListKinds(entry.listKinds);
-    if (next.length === 0) {
-      continue;
-    }
+    if (next.length === 0) continue;
     incoming.set(
       entry.sourceId,
       mergeListKinds(incoming.get(entry.sourceId), next),
     );
   }
-  if (incoming.size === 0) {
-    return relisted;
-  }
+  if (incoming.size === 0) return relisted;
 
   const db = await getDb();
   const released: Array<string> = [];
@@ -105,13 +99,9 @@ export async function mergeListKindsOntoExisting(
       .all();
     for (const row of rows) {
       const extra = incoming.get(row.postId);
-      if (!extra) {
-        continue;
-      }
+      if (!extra) continue;
       const merged = mergeListKinds(row.listKinds, extra);
-      if (listKindsEqual(row.listKinds, merged)) {
-        continue;
-      }
+      if (listKindsEqual(row.listKinds, merged)) continue;
       if (row.status === "skipped" && row.importFilter === "list") {
         released.push(row.id);
         relisted.add(row.postId);
@@ -151,9 +141,7 @@ export async function dropMissingListKind(
     .all();
   let dropped = 0;
   for (const row of rows) {
-    if (presentIds.has(row.postId) || !row.listKinds.includes(kind)) {
-      continue;
-    }
+    if (presentIds.has(row.postId) || !row.listKinds.includes(kind)) continue;
     await persistSave(
       row.id,
       { listKinds: row.listKinds.filter((k) => k !== kind) },

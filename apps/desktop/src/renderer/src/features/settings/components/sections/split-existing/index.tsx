@@ -38,9 +38,7 @@ export function SplitExistingSaves() {
   }, []);
 
   useEffect(() => {
-    if (!running) {
-      void refetch();
-    }
+    if (!running) void refetch();
   }, [running, refetch]);
 
   return (

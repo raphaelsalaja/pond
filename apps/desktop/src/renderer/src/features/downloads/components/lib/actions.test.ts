@@ -32,9 +32,7 @@ function createTrashFake(outcome: "trashed" | "rejected") {
     dependencies: {
       trash: async (ids: ReadonlyArray<string>) => {
         trashed.push(ids);
-        if (outcome === "rejected") {
-          throw new Error("Disk unavailable");
-        }
+        if (outcome === "rejected") throw new Error("Disk unavailable");
         return { changed: ids.length, undoId: null };
       },
       notify: (options: NotifyOptions) => {

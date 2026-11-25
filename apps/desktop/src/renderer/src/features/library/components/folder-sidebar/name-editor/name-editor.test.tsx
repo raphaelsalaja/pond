@@ -38,9 +38,7 @@ afterEach(async () => {
 });
 function field() {
   const input = container.querySelector("input");
-  if (!input) {
-    throw new Error("Missing folder name editor");
-  }
+  if (!input) throw new Error("Missing folder name editor");
   return input;
 }
 async function press(key: string) {

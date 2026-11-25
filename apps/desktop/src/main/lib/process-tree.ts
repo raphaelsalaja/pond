@@ -55,16 +55,12 @@ export function trackChildProcess(
   child: TrackableProcess,
   platform: NodeJS.Platform = process.platform,
 ) {
-  if (platform !== "win32" || !child.pid) {
-    return;
-  }
+  if (platform !== "win32" || !child.pid) return;
   tracked.add(child);
   child.once("close", () => tracked.delete(child));
 }
 
 export function killTrackedProcessTrees(deps: ProcessTreeKillDeps = {}) {
-  for (const child of tracked) {
-    killProcessTree(child, "SIGKILL", deps);
-  }
+  for (const child of tracked) killProcessTree(child, "SIGKILL", deps);
   tracked.clear();
 }

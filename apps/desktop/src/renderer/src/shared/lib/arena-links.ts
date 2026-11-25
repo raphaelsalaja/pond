@@ -15,9 +15,7 @@ export async function convertArenaLinks(): Promise<void> {
     timeout: 0,
   });
   const unsubscribe = window.pond.onArenaLinkProgress((progress) => {
-    if (progress.id !== progressId || progress.total === 0) {
-      return;
-    }
+    if (progress.id !== progressId || progress.total === 0) return;
     updateNotification({
       id: notificationId,
       title: "Converting Are.na links",

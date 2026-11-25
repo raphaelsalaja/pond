@@ -23,9 +23,7 @@ async function testModel() {
     apiKey: connection.apiKey,
     baseUrl: connection.baseUrl,
   });
-  if (!model) {
-    throw new Error("Expected the Ollama adapter to load.");
-  }
+  if (!model) throw new Error("Expected the Ollama adapter to load.");
   return model;
 }
 

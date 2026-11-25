@@ -20,18 +20,10 @@ const URL_ATTRIBUTES = new Set(["src", "href", "poster", "xlink:href"]);
 
 function allowedOfflineUrl(value: string): boolean {
   const trimmed = value.trim();
-  if (!trimmed) {
-    return true;
-  }
-  if (trimmed.startsWith("#")) {
-    return true;
-  }
-  if (/^(data|pond):/i.test(trimmed)) {
-    return true;
-  }
-  if (trimmed.startsWith("//")) {
-    return false;
-  }
+  if (!trimmed) return true;
+  if (trimmed.startsWith("#")) return true;
+  if (/^(data|pond):/i.test(trimmed)) return true;
+  if (trimmed.startsWith("//")) return false;
   return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed);
 }
 

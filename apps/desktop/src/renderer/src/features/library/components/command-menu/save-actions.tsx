@@ -38,18 +38,14 @@ export function saveActions(
 ): Array<MenuEntry> {
   const { openId, onOpenSave } = options;
   const select = () => {
-    if (!selection.has(save.id)) {
-      flushSync(() => selectOnlySave(save.id));
-    }
+    if (!selection.has(save.id)) flushSync(() => selectOnlySave(save.id));
   };
   const items = buildSaveMenu(save, {
     clipboardEmpty: tagClipboard.get().length === 0,
     opened: false,
   });
   const entries = specEntries(items, "", `save:${save.id}`).flatMap((entry) => {
-    if (entry.label === "Open Save") {
-      return [];
-    }
+    if (entry.label === "Open Save") return [];
     /** The open Save's pane owns the title field, so renaming another Save opens it first. */
     if (entry.label === "Rename" && openId && openId !== save.id) {
       return [onSave(entry, () => onOpenSave(save.id))];

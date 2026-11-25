@@ -93,13 +93,9 @@ export function MediaBridge({
   }, [duration, loopOverride, meta.videoRef, prefs.loopShortVideos, loopRange]);
 
   useEffect(() => {
-    if (!active || !playing || !loopRange || loopRange[1] > duration) {
-      return;
-    }
+    if (!active || !playing || !loopRange || loopRange[1] > duration) return;
     const video = meta.videoRef.current;
-    if (!video) {
-      return;
-    }
+    if (!video) return;
     let request = 0;
     const loop = () => {
       if (
@@ -116,9 +112,7 @@ export function MediaBridge({
 
   useEffect(() => {
     const video = meta.videoRef.current;
-    if (!active || !video || !loopRange || loopRange[1] > duration) {
-      return;
-    }
+    if (!active || !video || !loopRange || loopRange[1] > duration) return;
     const restart = () => {
       video.currentTime = loopRange[0];
       void video.play().catch(ignoreInterruptedRestart);
@@ -128,15 +122,11 @@ export function MediaBridge({
   }, [active, loopRange, duration, meta.videoRef]);
 
   useEffect(() => {
-    if (restored.current || duration <= 0) {
-      return;
-    }
+    if (restored.current || duration <= 0) return;
     restored.current = true;
     if (prefs.rememberPlayback !== false) {
       const position = viewerMemory.playback(src);
-      if (position > 0 && position < duration - 1) {
-        seek(position);
-      }
+      if (position > 0 && position < duration - 1) seek(position);
     }
   }, [duration, prefs.rememberPlayback, seek, src]);
   useEffect(() => {
@@ -213,9 +203,7 @@ export function MediaBridge({
   );
   const nudgeVolume = (delta: number) => {
     const video = meta.videoRef.current;
-    if (!video) {
-      return;
-    }
+    if (!video) return;
     const next = stepVolume(video.volume, delta);
     // Raising the level while muted should be heard. Lowering it stays muted.
     if (delta > 0 || !video.muted) {
@@ -235,9 +223,7 @@ export function MediaBridge({
   useHotkey(
     bindingKeys(shortcuts, "viewer.volume-up"),
     (event) => {
-      if (event.defaultPrevented || controlOwnsArrowKeys(event)) {
-        return;
-      }
+      if (event.defaultPrevented || controlOwnsArrowKeys(event)) return;
       event.preventDefault();
       nudgeVolume(0.05);
     },
@@ -246,9 +232,7 @@ export function MediaBridge({
   useHotkey(
     bindingKeys(shortcuts, "viewer.volume-down"),
     (event) => {
-      if (event.defaultPrevented || controlOwnsArrowKeys(event)) {
-        return;
-      }
+      if (event.defaultPrevented || controlOwnsArrowKeys(event)) return;
       event.preventDefault();
       nudgeVolume(-0.05);
     },
@@ -265,22 +249,16 @@ export function MediaBridge({
   // The M shortcut writes `muted` directly, so `volumechange` records it.
   useLayoutEffect(() => {
     const video = meta.video;
-    if (!prefsReady || !video || video.muted === prefs.videoMuted) {
-      return;
-    }
+    if (!prefsReady || !video || video.muted === prefs.videoMuted) return;
     applyingMute.current = true;
     writeMedia(video, { muted: prefs.videoMuted });
     applyingMute.current = false;
   }, [meta.video, prefs.videoMuted, prefsReady]);
   useEffect(() => {
     const video = meta.video;
-    if (!video) {
-      return;
-    }
+    if (!video) return;
     const onVolumeChange = () => {
-      if (applyingMute.current || video.muted === videoMutedRef.current) {
-        return;
-      }
+      if (applyingMute.current || video.muted === videoMutedRef.current) return;
       void patchPrefsSection("viewer", { videoMuted: video.muted });
     };
     video.addEventListener("volumechange", onVolumeChange);
@@ -288,14 +266,9 @@ export function MediaBridge({
   }, [meta.video]);
 
   useEffect(() => {
-    if (!prefsReady || !meta.video) {
-      return;
-    }
-    if (active && prefs.autoplayVideo !== false) {
-      play();
-    } else {
-      pause();
-    }
+    if (!prefsReady || !meta.video) return;
+    if (active && prefs.autoplayVideo !== false) play();
+    else pause();
   }, [active, meta.video, play, pause, prefs.autoplayVideo, prefsReady]);
 
   return null;

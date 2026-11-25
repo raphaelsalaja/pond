@@ -14,6 +14,8 @@ export default defineConfig({
     "anti-slop/no-shape-in-symbol-names": "error",
     "anti-slop/no-unknown-parameters": "error",
     "anti-slop/require-safety-comment-for-type-assertion": "error",
+    /** One-line `if` bodies stay as written; bracing them all tripled the migration diff for no behavior change. */
+    curly: "off",
     /** Compound wrappers like `<a {...props} />` get children through props, which this rule reads as empty. */
     "jsx-a11y/anchor-has-content": "off",
     "jsx-a11y/anchor-is-valid": "error",

@@ -65,9 +65,7 @@ const defaultDependencies: MediaUnderstandingQueryDependencies = {
 };
 
 function localProvider(value: string): LocalProvider | null {
-  if (value === "ollama" || value === "lmstudio") {
-    return value;
-  }
+  if (value === "ollama" || value === "lmstudio") return value;
   return null;
 }
 
@@ -87,14 +85,10 @@ async function resolveConnection(
 > {
   const prefs = await dependencies.getPrefs();
   const provider = localProvider(prefs.ai.mediaUnderstandingProvider);
-  if (!provider) {
-    return { ok: false, reason: "model_unavailable" };
-  }
+  if (!provider) return { ok: false, reason: "model_unavailable" };
 
   const modelId = prefs.ai.mediaUnderstandingModelId.trim();
-  if (!modelId) {
-    return { ok: false, reason: "model_unavailable" };
-  }
+  if (!modelId) return { ok: false, reason: "model_unavailable" };
   const configured = connectionFor(
     provider,
     {
@@ -108,12 +102,8 @@ async function resolveConnection(
   const model = listed.models.find(
     (candidate) => candidate.id === modelId && candidate.available !== false,
   );
-  if (!model) {
-    return { ok: false, reason: "model_unavailable" };
-  }
-  if (!visionEnabled(model)) {
-    return { ok: false, reason: "model_not_vision" };
-  }
+  if (!model) return { ok: false, reason: "model_unavailable" };
+  if (!visionEnabled(model)) return { ok: false, reason: "model_not_vision" };
 
   return {
     ok: true,
@@ -135,9 +125,7 @@ export function createMediaUnderstandingQueries(
       MediaUnderstandInputSchema,
       async ({ saveId, task }) => {
         const target = await resolved.resolveSaveFilePath(saveId, 0);
-        if (!target.ok) {
-          return target;
-        }
+        if (!target.ok) return target;
 
         const mimeType = IMAGE_MIME.get(extname(target.path).toLowerCase());
         if (!mimeType) {
@@ -172,9 +160,7 @@ export function createMediaUnderstandingQueries(
           });
           return { ok: false as const, reason: "model_unavailable" as const };
         }
-        if (!connection.ok) {
-          return connection;
-        }
+        if (!connection.ok) return connection;
 
         try {
           const result = await resolved.service[task]({

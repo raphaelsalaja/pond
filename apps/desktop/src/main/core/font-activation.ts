@@ -185,9 +185,7 @@ export function writeFontActivation(id: string, path: string): void {
 }
 
 export function clearFontActivation(id: string): void {
-  if (existsSync(sidecarPath(id))) {
-    rmSync(sidecarPath(id), { force: true });
-  }
+  if (existsSync(sidecarPath(id))) rmSync(sidecarPath(id), { force: true });
 }
 
 export function backfillFontActivationIndex(
@@ -203,9 +201,7 @@ export function backfillFontActivationIndex(
   let updated = 0;
   db.transaction(() => {
     for (const row of rows) {
-      if (!activationFor(row.id)) {
-        continue;
-      }
+      if (!activationFor(row.id)) continue;
       updated += update.run(row.id).changes;
     }
   })();

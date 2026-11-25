@@ -21,9 +21,7 @@ export function hostToSource(rawUrl: string): Source | null {
   }
   for (const descriptor of SOURCE_DESCRIPTORS) {
     for (const owned of descriptor.hosts) {
-      if (host === owned || host.endsWith(`.${owned}`)) {
-        return descriptor.id;
-      }
+      if (host === owned || host.endsWith(`.${owned}`)) return descriptor.id;
     }
   }
   return null;

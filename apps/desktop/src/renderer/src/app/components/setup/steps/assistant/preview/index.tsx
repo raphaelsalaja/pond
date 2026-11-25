@@ -22,9 +22,7 @@ function useTimeline(): Phase {
   const reduceMotion = useReducedMotionConfig();
   const [index, setIndex] = useState(reduceMotion ? REVIEW_INDEX : 0);
   useEffect(() => {
-    if (reduceMotion) {
-      return;
-    }
+    if (reduceMotion) return;
     const id = setTimeout(
       () => setIndex((current) => (current + 1) % TIMELINE.length),
       TIMELINE[index]?.ms,

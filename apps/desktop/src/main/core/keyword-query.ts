@@ -74,13 +74,9 @@ function tokenize(query: string): Array<Token> {
     const scoped = query.slice(offset).match(/^([\p{L}-]+):/u);
     const rawScope = scoped?.[1]?.toLowerCase();
     const scope = rawScope && isKeywordScope(rawScope) ? rawScope : undefined;
-    if (scope) {
-      offset += scoped?.[0].length ?? 0;
-    }
+    if (scope) offset += scoped?.[0].length ?? 0;
     const phrase = query[offset] === '"';
-    if (phrase) {
-      offset += 1;
-    }
+    if (phrase) offset += 1;
     let value = "";
     while (offset < query.length) {
       const current = query[offset] ?? "";
@@ -114,9 +110,7 @@ function tokenize(query: string): Array<Token> {
         tokens.push({ kind: "term", value, phrase, scope });
       }
     }
-    if (tokens.length > 128) {
-      throw new Error("Search has too many conditions.");
-    }
+    if (tokens.length > 128) throw new Error("Search has too many conditions.");
   }
   return tokens;
 }
@@ -130,9 +124,7 @@ function parse(query: string, mode: "all" | "any"): Keyword | null {
 
   function operand(): Keyword {
     depth += 1;
-    if (depth > 32) {
-      throw new Error("Search groups are nested too deeply.");
-    }
+    if (depth > 32) throw new Error("Search groups are nested too deeply.");
     const token = tokens[position++];
     let result: Keyword;
     if (token?.kind === "term") {
@@ -157,9 +149,7 @@ function parse(query: string, mode: "all" | "any"): Keyword | null {
       tokens[position]?.kind === "and" ||
       (mode === "all" && startsOperand())
     ) {
-      if (tokens[position]?.kind === "and") {
-        position += 1;
-      }
+      if (tokens[position]?.kind === "and") position += 1;
       left = { kind: "and", left, right: operand() };
     }
     return left;
@@ -171,17 +161,13 @@ function parse(query: string, mode: "all" | "any"): Keyword | null {
       tokens[position]?.kind === "or" ||
       (mode === "any" && startsOperand())
     ) {
-      if (tokens[position]?.kind === "or") {
-        position += 1;
-      }
+      if (tokens[position]?.kind === "or") position += 1;
       left = { kind: "or", left, right: conjunction() };
     }
     return left;
   }
 
-  if (!tokens.length) {
-    return null;
-  }
+  if (!tokens.length) return null;
   const result = disjunction();
   if (position !== tokens.length) {
     throw new Error("Unexpected search operator or parenthesis.");
@@ -259,21 +245,15 @@ export function compileKeywordWhere(
   function compile(node: Keyword): SQL {
     if (node.kind === "term") {
       const selected = node.scope ? [node.scope] : scopes;
-      if (!selected?.length) {
-        return compileTerm(node);
-      }
+      if (!selected?.length) return compileTerm(node);
       const [first, ...rest] = selected;
-      if (!first) {
-        return compileTerm(node);
-      }
+      if (!first) return compileTerm(node);
       return rest.reduce<SQL>(
         (where, scope) => sql`(${where}) or (${compileTerm(node, scope)})`,
         compileTerm(node, first),
       );
     }
-    if (node.kind === "not") {
-      return sql`not (${compile(node.child)})`;
-    }
+    if (node.kind === "not") return sql`not (${compile(node.child)})`;
     return node.kind === "and"
       ? sql`(${compile(node.left)}) and (${compile(node.right)})`
       : sql`(${compile(node.left)}) or (${compile(node.right)})`;
@@ -314,9 +294,7 @@ export function toFtsMatchQuery(
   mode: "all" | "any" = "all",
 ): string | null {
   const tree = parse(query, mode);
-  if (!tree) {
-    return null;
-  }
+  if (!tree) return null;
   const hasFolderScope = (node: Keyword): boolean =>
     node.kind === "term"
       ? node.scope === "folder" || node.scope === "folder-description"

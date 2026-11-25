@@ -8,9 +8,7 @@ export function Hint({
   label?: string;
   children: ReactElement;
 }) {
-  if (!label) {
-    return children;
-  }
+  if (!label) return children;
   return (
     <Tooltip label={label} side="top">
       {children}

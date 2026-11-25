@@ -296,18 +296,14 @@ export async function exportFolderFiles(
       ...options,
       fromFolders: true,
     });
-    if (!result.ok) {
-      notify({ id: "folder-export", title: result.message });
-    }
+    if (!result.ok) notify({ id: "folder-export", title: result.message });
   });
 }
 
 export async function exportFolderCsv(folderIds: Array<string>): Promise<void> {
   await withFolderSaves(folderIds, async (ids) => {
     const result = await exportSelectionCsv(ids);
-    if (!result.ok) {
-      notify({ id: "folder-export", title: result.message });
-    }
+    if (!result.ok) notify({ id: "folder-export", title: result.message });
   });
 }
 

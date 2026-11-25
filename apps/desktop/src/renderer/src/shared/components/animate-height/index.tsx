@@ -24,21 +24,15 @@ export function AnimateHeight({
   const [height, setHeight] = useState<number | "auto">("auto");
   const [ready, setReady] = useState(false);
   useLayoutEffect(() => {
-    if (presence) {
-      return;
-    }
+    if (presence) return;
     const node = inner.current;
-    if (!node) {
-      return;
-    }
+    if (!node) return;
     const sync = () => {
       const next = node.clientHeight;
       setHeight((current) => (current === next ? current : next));
     };
     sync();
-    if (!("ResizeObserver" in globalThis)) {
-      return;
-    }
+    if (!("ResizeObserver" in globalThis)) return;
     const observer = new ResizeObserver(sync);
     observer.observe(node);
     return () => observer.disconnect();

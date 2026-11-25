@@ -30,9 +30,7 @@ export async function queryFolderDownloadingCount(
   db: Db,
   folderIds: Array<string>,
 ): Promise<number> {
-  if (folderIds.length === 0) {
-    return 0;
-  }
+  if (folderIds.length === 0) return 0;
   const [row] = await db
     .select({ value: countDistinct(saveFolders.saveId) })
     .from(saveFolders)
@@ -57,9 +55,7 @@ export async function queryFolderSummaries(
     .where(eq(folders.parentId, parentId))
     .orderBy(folders.sortOrder, folders.name);
   const ids = children.map((folder) => folder.id);
-  if (ids.length === 0) {
-    return [];
-  }
+  if (ids.length === 0) return [];
 
   const directCounts = (status: "complete" | "ingesting") =>
     db

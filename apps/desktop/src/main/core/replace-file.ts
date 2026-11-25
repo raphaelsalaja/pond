@@ -25,9 +25,7 @@ export async function replaceSaveFile(input: {
   const db = await getDb();
   const row = db.select().from(saves).where(eq(saves.id, input.id)).all()[0];
   const kind = replacementKind(row?.files ?? []);
-  if (!kind) {
-    return { ok: false, error: "This save has no file to replace." };
-  }
+  if (!kind) return { ok: false, error: "This save has no file to replace." };
   const info = await stat(input.sourcePath).catch(() => null);
   if (!info?.isFile() || info.size === 0) {
     return { ok: false, error: "Choose a non-empty file." };

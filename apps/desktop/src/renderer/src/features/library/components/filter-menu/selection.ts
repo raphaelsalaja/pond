@@ -78,13 +78,9 @@ export function selectChoice(
   const included: Array<ChoiceValue> = [];
   const excluded: Array<ChoiceValue> = [];
   for (const row of rows) {
-    if (row.field !== field) {
-      continue;
-    }
+    if (row.field !== field) continue;
     const current = choiceMode(row);
-    if (current === null) {
-      continue;
-    }
+    if (current === null) continue;
     const bucket = current === "exclude" ? excluded : included;
     for (const value of choiceValues(row)) {
       const target =
@@ -113,9 +109,7 @@ export function selectChoice(
       return;
     }
     const value = array || selected.length > 1 ? selected : selected[0];
-    if (value === undefined) {
-      return;
-    }
+    if (value === undefined) return;
     rest.push({
       field,
       operator: array
@@ -171,9 +165,7 @@ export function isFilterSelected(
   option: Predicate,
 ): boolean {
   return rows.some((row) => {
-    if (row.field !== option.field || row.negate) {
-      return false;
-    }
+    if (row.field !== option.field || row.negate) return false;
     if (isChoice(row) && isChoice(option)) {
       return values(option).every((value) =>
         values(row).some((selected) => sameValue(selected, value)),
@@ -202,21 +194,15 @@ export function selectFilter(
       (value) =>
         !choiceValues(option).some((candidate) => sameValue(candidate, value)),
     );
-    if (checked) {
-      next.push(...choiceValues(option));
-    }
+    if (checked) next.push(...choiceValues(option));
     const unique = next.filter(
       (value, index) =>
         next.findIndex((candidate) => sameValue(candidate, value)) === index,
     );
-    if (unique.length === 0) {
-      return rest;
-    }
+    if (unique.length === 0) return rest;
     const value =
       type === "stringArray" || unique.length > 1 ? unique : unique[0];
-    if (value === undefined) {
-      return rest;
-    }
+    if (value === undefined) return rest;
     return [
       ...rest,
       {

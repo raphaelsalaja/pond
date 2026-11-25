@@ -13,9 +13,7 @@ export function selectOnlySave(id: string): void {
 /** Selects exactly `ids`, puts the cursor on the first, and scrolls the grid to it. */
 export function selectSaves(ids: ReadonlyArray<string>): void {
   const [first] = ids;
-  if (!first) {
-    return;
-  }
+  if (!first) return;
   selection.setPicking(false);
   selection.setCursor(first);
   selection.set(ids);
@@ -37,9 +35,7 @@ export function clearSaveSelection(): void {
 function dropDepartedSaves(gone: ReadonlySet<string>): void {
   selection.remove(gone);
   const primary = primarySelection.get();
-  if (primary === null || !gone.has(primary)) {
-    return;
-  }
+  if (primary === null || !gone.has(primary)) return;
   const anchor = selection.getAnchor();
   primarySelection.set(
     (anchor && selection.has(anchor) ? anchor : null) ??
@@ -61,19 +57,13 @@ export function createSelectionReconciler(): (
   let last: Omit<CollectionResults, "settled"> | null = null;
   return ({ key, ids, settled }) => {
     /** A refetch, or a new query still showing the previous page, must not read as Saves leaving. */
-    if (!settled) {
-      return;
-    }
+    if (!settled) return;
     const previous = last;
     last = { key, ids };
-    if (previous?.key !== key) {
-      return;
-    }
+    if (previous?.key !== key) return;
     const remaining = new Set(ids);
     const gone = new Set(previous.ids.filter((id) => !remaining.has(id)));
-    if (gone.size > 0) {
-      dropDepartedSaves(gone);
-    }
+    if (gone.size > 0) dropDepartedSaves(gone);
   };
 }
 
@@ -89,9 +79,7 @@ export function clickSave(
       rememberSave(id);
       return;
     }
-    if (primarySelection.get() !== id) {
-      return;
-    }
+    if (primarySelection.get() !== id) return;
     const anchor = selection.getAnchor();
     const fallback =
       (anchor && selection.has(anchor) ? anchor : null) ??

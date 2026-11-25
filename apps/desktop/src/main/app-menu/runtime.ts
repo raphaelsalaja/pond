@@ -28,9 +28,7 @@ function withFocusedWebContents(
 ): () => void {
   return () => {
     const win = BrowserWindow.getFocusedWindow();
-    if (!win || win.isDestroyed()) {
-      return;
-    }
+    if (!win || win.isDestroyed()) return;
     run(win.webContents);
   };
 }
@@ -44,15 +42,11 @@ export function createAppMenuContext(deps: AppMenuRuntimeDeps): AppMenuContext {
   };
   const sendMenuAction: AppMenuContext["sendMenuAction"] =
     (id: MenuActionId) => async (_item, _window, event) => {
-      if (routeCombineImagesZoom(id)) {
-        return;
-      }
+      if (routeCombineImagesZoom(id)) return;
       const source = menuActionSourceFromClick(event);
       if (!shouldOpenLibraryForMenuAction(source)) {
         const focused = BrowserWindow.getFocusedWindow();
-        if (!focused || focused.isDestroyed()) {
-          return;
-        }
+        if (!focused || focused.isDestroyed()) return;
         const action: MenuActionEvent = { id, source };
         focused.webContents.send(IPC.menuAction, action);
         return;

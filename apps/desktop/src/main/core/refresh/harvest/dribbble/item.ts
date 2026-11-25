@@ -89,16 +89,10 @@ async function inPageDribbbleHarvest(): Promise<DribbbleShotPage | null> {
   if (!shot) {
     const image = meta("og:image");
     const title = meta("og:title");
-    if (!image && !title) {
-      return null;
-    }
+    if (!image && !title) return null;
     const fallback: DribbbleShotPage = { mediaUrls: [], meta: {} };
-    if (title) {
-      fallback.title = title;
-    }
-    if (image) {
-      fallback.mediaUrls.push({ url: original(image), type: "image" });
-    }
+    if (title) fallback.title = title;
+    if (image) fallback.mediaUrls.push({ url: original(image), type: "image" });
     return fallback;
   }
 
@@ -122,9 +116,7 @@ async function inPageDribbbleHarvest(): Promise<DribbbleShotPage | null> {
   const page: DribbbleShotPage = { mediaUrls: [], meta: {} };
   for (const block of blocks) {
     const url = block.userUploadsAttributes?.[0]?.originalUrl;
-    if (!url) {
-      continue;
-    }
+    if (!url) continue;
     if (block.contentType === "image") {
       page.mediaUrls.push({ url, type: "image" });
     } else if (block.contentType === "video") {
@@ -136,40 +128,21 @@ async function inPageDribbbleHarvest(): Promise<DribbbleShotPage | null> {
   if (page.mediaUrls.length === 0 && shot.featureShotUrl) {
     page.mediaUrls.push({ url: original(shot.featureShotUrl), type: "image" });
   }
-  if (shot.title) {
-    page.title = shot.title;
-  }
-  if (description) {
-    page.description = description;
-  }
+  if (shot.title) page.title = shot.title;
+  if (description) page.description = description;
   const user = shot.shotUser;
-  if (user?.username) {
-    page.author = `@${user.username}`;
-  } else if (user?.name) {
-    page.author = user.name;
-  }
-  if (user?.name) {
-    page.meta.authorName = user.name;
-  }
-  if (user?.avatarUrl) {
-    page.meta.authorAvatar = user.avatarUrl;
-  }
-  if (user?.url) {
-    page.meta.authorUrl = new URL(user.url, location.origin).href;
-  }
+  if (user?.username) page.author = `@${user.username}`;
+  else if (user?.name) page.author = user.name;
+  if (user?.name) page.meta.authorName = user.name;
+  if (user?.avatarUrl) page.meta.authorAvatar = user.avatarUrl;
+  if (user?.url) page.meta.authorUrl = new URL(user.url, location.origin).href;
   const posted = shot.postedOn ? Date.parse(shot.postedOn) : Number.NaN;
   if (Number.isFinite(posted)) {
     page.meta.publishedAt = new Date(posted).toISOString();
   }
-  if (shot.likesCount !== undefined) {
-    page.meta.likes = shot.likesCount;
-  }
-  if (shot.viewsCount !== undefined) {
-    page.meta.views = shot.viewsCount;
-  }
-  if (shot.commentsCount !== undefined) {
-    page.meta.comments = shot.commentsCount;
-  }
+  if (shot.likesCount !== undefined) page.meta.likes = shot.likesCount;
+  if (shot.viewsCount !== undefined) page.meta.views = shot.viewsCount;
+  if (shot.commentsCount !== undefined) page.meta.comments = shot.commentsCount;
   return page;
 }
 

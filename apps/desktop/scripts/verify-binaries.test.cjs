@@ -94,9 +94,7 @@ async function writeWindowsRuntime(resourcesDirectory, options = {}) {
     await writeFile(path.join(bin, "onnxruntime_binding.node"), "binary");
     await writeFile(path.join(bin, "onnxruntime.dll"), "binary");
   }
-  if (options.tints !== false) {
-    await writeTintIcon(resourcesDirectory);
-  }
+  if (options.tints !== false) await writeTintIcon(resourcesDirectory);
   if (options.icon !== false) {
     const build = path.join(resourcesDirectory, "..", "build");
     await mkdir(build, { recursive: true });

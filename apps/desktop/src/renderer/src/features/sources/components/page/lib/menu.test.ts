@@ -13,14 +13,10 @@ function findItem(
   label: string,
 ): MenuItemSpec | null {
   for (const item of items) {
-    if ("label" in item && item.label === label) {
-      return item;
-    }
+    if ("label" in item && item.label === label) return item;
     if (item.type === "submenu" || item.type === "group") {
       const child = findItem(item.items, label);
-      if (child) {
-        return child;
-      }
+      if (child) return child;
     }
   }
   return null;

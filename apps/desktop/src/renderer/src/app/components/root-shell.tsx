@@ -53,12 +53,8 @@ const DownloadDialogHost = lazy(() =>
 function DownloadDialogSlot() {
   const { open } = useDownloadDialog();
   const [loaded, setLoaded] = useState(open);
-  if (open && !loaded) {
-    setLoaded(true);
-  }
-  if (!loaded) {
-    return null;
-  }
+  if (open && !loaded) setLoaded(true);
+  if (!loaded) return null;
   return (
     <Suspense fallback={null}>
       <DownloadDialogHost />

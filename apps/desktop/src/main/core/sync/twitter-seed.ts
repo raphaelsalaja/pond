@@ -26,9 +26,7 @@ export function buildTwitterBookmarkSeed(
   entry: BookmarksEntry,
 ): SaveSeed | null {
   const rich = entry.rich;
-  if (!rich) {
-    return null;
-  }
+  if (!rich) return null;
 
   const draft: RichPostDraft = {
     ...draftFromRichTweet(rich, entry.author?.replace(/^@/, "")),

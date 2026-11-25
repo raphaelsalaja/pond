@@ -27,9 +27,7 @@ export function RailPages() {
   const [visited, setVisited] = useState<ReadonlyArray<RailPage>>(() =>
     active ? [active] : [],
   );
-  if (active && !visited.includes(active)) {
-    setVisited([...visited, active]);
-  }
+  if (active && !visited.includes(active)) setVisited([...visited, active]);
 
   useEffect(
     () => preloadWhenIdle(...Object.values(PAGES).map((page) => page.preload)),

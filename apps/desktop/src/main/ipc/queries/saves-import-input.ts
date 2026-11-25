@@ -87,9 +87,7 @@ export function normalizeClipboardFilePaths(
   const paths: Array<string> = [];
   const pushFileUrl = (raw: string) => {
     const token = raw.trim();
-    if (!token.startsWith("file:")) {
-      return;
-    }
+    if (!token.startsWith("file:")) return;
     try {
       paths.push(fileURLToPath(token));
     } catch {
@@ -99,19 +97,14 @@ export function normalizeClipboardFilePaths(
 
   if (uriList !== null) {
     for (const part of uriList.split(/\r?\n/)) {
-      if (!part.startsWith("#")) {
-        pushFileUrl(part);
-      }
+      if (!part.startsWith("#")) pushFileUrl(part);
     }
   }
 
   if (plainText !== null) {
     for (const part of plainText.split(/\s+/).filter(Boolean)) {
-      if (part.startsWith("file:")) {
-        pushFileUrl(part);
-      } else if (isAbsolute(part)) {
-        paths.push(part);
-      }
+      if (part.startsWith("file:")) pushFileUrl(part);
+      else if (isAbsolute(part)) paths.push(part);
     }
   }
 

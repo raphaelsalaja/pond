@@ -10,9 +10,7 @@ export function ExtensionField({ ids }: { ids: Array<string> }) {
 
   async function submit() {
     const extension = value.trim().replace(/^\./, "");
-    if (!extension || busy) {
-      return;
-    }
+    if (!extension || busy) return;
     setBusy(true);
     try {
       const result = await window.pond.query("saves.batchEditExtension", {

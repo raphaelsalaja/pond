@@ -22,12 +22,8 @@ export type FishMood = "calm" | "busy" | "worried" | "pleased";
 export function fishMood(
   fish: Pick<FishSummary, "activity" | "lastRun">,
 ): FishMood {
-  if (fish.activity) {
-    return "busy";
-  }
-  if (!fish.lastRun || fish.lastRun.seen) {
-    return "calm";
-  }
+  if (fish.activity) return "busy";
+  if (!fish.lastRun || fish.lastRun.seen) return "calm";
   return fish.lastRun.status === "failed" ? "worried" : "pleased";
 }
 
@@ -51,12 +47,8 @@ export function fishAccent(color: FishColor) {
 }
 
 function taskOf(activity: FishPresence, mood: FishMood): Task | null {
-  if (mood === "worried" || mood === "pleased") {
-    return mood;
-  }
-  if (activity === "searching") {
-    return "reading";
-  }
+  if (mood === "worried" || mood === "pleased") return mood;
+  if (activity === "searching") return "reading";
   return activity;
 }
 
@@ -88,17 +80,13 @@ function Stage({ art, task }: { art: SpeciesArt; task: Task | null }) {
 
   useEffect(() => {
     const svg = svgRef.current;
-    if (!svg) {
-      return;
-    }
+    if (!svg) return;
     const avatar = createAvatar({ head: art.head, pivot: art.pivot });
     avatar.task(taskRef.current);
     const writeEyes = (eyes: Pose["eyes"]) => {
       [backEyeRef.current, frontEyeRef.current].forEach((node, index) => {
         const eye = eyes[index];
-        if (!node || !eye) {
-          return;
-        }
+        if (!node || !eye) return;
         node.setAttribute("d", eye.d);
         node.setAttribute("transform", eye.transform);
         node.setAttribute("opacity", String(eye.opacity));
@@ -138,9 +126,7 @@ function Stage({ art, task }: { art: SpeciesArt; task: Task | null }) {
     const enter = () => avatar.hover(true);
     const leave = () => avatar.hover(false);
     const press = (event: Event) => {
-      if ("button" in event && event.button === 0) {
-        avatar.press();
-      }
+      if ("button" in event && event.button === 0) avatar.press();
     };
     host.addEventListener("pointerenter", enter);
     host.addEventListener("pointerleave", leave);
@@ -159,9 +145,7 @@ function Stage({ art, task }: { art: SpeciesArt; task: Task | null }) {
   useEffect(() => {
     taskRef.current = task;
     avatarRef.current?.task(task);
-    if (reducedMotion()) {
-      rigRef.current?.rest();
-    }
+    if (reducedMotion()) rigRef.current?.rest();
   }, [task]);
 
   const [back, front] = rest;

@@ -12,18 +12,14 @@ export function currentPageIndex(history: PageHistory): number {
 }
 
 export function visitPage(history: PageHistory, index: number): PageHistory {
-  if (currentPageIndex(history) === index) {
-    return history;
-  }
+  if (currentPageIndex(history) === index) return history;
   const entries = [...history.entries.slice(0, history.cursor + 1), index];
   return { entries, cursor: entries.length - 1 };
 }
 
 export function stepPage(history: PageHistory, delta: number): PageHistory {
   const cursor = history.cursor + delta;
-  if (cursor < 0 || cursor >= history.entries.length) {
-    return history;
-  }
+  if (cursor < 0 || cursor >= history.entries.length) return history;
   return { ...history, cursor };
 }
 

@@ -72,13 +72,9 @@ export function useRetrievalOverlay(
           libraryQuery,
           limit: LIMIT,
         });
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         await ensureSaves(ids);
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         setRanked(
           ids.flatMap((id) => {
             const save = libraryQuery ? pool.get(id) : byId.get(id);
@@ -90,9 +86,7 @@ export function useRetrievalOverlay(
           log.warn("[pond overlay] retrieval failed", error);
         }
       } finally {
-        if (!cancelled) {
-          setSearching(false);
-        }
+        if (!cancelled) setSearching(false);
       }
     })();
     return () => {

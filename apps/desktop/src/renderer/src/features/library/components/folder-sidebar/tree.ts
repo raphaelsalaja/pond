@@ -11,9 +11,7 @@ export function descendantFolderIds(
   const ids = [id];
   for (let index = 0; index < ids.length; index++) {
     const current = ids[index];
-    if (!current) {
-      continue;
-    }
+    if (!current) continue;
     ids.push(...(children.get(current) ?? []));
   }
   return ids;
@@ -56,14 +54,10 @@ export function flattenFolderTree<
   function visit(parentId: string | null, depth: number) {
     const siblings = children.get(parentId) ?? [];
     for (const folder of siblings) {
-      if (visited.has(folder.id)) {
-        continue;
-      }
+      if (visited.has(folder.id)) continue;
       visited.add(folder.id);
       rows.push({ folder, depth });
-      if (!collapsed.has(folder.id)) {
-        visit(folder.id, depth + 1);
-      }
+      if (!collapsed.has(folder.id)) visit(folder.id, depth + 1);
     }
   }
   visit(null, 0);

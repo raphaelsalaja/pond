@@ -21,41 +21,27 @@ export function retarget<T>(
   stage: Stage<T>,
   next: StageEntry<T> | null,
 ): Stage<T> {
-  if (!next) {
-    return { shown: null, pending: null };
-  }
-  if (stage.shown?.key === next.key) {
-    return { shown: next, pending: null };
-  }
-  if (!stage.shown?.holds || !next.holds) {
-    return { shown: next, pending: null };
-  }
+  if (!next) return { shown: null, pending: null };
+  if (stage.shown?.key === next.key) return { shown: next, pending: null };
+  if (!stage.shown?.holds || !next.holds) return { shown: next, pending: null };
   return { shown: stage.shown, pending: next };
 }
 
 export function settle<T>(stage: Stage<T>, key: string): Stage<T> {
-  if (stage.pending?.key !== key) {
-    return stage;
-  }
+  if (stage.pending?.key !== key) return stage;
   return { shown: stage.pending, pending: null };
 }
 
 export function expire<T>(stage: Stage<T>): Stage<T> {
-  if (!stage.pending) {
-    return stage;
-  }
+  if (!stage.pending) return stage;
   return { shown: stage.pending, pending: null };
 }
 
 export function stageLayers<T>(
   stage: Stage<T>,
 ): Array<{ entry: StageEntry<T>; role: StageRole }> {
-  if (!stage.shown) {
-    return [];
-  }
-  if (!stage.pending) {
-    return [{ entry: stage.shown, role: "current" }];
-  }
+  if (!stage.shown) return [];
+  if (!stage.pending) return [{ entry: stage.shown, role: "current" }];
   return [
     { entry: stage.shown, role: "held" },
     { entry: stage.pending, role: "pending" },
@@ -93,9 +79,7 @@ export function useHeldStage<T>(target: StageEntry<T> | null) {
 
   const holding = stage.pending !== null;
   useEffect(() => {
-    if (!holding) {
-      return;
-    }
+    if (!holding) return;
     const timer = window.setTimeout(() => {
       setTracked((previous) => restage(previous, expire));
     }, HOLD_MS);

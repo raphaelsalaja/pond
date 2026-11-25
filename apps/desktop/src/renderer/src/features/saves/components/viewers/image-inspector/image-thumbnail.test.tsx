@@ -74,9 +74,7 @@ describe("current image thumbnail", () => {
   async function render(save: Save, fileIndex: number) {
     pool.upsert(save);
     const file = save.files[fileIndex];
-    if (!file) {
-      throw new Error("Missing carousel file");
-    }
+    if (!file) throw new Error("Missing carousel file");
     await act(async () => {
       root.render(
         <ImageInspector

@@ -87,9 +87,7 @@ describe("mcpOperations", () => {
 
   it("validates input with the tool's JSON Schema", () => {
     const [op] = mcpOperations(tools, vi.fn());
-    if (!op) {
-      throw new Error("Missing operation");
-    }
+    if (!op) throw new Error("Missing operation");
     expect(() => op.inputSchema.parse({})).toThrow();
     expect(op.inputSchema.parse({ repo: "a/b" })).toEqual({ repo: "a/b" });
     expect(() =>

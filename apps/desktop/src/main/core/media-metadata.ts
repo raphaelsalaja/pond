@@ -29,9 +29,7 @@ export async function extractMediaMetadata(
   path: string,
 ): Promise<ImageMetadata> {
   const ffmpeg = binariesAvailable().ffmpeg;
-  if (!ffmpeg) {
-    return {};
-  }
+  if (!ffmpeg) return {};
   try {
     await execFileAsync(ffmpeg, ["-hide_banner", "-i", path], {
       maxBuffer: 1024 * 1024,

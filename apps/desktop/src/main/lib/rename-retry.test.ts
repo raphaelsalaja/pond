@@ -11,9 +11,7 @@ function flaky(failures: number, code: string) {
     calls,
     rename(from: string, to: string) {
       calls.push(`${from}>${to}`);
-      if (calls.length <= failures) {
-        throw busy(code);
-      }
+      if (calls.length <= failures) throw busy(code);
     },
   };
 }

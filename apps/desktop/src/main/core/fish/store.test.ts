@@ -211,9 +211,7 @@ it("reads fish saved before species existed as koi", async () => {
   createFish({ name: "Scout", species: "shark" }, root, 1);
   const file = join(root, "fish.json");
   const stored = JSON.parse(await readFile(file, "utf8"));
-  for (const fish of stored.data) {
-    delete fish.species;
-  }
+  for (const fish of stored.data) delete fish.species;
   await writeFile(file, JSON.stringify(stored));
   expect(listFish(root).map((fish) => fish.species)).toEqual(["koi", "koi"]);
 });

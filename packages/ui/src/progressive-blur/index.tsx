@@ -25,9 +25,7 @@ export function ProgressiveBlur({
   const ref = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
-    if (!ref.current) {
-      return;
-    }
+    if (!ref.current) return;
     return progressiveBlur(ref.current, {
       side,
       color,

@@ -34,9 +34,7 @@ export function buildTagSortItems({
     indicator: "check",
     checked: option.sort === sort && option.direction === direction,
     onCheckedChange: (checked) => {
-      if (checked) {
-        onChange(option.sort, option.direction);
-      }
+      if (checked) onChange(option.sort, option.direction);
     },
   }));
 }

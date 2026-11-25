@@ -65,14 +65,10 @@ function watch(model = ready): ReturnType<typeof watchMenuTarget> {
 
 function groupItems(items: Array<MenuItemSpec>): Array<Array<string>> {
   return items.flatMap((item) => {
-    if (item.type !== "group") {
-      return [];
-    }
+    if (item.type !== "group") return [];
     return [
       item.items.flatMap((child) => {
-        if (!("label" in child) || child.hidden) {
-          return [];
-        }
+        if (!("label" in child) || child.hidden) return [];
         const label = labelText(child.label);
         return label ? [label] : [];
       }),
@@ -106,14 +102,10 @@ function findItem(
   label: string,
 ): MenuItemSpec | null {
   for (const item of items) {
-    if ("label" in item && item.label === label) {
-      return item;
-    }
+    if ("label" in item && item.label === label) return item;
     if (item.type === "group" || item.type === "submenu") {
       const child = findItem(item.items, label);
-      if (child) {
-        return child;
-      }
+      if (child) return child;
     }
   }
   return null;
@@ -245,9 +237,7 @@ describe("buildSourceActionMenu", () => {
       buildSourceActionMenu(account()),
       "Fetch Original Media",
     );
-    if (!media || !("onClick" in media)) {
-      throw new Error("Missing media item");
-    }
+    if (!media || !("onClick" in media)) throw new Error("Missing media item");
     media.onClick?.();
     expect(window.pond.refreshBackfillStart).not.toHaveBeenCalled();
     const options = confirm.mock.calls[0]?.[0];

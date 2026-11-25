@@ -80,14 +80,10 @@ function mediaKind(save: Save): EmbeddableMedia | null {
 }
 
 function mediaUrl(save: Save, kind: EmbeddableMedia): string | null {
-  if (kind === "image") {
-    return representativeImageUrl(save);
-  }
+  if (kind === "image") return representativeImageUrl(save);
   if (kind === "video") {
     const unit = pickPrimaryUnit(save);
-    if (unit?.isVideo) {
-      return unit.url;
-    }
+    if (unit?.isVideo) return unit.url;
   }
   const file = pickPrimaryFile(save);
   return file ? buildPondUrl(save.id, file) : null;
@@ -177,13 +173,9 @@ export function createMediaEmbeddingEnricher(
     },
     async run(save: Save) {
       const kind = mediaKind(save);
-      if (!kind) {
-        return null;
-      }
+      if (!kind) return null;
       const url = mediaUrl(save, kind);
-      if (!url) {
-        return null;
-      }
+      if (!url) return null;
 
       let vector: Float32Array;
       if (kind === "image") {
@@ -201,9 +193,7 @@ export function createMediaEmbeddingEnricher(
           url,
           MEDIA_EMBEDDING_VIDEO_OPTIONS,
         );
-        if (!sampled) {
-          return null;
-        }
+        if (!sampled) return null;
         const frameVector = normalize(
           await dependencies.embedVideoFrames(sampled.frames, sampled.duration),
         );

@@ -87,9 +87,7 @@ export async function importClipboardWithDuplicateReview(input: {
   folderIds?: Array<string>;
 }) {
   const staged = await window.pond.query("saves.stageClipboard", {});
-  if (!staged.ok) {
-    return { ok: false as const, error: staged.error };
-  }
+  if (!staged.ok) return { ok: false as const, error: staged.error };
   const { result, notImported } = await importReviewed({
     ...input,
     paths: staged.paths,

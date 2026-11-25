@@ -54,15 +54,10 @@ async function digest(path: string): Promise<string> {
 async function filesUnder(directory: string): Promise<Array<string>> {
   const files: Array<string> = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.name.startsWith(".")) {
-      continue;
-    }
+    if (entry.name.startsWith(".")) continue;
     const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...(await filesUnder(path)));
-    } else if (entry.isFile()) {
-      files.push(path);
-    }
+    if (entry.isDirectory()) files.push(...(await filesUnder(path)));
+    else if (entry.isFile()) files.push(path);
   }
   return files;
 }
@@ -98,19 +93,12 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
       return;
     }
     const present = new Set(paths);
-    for (const path of observations.keys()) {
-      if (!present.has(path)) {
-        observations.delete(path);
-      }
-    }
+    for (const path of observations.keys())
+      if (!present.has(path)) observations.delete(path);
     for (const path of paths) {
-      if (stopped) {
-        return;
-      }
+      if (stopped) return;
       const details = await stat(path).catch(() => null);
-      if (!details?.isFile() || details.size === 0) {
-        continue;
-      }
+      if (!details?.isFile() || details.size === 0) continue;
       const previous = observations.get(path);
       if (
         !previous ||
@@ -162,9 +150,7 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
           observations.delete(path);
           continue;
         }
-        if (stopped) {
-          return;
-        }
+        if (stopped) return;
         const sourceId = `auto:${createHash("sha256").update(`${path}\0${hash}`).digest("hex")}`;
         const result = await options.ingest({ path: snapshot, sourceId });
         if (!result.ok || !result.id) {
@@ -200,9 +186,7 @@ export async function createAutoImportWorker(options: AutoImportWorkerOptions) {
           Math.min(60_000, 1000 * 2 ** Math.min(previous.failures - 1, 6));
         await options.report?.({ name: basename(path), ok: false });
       } finally {
-        if (staging) {
-          await rm(staging, { recursive: true, force: true });
-        }
+        if (staging) await rm(staging, { recursive: true, force: true });
       }
     }
   }

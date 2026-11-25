@@ -87,9 +87,7 @@ function decodeFile(file: TxSaveFile) {
 
 async function createSaveDirectory(id: string): Promise<string> {
   const blocked = libraryWriteBlock(resolvePaths().libraryRoot);
-  if (blocked) {
-    throw userError(blocked);
-  }
+  if (blocked) throw userError(blocked);
   const dir = saveDir(id);
   await mkdir(dir, { recursive: true });
   return dir;
@@ -171,9 +169,7 @@ export async function patchSaveFiles(
   files: Array<TxSaveFile> = [],
 ): Promise<boolean> {
   const current = await readInfoForEdit(id);
-  if (!current) {
-    return false;
-  }
+  if (!current) return false;
 
   const decoded = files.map(decodeFile);
   for (const { filename, buf } of decoded) {
@@ -203,9 +199,7 @@ export async function readSaveMetadata(
   const infoPath = root
     ? join(saveDirIn(root, id), INFO_FILE)
     : saveFile(id, INFO_FILE);
-  if (!existsSync(infoPath)) {
-    return { status: "missing" };
-  }
+  if (!existsSync(infoPath)) return { status: "missing" };
   try {
     const info = StoredInfoDocSchema.parse(
       JSON.parse(await readFile(infoPath, "utf8")),
@@ -230,9 +224,7 @@ async function readSourceDoc(
   const path = root
     ? join(saveDirIn(root, id), SOURCE_FILE)
     : saveFile(id, SOURCE_FILE);
-  if (!existsSync(path)) {
-    return null;
-  }
+  if (!existsSync(path)) return null;
   const decoded: unknown = JSON.parse(await readFile(path, "utf8"));
   if (decoded === null) {
     return null;
@@ -244,9 +236,7 @@ async function readInfoForEdit(
   id: string,
 ): Promise<{ info: StoredInfoDoc; rawSource: RawJson | null } | null> {
   const infoPath = saveFile(id, INFO_FILE);
-  if (!existsSync(infoPath)) {
-    return null;
-  }
+  if (!existsSync(infoPath)) return null;
   try {
     const info = StoredInfoDocSchema.parse(
       JSON.parse(await readFile(infoPath, "utf8")),
@@ -304,9 +294,7 @@ function metadataFromInfo(
 }
 
 function parseTimestamp(value: string | null): number | null {
-  if (value === null) {
-    return null;
-  }
+  if (value === null) return null;
   const ms = Date.parse(value);
   return Number.isFinite(ms) ? ms : null;
 }
@@ -334,9 +322,7 @@ export async function listSaveFolderIds(
 ): Promise<Array<string>> {
   const ids: Array<string> = [];
   for (const entry of await readdir(savesDir, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !isSaveFolderName(entry.name)) {
-      continue;
-    }
+    if (!entry.isDirectory() || !isSaveFolderName(entry.name)) continue;
     ids.push(entry.name.slice(0, -".info".length));
   }
   return ids;

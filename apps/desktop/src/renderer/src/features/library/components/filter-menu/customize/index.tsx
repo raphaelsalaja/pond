@@ -137,9 +137,7 @@ export function CustomizeFilters({
     >
       <Menu.Root
         onOpenChange={(open) => {
-          if (!open) {
-            return;
-          }
+          if (!open) return;
           libraryHeader.closePopover();
           reset();
         }}

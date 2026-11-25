@@ -74,9 +74,7 @@ export async function createFolder(input: {
     parentId: input.parentId,
     color: input.color,
   });
-  if (!created) {
-    throw new Error("Could not create folder.");
-  }
+  if (!created) throw new Error("Could not create folder.");
   return created;
 }
 
@@ -90,13 +88,9 @@ export async function createFolderWithSaves(
 ): Promise<Folder & UndoableChange> {
   return runtime.run(async () => {
     const name = input.name.trim();
-    if (!name) {
-      throw new Error("Enter a folder name.");
-    }
+    if (!name) throw new Error("Enter a folder name.");
     const saveIds = [...new Set(input.saveIds.filter(Boolean))];
-    if (saveIds.length === 0) {
-      throw new Error("Select at least one Save.");
-    }
+    if (saveIds.length === 0) throw new Error("Select at least one Save.");
     const rows = await runtime.listFolders();
     const parentId = input.parentId ?? null;
     if (parentId && !rows.some((row) => row.id === parentId)) {
@@ -200,16 +194,12 @@ export async function renameFolder(
   name: string,
 ): Promise<OkResult> {
   const trimmed = name.trim();
-  if (!trimmed) {
-    return { ok: false, error: "Enter a folder name." };
-  }
+  if (!trimmed) return { ok: false, error: "Enter a folder name." };
   const db = await getDb();
   const row = (
     await db.select().from(foldersTable).where(eq(foldersTable.id, id))
   )[0];
-  if (!row) {
-    return { ok: false, error: "Folder not found." };
-  }
+  if (!row) return { ok: false, error: "Folder not found." };
   await executeTransaction({
     kind: "update",
     model: "folder",
@@ -238,9 +228,7 @@ export async function renameFoldersBatch(
   const transactions: Array<Transaction> = [];
   for (const [index, id] of ids.entries()) {
     const row = byId.get(id);
-    if (!row) {
-      continue;
-    }
+    if (!row) continue;
     const name = applyRenameTemplate(pattern, {
       index,
       title: row.name,
@@ -251,9 +239,7 @@ export async function renameFoldersBatch(
       replacement: input.replacement,
       textCase: input.textCase,
     });
-    if (!name || name === row.name) {
-      continue;
-    }
+    if (!name || name === row.name) continue;
     transactions.push({
       kind: "update",
       model: "folder",
@@ -282,12 +268,8 @@ export async function setFolderColor(
   const row = (
     await db.select().from(foldersTable).where(eq(foldersTable.id, id))
   )[0];
-  if (!row) {
-    return { ok: false, error: "Folder not found." };
-  }
-  if (row.color === next) {
-    return { ok: true };
-  }
+  if (!row) return { ok: false, error: "Folder not found." };
+  if (row.color === next) return { ok: true };
   await executeTransaction({
     kind: "update",
     model: "folder",
@@ -344,9 +326,7 @@ export async function deleteFolder(
   }
   for (const folderId of ids.reverse()) {
     const row = all.find((folder) => folder.id === folderId);
-    if (!row) {
-      continue;
-    }
+    if (!row) continue;
     txs.push({
       kind: "delete",
       model: "folder",
@@ -365,15 +345,9 @@ export async function deleteFolder(
 function collectDescendants(id: string, all: Array<Folder>): Array<string> {
   const ids = new Set<string>();
   function visit(current: string) {
-    if (ids.has(current)) {
-      return;
-    }
+    if (ids.has(current)) return;
     ids.add(current);
-    for (const folder of all) {
-      if (folder.parentId === current) {
-        visit(folder.id);
-      }
-    }
+    for (const folder of all) if (folder.parentId === current) visit(folder.id);
   }
   visit(id);
   return [...ids];
@@ -437,9 +411,7 @@ export async function assignSaveFolders(
 ): Promise<OkSuccess<UndoableChange>> {
   return withMutationScope(async () => {
     const txs = await folderAssignmentTransactions(assignments);
-    if (!txs.length) {
-      return { ok: true, undoId: null };
-    }
+    if (!txs.length) return { ok: true, undoId: null };
     await executeBatch(txs);
     const undoId = undo
       ? recordBatchForUndo(txs.filter((tx) => tx.model !== "tag"))
@@ -506,9 +478,7 @@ async function folderAssignmentTransactions(
 export async function getFolderRules(id: string) {
   const all = await listFolders();
   const folder = all.find((row) => row.id === id);
-  if (!folder) {
-    throw new Error("Folder no longer exists.");
-  }
+  if (!folder) throw new Error("Folder no longer exists.");
   const rules = (await getPrefs()).folderRules;
   return {
     tags: rules[id]?.automaticTags ?? [],
@@ -535,9 +505,7 @@ export async function setFolderRules(input: {
         [input.id]: { automaticTags: normalizeTagList(input.tags) },
       },
     });
-    if (!input.applyExisting) {
-      return { ok: true, affected: 0 };
-    }
+    if (!input.applyExisting) return { ok: true, affected: 0 };
     const descendants = collectDescendants(input.id, all);
     const members = (await memberships()).filter((member) =>
       descendants.includes(member.folderId),
@@ -619,9 +587,7 @@ export async function importFolderTree(
       throw new Error("The folder import contains a cycle or missing parent.");
     }
     const node = pending.splice(index, 1)[0];
-    if (!node) {
-      throw new Error("A folder is missing.");
-    }
+    if (!node) throw new Error("A folder is missing.");
     const parentId = node.parentId ? (mapped.get(node.parentId) ?? null) : null;
     const match = mergeExisting
       ? existing.find(
@@ -632,20 +598,14 @@ export async function importFolderTree(
       : undefined;
     const id = match?.id ?? ulid();
     mapped.set(node.id, id);
-    if (!match) {
-      existing.push({ id, parentId, name: node.name });
-    }
+    if (!match) existing.push({ id, parentId, name: node.name });
     ordered.push(node);
   }
   const txs: Array<Transaction> = [];
   for (const node of ordered) {
     const id = mapped.get(node.id);
-    if (!id) {
-      throw new Error("A folder is missing.");
-    }
-    if (createdIds.has(id)) {
-      continue;
-    }
+    if (!id) throw new Error("A folder is missing.");
+    if (createdIds.has(id)) continue;
     createdIds.add(id);
     const data: NewFolder = {
       id,
@@ -662,9 +622,7 @@ export async function importFolderTree(
       meta: { actor: "user", actorReason: "folder-import" },
     });
   }
-  if (txs.length > 0) {
-    await executeBatch(txs);
-  }
+  if (txs.length > 0) await executeBatch(txs);
   return mapped;
 }
 
@@ -719,9 +677,7 @@ async function commitFolderMoves(
         ]
       : [];
   });
-  if (!txs.length) {
-    return { ok: true, undoId: null };
-  }
+  if (!txs.length) return { ok: true, undoId: null };
   const affectedFolders = new Set(
     changes.flatMap((change) => collectDescendants(change.id, rows)),
   );

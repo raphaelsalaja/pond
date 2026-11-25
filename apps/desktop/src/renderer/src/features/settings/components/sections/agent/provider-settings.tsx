@@ -73,35 +73,21 @@ export function listedCatalog(
   const seen = new Set<string>();
   const listed: Array<AssistantCatalog> = [];
   const add = (id: string) => {
-    if (seen.has(id)) {
-      return;
-    }
+    if (seen.has(id)) return;
     const entry = assistantCatalog(id);
-    if (!entry) {
-      return;
-    }
-    if (providerGroup(entry.id) !== kind) {
-      return;
-    }
-    if (!isListedProvider(entry.id, agent, keys)) {
-      return;
-    }
+    if (!entry) return;
+    if (providerGroup(entry.id) !== kind) return;
+    if (!isListedProvider(entry.id, agent, keys)) return;
     seen.add(id);
     listed.push(entry);
   };
   for (const id of agent?.addedProviders ?? []) {
-    if (keys.find((row) => row.provider === id)?.hasKey) {
-      add(id);
-    }
+    if (keys.find((row) => row.provider === id)?.hasKey) add(id);
   }
   for (const row of keys) {
-    if (row.hasKey) {
-      add(row.provider);
-    }
+    if (row.hasKey) add(row.provider);
   }
-  for (const id of agent?.addedProviders ?? []) {
-    add(id);
-  }
+  for (const id of agent?.addedProviders ?? []) add(id);
   return listed;
 }
 
@@ -196,9 +182,7 @@ function AddProviderMenu({
   onAdd: (provider: AssistantProvider) => void;
 }) {
   const providers = remainingProviders(kind, agent, keys);
-  if (!providers.length) {
-    return null;
-  }
+  if (!providers.length) return null;
   return (
     <Menu.FilterProvider autoHighlight>
       <Menu.Root>

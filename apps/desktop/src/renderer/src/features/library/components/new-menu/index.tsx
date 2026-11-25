@@ -27,9 +27,7 @@ export function NewMenu() {
   );
 
   useEffect(() => {
-    if (open) {
-      void blankDocuments.refresh();
-    }
+    if (open) void blankDocuments.refresh();
   }, [open]);
 
   return (
@@ -43,9 +41,7 @@ export function NewMenu() {
         open={open}
         onOpenChange={(next) => {
           setOpen(next);
-          if (next) {
-            reset();
-          }
+          if (next) reset();
         }}
       >
         <Tooltip label="New">

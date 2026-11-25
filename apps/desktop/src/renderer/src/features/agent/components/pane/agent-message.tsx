@@ -25,9 +25,7 @@ import { inferredLookupResult, ResponseExtras } from "./response-content";
 
 async function copyText(text: string): Promise<void> {
   const result = await window.pond.query("clipboard.writeText", { text });
-  if (!result.ok) {
-    throw new Error(result.error);
-  }
+  if (!result.ok) throw new Error(result.error);
 }
 
 export function AgentMessage({
@@ -116,11 +114,8 @@ export function AgentMessage({
         text={message.role === "assistant" ? bubbles.join("\n\n") : text}
         onCopy={copyText}
         onQuote={() => {
-          if (sources.length) {
-            attach(sources);
-          } else if (text) {
-            assistant.quote(text);
-          }
+          if (sources.length) attach(sources);
+          else if (text) assistant.quote(text);
         }}
         onRetry={
           message.role === "assistant" &&

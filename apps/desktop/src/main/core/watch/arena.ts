@@ -53,9 +53,7 @@ async function fetchContents(url: string, attempt = 0): Promise<FetchResult> {
     );
     return fetchContents(url, attempt + 1);
   }
-  if (!res.ok) {
-    return { ok: false, status: res.status };
-  }
+  if (!res.ok) return { ok: false, status: res.status };
   try {
     return { ok: true, value: ArenaContentsSchema.parse(await res.json()) };
   } catch {
@@ -72,9 +70,7 @@ function entriesFromContents(value: ArenaContentsResponse): Array<WatchEntry> {
       continue;
     }
     const cls = (item.base_type ?? item.type ?? "").toLowerCase();
-    if (cls === "channel") {
-      continue;
-    }
+    if (cls === "channel") continue;
     const stamp = item.connection?.connected_at ?? item.created_at ?? null;
     withTime.push({
       entry: { url: `https://www.are.na/block/${id}`, sourceId: id },
@@ -111,21 +107,11 @@ export async function listArenaWatch(
   let allNotFound = true;
   for (const k of order) {
     const res = await fetchContents(contentsUrl(k, handle));
-    if (res.ok) {
-      return { ok: true, entries: entriesFromContents(res.value) };
-    }
-    if (res.status === 429) {
-      sawRateLimit = true;
-    }
-    if (res.status !== 404) {
-      allNotFound = false;
-    }
+    if (res.ok) return { ok: true, entries: entriesFromContents(res.value) };
+    if (res.status === 429) sawRateLimit = true;
+    if (res.status !== 404) allNotFound = false;
   }
-  if (sawRateLimit) {
-    return { ok: false, reason: "rate_limited" };
-  }
-  if (allNotFound) {
-    return { ok: false, reason: "not_found" };
-  }
+  if (sawRateLimit) return { ok: false, reason: "rate_limited" };
+  if (allNotFound) return { ok: false, reason: "not_found" };
   return { ok: false, reason: "unavailable" };
 }

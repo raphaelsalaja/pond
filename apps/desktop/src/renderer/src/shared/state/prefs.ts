@@ -43,9 +43,7 @@ function share(next: Prefs): PrefsState {
 let subscribed = false;
 let prefsRevision = 0;
 function subscribeToPrefs(): void {
-  if (subscribed || !window.pond.onPrefsChanged) {
-    return;
-  }
+  if (subscribed || !window.pond.onPrefsChanged) return;
   subscribed = true;
   window.pond.onPrefsChanged((prefs) => {
     prefsRevision += 1;
@@ -57,12 +55,8 @@ let inflight: Promise<Prefs> | null = null;
 
 async function load(): Promise<Prefs> {
   subscribeToPrefs();
-  if (prefsStore.state.value) {
-    return prefsStore.state.value;
-  }
-  if (inflight) {
-    return inflight;
-  }
+  if (prefsStore.state.value) return prefsStore.state.value;
+  if (inflight) return inflight;
   inflight = refreshPrefs().finally(() => {
     inflight = null;
   });
@@ -74,9 +68,7 @@ async function refreshPrefs(): Promise<Prefs> {
   const next = PrefsSchema.parse(
     await window.pond.query("settings.getPrefs", {}),
   );
-  if (revision === prefsRevision) {
-    prefsStore.setState(() => share(next));
-  }
+  if (revision === prefsRevision) prefsStore.setState(() => share(next));
   return prefsStore.state.value ?? next;
 }
 

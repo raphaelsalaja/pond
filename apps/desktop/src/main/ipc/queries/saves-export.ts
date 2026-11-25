@@ -102,13 +102,9 @@ export const savesExportQueries = {
     z.object({ id: StringParam, fileIndex: FileIndexParam }),
     async (params): Promise<QueryResult<"saves.exportFile">> => {
       const id = params.id;
-      if (!id) {
-        return { ok: false, reason: "not_found" };
-      }
+      if (!id) return { ok: false, reason: "not_found" };
       const target = await resolveSaveFilePath(id, params.fileIndex);
-      if (!target.ok) {
-        return target;
-      }
+      if (!target.ok) return target;
 
       const db = await getDb();
       const rows = await db.select().from(saves).where(eq(saves.id, id));
@@ -219,9 +215,7 @@ export const savesExportQueries = {
       let exported = 0;
       for (const id of ids) {
         const target = await resolveSaveFilePath(id, 0);
-        if (!target.ok) {
-          continue;
-        }
+        if (!target.ok) continue;
         try {
           const bytes = await sharp(target.path)
             .webp({ quality: 80 })

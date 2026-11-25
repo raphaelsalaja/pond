@@ -21,9 +21,7 @@ const FacetSchema = z.object({
 /** Extras are stored JSON, so a facet from an older or hand-edited save is checked before use. */
 function facetsOf(capture: Capture): Array<CaptureFacet> {
   const raw = capture.extras?.facets;
-  if (!Array.isArray(raw)) {
-    return [];
-  }
+  if (!Array.isArray(raw)) return [];
   return raw.flatMap((facet) => {
     const parsed = FacetSchema.safeParse(facet);
     return parsed.success ? [parsed.data] : [];
@@ -34,9 +32,7 @@ function facetsOf(capture: Capture): Array<CaptureFacet> {
 function toShortUrl(url: string): string {
   try {
     const u = new URL(url);
-    if (u.protocol !== "http:" && u.protocol !== "https:") {
-      return url;
-    }
+    if (u.protocol !== "http:" && u.protocol !== "https:") return url;
     const path = (u.pathname === "/" ? "" : u.pathname) + u.search + u.hash;
     return path.length > 15
       ? `${u.host}${path.slice(0, 13)}...`
@@ -57,12 +53,8 @@ function facetRuns(
   const out: Array<TextRun> = [];
   let at = 0;
   for (const f of [...facets].sort((a, b) => a.start - b.start)) {
-    if (f.start < at || f.end > bytes.length || f.end <= f.start) {
-      continue;
-    }
-    if (f.start > at) {
-      out.push({ text: decode(at, f.start) });
-    }
+    if (f.start < at || f.end > bytes.length || f.end <= f.start) continue;
+    if (f.start > at) out.push({ text: decode(at, f.start) });
     const segment = decode(f.start, f.end);
     out.push({
       text: f.type === "link" ? toShortUrl(segment) : segment,
@@ -70,9 +62,7 @@ function facetRuns(
     });
     at = f.end;
   }
-  if (at < bytes.length) {
-    out.push({ text: decode(at, bytes.length) });
-  }
+  if (at < bytes.length) out.push({ text: decode(at, bytes.length) });
   return out;
 }
 
@@ -91,12 +81,8 @@ const SINGLE_EMOJI_RE =
 function author(a: Capture["author"], fallback: string): BlueskyAuthor {
   const handle = a?.handle ?? fallback;
   const out: BlueskyAuthor = { name: a?.name || handle, handle: `@${handle}` };
-  if (a?.verified) {
-    out.verified = true;
-  }
-  if (isDataUrl(a?.avatarUrl)) {
-    out.avatar = a.avatarUrl;
-  }
+  if (a?.verified) out.verified = true;
+  if (isDataUrl(a?.avatarUrl)) out.avatar = a.avatarUrl;
   return out;
 }
 
@@ -108,9 +94,7 @@ function media(
   for (const m of list) {
     if (m.type === "video") {
       out.video = { width: m.width, height: m.height };
-      if (isDataUrl(m.posterUrl)) {
-        out.video.src = m.posterUrl;
-      }
+      if (isDataUrl(m.posterUrl)) out.video.src = m.posterUrl;
     } else if (m.type === "image" && m.url !== cardThumb) {
       out.images.push(
         isDataUrl(m.url)
@@ -124,26 +108,20 @@ function media(
 }
 
 function cardOf(card: Capture["card"]): BlueskyCard | undefined {
-  if (!card?.url) {
-    return undefined;
-  }
+  if (!card?.url) return undefined;
   const out: BlueskyCard = {
     title: card.title || card.url,
     description: card.description ?? "",
     domain: niceDomain(card.url),
   };
-  if (isDataUrl(card.imageUrl)) {
-    out.image = card.imageUrl;
-  }
+  if (isDataUrl(card.imageUrl)) out.image = card.imageUrl;
   return out;
 }
 
 /** `niceDate(…, 'dot separated')`. */
 function niceDate(iso: string | undefined): string {
   const d = iso ? new Date(iso) : undefined;
-  if (!d || !Number.isFinite(d.getTime())) {
-    return "";
-  }
+  if (!d || !Number.isFinite(d.getTime())) return "";
   const locale = systemLocale();
   const time = new Intl.DateTimeFormat(locale, { timeStyle: "short" });
   const date = new Intl.DateTimeFormat(locale, { dateStyle: "medium" });
@@ -153,25 +131,13 @@ function niceDate(iso: string | undefined): string {
 /** `useGetTimeAgo` in its narrow form: months are 30 days, a year or more is a date. */
 function timeAgo(iso: string | undefined, now: Date): string {
   const d = iso ? new Date(iso) : undefined;
-  if (!d || !Number.isFinite(d.getTime())) {
-    return "";
-  }
+  if (!d || !Number.isFinite(d.getTime())) return "";
   const s = Math.floor((now.getTime() - d.getTime()) / 1000);
-  if (s < 5) {
-    return "now";
-  }
-  if (s < 60) {
-    return `${s}s`;
-  }
-  if (s < 3600) {
-    return `${Math.floor(s / 60)}m`;
-  }
-  if (s < 86_400) {
-    return `${Math.floor(s / 3600)}h`;
-  }
-  if (s < 86_400 * 30) {
-    return `${Math.floor(s / 86_400)}d`;
-  }
+  if (s < 5) return "now";
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86_400) return `${Math.floor(s / 3600)}h`;
+  if (s < 86_400 * 30) return `${Math.floor(s / 86_400)}d`;
   const months = Math.floor(s / (86_400 * 30));
   return months < 12
     ? `${months}mo`
@@ -210,9 +176,7 @@ export function captureToBlueskyPost(
   }
 
   const card = cardOf(capture.card);
-  if (card) {
-    post.card = card;
-  }
+  if (card) post.card = card;
 
   const q = capture.quoted;
   if (q) {
@@ -223,9 +187,7 @@ export function captureToBlueskyPost(
       media: media(q.media ?? [], q.card?.imageUrl),
     };
     const quoteCard = cardOf(q.card);
-    if (quoteCard) {
-      post.quote.card = quoteCard;
-    }
+    if (quoteCard) post.quote.card = quoteCard;
   }
 
   const m = capture.metrics ?? {};

@@ -35,15 +35,9 @@ interface UseSmartFolderDragInput {
 }
 
 function relation(kind: SmartFolderDrop["kind"] | null): string {
-  if (kind === "before") {
-    return "before";
-  }
-  if (kind === "after") {
-    return "after";
-  }
-  if (kind === "into") {
-    return "inside";
-  }
+  if (kind === "before") return "before";
+  if (kind === "after") return "after";
+  if (kind === "into") return "inside";
   return "over";
 }
 
@@ -108,9 +102,7 @@ export function useSmartFolderDrag({
   );
 
   function groupDropAllowed(draggedId: string, target: SavedView): boolean {
-    if (target.kind !== "group") {
-      return false;
-    }
+    if (target.kind !== "group") return false;
     const ids = selectedIds.includes(draggedId) ? selectedIds : [draggedId];
     const roots = selectedViewRoots(ids, views);
     return (
@@ -193,36 +185,26 @@ export function useSmartFolderDrag({
       return;
     }
     const target = views.find((view) => view.id === over.id);
-    if (!target) {
-      return;
-    }
+    if (!target) return;
     const draggedId = String(active.id);
     const geometric = dndFolderDropKind(active, over, pointer);
     if (!keyboardDrag && geometric === "into") {
-      if (!groupDropAllowed(draggedId, target)) {
-        return;
-      }
+      if (!groupDropAllowed(draggedId, target)) return;
       const ids = selectedIds.includes(draggedId) ? selectedIds : [draggedId];
       const roots = selectedViewRoots(ids, views);
       haptics.drop(true);
       onReveal(target.id);
       await runAction(async () => {
-        for (const entry of roots) {
-          await savedViews.move(entry.id, target.id);
-        }
+        for (const entry of roots) await savedViews.move(entry.id, target.id);
       });
       return;
     }
     const kind = keyboardDrag
       ? keyboardSiblingReorderKind(draggedId, target.id, rows)
       : geometric;
-    if (kind === "into" || !kind) {
-      return;
-    }
+    if (kind === "into" || !kind) return;
     const ordered = planSmartFolderReorder(draggedId, target.id, kind, rows);
-    if (!ordered) {
-      return;
-    }
+    if (!ordered) return;
     haptics.drop(true);
     await runAction(() => savedViews.reorder(ordered));
   }

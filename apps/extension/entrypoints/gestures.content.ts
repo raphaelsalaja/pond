@@ -18,23 +18,17 @@ function itemAt(target: EventTarget | null): PageItem | null {
     : media;
   if (isHTMLTag(image, "img")) {
     const url = webUrl(image.currentSrc || image.src);
-    if (url) {
-      return { kind: "media", url, title: image.alt || undefined };
-    }
+    if (url) return { kind: "media", url, title: image.alt || undefined };
   }
   if (isHTMLTag(image, "video")) {
     const url = webUrl(image.currentSrc || image.src) ?? webUrl(image.poster);
-    if (url) {
-      return { kind: "media", url };
-    }
+    if (url) return { kind: "media", url };
   }
   const link = target.closest("a[href]");
   if (isHTMLTag(link, "a")) {
     const url = webUrl(link.href);
     const title = link.textContent?.trim().slice(0, 200);
-    if (url) {
-      return { kind: "link", url, title: title || undefined };
-    }
+    if (url) return { kind: "link", url, title: title || undefined };
   }
   return null;
 }
@@ -59,13 +53,9 @@ export default defineContentScript({
       window,
       "contextmenu",
       (event) => {
-        if (!event.altKey || !settings?.altClick) {
-          return;
-        }
+        if (!event.altKey || !settings?.altClick) return;
         const item = itemAt(event.target);
-        if (!item) {
-          return;
-        }
+        if (!item) return;
         event.preventDefault();
         event.stopPropagation();
         void sendMessage("gesture", { kind: "alt-click", item }).catch(

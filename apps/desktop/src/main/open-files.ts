@@ -26,14 +26,10 @@ export async function flushOpenFiles(deps: {
     (path) => extname(path).toLowerCase() !== ".pond",
   );
   pendingPaths = [];
-  if (paths.length === 0) {
-    return;
-  }
+  if (paths.length === 0) return;
   await deps.openLibraryWindow();
   const win = deps.getMainWindow();
-  if (!win || win.isDestroyed()) {
-    return;
-  }
+  if (!win || win.isDestroyed()) return;
   const send = () => win.webContents.send(IPC.openFiles, paths);
   /** A window that is still loading cannot receive IPC. */
   if (win.webContents.isLoading()) {

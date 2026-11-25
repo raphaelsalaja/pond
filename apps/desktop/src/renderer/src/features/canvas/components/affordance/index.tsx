@@ -52,9 +52,7 @@ export function Affordance({
     return (Math.atan2(point.y - center.y, point.x - center.x) * 180) / Math.PI;
   };
   const begin = (event: PointerEvent<HTMLElement>, next: Grab) => {
-    if (event.button !== 0) {
-      return;
-    }
+    if (event.button !== 0) return;
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     grab.current = next;
@@ -62,9 +60,7 @@ export function Affordance({
   };
   const move = (event: PointerEvent) => {
     const current = grab.current;
-    if (!current) {
-      return;
-    }
+    if (!current) return;
     if (!started.current) {
       started.current = true;
       onStart();

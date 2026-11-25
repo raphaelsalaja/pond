@@ -78,9 +78,7 @@ export function Imports() {
   const [running, setRunning] = useState<ReadonlySet<string>>(new Set());
 
   const start = async ({ id, run }: ImportSource) => {
-    if (running.has(id)) {
-      return;
-    }
+    if (running.has(id)) return;
     setRunning((current) => new Set(current).add(id));
     await runNewAction(run);
     setRunning((current) => {

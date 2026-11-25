@@ -17,9 +17,7 @@ export function latestFromMessage(message: {
     return { from: "you", text: plainPreview(message.content), at };
   }
   const text = plainPreview(message.content);
-  if (text) {
-    return { from: "fish", text, at };
-  }
+  if (text) return { from: "fish", text, at };
   const changes = metadata?.changes?.length ?? 0;
   if (changes) {
     return {

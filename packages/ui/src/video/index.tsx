@@ -225,9 +225,7 @@ function TimeDisplay({
 
 function FullscreenButton({ className, ...props }: ButtonProps) {
   const { state, actions } = useVideo();
-  if (!state.fullscreenSupported) {
-    return null;
-  }
+  if (!state.fullscreenSupported) return null;
   return (
     <button
       type="button"

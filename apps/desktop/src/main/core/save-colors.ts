@@ -11,41 +11,29 @@ export async function analyzeSaveColors(
   const { encodeBlurhash, pickBlurhashStill } = await import("../lib/blurhash");
   const { encodePhash } = await import("../lib/phash");
   const still = pickBlurhashStill(row);
-  if (!still) {
-    return false;
-  }
+  if (!still) return false;
   const needsColors =
     row.mediaType === "image" &&
     (force || (row.dominantColors ?? []).length === 0);
   const needsHash = force || !row.blurhash;
   const needsPerceptualHash =
     row.mediaType === "image" && (force || !row.phash);
-  if (!needsColors && !needsHash && !needsPerceptualHash) {
-    return false;
-  }
+  if (!needsColors && !needsHash && !needsPerceptualHash) return false;
   const path = saveFile(row.id, still.path);
   const patch: Parameters<typeof persistSave>[1] = {};
   if (needsColors) {
     const colors = await extractPalette(path);
-    if (colors.length > 0) {
-      patch.dominantColors = colors;
-    }
+    if (colors.length > 0) patch.dominantColors = colors;
   }
   if (needsHash) {
     const hash = await encodeBlurhash(path);
-    if (hash) {
-      patch.blurhash = hash;
-    }
+    if (hash) patch.blurhash = hash;
   }
   if (needsPerceptualHash) {
     const hash = await encodePhash(path);
-    if (hash) {
-      patch.phash = hash;
-    }
+    if (hash) patch.phash = hash;
   }
-  if (Object.keys(patch).length === 0) {
-    return false;
-  }
+  if (Object.keys(patch).length === 0) return false;
   await persistSave(row.id, patch, { actorReason });
   return true;
 }

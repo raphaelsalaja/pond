@@ -37,9 +37,7 @@ export function useImageReady(
   );
 
   const markBroken = useCallback(() => {
-    if (!src || settledSrc.current === src) {
-      return;
-    }
+    if (!src || settledSrc.current === src) return;
     settledSrc.current = src;
     onBroken?.();
   }, [onBroken, src]);

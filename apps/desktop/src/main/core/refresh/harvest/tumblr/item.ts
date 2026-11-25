@@ -37,17 +37,11 @@ async function inPageTumblrHarvest(): Promise<TumblrPostPage | null> {
       ?.trim() ?? "";
   const page: TumblrPostPage = { mediaUrls: [], meta: {} };
   const description = meta("description");
-  if (description) {
-    page.description = description;
-  }
+  if (description) page.description = description;
   const blog = /tumblr\.com\/([a-z0-9-]+)\//i.exec(location.href)?.[1];
-  if (blog) {
-    page.author = blog;
-  }
+  if (blog) page.author = blog;
   const image = meta("og:image");
-  if (image) {
-    page.mediaUrls.push({ url: image, type: "image" });
-  }
+  if (image) page.mediaUrls.push({ url: image, type: "image" });
   return page.description || image ? page : null;
 }
 

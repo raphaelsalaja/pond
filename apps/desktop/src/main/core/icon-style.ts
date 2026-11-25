@@ -58,9 +58,7 @@ export function macosMajor(
   platform: NodeJS.Platform,
   systemVersion: string,
 ): number | null {
-  if (platform !== "darwin") {
-    return null;
-  }
+  if (platform !== "darwin") return null;
   const major = Number.parseInt(systemVersion, 10);
   return Number.isNaN(major) ? null : major;
 }
@@ -102,17 +100,13 @@ export function watchIconStyle(
   onStyle: (style: AppIconStyle) => void,
 ): IconStyleWatch | null {
   const path = helperPath();
-  if (!path) {
-    return null;
-  }
+  if (!path) return null;
   const child = spawn(path, [], { stdio: ["pipe", "pipe", "ignore"] });
   child.on("error", (err) => log.warn("[pond] icon style helper failed", err));
   if (child.stdout) {
     createInterface({ input: child.stdout }).on("line", (line) => {
       const style = parseIconStyleLine(line);
-      if (style) {
-        onStyle(style);
-      }
+      if (style) onStyle(style);
     });
   }
   return {

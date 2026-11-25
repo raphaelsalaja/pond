@@ -38,9 +38,7 @@ const pascal = (file) =>
 function parse(path) {
   const svg = readFileSync(path, "utf8");
   const match = ROOT.exec(svg);
-  if (!match) {
-    throw new Error(`${path}: expected an 18×18 <svg>.`);
-  }
+  if (!match) throw new Error(`${path}: expected an 18×18 <svg>.`);
   const [, root, body] = match;
   const nodes = [...body.matchAll(ELEMENT)].map(([, tag, attrs]) => [
     tag,
@@ -66,9 +64,7 @@ function parse(path) {
 
 /** Ink past the 0–18 frame, counting half the stroke on outline drawings. */
 function overflow({ style, nodes, visible }) {
-  if (visible) {
-    return 0;
-  }
+  if (visible) return 0;
   const half = style === "outline" ? 0.625 : 0;
   let past = 0;
   for (const [tag, attrs] of nodes) {
@@ -132,17 +128,13 @@ function glyphs(manifest, miss) {
     }
   }
   for (const folder of readdirSync(dir, { withFileTypes: true })) {
-    if (!folder.isDirectory()) {
-      continue;
-    }
+    if (!folder.isDirectory()) continue;
     if (!manifest[folder.name]) {
       miss(`svg/${folder.name}`, "manifest-missing", "no manifest entry");
       continue;
     }
     for (const file of readdirSync(resolve(dir, folder.name))) {
-      if (!file.endsWith(".svg")) {
-        continue;
-      }
+      if (!file.endsWith(".svg")) continue;
       if (!listed.has(`${folder.name}/${file}`)) {
         miss(
           `svg/${folder.name}/${file}`,
@@ -179,9 +171,7 @@ function imported() {
           .trim()
           .replace(/^type\s+/, "")
           .split(/\s+as\s+/)[0];
-        if (name) {
-          names.add(name);
-        }
+        if (name) names.add(name);
       }
     }
   }
@@ -189,9 +179,7 @@ function imported() {
 }
 
 function parts(dir) {
-  if (!existsSync(dir)) {
-    return new Map();
-  }
+  if (!existsSync(dir)) return new Map();
   return new Map(
     readdirSync(dir)
       .filter((file) => file.endsWith(".svg"))
@@ -203,9 +191,7 @@ function parts(dir) {
 /** Checks each Neutral drawing in a staged tree against the parts it names. A Duo file draws only its badges and slash as lines. */
 function stagedMisses(root, label) {
   const path = resolve(root, "manifest.json");
-  if (!existsSync(path)) {
-    return [];
-  }
+  if (!existsSync(path)) return [];
   const misses = [];
   for (const [name, entry] of Object.entries(
     JSON.parse(readFileSync(path, "utf8")),
@@ -216,9 +202,7 @@ function stagedMisses(root, label) {
       ["duo-18.svg", names.filter(cuts)],
     ]) {
       const drawing = resolve(root, name, file);
-      if (!existsSync(drawing) || used.length === 0) {
-        continue;
-      }
+      if (!existsSync(drawing) || used.length === 0) continue;
       misses.push(
         ...partMisses(
           `${label}/${name}/${file}`,

@@ -99,9 +99,7 @@ function GallerySlide({
   const reportReady = useCallback(
     (image: HTMLImageElement) => {
       rememberCardThumbnail(unit.url, image.currentSrc || image.src);
-      if (!primary) {
-        return;
-      }
+      if (!primary) return;
       recordAspect(save.id, image.naturalWidth, image.naturalHeight, {
         coverKey: aspectCoverKey(unit),
       });
@@ -111,9 +109,7 @@ function GallerySlide({
   );
   const { ref: imageRef, loaded, onLoad } = useImageReady(src, reportReady);
 
-  if (failed && !primary) {
-    return null;
-  }
+  if (failed && !primary) return null;
 
   return (
     <>

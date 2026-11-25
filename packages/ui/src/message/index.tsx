@@ -37,9 +37,7 @@ function Bubble({ className, ...props }: ComponentPropsWithoutRef<"div">) {
 }
 
 function Leading({ children }: { children?: ReactNode }) {
-  if (!children) {
-    return null;
-  }
+  if (!children) return null;
   return <div className={styles.leading}>{children}</div>;
 }
 
@@ -48,9 +46,7 @@ function Footer({ children }: { children?: ReactNode }) {
 }
 
 function Actions({ children }: { children?: ReactNode }) {
-  if (!children) {
-    return null;
-  }
+  if (!children) return null;
   return <div className={styles.actions}>{children}</div>;
 }
 

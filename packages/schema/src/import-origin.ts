@@ -40,13 +40,8 @@ export function legacyImportOrigin(save: {
   source: string;
   sourceId: string;
 }): ImportOrigin | null {
-  if (save.source !== "local") {
-    return null;
-  }
-  for (const [prefix, origin] of LEGACY_IMPORT_PREFIXES) {
-    if (save.sourceId.startsWith(prefix)) {
-      return origin;
-    }
-  }
+  if (save.source !== "local") return null;
+  for (const [prefix, origin] of LEGACY_IMPORT_PREFIXES)
+    if (save.sourceId.startsWith(prefix)) return origin;
   return null;
 }

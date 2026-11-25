@@ -15,18 +15,14 @@ function nativeAvailable() {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
 const roots: Array<string> = [];
 const opened: Array<Database.Database> = [];
 afterEach(async () => {
-  for (const db of opened.splice(0)) {
-    db.close();
-  }
+  for (const db of opened.splice(0)) db.close();
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   );

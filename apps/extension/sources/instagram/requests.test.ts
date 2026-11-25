@@ -12,9 +12,7 @@ const ALPHABET =
 
 function mediaIdFor(shortcode: string): string {
   let n = 0n;
-  for (const ch of shortcode) {
-    n = n * 64n + BigInt(ALPHABET.indexOf(ch));
-  }
+  for (const ch of shortcode) n = n * 64n + BigInt(ALPHABET.indexOf(ch));
   return n.toString();
 }
 

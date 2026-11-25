@@ -79,13 +79,9 @@ export async function createView(
   runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<OkResult<{ id: string }>> {
   const name = input.name.trim();
-  if (!name) {
-    return MISSING_NAME;
-  }
+  if (!name) return MISSING_NAME;
   return mutateViews(runtime, async (db) => {
-    if (!(await validParent(db, input.parentId ?? null))) {
-      return INVALID_PARENT;
-    }
+    if (!(await validParent(db, input.parentId ?? null))) return INVALID_PARENT;
     const data: NewSavedView = {
       id: ulid(),
       name,
@@ -118,9 +114,7 @@ export async function updateView(
 ): Promise<OkResult> {
   return mutateViews(runtime, async (db) => {
     const row = await viewById(db, id);
-    if (!row) {
-      return NOT_FOUND;
-    }
+    if (!row) return NOT_FOUND;
     if (
       patch.parentId !== undefined &&
       !(await validParent(db, patch.parentId, id))
@@ -129,9 +123,7 @@ export async function updateView(
     }
     if (patch.name !== undefined) {
       const name = patch.name.trim();
-      if (!name) {
-        return MISSING_NAME;
-      }
+      if (!name) return MISSING_NAME;
       patch = { ...patch, name };
     }
     await runtime.commit([
@@ -154,9 +146,7 @@ export async function renameView(
   runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<OkResult> {
   const target = name.trim();
-  if (!target) {
-    return MISSING_NAME;
-  }
+  if (!target) return MISSING_NAME;
   return updateView(id, { name: target }, runtime);
 }
 
@@ -178,9 +168,7 @@ export async function renameViewsBatch(
     const transactions: Array<Transaction> = [];
     for (const [index, id] of ids.entries()) {
       const row = byId.get(id);
-      if (!row) {
-        continue;
-      }
+      if (!row) continue;
       const name = applyRenameTemplate(pattern, {
         index,
         title: row.name,
@@ -191,9 +179,7 @@ export async function renameViewsBatch(
         replacement: input.replacement,
         textCase: input.textCase,
       });
-      if (!name || name === row.name) {
-        continue;
-      }
+      if (!name || name === row.name) continue;
       transactions.push({
         kind: "update",
         model: "saved_view",
@@ -215,9 +201,7 @@ export async function deleteView(
 ): Promise<OkResult> {
   return mutateViews(runtime, async (db) => {
     const row = await viewById(db, id);
-    if (!row) {
-      return NOT_FOUND;
-    }
+    if (!row) return NOT_FOUND;
     const children = await db
       .select()
       .from(savedViewsTable)
@@ -250,13 +234,9 @@ export async function reorderViews(
     const txs: Array<Transaction> = [];
     for (let i = 0; i < orderedIds.length; i++) {
       const id = orderedIds[i];
-      if (!id) {
-        continue;
-      }
+      if (!id) continue;
       const row = await viewById(db, id);
-      if (!row || row.sortOrder === i) {
-        continue;
-      }
+      if (!row || row.sortOrder === i) continue;
       txs.push({
         kind: "update",
         model: "saved_view",
@@ -266,9 +246,7 @@ export async function reorderViews(
         meta: { actor: "user", actorReason: "saved-view-reorder" },
       });
     }
-    if (txs.length === 0) {
-      return { ok: true };
-    }
+    if (txs.length === 0) return { ok: true };
     await runtime.commit(txs);
     runtime.recordUndo?.(txs);
     return { ok: true };
@@ -300,14 +278,10 @@ async function validParent(
   const visited = new Set<string>();
   let ancestorId = parentId;
   while (ancestorId !== null) {
-    if (ancestorId === movingId || visited.has(ancestorId)) {
-      return false;
-    }
+    if (ancestorId === movingId || visited.has(ancestorId)) return false;
     visited.add(ancestorId);
     const parent = await viewById(db, ancestorId);
-    if (parent?.kind !== "group") {
-      return false;
-    }
+    if (parent?.kind !== "group") return false;
     ancestorId = parent.parentId;
   }
   return true;

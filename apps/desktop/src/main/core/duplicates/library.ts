@@ -37,9 +37,7 @@ function clipVector(
     return null;
   }
   const vector = parseJsonVector(row.clip_embedding);
-  if (!vector) {
-    return null;
-  }
+  if (!vector) return null;
   try {
     return normalizedEmbeddingVector(vector);
   } catch {

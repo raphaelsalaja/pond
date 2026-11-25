@@ -26,15 +26,9 @@ export interface SourceIdentity {
 }
 
 function lastFetchLabel(model: CardModel): string {
-  if (model.tone === "run") {
-    return "Fetching";
-  }
-  if (model.tone === "err") {
-    return "Failed";
-  }
-  if (model.lastText === "—") {
-    return "Never";
-  }
+  if (model.tone === "run") return "Fetching";
+  if (model.tone === "err") return "Failed";
+  if (model.lastText === "—") return "Never";
   return model.lastText.charAt(0).toUpperCase() + model.lastText.slice(1);
 }
 

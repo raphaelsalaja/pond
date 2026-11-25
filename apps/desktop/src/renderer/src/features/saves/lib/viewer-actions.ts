@@ -16,9 +16,7 @@ export function previewFileIndex(
   kind: "presentation" | "detached",
 ): number | null {
   const save = pool.get(saveId);
-  if (!save) {
-    return null;
-  }
+  if (!save) return null;
   const index = save.files.findIndex((file) => {
     const mediaType = previewMediaType(file);
     return (
@@ -45,9 +43,7 @@ export function openReferenceWindow(
 }
 
 export function runViewerAction(saveId: string, action: ViewerAction): void {
-  if (action === "none") {
-    return;
-  }
+  if (action === "none") return;
   if (action === "open") {
     openSave(saveId);
     return;
@@ -70,9 +66,7 @@ export function runViewerAction(saveId: string, action: ViewerAction): void {
         fileIndex: save.files.indexOf(file),
       })
       .then((result) => {
-        if (!result.ok) {
-          requestQuickPreview(saveId);
-        }
+        if (!result.ok) requestQuickPreview(saveId);
       })
       .catch(() => requestQuickPreview(saveId));
     return;

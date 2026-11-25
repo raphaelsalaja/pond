@@ -17,9 +17,7 @@ let wired = false;
 let installHandoff: Promise<void> | null = null;
 
 function handoffDownloadedUpdate(install: () => void): Promise<void> {
-  if (installHandoff) {
-    return installHandoff;
-  }
+  if (installHandoff) return installHandoff;
   const handoff = runUpdateRestart({
     armWatchdog: () => {
       setTimeout(() => {
@@ -110,9 +108,7 @@ const updater = createUpdaterCoordinator({
 });
 
 export function registerAutoUpdater(): void {
-  if (wired) {
-    return;
-  }
+  if (wired) return;
   if (!app.isPackaged) {
     log.info("[pond updater] skipped (dev build)");
     return;

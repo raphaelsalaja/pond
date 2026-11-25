@@ -14,9 +14,7 @@ export interface BundleHost {
 }
 
 export function appBundlePath(host: BundleHost): string | null {
-  if (host.platform !== "darwin" || !host.packaged) {
-    return null;
-  }
+  if (host.platform !== "darwin" || !host.packaged) return null;
   return posix.resolve(host.exePath, "../../..");
 }
 
@@ -29,13 +27,9 @@ const FINDER_FLAGS_OFFSET = 8;
 const HAS_BUNDLE = 0x20_00;
 
 export function withoutBundleFlag(finderInfo: Buffer): Buffer | null {
-  if (finderInfo.length < FINDER_FLAGS_OFFSET + 2) {
-    return null;
-  }
+  if (finderInfo.length < FINDER_FLAGS_OFFSET + 2) return null;
   const flags = finderInfo.readUInt16BE(FINDER_FLAGS_OFFSET);
-  if ((flags & HAS_BUNDLE) === 0) {
-    return null;
-  }
+  if ((flags & HAS_BUNDLE) === 0) return null;
   const cleared = Buffer.from(finderInfo);
   cleared.writeUInt16BE(flags & ~HAS_BUNDLE, FINDER_FLAGS_OFFSET);
   return cleared;

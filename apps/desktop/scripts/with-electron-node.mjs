@@ -24,8 +24,6 @@ if (invokedPath && import.meta.filename === invokedPath) {
     process.argv.slice(2),
   );
   const result = spawnSync(command, args, { env, stdio: "inherit" });
-  if (result.error) {
-    throw result.error;
-  }
+  if (result.error) throw result.error;
   process.exitCode = result.status ?? 1;
 }

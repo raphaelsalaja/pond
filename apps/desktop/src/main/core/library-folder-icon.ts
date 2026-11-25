@@ -25,13 +25,9 @@ function run(argv) {
 
 /** Leaves any icon already on the folder, including one you set in Finder. */
 export async function applyLibraryFolderIcon(root: string): Promise<void> {
-  if (process.platform !== "darwin") {
-    return;
-  }
+  if (process.platform !== "darwin") return;
   await clearBundleFlag(root);
-  if (hasCustomBundleIcon(root)) {
-    return;
-  }
+  if (hasCustomBundleIcon(root)) return;
   const temp = app.getPath("temp");
   const folderPng = join(temp, "pond-system-folder.png");
   const iconPng = join(temp, "pond-library-folder.png");

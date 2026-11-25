@@ -43,9 +43,7 @@ function LibraryMenuContent({
                 aria-current={entry.active ? "true" : undefined}
                 key={entry.path}
                 onClick={() => {
-                  if (entry.active) {
-                    return;
-                  }
+                  if (entry.active) return;
                   void switchLibrary(entry.path);
                 }}
               >
@@ -136,9 +134,7 @@ export function WorkspaceMenu() {
         open={open}
         onOpenChange={(next) => {
           setOpen(next);
-          if (next) {
-            void refetch();
-          }
+          if (next) void refetch();
         }}
       >
         <Tooltip label={name} side="right">

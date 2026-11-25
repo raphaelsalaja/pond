@@ -25,9 +25,7 @@ export async function joinRasterImages(
   paths: Array<string | Buffer>,
   input: Partial<CombineImagesOptions> = {},
 ): Promise<Buffer> {
-  if (paths.length < 2) {
-    throw new Error("Select at least two images.");
-  }
+  if (paths.length < 2) throw new Error("Select at least two images.");
   const options = CombineImagesOptionsSchema.parse(input);
   const ordered = options.order === "reverse" ? [...paths].reverse() : paths;
   const sources = await Promise.all(
@@ -121,13 +119,9 @@ export async function combineImages(input: {
         const files = row?.files ?? [];
         const file = pickCombineImageFile(files, input.cover);
         const fileIndex = file ? files.indexOf(file) : -1;
-        if (!row || fileIndex < 0) {
-          return null;
-        }
+        if (!row || fileIndex < 0) return null;
         const target = await resolveSaveFilePath(id, fileIndex);
-        if (!target.ok) {
-          return null;
-        }
+        if (!target.ok) return null;
         return { id, bytes: await readLibraryMedia(target.path) };
       }),
     ),
@@ -162,9 +156,7 @@ export async function combineImages(input: {
       title: "Combined Images",
       filePaths: [path],
     });
-    if (!created.ok) {
-      return created;
-    }
+    if (!created.ok) return created;
     if (input.folderId) {
       await addSavesToFolder(input.folderId, [created.id]);
     }

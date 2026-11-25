@@ -114,9 +114,7 @@ function footprintTotals(processes) {
     );
     for (const entry of processes) {
       const bytes = byPid.get(entry.pid);
-      if (bytes === undefined) {
-        continue;
-      }
+      if (bytes === undefined) continue;
       entry.footprintMB = toMB(bytes / 1024);
       totals[CATEGORIES[entry.type] ?? "other"] += bytes / 1024;
       totals.total += bytes / 1024;
@@ -133,9 +131,7 @@ function footprintTotals(processes) {
 async function sample() {
   const samples = [];
   for (let index = 0; index < SAMPLE_COUNT; index++) {
-    if (index > 0) {
-      await sleep(SAMPLE_GAP_MS);
-    }
+    if (index > 0) await sleep(SAMPLE_GAP_MS);
     samples.push(snapshot());
   }
   const totalsMB = {};
@@ -183,9 +179,7 @@ function writeSeedImages() {
 async function measure() {
   const contents = await rendererReady;
   const window = BrowserWindow.fromWebContents(contents);
-  if (!window) {
-    throw new Error("Library window is missing");
-  }
+  if (!window) throw new Error("Library window is missing");
   const info = await contents.executeJavaScript(
     'window.pond.query("library.info")',
   );
@@ -238,9 +232,7 @@ function checkBudgets(scenarios) {
   const failures = [];
   for (const [scenario, limits] of Object.entries(budgets)) {
     const totals = scenarios[scenario]?.totalsMB;
-    if (!totals) {
-      throw new Error(`No measurement for budget ${scenario}`);
-    }
+    if (!totals) throw new Error(`No measurement for budget ${scenario}`);
     for (const [category, budgetMB] of Object.entries(limits)) {
       if (totals[category] > budgetMB) {
         failures.push({

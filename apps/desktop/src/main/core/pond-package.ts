@@ -327,9 +327,7 @@ async function readPackage(directory: string) {
     }
     const save = manifest.saves.find((item) => item.id === entry.saveId);
     const file = save?.files.find((item) => item.path === entry.sourcePath);
-    if (!file) {
-      throw new Error("The package contains an unrecognized file.");
-    }
+    if (!file) throw new Error("The package contains an unrecognized file.");
     const actual = await hashFile(path);
     if (
       actual.size !== file.size ||
@@ -396,9 +394,7 @@ async function importPackage(
           for (const file of save.files) {
             checkTransferCancellation();
             const source = paths.get(save.id)?.get(file.path);
-            if (!source) {
-              throw new Error("A package original is missing.");
-            }
+            if (!source) throw new Error("A package original is missing.");
             const target = resolve(destination, file.path);
             await mkdir(dirname(target), { recursive: true });
             await copyLibraryMediaFile(source, target);
@@ -425,9 +421,7 @@ async function importPackage(
             save.files.reduce((total, file) => total + file.size, 0),
           );
         } finally {
-          if (!copied) {
-            await rm(destination, { recursive: true, force: true });
-          }
+          if (!copied) await rm(destination, { recursive: true, force: true });
         }
       }
       if (manifest.organization) {
@@ -448,9 +442,7 @@ async function importPackage(
   try {
     return await operation;
   } finally {
-    if (imports.get(dependencies) === settled) {
-      imports.delete(dependencies);
-    }
+    if (imports.get(dependencies) === settled) imports.delete(dependencies);
   }
 }
 

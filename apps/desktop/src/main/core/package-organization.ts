@@ -186,9 +186,7 @@ export function mergePackageOrganization(
   }
   for (const [id, view] of Object.entries(incoming.folderViews)) {
     const mapped = folderIds.get(id);
-    if (!mapped) {
-      throw new Error("A folder view references a missing folder.");
-    }
+    if (!mapped) throw new Error("A folder view references a missing folder.");
     const existingView = result.folderViews[mapped];
     const manualOrder = view.manualOrder.flatMap((saveId) => {
       const target = saveIds.get(saveId);

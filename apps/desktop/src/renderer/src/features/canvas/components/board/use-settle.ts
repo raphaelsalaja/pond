@@ -51,18 +51,14 @@ export function useSettle(
       let bottom = Number.NEGATIVE_INFINITY;
       for (const change of drags) {
         const node = byId.get(change.id);
-        if (!node || !change.position) {
-          continue;
-        }
+        if (!node || !change.position) continue;
         const { width, height } = rectOf(node);
         left = Math.min(left, change.position.x);
         top = Math.min(top, change.position.y);
         right = Math.max(right, change.position.x + width);
         bottom = Math.max(bottom, change.position.y + height);
       }
-      if (!Number.isFinite(left)) {
-        return changes;
-      }
+      if (!Number.isFinite(left)) return changes;
       const others = nodes
         .filter(
           (node) =>
@@ -92,13 +88,9 @@ export function useSettle(
       }
       const extra: Array<NodeChange<CanvasNode>> = [];
       for (const change of shifted) {
-        if (change.type !== "position" || !change.position) {
-          continue;
-        }
+        if (change.type !== "position" || !change.position) continue;
         const start = carried.sections.get(change.id);
-        if (!start) {
-          continue;
-        }
+        if (!start) continue;
         const dx = change.position.x - start.x;
         const dy = change.position.y - start.y;
         for (const [id, member] of carried.members) {
@@ -130,9 +122,7 @@ export function useSettle(
           continue;
         }
         const node = byId.get(change.id);
-        if (!node) {
-          continue;
-        }
+        if (!node) continue;
         const position = changes.find(
           (entry): entry is NodePositionChange =>
             entry.type === "position" && entry.id === change.id,
@@ -148,13 +138,9 @@ export function useSettle(
           }),
         );
       }
-      if (!frames.size) {
-        return changes;
-      }
+      if (!frames.size) return changes;
       return changes.map((change) => {
-        if (change.type === "add") {
-          return change;
-        }
+        if (change.type === "add") return change;
         const frame = frames.get(change.id);
         if (!frame) {
           return change;

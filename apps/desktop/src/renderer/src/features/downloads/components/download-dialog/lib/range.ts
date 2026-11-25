@@ -39,9 +39,7 @@ export function mostReplayed(
   heatmap: ReadonlyArray<DownloadHeatPoint>,
   duration: number,
 ): DownloadRange | null {
-  if (heatmap.length < 3) {
-    return null;
-  }
+  if (heatmap.length < 3) return null;
   let peak = 0;
   for (let index = 1; index < heatmap.length; index++) {
     if ((heatmap[index]?.value ?? 0) > (heatmap[peak]?.value ?? 0)) {
@@ -49,15 +47,11 @@ export function mostReplayed(
     }
   }
   const top = heatmap[peak];
-  if (!top) {
-    return null;
-  }
+  if (!top) return null;
   const floor = top.value * REPLAY_FLOOR;
   let left = peak;
   let right = peak;
-  while (left > 0 && (heatmap[left - 1]?.value ?? 0) >= floor) {
-    left -= 1;
-  }
+  while (left > 0 && (heatmap[left - 1]?.value ?? 0) >= floor) left -= 1;
   while (
     right < heatmap.length - 1 &&
     (heatmap[right + 1]?.value ?? 0) >= floor
@@ -94,14 +88,10 @@ export function storyboardTile(
   time: number,
 ): StoryboardTile | null {
   const { sheets, columns, rows, interval } = storyboard;
-  if (sheets.length === 0 || interval <= 0) {
-    return null;
-  }
+  if (sheets.length === 0 || interval <= 0) return null;
   const sheet =
     sheets.find((item) => time < item.start + item.duration) ?? sheets.at(-1);
-  if (!sheet) {
-    return null;
-  }
+  if (!sheet) return null;
   const perSheet = columns * rows;
   const index = Math.min(
     perSheet - 1,
@@ -122,27 +112,21 @@ export function heatmapPath(
   heatmap: ReadonlyArray<DownloadHeatPoint>,
   duration: number,
 ): string | null {
-  if (heatmap.length < 2 || duration <= 0) {
-    return null;
-  }
+  if (heatmap.length < 2 || duration <= 0) return null;
   const points = heatmap.map((point) => ({
     x: ((point.start + point.end) / 2 / duration) * 1000,
     y: 100 - point.value * 92,
   }));
   const first = points[0];
   const last = points.at(-1);
-  if (!first || !last) {
-    return null;
-  }
+  if (!first || !last) return null;
   let d = `M 0 100 L 0 ${first.y.toFixed(1)} L ${first.x.toFixed(1)} ${first.y.toFixed(1)}`;
   for (let index = 0; index < points.length - 1; index++) {
     const p0 = points[index - 1] ?? points[index];
     const p1 = points[index];
     const p2 = points[index + 1];
     const p3 = points[index + 2] ?? p2;
-    if (!p0 || !p1 || !p2 || !p3) {
-      continue;
-    }
+    if (!p0 || !p1 || !p2 || !p3) continue;
     const c1x = p1.x + (p2.x - p0.x) / 6;
     const c1y = p1.y + (p2.y - p0.y) / 6;
     const c2x = p2.x - (p3.x - p1.x) / 6;

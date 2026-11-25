@@ -29,9 +29,7 @@ export function substackAction(
   pageUrl: string,
   page: PagePost | null = null,
 ): SubstackAction | null {
-  if (method !== "POST") {
-    return null;
-  }
+  if (method !== "POST") return null;
   let path: string;
   try {
     path = new URL(requestUrl, pageUrl).pathname;
@@ -43,9 +41,7 @@ export function substackAction(
     ? /"?post_?id"?\s*[:=]\s*"?(\d+)/i.exec(body ?? "")?.[1]
     : undefined;
   const id = liked ?? saved;
-  if (!id) {
-    return null;
-  }
+  if (!id) return null;
   return {
     url: page?.id === id ? page.url : `https://substack.com/home/post/p-${id}`,
     trigger: liked ? "substack:like" : "substack:save",
@@ -54,12 +50,8 @@ export function substackAction(
 
 function pagePost(): PagePost | null {
   const post = window._preloads?.post;
-  if (!post?.id || !post.slug) {
-    return null;
-  }
-  if (!PUBLICATION_HOST_RE.test(location.hostname)) {
-    return null;
-  }
+  if (!post?.id || !post.slug) return null;
+  if (!PUBLICATION_HOST_RE.test(location.hostname)) return null;
   return {
     id: String(post.id),
     url: `https://${location.hostname.toLowerCase()}/p/${post.slug}`,
@@ -71,9 +63,7 @@ export function inject(): void {
     id: "substack",
     match: (req) => req.method === "POST" && TOUCH_RE.test(req.url),
     async onResponse(req, res) {
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
       const action = substackAction(
         req.method,
         req.url,
@@ -81,9 +71,7 @@ export function inject(): void {
         location.href,
         pagePost(),
       );
-      if (action) {
-        capture(action.url, action.trigger);
-      }
+      if (action) capture(action.url, action.trigger);
     },
   });
 }

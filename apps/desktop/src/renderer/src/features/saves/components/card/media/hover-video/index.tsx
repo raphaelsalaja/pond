@@ -88,9 +88,7 @@ export function HoverVideo({
   } = useImageReady(effectivePosterUrl ?? null, reportPosterReady);
 
   useEffect(() => {
-    if (!active || !primed || !hoverEnabled) {
-      return;
-    }
+    if (!active || !primed || !hoverEnabled) return;
     const el = internalRef.current;
     if (!el) {
       return;
@@ -103,19 +101,14 @@ export function HoverVideo({
       el.pause();
     };
     const onVisibility = (): void => {
-      if (document.hidden) {
-        pause();
-      } else if (document.hasFocus()) {
-        play();
-      }
+      if (document.hidden) pause();
+      else if (document.hasFocus()) play();
     };
     if (motionPaused) {
       pause();
       return () => pause();
     }
-    if (!document.hidden && document.hasFocus()) {
-      play();
-    }
+    if (!document.hidden && document.hasFocus()) play();
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", pause);
     window.addEventListener("focus", onVisibility);
@@ -128,13 +121,9 @@ export function HoverVideo({
   }, [active, primed, hoverEnabled, motionPaused]);
 
   useEffect(() => {
-    if (primed) {
-      return;
-    }
+    if (primed) return;
     const el = internalRef.current;
-    if (!el || el.networkState === HTMLMediaElement.NETWORK_EMPTY) {
-      return;
-    }
+    if (!el || el.networkState === HTMLMediaElement.NETWORK_EMPTY) return;
     /** Dropping src alone keeps the decoder and buffers; load() with no source frees them. */
     el.removeAttribute("src");
     el.load();
@@ -150,18 +139,14 @@ export function HoverVideo({
   );
 
   const activate = useCallback(() => {
-    if (!hoverEnabled || document.body.dataset.saveDragging) {
-      return;
-    }
+    if (!hoverEnabled || document.body.dataset.saveDragging) return;
     window.clearTimeout(releaseTimer.current);
     setActive(true);
     setHoverPrimed(true);
   }, [hoverEnabled]);
 
   const armHover = useCallback(() => {
-    if (!hoverEnabled) {
-      return;
-    }
+    if (!hoverEnabled) return;
     window.clearTimeout(releaseTimer.current);
     window.clearTimeout(hoverTimer.current);
     hoverTimer.current = window.setTimeout(() => {
@@ -172,9 +157,7 @@ export function HoverVideo({
 
   /** Enter fires once per hover, so a vetoed activation or a remount under a resting pointer never re-arms; movement does. */
   const onPointerMove = useCallback(() => {
-    if (active || hoverTimer.current !== undefined) {
-      return;
-    }
+    if (active || hoverTimer.current !== undefined) return;
     armHover();
   }, [active, armHover]);
 
@@ -187,20 +170,14 @@ export function HoverVideo({
       RELEASE_DELAY_MS,
     );
     const el = internalRef.current;
-    if (!el) {
-      return;
-    }
+    if (!el) return;
     el.pause();
   }, []);
 
   const onLoadedMetadata = useCallback(() => {
     const el = internalRef.current;
-    if (!el) {
-      return;
-    }
-    if (el.readyState < HTMLMediaElement.HAVE_METADATA) {
-      return;
-    }
+    if (!el) return;
+    if (el.readyState < HTMLMediaElement.HAVE_METADATA) return;
     if (el.videoWidth === 0 && el.videoHeight === 0) {
       onBroken();
       return;

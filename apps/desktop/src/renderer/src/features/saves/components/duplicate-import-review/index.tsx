@@ -41,9 +41,7 @@ function parentFolder(path: string) {
 
 function describe(save: Save | undefined) {
   const file = save ? pickPrimaryFile(save) : null;
-  if (!file) {
-    return null;
-  }
+  if (!file) return null;
   return [
     file.width && file.height ? `${file.width} × ${file.height}` : null,
     file.size ? formatBytes(file.size) : null,
@@ -108,14 +106,10 @@ function DuplicateImportReview({
   const existingId = candidate?.existingId;
   const save = useSave(existingId);
   useEffect(() => {
-    if (existingId) {
-      void ensureSaves([existingId]);
-    }
+    if (existingId) void ensureSaves([existingId]);
   }, [existingId]);
 
-  if (!candidate) {
-    return null;
-  }
+  if (!candidate) return null;
   const remaining = candidates.length - index;
   const last = applyToAll || remaining === 1;
   const existingName =
@@ -148,9 +142,7 @@ function DuplicateImportReview({
     <Dialog.Root
       open={open}
       onOpenChange={(open) => {
-        if (!open) {
-          closeDuplicateImportReview();
-        }
+        if (!open) closeDuplicateImportReview();
       }}
     >
       <Dialog.Portal>

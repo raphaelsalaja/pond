@@ -11,9 +11,7 @@ import { currentRouteMeta } from "@/shared/lib/route-meta";
 
 function hold(): DecodedImageHold | null {
   const meta = currentRouteMeta();
-  if (!meta) {
-    return null;
-  }
+  if (!meta) return null;
   return {
     surface: meta.surface,
     viewerOpen: openSaveId() !== null,
@@ -25,28 +23,20 @@ function hold(): DecodedImageHold | null {
 export function DecodedImageRelease(): null {
   useEffect(() => {
     const router = getAppRouter();
-    if (!router) {
-      return;
-    }
+    if (!router) return;
     let previous: DecodedImageHold | null = null;
     let generation = 0;
 
     const consider = (): void => {
       const next = hold();
-      if (!next) {
-        return;
-      }
+      if (!next) return;
       const release = shouldReleaseDecodedImages(previous, next);
       previous = next;
-      if (!release) {
-        return;
-      }
+      if (!release) return;
       const token = ++generation;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          if (token !== generation) {
-            return;
-          }
+          if (token !== generation) return;
           window.pond.releaseDecodedImages();
         });
       });

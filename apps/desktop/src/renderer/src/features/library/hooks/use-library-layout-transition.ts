@@ -9,8 +9,6 @@ export function useLibraryLayoutTransition<Version>(
   useLayoutEffect(() => {
     void layoutVersion;
     const container = ref.current;
-    if (container) {
-      completeLibraryLayoutTransition(container);
-    }
+    if (container) completeLibraryLayoutTransition(container);
   }, [ref, layoutVersion]);
 }

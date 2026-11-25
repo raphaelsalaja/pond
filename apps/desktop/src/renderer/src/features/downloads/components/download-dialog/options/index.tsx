@@ -27,9 +27,7 @@ export function ModeToggle({ value, onValueChange }: ModeToggleProps) {
       value={[value]}
       onValueChange={(next) => {
         const mode = MODES.find((item) => item.value === next[0]);
-        if (mode) {
-          onValueChange(mode.value);
-        }
+        if (mode) onValueChange(mode.value);
       }}
     >
       {MODES.map((mode) => (

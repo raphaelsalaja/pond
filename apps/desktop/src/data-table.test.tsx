@@ -29,18 +29,14 @@ describe("DataTable keyboard selection", () => {
   let opened: Array<string>;
   function grid() {
     const element = host.querySelector<HTMLElement>('[role="grid"]');
-    if (!element) {
-      throw new Error("Missing grid");
-    }
+    if (!element) throw new Error("Missing grid");
     return element;
   }
   function row(id: string) {
     const element = [
       ...host.querySelectorAll<HTMLElement>('[role="row"][aria-selected]'),
     ].find((item) => item.textContent === id);
-    if (!element) {
-      throw new Error(`Missing row ${id}`);
-    }
+    if (!element) throw new Error(`Missing row ${id}`);
     return element;
   }
   beforeEach(async () => {

@@ -26,9 +26,7 @@ function useStickyHeaderOffset(
       setOffset((current) => (current === next ? current : next));
     };
     measure();
-    if (!globalThis.ResizeObserver) {
-      return;
-    }
+    if (!globalThis.ResizeObserver) return;
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();
@@ -39,15 +37,10 @@ function useStickyHeaderOffset(
 function useHorizontalScrollFlag(scrollRef: RefObject<HTMLDivElement | null>) {
   useLayoutEffect(() => {
     const node = scrollRef.current;
-    if (!node) {
-      return;
-    }
+    if (!node) return;
     const update = () => {
-      if (node.scrollLeft > 0) {
-        node.dataset.scrolledX = "";
-      } else {
-        delete node.dataset.scrolledX;
-      }
+      if (node.scrollLeft > 0) node.dataset.scrolledX = "";
+      else delete node.dataset.scrolledX;
     };
     update();
     node.addEventListener("scroll", update, { passive: true });
@@ -88,22 +81,15 @@ export function DataTableRoot<T extends RowData>({
       return;
     }
     const first = meta.rows[0];
-    if (first) {
-      actions.focusRow(first.id);
-    }
+    if (first) actions.focusRow(first.id);
   }, [cursorId, meta.rows, meta.gridRef, actions]);
 
   let extraRow: ReactNode = null;
   let emptyState: ReactNode = null;
   Children.forEach(children, (child) => {
-    if (!isValidElement<SlotProps>(child)) {
-      return;
-    }
-    if (child.type === DataTableExtraRow) {
-      extraRow = child.props.children;
-    } else if (child.type === DataTableEmpty) {
-      emptyState = child.props.children;
-    }
+    if (!isValidElement<SlotProps>(child)) return;
+    if (child.type === DataTableExtraRow) extraRow = child.props.children;
+    else if (child.type === DataTableEmpty) emptyState = child.props.children;
   });
 
   const hasRows =
@@ -121,17 +107,13 @@ export function DataTableRoot<T extends RowData>({
       role="grid"
       tabIndex={0}
       onFocus={(event) => {
-        if (event.target !== event.currentTarget) {
-          return;
-        }
+        if (event.target !== event.currentTarget) return;
         const cursor = selectionStore.state.cursorId;
         const id =
           cursor && meta.rows.some((row) => row.id === cursor)
             ? cursor
             : meta.rows[0]?.id;
-        if (!id) {
-          return;
-        }
+        if (!id) return;
         actions.focusRow(id);
         meta.revealRow.current?.(id);
       }}

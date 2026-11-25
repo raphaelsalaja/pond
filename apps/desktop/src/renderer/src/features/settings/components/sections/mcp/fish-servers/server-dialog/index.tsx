@@ -105,9 +105,7 @@ export function ServerDialog({ initial, onClose, onSaved }: ServerDialogProps) {
   async function save() {
     setSubmitted(true);
     setError(null);
-    if (!nameCheck.success) {
-      return;
-    }
+    if (!nameCheck.success) return;
     const problem = secretProblem(secrets);
     if (problem) {
       setError(problem);
@@ -144,11 +142,8 @@ export function ServerDialog({ initial, onClose, onSaved }: ServerDialogProps) {
     <Dialog.Root
       open
       onOpenChange={(open, details) => {
-        if (busy) {
-          details.cancel();
-        } else if (!open) {
-          onClose();
-        }
+        if (busy) details.cancel();
+        else if (!open) onClose();
       }}
     >
       <Dialog.Portal>
@@ -189,9 +184,7 @@ export function ServerDialog({ initial, onClose, onSaved }: ServerDialogProps) {
                 value={[transport]}
                 onValueChange={(values) => {
                   const next = values[0];
-                  if (next === "stdio" || next === "http") {
-                    setTransport(next);
-                  }
+                  if (next === "stdio" || next === "http") setTransport(next);
                 }}
               >
                 <Toggle type="button" size="sm" value="stdio">

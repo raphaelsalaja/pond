@@ -192,11 +192,8 @@ export function FolderTree({ destination, folderRows }: FolderTreeProps) {
   );
   const parentsWithChildFolders = useMemo(() => {
     const set = new Set<string | null>();
-    for (const row of folderRows) {
-      if (tree.parentIds.has(row.id)) {
-        set.add(row.parentId);
-      }
-    }
+    for (const row of folderRows)
+      if (tree.parentIds.has(row.id)) set.add(row.parentId);
     return set;
   }, [folderRows, tree.parentIds]);
 

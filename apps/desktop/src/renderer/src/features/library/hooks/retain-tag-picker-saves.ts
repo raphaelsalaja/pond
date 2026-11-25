@@ -43,9 +43,7 @@ export function retainTagPickerSaves(
     let insertAt = rows.length;
     for (let index = 0; index < rows.length; index += 1) {
       const row = rows[index];
-      if (!row) {
-        continue;
-      }
+      if (!row) continue;
       const prior = previousIndex.get(row.id);
       if (prior !== undefined && prior > at) {
         insertAt = index;

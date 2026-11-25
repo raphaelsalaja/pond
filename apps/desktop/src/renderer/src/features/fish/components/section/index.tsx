@@ -78,9 +78,7 @@ export function FishSection({ activeId }: { activeId: string | null }) {
     }),
   );
 
-  if (!sidebar.sections.fish) {
-    return null;
-  }
+  if (!sidebar.sections.fish) return null;
 
   const saved = fishLayout(school, sections);
   const layout = draft ?? saved;
@@ -90,12 +88,8 @@ export function FishSection({ activeId }: { activeId: string | null }) {
   const loose = layout[LOOSE] ?? [];
   const labelFor = (id: UniqueIdentifier): string => {
     const key = String(id);
-    if (key === PINNED) {
-      return "Pinned";
-    }
-    if (key === LOOSE) {
-      return "Fish";
-    }
+    if (key === PINNED) return "Pinned";
+    if (key === LOOSE) return "Fish";
     return (
       byId.get(key)?.name ??
       sections.find((section) => section.id === key)?.name ??
@@ -127,18 +121,14 @@ export function FishSection({ activeId }: { activeId: string | null }) {
   };
 
   const onDragOver = ({ active, over }: DragOverEvent) => {
-    if (!over) {
-      return;
-    }
+    if (!over) return;
     const id = String(active.id);
     const overId = String(over.id);
     setDraft((current) => {
       const base = current ?? saved;
       const from = shelfOf(base, id);
       const to = shelfOf(base, overId);
-      if (!from || !to || from === to) {
-        return current;
-      }
+      if (!from || !to || from === to) return current;
       const target = base[to] ?? [];
       const overIndex = target.indexOf(overId);
       const moved = active.rect.current.translated;
@@ -159,9 +149,7 @@ export function FishSection({ activeId }: { activeId: string | null }) {
     setDraft(null);
     setDrag(null);
     lastOver.current = null;
-    if (!over) {
-      return;
-    }
+    if (!over) return;
     const id = String(active.id);
     const overId = String(over.id);
     const shelf = shelfOf(base, id);
@@ -173,17 +161,13 @@ export function FishSection({ activeId }: { activeId: string | null }) {
         next = { ...base, [shelf]: arrayMove(ids, ids.indexOf(id), to) };
       }
     }
-    if (!sameLayout(next, saved)) {
-      arrangeFish(layoutPlacements(next, sections));
-    }
+    if (!sameLayout(next, saved)) arrangeFish(layoutPlacements(next, sections));
   };
 
   const rows = (ids: ReadonlyArray<string>) =>
     ids.map((id) => {
       const fish = byId.get(id);
-      if (!fish) {
-        return null;
-      }
+      if (!fish) return null;
       return (
         <SortableFish
           key={id}
@@ -251,9 +235,7 @@ export function FishSection({ activeId }: { activeId: string | null }) {
                   <Sidebar.Tiles>
                     {pinned.map((id) => {
                       const fish = byId.get(id);
-                      if (!fish) {
-                        return null;
-                      }
+                      if (!fish) return null;
                       return (
                         <SortableFish
                           key={id}

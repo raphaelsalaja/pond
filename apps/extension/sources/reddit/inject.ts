@@ -25,13 +25,9 @@ function compactText(raw: string | null | undefined): string {
 }
 
 function looksLikeSaveLabel(label: string | null): boolean {
-  if (!label) {
-    return false;
-  }
+  if (!label) return false;
   const l = label.toLowerCase().trim();
-  if (/unsave|remove/.test(l)) {
-    return false;
-  }
+  if (/unsave|remove/.test(l)) return false;
   return l === "save" || l === "save post";
 }
 
@@ -44,9 +40,7 @@ function iconName(el: Element): string | null {
 }
 
 function isSavedIcon(icon: string | null): boolean {
-  if (!icon) {
-    return false;
-  }
+  if (!icon) return false;
   const name = icon.toLowerCase();
   return (
     name === "save-fill" ||
@@ -57,9 +51,7 @@ function isSavedIcon(icon: string | null): boolean {
 
 function isUnsaveClick(el: Element): boolean {
   const icon = iconName(el);
-  if (isSavedIcon(icon)) {
-    return true;
-  }
+  if (isSavedIcon(icon)) return true;
   const text = compactText(el.textContent);
   if (el.getAttribute("aria-pressed") === "true") {
     const label = el.getAttribute("aria-label");
@@ -86,22 +78,12 @@ function postIsSaved(node: Element): boolean {
 }
 
 function isSaveClickNode(el: Element): boolean {
-  if (el.closest?.(".save-comment-menu-button")) {
-    return false;
-  }
-  if (isUnsaveClick(el)) {
-    return false;
-  }
+  if (el.closest?.(".save-comment-menu-button")) return false;
+  if (isUnsaveClick(el)) return false;
   const icon = iconName(el);
-  if (icon === "save-outline" || icon === "save") {
-    return true;
-  }
-  if (icon?.includes("save") && !icon.includes("fill")) {
-    return true;
-  }
-  if (looksLikeSaveLabel(el.getAttribute("aria-label"))) {
-    return true;
-  }
+  if (icon === "save-outline" || icon === "save") return true;
+  if (icon?.includes("save") && !icon.includes("fill")) return true;
+  if (looksLikeSaveLabel(el.getAttribute("aria-label"))) return true;
   const text = compactText(el.textContent);
   return text === "save" || text === "save post" || text === "bookmark";
 }
@@ -137,18 +119,10 @@ export function isSaveClick(ev: Event): boolean {
   const nodes = eventElements(ev);
   let save = false;
   for (const node of nodes) {
-    if (postIsSaved(node)) {
-      return false;
-    }
-    if (compactText(node.textContent).length >= 32) {
-      continue;
-    }
-    if (isUnsaveClick(node)) {
-      return false;
-    }
-    if (isSaveClickNode(node)) {
-      save = true;
-    }
+    if (postIsSaved(node)) return false;
+    if (compactText(node.textContent).length >= 32) continue;
+    if (isUnsaveClick(node)) return false;
+    if (isSaveClickNode(node)) save = true;
   }
   return save;
 }
@@ -177,9 +151,7 @@ function permalinkFromPath(path: Array<EventTarget>): string | null {
     }
     if (node.localName === "shreddit-post") {
       const url = permalinkFromPost(node);
-      if (url) {
-        return url;
-      }
+      if (url) return url;
     }
     const fullname = node.getAttribute("data-fullname");
     if (fullname?.startsWith("t3_")) {
@@ -205,9 +177,7 @@ function fullnameToUrl(id: string | null): string | null {
 function readLegacyFullname(url: string, body: string | null): string | null {
   try {
     const fromQuery = new URL(url, location.href).searchParams.get("id");
-    if (fromQuery) {
-      return fromQuery;
-    }
+    if (fromQuery) return fromQuery;
   } catch {
     return bodyFullname(body);
   }
@@ -215,14 +185,10 @@ function readLegacyFullname(url: string, body: string | null): string | null {
 }
 
 function bodyFullname(body: string | null): string | null {
-  if (!body) {
-    return null;
-  }
+  if (!body) return null;
   try {
     const v = new URLSearchParams(body).get("id");
-    if (v) {
-      return v;
-    }
+    if (v) return v;
   } catch {
     return regexFullname(body);
   }
@@ -238,28 +204,20 @@ const POST_ID_FIELDS = ["postId", "post_id", "id", "thingId", "thing_id"];
 
 function operationName(request: JsonRecord | null, body: string): string {
   const op = asText(request?.operation ?? request?.operationName);
-  if (op !== undefined) {
-    return op;
-  }
+  if (op !== undefined) return op;
   return /"operation(?:Name)?"\s*:\s*"([^"]+)"/.exec(body)?.[1] ?? "";
 }
 
 function graphqlInput(request: JsonRecord | null): JsonRecord {
   const vars = request?.variables;
-  if (!isRecord(vars)) {
-    return {};
-  }
+  if (!isRecord(vars)) return {};
   return isRecord(vars.input) ? vars.input : vars;
 }
 
 function readSaveState(input: JsonRecord, body: string): string | null {
   const value = input.saveState ?? input.save_state;
-  if (value === true) {
-    return "true";
-  }
-  if (value === false) {
-    return "false";
-  }
+  if (value === true) return "true";
+  if (value === false) return "false";
   const text =
     asText(value) ?? /"save_?[Ss]tate"\s*:\s*"([^"]+)"/.exec(body)?.[1];
   return text?.trim().toLowerCase() ?? null;
@@ -270,39 +228,21 @@ function isSavedState(state: string): boolean {
 }
 
 export function isGraphqlSave(body: string | null): boolean {
-  if (!body || !/save/i.test(body)) {
-    return false;
-  }
-  if (COMMENT_ID_RE.test(body) && !POST_ID_RE.test(body)) {
-    return false;
-  }
+  if (!body || !/save/i.test(body)) return false;
+  if (COMMENT_ID_RE.test(body) && !POST_ID_RE.test(body)) return false;
   const request = parseJsonRecord(body);
   const op = operationName(request, body);
-  if (/comment/i.test(op) && /save/i.test(op)) {
-    return false;
-  }
-  if (/unsave/i.test(op)) {
-    return false;
-  }
+  if (/comment/i.test(op) && /save/i.test(op)) return false;
+  if (/unsave/i.test(op)) return false;
   const input = graphqlInput(request);
-  if (input.saved === false || input.save === false) {
-    return false;
-  }
+  if (input.saved === false || input.save === false) return false;
   const action = String(input.action ?? "").toLowerCase();
-  if (action === "unsave") {
-    return false;
-  }
+  if (action === "unsave") return false;
   // UpdatePostSaveState is both directions; saveState says which one.
   const state = readSaveState(input, body);
-  if (state) {
-    return isSavedState(state);
-  }
-  if (/postsave|savepost|save.?state/i.test(op)) {
-    return true;
-  }
-  if (/updatePostSaveState/i.test(body) && !/unsave/i.test(body)) {
-    return true;
-  }
+  if (state) return isSavedState(state);
+  if (/postsave|savepost|save.?state/i.test(op)) return true;
+  if (/updatePostSaveState/i.test(body) && !/unsave/i.test(body)) return true;
   return action === "save" || input.saved === true || input.save === true;
 }
 
@@ -315,9 +255,7 @@ function voteDir(url: string, body: string | null): string | null {
   } catch {
     /* fall through to body */
   }
-  if (!body) {
-    return null;
-  }
+  if (!body) return null;
   try {
     const v = new URLSearchParams(body).get("dir");
     if (v !== null) {
@@ -331,20 +269,12 @@ function voteDir(url: string, body: string | null): string | null {
 }
 
 function isGraphqlUpvote(body: string | null): boolean {
-  if (!body || !/vote/i.test(body)) {
-    return false;
-  }
-  if (COMMENT_ID_RE.test(body) && !POST_ID_RE.test(body)) {
-    return false;
-  }
+  if (!body || !/vote/i.test(body)) return false;
+  if (COMMENT_ID_RE.test(body) && !POST_ID_RE.test(body)) return false;
   const json = parseJsonRecord(body);
   const op = operationName(json, body);
-  if (/comment/i.test(op) && /vote/i.test(op)) {
-    return false;
-  }
-  if (!/vote/i.test(op) && !/updatePostVoteState/i.test(body)) {
-    return false;
-  }
+  if (/comment/i.test(op) && /vote/i.test(op)) return false;
+  if (!/vote/i.test(op) && !/updatePostVoteState/i.test(body)) return false;
   const input = graphqlInput(json);
   const state = String(
     input.voteState ?? input.vote_state ?? input.vote ?? input.direction ?? "",
@@ -352,33 +282,25 @@ function isGraphqlUpvote(body: string | null): boolean {
   if (/down|none|unvote/.test(state) || state === "-1" || state === "0") {
     return false;
   }
-  if (state === "up" || state === "upvote" || state === "1") {
-    return true;
-  }
+  if (state === "up" || state === "upvote" || state === "1") return true;
   const dir = String(input.dir ?? "");
   return dir === "1";
 }
 
 function postIdFromGraphql(body: string | null): string | null {
-  if (!body) {
-    return null;
-  }
+  if (!body) return null;
   const input = graphqlInput(parseJsonRecord(body));
   for (const key of POST_ID_FIELDS) {
     const m = asText(input[key])?.match(POST_ID_RE);
     const id = m?.[1];
-    if (id) {
-      return id;
-    }
+    if (id) return id;
   }
   const m = body.match(POST_ID_RE);
   return m?.[1] ?? null;
 }
 
 export function inject(): void {
-  if (window.__pondRedditInjected) {
-    return;
-  }
+  if (window.__pondRedditInjected) return;
   window.__pondRedditInjected = true;
 
   /** Overflow Save is inside a shadow menu; keep the permalink from the last in-post click. */
@@ -389,12 +311,8 @@ export function inject(): void {
     (ev) => {
       try {
         const nearby = permalinkFromPath(composedNodes(ev));
-        if (nearby) {
-          pendingPermalink = nearby;
-        }
-        if (!isSaveClick(ev)) {
-          return;
-        }
+        if (nearby) pendingPermalink = nearby;
+        if (!isSaveClick(ev)) return;
         const url = nearby ?? pendingPermalink ?? permalinkFromLocation();
         if (url) {
           capture(url, "reddit:save");
@@ -414,43 +332,29 @@ export function inject(): void {
         LEGACY_VOTE_RE.test(req.url) ||
         GRAPHQL_SAVE_RE.test(req.url)),
     async onResponse(req, res) {
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
       const body = await req.readBody();
       if (LEGACY_VOTE_RE.test(req.url)) {
-        if (voteDir(req.url, body) !== "1") {
-          return;
-        }
+        if (voteDir(req.url, body) !== "1") return;
         const url = fullnameToUrl(readLegacyFullname(req.url, body));
-        if (url) {
-          capture(url, "reddit:upvote");
-        }
+        if (url) capture(url, "reddit:upvote");
         return;
       }
       if (LEGACY_SAVE_RE.test(req.url)) {
         const url = fullnameToUrl(readLegacyFullname(req.url, body));
-        if (url) {
-          capture(url, "reddit:save");
-        }
+        if (url) capture(url, "reddit:save");
         return;
       }
       if (isGraphqlUpvote(body)) {
         const id = postIdFromGraphql(body);
         const url = id ? `https://redd.it/${id}` : pendingPermalink;
-        if (url) {
-          capture(url, "reddit:upvote");
-        }
+        if (url) capture(url, "reddit:upvote");
         return;
       }
-      if (!isGraphqlSave(body)) {
-        return;
-      }
+      if (!isGraphqlSave(body)) return;
       const id = postIdFromGraphql(body);
       const url = id ? `https://redd.it/${id}` : pendingPermalink;
-      if (url) {
-        capture(url, "reddit:graphql-save");
-      }
+      if (url) capture(url, "reddit:graphql-save");
     },
   });
 }

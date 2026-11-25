@@ -185,16 +185,10 @@ async function sumDirSizes(dir: string): Promise<number> {
   }
   const sizes = await Promise.all(
     dirents.map((entry) => {
-      if (isLibrarySidecar(entry.name) || entry.isSymbolicLink()) {
-        return 0;
-      }
+      if (isLibrarySidecar(entry.name) || entry.isSymbolicLink()) return 0;
       const abs = join(dir, entry.name);
-      if (entry.isDirectory()) {
-        return sumDirSizes(abs);
-      }
-      if (entry.isFile()) {
-        return safeFileSize(abs);
-      }
+      if (entry.isDirectory()) return sumDirSizes(abs);
+      if (entry.isFile()) return safeFileSize(abs);
       return 0;
     }),
   );

@@ -41,15 +41,11 @@ export function SafeWebViewer({
     let alive = true;
     void fetch(url)
       .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.arrayBuffer();
       })
       .then((buffer) => {
-        if (!alive) {
-          return;
-        }
+        if (!alive) return;
         const bytes = new Uint8Array(buffer);
         let binary = "";
         for (let offset = 0; offset < bytes.length; offset += 32_768) {
@@ -59,9 +55,7 @@ export function SafeWebViewer({
         }
         if (/\.mhtml?$/i.test(path)) {
           const archivePages = parseMhtml(binary);
-          if (archivePages.length === 0) {
-            throw new Error("No archived page");
-          }
+          if (archivePages.length === 0) throw new Error("No archived page");
           setPages(archivePages);
           setPageIndex(0);
           setLoaded(archivePages[0]?.html ?? "");
@@ -71,9 +65,7 @@ export function SafeWebViewer({
         setLoaded(new TextDecoder("utf-8").decode(bytes));
       })
       .catch(() => {
-        if (alive) {
-          onUnavailable();
-        }
+        if (alive) onUnavailable();
       });
     return () => {
       alive = false;

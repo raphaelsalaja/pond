@@ -49,9 +49,7 @@ export function ModelViewer({
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) {
-      return;
-    }
+    if (!root) return;
 
     let alive = true;
     let frame = 0;
@@ -95,13 +93,9 @@ export function ModelViewer({
     scene.add(grid);
 
     const frameObject = (object: typeof loadedObject) => {
-      if (!object) {
-        return;
-      }
+      if (!object) return;
       const box = new Box3().setFromObject(object);
-      if (box.isEmpty()) {
-        return;
-      }
+      if (box.isEmpty()) return;
       const size = box.getSize(new Vector3());
       const center = box.getCenter(new Vector3());
       object.position.sub(center);
@@ -131,9 +125,7 @@ export function ModelViewer({
 
     const clock = new Clock();
     const render = () => {
-      if (!alive) {
-        return;
-      }
+      if (!alive) return;
       frame = requestAnimationFrame(render);
       mixer?.update(clock.getDelta());
       controls.update();
@@ -151,17 +143,13 @@ export function ModelViewer({
         scene.add(result.object);
         if (result.animations.length > 0) {
           mixer = new AnimationMixer(result.object);
-          for (const clip of result.animations) {
-            mixer.clipAction(clip).play();
-          }
+          for (const clip of result.animations) mixer.clipAction(clip).play();
         }
         frameObject(result.object);
         setLoading(false);
       })
       .catch(() => {
-        if (alive) {
-          onUnavailable();
-        }
+        if (alive) onUnavailable();
       });
 
     return () => {
@@ -173,18 +161,14 @@ export function ModelViewer({
       mixer?.stopAllAction();
       unbindKeys();
       controls.dispose();
-      if (loadedObject) {
-        disposeObject(loadedObject);
-      }
+      if (loadedObject) disposeObject(loadedObject);
       renderer.dispose();
       renderer.domElement.remove();
     };
   }, [onUnavailable, path, url]);
 
   useEffect(() => {
-    if (gridRef.current) {
-      gridRef.current.visible = gridVisible;
-    }
+    if (gridRef.current) gridRef.current.visible = gridVisible;
   }, [gridVisible]);
 
   return (
@@ -238,9 +222,7 @@ function disposeObject(
     const materials = Array.isArray(child.material)
       ? child.material
       : [child.material];
-    for (const material of materials) {
-      disposeMaterial(material);
-    }
+    for (const material of materials) disposeMaterial(material);
   });
 }
 

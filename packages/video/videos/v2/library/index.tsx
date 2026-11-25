@@ -118,9 +118,7 @@ export function LibrarySidebar({ t }: { t: number }) {
 export function Library({ t }: { t: number }) {
   const rise = ease.outQuint(progress(t, CUES.windowRise, 1100));
   const away = ease.inOut(progress(t, end("preview") - 650, 600));
-  if (t < CUES.windowRise - 50 || away >= 1) {
-    return null;
-  }
+  if (t < CUES.windowRise - 50 || away >= 1) return null;
 
   const pointer = keyed(t, POINTER);
   const pointerOpacity =

@@ -35,9 +35,7 @@ function Highlight({
   const parts: Array<ReactNode> = [];
   let cursor = 0;
   for (const [start, end] of ranges) {
-    if (start > cursor) {
-      parts.push(text.slice(cursor, start));
-    }
+    if (start > cursor) parts.push(text.slice(cursor, start));
     parts.push(
       <mark key={start} className={styles.match}>
         {text.slice(start, end)}
@@ -45,9 +43,7 @@ function Highlight({
     );
     cursor = end;
   }
-  if (cursor < text.length) {
-    parts.push(text.slice(cursor));
-  }
+  if (cursor < text.length) parts.push(text.slice(cursor));
   return parts;
 }
 
@@ -70,12 +66,8 @@ const EntryRow = memo(function EntryRow({
 }: EntryRowProps) {
   const { entry, ranges } = item;
   function onMouseMove(event: MouseEvent) {
-    if (keyboard.current) {
-      return;
-    }
-    if (event.movementX === 0 && event.movementY === 0) {
-      return;
-    }
+    if (keyboard.current) return;
+    if (event.movementX === 0 && event.movementY === 0) return;
     onActivate(index);
   }
   return (
@@ -149,9 +141,7 @@ export function ResultsList({
   }, []);
 
   useEffect(() => {
-    if (!keyboard.current) {
-      return;
-    }
+    if (!keyboard.current) return;
     viewportRef.current
       ?.querySelector<HTMLElement>(`[data-command-index="${activeIndex}"]`)
       ?.scrollIntoView({ block: "nearest" });

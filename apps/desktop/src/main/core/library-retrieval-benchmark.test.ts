@@ -111,12 +111,8 @@ for (const size of [1000, 10_000, 50_000]) {
             insertText.run(id, blob);
             insertMedia.run(id, blob);
             folder.run(id, "broad");
-            if (index % 10 === 0) {
-              folder.run(id, "ten");
-            }
-            if (index % 100 === 0) {
-              folder.run(id, "one");
-            }
+            if (index % 10 === 0) folder.run(id, "ten");
+            if (index % 100 === 0) folder.run(id, "one");
           }
         })();
         const setupMs = performance.now() - setupStarted;
@@ -329,9 +325,7 @@ for (const size of [1000, 10_000, 50_000]) {
             }
             // Prove fallback for both missing and stale entries, outside timed regions.
             const first = expected[0];
-            if (!first) {
-              throw new Error("Expected eligible fixture");
-            }
+            if (!first) throw new Error("Expected eligible fixture");
             sqlite.prepare(`delete from ${table} where save_id=?`).run(first);
             const missing = candidate();
             expect(missing.fallback).toBe(true);

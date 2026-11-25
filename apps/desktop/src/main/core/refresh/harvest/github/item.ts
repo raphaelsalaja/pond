@@ -54,9 +54,7 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
   }
   /** A missing or private repo serves a 404 page without the repo meta. */
   const name = meta("octolytics-dimension-repository_nwo");
-  if (!name.includes("/")) {
-    return null;
-  }
+  if (!name.includes("/")) return null;
   const owner = name.split("/")[0] ?? "";
 
   const section = aboutHeading()?.parentElement;
@@ -94,12 +92,8 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
     page.description =
       text.length > TEXT_LIMIT ? `${text.slice(0, TEXT_LIMIT)}…` : text;
   }
-  if (homepage) {
-    page.homepage = homepage;
-  }
-  if (body) {
-    page.readme = readmeHtml(body);
-  }
+  if (homepage) page.homepage = homepage;
+  if (body) page.readme = readmeHtml(body);
 
   for (const url of openGraphImages()) {
     page.mediaUrls.push({ url, type: "image" });
@@ -121,9 +115,7 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
       const heading = anchor.parentElement?.querySelector(
         "h1, h2, h3, h4, h5, h6",
       );
-      if (heading && anchor.id && !heading.id) {
-        heading.id = anchor.id;
-      }
+      if (heading && anchor.id && !heading.id) heading.id = anchor.id;
       anchor.remove();
     }
     const ids = new Set(
@@ -133,9 +125,7 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
       const href = link.getAttribute("href") ?? "";
       if (href.startsWith("#")) {
         const target = `user-content-${href.slice(1)}`;
-        if (ids.has(target)) {
-          link.setAttribute("href", `#${target}`);
-        }
+        if (ids.has(target)) link.setAttribute("href", `#${target}`);
         continue;
       }
       link.setAttribute("href", link.href);
@@ -163,16 +153,10 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
 
 export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
   const capture = captureFromPageDom(raw, ctx);
-  if (!capture) {
-    return null;
-  }
+  if (!capture) return null;
   capture.media = selectRepositoryPreview(capture.media);
   const { homepage, readme } = RepoExtrasSchema.parse(raw);
-  if (homepage) {
-    capture.extras = { ...capture.extras, externalLink: homepage };
-  }
-  if (readme) {
-    capture.article = { html: readme };
-  }
+  if (homepage) capture.extras = { ...capture.extras, externalLink: homepage };
+  if (readme) capture.article = { html: readme };
   return capture;
 }

@@ -33,28 +33,16 @@ const ENCODED_BLOB = /^[A-Za-z0-9+/]+={0,2}$/;
 
 /** A mis-parsed tags cell can be file bytes or a base64 dump instead of short labels. */
 function isPlausibleMymindTag(tag: string): boolean {
-  if (tag.length === 0 || tag.length > MAX_MYMIND_TAG_LENGTH) {
-    return false;
-  }
-  if (CONTROL_CHARS.test(tag) || tag.includes("\uFFFD")) {
-    return false;
-  }
-  if (looksLikeEncodedBlob(tag)) {
-    return false;
-  }
+  if (tag.length === 0 || tag.length > MAX_MYMIND_TAG_LENGTH) return false;
+  if (CONTROL_CHARS.test(tag) || tag.includes("\uFFFD")) return false;
+  if (looksLikeEncodedBlob(tag)) return false;
   return true;
 }
 
 function looksLikeEncodedBlob(tag: string): boolean {
-  if (tag.length < 32 || /\s/.test(tag)) {
-    return false;
-  }
-  if (/^data:[^,]*,/i.test(tag)) {
-    return true;
-  }
-  if (!ENCODED_BLOB.test(tag)) {
-    return false;
-  }
+  if (tag.length < 32 || /\s/.test(tag)) return false;
+  if (/^data:[^,]*,/i.test(tag)) return true;
+  if (!ENCODED_BLOB.test(tag)) return false;
   return /[+/=]/.test(tag) || tag.length >= 64;
 }
 
@@ -89,9 +77,7 @@ interface MymindCard {
 function parseMymindCards(csv: string): Array<MymindCard> | null {
   const rows = parseCsvRows(csv);
   const header = rows[0]?.map((name) => name.trim().toLowerCase());
-  if (!header) {
-    return null;
-  }
+  if (!header) return null;
   const indexOf = (name: string) => header.indexOf(name);
   if (
     !["title", "url", "content", "note", "id"].some(
@@ -107,9 +93,7 @@ function parseMymindCards(csv: string): Array<MymindCard> | null {
     const content = value("content");
     const note = value("note");
     const type = value("type");
-    if (!title && !url && !content && !note && !type) {
-      return [];
-    }
+    if (!title && !url && !content && !note && !type) return [];
     const created = Date.parse(value("created"));
     return [
       {
@@ -254,24 +238,16 @@ export async function importMymindExport(
     }
     if (isMymindFileCard(card)) {
       const filename = basename(card.title).toLocaleLowerCase();
-      if ((availableMedia.get(filename) ?? 0) > 0) {
-        claimFile(filename, card);
-      } else {
-        skipped += 1;
-      }
+      if ((availableMedia.get(filename) ?? 0) > 0) claimFile(filename, card);
+      else skipped += 1;
       continue;
     }
     const note = cardNote(card);
     if (card.url) {
       const result = await importMymindLink(card, note, dependencies);
-      if (!result.ok) {
-        return result;
-      }
-      if (result.skipped) {
-        skipped += 1;
-      } else {
-        imported += 1;
-      }
+      if (!result.ok) return result;
+      if (result.skipped) skipped += 1;
+      else imported += 1;
       continue;
     }
     /** mymind exports placeholder cards with nothing in them, and an empty card cannot become a Save. */
@@ -324,14 +300,9 @@ export async function importMymindExport(
         createdAt: card.created ?? undefined,
       }),
     });
-    if (!result.ok) {
-      return failedImport(file.name, result.error);
-    }
-    if (result.skipped) {
-      skipped += 1;
-    } else {
-      imported += 1;
-    }
+    if (!result.ok) return failedImport(file.name, result.error);
+    if (result.skipped) skipped += 1;
+    else imported += 1;
   }
   return { ok: true, imported, skipped };
 }
@@ -347,9 +318,7 @@ async function importMymindLink(
   } catch {
     return failedImport(card.title || card.url, "the link couldn't be queued");
   }
-  if (!result.created) {
-    return { ok: true, skipped: true };
-  }
+  if (!result.created) return { ok: true, skipped: true };
   try {
     if (card.tags.length > 0) {
       const tagged = await dependencies.setLinkTags(result.id, card.tags);
@@ -361,9 +330,7 @@ async function importMymindLink(
       }
     }
     const patch: Partial<NewSave> = { importedFrom: "mymind" };
-    if (note) {
-      patch.notes = note;
-    }
+    if (note) patch.notes = note;
     if (card.created) {
       patch.savedAt = card.created;
       patch.createdAt = card.created;

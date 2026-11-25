@@ -17,21 +17,15 @@ function hasFullRawJson(id: string): boolean {
 }
 
 export async function ensureRawJson(id: string): Promise<void> {
-  if (!id || inflight.has(id) || hasFullRawJson(id)) {
-    return;
-  }
+  if (!id || inflight.has(id) || hasFullRawJson(id)) return;
   inflight.add(id);
   try {
     const res = RawJsonReplySchema.parse(
       await window.pond.query("saves.rawJson", { id }),
     );
     const rawJson = res.rawJson ?? null;
-    if (rawJson) {
-      full.add(rawJson);
-    }
-    if (pool.get(id)) {
-      patchSaveRawJson(id, rawJson);
-    }
+    if (rawJson) full.add(rawJson);
+    if (pool.get(id)) patchSaveRawJson(id, rawJson);
   } catch {
     /** The Save keeps its trimmed rawJson; the next request retries. */
   } finally {

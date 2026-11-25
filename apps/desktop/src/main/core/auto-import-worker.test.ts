@@ -42,9 +42,7 @@ async function fixture(mode: "copy" | "move" = "copy") {
     stableMs: 1000,
     async ingest({ path, sourceId }) {
       const existing = imported.get(sourceId);
-      if (existing) {
-        return { ok: true, id: existing };
-      }
+      if (existing) return { ok: true, id: existing };
       const id = `save-${imported.size}`;
       await copyFile(path, join(library, id));
       imported.set(sourceId, id);

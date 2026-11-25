@@ -46,9 +46,7 @@ export function StorageLocationSettings() {
       );
       if (!result.ok) {
         const message = moveError(result);
-        if (message) {
-          throw new Error(message);
-        }
+        if (message) throw new Error(message);
       }
     },
   });

@@ -62,9 +62,7 @@ export function createSuggestedTagsEnricher(
   async function getVocab(): Promise<Array<VocabEntry>> {
     const names = vocabNames(await deps.listTags());
     const key = vocabKey(names);
-    if (cached?.key === key) {
-      return cached.entries;
-    }
+    if (cached?.key === key) return cached.entries;
     if (
       failed?.key === key &&
       deps.now() - failed.at < SUGGESTED_TAGS_VOCAB_RETRY_MS
@@ -113,9 +111,7 @@ export function createSuggestedTagsEnricher(
       failed = { key, at: deps.now(), error: failure };
       throw failure;
     } finally {
-      if (inFlight === pending) {
-        inFlight = null;
-      }
+      if (inFlight === pending) inFlight = null;
     }
   }
 
@@ -136,9 +132,7 @@ export function createSuggestedTagsEnricher(
     },
     async run(save: Save) {
       const entry = await deps.embeddingFor(save.id);
-      if (!entry) {
-        return null;
-      }
+      if (!entry) return null;
       const vocab = await getVocab();
       const existing = new Set((save.tags ?? []).map((t) => t.toLowerCase()));
       const scored = vocab

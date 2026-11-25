@@ -146,9 +146,7 @@ export async function bulkEditSaves(
     }
   }
   const changed = transactions.length;
-  if (!changed) {
-    return { changed: 0, undoId: null };
-  }
+  if (!changed) return { changed: 0, undoId: null };
   if (
     input.operation.kind === "tags" ||
     input.operation.kind === "suggested-tags"

@@ -60,9 +60,7 @@ function deriveQuery(
 }
 
 function applyZoomVar(zoom: number): void {
-  if (!globalThis.document) {
-    return;
-  }
+  if (!globalThis.document) return;
   document.documentElement.style.setProperty("--grid-min", `${zoom}px`);
 }
 
@@ -100,9 +98,7 @@ function readInitialLayout(): LayoutValue {
 }
 
 function readInitialZoom(): number {
-  if (!globalThis.window) {
-    return ZOOM_DEFAULT;
-  }
+  if (!globalThis.window) return ZOOM_DEFAULT;
   try {
     const raw = window.localStorage.getItem(ZOOM_STORAGE_KEY);
     const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
@@ -127,9 +123,7 @@ function readPersistedFilters(): PersistedFilters {
     semanticQuery: null,
   };
   const raw = readViewPref("filterRules");
-  if (!raw) {
-    return empty;
-  }
+  if (!raw) return empty;
   try {
     const parsed = PersistedFilters.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : empty;
@@ -141,9 +135,7 @@ function readPersistedFilters(): PersistedFilters {
 /** Filters now live in the URL; builds that kept them in a pref hand them over once, on the first launch. */
 export function takeLegacyFilters(): PersistedFilters | null {
   const legacy = readPersistedFilters();
-  if (!readViewPref("filterRules")) {
-    return null;
-  }
+  if (!readViewPref("filterRules")) return null;
   writeViewPref("filterRules", "");
   return legacy.rows.length > 0 || legacy.semanticQuery ? legacy : null;
 }
@@ -282,9 +274,7 @@ export function useSearchScope(view: SearchView): SearchScope {
 }
 
 export function searchAllSaves(view: SearchView): void {
-  if (!canSearchAllSaves(view)) {
-    return;
-  }
+  if (!canSearchAllSaves(view)) return;
   const searchAllView = searchViewKey(view);
   store.setState((state) =>
     state.searchAllView === searchAllView ? state : { ...state, searchAllView },
@@ -446,9 +436,7 @@ export function applySavedView(view: {
 
 export function addCondition(field?: FieldId): void {
   const next = field ?? FIELD_IDS[0];
-  if (!next) {
-    return;
-  }
+  if (!next) return;
   store.setState((s) => {
     const rows = [...s.rows, defaultPredicateFor(next)];
     return { ...s, rows, query: deriveQuery(rows, s.combinator, s.query) };
@@ -457,15 +445,10 @@ export function addCondition(field?: FieldId): void {
 
 export function updateRow(idx: number, next: Predicate | null): void {
   store.setState((s) => {
-    if (idx < 0 || idx >= s.rows.length) {
-      return s;
-    }
+    if (idx < 0 || idx >= s.rows.length) return s;
     const rows = [...s.rows];
-    if (next === null) {
-      rows.splice(idx, 1);
-    } else {
-      rows[idx] = next;
-    }
+    if (next === null) rows.splice(idx, 1);
+    else rows[idx] = next;
     return { ...s, rows, query: deriveQuery(rows, s.combinator, s.query) };
   });
 }
@@ -487,9 +470,7 @@ export function reorderRows(from: number, to: number): void {
     }
     const rows = [...s.rows];
     const [moved] = rows.splice(from, 1);
-    if (!moved) {
-      return s;
-    }
+    if (!moved) return s;
     rows.splice(to, 0, moved);
     return { ...s, rows, query: deriveQuery(rows, s.combinator, s.query) };
   });
@@ -519,9 +500,7 @@ function folderPresentationSnapshot(): Omit<
 }
 function persistPresentation(): void {
   const id = store.state.presentationFolderId;
-  if (!id) {
-    return;
-  }
+  if (!id) return;
   void saveFolderPresentation(id, folderPresentationSnapshot()).catch(() =>
     notify({
       id: "folder-view-save",
@@ -533,9 +512,7 @@ export function activateFolderPresentation(
   id: string | null,
   presentation?: FolderPresentation,
 ): void {
-  if (store.state.presentationFolderId === id) {
-    return;
-  }
+  if (store.state.presentationFolderId === id) return;
   if (id === null && store.state.activeViewId) {
     store.setState((state) => ({ ...state, presentationFolderId: null }));
     return;
@@ -562,17 +539,13 @@ export function useRandomSeed(): string {
 
 export function reseedRandomSort(): void {
   const randomSeed = crypto.randomUUID();
-  if (!store.state.presentationFolderId) {
-    writeViewPref("seed", randomSeed);
-  }
+  if (!store.state.presentationFolderId) writeViewPref("seed", randomSeed);
   store.setState((state) => ({ ...state, randomSeed }));
   persistPresentation();
 }
 
 export function setLayout(layout: LayoutValue): void {
-  if (!store.state.presentationFolderId) {
-    writeViewPref("view", layout);
-  }
+  if (!store.state.presentationFolderId) writeViewPref("view", layout);
   store.setState((s) => ({ ...s, layout }));
   persistPresentation();
 }

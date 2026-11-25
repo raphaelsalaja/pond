@@ -31,33 +31,17 @@ export function encodeFilter(filter: Filter): string {
 }
 
 export function decodeFilter(value: string | undefined): Filter {
-  if (!value) {
-    return ALL_SAVES;
-  }
+  if (!value) return ALL_SAVES;
   const split = value.indexOf(":");
   const kind = split === -1 ? value : value.slice(0, split);
   const rest = split === -1 ? "" : value.slice(split + 1);
-  if (kind === "trash" || kind === "untagged" || kind === "unfiled") {
-    return { kind };
-  }
-  if (!rest) {
-    return ALL_SAVES;
-  }
-  if (kind === "source") {
-    return { kind, source: rest };
-  }
-  if (kind === "folder") {
-    return { kind, id: rest };
-  }
-  if (kind === "tag") {
-    return { kind, name: rest };
-  }
-  if (kind === "view") {
-    return { kind, id: rest };
-  }
-  if (kind === "media") {
-    return { kind, types: rest.split(",").filter(Boolean) };
-  }
+  if (kind === "trash" || kind === "untagged" || kind === "unfiled") return { kind };
+  if (!rest) return ALL_SAVES;
+  if (kind === "source") return { kind, source: rest };
+  if (kind === "folder") return { kind, id: rest };
+  if (kind === "tag") return { kind, name: rest };
+  if (kind === "view") return { kind, id: rest };
+  if (kind === "media") return { kind, types: rest.split(",").filter(Boolean) };
   return ALL_SAVES;
 }
 
@@ -95,9 +79,7 @@ export function queryFor(
       };
     case "view": {
       const view = views?.find((item) => item.id === filter.id);
-      if (!view) {
-        return null;
-      }
+      if (!view) return null;
       return { ...base, query: view.query, sortKey: view.sortKey, sortDir: view.sortDir };
     }
   }

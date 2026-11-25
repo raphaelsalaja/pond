@@ -52,14 +52,10 @@ export default function Command(
   const edited = useRef(Boolean(url));
 
   useEffect(() => {
-    if (edited.current) {
-      return;
-    }
+    if (edited.current) return;
     void findUrl()
       .then((found) => {
-        if (!found || edited.current) {
-          return;
-        }
+        if (!found || edited.current) return;
         setUrl(found.url);
         setOrigin(found.origin);
       })
@@ -82,9 +78,7 @@ export default function Command(
 
   async function submit() {
     const target = parseWebUrl(url);
-    if (!target) {
-      return setUrlError("Enter a full web address that starts with http:// or https://.");
-    }
+    if (!target) return setUrlError("Enter a full web address that starts with http:// or https://.");
     const toast = await showToast({ style: Toast.Style.Animated, title: "Saving to Pond" });
     try {
       const options = { tags: allTags(), folderId: folderId || undefined };

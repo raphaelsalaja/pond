@@ -42,9 +42,7 @@ export function HostPopover({ host }: { host: McpHostDefinition }) {
   );
 
   async function addToClient() {
-    if (!installable) {
-      return;
-    }
+    if (!installable) return;
     setError("");
     const result = await window.pond.query("agent.openMcpInstall", {
       id: installable,

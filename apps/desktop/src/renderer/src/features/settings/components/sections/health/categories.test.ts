@@ -144,9 +144,7 @@ function category(
   id: HealthCategoryId,
 ): HealthCategory {
   const found = categories.find((item) => item.id === id);
-  if (!found) {
-    throw new Error(`Missing ${id}`);
-  }
+  if (!found) throw new Error(`Missing ${id}`);
   return found;
 }
 

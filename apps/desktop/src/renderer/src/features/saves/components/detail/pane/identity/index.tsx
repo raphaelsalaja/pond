@@ -27,9 +27,7 @@ export function SaveIdentity({
       placeholder="Untitled"
       mixedPlaceholder="Multiple titles"
       commit={async (value) => {
-        if (!save) {
-          return;
-        }
+        if (!save) return;
         await mutateSave(
           save.id,
           { title: value.trim() || null },

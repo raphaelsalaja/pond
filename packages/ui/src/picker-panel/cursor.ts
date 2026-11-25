@@ -17,9 +17,7 @@ export function nextPickerIndex(
   key: ArrowKey,
   columns = 1,
 ): number {
-  if (length <= 0) {
-    return -1;
-  }
+  if (length <= 0) return -1;
   const safeCurrent = current >= 0 && current < length ? current : 0;
   const step =
     key === "ArrowDown"
@@ -133,9 +131,7 @@ export function usePickerCursor<T>({
   const bindOption = useMemo(() => createBinders(listbox), [listbox]);
 
   useEffect(() => {
-    if (!activeDomId) {
-      return;
-    }
+    if (!activeDomId) return;
     document
       .getElementById(activeDomId)
       ?.scrollIntoView?.({ block: "nearest" });
@@ -147,9 +143,7 @@ export function usePickerCursor<T>({
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     const { key } = event;
-    if (isComposing(event.nativeEvent)) {
-      return;
-    }
+    if (isComposing(event.nativeEvent)) return;
 
     if (key === "Tab" && onTab) {
       event.preventDefault();
@@ -159,34 +153,24 @@ export function usePickerCursor<T>({
 
     if (key === "Enter") {
       const item = activeIndex >= 0 ? items[activeIndex] : undefined;
-      if (!item) {
-        return;
-      }
+      if (!item) return;
       event.preventDefault();
       onActivate(item);
       return;
     }
 
     const activeItem = items[activeIndex];
-    if (!activeItem) {
-      return;
-    }
+    if (!activeItem) return;
     const horizontal = key === "ArrowLeft" || key === "ArrowRight";
     if (horizontal && onHorizontalKey?.(key, activeItem)) {
       event.preventDefault();
       return;
     }
-    if (horizontal && columns === 1) {
-      return;
-    }
-    if (!isArrowKey(key) && key !== "PageUp" && key !== "PageDown") {
-      return;
-    }
+    if (horizontal && columns === 1) return;
+    if (!isArrowKey(key) && key !== "PageUp" && key !== "PageDown") return;
 
     /** The default first row is derived, so seed the listbox before it steps from it. */
-    if (highlighted !== activeId) {
-      listbox.highlight(activeId);
-    }
+    if (highlighted !== activeId) listbox.highlight(activeId);
 
     if (isArrowKey(key) && columns > 1) {
       event.preventDefault();

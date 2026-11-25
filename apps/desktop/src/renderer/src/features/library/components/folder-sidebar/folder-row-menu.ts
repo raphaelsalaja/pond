@@ -75,14 +75,10 @@ async function moveQuickAccess(
 ): Promise<void> {
   const current = folderIds.indexOf(folderId);
   const target = current + offset;
-  if (current < 0 || target < 0 || target >= folderIds.length) {
-    return;
-  }
+  if (current < 0 || target < 0 || target >= folderIds.length) return;
   const ordered = [...folderIds];
   const [moved] = ordered.splice(current, 1);
-  if (!moved) {
-    return;
-  }
+  if (!moved) return;
   ordered.splice(target, 0, moved);
   await Promise.all(
     ordered.map((id, quickAccessOrder) =>

@@ -21,12 +21,8 @@ export async function enqueueHandler(c: Context) {
   try {
     const cookies = parsed.data.cookies;
     const options: EnqueueOptions = {};
-    if (parsed.data.trigger) {
-      options.trigger = parsed.data.trigger;
-    }
-    if (cookies && cookies.length > 0) {
-      options.cookies = cookies;
-    }
+    if (parsed.data.trigger) options.trigger = parsed.data.trigger;
+    if (cookies && cookies.length > 0) options.cookies = cookies;
     const result = await enqueue(parsed.data.url, options);
     if (parsed.data.tags?.length) {
       const [row] = await (

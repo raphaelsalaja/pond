@@ -9,9 +9,7 @@ export function useFolderDownloading(folderId: string | null): number {
   const folders = useFolders();
   const includeSubfolders = useIncludeSubfolders();
   const key = useMemo(() => {
-    if (!folderId) {
-      return "";
-    }
+    if (!folderId) return "";
     const ids = includeSubfolders
       ? [...descendantFolderIds(folderId, folders)]
       : [folderId];
@@ -39,9 +37,7 @@ export function useFolderDownloading(folderId: string | null): number {
     };
     void refresh();
     const off = window.pond.onSyncAction(() => {
-      if (timer) {
-        return;
-      }
+      if (timer) return;
       timer = setTimeout(() => {
         timer = undefined;
         void refresh();
@@ -50,9 +46,7 @@ export function useFolderDownloading(folderId: string | null): number {
     return () => {
       active = false;
       off();
-      if (timer) {
-        clearTimeout(timer);
-      }
+      if (timer) clearTimeout(timer);
     };
   }, [key]);
   return counted.key === key ? counted.count : 0;

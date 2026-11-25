@@ -63,9 +63,7 @@ function Glyph({ mark, pond }: { mark: Mark; pond?: boolean }) {
 /** The comparison grid: rival logos, then one row per bar, with Pond's column filling in last. */
 export function Table({ t }: { t: number }) {
   const exit = end("table") - 500;
-  if (t < CUES.tableRise - 50 || t > exit + 600) {
-    return null;
-  }
+  if (t < CUES.tableRise - 50 || t > exit + 600) return null;
   const scene = envelope(t, CUES.tableRise, exit, {
     duration: 900,
     rise: 40,

@@ -54,9 +54,7 @@ export function useReview(
   }, []);
 
   useEffect(() => {
-    if (id) {
-      selectOnlySave(id);
-    }
+    if (id) selectOnlySave(id);
   }, [id]);
 
   /** A disabled or unmounted control drops focus to the body, where the grid's keys would take over. */
@@ -136,9 +134,7 @@ export function useReview(
     const key = reviewKey(event, {
       fromButton: isHTMLTag(target, "button"),
     });
-    if (!key) {
-      return;
-    }
+    if (!key) return;
     event.preventDefault();
     if (key.kind === "exit") {
       onExit();
@@ -160,9 +156,7 @@ export function useReview(
       actions.preview();
     } else if (key.kind === "folder") {
       const folder = slots[key.slot];
-      if (folder) {
-        actions.file(folder);
-      }
+      if (folder) actions.file(folder);
     }
   }
 

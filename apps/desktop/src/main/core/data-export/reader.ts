@@ -43,9 +43,7 @@ function readEntries(zip: yauzl.ZipFile): Promise<Map<string, yauzl.Entry>> {
   const byPath = new Map<string, yauzl.Entry>();
   return new Promise((resolve, reject) => {
     zip.on("entry", (entry: yauzl.Entry) => {
-      if (!entry.fileName.endsWith("/")) {
-        byPath.set(entry.fileName, entry);
-      }
+      if (!entry.fileName.endsWith("/")) byPath.set(entry.fileName, entry);
       zip.readEntry();
     });
     zip.once("end", () => resolve(byPath));
@@ -84,12 +82,8 @@ async function zipReader(path: string): Promise<ExportReader> {
     paths: [...byPath.keys()],
     readText: async (name) => {
       const entry = byPath.get(name);
-      if (!entry) {
-        throw new Error("missing");
-      }
-      if (entry.uncompressedSize > MAX_TEXT_BYTES) {
-        throw new Error("too_large");
-      }
+      if (!entry) throw new Error("missing");
+      if (entry.uncompressedSize > MAX_TEXT_BYTES) throw new Error("too_large");
       return readEntryText(zip, entry);
     },
     close: async () => zip.close(),

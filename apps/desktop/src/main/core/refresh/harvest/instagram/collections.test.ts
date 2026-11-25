@@ -176,9 +176,7 @@ async function run(
       };
       requests.push(request);
       const reply = respond(request);
-      if (reply instanceof Error) {
-        throw reply;
-      }
+      if (reply instanceof Error) throw reply;
       const { status, body } = reply;
       const text = body ? JSON.stringify(body) : "<!DOCTYPE html><html></html>";
       return {
@@ -189,9 +187,7 @@ async function run(
         },
         text: async () => text,
         json: async () => {
-          if (!body) {
-            throw new SyntaxError("not json");
-          }
+          if (!body) throw new SyntaxError("not json");
           return body;
         },
       };
@@ -203,12 +199,8 @@ async function run(
 /** GraphQL refuses every query, so the listing falls through to the REST list. */
 function restOnly(rest: (request: Request) => Reply | Error) {
   return (request: Request) => {
-    if (isGraphql(request)) {
-      return STALE_DOC;
-    }
-    if (isCurrentUser(request)) {
-      return SIGNED_IN_USER;
-    }
+    if (isGraphql(request)) return STALE_DOC;
+    if (isCurrentUser(request)) return SIGNED_IN_USER;
     return rest(request);
   };
 }
@@ -440,9 +432,7 @@ describe("buildInstagramCollectionsExpression over REST", () => {
   it("keeps paging on the API host once www has failed", async () => {
     const { result, requests } = await run(
       restOnly((r): Reply => {
-        if (!onApiHost(r)) {
-          return SOFT_FAIL_FR;
-        }
+        if (!onApiHost(r)) return SOFT_FAIL_FR;
         return r.url.includes("max_id=")
           ? {
               status: 200,
@@ -568,12 +558,8 @@ describe("buildInstagramCollectionsExpression when everything fails", () => {
 
   it("names a GraphQL reply that isn't JSON", async () => {
     const { result } = await run((r) => {
-      if (isGraphql(r)) {
-        return { status: 200 };
-      }
-      if (isCurrentUser(r)) {
-        return SIGNED_IN_USER;
-      }
+      if (isGraphql(r)) return { status: 200 };
+      if (isCurrentUser(r)) return SIGNED_IN_USER;
       return NOT_FOUND_PAGE;
     });
     expect(result).toMatchObject({

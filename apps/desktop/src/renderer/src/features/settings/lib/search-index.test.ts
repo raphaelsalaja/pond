@@ -10,9 +10,7 @@ import { SETTINGS_SEARCH_INDEX, sectionEntries } from "./search-index";
 
 function entry(id: string) {
   const result = SETTINGS_SEARCH_INDEX.find((candidate) => candidate.id === id);
-  if (!result) {
-    throw new Error(`Missing Settings search entry: ${id}`);
-  }
+  if (!result) throw new Error(`Missing Settings search entry: ${id}`);
   return result;
 }
 

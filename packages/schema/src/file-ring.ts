@@ -32,13 +32,9 @@ function knownItems(items: ReadonlyArray<unknown>): Array<FileRingItem> {
   return items
     .flatMap((item) => {
       const parsed = FileRingItemSchema.safeParse(item);
-      if (!parsed.success) {
-        return [];
-      }
+      if (!parsed.success) return [];
       const key = fileRingItemKey(parsed.data);
-      if (seen.has(key)) {
-        return [];
-      }
+      if (seen.has(key)) return [];
       seen.add(key);
       return [parsed.data];
     })

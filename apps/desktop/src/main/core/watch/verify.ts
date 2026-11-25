@@ -33,9 +33,7 @@ function metadata(html: string): Map<string, string> {
     }
     const name = attributes.get("property") ?? attributes.get("name");
     const content = attributes.get("content");
-    if (name && content !== undefined) {
-      result.set(name.toLowerCase(), content);
-    }
+    if (name && content !== undefined) result.set(name.toLowerCase(), content);
   }
   return result;
 }
@@ -70,9 +68,7 @@ function targetUrl(source: Source, target: WatchTarget): string | null {
 }
 
 function samePage(left: string | undefined, right: string): boolean {
-  if (!left) {
-    return false;
-  }
+  if (!left) return false;
   try {
     const a = new URL(left);
     const b = new URL(right);
@@ -94,29 +90,21 @@ export async function verifyWatchTarget(
   fetchPage: FetchWatchPage,
 ): Promise<WatchTarget | null> {
   const url = targetUrl(source, target);
-  if (!url) {
-    return null;
-  }
+  if (!url) return null;
   const headers = new Headers({
     "user-agent": CRAWLER_UA,
     accept: "text/html",
     "accept-language": "en-US,en;q=0.9",
   });
-  if (source === "youtube") {
-    headers.set("cookie", "CONSENT=YES+cb; SOCS=CAI");
-  }
+  if (source === "youtube") headers.set("cookie", "CONSENT=YES+cb; SOCS=CAI");
   const response = await fetchPage(url, {
     redirect: "follow",
     credentials: "omit",
     signal: AbortSignal.timeout(8000),
     headers,
   });
-  if (response.status === 404 || response.status === 410) {
-    return null;
-  }
-  if (!response.ok) {
-    throw new Error("The platform could not be checked.");
-  }
+  if (response.status === 404 || response.status === 410) return null;
+  if (!response.ok) throw new Error("The platform could not be checked.");
   const html = await response.text();
   const meta = metadata(html);
   const title = meta.get("og:title") ?? "";

@@ -105,9 +105,7 @@ export function failToast(toast: Toast, error: Error, title: string): void {
   toast.title = problem.kind === "failed" ? title : copy.title;
   toast.message = copy.description;
   const action = toastAction(problem.kind);
-  if (action) {
-    toast.primaryAction = action;
-  }
+  if (action) toast.primaryAction = action;
 }
 
 function toastAction(kind: ProblemKind): Toast.ActionOptions | undefined {

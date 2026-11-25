@@ -100,9 +100,7 @@ describe("enrichment sweep preferences", () => {
       refresh,
     });
     const publish = (): void => {
-      for (const listener of listeners) {
-        listener();
-      }
+      for (const listener of listeners) listener();
     };
 
     current = { ...current, ai: { ...current.ai, enableCaption: true } };

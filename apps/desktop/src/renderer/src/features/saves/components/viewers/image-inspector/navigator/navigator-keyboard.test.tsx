@@ -47,9 +47,7 @@ it("pans with arrows, clamps to the image, and centers with keyboard activation"
       ),
     );
     const button = host.querySelector("button");
-    if (!button) {
-      throw new Error("Missing navigator");
-    }
+    if (!button) throw new Error("Missing navigator");
     await act(async () =>
       button.dispatchEvent(
         new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),

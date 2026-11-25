@@ -18,9 +18,7 @@ describe("app icon previews", () => {
   it("picks the swatch the Dock shows for the macOS version and icon style", () => {
     const grape = listAppIconPreviews().find((icon) => icon.id === "grape");
     const macos27 = grape?.generations.get(27);
-    if (!grape || !macos27) {
-      throw new Error("grape previews missing");
-    }
+    if (!grape || !macos27) throw new Error("grape previews missing");
     const swatch = (
       style: "light" | "dark" | "monochrome" | null,
       macosMajor: number | null,

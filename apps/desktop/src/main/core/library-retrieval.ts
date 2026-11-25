@@ -101,15 +101,11 @@ export function libraryScopeClauses(scope: LibraryRetrievalScope): Array<SQL> {
       combinator: "and",
       rules: [{ field: "folder", operator: "some", value: [scope.folderId] }],
     });
-    if (compiled) {
-      clauses.push(compiled);
-    }
+    if (compiled) clauses.push(compiled);
   }
   if (scope.filter) {
     const compiled = buildWhere(scope.filter);
-    if (compiled) {
-      clauses.push(compiled);
-    }
+    if (compiled) clauses.push(compiled);
   }
   return clauses;
 }
@@ -125,9 +121,7 @@ function inputClauses(input: LibraryRetrievalInput): Array<SQL> {
       rules: [{ field: "folder", operator: "some", value: [input.folderId] }],
     };
     const compiled = buildWhere(folderQuery);
-    if (compiled) {
-      clauses.push(compiled);
-    }
+    if (compiled) clauses.push(compiled);
   }
   const media = normalizeMedia(input.media);
   if (media.length) {
@@ -281,9 +275,7 @@ async function denseChannel(
       ),
     )
     .map((hit) => hit.id);
-  if (!ids.length) {
-    return [];
-  }
+  if (!ids.length) return [];
   const modelColumn = kind === "text" ? saves.embeddingModel : saves.clipModel;
   const rows = await store.admittedIds(
     and(...clauses, eq(modelColumn, vector.model), inArray(saves.id, ids)),
@@ -296,9 +288,7 @@ async function resolveMediaProbe(
   db: Db,
   probe: z.infer<typeof mediaProbe> | undefined,
 ): Promise<VersionedVector | undefined> {
-  if (!probe) {
-    return undefined;
-  }
+  if (!probe) return undefined;
   if (probe.kind === "vector") {
     return { model: probe.model, vector: probe.values };
   }
@@ -312,9 +302,7 @@ async function resolveMediaProbe(
     .limit(1);
   const row = rows[0];
   const vector = parseJsonVector(row?.clipEmbedding);
-  if (!vector || !row?.clipModel) {
-    return undefined;
-  }
+  if (!vector || !row?.clipModel) return undefined;
   return { model: row.clipModel, vector };
 }
 
@@ -341,9 +329,7 @@ export async function retrieveLibraryWithStore(
   const limit = input.limit ?? 12;
   const clauses = [...libraryScopeClauses(scope), ...inputClauses(input)];
   const excludedId = input.visual?.kind === "saveId" ? input.visual.id : null;
-  if (excludedId) {
-    clauses.push(ne(saves.id, excludedId));
-  }
+  if (excludedId) clauses.push(ne(saves.id, excludedId));
   const query = input.query?.trim() ?? "";
   const match = compileKeywordWhere(query);
   const hasDense = Boolean(queryEmbeddings.text || queryEmbeddings.media);
@@ -395,9 +381,7 @@ export async function retrieveLibraryWithStore(
       clauses,
       limit,
     );
-    if (ids.length) {
-      ranked.push({ channel: "text", ids });
-    }
+    if (ids.length) ranked.push({ channel: "text", ids });
   }
   if (queryEmbeddings.media) {
     const ids = await denseChannel(
@@ -407,27 +391,21 @@ export async function retrieveLibraryWithStore(
       clauses,
       limit,
     );
-    if (ids.length) {
-      ranked.push({ channel: "media", ids });
-    }
+    if (ids.length) ranked.push({ channel: "media", ids });
   }
 
   const channelById = new Map<string, Array<RetrievalChannel>>();
   for (const list of ranked) {
     for (const id of list.ids) {
       const channels = channelById.get(id) ?? [];
-      if (!channels.includes(list.channel)) {
-        channels.push(list.channel);
-      }
+      if (!channels.includes(list.channel)) channels.push(list.channel);
       channelById.set(id, channels);
     }
   }
   const fused = reciprocalRankFusion(ranked.map((list) => list.ids))
     .filter((row) => row.id !== excludedId)
     .slice(0, Math.max(limit * 4, 50));
-  if (!fused.length) {
-    return { hits: [], saves: [] };
-  }
+  if (!fused.length) return { hits: [], saves: [] };
   const rows = await store.records(
     and(
       ...clauses,
@@ -477,9 +455,7 @@ export async function retrieveLibrary(
   }
   try {
     const media = await resolveMediaProbe(db, input.visual);
-    if (media) {
-      embeddings = { ...embeddings, media };
-    }
+    if (media) embeddings = { ...embeddings, media };
   } catch (error) {
     log.warn("[pond retrieval] media probe unavailable", {
       error: error instanceof Error ? error.message : "unknown error",

@@ -18,12 +18,8 @@ function row(id: string, parentId: string | null) {
 
 function flatten(items: Array<MenuItemSpec>): Array<[string, boolean]> {
   return items.flatMap((item): Array<[string, boolean]> => {
-    if (item.type === "submenu") {
-      return flatten(item.items);
-    }
-    if (!("label" in item)) {
-      return [];
-    }
+    if (item.type === "submenu") return flatten(item.items);
+    if (!("label" in item)) return [];
     return [[String(item.label), "disabled" in item && Boolean(item.disabled)]];
   });
 }
@@ -55,9 +51,7 @@ it("disables the moving folder, its subfolders and its current parent", async ()
   ]);
 
   const top = items[0];
-  if (!top || !("onClick" in top)) {
-    throw new Error("Missing Top Level");
-  }
+  if (!top || !("onClick" in top)) throw new Error("Missing Top Level");
   top.onClick?.();
   await expect(moved.promise).resolves.toEqual({
     ids: ["Shots"],

@@ -115,14 +115,10 @@ export function isSyncAllSourcesRunning(): boolean {
 }
 
 export function syncAllSources(opts: SyncOptions = {}): Promise<void> {
-  if (allSourcesRun) {
-    return allSourcesRun;
-  }
+  if (allSourcesRun) return allSourcesRun;
   const run = syncAllSourcesImpl(opts);
   const tracked = run.finally(() => {
-    if (allSourcesRun === tracked) {
-      allSourcesRun = null;
-    }
+    if (allSourcesRun === tracked) allSourcesRun = null;
   });
   allSourcesRun = tracked;
   return tracked;
@@ -159,9 +155,7 @@ async function syncAllSourcesImpl(opts: SyncOptions): Promise<void> {
     ...runnable.map((account) => account.source),
     ...watches.map((watch) => watch.source),
   ]);
-  if (sources.size === 0) {
-    return;
-  }
+  if (sources.size === 0) return;
 
   await Promise.all(
     Array.from(sources).map(async (source) => {
@@ -230,9 +224,7 @@ export async function syncAccount(
     return;
   }
   const { source } = account;
-  if (source === "mymind" && isMymindConnecting(accountId)) {
-    return;
-  }
+  if (source === "mymind" && isMymindConnecting(accountId)) return;
   const existing = inFlight.get(accountId);
   if (existing) {
     const ageSec = Math.round((Date.now() - existing.startedAt) / 1000);
@@ -381,9 +373,7 @@ export async function syncAccount(
     ev.error = toErrorInfo(error);
   } finally {
     const entry = inFlight.get(accountId);
-    if (entry) {
-      clearTimeout(entry.watchdog);
-    }
+    if (entry) clearTimeout(entry.watchdog);
     inFlight.delete(accountId);
     await patchAccountSync(accountId, { runningSince: null }).catch(
       (cause: unknown) =>
@@ -392,9 +382,7 @@ export async function syncAccount(
     ev.durationMs = Date.now() - startedAt;
     ev.lockHeldMs = ev.durationMs;
     ev.watchdogTripped = watchdogTripped;
-    if (watchdogTripped) {
-      ev.outcome = "aborted";
-    }
+    if (watchdogTripped) ev.outcome = "aborted";
     void commitEvent(ev);
   }
 }
@@ -403,9 +391,7 @@ export async function recoverInterruptedSyncs(): Promise<Array<string>> {
   const recovered: Array<string> = [];
   for (const account of await listAccounts()) {
     const cfg = await getAccountSync(account.id);
-    if (!cfg.runningSince) {
-      continue;
-    }
+    if (!cfg.runningSince) continue;
     try {
       await patchAccountSync(account.id, {
         runningSince: null,

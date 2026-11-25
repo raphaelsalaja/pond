@@ -32,9 +32,7 @@ function flakyRename(failures: number, code: string) {
     calls,
     async rename(from: string, to: string) {
       calls.push(`${from}>${to}`);
-      if (calls.length <= failures) {
-        throw busy(code);
-      }
+      if (calls.length <= failures) throw busy(code);
     },
   };
 }

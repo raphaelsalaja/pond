@@ -22,12 +22,8 @@ export function sensitiveContentBand(
   ) {
     return "not-checked";
   }
-  if (score >= LIKELY_SENSITIVE_THRESHOLD) {
-    return "likely-sensitive";
-  }
-  if (score >= POSSIBLE_SENSITIVE_THRESHOLD) {
-    return "possible-sensitive";
-  }
+  if (score >= LIKELY_SENSITIVE_THRESHOLD) return "likely-sensitive";
+  if (score >= POSSIBLE_SENSITIVE_THRESHOLD) return "possible-sensitive";
   return "not-sensitive";
 }
 

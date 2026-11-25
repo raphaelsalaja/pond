@@ -63,9 +63,7 @@ export function Panel({ clip, initialSettings }: PanelProps) {
           folder={folder.name}
           onChooseFolder={() =>
             void folder.choose().then((picked) => {
-              if (picked) {
-                settings.patch({ destination: "file" });
-              }
+              if (picked) settings.patch({ destination: "file" });
             })
           }
         />

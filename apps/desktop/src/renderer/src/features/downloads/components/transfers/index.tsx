@@ -57,9 +57,7 @@ export function TransferJobsPanel() {
     action.variables?.id === id &&
     action.variables.kind === kind;
   const visible = (jobs.data ?? []).slice(0, 30);
-  if (!visible.length && !jobs.isError) {
-    return null;
-  }
+  if (!visible.length && !jobs.isError) return null;
   return (
     <section className={styles.panel} aria-label="Library transfers">
       <h2>Library Transfers</h2>

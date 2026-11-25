@@ -73,9 +73,7 @@ function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
 }
 
 function ensureWindow(): BrowserWindow {
-  if (win && !win.isDestroyed()) {
-    return win;
-  }
+  if (win && !win.isDestroyed()) return win;
   win = new BrowserWindow({
     show: false,
     width: CARD_WIDTH + 2,
@@ -169,9 +167,7 @@ async function readCardRect(
     "card rect",
   );
   const parsed = CardRectSchema.safeParse(raw);
-  if (!parsed.success) {
-    return null;
-  }
+  if (!parsed.success) return null;
   const r = parsed.data;
   if (r.width < 8 || r.height < 8) {
     return null;
@@ -214,9 +210,7 @@ async function captureAtScale(
       "captureScreenshot",
     );
     const parsed = ScreenshotSchema.safeParse(raw);
-    if (!parsed.success) {
-      return null;
-    }
+    if (!parsed.success) return null;
     return nativeImage.createFromBuffer(
       Buffer.from(parsed.data.data, "base64"),
     );
@@ -242,15 +236,11 @@ async function captureAtScale(
 }
 
 async function roundCorners(bytes: Buffer, radiusPx: number): Promise<Buffer> {
-  if (radiusPx <= 0) {
-    return bytes;
-  }
+  if (radiusPx <= 0) return bytes;
   const meta = await sharp(bytes).metadata();
   const width = meta.width ?? 0;
   const height = meta.height ?? 0;
-  if (width < 2 || height < 2) {
-    return bytes;
-  }
+  if (width < 2 || height < 2) return bytes;
   const r = Math.min(radiusPx, Math.floor(Math.min(width, height) / 2));
   const mask = Buffer.from(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="${width}" height="${height}" rx="${r}" ry="${r}" fill="#fff"/></svg>`,
@@ -326,13 +316,9 @@ async function renderOne(
   }
 
   const image = await captureAtScale(target, rect);
-  if (!image || image.getSize().width === 0) {
-    return null;
-  }
+  if (!image || image.getSize().width === 0) return null;
   const raw = image.toPNG();
-  if (raw.byteLength === 0) {
-    return null;
-  }
+  if (raw.byteLength === 0) return null;
   return pad(raw, scheme, padCss, radiusCss);
 }
 
@@ -373,9 +359,7 @@ export async function renderTweetCardPng(
     return null;
   }
   const native = await renderXPostPng(capture, fallbackAuthor, scheme);
-  if (native) {
-    return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
-  }
+  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
   return enqueueRender("tweet", data, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
 }
 
@@ -389,9 +373,7 @@ export async function renderThreadsCardPng(
     return null;
   }
   const native = await renderThreadsPostPng(data, scheme);
-  if (native) {
-    return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
-  }
+  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
   return enqueueRender(
     "threads",
     data,
@@ -418,9 +400,7 @@ export async function renderTextCardPng(
   scheme: "light" | "dark",
 ): Promise<RenderedCard | null> {
   const data = buildTextCardData(text);
-  if (!data) {
-    return null;
-  }
+  if (!data) return null;
   return enqueueRender("text", data, scheme, 0);
 }
 
@@ -433,8 +413,6 @@ export function renderSearchCardPng(
 
 export function disposeRenderCardWindow(): void {
   clearIdleDispose();
-  if (win && !win.isDestroyed()) {
-    win.destroy();
-  }
+  if (win && !win.isDestroyed()) win.destroy();
   win = null;
 }

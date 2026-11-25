@@ -9,9 +9,7 @@ interface PointerProps {
 
 /** The macOS arrow, tip at `x`, `y`. */
 export function Pointer({ x, y, opacity, pressed }: PointerProps) {
-  if (opacity <= 0.002) {
-    return null;
-  }
+  if (opacity <= 0.002) return null;
   return (
     <svg
       className={styles.pointer}

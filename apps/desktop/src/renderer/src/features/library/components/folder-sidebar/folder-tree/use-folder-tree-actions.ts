@@ -33,9 +33,7 @@ export function useFolderTreeActions({
   const [creatingFolder, setCreatingFolder] = useState(false);
 
   async function createFolder(parentId?: string): Promise<void> {
-    if (creatingFolder) {
-      return;
-    }
+    if (creatingFolder) return;
     setCreatingFolder(true);
     onCreateStart();
     try {

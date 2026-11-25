@@ -41,9 +41,7 @@ function readWidth(
       return fallback;
     }
     const next = Number.parseInt(stored, 10);
-    if (!Number.isFinite(next)) {
-      return fallback;
-    }
+    if (!Number.isFinite(next)) return fallback;
     return Math.min(max, Math.max(min, next));
   } catch {
     return fallback;
@@ -125,9 +123,7 @@ export const libraryChrome = {
     );
   },
   setDetailsOpen(detailsOpen: boolean): void {
-    if (store.state.detailsOpen === detailsOpen) {
-      return;
-    }
+    if (store.state.detailsOpen === detailsOpen) return;
     beginLibraryLayoutTransition();
     try {
       window.localStorage.setItem("pond.details", detailsOpen ? "1" : "0");

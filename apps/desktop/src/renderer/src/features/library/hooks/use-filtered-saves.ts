@@ -70,9 +70,7 @@ export function intersectSqlResults(
   const list: Array<Save> = [];
   for (const id of sqlIds) {
     const save = byId.get(id);
-    if (save) {
-      list.push(save);
-    }
+    if (save) list.push(save);
   }
   return list;
 }
@@ -177,9 +175,7 @@ function textFor(value: string | null | undefined): string {
 }
 
 function typeFor(s: Save): string {
-  if (s.source === "web") {
-    return webTypeKey(s);
-  }
+  if (s.source === "web") return webTypeKey(s);
   return (s.mediaType ?? s.files[0]?.kind ?? "").toLowerCase();
 }
 

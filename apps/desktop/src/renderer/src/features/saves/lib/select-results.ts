@@ -39,11 +39,8 @@ export async function selectResults(mode: "all" | "invert"): Promise<void> {
       current && selected.includes(current) ? current : (selected[0] ?? null);
     selection.setCursor(cursor);
     primarySelection.set(cursor);
-    if (cursor) {
-      selection.setAnchor(cursor);
-    } else {
-      selection.clear();
-    }
+    if (cursor) selection.setAnchor(cursor);
+    else selection.clear();
     updateNotification({
       id: notificationId,
       title: `${selected.length} Saves selected`,

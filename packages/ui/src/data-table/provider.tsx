@@ -55,9 +55,7 @@ function minimumColumnWidth<T extends RowData>(column: TableColumn<T>): number {
   const width = column.width?.trim();
   const match =
     width?.match(FIXED_PIXEL_WIDTH) ?? width?.match(MINMAX_PIXEL_WIDTH);
-  if (match?.[1]) {
-    return Number(match[1]);
-  }
+  if (match?.[1]) return Number(match[1]);
   return column.minWidth ?? 0;
 }
 
@@ -178,13 +176,9 @@ export function DataTableProvider<T extends RowData>({
   const columnOrder = columnOrderProp ?? uncontrolledOrder;
 
   const expanded = useMemo<ExpandedState>(() => {
-    if (!expandedIds) {
-      return internalExpanded;
-    }
+    if (!expandedIds) return internalExpanded;
     const rec: Record<string, boolean> = {};
-    for (const id of expandedIds) {
-      rec[id] = true;
-    }
+    for (const id of expandedIds) rec[id] = true;
     return rec;
   }, [expandedIds, internalExpanded]);
 
@@ -272,22 +266,16 @@ export function DataTableProvider<T extends RowData>({
             const [lo, hi] = from <= to ? [from, to] : [to, from];
             next.clear();
             for (const rowId of ids.slice(lo, hi + 1)) {
-              for (const d of withDescendants(rowId)) {
-                next.add(d);
-              }
+              for (const d of withDescendants(rowId)) next.add(d);
             }
             return { selectedIds: next, cursorId: id };
           }
         }
         const targets = withDescendants(id);
         if (next.has(id)) {
-          for (const d of targets) {
-            next.delete(d);
-          }
+          for (const d of targets) next.delete(d);
         } else {
-          for (const d of targets) {
-            next.add(d);
-          }
+          for (const d of targets) next.add(d);
         }
         anchorRef.current = id;
         return { selectedIds: next, cursorId: id };
@@ -319,9 +307,7 @@ export function DataTableProvider<T extends RowData>({
     const replaceSelection = (ids: Array<string>) => {
       const next = new Set<string>();
       for (const id of ids) {
-        for (const d of withDescendants(id)) {
-          next.add(d);
-        }
+        for (const d of withDescendants(id)) next.add(d);
       }
       selectionStore.setState(() => ({
         selectedIds: next,
@@ -367,14 +353,10 @@ export function DataTableProvider<T extends RowData>({
         }
         const from = base.indexOf(fromId);
         const to = base.indexOf(toId);
-        if (from < 0 || to < 0) {
-          return null;
-        }
+        if (from < 0 || to < 0) return null;
         const next = [...base];
         const [moved] = next.splice(from, 1);
-        if (moved === undefined) {
-          return null;
-        }
+        if (moved === undefined) return null;
         next.splice(to, 0, moved);
         return next;
       };
@@ -384,9 +366,7 @@ export function DataTableProvider<T extends RowData>({
             ? columnOrderProp
             : columns.map((column) => column.id),
         );
-        if (next) {
-          onColumnOrderChange?.(next);
-        }
+        if (next) onColumnOrderChange?.(next);
         return;
       }
       setUncontrolledOrder((prev) => {
@@ -422,21 +402,15 @@ export function DataTableProvider<T extends RowData>({
   ]);
 
   const orderedColumns = useMemo(() => {
-    if (columnOrder.length === 0) {
-      return columns;
-    }
+    if (columnOrder.length === 0) return columns;
     const byId = new Map(columns.map((c) => [c.id, c]));
     const ordered: Array<TableColumn<T>> = [];
     for (const id of columnOrder) {
       const col = byId.get(id);
-      if (col) {
-        ordered.push(col);
-      }
+      if (col) ordered.push(col);
     }
     for (const col of columns) {
-      if (!columnOrder.includes(col.id)) {
-        ordered.push(col);
-      }
+      if (!columnOrder.includes(col.id)) ordered.push(col);
     }
     return ordered;
   }, [columns, columnOrder]);
@@ -453,9 +427,7 @@ export function DataTableProvider<T extends RowData>({
       }
       for (const id of order) {
         const col = byId.get(id);
-        if (!col) {
-          continue;
-        }
+        if (!col) continue;
         const sized = columnSizing[id];
         parts.push(
           sized !== undefined ? `${sized}px` : (col.width ?? "minmax(0, 1fr)"),
@@ -538,9 +510,7 @@ export function DataTableProvider<T extends RowData>({
   const getSorted = useCallback(
     (id: string): false | "asc" | "desc" => {
       const cur = sorting[0];
-      if (cur?.id !== id) {
-        return false;
-      }
+      if (cur?.id !== id) return false;
       return cur.desc ? "desc" : "asc";
     },
     [sorting],

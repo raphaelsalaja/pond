@@ -348,9 +348,7 @@ describe("folder browser", () => {
       expect(candidate).not.toBeNull();
       return candidate;
     });
-    if (!button) {
-      throw new Error("Missing folder card");
-    }
+    if (!button) throw new Error("Missing folder card");
     await act(async () => button.click());
     expect(currentLocation(router).pathname).toBe("/folders/child");
   });
@@ -366,9 +364,7 @@ describe("folder browser", () => {
       expect(candidate).not.toBeNull();
       return candidate;
     });
-    if (!button) {
-      throw new Error("Missing folder card");
-    }
+    if (!button) throw new Error("Missing folder card");
     await act(async () => {
       button.dispatchEvent(
         new MouseEvent("contextmenu", {

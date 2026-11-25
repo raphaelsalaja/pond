@@ -85,18 +85,12 @@ export function handleMenuClick(
     void offerDraft(mediaDraft(info.srcUrl, tab, "context-menu"), tab?.id);
     return;
   }
-  if (id === "pond-save" && tab) {
-    void runTool(tab, "page");
-  }
+  if (id === "pond-save" && tab) void runTool(tab, "page");
 }
 
 export async function handleCommand(command: string): Promise<void> {
   const tool = COMMAND_TOOLS.get(command);
-  if (!tool) {
-    return;
-  }
+  if (!tool) return;
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-  if (tab) {
-    await runTool(tab, tool);
-  }
+  if (tab) await runTool(tab, tool);
 }

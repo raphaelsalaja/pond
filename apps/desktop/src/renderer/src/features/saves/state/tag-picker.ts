@@ -19,9 +19,7 @@ export function openSaveTagPicker(
   anchorId: string | null,
 ): void {
   const unique = [...new Set(ids)];
-  if (unique.length === 0) {
-    return;
-  }
+  if (unique.length === 0) return;
   nextKey += 1;
   saveTagPickerStore.setState(() => ({
     key: nextKey,
@@ -31,9 +29,7 @@ export function openSaveTagPicker(
 }
 
 export function closeSaveTagPicker(): void {
-  if (saveTagPickerStore.state === null) {
-    return;
-  }
+  if (saveTagPickerStore.state === null) return;
   saveTagPickerStore.setState(() => null);
 }
 
@@ -54,9 +50,7 @@ const departingSaveStore = new Store<ReadonlySet<string>>(NO_DEPARTING_SAVES);
 export function syncDepartingSaveIds(ids: ReadonlyArray<string>): void {
   const next = ids.length === 0 ? NO_DEPARTING_SAVES : new Set(ids);
   const current = departingSaveStore.state;
-  if (next === current) {
-    return;
-  }
+  if (next === current) return;
   if (next.size === current.size && [...next].every((id) => current.has(id))) {
     return;
   }

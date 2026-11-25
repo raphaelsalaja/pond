@@ -96,15 +96,11 @@ describe("filter dropdown matching", () => {
     try {
       db.exec("create table saves (id text, files text)");
       const insert = db.prepare("insert into saves values (?, ?)");
-      for (const save of saves) {
-        insert.run(save.id, JSON.stringify(save.files));
-      }
+      for (const save of saves) insert.run(save.id, JSON.stringify(save.files));
       for (const rule of rules) {
         const filter = query([rule]);
         const where = buildWhere(filter);
-        if (!where) {
-          throw new Error("Missing SQL predicate");
-        }
+        if (!where) throw new Error("Missing SQL predicate");
         const compiled = new SQLiteSyncDialect().sqlToQuery(where);
         expect(
           db
@@ -164,9 +160,7 @@ describe("filter dropdown matching", () => {
         insert.run(save.id, save.siteName, save.source, save.url);
       }
       const where = buildWhere(filter);
-      if (!where) {
-        throw new Error("Missing SQL predicate");
-      }
+      if (!where) throw new Error("Missing SQL predicate");
       const compiled = new SQLiteSyncDialect().sqlToQuery(where);
       expect(
         db
@@ -285,15 +279,11 @@ describe("filter dropdown matching", () => {
     try {
       db.exec("create table saves (id text, url text)");
       const insert = db.prepare("insert into saves values (?, ?)");
-      for (const save of saves) {
-        insert.run(save.id, save.url);
-      }
+      for (const save of saves) insert.run(save.id, save.url);
       for (const rule of rules) {
         const filter = query([rule]);
         const where = buildWhere(filter);
-        if (!where) {
-          throw new Error("Missing SQL predicate");
-        }
+        if (!where) throw new Error("Missing SQL predicate");
         const compiled = new SQLiteSyncDialect().sqlToQuery(where);
         expect(
           db
@@ -361,9 +351,7 @@ describe("filter dropdown matching", () => {
         ]) {
           const filter = query([rule]);
           const where = buildWhere(filter);
-          if (!where) {
-            throw new Error("Missing SQL predicate");
-          }
+          if (!where) throw new Error("Missing SQL predicate");
           const sql = new SQLiteSyncDialect().sqlToQuery(where);
           const params = SqlValues.parse(sql.params);
           expect(

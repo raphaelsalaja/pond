@@ -42,9 +42,7 @@ export function CreateTokenDialog({
   }
 
   async function create() {
-    if (busy) {
-      return;
-    }
+    if (busy) return;
     const next = { name: !trimmed, scopes: scopes.length === 0 };
     setInvalid(next);
     if (next.name) {
@@ -77,22 +75,16 @@ export function CreateTokenDialog({
     const result = await window.pond.query("clipboard.writeText", {
       text: value,
     });
-    if (result.ok) {
-      setCopied(true);
-    } else {
-      setError("Couldn't copy the token. Select it and copy it instead.");
-    }
+    if (result.ok) setCopied(true);
+    else setError("Couldn't copy the token. Select it and copy it instead.");
   }
 
   return (
     <Dialog.Root
       open
       onOpenChange={(open, details) => {
-        if (busy) {
-          details.cancel();
-        } else if (!open) {
-          onClose();
-        }
+        if (busy) details.cancel();
+        else if (!open) onClose();
       }}
     >
       <Dialog.Portal>

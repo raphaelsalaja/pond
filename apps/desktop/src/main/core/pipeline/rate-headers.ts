@@ -10,9 +10,7 @@ function header(bag: HeaderBag, name: string): string | null {
   }
   const lower = name.toLowerCase();
   for (const [k, v] of Object.entries(bag)) {
-    if (k.toLowerCase() === lower) {
-      return v;
-    }
+    if (k.toLowerCase() === lower) return v;
   }
   return null;
 }

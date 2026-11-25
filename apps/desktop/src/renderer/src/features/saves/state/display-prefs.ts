@@ -28,9 +28,7 @@ const DISPLAY_DEFAULTS: DisplayPrefs = {
 };
 
 function readKey(key: DisplayPrefKey): boolean {
-  if (!globalThis.window) {
-    return DISPLAY_DEFAULTS[key];
-  }
+  if (!globalThis.window) return DISPLAY_DEFAULTS[key];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEYS[key]);
     if (raw === null) {
@@ -100,9 +98,7 @@ function readItemInfoField(value: string | null): ItemInfoField {
 }
 
 function readItemInfo(): ItemInfo {
-  if (!globalThis.window) {
-    return { field: "created", visible: true };
-  }
+  if (!globalThis.window) return { field: "created", visible: true };
   try {
     const field = window.localStorage.getItem(ITEM_INFO_FIELD_KEY);
     const visible = window.localStorage.getItem(ITEM_INFO_VISIBLE_KEY);

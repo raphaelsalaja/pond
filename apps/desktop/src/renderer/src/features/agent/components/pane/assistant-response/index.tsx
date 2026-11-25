@@ -18,9 +18,7 @@ const ResponseContext = createContext<ResponseRenderContext | null>(null);
 
 function useResponseContext() {
   const value = useContext(ResponseContext);
-  if (!value) {
-    throw new Error("Response renderers require ResponseContext");
-  }
+  if (!value) throw new Error("Response renderers require ResponseContext");
   return value;
 }
 
@@ -102,9 +100,7 @@ const responseComponents: Components = {
     const code = node?.children.find(
       (child) => child.type === "element" && child.tagName === "code",
     );
-    if (code?.type !== "element") {
-      return <pre>{children}</pre>;
-    }
+    if (code?.type !== "element") return <pre>{children}</pre>;
     const value = code.children
       .flatMap((child) => (child.type === "text" ? child.value : []))
       .join("");
@@ -137,13 +133,9 @@ interface MarkdownParent {
 /** Model HTML is dropped outright; `safeResponseUrl` already gates every link. */
 function remarkDropHtml() {
   const prune = (node: MarkdownParent) => {
-    if (!node.children) {
-      return;
-    }
+    if (!node.children) return;
     node.children = node.children.filter((child) => child.type !== "html");
-    for (const child of node.children) {
-      prune(child);
-    }
+    for (const child of node.children) prune(child);
   };
   return prune;
 }
@@ -155,12 +147,8 @@ const wordReveal: AnimateOptions = {
 };
 
 export function safeResponseUrl(url: string): string {
-  if (/^#save-[1-9]\d*$/.test(url)) {
-    return url;
-  }
-  if (parseSaveMentionHref(url)) {
-    return url;
-  }
+  if (/^#save-[1-9]\d*$/.test(url)) return url;
+  if (parseSaveMentionHref(url)) return url;
   try {
     const parsed = new URL(url);
     if (

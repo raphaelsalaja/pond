@@ -61,9 +61,7 @@ function resolve(router: AnyRouter, pathname: string): RouteMeta {
   let details: ShellDetails | null | undefined;
   for (let index = branch.length - 1; index >= 0; index -= 1) {
     const data = branch[index]?.options.staticData;
-    if (!data) {
-      continue;
-    }
+    if (!data) continue;
     surface ??= data.surface;
     if (details === undefined && data.details !== undefined) {
       details = data.details;
@@ -101,9 +99,7 @@ export function routeMeta(router: AnyRouter, pathname: string): RouteMeta {
   cache.set(pathname, meta);
   if (cache.size > CACHE_SIZE) {
     const oldest = cache.keys().next().value;
-    if (oldest !== undefined) {
-      cache.delete(oldest);
-    }
+    if (oldest !== undefined) cache.delete(oldest);
   }
   return meta;
 }
@@ -125,8 +121,6 @@ export function useLatestRouteMeta(): RouteMeta {
 /** The route a navigation is heading to, read synchronously for event handlers and stores. */
 export function currentRouteMeta(): RouteMeta | null {
   const router = getAppRouter();
-  if (!router) {
-    return null;
-  }
+  if (!router) return null;
   return routeMeta(router, router.latestLocation.pathname);
 }

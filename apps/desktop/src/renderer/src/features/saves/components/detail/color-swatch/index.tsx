@@ -16,9 +16,7 @@ export function buildColorSwatchMenu(
   copyValue: (value: string) => void,
 ): Array<MenuItemSpec> {
   const formats = colorCopyFormats(color);
-  if (!formats) {
-    return [];
-  }
+  if (!formats) return [];
   return [
     {
       label: "Find Similar Color Items",
@@ -62,9 +60,7 @@ export function ColorSwatch({
   const primary = color.toLowerCase() === primaryColor?.toLowerCase();
 
   useEffect(() => {
-    if (!copied) {
-      return;
-    }
+    if (!copied) return;
     const timer = window.setTimeout(() => setCopied(false), COPIED_HOLD_MS);
     return () => window.clearTimeout(timer);
   }, [copied]);
@@ -74,9 +70,7 @@ export function ColorSwatch({
       () => true,
       () => false,
     );
-    if (written) {
-      setCopied(true);
-    }
+    if (written) setCopied(true);
   };
   const setPrimary = async (checked: boolean): Promise<void> => {
     const next = checked ? color : null;
@@ -85,9 +79,7 @@ export function ColorSwatch({
       color: next,
     });
     const save = pool.get(saveId);
-    if (result.ok && save) {
-      pool.upsert({ ...save, primaryColor: next });
-    }
+    if (result.ok && save) pool.upsert({ ...save, primaryColor: next });
   };
 
   return (

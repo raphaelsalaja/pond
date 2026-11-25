@@ -84,9 +84,7 @@ describe("filter menu selections", () => {
     ]);
     const first = options[0];
     const second = options[1];
-    if (!first || !second) {
-      throw new Error("Missing folder choices");
-    }
+    if (!first || !second) throw new Error("Missing folder choices");
     const rows = selectFilter([first.predicate], second.predicate, true);
     expect(
       matches(query(rows), {

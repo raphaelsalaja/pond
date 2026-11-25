@@ -96,9 +96,7 @@ describe("library settings", () => {
           '[role="dialog"] button',
         ),
       ].find((candidate) => candidate.textContent?.trim() === "Crop");
-      if (!button) {
-        throw new Error("Missing Crop button");
-      }
+      if (!button) throw new Error("Missing Crop button");
       return button;
     });
     await act(async () => crop.click());

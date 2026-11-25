@@ -5,9 +5,7 @@ import styles from "./styles.module.css";
 
 /** A frame-filling school streams in from the left and swims on out to the right, leaving Koi. */
 export function School({ t }: { t: number }) {
-  if (t > CUES.schoolOut + 1400) {
-    return null;
-  }
+  if (t > CUES.schoolOut + 1400) return null;
   return (
     <div className={styles.school}>
       {SCHOOL.map((member, i) => {
@@ -17,9 +15,7 @@ export function School({ t }: { t: number }) {
         const out =
           CUES.schoolOut - 350 + (1 - lead) * 250 + scatter(i + 90) * 150;
         const leave = ease.in(progress(t, out, 750));
-        if (arrive <= 0 || leave >= 1) {
-          return null;
-        }
+        if (arrive <= 0 || leave >= 1) return null;
         const reach = mix(0.75, 1.25, member.depth);
         const size = mix(40, 100, member.depth);
         const x =

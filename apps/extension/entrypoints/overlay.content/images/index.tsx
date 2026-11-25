@@ -59,9 +59,7 @@ function useProbedSizes(candidates: Array<Candidate>) {
   const probing = useRef(new Map<string, HTMLImageElement>());
   useEffect(() => {
     for (const candidate of candidates) {
-      if (candidate.width || probing.current.has(candidate.url)) {
-        continue;
-      }
+      if (candidate.width || probing.current.has(candidate.url)) continue;
       const probe = new Image();
       probe.decoding = "async";
       probe.onload = () =>
@@ -77,9 +75,7 @@ function useProbedSizes(candidates: Array<Candidate>) {
   }, [candidates]);
   useEffect(
     () => () => {
-      for (const probe of probing.current.values()) {
-        probe.src = "";
-      }
+      for (const probe of probing.current.values()) probe.src = "";
     },
     [],
   );
@@ -165,11 +161,8 @@ export function ImagePicker({
   const setMany = (urls: Array<string>, on: boolean) => {
     const next = new Set(selected);
     for (const url of urls) {
-      if (on) {
-        next.add(url);
-      } else {
-        next.delete(url);
-      }
+      if (on) next.add(url);
+      else next.delete(url);
     }
     setSelected(next);
   };
@@ -203,11 +196,8 @@ export function ImagePicker({
   const invert = () => {
     const next = new Set(selected);
     for (const image of shown) {
-      if (next.has(image.url)) {
-        next.delete(image.url);
-      } else {
-        next.add(image.url);
-      }
+      if (next.has(image.url)) next.delete(image.url);
+      else next.add(image.url);
     }
     setSelected(next);
   };
@@ -225,9 +215,7 @@ export function ImagePicker({
       modal="trap-focus"
       disablePointerDismissal
       onOpenChange={(open) => {
-        if (!open) {
-          onFinish(null);
-        }
+        if (!open) onFinish(null);
       }}
     >
       <Dialog.Portal container={container}>
@@ -239,9 +227,7 @@ export function ImagePicker({
               return;
             }
             event.preventDefault();
-            if (canSave) {
-              save();
-            }
+            if (canSave) save();
           }}
         >
           <Dialog.Header className={styles.header}>
@@ -270,9 +256,7 @@ export function ImagePicker({
                 value={zoom}
                 onValueChange={(value) => {
                   const [next] = [value].flat();
-                  if (next !== undefined) {
-                    setZoom(next);
-                  }
+                  if (next !== undefined) setZoom(next);
                 }}
               >
                 <Slider.Control>

@@ -29,9 +29,7 @@ function textRuns(text: string): Array<TextRun> {
   let last = 0;
   for (const match of text.matchAll(ENTITY)) {
     const idx = match.index ?? 0;
-    if (idx > last) {
-      out.push({ text: text.slice(last, idx) });
-    }
+    if (idx > last) out.push({ text: text.slice(last, idx) });
     const token = match[0];
     const linkText =
       token.startsWith("http") || token.startsWith("www.")
@@ -40,9 +38,7 @@ function textRuns(text: string): Array<TextRun> {
     out.push({ text: linkText, link: true });
     last = idx + token.length;
   }
-  if (last < text.length) {
-    out.push({ text: text.slice(last) });
-  }
+  if (last < text.length) out.push({ text: text.slice(last) });
   return out;
 }
 
@@ -70,9 +66,7 @@ const two = (n: number) => String(n).padStart(2, "0");
 
 /** The post header's age at render time: `42m`, `18h`, `3d`, then `11/18/26` from a week on. */
 function relativeTime(value: string | undefined, now = Date.now()): string {
-  if (!value) {
-    return "";
-  }
+  if (!value) return "";
   const then = new Date(value);
   const ms = now - then.getTime();
   if (!Number.isFinite(ms)) {
@@ -98,12 +92,8 @@ function author(a: TweetCardAuthor): ThreadsAuthor {
     name: a.handle || a.name,
     initials: initials(a.name || a.handle || "?"),
   };
-  if (a.verified) {
-    out.verified = true;
-  }
-  if (isDataUrl(a.avatarUrl)) {
-    out.avatar = a.avatarUrl;
-  }
+  if (a.verified) out.verified = true;
+  if (isDataUrl(a.avatarUrl)) out.avatar = a.avatarUrl;
   return out;
 }
 
@@ -111,16 +101,12 @@ function media(list: Array<TweetCardMedia> | undefined): Array<ThreadsMedia> {
   return (list ?? []).map((m) => {
     const out: ThreadsMedia = {};
     const src = m.type === "video" ? m.posterUrl : m.url;
-    if (isDataUrl(src)) {
-      out.src = src;
-    }
+    if (isDataUrl(src)) out.src = src;
     if (m.width && m.height) {
       out.width = m.width;
       out.height = m.height;
     }
-    if (m.type === "video") {
-      out.video = true;
-    }
+    if (m.type === "video") out.video = true;
     return out;
   });
 }
@@ -147,9 +133,7 @@ const METRICS: Array<{ key: keyof TweetCardMetrics; icon: string }> = [
  */
 export function cardDataToThreadsPost(data: TweetCardData): ThreadsPost | null {
   const parentAvatar = data.replyTo?.author.avatarUrl;
-  if (parentAvatar && !isDataUrl(parentAvatar)) {
-    return null;
-  }
+  if (parentAvatar && !isDataUrl(parentAvatar)) return null;
 
   const post: ThreadsPost = {
     ...nested(data, false),
@@ -163,12 +147,8 @@ export function cardDataToThreadsPost(data: TweetCardData): ThreadsPost | null {
       { icon: "threads-save", value: "" },
     ],
   };
-  if (data.replyTo) {
-    post.parent = nested(data.replyTo, false);
-  }
-  if (data.quoted) {
-    post.quoted = nested(data.quoted, true);
-  }
+  if (data.replyTo) post.parent = nested(data.replyTo, false);
+  if (data.quoted) post.quoted = nested(data.quoted, true);
   if (data.card) {
     const c = data.card;
     post.card = {
@@ -177,9 +157,7 @@ export function cardDataToThreadsPost(data: TweetCardData): ThreadsPost | null {
       description: c.description ?? "",
       large: c.large === true,
     };
-    if (isDataUrl(c.imageUrl)) {
-      post.card.image = c.imageUrl;
-    }
+    if (isDataUrl(c.imageUrl)) post.card.image = c.imageUrl;
   }
   return post;
 }

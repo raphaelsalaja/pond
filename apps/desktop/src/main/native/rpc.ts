@@ -91,9 +91,7 @@ export async function dispatchNative(
   try {
     switch (req.type) {
       case "capture.accept":
-        if (!ports.capture) {
-          return { ok: false, error: "capture_unavailable" };
-        }
+        if (!ports.capture) return { ok: false, error: "capture_unavailable" };
         return {
           ok: true,
           data: await ports.capture(req.draft, req.cookies, req.fishId),
@@ -116,14 +114,10 @@ export async function dispatchNative(
         }
         return { ok: true, data: await ports.foldersList() };
       case "tags.list":
-        if (!ports.tagsList) {
-          return { ok: false, error: "tags_unavailable" };
-        }
+        if (!ports.tagsList) return { ok: false, error: "tags_unavailable" };
         return { ok: true, data: await ports.tagsList() };
       case "fish.list":
-        if (!ports.fishList) {
-          return { ok: false, error: "fish_unavailable" };
-        }
+        if (!ports.fishList) return { ok: false, error: "fish_unavailable" };
         return { ok: true, data: await ports.fishList() };
       case "extension.settings":
         if (!ports.extensionSettings) {
@@ -134,12 +128,8 @@ export async function dispatchNative(
         return { ok: true, data: ports.sessionPending() };
       case "enqueue": {
         const opts: EnqueueOpts = {};
-        if (req.trigger) {
-          opts.trigger = req.trigger;
-        }
-        if (req.cookies && req.cookies.length > 0) {
-          opts.cookies = req.cookies;
-        }
+        if (req.trigger) opts.trigger = req.trigger;
+        if (req.cookies && req.cookies.length > 0) opts.cookies = req.cookies;
         return { ok: true, data: await ports.enqueue(req.url, opts) };
       }
       case "session.import": {

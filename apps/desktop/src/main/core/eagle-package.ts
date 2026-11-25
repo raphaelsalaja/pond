@@ -260,12 +260,8 @@ const runtime: EaglePackageImportRuntime = {
       rating: metadata.star,
       dominantColors: (metadata.palettes ?? []).map(eaglePaletteColor),
     };
-    if (metadata.width !== undefined) {
-      input.width = metadata.width;
-    }
-    if (metadata.height !== undefined) {
-      input.height = metadata.height;
-    }
+    if (metadata.width !== undefined) input.width = metadata.width;
+    if (metadata.height !== undefined) input.height = metadata.height;
     const result = await createManualSave(input);
     if (result.ok && result.id && folderIds.length > 0) {
       const assigned = await setSaveFolders(result.id, folderIds);
@@ -302,16 +298,12 @@ const runtime: EaglePackageImportRuntime = {
         );
       }
     }
-    for (const id of [...folderIds].reverse()) {
-      await deleteFolder(id);
-    }
+    for (const id of [...folderIds].reverse()) await deleteFolder(id);
   },
 };
 
 function timestampDate(value: number | undefined): Date | undefined {
-  if (value === undefined || !Number.isFinite(value)) {
-    return undefined;
-  }
+  if (value === undefined || !Number.isFinite(value)) return undefined;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
@@ -678,9 +670,7 @@ async function parsePackage(
     });
   }
   for (const metadata of pack?.images ?? []) {
-    if (metadataById.has(metadata.id)) {
-      continue;
-    }
+    if (metadataById.has(metadata.id)) continue;
     const suffix = `${metadata.id}.info`;
     const directories = new Set(
       files
@@ -729,9 +719,7 @@ async function parsePackage(
 
   const items: Array<EaglePackageImportItem> = [];
   for (const { metadata, directory } of metadataById.values()) {
-    if (metadata.isDeleted) {
-      continue;
-    }
+    if (metadata.isDeleted) continue;
     const prefix = `${directory}/`;
     const siblings = files.filter((file) => {
       const child = file.path.startsWith(prefix)
@@ -806,9 +794,7 @@ async function importPackage(
               .filter((id): id is string => Boolean(id));
             const result = await dependencies.importItem(item, assigned);
             if (!result.ok || !result.id) {
-              if (result.id) {
-                importedIds.push(result.id);
-              }
+              if (result.id) importedIds.push(result.id);
               throw new Error(
                 result.error || "An Eagle package Save could not be imported.",
               );
@@ -840,9 +826,7 @@ async function importPackage(
   try {
     return await operation;
   } finally {
-    if (imports.get(dependencies) === settled) {
-      imports.delete(dependencies);
-    }
+    if (imports.get(dependencies) === settled) imports.delete(dependencies);
   }
 }
 
@@ -871,9 +855,7 @@ function nestedFolders(
       left.name.localeCompare(right.name),
   )) {
     const node = included.get(folder.id);
-    if (!node) {
-      continue;
-    }
+    if (!node) continue;
     const parent = folder.parentId ? included.get(folder.parentId) : undefined;
     if (parent) {
       parent.children ??= [];
@@ -921,9 +903,7 @@ async function exportDirectory(
   destination: string,
 ): Promise<{ exported: number }> {
   const root = await realpath(destination);
-  if (input.items.length === 0) {
-    throw new Error("Select Saves to export.");
-  }
+  if (input.items.length === 0) throw new Error("Select Saves to export.");
   const folders = input.folders ?? [];
   const folderIds = new Set(folders.map((folder) => folder.id));
   const roots = nestedFolders(folders);

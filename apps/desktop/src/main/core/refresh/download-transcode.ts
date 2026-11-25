@@ -51,16 +51,10 @@ export function transcodeTarget(
   request: DownloadRequest,
   extension: string,
 ): TranscodeTarget | null {
-  if (request.mode !== "video") {
-    return null;
-  }
-  if (request.container === "gif") {
-    return "gif";
-  }
+  if (request.mode !== "video") return null;
+  if (request.container === "gif") return "gif";
   const reencode = request.fps !== null || request.compression !== "original";
-  if (!request.container && !reencode) {
-    return null;
-  }
+  if (!request.container && !reencode) return null;
   const wanted = request.container ?? (extension === ".webm" ? "webm" : "mp4");
   return reencode || extension !== `.${wanted}` ? wanted : null;
 }
@@ -103,9 +97,7 @@ export function transcodeArgs(
       "-an",
     );
   } else {
-    if (fps) {
-      args.push("-vf", `fps=${fps}`);
-    }
+    if (fps) args.push("-vf", `fps=${fps}`);
     if (target === "mp4") {
       args.push(
         "-c:v",
@@ -171,9 +163,7 @@ export async function transcodeItems(input: {
     return { items: [...items], cleanup: async () => {} };
   }
   const { ffmpeg } = binariesAvailable();
-  if (!ffmpeg) {
-    throw new Error("FFmpeg is required to convert this download.");
-  }
+  if (!ffmpeg) throw new Error("FFmpeg is required to convert this download.");
   const root = await mkdtemp(join(tmpdir(), "pond-transcode-"));
   const cleanup = () => rm(root, { recursive: true, force: true });
   try {
@@ -231,9 +221,7 @@ async function transcodeDownload(input: {
     signal: input.signal ?? new AbortController().signal,
     duration: Math.max(1, input.duration),
   };
-  if (input.onProgress) {
-    run.onProgress = input.onProgress;
-  }
+  if (input.onProgress) run.onProgress = input.onProgress;
   await runFfmpeg(run);
   const { size } = await stat(output);
   return { path: output, mimeType: MIME_TYPES[input.target], size };

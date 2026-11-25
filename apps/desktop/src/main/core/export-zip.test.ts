@@ -24,9 +24,7 @@ async function readText(stream: Readable): Promise<string> {
 function entries(path: string): Promise<Map<string, string>> {
   return new Promise((done, fail) => {
     yauzl.open(path, { lazyEntries: true }, (error, zip) => {
-      if (error) {
-        return fail(error);
-      }
+      if (error) return fail(error);
       const found = new Map<string, string>();
       zip.on("entry", (entry: yauzl.Entry) => {
         zip.openReadStream(entry, (streamError, stream) => {

@@ -56,9 +56,7 @@ export function splitsOnImport(
 
 export function planSaveSplit(save: SplitSource): SaveSplitPlan | null {
   const primaries = slideFiles(save.files);
-  if (primaries.length < 2) {
-    return null;
-  }
+  if (primaries.length < 2) return null;
   const posters = save.files.filter((file) => file.kind === POSTER_KIND);
   let videoIndex = 0;
   const media = walkCaptureMedia(save.rawJson?.capture);
@@ -78,9 +76,7 @@ export function planSaveSplit(save: SplitSource): SaveSplitPlan | null {
     ? [...slides].sort((a, b) => (a.mediaIndex ?? 0) - (b.mediaIndex ?? 0))
     : slides;
   const [keep, ...rest] = ordered;
-  if (!keep) {
-    return null;
-  }
+  if (!keep) return null;
   const taken = new Set(rest.map((slide) => slide.mediaIndex));
   const keepMedia = mapped
     ? media.flatMap((_, index) => (taken.has(index) ? [] : [index]))
@@ -104,9 +100,7 @@ function matchCaptureMedia(
     const index = media.findIndex(
       (entry, position) => !taken.has(position) && match(entry),
     );
-    if (index === -1) {
-      return null;
-    }
+    if (index === -1) return null;
     taken.add(index);
     return index;
   };
@@ -143,12 +137,8 @@ function filterCaptureMedia(capture: Capture, urls: Set<string>): Capture {
     ...capture,
     media: (capture.media ?? []).filter((entry) => urls.has(entry.url)),
   };
-  if (capture.quoted) {
-    next.quoted = filterCaptureMedia(capture.quoted, urls);
-  }
-  if (capture.replyTo) {
-    next.replyTo = filterCaptureMedia(capture.replyTo, urls);
-  }
+  if (capture.quoted) next.quoted = filterCaptureMedia(capture.quoted, urls);
+  if (capture.replyTo) next.replyTo = filterCaptureMedia(capture.replyTo, urls);
   return next;
 }
 
@@ -157,9 +147,7 @@ export function narrowToSplit(
   raw: RawJson,
   split: RawJson["split"] | undefined,
 ): RawJson {
-  if (!split) {
-    return raw;
-  }
+  if (!split) return raw;
   return {
     ...raw,
     capture: retainCaptureMedia(raw.capture, split.media),
@@ -189,9 +177,7 @@ export function slideSourceIds(plan: SaveSplitPlan): Array<string> {
   return plan.slides.map((slide) => {
     const base = `${plan.postSourceId} ${slide.primary.sha256.slice(0, 16) || slide.primary.path}`;
     let id = base;
-    for (let n = 2; seen.has(id); n += 1) {
-      id = `${base} ${n}`;
-    }
+    for (let n = 2; seen.has(id); n += 1) id = `${base} ${n}`;
     seen.add(id);
     return id;
   });
@@ -291,9 +277,7 @@ export function buildOriginalPatch(
       gone.has(file.path) ||
       (isThumbnailKind(file.kind) && !file.custom && sidecars.has(file.path)),
   );
-  for (const file of removed) {
-    gone.add(file.path);
-  }
+  for (const file of removed) gone.add(file.path);
   const files = save.files.filter((file) => !gone.has(file.path));
   const primaryChanged =
     primaryBeforeSplit(save)?.path !== plan.keep.primary.path;

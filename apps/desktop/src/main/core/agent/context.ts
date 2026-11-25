@@ -71,9 +71,7 @@ export function emptySearchNote(
     input.media?.length && `media ${input.media.join(", ")}`,
     input.untagged && "untagged",
   ].filter(Boolean);
-  if (!filters.length) {
-    return undefined;
-  }
+  if (!filters.length) return undefined;
   return `No Saves matched ${filters.join(", ")}. Remove any filter the request did not ask for and search again.`;
 }
 
@@ -99,19 +97,13 @@ export function libraryContext(
     input.signal.throwIfAborted();
     let changed = false;
     for (const row of rows) {
-      if (sources.size >= 80 && !sources.has(row.id)) {
-        continue;
-      }
+      if (sources.size >= 80 && !sources.has(row.id)) continue;
       const current = sources.get(row.id);
-      if (current && JSON.stringify(current) === JSON.stringify(row)) {
-        continue;
-      }
+      if (current && JSON.stringify(current) === JSON.stringify(row)) continue;
       sources.set(row.id, row);
       changed = true;
     }
-    if (changed) {
-      input.onSources([...sources.values()]);
-    }
+    if (changed) input.onSources([...sources.values()]);
   }
   function showResult(
     result: AssistantResultSet,
@@ -176,9 +168,7 @@ export function libraryContext(
       schema: assistantQuestion,
       execute: async (args) => {
         input.signal.throwIfAborted();
-        if (question) {
-          return { requested: true };
-        }
+        if (question) return { requested: true };
         const parsed = assistantQuestion.parse(args);
         const pick =
           parsed.recommended === undefined
@@ -187,9 +177,7 @@ export function libraryContext(
         const options = [...new Set(parsed.options)];
         const recommended = pick === undefined ? -1 : options.indexOf(pick);
         const draft: AssistantQuestion = { question: parsed.question, options };
-        if (recommended >= 0) {
-          draft.recommended = recommended;
-        }
+        if (recommended >= 0) draft.recommended = recommended;
         question = assistantQuestion.parse(draft);
         return {
           requested: true,
@@ -391,9 +379,7 @@ export function libraryContext(
             continue;
           }
           const result = savesById.get(proposal.saveId);
-          if (!result?.save || !sources.has(proposal.saveId)) {
-            continue;
-          }
+          if (!result?.save || !sources.has(proposal.saveId)) continue;
           const base = {
             id: `${proposal.saveId}:${proposal.field}`,
             saveId: proposal.saveId,

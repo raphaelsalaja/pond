@@ -43,21 +43,13 @@ function candidates(
       for (let bit = -1; bit < 32; bit++) {
         const probe = bit < 0 ? value : (value ^ (1 << bit)) >>> 0;
         const list = lookup.get(probe);
-        if (!list || list.length > MAX_BUCKET) {
-          continue;
-        }
-        for (const other of list) {
-          if (other > position) {
-            votes.set(other, (votes.get(other) ?? 0) + 1);
-          }
-        }
+        if (!list || list.length > MAX_BUCKET) continue;
+        for (const other of list)
+          if (other > position) votes.set(other, (votes.get(other) ?? 0) + 1);
       }
     }
-    for (const [other, count] of [...votes].sort((a, b) => a[0] - b[0])) {
-      if (count >= MIN_VOTES) {
-        pairs.push([position, other]);
-      }
-    }
+    for (const [other, count] of [...votes].sort((a, b) => a[0] - b[0]))
+      if (count >= MIN_VOTES) pairs.push([position, other]);
   }
   return pairs;
 }
@@ -77,9 +69,7 @@ export function audioMatches(
   for (const sha256 of bySha.keys()) {
     const value = prints.get(sha256);
     const print = value ? decodeAudioPrint(value) : null;
-    if (print) {
-      decoded.push({ sha256, print });
-    }
+    if (print) decoded.push({ sha256, print });
   }
   decoded.sort(
     (left, right) => left.print.durationSeconds - right.print.durationSeconds,
@@ -89,13 +79,9 @@ export function audioMatches(
   for (const [from, to] of candidates(decoded.map((entry) => entry.print))) {
     const left = decoded[from];
     const right = decoded[to];
-    if (!left || !right) {
-      continue;
-    }
+    if (!left || !right) continue;
     const match = compareAudioPrints(left.print, right.print);
-    if (!match) {
-      continue;
-    }
+    if (!match) continue;
     found.push(
       ...expandShaMatch(
         bySha.get(left.sha256) ?? [],

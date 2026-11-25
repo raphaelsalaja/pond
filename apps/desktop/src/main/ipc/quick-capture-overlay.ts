@@ -65,17 +65,12 @@ async function openWithSnapshot(): Promise<void> {
 }
 
 export async function toggleQuickCapture(): Promise<void> {
-  if (isQuickCaptureOpen()) {
-    closeQuickCapture();
-  } else {
-    await openWithSnapshot();
-  }
+  if (isQuickCaptureOpen()) closeQuickCapture();
+  else await openWithSnapshot();
 }
 
 function assertOwner(id: number): void {
-  if (!quickCaptureOwnsSender(id)) {
-    throw new Error("Not Quick Capture");
-  }
+  if (!quickCaptureOwnsSender(id)) throw new Error("Not Quick Capture");
 }
 
 export function registerQuickCaptureIpc(): void {
@@ -90,9 +85,7 @@ export function registerQuickCaptureIpc(): void {
   safeHandle(QUICK_CAPTURE_IPC.pick, async (event) => {
     assertOwner(event.sender.id);
     const win = quickCaptureWindow();
-    if (!win) {
-      return [];
-    }
+    if (!win) return [];
     setQuickCapturePicking(true);
     try {
       const result = await dialog.showOpenDialog(win, {
@@ -101,9 +94,7 @@ export function registerQuickCaptureIpc(): void {
       return result.canceled ? [] : result.filePaths;
     } finally {
       setQuickCapturePicking(false);
-      if (!win.isDestroyed()) {
-        win.focus();
-      }
+      if (!win.isDestroyed()) win.focus();
     }
   });
   safeHandle(

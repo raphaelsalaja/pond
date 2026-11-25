@@ -36,11 +36,8 @@ export const notificationQueries = {
     },
   ),
   "notifications.delete": query(NotificationDeleteSchema, async (input) => {
-    if ("read" in input) {
-      await notificationLog.deleteRead();
-    } else {
-      await notificationLog.delete(input.ids);
-    }
+    if ("read" in input) await notificationLog.deleteRead();
+    else await notificationLog.delete(input.ids);
     return OK;
   }),
 };

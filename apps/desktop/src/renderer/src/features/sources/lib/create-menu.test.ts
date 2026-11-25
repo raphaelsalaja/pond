@@ -101,9 +101,7 @@ describe("source create menu", () => {
     const connect = items.find(
       (item) => item.type === "submenu" && item.id === "new-source",
     );
-    if (connect?.type !== "submenu") {
-      throw new Error("Missing New Source");
-    }
+    if (connect?.type !== "submenu") throw new Error("Missing New Source");
     const arena = connect.items.find(
       (item) => "id" in item && item.id === "connect-arena",
     );

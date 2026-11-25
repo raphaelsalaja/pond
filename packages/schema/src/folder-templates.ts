@@ -84,9 +84,7 @@ export function orderFolderTemplateNodes(
   const ordered: Array<FolderTemplateNode> = [];
   const visit = (node: FolderTemplateNode) => {
     ordered.push(node);
-    for (const child of children.get(node.key) ?? []) {
-      visit(child);
-    }
+    for (const child of children.get(node.key) ?? []) visit(child);
   };
   for (const root of roots) {
     visit(root);

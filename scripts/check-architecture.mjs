@@ -27,9 +27,7 @@ export function runtimeImports(
             (entry) =>
               entry.type === "ImportSpecifier" && entry.importKind === "type",
           ));
-      if (includeTypes || !onlyTypes) {
-        imports.push(node.source.value);
-      }
+      if (includeTypes || !onlyTypes) imports.push(node.source.value);
     },
     ExportNamedDeclaration(node) {
       const onlyTypes =
@@ -69,9 +67,7 @@ function sourceFiles(directory) {
       return [];
     }
     const path = join(directory, entry.name);
-    if (entry.isDirectory()) {
-      return sourceFiles(path);
-    }
+    if (entry.isDirectory()) return sourceFiles(path);
     return /\.(ts|tsx)$/.test(path) &&
       !/\.(test|d)\.tsx?$/.test(path) &&
       entry.name !== "routeTree.gen.ts"
@@ -84,14 +80,10 @@ function workspacePackages() {
   return workspaceRoots.flatMap((root) => {
     const directory = join(repository, root);
     return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-      if (!entry.isDirectory()) {
-        return [];
-      }
+      if (!entry.isDirectory()) return [];
       const path = join(directory, entry.name);
       const manifestPath = join(path, "package.json");
-      if (!existsSync(manifestPath)) {
-        return [];
-      }
+      if (!existsSync(manifestPath)) return [];
       return [
         { path, manifest: JSON.parse(readFileSync(manifestPath, "utf8")) },
       ];
@@ -120,9 +112,7 @@ export function declaredWorkspaceDependencyErrors(packages) {
         true,
       );
       for (const specifier of imports) {
-        if (!specifier.startsWith("@")) {
-          continue;
-        }
+        if (!specifier.startsWith("@")) continue;
         const dependency = specifier.split("/").slice(0, 2).join("/");
         if (
           dependency === manifest.name ||
@@ -160,9 +150,7 @@ function resolveImport(source, specifier) {
     join(base, "index.ts"),
     join(base, "index.tsx"),
   ];
-  if (extname(base) === ".js") {
-    candidates.push(`${base.slice(0, -3)}.ts`);
-  }
+  if (extname(base) === ".js") candidates.push(`${base.slice(0, -3)}.ts`);
   return (
     candidates.find(
       (candidate) => existsSync(candidate) && /\.tsx?$/.test(candidate),
@@ -190,9 +178,7 @@ export function dependencyCycles(graph) {
         low.set(node, Math.min(low.get(node), index.get(target)));
       }
     }
-    if (low.get(node) !== index.get(node)) {
-      return;
-    }
+    if (low.get(node) !== index.get(node)) return;
     const group = [];
     let member;
     do {
@@ -204,11 +190,7 @@ export function dependencyCycles(graph) {
       cycles.push(group.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
     }
   };
-  for (const node of graph.keys()) {
-    if (!index.has(node)) {
-      visit(node);
-    }
-  }
+  for (const node of graph.keys()) if (!index.has(node)) visit(node);
   return cycles;
 }
 
@@ -225,12 +207,8 @@ export function rendererOwnershipError(from, to) {
 export function featureEntryError(from, to) {
   const source = /^renderer\/src\/features\/([^/]+)\//.exec(from);
   const target = /^renderer\/src\/features\/([^/]+)\/(.+)$/.exec(to);
-  if (!source || !target || source[1] === target[1]) {
-    return null;
-  }
-  if (!target[2].includes("/")) {
-    return null;
-  }
+  if (!source || !target || source[1] === target[1]) return null;
+  if (!target[2].includes("/")) return null;
   return `Cross-feature import bypasses the feature entry: ${from} -> ${to}`;
 }
 
@@ -252,9 +230,7 @@ function main() {
       const to = relative(desktop, target);
       const ownershipError =
         rendererOwnershipError(from, to) ?? featureEntryError(from, to);
-      if (ownershipError) {
-        errors.push(ownershipError);
-      }
+      if (ownershipError) errors.push(ownershipError);
       if (
         from.startsWith("renderer/src/shared/") &&
         /renderer\/src\/(features|app|dev|routes)\//.test(to)
@@ -281,9 +257,7 @@ function main() {
     );
   }
   if (errors.length) {
-    for (const error of errors) {
-      process.stderr.write(`${error}\n`);
-    }
+    for (const error of errors) process.stderr.write(`${error}\n`);
     process.exitCode = 1;
   } else {
     process.stdout.write(

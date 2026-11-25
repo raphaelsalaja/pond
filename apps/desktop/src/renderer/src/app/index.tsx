@@ -83,9 +83,7 @@ const STARTUP_ROUTES: ReadonlyMap<string, string> = new Map([
 ]);
 
 function readStored(key: string): string | null {
-  if (!("localStorage" in globalThis)) {
-    return null;
-  }
+  if (!("localStorage" in globalThis)) return null;
   try {
     return localStorage.getItem(key);
   } catch {
@@ -95,17 +93,11 @@ function readStored(key: string): string | null {
 
 function initialPath(): string {
   const startup = readStored(STARTUP_PAGE_KEY) ?? "continue";
-  if (startup === "settings") {
-    return "/settings/general";
-  }
+  if (startup === "settings") return "/settings/general";
   const startupRoute = STARTUP_ROUTES.get(startup);
-  if (startup !== "continue" && startupRoute) {
-    return startupRoute;
-  }
+  if (startup !== "continue" && startupRoute) return startupRoute;
   const last = readStored(LAST_PATH_KEY) || "/";
-  if (last.startsWith("/dev")) {
-    return "/";
-  }
+  if (last.startsWith("/dev")) return "/";
   return last;
 }
 
@@ -162,9 +154,7 @@ function LibraryApp() {
   const [windowPrefs] = usePrefs("window");
   const startupPage = windowPrefs?.startupPage;
   useEffect(() => {
-    if (!startupPage) {
-      return;
-    }
+    if (!startupPage) return;
     try {
       localStorage.setItem(STARTUP_PAGE_KEY, startupPage);
     } catch {

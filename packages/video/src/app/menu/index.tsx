@@ -67,9 +67,7 @@ function Popup({
   highlighted,
   pressed = -1,
 }: PopupProps) {
-  if (t < open || t > close + 160) {
-    return null;
-  }
+  if (t < open || t > close + 160) return null;
   const k =
     ease.out(progress(t, open, 140)) * (1 - ease.in(progress(t, close, 140)));
   return (

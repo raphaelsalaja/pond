@@ -113,16 +113,12 @@ export function ImageInspector({
     resetLoop: resetGifLoop,
   } = gif;
   const navigate = (delta: number) => {
-    if (!onNavigate || Date.now() - lastNavigate.current < 200) {
-      return;
-    }
+    if (!onNavigate || Date.now() - lastNavigate.current < 200) return;
     lastNavigate.current = Date.now();
     void resultNavigation
       .next(save.id, delta)
       .then((next) => {
-        if (next) {
-          onNavigate(next);
-        }
+        if (next) onNavigate(next);
       })
       .catch((cause: unknown) => {
         log.warn("[pond viewer] finding the next save failed", cause);
@@ -173,9 +169,7 @@ export function ImageInspector({
   useReportMediaReady(shown);
 
   const run = async (action: () => Promise<void>) => {
-    if (pending.current) {
-      return;
-    }
+    if (pending.current) return;
     pending.current = true;
     setBusy(true);
     try {
@@ -249,9 +243,7 @@ export function ImageInspector({
       });
   };
   const setImageThumbnail = () => {
-    if (!file) {
-      return;
-    }
+    if (!file) return;
     void window.pond
       .query("saves.setImageThumbnail", {
         id: save.id,
@@ -270,9 +262,7 @@ export function ImageInspector({
   const canApplyCrop =
     !!draft && draft.w > 0 && draft.h > 0 && !isFullImageCrop(draft);
   const applyCrop = () => {
-    if (!draft || !canApplyCrop) {
-      return;
-    }
+    if (!draft || !canApplyCrop) return;
     void run(async () => {
       await applyInspect(save.id, cropPatch(draft), "inspect:crop");
       setDraft(null);
@@ -290,9 +280,7 @@ export function ImageInspector({
     setMode,
   });
   const saveCrop = () => {
-    if (!draft) {
-      return;
-    }
+    if (!draft) return;
     void run(async () => {
       const result = await window.pond.query("saves.cropAsCopy", {
         id: save.id,
@@ -300,9 +288,7 @@ export function ImageInspector({
         crop: draft,
         frameIndex: isGif ? gifFrameIndex : undefined,
       });
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
+      if (!result.ok) throw new Error(result.error);
       setDraft(null);
       setMode("view");
       notify({ id: "image-crop-copy", title: "Crop saved as a new image" });
@@ -313,16 +299,12 @@ export function ImageInspector({
     mode === "view" ? mediaTransformStyle(save) : { transform: "none" };
   imageStyle.imageRendering =
     prefs.imageRendering === "pixelated" ? "pixelated" : "auto";
-  if (grayscale) {
-    imageStyle.filter = "grayscale(1)";
-  }
+  if (grayscale) imageStyle.filter = "grayscale(1)";
   const previousMode = useRef(mode);
   useEffect(() => {
     const leftMode = previousMode.current !== mode && mode === "view";
     previousMode.current = mode;
-    if (!active) {
-      return;
-    }
+    if (!active) return;
     if (mode !== "view") {
       frameRef.current?.focus();
       return;

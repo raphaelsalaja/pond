@@ -25,9 +25,7 @@ export function toReferenceItems(
   const byId = new Map(sources.map((source) => [source.id, source]));
   return [...new Set(ids)].flatMap((id) => {
     const source = byId.get(id);
-    if (!source) {
-      return [];
-    }
+    if (!source) return [];
     const excerpt = sourceExcerpt(source.notes || source.description, 140);
     return [
       {
@@ -79,9 +77,7 @@ export function SavePreview({
               disabled={attached}
               onClick={() => {
                 const source = sources.find((save) => save.id === item.id);
-                if (source) {
-                  onAttach([source]);
-                }
+                if (source) onAttach([source]);
               }}
             >
               {attached ? "Added to message" : "Add to message"}
@@ -100,9 +96,7 @@ function fileType(path: string | undefined) {
 
 function RowMeta({ id }: { id: string }) {
   const save = useSave(id);
-  if (!save) {
-    return null;
-  }
+  if (!save) return null;
   const type = fileType(pickPrimaryFile(save)?.path);
   const date = formatAbsolute(save.savedAt);
   return (
@@ -135,9 +129,7 @@ export function ConsultedSaves({
     renderMedia,
   );
   useSourceCovers(items.map((item) => item.id));
-  if (!items.length) {
-    return null;
-  }
+  if (!items.length) return null;
   const renderRow = (item: ReferenceItem) => (
     <article key={item.id} className={styles.row} data-hover-row="">
       <Popover.Root>
@@ -209,9 +201,7 @@ export function ReferencedSavesPopover({
       open={open}
       modal={false}
       onOpenChange={(next) => {
-        if (!next) {
-          onClose();
-        }
+        if (!next) onClose();
       }}
     >
       <Popover.Portal>

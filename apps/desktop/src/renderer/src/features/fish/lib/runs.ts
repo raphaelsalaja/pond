@@ -40,29 +40,21 @@ export function nextRunText(
   at: number | null,
   now = new Date(),
 ): string | null {
-  if (at === null) {
-    return null;
-  }
-  if (at <= now.getTime()) {
-    return "Next run soon";
-  }
+  if (at === null) return null;
+  if (at <= now.getTime()) return "Next run soon";
   return `Next ${relativeMoment(at, now)}`;
 }
 
 /** The same moment as `nextRunText`, as a standalone value: "Today at 9:00 AM". */
 export function nextRunValue(at: number, now = new Date()): string {
-  if (at <= now.getTime()) {
-    return "Soon";
-  }
+  if (at <= now.getTime()) return "Soon";
   const moment = relativeMoment(at, now);
   return moment.charAt(0).toUpperCase() + moment.slice(1);
 }
 
 export function lastRunText(run: FishRun, now = new Date()): string {
   const when = relativeMoment(run.at, now);
-  if (run.status === "failed") {
-    return `Failed ${when}`;
-  }
+  if (run.status === "failed") return `Failed ${when}`;
   return run.changes > 0
     ? `Ran ${when}, ${formatPlural(run.changes, { one: "change", other: "changes" })}`
     : `Ran ${when}`;

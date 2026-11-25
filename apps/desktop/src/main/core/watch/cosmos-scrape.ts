@@ -81,9 +81,7 @@ export async function listCosmosWatch(
   const lease = await leaseWindow("cosmos", { partition: PUBLIC_PARTITION });
   try {
     const navOk = await navigateWithTimeout(lease.win, target, NAV_TIMEOUT_MS);
-    if (!navOk) {
-      return { ok: false, reason: "timeout" };
-    }
+    if (!navOk) return { ok: false, reason: "timeout" };
     const landed = new URL(lease.win.webContents.getURL());
     const landedFirst = landed.pathname.split("/").filter(Boolean)[0] ?? "";
     const wantedFirst = handle.split("/")[0] ?? handle;
@@ -113,9 +111,7 @@ export async function listCosmosWatch(
     const seen = new Set<string>();
     for (const link of page.data.links) {
       const sourceId = sourceIdFromUrl("cosmos", link);
-      if (!sourceId || seen.has(sourceId)) {
-        continue;
-      }
+      if (!sourceId || seen.has(sourceId)) continue;
       seen.add(sourceId);
       entries.push({ url: link, sourceId });
     }

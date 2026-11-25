@@ -265,13 +265,9 @@ export async function harvestSourceList(
     {
       let lastCollected = -1;
       pollInterval = setInterval(() => {
-        if (stopPolling) {
-          return;
-        }
+        if (stopPolling) return;
         if (lease.win.isDestroyed()) {
-          if (pollInterval) {
-            clearInterval(pollInterval);
-          }
+          if (pollInterval) clearInterval(pollInterval);
           return;
         }
         void lease.win.webContents
@@ -281,9 +277,7 @@ export async function harvestSourceList(
           )
           .then((raw) => {
             const stats = readStats(StatsTextSchema.parse(raw));
-            if (!stats) {
-              return;
-            }
+            if (!stats) return;
             lastStats = stats;
             if (
               opts.onProgress &&
@@ -310,9 +304,7 @@ export async function harvestSourceList(
       sleep(timeoutMs).then(() => "__pond_list_timeout__"),
     ]).finally(() => {
       stopPolling = true;
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
+      if (pollInterval) clearInterval(pollInterval);
     });
 
     if (raw === "__pond_list_timeout__") {
@@ -450,9 +442,7 @@ function listUrlForSource(
     case "instagram":
       return INSTAGRAM_HOME_URL;
     case "tiktok":
-      if (!accountKey) {
-        return null;
-      }
+      if (!accountKey) return null;
       return collectionId
         ? tiktokCollectionUrl(accountKey, {
             id: collectionId,
@@ -560,9 +550,7 @@ function recoveredLikes(
   partial: PartialEntries,
   cause: string,
 ): ListHarvestResult | null {
-  if (!partial || partial.length === 0) {
-    return null;
-  }
+  if (!partial || partial.length === 0) return null;
   log.info(
     `[pond list] instagram likes recovered ${partial.length} entries after ${cause}`,
   );
@@ -578,9 +566,7 @@ export async function settleInstagramLikesFailure(
   );
   if (failure.reason === "page_error") {
     const recovered = recoveredLikes(await readPartial(), "a page error");
-    if (recovered) {
-      return recovered;
-    }
+    if (recovered) return recovered;
   }
   return failure;
 }
@@ -616,15 +602,11 @@ async function readSourceCollections(
 ): Promise<CollectionListResult> {
   switch (source) {
     case "pinterest": {
-      if (!opts.accountKey) {
-        return { ok: false, reason: "unknown" };
-      }
+      if (!opts.accountKey) return { ok: false, reason: "unknown" };
       const { listPinterestBoards } =
         await import("../harvest/pinterest/resource");
       const result = await listPinterestBoards(opts.partition, opts.accountKey);
-      if (!result.ok) {
-        return result;
-      }
+      if (!result.ok) return result;
       return {
         ok: true,
         collections: result.boards.map((board) => ({
@@ -641,9 +623,7 @@ async function readSourceCollections(
         READ_YOUTUBE_INITIAL_DATA,
         { partition: opts.partition },
       );
-      if (!run.ok) {
-        return pageRunFailure(run.reason);
-      }
+      if (!run.ok) return pageRunFailure(run.reason);
       return {
         ok: true,
         collections: parseYoutubePlaylists(parseJsonText(run.value)),
@@ -661,9 +641,7 @@ async function readSourceCollections(
           ? readCollectionsReply(run.value)
           : pageRunFailure(run.reason);
       });
-      if (result.ok) {
-        return result;
-      }
+      if (result.ok) return result;
       return result.detail
         ? { ok: false, reason: result.reason, detail: result.detail }
         : { ok: false, reason: result.reason };
@@ -686,18 +664,14 @@ async function readSourceCollections(
         : { ok: false, reason: "unknown", detail: `api ${result.status}` };
     }
     case "tiktok": {
-      if (!opts.accountKey) {
-        return { ok: false, reason: "unknown" };
-      }
+      if (!opts.accountKey) return { ok: false, reason: "unknown" };
       const run = await runOnSourcePage(
         "tiktok",
         tiktokFavouritesUrl(opts.accountKey),
         buildTiktokCollectionsExpression(),
         { partition: opts.partition, timeoutMs: 60_000 },
       );
-      if (!run.ok) {
-        return pageRunFailure(run.reason);
-      }
+      if (!run.ok) return pageRunFailure(run.reason);
       return readCollectionsReply(run.value);
     }
     case "twitter": {
@@ -707,9 +681,7 @@ async function readSourceCollections(
         buildReadBookmarkFoldersExpression(),
         { partition: opts.partition },
       );
-      if (!run.ok) {
-        return pageRunFailure(run.reason);
-      }
+      if (!run.ok) return pageRunFailure(run.reason);
       return { ok: true, collections: parseBookmarkFolders(run.value) };
     }
     default:
@@ -720,9 +692,7 @@ async function readSourceCollections(
 function pageRunFailure(
   reason: "auth_required" | "timeout" | "unknown",
 ): Extract<CollectionListResult, { ok: false }> {
-  if (reason === "auth_required") {
-    return { ok: false, reason };
-  }
+  if (reason === "auth_required") return { ok: false, reason };
   return { ok: false, reason: "unknown", detail: `page run ${reason}` };
 }
 
@@ -773,9 +743,7 @@ export async function harvestSourceCollections(
       );
       return harvestEachCollection(source, collections, async (collection) => {
         const cosmos = byId.get(collection.id);
-        if (!cosmos) {
-          return { ok: false, reason: "no_match" };
-        }
+        if (!cosmos) return { ok: false, reason: "no_match" };
         return harvestCosmosCollection(args, opts.partition, cosmos);
       });
     }
@@ -826,9 +794,7 @@ async function harvestEachCollection(
     }
     reachedEnd &&= result.reachedEnd;
   }
-  if (failed && entries.size === 0) {
-    return failed;
-  }
+  if (failed && entries.size === 0) return failed;
   return { ok: true, entries: [...entries.values()], reachedEnd };
 }
 
@@ -843,9 +809,7 @@ export async function harvestInstagramLikedList(
       INSTAGRAM_LIKES_URL,
       NAV_TIMEOUT_MS,
     );
-    if (!navOk) {
-      return { ok: false, reason: "timeout" };
-    }
+    if (!navOk) return { ok: false, reason: "timeout" };
     const landedUrl = lease.win.webContents.getURL();
     const challenge = looksLikeChallenge(landedUrl);
     if (challenge) {
@@ -929,9 +893,7 @@ async function harvestYoutubePlaylist(
       youtubePlaylistUrl(listId),
       NAV_TIMEOUT_MS,
     );
-    if (!navOk) {
-      return { ok: false, reason: "timeout" };
-    }
+    if (!navOk) return { ok: false, reason: "timeout" };
     if (looksLikeAuthWall(lease.win.webContents.getURL())) {
       return { ok: false, reason: "auth_required" };
     }
@@ -944,12 +906,8 @@ async function harvestYoutubePlaylist(
       return { ok: false, reason: "timeout" };
     }
     const parsed = ListResultSchema.parse(raw);
-    if (!parsed) {
-      return { ok: false, reason: "no_match" };
-    }
-    if (!parsed.ok) {
-      return parsed;
-    }
+    if (!parsed) return { ok: false, reason: "no_match" };
+    if (!parsed.ok) return parsed;
     return {
       ok: true,
       entries: parsed.entries.flatMap((e) => (e ? [e] : [])),

@@ -65,9 +65,7 @@ const runtime: ConversionRuntime = {
   scope: () => resolvePaths().libraryRoot,
   async resolve(id, fileIndex) {
     const target = await resolveSaveFilePath(id, fileIndex);
-    if (!target.ok) {
-      throw new Error(`No file is available for save ${id}.`);
-    }
+    if (!target.ok) throw new Error(`No file is available for save ${id}.`);
     return target.path;
   },
   async withSource(id, fileIndex, operation) {
@@ -204,12 +202,8 @@ export function createConversionJobs(operations: ConversionRuntime) {
       const controller = new AbortController();
       jobs.set(value.id, { value, controller });
       for (const [id, job] of jobs) {
-        if (jobs.size <= 20) {
-          break;
-        }
-        if (job.value.status !== "running") {
-          jobs.delete(id);
-        }
+        if (jobs.size <= 20) break;
+        if (job.value.status !== "running") jobs.delete(id);
       }
       void (async () => {
         try {
@@ -275,9 +269,7 @@ export function createConversionJobs(operations: ConversionRuntime) {
     },
     cancel(id: string): ConversionJob | null {
       const job = jobs.get(id);
-      if (job?.value.status === "running") {
-        job.controller.abort();
-      }
+      if (job?.value.status === "running") job.controller.abort();
       return job ? structuredClone(job.value) : null;
     },
   };

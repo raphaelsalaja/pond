@@ -33,9 +33,7 @@ export async function rememberTargets(
   folderIds: ReadonlyArray<string>,
   tags: ReadonlyArray<string>,
 ): Promise<void> {
-  if (folderIds.length === 0 && tags.length === 0) {
-    return;
-  }
+  if (folderIds.length === 0 && tags.length === 0) return;
   const current = await readRecentTargets();
   await item.setValue({
     folderIds: pushRecent(current.folderIds, folderIds, FOLDER_LIMIT),

@@ -31,17 +31,13 @@ export function createPreviewMedia({
   let current: (PreviewMediaTarget & { displayUrl: string }) | null = null;
   let applyingMute = false;
   const setMuted = (muted: boolean) => {
-    if (video.muted === muted) {
-      return;
-    }
+    if (video.muted === muted) return;
     applyingMute = true;
     video.muted = muted;
     applyingMute = false;
   };
   const onVolumeChange = () => {
-    if (applyingMute) {
-      return;
-    }
+    if (applyingMute) return;
     onMuted?.(video.muted);
   };
   const clearVideo = () => {
@@ -56,25 +52,18 @@ export function createPreviewMedia({
   };
   const loaded = () => {
     error.hidden = true;
-    if (!current) {
-      return;
-    }
+    if (!current) return;
     image.hidden = current.mediaType === "video";
     video.hidden = current.mediaType !== "video";
   };
   const reload = () => {
-    if (!current) {
-      return;
-    }
+    if (!current) return;
     error.hidden = true;
     const isVideo = current.mediaType === "video";
     image.hidden = isVideo;
     video.hidden = !isVideo;
-    if (isVideo) {
-      video.load();
-    } else {
-      image.src = current.displayUrl;
-    }
+    if (isVideo) video.load();
+    else image.src = current.displayUrl;
   };
   image.addEventListener("error", failed);
   image.addEventListener("load", loaded);
@@ -89,18 +78,14 @@ export function createPreviewMedia({
       const changed =
         current?.displayUrl !== displayUrl ||
         current?.mediaType !== next.mediaType;
-      if (changed && current?.mediaType === "video") {
-        clearVideo();
-      }
+      if (changed && current?.mediaType === "video") clearVideo();
       current = { ...next, displayUrl };
       const isVideo = next.mediaType === "video";
       image.hidden = isVideo;
       video.hidden = !isVideo;
       image.alt = next.title;
       video.ariaLabel = next.title;
-      if (!changed) {
-        return;
-      }
+      if (!changed) return;
       error.hidden = true;
       if (isVideo) {
         image.removeAttribute("src");
@@ -116,9 +101,7 @@ export function createPreviewMedia({
       video.removeEventListener("loadeddata", loaded);
       video.removeEventListener("volumechange", onVolumeChange);
       retry.removeEventListener("click", reload);
-      if (current?.mediaType === "video") {
-        clearVideo();
-      }
+      if (current?.mediaType === "video") clearVideo();
       current = null;
     },
   };

@@ -40,9 +40,7 @@ const RAW_POST = {
 
 function parsePost(raw: JsonValue): BlueskyPost {
   const [post] = PostsSchema.parse({ posts: [raw] }).posts;
-  if (!post) {
-    throw new Error("fixture did not parse");
-  }
+  if (!post) throw new Error("fixture did not parse");
   return post;
 }
 

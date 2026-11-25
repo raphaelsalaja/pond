@@ -29,9 +29,7 @@ export function specEntries(
     if (item.type === "radio") {
       for (const option of item.options) {
         const label = menuLabelText(option.label);
-        if (option.disabled || label === null) {
-          continue;
-        }
+        if (option.disabled || label === null) continue;
         entries.push({
           id: `${key}.${index}.${option.value}`,
           group,
@@ -46,9 +44,7 @@ export function specEntries(
       return;
     }
     const label = menuLabelText(item.label);
-    if (item.disabled || label === null) {
-      return;
-    }
+    if (item.disabled || label === null) return;
     const base = {
       id: `${key}.${index}`,
       group,
@@ -58,9 +54,7 @@ export function specEntries(
     };
     if (item.type === "submenu") {
       const children = specEntries(item.items, "", base.id);
-      if (children.length === 0) {
-        return;
-      }
+      if (children.length === 0) return;
       entries.push({
         ...base,
         page: () => ({
@@ -74,9 +68,7 @@ export function specEntries(
     }
     if (item.type === "checkbox") {
       const { checked, onCheckedChange } = item;
-      if (!onCheckedChange) {
-        return;
-      }
+      if (!onCheckedChange) return;
       entries.push({
         ...base,
         keys: glyphs(item.shortcut),
@@ -85,9 +77,7 @@ export function specEntries(
       });
       return;
     }
-    if (!item.onClick) {
-      return;
-    }
+    if (!item.onClick) return;
     entries.push({ ...base, keys: glyphs(item.shortcut), run: item.onClick });
   });
   return entries;

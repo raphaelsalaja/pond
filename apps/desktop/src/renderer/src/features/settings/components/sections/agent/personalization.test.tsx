@@ -34,18 +34,14 @@ it("saves on blur, retains edits after a failed save, and retries", async () => 
       root.render(
         <Harness
           onSave={(patch) => {
-            if (rejectSave) {
-              throw new Error("Disk unavailable");
-            }
+            if (rejectSave) throw new Error("Disk unavailable");
             saved.push(patch);
           }}
         />,
       ),
     );
     const profile = host.querySelector<HTMLTextAreaElement>("#agent-profile");
-    if (!profile) {
-      throw new Error("Missing profile field");
-    }
+    if (!profile) throw new Error("Missing profile field");
     expect(host.querySelector('button[type="submit"]')).toBeNull();
     await act(async () => {
       Object.getOwnPropertyDescriptor(

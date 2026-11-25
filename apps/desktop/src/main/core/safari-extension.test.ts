@@ -134,9 +134,7 @@ function commands(replies: Record<string, Reply>) {
         code: "ENOENT",
       });
     }
-    if ("fail" in reply) {
-      throw reply.fail;
-    }
+    if ("fail" in reply) throw reply.fail;
     return { stdout: reply.stdout ?? "", stderr: reply.stderr ?? "" };
   };
   return { run, calls };

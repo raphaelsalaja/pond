@@ -19,9 +19,7 @@ export function NoteForm({ save, onSubmit }: { save: ApiSave; onSubmit: (note: s
             title="Save Note"
             icon={Icon.Check}
             onSubmit={async (values: { note: string }) => {
-              if (values.note.length > NOTE_LIMIT) {
-                return setError(`Keep notes under ${NOTE_LIMIT} characters.`);
-              }
+              if (values.note.length > NOTE_LIMIT) return setError(`Keep notes under ${NOTE_LIMIT} characters.`);
               pop();
               await onSubmit(values.note);
             }}
@@ -57,9 +55,7 @@ export function TagsForm({ save, onSubmit }: { save: ApiSave; onSubmit: (tags: A
             icon={Icon.Tag}
             onSubmit={async (values: { tags: string }) => {
               const tags = parseTags(values.tags);
-              if (!tags.length) {
-                return setError("Enter at least one tag.");
-              }
+              if (!tags.length) return setError("Enter at least one tag.");
               pop();
               await onSubmit(tags);
             }}

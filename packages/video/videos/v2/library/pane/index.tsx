@@ -28,9 +28,7 @@ export function Pane({
   style?: CSSProperties;
 }) {
   const k = ease.outQuint(progress(t, open, 620));
-  if (k <= 0) {
-    return null;
-  }
+  if (k <= 0) return null;
   const Logo = SOURCE?.Icon;
   return (
     <Tabs.Root

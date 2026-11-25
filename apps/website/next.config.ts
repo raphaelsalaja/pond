@@ -23,9 +23,7 @@ const config: NextConfig = {
     useTypeScriptCli: true,
   },
   async rewrites() {
-    if (!favicon) {
-      return [];
-    }
+    if (!favicon) return [];
     return {
       beforeFiles: [{ source: "/favicon.svg", destination: favicon }],
     };

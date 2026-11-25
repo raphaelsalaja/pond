@@ -40,9 +40,7 @@ export function fishPath(id: string): string {
 
 export function fishIdFromPath(pathname: string): string | null {
   const match = /^\/fish\/([^/]+)\/?$/.exec(pathname);
-  if (!match?.[1]) {
-    return null;
-  }
+  if (!match?.[1]) return null;
   try {
     return decodeURIComponent(match[1]);
   } catch {
@@ -95,9 +93,7 @@ export const fish = {
       const byId = new Map(state.school.map((entry) => [entry.id, entry]));
       const placed = placements.flatMap((placement) => {
         const entry = byId.get(placement.id);
-        if (!entry) {
-          return [];
-        }
+        if (!entry) return [];
         byId.delete(placement.id);
         return [
           {
@@ -132,9 +128,7 @@ export const fish = {
   },
   async remove(id: string): Promise<void> {
     const result = await window.pond.query("fish.delete", { id });
-    if (!result.ok) {
-      throw new Error(result.error);
-    }
+    if (!result.ok) throw new Error(result.error);
     const router = getAppRouter();
     if (router && fishIdFromPath(router.state.location.pathname) === id) {
       fish.open(DEFAULT_FISH_ID);
@@ -143,9 +137,7 @@ export const fish = {
   },
   async run(id: string, routineId: string): Promise<void> {
     const result = await window.pond.query("fish.run", { id, routineId });
-    if (!result.ok) {
-      throw new Error(result.error);
-    }
+    if (!result.ok) throw new Error(result.error);
   },
   async pauseRoutine(
     id: string,
@@ -158,9 +150,7 @@ export const fish = {
   },
   async deleteRoutine(id: string, routineId: string): Promise<void> {
     replace(await window.pond.query("fish.deleteRoutine", { id, routineId }));
-    if (store.state.routine?.routineId === routineId) {
-      fish.closeRoutine();
-    }
+    if (store.state.routine?.routineId === routineId) fish.closeRoutine();
   },
   /** Opens the fish's page with its details pane, where the routine is listed. */
   openRoutine(fishId: string, routineId: string): void {

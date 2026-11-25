@@ -70,12 +70,8 @@ const columnOrder = definePrimitive({
         const order = reorder.order(context.store.get());
         const index = order.indexOf(key);
         const target = index + offset;
-        if (index < 0 || target < 0 || target >= order.length) {
-          return false;
-        }
-        if (!reorder.grab(key)) {
-          return false;
-        }
+        if (index < 0 || target < 0 || target >= order.length) return false;
+        if (!reorder.grab(key)) return false;
         reorder.moveTo(target);
         reorder.drop(event);
         return true;
@@ -126,18 +122,12 @@ function movedColumn(
   after: ReadonlyArray<string>,
 ) {
   const first = after.findIndex((id, index) => id !== before[index]);
-  if (first < 0) {
-    return null;
-  }
+  if (first < 0) return null;
   let last = after.length - 1;
-  while (last > first && after[last] === before[last]) {
-    last -= 1;
-  }
+  while (last > first && after[last] === before[last]) last -= 1;
   const start = before[first];
   const end = before[last];
-  if (start === undefined || end === undefined) {
-    return null;
-  }
+  if (start === undefined || end === undefined) return null;
   return after[last] === start
     ? { from: start, to: end }
     : { from: end, to: start };

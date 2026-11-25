@@ -62,9 +62,7 @@ function buildLibrary() {
 
   for (let index = 0; index < COPIES; index++) {
     const base = saves[index * 7];
-    if (!base) {
-      throw new Error(`No save-${index * 7}`);
-    }
+    if (!base) throw new Error(`No save-${index * 7}`);
     const id = `copy-${index}`;
     saves.push(
       save(
@@ -130,9 +128,7 @@ describe("a large Library", () => {
       (group) => group.relation === "exact" || group.relation === "near",
     );
     expect(merged).toHaveLength(COPIES + RESIZES);
-    for (const group of merged) {
-      expect(group.ids).toHaveLength(2);
-    }
+    for (const group of merged) expect(group.ids).toHaveLength(2);
     expect(
       merged.some(
         (group) =>

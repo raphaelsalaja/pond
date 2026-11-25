@@ -27,14 +27,10 @@ const liveDeps: RefreshBlockedDeps = {
   closeConnect: () => {
     const account = connectFlow.account();
     /** A new account still has to pick what to import, so its step stays open. */
-    if (account?.sync.importPending) {
-      return;
-    }
+    if (account?.sync.importPending) return;
     setTimeout(() => {
       /** A connection started during the delay owns the dialog. */
-      if (connectFlow.account() !== account) {
-        return;
-      }
+      if (connectFlow.account() !== account) return;
       connectFlow.clear();
       sourceFlow.close();
     }, CLOSE_AFTER_CONNECT_MS);
@@ -45,17 +41,11 @@ export function notifyRefreshBlocked(
   action: WireSyncAction,
   deps: RefreshBlockedDeps = liveDeps,
 ): void {
-  if (action.modelName !== "save") {
-    return;
-  }
-  if (action.actorReason !== "pipeline:refresh-blocked") {
-    return;
-  }
+  if (action.modelName !== "save") return;
+  if (action.actorReason !== "pipeline:refresh-blocked") return;
   const saveId = action.modelId;
   const source = pool.get(saveId)?.source;
-  if (!source) {
-    return;
-  }
+  if (!source) return;
   /** The toast timer pauses while the app is in the background during sign-in, so the toast must close here. */
   const signIn = () => {
     deps.closeToast(toastId);

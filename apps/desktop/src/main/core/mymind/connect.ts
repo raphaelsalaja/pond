@@ -76,9 +76,7 @@ export async function connectMymind(
     return { ok: false, error: "Stop the mymind import before reconnecting." };
   }
 
-  if (existing) {
-    connectingAccounts.add(existing.id);
-  }
+  if (existing) connectingAccounts.add(existing.id);
   try {
     const credential = { kid: input.kid, secret: input.secret };
     await dependencies.validate(credential);
@@ -161,8 +159,6 @@ export async function connectMymind(
       }
     }
   } finally {
-    if (existing) {
-      connectingAccounts.delete(existing.id);
-    }
+    if (existing) connectingAccounts.delete(existing.id);
   }
 }

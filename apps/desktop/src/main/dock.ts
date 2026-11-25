@@ -14,9 +14,7 @@ export async function showDock(): Promise<void> {
 
 /** Hidden helper windows keep `window-all-closed` from firing, so each close settles the Dock. */
 export async function settleDockAfterClose(): Promise<void> {
-  if (process.platform !== "darwin" || !app.dock?.isVisible()) {
-    return;
-  }
+  if (process.platform !== "darwin" || !app.dock?.isVisible()) return;
   const { system } = await getPrefs();
   const library = mainWindowState.current;
   const libraryOpen =

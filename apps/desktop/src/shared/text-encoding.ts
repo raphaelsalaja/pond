@@ -20,22 +20,13 @@ function likelyUtf16(bytes: Uint8Array): "utf-16le" | "utf-16be" | null {
   let evenZeros = 0;
   let oddZeros = 0;
   for (let index = 0; index < sample.length; index += 1) {
-    if (sample[index] !== 0) {
-      continue;
-    }
-    if (index % 2 === 0) {
-      evenZeros += 1;
-    } else {
-      oddZeros += 1;
-    }
+    if (sample[index] !== 0) continue;
+    if (index % 2 === 0) evenZeros += 1;
+    else oddZeros += 1;
   }
   const threshold = Math.max(2, sample.length / 8);
-  if (oddZeros > threshold && oddZeros > evenZeros * 2) {
-    return "utf-16le";
-  }
-  if (evenZeros > threshold && evenZeros > oddZeros * 2) {
-    return "utf-16be";
-  }
+  if (oddZeros > threshold && oddZeros > evenZeros * 2) return "utf-16le";
+  if (evenZeros > threshold && evenZeros > oddZeros * 2) return "utf-16be";
   return null;
 }
 

@@ -85,9 +85,7 @@ async function readViewer(get: VimeoGet): Promise<VimeoViewer | null> {
   const res = await safeGet(get, `${WEB}/_next/viewer`, {
     accept: "application/json",
   });
-  if (!res?.ok) {
-    return null;
-  }
+  if (!res?.ok) return null;
   try {
     return ViewerSchema.parse(await res.json());
   } catch {
@@ -99,9 +97,7 @@ function failure(status: number): Extract<ListHarvestResult, { ok: false }> {
   if (status === 401 || status === 403) {
     return { ok: false, reason: "auth_required" };
   }
-  if (status === 429) {
-    return { ok: false, reason: "rate_limited" };
-  }
+  if (status === 429) return { ok: false, reason: "rate_limited" };
   return { ok: false, reason: "unknown" };
 }
 
@@ -116,14 +112,10 @@ async function apiGet(
       authorization: `jwt ${auth.jwt}`,
     });
   const res = await send();
-  if (res?.status !== 401 || auth.refreshed) {
-    return res;
-  }
+  if (res?.status !== 401 || auth.refreshed) return res;
   auth.refreshed = true;
   const viewer = await readViewer(get);
-  if (!viewer) {
-    return res;
-  }
+  if (!viewer) return res;
   auth.jwt = viewer.jwt;
   return send();
 }
@@ -152,9 +144,7 @@ async function hydrate(
 }
 
 function signedOut(res: Response): boolean {
-  if (res.status === 401 || res.status === 403) {
-    return true;
-  }
+  if (res.status === 401 || res.status === 403) return true;
   try {
     return new URL(res.url).pathname.startsWith("/log_in");
   } catch {
@@ -206,9 +196,7 @@ async function walkClips(
       if (Number.isFinite(since) && row.at && Date.parse(row.at) < since) {
         return { ok: true, entries, reachedEnd: true, nextPage: page };
       }
-      if (!known.has(row.id)) {
-        fresh += 1;
-      }
+      if (!known.has(row.id)) fresh += 1;
       entries.push(clipEntry(row, videos.get(row.id), kind));
     }
     if (earlyStop && fresh === 0) {
@@ -256,12 +244,8 @@ export async function readVimeoLists(
   get: VimeoGet,
 ): Promise<ListHarvestResult> {
   const viewer = await readViewer(get);
-  if (!viewer) {
-    return { ok: false, reason: "unknown" };
-  }
-  if (!viewer.user) {
-    return { ok: false, reason: "auth_required" };
-  }
+  if (!viewer) return { ok: false, reason: "unknown" };
+  if (!viewer.user) return { ok: false, reason: "auth_required" };
   const handle = handleFromViewer(viewer);
   const auth: ApiAuth = { jwt: viewer.jwt, refreshed: false };
   const wanted = args.listKinds ?? LIST_ORDER;
@@ -285,9 +269,7 @@ export async function readVimeoLists(
     const firstPage = resume?.kind === kind ? resume.page : 1;
     const walk = await walkClips(get, auth, path, kind, firstPage, args);
     if (!walk.ok) {
-      if (entries.length === 0) {
-        return walk;
-      }
+      if (entries.length === 0) return walk;
       log.warn("[pond vimeo-api] list walk failed", kind, walk.reason);
       continue;
     }
@@ -323,9 +305,7 @@ export async function readVimeoCapture(
   get: VimeoGet,
 ): Promise<VimeoCaptureResult> {
   const viewer = await readViewer(get);
-  if (!viewer) {
-    return { ok: false, reason: "error" };
-  }
+  if (!viewer) return { ok: false, reason: "error" };
   const auth: ApiAuth = { jwt: viewer.jwt, refreshed: false };
   const query = new URLSearchParams({ fields: VIDEO_FIELDS });
   const res = await apiGet(
@@ -333,15 +313,9 @@ export async function readVimeoCapture(
     auth,
     `${API}/videos/${encodeURIComponent(sourceId)}?${query}`,
   );
-  if (!res) {
-    return { ok: false, reason: "error" };
-  }
-  if (res.status === 404) {
-    return { ok: false, reason: "not_found" };
-  }
-  if (!res.ok) {
-    return { ok: false, reason: "error" };
-  }
+  if (!res) return { ok: false, reason: "error" };
+  if (res.status === 404) return { ok: false, reason: "not_found" };
+  if (!res.ok) return { ok: false, reason: "error" };
   try {
     const video = parseVideos([await res.json()]).get(sourceId);
     return video

@@ -28,9 +28,7 @@ const TagRowContext = createContext<TagRowContextValue | null>(null);
 
 export function useTagRow(): TagRowContextValue {
   const ctx = use(TagRowContext);
-  if (!ctx) {
-    throw new Error("Tag cell must be used within TagRowContext");
-  }
+  if (!ctx) throw new Error("Tag cell must be used within TagRowContext");
   return ctx;
 }
 
@@ -63,9 +61,7 @@ export function TagRowProvider({
   /** A plain listener, since useHotkey copies every registration per render and freezes an index of thousands of tags. */
   useEffect(() => {
     const element = rowRef.current;
-    if (!element || renaming) {
-      return;
-    }
+    if (!element || renaming) return;
     function onKeyDown(event: KeyboardEvent) {
       if (eventFromEditable(event) || !matchesShortcut(event, "tags.rename")) {
         return;
@@ -78,9 +74,7 @@ export function TagRowProvider({
   }, [renaming]);
 
   function openTagItems() {
-    if (isGroup) {
-      return;
-    }
+    if (isGroup) return;
     selectLibraryNav({ kind: "tag", name });
   }
 
@@ -104,9 +98,7 @@ export function TagRowProvider({
         tagCount: row.group.tagNames.length,
         onFilter: () => {
           const names = row.group.tagNames;
-          if (names.length === 0) {
-            return;
-          }
+          if (names.length === 0) return;
           enterAll({
             combinator: "and",
             rules: [{ field: "tags", operator: "some", value: names }],
@@ -144,15 +136,11 @@ export function TagRowProvider({
       onAddToGroup: (g) =>
         void window.pond.query("tagGroups.addTags", { tags: [name], group: g }),
       onMoveToGroup: (g) => {
-        if (!inGroup || inGroup === g) {
-          return;
-        }
+        if (!inGroup || inGroup === g) return;
         void tagOperations.moveToGroup(name, inGroup, g);
       },
       onRemoveFromGroup: () => {
-        if (!inGroup) {
-          return;
-        }
+        if (!inGroup) return;
         void window.pond.query("tagGroups.removeTag", {
           tag: name,
           group: inGroup,

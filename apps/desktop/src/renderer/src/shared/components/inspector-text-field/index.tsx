@@ -76,9 +76,7 @@ export function InspectorTextField({
     const measure = () =>
       setOverflowing(area.scrollHeight > area.clientHeight + 1);
     measure();
-    if (!globalThis.ResizeObserver) {
-      return;
-    }
+    if (!globalThis.ResizeObserver) return;
     const observer = new ResizeObserver(measure);
     observer.observe(area);
     return () => observer.disconnect();
@@ -93,9 +91,7 @@ export function InspectorTextField({
       return;
     }
     const next = drafts.get(cacheKey);
-    if (!next || next.pending || readOnly || disabled) {
-      return;
-    }
+    if (!next || next.pending || readOnly || disabled) return;
     if (next.value === value) {
       drafts.delete(cacheKey);
       refresh();
@@ -123,9 +119,7 @@ export function InspectorTextField({
     disabled,
     readOnly: readOnly || draft?.pending,
     onValueChange: (text: string) => {
-      if (disabled) {
-        return;
-      }
+      if (disabled) return;
       drafts.set(cacheKey, { value: text, pending: false, error: null });
       refresh();
     },

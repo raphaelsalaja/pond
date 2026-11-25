@@ -342,9 +342,7 @@ export function applyPatchToInfo(
   }
   if ("folderIds" in patch) {
     const parsed = z.array(z.string()).safeParse(patch.folderIds);
-    if (parsed.success) {
-      next.folderIds = parsed.data;
-    }
+    if (parsed.success) next.folderIds = parsed.data;
   }
   if (patch.mediaType !== undefined) {
     next.mediaType = patch.mediaType ?? null;

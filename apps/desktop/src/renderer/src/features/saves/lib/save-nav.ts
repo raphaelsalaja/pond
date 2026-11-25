@@ -37,27 +37,18 @@ export function openSave(
 /** Moves on when the open Save leaves its results, so a move or trash keeps the preview going. */
 export function followDeparture(id: string): () => void {
   return resultNavigation.watchDeparture(id, (next) => {
-    if (selection.getCursor() !== id) {
-      return;
-    }
-    if (next) {
-      openSave(next, { replace: true });
-    } else {
-      closeSave();
-    }
+    if (selection.getCursor() !== id) return;
+    if (next) openSave(next, { replace: true });
+    else closeSave();
   });
 }
 
 /** Drops the step when the viewer has already moved on, so a slow page load cannot jump back. */
 export function stepSave(id: string, delta: number): void {
   void resultNavigation.next(id, delta).then(async (next) => {
-    if (!next || selection.getCursor() !== id) {
-      return;
-    }
+    if (!next || selection.getCursor() !== id) return;
     await ensureSaves([next]);
-    if (selection.getCursor() !== id) {
-      return;
-    }
+    if (selection.getCursor() !== id) return;
     openSave(next);
   });
 }
@@ -69,7 +60,5 @@ export function closeSave(): void {
 
 export function syncPrimaryFromSearch(search: SaveSearch): void {
   const primary = saveIdFromSearch(search) ?? selection.getCursor();
-  if (primarySelection.get() !== primary) {
-    primarySelection.set(primary);
-  }
+  if (primarySelection.get() !== primary) primarySelection.set(primary);
 }

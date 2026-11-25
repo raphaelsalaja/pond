@@ -25,9 +25,7 @@ export function FolderCover({
     }
     let cancelled = false;
     void window.pond.query("saves.get", { id: coverSaveId }).then((row) => {
-      if (!cancelled) {
-        setSave(normalise(row));
-      }
+      if (!cancelled) setSave(normalise(row));
     });
     return () => {
       cancelled = true;

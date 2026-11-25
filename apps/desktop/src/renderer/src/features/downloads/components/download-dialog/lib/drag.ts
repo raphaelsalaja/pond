@@ -35,9 +35,7 @@ export function useRangeDrag(clip: Clip, snap?: Snap) {
 
   const timeAt = (clientX: number) => {
     const box = track.current?.getBoundingClientRect();
-    if (!box || box.width === 0) {
-      return 0;
-    }
+    if (!box || box.width === 0) return 0;
     return (
       Math.min(1, Math.max(0, (clientX - box.left) / box.width)) * duration
     );
@@ -48,9 +46,7 @@ export function useRangeDrag(clip: Clip, snap?: Snap) {
     targets: ReadonlyArray<number>,
     free: boolean,
   ): Snapped => {
-    if (!snap?.enabled || free) {
-      return { time, guide: null };
-    }
+    if (!snap?.enabled || free) return { time, guide: null };
     const width = track.current?.getBoundingClientRect().width ?? 0;
     const tolerance = width > 0 ? (SNAP_PX / width) * duration : 0;
     let best: number | null = null;
@@ -132,9 +128,7 @@ export function useRangeDrag(clip: Clip, snap?: Snap) {
     const step = event.shiftKey ? 10 : 1;
     const delta =
       event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0;
-    if (!delta) {
-      return;
-    }
+    if (!delta) return;
     event.preventDefault();
     event.stopPropagation();
     setRange(

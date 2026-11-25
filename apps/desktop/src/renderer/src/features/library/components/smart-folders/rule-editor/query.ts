@@ -21,21 +21,11 @@ const RELATIVE_DATE_PATTERN = /^-P\d+[DWMY]$/;
 const ASPECT_PATTERN = /^\d+(\.\d+)?:\d+(\.\d+)?$/;
 
 export function defaultRuleValue(operator: ComparatorId): PredicateValue {
-  if (operator === "empty") {
-    return null;
-  }
-  if (operator === "exists") {
-    return true;
-  }
-  if (operator === "between") {
-    return ["", ""];
-  }
-  if (listOperators.has(operator)) {
-    return [];
-  }
-  if (operator === "near") {
-    return { hex: "#808080", tolerance: 12 };
-  }
+  if (operator === "empty") return null;
+  if (operator === "exists") return true;
+  if (operator === "between") return ["", ""];
+  if (listOperators.has(operator)) return [];
+  if (operator === "near") return { hex: "#808080", tolerance: 12 };
   return "";
 }
 
@@ -65,13 +55,9 @@ export function editableQuery(query: Query): Query {
 }
 
 export function ruleQueryReady(query: Query): boolean {
-  if (query.rules.length === 0) {
-    return !query.not;
-  }
+  if (query.rules.length === 0) return !query.not;
   return query.rules.every((rule) => {
-    if (isGroup(rule)) {
-      return rule.rules.length > 0 && ruleQueryReady(rule);
-    }
+    if (isGroup(rule)) return rule.rules.length > 0 && ruleQueryReady(rule);
     const field = FIELD_DESCRIPTORS[rule.field];
     if (!field.comparators.includes(rule.operator)) {
       return false;
@@ -92,15 +78,9 @@ export function ruleQueryReady(query: Query): boolean {
       listOperators.has(rule.operator) || rule.operator === "between"
         ? listValueSchema.safeParse(rule.value)
         : textValueSchema.transform((value) => [value]).safeParse(rule.value);
-    if (!values.success || values.data.length === 0) {
-      return false;
-    }
-    if (rule.operator === "between" && values.data.length !== 2) {
-      return false;
-    }
-    if (values.data.some((value) => !String(value).trim())) {
-      return false;
-    }
+    if (!values.success || values.data.length === 0) return false;
+    if (rule.operator === "between" && values.data.length !== 2) return false;
+    if (values.data.some((value) => !String(value).trim())) return false;
     if (field.type === "number") {
       if (
         (rule.field === "fileCount" || rule.field === "rating") &&
@@ -166,17 +146,13 @@ export function compileRuleQuery(query: Query): Query {
   return {
     ...query,
     rules: query.rules.map((rule) => {
-      if (isGroup(rule)) {
-        return compileRuleQuery(rule);
-      }
+      if (isGroup(rule)) return compileRuleQuery(rule);
       const field = FIELD_DESCRIPTORS[rule.field];
       const normalize = (
         value: string | number,
         upper: boolean,
       ): string | number => {
-        if (field.type === "number") {
-          return Number(value);
-        }
+        if (field.type === "number") return Number(value);
         if (field.type === "date" && DATE_PATTERN.test(String(value))) {
           const date = new Date(`${value}T00:00:00`);
           if (upper) {

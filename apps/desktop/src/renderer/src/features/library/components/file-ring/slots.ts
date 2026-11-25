@@ -69,9 +69,7 @@ export function pickRingFolders<Row extends RingFolderRow>(
   const byId = new Map(rows.map((row) => [row.id, row]));
   const recent = recentIds.flatMap((id) => {
     const row = byId.get(id);
-    if (!row || picked.has(id)) {
-      return [];
-    }
+    if (!row || picked.has(id)) return [];
     picked.add(id);
     return [row];
   });
@@ -109,9 +107,7 @@ export function layoutRing<Folder extends { id: string }>(
   const layout: RingLayout<Folder> = {};
   for (const [index, item] of items.entries()) {
     const slot = RING_FILL[index];
-    if (!slot) {
-      break;
-    }
+    if (!slot) break;
     if (item.kind === "action") {
       layout[slot] = {
         kind: "action",
@@ -121,9 +117,7 @@ export function layoutRing<Folder extends { id: string }>(
       continue;
     }
     const folder = byId.get(item.folderId);
-    if (folder) {
-      layout[slot] = { kind: "folder", folder };
-    }
+    if (folder) layout[slot] = { kind: "folder", folder };
   }
   return layout;
 }
@@ -131,9 +125,7 @@ export function layoutRing<Folder extends { id: string }>(
 export function acceptsDrop<Folder>(
   target: RingTarget<Folder> | undefined,
 ): target is RingTarget<Folder> {
-  if (!target) {
-    return false;
-  }
+  if (!target) return false;
   return target.kind === "folder" || !target.disabled;
 }
 
@@ -159,17 +151,10 @@ export function dropOnRing<Folder, Payload>(
   payload: Payload,
   handlers: RingDropHandlers<Folder, Payload>,
 ): boolean {
-  if (!acceptsDrop(target)) {
-    return false;
-  }
-  if (target.kind === "folder") {
-    handlers.addToFolder(payload, target.folder);
-  } else if (target.action === "new-folder") {
-    handlers.createFolder(payload);
-  } else if (handlers.exportFiles) {
-    handlers.exportFiles(payload);
-  } else {
-    return false;
-  }
+  if (!acceptsDrop(target)) return false;
+  if (target.kind === "folder") handlers.addToFolder(payload, target.folder);
+  else if (target.action === "new-folder") handlers.createFolder(payload);
+  else if (handlers.exportFiles) handlers.exportFiles(payload);
+  else return false;
   return true;
 }

@@ -44,9 +44,7 @@ export function paintShell(shell: ShellHint): void {
 function armBootFailsafe(): void {
   window.setTimeout(() => {
     const el = document.getElementById("boot");
-    if (!el || el.dataset.state === "out") {
-      return;
-    }
+    if (!el || el.dataset.state === "out") return;
     el.dataset.state = "out";
     el.setAttribute("aria-busy", "false");
     window.setTimeout(() => el.remove(), 220);

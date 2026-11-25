@@ -26,9 +26,7 @@ export function isCombinableImage(
   path: string,
 ): boolean {
   const mime = mimeType?.trim().toLowerCase() ?? "";
-  if (COMBINABLE_TYPES.has(mime)) {
-    return true;
-  }
+  if (COMBINABLE_TYPES.has(mime)) return true;
   const lower = path.toLowerCase();
   return COMBINABLE_EXTENSIONS.some((extension) => lower.endsWith(extension));
 }

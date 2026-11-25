@@ -22,13 +22,9 @@ const ALPHABET =
 const POST_HREF_RE = /\/(?:@[^/]+\/post|t)\/([A-Za-z0-9_-]+)/;
 
 function looksLikeSaveLabel(label: string | null): boolean {
-  if (!label) {
-    return false;
-  }
+  if (!label) return false;
   const l = label.toLowerCase().trim();
-  if (/unsave|unbookmark|remove/.test(l)) {
-    return false;
-  }
+  if (/unsave|unbookmark|remove/.test(l)) return false;
   return (
     l === "save" ||
     l === "bookmark" ||
@@ -38,9 +34,7 @@ function looksLikeSaveLabel(label: string | null): boolean {
 }
 
 function looksLikeLikeLabel(label: string | null): boolean {
-  if (!label) {
-    return false;
-  }
+  if (!label) return false;
   const l = label.toLowerCase().trim();
   return l === "like";
 }
@@ -51,13 +45,9 @@ function isSaveMenuText(raw: string | null): boolean {
 }
 
 function postHrefFrom(href: string | null): string | null {
-  if (!href) {
-    return null;
-  }
+  if (!href) return null;
   const m = href.match(POST_HREF_RE);
-  if (!m) {
-    return null;
-  }
+  if (!m) return null;
   return href.startsWith("http") ? href : `https://www.threads.com${href}`;
 }
 
@@ -72,9 +62,7 @@ function postUrlAround(target: EventTarget | null): string | null {
       'a[href*="/post/"], a[href*="/t/"]',
     );
     const href = postHrefFrom(link?.getAttribute("href") ?? null);
-    if (href) {
-      return href;
-    }
+    if (href) return href;
     cur = cur.parentElement;
     depth++;
   }
@@ -93,9 +81,7 @@ function isSaveClick(target: EventTarget | null): boolean {
   const menuItem = target.closest(
     '[role="menuitem"], [role="menuitemradio"], [role="option"]',
   );
-  if (menuItem && isSaveMenuText(menuItem.textContent)) {
-    return true;
-  }
+  if (menuItem && isSaveMenuText(menuItem.textContent)) return true;
 
   const clickable = target.closest(
     'button, [role="button"], a[role="button"], div[role="button"], [tabindex="0"]',
@@ -105,9 +91,7 @@ function isSaveClick(target: EventTarget | null): boolean {
       clickable.getAttribute("aria-label") ??
       clickable.querySelector("svg[aria-label]")?.getAttribute("aria-label") ??
       null;
-    if (looksLikeSaveLabel(label)) {
-      return true;
-    }
+    if (looksLikeSaveLabel(label)) return true;
     if (isSaveMenuText(clickable.textContent) && clickable.textContent) {
       const compact = clickable.textContent.replaceAll(/\s+/g, " ").trim();
       if (compact.length > 0 && compact.length < 24) {
@@ -119,13 +103,9 @@ function isSaveClick(target: EventTarget | null): boolean {
   let cur: Element | null = target;
   let depth = 0;
   while (cur && depth < 12) {
-    if (looksLikeSaveLabel(cur.getAttribute("aria-label"))) {
-      return true;
-    }
+    if (looksLikeSaveLabel(cur.getAttribute("aria-label"))) return true;
     const svg = cur.querySelector?.("svg[aria-label]");
-    if (svg && looksLikeSaveLabel(svg.getAttribute("aria-label"))) {
-      return true;
-    }
+    if (svg && looksLikeSaveLabel(svg.getAttribute("aria-label"))) return true;
     cur = cur.parentElement;
     depth++;
   }
@@ -144,20 +124,14 @@ function isLikeClick(target: EventTarget | null): boolean {
       clickable.getAttribute("aria-label") ??
       clickable.querySelector("svg[aria-label]")?.getAttribute("aria-label") ??
       null;
-    if (looksLikeLikeLabel(label)) {
-      return true;
-    }
+    if (looksLikeLikeLabel(label)) return true;
   }
   let cur: Element | null = target;
   let depth = 0;
   while (cur && depth < 12) {
-    if (looksLikeLikeLabel(cur.getAttribute("aria-label"))) {
-      return true;
-    }
+    if (looksLikeLikeLabel(cur.getAttribute("aria-label"))) return true;
     const svg = cur.querySelector?.("svg[aria-label]");
-    if (svg && looksLikeLikeLabel(svg.getAttribute("aria-label"))) {
-      return true;
-    }
+    if (svg && looksLikeLikeLabel(svg.getAttribute("aria-label"))) return true;
     cur = cur.parentElement;
     depth++;
   }
@@ -167,9 +141,7 @@ function isLikeClick(target: EventTarget | null): boolean {
 function mediaIdToShortcode(id: string): string | null {
   try {
     const mediaId = String(id).split("_", 1)[0];
-    if (!mediaId) {
-      return null;
-    }
+    if (!mediaId) return null;
     let n = BigInt(mediaId);
     let s = "";
     while (n > 0n) {
@@ -187,18 +159,14 @@ function isGraphqlUrl(url: string): boolean {
 }
 
 function isSaveRestUrl(url: string): boolean {
-  if (/unsave/i.test(url)) {
-    return false;
-  }
+  if (/unsave/i.test(url)) return false;
   return /\/api\/v1\/(?:media\/[^/]+\/save|web\/save\/[^/]+\/save)\b/i.test(
     url,
   );
 }
 
 function isLikeRestUrl(url: string): boolean {
-  if (/unlike/i.test(url)) {
-    return false;
-  }
+  if (/unlike/i.test(url)) return false;
   return /\/api\/v1\/(?:media\/[^/]+\/like|web\/likes\/[^/]+\/like)\b/i.test(
     url,
   );
@@ -209,12 +177,8 @@ function friendlyName(
   bodyStr: string | null,
 ): string {
   const header = getHeader("x-fb-friendly-name") ?? "";
-  if (header) {
-    return header;
-  }
-  if (!bodyStr) {
-    return "";
-  }
+  if (header) return header;
+  if (!bodyStr) return "";
   try {
     const params = new URLSearchParams(bodyStr);
     return params.get("fb_api_req_friendly_name") ?? "";
@@ -228,22 +192,12 @@ function isSaveMutation(
   url: string,
   bodyStr: string | null,
 ): boolean {
-  if (isSaveRestUrl(url)) {
-    return true;
-  }
+  if (isSaveRestUrl(url)) return true;
   const name = friendlyName(getHeader, bodyStr);
-  if (/unsave|unbookmark/i.test(name)) {
-    return false;
-  }
-  if (/mutation/i.test(name) && /save|bookmark/i.test(name)) {
-    return true;
-  }
-  if (!bodyStr) {
-    return false;
-  }
-  if (bodyStr.includes("usePolarisSaveMediaSaveMutation")) {
-    return true;
-  }
+  if (/unsave|unbookmark/i.test(name)) return false;
+  if (/mutation/i.test(name) && /save|bookmark/i.test(name)) return true;
+  if (!bodyStr) return false;
+  if (bodyStr.includes("usePolarisSaveMediaSaveMutation")) return true;
   if (
     /xdt_api__v1__web__save__media_id__save(?!_unsave)/.test(bodyStr) &&
     !/unsave/i.test(bodyStr)
@@ -264,13 +218,9 @@ function isLikeMutation(
   url: string,
   bodyStr: string | null,
 ): boolean {
-  if (isLikeRestUrl(url)) {
-    return true;
-  }
+  if (isLikeRestUrl(url)) return true;
   const name = friendlyName(getHeader, bodyStr);
-  if (/unlike/i.test(name)) {
-    return false;
-  }
+  if (/unlike/i.test(name)) return false;
   if (
     /mutation/i.test(name) &&
     /like/i.test(name) &&
@@ -278,15 +228,11 @@ function isLikeMutation(
   ) {
     return true;
   }
-  if (!bodyStr) {
-    return false;
-  }
+  if (!bodyStr) return false;
   if (/Unlike/i.test(bodyStr) && /usePolarisLikeMediaUnlike/.test(bodyStr)) {
     return false;
   }
-  if (bodyStr.includes("usePolarisLikeMediaLikeMutation")) {
-    return true;
-  }
+  if (bodyStr.includes("usePolarisLikeMediaLikeMutation")) return true;
   if (
     /use\w*Like\w*Mutation/.test(bodyStr) &&
     !/Unlike/i.test(bodyStr) &&
@@ -298,9 +244,7 @@ function isLikeMutation(
 }
 
 function parseVariables(bodyStr: string | null): JsonRecord | null {
-  if (!bodyStr) {
-    return null;
-  }
+  if (!bodyStr) return null;
   try {
     const raw = new URLSearchParams(bodyStr).get("variables");
     if (raw) {
@@ -315,9 +259,7 @@ function parseVariables(bodyStr: string | null): JsonRecord | null {
 
 function variablesFromJson(bodyStr: string): JsonRecord | null {
   const json = parseJsonRecord(bodyStr);
-  if (!json) {
-    return null;
-  }
+  if (!json) return null;
   return isRecord(json.variables) ? json.variables : json;
 }
 
@@ -328,18 +270,12 @@ function firstString(
   for (const key of keys) {
     const value = vars[key];
     const text = asText(value);
-    if (text !== undefined && text.length > 0) {
-      return text;
-    }
+    if (text !== undefined && text.length > 0) return text;
     const numeric = asNumber(value);
-    if (numeric !== undefined) {
-      return String(numeric);
-    }
+    if (numeric !== undefined) return String(numeric);
     if (Array.isArray(value)) {
       const first = asText(value[0]);
-      if (first !== undefined) {
-        return first;
-      }
+      if (first !== undefined) return first;
     }
   }
   return null;
@@ -362,9 +298,7 @@ function postUrlFromSaveRequest(
   const mediaId =
     firstString(vars, ["media_id", "mediaId", "post_id", "postId", "pk"]) ??
     mediaIdFromRestUrl(url);
-  if (!mediaId) {
-    return null;
-  }
+  if (!mediaId) return null;
   if (/^[A-Za-z0-9_-]+$/.test(mediaId) && /[A-Za-z]/.test(mediaId)) {
     return `https://www.threads.com/t/${mediaId}`;
   }
@@ -373,9 +307,7 @@ function postUrlFromSaveRequest(
 }
 
 export function inject(): void {
-  if (window.__pondThreadsInjected) {
-    return;
-  }
+  if (window.__pondThreadsInjected) return;
   window.__pondThreadsInjected = true;
 
   /** Save is a portaled menu item; keep the permalink from the last click that was still inside the post. */
@@ -386,19 +318,13 @@ export function inject(): void {
     (ev) => {
       try {
         const nearby = postUrlAround(ev.target);
-        if (nearby) {
-          pendingPostUrl = nearby;
-        }
+        if (nearby) pendingPostUrl = nearby;
         if (isSaveClick(ev.target)) {
           const url = nearby ?? pendingPostUrl ?? postUrlFromPath();
-          if (url) {
-            capture(url, "threads:save");
-          }
+          if (url) capture(url, "threads:save");
           return;
         }
-        if (!isLikeClick(ev.target)) {
-          return;
-        }
+        if (!isLikeClick(ev.target)) return;
         const url = nearby ?? pendingPostUrl ?? postUrlFromPath();
         if (url) {
           capture(url, "threads:like");
@@ -418,24 +344,16 @@ export function inject(): void {
         isSaveRestUrl(req.url) ||
         isLikeRestUrl(req.url)),
     async onResponse(req, res) {
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
       const bodyStr = await req.readBody();
       if (isLikeMutation(req.getHeader, req.url, bodyStr)) {
         const url = postUrlFromSaveRequest(req.url, bodyStr) ?? pendingPostUrl;
-        if (url) {
-          capture(url, "threads:like");
-        }
+        if (url) capture(url, "threads:like");
         return;
       }
-      if (!isSaveMutation(req.getHeader, req.url, bodyStr)) {
-        return;
-      }
+      if (!isSaveMutation(req.getHeader, req.url, bodyStr)) return;
       const url = postUrlFromSaveRequest(req.url, bodyStr) ?? pendingPostUrl;
-      if (url) {
-        capture(url, "threads:graphql-save");
-      }
+      if (url) capture(url, "threads:graphql-save");
     },
   });
 }

@@ -96,9 +96,7 @@ function cookieFromBrowser(c: chrome.cookies.Cookie): ExtensionCookie {
 function normaliseSameSite(
   s: chrome.cookies.Cookie["sameSite"],
 ): ExtensionCookie["sameSite"] {
-  if (s === "no_restriction" || s === "lax" || s === "strict") {
-    return s;
-  }
+  if (s === "no_restriction" || s === "lax" || s === "strict") return s;
   return "unspecified";
 }
 
@@ -108,9 +106,7 @@ export async function cookiesForUrl(
 ): Promise<Array<ExtensionCookie>> {
   try {
     const page = new URL(url);
-    if (page.protocol !== "http:" && page.protocol !== "https:") {
-      return [];
-    }
+    if (page.protocol !== "http:" && page.protocol !== "https:") return [];
     const [byUrl, byDomain] = await Promise.all([
       browser.cookies.getAll({ url }),
       browser.cookies.getAll({ domain: page.hostname }),
@@ -119,14 +115,10 @@ export async function cookiesForUrl(
     const out: Array<ExtensionCookie> = [];
     for (const c of [...byUrl, ...byDomain]) {
       const key = `${c.name}\0${c.domain}\0${c.path}`;
-      if (seen.has(key)) {
-        continue;
-      }
+      if (seen.has(key)) continue;
       seen.add(key);
       out.push(cookieFromBrowser(c));
-      if (out.length >= 500) {
-        break;
-      }
+      if (out.length >= 500) break;
     }
     return out;
   } catch (error) {
@@ -153,9 +145,7 @@ async function pushSession(
     const seen = new Set<string>();
     for (const cookie of batches.flat()) {
       const key = `${cookie.name}\0${cookie.domain}\0${cookie.path}`;
-      if (seen.has(key)) {
-        continue;
-      }
+      if (seen.has(key)) continue;
       seen.add(key);
       raw.push(cookie);
     }
@@ -217,9 +207,7 @@ function forwardRotation(source: Source, api: SessionApi): Promise<void> {
 async function refreshSession(source: Source, api: SessionApi): Promise<void> {
   const session = ROTATING_SESSIONS.get(source);
   const state = await readFollowState();
-  if (!session || state.untracked.includes(source)) {
-    return;
-  }
+  if (!session || state.untracked.includes(source)) return;
 
   const cookies = await api.getCookies({ domain: session.domain });
   const result = await api.nativeCall({
@@ -230,9 +218,7 @@ async function refreshSession(source: Source, api: SessionApi): Promise<void> {
   const missed = state.missed.filter((s) => s !== source);
   const next: FollowState = { ...state, missed };
   if (!result.ok) {
-    if (isUnreachable(result.error)) {
-      next.missed = [...missed, source];
-    }
+    if (isUnreachable(result.error)) next.missed = [...missed, source];
   } else {
     const refresh = sessionRefreshResponseSchema.safeParse(result.data);
     if (refresh.success && !refresh.data.tracked) {
@@ -260,9 +246,7 @@ export function startSessionFollow(api: SessionApi = browserSessionApi): void {
       return;
     }
     const source = rotatedSessionSource(cookie);
-    if (!source) {
-      return;
-    }
+    if (!source) return;
     clearTimeout(settling.get(source));
     settling.set(
       source,
@@ -277,9 +261,7 @@ export function startSessionFollow(api: SessionApi = browserSessionApi): void {
   });
 
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name !== SESSION_ALARM) {
-      return;
-    }
+    if (alarm.name !== SESSION_ALARM) return;
     void readFollowState().then(({ missed }) => {
       for (const source of missed) {
         void forwardRotation(source, api);
@@ -332,9 +314,7 @@ export function startSessionConnect(
   const maybeAutoPush = createSingleFlightTrigger(async (force) => {
     const now = Date.now();
     const state = await readSchedulerState();
-    if (!force && now < state.nextProbeAt) {
-      return;
-    }
+    if (!force && now < state.nextProbeAt) return;
 
     const probeResult = await fetchPendingSource(api);
     if (probeResult.kind === "idle") {
@@ -386,9 +366,7 @@ export function startSessionConnect(
       onConnected();
       return;
     }
-    if (result.ok) {
-      return;
-    }
+    if (result.ok) return;
     if (result.reason === "network") {
       // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
       console.warn("[pond] auto-push failed", result.detail);
@@ -407,19 +385,13 @@ export function startSessionConnect(
   });
 
   browser.tabs.onUpdated.addListener((_id, change, tab) => {
-    if (change.status !== "complete" || !tab.url) {
-      return;
-    }
-    if (!isCookieSourceUrl(tab.url)) {
-      return;
-    }
+    if (change.status !== "complete" || !tab.url) return;
+    if (!isCookieSourceUrl(tab.url)) return;
     void maybeAutoPush(true);
   });
 
   browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === SESSION_ALARM) {
-      void maybeAutoPush();
-    }
+    if (alarm.name === SESSION_ALARM) void maybeAutoPush();
   });
 
   void readSchedulerState()

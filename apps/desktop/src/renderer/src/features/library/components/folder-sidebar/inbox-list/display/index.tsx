@@ -73,9 +73,7 @@ function SelectRow<T extends string>({
       value={value}
       onValueChange={(next) => {
         const match = items.find((item) => item.value === next);
-        if (match) {
-          onValueChange(match.value);
-        }
+        if (match) onValueChange(match.value);
       }}
     >
       <div className={styles.row}>

@@ -50,9 +50,7 @@ describe("batch extension editing", () => {
       },
     });
     const transaction = result.transactions[0];
-    if (!transaction) {
-      throw new Error("Missing transaction");
-    }
+    if (!transaction) throw new Error("Missing transaction");
     expect(inverse(transaction)).toMatchObject({
       fileRenames: [{ from: "media-0.webp", to: "media-0.jpg" }],
       patch: { files: rows[0]?.files },
@@ -86,9 +84,7 @@ describe("batch extension editing", () => {
         return rows;
       },
       async commit(transactions) {
-        if (fail) {
-          throw new Error("Disk unavailable");
-        }
+        if (fail) throw new Error("Disk unavailable");
         batches.push(transactions);
       },
       recordUndo(transactions) {

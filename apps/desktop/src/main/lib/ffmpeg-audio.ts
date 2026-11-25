@@ -51,9 +51,7 @@ export function decodeAudioSamples(
       { stdio: ["ignore", "pipe", "pipe"], windowsHide: true },
     );
     const fail = (error: Error): void => {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       clearTimeout(timer);
       try {
@@ -80,9 +78,7 @@ export function decodeAudioSamples(
     });
     child.on("error", fail);
     child.on("close", (code) => {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       clearTimeout(timer);
       if (code !== 0 || bytes % Float32Array.BYTES_PER_ELEMENT !== 0) {

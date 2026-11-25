@@ -10,15 +10,9 @@ const MAX = STARS.length;
 
 /** Shortcuts on top of the radio group's own arrow keys. */
 export function nextRating(key: string): number | null {
-  if (key === "Home") {
-    return 1;
-  }
-  if (key === "End") {
-    return MAX;
-  }
-  if (key === "Delete" || key === "Backspace" || key === "0") {
-    return 0;
-  }
+  if (key === "Home") return 1;
+  if (key === "End") return MAX;
+  if (key === "Delete" || key === "Backspace" || key === "0") return 0;
   const digit = Number(key);
   return Number.isInteger(digit) && digit >= 1 && digit <= MAX ? digit : null;
 }
@@ -51,9 +45,7 @@ export function Rating({
   const jump = (event: KeyboardEvent<HTMLDivElement>) => {
     onKeyDown?.(event);
     const next = nextRating(event.key);
-    if (next === null || event.metaKey || event.ctrlKey) {
-      return;
-    }
+    if (next === null || event.metaKey || event.ctrlKey) return;
     event.preventDefault();
     onValueChange(next);
     event.currentTarget
@@ -82,9 +74,7 @@ export function Rating({
           data-filled={star <= current || undefined}
           className={styles.star}
           onClick={() => {
-            if (star === value) {
-              onValueChange(0);
-            }
+            if (star === value) onValueChange(0);
           }}
         >
           <IconStar size={size === "sm" ? 16 : 14} />

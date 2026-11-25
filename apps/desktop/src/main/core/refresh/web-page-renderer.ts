@@ -32,17 +32,13 @@ export async function renderPageHtml(
     } finally {
       webContents.off("did-navigate", onNavigate);
     }
-    if (!loaded) {
-      return { ok: false, reason: "navigation" };
-    }
+    if (!loaded) return { ok: false, reason: "navigation" };
     await sleep(RENDER_SETTLE_MS);
     const html: unknown = await Promise.race([
       webContents.executeJavaScript("document.documentElement.outerHTML", true),
       sleep(RENDER_READ_TIMEOUT_MS).then(() => null),
     ]);
-    if (html === null) {
-      return { ok: false, reason: "read-timeout" };
-    }
+    if (html === null) return { ok: false, reason: "read-timeout" };
     const rendered = RenderedHtmlSchema.safeParse(html);
     return rendered.success
       ? { ok: true, html: rendered.data, status }

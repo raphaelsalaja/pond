@@ -98,9 +98,7 @@ function statePath(): string {
 }
 
 export function loadState(): void {
-  if (loaded) {
-    return;
-  }
+  if (loaded) return;
   loaded = true;
   let parsed: z.infer<typeof PersistedStateSchema>;
   try {
@@ -114,31 +112,21 @@ export function loadState(): void {
   const t = now();
   for (const [key, until] of Object.entries(parsed.cooldownUntil)) {
     const source = toSource(key);
-    if (source && until > t) {
-      cooldownUntil.set(source, until);
-    }
+    if (source && until > t) cooldownUntil.set(source, until);
   }
   for (const [key, until] of Object.entries(parsed.breakerUntil)) {
     const source = toSource(key);
-    if (source && until > t) {
-      breakerUntil.set(source, until);
-    }
+    if (source && until > t) breakerUntil.set(source, until);
   }
   for (const [key, state] of Object.entries(parsed.atRisk)) {
     const source = toSource(key);
-    if (source) {
-      atRisk.set(source, state);
-    }
+    if (source) atRisk.set(source, state);
   }
   for (const [key, entries] of Object.entries(parsed.requestLog)) {
     const source = toSource(key);
-    if (source) {
-      requestLog.set(source, entries.slice(-500));
-    }
+    if (source) requestLog.set(source, entries.slice(-500));
   }
-  if (parsed.allPausedUntil > t) {
-    allPaused = true;
-  }
+  if (parsed.allPausedUntil > t) allPaused = true;
 
   log.info("[pond governor] loaded persisted state", {
     cooldowns: cooldownUntil.size,
@@ -155,9 +143,7 @@ export function schedulePersist(immediate = false): void {
     writeState();
     return;
   }
-  if (persistTimer) {
-    return;
-  }
+  if (persistTimer) return;
   persistTimer = setTimeout(() => {
     persistTimer = null;
     writeState();
@@ -208,9 +194,7 @@ export function pauseAll(): void {
     );
     db.$raw
       .transaction(() => {
-        for (const source of SOURCES) {
-          upsert.run(source, at);
-        }
+        for (const source of SOURCES) upsert.run(source, at);
       })
       .immediate();
   });
@@ -261,13 +245,9 @@ export function snapshotSourceGate(): Array<PausedState> {
     until: number,
     reason: PausedReason,
   ): void => {
-    if (until <= t) {
-      return;
-    }
+    if (until <= t) return;
     const prev = out.get(source);
-    if (!prev || until > prev.until) {
-      out.set(source, { source, until, reason });
-    }
+    if (!prev || until > prev.until) out.set(source, { source, until, reason });
   };
   for (const [s, until] of cooldownUntil) {
     consider(s, until, "cooldown");

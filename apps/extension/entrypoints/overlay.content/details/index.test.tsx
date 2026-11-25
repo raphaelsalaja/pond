@@ -67,9 +67,7 @@ function option(label: string): HTMLElement {
     ...searchRoot().querySelectorAll<HTMLElement>('[role="option"]'),
     ...document.querySelectorAll<HTMLElement>('[role="option"]'),
   ].find((item) => item.textContent?.includes(label));
-  if (!match) {
-    throw new Error(`Missing tag option: ${label}`);
-  }
+  if (!match) throw new Error(`Missing tag option: ${label}`);
   return match;
 }
 
@@ -123,9 +121,7 @@ it("lets overlay tags be selected and created from the shadow dialog", async () 
   const input = searchRoot().querySelector<HTMLInputElement>(
     '[aria-label="Tags"]',
   );
-  if (!input) {
-    throw new Error("Missing tags field");
-  }
+  if (!input) throw new Error("Missing tags field");
   await press(input);
   await type(input, "Lo");
   await vi.waitFor(() => option("Logos"));

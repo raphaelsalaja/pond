@@ -11,9 +11,7 @@ import type { YoutubeWatchPage } from "./normalize";
 /** The scraper only reads the watch UI; saved forms recognized by sourceIdFromUrl can render a different page, so navigate to the canonical watch URL. */
 export function urlForHarvest(url: string): string {
   const videoId = sourceIdFromUrl("youtube", url);
-  if (!videoId) {
-    return url;
-  }
+  if (!videoId) return url;
   const out = new URL("https://www.youtube.com/watch");
   out.searchParams.set("v", videoId);
   return out.href;

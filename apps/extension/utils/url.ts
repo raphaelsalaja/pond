@@ -9,9 +9,7 @@ export function rotatedSessionSource(cookie: {
 }): Source | null {
   const host = cookie.domain.replace(/^\./, "").toLowerCase();
   for (const [source, session] of ROTATING_SESSIONS) {
-    if (!session.rotates.includes(cookie.name)) {
-      continue;
-    }
+    if (!session.rotates.includes(cookie.name)) continue;
     if (host === session.domain || host.endsWith(`.${session.domain}`)) {
       return source;
     }

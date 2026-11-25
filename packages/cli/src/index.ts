@@ -42,22 +42,12 @@ export function createProgram(): Command {
 }
 
 function exitCode(error: Error): number {
-  if (error instanceof CommanderError) {
-    return error.exitCode;
-  }
+  if (error instanceof CommanderError) return error.exitCode;
   if (error instanceof PondApiError) {
-    if (error.kind === "connection") {
-      return 2;
-    }
-    if (error.kind === "authentication") {
-      return 3;
-    }
-    if (error.kind === "not-found") {
-      return 4;
-    }
-    if (error.kind === "conflict") {
-      return 5;
-    }
+    if (error.kind === "connection") return 2;
+    if (error.kind === "authentication") return 3;
+    if (error.kind === "not-found") return 4;
+    if (error.kind === "conflict") return 5;
     return 7;
   }
   if (

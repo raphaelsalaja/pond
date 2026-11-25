@@ -124,9 +124,7 @@ it("keeps a virtual cursor mounted and reveals it on focus return without changi
     const collection = host.querySelector<HTMLElement>(
       "[data-save-collection]",
     );
-    if (!collection) {
-      throw new Error("Missing collection");
-    }
+    if (!collection) throw new Error("Missing collection");
     expect(document.getElementById("save-option-90")).not.toBeNull();
     expect(pageRequests).toBe(0);
     await act(async () => {

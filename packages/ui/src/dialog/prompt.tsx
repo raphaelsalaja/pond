@@ -34,9 +34,7 @@ export function PromptDialogHost() {
     <Dialog.Root
       handle={handle}
       onOpenChange={(_, details) => {
-        if (pending.current) {
-          details.cancel();
-        }
+        if (pending.current) details.cancel();
       }}
     >
       {({ payload }) =>
@@ -112,9 +110,7 @@ function PromptContent({
                 value={value}
                 onValueChange={(next) => {
                   setValue(next);
-                  if (next.trim()) {
-                    setEmpty(false);
-                  }
+                  if (next.trim()) setEmpty(false);
                 }}
                 type={options.inputType}
                 autoComplete={options.autoComplete}

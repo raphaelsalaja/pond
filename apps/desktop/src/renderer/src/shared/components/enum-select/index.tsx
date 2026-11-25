@@ -60,13 +60,9 @@ export function EnumSelect<T>({
       value={value}
       disabled={disabled}
       onValueChange={(next) => {
-        if (next === null && !hasNullOption) {
-          return;
-        }
+        if (next === null && !hasNullOption) return;
         const match = options.find((option) => Object.is(option.value, next));
-        if (match) {
-          onValueChange(match.value);
-        }
+        if (match) onValueChange(match.value);
       }}
     >
       <Select.Trigger

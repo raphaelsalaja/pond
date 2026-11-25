@@ -74,13 +74,9 @@ function merge(
   for (const save of queue) {
     for (; next < sorted.length; next += 1) {
       const notification = sorted[next];
-      if (!notification) {
-        break;
-      }
+      if (!notification) break;
       const order = byRank(notification, save);
-      if (order > 0 || (order === 0 && notification.at <= save.at)) {
-        break;
-      }
+      if (order > 0 || (order === 0 && notification.at <= save.at)) break;
       items.push(notification);
     }
     items.push(save);
@@ -101,15 +97,9 @@ const DATE_ORDER = ["Today", "Yesterday", "Last 7 Days", "Older"];
 const DAY = 24 * 60 * 60 * 1000;
 
 function dateSection(at: number, today: number): string {
-  if (at >= today) {
-    return "Today";
-  }
-  if (at >= today - DAY) {
-    return "Yesterday";
-  }
-  if (at >= today - 6 * DAY) {
-    return "Last 7 Days";
-  }
+  if (at >= today) return "Today";
+  if (at >= today - DAY) return "Yesterday";
+  if (at >= today - 6 * DAY) return "Last 7 Days";
   return "Older";
 }
 
@@ -174,12 +164,8 @@ function useInboxEntries(): Array<Entry> {
     const saves = ids.flatMap((id, index): Array<Entry> => {
       const outcome = queue?.outcomes[id];
       const state = states[index];
-      if (outcome !== undefined && outcome !== "skip") {
-        return [];
-      }
-      if (state !== "unloaded" && state !== scopeState) {
-        return [];
-      }
+      if (outcome !== undefined && outcome !== "skip") return [];
+      if (state !== "unloaded" && state !== scopeState) return [];
       const entry: Entry = {
         type: "save",
         key: `save:${id}`,
@@ -224,11 +210,8 @@ export function useInboxItems(): Array<InboxItem> {
 }
 
 function pick(item: Entry | undefined): void {
-  if (item?.type === "save") {
-    inboxReview.jump(item.index);
-  } else {
-    inboxPicker.select(item?.type === "notification" ? item.key : null);
-  }
+  if (item?.type === "save") inboxReview.jump(item.index);
+  else inboxPicker.select(item?.type === "notification" ? item.key : null);
 }
 
 /** J and K walk Saves and notifications as one list; running-work rows aren't stops. */
@@ -249,9 +232,7 @@ export function useInboxNavigation() {
         pick(by > 0 ? pickable[0] : pickable.at(-1));
       } else {
         const next = pickable[at + by];
-        if (next) {
-          pick(next);
-        }
+        if (next) pick(next);
       }
     },
     leave(): void {

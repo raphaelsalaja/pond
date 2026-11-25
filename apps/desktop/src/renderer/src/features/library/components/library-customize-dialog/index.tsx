@@ -81,9 +81,7 @@ function restoreMark(
 ): MarkSelection {
   const source = library.mark;
   const image = { kind: "image", src: library.icon } as const;
-  if (!source) {
-    return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
-  }
+  if (!source) return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
   if (source.kind === "pond") {
     return {
       mark: { kind: "pond", tint: source.tint },
@@ -101,9 +99,7 @@ function restoreMark(
     return { mark: { kind: "emoji", emoji: source.emoji }, swatch };
   }
   const icon = LIBRARY_ICONS.find((entry) => entry.id === source.icon);
-  if (!icon) {
-    return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
-  }
+  if (!icon) return { mark: image, swatch: DEFAULT_LIBRARY_SWATCH };
   return { mark: { kind: "icon", icon: icon.id }, swatch };
 }
 
@@ -111,12 +107,8 @@ function markSource(
   mark: LibraryMark,
   swatch: LibrarySwatch,
 ): LibraryMarkSource | null {
-  if (isDefaultMark(mark)) {
-    return null;
-  }
-  if (mark.kind === "pond") {
-    return { kind: "pond", tint: mark.tint };
-  }
+  if (isDefaultMark(mark)) return null;
+  if (mark.kind === "pond") return { kind: "pond", tint: mark.tint };
   if (mark.kind === "emoji") {
     return { kind: "emoji", emoji: mark.emoji, color: swatch.id };
   }
@@ -187,9 +179,7 @@ export function LibraryCustomizeDialog({
   }
 
   async function submit(): Promise<void> {
-    if (!changed || !nextName) {
-      return;
-    }
+    if (!changed || !nextName) return;
     setBusy(true);
     setError(null);
     try {
@@ -229,11 +219,8 @@ export function LibraryCustomizeDialog({
     <Dialog.Root
       open
       onOpenChange={(open, details) => {
-        if (busy) {
-          details.cancel();
-        } else if (!open) {
-          onClose();
-        }
+        if (busy) details.cancel();
+        else if (!open) onClose();
       }}
     >
       <Dialog.Portal>
@@ -293,9 +280,7 @@ export function LibraryCustomizeDialog({
                   onOpenChange={setPickerOpen}
                   onChange={(next) => {
                     changeMark(next);
-                    if (next.kind !== "icon") {
-                      setPickerOpen(false);
-                    }
+                    if (next.kind !== "icon") setPickerOpen(false);
                   }}
                 />
               </div>

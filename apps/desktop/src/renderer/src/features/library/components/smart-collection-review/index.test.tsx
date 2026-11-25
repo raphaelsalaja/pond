@@ -117,9 +117,7 @@ it("applies accepted labels as add-only tag edits", async () => {
           `#${CSS.escape(label.htmlFor)}`,
         )
       : null;
-    if (!input) {
-      throw new Error("Missing labels field");
-    }
+    if (!input) throw new Error("Missing labels field");
     await act(async () => {
       Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,

@@ -20,12 +20,8 @@ const SWATCHES = new Set([
 ]);
 
 function folderColor(color: string | null): string | undefined {
-  if (!color) {
-    return undefined;
-  }
-  if (SWATCHES.has(color)) {
-    return `var(--ds-${color})`;
-  }
+  if (!color) return undefined;
+  if (SWATCHES.has(color)) return `var(--ds-${color})`;
   return /^#[\da-f]{3,8}$/i.test(color) ? color : undefined;
 }
 

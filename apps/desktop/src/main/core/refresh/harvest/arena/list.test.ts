@@ -73,9 +73,7 @@ describe("Are.na block pages", () => {
     );
 
     expect(result.ok).toBe(true);
-    if (!result.ok) {
-      return;
-    }
+    if (!result.ok) return;
     expect(result.reachedEnd).toBe(true);
     expect(result.resumeCursor).toBeUndefined();
     expect(ids(result)).toEqual([...first, ...second].map(String));

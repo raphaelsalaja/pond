@@ -30,9 +30,7 @@ export interface SourceTableRow extends FilterableSource {
 }
 
 function watchName(watch: WatchRow): string {
-  if (watch.label) {
-    return watch.label;
-  }
+  if (watch.label) return watch.label;
   return watchHandleLabel(watch.handle, watch.kind);
 }
 
@@ -40,21 +38,15 @@ type RemoteSourceEntry = Exclude<SourceEntry, { kind: "folder" }>;
 
 function sourceRowName(entry: RemoteSourceEntry): string {
   if (entry.kind === "account") {
-    if (entry.row.label) {
-      return entry.row.label;
-    }
-    if (entry.row.handle) {
-      return `@${entry.row.handle}`;
-    }
+    if (entry.row.label) return entry.row.label;
+    if (entry.row.handle) return `@${entry.row.handle}`;
     return getSourceDef(entry.row.source).label;
   }
   return watchName(entry.row);
 }
 
 function typeLabel(entry: RemoteSourceEntry): string {
-  if (entry.kind === "account") {
-    return "Account";
-  }
+  if (entry.kind === "account") return "Account";
   const kind = watchKindLabel(entry.row.kind);
   return kind.charAt(0).toUpperCase() + kind.slice(1);
 }
@@ -62,9 +54,7 @@ function typeLabel(entry: RemoteSourceEntry): string {
 export function toFolderTableRow(
   status: WatchedFolderStatus,
 ): SourceTableRow | null {
-  if (!status.path) {
-    return null;
-  }
+  if (!status.path) return null;
   const imported = status.history.filter((item) => item.ok);
   const lastMs = imported[0]?.at ?? status.history[0]?.at ?? null;
   const statusId: SourceStatusId = status.enabled ? "active" : "paused";

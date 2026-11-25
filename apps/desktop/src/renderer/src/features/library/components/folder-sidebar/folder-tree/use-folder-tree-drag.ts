@@ -94,13 +94,9 @@ export function useFolderTreeDrag({
 
   function scheduleArm(armsIn: number | undefined): void {
     window.clearTimeout(armTimer.current);
-    if (armsIn === undefined) {
-      return;
-    }
+    if (armsIn === undefined) return;
     armTimer.current = window.setTimeout(() => {
-      if (latest.current) {
-        preview(latest.current);
-      }
+      if (latest.current) preview(latest.current);
     }, armsIn);
   }
 
@@ -171,9 +167,7 @@ export function useFolderTreeDrag({
     reset();
     drop.current = target;
     haptics.drop(target !== null);
-    if (!target) {
-      return;
-    }
+    if (!target) return;
     setMovingFolderId(id);
     void drag.moveFolder(id, target).finally(() => setMovingFolderId(null));
   }

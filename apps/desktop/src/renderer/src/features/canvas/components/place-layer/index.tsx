@@ -25,9 +25,7 @@ export function PlaceLayer({ onPlace }: PlaceLayerProps) {
     const start = origin.current;
     origin.current = null;
     setDraft(null);
-    if (!start) {
-      return;
-    }
+    if (!start) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const corner = (x: number, y: number) =>
       flow.screenToFlowPosition(
@@ -54,9 +52,7 @@ export function PlaceLayer({ onPlace }: PlaceLayerProps) {
     <div
       className={styles.layer}
       onPointerDown={(event) => {
-        if (event.button !== 0) {
-          return;
-        }
+        if (event.button !== 0) return;
         const bounds = event.currentTarget.getBoundingClientRect();
         event.currentTarget.setPointerCapture(event.pointerId);
         origin.current = {

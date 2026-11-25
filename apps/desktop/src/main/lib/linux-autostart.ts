@@ -76,9 +76,7 @@ export async function setLinuxAutostart(
     input.path ?? linuxAutostartPath(input.env ?? process.env, input.home);
   const isPresent = input.exists ?? existsSync;
   if (!input.enabled) {
-    if (!isPresent(path)) {
-      return;
-    }
+    if (!isPresent(path)) return;
     await (input.removeFile ?? removeAutostartFile)(path);
     return;
   }

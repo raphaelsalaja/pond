@@ -24,12 +24,8 @@ export function ProgressDetail({
   }, []);
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (ignoresKey(event)) {
-      return;
-    }
-    if (navigationKey(event, onStep, onClose)) {
-      event.preventDefault();
-    }
+    if (ignoresKey(event)) return;
+    if (navigationKey(event, onStep, onClose)) event.preventDefault();
   }
 
   return (

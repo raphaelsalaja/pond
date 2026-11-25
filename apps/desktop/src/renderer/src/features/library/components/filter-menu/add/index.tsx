@@ -100,9 +100,7 @@ export function AddFilter({
         : fields.filter((field) => matchesName(FIELD_META[field].label));
       return matched.map((field) => fieldItem(field, entry.label));
     }
-    if (fields.length < 2) {
-      return fields.map((field) => fieldItem(field));
-    }
+    if (fields.length < 2) return fields.map((field) => fieldItem(field));
     return [
       <GroupSubmenu
         key={entry.label}
@@ -182,9 +180,7 @@ export function AddFilter({
       <Menu.Root
         onOpenChange={(next) => {
           setOpen(next);
-          if (!next) {
-            return;
-          }
+          if (!next) return;
           libraryHeader.closePopover();
           setHidden(applied);
           reset();
@@ -229,9 +225,7 @@ export function AddFilter({
 }
 
 function entryKey(entry: FilterMenuEntry | undefined): string {
-  if (entry === undefined) {
-    return "empty";
-  }
+  if (entry === undefined) return "empty";
   return isFieldEntry(entry) ? entry : entry.label;
 }
 
@@ -450,9 +444,7 @@ function matchesInOrder(label: string, needle: string): boolean {
     let position = start;
     for (const char of needle) {
       const found = text.indexOf(char, position);
-      if (found === -1) {
-        return false;
-      }
+      if (found === -1) return false;
       position = found + 1;
     }
     return text[start] === needle[0];

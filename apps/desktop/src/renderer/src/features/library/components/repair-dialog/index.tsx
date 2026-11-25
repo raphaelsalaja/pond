@@ -51,9 +51,7 @@ export function LibraryRepairDialog({
     let timer: ReturnType<typeof setTimeout> | undefined;
     async function track(id: string): Promise<void> {
       const next = await window.pond.query("libraryRepairs.get", { id });
-      if (!active || !next) {
-        return;
-      }
+      if (!active || !next) return;
       setJob(next);
       if (next.status === "queued" || next.status === "running") {
         timer = setTimeout(() => void track(id), 200);
@@ -65,9 +63,7 @@ export function LibraryRepairDialog({
         saveIds: saveIds ? [...saveIds] : undefined,
       })
       .then((next) => {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         setJob(next);
         return track(next.id);
       })
@@ -80,16 +76,12 @@ export function LibraryRepairDialog({
       });
     return () => {
       active = false;
-      if (timer) {
-        clearTimeout(timer);
-      }
+      if (timer) clearTimeout(timer);
     };
   }, [kind, saveIds]);
 
   async function apply(): Promise<void> {
-    if (!preview) {
-      return;
-    }
+    if (!preview) return;
     setError(null);
     try {
       const next = await window.pond.query("libraryRepairs.apply", {
@@ -106,9 +98,7 @@ export function LibraryRepairDialog({
 
   async function poll(id: string): Promise<void> {
     const next = await window.pond.query("libraryRepairs.get", { id });
-    if (!next) {
-      return;
-    }
+    if (!next) return;
     setJob(next);
     if (next.status === "queued" || next.status === "running") {
       await new Promise<void>((resolve) => {
@@ -137,9 +127,7 @@ export function LibraryRepairDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(value) => {
-        if (!value) {
-          void close();
-        }
+        if (!value) void close();
       }}
     >
       <Dialog.Portal>

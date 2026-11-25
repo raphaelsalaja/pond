@@ -25,9 +25,7 @@ function copy(value: string): void {
 
 function openProfile(row: DetailRow): RowAction | null {
   const href = row.href;
-  if (!href) {
-    return null;
-  }
+  if (!href) return null;
   return {
     label: "Open Profile",
     run: () => void window.pond.openExternal(href),
@@ -36,9 +34,7 @@ function openProfile(row: DetailRow): RowAction | null {
 
 function openAccount(row: DetailRow): RowAction | null {
   const id = row.accountId;
-  if (!id) {
-    return null;
-  }
+  if (!id) return null;
   return {
     label: "Open in Sources",
     run: () =>
@@ -64,9 +60,7 @@ function showMatching(row: DetailRow, save: Save): RowAction | null {
       };
     case "from": {
       const id = row.accountId;
-      if (!id) {
-        return null;
-      }
+      if (!id) return null;
       return {
         label: `Show Saves from ${row.value}`,
         run: () =>
@@ -89,9 +83,7 @@ function showMatching(row: DetailRow, save: Save): RowAction | null {
       };
     case "importedFrom": {
       const origin = save.importedFrom;
-      if (!origin) {
-        return null;
-      }
+      if (!origin) return null;
       return {
         label: `Show Saves Imported from ${row.value}`,
         run: () =>
@@ -104,9 +96,7 @@ function showMatching(row: DetailRow, save: Save): RowAction | null {
     }
     case "list": {
       const kinds = normalizeListKinds(save.listKinds);
-      if (kinds.length === 0) {
-        return null;
-      }
+      if (kinds.length === 0) return null;
       return {
         label: `Show ${row.value}`,
         run: () =>
@@ -124,12 +114,8 @@ function showMatching(row: DetailRow, save: Save): RowAction | null {
 
 /** What a plain click on the tile does. */
 export function primaryRowAction(row: DetailRow, save: Save): RowAction | null {
-  if (row.kind === "author") {
-    return openProfile(row) ?? showMatching(row, save);
-  }
-  if (row.kind === "account") {
-    return openAccount(row);
-  }
+  if (row.kind === "author") return openProfile(row) ?? showMatching(row, save);
+  if (row.kind === "account") return openAccount(row);
   return showMatching(row, save);
 }
 
@@ -159,9 +145,7 @@ export function buildRowMenu(row: DetailRow, save: Save): Array<MenuItemSpec> {
       onClick: account.run,
     });
   }
-  if (items.length > 0) {
-    items.push({ type: "separator" });
-  }
+  if (items.length > 0) items.push({ type: "separator" });
   items.push({
     label:
       row.kind === "author" || row.kind === "account"

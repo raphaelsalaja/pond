@@ -13,9 +13,7 @@ function headersFrom(value: string): Map<string, string> {
   const unfolded = value.replaceAll(/\r?\n[ \t]+/g, " ");
   for (const line of unfolded.split(/\r?\n/)) {
     const separator = line.indexOf(":");
-    if (separator < 1) {
-      continue;
-    }
+    if (separator < 1) continue;
     headers.set(
       line.slice(0, separator).trim().toLowerCase(),
       line.slice(separator + 1).trim(),
@@ -40,9 +38,7 @@ function decodePart(part: MimePart): Uint8Array {
     const binary = atob(part.body.replaceAll(/\s/g, ""));
     return Uint8Array.from(binary, (character) => character.charCodeAt(0));
   }
-  if (transfer === "quoted-printable") {
-    return decodeQuotedPrintable(part.body);
-  }
+  if (transfer === "quoted-printable") return decodeQuotedPrintable(part.body);
   return Uint8Array.from(part.body, (character) => character.charCodeAt(0));
 }
 
@@ -55,36 +51,26 @@ function charset(part: MimePart): string {
 
 function base64(bytes: Uint8Array): string {
   let binary = "";
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
-  }
+  for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
 }
 
 function parseParts(source: string): Array<MimePart> {
   const split = /\r?\n\r?\n/.exec(source);
-  if (!split?.index) {
-    return [];
-  }
+  if (!split?.index) return [];
   const headers = headersFrom(source.slice(0, split.index));
   const boundary = /boundary="?([^";\r\n]+)"?/i.exec(
     headers.get("content-type") ?? "",
   )?.[1];
-  if (!boundary) {
-    return [];
-  }
+  if (!boundary) return [];
   return source
     .slice(split.index + split[0].length)
     .split(`--${boundary}`)
     .flatMap((raw) => {
       const value = raw.replace(/^\r?\n/, "").replace(/\r?\n$/, "");
-      if (!value || value === "--") {
-        return [];
-      }
+      if (!value || value === "--") return [];
       const separator = /\r?\n\r?\n/.exec(value);
-      if (!separator?.index) {
-        return [];
-      }
+      if (!separator?.index) return [];
       return [
         {
           headers: headersFrom(value.slice(0, separator.index)),
@@ -112,13 +98,9 @@ export function parseMhtml(source: string): Array<MhtmlPage> {
   }
   return parts.flatMap((part) => {
     const type = part.headers.get("content-type")?.toLowerCase() ?? "";
-    if (!type.startsWith("text/html")) {
-      return [];
-    }
+    if (!type.startsWith("text/html")) return [];
     let html = new TextDecoder(charset(part)).decode(decodePart(part));
-    for (const [from, to] of replacements) {
-      html = html.split(from).join(to);
-    }
+    for (const [from, to] of replacements) html = html.split(from).join(to);
     return [
       {
         label: part.headers.get("content-location") ?? "Archived Page",

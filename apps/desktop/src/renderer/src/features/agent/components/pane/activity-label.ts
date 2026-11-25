@@ -153,9 +153,7 @@ export function currentActivityLabel(
     const label = copy.get(running.label)?.live ?? running.label;
     return running.detail ? `${label}: ${running.detail}` : label;
   }
-  if (activity === "writing") {
-    return activities.writing;
-  }
+  if (activity === "writing") return activities.writing;
   const last = steps.findLast((step) => step.status === "complete");
   return (last && copy.get(last.label)?.after) ?? activities[activity];
 }

@@ -21,9 +21,7 @@ function bump<K>(counts: Map<K, number>, key: K) {
 
 /** A custom-compare `memo` holds the list key on its outer fiber, not on the component it wraps. */
 function keyOf(fiber: Fiber): string | null {
-  if (fiber.key !== null) {
-    return fiber.key;
-  }
+  if (fiber.key !== null) return fiber.key;
   return fiber.return?.tag === MemoComponentTag ? fiber.return.key : null;
 }
 
@@ -32,22 +30,14 @@ instrument({
   onCommitFiberRoot(_rendererId, root) {
     traverseRenderedFibers(root, (fiber, phase) => {
       /** The outer fiber of a custom-compare `memo` renders alongside its inner component; count only the inner one. */
-      if (phase === "unmount" || fiber.tag === MemoComponentTag) {
-        return;
-      }
-      if (!isCompositeFiber(fiber) || tallies.size === 0) {
-        return;
-      }
+      if (phase === "unmount" || fiber.tag === MemoComponentTag) return;
+      if (!isCompositeFiber(fiber) || tallies.size === 0) return;
       const name = getDisplayName(fiber.type);
-      if (!name) {
-        return;
-      }
+      if (!name) return;
       const key = keyOf(fiber);
       for (const tally of tallies) {
         bump(tally.total, name);
-        if (key === null) {
-          continue;
-        }
+        if (key === null) continue;
         let keyed = tally.keyed.get(name);
         if (!keyed) {
           keyed = new Map();

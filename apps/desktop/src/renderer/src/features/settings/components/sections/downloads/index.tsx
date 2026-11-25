@@ -108,9 +108,7 @@ function useSaveDownloads() {
   return (run: () => Promise<object>) => {
     const operation = downloadSaveQueue.then(async () => {
       const saved = SavedDownloadsSchema.parse(await run());
-      if (!saved.ok) {
-        throw new Error("Download settings were not saved");
-      }
+      if (!saved.ok) throw new Error("Download settings were not saved");
       qc.setQueryData<DownloadSettings>(DOWNLOADS_KEY, readDownloads(saved));
     });
     downloadSaveQueue = operation.catch(() => {
@@ -133,9 +131,7 @@ export function useVideoDownloadBinding(
     values: videoDownloadValues(data ?? EMPTY_DOWNLOADS, source),
     loaded: Boolean(data),
     patch: ({ followsGlobal: _locked, ...delta }) => {
-      if (!data) {
-        return;
-      }
+      if (!data) return;
       save(() =>
         window.pond.query("settings.setVideoDownload", { ...delta, source }),
       );
@@ -152,9 +148,7 @@ export function useImageDownloadBinding(
     values: imageDownloadValues(data ?? EMPTY_DOWNLOADS, source),
     loaded: Boolean(data),
     patch: ({ followsGlobal: _locked, ...delta }) => {
-      if (!data) {
-        return;
-      }
+      if (!data) return;
       save(() =>
         window.pond.query("settings.setImageDownload", { ...delta, source }),
       );
@@ -173,9 +167,7 @@ export function useSourceCustomBinding(
     },
     loaded: Boolean(data),
     patch: ({ useGlobal }) => {
-      if (!data || useGlobal === undefined) {
-        return;
-      }
+      if (!data || useGlobal === undefined) return;
       save(() =>
         window.pond.query("settings.setSourceDownloadsCustom", {
           source,

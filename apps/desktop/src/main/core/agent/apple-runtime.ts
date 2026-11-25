@@ -63,9 +63,7 @@ export function appleErrorMessage(code: string): string {
 }
 
 function helperPath(): string {
-  if (app.isPackaged) {
-    return join(process.resourcesPath, "bin", HELPER);
-  }
+  if (app.isPackaged) return join(process.resourcesPath, "bin", HELPER);
   const bundled = join(app.getAppPath(), "resources", "bin", HELPER);
   const candidates = [bundled, join(process.cwd(), "resources", "bin", HELPER)];
   return candidates.find((path) => existsSync(path)) ?? bundled;
@@ -115,9 +113,7 @@ export async function appleStatus(
     { command: "status" },
     signal,
   );
-  if (!reply.ok) {
-    return { ok: false, error: appleErrorMessage(reply.error) };
-  }
+  if (!reply.ok) return { ok: false, error: appleErrorMessage(reply.error) };
   const size = z.number().int().positive().safeParse(reply.contextSize);
   return {
     ok: true,

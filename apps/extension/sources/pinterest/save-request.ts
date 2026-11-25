@@ -12,23 +12,17 @@ function decodeDataParam(encoded: string): JsonValue | null {
 }
 
 export function pinIdFromBody(body: string | null): string | null {
-  if (!body) {
-    return null;
-  }
+  if (!body) return null;
   let json: JsonValue | null = null;
   if (body.startsWith("data=")) {
     json = decodeDataParam(body.slice(5).split("&")[0] ?? "");
   } else if (body.includes("&data=")) {
     const m = body.match(/(?:^|&)data=([^&]+)/);
-    if (m?.[1]) {
-      json = decodeDataParam(m[1]);
-    }
+    if (m?.[1]) json = decodeDataParam(m[1]);
   } else if (body.startsWith("{")) {
     json = parseJsonValue(body);
   }
-  if (!json) {
-    return null;
-  }
+  if (!json) return null;
   const opts = at(json, "options") ?? at(json, "data", "options") ?? json;
   const id =
     at(opts, "pin_id") ??

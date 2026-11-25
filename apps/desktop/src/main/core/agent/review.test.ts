@@ -289,9 +289,7 @@ describe("Pond operation reviews", () => {
 
   it("reconnects MCP servers before applying a reviewed MCP tool call", async () => {
     const change = operationChange();
-    if (change.field !== "action") {
-      throw new Error("Expected action fixture");
-    }
+    if (change.field !== "action") throw new Error("Expected action fixture");
     const request = {
       operation: "mcp.github.create_issue",
       arguments: { title: "Bug" },
@@ -337,9 +335,7 @@ describe("Pond operation reviews", () => {
 
   it("does not execute malformed stored operation requests", async () => {
     const change = operationChange();
-    if (change.field !== "action") {
-      throw new Error("Expected action fixture");
-    }
+    if (change.field !== "action") throw new Error("Expected action fixture");
     change.payload = { operation: "folders.create", arguments: {} };
     mock.changes = [change];
     const { calls, apply } = recordedApply(async () => null);

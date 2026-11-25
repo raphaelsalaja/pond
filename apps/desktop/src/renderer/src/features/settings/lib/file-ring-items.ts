@@ -7,13 +7,9 @@ export function moveRingItem(
   to: number,
 ): Array<FileRingItem> {
   const next = [...items];
-  if (to < 0 || to >= next.length || from === to) {
-    return next;
-  }
+  if (to < 0 || to >= next.length || from === to) return next;
   const [moved] = next.splice(from, 1);
-  if (moved) {
-    next.splice(to, 0, moved);
-  }
+  if (moved) next.splice(to, 0, moved);
   return next;
 }
 

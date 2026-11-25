@@ -147,9 +147,7 @@ it("composes one top video toolbar and one bottom playback toolbar", async () =>
     configurable: true,
     value: 60,
   });
-  if (video) {
-    video.currentTime = 20;
-  }
+  if (video) video.currentTime = 20;
   await act(async () => {
     document.dispatchEvent(
       new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }),
@@ -184,9 +182,7 @@ it("keeps Space toggling playback after the seek bar is clicked", async () => {
   });
   const seek = host.querySelector('[aria-label="Seek"]');
   const thumb = seek?.querySelector("input");
-  if (!seek || !thumb) {
-    throw new Error("Missing seek bar");
-  }
+  if (!seek || !thumb) throw new Error("Missing seek bar");
 
   thumb.focus();
   await act(async () => {
@@ -253,9 +249,7 @@ it("keeps one scrub preview open across the timeline and closes it on leave", as
   });
   const video = host.querySelector("video");
   const seek = host.querySelector<HTMLElement>('[aria-label="Seek"]');
-  if (!video || !seek) {
-    throw new Error("Missing seek bar");
-  }
+  if (!video || !seek) throw new Error("Missing seek bar");
   Object.defineProperty(video, "duration", { configurable: true, value: 60 });
   await act(async () => video.dispatchEvent(new Event("durationchange")));
   seek.getBoundingClientRect = () => new DOMRect(0, 0, 200, 24);
@@ -533,9 +527,7 @@ it("carries mute to the next preview and keeps volume", async () => {
   const mute = host.querySelector<HTMLButtonElement>(
     'button[aria-label="Mute"]',
   );
-  if (!first || !mute) {
-    throw new Error("Missing video mute control");
-  }
+  if (!first || !mute) throw new Error("Missing video mute control");
   first.volume = 0.4;
 
   await act(async () => mute.click());
@@ -551,9 +543,7 @@ it("carries mute to the next preview and keeps volume", async () => {
   });
 
   const second = host.querySelector("video");
-  if (!second) {
-    throw new Error("Missing reopened video");
-  }
+  if (!second) throw new Error("Missing reopened video");
   expect(second).not.toBe(first);
   expect(second.muted).toBe(true);
   expect(second.volume).toBe(1);
@@ -591,9 +581,7 @@ it("changes video volume with the arrow keys", async () => {
     root.render(<TestVideoPlayer />);
   });
   const video = host.querySelector("video");
-  if (!video) {
-    throw new Error("Missing video");
-  }
+  if (!video) throw new Error("Missing video");
   video.volume = 0.5;
 
   await act(async () => {

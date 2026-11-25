@@ -32,9 +32,7 @@ export function overlayBounds(
   const area = workAreas.toSorted(
     (left, right) => gap(left, pointer) - gap(right, pointer),
   )[0];
-  if (!area) {
-    return null;
-  }
+  if (!area) return null;
   const width = Math.min(size, area.width);
   const height = Math.min(size, area.height);
   return {

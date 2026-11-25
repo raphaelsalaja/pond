@@ -25,15 +25,11 @@ function useAnnounceAfterUpdate(): void {
       try {
         const { version } = await loadAppInfo();
         const lastSeen = readWhatsNewSeen();
-        if (!active || lastSeen === version) {
-          return;
-        }
+        if (!active || lastSeen === version) return;
         const hasSaves =
           lastSeen !== null ||
           (await window.pond.query("saves.sidebarCounts", {})).library > 0;
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         const versions = unseenVersions({
           entries: CHANGELOG,
           current: version,
@@ -87,9 +83,7 @@ function Items({
 function Media({ entry }: { entry: ChangelogEntry }) {
   const reduceMotion = useReducedMotion() ?? false;
   const src = mediaUrl(entry);
-  if (!src || !entry.media) {
-    return null;
-  }
+  if (!src || !entry.media) return null;
   return isVideoMedia(entry.media) ? (
     <video
       className={styles.media}
@@ -195,9 +189,7 @@ export function WhatsNewDialog() {
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) {
-          whatsNewDialog.close();
-        }
+        if (!next) whatsNewDialog.close();
       }}
     >
       <Dialog.Portal>

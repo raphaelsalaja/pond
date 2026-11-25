@@ -154,9 +154,7 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
                 id: folder.id,
                 name,
               });
-              if (!result.ok) {
-                throw new Error("Couldn't rename folder");
-              }
+              if (!result.ok) throw new Error("Couldn't rename folder");
               await folders.refresh();
             }}
             onFinish={props.onFinishEditing}

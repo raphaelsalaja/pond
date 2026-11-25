@@ -65,9 +65,7 @@ export function traySavingLabel(
   input: Pick<TrayStatusInput, "ingesting" | "inflight">,
 ): string | null {
   const { ingesting, inflight } = input;
-  if (ingesting <= 0) {
-    return null;
-  }
+  if (ingesting <= 0) return null;
   if (inflight <= 0) {
     return ingesting === 1
       ? "Waiting to save 1 item"

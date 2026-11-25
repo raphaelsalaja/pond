@@ -32,9 +32,7 @@ const dependencies: QueueWorkerHostDependencies = {
       onMessage: (listener) => {
         child.on("message", (message) => {
           const response = QueueWorkerResponseSchema.safeParse(message);
-          if (response.success) {
-            listener(response.data);
-          }
+          if (response.success) listener(response.data);
         });
       },
       onExit: (listener) => {
@@ -46,9 +44,7 @@ const dependencies: QueueWorkerHostDependencies = {
   },
   createJobId: ulid,
   validateSourcePath: async (path) => {
-    if (!isAbsolute(path)) {
-      return false;
-    }
+    if (!isAbsolute(path)) return false;
     const info = await stat(path);
     return info.isFile();
   },

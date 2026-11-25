@@ -71,9 +71,7 @@ function CategoryRow({
   }).find((candidate) => candidate.primary && !candidate.navigates);
 
   async function run(): Promise<void> {
-    if (!action) {
-      return;
-    }
+    if (!action) return;
     setBusy(true);
     try {
       await action.run();

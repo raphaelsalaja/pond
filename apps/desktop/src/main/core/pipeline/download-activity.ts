@@ -41,9 +41,7 @@ export function createDownloadActivityStore(
     entries.set(task.id, activity);
     let settled = false;
     const report: ReportDownloadActivity = (update) => {
-      if (settled || entries.get(task.id) !== activity) {
-        return;
-      }
+      if (settled || entries.get(task.id) !== activity) return;
       const at = now();
       if (update.transfer) {
         const transfer = structuredClone(update.transfer);
@@ -66,13 +64,9 @@ export function createDownloadActivityStore(
               (entry) =>
                 entry.state === "completed" || entry.state === "failed",
             );
-            if (finished >= 0) {
-              activity.transfers.splice(finished, 1);
-            }
+            if (finished >= 0) activity.transfers.splice(finished, 1);
           }
-          if (activity.transfers.length < 64) {
-            activity.transfers.push(transfer);
-          }
+          if (activity.transfers.length < 64) activity.transfers.push(transfer);
         }
       }
       const phase =
@@ -98,9 +92,7 @@ export function createDownloadActivityStore(
       activity.updatedAt = at;
     };
     function finish(state: "completed" | "failed") {
-      if (settled || entries.get(task.id) !== activity) {
-        return;
-      }
+      if (settled || entries.get(task.id) !== activity) return;
       report({ phase: state });
       settled = true;
       activity.state = state;

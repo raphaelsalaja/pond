@@ -81,9 +81,7 @@ export async function syncTwitter(
     !baseline.full &&
     (repairLinks || (checkCollections && plan.collections))
   ) {
-    for (const id of await loadAllKnownIds(account)) {
-      knownIds.add(id);
-    }
+    for (const id of await loadAllKnownIds(account)) knownIds.add(id);
   }
   const bookmarkArgs = {
     knownIds: readAll ? [] : Array.from(knownIds),
@@ -94,9 +92,7 @@ export async function syncTwitter(
   const harvestOpts = {
     partition: partitionForAccount(accountId),
     onProgress: (p: { phase: "hydrate" | "scroll"; fresh: number }) => {
-      if (signal.aborted) {
-        return;
-      }
+      if (signal.aborted) return;
       const message =
         p.phase === "hydrate" ? "Loading" : p.fresh > 0 ? "Found" : "Scanning";
       emit({ accountId, source, state: "running", message });
@@ -201,9 +197,7 @@ export async function syncTwitter(
         },
       })
     : NO_COLLECTION_PASS;
-  if (collectionPass.gap) {
-    gaps.push(collectionPass.gap);
-  }
+  if (collectionPass.gap) gaps.push(collectionPass.gap);
 
   const relisted = await mergeListKindsOntoExisting(
     source,
@@ -212,9 +206,7 @@ export async function syncTwitter(
       listKinds: e.listKinds,
     })),
   );
-  for (const id of relisted) {
-    knownIds.delete(id);
-  }
+  for (const id of relisted) knownIds.delete(id);
 
   if (repairLinks) {
     const repaired = await repairTweetLinks(entries);
@@ -288,12 +280,8 @@ export async function syncTwitter(
     queue.map((entry) => {
       const item: EnqueueItem = { url: entry.url };
       const seed = buildTwitterBookmarkSeed(entry);
-      if (seed) {
-        item.seed = seed;
-      }
-      if (entry.listKinds) {
-        item.listKinds = entry.listKinds;
-      }
+      if (seed) item.seed = seed;
+      if (entry.listKinds) item.listKinds = entry.listKinds;
       return item;
     }),
     { trigger: "sync:twitter", accountId, generationId },
@@ -370,8 +358,6 @@ async function harvestFolders(
     captures.push(...result.captures);
     reachedEnd &&= result.reachedEnd;
   }
-  if (failed && entries.size === 0) {
-    return failed;
-  }
+  if (failed && entries.size === 0) return failed;
   return { ok: true, entries: [...entries.values()], captures, reachedEnd };
 }

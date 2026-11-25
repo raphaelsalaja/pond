@@ -28,9 +28,7 @@ let bandEdges: Uint32Array | null = null;
 let window: Float64Array | null = null;
 
 function edges(): Uint32Array {
-  if (bandEdges) {
-    return bandEdges;
-  }
+  if (bandEdges) return bandEdges;
   bandEdges = new Uint32Array(BANDS + 1);
   for (let band = 0; band <= BANDS; band++) {
     const hz = LOW_HZ * (HIGH_HZ / LOW_HZ) ** (band / BANDS);
@@ -40,9 +38,7 @@ function edges(): Uint32Array {
 }
 
 function hann(): Float64Array {
-  if (window) {
-    return window;
-  }
+  if (window) return window;
   window = new Float64Array(FRAME_SIZE);
   for (let index = 0; index < FRAME_SIZE; index++) {
     window[index] = 0.5 - 0.5 * Math.cos((2 * Math.PI * index) / FRAME_SIZE);
@@ -51,13 +47,9 @@ function hann(): Float64Array {
 }
 
 export function isSilent(samples: Float32Array): boolean {
-  if (samples.length === 0) {
-    return true;
-  }
+  if (samples.length === 0) return true;
   let sum = 0;
-  for (const sample of samples) {
-    sum += sample * sample;
-  }
+  for (const sample of samples) sum += sample * sample;
   return Math.sqrt(sum / samples.length) < SILENCE_RMS;
 }
 
@@ -99,9 +91,7 @@ export function audioPrintFromSamples(
       for (let band = 0; band < BANDS - 1; band++) {
         const now = (energy[band] ?? 0) - (energy[band + 1] ?? 0);
         const before = (previous[band] ?? 0) - (previous[band + 1] ?? 0);
-        if (now - before > 0) {
-          bits |= 1 << (31 - band);
-        }
+        if (now - before > 0) bits |= 1 << (31 - band);
       }
       frames[frame - 1] = bits >>> 0;
     }
@@ -127,23 +117,17 @@ export function encodeAudioPrint(print: AudioPrint): Uint8Array {
 }
 
 export function decodeAudioPrint(bytes: Uint8Array): AudioPrint | null {
-  if (bytes.byteLength < HEADER_BYTES) {
-    return null;
-  }
+  if (bytes.byteLength < HEADER_BYTES) return null;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const count = view.getUint32(16);
-  if (bytes.byteLength !== HEADER_BYTES + count * 4) {
-    return null;
-  }
+  if (bytes.byteLength !== HEADER_BYTES + count * 4) return null;
   const frames = new Uint32Array(count);
   for (let index = 0; index < count; index++) {
     frames[index] = view.getUint32(HEADER_BYTES + index * 4);
   }
   const durationSeconds = view.getFloat64(0);
   const hopSeconds = view.getFloat64(8);
-  if (!(durationSeconds > 0) || !(hopSeconds > 0)) {
-    return null;
-  }
+  if (!(durationSeconds > 0) || !(hopSeconds > 0)) return null;
   return { durationSeconds, hopSeconds, frames };
 }
 
@@ -157,21 +141,15 @@ export function compareAudioPrints(
   left: AudioPrint,
   right: AudioPrint,
 ): AudioMatch | null {
-  if (!durationsClose(left.durationSeconds, right.durationSeconds)) {
-    return null;
-  }
-  if (left.hopSeconds !== right.hopSeconds) {
-    return null;
-  }
+  if (!durationsClose(left.durationSeconds, right.durationSeconds)) return null;
+  if (left.hopSeconds !== right.hopSeconds) return null;
   const maxShift = Math.round(MAX_OFFSET_SECONDS / left.hopSeconds);
   let best: AudioMatch | null = null;
   for (let shift = -maxShift; shift <= maxShift; shift++) {
     const from = Math.max(0, -shift);
     const to = Math.min(left.frames.length, right.frames.length - shift);
     const overlap = to - from;
-    if (overlap < MIN_OVERLAP_FRAMES) {
-      continue;
-    }
+    if (overlap < MIN_OVERLAP_FRAMES) continue;
     let errors = 0;
     for (let index = from; index < to; index++) {
       errors += popcount32(
@@ -183,8 +161,6 @@ export function compareAudioPrints(
       best = { bitErrorRate, offsetSeconds: shift * left.hopSeconds };
     }
   }
-  if (!best || best.bitErrorRate > NEAR_BIT_ERROR_RATE) {
-    return null;
-  }
+  if (!best || best.bitErrorRate > NEAR_BIT_ERROR_RATE) return null;
   return best;
 }

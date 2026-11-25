@@ -33,9 +33,7 @@ function setup(stored: number) {
       await Promise.resolve();
     },
     change: (interfaceZoom: number) => {
-      for (const listener of listeners) {
-        listener({ window: { interfaceZoom } });
-      }
+      for (const listener of listeners) listener({ window: { interfaceZoom } });
     },
     destroy: () => {
       destroyed = true;

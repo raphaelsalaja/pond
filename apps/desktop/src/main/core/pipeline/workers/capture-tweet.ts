@@ -103,12 +103,8 @@ export function isCaptureTweetStale(rawJson: RawJson | null): boolean {
 
 function needsReplyParentEnrichment(rawJson: RawJson | null): boolean {
   const parent = rawJson?.capture?.replyTo;
-  if (!parent?.url) {
-    return false;
-  }
-  if (rawJson?.capture?.extras?.replyParentUnavailable === true) {
-    return false;
-  }
+  if (!parent?.url) return false;
+  if (rawJson?.capture?.extras?.replyParentUnavailable === true) return false;
   return !(
     parent.description ||
     parent.title ||
@@ -139,16 +135,10 @@ export function createCaptureTweetTask(
     opts?: { force?: boolean },
   ): Promise<void> => {
     const next: CaptureTweetOptions = { retryPendingParent: true };
-    if (signal) {
-      next.signal = signal;
-    }
-    if (opts?.force) {
-      next.force = true;
-    }
+    if (signal) next.signal = signal;
+    if (opts?.force) next.force = true;
     const result = await captureTweet(saveId, next);
-    if (signal?.aborted) {
-      return;
-    }
+    if (signal?.aborted) return;
     if (result.authWall && result.captured === 0) {
       throw new TransientError(
         "capture_tweet: X auth wall (session may be expired)",
@@ -174,15 +164,9 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     replyParentPending: false,
   };
   const save = await ports.readSave(saveId);
-  if (!save || opts?.signal?.aborted) {
-    return idle;
-  }
-  if (!rendersPostCard(save.source)) {
-    return idle;
-  }
-  if (!save.sourceId) {
-    return idle;
-  }
+  if (!save || opts?.signal?.aborted) return idle;
+  if (!rendersPostCard(save.source)) return idle;
+  if (!save.sourceId) return idle;
 
   if (
     !opts?.force &&
@@ -196,24 +180,16 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   let rawJson = save.rawJson;
   if (!opts?.nativeOnly) {
     const enrichment = await fillReplyParent(saveId, save, ports, opts?.signal);
-    if (opts?.signal?.aborted) {
-      return idle;
-    }
+    if (opts?.signal?.aborted) return idle;
     if (enrichment === "enriched" || enrichment === "unavailable") {
       const refreshed = await ports.readSave(saveId);
-      if (refreshed?.rawJson) {
-        rawJson = refreshed.rawJson;
-      }
+      if (refreshed?.rawJson) rawJson = refreshed.rawJson;
     }
   }
 
-  if (opts?.signal?.aborted) {
-    return idle;
-  }
+  if (opts?.signal?.aborted) return idle;
   const rendered = await tryNativeRender(saveId, { ...save, rawJson }, ports);
-  if (opts?.signal?.aborted) {
-    return idle;
-  }
+  if (opts?.signal?.aborted) return idle;
   if (rendered) {
     await finalizeRawJson(saveId, rawJson, [], { stampVersion: true }, ports);
     log.info("[pond pipeline:capture-tweet] native card done", { saveId });
@@ -248,20 +224,12 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     darkFilename: "tweet-dark.png",
     harvestMedia: false,
   };
-  if (opts?.signal) {
-    mainArgs.signal = opts.signal;
-  }
-  if (opts?.signal?.aborted) {
-    return idle;
-  }
+  if (opts?.signal) mainArgs.signal = opts.signal;
+  if (opts?.signal?.aborted) return idle;
   const main = await captureVariants(saveId, mainArgs, ports);
-  if (opts?.signal?.aborted) {
-    return idle;
-  }
+  if (opts?.signal?.aborted) return idle;
   captured += main.captured;
-  if (main.authWall) {
-    authWall = true;
-  }
+  if (main.authWall) authWall = true;
 
   if (main.authWall && main.captured === 0) {
     return {
@@ -275,16 +243,12 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   let completed = main.complete;
   let nextUrl = main.quotedUrl ?? quotedUrlFromCapture(rawJson);
   for (let depth = 1; nextUrl && depth <= QUOTE_DEPTH_CAP; depth += 1) {
-    if (opts?.signal?.aborted) {
-      return idle;
-    }
+    if (opts?.signal?.aborted) return idle;
     const quotedId =
       save.source === "threads"
         ? parsePostCode(nextUrl)
         : parseTweetId(nextUrl);
-    if (!quotedId) {
-      break;
-    }
+    if (!quotedId) break;
     const quote = await captureVariants(
       saveId,
       {
@@ -300,21 +264,15 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
       },
       ports,
     );
-    if (opts?.signal?.aborted) {
-      return idle;
-    }
+    if (opts?.signal?.aborted) return idle;
     captured += quote.captured;
-    if (quote.media) {
-      harvested.push(...quote.media);
-    }
+    if (quote.media) harvested.push(...quote.media);
     if (quote.authWall) {
       authWall = true;
       completed = false;
       break;
     }
-    if (!quote.complete) {
-      completed = false;
-    }
+    if (!quote.complete) completed = false;
     nextUrl = quote.quotedUrl;
   }
 
@@ -361,9 +319,7 @@ async function tryNativeRender<SaveRow extends CaptureTweetSave>(
   ports: CaptureTweetPorts<SaveRow>,
 ): Promise<boolean> {
   const capture = save.rawJson?.capture ?? null;
-  if (!capture) {
-    return false;
-  }
+  if (!capture) return false;
   const inlined = await ports.inlineCaptureAvatars(capture, save);
   const render =
     save.source === "threads"
@@ -372,13 +328,9 @@ async function tryNativeRender<SaveRow extends CaptureTweetSave>(
         ? ports.renderBlueskyCardPng
         : ports.renderTweetCardPng;
   const light = await render(inlined.capture, save.author, "light");
-  if (!light) {
-    return false;
-  }
+  if (!light) return false;
   const dark = await render(inlined.capture, save.author, "dark");
-  if (!dark) {
-    return false;
-  }
+  if (!dark) return false;
   await writeCardPng(
     saveId,
     TWEET_SCREENSHOT_LIGHT_KIND,
@@ -494,12 +446,8 @@ async function captureVariants<SaveRow extends CaptureTweetSave>(
     sourceId: args.sourceId,
     harvestMedia: args.harvestMedia,
   };
-  if (args.parentId) {
-    shotArgs.parentId = args.parentId;
-  }
-  if (args.signal) {
-    shotArgs.signal = args.signal;
-  }
+  if (args.parentId) shotArgs.parentId = args.parentId;
+  if (args.signal) shotArgs.signal = args.signal;
   const dual =
     args.source === "threads"
       ? await ports.screenshotThreadsDual(shotArgs)
@@ -547,15 +495,9 @@ async function captureVariants<SaveRow extends CaptureTweetSave>(
     complete: lightOk && darkOk,
     authWall,
   };
-  if (quotedUrl) {
-    result.quotedUrl = quotedUrl;
-  }
-  if (media) {
-    result.media = media;
-  }
-  if (dual.page) {
-    result.page = dual.page;
-  }
+  if (quotedUrl) result.quotedUrl = quotedUrl;
+  if (media) result.media = media;
+  if (dual.page) result.page = dual.page;
   const variantFailureReason =
     args.harvestMedia && !dual.page && (light.ok || dark.ok)
       ? "capture_failed"
@@ -584,9 +526,7 @@ async function writeScreenshot(
   result: TweetScreenshotResult,
   ports: Pick<CaptureTweetPorts<CaptureTweetSave>, "persistSave">,
 ): Promise<void> {
-  if (!result.png) {
-    return;
-  }
+  if (!result.png) return;
   await ports.persistSave(
     saveId,
     {},
@@ -614,37 +554,27 @@ async function finalizeRawJson<SaveRow extends CaptureTweetSave>(
   opts: { stampVersion: boolean },
   ports: CaptureTweetPorts<SaveRow>,
 ): Promise<boolean> {
-  if (!stored) {
-    return false;
-  }
+  if (!stored) return false;
   const rawJson = structuredClone(stored);
-  if (!rawJson.capture) {
-    return false;
-  }
+  if (!rawJson.capture) return false;
 
   const existing = rawJson.capture.media ?? [];
   const seen = new Set(existing.map((m) => m.url));
   let mediaAdded = false;
   for (const m of harvested) {
-    if (!m.url || seen.has(m.url)) {
-      continue;
-    }
+    if (!m.url || seen.has(m.url)) continue;
     seen.add(m.url);
     existing.push(m);
     mediaAdded = true;
   }
-  if (mediaAdded) {
-    rawJson.capture.media = existing;
-  }
+  if (mediaAdded) rawJson.capture.media = existing;
 
   const willStamp = opts.stampVersion && isCaptureTweetStale(rawJson);
   if (willStamp) {
     rawJson.captureTweetVersion = targetCaptureTweetVersion(rawJson);
   }
 
-  if (!mediaAdded && !willStamp) {
-    return mediaAdded;
-  }
+  if (!mediaAdded && !willStamp) return mediaAdded;
 
   await ports.persistSave(
     saveId,
@@ -691,19 +621,13 @@ async function fillReplyParent<SaveRow extends CaptureTweetSave>(
     return "unchanged";
   }
   const parentUrl = save.rawJson?.capture?.replyTo?.url;
-  if (!parentUrl || parentUrl === save.url) {
-    return "unchanged";
-  }
-  if (save.rawJson?.capture?.replyTo?.description) {
-    return "unchanged";
-  }
+  if (!parentUrl || parentUrl === save.url) return "unchanged";
+  if (save.rawJson?.capture?.replyTo?.description) return "unchanged";
   const parentId =
     save.source === "threads"
       ? parsePostCode(parentUrl)
       : parseTweetId(parentUrl);
-  if (!parentId) {
-    return "unchanged";
-  }
+  if (!parentId) return "unchanged";
   const parent = await captureVariants(
     saveId,
     {
@@ -720,9 +644,7 @@ async function fillReplyParent<SaveRow extends CaptureTweetSave>(
     },
     ports,
   );
-  if (signal?.aborted) {
-    return "unchanged";
-  }
+  if (signal?.aborted) return "unchanged";
   if (!parent.page) {
     if (
       parent.failureReason === "timeout" ||
@@ -749,9 +671,7 @@ async function markReplyParentUnavailable<SaveRow extends CaptureTweetSave>(
   stored: RawJson | null,
   ports: CaptureTweetPorts<SaveRow>,
 ): Promise<void> {
-  if (!stored?.capture?.replyTo) {
-    return;
-  }
+  if (!stored?.capture?.replyTo) return;
   const rawJson = structuredClone(stored);
   rawJson.capture.extras = {
     ...rawJson.capture.extras,
@@ -770,32 +690,16 @@ async function mergeReplyParent<SaveRow extends CaptureTweetSave>(
   parent: Capture,
   ports: CaptureTweetPorts<SaveRow>,
 ): Promise<boolean> {
-  if (!stored?.capture?.replyTo) {
-    return false;
-  }
+  if (!stored?.capture?.replyTo) return false;
   const rawJson = structuredClone(stored);
   const replyTo = rawJson.capture?.replyTo;
-  if (!replyTo) {
-    return false;
-  }
-  if (parent.description) {
-    replyTo.description = parent.description;
-  }
-  if (parent.title) {
-    replyTo.title = parent.title;
-  }
-  if (parent.author) {
-    replyTo.author = parent.author;
-  }
-  if (parent.publishedAt) {
-    replyTo.publishedAt = parent.publishedAt;
-  }
-  if (parent.media.length > 0) {
-    replyTo.media = parent.media;
-  }
-  if (parent.quoted) {
-    replyTo.quoted = parent.quoted;
-  }
+  if (!replyTo) return false;
+  if (parent.description) replyTo.description = parent.description;
+  if (parent.title) replyTo.title = parent.title;
+  if (parent.author) replyTo.author = parent.author;
+  if (parent.publishedAt) replyTo.publishedAt = parent.publishedAt;
+  if (parent.media.length > 0) replyTo.media = parent.media;
+  if (parent.quoted) replyTo.quoted = parent.quoted;
   await ports.persistSave(
     saveId,
     { rawJson },

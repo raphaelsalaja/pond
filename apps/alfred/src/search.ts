@@ -15,17 +15,11 @@ export function run(argv: Array<string>): string {
           include: ["saves"],
         }),
   );
-  if (!result) {
-    return JSON.stringify({ items: errorItems("offline") });
-  }
+  if (!result) return JSON.stringify({ items: errorItems("offline") });
   const failure = failureFor(result);
-  if (failure) {
-    return JSON.stringify({ items: errorItems(failure) });
-  }
+  if (failure) return JSON.stringify({ items: errorItems(failure) });
   const parsed = SavesResponseSchema.safeParse(result.body);
-  if (!parsed.success) {
-    return JSON.stringify({ items: errorItems("failed") });
-  }
+  if (!parsed.success) return JSON.stringify({ items: errorItems("failed") });
   const items = saveItems(parsed.data.data.saves);
   return JSON.stringify({
     items:

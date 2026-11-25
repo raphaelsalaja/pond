@@ -34,9 +34,7 @@ export const review = {
     action: ReviewAction,
     perform: ReviewPerform = performReview,
   ) {
-    if (!changes.length || store.state.working.length) {
-      return;
-    }
+    if (!changes.length || store.state.working.length) return;
     patch({ working: changes.map((change) => change.id), error: null });
     try {
       await perform(

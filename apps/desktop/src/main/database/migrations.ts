@@ -365,9 +365,7 @@ function savesColumns(sqlite: Database.Database): Array<string> {
 }
 
 function ensureFavorite(sqlite: Database.Database): void {
-  if (savesColumns(sqlite).includes("favorite")) {
-    return;
-  }
+  if (savesColumns(sqlite).includes("favorite")) return;
   sqlite.exec(
     "ALTER TABLE saves ADD COLUMN favorite INTEGER NOT NULL DEFAULT 0",
   );
@@ -391,9 +389,7 @@ function ensureInboxColumns(sqlite: Database.Database): void {
 
 /** `CREATE TABLE IF NOT EXISTS` leaves existing indexes without the column, so add it and fill it from legacy source id prefixes. */
 function ensureImportedFrom(sqlite: Database.Database): void {
-  if (savesColumns(sqlite).includes("imported_from")) {
-    return;
-  }
+  if (savesColumns(sqlite).includes("imported_from")) return;
   sqlite.transaction(() => {
     sqlite.exec("ALTER TABLE saves ADD COLUMN imported_from TEXT");
     const backfill = sqlite.prepare(`

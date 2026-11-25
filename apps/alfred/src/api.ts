@@ -52,14 +52,8 @@ function parseBody(text: string): JsonValue {
 export type ApiFailure = "offline" | "unauthorized" | "forbidden" | "failed";
 
 export function failureFor(result: CurlResult): ApiFailure | null {
-  if (result.status >= 200 && result.status < 300) {
-    return null;
-  }
-  if (result.status === 401) {
-    return "unauthorized";
-  }
-  if (result.status === 403) {
-    return "forbidden";
-  }
+  if (result.status >= 200 && result.status < 300) return null;
+  if (result.status === 401) return "unauthorized";
+  if (result.status === 403) return "forbidden";
   return "failed";
 }

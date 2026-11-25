@@ -11,9 +11,7 @@ type ChangeDetails = Parameters<
 export function useMenuFilterQuery() {
   const [query, setQuery] = useState("");
   const onValueChange = useCallback((value: string, details: ChangeDetails) => {
-    if (details.reason === "popup-close") {
-      return;
-    }
+    if (details.reason === "popup-close") return;
     setQuery(value);
   }, []);
   const reset = useCallback(() => setQuery(""), []);

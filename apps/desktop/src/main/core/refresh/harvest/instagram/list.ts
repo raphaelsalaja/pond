@@ -81,12 +81,8 @@ async function inPageInstagramList(
   }
 
   const apiResult = await fetchSavedViaApi();
-  if (apiResult) {
-    return apiResult;
-  }
-  if (args.collectionId) {
-    return { ok: false, reason: "no_match" };
-  }
+  if (apiResult) return apiResult;
+  if (args.collectionId) return { ok: false, reason: "no_match" };
   return await fallbackDomScroll();
 
   async function fetchSavedViaApi(): Promise<ListHarvestResult | null> {
@@ -138,9 +134,7 @@ async function inPageInstagramList(
 
     /** A stored cursor can expire between runs; read the list from the top instead. */
     function restartFromTop(): boolean {
-      if (!resuming || pagesRead > 0) {
-        return false;
-      }
+      if (!resuming || pagesRead > 0) return false;
       resuming = false;
       cursor = undefined;
       globalThis.__pondHarvestCursor = null;
@@ -185,9 +179,7 @@ async function inPageInstagramList(
             ok: false,
             reason: "rate_limited",
           };
-          if (Number.isFinite(n)) {
-            limited.retryAfterSec = Math.max(0, n);
-          }
+          if (Number.isFinite(n)) limited.retryAfterSec = Math.max(0, n);
           return limited;
         }
         if (!res.ok) {
@@ -197,9 +189,7 @@ async function inPageInstagramList(
             path = `${collection}/`;
             continue;
           }
-          if (restartFromTop()) {
-            continue;
-          }
+          if (restartFromTop()) continue;
           return null;
         }
 
@@ -210,9 +200,7 @@ async function inPageInstagramList(
           page,
           error: error instanceof Error ? error.name : "error",
         });
-        if (restartFromTop()) {
-          continue;
-        }
+        if (restartFromTop()) continue;
         return null;
       }
 
@@ -223,9 +211,7 @@ async function inPageInstagramList(
       const items = json?.items ?? json?.feed_items ?? [];
       if (items.length === 0 && pagesRead === 0) {
         reportProgress("api_empty", { page, path });
-        if (restartFromTop()) {
-          continue;
-        }
+        if (restartFromTop()) continue;
         return null;
       }
       pagesRead += 1;
@@ -236,9 +222,7 @@ async function inPageInstagramList(
         const entry = norm.normalizeMediaNode(item.media ?? item, {
           savedTimestamp: item.timestamp,
         });
-        if (!entry) {
-          continue;
-        }
+        if (!entry) continue;
         pageNorm += 1;
         if (!known.has(entry.sourceId)) {
           pageFresh += 1;
@@ -353,9 +337,7 @@ async function inPageInstagramList(
     const collected = new Map<string, StubEntry>();
     function ingestRows(rows: Array<StubEntry>): void {
       for (const r of rows) {
-        if (!collected.has(r.sourceId)) {
-          collected.set(r.sourceId, r);
-        }
+        if (!collected.has(r.sourceId)) collected.set(r.sourceId, r);
       }
     }
 

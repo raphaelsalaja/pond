@@ -68,9 +68,7 @@ const runtime: CompressionRuntime = {
           }
           const save = byId.get(id);
           const file = save?.files?.[fileIndex];
-          if (!save || !file) {
-            return null;
-          }
+          if (!save || !file) return null;
           const thumbnail = save.files?.find(
             (entry) => entry.kind === THUMBNAIL_KIND,
           );
@@ -165,9 +163,7 @@ export async function encodeCompressedImage(
   const extension = extname(path).slice(1).toLowerCase();
   if (mode === "upscale") {
     const metadata = await sharp(source).metadata();
-    if (!metadata.width || !metadata.height) {
-      return null;
-    }
+    if (!metadata.width || !metadata.height) return null;
     return sharp(source)
       .resize(metadata.width * 2, metadata.height * 2, {
         fit: "fill",
@@ -213,9 +209,7 @@ export async function encodeCompressedImage(
       .toBuffer();
   }
   if (extension === "svg") {
-    if (mode !== "lossless") {
-      return null;
-    }
+    if (mode !== "lossless") return null;
     return optimizeSvg(source);
   }
   const image = sharp(source, {
@@ -228,9 +222,7 @@ export async function encodeCompressedImage(
     case "jpeg":
     case "jpe":
     case "jfif":
-      if (mode === "lossless") {
-        return null;
-      }
+      if (mode === "lossless") return null;
       return image.jpeg({ quality, mozjpeg: true }).toBuffer();
     case "png":
       return image
@@ -327,9 +319,7 @@ async function compressionTransaction(
       const thumbnailIndex = files.findIndex(
         (file) => file.path === previousPath,
       );
-      if (thumbnailIndex >= 0) {
-        files[thumbnailIndex] = updatedThumbnail;
-      }
+      if (thumbnailIndex >= 0) files[thumbnailIndex] = updatedThumbnail;
       writes.push({
         filename: thumbnailPath,
         bytes: thumbnailBytes,

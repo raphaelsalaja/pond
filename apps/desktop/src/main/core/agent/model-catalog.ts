@@ -51,20 +51,14 @@ export function createModelCatalog(
   let expires = 0;
   let pending: Promise<CatalogResult> | undefined;
   return async (): Promise<CatalogResult> => {
-    if (now() < expires) {
-      return { models: cached };
-    }
-    if (pending) {
-      return pending;
-    }
+    if (now() < expires) return { models: cached };
+    if (pending) return pending;
     pending = (async () => {
       try {
         const response = await fetcher(CATALOG_URL, {
           signal: AbortSignal.timeout(10_000),
         });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const parsed = catalogSchema.parse(await response.json());
         cached = parsed.data.filter((model) => model.type === "language");
         expires = now() + CACHE_MS;
@@ -96,15 +90,9 @@ function withMetadata(
   native?: ProviderModel,
 ): ProviderModel {
   const model: ProviderModel = { id, name: entry.name, catalogId: entry.id };
-  if (entry.description) {
-    model.description = entry.description;
-  }
-  if (entry.context_window) {
-    model.contextWindow = entry.context_window;
-  }
-  if (entry.max_tokens) {
-    model.maxOutputTokens = entry.max_tokens;
-  }
+  if (entry.description) model.description = entry.description;
+  if (entry.context_window) model.contextWindow = entry.context_window;
+  if (entry.max_tokens) model.maxOutputTokens = entry.max_tokens;
   model.capabilities = [
     ...new Set(
       entry.tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean),
@@ -157,9 +145,7 @@ export function catalogModelsForProvider(
   nativeModels?: Array<ProviderModel>,
 ): Array<ProviderModel> {
   const prefix = creator(provider);
-  if (!prefix) {
-    return nativeModels ?? [];
-  }
+  if (!prefix) return nativeModels ?? [];
   const entries = catalog.filter((entry) => entry.id.startsWith(`${prefix}/`));
   if (!nativeModels) {
     return entries.map((entry) => ({

@@ -24,9 +24,7 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
@@ -107,9 +105,7 @@ describe.skipIf(!nativeSqliteAvailable())(
         rmSync(dir, { recursive: true, force: true });
       } catch (error) {
         /** Pond keeps `global.db` open until the process ends, and Windows can't delete an open file. */
-        if (process.platform !== "win32") {
-          throw error;
-        }
+        if (process.platform !== "win32") throw error;
       }
     });
 
@@ -118,9 +114,7 @@ describe.skipIf(!nativeSqliteAvailable())(
       const first = await saveFromExtension("first-save", page);
       expect(first).toMatchObject({ state: "complete", duplicateCount: 0 });
       const [saveId] = first.saveIds;
-      if (!saveId) {
-        throw new Error("first save returned no Save");
-      }
+      if (!saveId) throw new Error("first save returned no Save");
       const savedAt = (await row(saveId))?.savedAt;
 
       await trash(saveId);
@@ -154,9 +148,7 @@ describe.skipIf(!nativeSqliteAvailable())(
         filePaths: [file],
         fileSourceUrls: [image],
       });
-      if (!first.ok) {
-        throw new Error(first.error);
-      }
+      if (!first.ok) throw new Error(first.error);
       await trash(first.id);
 
       const again = await saveFromExtension("image-again", {

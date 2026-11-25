@@ -219,18 +219,12 @@ export function walkCaptureMedia(
     depth += 1;
     for (const current of level) {
       for (const m of current.media ?? []) {
-        if (seen.has(m.url)) {
-          continue;
-        }
+        if (seen.has(m.url)) continue;
         seen.add(m.url);
         out.push(m);
       }
-      if (current.quoted) {
-        pending.push(current.quoted);
-      }
-      if (current.replyTo) {
-        pending.push(current.replyTo);
-      }
+      if (current.quoted) pending.push(current.quoted);
+      if (current.replyTo) pending.push(current.replyTo);
     }
   }
   return out;

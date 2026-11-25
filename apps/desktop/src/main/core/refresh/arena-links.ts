@@ -132,9 +132,7 @@ const defaultDeps: ArenaLinkJobDeps = {
     ).ok,
   settle: async (saveIds) => {
     const db = await getDb();
-    while (countIngesting(db, saveIds) > 0) {
-      await delay(SETTLE_POLL_MS);
-    }
+    while (countIngesting(db, saveIds) > 0) await delay(SETTLE_POLL_MS);
   },
   converted: async (saveIds) => convertedArenaLinks(await getDb(), saveIds),
   restore: async () => restoreLinkedPageHarvests(await getDb()),
@@ -154,9 +152,7 @@ export async function convertArenaLinks(
   onProgress?: (progress: ArenaLinkConversionProgress) => void,
   deps: ArenaLinkJobDeps = defaultDeps,
 ): Promise<ArenaLinkConversion | { ok: false; reason: "already_running" }> {
-  if (running) {
-    return { ok: false, reason: "already_running" };
-  }
+  if (running) return { ok: false, reason: "already_running" };
   running = runConversion(onProgress, deps).finally(() => {
     running = null;
   });

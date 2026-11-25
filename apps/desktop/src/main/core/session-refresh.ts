@@ -43,17 +43,11 @@ export function createSessionRefresh(deps: SessionRefreshDeps) {
         signedOut.push(account);
       }
     }
-    if (signedOut.length === 0) {
-      return null;
-    }
+    if (signedOut.length === 0) return null;
     const handle = await deps.probeHandle(source, cookies);
-    if (!handle) {
-      return null;
-    }
+    if (!handle) return null;
     const match = signedOut.find((account) => account.handle === handle);
-    if (match) {
-      return { account: match, handle };
-    }
+    if (match) return { account: match, handle };
     /** An Account connected before handle probing has nothing to compare. When it is the only signed-out candidate and no other Account claims the probed handle, this is its one possible sign-in. */
     const sole = signedOut.length === 1 ? signedOut[0] : undefined;
     if (
@@ -86,9 +80,7 @@ export function createSessionRefresh(deps: SessionRefreshDeps) {
     const signedIn = own.some((cookie) =>
       deps.isAuthCookie(source, cookie.name, cookie.value),
     );
-    if (!sessionId || !signedIn) {
-      return { tracked: true, refreshed: false };
-    }
+    if (!sessionId || !signedIn) return { tracked: true, refreshed: false };
 
     let account: ConnectedAccount | null = null;
     for (const candidate of accounts) {
@@ -101,9 +93,7 @@ export function createSessionRefresh(deps: SessionRefreshDeps) {
     }
     const revived = account === null;
     if (!account) {
-      if (unmatched.has(sessionId)) {
-        return { tracked: true, refreshed: false };
-      }
+      if (unmatched.has(sessionId)) return { tracked: true, refreshed: false };
       const revival = await signedOutAccountFor(source, accounts, own);
       if (!revival) {
         unmatched.add(sessionId);
@@ -117,9 +107,7 @@ export function createSessionRefresh(deps: SessionRefreshDeps) {
     }
 
     await deps.writeCookies(account, own);
-    if (revived) {
-      deps.signedBackIn(account);
-    }
+    if (revived) deps.signedBackIn(account);
     return { tracked: true, refreshed: true };
   };
 }

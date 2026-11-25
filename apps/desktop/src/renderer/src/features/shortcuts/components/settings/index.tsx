@@ -38,9 +38,7 @@ export function ShortcutSettings({
     void window.pond
       .query("settings.globalShortcutStatus", {})
       .then((status) => {
-        if (active) {
-          setNativeErrors(status.errors);
-        }
+        if (active) setNativeErrors(status.errors);
       })
       .catch((cause: unknown) => {
         log.warn("[pond shortcuts] global shortcut status failed", cause);
@@ -51,9 +49,7 @@ export function ShortcutSettings({
   }, []);
 
   const patch = async (delta: Partial<typeof preferences>) => {
-    if (pendingRef.current) {
-      return;
-    }
+    if (pendingRef.current) return;
     pendingRef.current = true;
     setPending(true);
     setError("");
@@ -134,9 +130,7 @@ export function ShortcutSettings({
                 setError("");
               }}
               onKeyDown={(event) => {
-                if (recording !== id || pendingRef.current) {
-                  return;
-                }
+                if (recording !== id || pendingRef.current) return;
                 event.preventDefault();
                 event.stopPropagation();
                 if (event.key === "Escape") {

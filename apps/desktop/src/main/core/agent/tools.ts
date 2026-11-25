@@ -225,9 +225,7 @@ export async function readSave(
     and(eq(saves.id, input.id), ...libraryScopeClauses(scope)),
   );
   const row = rows[0];
-  if (!row) {
-    return { error: "Save not found." };
-  }
+  if (!row) return { error: "Save not found." };
   const fields = {
     description: row.description ?? "",
     notes: row.notes ?? "",
@@ -293,9 +291,7 @@ export async function grepLibrary(
   deps = toolDependencies,
 ) {
   const match = toFtsMatchQuery(input.query);
-  if (!match) {
-    return { hits: [] };
-  }
+  if (!match) return { hits: [] };
   /** SQLite snippet() returns null for columns that did not match. */
   const rows = GrepRowsSchema.parse(
     await deps.grepRows(match, input.id, input.limit ?? 20),

@@ -24,9 +24,7 @@ export function downloadActivityForSave(
 ): DownloadActivity | undefined {
   let result: DownloadActivity | undefined;
   for (const activity of activities) {
-    if (activity.saveId !== saveId) {
-      continue;
-    }
+    if (activity.saveId !== saveId) continue;
     if (
       !result ||
       (activity.state === "running" && result.state !== "running") ||

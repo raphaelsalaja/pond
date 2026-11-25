@@ -94,9 +94,7 @@ export async function startRefreshBackfill(
 }
 
 export function cancelRefreshBackfill(): void {
-  if (!inFlight) {
-    return;
-  }
+  if (!inFlight) return;
   inFlight.abort();
 }
 
@@ -111,9 +109,7 @@ async function runWorker(
   let current = 0;
 
   for (let i = 0; i < ids.length; i += GLOBAL_POOL_CAP) {
-    if (signal.aborted) {
-      break;
-    }
+    if (signal.aborted) break;
     const batch = ids.slice(i, i + GLOBAL_POOL_CAP);
     const outcomes = await Promise.all(
       batch.map(async (id): Promise<RefreshOutcome> => {
@@ -184,12 +180,8 @@ function messageForProgress(
   auth: Set<Source>,
 ): string {
   const parts = [`${current}/${total}`, `${ok} ok`];
-  if (fail > 0) {
-    parts.push(`${fail} failed`);
-  }
-  if (auth.size > 0) {
-    parts.push(`${auth.size} need sign-in`);
-  }
+  if (fail > 0) parts.push(`${fail} failed`);
+  if (auth.size > 0) parts.push(`${auth.size} need sign-in`);
   return parts.join(" · ");
 }
 
@@ -231,9 +223,7 @@ async function pickIdsForBackfill(
       isNull(saves.title),
       isNull(saves.description),
     );
-    if (missing) {
-      conds.push(missing);
-    }
+    if (missing) conds.push(missing);
   }
   const rows = await db
     .select({ id: saves.id })

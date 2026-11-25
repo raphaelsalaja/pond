@@ -47,9 +47,7 @@ export async function revealTransfer(job: TransferJob) {
   const result = await window.pond.query("transferJobs.reveal", {
     path: job.request.destination,
   });
-  if (!result.ok) {
-    statusFeed.error("Show in Finder", result.error);
-  }
+  if (!result.ok) statusFeed.error("Show in Finder", result.error);
 }
 
 function copyText(text: string) {

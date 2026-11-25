@@ -19,9 +19,7 @@ export function isPathInside(
 ): boolean {
   const path = flavor(options.platform ?? process.platform);
   const child = path.relative(root, target);
-  if (child === "") {
-    return options.includeSame ?? false;
-  }
+  if (child === "") return options.includeSame ?? false;
   return (
     child !== ".." &&
     !child.startsWith(`..${path.sep}`) &&
@@ -43,9 +41,7 @@ export function isSamePath(
   b: string,
   platform: NodeJS.Platform = process.platform,
 ): boolean {
-  if (a === "" || b === "") {
-    return a === b;
-  }
+  if (a === "" || b === "") return a === b;
   const path = flavor(platform);
   return platform === "win32"
     ? path.relative(a, b) === ""

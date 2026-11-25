@@ -69,20 +69,15 @@ export default defineBackground(() => {
 
   onMessage("openPond", async ({ data }) => {
     const path = pondPathSchema.safeParse(data);
-    if (!path.success) {
-      return false;
-    }
+    if (!path.success) return false;
     const [tab] = await browser.tabs.query({
       active: true,
       currentWindow: true,
     });
     const url = `pond://${path.data ?? ""}`;
     try {
-      if (tab?.id !== undefined) {
-        await browser.tabs.update(tab.id, { url });
-      } else {
-        await browser.tabs.create({ url });
-      }
+      if (tab?.id !== undefined) await browser.tabs.update(tab.id, { url });
+      else await browser.tabs.create({ url });
       return true;
     } catch (error) {
       // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.

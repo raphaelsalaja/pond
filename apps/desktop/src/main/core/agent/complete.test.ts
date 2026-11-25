@@ -65,9 +65,7 @@ function scriptedModel(...steps: Array<ReturnType<typeof textChunks>>) {
   return new MockLanguageModelV4({
     doStream: async () => {
       const chunks = steps[step++];
-      if (!chunks) {
-        throw new Error("Unexpected model step");
-      }
+      if (!chunks) throw new Error("Unexpected model step");
       return { stream: simulateReadableStream({ chunks }) };
     },
   });
@@ -283,17 +281,13 @@ it("keeps parallel search citations in evidence registry order", async () => {
       signal: input.abortController.signal,
       onActivity: vi.fn(),
       onSources: (sources) => {
-        if (sources[0]?.id === "film-2") {
-          cinemaCollected();
-        }
+        if (sources[0]?.id === "film-2") cinemaCollected();
       },
     },
     {
       ...contextDependencies,
       searchLibrary: (args) => {
-        if (++searches === 2) {
-          searchesStarted();
-        }
+        if (++searches === 2) searchesStarted();
         return args.query === "film" ? film : cinema;
       },
     },

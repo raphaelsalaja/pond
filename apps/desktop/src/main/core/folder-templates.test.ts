@@ -37,9 +37,7 @@ function runtime(options: { failPrefs?: boolean } = {}) {
     listFolders: async () => [],
     getPrefs: async () => prefs,
     setPrefs: async (patch) => {
-      if (options.failPrefs) {
-        throw new Error("Prefs unavailable");
-      }
+      if (options.failPrefs) throw new Error("Prefs unavailable");
       prefs = PrefsSchema.parse({
         ...prefs,
         ...patch,

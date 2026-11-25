@@ -65,9 +65,7 @@ JSON.stringify({ defaultPath: fallback ? ObjC.unwrap(fallback.path) : null, path
 async function listedApps(filePath: string): Promise<Array<OpenWithAppInfo>> {
   const key = openWithListingKey(filePath);
   const cached = listedAppsByKind.get(key);
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
   const ranked = await listMacApps(filePath);
   listedAppsByKind.set(key, ranked);
   return ranked;
@@ -77,9 +75,7 @@ const ICON_SOURCE_PX = 32;
 
 async function cachedAppIcon(path: string): Promise<string | null> {
   const cached = iconByPath.get(path);
-  if (cached !== undefined) {
-    return cached;
-  }
+  if (cached !== undefined) return cached;
   const icon = await readAppIcon(path);
   iconByPath.set(path, icon);
   return icon;
@@ -87,9 +83,7 @@ async function cachedAppIcon(path: string): Promise<string | null> {
 
 async function readAppIcon(path: string): Promise<string | null> {
   const fromQuickLook = await thumbnailIcon(path);
-  if (fromQuickLook) {
-    return fromQuickLook;
-  }
+  if (fromQuickLook) return fromQuickLook;
   try {
     const image = await app.getFileIcon(path, { size: "normal" });
     return encodeIcon(image);
@@ -111,17 +105,13 @@ async function thumbnailIcon(path: string): Promise<string | null> {
 }
 
 function encodeIcon(image: NativeImage): string | null {
-  if (image.isEmpty()) {
-    return null;
-  }
+  if (image.isEmpty()) return null;
   const sized = image.resize({
     width: ICON_SOURCE_PX,
     height: ICON_SOURCE_PX,
     quality: "best",
   });
-  if (sized.isEmpty()) {
-    return null;
-  }
+  if (sized.isEmpty()) return null;
   return sized.toDataURL();
 }
 
@@ -166,11 +156,8 @@ export const openWithQueries = {
       const window =
         (event ? BrowserWindow.fromWebContents(event.sender) : null) ??
         BrowserWindow.getFocusedWindow();
-      if (window) {
-        window.previewFile(target.path);
-      } else {
-        execFile("/usr/bin/qlmanage", ["-p", target.path]).unref();
-      }
+      if (window) window.previewFile(target.path);
+      else execFile("/usr/bin/qlmanage", ["-p", target.path]).unref();
       return { ok: true as const };
     },
   ),
@@ -199,9 +186,7 @@ export const openWithQueries = {
       const libraryId = activeLibraryId();
       const entries = unique.flatMap((id) => {
         const row = byId.get(id);
-        if (!row) {
-          return [];
-        }
+        if (!row) return [];
         return [
           {
             save: row,
@@ -224,13 +209,9 @@ export const openWithQueries = {
       includeIcons: z.boolean().optional(),
     }),
     async ({ ids, fileIndex, includeIcons }) => {
-      if (process.platform !== "darwin") {
-        return { apps: [] };
-      }
+      if (process.platform !== "darwin") return { apps: [] };
       const target = await resolveSaveFilePath(ids[0] ?? "", fileIndex);
-      if (!target.ok) {
-        return { apps: [] };
-      }
+      if (!target.ok) return { apps: [] };
       try {
         const file = target.path;
         const ranked = await listedApps(file);
@@ -257,9 +238,7 @@ export const openWithQueries = {
     async ({ ids, fileIndex, application }) =>
       runLibraryTransfer(async (): Promise<QueryResult<"saves.openWith">> => {
         const resolved = await resolveFiles(ids, fileIndex);
-        if (!resolved.ok) {
-          return resolved;
-        }
+        if (!resolved.ok) return resolved;
         const { files } = resolved;
         try {
           if (process.platform === "win32") {

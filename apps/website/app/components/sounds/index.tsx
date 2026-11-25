@@ -31,14 +31,10 @@ export function Sounds() {
         return;
       }
       const control = event.target.closest(CONTROL);
-      if (!control) {
-        return;
-      }
+      if (!control) return;
 
       const now = performance.now();
-      if (now - last < RATE_MS) {
-        return;
-      }
+      if (now - last < RATE_MS) return;
       const volume = now - last < RAPID_MS ? 0.7 : 1;
       last = now;
 

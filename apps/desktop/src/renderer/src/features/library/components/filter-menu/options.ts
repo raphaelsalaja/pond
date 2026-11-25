@@ -192,12 +192,8 @@ export function fieldMatchesQuery(
   options: ReadonlyArray<FilterOption>,
 ): boolean {
   const needle = query.trim().toLowerCase();
-  if (!needle) {
-    return true;
-  }
-  if (FIELD_META[field].label.toLowerCase().includes(needle)) {
-    return true;
-  }
+  if (!needle) return true;
+  if (FIELD_META[field].label.toLowerCase().includes(needle)) return true;
   return options.some((option) => option.label.toLowerCase().includes(needle));
 }
 
@@ -231,9 +227,7 @@ function calendarDateOptions(field: FieldId): Array<FilterOption> {
       predicate: { field, operator: "gte" as const, value: iso },
     })),
   ];
-  if (field !== "modifiedAt") {
-    return options;
-  }
+  if (field !== "modifiedAt") return options;
   const monthFormatter = new Intl.DateTimeFormat("en-US", {
     month: "long",
     year: "numeric",
@@ -274,9 +268,7 @@ function typeIcon(value: string): ReactNode {
 
 export function presetOptions(field: FieldId): Array<FilterOption> {
   const meta = FIELD_META[field];
-  if (meta.type === "date") {
-    return calendarDateOptions(field);
-  }
+  if (meta.type === "date") return calendarDateOptions(field);
   if (meta.type === "optional") {
     return [
       {

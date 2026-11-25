@@ -30,8 +30,6 @@ export async function probe(): Promise<ProbeResult> {
     return OFFLINE;
   }
   const library = libraryInfoSchema.safeParse(result.data);
-  if (!library.success) {
-    return { state: "offline", reason: "incompatible" };
-  }
+  if (!library.success) return { state: "offline", reason: "incompatible" };
   return { state: "connected", library: library.data };
 }

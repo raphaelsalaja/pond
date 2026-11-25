@@ -50,16 +50,12 @@ export async function retryDownloadRows(
   rows: ReadonlyArray<DownloadRow>,
 ): Promise<boolean> {
   const ids = uniqueSaveIds(rows, canRetryDownload);
-  if (ids.length === 0) {
-    return false;
-  }
+  if (ids.length === 0) return false;
   try {
     const result = RetryResultSchema.parse(
       await window.pond.query("saves.retryFailed", { ids }),
     );
-    if (!result.ok || result.requeued === 0) {
-      throw new Error("retry failed");
-    }
+    if (!result.ok || result.requeued === 0) throw new Error("retry failed");
     downloadsSelection.clear();
     return true;
   } catch {
@@ -72,16 +68,12 @@ export async function cancelDownloadRows(
   rows: ReadonlyArray<DownloadRow>,
 ): Promise<boolean> {
   const ids = uniqueSaveIds(rows, canCancelDownload);
-  if (ids.length === 0) {
-    return false;
-  }
+  if (ids.length === 0) return false;
   try {
     const result = CancelResultSchema.parse(
       await window.pond.pipelineCancelSaves(ids),
     );
-    if (!result.ok) {
-      throw new Error("cancel failed");
-    }
+    if (!result.ok) throw new Error("cancel failed");
     downloadsSelection.clear();
     return result.cancelled > 0;
   } catch {
@@ -97,16 +89,12 @@ export async function skipDownloadRows(
   rows: ReadonlyArray<DownloadRow>,
 ): Promise<boolean> {
   const ids = uniqueSaveIds(rows, canSkipDownload);
-  if (ids.length === 0) {
-    return false;
-  }
+  if (ids.length === 0) return false;
   try {
     const result = SkipResultSchema.parse(
       await window.pond.query("saves.skipIngest", { ids }),
     );
-    if (!result.ok || result.skipped === 0) {
-      throw new Error("skip failed");
-    }
+    if (!result.ok || result.skipped === 0) throw new Error("skip failed");
     downloadsSelection.clear();
     return true;
   } catch {
@@ -154,9 +142,7 @@ const CLEAR_UNFINISHED_DEPENDENCIES: ClearUnfinishedDependencies = {
     const deletedAt = Date.now();
     for (const id of ids) {
       const save = pool.get(id);
-      if (save) {
-        pool.upsert({ ...save, deletedAt });
-      }
+      if (save) pool.upsert({ ...save, deletedAt });
     }
     emitFeedback("saveDeletion");
   },
@@ -205,14 +191,10 @@ async function trashDownloadIds(
   dependencies: TrashDownloadDependencies,
 ): Promise<boolean> {
   const uniqueIds = [...new Set(ids)];
-  if (uniqueIds.length === 0) {
-    return false;
-  }
+  if (uniqueIds.length === 0) return false;
   try {
     const { changed } = await dependencies.trash(uniqueIds);
-    if (changed === 0) {
-      return false;
-    }
+    if (changed === 0) return false;
     notifyTrashedDownloads(changed, dependencies);
     return true;
   } catch {
@@ -229,9 +211,7 @@ export async function clearUnfinishedDownloads(
 ): Promise<boolean> {
   try {
     const result = await dependencies.clear();
-    if (result.changed === 0) {
-      return false;
-    }
+    if (result.changed === 0) return false;
     dependencies.invalidate(result.ids);
     dependencies.reconcile(result.ids);
     notifyTrashedDownloads(result.changed, dependencies, async () => {

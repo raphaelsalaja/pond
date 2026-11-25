@@ -33,9 +33,7 @@ export function imageMatches(
   for (const sha256 of bySha.keys()) {
     const value = prints.get(sha256);
     const print = value ? decodeImagePrint(value) : null;
-    if (!print || isLowDetailHash(print.full)) {
-      continue;
-    }
+    if (!print || isLowDetailHash(print.full)) continue;
     decoded.set(sha256, print);
     index.add(print.full, { sha256, center: false });
     if (!isLowDetailHash(print.center)) {
@@ -48,9 +46,7 @@ export function imageMatches(
     { left: string; right: string; distance: number }
   >();
   const consider = (left: string, right: string, distance: number) => {
-    if (left === right) {
-      return;
-    }
+    if (left === right) return;
     const key = pairKey(left, right);
     const current = best.get(key);
     if (!current || distance < current.distance) {
@@ -59,9 +55,7 @@ export function imageMatches(
   };
   for (const [sha256, print] of decoded) {
     for (const hit of index.search(print.full, IMAGE_FULL_DISTANCE)) {
-      if (hit.value.center && hit.distance > IMAGE_CENTER_DISTANCE) {
-        continue;
-      }
+      if (hit.value.center && hit.distance > IMAGE_CENTER_DISTANCE) continue;
       consider(sha256, hit.value.sha256, hit.distance);
     }
     if (isLowDetailHash(print.center)) {

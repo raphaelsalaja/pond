@@ -76,9 +76,7 @@ describe("Split Into Saves hotkey", () => {
 
   function collection(): HTMLElement {
     const element = host.querySelector<HTMLElement>("[data-save-collection]");
-    if (!element) {
-      throw new Error("Missing collection");
-    }
+    if (!element) throw new Error("Missing collection");
     return element;
   }
 
@@ -224,9 +222,7 @@ describe("Triage hotkeys", () => {
 
   function collection(): HTMLElement {
     const element = host.querySelector<HTMLElement>("[data-save-collection]");
-    if (!element) {
-      throw new Error("Missing collection");
-    }
+    if (!element) throw new Error("Missing collection");
     return element;
   }
 
@@ -264,9 +260,7 @@ describe("Triage hotkeys", () => {
     });
     pool.clear();
     clearSaveSelection();
-    for (const id of ["a", "b", "c"]) {
-      pool.upsert(save(id, [image(id)]));
-    }
+    for (const id of ["a", "b", "c"]) pool.upsert(save(id, [image(id)]));
     resultNavigation.setSource({ key: "triage", ids: ["a", "b", "c"] });
     host = document.createElement("div");
     document.body.append(host);
@@ -407,9 +401,7 @@ describe("Inbox hotkeys", () => {
 
   async function press(key: string) {
     const target = host.querySelector<HTMLElement>("[data-save-collection]");
-    if (!target) {
-      throw new Error("Missing collection");
-    }
+    if (!target) throw new Error("Missing collection");
     target.focus();
     await act(async () => {
       target.dispatchEvent(

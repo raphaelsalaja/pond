@@ -62,9 +62,7 @@ function scrollActiveViewport(position: "top" | "bottom"): void {
     active !== document.documentElement
       ? active.closest<HTMLElement>("[data-scroll-viewport]")
       : document.querySelector<HTMLElement>("[data-scroll-viewport]");
-  if (!target) {
-    return;
-  }
+  if (!target) return;
   const motion = getPrefsSnapshot()?.preferences.reduceMotion ?? "system";
   const reduceMotion =
     motion === "always" ||
@@ -95,18 +93,12 @@ function slideNavActive(): boolean {
 export function AppHotkeys() {
   const [preferences, , loaded] = usePrefs("shortcuts");
   useEffect(() => {
-    if (loaded) {
-      configureShortcuts(preferences);
-    }
+    if (loaded) configureShortcuts(preferences);
   }, [preferences, loaded]);
   useEffect(() => {
     return window.pond.onShortcutAction((id) => {
-      if (isEditableTarget()) {
-        return;
-      }
-      if (id === "view.layout-cycle") {
-        cycleLayout();
-      }
+      if (isEditableTarget()) return;
+      if (id === "view.layout-cycle") cycleLayout();
     });
   }, []);
   const shortcuts = useShortcutBindings();
@@ -134,9 +126,7 @@ export function AppHotkeys() {
         sequence: [...bindingSequence(shortcuts, "nav.canvases")],
         callback: () => {
           showSidebarPanel("canvases");
-          if (!canvases.snapshot().length) {
-            go(CANVASES_PATH);
-          }
+          if (!canvases.snapshot().length) go(CANVASES_PATH);
         },
       },
       {
@@ -164,9 +154,7 @@ export function AppHotkeys() {
     ].map((binding) => ({
       ...binding,
       callback: () => {
-        if (isEditableTarget()) {
-          return;
-        }
+        if (isEditableTarget()) return;
         if (
           document.activeElement !== document.body &&
           !collectionOwnsKeyboard()
@@ -184,9 +172,7 @@ export function AppHotkeys() {
       {
         hotkey: bindingKeys(shortcuts, "library.search"),
         callback: (event: KeyboardEvent) => {
-          if (event.defaultPrevented) {
-            return;
-          }
+          if (event.defaultPrevented) return;
           event.preventDefault();
           commandMenu.toggle();
         },
@@ -276,9 +262,7 @@ export function AppHotkeys() {
       {
         hotkey: bindingKeys(shortcuts, "view.sidebar"),
         callback: () => {
-          if (slideNavActive()) {
-            return;
-          }
+          if (slideNavActive()) return;
           libraryChrome.toggleSidebar();
         },
         options: { ignoreInputs: true, conflictBehavior: "allow" as const },
@@ -380,12 +364,8 @@ export function AppHotkeys() {
     ].map((binding) => ({
       ...binding,
       callback: (event: KeyboardEvent) => {
-        if (event.defaultPrevented || event.isComposing) {
-          return;
-        }
-        if (appHotkeyBlockedByEditable(event)) {
-          return;
-        }
+        if (event.defaultPrevented || event.isComposing) return;
+        if (appHotkeyBlockedByEditable(event)) return;
         const active = document.activeElement;
         const plain = !event.metaKey && !event.ctrlKey && !event.altKey;
         if (

@@ -63,9 +63,7 @@ export async function rollbackLibraryRename(
   destination: string,
   previousName: string,
 ): Promise<void> {
-  if (source !== destination) {
-    await rename(destination, source);
-  }
+  if (source !== destination) await rename(destination, source);
   updateLibraryIdentity(source, { name: previousName });
 }
 
@@ -73,12 +71,8 @@ export async function removeMovedLibrarySource(
   source: string,
   destination: string,
 ): Promise<boolean> {
-  if (source === destination) {
-    return true;
-  }
-  if (!existsSync(destination)) {
-    return false;
-  }
+  if (source === destination) return true;
+  if (!existsSync(destination)) return false;
   try {
     await rm(source, { recursive: true });
     return true;

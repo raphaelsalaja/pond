@@ -45,9 +45,7 @@ export function SelectionFrame({
                 aria-label="Resize Selection"
                 style={{ scale: `${1 / zoom}` }}
                 onPointerDown={(event) => {
-                  if (event.button !== 0) {
-                    return;
-                  }
+                  if (event.button !== 0) return;
                   event.stopPropagation();
                   event.currentTarget.setPointerCapture(event.pointerId);
                   grabbed.current = corner;
@@ -55,9 +53,7 @@ export function SelectionFrame({
                 }}
                 onPointerMove={(event) => {
                   const corner = grabbed.current;
-                  if (!corner) {
-                    return;
-                  }
+                  if (!corner) return;
                   if (!started.current) {
                     started.current = true;
                     onResizeStart(corner);

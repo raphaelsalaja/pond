@@ -24,9 +24,7 @@ function findScroller(element: HTMLElement | null): HTMLElement | null {
   let node = element?.parentElement ?? null;
   while (node) {
     const overflow = getComputedStyle(node).overflowY;
-    if (overflow === "auto" || overflow === "scroll") {
-      return node;
-    }
+    if (overflow === "auto" || overflow === "scroll") return node;
     node = node.parentElement;
   }
   return null;
@@ -50,9 +48,7 @@ export function useVirtualWindow<T extends HTMLElement>(
   const rafRef = useRef(0);
   const apply = useCallback(() => {
     const container = containerRef.current;
-    if (!container) {
-      return;
-    }
+    if (!container) return;
     let scroller = scrollerRef.current;
     if (!scroller?.isConnected) {
       scroller = findScroller(container);
@@ -76,9 +72,7 @@ export function useVirtualWindow<T extends HTMLElement>(
     let last = Math.ceil(end / FOLDER_ROW_SLOT) + OVERSCAN;
     for (const id of focusIds) {
       const index = indexOf(id);
-      if (index === undefined) {
-        continue;
-      }
+      if (index === undefined) continue;
       first = Math.min(first, index - OVERSCAN);
       last = Math.max(last, index + OVERSCAN + 1);
     }
@@ -97,9 +91,7 @@ export function useVirtualWindow<T extends HTMLElement>(
   const applyRef = useRef(apply);
 
   const schedule = useCallback(() => {
-    if (rafRef.current) {
-      return;
-    }
+    if (rafRef.current) return;
     rafRef.current = requestAnimationFrame(() => {
       rafRef.current = 0;
       applyRef.current();
@@ -114,19 +106,13 @@ export function useVirtualWindow<T extends HTMLElement>(
   /** The scroller's direct children include the animated group, whose height changes without a scroll. */
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) {
-      return;
-    }
+    if (!container) return;
     const scroller = findScroller(container);
     scrollerRef.current = scroller;
-    if (!scroller) {
-      return;
-    }
+    if (!scroller) return;
     const observer = new ResizeObserver(schedule);
     observer.observe(scroller);
-    for (const child of Array.from(scroller.children)) {
-      observer.observe(child);
-    }
+    for (const child of Array.from(scroller.children)) observer.observe(child);
     window.addEventListener("resize", schedule);
     scroller.addEventListener("scroll", schedule, { passive: true });
     apply();

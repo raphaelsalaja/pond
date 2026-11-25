@@ -111,9 +111,7 @@ export function DataTableBody<T extends RowData>({
         >
           {virtualizer.getVirtualItems().map((vi) => {
             const row = rows[vi.index];
-            if (!row) {
-              return null;
-            }
+            if (!row) return null;
             return (
               <div
                 key={row.id}

@@ -1,9 +1,7 @@
 import type { RawJson } from "@pond/schema/raw";
 
 export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
-  if (!raw) {
-    return null;
-  }
+  if (!raw) return null;
   const cap = raw.capture;
   const capture: RawJson["capture"] = {
     id: cap.id,
@@ -47,8 +45,6 @@ export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
 export function withRawSlim<T extends { rawJson?: RawJson | null }>(
   values: T,
 ): T & { rawSlim?: RawJson | null } {
-  if (!("rawJson" in values)) {
-    return values;
-  }
+  if (!("rawJson" in values)) return values;
   return { ...values, rawSlim: slimRawJson(values.rawJson) };
 }

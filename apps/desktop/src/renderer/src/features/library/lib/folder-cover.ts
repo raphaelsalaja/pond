@@ -17,18 +17,14 @@ function textCoverFile(save: Save, theme: ResolvedTheme): SaveFile | null {
   const files = (save.files ?? []).filter(
     (file) => isThumbnailKind(file.kind) && isTextCardThumbnailPath(file.path),
   );
-  if (files.length === 0) {
-    return null;
-  }
+  if (files.length === 0) return null;
   const preferred =
     theme === "dark"
       ? ["thumbnail-dark.png", "thumbnail.webp", "thumbnail.png"]
       : ["thumbnail.webp", "thumbnail.png", "thumbnail-dark.png"];
   for (const filename of preferred) {
     const match = files.find((file) => file.path.endsWith(filename));
-    if (match) {
-      return match;
-    }
+    if (match) return match;
   }
   return files[0] ?? null;
 }

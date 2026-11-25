@@ -33,12 +33,8 @@ onCaptureComplete((receipt) => fishHandoff.complete(receipt));
 export function liveNativePorts(): NativePorts {
   return {
     capture: async (draft, cookies, fishId) => {
-      if (cookies?.length) {
-        attachCaptureCookies(draft.id, cookies);
-      }
-      if (fishId) {
-        fishHandoff.remember(draft.id, fishId);
-      }
+      if (cookies?.length) attachCaptureCookies(draft.id, cookies);
+      if (fishId) fishHandoff.remember(draft.id, fishId);
       return captures.accept(draft);
     },
     captureStatus: (id) => captures.status(id),

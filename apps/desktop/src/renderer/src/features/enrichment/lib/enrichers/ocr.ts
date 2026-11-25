@@ -22,9 +22,7 @@ export function createOcrEnricher(
     },
     async run(save: Save, prefs = DEFAULT_PREFS.ai) {
       const imageUrl = representativeImageUrl(save);
-      if (!imageUrl) {
-        return null;
-      }
+      if (!imageUrl) return null;
       const result = await router.run({
         saveId: save.id,
         imageUrl,

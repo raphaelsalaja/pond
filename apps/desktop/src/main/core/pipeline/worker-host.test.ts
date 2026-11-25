@@ -65,9 +65,7 @@ class FakeWorkerProcess implements QueueWorkerProcess {
 
   complete(): void {
     const request = this.requests[0];
-    if (!request) {
-      throw new Error("Worker did not receive a request.");
-    }
+    if (!request) throw new Error("Worker did not receive a request.");
     this.messageListener?.({
       jobId: request.jobId,
       leaseToken: request.leaseToken,
@@ -117,9 +115,7 @@ it("replaces a dead worker and continues queued jobs", async () => {
 
   const secondWorker = workers[1];
   const replacement = workers[2];
-  if (!secondWorker || !replacement) {
-    throw new Error("Missing worker.");
-  }
+  if (!secondWorker || !replacement) throw new Error("Missing worker.");
   secondWorker.complete();
   replacement.complete();
 
@@ -177,9 +173,7 @@ function idleHarness() {
   });
   const fireIdle = () => {
     for (const timer of timers.splice(0)) {
-      if (!timer.cancelled) {
-        timer.run();
-      }
+      if (!timer.cancelled) timer.run();
     }
   };
   const killed = () => workers.filter((worker) => worker.killed);

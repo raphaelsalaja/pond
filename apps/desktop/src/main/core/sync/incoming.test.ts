@@ -17,9 +17,7 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
@@ -49,9 +47,7 @@ describe.skipIf(!nativeSqliteAvailable())("incoming folder assignment", () => {
       rmSync(dir, { recursive: true, force: true });
     } catch (error) {
       /** Windows keeps the closed SQLite files locked until the process exits. */
-      if (process.platform !== "win32") {
-        throw error;
-      }
+      if (process.platform !== "win32") throw error;
     }
   });
 

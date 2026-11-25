@@ -42,11 +42,7 @@ export function videoPrintFromFrames(
 
 export function detailedFrameCount(print: VideoPrint): number {
   let count = 0;
-  for (const frame of print.frames) {
-    if (!isLowDetailHash(frame)) {
-      count += 1;
-    }
-  }
+  for (const frame of print.frames) if (!isLowDetailHash(frame)) count += 1;
   return count;
 }
 
@@ -63,9 +59,7 @@ export function encodeVideoPrint(print: VideoPrint): Uint8Array {
 }
 
 export function decodeVideoPrint(bytes: Uint8Array): VideoPrint | null {
-  if (bytes.byteLength < HEADER_BYTES) {
-    return null;
-  }
+  if (bytes.byteLength < HEADER_BYTES) return null;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const count = view.getUint32(16);
   if (bytes.byteLength !== HEADER_BYTES + count * 8) {
@@ -77,9 +71,7 @@ export function decodeVideoPrint(bytes: Uint8Array): VideoPrint | null {
   }
   const durationSeconds = view.getFloat64(0);
   const intervalSeconds = view.getFloat64(8);
-  if (!(durationSeconds > 0) || !(intervalSeconds > 0)) {
-    return null;
-  }
+  if (!(durationSeconds > 0) || !(intervalSeconds > 0)) return null;
   return { durationSeconds, intervalSeconds, frames };
 }
 
@@ -99,9 +91,7 @@ export function compareVideoPrints(
   left: VideoPrint,
   right: VideoPrint,
 ): VideoMatch | null {
-  if (!durationsClose(left.durationSeconds, right.durationSeconds)) {
-    return null;
-  }
+  if (!durationsClose(left.durationSeconds, right.durationSeconds)) return null;
   let best: VideoMatch | null = null;
   for (let step = -OFFSET_STEPS; step <= OFFSET_STEPS; step++) {
     const offsetSeconds = step * left.intervalSeconds;
@@ -110,22 +100,14 @@ export function compareVideoPrints(
     for (let index = 0; index < left.frames.length; index++) {
       const time = (index + 0.5) * left.intervalSeconds + offsetSeconds;
       const other = Math.floor(time / right.intervalSeconds);
-      if (other < 0 || other >= right.frames.length) {
-        continue;
-      }
+      if (other < 0 || other >= right.frames.length) continue;
       const a = left.frames[index] ?? 0n;
       const b = right.frames[other] ?? 0n;
-      if (isLowDetailHash(a) || isLowDetailHash(b)) {
-        continue;
-      }
+      if (isLowDetailHash(a) || isLowDetailHash(b)) continue;
       comparedFrames += 1;
-      if (hamming64(a, b) <= FRAME_DISTANCE) {
-        matchedFrames += 1;
-      }
+      if (hamming64(a, b) <= FRAME_DISTANCE) matchedFrames += 1;
     }
-    if (comparedFrames < MIN_COMPARED_FRAMES) {
-      continue;
-    }
+    if (comparedFrames < MIN_COMPARED_FRAMES) continue;
     if (
       !best ||
       matchedFrames / comparedFrames > best.matchedFrames / best.comparedFrames

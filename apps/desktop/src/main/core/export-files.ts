@@ -112,25 +112,19 @@ async function reserveOutput(
     for (;;) {
       const name = suffix === 0 ? cleaned : `${stem}-${suffix}${extension}`;
       suffix += 1;
-      if (used.has(name.toLowerCase())) {
-        continue;
-      }
+      if (used.has(name.toLowerCase())) continue;
       const path = join(root, name);
       try {
         await write(path);
         return path;
       } catch (error) {
-        if (!(error instanceof Error) || !isCollision(error)) {
-          throw error;
-        }
+        if (!(error instanceof Error) || !isCollision(error)) throw error;
         used.add(name.toLowerCase());
       }
     }
   } finally {
     release();
-    if (destinationQueues.get(root) === tail) {
-      destinationQueues.delete(root);
-    }
+    if (destinationQueues.get(root) === tail) destinationQueues.delete(root);
   }
 }
 
@@ -165,9 +159,7 @@ function folderPaths(
     const base = safeName(folder.name);
     let name = base;
     let suffix = 1;
-    while (used.has(name.toLowerCase())) {
-      name = `${base}-${suffix++}`;
-    }
+    while (used.has(name.toLowerCase())) name = `${base}-${suffix++}`;
     used.add(name.toLowerCase());
     siblings.set(folder.parentId, used);
     names.set(folder.id, name);
@@ -196,9 +188,7 @@ function itemDestinations(
 ): Array<Array<string>> {
   const destinations = [...new Set(item.folderIds)].map((id) => {
     const parts = paths.get(id);
-    if (!parts) {
-      throw new Error(`Cannot export missing folder ${id}.`);
-    }
+    if (!parts) throw new Error(`Cannot export missing folder ${id}.`);
     return parts;
   });
   return destinations.length > 0 ? destinations : [[]];
@@ -413,16 +403,10 @@ async function verifiedCheckpoint(
   sha256: string,
 ): Promise<boolean> {
   const actual = await realpath(path).catch(() => null);
-  if (!actual?.startsWith(`${directory}${sep}`)) {
-    return false;
-  }
+  if (!actual?.startsWith(`${directory}${sep}`)) return false;
   const file = await stat(actual);
-  if (!file.isFile() || file.size !== size) {
-    return false;
-  }
-  if (!sha256) {
-    return false;
-  }
+  if (!file.isFile() || file.size !== size) return false;
+  if (!sha256) return false;
   const hash = createHash("sha256");
   for await (const bytes of createReadStream(actual)) {
     checkTransferCancellation();

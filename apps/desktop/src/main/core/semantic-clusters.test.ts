@@ -81,9 +81,7 @@ const edges: Array<SemanticClusterEdge> = [
 
 function candidate(id: string): SemanticClusterCandidate {
   const found = candidates.find((value) => value.id === id);
-  if (!found) {
-    throw new Error(`missing test candidate: ${id}`);
-  }
+  if (!found) throw new Error(`missing test candidate: ${id}`);
   return found;
 }
 

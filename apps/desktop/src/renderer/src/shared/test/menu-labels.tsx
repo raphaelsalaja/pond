@@ -12,12 +12,8 @@ function labelText(label: ReactNode): string | null {
 
 export function menuLabels(items: Array<MenuItemSpec>): Array<string> {
   return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") {
-      return [];
-    }
-    if ("hidden" in item && item.hidden) {
-      return [];
-    }
+    if (item.type === "separator" || item.type === "custom") return [];
+    if ("hidden" in item && item.hidden) return [];
     const label = "label" in item ? labelText(item.label) : null;
     const labels = label ? [label] : [];
     if (item.type === "group" || item.type === "submenu") {
@@ -29,12 +25,8 @@ export function menuLabels(items: Array<MenuItemSpec>): Array<string> {
 
 export function topLevelMenuLabels(items: Array<MenuItemSpec>): Array<string> {
   return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") {
-      return [];
-    }
-    if ("hidden" in item && item.hidden) {
-      return [];
-    }
+    if (item.type === "separator" || item.type === "custom") return [];
+    if ("hidden" in item && item.hidden) return [];
     const label = "label" in item ? labelText(item.label) : null;
     return label ? [label] : [];
   });
@@ -44,15 +36,9 @@ export function menuLabelsWithoutIcons(
   items: Array<MenuItemSpec>,
 ): Array<string> {
   return items.flatMap((item) => {
-    if (item.type === "separator" || item.type === "custom") {
-      return [];
-    }
-    if ("hidden" in item && item.hidden) {
-      return [];
-    }
-    if (item.type === "group") {
-      return menuLabelsWithoutIcons(item.items);
-    }
+    if (item.type === "separator" || item.type === "custom") return [];
+    if ("hidden" in item && item.hidden) return [];
+    if (item.type === "group") return menuLabelsWithoutIcons(item.items);
     const label = "label" in item ? labelText(item.label) : null;
     const current =
       label &&

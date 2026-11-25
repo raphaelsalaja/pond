@@ -28,9 +28,7 @@ export function walkJson(
   ];
   while (stack.length > 0) {
     const next = stack.pop();
-    if (!next) {
-      break;
-    }
+    if (!next) break;
     const { value, keys } = next;
     if (Array.isArray(value)) {
       for (let index = value.length - 1; index >= 0; index -= 1) {
@@ -41,16 +39,12 @@ export function walkJson(
       }
       continue;
     }
-    if (!isJsonObject(value)) {
-      continue;
-    }
+    if (!isJsonObject(value)) continue;
     visit(value, keys);
     const entries = Object.entries(value);
     for (let index = entries.length - 1; index >= 0; index -= 1) {
       const entry = entries[index];
-      if (entry) {
-        stack.push({ value: entry[1], keys: [...keys, entry[0]] });
-      }
+      if (entry) stack.push({ value: entry[1], keys: [...keys, entry[0]] });
     }
   }
 }
@@ -71,9 +65,7 @@ export function exportDate(value: JsonValue | undefined): Date | null {
     return new Date(epoch.data < 1e11 ? epoch.data * 1000 : epoch.data);
   }
   const text = exportText(value);
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
   const iso = SPACED_UTC.test(text) ? `${text.replace(" ", "T")}Z` : text;
   const parsed = Date.parse(iso);
   return Number.isNaN(parsed) ? null : new Date(parsed);

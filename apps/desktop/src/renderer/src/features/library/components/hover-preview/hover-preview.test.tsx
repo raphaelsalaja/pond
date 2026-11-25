@@ -20,9 +20,7 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
     title: "First reference",
     files: [],
   });
-  if (!first) {
-    throw new Error("Invalid fixture");
-  }
+  if (!first) throw new Error("Invalid fixture");
   pool.upsert(first);
   const next = [
     wireSave({
@@ -114,9 +112,7 @@ it("dims the grid for a peek and closes on a click outside", async () => {
     title: "Peeked reference",
     files: [],
   });
-  if (!save) {
-    throw new Error("Invalid fixture");
-  }
+  if (!save) throw new Error("Invalid fixture");
   pool.upsert(save);
   bridge.use({
     query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
@@ -165,9 +161,7 @@ it("opens the save details from the expand button and closes the preview", async
     title: "Expand reference",
     files: [],
   });
-  if (!save) {
-    throw new Error("Invalid fixture");
-  }
+  if (!save) throw new Error("Invalid fixture");
   pool.upsert(save);
   bridge.use({
     query: { "settings.getPrefs": () => PrefsSchema.parse({}) },

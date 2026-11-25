@@ -9,9 +9,7 @@ export function draftFromRichTweet(
   const draft = postDraft(rich, fallbackHandle);
   if (rich.replyTo) {
     draft.isReply = true;
-    if (rich.replyTo.handle) {
-      draft.replyingTo = rich.replyTo.handle;
-    }
+    if (rich.replyTo.handle) draft.replyingTo = rich.replyTo.handle;
     draft.replyTo = {
       source: "twitter",
       id: rich.replyTo.tweetId,
@@ -31,12 +29,8 @@ function postDraft(rich: RichTweet, fallbackHandle = ""): RichPostDraft {
     handle,
     name: rich.author.name || handle,
   };
-  if (rich.author.avatarUrl) {
-    author.avatarUrl = rich.author.avatarUrl;
-  }
-  if (rich.author.verified) {
-    author.verified = true;
-  }
+  if (rich.author.avatarUrl) author.avatarUrl = rich.author.avatarUrl;
+  if (rich.author.verified) author.verified = true;
 
   const draft: RichPostDraft = {
     source: "twitter",
@@ -47,14 +41,8 @@ function postDraft(rich: RichTweet, fallbackHandle = ""): RichPostDraft {
     media: rich.media,
     metrics: rich.metrics,
   };
-  if (rich.quoted) {
-    draft.quoted = postDraft(rich.quoted);
-  }
-  if (rich.card) {
-    draft.card = rich.card;
-  }
-  if (rich.publishedAt) {
-    draft.publishedAt = rich.publishedAt;
-  }
+  if (rich.quoted) draft.quoted = postDraft(rich.quoted);
+  if (rich.card) draft.card = rich.card;
+  if (rich.publishedAt) draft.publishedAt = rich.publishedAt;
   return draft;
 }

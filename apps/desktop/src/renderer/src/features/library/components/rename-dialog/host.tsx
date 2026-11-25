@@ -23,9 +23,7 @@ const RenameDialog = lazy(() =>
 export function RenameDialogHost() {
   const state = useSelector(renameDialogStore, (value) => value);
   const [last, setLast] = useState(state);
-  if (state && state !== last) {
-    setLast(state);
-  }
+  if (state && state !== last) setLast(state);
   return last ? (
     <Suspense fallback={null}>
       <RenameDialog key={last.id} ids={last.ids} open={state !== null} />

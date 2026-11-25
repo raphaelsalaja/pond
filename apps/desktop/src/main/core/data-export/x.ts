@@ -16,9 +16,7 @@ export const xParser: ExportParser = {
   matches: (path) => /(^|\/)data\/like(-part\d+)?\.js$/i.test(path),
   parse: (_path, text) => {
     const start = text.indexOf("=");
-    if (start < 0) {
-      return [];
-    }
+    if (start < 0) return [];
     const json = parseJsonText(text.slice(start + 1));
     const rows = LikeFile.safeParse(json);
     if (!rows.success) {

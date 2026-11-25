@@ -41,13 +41,9 @@ export function HudHost({
 
 function Root({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   const host = use(HudOverlayContext);
-  if (host?.enabled === false) {
-    return null;
-  }
+  if (host?.enabled === false) return null;
   const hud = <div className={cn(styles.hud, className)} {...props} />;
-  if (host?.overlay) {
-    return createPortal(hud, host.overlay);
-  }
+  if (host?.overlay) return createPortal(hud, host.overlay);
   return hud;
 }
 

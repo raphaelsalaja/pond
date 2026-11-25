@@ -78,9 +78,7 @@ export function grabOffset(point: XYPosition, view: Box): XYPosition | null {
     point.x <= view.x + view.width &&
     point.y >= view.y &&
     point.y <= view.y + view.height;
-  if (!inside) {
-    return null;
-  }
+  if (!inside) return null;
   return {
     x: point.x - (view.x + view.width / 2),
     y: point.y - (view.y + view.height / 2),

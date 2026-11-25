@@ -61,9 +61,7 @@ const chatDependencies = {
     const fish =
       school.find((entry) => entry.id === fishId) ??
       school.find((entry) => entry.id === DEFAULT_FISH_ID);
-    if (!fish) {
-      throw new Error("Your fish could not be read.");
-    }
+    if (!fish) throw new Error("Your fish could not be read.");
     return fish;
   },
   setFishPresence,
@@ -147,17 +145,11 @@ export async function sendMessage(
   let fish: Fish | undefined;
   const emit = (chunk: AssistantEvent) => {
     if (chunk.type === "activity") {
-      if (chunk.activity === lastActivity) {
-        return;
-      }
+      if (chunk.activity === lastActivity) return;
       lastActivity = chunk.activity;
-      if (fish) {
-        deps.setFishPresence(fish.id, chunk.activity);
-      }
+      if (fish) deps.setFishPresence(fish.id, chunk.activity);
     }
-    if (controller.signal.aborted) {
-      return;
-    }
+    if (controller.signal.aborted) return;
     onEvent?.(chunk);
     if (chunk.type !== "text") {
       deps.broadcast(IPC.agentChunk, { chatId, requestId, ...chunk });
@@ -177,9 +169,7 @@ export async function sendMessage(
     const prefs = await deps.getPrefs();
     const model = ASSISTANT_MODELS.find((entry) => entry.id === provider);
     const agentProvider = parseProvider(provider);
-    if (!model || !agentProvider) {
-      throw new Error("Choose a supported model.");
-    }
+    if (!model || !agentProvider) throw new Error("Choose a supported model.");
     const apiKey = await deps.keyFor(agentProvider);
     if (model.needsKey) {
       if (!apiKey || prefs.agent.enabledKeys[provider] === false) {
@@ -326,9 +316,7 @@ export async function sendMessage(
       images.length > 0 ||
       files.some((file) => file.mediaType.startsWith("image/"));
     const connection = connectionFor(agentProvider, prefs.agent, model.model);
-    if (input.modelId) {
-      connection.modelId = input.modelId;
-    }
+    if (input.modelId) connection.modelId = input.modelId;
     const modelId = connection.modelId;
     const requestedControls =
       input.controls ??
@@ -489,9 +477,7 @@ ${personalizationContext}`.trim(),
   } finally {
     context?.finishPending();
     active.delete(chatId);
-    if (fish) {
-      deps.setFishPresence(fish.id, null);
-    }
+    if (fish) deps.setFishPresence(fish.id, null);
   }
 }
 

@@ -22,9 +22,7 @@ export function searchCardFromSave(save: {
   const parsed = StoredSearchSchema.safeParse(
     save.rawJson?.capture?.extras?.search,
   );
-  if (!parsed.success) {
-    return null;
-  }
+  if (!parsed.success) return null;
   const card: SearchCardData = { ...parsed.data };
   try {
     const host = new URL(save.url).hostname;

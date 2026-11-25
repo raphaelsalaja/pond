@@ -157,9 +157,7 @@ export function createFishMcpManager(deps: ManagerDeps) {
 
   function opening(server: FishMcpServerConfig): Promise<void> {
     const existing = pending.get(server.id);
-    if (existing) {
-      return existing;
-    }
+    if (existing) return existing;
     const run: Promise<void> = open(server).then(async (entry) => {
       if (pending.get(server.id) !== run) {
         await entry.client?.close().catch(() => {});

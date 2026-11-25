@@ -25,9 +25,7 @@ let kept: QuickCaptureSubmit | null = null;
 const BLUR_GRACE_MS = 1500;
 
 function cancelBlurClose(): void {
-  if (blurClose) {
-    clearTimeout(blurClose);
-  }
+  if (blurClose) clearTimeout(blurClose);
   blurClose = null;
 }
 
@@ -80,13 +78,9 @@ export function setQuickCapturePicking(next: boolean): void {
 /** A drag from another app keeps the window open until it drops or leaves. */
 export function setQuickCaptureDrag(phase: "enter" | "leave" | "drop"): void {
   const win = overlay;
-  if (!win || win.isDestroyed()) {
-    return;
-  }
+  if (!win || win.isDestroyed()) return;
   if (phase === "enter") {
-    if (!draggingIn) {
-      dragAfterBlur = blurClose !== null || !win.isFocused();
-    }
+    if (!draggingIn) dragAfterBlur = blurClose !== null || !win.isFocused();
     draggingIn = true;
     cancelBlurClose();
     return;
@@ -110,9 +104,7 @@ export function closeQuickCapture(): void {
   overlay = null;
   snapshot = null;
   picking = false;
-  if (win && !win.isDestroyed()) {
-    win.close();
-  }
+  if (win && !win.isDestroyed()) win.close();
 }
 
 /** Upper third of the display under the pointer, like Spotlight. */
@@ -163,9 +155,7 @@ export async function openQuickCapture(
       nodeIntegration: false,
     },
   };
-  if (behavior.panel) {
-    options.type = "panel";
-  }
+  if (behavior.panel) options.type = "panel";
   const win = new BrowserWindow(options);
   overlay = win;
   snapshot = next;
@@ -180,15 +170,11 @@ export async function openQuickCapture(
     });
   }
   win.on("blur", () => {
-    if (overlay === win && !picking) {
-      scheduleBlurClose(win);
-    }
+    if (overlay === win && !picking) scheduleBlurClose(win);
   });
   win.on("focus", cancelBlurClose);
   win.once("closed", () => {
-    if (overlay !== win) {
-      return;
-    }
+    if (overlay !== win) return;
     overlay = null;
     snapshot = null;
   });
@@ -200,9 +186,7 @@ export async function openQuickCapture(
       await win.loadFile(resolveMainOut("../renderer/quick-capture.html"));
     }
   } catch (error) {
-    if (!win.isDestroyed()) {
-      win.destroy();
-    }
+    if (!win.isDestroyed()) win.destroy();
     throw error;
   }
 }
@@ -210,9 +194,7 @@ export async function openQuickCapture(
 /** Shown only after the renderer paints, so it never flashes an empty window. */
 export function presentQuickCapture(): void {
   const win = overlay;
-  if (!win || win.isDestroyed() || win.isVisible()) {
-    return;
-  }
+  if (!win || win.isDestroyed() || win.isVisible()) return;
   win.show();
   win.focus();
 }

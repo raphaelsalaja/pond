@@ -59,9 +59,7 @@ export function SaveDetailPage({ id }: { id: string }) {
   useTrackVisit(id);
 
   useEffect(() => {
-    if (primarySelection.get() !== id) {
-      primarySelection.set(id);
-    }
+    if (primarySelection.get() !== id) primarySelection.set(id);
     selection.setCursor(id);
   }, [id]);
 
@@ -73,9 +71,7 @@ export function SaveDetailPage({ id }: { id: string }) {
 
   const stepImageOrSave = useCallback(
     (delta: number) => {
-      if (viewerNav.current?.step(delta)) {
-        return;
-      }
+      if (viewerNav.current?.step(delta)) return;
       step(delta);
     },
     [step],
@@ -139,15 +135,9 @@ export function SaveDetailPage({ id }: { id: string }) {
     hotkeys.map(({ hotkey, when, action }) => ({
       hotkey,
       callback: (event: KeyboardEvent) => {
-        if (!saveOwnsKeyboard(event)) {
-          return;
-        }
-        if (event.key !== "Escape" && controlKeepsKey(event)) {
-          return;
-        }
-        if (when && !when(event)) {
-          return;
-        }
+        if (!saveOwnsKeyboard(event)) return;
+        if (event.key !== "Escape" && controlKeepsKey(event)) return;
+        if (when && !when(event)) return;
         event.preventDefault();
         run(action);
       },
@@ -172,9 +162,7 @@ function SaveDetailSession({
   const saveId = save?.id;
   const pageRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (saveId) {
-      pageRef.current?.focus({ preventScroll: true });
-    }
+    if (saveId) pageRef.current?.focus({ preventScroll: true });
   }, [saveId]);
   const [activeFile, setActiveFile] = useState<{
     saveId?: string;
@@ -200,9 +188,7 @@ function SaveDetailSession({
   );
 
   useEffect(() => {
-    if (!saveId) {
-      return;
-    }
+    if (!saveId) return;
     return () => {
       setSaveViewerFileIndex(null);
       setSaveViewerNavigation(null);

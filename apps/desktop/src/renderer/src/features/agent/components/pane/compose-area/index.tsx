@@ -143,20 +143,14 @@ export function ComposeArea({
       <div
         ref={composer}
         onDragEnterCapture={(event) => {
-          if (!isLibrarySaveDrag(event.dataTransfer)) {
-            return;
-          }
+          if (!isLibrarySaveDrag(event.dataTransfer)) return;
           event.preventDefault();
           setDropping(true);
         }}
         onDragOverCapture={(event) => {
-          if (!isLibrarySaveDrag(event.dataTransfer)) {
-            return;
-          }
+          if (!isLibrarySaveDrag(event.dataTransfer)) return;
           event.preventDefault();
-          if (event.dataTransfer) {
-            event.dataTransfer.dropEffect = "copy";
-          }
+          if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
           setDropping(true);
         }}
         onDragLeaveCapture={(event) => {
@@ -170,9 +164,7 @@ export function ComposeArea({
         }}
         onDropCapture={(event) => {
           const ids = saveDropIds(event.dataTransfer);
-          if (!ids.length) {
-            return;
-          }
+          if (!ids.length) return;
           event.preventDefault();
           setDropping(false);
           void assistant.attachIds(ids);

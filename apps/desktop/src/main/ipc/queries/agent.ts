@@ -20,9 +20,7 @@ export const agentQueries = {
   "agent.saveKey": query(Params, async (params) => {
     const { parseProvider, saveKey } = await import("../../core/agent/keys");
     const provider = parseProvider(String(params.provider ?? ""));
-    if (!provider) {
-      return { ok: false, error: "Unknown provider." };
-    }
+    if (!provider) return { ok: false, error: "Unknown provider." };
     return await saveKey(provider, String(params.key ?? ""));
   }),
 
@@ -32,9 +30,7 @@ export const agentQueries = {
       const { parseProvider, removeKey } =
         await import("../../core/agent/keys");
       const provider = parseProvider(String(params.provider ?? ""));
-      if (!provider) {
-        return { ok: false, error: "Unknown provider." };
-      }
+      if (!provider) return { ok: false, error: "Unknown provider." };
       return await removeKey(provider);
     },
   ),
@@ -45,9 +41,7 @@ export const agentQueries = {
       const { parseProvider, setKeyEnabled } =
         await import("../../core/agent/keys");
       const provider = parseProvider(String(params.provider ?? ""));
-      if (!provider) {
-        return { ok: false, error: "Unknown provider." };
-      }
+      if (!provider) return { ok: false, error: "Unknown provider." };
       return await setKeyEnabled(provider, Boolean(params.enabled));
     },
   ),
@@ -55,9 +49,7 @@ export const agentQueries = {
   "agent.verifyKey": query(Params, async (params) => {
     const { parseProvider, verifyKey } = await import("../../core/agent/keys");
     const provider = parseProvider(String(params.provider ?? ""));
-    if (!provider) {
-      return { ok: false, error: "Unknown provider." };
-    }
+    if (!provider) return { ok: false, error: "Unknown provider." };
     return await verifyKey(provider, String(params.key ?? ""));
   }),
 
@@ -121,9 +113,7 @@ export const agentQueries = {
       const { listChats, listMessages } =
         await import("../../core/agent/persist");
       const chat = (await listChats()).find((chat) => chat.id === chatId);
-      if (!chat) {
-        return { ok: false, error: "This chat no longer exists." };
-      }
+      if (!chat) return { ok: false, error: "This chat no longer exists." };
       const content = conversationMarkdown(
         chat.title,
         await listMessages(chatId),
@@ -155,9 +145,7 @@ export const agentQueries = {
     async ({ chatId }): Promise<QueryResult<"agent.regenerate">> => {
       const { rewindLastTurn } = await import("../../core/agent/persist");
       const turn = await rewindLastTurn(chatId);
-      if (!turn.ok) {
-        return turn;
-      }
+      if (!turn.ok) return turn;
       return {
         ok: true,
         content: turn.content,

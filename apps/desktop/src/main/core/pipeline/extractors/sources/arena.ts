@@ -68,16 +68,10 @@ export class ArenaBlockExtractor implements Extractor {
 
   handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
-    if (!first) {
-      return null;
-    }
-    if (ARENA_RESERVED_ROOTS.has(first.toLowerCase())) {
-      return null;
-    }
+    if (!first) return null;
+    if (ARENA_RESERVED_ROOTS.has(first.toLowerCase())) return null;
     /** are.na slugs are lowercase alphanumerics + hyphens; anything else is a display name, not a slug. */
-    if (!/^[a-z0-9][a-z0-9-]*$/.test(first)) {
-      return null;
-    }
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(first)) return null;
     return first;
   }
 
@@ -96,9 +90,7 @@ export class ArenaBlockExtractor implements Extractor {
   async extract(input: ExtractInput): Promise<Capture> {
     const match = firstMatch(input.url, this.validUrl);
     const blockId = match?.[1] ?? null;
-    if (!blockId) {
-      throw new TerminalError("could not parse arena block id");
-    }
+    if (!blockId) throw new TerminalError("could not parse arena block id");
 
     return captureFromSource({
       url: input.url.href,

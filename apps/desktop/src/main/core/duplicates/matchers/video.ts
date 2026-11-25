@@ -25,11 +25,8 @@ function candidates(
   prints: ReadonlyArray<VideoPrint>,
 ): Array<[number, number]> {
   const index = new HammingIndex<number>();
-  for (const [position, print] of prints.entries()) {
-    for (const frame of detailedFrames(print)) {
-      index.add(frame, position);
-    }
-  }
+  for (const [position, print] of prints.entries())
+    for (const frame of detailedFrames(print)) index.add(frame, position);
   const pairs: Array<[number, number]> = [];
   for (const [position, print] of prints.entries()) {
     const frames = detailedFrames(print);
@@ -61,9 +58,7 @@ export function videoMatches(
   for (const sha256 of bySha.keys()) {
     const value = prints.get(sha256);
     const print = value ? decodeVideoPrint(value) : null;
-    if (print) {
-      decoded.push({ sha256, print });
-    }
+    if (print) decoded.push({ sha256, print });
   }
   decoded.sort(
     (left, right) => left.print.durationSeconds - right.print.durationSeconds,
@@ -73,13 +68,9 @@ export function videoMatches(
   for (const [from, to] of candidates(decoded.map((entry) => entry.print))) {
     const left = decoded[from];
     const right = decoded[to];
-    if (!left || !right) {
-      continue;
-    }
+    if (!left || !right) continue;
     const match = compareVideoPrints(left.print, right.print);
-    if (!match) {
-      continue;
-    }
+    if (!match) continue;
     found.push(
       ...expandShaMatch(
         bySha.get(left.sha256) ?? [],

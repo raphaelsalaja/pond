@@ -38,9 +38,7 @@ export const LIST_COLUMN_DEFAULTS: ListColumns = {
 };
 
 function readKey(key: ListColumnKey): boolean {
-  if (!globalThis.window) {
-    return LIST_COLUMN_DEFAULTS[key];
-  }
+  if (!globalThis.window) return LIST_COLUMN_DEFAULTS[key];
   try {
     const raw = window.localStorage.getItem(`pond.list.${key}`);
     if (raw === null) {
@@ -54,9 +52,7 @@ function readKey(key: ListColumnKey): boolean {
 
 function readAll(): ListColumns {
   const columns = { ...LIST_COLUMN_DEFAULTS };
-  for (const { key } of LIST_COLUMN_OPTIONS) {
-    columns[key] = readKey(key);
-  }
+  for (const { key } of LIST_COLUMN_OPTIONS) columns[key] = readKey(key);
   return columns;
 }
 
@@ -81,9 +77,7 @@ export function formatListDimension(
   width: number | null | undefined,
   height: number | null | undefined,
 ): string {
-  if (!width || !height) {
-    return "—";
-  }
+  if (!width || !height) return "—";
   return `${width} × ${height}`;
 }
 
@@ -95,12 +89,8 @@ export function formatListRating(rating: number | null | undefined): string {
 }
 
 export function formatListExtension(path: string | null | undefined): string {
-  if (!path) {
-    return "—";
-  }
+  if (!path) return "—";
   const dot = path.lastIndexOf(".");
-  if (dot < 0) {
-    return "—";
-  }
+  if (dot < 0) return "—";
   return path.slice(dot + 1).toUpperCase();
 }

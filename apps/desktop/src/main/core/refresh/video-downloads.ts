@@ -86,9 +86,7 @@ export async function queueVideoDownloads(
   options: QueueVideoDownloadOptions,
   runtime: VideoDownloadRuntime = defaultRuntime,
 ): Promise<number> {
-  if (saveIds.length === 0) {
-    return 0;
-  }
+  if (saveIds.length === 0) return 0;
   const db = await runtime.getDb();
   const now = new Date();
   let queued = 0;
@@ -96,9 +94,7 @@ export async function queueVideoDownloads(
     queued += requestIngestingDownloads(db, batch, options, now);
     queued += await reopenSettledSaves(db, batch, options, now, runtime);
   }
-  if (queued > 0) {
-    runtime.kickReconciler();
-  }
+  if (queued > 0) runtime.kickReconciler();
   return queued;
 }
 
@@ -122,9 +118,7 @@ export async function removeVideos(
       .all();
     for (const row of rows) {
       const files = row.files ?? [];
-      if (!files.some((file) => file.kind === "video")) {
-        continue;
-      }
+      if (!files.some((file) => file.kind === "video")) continue;
       await runtime.persistSave(
         row.id,
         {},
@@ -164,9 +158,7 @@ function requestIngestingDownloads(
           ),
         )
         .all();
-      if (ingesting.length === 0) {
-        return 0;
-      }
+      if (ingesting.length === 0) return 0;
       const followUps = db
         .select({
           id: tasks.id,
@@ -204,16 +196,10 @@ function requestIngestingDownloads(
           requested += 1;
           continue;
         }
-        if (video && video.status !== "done") {
-          continue;
-        }
+        if (video && video.status !== "done") continue;
         /** Only finalize settles an ingesting save, and a running one would orphan the reset download. */
-        if (!own.some((task) => task.op === "finalize")) {
-          continue;
-        }
-        if (own.some((task) => task.status === "running")) {
-          continue;
-        }
+        if (!own.some((task) => task.op === "finalize")) continue;
+        if (own.some((task) => task.status === "running")) continue;
         requestTask(
           db,
           save,
@@ -254,9 +240,7 @@ async function reopenSettledSaves(
       ),
     )
     .all();
-  if (settled.length === 0) {
-    return 0;
-  }
+  if (settled.length === 0) return 0;
   const settledIds = settled.map((row) => row.id);
   /** A non-done earlier task holds the sequential gate, so the download would never run. */
   const blocked = new Set(
@@ -274,9 +258,7 @@ async function reopenSettledSaves(
       .map((row) => row.saveId),
   );
   const rows = settled.filter((row) => !blocked.has(row.id));
-  if (rows.length === 0) {
-    return 0;
-  }
+  if (rows.length === 0) return 0;
   const existing = new Map(
     db
       .select({ id: tasks.id, saveId: tasks.saveId, op: tasks.op })

@@ -84,9 +84,7 @@ async function fixture(
     async inspectPayload(path, expected): Promise<PayloadInspection> {
       await options.gate;
       const name = basename(path);
-      if (unreadable.has(name)) {
-        throw new Error(`EACCES: ${name}`);
-      }
+      if (unreadable.has(name)) throw new Error(`EACCES: ${name}`);
       return missing.has(name)
         ? { ok: false, size: null, sha256: null, reason: "missing" }
         : {
@@ -99,9 +97,7 @@ async function fixture(
     canRenderThumbnail: async (path) => path.endsWith(".png"),
     async readInfo(path) {
       const row = byId.get(basename(dirname(path)).replace(/\.info$/, ""));
-      if (!row) {
-        return { status: "missing" };
-      }
+      if (!row) return { status: "missing" };
       return {
         status: "valid",
         fingerprint: row.id,

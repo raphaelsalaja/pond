@@ -117,12 +117,8 @@ export function collectionCheckDue(
   full: boolean,
   now = Date.now(),
 ): boolean {
-  if (plan.collections === null && !plan.fileEveryCollection) {
-    return false;
-  }
-  if (full) {
-    return true;
-  }
+  if (plan.collections === null && !plan.fileEveryCollection) return false;
+  if (full) return true;
   const last = sync.lastCollectionCheckAt
     ? Date.parse(sync.lastCollectionCheckAt)
     : Number.NaN;
@@ -146,12 +142,8 @@ export function importScopePatch(
       ? undefined
       : scope;
   const patch: Partial<SourceSyncPrefs> = { importScope: next };
-  if (start) {
-    patch.importPending = false;
-  }
-  if (current.syncLikes !== undefined) {
-    patch.syncLikes = undefined;
-  }
+  if (start) patch.importPending = false;
+  if (current.syncLikes !== undefined) patch.syncLikes = undefined;
   /** Early stop ends a walk at ids already in the Library, so a new selection needs one full walk to reach its older items. */
   if (!sameScope(accountImportScope(source, current), next)) {
     patch.lastFullSyncAt = null;

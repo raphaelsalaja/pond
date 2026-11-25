@@ -17,11 +17,8 @@ export function ViewMenu() {
     <Popover.Root
       open={open}
       onOpenChange={(next) => {
-        if (next) {
-          libraryHeader.openPopover("view");
-        } else {
-          libraryHeader.closePopover("view");
-        }
+        if (next) libraryHeader.openPopover("view");
+        else libraryHeader.closePopover("view");
       }}
     >
       <Tooltip

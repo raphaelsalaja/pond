@@ -65,12 +65,8 @@ async function inPageUnsplashBookmarks(
     });
 
   const me = await get("/napi/me");
-  if (me.status === 429) {
-    return { ok: false, reason: "rate_limited" };
-  }
-  if (!me.ok) {
-    return { ok: false, reason: "auth_required" };
-  }
+  if (me.status === 429) return { ok: false, reason: "rate_limited" };
+  if (!me.ok) return { ok: false, reason: "auth_required" };
 
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
@@ -127,9 +123,7 @@ async function inPageUnsplashBookmarks(
       return { ok: false, reason: "auth_required" };
     }
     if (!res.ok) {
-      if (page > firstPage) {
-        return unfinished(page);
-      }
+      if (page > firstPage) return unfinished(page);
       return {
         ok: false,
         reason: res.status === 429 ? "rate_limited" : "unknown",
@@ -138,26 +132,18 @@ async function inPageUnsplashBookmarks(
     const body: unknown = await res.json();
     const parsed = validators.unsplashBookmarks.safeParse(body);
     if (!parsed.success) {
-      if (page > firstPage) {
-        return unfinished(page);
-      }
+      if (page > firstPage) return unfinished(page);
       return { ok: false, reason: "unknown" };
     }
     const { total, results } = parsed.data;
-    if (results.length === 0) {
-      return finished();
-    }
+    if (results.length === 0) return finished();
     read += results.length;
 
     let pageFresh = 0;
     for (const asset of results) {
-      if (!asset) {
-        continue;
-      }
+      if (!asset) continue;
       const entry = norm.assetEntry(asset);
-      if (seen.has(entry.sourceId)) {
-        continue;
-      }
+      if (seen.has(entry.sourceId)) continue;
       seen.add(entry.sourceId);
       if (!known.has(entry.sourceId)) {
         fresh += 1;
@@ -175,9 +161,7 @@ async function inPageUnsplashBookmarks(
     globalThis.__pondHarvestCursor = String(page + 1);
     report("page", page);
 
-    if (total !== undefined && read >= total) {
-      return finished();
-    }
+    if (total !== undefined && read >= total) return finished();
     if (earlyStop && pageFresh === 0) {
       knownStreak += 1;
       if (knownStreak >= 2) {

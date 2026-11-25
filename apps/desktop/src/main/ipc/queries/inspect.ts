@@ -32,9 +32,7 @@ export const inspectQueries = {
     }),
     async (params) => {
       const target = await resolveSaveFilePath(params.id, params.fileIndex);
-      if (!target.ok) {
-        return { frameRate: null };
-      }
+      if (!target.ok) return { frameRate: null };
       const result = await probeVideoDims(target.path);
       return { frameRate: result?.frameRate ?? null };
     },
@@ -105,9 +103,7 @@ export const inspectQueries = {
 
   async "autoImport.reveal"(): Promise<QueryResult<"autoImport.reveal">> {
     const { path } = (await getPrefs()).autoImport;
-    if (!path || !existsSync(path)) {
-      return { ok: false, reason: "missing" };
-    }
+    if (!path || !existsSync(path)) return { ok: false, reason: "missing" };
     const { shell } = await import("electron");
     shell.showItemInFolder(path);
     return { ok: true };

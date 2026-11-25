@@ -21,18 +21,14 @@ export const YTDLP_FILENAME =
 const FFMPEG_FILENAME = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
 
 export function userBinDir(): string {
-  if (!app) {
-    throw new Error("The managed binary folder is only known in main.");
-  }
+  if (!app) throw new Error("The managed binary folder is only known in main.");
   return join(app.getPath("userData"), "bin");
 }
 
 let cached: ResolvedBinaries | null = null;
 
 export function binariesAvailable(): ResolvedBinaries {
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
   cached = { ytdlp: resolveYtDlp(), ffmpeg: resolveFfmpeg() };
   log.info("[pond binaries] resolved", {
     ytdlp: cached.ytdlp,
@@ -48,9 +44,7 @@ export function invalidateBinariesCache(): void {
 function resolveYtDlp(): string | null {
   if (app) {
     const managed = join(userBinDir(), YTDLP_FILENAME);
-    if (existsSync(managed)) {
-      return managed;
-    }
+    if (existsSync(managed)) return managed;
   }
   return lookupOnPath(YTDLP_FILENAME);
 }
@@ -75,9 +69,7 @@ function resolveFfmpeg(): string | null {
   );
 
   for (const c of candidates) {
-    if (existsSync(c)) {
-      return c;
-    }
+    if (existsSync(c)) return c;
   }
   return lookupOnPath(FFMPEG_FILENAME);
 }

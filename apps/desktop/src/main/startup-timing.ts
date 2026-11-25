@@ -12,16 +12,12 @@ let logged = false;
 
 /** Node's `performance.now()` counts from process start, so each mark reads as time-to-X. */
 export function markStartup(mark: StartupMark): void {
-  if (marks[mark] !== undefined) {
-    return;
-  }
+  if (marks[mark] !== undefined) return;
   marks[mark] = Math.round(performance.now());
 }
 
 export function logStartupTiming(): void {
-  if (logged) {
-    return;
-  }
+  if (logged) return;
   logged = true;
   log.info("[pond startup] ms since process start", marks);
 }

@@ -60,9 +60,7 @@ async function createChat(
     .leftJoin(agentChatFish, eq(agentChatFish.chatId, agentChats.id))
     .where(eq(agentChats.id, id));
   const created = rows[0];
-  if (!created) {
-    throw new Error("agent chat create failed");
-  }
+  if (!created) throw new Error("agent chat create failed");
   return created;
 }
 
@@ -71,9 +69,7 @@ export async function fishThread(
   fishId: string = DEFAULT_FISH_ID,
 ): Promise<ChatListing & { created: boolean }> {
   const [latest] = await listChats(fishId);
-  if (latest) {
-    return { ...latest, created: false };
-  }
+  if (latest) return { ...latest, created: false };
   return { ...(await createChat(fishId)), created: true };
 }
 
@@ -88,9 +84,7 @@ export async function fishIdForChat(chatId: string): Promise<string> {
 }
 
 export async function deleteFishChats(fishId: string): Promise<void> {
-  for (const chat of await listChats(fishId)) {
-    await deleteChat(chat.id);
-  }
+  for (const chat of await listChats(fishId)) await deleteChat(chat.id);
 }
 
 export async function renameChat(id: string, title: string): Promise<OkResult> {
@@ -229,9 +223,7 @@ export async function appendMessage(input: {
     current[0]?.title ||
     (input.role === "user" ? chatTitle(input.content) : null);
   const patch: Partial<AgentChat> = { updatedAt: new Date() };
-  if (title) {
-    patch.title = title;
-  }
+  if (title) patch.title = title;
   await db.update(agentChats).set(patch).where(eq(agentChats.id, input.chatId));
   return id;
 }

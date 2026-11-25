@@ -13,9 +13,7 @@ const { packageName, runtimePackages, verifyRuntimePackages } = createRequire(
 const roots = [];
 
 afterEach(() => {
-  for (const root of roots) {
-    rmSync(root, { recursive: true, force: true });
-  }
+  for (const root of roots) rmSync(root, { recursive: true, force: true });
   roots.length = 0;
 });
 

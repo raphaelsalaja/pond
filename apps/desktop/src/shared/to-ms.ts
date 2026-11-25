@@ -23,13 +23,9 @@ export function toMs(v: WireJson | undefined): number | null {
   }
 
   const text = String(v).trim();
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
   const num = Number(text);
-  if (Number.isFinite(num)) {
-    return num;
-  }
+  if (Number.isFinite(num)) return num;
   const parsed = Date.parse(text);
   return Number.isFinite(parsed) ? parsed : null;
 }

@@ -17,8 +17,6 @@ if (process.argv.includes("--check")) {
   }
   console.log("Verified colors/palette.css and colors/scale.css");
 } else {
-  for (const [path, source] of outputs) {
-    writeFileSync(path, source);
-  }
+  for (const [path, source] of outputs) writeFileSync(path, source);
   console.log("Generated colors/palette.css and colors/scale.css");
 }

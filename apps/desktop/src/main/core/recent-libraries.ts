@@ -18,9 +18,7 @@ const RecentLibrariesSchema = z.array(
 );
 
 function readHistory(file: string) {
-  if (!existsSync(file)) {
-    return [];
-  }
+  if (!existsSync(file)) return [];
   return RecentLibrariesSchema.parse(JSON.parse(readFileSync(file, "utf8")));
 }
 

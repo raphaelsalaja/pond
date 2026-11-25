@@ -65,9 +65,7 @@ function cropLogo(image: NativeImage, crop: LogoCrop): string {
 function cropSource(image: NativeImage): NativeImage {
   const { width, height } = image.getSize();
   const scale = CROP_SOURCE_SIZE / Math.max(width, height);
-  if (scale >= 1) {
-    return image;
-  }
+  if (scale >= 1) return image;
   return image.resize({
     width: Math.max(1, Math.round(width * scale)),
     height: Math.max(1, Math.round(height * scale)),
@@ -111,9 +109,7 @@ export const libraryLocationOpenQueries = {
     QueryResult<"library.identity.pickIcon">
   > {
     const result = await pickLibraryImage();
-    if (!result.ok) {
-      return result;
-    }
+    if (!result.ok) return result;
     const source = cropSource(result.image);
     return {
       ok: true as const,
@@ -137,9 +133,7 @@ export const libraryLocationOpenQueries = {
     async (params): Promise<QueryResult<"library.identity.pondLogo">> => {
       const { appIconFile } = await import("../../core/app-icon");
       const file = appIconFile(params.tint);
-      if (!file) {
-        return { ok: false as const, reason: "missing" as const };
-      }
+      if (!file) return { ok: false as const, reason: "missing" as const };
       const image = nativeImage.createFromPath(file);
       if (image.isEmpty()) {
         return { ok: false as const, reason: "invalid_image" as const };
@@ -157,9 +151,7 @@ export const libraryLocationOpenQueries = {
     PathParams,
     async (params): Promise<QueryResult<"library.recent.pickIcon">> => {
       const result = await pickLibraryImage();
-      if (!result.ok) {
-        return result;
-      }
+      if (!result.ok) return result;
       const size = result.image.getSize();
       const icon = cropLogo(result.image, cropRect(size, centeredFrame(size)));
       updateLibraryIdentity(params.path, { icon });
@@ -260,9 +252,7 @@ export const libraryLocationOpenQueries = {
       return { ok: false as const, reason: "cancelled" as const };
     }
     const dest = result.filePaths[0];
-    if (!dest) {
-      return { ok: false as const, reason: "cancelled" as const };
-    }
+    if (!dest) return { ok: false as const, reason: "cancelled" as const };
     return { ok: true as const, path: dest };
   },
 
@@ -270,9 +260,7 @@ export const libraryLocationOpenQueries = {
     PathParams,
     async (params): Promise<QueryResult<"library.switchTo">> => {
       const dest = params.path.trim();
-      if (!dest) {
-        return { ok: false as const, reason: "no_path" as const };
-      }
+      if (!dest) return { ok: false as const, reason: "no_path" as const };
 
       const pointer = readLibraryPointer() ?? "";
       const cached = libraryRootDir();

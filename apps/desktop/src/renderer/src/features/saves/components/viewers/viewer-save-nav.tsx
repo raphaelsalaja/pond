@@ -11,9 +11,7 @@ export function ViewerSaveNav({ saveId }: { saveId: string }) {
   const index = useResultIndex(saveId);
   const total = useResultTotal();
 
-  if (index < 0 || total <= 0) {
-    return null;
-  }
+  if (index < 0 || total <= 0) return null;
 
   return (
     <>

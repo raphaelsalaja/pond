@@ -125,15 +125,11 @@ export const SyncActionEventSchema = z.object({
 export type SyncActionEvent = z.infer<typeof SyncActionEventSchema>;
 
 export function applyAction(event: SyncActionEvent): void {
-  if (event.modelName !== "save") {
-    return;
-  }
+  if (event.modelName !== "save") return;
 
   if (event.action === "I") {
     const save = normalise(event.data);
-    if (save) {
-      upsertSave(save);
-    }
+    if (save) upsertSave(save);
     return;
   }
 
@@ -141,13 +137,9 @@ export function applyAction(event: SyncActionEvent): void {
     const patch = event.data;
     const existing = pool.get(event.modelId);
     if (!existing) {
-      if (!patch?.url) {
-        return;
-      }
+      if (!patch?.url) return;
       const created = normalise(patch);
-      if (created) {
-        upsertSave(created);
-      }
+      if (created) upsertSave(created);
       return;
     }
     const merged = normalise({
@@ -155,9 +147,7 @@ export function applyAction(event: SyncActionEvent): void {
       ...patch,
       id: existing.id,
     });
-    if (merged) {
-      upsertSave(merged);
-    }
+    if (merged) upsertSave(merged);
     return;
   }
 
@@ -168,22 +158,16 @@ export function applyAction(event: SyncActionEvent): void {
 
   if (event.action === "A") {
     const existing = pool.get(event.modelId);
-    if (!existing) {
-      return;
-    }
+    if (!existing) return;
     const merged = normalise({ ...existing, ...event.data });
-    if (merged) {
-      upsertSave(merged);
-    }
+    if (merged) upsertSave(merged);
   }
 }
 
 export function normalise(
   raw: Partial<SavePatch> | null | undefined,
 ): Save | null {
-  if (!raw?.id) {
-    return null;
-  }
+  if (!raw?.id) return null;
   return {
     id: raw.id,
     source: raw.source ?? "twitter",

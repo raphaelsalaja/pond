@@ -20,9 +20,7 @@ function typing(target: EventTarget) {
 /** Bound on the card itself, so keys only act while focus is inside it and never while typing in the composer. */
 export function cardKeys({ submit, cancel, pick }: CardKeys) {
   return (event: KeyboardEvent<HTMLElement>) => {
-    if (event.defaultPrevented || event.nativeEvent.isComposing) {
-      return;
-    }
+    if (event.defaultPrevented || event.nativeEvent.isComposing) return;
     const mod = event.metaKey || event.ctrlKey;
     if (event.key === "Enter" && mod && submit) {
       event.preventDefault();

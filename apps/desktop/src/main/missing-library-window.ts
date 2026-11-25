@@ -80,28 +80,20 @@ export function openMissingLibraryWindow(
     next.once("closed", () => {
       ipcMain.removeHandler(MISSING_LIBRARY_WINDOW_IPC.ready);
       ipcMain.removeHandler(MISSING_LIBRARY_WINDOW_IPC.choose);
-      if (current === next) {
-        current = null;
-      }
+      if (current === next) current = null;
       win = null;
       answer("quit");
     });
 
     safeHandle(MISSING_LIBRARY_WINDOW_IPC.ready, (event) => {
-      if (!owns(event.sender.id)) {
-        throw new Error("Not the recovery window");
-      }
+      if (!owns(event.sender.id)) throw new Error("Not the recovery window");
       delivered = true;
       return view;
     });
     safeHandle(MISSING_LIBRARY_WINDOW_IPC.choose, (event, raw) => {
-      if (!owns(event.sender.id)) {
-        throw new Error("Not the recovery window");
-      }
+      if (!owns(event.sender.id)) throw new Error("Not the recovery window");
       const choice = MissingLibraryChoiceSchema.safeParse(raw);
-      if (choice.success) {
-        answer(choice.data);
-      }
+      if (choice.success) answer(choice.data);
     });
 
     const devUrl = process.env.ELECTRON_RENDERER_URL;
@@ -110,9 +102,7 @@ export function openMissingLibraryWindow(
         ? next.loadURL(new URL("missing-library.html", `${devUrl}/`).toString())
         : next.loadFile(resolveMainOut("../renderer/missing-library.html"))
     ).catch(() => {
-      if (!next.isDestroyed()) {
-        next.destroy();
-      }
+      if (!next.isDestroyed()) next.destroy();
     });
     return next;
   };
@@ -121,9 +111,7 @@ export function openMissingLibraryWindow(
     ask(detail) {
       view = { ...view, detail, attempt: view.attempt + 1 };
       if (!win) {
-        if (view.attempt > 1) {
-          return Promise.resolve("quit");
-        }
+        if (view.attempt > 1) return Promise.resolve("quit");
         win = create();
       } else {
         if (delivered) {
@@ -144,8 +132,6 @@ export function openMissingLibraryWindow(
 }
 
 export function closeMissingLibraryWindow(): void {
-  if (current && !current.isDestroyed()) {
-    current.destroy();
-  }
+  if (current && !current.isDestroyed()) current.destroy();
   current = null;
 }

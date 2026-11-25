@@ -83,9 +83,7 @@ function deferred() {
 it("persists cancellation and reuses verified completed originals on retry after store reload", async () => {
   const { store, request, items, destination, directory } = await fixture();
   const first = items[0];
-  if (!first) {
-    throw new Error("Missing first original");
-  }
+  if (!first) throw new Error("Missing first original");
   const ready = deferred();
   const resume = deferred();
   const run = store.run(request, async () => {
@@ -96,9 +94,7 @@ it("persists cancellation and reuses verified completed originals on retry after
   });
   await ready.promise;
   const [job] = await store.list();
-  if (!job) {
-    throw new Error("Missing transfer");
-  }
+  if (!job) throw new Error("Missing transfer");
   await store.cancel(job.id);
   resume.release();
   await expect(run).rejects.toThrow("canceled");
@@ -117,9 +113,7 @@ it("persists cancellation and reuses verified completed originals on retry after
 it("keeps user changes to a checkpointed output and copies to a fresh name", async () => {
   const { store, request, items, destination } = await fixture();
   const first = items[0];
-  if (!first) {
-    throw new Error("Missing first original");
-  }
+  if (!first) throw new Error("Missing first original");
   await expect(
     store.run(request, async () => {
       await exportFiles({ directory: destination, items: [first] });
@@ -127,9 +121,7 @@ it("keeps user changes to a checkpointed output and copies to a fresh name", asy
     }),
   ).rejects.toThrow("Interrupted fixture");
   const [job] = await store.list();
-  if (!job) {
-    throw new Error("Missing job");
-  }
+  if (!job) throw new Error("Missing job");
   await writeFile(join(destination, "first.txt"), "other");
   await store.run(
     request,
@@ -178,9 +170,7 @@ it("dismisses a failed library transfer and leaves the others in place", async (
     }),
   ).rejects.toThrow("no longer exists");
   const [failed] = await store.list();
-  if (!failed) {
-    throw new Error("Missing failed transfer");
-  }
+  if (!failed) throw new Error("Missing failed transfer");
   expect(failed.status).toBe("failed");
   await writeFile(join(directory, `${failed.id}.jsonl`), "{}\n");
   await store.run(
@@ -188,9 +178,7 @@ it("dismisses a failed library transfer and leaves the others in place", async (
     async () => "kept",
   );
   const kept = (await store.list()).find((job) => job.id !== failed.id);
-  if (!kept) {
-    throw new Error("Missing kept transfer");
-  }
+  if (!kept) throw new Error("Missing kept transfer");
   expect(await store.dismiss(failed.id)).toEqual({ ok: true });
   expect(await store.dismiss(failed.id)).toEqual({
     ok: false,
@@ -222,9 +210,7 @@ it("keeps a running transfer when dismiss is requested", async () => {
   });
   await ready.promise;
   const [job] = await store.list();
-  if (!job) {
-    throw new Error("Missing transfer");
-  }
+  if (!job) throw new Error("Missing transfer");
   expect(job.status).toBe("running");
   expect(await store.dismiss(job.id)).toEqual({
     ok: false,
@@ -249,9 +235,7 @@ it("isolates cancellation between parallel transfers", async () => {
   });
   await ready.promise;
   const [job] = await store.list();
-  if (!job) {
-    throw new Error("Missing job");
-  }
+  if (!job) throw new Error("Missing job");
   await store.cancel(job.id);
   await expect(
     store.run(

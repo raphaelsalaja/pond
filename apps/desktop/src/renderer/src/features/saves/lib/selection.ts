@@ -73,9 +73,7 @@ async function resolve(ids: ReadonlyArray<string>): Promise<Array<Save>> {
 }
 
 async function writeClipboard(text: string): Promise<boolean> {
-  if (!text) {
-    return false;
-  }
+  if (!text) return false;
   try {
     const result = OkSchema.parse(
       await window.pond.query("clipboard.writeText", { text }),
@@ -93,9 +91,7 @@ export function failedIdsIn(ids: ReadonlyArray<string>): Array<string> {
 export async function retryFailedSelection(
   ids: ReadonlyArray<string>,
 ): Promise<void> {
-  if (ids.length === 0) {
-    return;
-  }
+  if (ids.length === 0) return;
   const result = RetryReplySchema.parse(
     await window.pond.query("saves.retryFailed", { ids: [...ids] }),
   );
@@ -127,9 +123,7 @@ export async function restoreSelection(
 export async function deleteSelectionForever(
   ids: ReadonlyArray<string>,
 ): Promise<void> {
-  if (ids.length === 0) {
-    return;
-  }
+  if (ids.length === 0) return;
   await purgeSaves([...ids]);
   selection.clear();
 }
@@ -151,9 +145,7 @@ export async function addTagsToSelection(
 export async function clearTagsForSelection(
   ids: ReadonlyArray<string>,
 ): Promise<void> {
-  if (ids.length === 0) {
-    return;
-  }
+  if (ids.length === 0) return;
   await bulkMutation(ids, { kind: "tags", tags: [], mode: "replace" });
 }
 
@@ -247,9 +239,7 @@ export async function exportSelectionFiles(
   ids: ReadonlyArray<string>,
   options: { zip?: boolean; fromFolders?: boolean } = {},
 ): Promise<SelectionActionResult> {
-  if (ids.length === 0) {
-    return { ok: false, message: "Nothing selected" };
-  }
+  if (ids.length === 0) return { ok: false, message: "Nothing selected" };
   const job = statusFeed.start("Exporting files");
   const result = ExportReplySchema.parse(
     await window.pond.query("saves.exportFiles", {
@@ -286,9 +276,7 @@ export async function exportSelectionFiles(
 export async function exportSelectionCsv(
   ids: ReadonlyArray<string>,
 ): Promise<SelectionActionResult> {
-  if (ids.length === 0) {
-    return { ok: false, message: "Nothing selected" };
-  }
+  if (ids.length === 0) return { ok: false, message: "Nothing selected" };
   const job = statusFeed.start("Exporting CSV");
   const result = ExportReplySchema.parse(
     await window.pond.query("saves.exportCsv", { ids: [...ids] }),
@@ -317,15 +305,11 @@ export async function copyFilesForSelection(
     }
     files.push({ id: save.id, fileIndex });
   }
-  if (files.length === 0) {
-    return;
-  }
+  if (files.length === 0) return;
   const result = OkSchema.parse(
     await window.pond.query("saves.copyFiles", { files }),
   );
-  if (!result.ok) {
-    return;
-  }
+  if (!result.ok) return;
   notify({
     id: "copy-media",
     title:
@@ -342,9 +326,7 @@ export async function copyTagsForSelection(
   for (const save of await resolve(ids)) {
     tags = mergeUniqueTags(tags, save.tags);
   }
-  if (tags.length === 0) {
-    return;
-  }
+  if (tags.length === 0) return;
   tagClipboard.set(tags);
   notify({ id: "copy-tags", title: "Tags copied" });
 }
@@ -353,9 +335,7 @@ export async function pasteTagsForSelection(
   ids: ReadonlyArray<string>,
 ): Promise<void> {
   const buf = tagClipboard.get();
-  if (buf.length === 0) {
-    return;
-  }
+  if (buf.length === 0) return;
   await addTagsToSelection(ids, buf);
 }
 
@@ -373,13 +353,9 @@ export async function openDefaultAppForSelection(
     const result = OkSchema.parse(
       await window.pond.openSaveFile(save.id, fileIndex),
     );
-    if (!result.ok) {
-      failed += 1;
-    }
+    if (!result.ok) failed += 1;
   }
-  if (attempted === 0 || failed === 0) {
-    return;
-  }
+  if (attempted === 0 || failed === 0) return;
   statusFeed.error(
     "Open",
     failed === attempted
@@ -402,13 +378,9 @@ export async function revealFilesForSelection(
     const result = OkSchema.parse(
       await window.pond.revealSave(save.id, fileIndex),
     );
-    if (!result.ok) {
-      failed += 1;
-    }
+    if (!result.ok) failed += 1;
   }
-  if (attempted === 0 || failed === 0) {
-    return;
-  }
+  if (attempted === 0 || failed === 0) return;
   statusFeed.error(
     "Reveal",
     failed === attempted
@@ -422,9 +394,7 @@ export async function openInBrowserForSelection(
 ): Promise<void> {
   for (const save of await resolve(ids)) {
     const url = save.url;
-    if (!url) {
-      continue;
-    }
+    if (!url) continue;
     try {
       const parsed = new URL(url);
       if (parsed.protocol === "http:" || parsed.protocol === "https:") {
@@ -441,9 +411,7 @@ export async function reverseImageSearchForSelection(
   engineKey: string,
 ): Promise<void> {
   const engine = REVERSE_SEARCH_ENGINES.find((e) => e.key === engineKey);
-  if (!engine) {
-    return;
-  }
+  if (!engine) return;
   if ("usesImageUrl" in engine && !engine.usesImageUrl) {
     await window.pond.openExternal(engine.url(""));
     return;
@@ -453,9 +421,7 @@ export async function reverseImageSearchForSelection(
     const result = PublicUrlReplySchema.parse(
       await window.pond.query("saves.publicImageUrl", { id: save.id }),
     );
-    if (!result.ok || !result.url) {
-      continue;
-    }
+    if (!result.ok || !result.url) continue;
     await window.pond.openExternal(engine.url(encodeURIComponent(result.url)));
     opened += 1;
   }
@@ -471,9 +437,7 @@ export async function refreshDetailsForSelection(
   ids: ReadonlyArray<string>,
 ): Promise<void> {
   for (const save of await resolve(ids)) {
-    if (!save.url) {
-      continue;
-    }
+    if (!save.url) continue;
     await window.pond.refreshSave(save.id);
   }
 }
@@ -482,9 +446,7 @@ export async function archiveSitesForSelection(
   ids: ReadonlyArray<string>,
 ): Promise<void> {
   for (const save of await resolve(ids)) {
-    if (!save.url || !isWebPageSave(save) || save.deletedAt) {
-      continue;
-    }
+    if (!save.url || !isWebPageSave(save) || save.deletedAt) continue;
     await window.pond.archiveSite(save.id);
   }
 }

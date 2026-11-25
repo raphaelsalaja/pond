@@ -50,9 +50,7 @@ export function useTextReveal(
         return;
       }
       const remaining = Array.from(next.slice(current.current.length));
-      if (!remaining.length) {
-        return;
-      }
+      if (!remaining.length) return;
       const elapsed = Math.min(64, now - previous);
       const count = Math.min(
         remaining.length,

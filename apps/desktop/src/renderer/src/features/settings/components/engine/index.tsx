@@ -184,9 +184,7 @@ function Group({
   binding: Binding;
   sectionId?: string;
 }) {
-  if (group.visible && !group.visible(binding.values)) {
-    return null;
-  }
+  if (group.visible && !group.visible(binding.values)) return null;
 
   const items = (group.items ?? []).filter(
     (item) =>
@@ -195,9 +193,7 @@ function Group({
       item.visible(binding.values),
   );
 
-  if (group.render === undefined && items.length === 0) {
-    return null;
-  }
+  if (group.render === undefined && items.length === 0) return null;
 
   return (
     <Settings.Section
@@ -228,9 +224,7 @@ function GroupItems({
   let rows: Array<Item> = [];
 
   const flushRows = () => {
-    if (rows.length === 0) {
-      return;
-    }
+    if (rows.length === 0) return;
     const segment = rows;
     rows = [];
     content.push(
@@ -304,9 +298,7 @@ function StandaloneItemWithBinding({
   sectionId?: string;
 }) {
   const binding = usePrefsBinding(prefsKey);
-  if (item.visible && !item.visible(binding.values)) {
-    return null;
-  }
+  if (item.visible && !item.visible(binding.values)) return null;
   return (
     <StandaloneItemShell item={item} binding={binding} sectionId={sectionId} />
   );
@@ -359,9 +351,7 @@ function OverriddenItemRow({
   sectionId?: string;
 }) {
   const binding = usePrefsBinding(prefsKey);
-  if (item.visible && !item.visible(binding.values)) {
-    return null;
-  }
+  if (item.visible && !item.visible(binding.values)) return null;
   return <ItemShell item={item} binding={binding} sectionId={sectionId} />;
 }
 

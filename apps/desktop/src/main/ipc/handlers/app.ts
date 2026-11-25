@@ -130,18 +130,14 @@ export function registerAppHandlers(): void {
 
   safeHandle(IPC.revealSave, async (_, id: string, fileIndex?: number) => {
     const target = await resolveSaveFilePath(id, fileIndex);
-    if (!target.ok) {
-      return target;
-    }
+    if (!target.ok) return target;
     shell.showItemInFolder(target.path);
     return { ok: true as const };
   });
 
   safeHandle(IPC.openSaveFile, async (_, id: string, fileIndex?: number) => {
     const target = await resolveSaveFilePath(id, fileIndex);
-    if (!target.ok) {
-      return target;
-    }
+    if (!target.ok) return target;
     const err = await openSavedFile(target.path, shell);
     if (err) {
       log.warn("[pond ipc] openSaveFile failed", err);

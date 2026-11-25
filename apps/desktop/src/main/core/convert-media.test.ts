@@ -215,9 +215,7 @@ it.skipIf(!ffmpegPath)(
   "rejects professional formats that fail runtime validation",
   async () => {
     const ffmpeg = ffmpegPath;
-    if (!ffmpeg) {
-      throw new Error("FFmpeg unavailable");
-    }
+    if (!ffmpeg) throw new Error("FFmpeg unavailable");
     const directory = await mkdtemp(join(tmpdir(), "pond-pro-gate-test-"));
     try {
       const source = join(directory, "source.png");

@@ -134,9 +134,7 @@ export function evaluateEmbeddingDimension(
   const slices: EmbeddingDimensionResult["slices"] = {};
   for (const modality of ALL_MODALITIES) {
     const queries = perQuery.filter((query) => query.modality === modality);
-    if (queries.length === 0) {
-      continue;
-    }
+    if (queries.length === 0) continue;
     slices[modality] = {
       queries: queries.length,
       recallAt10: average(queries.map((query) => query.recallAt10)),

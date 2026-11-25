@@ -97,9 +97,7 @@ export function NotificationDetail({
   useEffect(() => {
     ref.current?.focus({ preventScroll: true });
     const item = notifications.find(id);
-    if (item && isUnread(item)) {
-      notifications.markRead([id], true);
-    }
+    if (item && isUnread(item)) notifications.markRead([id], true);
   }, [id]);
 
   function remove() {
@@ -108,17 +106,12 @@ export function NotificationDetail({
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (ignoresKey(event)) {
-      return;
-    }
+    if (ignoresKey(event)) return;
     const handled = (() => {
       switch (event.code) {
         case "KeyU":
-          if (event.altKey) {
-            notifications.markAllRead();
-          } else {
-            notifications.markRead([id], unread);
-          }
+          if (event.altKey) notifications.markAllRead();
+          else notifications.markRead([id], unread);
           return true;
         case "KeyH":
           snoozeRef.current?.click();
@@ -126,9 +119,7 @@ export function NotificationDetail({
         case "Backspace":
         case "Delete":
           if (event.shiftKey) {
-            if (!unread) {
-              onLeave();
-            }
+            if (!unread) onLeave();
             notifications.removeRead();
           } else {
             remove();
@@ -138,9 +129,7 @@ export function NotificationDetail({
           return navigationKey(event, onStep, onClose);
       }
     })();
-    if (handled) {
-      event.preventDefault();
-    }
+    if (handled) event.preventDefault();
   }
 
   return (

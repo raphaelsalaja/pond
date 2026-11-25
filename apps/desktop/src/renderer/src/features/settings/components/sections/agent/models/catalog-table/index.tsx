@@ -55,9 +55,7 @@ export function ModelCatalogTable({
   ).length;
 
   async function save(next: VisibleModelIds) {
-    if (pending) {
-      return;
-    }
+    if (pending) return;
     setPending(true);
     setError("");
     try {
@@ -84,17 +82,13 @@ export function ModelCatalogTable({
       ids.push(model.id);
       byProvider.set(model.provider, ids);
     }
-    for (const [provider, ids] of byProvider) {
-      next[provider] = ids;
-    }
+    for (const [provider, ids] of byProvider) next[provider] = ids;
     return next;
   }
 
   function noneVisible() {
     const next = { ...visibleByProvider };
-    for (const model of models) {
-      next[model.provider] = [];
-    }
+    for (const model of models) next[model.provider] = [];
     return next;
   }
 
@@ -108,9 +102,7 @@ export function ModelCatalogTable({
             value={search}
             onValueChange={(value) => {
               setSearch(value);
-              if (value.trim()) {
-                setCollapsed(new Set());
-              }
+              if (value.trim()) setCollapsed(new Set());
             }}
           />
         </Input.Root>
@@ -143,11 +135,8 @@ export function ModelCatalogTable({
           setCollapsed((current) => {
             const next = new Set(current);
             for (const provider of groups.keys()) {
-              if (expanded.includes(provider)) {
-                next.delete(provider);
-              } else {
-                next.add(provider);
-              }
+              if (expanded.includes(provider)) next.delete(provider);
+              else next.add(provider);
             }
             return next;
           });
@@ -188,11 +177,8 @@ export function ModelCatalogTable({
                     disabled: pending,
                     onCheckedChange: (model, checked) => {
                       const next = new Set(providerVisible(model.provider));
-                      if (checked) {
-                        next.add(model.id);
-                      } else {
-                        next.delete(model.id);
-                      }
+                      if (checked) next.add(model.id);
+                      else next.delete(model.id);
                       void save({
                         ...visibleByProvider,
                         [model.provider]: [...next],

@@ -8,9 +8,7 @@ import { hrefWithSearch } from "@/shared/lib/route-search";
 /** Each collection opens unfiltered; All keeps the search, so a search can widen to every Save. */
 export function selectLibraryNav(nav: LibraryNav): void {
   const router = getAppRouter();
-  if (!router) {
-    return;
-  }
+  if (!router) return;
   const path = pathForLibraryNav(nav);
   const href =
     nav.kind === "all"
@@ -28,7 +26,5 @@ export async function preloadLibraryNav(nav: LibraryNav): Promise<void> {
 
 export function showSidebarPanel(panel: SidebarPanel): void {
   libraryChrome.setSidebarPanel(panel);
-  if (!libraryChrome.getState().sidebarOpen) {
-    libraryChrome.toggleSidebar();
-  }
+  if (!libraryChrome.getState().sidebarOpen) libraryChrome.toggleSidebar();
 }

@@ -187,9 +187,7 @@ describe("matchesDownloadFilters", () => {
     save({ id: "a", status: "failed", title: "Clip" }),
   ]);
   const row = rows[0];
-  if (!row) {
-    throw new Error("expected a row");
-  }
+  if (!row) throw new Error("expected a row");
 
   it("hides only completed downloads by default", () => {
     const filters = defaultDownloadFilters();
@@ -239,9 +237,7 @@ describe("matchesDownloadFilters", () => {
         url: "https://www.youtube.com/watch?v=abc",
       }),
     ]);
-    if (!webRow) {
-      throw new Error("expected a row");
-    }
+    if (!webRow) throw new Error("expected a row");
     expect(
       matchesDownloadFilters(webRow, {
         ...defaultDownloadFilters(),

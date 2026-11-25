@@ -73,9 +73,7 @@ const setOverlay = (input: Parameters<typeof overlay>[0]) =>
 const dialect = new SQLiteSyncDialect();
 const query = () => {
   const condition = mock.where.mock.calls[0]?.[0];
-  if (!condition) {
-    throw new Error("Expected scoped query");
-  }
+  if (!condition) throw new Error("Expected scoped query");
   return dialect.sqlToQuery(condition);
 };
 beforeEach(() => {
@@ -213,9 +211,7 @@ function untypedSchemaPaths(schema: JsonValue, path = "$"): Array<string> {
     );
   }
   const parsed = z.record(z.string(), z.json()).safeParse(schema);
-  if (!parsed.success) {
-    return [];
-  }
+  if (!parsed.success) return [];
   const node = parsed.data;
   const keys = Object.keys(node).filter((key) => key !== "$schema");
   const typed =

@@ -55,9 +55,7 @@ function waitForImages(root: HTMLElement): Promise<void> {
   const imgs = Array.from(root.querySelectorAll("img")).filter((img) =>
     Boolean(img.currentSrc || img.src),
   );
-  if (imgs.length === 0) {
-    return Promise.resolve();
-  }
+  if (imgs.length === 0) return Promise.resolve();
   return Promise.race([
     Promise.all(imgs.map((img) => img.decode().catch(() => undefined))).then(
       () => undefined,
@@ -93,9 +91,7 @@ function CaptureCard() {
           resolve(null);
         });
       });
-      if (!cancelled) {
-        document.documentElement.dataset.ready = "1";
-      }
+      if (!cancelled) document.documentElement.dataset.ready = "1";
     };
     void run();
     return () => {
@@ -120,6 +116,4 @@ function CaptureCard() {
 
 const root = document.getElementById("capture-root");
 
-if (root) {
-  createRoot(root).render(<CaptureCard />);
-}
+if (root) createRoot(root).render(<CaptureCard />);

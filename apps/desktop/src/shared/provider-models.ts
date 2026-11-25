@@ -49,15 +49,9 @@ export function displayName(id: string): string {
     .filter(Boolean)
     .map((part) => {
       const token = TOKENS.get(part.toLowerCase());
-      if (token) {
-        return token;
-      }
-      if (/^\d/.test(part)) {
-        return part;
-      }
-      if (part.length <= 2) {
-        return part.toUpperCase();
-      }
+      if (token) return token;
+      if (/^\d/.test(part)) return part;
+      if (part.length <= 2) return part.toUpperCase();
       return part.charAt(0).toUpperCase() + part.slice(1);
     })
     .join(" ");
@@ -72,15 +66,9 @@ export function chosenModelId(
   },
 ): string {
   const fromMap = prefs.modelIds?.[provider]?.trim();
-  if (fromMap) {
-    return fromMap;
-  }
-  if (provider === "ollama") {
-    return prefs.ollamaModelId?.trim() ?? "";
-  }
-  if (provider === "lmstudio") {
-    return prefs.lmstudioModelId?.trim() ?? "";
-  }
+  if (fromMap) return fromMap;
+  if (provider === "ollama") return prefs.ollamaModelId?.trim() ?? "";
+  if (provider === "lmstudio") return prefs.lmstudioModelId?.trim() ?? "";
   return "";
 }
 

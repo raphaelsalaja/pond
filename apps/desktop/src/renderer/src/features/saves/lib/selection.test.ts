@@ -19,9 +19,7 @@ function seed() {
   const save = normalise(
     SavePatchSchema.parse({ id: ids[0], url: "https://example.com/0" }),
   );
-  if (!save) {
-    throw new Error("Invalid fixture");
-  }
+  if (!save) throw new Error("Invalid fixture");
   pool.upsert(save);
 }
 afterEach(() => {
@@ -70,9 +68,7 @@ it("confirms a tag copy but lets the pasted tags speak for themselves", async ()
       tags: ["Reviewed"],
     }),
   );
-  if (!save) {
-    throw new Error("Invalid fixture");
-  }
+  if (!save) throw new Error("Invalid fixture");
   pool.upsert(save);
   const titles: Array<string | undefined> = [];
   const listener = (event: Event) => titles.push(notificationTitle(event));

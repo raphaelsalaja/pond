@@ -59,9 +59,7 @@ function Mode({ clip }: { clip: Clip }) {
         value={[clip.request.mode]}
         onValueChange={(next) => {
           const mode = MODES.find((item) => item.value === next[0]);
-          if (mode) {
-            clip.patch({ mode: mode.value });
-          }
+          if (mode) clip.patch({ mode: mode.value });
         }}
       >
         {MODES.map((mode) => (
@@ -112,9 +110,7 @@ function Tiles<T extends string>({
       value={[value]}
       onValueChange={(next) => {
         const option = options.find((item) => item.value === next[0]);
-        if (option) {
-          onValueChange(option.value);
-        }
+        if (option) onValueChange(option.value);
       }}
     >
       {options.map((option) => (

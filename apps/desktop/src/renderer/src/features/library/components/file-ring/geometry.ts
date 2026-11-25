@@ -70,12 +70,8 @@ export function ringHit(x: number, y: number): RingHit {
   const dx = x - CENTER;
   const dy = y - CENTER;
   const distance = Math.hypot(dx, dy);
-  if (distance <= HUB_RADIUS) {
-    return "hub";
-  }
-  if (distance < INNER_RADIUS || distance > OUTER_RADIUS) {
-    return null;
-  }
+  if (distance <= HUB_RADIUS) return "hub";
+  if (distance < INNER_RADIUS || distance > OUTER_RADIUS) return null;
   const degrees = (Math.atan2(dx, -dy) * 180) / Math.PI;
   const turned = (((degrees - FIRST_SECTOR_START) % 360) + 360) % 360;
   return RING_SLOTS[Math.floor(turned / SECTOR_DEGREES)] ?? null;
@@ -87,9 +83,7 @@ export function ringHitAt(
   clientY: number,
   rect: RingRect,
 ): RingHit {
-  if (rect.width <= 0) {
-    return null;
-  }
+  if (rect.width <= 0) return null;
   const scale = rect.width / RING_SIZE;
   return ringHit((clientX - rect.left) / scale, (clientY - rect.top) / scale);
 }

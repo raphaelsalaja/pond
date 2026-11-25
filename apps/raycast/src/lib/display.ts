@@ -40,18 +40,10 @@ export function escapeMarkdown(value: string): string {
 
 export function savedSection(saved: Date, now: Date): string {
   const days = Math.round((startOfDay(now) - startOfDay(saved)) / DAY);
-  if (days <= 0) {
-    return "Today";
-  }
-  if (days === 1) {
-    return "Yesterday";
-  }
-  if (days < 7) {
-    return "Previous 7 Days";
-  }
-  if (days < 30) {
-    return "Previous 30 Days";
-  }
+  if (days <= 0) return "Today";
+  if (days === 1) return "Yesterday";
+  if (days < 7) return "Previous 7 Days";
+  if (days < 30) return "Previous 30 Days";
   return saved.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 
@@ -72,11 +64,8 @@ export function sectionsBySavedDay<Item extends { savedAt: number }>(
   for (const item of items) {
     const title = savedSection(new Date(item.savedAt), now);
     const last = sections.at(-1);
-    if (last?.title === title) {
-      last.items.push(item);
-    } else {
-      sections.push({ title, items: [item] });
-    }
+    if (last?.title === title) last.items.push(item);
+    else sections.push({ title, items: [item] });
   }
   return sections;
 }
@@ -128,12 +117,8 @@ export function folderPaths(
   const byId = new Map(folders.map((folder) => [folder.id, folder]));
   function path(id: string, seen: Set<string>): string {
     const folder = byId.get(id);
-    if (!folder) {
-      return "";
-    }
-    if (!folder.parentId || seen.has(folder.parentId)) {
-      return folder.name;
-    }
+    if (!folder) return "";
+    if (!folder.parentId || seen.has(folder.parentId)) return folder.name;
     seen.add(id);
     const parent = path(folder.parentId, seen);
     return parent ? `${parent} / ${folder.name}` : folder.name;

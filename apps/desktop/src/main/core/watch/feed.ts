@@ -113,9 +113,7 @@ export async function readFeed(
   signal?: AbortSignal,
 ): Promise<FeedResult> {
   const address = normalizeFeedUrl(url);
-  if (!address) {
-    return { ok: false, reason: "not_found" };
-  }
+  if (!address) return { ok: false, reason: "not_found" };
   const timeout = AbortSignal.timeout(15_000);
   const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
   try {
@@ -140,9 +138,7 @@ export async function readFeed(
       return { ok: false, reason: "unavailable" };
     }
     const body = await readResponseBodyWithinBudget(response, 5 * 1024 * 1024);
-    if (!body) {
-      return { ok: false, reason: "unavailable" };
-    }
+    if (!body) return { ok: false, reason: "unavailable" };
     const xml = decodeFeed(body, response.headers.get("content-type"));
     const { XMLParser, XMLValidator } = await import("fast-xml-parser");
     if (DECLARES_ENTITIES.test(xml) || XMLValidator.validate(xml) !== true) {
@@ -156,9 +152,7 @@ export async function readFeed(
       isArray: (name) => ["item", "entry", "link"].includes(name),
     });
     const parsed = FeedSchema.safeParse(parser.parse(xml));
-    if (!parsed.success) {
-      return { ok: false, reason: "not_found" };
-    }
+    if (!parsed.success) return { ok: false, reason: "not_found" };
     const feed = parsed.data;
     const responseUrl = response.url || address;
     const base = feed.base

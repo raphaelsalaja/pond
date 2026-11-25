@@ -55,9 +55,7 @@ function noop() {}
 
 function field() {
   const input = host.querySelector<HTMLInputElement>('input[type="text"]');
-  if (!input) {
-    throw new Error("Missing input");
-  }
+  if (!input) throw new Error("Missing input");
   return input;
 }
 
@@ -65,9 +63,7 @@ function watchButton() {
   const button = Array.from(host.querySelectorAll("button")).find(
     (button) => button.textContent === "Watch",
   );
-  if (!button) {
-    throw new Error("Missing Watch button");
-  }
+  if (!button) throw new Error("Missing Watch button");
   return button;
 }
 

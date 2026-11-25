@@ -15,9 +15,7 @@ function fish() {
 
 function run(avatar: ReturnType<typeof fish>, seconds: number) {
   let pose = avatar.step(0);
-  for (let t = 0; t < seconds; t += 1 / 60) {
-    pose = avatar.step(1 / 60);
-  }
+  for (let t = 0; t < seconds; t += 1 / 60) pose = avatar.step(1 / 60);
   return pose;
 }
 

@@ -47,9 +47,7 @@ export function postMedia(
         sized({ url: i.fullsize, type: "image" }, i.aspectRatio),
       );
     case "app.bsky.embed.video#view":
-      if (!embed.playlist) {
-        return [];
-      }
+      if (!embed.playlist) return [];
       return [
         sized(
           embed.thumbnail
@@ -79,12 +77,8 @@ export function postEntry(
     author: `@${post.author.handle}`,
     listKinds: ["liked"],
   };
-  if (likedAt) {
-    entry.savedAt = likedAt;
-  }
-  if (post.record.text) {
-    entry.description = post.record.text;
-  }
+  if (likedAt) entry.savedAt = likedAt;
+  if (post.record.text) entry.description = post.record.text;
   const media = postMedia(post.embed);
   const [first] = media;
   if (first) {
@@ -138,9 +132,7 @@ function captureOf(
     },
     media: media.map((m) => {
       const item: CaptureMedia = { url: m.url, type: m.type };
-      if (m.poster) {
-        item.posterUrl = m.poster;
-      }
+      if (m.poster) item.posterUrl = m.poster;
       if (m.width && m.height) {
         item.width = m.width;
         item.height = m.height;
@@ -148,30 +140,20 @@ function captureOf(
       return item;
     }),
   };
-  if (author.avatar && capture.author) {
-    capture.author.avatarUrl = author.avatar;
-  }
+  if (author.avatar && capture.author) capture.author.avatarUrl = author.avatar;
   if (author.verification?.verifiedStatus === "valid" && capture.author) {
     capture.author.verified = true;
   }
-  if (record.text) {
-    capture.description = record.text;
-  }
-  if (record.createdAt) {
-    capture.publishedAt = record.createdAt;
-  }
+  if (record.text) capture.description = record.text;
+  if (record.createdAt) capture.publishedAt = record.createdAt;
   const facets = facetsOf(record);
-  if (facets.length > 0) {
-    capture.extras = { facets };
-  }
+  if (facets.length > 0) capture.extras = { facets };
   return capture;
 }
 
 function quotedOf(embed: BlueskyPost["embed"]): BlueskyViewRecord | undefined {
   const record = embed?.record;
-  if (!record) {
-    return undefined;
-  }
+  if (!record) return undefined;
   return "uri" in record ? record : record.record;
 }
 
@@ -184,29 +166,15 @@ export function captureFromPost(post: BlueskyPost): Capture {
     postMedia(post.embed),
   );
   const metrics: NonNullable<Capture["metrics"]> = {};
-  if (post.likeCount !== undefined) {
-    metrics.likes = post.likeCount;
-  }
-  if (post.replyCount !== undefined) {
-    metrics.replies = post.replyCount;
-  }
-  if (post.repostCount !== undefined) {
-    metrics.retweets = post.repostCount;
-  }
-  if (post.quoteCount !== undefined) {
-    metrics.quotes = post.quoteCount;
-  }
-  if (post.bookmarkCount !== undefined) {
-    metrics.bookmarks = post.bookmarkCount;
-  }
-  if (Object.keys(metrics).length > 0) {
-    capture.metrics = metrics;
-  }
+  if (post.likeCount !== undefined) metrics.likes = post.likeCount;
+  if (post.replyCount !== undefined) metrics.replies = post.replyCount;
+  if (post.repostCount !== undefined) metrics.retweets = post.repostCount;
+  if (post.quoteCount !== undefined) metrics.quotes = post.quoteCount;
+  if (post.bookmarkCount !== undefined) metrics.bookmarks = post.bookmarkCount;
+  if (Object.keys(metrics).length > 0) capture.metrics = metrics;
 
   const card = cardOf(post.embed);
-  if (card) {
-    capture.card = card;
-  }
+  if (card) capture.card = card;
 
   const quoted = quotedOf(post.embed);
   if (quoted) {
@@ -217,9 +185,7 @@ export function captureFromPost(post: BlueskyPost): Capture {
       postMedia(quoted.embeds?.[0]),
     );
     const quotedCard = cardOf(quoted.embeds?.[0]);
-    if (quotedCard) {
-      capture.quoted.card = quotedCard;
-    }
+    if (quotedCard) capture.quoted.card = quotedCard;
   }
   return capture;
 }

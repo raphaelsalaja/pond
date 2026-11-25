@@ -42,9 +42,7 @@ export function ToolList({ status, onChanged, onClose }: ToolListProps) {
     <Dialog.Root
       open
       onOpenChange={(open) => {
-        if (!open) {
-          onClose();
-        }
+        if (!open) onClose();
       }}
     >
       <Dialog.Portal>
@@ -153,9 +151,7 @@ function ToolRow({
         value={pending ?? tool.access}
         items={ACCESS_ITEMS}
         onValueChange={(next) => {
-          if (next !== null) {
-            void change(next);
-          }
+          if (next !== null) void change(next);
         }}
       >
         <Select.Trigger size="sm" aria-label={`${tool.name} access`}>

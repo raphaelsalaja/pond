@@ -29,9 +29,7 @@ export function Strip({
   };
   const move = (from: number, to: number) => {
     const image = images[from];
-    if (!image || to < 0 || to >= images.length || to === from) {
-      return;
-    }
+    if (!image || to < 0 || to >= images.length || to === from) return;
     refocus.current = image.save.id;
     onReorder(from, to);
     setAnnouncement(
@@ -40,9 +38,7 @@ export function Strip({
   };
   useLayoutEffect(() => {
     const id = refocus.current;
-    if (!id) {
-      return;
-    }
+    if (!id) return;
     refocus.current = null;
     items.current.get(id)?.focus();
   });
@@ -82,32 +78,23 @@ export function Strip({
                   setDragging(index);
                 }}
                 onDragOver={(event) => {
-                  if (dragging === null) {
-                    return;
-                  }
+                  if (dragging === null) return;
                   event.preventDefault();
                   setOver(index);
                 }}
                 onDrop={(event) => {
-                  if (dragging === null) {
-                    return;
-                  }
+                  if (dragging === null) return;
                   event.preventDefault();
                   event.stopPropagation();
-                  if (dragging !== index) {
-                    onReorder(dragging, index);
-                  }
+                  if (dragging !== index) onReorder(dragging, index);
                   reset();
                 }}
                 onDragEnd={reset}
               >
                 <div
                   ref={(node) => {
-                    if (node) {
-                      items.current.set(save.id, node);
-                    } else {
-                      items.current.delete(save.id);
-                    }
+                    if (node) items.current.set(save.id, node);
+                    else items.current.delete(save.id);
                   }}
                   className={styles.handle}
                   role="button"
@@ -116,9 +103,7 @@ export function Strip({
                   aria-label={`${title}, ${index + 1} of ${images.length}`}
                   aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
                   onKeyDown={(event) => {
-                    if (!event.altKey) {
-                      return;
-                    }
+                    if (!event.altKey) return;
                     if (event.key === "ArrowUp") {
                       event.preventDefault();
                       move(index, index - 1);

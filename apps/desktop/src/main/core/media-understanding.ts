@@ -164,9 +164,7 @@ function failure(
 function localReasoningOptions(
   provider: LocalMediaModelConnection["provider"],
 ): LocalReasoningOptions {
-  if (provider === "ollama") {
-    return { ollama: { reasoningEffort: "none" } };
-  }
+  if (provider === "ollama") return { ollama: { reasoningEffort: "none" } };
   return { lmstudio: { reasoningEffort: "none" } };
 }
 
@@ -174,9 +172,7 @@ function validateRequest(
   task: MediaUnderstandingTask,
   input: MediaImageRequest,
 ): string {
-  if (input.signal.aborted) {
-    throw failure("aborted", task);
-  }
+  if (input.signal.aborted) throw failure("aborted", task);
   const mimeType = input.mimeType.trim().toLowerCase();
   if (
     !mimeType.startsWith("image/") ||
@@ -192,25 +188,19 @@ function cleanOutput(task: MediaUnderstandingTask, output: string): string {
   const config = TASK_CONFIG[task];
   const text = output.replaceAll(/\r\n?/g, "\n").trim();
   if (!text) {
-    if (task === "ocr") {
-      return "";
-    }
+    if (task === "ocr") return "";
     throw failure("empty-output", task);
   }
   if (text.length > config.maxCharacters) {
     throw failure("output-too-long", task);
   }
   const chatter = task === "caption" ? CAPTION_CHATTER : OCR_CHATTER;
-  if (chatter.test(text)) {
-    throw failure("model-chatter", task);
-  }
+  if (chatter.test(text)) throw failure("model-chatter", task);
   return text;
 }
 
 function boundedInteger(value: number, maximum: number): number {
-  if (!Number.isFinite(value)) {
-    return 0;
-  }
+  if (!Number.isFinite(value)) return 0;
   return Math.min(maximum, Math.max(0, Math.round(value)));
 }
 
@@ -285,17 +275,11 @@ async function executeTask(
       baseUrl: connection.baseUrl,
     });
   } catch {
-    if (input.signal.aborted) {
-      throw failure("aborted", task);
-    }
+    if (input.signal.aborted) throw failure("aborted", task);
     throw failure("model-unavailable", task);
   }
-  if (input.signal.aborted) {
-    throw failure("aborted", task);
-  }
-  if (!model) {
-    throw failure("model-unavailable", task);
-  }
+  if (input.signal.aborted) throw failure("aborted", task);
+  if (!model) throw failure("model-unavailable", task);
 
   const config = TASK_CONFIG[task];
   let text: string;
@@ -317,14 +301,10 @@ async function executeTask(
     });
     text = result.text;
   } catch {
-    if (input.signal.aborted) {
-      throw failure("aborted", task);
-    }
+    if (input.signal.aborted) throw failure("aborted", task);
     throw failure("generation-failed", task);
   }
-  if (input.signal.aborted) {
-    throw failure("aborted", task);
-  }
+  if (input.signal.aborted) throw failure("aborted", task);
 
   return {
     text: cleanOutput(task, text),

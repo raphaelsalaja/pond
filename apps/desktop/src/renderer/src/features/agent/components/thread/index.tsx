@@ -68,18 +68,14 @@ const ThreadScrollContext = createContext<ThreadScroll | null>(null);
 /** Follow, release and return to the latest message from anywhere inside a `Thread.Conversation`. */
 export function useThreadScroll(): ThreadScroll {
   const value = useContext(ThreadScrollContext);
-  if (!value) {
-    throw new Error("useThreadScroll requires Thread.Conversation");
-  }
+  if (!value) throw new Error("useThreadScroll requires Thread.Conversation");
   return value;
 }
 
 function ScrollToLatest() {
   const reduceMotion = useReducedMotionConfig();
   const { isAtBottom, scrollToBottom } = useThreadScroll();
-  if (isAtBottom) {
-    return null;
-  }
+  if (isAtBottom) return null;
   return (
     <div className={styles["scroll-action"]}>
       <Button
@@ -121,9 +117,7 @@ function useCurrentMark(
   const [current, setCurrent] = useState<string | null>(null);
   const key = ids.join("\n");
   useEffect(() => {
-    if (!viewport) {
-      return;
-    }
+    if (!viewport) return;
     const list = key ? key.split("\n") : [];
     const update = () => {
       const box = viewport.getBoundingClientRect();
@@ -131,9 +125,7 @@ function useCurrentMark(
       let next = list[0] ?? null;
       for (const id of list) {
         const node = markNode(viewport, id);
-        if (node && node.getBoundingClientRect().top <= line) {
-          next = id;
-        }
+        if (node && node.getBoundingClientRect().top <= line) next = id;
       }
       if (
         viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <
@@ -168,15 +160,11 @@ function Rail({ marks, viewport, className, ...props }: RailProps) {
     viewport,
     marks.map((mark) => mark.id),
   );
-  if (marks.length < 2) {
-    return null;
-  }
+  if (marks.length < 2) return null;
 
   function jump(id: string) {
     const node = viewport && markNode(viewport, id);
-    if (!viewport || !node) {
-      return;
-    }
+    if (!viewport || !node) return;
     scroll?.stopScroll();
     const offset =
       node.getBoundingClientRect().top - viewport.getBoundingClientRect().top;

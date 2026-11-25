@@ -6,9 +6,7 @@ it("estimates a 120 bpm pulse", () => {
   const seconds = 8;
   const samples = new Float32Array(sampleRate * seconds);
   const interval = Math.round(sampleRate * (60 / 120));
-  for (let i = 0; i < samples.length; i += interval) {
-    samples[i] = 1;
-  }
+  for (let i = 0; i < samples.length; i += interval) samples[i] = 1;
   const bpm = estimateBpm(samples, sampleRate);
   expect(bpm).toBeGreaterThanOrEqual(118);
   expect(bpm).toBeLessThanOrEqual(122);

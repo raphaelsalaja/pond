@@ -37,9 +37,7 @@ export function ChatActions({
   items?: Array<MenuItemSpec>;
 }) {
   async function transfer(kind: "copy" | "export") {
-    if (!chatId) {
-      return;
-    }
+    if (!chatId) return;
     try {
       const result =
         kind === "copy"
@@ -48,9 +46,7 @@ export function ChatActions({
             })
           : await window.pond.query("agent.exportChat", { chatId });
       if (!result.ok) {
-        if (result.reason === "cancelled") {
-          return;
-        }
+        if (result.reason === "cancelled") return;
         throw new Error(result.error);
       }
       notify({
@@ -100,9 +96,7 @@ export function ChatActions({
                   variant: "destructive",
                   disabled: disabled || !chatId,
                   onClick: () => {
-                    if (!chatId) {
-                      return;
-                    }
+                    if (!chatId) return;
                     Dialog.confirm({
                       title: "Clear Conversation",
                       description:

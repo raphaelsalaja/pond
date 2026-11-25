@@ -13,12 +13,8 @@ export function TimelinePreview({ src, time }: { src: string; time: number }) {
 
   /** One seek in flight at a time; a new seek would abort the last before its frame paints. */
   const seek = useCallback((video: HTMLVideoElement) => {
-    if (seeking.current) {
-      return;
-    }
-    if (!Number.isFinite(video.duration) || video.duration <= 0) {
-      return;
-    }
+    if (seeking.current) return;
+    if (!Number.isFinite(video.duration) || video.duration <= 0) return;
     seeking.current = true;
     video.currentTime = previewTime(video, target.current);
   }, []);
@@ -26,9 +22,7 @@ export function TimelinePreview({ src, time }: { src: string; time: number }) {
   useEffect(() => {
     target.current = time;
     const video = preview.current;
-    if (!video || video.readyState < HTMLMediaElement.HAVE_METADATA) {
-      return;
-    }
+    if (!video || video.readyState < HTMLMediaElement.HAVE_METADATA) return;
     const request = requestAnimationFrame(() => seek(video));
     return () => cancelAnimationFrame(request);
   }, [seek, time]);

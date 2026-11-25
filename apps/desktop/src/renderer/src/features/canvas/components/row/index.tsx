@@ -52,9 +52,7 @@ export function CanvasRow({ canvas, active, renaming }: CanvasRowProps) {
             onClick={() => canvases.open(canvas.id)}
             onDoubleClick={() => canvases.startEditing(canvas.id)}
             onDragOver={(event) => {
-              if (!isLibrarySaveDrag(event.dataTransfer)) {
-                return;
-              }
+              if (!isLibrarySaveDrag(event.dataTransfer)) return;
               event.preventDefault();
               event.stopPropagation();
               event.dataTransfer.dropEffect = "copy";
@@ -63,9 +61,7 @@ export function CanvasRow({ canvas, active, renaming }: CanvasRowProps) {
             onDragLeave={() => setDropping(false)}
             onDrop={(event) => {
               setDropping(false);
-              if (!isLibrarySaveDrag(event.dataTransfer)) {
-                return;
-              }
+              if (!isLibrarySaveDrag(event.dataTransfer)) return;
               event.preventDefault();
               event.stopPropagation();
               addSavesToCanvas(canvas.id, saveDropIds(event.dataTransfer));

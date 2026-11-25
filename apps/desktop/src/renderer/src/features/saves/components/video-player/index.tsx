@@ -177,9 +177,7 @@ function VideoSurface({
    * `Video.Root`, which is why the handler is not on the root.
    */
   const onSurfaceClick = (event: MouseEvent<HTMLVideoElement>) => {
-    if (event.button !== 0 || event.defaultPrevented) {
-      return;
-    }
+    if (event.button !== 0 || event.defaultPrevented) return;
     const { target } = event;
     if (!isElement(target) || target.closest(SURFACE_CONTROLS)) {
       return;
@@ -313,15 +311,11 @@ export function VideoPlayer({
   const [ratioSizeKey, setRatioSizeKey] = useState(sizeKey);
   if (sizeKey !== ratioSizeKey) {
     setRatioSizeKey(sizeKey);
-    if (width && height) {
-      setRatio(width / height);
-    }
+    if (width && height) setRatio(width / height);
   }
 
   useEffect(() => {
-    if (ratio && onRatio) {
-      onRatio(ratio);
-    }
+    if (ratio && onRatio) onRatio(ratio);
   }, [ratio, onRatio]);
 
   const onLoadedMetadata = useCallback<ReactEventHandler<HTMLVideoElement>>(

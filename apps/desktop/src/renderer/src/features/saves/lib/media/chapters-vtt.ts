@@ -19,22 +19,16 @@ function normalizeChapters(
 ): Array<ChapterCue> {
   const cues: Array<ChapterCue> = [];
   for (const c of input) {
-    if (!c) {
-      continue;
-    }
+    if (!c) continue;
     const title = (c.title ?? "").trim();
-    if (!title) {
-      continue;
-    }
+    if (!title) continue;
     const start =
       ("startSec" in c
         ? c.startSec
         : "start_time" in c
           ? c.start_time
           : null) ?? null;
-    if (start === null || !Number.isFinite(start) || start < 0) {
-      continue;
-    }
+    if (start === null || !Number.isFinite(start) || start < 0) continue;
     const endRaw =
       ("endSec" in c ? c.endSec : "end_time" in c ? c.end_time : null) ?? null;
     const end =
@@ -49,16 +43,12 @@ function normalizeChapters(
 
 function chaptersToVtt(input: ReadonlyArray<ChapterLike>): string | null {
   const cues = normalizeChapters(input);
-  if (cues.length === 0) {
-    return null;
-  }
+  if (cues.length === 0) return null;
 
   const lines: Array<string> = ["WEBVTT", ""];
   for (let i = 0; i < cues.length; i++) {
     const cue = cues[i];
-    if (!cue) {
-      continue;
-    }
+    if (!cue) continue;
     const next = cues[i + 1];
     const end = cue.endSec ?? next?.startSec ?? SENTINEL_END_SEC;
     lines.push(
@@ -74,9 +64,7 @@ export function chaptersToVttUrl(
   input: ReadonlyArray<ChapterLike>,
 ): string | null {
   const text = chaptersToVtt(input);
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
   const blob = new Blob([text], { type: "text/vtt" });
   return URL.createObjectURL(blob);
 }
@@ -85,9 +73,7 @@ export function chaptersForSave(save: {
   rawJson?: { ytdlp?: { chapters?: ReadonlyArray<ChapterLike> } } | null;
 }): Array<ChapterCue> {
   const raw = save.rawJson?.ytdlp?.chapters;
-  if (!raw || raw.length === 0) {
-    return [];
-  }
+  if (!raw || raw.length === 0) return [];
   return normalizeChapters(raw);
 }
 

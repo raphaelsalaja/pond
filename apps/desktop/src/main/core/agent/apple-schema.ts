@@ -56,13 +56,9 @@ function schemaNode(definition: JsonSchemaDefinition | undefined) {
 /** Guided generation can't emit null, so a nullable field becomes one the model may leave out. */
 function isNullable(definition: JsonSchemaDefinition): boolean {
   const node = schemaNode(definition);
-  if (!node) {
-    return false;
-  }
+  if (!node) return false;
   const union = node.anyOf ?? node.oneOf;
-  if (union) {
-    return union.some((branch) => schemaNode(branch)?.type === "null");
-  }
+  if (union) return union.some((branch) => schemaNode(branch)?.type === "null");
   return Array.isArray(node.type) && node.type.includes("null");
 }
 
@@ -72,9 +68,7 @@ function convert(
   depth: number,
 ): AppleSchema {
   const node = schemaNode(definition);
-  if (!node || depth > MAX_DEPTH) {
-    return STRING;
-  }
+  if (!node || depth > MAX_DEPTH) return STRING;
   const union = node.anyOf ?? node.oneOf;
   if (union) {
     const branches = union.filter(
@@ -87,14 +81,10 @@ function convert(
     : node.type
       ? [node.type]
       : [];
-  if (types.length !== 1) {
-    return STRING;
-  }
+  if (types.length !== 1) return STRING;
   const type = types[0];
   const choices = stringChoices.safeParse(node.enum);
-  if (choices.success) {
-    return { kind: "choice", name, choices: choices.data };
-  }
+  if (choices.success) return { kind: "choice", name, choices: choices.data };
   if (type === "integer" || type === "number" || type === "boolean") {
     return { kind: type };
   }

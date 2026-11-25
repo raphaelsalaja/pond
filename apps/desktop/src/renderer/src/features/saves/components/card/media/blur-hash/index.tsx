@@ -10,9 +10,7 @@ const CACHE_LIMIT = 500;
 const decoded = new Map<string, ImageData | null>();
 
 function decodeHash(hash: string): ImageData | null {
-  if (decoded.has(hash)) {
-    return decoded.get(hash) ?? null;
-  }
+  if (decoded.has(hash)) return decoded.get(hash) ?? null;
   let image: ImageData | null;
   try {
     image = new ImageData(SIZE, SIZE);
@@ -22,9 +20,7 @@ function decodeHash(hash: string): ImageData | null {
   }
   if (decoded.size >= CACHE_LIMIT) {
     const oldest = decoded.keys().next().value;
-    if (oldest !== undefined) {
-      decoded.delete(oldest);
-    }
+    if (oldest !== undefined) decoded.delete(oldest);
   }
   decoded.set(hash, image);
   return image;
@@ -35,15 +31,10 @@ export function BlurHash({ hash }: { hash: string }) {
 
   useLayoutEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
-    if (!ctx) {
-      return;
-    }
+    if (!ctx) return;
     const image = decodeHash(hash);
-    if (image) {
-      ctx.putImageData(image, 0, 0);
-    } else {
-      ctx.clearRect(0, 0, SIZE, SIZE);
-    }
+    if (image) ctx.putImageData(image, 0, 0);
+    else ctx.clearRect(0, 0, SIZE, SIZE);
   }, [hash]);
 
   return (

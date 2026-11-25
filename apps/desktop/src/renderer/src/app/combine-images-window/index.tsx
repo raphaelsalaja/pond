@@ -35,9 +35,7 @@ export function CombineImagesWindow() {
   const [load, setLoad] = useState<CombineImagesWindowLoad | null>(null);
   useEffect(() => {
     const api = window.pondCombine;
-    if (!api) {
-      return;
-    }
+    if (!api) return;
     let active = true;
     const apply = (next: CombineImagesWindowLoad) => {
       if (active) {

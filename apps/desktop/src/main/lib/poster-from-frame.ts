@@ -8,14 +8,10 @@ export async function buildFirstFramePoster(
   filename: string,
 ): Promise<PosterWrite | null> {
   const frame = await extractFirstFrame(videoPath);
-  if (!frame) {
-    return null;
-  }
+  if (!frame) return null;
   try {
     const bytes = await readFile(frame.path);
-    if (bytes.byteLength === 0) {
-      return null;
-    }
+    if (bytes.byteLength === 0) return null;
     const dims = await probeImageDims(bytes);
     return {
       kind: "poster",

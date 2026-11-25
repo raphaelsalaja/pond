@@ -12,9 +12,7 @@ describe("color swatch menu", () => {
       (item) => "label" in item && item.label === "Set Primary Color",
     );
     expect(primary).toMatchObject({ type: "checkbox", checked: true });
-    if (primary?.type !== "checkbox") {
-      throw new Error("Missing primary color");
-    }
+    if (primary?.type !== "checkbox") throw new Error("Missing primary color");
     primary.onCheckedChange?.(false);
     expect(setPrimary).toHaveBeenCalledWith(false);
   });

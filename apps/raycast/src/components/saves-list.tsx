@@ -42,12 +42,8 @@ function meaningScope(filter: Filter): Omit<ApiSearchRequest, "query"> | null {
 
 function loadSaves(input: ApiLibraryQueryInput | null, meaning: ApiSearchRequest | null) {
   return async ({ cursor }: { cursor?: ApiCursor | null }) => {
-    if (meaning) {
-      return { data: (await pond().search(meaning)).saves, hasMore: false };
-    }
-    if (!input) {
-      return { data: NONE, hasMore: false };
-    }
+    if (meaning) return { data: (await pond().search(meaning)).saves, hasMore: false };
+    if (!input) return { data: NONE, hasMore: false };
     const page = await pond().query({ ...input, limit: PAGE_SIZE, cursor });
     return { data: page.saves ?? [], hasMore: page.nextCursor !== null, cursor: page.nextCursor };
   };
@@ -105,18 +101,14 @@ export function SavesList({ filter: pinned, navigationTitle, searchText: initial
 
   function refresh() {
     saves.revalidate();
-    if (showRecents) {
-      recents.revalidate();
-    }
+    if (showRecents) recents.revalidate();
     lookups.revalidate();
     views.revalidate();
     sources.revalidate();
   }
 
   function applyFilter(next: Filter) {
-    if (pinned) {
-      return push(<SavesList filter={next} navigationTitle={filterTitle(next, lookups, views.data)} />);
-    }
+    if (pinned) return push(<SavesList filter={next} navigationTitle={filterTitle(next, lookups, views.data)} />);
     setStored(encodeFilter(next));
   }
 

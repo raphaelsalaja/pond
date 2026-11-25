@@ -12,9 +12,7 @@ if (import.meta.env.DEV) {
 }
 
 const root = document.getElementById("root");
-if (!root) {
-  throw new Error("#root element missing");
-}
+if (!root) throw new Error("#root element missing");
 
 createRoot(root).render(
   <React.StrictMode>

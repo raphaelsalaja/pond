@@ -30,18 +30,10 @@ type ExifValue =
   | null;
 
 function typeSize(type: number): number | null {
-  if (type === 1 || type === 2 || type === 7) {
-    return 1;
-  }
-  if (type === 3) {
-    return 2;
-  }
-  if (type === 4 || type === 9) {
-    return 4;
-  }
-  if (type === 5 || type === 10) {
-    return 8;
-  }
+  if (type === 1 || type === 2 || type === 7) return 1;
+  if (type === 3) return 2;
+  if (type === 4 || type === 9) return 4;
+  if (type === 5 || type === 10) return 8;
   return null;
 }
 
@@ -70,9 +62,7 @@ function valueOffset(
   count: number,
 ): number | null {
   const size = typeSize(type);
-  if (!size) {
-    return null;
-  }
+  if (!size) return null;
   const length = size * count;
   const offset =
     length <= 4 ? entry + 8 : reader.base + uint32(reader, entry + 8);
@@ -125,15 +115,11 @@ function readIfd(
 ): Map<number, { entry: number; value: ExifValue }> {
   const fields = new Map<number, { entry: number; value: ExifValue }>();
   const start = reader.base + relativeOffset;
-  if (start < 0 || start + 2 > reader.bytes.length) {
-    return fields;
-  }
+  if (start < 0 || start + 2 > reader.bytes.length) return fields;
   const count = uint16(reader, start);
   for (let index = 0; index < count; index += 1) {
     const entry = start + 2 + index * 12;
-    if (entry + 12 > reader.bytes.length) {
-      break;
-    }
+    if (entry + 12 > reader.bytes.length) break;
     fields.set(uint16(reader, entry), {
       entry,
       value: entryValue(reader, entry),
@@ -143,15 +129,11 @@ function readIfd(
 }
 
 function exifDate(value: string | undefined): Date | undefined {
-  if (!value) {
-    return undefined;
-  }
+  if (!value) return undefined;
   const match = /^(\d{4}):(\d{2}):(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/.exec(
     value,
   );
-  if (!match) {
-    return undefined;
-  }
+  if (!match) return undefined;
   const [, year, month, day, hour, minute, second] = match;
   const date = new Date(
     Number(year),
@@ -183,22 +165,16 @@ function number(
 }
 
 export function parseExif(exif: Buffer | undefined): ImageMetadata {
-  if (!exif || exif.length < 14) {
-    return {};
-  }
+  if (!exif || exif.length < 14) return {};
   const base = exif.toString("ascii", 0, 6) === "Exif\u0000\u0000" ? 6 : 0;
   const order = exif.toString("ascii", base, base + 2);
-  if (order !== "II" && order !== "MM") {
-    return {};
-  }
+  if (order !== "II" && order !== "MM") return {};
   const reader: TiffReader = {
     bytes: exif,
     base,
     littleEndian: order === "II",
   };
-  if (uint16(reader, base + 2) !== 42) {
-    return {};
-  }
+  if (uint16(reader, base + 2) !== 42) return {};
   const primary = readIfd(reader, uint32(reader, base + 4));
   const exifPointer = number(primary, 0x87_69);
   const details = exifPointer
@@ -237,40 +213,28 @@ const MAX_KEYWORD_BYTES = 64;
 
 /** TIFF stores raw IIM datasets; JPEG APP13 wraps them in a Photoshop 8BIM resource. */
 function iimBlock(iptc: Buffer): Buffer | null {
-  if (iptc[0] === 0x1c) {
-    return iptc;
-  }
+  if (iptc[0] === 0x1c) return iptc;
   let offset =
     iptc.toString("latin1", 0, PHOTOSHOP_HEADER.length) === PHOTOSHOP_HEADER
       ? PHOTOSHOP_HEADER.length
       : 0;
   while (offset + 12 <= iptc.length) {
-    if (iptc.toString("latin1", offset, offset + 4) !== "8BIM") {
-      return null;
-    }
+    if (iptc.toString("latin1", offset, offset + 4) !== "8BIM") return null;
     const id = iptc.readUInt16BE(offset + 4);
     const nameLength = iptc[offset + 6] ?? 0;
     offset += 6 + ((nameLength + 2) & ~1);
-    if (offset + 4 > iptc.length) {
-      return null;
-    }
+    if (offset + 4 > iptc.length) return null;
     const size = iptc.readUInt32BE(offset);
     offset += 4;
-    if (offset + size > iptc.length) {
-      return null;
-    }
-    if (id === IPTC_RESOURCE_ID) {
-      return iptc.subarray(offset, offset + size);
-    }
+    if (offset + size > iptc.length) return null;
+    if (id === IPTC_RESOURCE_ID) return iptc.subarray(offset, offset + size);
     offset += size + (size & 1);
   }
   return null;
 }
 
 function decodeKeyword(value: Buffer): string | null {
-  if (value.length > MAX_KEYWORD_BYTES) {
-    return null;
-  }
+  if (value.length > MAX_KEYWORD_BYTES) return null;
   let keyword: string;
   try {
     keyword = new TextDecoder("utf-8", { fatal: true }).decode(value);
@@ -283,9 +247,7 @@ function decodeKeyword(value: Buffer): string | null {
 
 export function parseIptcKeywords(iptc: Buffer | undefined): Array<string> {
   const iim = iptc ? iimBlock(iptc) : null;
-  if (!iim) {
-    return [];
-  }
+  if (!iim) return [];
   const keywords = new Set<string>();
   let offset = 0;
   while (offset + 5 <= iim.length && iim[offset] === 0x1c) {
@@ -295,14 +257,10 @@ export function parseIptcKeywords(iptc: Buffer | undefined): Array<string> {
     }
     const start = offset + 5;
     const end = start + length;
-    if (end > iim.length) {
-      break;
-    }
+    if (end > iim.length) break;
     if (iim[offset + 1] === 0x02 && iim[offset + 2] === 0x19) {
       const keyword = decodeKeyword(iim.subarray(start, end));
-      if (keyword) {
-        keywords.add(keyword);
-      }
+      if (keyword) keywords.add(keyword);
     }
     offset = end;
   }

@@ -25,9 +25,7 @@ export function useEditor(clip: Clip) {
     duration,
     ...probe.chapters.map((chapter) => chapter.start),
   ];
-  if (replay) {
-    targets.push(replay.start, replay.end);
-  }
+  if (replay) targets.push(replay.start, replay.end);
   const drag = useRangeDrag(clip, { enabled: true, targets });
   const player = usePlayer(clip, drag);
   targets.push(player.time);
@@ -44,9 +42,7 @@ export function useEditor(clip: Clip) {
     });
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.metaKey || event.ctrlKey || event.altKey) {
-      return;
-    }
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
     const { target } = event;
     if (!isElement(target) || target.closest(OWN_KEYS)) {
       return;
@@ -65,9 +61,7 @@ export function useEditor(clip: Clip) {
       ["o", setEnd],
     ]);
     const action = actions.get(event.key);
-    if (!action) {
-      return;
-    }
+    if (!action) return;
     event.preventDefault();
     action();
   };

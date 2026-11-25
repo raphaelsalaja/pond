@@ -34,9 +34,7 @@ function appBundleId() {
     "utf8",
   );
   const match = yml.match(/^appId:\s*(\S+)\s*$/m);
-  if (!match) {
-    fail("electron-builder.yml has no top-level appId");
-  }
+  if (!match) fail("electron-builder.yml has no top-level appId");
   return match[1];
 }
 
@@ -57,17 +55,13 @@ function run(command, args, options = {}) {
   }
 }
 
-if (process.platform !== "darwin") {
-  skip("Safari is macOS only");
-}
+if (process.platform !== "darwin") skip("Safari is macOS only");
 
 const xcode = spawnSync("xcrun", ["--find", "xcodebuild"], {
   encoding: "utf8",
 });
 if (xcode.error || xcode.status !== 0) {
-  if (process.env.CI) {
-    fail("Xcode is required to build the Safari extension");
-  }
+  if (process.env.CI) fail("Xcode is required to build the Safari extension");
   skip("Xcode is not installed");
 }
 
@@ -126,9 +120,7 @@ run("xcodebuild", [
 ]);
 
 const builtAppex = join(workDir, "build/Release/Pond Extension.appex");
-if (!existsSync(builtAppex)) {
-  fail("the .appex was not produced");
-}
+if (!existsSync(builtAppex)) fail("the .appex was not produced");
 
 rmSync(outDir, { recursive: true, force: true });
 mkdirSync(outDir, { recursive: true });

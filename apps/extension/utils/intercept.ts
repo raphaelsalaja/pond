@@ -24,9 +24,7 @@ export function canonicalCaptureUrl(url: string): string {
     const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
     if (host === "instagram.com") {
       const shortcode = /^\/(?:p|reels?|tv)\/([^/]+)/.exec(parsed.pathname);
-      if (shortcode?.[1]) {
-        return `instagram.com/p/${shortcode[1]}`;
-      }
+      if (shortcode?.[1]) return `instagram.com/p/${shortcode[1]}`;
     }
     return `${host}${parsed.pathname.replace(/\/+$/, "")}`;
   } catch {
@@ -43,14 +41,9 @@ export function capture(
   const intent = /:(?:like|upvote)$/.test(trigger) ? "like" : "save";
   const key = `${intent} ${canonicalCaptureUrl(url)}`;
   const previous = recentCaptures.get(key);
-  if (previous !== undefined && now - previous < CAPTURE_DEDUPE_MS) {
-    return;
-  }
-  for (const [entry, at] of recentCaptures) {
-    if (now - at >= CAPTURE_DEDUPE_MS) {
-      recentCaptures.delete(entry);
-    }
-  }
+  if (previous !== undefined && now - previous < CAPTURE_DEDUPE_MS) return;
+  for (const [entry, at] of recentCaptures)
+    if (now - at >= CAPTURE_DEDUPE_MS) recentCaptures.delete(entry);
   recentCaptures.set(key, now);
   send({ kind: "capture", payload: { url, trigger } });
 }
@@ -102,9 +95,7 @@ declare global {
 
 function registry(): Registry {
   const existing = window[REGISTRY_KEY];
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
   const created: Registry = {
     handlers: [],
     ids: new Set<string>(),
@@ -119,9 +110,7 @@ function registry(): Registry {
 function once<T>(fn: () => Promise<T>): () => Promise<T> {
   let cached: Promise<T> | undefined;
   return () => {
-    if (!cached) {
-      cached = fn();
-    }
+    if (!cached) cached = fn();
     return cached;
   };
 }
@@ -250,9 +239,7 @@ function dispatch(
 function leaveRejectionToPage() {}
 
 function patchFetch(reg: Registry): void {
-  if (reg.patchedFetch) {
-    return;
-  }
+  if (reg.patchedFetch) return;
   reg.patchedFetch = true;
   const origFetch = window.fetch;
 
@@ -299,9 +286,7 @@ function patchFetch(reg: Registry): void {
     }
 
     const promise = origFetch.call(this, input, init);
-    if (matched.length === 0 || !req) {
-      return promise;
-    }
+    if (matched.length === 0 || !req) return promise;
 
     const activeReq = req;
     const activeMatched = matched;
@@ -315,9 +300,7 @@ function patchFetch(reg: Registry): void {
           }
         })();
         const readText = once(async () => {
-          if (!clone) {
-            return null;
-          }
+          if (!clone) return null;
           try {
             return await clone.text();
           } catch {
@@ -357,9 +340,7 @@ type XhrOpen = (
 ) => void;
 
 function patchXhr(reg: Registry): void {
-  if (reg.patchedXhr) {
-    return;
-  }
+  if (reg.patchedXhr) return;
   reg.patchedXhr = true;
 
   const proto = XMLHttpRequest.prototype;
@@ -440,12 +421,8 @@ function patchXhr(reg: Registry): void {
 }
 
 function patchBeacon(reg: Registry): void {
-  if (reg.patchedBeacon) {
-    return;
-  }
-  if (!globalThis.navigator?.sendBeacon) {
-    return;
-  }
+  if (reg.patchedBeacon) return;
+  if (!globalThis.navigator?.sendBeacon) return;
   reg.patchedBeacon = true;
   const origBeacon = navigator.sendBeacon.bind(navigator);
 
@@ -474,15 +451,11 @@ function patchBeacon(reg: Registry): void {
 
 export function installInterceptor(def: SourceInterceptor): void {
   const reg = registry();
-  if (reg.ids.has(def.id)) {
-    return;
-  }
+  if (reg.ids.has(def.id)) return;
   reg.ids.add(def.id);
   reg.handlers.push(def);
   patchFetch(reg);
   patchXhr(reg);
-  if (def.onBeacon) {
-    patchBeacon(reg);
-  }
+  if (def.onBeacon) patchBeacon(reg);
   log("info", `${def.id} inject ready`);
 }

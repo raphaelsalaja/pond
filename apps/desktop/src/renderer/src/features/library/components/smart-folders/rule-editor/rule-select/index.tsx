@@ -26,9 +26,7 @@ function Single<T extends string>({
       value={value}
       items={items}
       onValueChange={(next) => {
-        if (next !== null) {
-          onChange(next);
-        }
+        if (next !== null) onChange(next);
       }}
     >
       <Select.Trigger

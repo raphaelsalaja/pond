@@ -76,20 +76,14 @@ type SavedRange = {
 
 function hrefFromDraft(value: string): string | null {
   const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) {
-    return trimmed;
-  }
+  if (!trimmed) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
 }
 
 function httpHref(value: string): string | null {
   const href = hrefFromDraft(value);
-  if (!href) {
-    return null;
-  }
+  if (!href) return null;
   try {
     const url = new URL(href);
     if (url.protocol === "http:" || url.protocol === "https:") {
@@ -140,12 +134,8 @@ function StyleGlyph({ block }: { block: NoteBlock }) {
 }
 
 function ListGlyph({ block }: { block: NoteBlock }) {
-  if (block === "number") {
-    return <IconOrderedList />;
-  }
-  if (block === "check") {
-    return <IconCheckList />;
-  }
+  if (block === "number") return <IconOrderedList />;
+  if (block === "check") return <IconCheckList />;
   return <IconBulletList />;
 }
 
@@ -199,9 +189,7 @@ export function FormatToolbar() {
       editor.getEditorState().read(() => {
         const selection = $getSelection();
         if (!$isRangeSelection(selection) || selection.isCollapsed()) {
-          if (urlRef.current === document.activeElement) {
-            return;
-          }
+          if (urlRef.current === document.activeElement) return;
           explicit.current = false;
           setLinkMode(false);
           setStyleMenuOpen(false);
@@ -276,9 +264,7 @@ export function FormatToolbar() {
   const applyHref = (value: string) => {
     const href = hrefFromDraft(value);
     editor.update(() => {
-      if (rangeRef.current) {
-        $restoreRange(rangeRef.current);
-      }
+      if (rangeRef.current) $restoreRange(rangeRef.current);
     });
     editor.dispatchCommand(TOGGLE_LINK_COMMAND, href);
   };
@@ -364,9 +350,7 @@ export function FormatToolbar() {
                       label="Open"
                       onClick={() => {
                         skipBlur.current = true;
-                        if (openHref) {
-                          void window.pond.openExternal(openHref);
-                        }
+                        if (openHref) void window.pond.openExternal(openHref);
                       }}
                     >
                       <IconArrowUpRight />

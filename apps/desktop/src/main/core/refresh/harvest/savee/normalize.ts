@@ -79,31 +79,19 @@ function itemUrl(item: SaveeItem): string {
 function mediaOf(item: SaveeItem): CaptureMedia | null {
   const image = item.asset?.image;
   const url = image?.original;
-  if (!url) {
-    return null;
-  }
+  if (!url) return null;
   const video = item.asset?.type === "video" || /\.mp4(?:\?|$)/i.test(url);
   const media: CaptureMedia = { url, type: video ? "video" : "image" };
-  if (image?.width) {
-    media.width = image.width;
-  }
-  if (image?.height) {
-    media.height = image.height;
-  }
-  if (video && image?.thumbnail) {
-    media.posterUrl = image.thumbnail;
-  }
+  if (image?.width) media.width = image.width;
+  if (image?.height) media.height = image.height;
+  if (video && image?.thumbnail) media.posterUrl = image.thumbnail;
   return media;
 }
 
 export function itemEntry(item: SaveeItem): ListEntry {
   const entry: ListEntry = { sourceId: item.shortID, url: itemUrl(item) };
-  if (item.createdAt) {
-    entry.savedAt = item.createdAt;
-  }
-  if (item.name) {
-    entry.title = item.name;
-  }
+  if (item.createdAt) entry.savedAt = item.createdAt;
+  if (item.name) entry.title = item.name;
   const media = mediaOf(item);
   if (media) {
     entry.mediaUrl = media.url;
@@ -127,20 +115,14 @@ export function captureFromItem(item: SaveeItem): Capture {
     url: itemUrl(item),
     media: media ? [media] : [],
   };
-  if (item.name) {
-    capture.title = item.name;
-  }
+  if (item.name) capture.title = item.name;
   if (item.user) {
     capture.author = {
       handle: item.user.username,
       profileUrl: item.user.url ?? `https://savee.com/${item.user.username}/`,
     };
-    if (item.user.name) {
-      capture.author.name = item.user.name;
-    }
-    if (item.user.avatarURL) {
-      capture.author.avatarUrl = item.user.avatarURL;
-    }
+    if (item.user.name) capture.author.name = item.user.name;
+    if (item.user.avatarURL) capture.author.avatarUrl = item.user.avatarURL;
   }
   if (item.pageURL) {
     try {

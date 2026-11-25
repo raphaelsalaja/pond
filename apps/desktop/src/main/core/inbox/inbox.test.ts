@@ -31,9 +31,7 @@ function nativeAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
@@ -57,9 +55,7 @@ const github = (path: string, opts: { trigger: string }) =>
 const roots: Array<string> = [];
 const opened: Array<Database.Database> = [];
 afterEach(async () => {
-  for (const db of opened.splice(0)) {
-    db.close();
-  }
+  for (const db of opened.splice(0)) db.close();
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   );
@@ -140,9 +136,7 @@ describe.skipIf(!nativeAvailable())("inbox storage", () => {
       inboxState: "snoozed",
       inboxUntil: Date.parse(until),
     });
-    if (!row) {
-      throw new Error("scan did not index the Save");
-    }
+    if (!row) throw new Error("scan did not index the Save");
     expect(infoDocFromSave(row, [], []).inbox).toEqual({
       state: "snoozed",
       until,
@@ -273,16 +267,12 @@ describe.skipIf(!nativeAvailable())("inbox intake", () => {
     closeDb();
     vi.restoreAllMocks();
     invalidatePaths();
-    if (!dir) {
-      return;
-    }
+    if (!dir) return;
     try {
       await rm(dir, { recursive: true, force: true });
     } catch (error) {
       /** Windows keeps the closed SQLite files locked until the process exits. */
-      if (process.platform !== "win32") {
-        throw error;
-      }
+      if (process.platform !== "win32") throw error;
     }
   });
 

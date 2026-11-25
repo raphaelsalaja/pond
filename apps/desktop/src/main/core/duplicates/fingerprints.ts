@@ -89,9 +89,7 @@ export function nextFingerprintJobs(
 ): Array<FingerprintJob> {
   const jobs: Array<FingerprintJob> = [];
   for (const algorithm of Object.values(FINGERPRINT_ALGORITHMS)) {
-    if (jobs.length >= limit) {
-      break;
-    }
+    if (jobs.length >= limit) break;
     const rows = z.array(JobRowSchema).parse(
       sqlite
         .prepare(

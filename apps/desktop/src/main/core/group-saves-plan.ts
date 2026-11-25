@@ -86,12 +86,8 @@ export function groupFiles(
     for (const file of media.slides) {
       const video = isVideoFile(file);
       const poster = video ? media.posters[videoIndex++] : undefined;
-      if (file.sha256 && seen.has(file.sha256)) {
-        continue;
-      }
-      if (file.sha256) {
-        seen.add(file.sha256);
-      }
+      if (file.sha256 && seen.has(file.sha256)) continue;
+      if (file.sha256) seen.add(file.sha256);
       slides.push({ from: member.id, file, filename: file.path });
       if (!video) {
         continue;
@@ -115,9 +111,7 @@ function mergedTags(members: ReadonlyArray<GroupMember>): Array<string> {
   const keys = new Set<string>();
   for (const tag of members.flatMap((save) => save.tags ?? [])) {
     const key = labelKey(tag);
-    if (!key || keys.has(key)) {
-      continue;
-    }
+    if (!key || keys.has(key)) continue;
     keys.add(key);
     tags.push(tag);
   }
@@ -127,9 +121,7 @@ function mergedTags(members: ReadonlyArray<GroupMember>): Array<string> {
 function mergedNotes(members: ReadonlyArray<GroupMember>): string | null {
   let notes: Array<string> = [];
   for (const note of members.map((save) => save.notes?.trim())) {
-    if (!note || notes.some((kept) => kept.includes(note))) {
-      continue;
-    }
+    if (!note || notes.some((kept) => kept.includes(note))) continue;
     notes = [...notes.filter((kept) => !note.includes(kept)), note];
   }
   return notes.length > 0 ? notes.join("\n\n") : null;
@@ -169,9 +161,7 @@ function maxRating(members: ReadonlyArray<GroupMember>): number | null {
 function groupTitle(members: ReadonlyArray<GroupMember>): string | null {
   for (const save of members) {
     const title = save.title?.trim();
-    if (title) {
-      return title;
-    }
+    if (title) return title;
   }
   return null;
 }

@@ -202,9 +202,7 @@ function registerSearchTools(server: McpServer): void {
     },
     withAccess("search", async ({ detail, ...args }) => {
       const result = await searchLibrary(searchLibraryInput.parse(args));
-      if (detail !== "concise") {
-        return jsonResult(result);
-      }
+      if (detail !== "concise") return jsonResult(result);
       return jsonResult({
         saves: result.saves.map(({ id, title, source, url }) => ({
           id,
@@ -319,13 +317,9 @@ function registerSearchTools(server: McpServer): void {
           title: card.title,
           source: card.source,
         };
-        if (!image) {
-          caption.error = "No image to show for this Save.";
-        }
+        if (!image) caption.error = "No image to show for this Save.";
         content.push({ type: "text", text: JSON.stringify(caption) });
-        if (image) {
-          content.push(image);
-        }
+        if (image) content.push(image);
       }
       const found = new Set(cards.map((card) => card.id));
       const missing = ids.filter((id) => !found.has(id));

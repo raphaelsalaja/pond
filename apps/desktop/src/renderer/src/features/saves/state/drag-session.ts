@@ -17,9 +17,7 @@ export function startSaveDragSession(session: SaveDragSession): void {
 }
 
 export function endSaveDragSession(): void {
-  if (store.state) {
-    store.setState(() => null);
-  }
+  if (store.state) store.setState(() => null);
 }
 
 export function useSaveDragSession(): SaveDragSession | null {

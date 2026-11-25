@@ -23,9 +23,7 @@ interface FolderMenuTarget {
 
 async function revealFolder(name: string): Promise<void> {
   const result = await window.pond.query("autoImport.reveal", {});
-  if (result.ok) {
-    return;
-  }
+  if (result.ok) return;
   notify({
     id: "folder-reveal",
     title: `Couldn't find ${name}. Change the folder to keep importing.`,

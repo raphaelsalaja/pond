@@ -8,9 +8,7 @@ interface Rgb {
 
 function parseHex(input: string): { rgb: Rgb; hex: string } | null {
   const hex = normalizeHex(input);
-  if (!hex) {
-    return null;
-  }
+  if (!hex) return null;
   const int = Number.parseInt(hex.slice(1), 16);
   return {
     hex,
@@ -29,17 +27,11 @@ function hue(
   max: number,
   delta: number,
 ): number {
-  if (delta === 0) {
-    return 0;
-  }
+  if (delta === 0) return 0;
   let h: number;
-  if (max === r) {
-    h = ((g - b) / delta) % 6;
-  } else if (max === g) {
-    h = (b - r) / delta + 2;
-  } else {
-    h = (r - g) / delta + 4;
-  }
+  if (max === r) h = ((g - b) / delta) % 6;
+  else if (max === g) h = (b - r) / delta + 2;
+  else h = (r - g) / delta + 4;
   h = Math.round(h * 60);
   return h < 0 ? h + 360 : h;
 }
@@ -95,9 +87,7 @@ export function colorCopyFormats(
   input: string,
 ): { primary: Array<ColorFormat>; secondary: Array<ColorFormat> } | null {
   const parsed = parseHex(input);
-  if (!parsed) {
-    return null;
-  }
+  if (!parsed) return null;
   const { rgb, hex } = parsed;
   return {
     primary: [

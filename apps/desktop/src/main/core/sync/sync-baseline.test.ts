@@ -5,9 +5,7 @@ import { knownIdsFromRows, syncBaselineWhere } from "./sync-baseline";
 describe("syncBaselineWhere", () => {
   it("counts mymind imports under their Account across content Sources", () => {
     const where = syncBaselineWhere({ id: "mymind-account", source: "mymind" });
-    if (!where) {
-      throw new Error("Expected an Account filter.");
-    }
+    if (!where) throw new Error("Expected an Account filter.");
     const query = new SQLiteSyncDialect().sqlToQuery(where);
     expect(query.sql).toContain('"saves"."account_id" = ?');
     expect(query.sql).toContain('"saves"."deleted_at" is null');

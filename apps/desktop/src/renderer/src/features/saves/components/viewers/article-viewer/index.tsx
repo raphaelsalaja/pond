@@ -37,20 +37,14 @@ export function ArticleViewer({
     let alive = true;
     void fetch(url)
       .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return response.text();
       })
       .then((text) => {
-        if (alive) {
-          setSource(text);
-        }
+        if (alive) setSource(text);
       })
       .catch(() => {
-        if (alive) {
-          onUnavailable();
-        }
+        if (alive) onUnavailable();
       });
     return () => {
       alive = false;
@@ -116,17 +110,13 @@ function ArticleBody({
 
   useEffect(() => {
     const scroller = scrollRef.current;
-    if (!scroller) {
-      return;
-    }
+    if (!scroller) return;
     const onClick = (event: MouseEvent) => {
       if (!isElement(event.target)) {
         return;
       }
       const anchor = event.target.closest("a[href]");
-      if (!anchor || !scroller.contains(anchor)) {
-        return;
-      }
+      if (!anchor || !scroller.contains(anchor)) return;
       event.preventDefault();
       const href = anchor.getAttribute("href") ?? "";
       if (href.startsWith("#")) {

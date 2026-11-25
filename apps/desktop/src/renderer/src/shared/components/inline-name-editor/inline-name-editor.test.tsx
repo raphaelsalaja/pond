@@ -42,9 +42,7 @@ afterEach(async () => {
 });
 function field() {
   const input = container.querySelector("input");
-  if (!input) {
-    throw new Error("Missing inline name editor");
-  }
+  if (!input) throw new Error("Missing inline name editor");
   return input;
 }
 async function press(key: string, isComposing = false) {

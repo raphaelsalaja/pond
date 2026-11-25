@@ -83,9 +83,7 @@ async function readBundleIcon(path: string) {
       { timeout: 3000 },
     );
     const configured = basename(stdout.trim());
-    if (!configured) {
-      return null;
-    }
+    if (!configured) return null;
     const filename = configured.endsWith(".icns")
       ? configured
       : `${configured}.icns`;
@@ -125,9 +123,7 @@ async function loadBlankDocumentIcon(path: string): Promise<string | null> {
 /** Menus refresh concurrently at launch; share the in-flight lookup so each app spawns plutil and sips once. */
 function blankDocumentIcon(path: string): Promise<string | null> {
   const cached = blankDocumentIconCache.get(path);
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
   const pending = loadBlankDocumentIcon(path);
   blankDocumentIconCache.set(path, pending);
   return pending;
@@ -180,9 +176,7 @@ export const savesImportPersistenceQueries = {
         ? await dialog.showOpenDialog(win, options)
         : await dialog.showOpenDialog(options);
       const path = result.filePaths[0];
-      if (result.canceled || !path) {
-        return { ok: false, reason: "cancelled" };
-      }
+      if (result.canceled || !path) return { ok: false, reason: "cancelled" };
       const format = classifyLibraryFile(path, mime.lookup(path) || null);
       if (format.mediaType !== "image") {
         return { ok: false, error: "not_an_image" };
@@ -192,9 +186,7 @@ export const savesImportPersistenceQueries = {
         return { ok: false, error: "empty_file" };
       }
       const bytes = await renderThumbnail(await readFile(path));
-      if (!bytes) {
-        return { ok: false, error: "not_an_image" };
-      }
+      if (!bytes) return { ok: false, error: "not_an_image" };
       const updated = await persistSaveThumbnail(
         params.id,
         bytes,
@@ -208,13 +200,9 @@ export const savesImportPersistenceQueries = {
     z.object({ id: StringParam }),
     async ({ id }): Promise<QueryResult<"saves.setThumbnailFromClipboard">> => {
       const image = await readClipboardImage();
-      if (image.isEmpty()) {
-        return { ok: false, error: "clipboard_empty" };
-      }
+      if (image.isEmpty()) return { ok: false, error: "clipboard_empty" };
       const bytes = await renderThumbnail(image.toPNG());
-      if (!bytes) {
-        return { ok: false, error: "not_an_image" };
-      }
+      if (!bytes) return { ok: false, error: "not_an_image" };
       const updated = await persistSaveThumbnail(
         id,
         bytes,
@@ -267,9 +255,7 @@ export const savesImportPersistenceQueries = {
       const rendered = await renderThumbnail(
         await readLibraryMedia(resolved.path),
       );
-      if (!rendered) {
-        return { ok: false, error: "not_an_image" };
-      }
+      if (!rendered) return { ok: false, error: "not_an_image" };
       const updated = await persistSaveThumbnail(
         params.id,
         rendered,
@@ -292,9 +278,7 @@ export const savesImportPersistenceQueries = {
         ? await dialog.showOpenDialog(win, options)
         : await dialog.showOpenDialog(options);
       const path = result.filePaths[0];
-      if (result.canceled || !path) {
-        return { ok: false, reason: "cancelled" };
-      }
+      if (result.canceled || !path) return { ok: false, reason: "cancelled" };
       const raw = await readFile(path, "utf8");
       const vtt = srtToVtt(raw);
       const updated = await persistSave(
@@ -329,9 +313,7 @@ export const savesImportPersistenceQueries = {
         ? await dialog.showOpenDialog(win, options)
         : await dialog.showOpenDialog(options);
       const path = picked.filePaths[0];
-      if (picked.canceled || !path) {
-        return { ok: false, reason: "cancelled" };
-      }
+      if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
       const { replaceSaveFile } = await import("../../core/replace-file");
       return replaceSaveFile({ id: params.id, sourcePath: path });
     },
@@ -408,9 +390,7 @@ export const savesImportPersistenceQueries = {
           replaceFilesWithKind: THUMBNAIL_REPLACE_KINDS,
         },
       );
-      if (!updated) {
-        return SAVE_NOT_FOUND;
-      }
+      if (!updated) return SAVE_NOT_FOUND;
       await resetSaveThumbnail(params.id, updated);
       return { ok: true };
     },
@@ -444,9 +424,7 @@ export const savesImportPersistenceQueries = {
         title: null,
         filePaths: [path],
       });
-      if (!created.ok) {
-        return created;
-      }
+      if (!created.ok) return created;
       if (params.folderId) {
         const { addSavesToFolder } = await import("../../core/folders");
         await addSavesToFolder(params.folderId, [created.id]);

@@ -18,9 +18,7 @@ export async function tumbleToTrash(ids: ReadonlyArray<string>): Promise<void> {
   }
   store.setState((s) => {
     const next = new Set(s.ids);
-    for (const id of ids) {
-      next.add(id);
-    }
+    for (const id of ids) next.add(id);
     return { ids: next };
   });
   await new Promise((resolve) => {
@@ -29,9 +27,7 @@ export async function tumbleToTrash(ids: ReadonlyArray<string>): Promise<void> {
   setTimeout(() => {
     store.setState((s) => {
       const next = new Set(s.ids);
-      for (const id of ids) {
-        next.delete(id);
-      }
+      for (const id of ids) next.delete(id);
       return { ids: next };
     });
   }, CLEAR_GRACE_MS);

@@ -60,9 +60,7 @@ function recording(respond: BehancePost) {
 function serve(pages: Record<string, JsonValue>, viewer: JsonValue = VIEWER) {
   return recording(async (body) => {
     const { query, variables } = call(body);
-    if (query.startsWith("query PondViewer")) {
-      return json(viewer);
-    }
+    if (query.startsWith("query PondViewer")) return json(viewer);
     if (query.startsWith("query PondAppreciated")) {
       return json(pages[variables.after ?? "first"] ?? page([], null));
     }
@@ -81,9 +79,7 @@ describe("readBehanceAppreciations", () => {
     });
     const result = await readBehanceAppreciations({ knownIds: [] }, post);
     expect(result).toMatchObject({ ok: true, reachedEnd: true, seen: 3 });
-    if (!result.ok) {
-      throw new Error("expected ok");
-    }
+    if (!result.ok) throw new Error("expected ok");
     expect(result.entries.map((e) => e.sourceId)).toEqual(["3", "2", "1"]);
     expect(result.entries[0]?.savedAt).toBe("2026-10-03T10:00:00.000Z");
     const walk = bodies.map((body) => call(body).variables);
@@ -117,9 +113,7 @@ describe("readBehanceAppreciations", () => {
       { knownIds: [], savedSince: "2026-10-01T00:00:00.000Z" },
       post,
     );
-    if (!result.ok) {
-      throw new Error("expected ok");
-    }
+    if (!result.ok) throw new Error("expected ok");
     expect(result.entries.map((e) => e.sourceId)).toEqual(["3"]);
     expect(bodies).toHaveLength(2);
   });
@@ -132,9 +126,7 @@ describe("readBehanceAppreciations", () => {
       { knownIds: [], resumeCursor: "c9" },
       post,
     );
-    if (!result.ok) {
-      throw new Error("expected ok");
-    }
+    if (!result.ok) throw new Error("expected ok");
     expect(result.entries.map((e) => e.sourceId)).toEqual(["1"]);
   });
 
@@ -157,12 +149,8 @@ describe("readBehanceAppreciations", () => {
   it("keeps earlier pages and a resume cursor when a later page fails", async () => {
     const post: BehancePost = async (body) => {
       const { query, variables } = call(body);
-      if (query.startsWith("query PondViewer")) {
-        return json(VIEWER);
-      }
-      if (variables.after === "c2") {
-        return json({}, 500);
-      }
+      if (query.startsWith("query PondViewer")) return json(VIEWER);
+      if (variables.after === "c2") return json({}, 500);
       return json(page([edge(2, "2026-10-02 10:00:00")], "c2"));
     };
     const result = await readBehanceAppreciations({ knownIds: [] }, post);

@@ -50,9 +50,7 @@ interface FolderDropZone {
 
 export function isFolderDrag(types: Iterable<string>): boolean {
   for (const type of types) {
-    if (type.toLowerCase() === FOLDER_DRAG_TYPE) {
-      return true;
-    }
+    if (type.toLowerCase() === FOLDER_DRAG_TYPE) return true;
   }
   return false;
 }
@@ -61,16 +59,10 @@ export function folderDropKind(
   offsetY: number,
   height: number,
 ): FolderDropKind {
-  if (height <= 0) {
-    return "into";
-  }
+  if (height <= 0) return "into";
   const ratio = offsetY / height;
-  if (ratio < (1 - FOLDER_NEST_BAND) / 2) {
-    return "before";
-  }
-  if (ratio > (1 + FOLDER_NEST_BAND) / 2) {
-    return "after";
-  }
+  if (ratio < (1 - FOLDER_NEST_BAND) / 2) return "before";
+  if (ratio > (1 + FOLDER_NEST_BAND) / 2) return "after";
   return "into";
 }
 
@@ -83,14 +75,10 @@ export function pickFolderDropZone({
   dwell,
 }: FolderDropZoneInput): FolderDropZone {
   const kind = folderDropKind(offsetY, height);
-  if (kind !== "into") {
-    return { kind, dwell: null };
-  }
+  if (kind !== "into") return { kind, dwell: null };
   const resting = dwell?.id === id ? dwell : { id, since: now };
   const waited = now - resting.since;
-  if (waited >= FOLDER_NEST_DWELL_MS) {
-    return { kind, dwell: resting };
-  }
+  if (waited >= FOLDER_NEST_DWELL_MS) return { kind, dwell: resting };
   return {
     kind: offsetY < height / 2 ? "before" : "after",
     dwell: resting,
@@ -103,9 +91,7 @@ export function resolveFolderDropTarget(
   drop: FolderDropTarget,
   visibleRows: ReadonlyArray<FolderDropRow>,
 ): FolderDropTarget {
-  if (drop.kind !== "after") {
-    return drop;
-  }
+  if (drop.kind !== "after") return drop;
   const at = visibleRows.findIndex((row) => row.id === drop.id);
   const next = at >= 0 ? visibleRows[at + 1] : undefined;
   return next?.parentId === drop.id ? { id: next.id, kind: "before" } : drop;
@@ -117,14 +103,10 @@ export function planFolderSidebarDrop(
   kind: FolderDropKind,
   folders: ReadonlyArray<FolderDropRow>,
 ): FolderDropMove | null {
-  if (draggedId === target.id) {
-    return null;
-  }
+  if (draggedId === target.id) return null;
   const inside = new Set(descendantFolderIds(draggedId, folders));
   if (kind === "into") {
-    if (inside.has(target.id)) {
-      return null;
-    }
+    if (inside.has(target.id)) return null;
     return { id: draggedId, parentId: target.id };
   }
   if (
@@ -143,9 +125,7 @@ export function planFolderSidebarDrop(
   const siblings = folders.filter((row) => row.parentId === target.parentId);
   const at = siblings.findIndex((row) => row.id === target.id);
   const next = at >= 0 ? siblings[at + 1] : undefined;
-  if (next?.id === draggedId) {
-    return null;
-  }
+  if (next?.id === draggedId) return null;
   return next
     ? { id: draggedId, parentId: target.parentId, beforeId: next.id }
     : { id: draggedId, parentId: target.parentId };

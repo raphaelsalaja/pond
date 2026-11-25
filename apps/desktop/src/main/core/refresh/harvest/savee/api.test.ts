@@ -52,9 +52,7 @@ function serve(pages: Record<string, JsonValue>, viewer: JsonValue = VIEWER) {
   const post: SaveePost = async (body) => {
     bodies.push(body);
     const { query, variables } = call(body);
-    if (query.startsWith("query PondViewer")) {
-      return json(viewer);
-    }
+    if (query.startsWith("query PondViewer")) return json(viewer);
     if (query.startsWith("query PondUserItems")) {
       const cursor = variables.cursor ?? "first";
       return json(pages[cursor] ?? page([], null));

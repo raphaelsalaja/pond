@@ -64,15 +64,9 @@ export function enrichmentSuspended(pace: MachinePace, now: number): boolean {
 
 export function enrichmentCooldownFactor(pace: MachinePace): number {
   let factor = 1;
-  if (pace.onBattery) {
-    factor *= 2.5;
-  }
-  if (!pace.focused) {
-    factor *= 2.5;
-  }
-  if (pace.thermal === "fair") {
-    factor *= 2;
-  }
+  if (pace.onBattery) factor *= 2.5;
+  if (!pace.focused) factor *= 2.5;
+  if (pace.thermal === "fair") factor *= 2;
   return Math.min(factor, COOLDOWN_FACTOR_CAP);
 }
 

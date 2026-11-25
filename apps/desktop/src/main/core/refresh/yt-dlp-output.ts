@@ -22,9 +22,7 @@ async function readInfoJson(
     return null;
   }
   const parsed = RawYtdlpSchema.safeParse(JSON.parse(text));
-  if (!parsed.success) {
-    return null;
-  }
+  if (!parsed.success) return null;
   const kept = Object.fromEntries(
     Object.entries(parsed.data).filter(([, value]) => value !== undefined),
   );
@@ -76,9 +74,7 @@ export async function pickProducedFiles(
   } catch {
     return [];
   }
-  if (entries.length === 0) {
-    return [];
-  }
+  if (entries.length === 0) return [];
 
   const sized = await Promise.all(
     entries
@@ -90,9 +86,7 @@ export async function pickProducedFiles(
         const full = join(dir, name);
         try {
           const s = await stat(full);
-          if (s.size <= 0) {
-            return null;
-          }
+          if (s.size <= 0) return null;
           const infoJson = await readInfoJson(dir, full);
           return {
             path: full,
@@ -182,15 +176,11 @@ export async function pickSubtitleFiles(
   const entries = await readdir(dir);
   const out: Array<SubtitleFile> = [];
   for (const name of entries) {
-    if (!isSubtitle(name)) {
-      continue;
-    }
+    if (!isSubtitle(name)) continue;
     const full = join(dir, name);
     try {
       const s = await stat(full);
-      if (s.size === 0) {
-        continue;
-      }
+      if (s.size === 0) continue;
     } catch {
       continue;
     }
@@ -214,18 +204,12 @@ export async function pickProducedPoster(
   const stem = basename(videoPath, extname(videoPath));
   const entries = await readdir(dir);
   for (const name of entries) {
-    if (!name.startsWith(stem)) {
-      continue;
-    }
-    if (!isThumbnail(name)) {
-      continue;
-    }
+    if (!name.startsWith(stem)) continue;
+    if (!isThumbnail(name)) continue;
     const full = join(dir, name);
     try {
       const s = await stat(full);
-      if (s.size === 0) {
-        continue;
-      }
+      if (s.size === 0) continue;
     } catch {
       continue;
     }
@@ -246,9 +230,7 @@ export async function readSidecars(dir: string): Promise<{
     return { infoJson: null, poster: null };
   }
   const info = entries.find((name) => /\.info\.json$/i.test(name));
-  if (!info) {
-    return { infoJson: null, poster: null };
-  }
+  if (!info) return { infoJson: null, poster: null };
   const anchor = join(dir, `${info.replace(/\.info\.json$/i, "")}.media`);
   const [infoJson, poster] = await Promise.all([
     readInfoJson(dir, anchor).catch(() => null),

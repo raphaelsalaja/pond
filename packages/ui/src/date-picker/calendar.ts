@@ -1,9 +1,7 @@
 /** A local `YYYY-MM-DD` as midnight that day, or null when it isn't a real day. */
 export function parseDay(value: string | undefined): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value ?? "");
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
   const [, year, month, day] = match.map(Number);
   if (year === undefined || month === undefined || day === undefined) {
     return null;
@@ -42,12 +40,8 @@ export function sameDay(a: Date | null, b: Date | null): boolean {
 }
 
 export function clampDay(date: Date, min: Date | null, max: Date | null) {
-  if (min && date < min) {
-    return min;
-  }
-  if (max && date > max) {
-    return max;
-  }
+  if (min && date < min) return min;
+  if (max && date > max) return max;
   return date;
 }
 

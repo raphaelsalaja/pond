@@ -29,9 +29,7 @@ export function isPathInside(
   target: string,
   platform: NodeJS.Platform = process.platform,
 ): boolean {
-  if (platform !== "win32") {
-    return target.startsWith(`${root}/`);
-  }
+  if (platform !== "win32") return target.startsWith(`${root}/`);
   const child = win32.relative(root, target);
   return (
     child === "" ||
@@ -43,14 +41,10 @@ export function readLibraryPointer(): string | null {
   try {
     const raw = readFileSync(pointerPath(), "utf8");
     const parsed = StoredPointerSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success) {
-      return null;
-    }
+    if (!parsed.success) return null;
     const candidate = parsed.data.path;
     const abs = isAbsolute(candidate) ? candidate : resolve(candidate);
-    if (isPathInside(app.getPath("userData"), abs)) {
-      return null;
-    }
+    if (isPathInside(app.getPath("userData"), abs)) return null;
     return abs;
   } catch {
     return null;
@@ -88,9 +82,7 @@ export function checkPointerSafety(target: string): PointerSafetyReport {
   try {
     if (existsSync(abs)) {
       const st = statSync(abs);
-      if (!st.isDirectory()) {
-        return { ok: false, reason: "not_a_directory" };
-      }
+      if (!st.isDirectory()) return { ok: false, reason: "not_a_directory" };
     } else {
       mkdirSync(abs, { recursive: true });
     }

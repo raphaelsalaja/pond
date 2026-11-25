@@ -61,9 +61,7 @@ function RestorationHarness({
     [scrollerRef],
   );
 
-  if (detail) {
-    return <div data-detail />;
-  }
+  if (detail) return <div data-detail />;
   return (
     <ScrollRestorationContext.Provider value={restoration}>
       <div ref={attachScroller} data-restoration-scroller>
@@ -254,9 +252,7 @@ describe("PackedGrid", () => {
 
     expect(container.scrollTop).toBe(2500);
     await act(async () => {
-      if (!container) {
-        return;
-      }
+      if (!container) return;
       container.scrollTop = 3200;
       container.dispatchEvent(new Event("scroll"));
       await new Promise(requestAnimationFrame);
@@ -278,9 +274,7 @@ describe("PackedGrid", () => {
     expect(firstScroller).not.toBeNull();
 
     await act(async () => {
-      if (!firstScroller) {
-        return;
-      }
+      if (!firstScroller) return;
       firstScroller.scrollTop = 2500;
       firstScroller.dispatchEvent(new Event("scroll"));
       await new Promise(requestAnimationFrame);
@@ -321,9 +315,7 @@ describe("PackedGrid", () => {
     );
 
     await act(async () => {
-      if (!firstScroller) {
-        return;
-      }
+      if (!firstScroller) return;
       firstScroller.scrollTop = 2500;
       firstScroller.dispatchEvent(new Event("scroll"));
       await new Promise(requestAnimationFrame);

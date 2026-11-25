@@ -19,9 +19,7 @@ type CosmosTokenPayload = z.infer<typeof CosmosTokenPayloadSchema>;
 
 export function cosmosIdentityFromToken(value: string): string | null {
   const payload = decodeCosmosToken(value);
-  if (!payload) {
-    return null;
-  }
+  if (!payload) return null;
   const id =
     payload.userId ??
     payload.user_id ??
@@ -34,9 +32,7 @@ export function cosmosIdentityFromToken(value: string): string | null {
 function decodeCosmosToken(value: string): CosmosTokenPayload | null {
   const jwt = value.trim();
   const parts = jwt.split(".");
-  if (parts.length < 2 || !parts[1]) {
-    return null;
-  }
+  if (parts.length < 2 || !parts[1]) return null;
   try {
     const json = Buffer.from(base64UrlToBase64(parts[1]), "base64").toString(
       "utf8",

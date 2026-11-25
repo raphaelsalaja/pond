@@ -21,9 +21,7 @@ function Select<Value extends string>({
       disabled={disabled}
       onValueChange={(next) => {
         const match = items.find((item) => item.value === next);
-        if (match) {
-          onValueChange(match.value);
-        }
+        if (match) onValueChange(match.value);
       }}
     >
       <PondSelect.Trigger variant="field" width="full" aria-label={label}>
@@ -70,17 +68,13 @@ function Measure({
       onValueChange={setDraft}
       onValueCommitted={(next) => {
         setDraft(null);
-        if (next !== null && next !== value) {
-          onValueChange(next);
-        }
+        if (next !== null && next !== value) onValueChange(next);
       }}
     >
       <NumberField.Input
         aria-label={label}
         onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.currentTarget.blur();
-          }
+          if (event.key === "Enter") event.currentTarget.blur();
         }}
       />
       <NumberField.ScrubArea>{unit}</NumberField.ScrubArea>

@@ -56,9 +56,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
   function extractVideoId(href: string): string | null {
     try {
       const u = new URL(href, location.origin);
-      if (u.searchParams.has("v")) {
-        return u.searchParams.get("v");
-      }
+      if (u.searchParams.has("v")) return u.searchParams.get("v");
       if (u.pathname.startsWith("/shorts/")) {
         return u.pathname.split("/")[2] ?? null;
       }
@@ -77,9 +75,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
       return undefined;
     }
     const num = Number.parseFloat(m[1]);
-    if (!Number.isFinite(num)) {
-      return undefined;
-    }
+    if (!Number.isFinite(num)) return undefined;
     const suffix = (m[2] ?? "").toUpperCase();
     const mult =
       suffix === "K"
@@ -97,9 +93,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
       "#title h1 yt-formatted-string, #title h1",
     );
     const title = titleEl?.textContent?.trim();
-    if (!title) {
-      return null;
-    }
+    if (!title) return null;
 
     const out: YoutubeWatchPage = { title };
     const meta: YoutubeWatchMeta = {};
@@ -120,14 +114,10 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     const avatarImg = document.querySelector<HTMLImageElement>(
       "#owner img, ytd-video-owner-renderer img",
     );
-    if (avatarImg?.src) {
-      meta.authorAvatar = avatarImg.src;
-    }
+    if (avatarImg?.src) meta.authorAvatar = avatarImg.src;
 
     const description = readDescription();
-    if (description) {
-      out.description = description;
-    }
+    if (description) out.description = description;
 
     const infoStrings = document.querySelectorAll<HTMLElement>(
       "#info-strings yt-formatted-string, ytd-video-primary-info-renderer #info yt-formatted-string",
@@ -136,9 +126,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
       const t = el.textContent?.trim() ?? "";
       if (/views/i.test(t)) {
         const v = parseCount(t);
-        if (v !== undefined) {
-          meta.views = v;
-        }
+        if (v !== undefined) meta.views = v;
       }
       if (
         /\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(t)
@@ -153,9 +141,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     const likeLabel =
       likeBtn?.getAttribute("aria-label") ?? likeBtn?.textContent ?? "";
     const likes = parseCount(likeLabel);
-    if (likes !== undefined) {
-      meta.likes = likes;
-    }
+    if (likes !== undefined) meta.likes = likes;
 
     const video = document.querySelector<HTMLVideoElement>("video");
     if (video) {
@@ -172,14 +158,9 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     const landscape =
       (video?.poster && video.poster.length > 0 ? video.poster : undefined) ||
       ogImage?.content;
-    if (video || portrait || landscape) {
-      out.mediaType = "video";
-    }
-    if (portrait) {
-      out.mediaUrl = portrait;
-    } else if (landscape) {
-      out.mediaUrl = landscape;
-    }
+    if (video || portrait || landscape) out.mediaType = "video";
+    if (portrait) out.mediaUrl = portrait;
+    else if (landscape) out.mediaUrl = landscape;
 
     if (out.mediaUrl) {
       out.mediaUrls = [{ url: out.mediaUrl, type: "video" }];
@@ -193,18 +174,14 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
       meta.lang = lang;
     }
 
-    if (Object.keys(meta).length > 0) {
-      out.meta = meta;
-    }
+    if (Object.keys(meta).length > 0) out.meta = meta;
     return out;
   }
 
   /** Player caption. The description box also contains views, the date, and a hidden digit probe. */
   function readDescription(): string | undefined {
     const fromPlayer = readPlayerDescription();
-    if (fromPlayer !== null) {
-      return fromPlayer;
-    }
+    if (fromPlayer !== null) return fromPlayer;
     return readDomDescription();
   }
 
@@ -212,9 +189,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
   function currentPlayerResponse(): YoutubePlayerResponse | undefined {
     const player = globalThis.ytInitialPlayerResponse;
     const id = player?.videoDetails?.videoId;
-    if (id && id !== extractVideoId(location.href)) {
-      return undefined;
-    }
+    if (id && id !== extractVideoId(location.href)) return undefined;
     return player;
   }
 
@@ -223,21 +198,15 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     const thumbnail =
       currentPlayerResponse()?.microformat?.playerMicroformatRenderer
         ?.thumbnail;
-    if (thumbnail?.isOriginalAspectRatio !== true) {
-      return undefined;
-    }
+    if (thumbnail?.isOriginalAspectRatio !== true) return undefined;
     const thumbs = thumbnail.thumbnails;
-    if (!Array.isArray(thumbs)) {
-      return undefined;
-    }
+    if (!Array.isArray(thumbs)) return undefined;
     let best: { url: string; height: number } | undefined;
     for (const item of thumbs) {
       const url = validators.text.safeParse(item?.url);
       const width = validators.number.safeParse(item?.width);
       const height = validators.number.safeParse(item?.height);
-      if (!url.success || !width.success || !height.success) {
-        continue;
-      }
+      if (!url.success || !width.success || !height.success) continue;
       if (
         !url.data.startsWith("https://") ||
         !(height.data > width.data && width.data > 0)
@@ -272,9 +241,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     const published = validators.text.safeParse(
       player?.microformat?.playerMicroformatRenderer?.publishDate,
     );
-    if (published.success && published.data) {
-      out.publishedAt = published.data;
-    }
+    if (published.success && published.data) out.publishedAt = published.data;
     return out;
   }
 
@@ -282,9 +249,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     const parsed = validators.text.safeParse(
       currentPlayerResponse()?.videoDetails?.shortDescription,
     );
-    if (!parsed.success) {
-      return null;
-    }
+    if (!parsed.success) return null;
     return clipText(parsed.data);
   }
 
@@ -298,9 +263,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     for (const selector of selectors) {
       const el = document.querySelector<HTMLElement>(selector);
       const text = el ? elementText(el) : "";
-      if (!text) {
-        continue;
-      }
+      if (!text) continue;
       return clipText(stripDescriptionChrome(text));
     }
     return undefined;
@@ -317,16 +280,12 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
         parts.push(node.textContent ?? "");
         return;
       }
-      if (!isElement(node) || isHidden(node)) {
-        return;
-      }
+      if (!isElement(node) || isHidden(node)) return;
       if (node.tagName === "BR") {
         parts.push("\n");
         return;
       }
-      for (const next of Array.from(node.childNodes)) {
-        walk(next);
-      }
+      for (const next of Array.from(node.childNodes)) walk(next);
     }
     for (const child of Array.from(el.childNodes)) {
       walk(child);
@@ -335,18 +294,14 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
   }
 
   function isHidden(el: HTMLElement): boolean {
-    if (el.hidden || el.getAttribute("aria-hidden") === "true") {
-      return true;
-    }
+    if (el.hidden || el.getAttribute("aria-hidden") === "true") return true;
     const style = el.getAttribute("style") ?? "";
     return /visibility\s*:\s*hidden|display\s*:\s*none/i.test(style);
   }
 
   function clipText(value: string): string | undefined {
     const trimmed = value.trim();
-    if (!trimmed) {
-      return undefined;
-    }
+    if (!trimmed) return undefined;
     return trimmed.length > 4000 ? `${trimmed.slice(0, 4000)}…` : trimmed;
   }
 
@@ -354,9 +309,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     const kept: Array<string> = [];
     for (const line of raw.split(/\n/)) {
       const trimmed = line.trim();
-      if (isDescriptionChrome(trimmed)) {
-        continue;
-      }
+      if (isDescriptionChrome(trimmed)) continue;
       kept.push(trimmed);
     }
     while (kept[0] === "") {
@@ -373,27 +326,13 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
   }
 
   function isDescriptionChrome(line: string): boolean {
-    if (!line) {
-      return false;
-    }
-    if (isDigitProbe(line)) {
-      return true;
-    }
-    if (/^(?:views|[KMB])$/i.test(line)) {
-      return true;
-    }
-    if (/^(?:\d+\s*)?(?:[smhdwy]|mo|yr)\s+ago$/i.test(line)) {
-      return true;
-    }
-    if (/^\d[\d,.]*\s*(?:[KMB]\s+)?views\b.*•/i.test(line)) {
-      return true;
-    }
-    if (/^(?:\.{3}|…)\s*more$/i.test(line)) {
-      return true;
-    }
-    if (/^show less$/i.test(line)) {
-      return true;
-    }
+    if (!line) return false;
+    if (isDigitProbe(line)) return true;
+    if (/^(?:views|[KMB])$/i.test(line)) return true;
+    if (/^(?:\d+\s*)?(?:[smhdwy]|mo|yr)\s+ago$/i.test(line)) return true;
+    if (/^\d[\d,.]*\s*(?:[KMB]\s+)?views\b.*•/i.test(line)) return true;
+    if (/^(?:\.{3}|…)\s*more$/i.test(line)) return true;
+    if (/^show less$/i.test(line)) return true;
     return false;
   }
 

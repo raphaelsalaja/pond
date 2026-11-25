@@ -114,15 +114,9 @@ export function resourceFailure(response: {
   };
 }): ResourceFailure | null {
   const { status, http_status: httpStatus } = response.resource_response;
-  if (status !== "failure") {
-    return null;
-  }
-  if (httpStatus === 401 || httpStatus === 403) {
-    return "auth_required";
-  }
-  if (httpStatus === 429) {
-    return "rate_limited";
-  }
+  if (status !== "failure") return null;
+  if (httpStatus === 401 || httpStatus === 403) return "auth_required";
+  if (httpStatus === 429) return "rate_limited";
   return "unknown";
 }
 
@@ -143,12 +137,8 @@ export function boardsPage(
 ): ResourcePage<PinterestBoard> {
   const items: Array<PinterestBoard> = [];
   for (const board of response.resource_response.data) {
-    if (!board?.id || !board.name) {
-      continue;
-    }
-    if (board.type && board.type !== "board") {
-      continue;
-    }
+    if (!board?.id || !board.name) continue;
+    if (board.type && board.type !== "board") continue;
     items.push({
       id: board.id,
       name: board.name,
@@ -171,12 +161,8 @@ export function boardPinsPage(
   const pins = Array.isArray(data) ? data : data.results;
   const items: Array<ListEntry> = [];
   for (const pin of pins) {
-    if (!pin?.id || !/^\d+$/.test(pin.id)) {
-      continue;
-    }
-    if (pin.type && pin.type !== "pin") {
-      continue;
-    }
+    if (!pin?.id || !/^\d+$/.test(pin.id)) continue;
+    if (pin.type && pin.type !== "pin") continue;
     items.push({
       sourceId: pin.id,
       url: `https://www.pinterest.com/pin/${pin.id}/`,
@@ -201,9 +187,7 @@ export function boardsUrl(username: string, bookmark: string | null): string {
     filter_stories: false,
     include_archived: true,
   };
-  if (bookmark) {
-    options.bookmarks = [bookmark];
-  }
+  if (bookmark) options.bookmarks = [bookmark];
   return resourceUrl(
     "Boards",
     options,
@@ -213,9 +197,7 @@ export function boardsUrl(username: string, bookmark: string | null): string {
 
 export function boardFeedUrl(boardId: string, bookmark: string | null): string {
   const options: BoardFeedOptions = { board_id: boardId, page_size: PAGE_SIZE };
-  if (bookmark) {
-    options.bookmarks = [bookmark];
-  }
+  if (bookmark) options.bookmarks = [bookmark];
   return resourceUrl("BoardFeed", options, "/");
 }
 
@@ -245,17 +227,11 @@ export async function collectBoards(
   for (let page = 0; page < MAX_BOARD_LIST_PAGES; page++) {
     const result = await fetchPage(bookmark);
     if (!result.ok) {
-      if (page === 0) {
-        return result;
-      }
+      if (page === 0) return result;
       break;
     }
-    for (const board of result.page.items) {
-      boards.set(board.id, board);
-    }
-    if (!result.page.bookmark) {
-      break;
-    }
+    for (const board of result.page.items) boards.set(board.id, board);
+    if (!result.page.bookmark) break;
     bookmark = result.page.bookmark;
   }
   return { ok: true, boards: Array.from(boards.values()) };
@@ -290,9 +266,7 @@ export async function walkBoards(
       }
       let fresh = 0;
       for (const entry of result.page.items) {
-        if (!known.has(entry.sourceId)) {
-          fresh += 1;
-        }
+        if (!known.has(entry.sourceId)) fresh += 1;
         addCollectionEntry(entries, entry.sourceId, entry, board.id);
       }
       if (earlyStop && result.page.items.length > 0 && fresh === 0) {
@@ -310,9 +284,7 @@ export async function walkBoards(
       }
       bookmark = result.page.bookmark;
     }
-    if (!boardEnded) {
-      reachedEnd = false;
-    }
+    if (!boardEnded) reachedEnd = false;
   }
 
   return {

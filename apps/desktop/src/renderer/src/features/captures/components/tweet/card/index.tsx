@@ -13,9 +13,7 @@ type Scheme = "light" | "dark";
 
 function formatTimestamp(iso: string): string | null {
   const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) {
-    return null;
-  }
+  if (!Number.isFinite(d.getTime())) return null;
   const time = d.toLocaleTimeString(systemLocale, {
     hour: "numeric",
     minute: "2-digit",

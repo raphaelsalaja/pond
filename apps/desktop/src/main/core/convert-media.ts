@@ -112,9 +112,7 @@ async function convertWithFfmpeg(
   },
 ): Promise<string> {
   const ffmpeg = input.ffmpegPath;
-  if (!ffmpeg) {
-    throw new Error("FFmpeg is required for this conversion.");
-  }
+  if (!ffmpeg) throw new Error("FFmpeg is required for this conversion.");
   const temporary = await mkdtemp(join(tmpdir(), "pond-convert-"));
   try {
     const output = join(temporary, `converted.${input.extension}`);
@@ -169,9 +167,7 @@ export function buildFfmpegConversionArguments(
   const quality = Math.round(51 - (preset.quality / 100) * 47);
   switch (preset.format) {
     case "jxl": {
-      if (scale) {
-        args.push("-vf", scale);
-      }
+      if (scale) args.push("-vf", scale);
       const distance = preset.lossless
         ? "0"
         : Math.max(0.1, ((100 - preset.quality) / 100) * 15).toFixed(2);
@@ -182,9 +178,7 @@ export function buildFfmpegConversionArguments(
     case "hdr":
     case "tga":
     case "bmp": {
-      if (scale) {
-        args.push("-vf", scale);
-      }
+      if (scale) args.push("-vf", scale);
       const encoder = {
         exr: "exr",
         hdr: "hdr",
@@ -195,9 +189,7 @@ export function buildFfmpegConversionArguments(
       break;
     }
     case "ico":
-      if (scale) {
-        args.push("-vf", scale);
-      }
+      if (scale) args.push("-vf", scale);
       args.push("-frames:v", "1", "-c:v", "png", "-f", "ico");
       break;
     case "gif": {
@@ -237,9 +229,7 @@ export function buildFfmpegConversionArguments(
       );
       break;
     case "mp4":
-      if (scale) {
-        args.push("-vf", scale);
-      }
+      if (scale) args.push("-vf", scale);
       args.push(
         "-c:v",
         "libx264",
@@ -254,9 +244,7 @@ export function buildFfmpegConversionArguments(
       );
       break;
     case "webm":
-      if (scale) {
-        args.push("-vf", scale);
-      }
+      if (scale) args.push("-vf", scale);
       args.push(
         "-c:v",
         "libvpx-vp9",
@@ -299,9 +287,7 @@ export async function runFfmpeg(input: {
       progress = lines.pop() ?? "";
       for (const line of lines) {
         const [key, raw] = line.trim().split("=", 2);
-        if (key !== "out_time_us" || !raw) {
-          continue;
-        }
+        if (key !== "out_time_us" || !raw) continue;
         const elapsed = Number(raw) / 1_000_000;
         if (Number.isFinite(elapsed)) {
           input.onProgress?.(Math.min(0.99, elapsed / input.duration));

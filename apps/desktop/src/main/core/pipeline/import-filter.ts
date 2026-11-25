@@ -32,17 +32,11 @@ async function skipFiltered(
   save: Save,
   reasonFor: (scope: ImportScope | undefined) => ImportFilterReason | null,
 ): Promise<boolean> {
-  if (!save.accountId || save.status !== "ingesting") {
-    return false;
-  }
+  if (!save.accountId || save.status !== "ingesting") return false;
   const account = await getAccount(save.accountId);
-  if (!account) {
-    return false;
-  }
+  if (!account) return false;
   const reason = reasonFor(accountImportScope(account.source, account.sync));
-  if (!reason) {
-    return false;
-  }
+  if (!reason) return false;
   await persistSave(
     save.id,
     {
@@ -118,9 +112,7 @@ export async function releaseFilteredSaves(accountId: string): Promise<number> {
         ),
       ),
     );
-  if (rows.length === 0) {
-    return 0;
-  }
+  if (rows.length === 0) return 0;
   await purgeReleased(rows);
   log.info("[pond pipeline:import-filter] released", {
     accountId,
@@ -133,9 +125,7 @@ export async function releaseFilteredSaves(accountId: string): Promise<number> {
 export async function releaseListFilteredSaves(
   ids: ReadonlyArray<string>,
 ): Promise<void> {
-  if (ids.length === 0) {
-    return;
-  }
+  if (ids.length === 0) return;
   const db = await getDb();
   const rows = await db
     .select()

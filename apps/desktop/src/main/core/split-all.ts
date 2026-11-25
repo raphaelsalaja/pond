@@ -98,14 +98,10 @@ export async function splittableIds(
     const rows = await dependencies.page(after, PAGE_SIZE);
     for (const row of rows) {
       const min = minMedia(row.source);
-      if (min !== null && canSplitFiles(row.files, min)) {
-        ids.push(row.id);
-      }
+      if (min !== null && canSplitFiles(row.files, min)) ids.push(row.id);
     }
     const last = rows.at(-1);
-    if (!last || rows.length < PAGE_SIZE) {
-      return ids;
-    }
+    if (!last || rows.length < PAGE_SIZE) return ids;
     after = last.id;
   }
 }
@@ -119,9 +115,7 @@ export async function runSplitAll(
   const progress = { ...IDLE, running: true, total: ids.length };
   report({ ...progress });
   for (let start = 0; start < ids.length; start += BATCH_SIZE) {
-    if (dependencies.library() !== library) {
-      break;
-    }
+    if (dependencies.library() !== library) break;
     for (const id of ids.slice(start, start + BATCH_SIZE)) {
       const result = await dependencies.split(id).catch((cause: unknown) => {
         log.warn("[pond split] split all skipped a save", id, cause);
@@ -154,9 +148,7 @@ export function splitAllStatus(): SplitAllProgress {
 export function startSplitAll(
   dependencies: SplitAllRuntime = runtime,
 ): SplitAllProgress {
-  if (status.running) {
-    return splitAllStatus();
-  }
+  if (status.running) return splitAllStatus();
   status = { ...IDLE, running: true };
   void runSplitAll(dependencies, (next) => {
     status = next;

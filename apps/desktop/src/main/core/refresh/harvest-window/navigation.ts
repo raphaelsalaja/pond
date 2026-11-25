@@ -31,12 +31,8 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
     ) {
       return true;
     }
-    if (u.hostname.includes("accounts.google.com")) {
-      return true;
-    }
-    if (u.hostname.includes("login.reddit.com")) {
-      return true;
-    }
+    if (u.hostname.includes("accounts.google.com")) return true;
+    if (u.hostname.includes("login.reddit.com")) return true;
     return false;
   } catch {
     return false;
@@ -53,9 +49,7 @@ export function looksLikeChallenge(currentUrl: string): null | {
     if (p.includes("/challenge") || hay.includes("challenge")) {
       return { kind: "challenge" };
     }
-    if (p.includes("/checkpoint")) {
-      return { kind: "checkpoint" };
-    }
+    if (p.includes("/checkpoint")) return { kind: "checkpoint" };
     if (
       p.includes("/account/access") ||
       p.includes("/i/flow/consent") ||
@@ -89,9 +83,7 @@ export async function navigateWithTimeout(
       failedUrl: string,
       isMainFrame: boolean,
     ) => {
-      if (!isMainFrame || code === -3) {
-        return;
-      }
+      if (!isMainFrame || code === -3) return;
       log.info("[pond scrape] nav load failed", { code, desc, failedUrl });
       cleanup();
       resolve(false);
@@ -151,9 +143,7 @@ export async function waitPastInterstitial(
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (!win.isDestroyed() && isInterstitial(win.webContents.getURL())) {
-    if (Date.now() > deadline) {
-      return false;
-    }
+    if (Date.now() > deadline) return false;
     await sleep(250);
   }
   return !win.isDestroyed();

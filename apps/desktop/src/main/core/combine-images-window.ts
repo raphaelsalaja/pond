@@ -34,9 +34,7 @@ async function openCombineImagesWindow(
   next: CombineImagesWindowOpen,
 ): Promise<void> {
   load = { ...next, nonce: load.nonce + 1 };
-  if (opening) {
-    await opening;
-  }
+  if (opening) await opening;
   if (combineWindow && !combineWindow.isDestroyed()) {
     if (combineWindow.isMinimized()) {
       combineWindow.restore();
@@ -66,9 +64,7 @@ export function routeCombineImagesZoom(id: string): boolean {
 }
 
 export function closeCombineImagesWindow(): void {
-  if (combineWindow && !combineWindow.isDestroyed()) {
-    combineWindow.close();
-  }
+  if (combineWindow && !combineWindow.isDestroyed()) combineWindow.close();
 }
 
 async function createCombineImagesWindow(): Promise<void> {
@@ -107,9 +103,7 @@ async function createCombineImagesWindow(): Promise<void> {
     win.focus();
   });
   win.once("closed", () => {
-    if (combineWindow !== win) {
-      return;
-    }
+    if (combineWindow !== win) return;
     combineWindow = null;
     delivered = false;
   });

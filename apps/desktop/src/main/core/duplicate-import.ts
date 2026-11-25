@@ -30,14 +30,10 @@ async function importableFiles(
   const visited = new Set<string>();
   async function visit(path: string): Promise<void> {
     const absolute = resolve(path);
-    if (visited.has(absolute) || basename(path).startsWith(".")) {
-      return;
-    }
+    if (visited.has(absolute) || basename(path).startsWith(".")) return;
     visited.add(absolute);
     const details = await stat(absolute).catch(() => null);
-    if (!details) {
-      return;
-    }
+    if (!details) return;
     if (details.isFile() && details.size > 0) {
       files.push(absolute);
       return;
@@ -51,9 +47,7 @@ async function importableFiles(
       }
     }
   }
-  for (const path of paths) {
-    await visit(path);
-  }
+  for (const path of paths) await visit(path);
   return files;
 }
 
@@ -101,16 +95,10 @@ export function resolveDuplicateDecisions(
   const restore = new Set<string>();
   for (const candidate of candidates) {
     const choice = decisions[candidate.path] ?? policy;
-    if (choice === "keep-both") {
-      continue;
-    }
-    if (candidate.inTrash && choice !== "restore") {
-      continue;
-    }
+    if (choice === "keep-both") continue;
+    if (candidate.inTrash && choice !== "restore") continue;
     useExisting[candidate.path] = candidate.existingId;
-    if (candidate.inTrash) {
-      restore.add(candidate.path);
-    }
+    if (candidate.inTrash) restore.add(candidate.path);
   }
   return { useExisting, restore };
 }

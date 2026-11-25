@@ -26,13 +26,9 @@ export function scrollClampSpace({
   natural,
 }: ScrollClampInput): number | null {
   /** A position of zero has nothing to ease. Anything above that, even a few pixels, is a real clamp. */
-  if (scrollTop <= 0) {
-    return null;
-  }
+  if (scrollTop <= 0) return null;
   const height = clampHeight(content, natural);
-  if (height >= previousContent) {
-    return null;
-  }
+  if (height >= previousContent) return null;
   const needed = Math.ceil(scrollTop + clientHeight - height);
   return needed > space ? needed : null;
 }
@@ -73,9 +69,7 @@ function measureUnflooredContent(
     scroll.style.height = snapshot.height;
     scroll.style.minHeight = snapshot.minHeight;
     scroll.style.flex = snapshot.flex;
-    if (scroll.scrollTop !== top) {
-      scroll.scrollTop = top;
-    }
+    if (scroll.scrollTop !== top) scroll.scrollTop = top;
     scroll.style.scrollBehavior = behavior;
   }
 }
@@ -88,9 +82,7 @@ export function useEasedScrollClamp(
   useEffect(() => {
     const scroll = scrollRef.current;
     const space = spaceRef.current;
-    if (!scroll || !space || !("ResizeObserver" in window)) {
-      return;
-    }
+    if (!scroll || !space || !("ResizeObserver" in window)) return;
     const initial = scroll.scrollHeight - space.offsetHeight;
     let scrollTop = scroll.scrollTop;
     let content =
@@ -101,17 +93,13 @@ export function useEasedScrollClamp(
     let settle: ((event: TransitionEvent) => void) | null = null;
 
     const cancelSettle = () => {
-      if (!settle) {
-        return;
-      }
+      if (!settle) return;
       space.removeEventListener("transitionend", settle);
       settle = null;
     };
 
     const check = (remeasure: boolean) => {
-      if (running) {
-        return;
-      }
+      if (running) return;
       running = true;
       try {
         const current = space.offsetHeight;
@@ -133,9 +121,7 @@ export function useEasedScrollClamp(
           space: current,
           natural,
         });
-        if (next === null || prefersReducedMotion()) {
-          return;
-        }
+        if (next === null || prefersReducedMotion()) return;
         const floor = Math.min(
           next,
           scrollClampFloor({
@@ -158,9 +144,7 @@ export function useEasedScrollClamp(
         if (floor > 0) {
           space.style.height = `${floor}px`;
           settle = (event) => {
-            if (event.propertyName !== "height") {
-              return;
-            }
+            if (event.propertyName !== "height") return;
             cancelSettle();
             space.style.transition = "none";
             space.style.removeProperty("height");
@@ -178,9 +162,7 @@ export function useEasedScrollClamp(
     const observeChildren = () => {
       resize.disconnect();
       for (const child of scroll.children) {
-        if (child !== space) {
-          resize.observe(child);
-        }
+        if (child !== space) resize.observe(child);
       }
     };
     /** Removed children resize nothing, so the mutation itself triggers the check. */
@@ -190,9 +172,7 @@ export function useEasedScrollClamp(
     });
     /** A layout forced mid-commit clamps before any observer runs; its scroll event still precedes paint. */
     const onScroll = () => {
-      if (running) {
-        return;
-      }
+      if (running) return;
       check(false);
       scrollTop = scroll.scrollTop;
     };

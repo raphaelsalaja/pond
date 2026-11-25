@@ -23,12 +23,8 @@ export function TableSelectionSync<T extends DataTableRow>({
   useEffect(() => {
     const selected = [...selectionStore.state.selectedIds];
     const next = selected.filter((id) => rowsById.has(id));
-    if (next.length !== selected.length) {
-      actions.replaceSelection(next);
-    }
-    if (next.length === 0) {
-      return;
-    }
+    if (next.length !== selected.length) actions.replaceSelection(next);
+    if (next.length === 0) return;
     selection.set(
       next.flatMap((id) => {
         const row = rowsById.get(id);

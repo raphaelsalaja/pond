@@ -73,13 +73,9 @@ export function parseChangelogEntry(source: string): ChangelogEntry {
 
   const fields: Record<string, string> = {};
   for (const line of head.split("\n")) {
-    if (!line.trim()) {
-      continue;
-    }
+    if (!line.trim()) continue;
     const colon = line.indexOf(":");
-    if (colon < 1) {
-      throw new Error(`Invalid frontmatter line: ${line}`);
-    }
+    if (colon < 1) throw new Error(`Invalid frontmatter line: ${line}`);
     fields[line.slice(0, colon).trim()] = line.slice(colon + 1).trim();
   }
 
@@ -87,14 +83,10 @@ export function parseChangelogEntry(source: string): ChangelogEntry {
     [];
   for (const raw of body.split("\n")) {
     const line = raw.trim();
-    if (!line) {
-      continue;
-    }
+    if (!line) continue;
     if (line.startsWith("## ")) {
       const category = categoryForHeading(line.slice(3).trim());
-      if (!category) {
-        throw new Error(`Unknown changelog section: ${line}`);
-      }
+      if (!category) throw new Error(`Unknown changelog section: ${line}`);
       sections.push({ category, items: [] });
       continue;
     }
@@ -118,9 +110,7 @@ export function compareVersions(a: string, b: string): number {
   const right = versionParts(b);
   for (let index = 0; index < 3; index++) {
     const diff = (left[index] ?? 0) - (right[index] ?? 0);
-    if (diff !== 0) {
-      return diff;
-    }
+    if (diff !== 0) return diff;
   }
   return Number(b.includes("-")) - Number(a.includes("-"));
 }

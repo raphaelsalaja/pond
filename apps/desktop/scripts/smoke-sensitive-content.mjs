@@ -27,18 +27,14 @@ async function main() {
   }
   const bytes = new Uint8Array(await response.arrayBuffer());
   const checksum = createHash("sha256").update(bytes).digest("hex");
-  if (checksum !== SHA256) {
-    throw new Error("Model checksum mismatch");
-  }
+  if (checksum !== SHA256) throw new Error("Model checksum mismatch");
 
   const session = await InferenceSession.create(bytes, {
     executionProviders: ["wasm"],
   });
   const inputName = session.inputNames[0];
   const outputName = session.outputNames[0];
-  if (!inputName || !outputName) {
-    throw new Error("Model I/O is missing");
-  }
+  if (!inputName || !outputName) throw new Error("Model I/O is missing");
 
   const rgb = await sharp({
     create: {

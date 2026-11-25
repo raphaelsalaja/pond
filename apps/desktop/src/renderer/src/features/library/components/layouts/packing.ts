@@ -110,9 +110,7 @@ export function packWaterfall(
     const mediaHeight = columns.width / safeAspect(entry.aspect);
     let target = 0;
     for (let index = 1; index < columns.count; index += 1) {
-      if ((heights[index] ?? 0) < (heights[target] ?? 0)) {
-        target = index;
-      }
+      if ((heights[index] ?? 0) < (heights[target] ?? 0)) target = index;
     }
     const top = heights[target] ?? 0;
     items.push({
@@ -177,9 +175,7 @@ export function packJustified(
       flush(available / aspectSum);
     }
   }
-  if (row.length > 0) {
-    flush(targetHeight);
-  }
+  if (row.length > 0) flush(targetHeight);
 
   return {
     items,
@@ -194,9 +190,7 @@ export function stackSections(
 ) {
   const dividerTop = lead?.totalHeight ?? 0;
   const offset = dividerTop + spacing;
-  if (!lead && offset === 0) {
-    return { ...rest, dividerTop };
-  }
+  if (!lead && offset === 0) return { ...rest, dividerTop };
   return {
     items: [
       ...(lead?.items ?? []),

@@ -76,9 +76,7 @@ async function writeSnapshot(saves: ReadonlyArray<Save>): Promise<void> {
       tx.onabort = () => reject(tx.error);
       const store = tx.objectStore(STORE);
       store.clear();
-      for (const save of saves) {
-        store.put(save);
-      }
+      for (const save of saves) store.put(save);
     });
   } catch (error) {
     log.warn("[pond pool] snapshot write failed", error);

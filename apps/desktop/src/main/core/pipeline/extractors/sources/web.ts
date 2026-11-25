@@ -49,9 +49,7 @@ function resolveHttpUrl(
   base: string,
 ): string | undefined {
   const picked = pickString(src);
-  if (!picked) {
-    return undefined;
-  }
+  if (!picked) return undefined;
   try {
     const resolved = new URL(picked, base);
     return resolved.protocol === "http:" || resolved.protocol === "https:"
@@ -93,9 +91,7 @@ const jsonLdProductImage: metascraper.Rules = {
       for (const product of productsFromJsonLd($(script).text())) {
         for (const src of [product.image].flat()) {
           const resolved = resolveHttpUrl(src, url);
-          if (resolved) {
-            return resolved;
-          }
+          if (resolved) return resolved;
         }
       }
     }
@@ -145,9 +141,7 @@ function productsFromJsonLd(
   });
   return nodes.flatMap((node) => {
     const product = JsonLdProduct.safeParse(node);
-    if (!product.success) {
-      return [];
-    }
+    if (!product.success) return [];
     const types = [product.data["@type"]].flat();
     return types.some((type) => PRODUCT_TYPES.has(type)) ? [product.data] : [];
   });
@@ -229,21 +223,11 @@ export class WebPageExtractor implements Extractor {
     const publisher = search?.engine ?? pickString(meta.publisher);
 
     const extras: WebExtras = {};
-    if (publisher) {
-      extras.publisher = publisher;
-    }
-    if (faviconUrl) {
-      extras.faviconUrl = faviconUrl;
-    }
-    if (meta.product === PRODUCT_FLAG) {
-      extras.product = true;
-    }
-    if (search) {
-      extras.search = search;
-    }
-    if (fetched?.document) {
-      extras.textDocument = true;
-    }
+    if (publisher) extras.publisher = publisher;
+    if (faviconUrl) extras.faviconUrl = faviconUrl;
+    if (meta.product === PRODUCT_FLAG) extras.product = true;
+    if (search) extras.search = search;
+    if (fetched?.document) extras.textDocument = true;
 
     const title = search?.query ?? pickString(meta.title);
     /** A results page's description is boilerplate, and one would open the Save as text instead of the page. */
@@ -254,21 +238,11 @@ export class WebPageExtractor implements Extractor {
       url: canonical,
       media,
     };
-    if (title) {
-      capture.title = title;
-    }
-    if (description) {
-      capture.description = description;
-    }
-    if (author) {
-      capture.author = author;
-    }
-    if (publishedAt) {
-      capture.publishedAt = publishedAt;
-    }
-    if (Object.keys(extras).length > 0) {
-      capture.extras = extras;
-    }
+    if (title) capture.title = title;
+    if (description) capture.description = description;
+    if (author) capture.author = author;
+    if (publishedAt) capture.publishedAt = publishedAt;
+    if (Object.keys(extras).length > 0) capture.extras = extras;
     if (fetched?.document) {
       capture.article = {
         html: fetched.document.bodyHtml,
@@ -296,9 +270,7 @@ async function renderHtml(url: string, signal?: AbortSignal): Promise<string> {
 }
 
 function assertPageStatus(status: number, label: string): void {
-  if (status < 400) {
-    return;
-  }
+  if (status < 400) return;
   if (status === 429) {
     throw new RateLimitedError(undefined, `${label} 429`);
   }

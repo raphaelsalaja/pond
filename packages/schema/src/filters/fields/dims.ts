@@ -48,9 +48,7 @@ export const ASPECT_TOLERANCE = 0.06;
 
 export function parseAspectRatio(value: string): number | null {
   const parts = /^\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)\s*$/.exec(value);
-  if (!parts) {
-    return null;
-  }
+  if (!parts) return null;
   const width = Number(parts[1]);
   const height = Number(parts[2]);
   const ratio = width / height;
@@ -72,18 +70,10 @@ export function orientationFromDims(
     return null;
   }
   const r = width / height;
-  if (r >= 2) {
-    return "panoramic-landscape";
-  }
-  if (r <= 0.5) {
-    return "panoramic-portrait";
-  }
-  if (r >= 0.9 && r <= 1.1) {
-    return "square";
-  }
-  if (r > 1) {
-    return "landscape";
-  }
+  if (r >= 2) return "panoramic-landscape";
+  if (r <= 0.5) return "panoramic-portrait";
+  if (r >= 0.9 && r <= 1.1) return "square";
+  if (r > 1) return "landscape";
   return "portrait";
 }
 
@@ -104,9 +94,7 @@ export function aspectFromDims(
   const r = width / height;
   for (const preset of ASPECT_PRESETS) {
     const target = ASPECT_TARGETS[preset.value];
-    if (Math.abs(r - target) / target <= ASPECT_TOLERANCE) {
-      return preset.value;
-    }
+    if (Math.abs(r - target) / target <= ASPECT_TOLERANCE) return preset.value;
   }
   return null;
 }

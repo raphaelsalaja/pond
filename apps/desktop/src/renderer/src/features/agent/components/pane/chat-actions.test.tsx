@@ -52,9 +52,7 @@ async function render(disabled = false, chatId: string | null = "chat") {
 }
 async function openMenu() {
   const trigger = item("Fish Actions");
-  if (!trigger) {
-    throw new Error("Missing Fish Actions");
-  }
+  if (!trigger) throw new Error("Missing Fish Actions");
   await act(async () => trigger.click());
 }
 function item(label: string) {

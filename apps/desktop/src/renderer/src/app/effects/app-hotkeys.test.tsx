@@ -61,9 +61,7 @@ describe("app hotkeys in text fields", () => {
     root = createRoot(host);
     libraryHeader.closePopover();
     commandMenu.close();
-    if (!libraryChrome.getState().sidebarOpen) {
-      libraryChrome.toggleSidebar();
-    }
+    if (!libraryChrome.getState().sidebarOpen) libraryChrome.toggleSidebar();
   });
 
   afterEach(async () => {
@@ -87,9 +85,7 @@ describe("app hotkeys in text fields", () => {
         </HotkeysProvider>,
       );
     });
-    if (!field) {
-      return;
-    }
+    if (!field) return;
     host.append(field);
     field.focus();
     expect(document.activeElement).toBe(field);

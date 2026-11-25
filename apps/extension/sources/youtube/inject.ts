@@ -11,42 +11,28 @@ const VIDEO_ID_RE = /^[\w-]{11}$/;
 
 function collectAddedVideoIds(node: JsonValue, out: Set<string>): void {
   if (Array.isArray(node)) {
-    for (const child of node) {
-      collectAddedVideoIds(child, out);
-    }
+    for (const child of node) collectAddedVideoIds(child, out);
     return;
   }
-  if (!isRecord(node)) {
-    return;
-  }
+  if (!isRecord(node)) return;
   for (const [key, value] of Object.entries(node)) {
     const id =
       key === "addedVideoId" || key === "videoId" ? asText(value) : undefined;
-    if (id !== undefined && VIDEO_ID_RE.test(id)) {
-      out.add(id);
-    } else {
-      collectAddedVideoIds(value, out);
-    }
+    if (id !== undefined && VIDEO_ID_RE.test(id)) out.add(id);
+    else collectAddedVideoIds(value, out);
   }
 }
 
 function findPlaylistIds(node: JsonValue, out: Set<string>): void {
   if (Array.isArray(node)) {
-    for (const child of node) {
-      findPlaylistIds(child, out);
-    }
+    for (const child of node) findPlaylistIds(child, out);
     return;
   }
-  if (!isRecord(node)) {
-    return;
-  }
+  if (!isRecord(node)) return;
   for (const [key, value] of Object.entries(node)) {
     const id = key === "playlistId" ? asText(value) : undefined;
-    if (id) {
-      out.add(id);
-    } else {
-      findPlaylistIds(value, out);
-    }
+    if (id) out.add(id);
+    else findPlaylistIds(value, out);
   }
 }
 
@@ -55,9 +41,7 @@ function anyStringMatches(
   predicate: (s: string) => boolean,
 ): boolean {
   const text = asText(node);
-  if (text !== undefined) {
-    return predicate(text);
-  }
+  if (text !== undefined) return predicate(text);
   if (Array.isArray(node)) {
     return node.some((child) => anyStringMatches(child, predicate));
   }
@@ -71,23 +55,15 @@ function anyStringMatches(
 
 function collectEditedVideoIds(node: JsonValue, out: Set<string>): void {
   if (Array.isArray(node)) {
-    for (const child of node) {
-      collectEditedVideoIds(child, out);
-    }
+    for (const child of node) collectEditedVideoIds(child, out);
     return;
   }
-  if (!isRecord(node)) {
-    return;
-  }
+  if (!isRecord(node)) return;
   const videoId = asText(
     at(node, "playlistEditVideoAddedResultData", "videoId"),
   );
-  if (videoId !== undefined) {
-    out.add(videoId);
-  }
-  for (const child of Object.values(node)) {
-    collectEditedVideoIds(child, out);
-  }
+  if (videoId !== undefined) out.add(videoId);
+  for (const child of Object.values(node)) collectEditedVideoIds(child, out);
 }
 
 function extractLikeVideoId(body: string | null): string | null {
@@ -96,9 +72,7 @@ function extractLikeVideoId(body: string | null): string | null {
     at(json, "target", "videoId") ??
     at(json, "videoId") ??
     at(json, "params", "videoId");
-  if (!id) {
-    return null;
-  }
+  if (!id) return null;
   const videoId = String(id);
   return VIDEO_ID_RE.test(videoId) ? videoId : null;
 }
@@ -125,15 +99,9 @@ function classifyYoutubeiPost(
   const looksLikePlaylistEdit = PLAYLIST_EDIT_HINT_RE.test(url);
   const allVideoIds = new Set<string>([...reqVideoIds, ...resVideoIds]);
 
-  if (allVideoIds.size === 0) {
-    return new Set();
-  }
-  if (resVideoIds.size > 0) {
-    return resVideoIds;
-  }
-  if (hasAddVideoAction || looksLikePlaylistEdit) {
-    return allVideoIds;
-  }
+  if (allVideoIds.size === 0) return new Set();
+  if (resVideoIds.size > 0) return resVideoIds;
+  if (hasAddVideoAction || looksLikePlaylistEdit) return allVideoIds;
   return new Set();
 }
 
@@ -141,9 +109,7 @@ export function inject(): void {
   const emitted = new Set<string>();
 
   function emitSave(videoId: string, trigger = "youtube:save"): void {
-    if (!videoId || emitted.has(videoId)) {
-      return;
-    }
+    if (!videoId || emitted.has(videoId)) return;
     emitted.add(videoId);
     capture(`https://www.youtube.com/watch?v=${videoId}`, trigger);
   }
@@ -164,14 +130,10 @@ export function inject(): void {
       req.method === "POST" &&
       (LIKE_RE.test(req.url) || YOUTUBEI_RE.test(req.url)),
     async onResponse(req, res) {
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
       if (LIKE_RE.test(req.url)) {
         const id = extractLikeVideoId(await req.readBody());
-        if (id) {
-          emitSave(id, "youtube:like");
-        }
+        if (id) emitSave(id, "youtube:like");
         return;
       }
       if (YOUTUBEI_RE.test(req.url)) {
@@ -179,9 +141,7 @@ export function inject(): void {
       }
     },
     onBeacon(url, body) {
-      if (YOUTUBEI_RE.test(url)) {
-        handleYoutubeiPost(url, body, null);
-      }
+      if (YOUTUBEI_RE.test(url)) handleYoutubeiPost(url, body, null);
     },
   });
 }

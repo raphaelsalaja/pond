@@ -31,9 +31,7 @@ export async function startArchiveBackfill(
   ok: true;
   queued: number;
 }> {
-  if (!(await autoArchive())) {
-    return { ok: true, queued: 0 };
-  }
+  if (!(await autoArchive())) return { ok: true, queued: 0 };
   /** archive-page pulls in the WARC stack; IPC handlers import this module at launch. */
   const { ARCHIVE_VERSION, hasWarcArchive, readArchivedMeta } =
     await import("../pipeline/workers/archive-page");
@@ -69,9 +67,7 @@ export async function startArchiveBackfill(
     }
   }
 
-  if (candidates.length === 0) {
-    return { ok: true, queued: 0 };
-  }
+  if (candidates.length === 0) return { ok: true, queued: 0 };
 
   const withTask = new Set(
     db
@@ -119,12 +115,8 @@ export async function startArchiveBackfill(
         ),
       )
       .get();
-    if (blocked) {
-      continue;
-    }
-    if (!rependArchiveTasks(db, id, now)) {
-      continue;
-    }
+    if (blocked) continue;
+    if (!rependArchiveTasks(db, id, now)) continue;
     if (withTask.has(id)) {
       db.update(tasks)
         .set({
@@ -155,9 +147,7 @@ export async function startArchiveBackfill(
     queued += 1;
   }
 
-  if (queued === 0) {
-    return { ok: true, queued };
-  }
+  if (queued === 0) return { ok: true, queued };
   log.info("[pond archive-backfill] queued web saves for archiving", {
     queued,
   });
@@ -185,9 +175,7 @@ export async function archiveSiteForSave(
   }
 
   const now = new Date();
-  if (!rependArchiveTasks(db, saveId, now)) {
-    return { ok: false };
-  }
+  if (!rependArchiveTasks(db, saveId, now)) return { ok: false };
   const payload = { scope: "site" as const };
   const existing = db
     .select({ id: tasks.id })

@@ -130,13 +130,9 @@ export function createAppleLanguageModel(
       options.abortSignal,
     );
     options.abortSignal?.throwIfAborted();
-    if (!reply.ok) {
-      throw new Error(appleErrorMessage(reply.error));
-    }
+    if (!reply.ok) throw new Error(appleErrorMessage(reply.error));
     const content = contentSchema.safeParse(reply.content);
-    if (!content.success) {
-      throw new Error(appleErrorMessage("failed"));
-    }
+    if (!content.success) throw new Error(appleErrorMessage("failed"));
     const { call, text } = content.data;
     if (
       (call && !tools.some((tool) => tool.name === call.tool)) ||

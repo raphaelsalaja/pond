@@ -73,9 +73,7 @@ export async function syncThreads(
       harvestThreadsList(kind, args, {
         partition,
         onProgress: (p) => {
-          if (signal.aborted) {
-            return;
-          }
+          if (signal.aborted) return;
           const message =
             p.phase === "hydrate"
               ? "Loading"
@@ -148,9 +146,7 @@ export async function syncThreads(
       listKinds: e.listKinds,
     })),
   );
-  for (const id of relisted) {
-    knownIds.delete(id);
-  }
+  for (const id of relisted) knownIds.delete(id);
 
   const allFresh = entries.filter((e) => !knownIds.has(e.postId));
   const recovery = entries.filter((e) => failedSourceIds.has(e.postId));
@@ -207,12 +203,8 @@ export async function syncThreads(
     queue.map((entry) => {
       const item: EnqueueItem = { url: entry.url };
       const seed = buildThreadsSavedSeed(entry);
-      if (seed) {
-        item.seed = seed;
-      }
-      if (entry.listKinds) {
-        item.listKinds = entry.listKinds;
-      }
+      if (seed) item.seed = seed;
+      if (entry.listKinds) item.listKinds = entry.listKinds;
       return item;
     }),
     { trigger: "sync:threads", accountId, generationId },

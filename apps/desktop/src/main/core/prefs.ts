@@ -94,9 +94,7 @@ async function resolvePondSlice(
   stored: StoredPrefs,
   libraryId: string,
 ): Promise<DeepPartial<PondPrefs>> {
-  if (isUnboundLibraryId(libraryId)) {
-    return stored.pending ?? {};
-  }
+  if (isUnboundLibraryId(libraryId)) return stored.pending ?? {};
 
   let bundle: DeepPartial<PondPrefs> | null;
   try {
@@ -107,9 +105,7 @@ async function resolvePondSlice(
     });
     return stored.pending ?? {};
   }
-  if (bundle) {
-    return bundle;
-  }
+  if (bundle) return bundle;
 
   const seed = mergePondSlice(stored.pending ?? {});
   try {
@@ -132,9 +128,7 @@ async function loadSettings(): Promise<SettingsCache> {
   try {
     const cached = settingsCache.peek();
     const libraryId = currentLibraryId();
-    if (cached && cached.libraryId === libraryId) {
-      return cached;
-    }
+    if (cached && cached.libraryId === libraryId) return cached;
     settingsCache.invalidate();
     return await settingsCache.get();
   } catch (error) {

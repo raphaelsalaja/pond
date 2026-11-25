@@ -108,13 +108,9 @@ function readTheme(value: JsonValue | undefined): ThemePreference {
 
 function readFlags(value: JsonValue | undefined, fallback: SourceFlags) {
   const flags = { ...fallback };
-  if (!isRecord(value)) {
-    return flags;
-  }
+  if (!isRecord(value)) return flags;
   for (const source of SOURCES) {
-    if (source in value) {
-      flags[source] = Boolean(value[source]);
-    }
+    if (source in value) flags[source] = Boolean(value[source]);
   }
   return flags;
 }
@@ -126,9 +122,7 @@ function flagsFromPond(
   const next = { ...fallback };
   for (const source of SOURCES) {
     const flag = flags[source];
-    if (flag !== undefined) {
-      next[source] = flag;
-    }
+    if (flag !== undefined) next[source] = flag;
   }
   return next;
 }

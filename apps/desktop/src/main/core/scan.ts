@@ -68,14 +68,10 @@ export async function reconcileLibraryIndex(
         .from(libraryScan)
         .where(eq(libraryScan.itemId, id));
 
-      if (existing[0] && existing[0].mtimeMs === mtimeMs) {
-        return;
-      }
+      if (existing[0] && existing[0].mtimeMs === mtimeMs) return;
       const read = await readSaveMetadata(id, root);
       if (read.status !== "ok") {
-        if (await markMissingOriginalsFailed(runtime, id, mtimeMs)) {
-          updated++;
-        }
+        if (await markMissingOriginalsFailed(runtime, id, mtimeMs)) updated++;
         return;
       }
       const { metadata } = read;
@@ -196,9 +192,7 @@ export async function reconcileLibraryIndex(
           stampScan(tx, id, mtimeMs);
           return inserted;
         });
-        if (action) {
-          runtime.changed(action);
-        }
+        if (action) runtime.changed(action);
         updated++;
       } catch (error) {
         log.warn("[pond scan] upsert failed", { id, error });
@@ -240,13 +234,9 @@ async function markRowsWithMissingOriginals(
       continue;
     }
     missingFiles.push({ id: row.id, title: row.title });
-    if (row.status !== "complete") {
-      continue;
-    }
+    if (row.status !== "complete") continue;
     await runtime.mutate(async () => {
-      if (await markMissingOriginalsFailed(runtime, row.id, 0)) {
-        updated++;
-      }
+      if (await markMissingOriginalsFailed(runtime, row.id, 0)) updated++;
     });
   }
   return { updated, missingFiles };
@@ -285,9 +275,7 @@ async function markMissingOriginalsFailed(
     stampScan(tx, id, mtimeMs);
     return inserted;
   });
-  if (action) {
-    runtime.changed(action);
-  }
+  if (action) runtime.changed(action);
   return true;
 }
 
@@ -305,9 +293,7 @@ function restoreCompleteStatus<T extends object>(
   update: T,
   restore: boolean,
 ): T | (T & { status: "complete" }) {
-  if (!restore) {
-    return update;
-  }
+  if (!restore) return update;
   return { ...update, status: "complete" };
 }
 
@@ -336,9 +322,7 @@ async function originalsPresent(
       const actual = await libraryMediaMetadata(
         join(root, "items", `${id}.info`, file.path),
       );
-      if (actual.originalSize !== file.size) {
-        return false;
-      }
+      if (actual.originalSize !== file.size) return false;
     } catch {
       return false;
     }

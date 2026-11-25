@@ -70,9 +70,7 @@ export function useFolderTreeState(folderRows: Array<Folder>) {
   const parentIds = useMemo(() => {
     const ids = new Set<string>();
     for (const row of folderRows) {
-      if (row.parentId) {
-        ids.add(row.parentId);
-      }
+      if (row.parentId) ids.add(row.parentId);
     }
     return ids;
   }, [folderRows]);
@@ -88,9 +86,7 @@ export function useFolderTreeState(folderRows: Array<Folder>) {
       const seen = new Set<string>();
       while (current && !seen.has(current)) {
         seen.add(current);
-        if (next.delete(current)) {
-          changed = true;
-        }
+        if (next.delete(current)) changed = true;
         current = parents.get(current) ?? null;
       }
       return changed ? persistCollapsedFolders(next) : previous;
@@ -100,11 +96,8 @@ export function useFolderTreeState(folderRows: Array<Folder>) {
   function toggleFolder(id: string): void {
     setCollapsed((previous) => {
       const next = new Set(previous);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return persistCollapsedFolders(next);
     });
   }
@@ -113,14 +106,9 @@ export function useFolderTreeState(folderRows: Array<Folder>) {
     setCollapsed((previous) => {
       const next = new Set(previous);
       for (const row of folderRows) {
-        if (row.parentId !== parentId || !parentIds.has(row.id)) {
-          continue;
-        }
-        if (expanded) {
-          next.add(row.id);
-        } else {
-          next.delete(row.id);
-        }
+        if (row.parentId !== parentId || !parentIds.has(row.id)) continue;
+        if (expanded) next.add(row.id);
+        else next.delete(row.id);
       }
       return persistCollapsedFolders(next);
     });
@@ -131,11 +119,8 @@ export function useFolderTreeState(folderRows: Array<Folder>) {
       const next = new Set(previous);
       const expand = [...parentIds].some((id) => previous.has(id));
       for (const id of parentIds) {
-        if (expand) {
-          next.delete(id);
-        } else {
-          next.add(id);
-        }
+        if (expand) next.delete(id);
+        else next.add(id);
       }
       return persistCollapsedFolders(next);
     });
@@ -163,9 +148,7 @@ export function useRevealFolderDrop(
   revealFolder: (id: string) => void,
 ): void {
   useEffect(() => {
-    if (folderDrop?.kind !== "into") {
-      return;
-    }
+    if (folderDrop?.kind !== "into") return;
     const timer = window.setTimeout(() => revealFolder(folderDrop.id), 600);
     return () => window.clearTimeout(timer);
   }, [folderDrop, revealFolder]);

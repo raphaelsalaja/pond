@@ -155,9 +155,7 @@ export function rotateBundleBackups(
   files: Array<string>,
 ): void {
   const present = files.filter((f) => existsSync(f));
-  if (present.length === 0) {
-    return;
-  }
+  if (present.length === 0) return;
 
   const stamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
   const target = join(backupDir, stamp);
@@ -202,18 +200,14 @@ export function createDebouncedTask(
 
   return {
     schedule() {
-      if (timer) {
-        clearTimeout(timer);
-      }
+      if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         timer = null;
         void run();
       }, waitMs);
     },
     async flush() {
-      if (!timer) {
-        return;
-      }
+      if (!timer) return;
       clearTimeout(timer);
       timer = null;
       await run();

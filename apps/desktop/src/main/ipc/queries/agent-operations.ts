@@ -112,13 +112,9 @@ export function agentOperationsForQueries(
     }
     const queryName = name;
     const access = queryOperationAccess[queryName];
-    if (access === "hidden") {
-      return [];
-    }
+    if (access === "hidden") return [];
     const handler: QueryHandler | undefined = registry[queryName];
-    if (!handler) {
-      return [];
-    }
+    if (!handler) return [];
     return [
       {
         name,

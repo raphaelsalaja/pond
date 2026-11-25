@@ -234,16 +234,12 @@ export function pondOperationTools(
         const result = await applyPondOperation(request, current());
         input.signal.throwIfAborted();
         const text = JSON.stringify(result);
-        if (text.length <= 16_000) {
-          return { status: "complete", result };
-        }
+        if (text.length <= 16_000) return { status: "complete", result };
         const resultId = `result-${++resultSequence}`;
         results.set(resultId, text);
         if (results.size > 4) {
           const oldest = results.keys().next().value;
-          if (oldest) {
-            results.delete(oldest);
-          }
+          if (oldest) results.delete(oldest);
         }
         return {
           status: "complete",

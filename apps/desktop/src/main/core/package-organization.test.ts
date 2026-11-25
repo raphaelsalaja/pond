@@ -115,9 +115,7 @@ describe("portable library organization", () => {
       "missing folder",
     );
     const group = incoming.views[0];
-    if (!group) {
-      throw new Error("Missing test group");
-    }
+    if (!group) throw new Error("Missing test group");
     group.parent_id = group.id;
     expect(() =>
       mergePackageOrganization(
@@ -131,9 +129,7 @@ describe("portable library organization", () => {
     const existing = organization();
     const incoming = organization();
     const tag = incoming.tags[0];
-    if (!tag) {
-      throw new Error("Missing test tag");
-    }
+    if (!tag) throw new Error("Missing test tag");
     tag.name = "PRINT";
     tag.description = "Replacement";
     const merged = mergePackageOrganization(

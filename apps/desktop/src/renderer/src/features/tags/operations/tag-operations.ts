@@ -15,15 +15,11 @@ export function createTagOperations(client: TagClient) {
   return {
     async create(kind: TagEntity, raw: string) {
       const name = normalizeLabelName(raw);
-      if (name) {
-        await client.create(kind, name);
-      }
+      if (name) await client.create(kind, name);
     },
     async rename(kind: TagEntity, from: string, raw: string) {
       const to = kind === "group" ? raw.trim() : normalizeLabelName(raw);
-      if (!to) {
-        return;
-      }
+      if (!to) return;
       if (
         kind === "group" ? from === to : from.toLowerCase() === to.toLowerCase()
       ) {
@@ -38,9 +34,7 @@ export function createTagOperations(client: TagClient) {
     },
     async mergeTags(names: Array<string>, raw: string) {
       const to = normalizeLabelName(raw);
-      if (!to) {
-        return;
-      }
+      if (!to) return;
       for (const name of names) {
         if (name.toLowerCase() !== to.toLowerCase()) {
           await client.merge(name, to);
@@ -54,9 +48,7 @@ export function createTagOperations(client: TagClient) {
       await client.removeFromGroup(tag, group);
     },
     async moveToGroup(tag: string, from: string, to: string) {
-      if (from === to) {
-        return;
-      }
+      if (from === to) return;
       await client.addToGroup(tag, to);
       await client.removeFromGroup(tag, from);
     },

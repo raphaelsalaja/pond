@@ -21,12 +21,8 @@ function detailMarkdown(save: ApiSave, preview: string | null | undefined): stri
     parts.push(`<img src="${pathToFileURL(preview).href}" height="220" />`);
   }
   parts.push(`## ${escapeMarkdown(saveTitle(save))}`);
-  if (save.description && save.description !== save.title) {
-    parts.push(escapeMarkdown(save.description));
-  }
-  if (save.note) {
-    parts.push(`---\n\n**Note**\n\n${save.note}`);
-  }
+  if (save.description && save.description !== save.title) parts.push(escapeMarkdown(save.description));
+  if (save.note) parts.push(`---\n\n**Note**\n\n${save.note}`);
   return parts.join("\n\n");
 }
 

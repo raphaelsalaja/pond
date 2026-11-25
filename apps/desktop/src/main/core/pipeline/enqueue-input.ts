@@ -58,13 +58,9 @@ export function normalizeUrl(rawUrl: string): string {
     }
     const repo = firstMatch(url, GITHUB_PATTERNS)?.[1];
     /** GitHub repo names are case-insensitive, so every spelling of a repo lands on one save. */
-    if (repo) {
-      return `https://github.com/${repo.toLowerCase()}`;
-    }
+    if (repo) return `https://github.com/${repo.toLowerCase()}`;
     const shared = OPEN_SUBSTACK_POST.exec(`${url.host}${url.pathname}`);
-    if (shared) {
-      return `https://${shared[1]}.substack.com/p/${shared[2]}`;
-    }
+    if (shared) return `https://${shared[1]}.substack.com/p/${shared[2]}`;
     return url.toString();
   } catch {
     return rawUrl;
@@ -113,9 +109,7 @@ export function normalizeEnqueueItems(
       sourceId,
       listKinds,
     };
-    if (item.seed) {
-      candidate.seed = item.seed;
-    }
+    if (item.seed) candidate.seed = item.seed;
     byKey.set(key, candidate);
     candidates.push(candidate);
   }

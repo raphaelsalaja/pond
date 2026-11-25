@@ -50,9 +50,7 @@ export function buildSearchScopeItems({
       indicator: "check",
       checked: all,
       onCheckedChange: (checked) => {
-        if (!checked) {
-          return;
-        }
+        if (!checked) return;
         onChange({
           title: true,
           description: true,

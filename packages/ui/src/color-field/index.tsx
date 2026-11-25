@@ -61,9 +61,7 @@ function Root({
   if (value !== seen) {
     setSeen(value);
     const committed = normalize(draft);
-    if (!committed || !sameHex(committed, value)) {
-      setDraft(value);
-    }
+    if (!committed || !sameHex(committed, value)) setDraft(value);
   }
 
   const applied = normalize(value);
@@ -71,16 +69,12 @@ function Root({
   const commit = (next: string, display: string) => {
     setDraft(display);
     const normalized = normalize(next);
-    if (normalized && !sameHex(normalized, value)) {
-      onChange(normalized);
-    }
+    if (normalized && !sameHex(normalized, value)) onChange(normalized);
   };
 
   const handleBlur = () => {
     const normalized = normalize(draft);
-    if (!normalized || sameHex(normalized, value)) {
-      setDraft(value);
-    }
+    if (!normalized || sameHex(normalized, value)) setDraft(value);
   };
 
   return (

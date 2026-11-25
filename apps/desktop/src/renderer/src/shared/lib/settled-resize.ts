@@ -109,9 +109,7 @@ export function observeSettledSize(
       host.cancelFrame(frame);
       frame = 0;
     }
-    if (timer) {
-      clearTimeout(timer);
-    }
+    if (timer) clearTimeout(timer);
     timer = window.setTimeout(apply, SETTLE_MS);
   };
   const onTransitionEnd = (event: TransitionEvent) => {

@@ -43,9 +43,7 @@ export function LinkField({
         /** A single-line field drops the newlines between pasted links. */
         onPaste={(event) => {
           const links = extractLinks(event.clipboardData.getData("text"));
-          if (links.length < 2) {
-            return;
-          }
+          if (links.length < 2) return;
           event.preventDefault();
           onValueChange(links.join(" "));
         }}

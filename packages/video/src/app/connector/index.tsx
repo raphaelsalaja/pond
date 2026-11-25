@@ -37,15 +37,9 @@ const offset = (distance: number) =>
   distance >= 0 ? 0.5 * distance : 0.25 * 25 * Math.sqrt(-distance);
 
 function control(end: End, other: { x: number; y: number }) {
-  if (end.side === "left") {
-    return [end.x - offset(end.x - other.x), end.y];
-  }
-  if (end.side === "right") {
-    return [end.x + offset(other.x - end.x), end.y];
-  }
-  if (end.side === "top") {
-    return [end.x, end.y - offset(end.y - other.y)];
-  }
+  if (end.side === "left") return [end.x - offset(end.x - other.x), end.y];
+  if (end.side === "right") return [end.x + offset(other.x - end.x), end.y];
+  if (end.side === "top") return [end.x, end.y - offset(end.y - other.y)];
   return [end.x, end.y + offset(other.y - end.y)];
 }
 

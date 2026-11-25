@@ -26,9 +26,7 @@ const userText = z.object({
 export function latestUserText(messages: AgentStreamRequest["messages"]) {
   for (let index = messages.length - 1; index >= 0; index--) {
     const message = messages[index];
-    if (message?.role !== "user") {
-      continue;
-    }
+    if (message?.role !== "user") continue;
     const text = message.parts
       .flatMap((part) => {
         const parsed = userText.safeParse(part);
@@ -36,9 +34,7 @@ export function latestUserText(messages: AgentStreamRequest["messages"]) {
       })
       .join("")
       .trim();
-    if (text) {
-      return text;
-    }
+    if (text) return text;
   }
   return "";
 }
@@ -71,9 +67,7 @@ export async function streamAgentTurn(
   }
   await convertToModelMessages(validated.data);
   const content = latestUserText(input.messages);
-  if (!content) {
-    throw new Error("Write a message before sending.");
-  }
+  if (!content) throw new Error("Write a message before sending.");
   const stream = createUIMessageStream({
     originalMessages: validated.data,
     execute: async ({ writer }) => {
@@ -111,9 +105,7 @@ export async function streamAgentTurn(
         deps.chat,
         onEvent,
       );
-      if (textOpen) {
-        writer.write({ type: "text-end", id: "text-1" });
-      }
+      if (textOpen) writer.write({ type: "text-end", id: "text-1" });
       const rows =
         result.accepted === false ? [] : await deps.listMessages(result.chatId);
       const last = rows.at(-1);

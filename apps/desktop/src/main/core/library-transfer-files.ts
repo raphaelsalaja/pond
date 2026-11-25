@@ -62,9 +62,7 @@ async function readSaves(root: string, includeTrash = false) {
     for (const entry of await readdir(join(root, bucket), {
       withFileTypes: true,
     }).catch(() => [])) {
-      if (!entry.isDirectory() || !isSaveFolderName(entry.name)) {
-        continue;
-      }
+      if (!entry.isDirectory() || !isSaveFolderName(entry.name)) continue;
       const directory = join(root, bucket, entry.name);
       const infoPath = join(directory, "info.json");
       const info = StoredInfoDocSchema.parse(
@@ -154,9 +152,7 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
               throw new Error("The package folder hierarchy is invalid.");
             }
             const folder = pending.splice(index, 1)[0];
-            if (!folder) {
-              throw new Error("The package folder is missing.");
-            }
+            if (!folder) throw new Error("The package folder is missing.");
             const parent = folder.parentId
               ? (mapped.get(folder.parentId) ?? null)
               : null;
@@ -324,9 +320,7 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
           );
           let addedTags = false;
           for (const name of save.tags) {
-            if (knownTags.has(name.toLowerCase())) {
-              continue;
-            }
+            if (knownTags.has(name.toLowerCase())) continue;
             tagCatalog.tags.push({
               id: ulid(),
               name,
@@ -366,9 +360,7 @@ export function packageLibrary(libraryPath: string, destination: string) {
     const organization = await readOrganization(root);
     const items: Array<ExportItem> = [];
     for (const { directory, info } of await readSaves(root)) {
-      if (info.deletedAt) {
-        continue;
-      }
+      if (info.deletedAt) continue;
       const sourcePath = join(directory, "source.json");
       const raw = await readFile(sourcePath)
         .then((value) => value.toString("utf8"))

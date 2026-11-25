@@ -110,17 +110,13 @@ const runtime: SplitSaveRuntime = {
       setUserTitleLock(to, true);
     }
     const updated = await readSave(to);
-    if (updated) {
-      await writeSaveInfo(updated);
-    }
+    if (updated) await writeSaveInfo(updated);
   },
   async discard(ids) {
     const rows = (await Promise.all(ids.map(readSave))).filter(
       (row): row is Save => row !== null,
     );
-    if (rows.length === 0) {
-      return;
-    }
+    if (rows.length === 0) return;
     await executeBatch(
       rows.map((row) => ({
         kind: "purge",
@@ -146,23 +142,17 @@ const runtime: SplitSaveRuntime = {
   },
   async refresh(id) {
     const save = await readSave(id);
-    if (!save) {
-      return;
-    }
+    if (!save) return;
     await ensureSaveThumbnail(id, save);
     const updated = await readSave(id);
-    if (updated) {
-      await analyzeSaveColors(updated, false, "split-save:colors");
-    }
+    if (updated) await analyzeSaveColors(updated, false, "split-save:colors");
   },
   newId: ulid,
 };
 
 /** The pipeline splits a new post during finalize, while it's still ingesting. */
 function splittableStatus(save: Save, actor: ActorKind): boolean {
-  if (save.status === "complete") {
-    return true;
-  }
+  if (save.status === "complete") return true;
   return actor === "system" && save.status === "ingesting";
 }
 
@@ -182,18 +172,14 @@ export async function runSplitSave(
     return { ok: false, reason: "missing" };
   }
   const plan = planSaveSplit(save);
-  if (!plan) {
-    return { ok: false, reason: "single" };
-  }
+  if (!plan) return { ok: false, reason: "single" };
   const rows = buildSlideRows(save, plan, dependencies.newId);
   const created: Array<string> = [];
   const fresh: Array<string> = [];
   try {
     for (const [index, row] of rows.entries()) {
       const slide = plan.slides[index];
-      if (!slide || !row.id) {
-        continue;
-      }
+      if (!slide || !row.id) continue;
       const existing = await dependencies.findSlide(row);
       const slideId = existing ?? row.id;
       if (!existing) {
@@ -234,9 +220,7 @@ export async function splitSave(
   const result = await runLibraryTransfer(() =>
     withMutationScope(() => runSplitSave(id, actor, dependencies)),
   );
-  if (result.ok) {
-    void refreshAll([id, ...result.created], dependencies);
-  }
+  if (result.ok) void refreshAll([id, ...result.created], dependencies);
   return result;
 }
 
@@ -264,15 +248,11 @@ export async function splitSaves(
       failed = true;
       return null;
     });
-    if (!result?.ok) {
-      continue;
-    }
+    if (!result?.ok) continue;
     split += 1;
     created += result.created.length;
   }
-  if (split > 0) {
-    return { ok: true, split, created };
-  }
+  if (split > 0) return { ok: true, split, created };
   return {
     ok: false,
     error: failed

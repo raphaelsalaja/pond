@@ -19,9 +19,7 @@ export class FinalizeIncompleteError extends Error {
 
 export async function runFinalize(saveId: string): Promise<void> {
   const save = await readSave(saveId);
-  if (!save) {
-    return;
-  }
+  if (!save) return;
 
   const taskRows = await fetchTaskRows(saveId);
   const report = computeCaptureReport(save);
@@ -72,9 +70,7 @@ export async function runFinalize(saveId: string): Promise<void> {
 
   const { splitNewPost } = await import("../../split-on-import");
   const current = await splitNewPost(save);
-  if (!current) {
-    return;
-  }
+  if (!current) return;
   const { writeSaveBlurhash } = await import("../../save-blurhash");
   await Promise.all([writeDominantColors(current), writeSaveBlurhash(current)]);
 
@@ -98,15 +94,11 @@ async function writeDominantColors(save: Save): Promise<void> {
   }
   const files = save.files ?? [];
   const cover = pickCardFile(files) ?? files[0];
-  if (!cover) {
-    return;
-  }
+  if (!cover) return;
   const { extractPalette } = await import("../../../lib/palette");
   const { saveFile } = await import("../../../paths");
   const colors = await extractPalette(saveFile(save.id, cover.path));
-  if (colors.length === 0) {
-    return;
-  }
+  if (colors.length === 0) return;
   await persistSave(
     save.id,
     { dominantColors: colors },
@@ -183,11 +175,8 @@ function partition(
   const present: Array<CaptureField> = [];
   const missing: Array<CaptureField> = [];
   for (const field of fields) {
-    if (FIELD_PRESENT[field](save)) {
-      present.push(field);
-    } else {
-      missing.push(field);
-    }
+    if (FIELD_PRESENT[field](save)) present.push(field);
+    else missing.push(field);
   }
   return { present, missing };
 }

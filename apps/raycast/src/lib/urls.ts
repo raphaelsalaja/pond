@@ -1,8 +1,6 @@
 export function parseWebUrl(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
-  if (!trimmed || /\s/.test(trimmed)) {
-    return null;
-  }
+  if (!trimmed || /\s/.test(trimmed)) return null;
   try {
     const url = new URL(trimmed);
     return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
@@ -13,9 +11,7 @@ export function parseWebUrl(value: string | null | undefined): string | null {
 
 export function webUrl(value: string | null | undefined): string {
   const url = parseWebUrl(value);
-  if (!url) {
-    throw new Error("Enter a full web address that starts with http:// or https://.");
-  }
+  if (!url) throw new Error("Enter a full web address that starts with http:// or https://.");
   return url;
 }
 
@@ -26,15 +22,11 @@ export function cleanTags(values: ReadonlyArray<string>): Array<string> {
   const tags: Array<string> = [];
   for (const value of values) {
     const tag = value.trim().replace(/^#/, "").trim();
-    if (!tag || seen.has(tag.toLowerCase())) {
-      continue;
-    }
+    if (!tag || seen.has(tag.toLowerCase())) continue;
     seen.add(tag.toLowerCase());
     tags.push(tag);
   }
-  if (tags.length > TAG_LIMIT) {
-    throw new Error(`Use ${TAG_LIMIT} tags or fewer.`);
-  }
+  if (tags.length > TAG_LIMIT) throw new Error(`Use ${TAG_LIMIT} tags or fewer.`);
   return tags;
 }
 

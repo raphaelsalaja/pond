@@ -70,9 +70,7 @@ export function summonShortcutTarget(
   mainWindowFocused: boolean,
   isMac: boolean,
 ): "renderer" | "summon" {
-  if (!mainWindowFocused) {
-    return "summon";
-  }
+  if (!mainWindowFocused) return "summon";
   try {
     const summon = accelerator(
       overrides["app.summon"] ?? GLOBAL_SHORTCUTS["app.summon"].keys,
@@ -102,9 +100,7 @@ export class GlobalShortcutController {
     const desired = new Map<string, GlobalShortcutId>();
     for (const id of ids) {
       const chord = overrides[id] ?? defaultGlobalKeys(id);
-      if (!chord) {
-        continue;
-      }
+      if (!chord) continue;
       const key = accelerator(chord, this.isMac);
       const conflict = desired.get(key);
       if (conflict) {
@@ -151,23 +147,17 @@ export class GlobalShortcutController {
 
   private dispatch(key: string): void {
     const id = this.active.get(key);
-    if (id) {
-      this.actions[id]();
-    }
+    if (id) this.actions[id]();
   }
 
   prepare(overrides: Bindings): Change {
     const desired = this.desired(overrides);
     const staged: Array<string> = [];
     const rollback = () => {
-      for (const key of staged) {
-        this.native.unregister(key);
-      }
+      for (const key of staged) this.native.unregister(key);
     };
     for (const [key, id] of desired) {
-      if (this.active.has(key) || this.configured.get(key) === id) {
-        continue;
-      }
+      if (this.active.has(key) || this.configured.get(key) === id) continue;
       try {
         if (!this.native.register(key, () => this.dispatch(key))) {
           throw new Error("Unavailable");

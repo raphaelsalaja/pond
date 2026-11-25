@@ -23,9 +23,7 @@ function useView(): MissingLibraryView | null {
   const [view, setView] = useState<MissingLibraryView | null>(null);
   useEffect(() => {
     const api = window.pondMissingLibrary;
-    if (!api) {
-      return;
-    }
+    if (!api) return;
     let active = true;
     const apply = (next: MissingLibraryView) => {
       if (active) {
@@ -54,9 +52,7 @@ export function MissingLibraryWindow() {
   const choice = busy ? (answer?.choice ?? null) : null;
 
   const choose = (next: MissingLibraryChoice) => {
-    if (!view || busy) {
-      return;
-    }
+    if (!view || busy) return;
     setAnswer({ attempt: view.attempt, choice: next });
     void window.pondMissingLibrary?.choose(next);
   };

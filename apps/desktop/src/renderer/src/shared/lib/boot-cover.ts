@@ -1,13 +1,9 @@
 const BOOT_FADE_MS = 220;
 
 export function dismissBootCover(): void {
-  if (!globalThis.document) {
-    return;
-  }
+  if (!globalThis.document) return;
   const el = document.getElementById("boot");
-  if (!el || el.dataset.state === "out") {
-    return;
-  }
+  if (!el || el.dataset.state === "out") return;
 
   el.dataset.state = "out";
   el.setAttribute("aria-busy", "false");
@@ -24,9 +20,7 @@ export function dismissBootCover(): void {
   el.addEventListener(
     "transitionend",
     (event) => {
-      if (event.propertyName !== "opacity") {
-        return;
-      }
+      if (event.propertyName !== "opacity") return;
       remove();
     },
     { once: true },

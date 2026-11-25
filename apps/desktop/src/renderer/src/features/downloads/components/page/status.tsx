@@ -43,9 +43,7 @@ export function downloadTableStatus(
   row: DownloadRow,
   paused: boolean,
 ): DownloadTableStatus {
-  if (row.status === "complete") {
-    return "complete";
-  }
+  if (row.status === "complete") return "complete";
   if (
     row.status === "failed" ||
     row.status === "blocked" ||
@@ -66,15 +64,9 @@ export function downloadTableStatus(
 }
 
 export function downloadStatusLabel(row: DownloadRow, paused: boolean): string {
-  if (isDownloadStopped(row, paused)) {
-    return "Paused";
-  }
-  if (row.status === "waiting") {
-    return "Waiting";
-  }
-  if (row.status === "parked") {
-    return `Waiting for ${sourceLabel(row.source)}`;
-  }
+  if (isDownloadStopped(row, paused)) return "Paused";
+  if (row.status === "waiting") return "Waiting";
+  if (row.status === "parked") return `Waiting for ${sourceLabel(row.source)}`;
   if (row.status === "retrying") {
     if (row.nextRunAt === null || row.nextRunAt === undefined) {
       return "Retrying";
@@ -84,9 +76,7 @@ export function downloadStatusLabel(row: DownloadRow, paused: boolean): string {
       return `Retrying in ${seconds}s`;
     }
     const minutes = Math.ceil(seconds / 60);
-    if (minutes < 60) {
-      return `Retrying in ${minutes}m`;
-    }
+    if (minutes < 60) return `Retrying in ${minutes}m`;
     return `Retrying in ${Math.ceil(minutes / 60)}h`;
   }
   return STATUS_LABELS[downloadTableStatus(row, paused)];

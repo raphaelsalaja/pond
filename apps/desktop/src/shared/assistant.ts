@@ -291,9 +291,7 @@ export function assistantCatalog(id: string): AssistantCatalog | undefined {
 export type ProviderGroup = "cloud" | "local" | "subscription";
 
 export function providerGroup(id: AssistantProvider): ProviderGroup {
-  if (id === "codex" || id === "claude-code") {
-    return "subscription";
-  }
+  if (id === "codex" || id === "claude-code") return "subscription";
   return assistantCatalog(id)?.local ? "local" : "cloud";
 }
 

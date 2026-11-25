@@ -100,9 +100,7 @@ export function FishIntroDialog() {
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) {
-          fishIntroDialog.close();
-        }
+        if (!next) fishIntroDialog.close();
       }}
     >
       <Dialog.Portal>

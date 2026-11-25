@@ -33,24 +33,16 @@ export class GitHubRepoExtractor implements Extractor {
       })()`;
 
   authCookies(name: string, value?: string): boolean {
-    if (name === "user_session") {
-      return value === undefined || value.length > 0;
-    }
-    if (name === "logged_in") {
-      return value === undefined || value === "yes";
-    }
+    if (name === "user_session") return value === undefined || value.length > 0;
+    if (name === "logged_in") return value === undefined || value === "yes";
     return false;
   }
 
   /** Only a bare profile path names you; `owner/repo` belongs to whoever you starred. */
   handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
-    if (segments.length !== 1 || !first) {
-      return null;
-    }
-    if (RESERVED_ROOTS.has(first.toLowerCase())) {
-      return null;
-    }
+    if (segments.length !== 1 || !first) return null;
+    if (RESERVED_ROOTS.has(first.toLowerCase())) return null;
     return /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/.test(first) ? first : null;
   }
 
@@ -70,9 +62,7 @@ export class GitHubRepoExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const repo = firstMatch(input.url, this.validUrl)?.[1]?.toLowerCase();
-    if (!repo) {
-      throw new TerminalError("could not parse github repo");
-    }
+    if (!repo) throw new TerminalError("could not parse github repo");
     return captureFromSource({
       url: `https://github.com/${repo}`,
       source: "github",

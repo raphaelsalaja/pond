@@ -30,9 +30,7 @@ export async function* readLibraryMediaRange(input: {
   start: number;
   endExclusive: number;
 }): AsyncGenerator<Buffer> {
-  if (input.start === input.endExclusive) {
-    return;
-  }
+  if (input.start === input.endExclusive) return;
   const stream = createReadStream(input.path, {
     start: input.start,
     end: input.endExclusive - 1,

@@ -17,9 +17,7 @@ const source = (path) => readFile(`${HARVEST}${path}`, "utf8");
 
 function match(text, pattern, label) {
   const found = pattern.exec(text)?.[1];
-  if (!found) {
-    throw new Error(`Couldn't find ${label} in Pond's source`);
-  }
+  if (!found) throw new Error(`Couldn't find ${label} in Pond's source`);
   return found;
 }
 
@@ -40,18 +38,14 @@ async function fetchText(url, init = {}) {
     signal: AbortSignal.timeout(20_000),
     ...init,
   });
-  if (!response.ok) {
-    throw new Error(`${url} answered ${response.status}`);
-  }
+  if (!response.ok) throw new Error(`${url} answered ${response.status}`);
   return response.text();
 }
 
 /** Reads the JSON object that starts right after `marker`, honoring strings so braces inside them don't count. */
 function jsonAfter(text, marker) {
   const start = text.indexOf("{", text.indexOf(marker) + marker.length);
-  if (text.indexOf(marker) < 0 || start < 0) {
-    return null;
-  }
+  if (text.indexOf(marker) < 0 || start < 0) return null;
   let depth = 0;
   let quoted = false;
   for (let index = start; index < text.length; index += 1) {
@@ -81,9 +75,7 @@ function scriptJson(html, id) {
 }
 
 function assert(condition, message) {
-  if (!condition) {
-    throw new Error(message);
-  }
+  if (!condition) throw new Error(message);
 }
 
 async function cosmosSchema() {

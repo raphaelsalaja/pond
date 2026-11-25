@@ -101,9 +101,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       : null;
   }, [primary, save]);
   const hasVideoDims = useMemo(() => {
-    if (!unit?.isVideo) {
-      return false;
-    }
+    if (!unit?.isVideo) return false;
     const primary = (save.files ?? []).find((f) => f.path === unit.key) ?? null;
     if (
       primary?.width &&
@@ -122,25 +120,15 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   }, [save]);
 
   const slides = useMemo(() => {
-    if (!unit || unit.isVideo) {
-      return null;
-    }
+    if (!unit || unit.isVideo) return null;
     const images = mediaUnits.filter((candidate) => !candidate.isVideo);
-    if (images.length < 2) {
-      return null;
-    }
+    if (images.length < 2) return null;
     const idx = images.findIndex((u) => u.url === unit.url);
-    if (idx < 0) {
-      return null;
-    }
-    if (idx === 0) {
-      return images;
-    }
+    if (idx < 0) return null;
+    if (idx === 0) return images;
     const reordered = [...images];
     const [primary] = reordered.splice(idx, 1);
-    if (primary) {
-      reordered.unshift(primary);
-    }
+    if (primary) reordered.unshift(primary);
     return reordered;
   }, [mediaUnits, unit]);
 
@@ -150,9 +138,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       const rect = e.currentTarget.getBoundingClientRect();
-      if (rect.width === 0) {
-        return;
-      }
+      if (rect.width === 0) return;
       const pointerRatio = Math.min(
         1,
         Math.max(0, (e.clientX - rect.left) / rect.width),
@@ -167,9 +153,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
           `${Math.min(1, Math.max(0, (e.clientY - rect.top) / rect.height)) * 100}%`,
         );
       }
-      if (!slides || viewer.thumbnailBehavior === "still") {
-        return;
-      }
+      if (!slides || viewer.thumbnailBehavior === "still") return;
       const ratio =
         viewer.thumbnailSpeed === "slow"
           ? pointerRatio ** 1.6

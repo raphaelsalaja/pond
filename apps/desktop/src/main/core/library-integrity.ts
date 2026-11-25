@@ -90,9 +90,7 @@ async function thumbnailMatchesSource(
     readLibraryMedia(thumbnailPath).catch(() => null),
     readLibraryMedia(sourcePath).catch(() => null),
   ]);
-  if (!thumbnail || !source) {
-    return null;
-  }
+  if (!thumbnail || !source) return null;
   return thumbnailLooksLikeSource(thumbnail, source);
 }
 
@@ -191,9 +189,7 @@ export async function scanLibraryIntegrity(input: {
       row,
       runtime,
     });
-    if (issue) {
-      issues.push(issue);
-    }
+    if (issue) issues.push(issue);
     input.onProgress?.(index + 1, rows.length);
   }
   return issues;
@@ -206,9 +202,7 @@ async function scopedSaves(
   const rows: Array<IntegritySave> = [];
   for (const id of new Set(saveIds)) {
     const row = await runtime.getSave(id);
-    if (row && !row.deletedAt) {
-      rows.push(row);
-    }
+    if (row && !row.deletedAt) rows.push(row);
   }
   return rows;
 }
@@ -220,9 +214,7 @@ export async function inspectCurrentSaveIntegrity(input: {
 }): Promise<InternalLibraryRepairIssue | null> {
   const runtime = input.runtime ?? defaultRuntime;
   const row = await runtime.getSave(input.saveId);
-  if (!row) {
-    return null;
-  }
+  if (!row) return null;
   return inspectSaveIntegrity({ kind: input.kind, row, runtime });
 }
 
@@ -259,9 +251,7 @@ export function findEaglePreviewOriginal(
     return null;
   }
   const name = eaglePreviewName(row.title);
-  if (!name) {
-    return null;
-  }
+  if (!name) return null;
   return (
     db
       .select({ id: saves.id, title: saves.title })
@@ -291,9 +281,7 @@ async function inspectEaglePreview(
     return null;
   }
   const original = await runtime.eaglePreviewOriginal(row.id);
-  if (!original) {
-    return null;
-  }
+  if (!original) return null;
   return issue({
     kind: "eagle-previews",
     row,
@@ -318,32 +306,22 @@ async function inspectThumbnail(
     const path = safePayloadPath(directory, thumbnail.path);
     const inspection = await runtime.inspectPayload(path, thumbnail);
     inspections.set(thumbnail, inspection);
-    if (!inspection.ok) {
-      findings.set(thumbnail, inspection.reason);
-    } else if (await runtime.canRenderThumbnail(path)) {
-      healthy.push(thumbnail);
-    } else {
-      findings.set(thumbnail, "undecodable");
-    }
+    if (!inspection.ok) findings.set(thumbnail, inspection.reason);
+    else if (await runtime.canRenderThumbnail(path)) healthy.push(thumbnail);
+    else findings.set(thumbnail, "undecodable");
   }
   const sourceCandidate = thumbnailSource(row.files);
-  if (!sourceCandidate) {
-    return null;
-  }
+  if (!sourceCandidate) return null;
   const source = row.files.find(
     (file) =>
       file.path === sourceCandidate.path && file.kind === sourceCandidate.kind,
   );
-  if (!source) {
-    return null;
-  }
+  if (!source) return null;
   const sourcePath = safePayloadPath(directory, source.path);
   const mismatched =
     healthy.length > 0 &&
     (await thumbnailsMismatch(healthy, source, sourcePath, directory, runtime));
-  if (healthy.length > 0 && !mismatched) {
-    return null;
-  }
+  if (healthy.length > 0 && !mismatched) return null;
   const sourceInspection = await runtime.inspectPayload(sourcePath, source);
   if (!sourceInspection.ok || !(await runtime.canRenderThumbnail(sourcePath))) {
     return null;
@@ -412,22 +390,16 @@ async function thumbnailsMismatch(
   runtime: LibraryIntegrityRuntime,
 ): Promise<boolean> {
   for (const thumbnail of thumbnails) {
-    if (thumbnail.custom) {
-      return false;
-    }
+    if (thumbnail.custom) return false;
     if (isTextCardThumbnailPath(thumbnail.path)) {
-      if (isVisualMedia(source)) {
-        return true;
-      }
+      if (isVisualMedia(source)) return true;
       continue;
     }
     const matches = await runtime.thumbnailMatchesSource?.(
       safePayloadPath(directory, thumbnail.path),
       sourcePath,
     );
-    if (matches === false) {
-      return true;
-    }
+    if (matches === false) return true;
   }
   return false;
 }
@@ -452,9 +424,7 @@ async function inspectPhysicalNames(
       safePayloadPath(directory, file.path),
       file,
     );
-    if (!payload.ok) {
-      continue;
-    }
+    if (!payload.ok) continue;
     const to = availablePhysicalName(file.path, occupied);
     occupied.add(to.toLowerCase());
     changes.push({ from: file.path, to, payload });
@@ -464,9 +434,7 @@ async function inspectPhysicalNames(
       renameTo: to,
     });
   }
-  if (changes.length === 0) {
-    return null;
-  }
+  if (changes.length === 0) return null;
   return issue({
     kind: "physical-file-names",
     row,
@@ -495,9 +463,7 @@ async function inspectInvalidContent(
       runtime.inspectPayload(safePayloadPath(directory, file.path), file),
     ),
   );
-  if (payloads.some((payload) => payload.ok)) {
-    return null;
-  }
+  if (payloads.some((payload) => payload.ok)) return null;
   return issue({
     kind: "invalid-content",
     row,
@@ -521,22 +487,16 @@ async function inspectSaveMetadata(
   row: IntegritySave,
   runtime: LibraryIntegrityRuntime,
 ): Promise<InternalLibraryRepairIssue | null> {
-  if (row.files.length === 0) {
-    return null;
-  }
+  if (row.files.length === 0) return null;
   const directory = saveDirIn(runtime.root(), row.id);
   const payloads = await Promise.all(
     row.files.map((file) =>
       runtime.inspectPayload(safePayloadPath(directory, file.path), file),
     ),
   );
-  if (payloads.some((payload) => !payload.ok)) {
-    return null;
-  }
+  if (payloads.some((payload) => !payload.ok)) return null;
   const info = await runtime.readInfo(join(directory, "info.json"));
-  if (info.status === "valid" && metadataMatches(row, info.value)) {
-    return null;
-  }
+  if (info.status === "valid" && metadataMatches(row, info.value)) return null;
   return issue({
     kind: "save-metadata",
     row,
@@ -574,9 +534,7 @@ async function inspectPayload(
       return failedPayload("unsafe");
     }
     const file = await lstat(path);
-    if (!file.isFile() || file.isSymbolicLink()) {
-      return failedPayload("unsafe");
-    }
+    if (!file.isFile() || file.isSymbolicLink()) return failedPayload("unsafe");
     const metadata = await libraryMediaMetadata(path);
     if (metadata.originalSize === 0) {
       return failedPayload("empty");
@@ -677,12 +635,8 @@ function availablePhysicalName(name: string, occupied: Set<string>): string {
     .replaceAll(/-+/gu, "-")
     .replaceAll(/[. ]+$/gu, "")
     .slice(0, 180);
-  if (!stem) {
-    stem = "file";
-  }
-  if (reservedName(stem)) {
-    stem = `file-${stem}`;
-  }
+  if (!stem) stem = "file";
+  if (reservedName(stem)) stem = `file-${stem}`;
   let candidate = `${stem}${extension}`;
   let suffix = 2;
   while (occupied.has(candidate.toLowerCase())) {
@@ -759,9 +713,7 @@ function issue(input: {
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) {
-    throw new DOMException("Repair canceled.", "AbortError");
-  }
+  if (signal?.aborted) throw new DOMException("Repair canceled.", "AbortError");
 }
 
 export const libraryIntegrityRuntime = defaultRuntime;

@@ -55,9 +55,7 @@ function parse(url: string, base?: string): URL | null {
 
 export function imageFormat(url: string): string {
   const parsed = parse(url);
-  if (!parsed) {
-    return "Other";
-  }
+  if (!parsed) return "Other";
   const extension = parsed.pathname.split(".").at(-1)?.toLowerCase() ?? "";
   const query =
     parsed.searchParams.get("format") ?? parsed.searchParams.get("fm") ?? "";
@@ -70,9 +68,7 @@ export function imageFormat(url: string): string {
 
 export function imageName(url: string): string {
   const parsed = parse(url);
-  if (!parsed) {
-    return url;
-  }
+  if (!parsed) return url;
   const last = parsed.pathname.split("/").filter(Boolean).at(-1) ?? "";
   let decoded = last;
   try {
@@ -85,9 +81,7 @@ export function imageName(url: string): string {
 
 export function sizeBucket(width: number, height: number): SizeBucket {
   const edge = Math.max(width, height);
-  if (edge >= LARGE_EDGE) {
-    return "large";
-  }
+  if (edge >= LARGE_EDGE) return "large";
   return edge >= MEDIUM_EDGE ? "medium" : "small";
 }
 
@@ -96,14 +90,10 @@ export function largestSrcset(srcset: string, base: string): string | null {
   let best: { url: string; size: number } | null = null;
   for (const entry of srcset.split(/,\s+/)) {
     const [raw, descriptor = "1x"] = entry.trim().split(/\s+/);
-    if (!raw) {
-      continue;
-    }
+    if (!raw) continue;
     const size = Number.parseFloat(descriptor) || 1;
     const url = parse(raw, base)?.href;
-    if (url && (!best || size > best.size)) {
-      best = { url, size };
-    }
+    if (url && (!best || size > best.size)) best = { url, size };
   }
   return best?.url ?? null;
 }
@@ -115,9 +105,7 @@ function isWeb(url: string): boolean {
 function backgroundUrls(value: string, base: string): Array<string> {
   return [...value.matchAll(/url\(\s*(['"]?)(.*?)\1\s*\)/g)].flatMap(
     ([, , raw]) => {
-      if (!raw) {
-        return [];
-      }
+      if (!raw) return [];
       const url = parse(raw, base)?.href;
       return url && isWeb(url) ? [url] : [];
     },
@@ -133,9 +121,7 @@ export function collectCandidates(root: Document): Array<Candidate> {
     width = 0,
     height = 0,
   ) => {
-    if (!url || !isWeb(url)) {
-      return;
-    }
+    if (!url || !isWeb(url)) return;
     const existing = found.get(url);
     if (existing) {
       existing.width ||= width;
@@ -173,9 +159,7 @@ export function collectCandidates(root: Document): Array<Candidate> {
   const share = root.querySelector<HTMLMetaElement>(
     'meta[property="og:image"]',
   );
-  if (share?.content) {
-    add(parse(share.content, base)?.href);
-  }
+  if (share?.content) add(parse(share.content, base)?.href);
   const styled = root.body?.querySelectorAll("*") ?? [];
   for (
     let index = 0;
@@ -183,15 +167,10 @@ export function collectCandidates(root: Document): Array<Candidate> {
     index++
   ) {
     const element = styled[index];
-    if (!element) {
-      continue;
-    }
+    if (!element) continue;
     const background = getComputedStyle(element).backgroundImage;
-    if (background && background !== "none") {
-      for (const url of backgroundUrls(background, base)) {
-        add(url);
-      }
-    }
+    if (background && background !== "none")
+      for (const url of backgroundUrls(background, base)) add(url);
   }
   return [...found.values()];
 }
@@ -239,9 +218,7 @@ export function matchesFilters(
     return false;
   }
   const needle = filters.query.trim().toLowerCase();
-  if (!needle) {
-    return true;
-  }
+  if (!needle) return true;
   return [image.name, image.alt, image.url].some((text) =>
     text.toLowerCase().includes(needle),
   );
@@ -261,14 +238,10 @@ export function facetCounts(
   const counts = new Map<string, FacetCount>();
   for (const image of images) {
     const id = facet(image);
-    if (!id) {
-      continue;
-    }
+    if (!id) continue;
     const count = counts.get(id) ?? { id, total: 0, selected: 0 };
     count.total++;
-    if (selected.has(image.url)) {
-      count.selected++;
-    }
+    if (selected.has(image.url)) count.selected++;
     counts.set(id, count);
   }
   return [...counts.values()].toSorted((a, b) => b.total - a.total);

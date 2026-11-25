@@ -22,9 +22,7 @@ export const tagCreation = {
    */
   takeRequest(): TagCreationRequest | null {
     const state = store.state;
-    if (state.token === 0 || state.token === handledToken) {
-      return null;
-    }
+    if (state.token === 0 || state.token === handledToken) return null;
     handledToken = state.token;
     return state;
   },

@@ -114,9 +114,7 @@ export function ConversionDialog({
     });
   }, [ids]);
   useEffect(() => {
-    if (!converting || conversionOptionsLoaded) {
-      return;
-    }
+    if (!converting || conversionOptionsLoaded) return;
     void Promise.all([
       window.pond.query("conversion.presets", {}),
       window.pond.query("conversion.capabilities", {}),
@@ -145,9 +143,7 @@ export function ConversionDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(value) => {
-        if (!value) {
-          closeConversionDialog();
-        }
+        if (!value) closeConversionDialog();
       }}
     >
       <Dialog.Portal>

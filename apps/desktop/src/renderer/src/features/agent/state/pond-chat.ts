@@ -11,9 +11,7 @@ export function pondChatSession(
   messages: Array<PondUIMessage> = [],
 ) {
   const existing = sessions.get(chatId);
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
   const chat = new Chat<PondUIMessage>({
     id: chatId,
     transport: pondChatTransport(),

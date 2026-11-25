@@ -36,9 +36,7 @@ function replayAssetsDir(): string | null {
     join(app.getAppPath(), "resources", "replay"),
   ].filter(Boolean);
   for (const root of roots) {
-    if (existsSync(join(root, "index.html"))) {
-      return root;
-    }
+    if (existsSync(join(root, "index.html"))) return root;
   }
   return null;
 }

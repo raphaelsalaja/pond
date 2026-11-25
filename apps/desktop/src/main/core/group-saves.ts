@@ -95,15 +95,11 @@ const runtime: GroupSavesRuntime = {
       );
     }
     const updated = await readSave(id);
-    if (updated) {
-      await writeSaveInfo(updated);
-    }
+    if (updated) await writeSaveInfo(updated);
   },
   async discard(id) {
     const row = await readSave(id);
-    if (!row) {
-      return;
-    }
+    if (!row) return;
     await executeBatch([
       {
         kind: "purge",
@@ -129,17 +125,11 @@ const runtime: GroupSavesRuntime = {
   },
   async refresh(id) {
     const save = await readSave(id);
-    if (!save) {
-      return;
-    }
+    if (!save) return;
     await ensureSaveThumbnail(id, save);
-    if (needsPosterRepair(save.files)) {
-      await runEnsurePoster(id);
-    }
+    if (needsPosterRepair(save.files)) await runEnsurePoster(id);
     const updated = await readSave(id);
-    if (updated) {
-      await analyzeSaveColors(updated, false, "group-saves:colors");
-    }
+    if (updated) await analyzeSaveColors(updated, false, "group-saves:colors");
   },
   newId: ulid,
 };
@@ -157,9 +147,7 @@ export async function runGroupSaves(
   dependencies: GroupSavesRuntime,
 ): Promise<GroupSavesResult> {
   const order = [...new Set(ids)];
-  if (order.length < 2) {
-    return { ok: false, error: REFUSALS.count };
-  }
+  if (order.length < 2) return { ok: false, error: REFUSALS.count };
   const byId = new Map(
     (await dependencies.read(order)).map((save) => [save.id, save]),
   );
@@ -167,12 +155,8 @@ export async function runGroupSaves(
   for (const id of order) {
     const save = byId.get(id);
     const refusal = save ? canGroupMember(save) : "missing";
-    if (refusal) {
-      return { ok: false, error: REFUSALS[refusal] };
-    }
-    if (save) {
-      members.push(save);
-    }
+    if (refusal) return { ok: false, error: REFUSALS[refusal] };
+    if (save) members.push(save);
   }
   const plan = planGroup(members, dependencies.newId);
   const { id } = plan;

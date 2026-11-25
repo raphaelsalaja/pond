@@ -61,9 +61,7 @@ export function planFolderTemplate(input: {
     });
     if (node.icon || node.view) {
       const view: FolderView = { ...node.view };
-      if (node.icon) {
-        view.icon = node.icon;
-      }
+      if (node.icon) view.icon = node.icon;
       plan.views[id] = view;
     }
     if (node.automaticTags?.length) {
@@ -107,27 +105,17 @@ export function buildFolderTemplate(input: {
       name: folder.name,
       color: color.success ? color.data : null,
     };
-    if (view?.icon) {
-      node.icon = view.icon;
-    }
-    if (tags.length) {
-      node.automaticTags = [...tags];
-    }
-    if (view) {
-      node.view = templateView(view);
-    }
+    if (view?.icon) node.icon = view.icon;
+    if (tags.length) node.automaticTags = [...tags];
+    if (view) node.view = templateView(view);
     nodes.push(node);
-    if (!input.includeSubfolders) {
-      return;
-    }
+    if (!input.includeSubfolders) return;
     const children = input.folders
       .filter((row) => row.parentId === folder.id && !visited.has(row.id))
       .sort(
         (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
       );
-    for (const child of children) {
-      visit(child, key);
-    }
+    for (const child of children) visit(child, key);
   };
   visit(root, null);
   return FolderTemplateSchema.parse({

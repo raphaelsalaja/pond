@@ -42,9 +42,7 @@ export function PresetSelect({
       value={value}
       disabled={disabled}
       onValueChange={(v) => {
-        if (v) {
-          onChange(v);
-        }
+        if (v) onChange(v);
       }}
     >
       <Select.Trigger aria-label={ariaLabel}>

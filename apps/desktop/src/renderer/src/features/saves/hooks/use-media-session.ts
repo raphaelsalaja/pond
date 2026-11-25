@@ -56,13 +56,9 @@ function useArtworkBlob(
     void (async () => {
       try {
         const res = await fetch(url);
-        if (!res.ok) {
-          return;
-        }
+        if (!res.ok) return;
         const blob = await res.blob();
-        if (cancelled) {
-          return;
-        }
+        if (cancelled) return;
         objectUrl = URL.createObjectURL(blob);
         setLoaded({
           url,
@@ -76,9 +72,7 @@ function useArtworkBlob(
     })();
     return () => {
       cancelled = true;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [url]);
 
@@ -100,9 +94,7 @@ function clearSession(): void {
   const session = navigator.mediaSession;
   session.metadata = null;
   session.playbackState = "none";
-  for (const action of ACTIONS) {
-    bindAction(action, null);
-  }
+  for (const action of ACTIONS) bindAction(action, null);
 }
 
 export function useMediaSession(
@@ -121,9 +113,7 @@ export function useMediaSession(
   });
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !playback.active) {
-      return;
-    }
+    if (!("mediaSession" in navigator) || !playback.active) return;
 
     const id = ++sessionOwner;
     const session = navigator.mediaSession;
@@ -152,29 +142,21 @@ export function useMediaSession(
 
     return () => {
       queueMicrotask(() => {
-        if (sessionOwner === id) {
-          clearSession();
-        }
+        if (sessionOwner === id) clearSession();
       });
     };
   }, [playback.active, meta.title, meta.artist, artwork]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !playback.active) {
-      return;
-    }
+    if (!("mediaSession" in navigator) || !playback.active) return;
     navigator.mediaSession.playbackState = playback.playing
       ? "playing"
       : "paused";
   }, [playback.active, playback.playing]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator) || !playback.active) {
-      return;
-    }
-    if (!(playback.duration > 0) || !Number.isFinite(playback.duration)) {
-      return;
-    }
+    if (!("mediaSession" in navigator) || !playback.active) return;
+    if (!(playback.duration > 0) || !Number.isFinite(playback.duration)) return;
     try {
       navigator.mediaSession.setPositionState({
         duration: playback.duration,

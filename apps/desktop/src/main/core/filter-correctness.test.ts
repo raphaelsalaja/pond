@@ -16,9 +16,7 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
@@ -269,9 +267,7 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
     const db = fixture();
     try {
       const where = buildWhere(query);
-      if (!where) {
-        throw new Error("Expected a filter predicate");
-      }
+      if (!where) throw new Error("Expected a filter predicate");
       const compiled = new SQLiteSyncDialect().sqlToQuery(where);
       const rows = z
         .array(z.object({ id: z.string() }))
@@ -340,9 +336,7 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
       const db = fixture(rows);
       try {
         const where = buildWhere(query);
-        if (!where) {
-          throw new Error("Expected a filter predicate");
-        }
+        if (!where) throw new Error("Expected a filter predicate");
         const compiled = new SQLiteSyncDialect().sqlToQuery(where);
         const found = z
           .array(z.object({ id: z.string() }))
@@ -374,9 +368,7 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
         ["cat OR -store", ["cat", "none"]],
       ] satisfies Array<[string, Array<string>]>) {
         const where = compileKeywordWhere(query);
-        if (!where) {
-          throw new Error("Expected a keyword predicate");
-        }
+        if (!where) throw new Error("Expected a keyword predicate");
         const compiled = new SQLiteSyncDialect().sqlToQuery(where);
         const rows = z
           .array(z.object({ id: z.string() }))

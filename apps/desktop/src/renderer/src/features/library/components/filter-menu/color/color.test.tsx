@@ -45,9 +45,7 @@ describe("color filter", () => {
       (node) =>
         node.getAttribute("aria-label") === label || node.textContent === label,
     );
-    if (!result) {
-      throw new Error(`Missing button: ${label}`);
-    }
+    if (!result) throw new Error(`Missing button: ${label}`);
     return result;
   }
 
@@ -60,9 +58,7 @@ describe("color filter", () => {
           document.getElementById(labelledBy)?.textContent === label)
       );
     });
-    if (!result) {
-      throw new Error(`Missing input: ${label}`);
-    }
+    if (!result) throw new Error(`Missing input: ${label}`);
     return result;
   }
 
@@ -70,9 +66,7 @@ describe("color filter", () => {
     const result = [
       ...host.querySelectorAll<HTMLElement>('[role="slider"]'),
     ].find((node) => node.getAttribute("aria-label") === label);
-    if (!result) {
-      throw new Error(`Missing slider: ${label}`);
-    }
+    if (!result) throw new Error(`Missing slider: ${label}`);
     return result;
   }
 

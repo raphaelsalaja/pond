@@ -14,18 +14,14 @@ const MAX_PER_WINDOW = 20;
 
 export function parseSaveLink(link: URL): SaveLink | null {
   const raw = link.searchParams.get("url");
-  if (!raw) {
-    return null;
-  }
+  if (!raw) return null;
   let target: URL;
   try {
     target = new URL(raw);
   } catch {
     return null;
   }
-  if (target.protocol !== "http:" && target.protocol !== "https:") {
-    return null;
-  }
+  if (target.protocol !== "http:" && target.protocol !== "https:") return null;
   const tags = (link.searchParams.get("tags") ?? "")
     .split(",")
     .map((tag) => tag.trim())
@@ -69,12 +65,8 @@ export function createSaveLinkHandler(deps: SaveLinkDeps) {
     await deps.ready();
     try {
       const { id } = await deps.enqueue(link.url, { trigger: TRIGGER });
-      if (link.tags.length > 0) {
-        await deps.addTags([id], link.tags, TRIGGER);
-      }
-      if (link.folderId) {
-        await deps.addToFolder(link.folderId, [id]);
-      }
+      if (link.tags.length > 0) await deps.addTags([id], link.tags, TRIGGER);
+      if (link.folderId) await deps.addToFolder(link.folderId, [id]);
       deps.notify("Saved to Pond", host);
     } catch (error) {
       log.warn("[pond deep-link] save failed", link.url, error);

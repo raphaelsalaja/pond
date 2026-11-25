@@ -48,13 +48,9 @@ import { SourceSelectionBar } from "./selection-bar";
 import styles from "./styles.module.css";
 
 function openEntry(entry: SourceEntry): void {
-  if (entry.kind === "account") {
-    sourceDetail.openAccount(entry.row.id);
-  } else if (entry.kind === "watch") {
-    sourceDetail.openWatch(entry.row.id);
-  } else {
-    sourceDetail.openFolder(entry.row.path);
-  }
+  if (entry.kind === "account") sourceDetail.openAccount(entry.row.id);
+  else if (entry.kind === "watch") sourceDetail.openWatch(entry.row.id);
+  else sourceDetail.openFolder(entry.row.path);
 }
 
 function SourcesMatchesEmpty({
@@ -127,25 +123,19 @@ export function SourcesPage() {
 
   const rowsById = useMemo(() => {
     const next = new Map<string, SourceTableRow>();
-    for (const row of rows) {
-      next.set(row.id, row);
-    }
+    for (const row of rows) next.set(row.id, row);
     return next;
   }, [rows]);
 
   useEffect(() => {
-    if (!addedWatchId) {
-      return;
-    }
+    if (!addedWatchId) return;
     void refetchWatches();
     sourceDetail.openWatch(addedWatchId);
     watchFlow.consumeAdded();
   }, [addedWatchId, refetchWatches]);
 
   useEffect(() => {
-    if (detailRevision === 0) {
-      return;
-    }
+    if (detailRevision === 0) return;
     void refetch();
     void refetchWatches();
   }, [detailRevision, refetch, refetchWatches]);
@@ -156,9 +146,7 @@ export function SourcesPage() {
     openEntry(row.entry);
   }, []);
   const fetchAll = useCallback(async () => {
-    if (fetchingAllRef.current) {
-      return;
-    }
+    if (fetchingAllRef.current) return;
     fetchingAllRef.current = true;
     setFetchingAll(true);
     const notificationId = notify({
@@ -196,9 +184,7 @@ export function SourcesPage() {
       setFetchingAll(false);
     }
   }, []);
-  if (loaded && tableRows.length === 0) {
-    return <SourcesIntro />;
-  }
+  if (loaded && tableRows.length === 0) return <SourcesIntro />;
 
   const toolbar = (
     <SearchChrome.Root

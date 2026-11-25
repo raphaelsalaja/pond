@@ -10,9 +10,7 @@ export interface QuickCapturePlan {
 }
 
 function webUrl(line: string): string | null {
-  if (/\s/.test(line)) {
-    return null;
-  }
+  if (/\s/.test(line)) return null;
   try {
     const url = new URL(line);
     return url.protocol === "http:" || url.protocol === "https:"
@@ -48,20 +46,13 @@ export function quickCapturePlan(
     .map((line) => line.trim())
     .filter(Boolean);
   const urls = lines.map(webUrl).filter((url) => url !== null);
-  if (lines.length && urls.length === lines.length) {
-    for (const url of urls) {
-      items.push({ kind: "url", url });
-    }
-  } else if (input.text.trim()) {
-    items.push({ kind: "note", text: input.text });
-  }
+  if (lines.length && urls.length === lines.length)
+    for (const url of urls) items.push({ kind: "url", url });
+  else if (input.text.trim()) items.push({ kind: "note", text: input.text });
   for (const path of input.paths) {
     const saveId = saveIdFor(path);
-    if (!saveId) {
-      items.push({ kind: "file", path });
-    } else if (!saveIds.includes(saveId)) {
-      saveIds.push(saveId);
-    }
+    if (!saveId) items.push({ kind: "file", path });
+    else if (!saveIds.includes(saveId)) saveIds.push(saveId);
   }
   if (!items.length && !saveIds.length) {
     throw userError("Add a link, some text, or a file.");
@@ -75,9 +66,7 @@ export function quickCapturePlan(
   };
   const title = input.title?.trim();
   /** Metadata titles are locked, so a link's fetched title can't replace the typed one. */
-  if (title && items.length === 1 && !saveIds.length) {
-    metadata.title = title;
-  }
+  if (title && items.length === 1 && !saveIds.length) metadata.title = title;
   return {
     draft: { id, trigger: "quick-capture", items, metadata },
     saveIds,

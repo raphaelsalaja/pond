@@ -87,9 +87,7 @@ export class YouTubeNode extends DecoratorNode<JSX.Element> {
   }
 
   decorate(): JSX.Element {
-    if (!this.__id) {
-      return <YouTubeDraft nodeKey={this.getKey()} />;
-    }
+    if (!this.__id) return <YouTubeDraft nodeKey={this.getKey()} />;
     const watch = youtubeWatchUrl(this.__id);
     return (
       <div className={styles.youtube}>
@@ -128,9 +126,7 @@ function YouTubeDraft({ nodeKey }: { nodeKey: NodeKey }) {
     }
     editor.update(() => {
       const node = $getNodeByKey(nodeKey);
-      if ($isYouTubeNode(node)) {
-        node.setId(id);
-      }
+      if ($isYouTubeNode(node)) node.setId(id);
     });
   }
 

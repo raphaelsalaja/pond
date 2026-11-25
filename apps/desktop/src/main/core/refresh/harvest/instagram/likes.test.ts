@@ -42,9 +42,7 @@ function run(firstPage: string, laterPages: Array<string | Error>) {
     },
     fetch: async () => {
       const page = pages.shift() ?? payload();
-      if (page instanceof Error) {
-        throw page;
-      }
+      if (page instanceof Error) throw page;
       return { ok: true, status: 200, text: async () => page };
     },
   };

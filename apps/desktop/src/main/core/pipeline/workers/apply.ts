@@ -80,13 +80,9 @@ export async function applySavePatch(
     const written: Array<SaveFile> = [];
     if (opts.newFiles && opts.newFiles.length > 0) {
       const blocked = libraryWriteBlock(libraryRoot());
-      if (blocked) {
-        throw userError(blocked);
-      }
+      if (blocked) throw userError(blocked);
       const dir = saveDir(saveId);
-      if (!existsSync(dir)) {
-        await mkdir(dir, { recursive: true });
-      }
+      if (!existsSync(dir)) await mkdir(dir, { recursive: true });
       const existingForNames = replaceKinds
         ? (current.files ?? []).filter((file) => !replaceKinds.has(file.kind))
         : (current.files ?? []);
@@ -108,21 +104,11 @@ export async function applySavePatch(
           sha256: details.sha256,
           size: details.size,
         };
-        if (file.mimeType) {
-          entry.mimeType = file.mimeType;
-        }
-        if (file.width) {
-          entry.width = file.width;
-        }
-        if (file.height) {
-          entry.height = file.height;
-        }
-        if (file.sourceUrl) {
-          entry.sourceUrl = file.sourceUrl;
-        }
-        if (file.custom) {
-          entry.custom = true;
-        }
+        if (file.mimeType) entry.mimeType = file.mimeType;
+        if (file.width) entry.width = file.width;
+        if (file.height) entry.height = file.height;
+        if (file.sourceUrl) entry.sourceUrl = file.sourceUrl;
+        if (file.custom) entry.custom = true;
         written.push(entry);
       }
     }
@@ -136,9 +122,7 @@ export async function applySavePatch(
         : current.files;
 
     const fullPatch: Partial<NewSave> = { ...patch };
-    if (written.length > 0 || replaceKinds) {
-      fullPatch.files = nextFiles;
-    }
+    if (written.length > 0 || replaceKinds) fullPatch.files = nextFiles;
 
     if (fullPatch.title !== undefined && hasUserTitle(saveId)) {
       delete fullPatch.title;
@@ -150,9 +134,7 @@ export async function applySavePatch(
     const updated = (
       await db.select().from(saves).where(eq(saves.id, saveId))
     )[0];
-    if (!updated) {
-      return null;
-    }
+    if (!updated) return null;
 
     const inserted = db
       .insert(syncActions)
@@ -168,9 +150,7 @@ export async function applySavePatch(
       })
       .returning()
       .all()[0];
-    if (inserted) {
-      broadcastSyncAction(inserted);
-    }
+    if (inserted) broadcastSyncAction(inserted);
 
     if (replaceKinds) {
       const retainedPaths = new Set((nextFiles ?? []).map((file) => file.path));
@@ -202,9 +182,7 @@ export async function persistWriteFile(
   targetPath: string,
 ): Promise<{ sha256: string; size: number } | null> {
   if (file.bytes) {
-    if (file.bytes.byteLength === 0) {
-      return null;
-    }
+    if (file.bytes.byteLength === 0) return null;
     await writeLibraryMedia(targetPath, file.bytes);
     return {
       sha256: createHash("sha256").update(file.bytes).digest("hex"),
@@ -245,22 +223,14 @@ function uniqueFilename(
   pending: ReadonlyArray<SaveFile>,
 ): string {
   const taken = new Set<string>();
-  for (const f of existing) {
-    taken.add(f.path);
-  }
-  for (const f of pending) {
-    taken.add(f.path);
-  }
-  if (!taken.has(desired)) {
-    return desired;
-  }
+  for (const f of existing) taken.add(f.path);
+  for (const f of pending) taken.add(f.path);
+  if (!taken.has(desired)) return desired;
   const ext = extname(desired);
   const base = desired.slice(0, desired.length - ext.length);
   for (let i = 1; i < 100; i++) {
     const candidate = `${base}-${i}${ext}`;
-    if (!taken.has(candidate)) {
-      return candidate;
-    }
+    if (!taken.has(candidate)) return candidate;
   }
   return `${base}-${Date.now()}${ext}`;
 }

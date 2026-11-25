@@ -57,9 +57,7 @@ async function verifyRuntimePackages(resourcesDir) {
   try {
     const references = new Map();
     for (const [path, entry] of archive.files) {
-      if (!RUNTIME_CODE.test(path) || entry.unpacked) {
-        continue;
-      }
+      if (!RUNTIME_CODE.test(path) || entry.unpacked) continue;
       const { program, errors } = parseSync(path, archive.read(entry));
       if (errors.length > 0) {
         throw new Error(
@@ -67,9 +65,7 @@ async function verifyRuntimePackages(resourcesDir) {
         );
       }
       for (const name of runtimePackages(program)) {
-        if (!references.has(name)) {
-          references.set(name, new Set());
-        }
+        if (!references.has(name)) references.set(name, new Set());
         references.get(name).add(path);
       }
     }
@@ -107,14 +103,10 @@ async function verifyRuntimePackages(resourcesDir) {
 function runtimePackages(program) {
   const names = new Set();
   const add = (node) => {
-    if (node?.type !== "Literal") {
-      return;
-    }
+    if (node?.type !== "Literal") return;
     const specifier = z.string().safeParse(node.value);
     const name = specifier.success ? packageName(specifier.data) : null;
-    if (name) {
-      names.add(name);
-    }
+    if (name) names.add(name);
   };
   const addSource = (node) => add(node.source);
   new Visitor({
@@ -123,9 +115,7 @@ function runtimePackages(program) {
     ExportNamedDeclaration: addSource,
     ImportExpression: addSource,
     CallExpression(node) {
-      if (isRequireLike(node.callee)) {
-        add(node.arguments[0]);
-      }
+      if (isRequireLike(node.callee)) add(node.arguments[0]);
     },
   }).visit(program);
   return names;
@@ -133,9 +123,7 @@ function runtimePackages(program) {
 
 /** `require`, `__require`, `requireFromHere`, and their `.resolve`: bundled libraries load packages through all of these. */
 function isRequireLike(callee) {
-  if (callee.type === "Identifier") {
-    return /require/i.test(callee.name);
-  }
+  if (callee.type === "Identifier") return /require/i.test(callee.name);
   return (
     callee.type === "MemberExpression" &&
     callee.object.type === "Identifier" &&
@@ -146,16 +134,12 @@ function isRequireLike(callee) {
 }
 
 function packageName(specifier) {
-  if (/^[./#]/.test(specifier) || specifier.startsWith("node:")) {
-    return null;
-  }
+  if (/^[./#]/.test(specifier) || specifier.startsWith("node:")) return null;
   const parts = specifier.split("/");
   const name = specifier.startsWith("@")
     ? parts.slice(0, 2).join("/")
     : parts[0];
-  if (BUILTINS.has(name) || BUILTINS.has(specifier)) {
-    return null;
-  }
+  if (BUILTINS.has(name) || BUILTINS.has(specifier)) return null;
   return PACKAGE_NAME.test(name) ? name : null;
 }
 
@@ -166,29 +150,20 @@ function missingDependencies(archive, resourcesDir, roots) {
   const queue = roots.map((name) => ({ name, dir: `node_modules/${name}` }));
   while (queue.length > 0) {
     const { name, dir } = queue.shift();
-    if (visited.has(dir)) {
-      continue;
-    }
+    if (visited.has(dir)) continue;
     visited.add(dir);
     const manifest = readManifest(archive, resourcesDir, dir);
-    if (!manifest) {
-      continue;
-    }
+    if (!manifest) continue;
     for (const dependency of Object.keys(manifest.dependencies)) {
-      if (INSTALL_ONLY.has(dependency)) {
-        continue;
-      }
+      if (INSTALL_ONLY.has(dependency)) continue;
       const resolved = resolveDependency(
         archive,
         resourcesDir,
         dir,
         dependency,
       );
-      if (resolved) {
-        queue.push({ name: dependency, dir: resolved });
-      } else {
-        missing.push(`${dependency} (needed by ${name})`);
-      }
+      if (resolved) queue.push({ name: dependency, dir: resolved });
+      else missing.push(`${dependency} (needed by ${name})`);
     }
   }
   return missing;
@@ -198,13 +173,9 @@ function resolveDependency(archive, resourcesDir, fromDir, name) {
   let base = fromDir;
   for (;;) {
     const candidate = `${base}/node_modules/${name}`;
-    if (hasPackage(archive, resourcesDir, candidate)) {
-      return candidate;
-    }
+    if (hasPackage(archive, resourcesDir, candidate)) return candidate;
     const parent = base.lastIndexOf("/node_modules/");
-    if (parent === -1) {
-      break;
-    }
+    if (parent === -1) break;
     base = base.slice(0, parent);
   }
   const topLevel = `node_modules/${name}`;
@@ -230,9 +201,7 @@ function readManifest(archive, resourcesDir, dir) {
     ...dir.split("/"),
     "package.json",
   );
-  if (!existsSync(path)) {
-    return null;
-  }
+  if (!existsSync(path)) return null;
   return Manifest.parse(JSON.parse(readFileSync(path, "utf8")));
 }
 
@@ -248,11 +217,8 @@ function openArchive(path) {
   const index = (node, prefixPath) => {
     for (const [name, child] of Object.entries(node.files ?? {})) {
       const childPath = prefixPath ? `${prefixPath}/${name}` : name;
-      if (child.files) {
-        index(child, childPath);
-      } else if (!child.link) {
-        files.set(childPath, child);
-      }
+      if (child.files) index(child, childPath);
+      else if (!child.link) files.set(childPath, child);
     }
   };
   index(JSON.parse(header.toString("utf8")), "");

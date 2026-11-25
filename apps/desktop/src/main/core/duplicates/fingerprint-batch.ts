@@ -87,18 +87,12 @@ export async function runFingerprintBatch(
   limit = FINGERPRINT_BATCH_SIZE,
 ): Promise<FingerprintBatchResult> {
   const classified = classifyPendingAssets(sqlite);
-  if (classified > 0) {
-    return { state: "classified", count: classified };
-  }
+  if (classified > 0) return { state: "classified", count: classified };
   const jobs = nextFingerprintJobs(sqlite, limit, deps.now?.() ?? Date.now());
-  if (jobs.length === 0) {
-    return { state: "idle" };
-  }
+  if (jobs.length === 0) return { state: "idle" };
   let count = 0;
   for (const job of jobs) {
-    if (deps.shouldStop?.()) {
-      return { state: "stopped", count };
-    }
+    if (deps.shouldStop?.()) return { state: "stopped", count };
     await runJob(sqlite, job, deps);
     count += 1;
   }

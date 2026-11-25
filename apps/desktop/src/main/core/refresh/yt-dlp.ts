@@ -76,13 +76,9 @@ export async function downloadVideo(
   let attemptDir: string | null = null;
   let cleanupCalled = false;
   const cleanup = async () => {
-    if (cleanupCalled) {
-      return;
-    }
+    if (cleanupCalled) return;
     cleanupCalled = true;
-    if (cookies) {
-      await cookies.cleanup();
-    }
+    if (cookies) await cookies.cleanup();
     if (attemptDir) {
       try {
         await rm(attemptDir, { recursive: true, force: true });
@@ -119,9 +115,7 @@ export async function downloadVideo(
       completed: ReadonlySet<string> | undefined;
     } | null = null;
     for (const withCookies of cookieAttempts(args.source, cookies.count)) {
-      if (attemptDir) {
-        await rm(attemptDir, { recursive: true, force: true });
-      }
+      if (attemptDir) await rm(attemptDir, { recursive: true, force: true });
       attemptDir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
       const mediaDir = join(attemptDir, "media");
       const manifest = join(attemptDir, "completed.txt");
@@ -175,9 +169,7 @@ export async function downloadVideo(
         outcome = { mediaDir, completed };
         break;
       }
-      if (args.signal?.aborted) {
-        break;
-      }
+      if (args.signal?.aborted) break;
     }
     if (!outcome) {
       await cleanup();
@@ -204,9 +196,7 @@ export async function downloadVideo(
     const items: Array<DownloadedVideoItem> = [];
     for (let i = 0; i < produced.length; i++) {
       const file = produced[i];
-      if (!file) {
-        continue;
-      }
+      if (!file) continue;
       const poster = wantPoster
         ? await pickProducedPoster(mediaDir, file.path)
         : null;

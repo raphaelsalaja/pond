@@ -262,9 +262,7 @@ describe("app menu sections", () => {
     const context = createContext({ isMac: true, isPackaged: true });
     const edit = buildEditSection(context, buildSettingsItem(context));
     const submenu = edit.submenu;
-    if (!Array.isArray(submenu)) {
-      throw new Error("Missing Edit submenu");
-    }
+    if (!Array.isArray(submenu)) throw new Error("Missing Edit submenu");
 
     expect(submenu.find((item) => item.label === "Select All")).toMatchObject({
       accelerator: "CmdOrCtrl+A",
@@ -305,9 +303,7 @@ describe("app menu sections", () => {
   it("groups File actions like the tray menu without navigation", () => {
     const context = createContext({ isMac: true, isPackaged: true });
     const file = buildFileSection(context).submenu;
-    if (!Array.isArray(file)) {
-      throw new Error("Missing File submenu");
-    }
+    if (!Array.isArray(file)) throw new Error("Missing File submenu");
     const newMenu = file.find((item) => item.label === "New");
     const importMenu = file.find((item) => item.label === "Import");
 
@@ -386,9 +382,7 @@ describe("app menu sections", () => {
       file.find((item) => item.label === "Open with Default App")?.accelerator,
     ).toBe(undefined);
     const edit = buildEditSection(context, buildSettingsItem(context)).submenu;
-    if (!Array.isArray(edit)) {
-      throw new Error("Missing Edit submenu");
-    }
+    if (!Array.isArray(edit)) throw new Error("Missing Edit submenu");
     expect(edit.find((item) => item.label === "Search Pond")?.accelerator).toBe(
       "CommandOrControl+K",
     );

@@ -42,9 +42,7 @@ async function inPageSubstackHarvest(): Promise<SubstackPostPage | null> {
   const title =
     document.querySelector("h1.post-title")?.textContent?.trim() ||
     meta("og:title");
-  if (title) {
-    page.title = title;
-  }
+  if (title) page.title = title;
   if (text) {
     page.description =
       text.length > 20_000 ? `${text.slice(0, 20_000)}…` : text;
@@ -52,23 +50,15 @@ async function inPageSubstackHarvest(): Promise<SubstackPostPage | null> {
     page.description = meta("og:description");
   }
   const author = meta("author");
-  if (author) {
-    page.author = author;
-  }
+  if (author) page.author = author;
   const image = meta("og:image");
-  if (image) {
-    page.mediaUrls.push({ url: image, type: "image" });
-  }
+  if (image) page.mediaUrls.push({ url: image, type: "image" });
   const published = document
     .querySelector('meta[property="article:published_time"]')
     ?.getAttribute("content");
-  if (published) {
-    page.meta.publishedAt = published;
-  }
+  if (published) page.meta.publishedAt = published;
   const publisher = meta("og:site_name");
-  if (publisher) {
-    page.meta.publisher = publisher;
-  }
+  if (publisher) page.meta.publisher = publisher;
   return page;
 }
 

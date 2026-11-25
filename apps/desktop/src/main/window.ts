@@ -57,9 +57,7 @@ const MIN_WINDOW_HEIGHT = 480;
 function usableWindowBounds(
   bounds: { x: number; y: number; width: number; height: number } | null,
 ): { x: number; y: number; width: number; height: number } | null {
-  if (!bounds) {
-    return null;
-  }
+  if (!bounds) return null;
   if (bounds.width < MIN_WINDOW_WIDTH || bounds.height < MIN_WINDOW_HEIGHT) {
     return null;
   }
@@ -89,9 +87,7 @@ export function setCloseToTray(enabled: boolean): void {
 }
 
 export function queueTrayRefresh(): void {
-  if (!tray || trayRefreshQueued) {
-    return;
-  }
+  if (!tray || trayRefreshQueued) return;
   trayRefreshQueued = true;
   setTimeout(() => {
     trayRefreshQueued = false;
@@ -103,17 +99,13 @@ const CLEAR_BACKGROUND = "#00000000";
 const appliedMaterial = new WeakMap<BrowserWindow, WindowMaterial | null>();
 
 function windowMaterial(prefs: Prefs | null): WindowMaterial | null {
-  if (process.platform !== "darwin" || !prefs?.window.translucent) {
-    return null;
-  }
+  if (process.platform !== "darwin" || !prefs?.window.translucent) return null;
   return prefs.window.translucentMaterial;
 }
 
 export async function syncShellChrome(): Promise<void> {
   const win = mainWindowState.current;
-  if (!win || win.isDestroyed()) {
-    return;
-  }
+  if (!win || win.isDestroyed()) return;
 
   const [resolved, prefs] = await Promise.all([
     resolveTheme(),
@@ -126,9 +118,7 @@ export async function syncShellChrome(): Promise<void> {
       ? "#000000"
       : "#ffffff");
 
-  if (win.isDestroyed()) {
-    return;
-  }
+  if (win.isDestroyed()) return;
   if (process.platform === "darwin" && appliedMaterial.get(win) !== material) {
     win.setVibrancy(material);
     appliedMaterial.set(win, material);
@@ -139,9 +129,7 @@ export async function syncShellChrome(): Promise<void> {
 
 export async function resolveShellHint(): Promise<ShellHint> {
   const resolved = await resolveTheme();
-  if (!resolved) {
-    return {};
-  }
+  if (!resolved) return {};
   const { mode, ...vars } = resolved;
   return { theme: mode, ...vars };
 }
@@ -205,9 +193,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
       ],
     },
   };
-  if (!isMac && appIcon) {
-    options.icon = appIcon;
-  }
+  if (!isMac && appIcon) options.icon = appIcon;
 
   const win = new BrowserWindow(options);
   markStartup("window-created");
@@ -218,12 +204,8 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
     subscribePrefs(() => void syncShellChrome()),
   );
   win.once("closed", () => {
-    if (mainWindowState.current === win) {
-      mainWindowState.current = null;
-    }
-    if (!isQuitting) {
-      void settleDockAfterClose();
-    }
+    if (mainWindowState.current === win) mainWindowState.current = null;
+    if (!isQuitting) void settleDockAfterClose();
   });
   win.on("show", () => {
     hiddenLibraryRelease.shown(win);
@@ -251,17 +233,11 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
 
   let saveBoundsTimer: NodeJS.Timeout | null = null;
   const saveBounds = () => {
-    if (win.isDestroyed()) {
-      return;
-    }
-    if (saveBoundsTimer) {
-      clearTimeout(saveBoundsTimer);
-    }
+    if (win.isDestroyed()) return;
+    if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
     saveBoundsTimer = setTimeout(() => {
       saveBoundsTimer = null;
-      if (win.isDestroyed()) {
-        return;
-      }
+      if (win.isDestroyed()) return;
       const b = usableWindowBounds(win.getBounds());
       if (!b) {
         return;
@@ -283,21 +259,11 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   win.on("leave-full-screen", sendFullScreen);
 
   win.on("close", (event) => {
-    if (isQuitting) {
-      return;
-    }
-    if (!closeToTrayEnabled) {
-      return;
-    }
-    if (!hasTray()) {
-      return;
-    }
-    if (win.isDestroyed()) {
-      return;
-    }
-    if (mainWindowState.current !== win) {
-      return;
-    }
+    if (isQuitting) return;
+    if (!closeToTrayEnabled) return;
+    if (!hasTray()) return;
+    if (win.isDestroyed()) return;
+    if (mainWindowState.current !== win) return;
     event.preventDefault();
     win.hide();
     hiddenLibraryRelease.hidden(win);
@@ -305,12 +271,8 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   });
 
   win.webContents.on("did-finish-load", () => {
-    if (win.isDestroyed()) {
-      return;
-    }
-    if (win.isFullScreen()) {
-      sendFullScreen();
-    }
+    if (win.isDestroyed()) return;
+    if (win.isFullScreen()) sendFullScreen();
     const route = consumePendingDeepLink();
     if (route) {
       win.webContents.send(IPC.nav, route);
@@ -320,9 +282,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   win.webContents.on(
     "did-fail-load",
     (_event, code, desc, url, isMainFrame) => {
-      if (!isMainFrame) {
-        return;
-      }
+      if (!isMainFrame) return;
       log.error("[pond] renderer did-fail-load", { code, desc, url });
     },
   );
@@ -333,9 +293,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
 
   win.webContents.on("console-message", (event) => {
     const level = event.level;
-    if (level !== "warning" && level !== "error") {
-      return;
-    }
+    if (level !== "warning" && level !== "error") return;
     log.warn("[pond renderer]", event.message);
   });
 
@@ -349,11 +307,8 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
         return false;
       }
     })();
-    if (isHttp) {
-      void shell.openExternal(url);
-    } else {
-      log.warn("[pond] blocked window.open for non-http(s) URL", url);
-    }
+    if (isHttp) void shell.openExternal(url);
+    else log.warn("[pond] blocked window.open for non-http(s) URL", url);
     return { action: "deny" };
   });
 
@@ -361,18 +316,10 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
 
   win.webContents.on("will-navigate", (event, url) => {
     const allowed = (() => {
-      if (devUrl && url.startsWith(devUrl)) {
-        return true;
-      }
-      if (url.startsWith("file://")) {
-        return true;
-      }
-      if (url.startsWith("pond://")) {
-        return true;
-      }
-      if (url === "about:blank") {
-        return true;
-      }
+      if (devUrl && url.startsWith(devUrl)) return true;
+      if (url.startsWith("file://")) return true;
+      if (url.startsWith("pond://")) return true;
+      if (url === "about:blank") return true;
       return false;
     })();
     if (!allowed) {
@@ -415,9 +362,7 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
 }
 
 async function ensureMainWindow(): Promise<BrowserWindow> {
-  if (openingLibraryWindow) {
-    return openingLibraryWindow;
-  }
+  if (openingLibraryWindow) return openingLibraryWindow;
   if (!mainWindowState.current || mainWindowState.current.isDestroyed()) {
     return createWindow();
   }
@@ -426,9 +371,7 @@ async function ensureMainWindow(): Promise<BrowserWindow> {
 
 export async function openLibraryWindow(): Promise<void> {
   const win = await ensureMainWindow();
-  if (win.isMinimized()) {
-    win.restore();
-  }
+  if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
 }
@@ -440,12 +383,8 @@ export async function handleActivate(): Promise<void> {
 
 export function focusedOrMain(): BrowserWindow | null {
   const target = mainWindowState.current;
-  if (!target || target.isDestroyed()) {
-    return null;
-  }
-  if (target.isMinimized()) {
-    target.restore();
-  }
+  if (!target || target.isDestroyed()) return null;
+  if (target.isMinimized()) target.restore();
   target.show();
   target.focus();
   return target;
@@ -453,9 +392,7 @@ export function focusedOrMain(): BrowserWindow | null {
 
 export async function summonMainWindow(): Promise<void> {
   const win = await ensureMainWindow();
-  if (win.isMinimized()) {
-    win.restore();
-  }
+  if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
 }

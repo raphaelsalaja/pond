@@ -23,9 +23,7 @@ export function offerEntries({
   const picked = suggested
     ? entries.filter((entry) => suggested.has(entry.label))
     : entries.slice(0, FALLBACK_COUNT);
-  if (picked.length === entries.length) {
-    return picked;
-  }
+  if (picked.length === entries.length) return picked;
   return [
     ...picked,
     {

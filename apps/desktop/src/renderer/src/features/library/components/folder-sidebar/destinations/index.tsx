@@ -187,9 +187,7 @@ function RecentlyAddedDestination({
         side="inline-end"
         onValueChange={(value) => {
           const day = parseLocalDay(value);
-          if (day) {
-            showRecentlyAddedOn(day);
-          }
+          if (day) showRecentlyAddedOn(day);
         }}
       />
     </>
@@ -269,9 +267,7 @@ export function LibraryDestinations({
   };
 
   const isDestinationActive = (id: SidebarDestination): boolean => {
-    if (!destination) {
-      return false;
-    }
+    if (!destination) return false;
     switch (id) {
       case "all":
         return destination.kind === "all" && !activeViewId;
@@ -568,18 +564,14 @@ export function LibraryDestinations({
             onDragCancel={() => setActiveSort(null)}
             onDragEnd={({ active, over }: DragEndEvent) => {
               setActiveSort(null);
-              if (!over || active.id === over.id) {
-                return;
-              }
+              if (!over || active.id === over.id) return;
               const destination = group.destinations.find(
                 (item) => item === active.id,
               );
               const overDestination = group.destinations.find(
                 (item) => item === over.id,
               );
-              if (!destination || !overDestination) {
-                return;
-              }
+              if (!destination || !overDestination) return;
               saveOrder(
                 moveVisibleSidebarDestination(
                   order,

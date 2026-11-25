@@ -8,9 +8,7 @@ export function prepareManualOrder(ids: ReadonlyArray<string>): string {
   }
   if (orders.size > 8) {
     const oldest = orders.keys().next().value;
-    if (oldest) {
-      orders.delete(oldest);
-    }
+    if (oldest) orders.delete(oldest);
   }
   return key;
 }

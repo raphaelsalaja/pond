@@ -107,12 +107,8 @@ export function DownloadsPage() {
     return (history.data?.pages ?? [])
       .flatMap((page) => page.rows)
       .flatMap((row) => {
-        if (row.source === "local") {
-          return [];
-        }
-        if (seen.has(row.saveId)) {
-          return [];
-        }
+        if (row.source === "local") return [];
+        if (seen.has(row.saveId)) return [];
         seen.add(row.saveId);
         return [historyToDownloadRow(row)];
       });

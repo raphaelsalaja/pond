@@ -19,9 +19,7 @@ export function useTagsData() {
   const counts = useMemo(() => {
     const c = new Map<string, number>();
     for (const s of saves) {
-      if (s.deletedAt) {
-        continue;
-      }
+      if (s.deletedAt) continue;
       for (const t of s.tags) {
         const k = t.toLowerCase();
         c.set(k, (c.get(k) ?? 0) + 1);
@@ -37,19 +35,13 @@ export function useTagsData() {
 
   const tagsById = useMemo(() => {
     const m = new Map<string, TagRow>();
-    for (const t of tags) {
-      m.set(t.id, t);
-    }
+    for (const t of tags) m.set(t.id, t);
     return m;
   }, [tags]);
 
   const taggedIds = useMemo(() => {
     const set = new Set<string>();
-    for (const g of groups) {
-      for (const id of g.tagIds) {
-        set.add(id);
-      }
-    }
+    for (const g of groups) for (const id of g.tagIds) set.add(id);
     return set;
   }, [groups]);
 
@@ -94,9 +86,7 @@ export function useTagsData() {
             saves: countFor(tag.name),
           }))
           .sort((a, b) => {
-            if (a.kind !== "tag" || b.kind !== "tag") {
-              return 0;
-            }
+            if (a.kind !== "tag" || b.kind !== "tag") return 0;
             return a.tag.name.localeCompare(b.tag.name, undefined, {
               sensitivity: "base",
             });
@@ -110,15 +100,9 @@ export function useTagsData() {
         };
       })
       .filter((row) => {
-        if (row.kind !== "group") {
-          return true;
-        }
-        if (!needle) {
-          return true;
-        }
-        if (row.group.name.toLowerCase().includes(needle)) {
-          return true;
-        }
+        if (row.kind !== "group") return true;
+        if (!needle) return true;
+        if (row.group.name.toLowerCase().includes(needle)) return true;
         return row.group.tagNames.some((n) => n.toLowerCase().includes(needle));
       })
       .sort((a, b) =>
@@ -164,9 +148,7 @@ export function useTagsData() {
   const onToggleExpand = useCallback(
     (id: string, next: boolean) => {
       const g = groups.find((x) => x.id === id);
-      if (!g) {
-        return;
-      }
+      if (!g) return;
       setToggles((prev) => new Map(prev).set(id, next));
       void window.pond.query("tagGroups.update", {
         name: g.name,
@@ -179,15 +161,10 @@ export function useTagsData() {
   const tagNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const row of data) {
-      if (row.kind === "tag") {
-        m.set(row.id, row.tag.name);
-      } else {
-        for (const child of row.children) {
-          if (child.kind === "tag") {
-            m.set(child.id, child.tag.name);
-          }
-        }
-      }
+      if (row.kind === "tag") m.set(row.id, row.tag.name);
+      else
+        for (const child of row.children)
+          if (child.kind === "tag") m.set(child.id, child.tag.name);
     }
     return m;
   }, [data]);
@@ -197,9 +174,7 @@ export function useTagsData() {
       const set = new Set<string>();
       for (const id of ids) {
         const name = tagNameById.get(id);
-        if (name) {
-          set.add(name);
-        }
+        if (name) set.add(name);
       }
       return [...set];
     },

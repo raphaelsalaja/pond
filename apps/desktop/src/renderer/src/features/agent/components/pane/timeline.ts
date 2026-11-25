@@ -50,9 +50,7 @@ export function timeBreaks(
       at !== undefined &&
       (previous === undefined ||
         at.getTime() - previous.getTime() >= SESSION_GAP);
-    if (at) {
-      previous = at;
-    }
+    if (at) previous = at;
     return opens;
   });
 }
@@ -64,9 +62,7 @@ export function turnMarks(
   name: string,
 ): Array<ThreadMark> {
   return messages.flatMap((message, index) => {
-    if (message.role !== "user") {
-      return [];
-    }
+    if (message.role !== "user") return [];
     const routine = fromUIMessage(message, chatId).metadata?.routine;
     const reply = messages[index + 1];
     const description =

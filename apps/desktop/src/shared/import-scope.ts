@@ -201,9 +201,7 @@ export function normalizeImportScope(
       return { ok: false, problem: "no_collections" };
     }
     next.collections = collections;
-    if (scope.addToFolders === false) {
-      next.addToFolders = false;
-    }
+    if (scope.addToFolders === false) next.addToFolders = false;
   } else if (
     scope.addToFolders === true &&
     options.fileEveryCollection &&
@@ -215,9 +213,7 @@ export function normalizeImportScope(
   if (scope.mediaKinds && options.mediaKinds.length > 0) {
     const chosen = new Set(scope.mediaKinds);
     const mediaKinds = options.mediaKinds.filter((kind) => chosen.has(kind));
-    if (mediaKinds.length === 0) {
-      return { ok: false, problem: "no_media" };
-    }
+    if (mediaKinds.length === 0) return { ok: false, problem: "no_media" };
     if (mediaKinds.length < options.mediaKinds.length) {
       next.mediaKinds = mediaKinds;
     }
@@ -259,15 +255,10 @@ export function sourcesSkippingLikes(
   const importing = new Set<Source>();
   for (const account of accounts) {
     const scope = accountImportScope(account.source, account.sync);
-    if (importsListKind(scope, "liked")) {
-      importing.add(account.source);
-    } else {
-      skipping.add(account.source);
-    }
+    if (importsListKind(scope, "liked")) importing.add(account.source);
+    else skipping.add(account.source);
   }
-  for (const source of importing) {
-    skipping.delete(source);
-  }
+  for (const source of importing) skipping.delete(source);
   return skipping;
 }
 
@@ -281,12 +272,8 @@ export function importsListKind(
 /** An empty `listKinds` imports nothing. Omitting the field still imports every list. */
 export function importsAnyList(source: Source, scope: ImportScope): boolean {
   const options = importScopeOptions(source);
-  if (options.listKinds.length === 0) {
-    return true;
-  }
-  if (!scope.listKinds) {
-    return true;
-  }
+  if (options.listKinds.length === 0) return true;
+  if (!scope.listKinds) return true;
   return scope.listKinds.length > 0;
 }
 
@@ -307,9 +294,7 @@ export function collectionFiling(
   scope: ImportScope | undefined,
 ): CollectionFiling {
   const options = importScopeOptions(source);
-  if (!options.collections || !importsListKind(scope, "saved")) {
-    return "off";
-  }
+  if (!options.collections || !importsListKind(scope, "saved")) return "off";
   if (scope?.collections?.length) {
     return scope.addToFolders === false ? "off" : "picked";
   }
@@ -325,9 +310,7 @@ export function listFilterReason(
   scope: ImportScope | undefined,
   listKinds: ReadonlyArray<ListKind>,
 ): "list" | null {
-  if (!scope?.listKinds || listKinds.length === 0) {
-    return null;
-  }
+  if (!scope?.listKinds || listKinds.length === 0) return null;
   return listKinds.some((kind) => scope.listKinds?.includes(kind))
     ? null
     : "list";
@@ -354,9 +337,7 @@ export function importFilterReason(
   },
 ): ImportFilterReason | null {
   const list = listFilterReason(scope, save.listKinds);
-  if (list) {
-    return list;
-  }
+  if (list) return list;
   if (scope?.mediaKinds) {
     const kind =
       save.mediaType === "image" || save.mediaType === "video"
@@ -364,23 +345,17 @@ export function importFilterReason(
         : save.mediaType === null || save.mediaType === "text"
           ? "text"
           : null;
-    if (kind && !scope.mediaKinds.includes(kind)) {
-      return "media";
-    }
+    if (kind && !scope.mediaKinds.includes(kind)) return "media";
   }
   const start = scope?.since ? sinceStart(scope.since) : null;
-  if (start && save.publishedAt && save.publishedAt < start) {
-    return "since";
-  }
+  if (start && save.publishedAt && save.publishedAt < start) return "since";
   return null;
 }
 
 /** Local midnight that starts the `since` day, or null when it isn't a real calendar day. */
 export function sinceStart(since: string): Date | null {
   const match = DAY.exec(since);
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
   const [, year, month, day] = match.map(Number);
   if (year === undefined || month === undefined || day === undefined) {
     return null;
@@ -400,9 +375,7 @@ function uniqueCollections(
   const out: Array<ImportCollection> = [];
   for (const collection of collections) {
     const id = collection.id.trim();
-    if (!id || seen.has(id)) {
-      continue;
-    }
+    if (!id || seen.has(id)) continue;
     seen.add(id);
     out.push({ id, name: collection.name.trim() || id });
   }

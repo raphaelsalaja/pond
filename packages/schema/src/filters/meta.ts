@@ -17,9 +17,7 @@ function metaFor(id: FieldId): FieldMeta {
     label: d.label,
     group: d.group,
   };
-  if (d.presets) {
-    meta.presets = d.presets;
-  }
+  if (d.presets) meta.presets = d.presets;
   return meta;
 }
 

@@ -10,9 +10,7 @@ export function inPageTwitterNormalize() {
         return { u, w: sz ? Number.parseInt(sz, 10) : 0 };
       })
       .filter((p) => p.u);
-    if (!parts.length) {
-      return undefined;
-    }
+    if (!parts.length) return undefined;
     parts.sort((a, b) => b.w - a.w);
     return parts[0]?.u;
   }
@@ -31,20 +29,14 @@ export function inPageTwitterNormalize() {
   }
 
   function httpMediaUrl(url: string | undefined): string | undefined {
-    if (url === undefined || !/^https?:\/\//i.test(url)) {
-      return undefined;
-    }
+    if (url === undefined || !/^https?:\/\//i.test(url)) return undefined;
     /* Avatars can sit inside media containers; they are never tweet media. */
-    if (/\/profile_images\//i.test(url)) {
-      return undefined;
-    }
+    if (/\/profile_images\//i.test(url)) return undefined;
     return upgradeTwimgUrl(url);
   }
 
   function parseMetric(label: string | null | undefined): number | undefined {
-    if (!label) {
-      return undefined;
-    }
+    if (!label) return undefined;
     /** The suffix must end the word: "48 Bookmarks" is 48, not 48 billion. */
     const m = label.match(/([\d.,]+)\s*(?:([KMB])(?![a-z]))?/i);
     if (!m?.[1]) {
@@ -68,9 +60,7 @@ export function inPageTwitterNormalize() {
 
   function metricFromTestid(root: Element, testid: string): number | undefined {
     const el = root.querySelector<HTMLElement>(`[data-testid="${testid}"]`);
-    if (!el) {
-      return undefined;
-    }
+    if (!el) return undefined;
     const label =
       el.getAttribute("aria-label") ??
       el.closest("[role='button']")?.getAttribute("aria-label") ??
@@ -80,9 +70,7 @@ export function inPageTwitterNormalize() {
   }
 
   function readDuration(video: HTMLVideoElement | null): number | undefined {
-    if (!video) {
-      return undefined;
-    }
+    if (!video) return undefined;
     const d = video.duration;
     return Number.isFinite(d) && d > 0 ? Math.round(d) : undefined;
   }

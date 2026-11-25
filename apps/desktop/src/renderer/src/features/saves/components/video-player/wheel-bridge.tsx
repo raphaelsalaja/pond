@@ -12,13 +12,9 @@ export function WheelBridge() {
 
   useEffect(() => {
     const video = meta.videoRef.current;
-    if (!video || prefs.videoWheelBehavior === "none") {
-      return;
-    }
+    if (!video || prefs.videoWheelBehavior === "none") return;
     const onWheel = (event: WheelEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey) {
-        return;
-      }
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
       event.preventDefault();
       event.stopPropagation();
       const direction = event.deltaY > 0 ? -1 : 1;

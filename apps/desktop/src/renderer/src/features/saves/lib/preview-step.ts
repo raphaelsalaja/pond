@@ -19,12 +19,8 @@ export function previewStepRuns({
   const seeks =
     matchesBinding(event, bindings, "viewer.seek-back") ||
     matchesBinding(event, bindings, "viewer.seek-forward");
-  if (videoShown && seeks) {
-    return false;
-  }
-  if (binding === "step") {
-    return true;
-  }
+  if (videoShown && seeks) return false;
+  if (binding === "step") return true;
   const steps =
     matchesBinding(event, bindings, "viewer.step-prev") ||
     matchesBinding(event, bindings, "viewer.step-next");

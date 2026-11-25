@@ -18,9 +18,7 @@ export function useAutoHide(opts: {
 
   const showControls = useCallback(() => {
     setControlsVisible(true);
-    if (timer.current !== null) {
-      window.clearTimeout(timer.current);
-    }
+    if (timer.current !== null) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
       const v = videoRef.current;
       if (
@@ -35,17 +33,11 @@ export function useAutoHide(opts: {
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) {
-      return;
-    }
+    if (!root) return;
     const onActivity = () => showControls();
     const onLeave = () => {
-      if (timer.current !== null) {
-        window.clearTimeout(timer.current);
-      }
-      if (!root.contains(document.activeElement)) {
-        setControlsVisible(false);
-      }
+      if (timer.current !== null) window.clearTimeout(timer.current);
+      if (!root.contains(document.activeElement)) setControlsVisible(false);
     };
     root.addEventListener("focusin", onActivity);
     root.addEventListener("keydown", onActivity);
@@ -72,9 +64,7 @@ export function useAutoHide(opts: {
 
   useEffect(
     () => () => {
-      if (timer.current !== null) {
-        window.clearTimeout(timer.current);
-      }
+      if (timer.current !== null) window.clearTimeout(timer.current);
     },
     [],
   );

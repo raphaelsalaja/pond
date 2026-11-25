@@ -130,9 +130,7 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
     event: KeyboardEvent,
     focusOnly = false,
   ) => {
-    if (!canNavigate(event)) {
-      return;
-    }
+    if (!canNavigate(event)) return;
     event.preventDefault();
     const key = resultNavigation.key();
     movementQueue.current = movementQueue.current
@@ -199,13 +197,9 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       {
         hotkey: "Shift+Space",
         callback: (event) => {
-          if (!canNavigate(event)) {
-            return;
-          }
+          if (!canNavigate(event)) return;
           const cursor = selection.getCursor();
-          if (!cursor) {
-            return;
-          }
+          if (!cursor) return;
           event.preventDefault();
           selection.toggle(cursor);
           selection.setAnchor(cursor);
@@ -247,13 +241,9 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       {
         hotkey: bindingKeys(shortcuts, "grid.open"),
         callback: (event) => {
-          if (!canNavigate(event)) {
-            return;
-          }
+          if (!canNavigate(event)) return;
           const cursor = selection.getCursor();
-          if (!cursor || !idsRef.current.includes(cursor)) {
-            return;
-          }
+          if (!cursor || !idsRef.current.includes(cursor)) return;
           event.preventDefault();
           openSave(cursor);
         },
@@ -261,9 +251,7 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       {
         hotkey: bindingKeys(shortcuts, "grid.select-all"),
         callback: (event) => {
-          if (!canNavigate(event)) {
-            return;
-          }
+          if (!canNavigate(event)) return;
           event.preventDefault();
           void selectResults("all");
         },
@@ -271,9 +259,7 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       {
         hotkey: bindingKeys(shortcuts, "grid.clear"),
         callback: (event) => {
-          if (!canNavigate(event)) {
-            return;
-          }
+          if (!canNavigate(event)) return;
           event.preventDefault();
           clearSaveSelection();
         },

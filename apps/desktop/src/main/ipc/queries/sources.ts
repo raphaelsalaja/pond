@@ -64,12 +64,8 @@ export const sourcesQueries = {
     (params) => {
       const tags = normalizeTagList(params.tags);
       const incoming: IncomingSaveRule = {};
-      if (params.folderId) {
-        incoming.folderId = params.folderId;
-      }
-      if (tags.length > 0) {
-        incoming.tags = tags;
-      }
+      if (params.folderId) incoming.folderId = params.folderId;
+      if (tags.length > 0) incoming.tags = tags;
       return patchTargetSync(params, {
         incoming: incoming.folderId || incoming.tags ? incoming : undefined,
       });

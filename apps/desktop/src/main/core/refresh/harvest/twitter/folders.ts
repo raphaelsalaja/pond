@@ -43,9 +43,7 @@ async function inPageOpenBookmarkFolder(folderId: string): Promise<boolean> {
   /** Only the folder's own request proves the view switched; otherwise a scroll would read the main list. */
   const requestDeadline = Date.now() + 20_000;
   while (!globalThis.__pondBookmarkFolderRequest) {
-    if (Date.now() > requestDeadline) {
-      return false;
-    }
+    if (Date.now() > requestDeadline) return false;
     await sleep(250);
   }
   return true;
@@ -100,9 +98,7 @@ export function parseBookmarkFolders(
     }
     for (const slice of findKey(json, "bookmark_collections_slice")) {
       for (const folder of SliceSchema.parse(slice).items) {
-        if (!folder || seen.has(folder.id)) {
-          continue;
-        }
+        if (!folder || seen.has(folder.id)) continue;
         seen.add(folder.id);
         out.push({
           id: folder.id,

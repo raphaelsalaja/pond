@@ -148,12 +148,8 @@ async function inPageBookmarks(
       globalThis.__pondBookmarksCaptures,
       globalThis.__pondLikesCaptures,
     ]) {
-      if (!Array.isArray(buf) || buf.length === 0) {
-        continue;
-      }
-      for (const item of buf.splice(0)) {
-        captures.push(item);
-      }
+      if (!Array.isArray(buf) || buf.length === 0) continue;
+      for (const item of buf.splice(0)) captures.push(item);
     }
   };
 
@@ -170,11 +166,7 @@ async function inPageBookmarks(
   const publishStats = (phase: "hydrate" | "scroll" | "done"): void => {
     stats.seen = seen.size;
     let fresh = 0;
-    for (const id of seen.keys()) {
-      if (!known.has(id)) {
-        fresh += 1;
-      }
-    }
+    for (const id of seen.keys()) if (!known.has(id)) fresh += 1;
     stats.fresh = fresh;
     stats.articles = document.querySelectorAll(
       'article[data-testid="tweet"]',
@@ -211,9 +203,7 @@ async function inPageBookmarks(
     } catch {
       return null;
     }
-    if (!tweetId) {
-      return null;
-    }
+    if (!tweetId) return null;
 
     const time = article.querySelector<HTMLTimeElement>("time[datetime]");
     const bookmarkedAt = time?.getAttribute("datetime") ?? undefined;
@@ -274,18 +264,10 @@ async function inPageBookmarks(
       tweetId,
       url: `https://x.com${pathname}`,
     };
-    if (bookmarkedAt) {
-      entry.bookmarkedAt = bookmarkedAt;
-    }
-    if (title) {
-      entry.title = title;
-    }
-    if (description) {
-      entry.description = description;
-    }
-    if (author) {
-      entry.author = author;
-    }
+    if (bookmarkedAt) entry.bookmarkedAt = bookmarkedAt;
+    if (title) entry.title = title;
+    if (description) entry.description = description;
+    if (author) entry.author = author;
     if (mediaUrls.length > 0) {
       entry.mediaUrls = mediaUrls;
       entry.mediaUrl = mediaUrls[0]?.url;
@@ -313,12 +295,8 @@ async function inPageBookmarks(
     );
     for (const article of articles) {
       const entry = extract(article);
-      if (!entry) {
-        continue;
-      }
-      if (seen.has(entry.tweetId)) {
-        continue;
-      }
+      if (!entry) continue;
+      if (seen.has(entry.tweetId)) continue;
       seen.set(entry.tweetId, entry);
       added = true;
     }
@@ -328,9 +306,7 @@ async function inPageBookmarks(
   const freshEntries = (): Array<BookmarksEntry> => {
     const out: Array<BookmarksEntry> = [];
     for (const [id, entry] of seen) {
-      if (known.has(id)) {
-        continue;
-      }
+      if (known.has(id)) continue;
       out.push(entry);
     }
     return out;
@@ -386,9 +362,7 @@ async function inPageBookmarks(
         document.querySelectorAll<HTMLElement>("[data-testid]"),
       )) {
         const v = el.getAttribute("data-testid") ?? "";
-        if (/empty/i.test(v)) {
-          out.add(v);
-        }
+        if (/empty/i.test(v)) out.add(v);
       }
       return Array.from(out);
     };
@@ -398,9 +372,7 @@ async function inPageBookmarks(
           'a[href="/login"], a[href*="/i/flow/login"], [data-testid="loginButton"]',
         ),
       )) {
-        if (el.offsetParent !== null) {
-          return true;
-        }
+        if (el.offsetParent !== null) return true;
       }
       return false;
     };
@@ -432,9 +404,7 @@ async function inPageBookmarks(
   }
 
   const looksLikeRetryWall = (): boolean => {
-    if (document.querySelector('[data-testid="error-detail"]')) {
-      return true;
-    }
+    if (document.querySelector('[data-testid="error-detail"]')) return true;
     const buttons = Array.from(document.querySelectorAll("button, a"));
     return buttons.some((b) =>
       (b.textContent ?? "").trim().toLowerCase().startsWith("try again"),
@@ -457,20 +427,14 @@ async function inPageBookmarks(
     const candidates = Array.from(
       main.querySelectorAll<HTMLElement>("*"),
     ).filter((el) => {
-      if (el.scrollHeight <= el.clientHeight) {
-        return false;
-      }
+      if (el.scrollHeight <= el.clientHeight) return false;
       const cs = getComputedStyle(el);
       return cs.overflowY === "auto" || cs.overflowY === "scroll";
     });
     candidates.sort((a, b) => b.scrollHeight - a.scrollHeight);
     const inner = candidates[0] ?? null;
-    if (inner) {
-      return { el: inner, kind: "scrollable-div" };
-    }
-    if (docCanScroll) {
-      return { el: null, kind: "document" };
-    }
+    if (inner) return { el: inner, kind: "scrollable-div" };
+    if (docCanScroll) return { el: null, kind: "document" };
     return { el: null, kind: "none" };
   };
   const scroller = findScroller();

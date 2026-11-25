@@ -22,34 +22,25 @@ export async function ipcChatFetch(
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       const finish = (error?: Error) => {
-        if (settled) {
-          return;
-        }
+        if (settled) return;
         settled = true;
         cleanup();
-        if (error) {
-          controller.error(error);
-        } else {
-          controller.close();
-        }
+        if (error) controller.error(error);
+        else controller.close();
       };
       abort = () =>
         finish(new DOMException("The request was aborted.", "AbortError"));
       signal?.addEventListener("abort", abort, { once: true });
       try {
         closePort = window.pond.agentStream(parseBody(init), (event) => {
-          if (settled) {
-            return;
-          }
+          if (settled) return;
           if (event.type === "data") {
             controller.enqueue(new Uint8Array(event.data));
           } else {
             finish(event.type === "error" ? new Error(event.error) : undefined);
           }
         });
-        if (settled) {
-          cleanup();
-        }
+        if (settled) cleanup();
       } catch (error) {
         finish(
           error instanceof Error
@@ -59,9 +50,7 @@ export async function ipcChatFetch(
       }
     },
     cancel() {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       cleanup();
     },
@@ -76,9 +65,7 @@ export async function ipcChatFetch(
 
 export function parseBody(init?: RequestInit) {
   const raw = z.string().safeParse(init?.body);
-  if (!raw.success) {
-    return {};
-  }
+  if (!raw.success) return {};
   try {
     const parsed = z
       .record(z.string(), z.json())

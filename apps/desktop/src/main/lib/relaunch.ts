@@ -15,9 +15,7 @@ export function appRelaunchOptions(
   appImage = process.env.APPIMAGE,
   argv: ReadonlyArray<string> = process.argv,
 ): RelaunchOptions | undefined {
-  if (platform !== "linux" || !appImage) {
-    return undefined;
-  }
+  if (platform !== "linux" || !appImage) return undefined;
   return {
     execPath: appImage,
     args: [...argv]
@@ -29,9 +27,7 @@ export function appRelaunchOptions(
 
 export function appRelaunchEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const next = { ...env };
-  for (const key of APPIMAGE_MOUNT_ENV) {
-    delete next[key];
-  }
+  for (const key of APPIMAGE_MOUNT_ENV) delete next[key];
   return next;
 }
 
@@ -55,9 +51,7 @@ export function planRelaunch(
   env: NodeJS.ProcessEnv = process.env,
 ): RelaunchPlan {
   const options = appRelaunchOptions(platform, appImage, argv);
-  if (!options) {
-    return { kind: "electron" };
-  }
+  if (!options) return { kind: "electron" };
   return {
     kind: "spawn",
     command: options.execPath,

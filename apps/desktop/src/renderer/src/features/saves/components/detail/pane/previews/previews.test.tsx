@@ -82,9 +82,7 @@ describe("SavePreviews", () => {
   const decode = (name: string) =>
     act(async () => {
       for (const pending of decodes) {
-        if (pending.src.includes(`/${name}.jpg`)) {
-          pending.resolve();
-        }
+        if (pending.src.includes(`/${name}.jpg`)) pending.resolve();
       }
     });
   const layers = () =>
@@ -127,9 +125,7 @@ describe("SavePreviews", () => {
     await show(imageSave("wide", { width: 1600, height: 900 }));
     const image = host.querySelector<HTMLImageElement>('img[alt="wide"]');
     const frame = image?.closest("figure");
-    if (!image || !frame) {
-      throw new Error("Missing preview image");
-    }
+    if (!image || !frame) throw new Error("Missing preview image");
     expect(Number(frame.style.getPropertyValue("--preview-aspect"))).toBe(
       1600 / 900,
     );
@@ -151,9 +147,7 @@ describe("SavePreviews", () => {
     const open = host.querySelector<HTMLButtonElement>(
       'button[aria-label="View Thumbnail"]',
     );
-    if (!open) {
-      throw new Error("Missing View Thumbnail");
-    }
+    if (!open) throw new Error("Missing View Thumbnail");
     expect(open.querySelector("img")?.alt).toBe("photo");
 
     await act(async () => open.click());

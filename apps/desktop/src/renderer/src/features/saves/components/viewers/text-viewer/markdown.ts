@@ -54,9 +54,7 @@ function splitPondMarkdown(source: string): Array<MarkdownSegment> {
   const flush = () => {
     const value = buf.join("\n");
     buf = [];
-    if (value.trim().length === 0) {
-      return;
-    }
+    if (value.trim().length === 0) return;
     segments.push({ kind: "md", value });
   };
   for (let i = 0; i < lines.length; i++) {
@@ -101,9 +99,7 @@ function $splitUnderline(text: TextNode): void {
     parts.push({ value: match[1] ?? "", underline: true });
     last = index + match[0].length;
   }
-  if (parts.length === 0) {
-    return;
-  }
+  if (parts.length === 0) return;
   if (last < value.length) {
     parts.push({ value: value.slice(last), underline: false });
   }
@@ -120,9 +116,7 @@ function $splitUnderline(text: TextNode): void {
     return [next];
   });
   const first = nodes[0];
-  if (!first) {
-    return;
-  }
+  if (!first) return;
   text.replace(first);
   let cursor = first;
   for (const node of nodes.slice(1)) {
@@ -132,16 +126,12 @@ function $splitUnderline(text: TextNode): void {
 }
 
 function $applyUnderlineMarkers(): void {
-  for (const text of $getRoot().getAllTextNodes()) {
-    $splitUnderline(text);
-  }
+  for (const text of $getRoot().getAllTextNodes()) $splitUnderline(text);
 }
 
 function $appendMarkdown(markdown: string): void {
   const nodes = $generateNodesFromMarkdownString(markdown);
-  if (nodes.length === 0) {
-    return;
-  }
+  if (nodes.length === 0) return;
   $getRoot().append(...nodes);
 }
 
@@ -160,19 +150,13 @@ export function $writeMarkdown(markdown: string): void {
       continue;
     }
     const title = $createParagraphNode();
-    if (segment.title) {
-      title.append($createTextNode(segment.title));
-    }
+    if (segment.title) title.append($createTextNode(segment.title));
     const content = $createCollapsibleContentNode();
     if (segment.body) {
       const inner = $generateNodesFromMarkdownString(segment.body);
-      if (inner.length) {
-        content.append(...inner);
-      }
+      if (inner.length) content.append(...inner);
     }
-    if (content.getChildrenSize() === 0) {
-      content.append($createParagraphNode());
-    }
+    if (content.getChildrenSize() === 0) content.append($createParagraphNode());
     root.append(
       $createCollapsibleContainerNode(segment.open).append(
         $createCollapsibleTitleNode().append(title),
@@ -188,9 +172,7 @@ export function markdownFromEditor(editor: LexicalEditor): string {
 }
 
 function $exportUnderline(node: LexicalNode): PhrasingContent | null {
-  if (!$isTextNode(node) || !node.hasFormat("underline")) {
-    return null;
-  }
+  if (!$isTextNode(node) || !node.hasFormat("underline")) return null;
   const value = `++${node.getTextContent()}++`;
   let phrasing: PhrasingContent = node.hasFormat("code")
     ? { type: "inlineCode", value }
@@ -208,9 +190,7 @@ function $exportUnderline(node: LexicalNode): PhrasingContent | null {
 }
 
 function $exportCollapse(node: LexicalNode): MdastNode | null {
-  if (!$isCollapsibleContainerNode(node)) {
-    return null;
-  }
+  if (!$isCollapsibleContainerNode(node)) return null;
   const title = node.getChildren().find($isCollapsibleTitleNode);
   const content = node.getChildren().find($isCollapsibleContentNode);
   const heading = title?.getTextContent() ?? "";
@@ -224,13 +204,9 @@ function $exportCollapse(node: LexicalNode): MdastNode | null {
 
 function $importImage(node: { url?: string; alt?: string | null }) {
   const src = node.url;
-  if (!src) {
-    return null;
-  }
+  if (!src) return null;
   const video = parseYouTubeId(src);
-  if (video) {
-    return $createYouTubeNode(video);
-  }
+  if (video) return $createYouTubeNode(video);
   return $createImageNode({ src, alt: node.alt ?? "" });
 }
 
@@ -239,13 +215,9 @@ function $importLink(
   ctx: MdastImportContext,
 ) {
   const href = node.url;
-  if (!href) {
-    return null;
-  }
+  if (!href) return null;
   const video = parseYouTubeId(href);
-  if (video) {
-    return $createYouTubeNode(video);
-  }
+  if (video) return $createYouTubeNode(video);
   if (IMAGE_HREF.test(href)) {
     return $createImageNode({ src: href, alt: linkLabel(node) });
   }
@@ -257,23 +229,17 @@ function $importLink(
     node.title ? { title: node.title } : undefined,
   );
   const children = ctx.importChildren(node);
-  if (children.length) {
-    link.append(...children);
-  }
+  if (children.length) link.append(...children);
   return link;
 }
 
 function $exportImage(node: LexicalNode): MdastNode | null {
-  if (!$isImageNode(node)) {
-    return null;
-  }
+  if (!$isImageNode(node)) return null;
   return { type: "image", url: node.getSrc(), alt: node.getAlt() };
 }
 
 function $exportFile(node: LexicalNode): MdastNode | null {
-  if (!$isFileNode(node)) {
-    return null;
-  }
+  if (!$isFileNode(node)) return null;
   return {
     type: "link",
     url: node.getHref(),
@@ -282,9 +248,7 @@ function $exportFile(node: LexicalNode): MdastNode | null {
 }
 
 function $exportYouTube(node: LexicalNode): MdastNode | null {
-  if (!$isYouTubeNode(node)) {
-    return null;
-  }
+  if (!$isYouTubeNode(node)) return null;
   const url = youtubeWatchUrl(node.getId());
   return {
     type: "paragraph",
@@ -310,9 +274,7 @@ function fileName(href: string): string {
 }
 
 function linkLabel(node: MdastParent & { alt?: string | null }): string {
-  if (node.alt) {
-    return node.alt;
-  }
+  if (node.alt) return node.alt;
   return node.children
     .map((child) => ("value" in child ? String(child.value ?? "") : ""))
     .join("");

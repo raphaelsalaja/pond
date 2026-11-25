@@ -43,9 +43,7 @@ export function DataTableHotkeys<T extends RowData>() {
   const { actions, meta, selectionStore } = useDataTable<T>();
 
   useEffect(() => {
-    if (!meta.selectionEnabled) {
-      return;
-    }
+    if (!meta.selectionEnabled) return;
 
     const onMouseDown = (event: MouseEvent) => {
       if (
@@ -79,9 +77,7 @@ export function DataTableHotkeys<T extends RowData>() {
       }
 
       const ids = meta.rows.map((row) => row.id);
-      if (ids.length === 0) {
-        return;
-      }
+      if (ids.length === 0) return;
 
       const selected = selectionStore.state.selectedIds;
       const current = selectionStore.state.cursorId;
@@ -95,9 +91,7 @@ export function DataTableHotkeys<T extends RowData>() {
       }
 
       if (event.key === "Escape") {
-        if (selected.size === 0) {
-          return;
-        }
+        if (selected.size === 0) return;
         event.preventDefault();
         actions.clearSelection();
         return;
@@ -106,22 +100,16 @@ export function DataTableHotkeys<T extends RowData>() {
       if (event.key === "Enter") {
         const id = cursor ?? ids[0];
         const row = meta.rows.find((item) => item.id === id);
-        if (!row) {
-          return;
-        }
+        if (!row) return;
         event.preventDefault();
-        if (!selected.has(row.id)) {
-          actions.selectRow(row.id);
-        }
+        if (!selected.has(row.id)) actions.selectRow(row.id);
         meta.rowApi.onRowClick?.(row.original);
         return;
       }
 
       if (event.key === " ") {
         const id = cursor ?? ids[0];
-        if (!id) {
-          return;
-        }
+        if (!id) return;
         event.preventDefault();
         actions.toggleRow(id, event.shiftKey);
         return;
@@ -163,17 +151,11 @@ export function DataTableHotkeys<T extends RowData>() {
                 : ids.length - 1
               : Math.min(ids.length - 1, Math.max(0, from + delta));
       const next = ids[nextIdx];
-      if (!next) {
-        return;
-      }
+      if (!next) return;
       event.preventDefault();
-      if (cmd && !event.shiftKey) {
-        actions.focusRow(next);
-      } else if (event.shiftKey) {
-        actions.toggleRow(next, true);
-      } else {
-        actions.selectRow(next);
-      }
+      if (cmd && !event.shiftKey) actions.focusRow(next);
+      else if (event.shiftKey) actions.toggleRow(next, true);
+      else actions.selectRow(next);
     };
 
     document.addEventListener("mousedown", onMouseDown);

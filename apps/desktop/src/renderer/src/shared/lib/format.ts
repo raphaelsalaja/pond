@@ -14,9 +14,7 @@ const compactFormatter = new Intl.NumberFormat(systemLocale, {
 });
 
 export function formatNumber(n: number): string {
-  if (!Number.isFinite(n)) {
-    return "-";
-  }
+  if (!Number.isFinite(n)) return "-";
   return numberFormatter.format(n);
 }
 
@@ -33,9 +31,7 @@ export function formatBytes(bytes: number | null | undefined): string {
 }
 
 export function formatCount(n: number): string {
-  if (!Number.isFinite(n)) {
-    return "-";
-  }
+  if (!Number.isFinite(n)) return "-";
   return compactFormatter.format(n);
 }
 
@@ -74,20 +70,14 @@ const tsDate = new Intl.DateTimeFormat(systemLocale, {
 export function formatTimestampLine(
   value: string | number | null | undefined,
 ): string {
-  if (value === null || value === undefined || value === "") {
-    return "";
-  }
+  if (value === null || value === undefined || value === "") return "";
   const d = new Date(value);
-  if (!Number.isFinite(d.getTime())) {
-    return "";
-  }
+  if (!Number.isFinite(d.getTime())) return "";
   return `${tsTime.format(d)} · ${tsDate.format(d)}`;
 }
 
 export function formatDate(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === "") {
-    return "";
-  }
+  if (value === null || value === undefined || value === "") return "";
   const d = new Date(value);
   return Number.isFinite(d.getTime()) ? tsDate.format(d) : "";
 }
@@ -95,13 +85,9 @@ export function formatDate(value: string | number | null | undefined): string {
 export function formatAbsolute(
   value: string | number | null | undefined,
 ): string {
-  if (value === null || value === undefined || value === "") {
-    return "";
-  }
+  if (value === null || value === undefined || value === "") return "";
   const d = new Date(value);
-  if (!Number.isFinite(d.getTime())) {
-    return String(value);
-  }
+  if (!Number.isFinite(d.getTime())) return String(value);
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");

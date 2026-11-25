@@ -120,9 +120,7 @@ function buildAddItems(
       hidden: !lastFolder,
       shortcut: shortcutGlyphs("save.add-to-last-folder"),
       onClick: () => {
-        if (lastFolder) {
-          void assignSavesToFolder(ids, lastFolder);
-        }
+        if (lastFolder) void assignSavesToFolder(ids, lastFolder);
       },
     },
     {
@@ -227,11 +225,8 @@ export function buildOrganizeItems(
         disabled: clipboardEmpty,
         shortcut: shortcutGlyphs("save.paste-tags"),
         onClick: () => {
-          if (batch) {
-            void pasteTagsForSelection(ids);
-          } else {
-            void pasteTags(save);
-          }
+          if (batch) void pasteTagsForSelection(ids);
+          else void pasteTags(save);
         },
       },
       {
@@ -239,9 +234,7 @@ export function buildOrganizeItems(
         icon: glyph(IconPinTack),
         hidden: !inFolder || batch,
         onClick: () => {
-          if (!resolvedFolderId) {
-            return;
-          }
+          if (!resolvedFolderId) return;
           const next = isPinned
             ? resolvedPinned.filter((id) => id !== save.id)
             : [save.id, ...resolvedPinned.filter((id) => id !== save.id)];
@@ -255,9 +248,7 @@ export function buildOrganizeItems(
         icon: glyph(IconImage),
         hidden: !inFolder || batch,
         onClick: () => {
-          if (!resolvedFolderId) {
-            return;
-          }
+          if (!resolvedFolderId) return;
           void saveLibraryBridge.saveFolderPresentation(resolvedFolderId, {
             coverSaveId: isCover ? null : save.id,
           });

@@ -174,9 +174,7 @@ export function glyphsFor(command: CanvasCommand): Array<string> | undefined {
   const binding = BINDINGS.find(
     ([, candidate]) => JSON.stringify(candidate) === key,
   );
-  if (!binding) {
-    return undefined;
-  }
+  if (!binding) return undefined;
   const [chord] = binding;
   return [
     ...(chord.control ? ["⌃"] : []),

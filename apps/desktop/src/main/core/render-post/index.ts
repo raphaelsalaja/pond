@@ -44,18 +44,12 @@ function resourcesDir(): string | null {
 
 /** Arial, Apple Color Emoji and Hiragino are read from macOS; Pond may not ship them. */
 function getRenderer(): Promise<PostRenderer | null> {
-  if (process.platform !== "darwin") {
-    return Promise.resolve(null);
-  }
+  if (process.platform !== "darwin") return Promise.resolve(null);
   /** Without a build there is nothing to cache, so one built later is picked up without a restart. */
   const dir = renderer ? null : resourcesDir();
-  if (!renderer && !dir) {
-    return Promise.resolve(null);
-  }
+  if (!renderer && !dir) return Promise.resolve(null);
   renderer ??= (async () => {
-    if (!dir) {
-      return null;
-    }
+    if (!dir) return null;
     try {
       return await createPostRenderer({
         wasmPath: join(dir, "pond-render.wasm"),
@@ -71,17 +65,13 @@ function getRenderer(): Promise<PostRenderer | null> {
 }
 
 function scheduleIdleDispose(): void {
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-  }
+  if (idleTimer) clearTimeout(idleTimer);
   idleTimer = setTimeout(disposePostRenderer, IDLE_DISPOSE_MS);
   idleTimer.unref?.();
 }
 
 function disposePostRenderer(): void {
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-  }
+  if (idleTimer) clearTimeout(idleTimer);
   idleTimer = null;
   const current = renderer;
   renderer = null;
@@ -92,9 +82,7 @@ async function sizeOf(
   data: string,
 ): Promise<{ width: number; height: number } | null> {
   const comma = data.indexOf(",");
-  if (comma < 0) {
-    return null;
-  }
+  if (comma < 0) return null;
   try {
     const meta = await sharp(
       Buffer.from(data.slice(comma + 1), "base64"),
@@ -118,13 +106,9 @@ async function fillImageSizes(post: XPost): Promise<void> {
   ];
   await Promise.all(
     boxes.map(async (box) => {
-      if ((box.width > 0 && box.height > 0) || !box.data) {
-        return;
-      }
+      if ((box.width > 0 && box.height > 0) || !box.data) return;
       const size = await sizeOf(box.data);
-      if (size) {
-        Object.assign(box, size);
-      }
+      if (size) Object.assign(box, size);
     }),
   );
   if (post.media) {
@@ -141,13 +125,9 @@ async function withRenderer(
   label: string,
   draw: (engine: PostRenderer) => Promise<RenderedPost>,
 ): Promise<RenderedPost | null> {
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-  }
+  if (idleTimer) clearTimeout(idleTimer);
   const engine = await getRenderer();
-  if (!engine) {
-    return null;
-  }
+  if (!engine) return null;
   try {
     return await draw(engine);
   } catch (error) {
@@ -164,13 +144,9 @@ export async function renderXPostPng(
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
 ): Promise<RenderedPost | null> {
-  if (!capture) {
-    return null;
-  }
+  if (!capture) return null;
   const post = captureToXPost(capture, fallbackAuthor);
-  if (!post) {
-    return null;
-  }
+  if (!post) return null;
   return withRenderer(`X ${capture.id}`, async (engine) => {
     await fillImageSizes(post);
     return engine.render("twitter", post, {
@@ -188,9 +164,7 @@ export async function renderThreadsPostPng(
   scheme: "light" | "dark",
 ): Promise<RenderedPost | null> {
   const post = cardDataToThreadsPost(data);
-  if (!post) {
-    return null;
-  }
+  if (!post) return null;
   return withRenderer("Threads", (engine) =>
     engine.render("threads", post, {
       theme: scheme,
@@ -206,9 +180,7 @@ export async function renderBlueskyPostPng(
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
 ): Promise<RenderedPost | null> {
-  if (!capture) {
-    return null;
-  }
+  if (!capture) return null;
   const post = captureToBlueskyPost(capture, fallbackAuthor);
   return withRenderer(`Bluesky ${capture.id}`, (engine) =>
     engine.render("bluesky", post, {

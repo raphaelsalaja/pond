@@ -8,9 +8,7 @@ export function $writeSearchString(text: string): void {
   const root = $getRoot();
   root.clear();
   const paragraph = $createParagraphNode();
-  if (text.trim()) {
-    paragraph.append($createTextNode(`${text.trim()} `));
-  }
+  if (text.trim()) paragraph.append($createTextNode(`${text.trim()} `));
   root.append(paragraph);
   paragraph.selectEnd();
 }

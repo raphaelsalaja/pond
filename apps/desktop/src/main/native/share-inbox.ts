@@ -21,9 +21,7 @@ export async function inboxEntries(
   const entries: Array<InboxEntry> = [];
   for (const path of paths) {
     const file = await realpath(path).catch(() => null);
-    if (!file) {
-      continue;
-    }
+    if (!file) continue;
     const parts = relative(base, file).split(sep);
     if (parts.length !== 2 || parts.some((p) => p === ".." || p === "")) {
       continue;
@@ -46,15 +44,11 @@ export async function importSharedFiles(
 ): Promise<{ ids: Array<string> }> {
   const root = deps.root ?? shareInboxPath();
   const entries = await inboxEntries(paths, root);
-  if (entries.length === 0) {
-    throw new Error("no_files");
-  }
+  if (entries.length === 0) throw new Error("no_files");
   const run = deps.importFiles ?? importFilesDefault;
   try {
     const result = await run({ paths: entries.map((e) => e.file) });
-    if (!result.ok) {
-      throw new Error(result.error);
-    }
+    if (!result.ok) throw new Error(result.error);
     return { ids: result.ids };
   } finally {
     const drops = new Set(entries.map((e) => e.drop));

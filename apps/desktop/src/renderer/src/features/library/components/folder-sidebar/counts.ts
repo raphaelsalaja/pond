@@ -28,13 +28,9 @@ export function countSidebarSaves(
       continue;
     }
     library += 1;
-    if (save.tags.length === 0) {
-      untagged += 1;
-    }
+    if (save.tags.length === 0) untagged += 1;
     const folderIds = memberships[save.id] ?? [];
-    if (folderIds.length === 0) {
-      uncategorized += 1;
-    }
+    if (folderIds.length === 0) uncategorized += 1;
     for (const folderId of folderIds) {
       folders[folderId] = (folders[folderId] ?? 0) + 1;
     }

@@ -15,9 +15,7 @@ type Input = {
 
 export default async function tool(input: Input) {
   const [save] = await loadSaves([input.id], input.libraryId);
-  if (!save) {
-    throw new Error("Pond has no save with that ID in this library. Search again to find it.");
-  }
+  if (!save) throw new Error("Pond has no save with that ID in this library. Search again to find it.");
   const target = input.original && isWebUrl(save.url) ? save.url : saveLink(save);
   await recordOpened(save);
   await open(target);

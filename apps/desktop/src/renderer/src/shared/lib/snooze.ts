@@ -54,9 +54,7 @@ export function snoozeUntil(
 ): number | null {
   const date = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
   const clock = /^(\d{2}):(\d{2})$/.exec(time);
-  if (!date || !clock) {
-    return null;
-  }
+  if (!date || !clock) return null;
   const until = new Date(
     Number(date[1]),
     Number(date[2]) - 1,

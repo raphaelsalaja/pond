@@ -32,9 +32,7 @@ export function ChipsField<Value extends string>({
       disabled={disabled}
       itemToStringLabel={labelOf}
       onOpenChange={(open) => {
-        if (open) {
-          onOpen?.();
-        }
+        if (open) onOpen?.();
       }}
       onValueChange={onValueChange}
     >

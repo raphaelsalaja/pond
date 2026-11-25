@@ -46,9 +46,7 @@ export function EpubViewer({
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) {
-      return;
-    }
+    if (!root) return;
     let alive = true;
     let book: Book | null = null;
     let rendition: Rendition | null = null;
@@ -58,14 +56,10 @@ export function EpubViewer({
       import("epubjs"),
     ])
       .then(async ([buffer, module]) => {
-        if (!alive) {
-          return;
-        }
+        if (!alive) return;
         book = module.default();
         await book.open(buffer, "binary");
-        if (!alive || !book) {
-          return;
-        }
+        if (!alive || !book) return;
         rendition = book.renderTo(root, {
           width: "100%",
           height: "100%",
@@ -83,18 +77,12 @@ export function EpubViewer({
           img: { "max-width": "100% !important" },
         });
         const navigation = await book.loaded.navigation;
-        if (alive) {
-          setToc(flattenNavigation(navigation.toc));
-        }
+        if (alive) setToc(flattenNavigation(navigation.toc));
         await rendition.display();
-        if (alive) {
-          setReady(true);
-        }
+        if (alive) setReady(true);
       })
       .catch(() => {
-        if (alive) {
-          onUnavailable();
-        }
+        if (alive) onUnavailable();
       });
 
     return () => {
@@ -181,9 +169,7 @@ export function EpubViewer({
                 items={chapters}
                 value={chapter}
                 onValueChange={(next) => {
-                  if (next === null) {
-                    return;
-                  }
+                  if (next === null) return;
                   setChapter(next);
                   void renditionRef.current?.display(next);
                 }}

@@ -28,9 +28,7 @@ function entry(text: string, quotedText?: string): BookmarksEntry {
 
 function seeded(text: string, quotedText?: string): RawJson {
   const seed = buildTwitterBookmarkSeed(entry(text, quotedText));
-  if (!seed) {
-    throw new Error("seed missing");
-  }
+  if (!seed) throw new Error("seed missing");
   return seed.rawJson;
 }
 

@@ -20,27 +20,17 @@ export function ensureTextCover(
   save: Save,
   opts: { force?: boolean } = {},
 ): void {
-  if (!opts.force && !needsTextCover(save)) {
-    return;
-  }
-  if (!opts.force && requested.has(save.id)) {
-    return;
-  }
-  if (opts.force) {
-    requested.delete(save.id);
-  }
+  if (!opts.force && !needsTextCover(save)) return;
+  if (!opts.force && requested.has(save.id)) return;
+  if (opts.force) requested.delete(save.id);
   requested.add(save.id);
   const params: TextCoverParams = { id: save.id };
-  if (opts.force) {
-    params.force = true;
-  }
+  if (opts.force) params.force = true;
   void window.pond
     .query("saves.ensureTextCover", params)
     .then((result) => {
       const res = TextCoverReplySchema.parse(result);
-      if (!res.ok || !res.captured) {
-        requested.delete(save.id);
-      }
+      if (!res.ok || !res.captured) requested.delete(save.id);
     })
     .catch(() => {
       requested.delete(save.id);

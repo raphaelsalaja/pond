@@ -59,9 +59,7 @@ export async function importSessionCookies(
   cookies: Array<ExtensionCookie>,
 ): Promise<SessionImportResponse> {
   const domain = primaryDomainForSource(source);
-  if (!domain) {
-    return failedSessionImport(source, "no_cookie_domain");
-  }
+  if (!domain) return failedSessionImport(source, "no_cookie_domain");
 
   const allowedHost = domain.replace(/^\./, "").toLowerCase();
   const filtered = cookies.filter((cookie: ExtensionCookie) => {
@@ -137,9 +135,7 @@ export async function importSessionCookies(
     const { fetchCosmosViewer } = await import("./refresh/harvest/cosmos/api");
     const viewer = await fetchCosmosViewer(partitionForAccount(account.id));
     if (viewer) {
-      if (viewer.handle !== account.handle) {
-        patch.handle = viewer.handle;
-      }
+      if (viewer.handle !== account.handle) patch.handle = viewer.handle;
       if (account.identityKey !== viewer.userId) {
         patch.identityKey = viewer.userId;
       }
@@ -278,9 +274,7 @@ async function resolveTargetAccount(
     return { account, kind: "created", probedHandle };
   }
   const first = accounts[0];
-  if (!first) {
-    throw new Error("unreachable: accounts non-empty");
-  }
+  if (!first) throw new Error("unreachable: accounts non-empty");
   if (accounts.length > 1) {
     log.warn(
       `[pond session-import] ${source}: ${accounts.length} accounts but the session carries no identity; assigning to the first`,

@@ -33,9 +33,7 @@ export function ModelCardPreview({
 
   useEffect(() => {
     const root = rootRef.current;
-    if (!root) {
-      return;
-    }
+    if (!root) return;
     let alive = true;
     let loaded: Awaited<ReturnType<typeof loadModel>>["object"] | null = null;
     const scene = new Scene();
@@ -77,9 +75,7 @@ export function ModelCardPreview({
         }
         loaded = result.object;
         const box = new Box3().setFromObject(result.object);
-        if (box.isEmpty()) {
-          throw new Error("empty model");
-        }
+        if (box.isEmpty()) throw new Error("empty model");
         const size = box.getSize(new Vector3());
         const center = box.getCenter(new Vector3());
         result.object.position.sub(center);
@@ -97,17 +93,13 @@ export function ModelCardPreview({
         requestAnimationFrame(render);
       })
       .catch(() => {
-        if (alive) {
-          setStatus("failed");
-        }
+        if (alive) setStatus("failed");
       });
 
     return () => {
       alive = false;
       observer.disconnect();
-      if (loaded) {
-        disposeObject(loaded);
-      }
+      if (loaded) disposeObject(loaded);
       renderer.dispose();
       renderer.domElement.remove();
     };
@@ -138,9 +130,7 @@ function disposeObject(
     const materials = Array.isArray(child.material)
       ? child.material
       : [child.material];
-    for (const material of materials) {
-      disposeMaterial(material);
-    }
+    for (const material of materials) disposeMaterial(material);
   });
 }
 

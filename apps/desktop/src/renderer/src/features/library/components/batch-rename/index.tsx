@@ -168,9 +168,7 @@ export function BatchRenameDialog({
   }
 
   async function submit() {
-    if (busy) {
-      return;
-    }
+    if (busy) return;
     if (!filled) {
       setMissing(true);
       (mode === "replace" ? findRef : patternRef).current?.focus();
@@ -203,9 +201,7 @@ export function BatchRenameDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next && !busy) {
-          onClose();
-        }
+        if (!next && !busy) onClose();
       }}
     >
       <Dialog.Portal>
@@ -230,9 +226,7 @@ export function BatchRenameDialog({
                   value={[mode]}
                   onValueChange={(value) => {
                     const next = value[0];
-                    if (next === "format" || next === "replace") {
-                      setMode(next);
-                    }
+                    if (next === "format" || next === "replace") setMode(next);
                   }}
                 >
                   <Toggle type="button" size="sm" value="format">
@@ -357,9 +351,7 @@ export function BatchRenameDialog({
                       const next = CASES.find(
                         (entry) => entry.value === value[0],
                       );
-                      if (next) {
-                        setTextCase(next.value);
-                      }
+                      if (next) setTextCase(next.value);
                     }}
                   >
                     {CASES.map((entry) => (

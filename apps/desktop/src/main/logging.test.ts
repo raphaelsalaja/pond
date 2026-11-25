@@ -51,9 +51,7 @@ describe("resolveLogFile", () => {
     const file = resolveLogFile({
       ...test.app,
       getPath: (name) => {
-        if (name === "logs") {
-          throw new Error("Failed to get 'logs' path");
-        }
+        if (name === "logs") throw new Error("Failed to get 'logs' path");
         return test.userData;
       },
     });

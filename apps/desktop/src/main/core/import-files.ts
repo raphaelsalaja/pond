@@ -61,9 +61,7 @@ async function importPaths(
 
   async function visit(path: string, parentId: string | null) {
     const absolute = resolve(path);
-    if (visited.has(absolute) || basename(path).startsWith(".")) {
-      return;
-    }
+    if (visited.has(absolute) || basename(path).startsWith(".")) return;
     visited.add(absolute);
     try {
       const details = await stat(path);
@@ -121,9 +119,7 @@ async function importPaths(
           tags,
           importedFrom: input.origin ?? "files",
         });
-        if (!imported.ok) {
-          throw new Error(imported.error);
-        }
+        if (!imported.ok) throw new Error(imported.error);
         if (assigned.length > 0) {
           const result = await dependencies.assignFolders(
             imported.id,
@@ -140,12 +136,8 @@ async function importPaths(
     }
   }
 
-  for (const path of input.paths) {
-    await visit(path, folderIds[0] ?? null);
-  }
-  if (ids.length === 0) {
-    return { ok: false, failedPaths, error: "no_files" };
-  }
+  for (const path of input.paths) await visit(path, folderIds[0] ?? null);
+  if (ids.length === 0) return { ok: false, failedPaths, error: "no_files" };
   return { ok: true, ids: [...new Set(ids)], failedPaths };
 }
 

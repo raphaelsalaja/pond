@@ -72,9 +72,7 @@ export function useOrganizationTree(
   // oxlint-disable-next-line react-hooks/exhaustive-deps -- Reconciles the cursor with the rows the DOM rendered, which change without any input changing; every setState is guarded so it settles.
   useLayoutEffect(() => {
     const retained = selected.filter((id) => byId.has(id));
-    if (retained.length !== selected.length) {
-      commit(retained);
-    }
+    if (retained.length !== selected.length) commit(retained);
     const rows = visibleRows();
     const ids = rowIds();
     if (!cursor || !ids.includes(cursor)) {
@@ -185,9 +183,7 @@ export function useOrganizationTree(
           toggle?.();
         } else if (expanded) {
           const child = ids[index + 1];
-          if (byId.get(child ?? "")?.parentId === id) {
-            nextId = child;
-          }
+          if (byId.get(child ?? "")?.parentId === id) nextId = child;
         }
         break;
       case "ArrowLeft":
@@ -240,9 +236,7 @@ export function useOrganizationTree(
         next?.scrollIntoView?.({ block: "nearest" });
       }
       if (event.shiftKey) {
-        if (!anchor.current || !byId.has(anchor.current)) {
-          anchor.current = id;
-        }
+        if (!anchor.current || !byId.has(anchor.current)) anchor.current = id;
         select(nextId, event);
       }
     }

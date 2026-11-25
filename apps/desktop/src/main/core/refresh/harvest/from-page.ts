@@ -115,21 +115,11 @@ export function parsePageBlob(raw: JsonValue | PageBlobInput): PageBlob | null {
     mediaUrls: blob.mediaUrls,
     mediaType: blob.mediaType,
   };
-  if (blob.title) {
-    page.title = blob.title;
-  }
-  if (blob.description) {
-    page.description = blob.description;
-  }
-  if (blob.author) {
-    page.author = blob.author;
-  }
-  if (blob.mediaUrl) {
-    page.mediaUrl = blob.mediaUrl;
-  }
-  if (blob.meta) {
-    page.meta = blob.meta;
-  }
+  if (blob.title) page.title = blob.title;
+  if (blob.description) page.description = blob.description;
+  if (blob.author) page.author = blob.author;
+  if (blob.mediaUrl) page.mediaUrl = blob.mediaUrl;
+  if (blob.meta) page.meta = blob.meta;
   return page;
 }
 
@@ -138,9 +128,7 @@ export function captureFromPageDom(
   ctx: HarvestAdaptCtx,
 ): Capture | null {
   const page = parsePageBlob(raw);
-  if (!page) {
-    return null;
-  }
+  if (!page) return null;
   const meta = page.meta ?? {};
   const author = authorFromPage(page.author, meta);
   const metrics = metricsFromMeta(meta);
@@ -153,33 +141,15 @@ export function captureFromPageDom(
     url: ctx.url,
     media: mediaFromPage(page, ctx),
   };
-  if (page.title) {
-    capture.title = page.title;
-  }
-  if (page.description) {
-    capture.description = page.description;
-  }
-  if (author) {
-    capture.author = author;
-  }
-  if (meta.publishedAt !== undefined) {
-    capture.publishedAt = meta.publishedAt;
-  }
-  if (page.lang) {
-    capture.lang = page.lang;
-  }
-  if (metrics) {
-    capture.metrics = metrics;
-  }
-  if (meta.durationSec !== undefined) {
-    capture.duration = meta.durationSec;
-  }
-  if (upstream) {
-    capture.upstream = upstream;
-  }
-  if (extras) {
-    capture.extras = extras;
-  }
+  if (page.title) capture.title = page.title;
+  if (page.description) capture.description = page.description;
+  if (author) capture.author = author;
+  if (meta.publishedAt !== undefined) capture.publishedAt = meta.publishedAt;
+  if (page.lang) capture.lang = page.lang;
+  if (metrics) capture.metrics = metrics;
+  if (meta.durationSec !== undefined) capture.duration = meta.durationSec;
+  if (upstream) capture.upstream = upstream;
+  if (extras) capture.extras = extras;
   return capture;
 }
 
@@ -200,9 +170,7 @@ function mediaFromPage(
       url: m.url,
       type: m.type === "video" ? "video" : "image",
     };
-    if (m.poster) {
-      entry.posterUrl = m.poster;
-    }
+    if (m.poster) entry.posterUrl = m.poster;
     return entry;
   });
 
@@ -213,9 +181,7 @@ function mediaFromPage(
     !media.some((m) => m.type === "video")
   ) {
     const entry: CaptureMedia = { url: upstreamUrl, type: "video" };
-    if (media[0]?.url) {
-      entry.posterUrl = media[0].url;
-    }
+    if (media[0]?.url) entry.posterUrl = media[0].url;
     media.push(entry);
   }
   return media;
@@ -229,21 +195,11 @@ function authorFromPage(
     ? author.replace(/^u\//, "").replace(/^@/, "")
     : undefined;
   const next: CaptureAuthor = {};
-  if (meta.authorName !== undefined) {
-    next.name = meta.authorName;
-  }
-  if (handle) {
-    next.handle = handle;
-  }
-  if (meta.authorAvatar !== undefined) {
-    next.avatarUrl = meta.authorAvatar;
-  }
-  if (meta.authorUrl !== undefined) {
-    next.profileUrl = meta.authorUrl;
-  }
-  if (meta.verified === true) {
-    next.verified = true;
-  }
+  if (meta.authorName !== undefined) next.name = meta.authorName;
+  if (handle) next.handle = handle;
+  if (meta.authorAvatar !== undefined) next.avatarUrl = meta.authorAvatar;
+  if (meta.authorUrl !== undefined) next.profileUrl = meta.authorUrl;
+  if (meta.verified === true) next.verified = true;
   if (
     !next.name &&
     author &&
@@ -260,41 +216,25 @@ function metricsFromMeta(meta: PageMeta): CaptureMetrics | undefined {
   const out: CaptureMetrics = {};
   for (const key of METRIC_KEYS) {
     const v = meta.metrics?.[key] ?? meta[key];
-    if (v !== undefined) {
-      out[key] = v;
-    }
+    if (v !== undefined) out[key] = v;
   }
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
 function extrasFromMeta(meta: PageMeta): CaptureExtras | undefined {
   const extras: CaptureExtras = {};
-  if (meta.subreddit !== undefined) {
-    extras.subreddit = meta.subreddit;
-  }
-  if (meta.tileType !== undefined) {
-    extras.tileType = meta.tileType;
-  }
-  if (meta.clusters) {
-    extras.clusters = meta.clusters;
-  }
-  if (meta.publisher !== undefined) {
-    extras.publisher = meta.publisher;
-  }
-  if (meta.faviconUrl !== undefined) {
-    extras.faviconUrl = meta.faviconUrl;
-  }
-  if (meta.blockClass !== undefined) {
-    extras.blockClass = meta.blockClass;
-  }
+  if (meta.subreddit !== undefined) extras.subreddit = meta.subreddit;
+  if (meta.tileType !== undefined) extras.tileType = meta.tileType;
+  if (meta.clusters) extras.clusters = meta.clusters;
+  if (meta.publisher !== undefined) extras.publisher = meta.publisher;
+  if (meta.faviconUrl !== undefined) extras.faviconUrl = meta.faviconUrl;
+  if (meta.blockClass !== undefined) extras.blockClass = meta.blockClass;
   return Object.keys(extras).length > 0 ? extras : undefined;
 }
 
 function upstreamFromMeta(meta: PageMeta): CaptureUpstream | undefined {
   const url = meta.upstreamUrl;
-  if (!url) {
-    return undefined;
-  }
+  if (!url) return undefined;
   try {
     return { url, host: new URL(url).host };
   } catch {

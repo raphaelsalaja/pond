@@ -28,9 +28,7 @@ function boardFeed(pages: Record<string, Array<Array<ListEntry>>>) {
   ): Promise<ResourcePageResult<ListEntry>> => {
     requests.push([boardId, bookmark]);
     const board = pages[boardId];
-    if (!board) {
-      return { ok: false, reason: "unknown" };
-    }
+    if (!board) return { ok: false, reason: "unknown" };
     const index = bookmark ? Number(bookmark) : 0;
     const items = board[index] ?? [];
     const next = index + 1 < board.length ? String(index + 1) : null;

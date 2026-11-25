@@ -11,17 +11,13 @@ function nativeAvailable() {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
 const opened: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of opened.splice(0)) {
-    db.close();
-  }
+  for (const db of opened.splice(0)) db.close();
 });
 function fixture() {
   const raw = new Database(":memory:");
@@ -38,9 +34,7 @@ function fixture() {
   );
   const ids = Array.from({ length: 1301 }, (_, i) => `save-${i}`);
   raw.transaction(() => {
-    for (const id of ids) {
-      insert.run(id, id);
-    }
+    for (const id of ids) insert.run(id, id);
   })();
   const batches: Array<Array<Transaction>> = [];
   const undo: Array<Array<Transaction>> = [];
@@ -87,9 +81,7 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
       );
       expect(result.changed).toBe(1301);
       const batch = f.batches.at(-1);
-      if (!batch) {
-        throw new Error("Expected a committed batch");
-      }
+      if (!batch) throw new Error("Expected a committed batch");
       expect(
         new Set(batch.filter((tx) => tx.model === "save").map((tx) => tx.id)),
       ).toEqual(new Set(f.ids));

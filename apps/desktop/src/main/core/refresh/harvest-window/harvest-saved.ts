@@ -181,9 +181,7 @@ async function harvestThreadsFeed(
   const lease = await leaseWindow("threads", { partition: opts.partition });
   try {
     const navOk = await navigateWithTimeout(lease.win, listUrl, NAV_TIMEOUT_MS);
-    if (!navOk) {
-      return { ok: false, reason: "timeout" };
-    }
+    if (!navOk) return { ok: false, reason: "timeout" };
     const savedUrl = lease.win.webContents.getURL();
     const challenge = looksLikeChallenge(savedUrl);
     if (challenge) {
@@ -211,9 +209,7 @@ async function harvestThreadsFeed(
     let lastPhase: SavedHarvestProgress["phase"] | null = null;
     let stopPolling = false;
     const pollInterval = setInterval(() => {
-      if (stopPolling) {
-        return;
-      }
+      if (stopPolling) return;
       if (lease.win.isDestroyed()) {
         clearInterval(pollInterval);
         return;
@@ -225,13 +221,9 @@ async function harvestThreadsFeed(
         )
         .then((raw) => {
           const stats = readStats(TextSchema.parse(raw));
-          if (!stats || stats.phase === "done") {
-            return;
-          }
+          if (!stats || stats.phase === "done") return;
           const moved = stats.seen !== lastSeen || stats.phase !== lastPhase;
-          if (!moved) {
-            return;
-          }
+          if (!moved) return;
           lastSeen = stats.seen;
           lastPhase = stats.phase;
           opts.onProgress?.({
@@ -307,25 +299,13 @@ async function harvestThreadsFeed(
         result = {
           ok: true,
           entries: scroll.entries.flatMap((e) => {
-            if (!e) {
-              return [];
-            }
+            if (!e) return [];
             const entry: SavedEntry = { postId: e.sourceId, url: e.url };
-            if (e.title) {
-              entry.title = e.title;
-            }
-            if (e.description) {
-              entry.description = e.description;
-            }
-            if (e.author) {
-              entry.author = e.author;
-            }
-            if (e.mediaUrl) {
-              entry.mediaUrl = e.mediaUrl;
-            }
-            if (e.mediaUrls) {
-              entry.mediaUrls = e.mediaUrls;
-            }
+            if (e.title) entry.title = e.title;
+            if (e.description) entry.description = e.description;
+            if (e.author) entry.author = e.author;
+            if (e.mediaUrl) entry.mediaUrl = e.mediaUrl;
+            if (e.mediaUrls) entry.mediaUrls = e.mediaUrls;
             return [entry];
           }),
           captures: hookCaptures,
@@ -341,9 +321,7 @@ async function harvestThreadsFeed(
     const seenIds = new Set<string>();
     const merged: Array<SavedEntry> = [];
     for (const entry of result.entries) {
-      if (seenIds.has(entry.postId)) {
-        continue;
-      }
+      if (seenIds.has(entry.postId)) continue;
       seenIds.add(entry.postId);
       const r = rich.get(entry.postId);
       if (!r) {
@@ -353,9 +331,7 @@ async function harvestThreadsFeed(
       merged.push(enrichEntry(entry, r));
     }
     for (const [postId, r] of rich) {
-      if (seenIds.has(postId)) {
-        continue;
-      }
+      if (seenIds.has(postId)) continue;
       seenIds.add(postId);
       merged.push(enrichEntry({ postId, url: r.url }, r));
     }

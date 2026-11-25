@@ -21,14 +21,10 @@ const pondIcnsPath = resolve(appRoot, "build/icon.icns");
 const relativeBinary = `${APP_NAME}.app/Contents/MacOS/Electron`;
 
 async function main() {
-  if (process.platform !== "darwin") {
-    return;
-  }
+  if (process.platform !== "darwin") return;
 
   const appBundle = await ensureNamedBundle();
-  if (!appBundle) {
-    return;
-  }
+  if (!appBundle) return;
 
   const contents = resolve(appBundle, "Contents");
   await patchPlist(resolve(contents, "Info.plist"));
@@ -59,14 +55,10 @@ async function ensureNamedBundle() {
 }
 
 async function writePathTxt() {
-  if (!(await isDir(pondApp))) {
-    return;
-  }
+  if (!(await isDir(pondApp))) return;
   try {
     const current = (await readFile(pathTxt, "utf8")).trim();
-    if (current === relativeBinary) {
-      return;
-    }
+    if (current === relativeBinary) return;
     await writeFile(pathTxt, relativeBinary, "utf8");
     console.log(`[pond] path.txt → ${relativeBinary}`);
   } catch (error) {

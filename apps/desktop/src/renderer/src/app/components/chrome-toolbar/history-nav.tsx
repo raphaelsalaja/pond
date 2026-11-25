@@ -33,9 +33,7 @@ export function ChromeHistoryNav() {
   useEffect(() => {
     /** Buttons 3 and 4 are a mouse's back and forward side buttons. */
     const onMouseUp = (event: MouseEvent) => {
-      if (event.button !== 3 && event.button !== 4) {
-        return;
-      }
+      if (event.button !== 3 && event.button !== 4) return;
       event.preventDefault();
       navigate(event.button === 3 ? "back" : "forward");
     };

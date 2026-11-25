@@ -33,9 +33,7 @@ export function addSavesToCanvas(
 ): void {
   void runCanvasAction(async () => {
     await canvases.addSaves(canvasId, saveIds);
-    if (canvases.isOpen(canvasId)) {
-      return;
-    }
+    if (canvases.isOpen(canvasId)) return;
     const canvas = canvases.snapshot().find((entry) => entry.id === canvasId);
     notify({
       id: "canvas-add-saves",
@@ -66,9 +64,7 @@ export function addFolderSavesToCanvas(
   saveIds: ReadonlyArray<string>,
 ): Promise<void> {
   const canvas = canvases.snapshot().find((entry) => entry.id === canvasId);
-  if (!canvas) {
-    return Promise.resolve();
-  }
+  if (!canvas) return Promise.resolve();
   const plan = planFolderSaves(saveIds, canvas);
   return runCanvasAction(async () => {
     await canvases.addSaves(canvasId, plan.saveIds, "beside");

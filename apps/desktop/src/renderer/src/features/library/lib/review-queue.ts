@@ -32,9 +32,7 @@ export function advanceQueue(
   outcome: ReviewOutcome,
 ): ReviewQueue {
   const id = currentReviewId(queue);
-  if (!id) {
-    return queue;
-  }
+  if (!id) return queue;
   return {
     ...queue,
     index: queue.index + 1,
@@ -45,9 +43,7 @@ export function advanceQueue(
 /** Undo restores a Save's earlier state, so its card comes back with no outcome recorded. */
 export function rewindQueue(queue: ReviewQueue, id: string): ReviewQueue {
   const index = queue.ids.indexOf(id);
-  if (index < 0) {
-    return queue;
-  }
+  if (index < 0) return queue;
   const outcomes = Object.fromEntries(
     Object.entries(queue.outcomes).filter(([saveId]) => saveId !== id),
   );
@@ -64,9 +60,7 @@ export function jumpQueue(queue: ReviewQueue, index: number): ReviewQueue {
 
 export function countOutcomes(queue: ReviewQueue) {
   const counts = { keep: 0, trash: 0, collection: 0, skip: 0 };
-  for (const outcome of Object.values(queue.outcomes)) {
-    counts[outcome] += 1;
-  }
+  for (const outcome of Object.values(queue.outcomes)) counts[outcome] += 1;
   return counts;
 }
 

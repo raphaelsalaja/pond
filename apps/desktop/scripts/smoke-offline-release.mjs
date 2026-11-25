@@ -29,7 +29,5 @@ const result = spawnSync("pnpm", ["exec", "vitest", "run", ...files], {
   stdio: "inherit",
 });
 
-if (result.error) {
-  throw result.error;
-}
+if (result.error) throw result.error;
 process.exitCode = result.status ?? 1;

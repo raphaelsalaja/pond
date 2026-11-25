@@ -71,9 +71,7 @@ async function adoptOrphanedSave(
   opts: EnqueueOptions,
 ): Promise<void> {
   const { accountId } = opts;
-  if (!accountId) {
-    return;
-  }
+  if (!accountId) return;
   const connected = new Set((await listAccounts()).map((a) => a.id));
   if (
     !harvestShouldAdoptSave(current, accountId, connected, opts.adoptOrphaned)
@@ -124,9 +122,7 @@ export async function enqueue(
   input: string | ReadonlyArray<EnqueueItem>,
   opts: EnqueueOptions = {},
 ): Promise<EnqueueOneResult | EnqueueManyResult> {
-  if (isItemList(input)) {
-    return enqueueMany(input, opts);
-  }
+  if (isItemList(input)) return enqueueMany(input, opts);
   return enqueueOne(input, opts);
 }
 
@@ -249,9 +245,7 @@ async function enqueueOne(
     sourceId,
     listKinds: incomingKinds,
   };
-  if (opts.seed) {
-    candidate.seed = opts.seed;
-  }
+  if (opts.seed) candidate.seed = opts.seed;
   const bundle = createEnqueueBundle(
     candidate,
     opts,
@@ -260,9 +254,7 @@ async function enqueueOne(
     await newSaveInboxForTrigger(opts.trigger),
   );
   const insertedAction = persistence.insertBundle(bundle);
-  if (insertedAction) {
-    broadcastSyncAction(insertedAction);
-  }
+  if (insertedAction) broadcastSyncAction(insertedAction);
   await fileIncomingSaves(
     [bundle.save.id],
     opts.accountId,
@@ -296,9 +288,7 @@ async function enqueueMany(
   const normalized = normalizeEnqueueItems(items, opts.trigger);
   const { candidates } = normalized;
   result.failed = normalized.failed;
-  if (candidates.length === 0) {
-    return result;
-  }
+  if (candidates.length === 0) return result;
 
   const existingKeys = await persistence.loadExistingCandidateKeys(candidates);
 
@@ -321,9 +311,7 @@ async function enqueueMany(
         adoptOrphaned: opts.adoptOrphaned,
         listKinds: candidate.listKinds,
       };
-      if (candidate.seed) {
-        one.seed = candidate.seed;
-      }
+      if (candidate.seed) one.seed = candidate.seed;
       await enqueueOne(candidate.url, one);
       result.existing += 1;
     } catch (error) {
@@ -337,9 +325,7 @@ async function enqueueMany(
   }
 
   if (fresh.length === 0) {
-    if (result.existing > 0) {
-      kickReconciler();
-    }
+    if (result.existing > 0) kickReconciler();
     return result;
   }
 

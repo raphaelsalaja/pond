@@ -5,9 +5,7 @@ import { video } from "virtual:video";
 import { FPS } from "../src/video";
 
 const element = document.getElementById("stage");
-if (!element) {
-  throw new Error("#stage element missing");
-}
+if (!element) throw new Error("#stage element missing");
 document.title = video.title;
 const root = createRoot(element);
 const render = (t: number) =>

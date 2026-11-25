@@ -67,15 +67,11 @@ export async function startThreadsCardBackfill(): Promise<{
       .limit(PAGE_SIZE)
       .offset(offset)
       .all();
-    if (page.length === 0) {
-      break;
-    }
+    if (page.length === 0) break;
     offset += page.length;
 
     for (const row of page) {
-      if (!isCaptureTweetStale(row.rawJson)) {
-        continue;
-      }
+      if (!isCaptureTweetStale(row.rawJson)) continue;
       const source = row.source;
       if (
         source !== "twitter" &&
@@ -103,9 +99,7 @@ export async function startThreadsCardBackfill(): Promise<{
       );
     }
 
-    if (page.length < PAGE_SIZE) {
-      break;
-    }
+    if (page.length < PAGE_SIZE) break;
   }
 
   await Promise.all(jobs);
@@ -121,9 +115,7 @@ export async function startThreadsCardBackfill(): Promise<{
 
 function needsLiveReplyRecapture(rawJson: RawJson | null): boolean {
   const capture = rawJson?.capture;
-  if (!capture?.replyTo) {
-    return false;
-  }
+  if (!capture?.replyTo) return false;
   return capture.extras?.replyRecaptureQueued !== true;
 }
 
@@ -132,9 +124,7 @@ export async function requeueReplyCaptures(
   rows: ReadonlyArray<BackfillRow>,
   runtime: ReplyRecaptureRuntime = defaultRuntime,
 ): Promise<number> {
-  if (rows.length === 0) {
-    return 0;
-  }
+  if (rows.length === 0) return 0;
   const db = await runtime.getDb();
   const now = new Date();
   const existingRows = db
@@ -161,9 +151,7 @@ export async function requeueReplyCaptures(
       .from(saves)
       .where(eq(saves.id, row.id))
       .get()?.rawJson;
-    if (!rawJson?.capture || !needsLiveReplyRecapture(rawJson)) {
-      continue;
-    }
+    if (!rawJson?.capture || !needsLiveReplyRecapture(rawJson)) continue;
     for (const op of REPLY_RECAPTURE_OPS) {
       const existingId = existingByKey.get(`${row.id}:${op}`);
       if (existingId) {
@@ -214,8 +202,6 @@ export async function requeueReplyCaptures(
     queued += 1;
   }
 
-  if (queued > 0) {
-    runtime.kickReconciler();
-  }
+  if (queued > 0) runtime.kickReconciler();
   return queued;
 }

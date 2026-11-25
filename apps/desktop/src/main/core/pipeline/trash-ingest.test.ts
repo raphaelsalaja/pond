@@ -26,9 +26,7 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
@@ -156,9 +154,7 @@ describe.skipIf(!nativeSqliteAvailable())(
       try {
         rmSync(dir, { recursive: true, force: true });
       } catch (error) {
-        if (process.platform !== "win32") {
-          throw error;
-        }
+        if (process.platform !== "win32") throw error;
       }
     });
 
@@ -180,9 +176,7 @@ describe.skipIf(!nativeSqliteAvailable())(
         .from(tasks)
         .where(eq(tasks.id, "hidden-running"))
         .get();
-      if (!hiddenRunning) {
-        throw new Error("missing hidden task");
-      }
+      if (!hiddenRunning) throw new Error("missing hidden task");
 
       const claimed = await claimOpenTasks();
 

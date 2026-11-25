@@ -60,9 +60,7 @@ export function createLibraryRepairService(
   function prune(): void {
     const now = dependencies.now();
     for (const [token, preview] of previews) {
-      if (preview.expiresAt <= now || preview.consumed) {
-        previews.delete(token);
-      }
+      if (preview.expiresAt <= now || preview.consumed) previews.delete(token);
     }
   }
 
@@ -156,22 +154,16 @@ export function createLibraryRepairService(
           dependencies,
           input.signal,
         );
-        if (transactions.length > 0) {
-          undoable.push(...transactions);
-        }
+        if (transactions.length > 0) undoable.push(...transactions);
         repaired += 1;
         input.onProgress?.(index + 1, preview.issues.length);
       }
     } catch (error) {
-      if (undoable.length > 0) {
-        dependencies.recordUndo(undoable);
-      }
+      if (undoable.length > 0) dependencies.recordUndo(undoable);
       previews.delete(input.token);
       throw error;
     }
-    if (undoable.length > 0) {
-      dependencies.recordUndo(undoable);
-    }
+    if (undoable.length > 0) dependencies.recordUndo(undoable);
     previews.delete(input.token);
     return {
       kind: preview.kind,
@@ -210,9 +202,7 @@ async function applyIssue(
 ): Promise<Array<Transaction>> {
   throwIfAborted(signal);
   const row = await dependencies.integrityRuntime.getSave(issue.saveId);
-  if (!row) {
-    throw new Error("The Save no longer exists.");
-  }
+  if (!row) throw new Error("The Save no longer exists.");
   switch (issue.action.kind) {
     case "thumbnail": {
       const action = issue.action;
@@ -290,9 +280,7 @@ async function applyIssue(
     }
     case "invalid-content":
     case "eagle-previews": {
-      if (row.deletedAt) {
-        return [];
-      }
+      if (row.deletedAt) return [];
       const transaction: Transaction = {
         kind: "trash",
         model: "save",
@@ -406,9 +394,7 @@ function isRepairThumbnail(kind: string): boolean {
 }
 
 function throwIfAborted(signal: AbortSignal | undefined): void {
-  if (signal?.aborted) {
-    throw new DOMException("Repair canceled.", "AbortError");
-  }
+  if (signal?.aborted) throw new DOMException("Repair canceled.", "AbortError");
 }
 
 const defaultDependencies: LibraryRepairServiceDependencies = {

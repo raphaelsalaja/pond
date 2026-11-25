@@ -144,9 +144,7 @@ describe("createAppleLanguageModel", () => {
       tools,
     });
     const parts = [];
-    for await (const part of stream) {
-      parts.push(part.type);
-    }
+    for await (const part of stream) parts.push(part.type);
     expect(parts).toEqual([
       "stream-start",
       "text-start",

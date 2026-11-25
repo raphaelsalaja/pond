@@ -68,28 +68,20 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
 
   async function current(): Promise<LibraryHealthCheck | null> {
     const libraryId = deps.libraryId();
-    if (latest?.libraryId === libraryId) {
-      return latest.check;
-    }
+    if (latest?.libraryId === libraryId) return latest.check;
     const check = await deps.readCheck(libraryId);
-    if (libraryId === deps.libraryId()) {
-      latest = { libraryId, check };
-    }
+    if (libraryId === deps.libraryId()) latest = { libraryId, check };
     return check;
   }
 
   function currentJob(): LibraryHealthJob | null {
-    if (!record || record.libraryId !== deps.libraryId()) {
-      return null;
-    }
+    if (!record || record.libraryId !== deps.libraryId()) return null;
     return { ...record.job };
   }
 
   /** Folders come and go between checks, so index findings that are no longer true drop out without a recheck. */
   function settled(check: LibraryHealthCheck): LibraryHealthCheck {
-    if (!check.index) {
-      return check;
-    }
+    if (!check.index) return check;
     const { orphans, missing, unreadable } = check.index;
     return {
       ...check,
@@ -110,9 +102,7 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
   function start(): LibraryHealthJob {
     const libraryId = deps.libraryId();
     if (record?.job.status === "running") {
-      if (record.libraryId === libraryId) {
-        return { ...record.job };
-      }
+      if (record.libraryId === libraryId) return { ...record.job };
       record.controller.abort();
     }
     const next: JobRecord = {
@@ -133,9 +123,7 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
   }
 
   function cancel(): LibraryHealthJob | null {
-    if (!record || record.libraryId !== deps.libraryId()) {
-      return null;
-    }
+    if (!record || record.libraryId !== deps.libraryId()) return null;
     if (record.job.status === "running") {
       record.controller.abort();
       record.job.status = "cancelled";
@@ -176,9 +164,7 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
       };
       await deps.writeCheck(job.libraryId, check);
       latest = { libraryId: job.libraryId, check };
-      if (!signal.aborted) {
-        job.job.status = "completed";
-      }
+      if (!signal.aborted) job.job.status = "completed";
     } catch (error) {
       if (signal.aborted || isAbortError(error)) {
         job.job.status = "cancelled";
@@ -191,16 +177,12 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
 
   async function inspectInto(findings: Findings, row: HealthSave) {
     /** Only a finished ingest owns its files; Downloads reports the rest. */
-    if (row.status !== "complete") {
-      return;
-    }
+    if (row.status !== "complete") return;
     const runtime = memoizedRuntime(deps.integrityRuntime);
     try {
       for (const kind of LibraryRepairKindSchema.options) {
         const found = await inspectSaveIntegrity({ kind, row, runtime });
-        if (!found) {
-          continue;
-        }
+        if (!found) continue;
         add(findings, kind, findings.issues, {
           kind,
           saveId: found.saveId,
@@ -219,9 +201,7 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
       });
     }
     const gap = posterGap(row);
-    if (gap) {
-      add(findings, "posters", findings.posters, gap);
-    }
+    if (gap) add(findings, "posters", findings.posters, gap);
   }
 
   async function recheck(
@@ -229,9 +209,7 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
   ): Promise<LibraryHealthCheck | null> {
     const libraryId = deps.libraryId();
     const check = await current();
-    if (!check) {
-      return null;
-    }
+    if (!check) return null;
     const ids = new Set(saveIds);
     const removed = zeroCounts();
     const keep = <T extends { saveId: string }>(
@@ -239,9 +217,7 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
       key: (item: T) => HealthCountKey,
     ) =>
       list.filter((item) => {
-        if (!ids.has(item.saveId)) {
-          return true;
-        }
+        if (!ids.has(item.saveId)) return true;
         removed[key(item)] += 1;
         return false;
       });
@@ -251,13 +227,9 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
     const fresh = emptyFindings();
     for (const id of ids) {
       const row = await deps.getSave(id);
-      if (row) {
-        await inspectInto(fresh, row);
-      }
+      if (row) await inspectInto(fresh, row);
     }
-    if (libraryId !== deps.libraryId()) {
-      return null;
-    }
+    if (libraryId !== deps.libraryId()) return null;
     const counts = zeroCounts();
     for (const key of HEALTH_COUNT_KEYS) {
       counts[key] = Math.max(
@@ -295,18 +267,14 @@ function memoizedRuntime(
     inspectPayload(path, expected) {
       const key = JSON.stringify([path, expected.size, expected.sha256]);
       const cached = payloads.get(key);
-      if (cached) {
-        return cached;
-      }
+      if (cached) return cached;
       const pending = runtime.inspectPayload(path, expected);
       payloads.set(key, pending);
       return pending;
     },
     canRenderThumbnail(path) {
       const cached = renders.get(path);
-      if (cached) {
-        return cached;
-      }
+      if (cached) return cached;
       const pending = runtime.canRenderThumbnail(path);
       renders.set(path, pending);
       return pending;
@@ -315,9 +283,7 @@ function memoizedRuntime(
 }
 
 function posterGap(row: HealthSave): HealthPosterGap | null {
-  if (!mediaWarmCandidates(row).some((c) => c.kind === "poster")) {
-    return null;
-  }
+  if (!mediaWarmCandidates(row).some((c) => c.kind === "poster")) return null;
   return {
     saveId: row.id,
     title: row.title,
@@ -366,9 +332,7 @@ function add<T>(
   item: T,
 ): void {
   findings.counts[key] += 1;
-  if (findings.counts[key] <= LIST_LIMIT) {
-    list.push(item);
-  }
+  if (findings.counts[key] <= LIST_LIMIT) list.push(item);
 }
 
 function messageOf(cause: unknown, fallback: string): string {

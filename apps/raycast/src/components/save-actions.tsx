@@ -52,9 +52,7 @@ async function copyText(save: ApiSave) {
         return trimmed ? [trimmed] : [];
       })
       .join("\n\n");
-    if (!body) {
-      throw new Error("Pond hasn't found any text in this save yet.");
-    }
+    if (!body) throw new Error("Pond hasn't found any text in this save yet.");
     await Clipboard.copy(body);
     toast.style = Toast.Style.Success;
     toast.title = "Copied Text";

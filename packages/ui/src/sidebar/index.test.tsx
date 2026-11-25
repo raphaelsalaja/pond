@@ -43,9 +43,7 @@ it("shows the full label on hover only when it is truncated", async () => {
   );
   const long = host.querySelector<HTMLElement>('[data-testid="long"]');
   const short = host.querySelector<HTMLElement>('[data-testid="short"]');
-  if (!long || !short) {
-    throw new Error("Missing labels");
-  }
+  if (!long || !short) throw new Error("Missing labels");
 
   await hover(long, { scroll: 240 });
   await hover(short, { scroll: 60 });

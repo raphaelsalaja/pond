@@ -19,15 +19,11 @@ export function buildVirtualBands(
 
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index];
-    if (!item || item.height <= 0) {
-      continue;
-    }
+    if (!item || item.height <= 0) continue;
 
     const top = Math.max(0, item.top);
     const bottom = Math.min(totalHeight, item.top + item.height);
-    if (bottom <= top) {
-      continue;
-    }
+    if (bottom <= top) continue;
 
     const firstBand = Math.min(bandCount - 1, Math.floor(top / bandSize));
     const lastBand = Math.min(bandCount - 1, Math.ceil(bottom / bandSize) - 1);
@@ -46,12 +42,8 @@ export function indicesForVirtualBands(
   const indices = new Set<number>();
   for (const bandIndex of bandIndexes) {
     const band = bands[bandIndex];
-    if (!band) {
-      continue;
-    }
-    for (const itemIndex of band) {
-      indices.add(itemIndex);
-    }
+    if (!band) continue;
+    for (const itemIndex of band) indices.add(itemIndex);
   }
   return [...indices].sort((a, b) => a - b);
 }

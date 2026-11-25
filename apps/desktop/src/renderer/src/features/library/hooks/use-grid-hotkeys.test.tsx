@@ -40,9 +40,7 @@ function Gallery({
       loadedIds: () => loaded.current,
       allIds: resolveIds ?? (async () => allIds),
       loadMore: async () => {
-        if (!loadPages) {
-          return;
-        }
+        if (!loadPages) return;
         loaded.current = allIds;
         setIds(allIds);
       },
@@ -60,12 +58,8 @@ function Gallery({
   useLayoutEffect(
     () =>
       resultNavigation.registerReveal((id) => {
-        if (!loaded.current.includes(id)) {
-          return;
-        }
-        if (resultNavigation.shouldFocus()) {
-          collection.current?.focus();
-        }
+        if (!loaded.current.includes(id)) return;
+        if (resultNavigation.shouldFocus()) collection.current?.focus();
         resultNavigation.didReveal(id);
       }),
     [],
@@ -119,9 +113,7 @@ describe("gallery keyboard interaction", () => {
   let root: Root;
   function collection() {
     const element = host.querySelector<HTMLElement>("[data-save-collection]");
-    if (!element) {
-      throw new Error("Missing collection");
-    }
+    if (!element) throw new Error("Missing collection");
     return element;
   }
   beforeEach(() => {
@@ -134,9 +126,7 @@ describe("gallery keyboard interaction", () => {
       const save = normalise(
         SavePatchSchema.parse({ id, url: `https://example.com/${id}` }),
       );
-      if (!save) {
-        throw new Error("Invalid Save fixture");
-      }
+      if (!save) throw new Error("Invalid Save fixture");
       pool.upsert(save);
     }
   });

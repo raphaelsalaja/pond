@@ -39,9 +39,7 @@ export function createPendingTasks(
       createdAt: now,
       updatedAt: now,
     };
-    if (interactive) {
-      row.payload = withInteractivePriority();
-    }
+    if (interactive) row.payload = withInteractivePriority();
     return row;
   });
 }
@@ -75,9 +73,7 @@ export async function promoteInteractiveSaveTasks(
 export async function rependArchiveForCookies(saveId: string): Promise<void> {
   const db = await getDb();
   const now = new Date();
-  if (!rependArchiveTasks(db, saveId, now)) {
-    return;
-  }
+  if (!rependArchiveTasks(db, saveId, now)) return;
   await persistSave(
     saveId,
     { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
@@ -91,9 +87,7 @@ export function rependArchiveTasks(db: Db, saveId: string, now: Date): boolean {
     .from(tasks)
     .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "running")))
     .get();
-  if (running) {
-    return false;
-  }
+  if (running) return false;
   db.update(tasks)
     .set({
       status: "pending",
@@ -156,9 +150,7 @@ export async function resetTasksForSave(
     .set({ status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null })
     .where(eq(saves.id, saveId))
     .run();
-  if (isInteractiveTrigger(reason)) {
-    await promoteInteractiveTasks(saveId);
-  }
+  if (isInteractiveTrigger(reason)) await promoteInteractiveTasks(saveId);
   log.info("[pond pipeline:enqueue] reset tasks", { saveId, reason });
 }
 
@@ -180,8 +172,6 @@ async function retryFailedSavesGeneration(
     requeued: result.queued,
     scoped: ids !== undefined && ids.length > 0,
   });
-  if (result.queued > 0) {
-    kickReconciler();
-  }
+  if (result.queued > 0) kickReconciler();
   return result;
 }

@@ -51,9 +51,7 @@ export function createOverlayStore() {
     const stop = listen(listener);
     subscribers += 1;
     if (subscribers === 1) {
-      for (const options of held.values()) {
-        toasts.add(options);
-      }
+      for (const options of held.values()) toasts.add(options);
     }
     return () => {
       stop();
@@ -63,9 +61,7 @@ export function createOverlayStore() {
 
   const set = (next: Partial<OverlayState>) => {
     state = { ...state, ...next };
-    for (const listener of listeners) {
-      listener();
-    }
+    for (const listener of listeners) listener();
   };
 
   const toast = (input: OverlayToast) => {
@@ -81,9 +77,7 @@ export function createOverlayStore() {
     if (current) {
       const next = { ...current, ...options };
       held.set(input.id, next);
-      if (subscribers > 0) {
-        toasts.update(input.id, options);
-      }
+      if (subscribers > 0) toasts.update(input.id, options);
       return;
     }
     const created = {
@@ -94,9 +88,7 @@ export function createOverlayStore() {
       },
     };
     held.set(input.id, created);
-    if (subscribers > 0) {
-      toasts.add(created);
-    }
+    if (subscribers > 0) toasts.add(created);
   };
 
   return {
@@ -109,9 +101,7 @@ export function createOverlayStore() {
     show(request: OverlayRequest, appearance: Appearance) {
       if (request.view === "clear") {
         held.clear();
-        if (subscribers > 0) {
-          toasts.close();
-        }
+        if (subscribers > 0) toasts.close();
         set({ tool: null });
         return;
       }

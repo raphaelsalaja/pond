@@ -60,11 +60,8 @@ function groupAlphabetically(
   for (const row of rows) {
     const key = alphabetKey(row.tag.name);
     const group = grouped.get(key);
-    if (group) {
-      group.push(row);
-    } else {
-      grouped.set(key, [row]);
-    }
+    if (group) group.push(row);
+    else grouped.set(key, [row]);
   }
   const order = direction === "asc" ? 1 : -1;
   return [...grouped]
@@ -86,12 +83,8 @@ type IndexLine =
 
 /** Must match the .grid breakpoints in styles.module.css. */
 function readColumns(): number {
-  if (matchMedia("(max-width: 680px)").matches) {
-    return 1;
-  }
-  if (matchMedia("(max-width: 900px)").matches) {
-    return 2;
-  }
+  if (matchMedia("(max-width: 680px)").matches) return 1;
+  if (matchMedia("(max-width: 900px)").matches) return 2;
   return 3;
 }
 
@@ -102,13 +95,9 @@ function useGridColumns(): number {
       matchMedia(query),
     );
     const update = () => setColumns(readColumns());
-    for (const query of queries) {
-      query.addEventListener("change", update);
-    }
+    for (const query of queries) query.addEventListener("change", update);
     return () => {
-      for (const query of queries) {
-        query.removeEventListener("change", update);
-      }
+      for (const query of queries) query.removeEventListener("change", update);
     };
   }, []);
   return columns;
@@ -145,9 +134,7 @@ function VirtualTagIndex({ lines }: { lines: Array<IndexLine> }) {
       : lines.findIndex((line) => line.key === focusedKey);
   useEffect(() => {
     const list = listRef.current;
-    if (!list) {
-      return;
-    }
+    if (!list) return;
     const onFocusIn = (event: FocusEvent) => {
       const item = isElement(event.target)
         ? event.target.closest(`.${styles.item}`)
@@ -179,9 +166,7 @@ function VirtualTagIndex({ lines }: { lines: Array<IndexLine> }) {
     overscan: 10,
     rangeExtractor: (range) => {
       const indexes = defaultRangeExtractor(range);
-      if (pinned < 0 || indexes.includes(pinned)) {
-        return indexes;
-      }
+      if (pinned < 0 || indexes.includes(pinned)) return indexes;
       return [...indexes, pinned].sort((a, b) => a - b);
     },
   });
@@ -204,9 +189,7 @@ function VirtualTagIndex({ lines }: { lines: Array<IndexLine> }) {
     <div ref={listRef} className={styles.virtual} style={{ height: totalSize }}>
       {virtual.getVirtualItems().map((item) => {
         const line = lines[item.index];
-        if (!line) {
-          return null;
-        }
+        if (!line) return null;
         return (
           <div
             key={item.key}
@@ -258,13 +241,9 @@ export function TagsPage() {
   const columns = useGridColumns();
 
   useEffect(() => {
-    if (creationRequest.token === 0) {
-      return;
-    }
+    if (creationRequest.token === 0) return;
     const request = tagCreation.takeRequest();
-    if (!request) {
-      return;
-    }
+    if (!request) return;
     const group = groupSummaries.find((candidate) => candidate.id === scope);
     tagsScope.set(
       request.kind === "group" ? "all" : group ? scope : "ungrouped",
@@ -312,9 +291,7 @@ export function TagsPage() {
       ? undefined
       : groups.find((group) => group.id === scope);
   const visibleRows = useMemo(() => {
-    if (scope === "ungrouped") {
-      return ungrouped;
-    }
+    if (scope === "ungrouped") return ungrouped;
     if (scope === "starred") {
       return [
         ...groups.flatMap((group) => group.children),
@@ -404,9 +381,7 @@ export function TagsPage() {
     const groupName = creationGroupRef.current;
     try {
       await saveCreate(name);
-      if (groupName) {
-        await tagOperations.addToGroup(name, groupName);
-      }
+      if (groupName) await tagOperations.addToGroup(name, groupName);
     } finally {
       creationGroupRef.current = null;
     }
@@ -414,9 +389,7 @@ export function TagsPage() {
 
   function commitGroupDescription() {
     const group = activeGroupRow?.group;
-    if (!group || descriptionDraft.trim() === (group.description ?? "")) {
-      return;
-    }
+    if (!group || descriptionDraft.trim() === (group.description ?? "")) return;
     void window.pond.query("tagGroups.update", {
       name: group.name,
       patch: { description: descriptionDraft },

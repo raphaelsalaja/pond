@@ -97,9 +97,7 @@ function toHttpHeaders(
 ): Array<[string, string]> {
   const entries: Array<[string, string]> = [];
   for (const [name, value] of Object.entries(raw)) {
-    if (DROPPED_HEADERS.has(name.toLowerCase())) {
-      continue;
-    }
+    if (DROPPED_HEADERS.has(name.toLowerCase())) continue;
     /** CDP folds duplicate headers into one \n-joined value. */
     for (const part of value.split("\n")) {
       entries.push([name, part]);
@@ -130,9 +128,7 @@ export class WarcRecorder {
   static async start(wc: WebContents, filePath: string): Promise<WarcRecorder> {
     const recorder = new WarcRecorder(wc, filePath);
     const dbg = wc.debugger;
-    if (!dbg.isAttached()) {
-      dbg.attach("1.3");
-    }
+    if (!dbg.isAttached()) dbg.attach("1.3");
     recorder.attached = true;
     dbg.on("message", recorder.onMessage);
     try {
@@ -187,9 +183,7 @@ export class WarcRecorder {
       }
       if (method === "Network.responseReceived") {
         const p = ResponseReceivedSchema.parse(params);
-        if (!isArchivableUrl(p.response.url)) {
-          return;
-        }
+        if (!isArchivableUrl(p.response.url)) return;
         /** A range response holds one slice of the file; replaying that slice alone leaves media undecodable. */
         if (p.response.status === 206) {
           this.partialUrls.add(p.response.url);
@@ -208,9 +202,7 @@ export class WarcRecorder {
       if (method === "Network.loadingFinished") {
         const p = RequestIdSchema.parse(params);
         const meta = this.responses.get(p.requestId);
-        if (!meta) {
-          return;
-        }
+        if (!meta) return;
         this.responses.delete(p.requestId);
         const task = this.captureBody(p.requestId, meta).catch(
           (cause: unknown) => {
@@ -295,9 +287,7 @@ export class WarcRecorder {
     requestId: string,
     meta: CdpResponse,
   ): Promise<void> {
-    if (this.writtenUrls.has(meta.url)) {
-      return;
-    }
+    if (this.writtenUrls.has(meta.url)) return;
     let body = new Uint8Array(0);
     let bodyRetrieved = false;
     try {
@@ -319,9 +309,7 @@ export class WarcRecorder {
     if ((!bodyRetrieved || body.byteLength === 0) && this.expectsBody(meta)) {
       return;
     }
-    if (body.byteLength > MAX_BODY_BYTES) {
-      return;
-    }
+    if (body.byteLength > MAX_BODY_BYTES) return;
     this.enqueueWrite(meta, body);
   }
 
@@ -338,12 +326,8 @@ export class WarcRecorder {
   }
 
   private enqueueWrite(meta: CdpResponse, body: Uint8Array): void {
-    if (this.writtenUrls.has(meta.url)) {
-      return;
-    }
-    if (body.byteLength > this.remainingCaptureBudget()) {
-      return;
-    }
+    if (this.writtenUrls.has(meta.url)) return;
+    if (body.byteLength > this.remainingCaptureBudget()) return;
     this.writtenUrls.add(meta.url);
     this.reservedBytes += body.byteLength;
     const task = this.writeChain.then(async () => {
@@ -360,9 +344,7 @@ export class WarcRecorder {
           [body],
         );
         const bytes = await WARCSerializer.serialize(record, { gzip: true });
-        if (bytes.byteLength > MAX_TOTAL_BYTES - this.totalBytes) {
-          return;
-        }
+        if (bytes.byteLength > MAX_TOTAL_BYTES - this.totalBytes) return;
         this.totalBytes += bytes.byteLength;
         if (!this.stream.write(bytes)) {
           await once(this.stream, "drain");
@@ -417,9 +399,7 @@ export class WarcRecorder {
       res,
       this.remainingCaptureBudget(),
     );
-    if (!body) {
-      return;
-    }
+    if (!body) return;
     const headers: Record<string, string> = {};
     res.headers.forEach((value, name) => {
       headers[name] = headers[name] ? `${headers[name]}\n${value}` : value;

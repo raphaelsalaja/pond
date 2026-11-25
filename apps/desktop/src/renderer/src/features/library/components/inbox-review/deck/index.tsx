@@ -55,9 +55,7 @@ function fly(velocity: number) {
 const slot = {
   gone: (departure: Departure | null) => {
     const fade = { opacity: { duration: 0.2, ease: EASE_OUT } };
-    if (!departure) {
-      return { opacity: 0, transition: { duration: 0.12 } };
-    }
+    if (!departure) return { opacity: 0, transition: { duration: 0.12 } };
     const { outcome, fling } = departure;
     if (outcome === "keep" || outcome === "trash") {
       const side = outcome === "keep" ? 1 : -1;
@@ -99,11 +97,8 @@ function useDepth(depth: number, pull: MotionValue<number>, arrive: boolean) {
   const level = useSpring(arrive ? depth + 1 : depth, SETTLE);
   useLayoutEffect(() => {
     level.jump(Math.max(depth, level.get() - pull.get()));
-    if (reduce) {
-      level.jump(depth);
-    } else {
-      level.set(depth);
-    }
+    if (reduce) level.jump(depth);
+    else level.set(depth);
   }, [depth, level, pull, reduce]);
   const shown = useTransform([level, pull], ([at, by]: Array<number>) =>
     Math.max(0, (at ?? 0) - (depth > 0 ? (by ?? 0) : 0)),
@@ -185,9 +180,7 @@ function ReviewCard({ id, depth, pull, arrive, review }: ReviewCardProps) {
   const skip = useTransform(y, [24, THROW], [0, 1]);
 
   function track() {
-    if (top) {
-      pull.set(Math.min(1, Math.hypot(x.get(), y.get()) / THROW));
-    }
+    if (top) pull.set(Math.min(1, Math.hypot(x.get(), y.get()) / THROW));
   }
   useMotionValueEvent(x, "change", track);
   useMotionValueEvent(y, "change", track);
@@ -215,9 +208,7 @@ function ReviewCard({ id, depth, pull, arrive, review }: ReviewCardProps) {
       review.actions.skip(fling);
     } else {
       settle(fling);
-      if (!across && dy < -THROW) {
-        review.setChoosing(true);
-      }
+      if (!across && dy < -THROW) review.setChoosing(true);
     }
   }
 

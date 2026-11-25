@@ -19,9 +19,7 @@ export function setSidebarSectionVisible(
   visible: boolean,
 ): void {
   const sections = getPrefsSnapshot()?.sidebar.sections;
-  if (!sections || sections[section] === visible) {
-    return;
-  }
+  if (!sections || sections[section] === visible) return;
   void patchPrefsSection("sidebar", {
     sections: { ...sections, [section]: visible },
   });
@@ -33,9 +31,7 @@ export function useRevealSidebarSection(
   editing: boolean,
 ): void {
   useEffect(() => {
-    if (editing) {
-      setSidebarSectionVisible(section, true);
-    }
+    if (editing) setSidebarSectionVisible(section, true);
   }, [section, editing]);
 }
 
@@ -94,9 +90,7 @@ export function moveVisibleSidebarDestination(
   );
   const sourceIndex = visibleOrder.indexOf(destination);
   const targetIndex = visibleOrder.indexOf(over);
-  if (sourceIndex < 0 || targetIndex < 0) {
-    return [...order];
-  }
+  if (sourceIndex < 0 || targetIndex < 0) return [...order];
   visibleOrder.splice(sourceIndex, 1);
   visibleOrder.splice(targetIndex, 0, destination);
 
@@ -114,9 +108,7 @@ export function resolveSidebarBadgeStyle(
 ): SidebarBadgeStyle {
   if (destination) {
     const override = sidebar.badgeOverrides[destination];
-    if (override) {
-      return override;
-    }
+    if (override) return override;
   }
   return sidebar.badgeStyle;
 }

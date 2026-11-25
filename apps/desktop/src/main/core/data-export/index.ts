@@ -114,9 +114,7 @@ async function readEntries(
         continue;
       }
       const parsed = parser.parse(path, text);
-      if (parsed.length > 0) {
-        platforms.add(parser.label);
-      }
+      if (parsed.length > 0) platforms.add(parser.label);
       entries.push(...parsed);
     }
   }
@@ -133,15 +131,9 @@ function unconnectedSources(
   const sources = new Set<Source>();
   for (const bookmark of file.bookmarks) {
     const { source } = classifyUrlToSource(bookmark.url);
-    if (!source || source === "web" || source === "local") {
-      continue;
-    }
-    if (CAPTURES_SIGNED_OUT.has(source)) {
-      continue;
-    }
-    if (!connected.has(source)) {
-      sources.add(source);
-    }
+    if (!source || source === "web" || source === "local") continue;
+    if (CAPTURES_SIGNED_OUT.has(source)) continue;
+    if (!connected.has(source)) sources.add(source);
   }
   return [...sources];
 }
@@ -163,9 +155,7 @@ export async function importDataExport(
   }
   try {
     const { entries, platforms } = await readEntries(reader);
-    if (entries.length === 0) {
-      return { ok: false, error: UNREADABLE };
-    }
+    if (entries.length === 0) return { ok: false, error: UNREADABLE };
     const file = entriesToBookmarkFile(entries);
     const counts = await dependencies.importFile(file);
     const connect = unconnectedSources(

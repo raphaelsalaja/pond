@@ -18,16 +18,10 @@ function isOpaqueKind(kind: WatchKind | undefined): boolean {
 
 function localName(ref: AccountRef): string {
   const labeled = ref.label?.trim();
-  if (labeled) {
-    return labeled;
-  }
+  if (labeled) return labeled;
   const handle = ref.handle?.trim();
-  if (!handle) {
-    return "";
-  }
-  if (isOpaqueKind(ref.kind)) {
-    return handle;
-  }
+  if (!handle) return "";
+  if (isOpaqueKind(ref.kind)) return handle;
   return handle.startsWith("@") ? handle : `@${handle}`;
 }
 
@@ -139,9 +133,7 @@ export function displayAccountToken(
   refs: ReadonlyArray<AccountRef> = liveRefs(),
 ): string {
   const ref = findAccountRef(id, refs);
-  if (!ref) {
-    return id;
-  }
+  if (!ref) return id;
   const local = localName(ref) || ref.id;
   const unique = hitsFor(local, refs).every((row) => row.id === ref.id);
   return unique ? local : `${ref.source}/${local}`;
@@ -156,9 +148,7 @@ export function accountChipLabel(
   refs: ReadonlyArray<AccountRef> = liveRefs(),
 ): string {
   const ref = findAccountRef(id, refs);
-  if (!ref) {
-    return id;
-  }
+  if (!ref) return id;
   const brand = sourceLabel(ref.source);
   const name = localName(ref);
   return name ? `${name} · ${brand}` : brand;
@@ -170,8 +160,6 @@ export function resolveAccountToken(
 ): string {
   const matched = hitsFor(raw, refs);
   const hit = matched.length === 1 ? matched[0] : undefined;
-  if (hit) {
-    return hit.id.toLowerCase();
-  }
+  if (hit) return hit.id.toLowerCase();
   return raw.trim().toLowerCase();
 }

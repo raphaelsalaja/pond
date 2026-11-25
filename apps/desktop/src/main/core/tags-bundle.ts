@@ -166,16 +166,12 @@ export async function hydrateTagsFromBundle(): Promise<void> {
   const raw = db.$raw;
   raw.transaction(() => {
     for (const tag of wireTags) {
-      if (knownTagIds.has(tag.id)) {
-        continue;
-      }
+      if (knownTagIds.has(tag.id)) continue;
       db.insert(tagsTable).values(tagFromWire(tag)).onConflictDoNothing().run();
       inserted += 1;
     }
     for (const group of wireGroups) {
-      if (knownGroupIds.has(group.id)) {
-        continue;
-      }
+      if (knownGroupIds.has(group.id)) continue;
       db.insert(tagGroupsTable)
         .values(groupFromWire(group))
         .onConflictDoNothing()
@@ -187,9 +183,7 @@ export async function hydrateTagsFromBundle(): Promise<void> {
         knownTagIds.has(member.tagId) || bundleTagIds.has(member.tagId);
       const groupOk =
         knownGroupIds.has(member.groupId) || bundleGroupIds.has(member.groupId);
-      if (!tagOk || !groupOk) {
-        continue;
-      }
+      if (!tagOk || !groupOk) continue;
       db.insert(tagGroupMembersTable)
         .values(member)
         .onConflictDoNothing()

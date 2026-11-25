@@ -22,9 +22,7 @@ interface SaveSeed {
 
 export function buildThreadsSavedSeed(entry: SavedEntry): SaveSeed | null {
   const rich = entry.rich;
-  if (!rich) {
-    return null;
-  }
+  if (!rich) return null;
 
   const publishedAt = rich.publishedAt ? new Date(rich.publishedAt) : null;
   const capture = captureFromTweetDraft(draftFromRichPost(richPost(rich)));
@@ -60,12 +58,8 @@ function richPost(rich: RichThread): RichPostDraft {
     handle: rich.author.handle,
     name: rich.author.name,
   };
-  if (rich.author.avatarUrl) {
-    author.avatarUrl = rich.author.avatarUrl;
-  }
-  if (rich.author.verified) {
-    author.verified = true;
-  }
+  if (rich.author.avatarUrl) author.avatarUrl = rich.author.avatarUrl;
+  if (rich.author.verified) author.verified = true;
 
   const draft: RichPostDraft = {
     source: "threads",
@@ -76,20 +70,10 @@ function richPost(rich: RichThread): RichPostDraft {
     media: rich.media,
     metrics: rich.metrics,
   };
-  if (rich.quoted) {
-    draft.quoted = richPost(rich.quoted);
-  }
-  if (rich.card) {
-    draft.card = rich.card;
-  }
-  if (rich.isReply) {
-    draft.isReply = true;
-  }
-  if (rich.replyingTo) {
-    draft.replyingTo = rich.replyingTo;
-  }
-  if (rich.publishedAt) {
-    draft.publishedAt = rich.publishedAt;
-  }
+  if (rich.quoted) draft.quoted = richPost(rich.quoted);
+  if (rich.card) draft.card = rich.card;
+  if (rich.isReply) draft.isReply = true;
+  if (rich.replyingTo) draft.replyingTo = rich.replyingTo;
+  if (rich.publishedAt) draft.publishedAt = rich.publishedAt;
   return draft;
 }

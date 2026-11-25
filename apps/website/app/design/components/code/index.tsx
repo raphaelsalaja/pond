@@ -19,12 +19,8 @@ function Text({ children }: TextProps) {
   return segments.map((segment, index) => {
     const start = offset;
     offset += segment.length + 1;
-    if (index % 2 === 0) {
-      return segment;
-    }
-    if (!closed && index === segments.length - 1) {
-      return `\`${segment}`;
-    }
+    if (index % 2 === 0) return segment;
+    if (!closed && index === segments.length - 1) return `\`${segment}`;
     return <Inline key={start}>{segment}</Inline>;
   });
 }

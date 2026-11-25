@@ -23,9 +23,7 @@ export function controlKeepsKey(event: KeyboardEvent): boolean {
 
 export function collectionOwnsKeyboard(): boolean {
   const active = document.activeElement;
-  if (document.querySelector(OVERLAY)) {
-    return false;
-  }
+  if (document.querySelector(OVERLAY)) return false;
   return (
     isHTMLElement(active) &&
     !isEditableTarget(active) &&
@@ -46,12 +44,8 @@ export function saveOwnsKeyboard(event: KeyboardEvent): boolean {
     return false;
   }
   const overlay = active.closest(OVERLAY);
-  if (overlay && !overlay.matches("[data-quick-preview]")) {
-    return false;
-  }
-  if (!overlay && document.querySelector(OVERLAY)) {
-    return false;
-  }
+  if (overlay && !overlay.matches("[data-quick-preview]")) return false;
+  if (!overlay && document.querySelector(OVERLAY)) return false;
   const inspector = active.closest<HTMLElement>("[data-save-inspector]");
   if (inspector) {
     const id = inspector.dataset.saveInspector;

@@ -42,8 +42,6 @@ export function useResultsHeight(
     setPeak({ key: resetKey, height: natural });
     return natural;
   }
-  if (natural > peak.height) {
-    setPeak({ key: resetKey, height: natural });
-  }
+  if (natural > peak.height) setPeak({ key: resetKey, height: natural });
   return Math.max(peak.height, natural);
 }

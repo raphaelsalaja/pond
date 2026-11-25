@@ -26,55 +26,39 @@ export function sha256Matches(saves: ReadonlyArray<LibrarySave>): Array<Found> {
         bySha.set(asset.sha256, owners);
       }
       const list = owners.get(save.id);
-      if (list) {
-        list.push(asset);
-      } else {
-        owners.set(save.id, [asset]);
-      }
+      if (list) list.push(asset);
+      else owners.set(save.id, [asset]);
     }
-    if (!complete) {
-      continue;
-    }
+    if (!complete) continue;
     const manifest = save.assets
       .map((asset) => asset.sha256)
       .sort()
       .join(",");
     const members = byManifest.get(manifest);
-    if (members) {
-      members.push(save.id);
-    } else {
-      byManifest.set(manifest, [save.id]);
-    }
+    if (members) members.push(save.id);
+    else byManifest.set(manifest, [save.id]);
   }
 
   for (const owners of bySha.values()) {
-    if (owners.size < 2) {
-      continue;
-    }
+    if (owners.size < 2) continue;
     for (const [left, right] of fanoutPairs([...owners.keys()].sort())) {
       const leftAssets = owners.get(left) ?? [];
       const rightAssets = owners.get(right) ?? [];
       for (const [index, leftAsset] of leftAssets.entries()) {
         const rightAsset = rightAssets[index];
-        if (!rightAsset) {
-          break;
-        }
+        if (!rightAsset) break;
         const match = assetFound({
           matcher: "sha256",
           left: assetRef(leftAsset),
           right: assetRef(rightAsset),
         });
-        if (match) {
-          found.push(match);
-        }
+        if (match) found.push(match);
       }
     }
   }
 
   for (const [manifest, members] of byManifest) {
-    if (members.length < 2) {
-      continue;
-    }
+    if (members.length < 2) continue;
     const files = manifest.split(",").length;
     for (const ids of fanoutPairs(members.sort())) {
       found.push({ ids, save: { matcher: "manifest", files } });

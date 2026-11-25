@@ -48,9 +48,7 @@ export function modelLoaderKind(value: string): ModelLoaderKind | null {
 }
 
 function meshForGeometry(geometry: BufferGeometry): Mesh {
-  if (!geometry.hasAttribute("normal")) {
-    geometry.computeVertexNormals();
-  }
+  if (!geometry.hasAttribute("normal")) geometry.computeVertexNormals();
   const material = new MeshStandardMaterial({
     color: 0x94_a3_b8,
     roughness: 0.72,
@@ -65,9 +63,7 @@ export async function loadModel(
   path: string,
 ): Promise<LoadedModel> {
   const kind = modelLoaderKind(path);
-  if (!kind) {
-    throw new Error(`No model loader for ${path}`);
-  }
+  if (!kind) throw new Error(`No model loader for ${path}`);
 
   switch (kind) {
     case "gltf": {
@@ -120,9 +116,7 @@ export async function loadModel(
       const { ColladaLoader } =
         await import("three/addons/loaders/ColladaLoader.js");
       const result = await new ColladaLoader().loadAsync(url);
-      if (!result) {
-        throw new Error(`Unable to parse ${path}`);
-      }
+      if (!result) throw new Error(`Unable to parse ${path}`);
       return { object: result.scene, animations: result.scene.animations };
     }
     case "amf": {

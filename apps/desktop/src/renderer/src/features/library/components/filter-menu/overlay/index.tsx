@@ -158,9 +158,7 @@ function VisualEditor({ probe }: { probe: VisualProbe | null }) {
   useEffect(() => {
     const onPaste = (event: ClipboardEvent) => {
       const file = imageFile(event.clipboardData);
-      if (!file) {
-        return;
-      }
+      if (!file) return;
       event.preventDefault();
       void encodeFile(file, setBusy, setError);
     };
@@ -191,9 +189,7 @@ function VisualEditor({ probe }: { probe: VisualProbe | null }) {
           return;
         }
         const file = event.dataTransfer.files[0];
-        if (file) {
-          void encodeFile(file, setBusy, setError);
-        }
+        if (file) void encodeFile(file, setBusy, setError);
       }}
     >
       {probe ? (
@@ -232,9 +228,7 @@ function VisualEditor({ probe }: { probe: VisualProbe | null }) {
         hidden
         onChange={(event) => {
           const file = event.target.files?.[0];
-          if (file) {
-            void encodeFile(file, setBusy, setError);
-          }
+          if (file) void encodeFile(file, setBusy, setError);
           event.target.value = "";
         }}
       />

@@ -64,9 +64,7 @@ export function assetFound(
   evidence: AssetEvidence,
   supporting = false,
 ): Found | null {
-  if (evidence.left.saveId === evidence.right.saveId) {
-    return null;
-  }
+  if (evidence.left.saveId === evidence.right.saveId) return null;
   const flipped = evidence.left.saveId > evidence.right.saveId;
   const oriented = flipped
     ? { ...evidence, left: evidence.right, right: evidence.left }
@@ -78,9 +76,7 @@ export function assetFound(
     ids: [oriented.left.saveId, oriented.right.saveId],
     asset: oriented,
   };
-  if (supporting) {
-    found.supporting = true;
-  }
+  if (supporting) found.supporting = true;
   return found;
 }
 
@@ -97,10 +93,7 @@ export function fanoutPairs(
     }
   }
   const anchor = ids[0];
-  if (anchor) {
-    for (const id of ids.slice(limit)) {
-      pairs.push(orderIds(anchor, id));
-    }
-  }
+  if (anchor)
+    for (const id of ids.slice(limit)) pairs.push(orderIds(anchor, id));
   return pairs;
 }

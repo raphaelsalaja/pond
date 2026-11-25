@@ -37,13 +37,9 @@ if (published !== api.version) {
 }
 
 await mkdir(destination, { recursive: true });
-for (const file of FILES) {
-  await cp(join(root, file), join(destination, file));
-}
+for (const file of FILES) await cp(join(root, file), join(destination, file));
 for (const folder of FOLDERS) {
-  if (!(await exists(join(root, folder)))) {
-    continue;
-  }
+  if (!(await exists(join(root, folder)))) continue;
   await rm(join(destination, folder), { recursive: true, force: true });
   await cp(join(root, folder), join(destination, folder), { recursive: true });
 }
@@ -55,9 +51,7 @@ manifest.scripts = { ...scripts, dev: develop };
 await writeFile(join(destination, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
 
 const extra = (await readdir(destination)).filter((name) => !MANAGED.has(name));
-if (extra.length) {
-  console.warn(`Left alone in the Store copy, check they still belong: ${extra.join(", ")}`);
-}
+if (extra.length) console.warn(`Left alone in the Store copy, check they still belong: ${extra.join(", ")}`);
 
 if (install) {
   execFileSync("npm", ["install", "--no-audit", "--no-fund"], { cwd: destination, stdio: "inherit" });

@@ -14,12 +14,8 @@ export function useKeyboardMode(): RefObject<boolean> {
       origin = null;
     };
     const onMouseMove = (event: MouseEvent) => {
-      if (!keyboard.current) {
-        return;
-      }
-      if (event.movementX === 0 && event.movementY === 0) {
-        return;
-      }
+      if (!keyboard.current) return;
+      if (event.movementX === 0 && event.movementY === 0) return;
       const time = event.timeStamp;
       if (!origin) {
         origin = { x: event.clientX, y: event.clientY, time };

@@ -22,17 +22,11 @@ function weigh(
 
 function components(body: string, max: number): Array<number> | null {
   const tokens = body.split(/[\s,/]+/).filter(Boolean);
-  if (tokens.length < 3 || tokens.length > 4) {
-    return null;
-  }
+  if (tokens.length < 3 || tokens.length > 4) return null;
   const values = tokens.map((token, index) => {
-    if (token === "none") {
-      return 0;
-    }
+    if (token === "none") return 0;
     const value = Number.parseFloat(token);
-    if (token.endsWith("%")) {
-      return value / 100;
-    }
+    if (token.endsWith("%")) return value / 100;
     return index < 3 ? value / max : value;
   });
   return values.some(Number.isNaN) ? null : values;
@@ -48,9 +42,7 @@ function hex(value: string): Array<number> | null {
   for (let i = 0; i < digits.length; i += size) {
     const pair = digits.slice(i, i + size);
     const parsed = Number.parseInt(size === 1 ? pair + pair : pair, 16);
-    if (Number.isNaN(parsed)) {
-      return null;
-    }
+    if (Number.isNaN(parsed)) return null;
     values.push(parsed / 255);
   }
   return values;
@@ -78,18 +70,10 @@ export function luminance(color: string): number | null {
   const fn = /^color\(\s*([\w-]+)\s+(.+)\)$/.exec(value);
   if (fn?.[1] && fn[2]) {
     const values = components(fn[2], 1);
-    if (!values || !opaque(values)) {
-      return null;
-    }
-    if (fn[1] === "srgb") {
-      return weigh(values, SRGB_Y);
-    }
-    if (fn[1] === "srgb-linear") {
-      return weigh(values, SRGB_Y, false);
-    }
-    if (fn[1] === "display-p3") {
-      return weigh(values, P3_Y);
-    }
+    if (!values || !opaque(values)) return null;
+    if (fn[1] === "srgb") return weigh(values, SRGB_Y);
+    if (fn[1] === "srgb-linear") return weigh(values, SRGB_Y, false);
+    if (fn[1] === "display-p3") return weigh(values, P3_Y);
   }
 
   return null;

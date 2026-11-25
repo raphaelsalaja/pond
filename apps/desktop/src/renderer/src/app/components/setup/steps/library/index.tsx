@@ -36,9 +36,7 @@ function Location({ profile, library, choices, update }: StepProps) {
       }
       onClick={async () => {
         const result = await window.pond.query("library.pickFolder", {});
-        if (result.ok) {
-          update({ libraryLocation: result.path });
-        }
+        if (result.ok) update({ libraryLocation: result.path });
       }}
     >
       <IconFolder size={16} aria-hidden />

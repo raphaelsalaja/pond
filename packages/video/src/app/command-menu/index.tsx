@@ -67,11 +67,8 @@ export interface PaletteState {
 function resultsHeight(rows: ReadonlyArray<PaletteRow>) {
   let height = PADDING;
   for (const row of rows) {
-    if (row.kind === "group") {
-      height += row.divided ? DIVIDED : GROUP;
-    } else {
-      height += row.entry.tall ? TALL : ROW;
-    }
+    if (row.kind === "group") height += row.divided ? DIVIDED : GROUP;
+    else height += row.entry.tall ? TALL : ROW;
   }
   return Math.min(MAX_RESULTS, height);
 }
@@ -89,9 +86,7 @@ function Highlight({
   const parts: Array<ReactNode> = [];
   let cursor = 0;
   for (const [start, end] of ranges) {
-    if (start > cursor) {
-      parts.push(text.slice(cursor, start));
-    }
+    if (start > cursor) parts.push(text.slice(cursor, start));
     parts.push(
       <mark key={start} className={styles.match}>
         {text.slice(start, end)}
@@ -99,9 +94,7 @@ function Highlight({
     );
     cursor = end;
   }
-  if (cursor < text.length) {
-    parts.push(text.slice(cursor));
-  }
+  if (cursor < text.length) parts.push(text.slice(cursor));
   return parts;
 }
 
@@ -169,19 +162,13 @@ interface CommandMenuProps {
 
 /** Pond's command menu over a dimmed window: it resizes to each state's rows and slides pages in. Children of `App.Window`. */
 export function CommandMenu({ t, open, close, states }: CommandMenuProps) {
-  if (t < open || t > close + CLOSE) {
-    return null;
-  }
+  if (t < open || t > close + CLOSE) return null;
   let index = 0;
   for (let i = 0; i < states.length; i++) {
-    if ((states[i]?.at ?? Infinity) <= t) {
-      index = i;
-    }
+    if ((states[i]?.at ?? Infinity) <= t) index = i;
   }
   const state = states[index];
-  if (!state) {
-    return null;
-  }
+  if (!state) return null;
   const previous = states[index - 1] ?? state;
 
   const shown = ease.out(progress(t, open, OPEN));

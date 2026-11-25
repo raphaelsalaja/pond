@@ -27,9 +27,7 @@ export function remembersDeletedSource(
   save: Pick<DeletedSourceSave, "status" | "deletedAt" | "rawJson">,
   reason: string | null | undefined,
 ): boolean {
-  if (reason && RELEASED_DELETES.has(reason)) {
-    return false;
-  }
+  if (reason && RELEASED_DELETES.has(reason)) return false;
   if (
     (save.deletedAt === null || save.deletedAt === undefined) &&
     save.status === "skipped" &&
@@ -61,13 +59,9 @@ export function knownIdsForFetch(input: {
   liveIds: ReadonlySet<string>;
   dismissedIds: ReadonlySet<string>;
 }): Set<string> {
-  if (input.forceFull) {
-    return new Set(input.liveIds);
-  }
+  if (input.forceFull) return new Set(input.liveIds);
   const ids = new Set(input.liveIds);
-  for (const id of input.dismissedIds) {
-    ids.add(id);
-  }
+  for (const id of input.dismissedIds) ids.add(id);
   return ids;
 }
 

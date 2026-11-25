@@ -128,13 +128,9 @@ export async function persistMergedListKinds(
   incoming: NonNullable<Save["listKinds"]>,
   reason: string,
 ): Promise<void> {
-  if (incoming.length === 0) {
-    return;
-  }
+  if (incoming.length === 0) return;
   const merged = mergeListKinds(current, incoming);
-  if (listKindsEqual(current, merged)) {
-    return;
-  }
+  if (listKindsEqual(current, merged)) return;
   await persistSave(saveId, { listKinds: merged }, { actorReason: reason });
 }
 

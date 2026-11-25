@@ -40,9 +40,7 @@ function queryParams(c: Context) {
 }
 
 async function readParams(c: Context): Promise<JsonValue> {
-  if (c.req.method !== "POST") {
-    return queryParams(c);
-  }
+  if (c.req.method !== "POST") return queryParams(c);
   try {
     return await c.req.json();
   } catch {
@@ -75,9 +73,7 @@ async function saveRow(runtime: ApiRuntime, id: string) {
     .from(saves)
     .where(eq(saves.id, id))
     .limit(1);
-  if (!row) {
-    throw new PondError("save_not_found", `No Save has the id ${id}.`);
-  }
+  if (!row) throw new PondError("save_not_found", `No Save has the id ${id}.`);
   return row;
 }
 
@@ -293,9 +289,7 @@ export function savesRoutes(runtime: ApiRuntime = apiRuntime): Hono {
 
   routes.post("/tags", async (c) => {
     const parsed = ApiEditTagsRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) {
-      return invalidRequest(c, parsed.error);
-    }
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     const { ids, add, remove, libraryId } = parsed.data;
     requireLibrary(runtime, libraryId);
     await requireSaves(runtime, ids);
@@ -322,9 +316,7 @@ export function savesRoutes(runtime: ApiRuntime = apiRuntime): Hono {
 
   routes.post("/folders", async (c) => {
     const parsed = ApiEditFoldersRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) {
-      return invalidRequest(c, parsed.error);
-    }
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     const { ids, add, remove, libraryId } = parsed.data;
     requireLibrary(runtime, libraryId);
     await requireSaves(runtime, ids);
@@ -363,9 +355,7 @@ export function savesRoutes(runtime: ApiRuntime = apiRuntime): Hono {
   ] as const) {
     routes.post(path, async (c) => {
       const parsed = ApiSaveIdsRequestSchema.safeParse(await c.req.json());
-      if (!parsed.success) {
-        return invalidRequest(c, parsed.error);
-      }
+      if (!parsed.success) return invalidRequest(c, parsed.error);
       requireLibrary(runtime, parsed.data.libraryId);
       await requireSaves(runtime, parsed.data.ids);
       const data = await bulkEdit({
@@ -378,9 +368,7 @@ export function savesRoutes(runtime: ApiRuntime = apiRuntime): Hono {
 
   routes.post("/note", async (c) => {
     const parsed = ApiNoteRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) {
-      return invalidRequest(c, parsed.error);
-    }
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     requireLibrary(runtime, parsed.data.libraryId);
     await requireSaves(runtime, [parsed.data.id]);
     const data = await bulkEdit({
@@ -392,9 +380,7 @@ export function savesRoutes(runtime: ApiRuntime = apiRuntime): Hono {
 
   routes.post("/rating", async (c) => {
     const parsed = ApiRatingRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) {
-      return invalidRequest(c, parsed.error);
-    }
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     requireLibrary(runtime, parsed.data.libraryId);
     await requireSaves(runtime, parsed.data.ids);
     const data = await bulkEdit({
@@ -406,9 +392,7 @@ export function savesRoutes(runtime: ApiRuntime = apiRuntime): Hono {
 
   routes.post("/favorite", async (c) => {
     const parsed = ApiFavoriteRequestSchema.safeParse(await c.req.json());
-    if (!parsed.success) {
-      return invalidRequest(c, parsed.error);
-    }
+    if (!parsed.success) return invalidRequest(c, parsed.error);
     requireLibrary(runtime, parsed.data.libraryId);
     await requireSaves(runtime, parsed.data.ids);
     const data = await bulkEdit({

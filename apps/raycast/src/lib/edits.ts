@@ -117,9 +117,7 @@ export function saveEditor(mutate: SavesMutate, options: { inTrash?: boolean } =
         icon: Icon.Trash,
         primaryAction: { title: "Move to Trash", style: Alert.ActionStyle.Destructive },
       });
-      if (!confirmed) {
-        return;
-      }
+      if (!confirmed) return;
       return apply({
         save,
         busy: "Moving to Trash",

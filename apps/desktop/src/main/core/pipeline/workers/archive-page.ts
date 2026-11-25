@@ -297,9 +297,7 @@ async function crawlSite(
     signal,
     reportActivity: opts.reportActivity,
   };
-  if (opts.partition) {
-    leaseOptions.partition = opts.partition;
-  }
+  if (opts.partition) leaseOptions.partition = opts.partition;
   const lease = await leaseWindow("web", leaseOptions);
   log.info("[pond pipeline:archive-page] window leased", { ms: elapsed() });
   const tmpDir = await mkdtemp(join(tmpdir(), "pond-archive-"));
@@ -346,24 +344,14 @@ async function crawlSite(
     });
 
     while (queue.length > 0 && pages.length < maxPages) {
-      if (signal.aborted) {
-        break;
-      }
-      if (navAttempts >= MAX_NAV_ATTEMPTS) {
-        break;
-      }
-      if (Date.now() >= deadline) {
-        break;
-      }
+      if (signal.aborted) break;
+      if (navAttempts >= MAX_NAV_ATTEMPTS) break;
+      if (Date.now() >= deadline) break;
       const next = queue.shift();
-      if (!next) {
-        break;
-      }
+      if (!next) break;
 
       navAttempts += 1;
-      if (pages.length > 0) {
-        await sleep(PAGE_GAP_MS);
-      }
+      if (pages.length > 0) await sleep(PAGE_GAP_MS);
       const navOk = await navigateWithTimeout(
         lease.win,
         next.url,
@@ -391,13 +379,9 @@ async function crawlSite(
       const wc = lease.win.webContents;
       const finalUrl = wc.getURL();
       const finalKey = dedupeKey(finalUrl);
-      if (capturedKeys.has(finalKey)) {
-        continue;
-      }
+      if (capturedKeys.has(finalKey)) continue;
       if (looksLikeAuthWall(finalUrl)) {
-        if (next.depth === 0) {
-          authWalled = true;
-        }
+        if (next.depth === 0) authWalled = true;
         log.info("[pond pipeline:archive-page] login wall", {
           url: finalUrl,
           ms: elapsed(),
@@ -422,18 +406,12 @@ async function crawlSite(
         ms: elapsed(),
       });
 
-      if (next.depth >= maxDepth) {
-        continue;
-      }
+      if (next.depth >= maxDepth) continue;
       for (const href of harvest.links) {
         const normalized = normalizeLink(href, rootUrl);
-        if (!normalized) {
-          continue;
-        }
+        if (!normalized) continue;
         const key = dedupeKey(normalized);
-        if (queued.has(key)) {
-          continue;
-        }
+        if (queued.has(key)) continue;
         queued.add(key);
         queue.push({ url: normalized, depth: next.depth + 1 });
       }
@@ -644,18 +622,12 @@ function normalizeLink(href: string, rootUrl: URL): string | null {
   } catch {
     return null;
   }
-  if (u.protocol !== "http:" && u.protocol !== "https:") {
-    return null;
-  }
-  if (u.hostname !== rootUrl.hostname) {
-    return null;
-  }
+  if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+  if (u.hostname !== rootUrl.hostname) return null;
   u.hash = "";
   const path = u.pathname.toLowerCase();
   const dot = path.lastIndexOf(".");
-  if (dot !== -1 && NON_PAGE_EXTENSIONS.has(path.slice(dot))) {
-    return null;
-  }
+  if (dot !== -1 && NON_PAGE_EXTENSIONS.has(path.slice(dot))) return null;
   return u.href;
 }
 

@@ -109,9 +109,7 @@ async function writeAppIcon(tintDir, name) {
   } catch {
     return false;
   }
-  if (await isFresh(out, source)) {
-    return false;
-  }
+  if (await isFresh(out, source)) return false;
   await mkdir(dirname(out), { recursive: true });
   await sharp(source)
     .resize(APP_ICON_PX, APP_ICON_PX)
@@ -132,17 +130,11 @@ async function main() {
   let written = 0;
   let appIcons = 0;
   for (const tint of tints) {
-    if (!tint.isDirectory()) {
-      continue;
-    }
-    if (await writeAppIcon(join(tintsRoot, tint.name), tint.name)) {
-      appIcons++;
-    }
+    if (!tint.isDirectory()) continue;
+    if (await writeAppIcon(join(tintsRoot, tint.name), tint.name)) appIcons++;
     for (const source of await tintImages(join(tintsRoot, tint.name))) {
       const out = join(outRoot, relative(tintsRoot, source));
-      if (await isFresh(out, source)) {
-        continue;
-      }
+      if (await isFresh(out, source)) continue;
       await mkdir(dirname(out), { recursive: true });
       const icon = await placed(source);
       // Windows and Linux show the icon in a window or taskbar, where a drawn shadow does not belong.

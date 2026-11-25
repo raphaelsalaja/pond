@@ -27,15 +27,9 @@ export function problemOf(error: Error): PondProblem {
     return error;
   }
   if (error instanceof PondApiError) {
-    if (error.kind === "authentication") {
-      return new PondProblem("unauthorized", error.message);
-    }
-    if (error.kind === "connection") {
-      return new PondProblem("not-running", error.message);
-    }
-    if (error.kind === "not-found" && error.code === undefined) {
-      return new PondProblem("outdated", error.message);
-    }
+    if (error.kind === "authentication") return new PondProblem("unauthorized", error.message);
+    if (error.kind === "connection") return new PondProblem("not-running", error.message);
+    if (error.kind === "not-found" && error.code === undefined) return new PondProblem("outdated", error.message);
   }
   return new PondProblem("failed", error.message);
 }

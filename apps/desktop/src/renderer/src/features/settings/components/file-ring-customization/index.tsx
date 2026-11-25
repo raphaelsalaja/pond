@@ -278,14 +278,10 @@ function FileRingDialog({
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over || active.id === over.id) {
-      return;
-    }
+    if (!over || active.id === over.id) return;
     const from = ids.indexOf(String(active.id));
     const to = ids.indexOf(String(over.id));
-    if (from >= 0 && to >= 0) {
-      save(moveRingItem(order, from, to));
-    }
+    if (from >= 0 && to >= 0) save(moveRingItem(order, from, to));
   };
 
   return (

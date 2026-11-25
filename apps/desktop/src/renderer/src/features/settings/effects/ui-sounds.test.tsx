@@ -5,9 +5,7 @@ function element(html: string): Element {
   const host = document.createElement("div");
   host.innerHTML = html;
   const child = host.firstElementChild;
-  if (!child) {
-    throw new Error("Fixture must produce an element");
-  }
+  if (!child) throw new Error("Fixture must produce an element");
   return child;
 }
 

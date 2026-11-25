@@ -21,13 +21,9 @@ const LIGHTS = [
 ];
 
 function ffmpegPath() {
-  if (process.env.FFMPEG) {
-    return process.env.FFMPEG;
-  }
+  if (process.env.FFMPEG) return process.env.FFMPEG;
   for (const candidate of ["/opt/homebrew/bin/ffmpeg", "ffmpeg"]) {
-    if (spawnSync(candidate, ["-version"]).status === 0) {
-      return candidate;
-    }
+    if (spawnSync(candidate, ["-version"]).status === 0) return candidate;
   }
   return require("ffmpeg-static");
 }
@@ -52,14 +48,10 @@ function run(command, args) {
 async function wallpaperSource(path) {
   const file = path || DEFAULT_WALLPAPER;
   if (!existsSync(file)) {
-    if (path) {
-      throw new Error(`Wallpaper not found: ${path}`);
-    }
+    if (path) throw new Error(`Wallpaper not found: ${path}`);
     return null;
   }
-  if (!/\.heic$/i.test(file)) {
-    return file;
-  }
+  if (!/\.heic$/i.test(file)) return file;
   const key = createHash("sha256")
     .update(`${file}:${statSync(file).mtimeMs}`)
     .digest("hex")

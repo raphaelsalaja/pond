@@ -46,9 +46,7 @@ if (!existsSync(ictool)) {
 const work = mkdtempSync(join(tmpdir(), "pond-tint-icons-"));
 for (const entry of readdirSync(tintsRoot, { withFileTypes: true })) {
   const source = join(tintsRoot, entry.name, "icon.icon");
-  if (!entry.isDirectory() || !existsSync(source)) {
-    continue;
-  }
+  if (!entry.isDirectory() || !existsSync(source)) continue;
   for (const { generation, rendition, file } of EXPORTS) {
     const exported = join(work, `${entry.name}-${generation}-${rendition}.png`);
     const result = spawnSync(

@@ -45,25 +45,17 @@ function annotationLines(
 ): Array<string> {
   const lines: Array<string> = [];
   for (const comment of comments) {
-    if (!comment) {
-      continue;
-    }
+    if (!comment) continue;
     const texts = [
       comment.text ?? comment.annotation,
       ...(comment.replies ?? []).map((reply) => reply.text),
     ];
-    for (const text of texts) {
-      if (text?.trim()) {
-        lines.push(text.trim());
-      }
-    }
+    for (const text of texts) if (text?.trim()) lines.push(text.trim());
   }
   const timed = videoNotes
     .flatMap((note) => {
       const text = (note?.text ?? note?.annotation)?.trim();
-      if (!note || !text) {
-        return [];
-      }
+      if (!note || !text) return [];
       return [{ time: note.timeSec ?? note.time ?? note.duration ?? 0, text }];
     })
     .sort((a, b) => a.time - b.time);
@@ -79,9 +71,7 @@ export function foldAnnotationsIntoNotes(
   videoNotes: EagleVideoNotes | undefined,
 ): string | null {
   const lines = annotationLines(comments, videoNotes);
-  if (lines.length === 0) {
-    return notes ?? null;
-  }
+  if (lines.length === 0) return notes ?? null;
   const base = notes?.trim();
   return base ? `${base}\n\n${lines.join("\n")}` : lines.join("\n");
 }

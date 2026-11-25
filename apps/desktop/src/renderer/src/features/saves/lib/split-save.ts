@@ -26,9 +26,7 @@ export function splitTargetIds(
 
 function splitTitle(split: number, created: number): string {
   const total = split + created;
-  if (split === 1) {
-    return `Split into ${total} saves`;
-  }
+  if (split === 1) return `Split into ${total} saves`;
   return `Split ${split} saves into ${total}`;
 }
 

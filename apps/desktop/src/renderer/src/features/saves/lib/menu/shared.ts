@@ -17,8 +17,6 @@ export function submenuHidden(items: Array<MenuItemSpec>): boolean {
 }
 
 export function notifyCopy(result: { ok: boolean; message: string }): void {
-  if (!result.ok) {
-    return;
-  }
+  if (!result.ok) return;
   notify({ id: "copy-selection", title: result.message });
 }

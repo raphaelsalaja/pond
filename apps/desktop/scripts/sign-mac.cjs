@@ -44,15 +44,9 @@ exports.default = async function signMac(opts) {
       continue;
     }
     const args = ["--force", "--sign", opts.identity, "--options", "runtime"];
-    if (entitlements) {
-      args.push("--entitlements", entitlements);
-    }
-    if (opts.identity !== "-") {
-      args.push("--timestamp");
-    }
-    if (opts.keychain) {
-      args.push("--keychain", opts.keychain);
-    }
+    if (entitlements) args.push("--entitlements", entitlements);
+    if (opts.identity !== "-") args.push("--timestamp");
+    if (opts.keychain) args.push("--keychain", opts.keychain);
     execFileSync("codesign", [...args, plugIn], { stdio: "inherit" });
   }
   return defaultSign()(opts);

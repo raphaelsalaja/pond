@@ -28,9 +28,7 @@ export function pickIconGeneration(
   available: Iterable<number>,
   macosMajor: number | null,
 ): number | null {
-  if (macosMajor === null) {
-    return null;
-  }
+  if (macosMajor === null) return null;
   let best: number | null = null;
   for (const generation of available) {
     if (generation <= macosMajor && (best === null || generation > best)) {
@@ -106,12 +104,8 @@ export function preferredAppIcon(
   prefs: AppIconPrefs,
   logo: LibraryLogo | null,
 ): string {
-  if (!prefs.appIconMatchesLibrary || !logo) {
-    return prefs.appIcon;
-  }
-  if (logo.icon === null) {
-    return DEFAULT_APP_ICON;
-  }
+  if (!prefs.appIconMatchesLibrary || !logo) return prefs.appIcon;
+  if (logo.icon === null) return DEFAULT_APP_ICON;
   return logo.mark?.kind === "pond" ? logo.mark.tint : prefs.appIcon;
 }
 
@@ -119,12 +113,8 @@ export function resolveAppIconId(
   raw: string | null | undefined,
   available: ReadonlySet<string>,
 ): string {
-  if (raw && available.has(raw)) {
-    return raw;
-  }
-  if (available.has(DEFAULT_APP_ICON)) {
-    return DEFAULT_APP_ICON;
-  }
+  if (raw && available.has(raw)) return raw;
+  if (available.has(DEFAULT_APP_ICON)) return DEFAULT_APP_ICON;
   return available.values().next().value ?? DEFAULT_APP_ICON;
 }
 
@@ -132,9 +122,7 @@ export function sortAppIconIds(ids: Iterable<string>): Array<string> {
   const leftover = new Set(ids);
   const ordered: Array<string> = [];
   for (const id of APP_ICON_ORDER) {
-    if (!leftover.has(id)) {
-      continue;
-    }
+    if (!leftover.has(id)) continue;
     leftover.delete(id);
     ordered.push(id);
   }

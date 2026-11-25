@@ -53,13 +53,9 @@ export function parseCsvRows(text: string): Array<Array<string>> {
       continue;
     }
     if (char === "\n" || char === "\r") {
-      if (char === "\r" && source[index + 1] === "\n") {
-        index += 1;
-      }
+      if (char === "\r" && source[index + 1] === "\n") index += 1;
       row.push(cell);
-      if (row.some((value) => value.trim())) {
-        rows.push(row);
-      }
+      if (row.some((value) => value.trim())) rows.push(row);
       row = [];
       cell = "";
       continue;
@@ -67,8 +63,6 @@ export function parseCsvRows(text: string): Array<Array<string>> {
     cell += char;
   }
   row.push(cell);
-  if (row.some((value) => value.trim())) {
-    rows.push(row);
-  }
+  if (row.some((value) => value.trim())) rows.push(row);
   return rows;
 }

@@ -35,9 +35,7 @@ function emptyValueFor(operator: ComparatorId) {
 }
 
 export function predicateIsActive(p: Predicate): boolean {
-  if (p.operator === "exists" || p.operator === "empty") {
-    return true;
-  }
+  if (p.operator === "exists" || p.operator === "empty") return true;
   const v = p.value;
   if (v === null || v === undefined) {
     return false;

@@ -177,9 +177,7 @@ function VideoSlide({
     void window.pond
       .query("video.preparePreview", { src: slide.src })
       .then((result) => {
-        if (requestId.current !== currentRequest) {
-          return;
-        }
+        if (requestId.current !== currentRequest) return;
         if (result.ok && result.url) {
           setPreview({ src: slide.src, url: result.url });
           return;
@@ -187,9 +185,7 @@ function VideoSlide({
         onError();
       })
       .catch(() => {
-        if (requestId.current === currentRequest) {
-          onError();
-        }
+        if (requestId.current === currentRequest) onError();
       });
   }, [onError, slide.src]);
 
@@ -230,9 +226,7 @@ function VideoSlide({
 }
 
 function PosterSlide({ slide, saveId }: { slide: MediaSlide; saveId: string }) {
-  if (!slide.posterUrl) {
-    return <div className={styles["media-shell"]} />;
-  }
+  if (!slide.posterUrl) return <div className={styles["media-shell"]} />;
   return (
     <button
       type="button"

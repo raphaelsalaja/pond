@@ -55,9 +55,7 @@ async function defaultClassifyUrl(): Promise<ClassifyUrl> {
   return (raw) => {
     const url = normalizeUrl(raw);
     const { source } = classifyUrlToSource(url);
-    if (!source) {
-      return null;
-    }
+    if (!source) return null;
     const sourceId = sourceIdFromUrl(source, url);
     return sourceId ? { source, sourceId } : null;
   };

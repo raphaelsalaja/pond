@@ -26,11 +26,8 @@ interface SidebarProps {
 
 function toggled<T>(set: ReadonlySet<T>, value: T, on: boolean): Set<T> {
   const next = new Set(set);
-  if (on) {
-    next.add(value);
-  } else {
-    next.delete(value);
-  }
+  if (on) next.add(value);
+  else next.delete(value);
   return next;
 }
 

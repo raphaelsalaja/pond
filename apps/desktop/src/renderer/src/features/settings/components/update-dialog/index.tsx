@@ -40,17 +40,13 @@ const FALLBACK_ERRORS = {
 } satisfies Record<UpdateAction, string>;
 
 function noticeKey(notice: UpdateNotice): string {
-  if (notice.phase === "downloaded") {
-    return `downloaded:${notice.version}`;
-  }
+  if (notice.phase === "downloaded") return `downloaded:${notice.version}`;
   return `available:${notice.version}:${notice.downloading}:${notice.progress ?? ""}`;
 }
 
 /** Leaves out download state: a failed download's notice and its error reply arrive in either order. */
 function viewKey(view: UpdateDialogView | null): string {
-  if (!view) {
-    return "none";
-  }
+  if (!view) return "none";
   switch (view.kind) {
     case "checking":
       return "checking";
@@ -89,21 +85,15 @@ export function UpdateDialog() {
     model.view.notice.phase === "available";
 
   useEffect(() => {
-    if (step === "none") {
-      return;
-    }
+    if (step === "none") return;
     actionRef.current?.focus({ preventScroll: true });
   }, [step]);
 
   async function confirm() {
     const current = readUpdateDialog();
     const view = current.view;
-    if (!current.open || !view) {
-      return;
-    }
-    if (view.kind === "checking" || view.kind === "restarting") {
-      return;
-    }
+    if (!current.open || !view) return;
+    if (view.kind === "checking" || view.kind === "restarting") return;
     if (view.kind === "current" || (view.kind === "failed" && !view.retry)) {
       dismissUpdateDialog();
       return;
@@ -112,9 +102,7 @@ export function UpdateDialog() {
       requestUpdateCheck();
       return;
     }
-    if (view.notice.phase === "available" && view.notice.downloading) {
-      return;
-    }
+    if (view.notice.phase === "available" && view.notice.downloading) return;
     const started = viewKey(view);
     const action =
       view.notice.phase === "downloaded"
@@ -141,9 +129,7 @@ export function UpdateDialog() {
     <Dialog.Root
       open={model.open}
       onOpenChange={(next) => {
-        if (!next) {
-          dismissUpdateDialog();
-        }
+        if (!next) dismissUpdateDialog();
       }}
     >
       {screen ? (
@@ -240,9 +226,7 @@ export function subscribeToUpdateNotices(
   let lastNotice = "";
   const presentOnce = (notice: UpdateNotice) => {
     const key = noticeKey(notice);
-    if (key === lastNotice) {
-      return;
-    }
+    if (key === lastNotice) return;
     lastNotice = key;
     present(notice);
   };
@@ -250,9 +234,7 @@ export function subscribeToUpdateNotices(
   void dependencies
     .current()
     .then((notice) => {
-      if (active && notice) {
-        presentOnce(notice);
-      }
+      if (active && notice) presentOnce(notice);
     })
     .catch((cause: unknown) => {
       dependencies.warn(
@@ -273,9 +255,7 @@ export async function runUpdateAction(
 ): Promise<string | null> {
   try {
     const result = await run(name);
-    if (result.ok) {
-      return null;
-    }
+    if (result.ok) return null;
     return (
       result.error ??
       (result.reason === "dev_build"

@@ -94,9 +94,7 @@ function withSelection(
       return;
     }
     const save = primarySave();
-    if (save) {
-      single(save);
-    }
+    if (save) single(save);
   };
 }
 
@@ -104,9 +102,7 @@ function withSelection(
 function targetIds(): ReadonlyArray<string> {
   const selected = selection.snapshot();
   const primary = primarySelectionStore.state.id;
-  if (selected.length > 1) {
-    return selected;
-  }
+  if (selected.length > 1) return selected;
   return primary ? [primary] : [];
 }
 
@@ -129,16 +125,12 @@ export function SaveHotkeys() {
         const primary = primarySelectionStore.state.id;
         const selected = selection.snapshot();
         const ids = selected.length ? selected : primary ? [primary] : [];
-        if (!ids.length || (advance && ids.length > 1)) {
-          return;
-        }
+        if (!ids.length || (advance && ids.length > 1)) return;
         const current = ids[0];
         const next =
           advance && current ? await resultNavigation.next(current, 1) : null;
         await rateSaves(ids, rating);
-        if (!next || primarySelectionStore.state.id !== primary) {
-          return;
-        }
+        if (!next || primarySelectionStore.state.id !== primary) return;
         await showResult(next, primary);
       })
       .catch(() => {
@@ -211,9 +203,7 @@ export function SaveHotkeys() {
         hotkey: bindingKeys(shortcuts, "save.copy-image"),
         callback: (event: KeyboardEvent) => {
           const textSelection = window.getSelection();
-          if (textSelection && !textSelection.isCollapsed) {
-            return;
-          }
+          if (textSelection && !textSelection.isCollapsed) return;
           const ids = selection.snapshot();
           if (ids.length > 1) {
             event.preventDefault();
@@ -221,9 +211,7 @@ export function SaveHotkeys() {
             return;
           }
           const save = primarySave();
-          if (!save || !canCopyPrimaryMedia(save)) {
-            return;
-          }
+          if (!save || !canCopyPrimaryMedia(save)) return;
           event.preventDefault();
           void copyPrimaryMedia(save);
         },
@@ -236,9 +224,7 @@ export function SaveHotkeys() {
       {
         hotkey: bindingKeys(shortcuts, "save.copy-url"),
         callback: withSelection((save) => {
-          if (save.url) {
-            void copyUrl(save.url);
-          }
+          if (save.url) void copyUrl(save.url);
         }, copyUrlsForSelection),
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
@@ -251,9 +237,7 @@ export function SaveHotkeys() {
             return;
           }
           const id = primarySelectionStore.state.id;
-          if (id) {
-            void copyId(id);
-          }
+          if (id) void copyId(id);
         },
         options: { enabled: hasPrimary, ignoreInputs: true },
       },
@@ -294,9 +278,7 @@ export function SaveHotkeys() {
             primarySelectionStore.state.id,
             (id) => pool.get(id),
           );
-          if (ids.length === 0) {
-            return;
-          }
+          if (ids.length === 0) return;
           event.preventDefault();
           splitIntoSaves(ids);
         },
@@ -310,9 +292,7 @@ export function SaveHotkeys() {
         hotkey: bindingKeys(shortcuts, "save.add-tag"),
         callback: () => {
           const ids = selection.snapshot();
-          if (ids.length === 0 && !primarySelectionStore.state.id) {
-            return;
-          }
+          if (ids.length === 0 && !primarySelectionStore.state.id) return;
           openTagPicker();
         },
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
@@ -321,9 +301,7 @@ export function SaveHotkeys() {
         hotkey: bindingKeys(shortcuts, "save.rename"),
         callback: withSelection(
           (save) => {
-            if (save.source !== "local") {
-              return;
-            }
+            if (save.source !== "local") return;
             focusPaneTitle();
           },
           (ids) => saveLibraryBridge.openRename(ids),
@@ -333,9 +311,7 @@ export function SaveHotkeys() {
       {
         hotkey: bindingKeys(shortcuts, "save.open-url"),
         callback: withSelection((save) => {
-          if (!save.url) {
-            return;
-          }
+          if (!save.url) return;
           void window.pond.openExternal(save.url);
         }, openInBrowserForSelection),
         options: { enabled: hasPrimary, ignoreInputs: true },
@@ -349,9 +325,7 @@ export function SaveHotkeys() {
             return;
           }
           const sid = primarySelectionStore.state.id;
-          if (!sid) {
-            return;
-          }
+          if (!sid) return;
           void window.pond.revealSave(sid);
         },
         options: { enabled: hasPrimary, ignoreInputs: true },
@@ -409,14 +383,9 @@ export function SaveHotkeys() {
             return;
           }
           const save = primarySave();
-          if (!save) {
-            return;
-          }
-          if (save.deletedAt) {
-            void untrashSave(save);
-          } else {
-            void moveSavesToTrash([save.id]);
-          }
+          if (!save) return;
+          if (save.deletedAt) void untrashSave(save);
+          else void moveSavesToTrash([save.id]);
         },
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },
@@ -438,12 +407,8 @@ export function SaveHotkeys() {
     ].map((binding) => ({
       ...binding,
       callback: (event: KeyboardEvent) => {
-        if (appHotkeyBlockedByEditable(event)) {
-          return;
-        }
-        if (!saveOwnsKeyboard(event)) {
-          return;
-        }
+        if (appHotkeyBlockedByEditable(event)) return;
+        if (!saveOwnsKeyboard(event)) return;
         if (
           !("preventDefault" in binding.options) ||
           binding.options.preventDefault !== false

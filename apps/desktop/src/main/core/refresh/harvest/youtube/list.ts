@@ -59,9 +59,7 @@ async function inPageYoutubeList(
     );
     for (const a of links) {
       const id = norm.extractVideoId(a.href);
-      if (!id || seen.has(id)) {
-        continue;
-      }
+      if (!id || seen.has(id)) continue;
       seen.add(id);
 
       const renderer = a.closest(

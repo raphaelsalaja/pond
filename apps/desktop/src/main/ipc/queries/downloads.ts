@@ -78,13 +78,9 @@ type HistoryRow = Pick<
 
 function toHistoryRow(row: HistoryRow): DownloadHistoryRow | null {
   const payload = row.payload;
-  if (payload.kind !== "save.ingest.completed") {
-    return null;
-  }
+  if (payload.kind !== "save.ingest.completed") return null;
   const saveId = payload.saveId ?? row.saveId;
-  if (!saveId) {
-    return null;
-  }
+  if (!saveId) return null;
   return {
     id: row.id,
     saveId,
@@ -170,9 +166,7 @@ export const downloadsQueries = {
             lt(pipelineEvents.id, cursor.id),
           ),
         );
-        if (older) {
-          clauses.push(older);
-        }
+        if (older) clauses.push(older);
       }
       if (q) {
         const pattern = `%${q.replaceAll("%", "").replaceAll("_", "")}%`;
@@ -182,9 +176,7 @@ export const downloadsQueries = {
           like(pipelineEvents.errorMessage, pattern),
           sql`json_extract(${pipelineEvents.payload}, '$.url') like ${pattern}`,
         );
-        if (match) {
-          clauses.push(match);
-        }
+        if (match) clauses.push(match);
       }
 
       const raw = db

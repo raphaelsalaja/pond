@@ -11,12 +11,8 @@ function flattenConjunction(clause: Clause): Array<Clause> {
 
 export function combineQueries(queries: ReadonlyArray<Query>): Query {
   const active = queries.filter((query) => query.rules.length > 0);
-  if (active.length === 0) {
-    return EMPTY_QUERY;
-  }
-  if (active.length === 1) {
-    return active[0] ?? EMPTY_QUERY;
-  }
+  if (active.length === 0) return EMPTY_QUERY;
+  if (active.length === 1) return active[0] ?? EMPTY_QUERY;
   return { combinator: "and", rules: active.flatMap(flattenConjunction) };
 }
 
@@ -31,9 +27,7 @@ function ancestors(
   while (parentId && !seen.has(parentId)) {
     seen.add(parentId);
     const parent = byId.get(parentId);
-    if (parent?.kind !== "group") {
-      break;
-    }
+    if (parent?.kind !== "group") break;
     result.unshift(parent);
     parentId = parent.parentId;
   }

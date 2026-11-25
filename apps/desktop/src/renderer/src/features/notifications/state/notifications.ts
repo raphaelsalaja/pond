@@ -22,9 +22,7 @@ function warnRefreshFailed(cause: unknown): void {
 async function refresh(): Promise<void> {
   const request = ++ticket;
   const items = await window.pond.query("notifications.list", {});
-  if (request !== ticket) {
-    return;
-  }
+  if (request !== ticket) return;
   store.setState(() => ({ items, loaded: true }));
 }
 
@@ -102,9 +100,7 @@ export const notifications = {
     );
   },
   removeRead(): void {
-    if (!store.state.items.some((item) => !isUnread(item))) {
-      return;
-    }
+    if (!store.state.items.some((item) => !isUnread(item))) return;
     optimistic(
       (items) => items.filter(isUnread),
       () => window.pond.query("notifications.delete", { read: true }),
@@ -125,9 +121,7 @@ export function useHydrateNotifications(): void {
       });
     }
     return () => {
-      if (--subscribers > 0) {
-        return;
-      }
+      if (--subscribers > 0) return;
       unsubscribe?.();
       unsubscribe = null;
     };

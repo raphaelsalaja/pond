@@ -14,9 +14,7 @@ async function addToFolder(
   saveIds: ReadonlyArray<string>,
   folderId: string,
 ): Promise<void> {
-  if (!(await listFolders()).some((folder) => folder.id === folderId)) {
-    return;
-  }
+  if (!(await listFolders()).some((folder) => folder.id === folderId)) return;
   const db = await getDb();
   for (let offset = 0; offset < saveIds.length; offset += CHUNK) {
     const batch = saveIds.slice(offset, offset + CHUNK);
@@ -55,18 +53,12 @@ async function incomingRuleFor(
       return account.source === source ? account.sync.incoming : undefined;
     }
     const watch = await getWatch(ownerId);
-    if (watch) {
-      return watch.source === source ? watch.sync.incoming : undefined;
-    }
+    if (watch) return watch.source === source ? watch.sync.incoming : undefined;
     return undefined;
   }
   const accounts = await listAccountsForSource(source);
-  if (accounts.length === 1) {
-    return accounts[0]?.sync.incoming;
-  }
-  if (accounts.length > 1) {
-    return undefined;
-  }
+  if (accounts.length === 1) return accounts[0]?.sync.incoming;
+  if (accounts.length > 1) return undefined;
   const watches = (await listWatches()).filter(
     (watch) => watch.source === source,
   );
@@ -92,13 +84,9 @@ export async function organizeIncoming(
   rule: IncomingSaveRule | undefined,
   trigger: string,
 ): Promise<void> {
-  if (!rule || saveIds.length === 0) {
-    return;
-  }
+  if (!rule || saveIds.length === 0) return;
   try {
-    if (rule.folderId) {
-      await addToFolder(saveIds, rule.folderId);
-    }
+    if (rule.folderId) await addToFolder(saveIds, rule.folderId);
     if (rule.tags?.length) {
       await addTagsToSaves(saveIds, rule.tags, `${trigger}:incoming-tags`);
     }

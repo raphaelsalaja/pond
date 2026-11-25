@@ -4,8 +4,6 @@ import { useState } from "react";
 export function useMediaReveal(ready: boolean, source: string): boolean {
   const [shownSource, setShownSource] = useState<string | null>(null);
   const shown = shownSource === source || ready;
-  if (shown && shownSource !== source) {
-    setShownSource(source);
-  }
+  if (shown && shownSource !== source) setShownSource(source);
   return shown;
 }

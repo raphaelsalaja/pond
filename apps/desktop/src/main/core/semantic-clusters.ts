@@ -80,9 +80,7 @@ function clusterLabels(
     const seen = new Set<string>();
     for (const label of labels) {
       const key = label.toLowerCase();
-      if (seen.has(key)) {
-        continue;
-      }
+      if (seen.has(key)) continue;
       seen.add(key);
       const current = counts.get(key);
       if (!current) {
@@ -90,9 +88,7 @@ function clusterLabels(
         continue;
       }
       current.count += 1;
-      if (label < current.label) {
-        current.label = label;
-      }
+      if (label < current.label) current.label = label;
     }
   }
   return [...counts.values()]
@@ -122,9 +118,7 @@ export function previewSemanticClusters(input: {
 
   function root(id: string): string {
     const next = parent.get(id);
-    if (!next || next === id) {
-      return id;
-    }
+    if (!next || next === id) return id;
     const resolved = root(next);
     parent.set(id, resolved);
     return resolved;
@@ -133,9 +127,7 @@ export function previewSemanticClusters(input: {
   function union(leftId: string, rightId: string): void {
     const leftRoot = root(leftId);
     const rightRoot = root(rightId);
-    if (leftRoot === rightRoot) {
-      return;
-    }
+    if (leftRoot === rightRoot) return;
     const [first, second] =
       leftRoot < rightRoot ? [leftRoot, rightRoot] : [rightRoot, leftRoot];
     parent.set(second, first);
@@ -144,9 +136,7 @@ export function previewSemanticClusters(input: {
   for (const edge of input.edges) {
     const source = byId.get(edge.sourceId);
     const target = byId.get(edge.targetId);
-    if (!source || !target || source.id === target.id) {
-      continue;
-    }
+    if (!source || !target || source.id === target.id) continue;
     if (cosineDistance(source.vector, target.vector) <= input.distance) {
       union(source.id, target.id);
     }
@@ -156,11 +146,8 @@ export function previewSemanticClusters(input: {
   for (const candidate of candidates) {
     const id = root(candidate.id);
     const current = components.get(id);
-    if (current) {
-      current.push(candidate);
-    } else {
-      components.set(id, [candidate]);
-    }
+    if (current) current.push(candidate);
+    else components.set(id, [candidate]);
   }
 
   const clusters: SemanticClusterPreview["clusters"] = [];
@@ -172,9 +159,7 @@ export function previewSemanticClusters(input: {
       continue;
     }
     const id = memberIds[0];
-    if (!id) {
-      continue;
-    }
+    if (!id) continue;
     clusters.push({
       id,
       labels: clusterLabels(component),
@@ -281,9 +266,7 @@ export async function semanticClustersWithStore(
 function semanticClustersStore(db: Db): SemanticClustersStore {
   return {
     async candidates(scope, model, limit) {
-      if (scope.saveIds && scope.saveIds.length === 0) {
-        return [];
-      }
+      if (scope.saveIds && scope.saveIds.length === 0) return [];
       const rows = await db
         .select({
           id: saves.id,
@@ -316,9 +299,7 @@ function semanticClustersStore(db: Db): SemanticClustersStore {
 
       return rows.flatMap((row) => {
         const vector = parseJsonVector(row.clipEmbedding);
-        if (!vector || !row.clipModel) {
-          return [];
-        }
+        if (!vector || !row.clipModel) return [];
         return [
           {
             id: row.id,

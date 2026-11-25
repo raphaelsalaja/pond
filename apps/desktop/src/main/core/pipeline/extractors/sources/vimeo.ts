@@ -47,9 +47,7 @@ export class VimeoVideoExtractor implements Extractor {
 
   handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
-    if (segments.length !== 1 || !first) {
-      return null;
-    }
+    if (segments.length !== 1 || !first) return null;
     if (VIMEO_RESERVED.has(first.toLowerCase()) || /^\d+$/.test(first)) {
       return null;
     }
@@ -76,9 +74,7 @@ export class VimeoVideoExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("vimeo", input.url.href);
-    if (!sourceId) {
-      throw new TerminalError("could not parse vimeo video");
-    }
+    if (!sourceId) throw new TerminalError("could not parse vimeo video");
     return captureFromSource({
       url: `https://vimeo.com/${sourceId}`,
       source: "vimeo",

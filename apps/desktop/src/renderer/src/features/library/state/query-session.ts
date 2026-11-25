@@ -27,9 +27,7 @@ const caches = new WeakMap<
 
 function pagesFor(runtime: QuerySessionRuntime): Map<string, LibraryQueryPage> {
   const existing = caches.get(runtime);
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
   const pages = new Map<string, LibraryQueryPage>();
   caches.set(runtime, pages);
   return pages;
@@ -42,13 +40,9 @@ function rememberPage(
 ): void {
   pages.delete(key);
   pages.set(key, page);
-  if (pages.size <= CACHED_PAGES) {
-    return;
-  }
+  if (pages.size <= CACHED_PAGES) return;
   const oldest = pages.keys().next();
-  if (!oldest.done) {
-    pages.delete(oldest.value);
-  }
+  if (!oldest.done) pages.delete(oldest.value);
 }
 
 export function cachedQueryPage(
@@ -74,9 +68,7 @@ export function createQuerySession(
     emit(state);
   }
   async function load(append = false): Promise<void> {
-    if (!request || (append && (active || !state.page?.nextCursor))) {
-      return;
-    }
+    if (!request || (append && (active || !state.page?.nextCursor))) return;
     const captured = request;
     const capturedKey = key;
     const ticket = ++sequence;
@@ -89,9 +81,7 @@ export function createQuerySession(
         ...captured,
         cursor: append ? previous?.nextCursor : null,
       });
-      if (!current()) {
-        return;
-      }
+      if (!current()) return;
       while (
         !append &&
         result.nextCursor &&
@@ -101,15 +91,11 @@ export function createQuerySession(
           ...captured,
           cursor: result.nextCursor,
         });
-        if (!current()) {
-          return;
-        }
+        if (!current()) return;
         result = { ...next, ids: [...result.ids, ...next.ids] };
       }
       await runtime.refresh(result.ids);
-      if (!current()) {
-        return;
-      }
+      if (!current()) return;
       const page = {
         ...result,
         ids:
@@ -146,9 +132,7 @@ export function createQuerySession(
     snapshot: () => state,
     setRequest(next: LibraryQueryRequest): boolean {
       const nextKey = JSON.stringify(next);
-      if (nextKey === key) {
-        return false;
-      }
+      if (nextKey === key) return false;
       /** Typing only changes keywords, so current results stay up until the debounced search replaces them. */
       const retyped = request !== null && scopeKey(request) === scopeKey(next);
       request = next;
@@ -156,9 +140,7 @@ export function createQuerySession(
       sequence++;
       active = false;
       const cached = retyped ? null : (pages.get(nextKey) ?? null);
-      if (cached) {
-        pageKey = nextKey;
-      }
+      if (cached) pageKey = nextKey;
       update({
         page: retyped ? state.page : cached,
         loading: true,
@@ -168,9 +150,7 @@ export function createQuerySession(
     },
     load,
     async allIds() {
-      if (!request) {
-        return null;
-      }
+      if (!request) return null;
       const capturedKey = key;
       const result = await runtime.ids(request);
       return key === capturedKey ? result.ids : null;

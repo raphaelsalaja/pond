@@ -20,12 +20,8 @@ function isRecencyDesc(list: ReadonlyArray<Save>): boolean {
   for (let i = 1; i < list.length; i++) {
     const prev = list[i - 1];
     const cur = list[i];
-    if (!prev || !cur) {
-      continue;
-    }
-    if (savedAtMs(prev) < savedAtMs(cur)) {
-      return false;
-    }
+    if (!prev || !cur) continue;
+    if (savedAtMs(prev) < savedAtMs(cur)) return false;
   }
   return true;
 }
@@ -35,16 +31,12 @@ function canSkipFullSort(
   byId: Map<string, Save>,
   sorted: ReadonlyArray<Save>,
 ): boolean {
-  if (!isRecencyDesc(list)) {
-    return false;
-  }
+  if (!isRecencyDesc(list)) return false;
   const headMs = sorted[0] ? savedAtMs(sorted[0]) : Number.NEGATIVE_INFINITY;
   for (const save of list) {
     const prev = byId.get(save.id);
     if (prev) {
-      if (savedAtMs(prev) !== savedAtMs(save)) {
-        return false;
-      }
+      if (savedAtMs(prev) !== savedAtMs(save)) return false;
     } else if (savedAtMs(save) <= headMs) {
       /** New ties must follow existing Saves, as in single-upsert's stable sort. */
       return false;
@@ -61,11 +53,8 @@ function sortedAfterSkip(
   const updated = new Map<string, Save>();
   const prepend: Array<Save> = [];
   for (const save of list) {
-    if (byId.has(save.id)) {
-      updated.set(save.id, save);
-    } else {
-      prepend.push(save);
-    }
+    if (byId.has(save.id)) updated.set(save.id, save);
+    else prepend.push(save);
   }
   const nextSorted =
     updated.size === 0
@@ -128,9 +117,7 @@ export function protectSaves(guard: PoolGuard): () => void {
 }
 
 function scheduleTrim(): void {
-  if (trimTimer !== null || savesStore.state.byId.size <= POOL_SOFT_CAP) {
-    return;
-  }
+  if (trimTimer !== null || savesStore.state.byId.size <= POOL_SOFT_CAP) return;
   trimTimer = setTimeout(() => {
     trimTimer = null;
     trimPool();
@@ -140,57 +127,39 @@ function scheduleTrim(): void {
 /** Evicts least recently touched, unprotected rows down to the trim target; `ensureSaves` refetches them. */
 export function trimPool(): number {
   const { byId } = savesStore.state;
-  if (byId.size <= POOL_SOFT_CAP) {
-    return 0;
-  }
+  if (byId.size <= POOL_SOFT_CAP) return 0;
   const kept = new Set<string>();
   for (const guard of guards) {
-    for (const id of guard()) {
-      if (id) {
-        kept.add(id);
-      }
-    }
+    for (const id of guard()) if (id) kept.add(id);
   }
   const excess = byId.size - POOL_TRIM_TARGET;
   const evicted = new Set<string>();
   for (const id of touched) {
-    if (evicted.size >= excess) {
-      break;
-    }
-    if (!kept.has(id) && byId.has(id)) {
-      evicted.add(id);
-    }
+    if (evicted.size >= excess) break;
+    if (!kept.has(id) && byId.has(id)) evicted.add(id);
   }
   removeSaves(evicted);
   return evicted.size;
 }
 
 function removeSaves(present: ReadonlySet<string>): void {
-  if (present.size === 0) {
-    return;
-  }
+  if (present.size === 0) return;
   savesStore.setState((s) => {
-    for (const id of present) {
-      s.byId.delete(id);
-    }
+    for (const id of present) s.byId.delete(id);
     return {
       byId: s.byId,
       sorted: s.sorted.filter((save) => !present.has(save.id)),
       revision: s.revision + 1,
     };
   });
-  for (const id of present) {
-    touched.delete(id);
-  }
+  for (const id of present) touched.delete(id);
   emitDirty([...present]);
 }
 
 export const pool = {
   get(id: string): Save | undefined {
     const save = savesStore.state.byId.get(id);
-    if (save) {
-      touch(id);
-    }
+    if (save) touch(id);
     return save;
   },
   ids(): IterableIterator<string> {
@@ -220,9 +189,7 @@ export function upsertSave(save: Save): void {
   let dirty = false;
   savesStore.setState((s) => {
     const prev = s.byId.get(save.id);
-    if (prev === save) {
-      return s;
-    }
+    if (prev === save) return s;
     dirty = true;
     s.byId.set(save.id, save);
     const sorted =
@@ -232,34 +199,24 @@ export function upsertSave(save: Save): void {
     return { byId: s.byId, sorted, revision: s.revision + 1 };
   });
   touch(save.id);
-  if (dirty) {
-    emitDirty([save.id]);
-  }
+  if (dirty) emitDirty([save.id]);
   scheduleTrim();
 }
 
 export function bulkUpsertSaves(list: ReadonlyArray<Save>): void {
-  if (list.length === 0) {
-    return;
-  }
+  if (list.length === 0) return;
   const held = savesStore.state.byId;
   /** Every page load refetches its rows, so unchanged rows keep their identity and their cards stay put. */
   const changed = list.filter((save) => {
     const prev = held.get(save.id);
     return !prev || (prev !== save && !dequal(prev, save));
   });
-  for (const save of list) {
-    touch(save.id);
-  }
-  if (changed.length === 0) {
-    return;
-  }
+  for (const save of list) touch(save.id);
+  if (changed.length === 0) return;
   savesStore.setState((s) => {
     const skipSort = canSkipFullSort(changed, s.byId, s.sorted);
     const sorted = skipSort ? sortedAfterSkip(changed, s.byId, s.sorted) : null;
-    for (const save of changed) {
-      s.byId.set(save.id, save);
-    }
+    for (const save of changed) s.byId.set(save.id, save);
     return {
       byId: s.byId,
       sorted: sorted ?? sortByRecency(s.byId.values()),
@@ -273,9 +230,7 @@ export function bulkUpsertSaves(list: ReadonlyArray<Save>): void {
 export function deleteSave(id: string): void {
   let dirty = false;
   savesStore.setState((s) => {
-    if (!s.byId.has(id)) {
-      return s;
-    }
+    if (!s.byId.has(id)) return s;
     dirty = true;
     s.byId.delete(id);
     return {
@@ -285,16 +240,12 @@ export function deleteSave(id: string): void {
     };
   });
   touched.delete(id);
-  if (dirty) {
-    emitDirty([id]);
-  }
+  if (dirty) emitDirty([id]);
 }
 
 function clearSaves(): void {
   touched.clear();
-  if (trimTimer !== null) {
-    clearTimeout(trimTimer);
-  }
+  if (trimTimer !== null) clearTimeout(trimTimer);
   trimTimer = null;
   savesStore.setState((s) =>
     s.byId.size === 0
@@ -306,13 +257,9 @@ function clearSaves(): void {
 export function patchSaveRawJson(id: string, rawJson: Save["rawJson"]): void {
   savesStore.setState((s) => {
     const prev = s.byId.get(id);
-    if (!prev) {
-      return s;
-    }
+    if (!prev) return s;
     s.byId.set(id, { ...prev, rawJson });
     return { byId: s.byId, sorted: s.sorted, revision: s.revision + 1 };
   });
-  if (savesStore.state.byId.has(id)) {
-    touch(id);
-  }
+  if (savesStore.state.byId.has(id)) touch(id);
 }

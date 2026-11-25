@@ -45,19 +45,11 @@ export function ytDlpAsset(
   platform: NodeJS.Platform,
   arch: string,
 ): string | undefined {
-  if (platform === "darwin") {
-    return "yt-dlp_macos";
-  }
-  if (platform === "linux") {
-    return "yt-dlp_linux";
-  }
+  if (platform === "darwin") return "yt-dlp_macos";
+  if (platform === "linux") return "yt-dlp_linux";
   if (platform === "win32") {
-    if (arch === "x64") {
-      return "yt-dlp.exe";
-    }
-    if (arch === "arm64") {
-      return "yt-dlp_arm64.exe";
-    }
+    if (arch === "x64") return "yt-dlp.exe";
+    if (arch === "arm64") return "yt-dlp_arm64.exe";
   }
   return undefined;
 }
@@ -115,9 +107,7 @@ interface UpdateOptions {
 export function maybeUpdateYtDlp(
   opts: Partial<UpdateOptions> = {},
 ): Promise<void> {
-  if (inFlight) {
-    return inFlight;
-  }
+  if (inFlight) return inFlight;
   inFlight = runUpdate(defaultDeps(), {
     force: opts.force ?? false,
     install: opts.install ?? true,
@@ -129,17 +119,11 @@ export function maybeUpdateYtDlp(
 
 /** A failed install backs off so a batch of queued videos makes one attempt, not one each. */
 export async function ensureYtDlp(): Promise<void> {
-  if (binariesAvailable().ytdlp) {
-    return;
-  }
-  if (Date.now() - onDemandFailedAt < ON_DEMAND_RETRY_MS) {
-    return;
-  }
+  if (binariesAvailable().ytdlp) return;
+  if (Date.now() - onDemandFailedAt < ON_DEMAND_RETRY_MS) return;
   await inFlight;
   await maybeUpdateYtDlp({ force: true, install: true });
-  if (!binariesAvailable().ytdlp) {
-    onDemandFailedAt = Date.now();
-  }
+  if (!binariesAvailable().ytdlp) onDemandFailedAt = Date.now();
 }
 
 /**
@@ -162,9 +146,7 @@ export async function runUpdate(
   { force, install }: UpdateOptions,
 ): Promise<void> {
   const { asset, dir } = deps;
-  if (!asset) {
-    return;
-  }
+  if (!asset) return;
 
   const active = join(dir, YTDLP_FILENAME);
   const previous = join(dir, PREVIOUS_FILENAME);
@@ -174,17 +156,11 @@ export async function runUpdate(
   try {
     await (recovering ?? recoverFiles(deps));
 
-    if (!install && !existsSync(active)) {
-      return;
-    }
-    if (!force && (await checkedRecently(dir))) {
-      return;
-    }
+    if (!install && !existsSync(active)) return;
+    if (!force && (await checkedRecently(dir))) return;
 
     const tag = await deps.fetchLatestTag();
-    if (!tag) {
-      return;
-    }
+    if (!tag) return;
 
     const installedTag = await readText(join(dir, VERSION_FILE));
     if (installedTag === tag && existsSync(active)) {
@@ -219,9 +195,7 @@ export async function runUpdate(
       await rm(tmp, { force: true });
       return;
     }
-    if (process.platform !== "win32") {
-      await chmod(tmp, 0o755);
-    }
+    if (process.platform !== "win32") await chmod(tmp, 0o755);
 
     if (!(await deps.smokeTest(tmp))) {
       log.warn("[pond yt-dlp-update] downloaded binary failed --version");
@@ -229,9 +203,7 @@ export async function runUpdate(
       return;
     }
 
-    if (existsSync(active)) {
-      await rotateToPrevious(dir, active, previous, move);
-    }
+    if (existsSync(active)) await rotateToPrevious(dir, active, previous, move);
     try {
       await move(tmp, active);
     } catch (error) {
@@ -263,9 +235,7 @@ export async function recoverFiles(
 
   /** Downloads are written to `<name>.<pid>.tmp` only after recovery has run. */
   for (const name of await readdir(dir).catch(() => [])) {
-    if (isStaleTmp(name)) {
-      await rm(join(dir, name), { force: true });
-    }
+    if (isStaleTmp(name)) await rm(join(dir, name), { force: true });
   }
 
   if (existsSync(active) && (await deps.smokeTest(active))) {
@@ -384,15 +354,11 @@ async function fetchExpectedSha(
     redirect: "follow",
     headers: { "user-agent": "pond-desktop" },
   });
-  if (!res.ok) {
-    return null;
-  }
+  if (!res.ok) return null;
   const text = await res.text();
   for (const line of text.split("\n")) {
     const [sha, name] = line.trim().split(/\s+/);
-    if (name === asset && sha) {
-      return sha.toLowerCase();
-    }
+    if (name === asset && sha) return sha.toLowerCase();
   }
   return null;
 }
@@ -403,9 +369,7 @@ async function fetchBinary(url: string): Promise<AsyncIterable<Uint8Array>> {
     headers: { "user-agent": "pond-desktop" },
     signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
   });
-  if (!res.ok || !res.body) {
-    throw new Error(`HTTP ${res.status} for ${url}`);
-  }
+  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.body;
 }
 
@@ -458,13 +422,9 @@ function smokeTest(binaryPath: string): Promise<boolean> {
 
 async function checkedRecently(dir: string): Promise<boolean> {
   const last = await readText(join(dir, LAST_CHECK_FILE));
-  if (!last) {
-    return false;
-  }
+  if (!last) return false;
   const ts = Date.parse(last);
-  if (Number.isNaN(ts)) {
-    return false;
-  }
+  if (Number.isNaN(ts)) return false;
   return Date.now() - ts < CHECK_INTERVAL_MS;
 }
 

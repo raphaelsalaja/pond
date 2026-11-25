@@ -48,9 +48,7 @@ function serve(site: Site) {
       return json(site.viewer ?? SIGNED_IN);
     }
     if (url.host === "api.vimeo.com") {
-      if (site.hydrate) {
-        return json({ error: "nope" }, site.hydrate);
-      }
+      if (site.hydrate) return json({ error: "nope" }, site.hydrate);
       const uris = url.searchParams.get("uris")?.split(",") ?? [];
       return json({
         data: uris.map((uri) => ({ uri, name: `video ${uri.slice(8)}` })),

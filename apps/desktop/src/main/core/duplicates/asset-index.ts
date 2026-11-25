@@ -78,9 +78,7 @@ export function ensureAssetIndex(sqlite: Database.Database): void {
       DELETE FROM save_assets WHERE save_id = old.id;
     END;
   `);
-  if (!populated) {
-    rebuildAssetIndex(sqlite);
-  }
+  if (!populated) rebuildAssetIndex(sqlite);
 }
 
 export function rebuildAssetIndex(sqlite: Database.Database): number {
@@ -126,9 +124,7 @@ export function classifyPendingAssets(
         )
         .all(limit),
     );
-  if (rows.length === 0) {
-    return 0;
-  }
+  if (rows.length === 0) return 0;
   const update = sqlite.prepare(
     "UPDATE save_assets SET media = ? WHERE save_id = ? AND path = ?",
   );

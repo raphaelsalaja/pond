@@ -24,9 +24,7 @@ export function poly(
   const fillet = (i) => {
     const named = corners[i] !== undefined;
     const r0 = named ? corners[i] : radius;
-    if (!r0) {
-      return null;
-    }
+    if (!r0) return null;
     const a = at(i - 1);
     const b = at(i);
     const c = at(i + 1);
@@ -35,9 +33,7 @@ export function poly(
     const angle = Math.acos(
       Math.max(-1, Math.min(1, u[0] * v[0] + u[1] * v[1])),
     );
-    if (angle > Math.PI - 1e-3) {
-      return null;
-    }
+    if (angle > Math.PI - 1e-3) return null;
     const la = len(sub(a, b));
     const lc = len(sub(c, b));
     let r = named ? r0 : Math.min(r0, Math.min(la, lc) / 4);

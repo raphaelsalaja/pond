@@ -35,12 +35,8 @@ function byName(a: TagRow, b: TagRow) {
 }
 
 function gridColumns(size: "sm" | "md" | "lg") {
-  if (size === "sm") {
-    return 3;
-  }
-  if (size === "md") {
-    return 2;
-  }
+  if (size === "sm") return 3;
+  if (size === "md") return 2;
   return 1;
 }
 
@@ -70,9 +66,7 @@ export function useTagMenu({
   const needle = query.trim().toLowerCase();
   const tagsByLower = useMemo(() => {
     const map = new Map<string, TagRow>();
-    for (const tag of tags) {
-      map.set(tag.name.toLowerCase(), tag);
-    }
+    for (const tag of tags) map.set(tag.name.toLowerCase(), tag);
     return map;
   }, [tags]);
   const groupNamesByTag = useMemo(() => {
@@ -88,9 +82,7 @@ export function useTagMenu({
     () =>
       needle
         ? tags.filter((tag) => {
-            if (tag.name.toLowerCase().includes(needle)) {
-              return true;
-            }
+            if (tag.name.toLowerCase().includes(needle)) return true;
             return (groupNamesByTag.get(tag.id) ?? []).some((name) =>
               name.toLowerCase().includes(needle),
             );
@@ -167,13 +159,9 @@ export function useTagMenu({
   );
 
   const createInfo = useMemo<CreateInfo | null>(() => {
-    if (!allowCreate) {
-      return null;
-    }
+    if (!allowCreate) return null;
     const raw = query.trim();
-    if (!raw) {
-      return null;
-    }
+    if (!raw) return null;
     const batch = parseTagBatch(raw).map(normalizeLabelName).filter(Boolean);
     if (batch.length > 1) {
       return { kind: "batch", labels: batch, label: batch.join(", ") };
@@ -182,15 +170,11 @@ export function useTagMenu({
     if (slash >= 0) {
       const group = normalizeLabelName(raw.slice(0, slash));
       const label = normalizeLabelName(raw.slice(slash + 1));
-      if (!group || !label) {
-        return null;
-      }
+      if (!group || !label) return null;
       return { kind: "group", group, label };
     }
     const label = normalizeLabelName(raw);
-    if (!label || tagsByLower.has(label.toLowerCase())) {
-      return null;
-    }
+    if (!label || tagsByLower.has(label.toLowerCase())) return null;
     return { kind: "plain", label };
   }, [allowCreate, query, tagsByLower]);
 
@@ -228,12 +212,8 @@ export function useTagMenu({
       const members = group.tagIds
         .flatMap((id) => tagsById.get(id) ?? [])
         .toSorted(byName);
-      if (!members.length) {
-        continue;
-      }
-      for (const tag of members) {
-        grouped.add(tag.id);
-      }
+      if (!members.length) continue;
+      for (const tag of members) grouped.add(tag.id);
       result.push({ id: `group-${group.id}`, kind: "group", group });
       if (collapsedGroups.has(group.id)) {
         continue;
@@ -282,9 +262,7 @@ export function useTagMenu({
   const createRow = lastRow?.kind === "create" ? lastRow : null;
 
   async function commitCreate(info: CreateInfo) {
-    if (creating) {
-      return;
-    }
+    if (creating) return;
     setCreating(true);
     setError(null);
     try {
@@ -304,17 +282,13 @@ export function useTagMenu({
         return;
       }
       const existed = tagsByLower.has(label.toLowerCase());
-      if (!existed) {
-        await tagOperations.create("tag", label);
-      }
+      if (!existed) await tagOperations.create("tag", label);
       if (info.kind === "group") {
         const group = groups.find(
           (candidate) =>
             candidate.name.toLowerCase() === info.group.toLowerCase(),
         );
-        if (!group) {
-          await tagOperations.create("group", info.group);
-        }
+        if (!group) await tagOperations.create("group", info.group);
         await tagOperations.addToGroup(label, group?.name ?? info.group);
       }
       await onToggle(label, { created: !existed });
@@ -338,23 +312,16 @@ export function useTagMenu({
   function toggleGroup(id: string) {
     setCollapsedGroups((current) => {
       const next = new Set(current);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
 
   function activate(row: TagPickerRow) {
-    if (row.kind === "create") {
-      void commitCreate(row.create);
-    } else if (row.kind === "group") {
-      toggleGroup(row.group.id);
-    } else {
-      void toggleTag(row.tag.name);
-    }
+    if (row.kind === "create") void commitCreate(row.create);
+    else if (row.kind === "group") toggleGroup(row.group.id);
+    else void toggleTag(row.tag.name);
   }
 
   const cursor = usePickerCursor({
@@ -363,16 +330,10 @@ export function useTagMenu({
     columns: list ? 1 : gridColumns(gridSize),
     onActivate: activate,
     onHorizontalKey: (key, row) => {
-      if (!showTree) {
-        return false;
-      }
-      if (row.kind !== "group") {
-        return true;
-      }
+      if (!showTree) return false;
+      if (row.kind !== "group") return true;
       const open = !collapsedGroups.has(row.group.id);
-      if (key === "ArrowLeft" ? open : !open) {
-        toggleGroup(row.group.id);
-      }
+      if (key === "ArrowLeft" ? open : !open) toggleGroup(row.group.id);
       return true;
     },
   });

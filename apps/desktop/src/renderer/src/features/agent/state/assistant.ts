@@ -108,9 +108,7 @@ async function refreshChats() {
   const chats = ChatsSchema.parse(
     await window.pond.query("agent.chats", { fishId }),
   );
-  if (store.state.fishId === fishId) {
-    patch({ chats });
-  }
+  if (store.state.fishId === fishId) patch({ chats });
 }
 async function loadMessages(chatId: string) {
   return assistantMessages.parse(
@@ -121,9 +119,7 @@ async function refreshMessages(chatId: string, version = historyVersion) {
   const messages = await loadMessages(chatId);
   if (store.state.chatId === chatId && version === historyVersion) {
     setMessages(messages);
-    if (!store.state.sending) {
-      hydratePondChat(chatId, messages);
-    }
+    if (!store.state.sending) hydratePondChat(chatId, messages);
   }
 }
 
@@ -293,9 +289,7 @@ export const assistant = {
     return store.state.fishId;
   },
   selectFish(fishId: string) {
-    if (fishSelected && store.state.fishId === fishId) {
-      return;
-    }
+    if (fishSelected && store.state.fishId === fishId) return;
     fishSelected = true;
     /** A reply from another fish can still be running. Keep it running, but stop showing its chat here. */
     const wasBusy = isBusy();
@@ -314,28 +308,18 @@ export const assistant = {
       loading: true,
     });
     const settle = () => {
-      if (version === historyVersion) {
-        patch({ loading: false });
-      }
+      if (version === historyVersion) patch({ loading: false });
     };
     void refreshChats()
       .then(() => {
-        if (version !== historyVersion) {
-          return settle();
-        }
+        if (version !== historyVersion) return settle();
         const chatId = store.state.chats[0]?.id;
-        if (!chatId) {
-          return settle();
-        }
-        if (!wasBusy) {
-          return void assistant.openChat(chatId);
-        }
+        if (!chatId) return settle();
+        if (!wasBusy) return void assistant.openChat(chatId);
         /** openChat is blocked while a reply runs, so load this fish's own chat directly. */
         void loadMessages(chatId)
           .then((messages) => {
-            if (version !== historyVersion) {
-              return;
-            }
+            if (version !== historyVersion) return;
             hydratePondChat(chatId, messages);
             patch({
               chatId,
@@ -352,9 +336,7 @@ export const assistant = {
       });
   },
   newChat() {
-    if (isBusy()) {
-      return;
-    }
+    if (isBusy()) return;
     saveComposer();
     historyVersion++;
     patch({
@@ -369,9 +351,7 @@ export const assistant = {
     });
   },
   async deleteChat(chatId: string) {
-    if (isBusy()) {
-      throw new Error("Wait for the reply to finish.");
-    }
+    if (isBusy()) throw new Error("Wait for the reply to finish.");
     const result = await window.pond.query("agent.deleteChat", { chatId });
     if (!result.ok) {
       throw new Error(result.error || "Could not delete this chat.");
@@ -383,17 +363,13 @@ export const assistant = {
     await refreshChats();
   },
   async openChat(chatId: string) {
-    if (isBusy()) {
-      return;
-    }
+    if (isBusy()) return;
     saveComposer();
     const version = ++historyVersion;
     patch({ loading: true });
     try {
       const messages = await loadMessages(chatId);
-      if (version !== historyVersion) {
-        return;
-      }
+      if (version !== historyVersion) return;
       hydratePondChat(chatId, messages);
       patch({
         chatId,
@@ -419,9 +395,7 @@ export const assistant = {
     run?: Pick<AssistantSend, "modelId" | "controls">,
     snapshot?: DraftSnapshot,
   ) {
-    if (isBusy() || store.state.loading) {
-      return;
-    }
+    if (isBusy() || store.state.loading) return;
     const sent = snapshot ?? {
       content: store.state.draft.trim(),
       attachments: store.state.attachments,
@@ -431,9 +405,7 @@ export const assistant = {
       modelId: run?.modelId,
       controls: run?.controls,
     };
-    if (!sent.content) {
-      return;
-    }
+    if (!sent.content) return;
     const requestId = crypto.randomUUID();
     patch({
       sending: true,
@@ -471,9 +443,7 @@ export const assistant = {
         patch({ chatId });
       }
       if (!chatId || cancelledRequest === requestId) {
-        if (cancelledRequest === requestId) {
-          restoreDraft(sent);
-        }
+        if (cancelledRequest === requestId) restoreDraft(sent);
         return;
       }
       const threadId = chatId;
@@ -510,9 +480,7 @@ export const assistant = {
           },
         },
       );
-      if (session.error) {
-        throw session.error;
-      }
+      if (session.error) throw session.error;
       patch({ error: null });
     } catch (error) {
       if (cancelledRequest !== requestId) {
@@ -526,9 +494,7 @@ export const assistant = {
         });
       }
     } finally {
-      if (cancelledRequest === requestId) {
-        cancelledRequest = null;
-      }
+      if (cancelledRequest === requestId) cancelledRequest = null;
       patch({
         sending: false,
         requestId: null,
@@ -557,13 +523,9 @@ export const assistant = {
     provider: AssistantProvider,
     run?: Pick<AssistantSend, "modelId" | "controls">,
   ) {
-    if (!isBusy()) {
-      return assistant.send(provider, run);
-    }
+    if (!isBusy()) return assistant.send(provider, run);
     const content = store.state.draft.trim();
-    if (!content) {
-      return;
-    }
+    if (!content) return;
     const previous = store.state.queued;
     const attachments = [
       ...new Map(
@@ -593,9 +555,7 @@ export const assistant = {
   },
   /** Stops the running reply; the queued message goes out as soon as it settles. */
   sendQueuedNow() {
-    if (store.state.queued && isBusy()) {
-      assistant.stop();
-    }
+    if (store.state.queued && isBusy()) assistant.stop();
   },
   async answerQuestion(
     messageId: string,
@@ -603,9 +563,7 @@ export const assistant = {
     provider: AssistantProvider,
     run?: Pick<AssistantSend, "modelId" | "controls">,
   ) {
-    if (currentMessages().at(-1)?.id !== messageId) {
-      return;
-    }
+    if (currentMessages().at(-1)?.id !== messageId) return;
     await assistant.send(provider, run, {
       content,
       attachments: [],
@@ -638,9 +596,7 @@ export const assistant = {
     run?: Pick<AssistantSend, "modelId" | "controls">,
   ) {
     const chatId = store.state.chatId;
-    if (!chatId || isBusy() || store.state.loading) {
-      return;
-    }
+    if (!chatId || isBusy() || store.state.loading) return;
     const result = await window.pond.query("agent.regenerate", { chatId });
     if (!result.ok) {
       patch({ error: result.error });
@@ -675,16 +631,12 @@ export const assistant = {
         : m,
     );
     setMessages(messages);
-    if (store.state.chatId) {
-      hydratePondChat(store.state.chatId, messages);
-    }
+    if (store.state.chatId) hydratePondChat(store.state.chatId, messages);
     await folders.refresh();
   },
   async refresh() {
     const chatId = store.state.chatId;
-    if (chatId) {
-      await refreshMessages(chatId);
-    }
+    if (chatId) await refreshMessages(chatId);
     await refreshChats();
   },
 };

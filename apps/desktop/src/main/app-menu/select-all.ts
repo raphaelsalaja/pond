@@ -14,7 +14,5 @@ export async function selectAllInTextField(
   const editable: unknown = await contents
     .executeJavaScript(FOCUSED_TEXT_FIELD)
     .catch(() => false);
-  if (editable === true) {
-    contents.selectAll();
-  }
+  if (editable === true) contents.selectAll();
 }

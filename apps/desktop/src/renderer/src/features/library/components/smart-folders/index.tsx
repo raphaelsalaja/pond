@@ -60,15 +60,10 @@ export function SmartFoldersSection({ active = true }: { active?: boolean }) {
   );
   const setGroupOpen = (id: string, next: boolean) => {
     setClosedGroups((current) => {
-      if (current.has(id) === !next) {
-        return current;
-      }
+      if (current.has(id) === !next) return current;
       const groups = new Set(current);
-      if (next) {
-        groups.delete(id);
-      } else {
-        groups.add(id);
-      }
+      if (next) groups.delete(id);
+      else groups.add(id);
       return groups;
     });
   };
@@ -156,9 +151,7 @@ export function SmartFoldersSection({ active = true }: { active?: boolean }) {
     />
   ) : null;
 
-  if (!sidebar.sections.smartFolders) {
-    return editorDialog;
-  }
+  if (!sidebar.sections.smartFolders) return editorDialog;
 
   return (
     <>

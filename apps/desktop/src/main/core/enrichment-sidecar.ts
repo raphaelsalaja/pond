@@ -91,15 +91,11 @@ export async function writeEnrichmentSidecar(save: Save): Promise<void> {
   if (save.suggestedTagsModel) {
     data.suggestedTagsModel = save.suggestedTagsModel;
   }
-  if (save.dominantColors?.length) {
-    data.dominantColors = save.dominantColors;
-  }
+  if (save.dominantColors?.length) data.dominantColors = save.dominantColors;
 
   const file = sidecarPath(save.id);
   try {
-    if (Object.keys(data).length === 0 && !(await sidecarExists(file))) {
-      return;
-    }
+    if (Object.keys(data).length === 0 && !(await sidecarExists(file))) return;
     await writeBundleJsonAsync(file, data);
   } catch (error) {
     log.warn("[pond enrichment] sidecar write failed", save.id, error);
@@ -144,9 +140,7 @@ export async function readEnrichmentSidecar(
     : sidecarPath(id);
   const read = await readBundleJsonAsync(file);
   const parsed = EnrichmentSidecarSchema.safeParse(read?.data);
-  if (!parsed.success) {
-    return null;
-  }
+  if (!parsed.success) return null;
 
   const stored = parsed.data;
   const out: EnrichmentFields = {};
@@ -183,15 +177,9 @@ export async function readEnrichmentSidecar(
   if (stored.sensitiveScore !== undefined) {
     out.sensitiveScore = stored.sensitiveScore;
   }
-  if (stored.sensitiveModel) {
-    out.sensitiveModel = stored.sensitiveModel;
-  }
-  if (stored.autoTitleModel) {
-    out.autoTitleModel = stored.autoTitleModel;
-  }
-  if (stored.suggestedTags?.length) {
-    out.suggestedTags = stored.suggestedTags;
-  }
+  if (stored.sensitiveModel) out.sensitiveModel = stored.sensitiveModel;
+  if (stored.autoTitleModel) out.autoTitleModel = stored.autoTitleModel;
+  if (stored.suggestedTags?.length) out.suggestedTags = stored.suggestedTags;
   if (stored.suggestedTagsModel) {
     out.suggestedTagsModel = stored.suggestedTagsModel;
   }
@@ -223,17 +211,13 @@ export async function backfillEnrichmentSidecars(): Promise<void> {
 
   let written = 0;
   for (const { id } of enriched) {
-    if (await sidecarExists(sidecarPath(id))) {
-      continue;
-    }
+    if (await sidecarExists(sidecarPath(id))) continue;
     const rows = await db
       .select()
       .from(savesTable)
       .where(eq(savesTable.id, id));
     const save = rows[0];
-    if (!save) {
-      continue;
-    }
+    if (!save) continue;
     await writeEnrichmentSidecar(save);
     written += 1;
   }

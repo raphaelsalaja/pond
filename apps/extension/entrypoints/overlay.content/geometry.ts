@@ -65,9 +65,7 @@ export function viewportRegion(
   const end = clampPoint(rect.x + rect.width, rect.y + rect.height, viewport);
   const width = end.x - start.x;
   const height = end.y - start.y;
-  if (width < 2 || height < 2) {
-    return null;
-  }
+  if (width < 2 || height < 2) return null;
   return {
     ...start,
     width,

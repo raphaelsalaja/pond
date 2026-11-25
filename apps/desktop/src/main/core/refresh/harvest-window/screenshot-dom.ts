@@ -24,9 +24,7 @@ async function inPageCaptureMediaSettled(
     Boolean(img.getAttribute("src")) && !img.complete;
   const poster = (src: string): HTMLImageElement => {
     const known = posters.get(src);
-    if (known) {
-      return known;
-    }
+    if (known) return known;
     const image = new Image();
     image.src = src;
     posters.set(src, image);

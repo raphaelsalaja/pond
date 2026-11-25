@@ -15,9 +15,7 @@ import styles from "./styles.module.css";
 
 function fileTypeOf(probe: DownloadFileProbe): string {
   const extension = /\.([a-z0-9]{1,8})$/i.exec(probe.name)?.[1];
-  if (extension) {
-    return extension.toUpperCase();
-  }
+  if (extension) return extension.toUpperCase();
   const subtype = probe.mimeType?.split("/")[1]?.split("+")[0];
   return subtype ? subtype.toUpperCase() : "File";
 }
@@ -89,9 +87,7 @@ export function FilePage({
               })}
               onChooseFolder={() =>
                 void folder.choose().then((picked) => {
-                  if (picked) {
-                    setDestination("file");
-                  }
+                  if (picked) setDestination("file");
                 })
               }
             />

@@ -100,9 +100,7 @@ export function AssignMenu({
     >
       <Menu.Root
         onOpenChange={(open) => {
-          if (open) {
-            reset();
-          }
+          if (open) reset();
         }}
       >
         <Menu.Trigger
@@ -134,9 +132,7 @@ export function AssignMenu({
                   </>
                 ) : null}
                 {entries.map((entry) => {
-                  if (entry.kind === "option") {
-                    return row(entry.option);
-                  }
+                  if (entry.kind === "option") return row(entry.option);
                   return (
                     <Menu.Item
                       key="create"

@@ -81,9 +81,7 @@ export function createMediaUnderstandingRouter(
     task: MediaUnderstandingTask,
   ): Promise<MediaUnderstandingText> {
     const result = await resolved.understandMedia(saveId, task);
-    if (!result.ok) {
-      throw gemmaFailure(result);
-    }
+    if (!result.ok) throw gemmaFailure(result);
     return { text: result.text, model: result.model };
   }
 
@@ -109,9 +107,7 @@ export function createMediaUnderstandingRouter(
         try {
           return await runGemma(input.saveId, input.task);
         } catch (error) {
-          if (!(error instanceof GemmaMediaUnderstandingError)) {
-            throw error;
-          }
+          if (!(error instanceof GemmaMediaUnderstandingError)) throw error;
           if (UNREADABLE_MEDIA.has(error.reason)) {
             return {
               text: "",

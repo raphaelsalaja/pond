@@ -12,9 +12,7 @@ export function orientedDimensions(
   height: number,
   rotate: number | null | undefined,
 ) {
-  if (!rotationSwapsAxes(rotate)) {
-    return { width, height };
-  }
+  if (!rotationSwapsAxes(rotate)) return { width, height };
   return { width: height, height: width };
 }
 
@@ -22,8 +20,6 @@ export function orientAspectRatio(
   ratio: number,
   rotate: number | null | undefined,
 ): number {
-  if (!rotationSwapsAxes(rotate) || !(ratio > 0)) {
-    return ratio;
-  }
+  if (!rotationSwapsAxes(rotate) || !(ratio > 0)) return ratio;
   return 1 / ratio;
 }

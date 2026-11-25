@@ -39,9 +39,7 @@ function fakeDb(input: {
     neighborLimits,
     query: () => {
       const condition = where.mock.calls[0]?.[0];
-      if (!condition) {
-        throw new Error("Expected a scoped query");
-      }
+      if (!condition) throw new Error("Expected a scoped query");
       return dialect.sqlToQuery(condition);
     },
   };

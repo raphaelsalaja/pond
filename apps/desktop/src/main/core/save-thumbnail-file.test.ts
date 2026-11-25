@@ -93,9 +93,7 @@ describe("renderThumbnail", () => {
       .toBuffer();
     const thumbnail = await renderThumbnail(source);
     expect(thumbnail).not.toBeNull();
-    if (!thumbnail) {
-      return;
-    }
+    if (!thumbnail) return;
     const meta = await sharp(thumbnail).metadata();
     expect(meta.format).toBe("webp");
     expect(meta.width).toBeLessThanOrEqual(1024);

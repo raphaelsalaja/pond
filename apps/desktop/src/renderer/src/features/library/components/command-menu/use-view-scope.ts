@@ -39,13 +39,9 @@ export function useViewScope(pathname: string): ViewScope | null {
   const onCollection = useOnCollection(pathname);
 
   return useMemo(() => {
-    if (!onCollection || !nav) {
-      return null;
-    }
+    if (!onCollection || !nav) return null;
     const view = searchViewFor(nav);
-    if (view.kind === "library") {
-      return null;
-    }
+    if (view.kind === "library") return null;
     const name = searchViewName(view, folderRows);
     const base = { name, deleted: false };
     const navPick = (saves: ReadonlyArray<Save>) =>

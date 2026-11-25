@@ -226,12 +226,8 @@ export function resolveYtDlpTarget(
   save: Pick<Save, "rawJson" | "source" | "url">,
 ): string | null {
   const upstreamUrl = save.rawJson?.capture?.upstream?.url;
-  if (upstreamUrl) {
-    return upstreamUrl;
-  }
-  if (save.source === "pinterest") {
-    return null;
-  }
+  if (upstreamUrl) return upstreamUrl;
+  if (save.source === "pinterest") return null;
   return save.url;
 }
 
@@ -244,8 +240,6 @@ export function expectedVideoDownloads(
   save: Pick<Save, "mediaType" | "rawJson">,
 ): number {
   const fromCapture = countCaptureVideos(save.rawJson);
-  if (fromCapture > 0) {
-    return fromCapture;
-  }
+  if (fromCapture > 0) return fromCapture;
   return save.mediaType === "video" ? 1 : 0;
 }

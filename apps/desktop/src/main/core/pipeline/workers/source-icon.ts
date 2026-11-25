@@ -22,9 +22,7 @@ export async function hasReadableSourceIcon(
   files: Save["files"],
 ): Promise<boolean> {
   const icon = (files ?? []).find((f) => f.kind === SOURCE_ICON_KIND);
-  if (!icon) {
-    return false;
-  }
+  if (!icon) return false;
   try {
     return await isReadableImage(
       await readLibraryMedia(saveFile(saveId, icon.path)),
@@ -40,14 +38,10 @@ export async function fetchSourceIcon(
   save: Save,
   { replace = false }: { replace?: boolean } = {},
 ): Promise<boolean> {
-  if (!replace && hasSourceIcon(save.files)) {
-    return false;
-  }
+  if (!replace && hasSourceIcon(save.files)) return false;
 
   const fetched = await fetchFirstIcon(faviconUrls(save));
-  if (!fetched && !replace) {
-    return false;
-  }
+  if (!fetched && !replace) return false;
 
   const newFiles: Array<WriteFileArgs> = [];
   if (fetched) {
@@ -58,9 +52,7 @@ export async function fetchSourceIcon(
       bytes: Buffer.from(tx.bytes),
       sourceUrl: iconUrl,
     };
-    if (tx.mimeType) {
-      iconFile.mimeType = tx.mimeType;
-    }
+    if (tx.mimeType) iconFile.mimeType = tx.mimeType;
     newFiles.push(iconFile);
   }
 
@@ -85,9 +77,7 @@ async function fetchFirstIcon(
 ): Promise<{ iconUrl: string; file: TxSaveFile } | null> {
   for (const iconUrl of urls) {
     const outcome = await fetchSourceIconToTxFile(iconUrl);
-    if ("file" in outcome) {
-      return { iconUrl, file: outcome.file };
-    }
+    if ("file" in outcome) return { iconUrl, file: outcome.file };
   }
   return null;
 }
@@ -107,9 +97,7 @@ function scrapedFaviconUrl(rawJson: RawJson | null): string | null {
 function fallbackFaviconUrl(saveUrl: string): string | null {
   try {
     const host = new URL(saveUrl).hostname;
-    if (!host) {
-      return null;
-    }
+    if (!host) return null;
     return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64`;
   } catch {
     return null;

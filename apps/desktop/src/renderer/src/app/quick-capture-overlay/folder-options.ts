@@ -23,9 +23,7 @@ export function folderOptions(
       (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
     );
     for (const folder of rows) {
-      if (seen.has(folder.id)) {
-        continue;
-      }
+      if (seen.has(folder.id)) continue;
       seen.add(folder.id);
       out.push({ folder, depth });
       visit(folder.id, depth + 1);

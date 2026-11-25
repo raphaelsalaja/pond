@@ -98,9 +98,7 @@ describe("generated raster viewer", () => {
     const save = generatedSave("heic");
     save.mediaType = "image";
     const file = save.files[0];
-    if (!file) {
-      throw new Error("Missing fixture file");
-    }
+    if (!file) throw new Error("Missing fixture file");
     file.kind = "image";
     file.mimeType = "image/heic";
     pool.upsert(save);

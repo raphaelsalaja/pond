@@ -67,12 +67,8 @@ export function useViewOptions() {
 
   function applyPreset(preset: Preset) {
     actions.setLayout(preset.layout);
-    if (preset.size !== undefined) {
-      actions.setZoom(preset.size);
-    }
-    if (preset.gap !== undefined) {
-      setLibrarySaveGap(preset.gap);
-    }
+    if (preset.size !== undefined) actions.setZoom(preset.size);
+    if (preset.gap !== undefined) setLibrarySaveGap(preset.gap);
     setLibrarySaveRadius(preset.rounding);
     if (preset.fit !== viewer.galleryFit) {
       void patchViewer({ galleryFit: preset.fit });
@@ -81,9 +77,7 @@ export function useViewOptions() {
     for (const { value: detail } of DETAILS) {
       writeDetail(detail, preset.details[detail], inList);
     }
-    if (preset.infoField) {
-      setItemInfoField(preset.infoField);
-    }
+    if (preset.infoField) setItemInfoField(preset.infoField);
   }
 
   const active = PRESETS.find(

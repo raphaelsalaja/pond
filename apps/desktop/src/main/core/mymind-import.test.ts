@@ -65,9 +65,7 @@ function createImportFixture(): ImportFixture {
       },
       async enqueueLink(url) {
         const current = links.get(url);
-        if (current) {
-          return { id: current.id, created: false };
-        }
+        if (current) return { id: current.id, created: false };
         const id = `link:${links.size}`;
         links.set(url, { id, metadata: {} });
         return { id, created: true };
@@ -76,9 +74,7 @@ function createImportFixture(): ImportFixture {
         const link = [...links.values()].find(
           (candidate) => candidate.id === id,
         );
-        if (!link) {
-          return false;
-        }
+        if (!link) return false;
         Object.assign(link.metadata, patch);
         return true;
       },
@@ -86,9 +82,7 @@ function createImportFixture(): ImportFixture {
         const link = [...links.values()].find(
           (candidate) => candidate.id === id,
         );
-        if (!link) {
-          return { ok: false, error: "Save not found." };
-        }
+        if (!link) return { ok: false, error: "Save not found." };
         link.metadata.tags = tags;
         return { ok: true };
       },
@@ -123,9 +117,7 @@ describe("importMymindExport", () => {
       join(exportDirectory, "clip.webm"),
     ]);
 
-    if (!link) {
-      throw new Error("Expected the link fixture to exist.");
-    }
+    if (!link) throw new Error("Expected the link fixture to exist.");
     link.metadata = { notes: "Edited in Pond", tags: ["pond-only"] };
     const second = await importMymindExport(
       exportDirectory,

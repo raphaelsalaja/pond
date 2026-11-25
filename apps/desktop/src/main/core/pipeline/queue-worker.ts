@@ -6,9 +6,7 @@ limitSharpMemory();
 
 process.parentPort.on("message", (event) => {
   const parsed = QueueWorkerRequestSchema.safeParse(event.data);
-  if (!parsed.success) {
-    return;
-  }
+  if (!parsed.success) return;
   void executeQueueWorkerRequest(parsed.data).then((response) => {
     process.parentPort.postMessage(response);
   });

@@ -42,35 +42,20 @@ function resolveArchivePath(basePath: string, relativePath: string): string {
       .split("/");
   const resolved: Array<string> = [];
   for (const part of parts) {
-    if (!part || part === ".") {
-      continue;
-    }
-    if (part === "..") {
-      resolved.pop();
-    } else {
-      resolved.push(part);
-    }
+    if (!part || part === ".") continue;
+    if (part === "..") resolved.pop();
+    else resolved.push(part);
   }
   return resolved.join("/");
 }
 
 function imageMime(path: string, supplied: string): string {
-  if (supplied.startsWith("image/")) {
-    return supplied;
-  }
+  if (supplied.startsWith("image/")) return supplied;
   const extension = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
-  if (extension === "png") {
-    return "image/png";
-  }
-  if (extension === "gif") {
-    return "image/gif";
-  }
-  if (extension === "webp") {
-    return "image/webp";
-  }
-  if (extension === "svg") {
-    return "image/svg+xml";
-  }
+  if (extension === "png") return "image/png";
+  if (extension === "gif") return "image/gif";
+  if (extension === "webp") return "image/webp";
+  if (extension === "svg") return "image/svg+xml";
   return "image/jpeg";
 }
 
@@ -79,16 +64,12 @@ export async function extractEpubCover(
 ): Promise<EpubCover | null> {
   const zip = await JSZip.loadAsync(source);
   const container = zip.file("META-INF/container.xml");
-  if (!container) {
-    return null;
-  }
+  if (!container) return null;
   const containerXml = await container.async("text");
   const rootfile = tags(containerXml, "rootfile")[0];
   const packagePath = rootfile ? attribute(rootfile, "full-path") : "";
   const packageFile = packagePath ? zip.file(packagePath) : null;
-  if (!packageFile) {
-    return null;
-  }
+  if (!packageFile) return null;
 
   const packageXml = await packageFile.async("text");
   const items: Array<ManifestItem> = tags(packageXml, "item").map((item) => ({
@@ -113,14 +94,10 @@ export async function extractEpubCover(
         item.mediaType.startsWith("image/") &&
         /(^|[._/-])cover([._/-]|$)/i.test(item.href),
     );
-  if (!cover?.href) {
-    return null;
-  }
+  if (!cover?.href) return null;
   const coverPath = resolveArchivePath(packagePath, cover.href);
   const coverFile = zip.file(coverPath);
-  if (!coverFile) {
-    return null;
-  }
+  if (!coverFile) return null;
   return {
     bytes: await coverFile.async("uint8array"),
     mimeType: imageMime(coverPath, cover.mediaType),

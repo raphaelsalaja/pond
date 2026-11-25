@@ -60,9 +60,7 @@ async function capture() {
   win.webContents.setFrameRate(60);
   const errors = [];
   win.webContents.on("console-message", (e) => {
-    if (e.level === "error") {
-      errors.push(e.message);
-    }
+    if (e.level === "error") errors.push(e.message);
   });
   const stage = (code) => win.webContents.executeJavaScript(code);
   await win.loadURL("stage://stage/index.html");

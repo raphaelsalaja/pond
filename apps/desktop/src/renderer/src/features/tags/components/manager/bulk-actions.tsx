@@ -34,13 +34,9 @@ export function TagsBulkActionBar({
   const [draft, setDraft] = useState<Draft | null>(null);
 
   async function submitDraft() {
-    if (!draft) {
-      return;
-    }
+    if (!draft) return;
     const value = draft.value.trim();
-    if (!value) {
-      return;
-    }
+    if (!value) return;
     try {
       if (draft.kind === "merge") {
         await tagOperations.mergeTags(draft.names, value);

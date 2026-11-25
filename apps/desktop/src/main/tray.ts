@@ -31,12 +31,8 @@ export function isTrayVisible(): boolean {
 
 export async function setTrayVisible(visible: boolean): Promise<void> {
   if (visible) {
-    if (handle) {
-      return;
-    }
-    if (!lastOpts) {
-      return;
-    }
+    if (handle) return;
+    if (!lastOpts) return;
     await ensureTray(lastOpts);
     return;
   }
@@ -48,9 +44,7 @@ export async function setTrayVisible(visible: boolean): Promise<void> {
 
 export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   lastOpts = opts;
-  if (handle) {
-    return handle;
-  }
+  if (handle) return handle;
 
   let tray: Tray;
   try {
@@ -94,9 +88,7 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     destroy() {
       clearBusyPoll();
       nativeTheme.off("updated", onThemeUpdated);
-      if (process.platform === "darwin") {
-        tray.setTitle("");
-      }
+      if (process.platform === "darwin") tray.setTitle("");
       tray.destroy();
       handle = null;
     },
@@ -108,9 +100,7 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
 }
 
 function setTrayCount(tray: Tray, inflight: number): void {
-  if (process.platform !== "darwin") {
-    return;
-  }
+  if (process.platform !== "darwin") return;
   tray.setTitle(trayBadge({ inflight }), {
     fontType: "monospacedDigit",
   });
@@ -118,9 +108,7 @@ function setTrayCount(tray: Tray, inflight: number): void {
 
 function scheduleBusyPoll(busy: boolean): void {
   clearBusyPoll();
-  if (!busy) {
-    return;
-  }
+  if (!busy) return;
   busyPoll = setTimeout(() => {
     busyPoll = null;
     void handle?.refresh();
@@ -128,9 +116,7 @@ function scheduleBusyPoll(busy: boolean): void {
 }
 
 function clearBusyPoll(): void {
-  if (!busyPoll) {
-    return;
-  }
+  if (!busyPoll) return;
   clearTimeout(busyPoll);
   busyPoll = null;
 }

@@ -45,9 +45,7 @@ export function inPagePinterestNormalize() {
       for (const sel of selectors) {
         const el = document.querySelector<HTMLMetaElement>(sel);
         const value = el?.content?.trim();
-        if (value) {
-          return value;
-        }
+        if (value) return value;
       }
       return undefined;
     };
@@ -64,9 +62,7 @@ export function inPagePinterestNormalize() {
       ]);
     if (title) {
       const cleaned = title.replace(/\s+\|\s+Pinterest\s*$/i, "").trim();
-      if (cleaned) {
-        out.title = cleaned;
-      }
+      if (cleaned) out.title = cleaned;
     }
 
     const descEl = document.querySelector<HTMLElement>(
@@ -112,9 +108,7 @@ export function inPagePinterestNormalize() {
     const avatarImg = document.querySelector<HTMLImageElement>(
       '[data-test-id="pin-creator-profile"] img, [data-test-id="pinner-avatar"] img',
     );
-    if (avatarImg?.src) {
-      meta.authorAvatar = avatarImg.src;
-    }
+    if (avatarImg?.src) meta.authorAvatar = avatarImg.src;
 
     const boardLink = document.querySelector<HTMLAnchorElement>(
       '[data-test-id="board-name"] a, [data-test-id="board-link"]',
@@ -123,9 +117,7 @@ export function inPagePinterestNormalize() {
       meta.boardName = boardLink.textContent.trim();
     } else {
       const ogBoard = getMeta(['meta[name="pinterestapp:pinboard"]']);
-      if (ogBoard) {
-        meta.boardName = ogBoard;
-      }
+      if (ogBoard) meta.boardName = ogBoard;
     }
 
     const mainImg = document.querySelector<HTMLImageElement>(
@@ -155,9 +147,7 @@ export function inPagePinterestNormalize() {
     if (videoSrc) {
       const poster = video?.poster || imgSrc || undefined;
       const clip: PinterestMedia = { url: videoSrc, type: "video" };
-      if (poster) {
-        clip.poster = poster;
-      }
+      if (poster) clip.poster = poster;
       out.mediaUrl = poster || videoSrc;
       out.mediaUrls = [clip];
       out.mediaType = "video";
@@ -169,12 +159,8 @@ export function inPagePinterestNormalize() {
       meta.lang = lang;
     }
 
-    if (Object.keys(meta).length > 0) {
-      out.meta = meta;
-    }
-    if (!out.title && !out.description && !out.mediaUrl) {
-      return null;
-    }
+    if (Object.keys(meta).length > 0) out.meta = meta;
+    if (!out.title && !out.description && !out.mediaUrl) return null;
     return out;
   }
 

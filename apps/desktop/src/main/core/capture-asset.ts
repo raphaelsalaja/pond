@@ -103,16 +103,12 @@ export async function captureAsset(input: {
     const handle = await open(file, "wx");
     try {
       const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("The image server returned no data.");
-      }
+      if (!reader) throw new Error("The image server returned no data.");
       let total = 0;
       try {
         while (true) {
           const next = await reader.read();
-          if (next.done) {
-            break;
-          }
+          if (next.done) break;
           total += next.value.byteLength;
           if (total > 128 * 1024 * 1024) {
             throw new Error(
@@ -139,9 +135,7 @@ export async function captureAsset(input: {
       rating: input.metadata.rating,
       inboxChannel: "captures",
     });
-    if (!result.ok) {
-      throw new Error(result.error);
-    }
+    if (!result.ok) throw new Error(result.error);
     return { id: result.id, duplicate: Boolean(result.skipped) };
   } finally {
     await Promise.allSettled([

@@ -50,9 +50,7 @@ export const watchesQueries = {
           return fetch(url, init);
         },
       );
-      if (!resolved) {
-        return { ok: false as const };
-      }
+      if (!resolved) return { ok: false as const };
       return { ok: true as const, target: resolved };
     },
   ),
@@ -125,9 +123,7 @@ export const watchesQueries = {
     z.object({ watchId: StringParam }),
     async (params) => {
       const watch = await getWatch(params.watchId);
-      if (!watch) {
-        return WATCH_NOT_FOUND;
-      }
+      if (!watch) return WATCH_NOT_FOUND;
       await removeWatch(params.watchId);
       return { ok: true as const };
     },

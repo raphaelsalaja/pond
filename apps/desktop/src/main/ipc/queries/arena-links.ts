@@ -27,9 +27,7 @@ export const arenaLinkQueries = {
           ? (progress) => {
               const now = Date.now();
               const done = progress.processed === progress.total;
-              if (!done && now - lastProgressAt < PROGRESS_INTERVAL_MS) {
-                return;
-              }
+              if (!done && now - lastProgressAt < PROGRESS_INTERVAL_MS) return;
               lastProgressAt = now;
               if (!event.sender.isDestroyed()) {
                 event.sender.send(IPC.arenaLinkProgress, {

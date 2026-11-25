@@ -26,9 +26,7 @@ process.env.POND_SANDBOX = sandbox;
 let started = false;
 let complete = false;
 app.on("before-quit", (event) => {
-  if (!complete) {
-    event.preventDefault();
-  }
+  if (!complete) event.preventDefault();
 });
 const timeout = setTimeout(() => {
   console.error("SUBSCRIPTION_SMOKE_FAILED: timed out");

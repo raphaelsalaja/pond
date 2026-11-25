@@ -120,15 +120,9 @@ export class CosmosTileExtractor implements Extractor {
 
   handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
-    if (!first) {
-      return null;
-    }
-    if (COSMOS_RESERVED_ROOTS.has(first.toLowerCase())) {
-      return null;
-    }
-    if (!/^[A-Za-z0-9_-]{2,40}$/.test(first)) {
-      return null;
-    }
+    if (!first) return null;
+    if (COSMOS_RESERVED_ROOTS.has(first.toLowerCase())) return null;
+    if (!/^[A-Za-z0-9_-]{2,40}$/.test(first)) return null;
     return first;
   }
 
@@ -146,9 +140,7 @@ export class CosmosTileExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("cosmos", input.url.href);
-    if (!sourceId) {
-      throw new TerminalError("could not parse cosmos id");
-    }
+    if (!sourceId) throw new TerminalError("could not parse cosmos id");
     return captureFromSource({
       url: input.url.href,
       source: "cosmos",

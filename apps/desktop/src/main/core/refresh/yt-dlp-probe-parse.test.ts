@@ -123,9 +123,7 @@ const youtube = info({
 
 describe("toDownloadProbe", () => {
   const probe = toDownloadProbe(youtube, "https://youtu.be/abc", "youtube");
-  if (probe.kind !== "single") {
-    throw new Error("expected a single probe");
-  }
+  if (probe.kind !== "single") throw new Error("expected a single probe");
 
   it("reads the basics", () => {
     expect(probe.title).toBe("A talk");
@@ -199,9 +197,7 @@ describe("toDownloadProbe playlists", () => {
       "youtube",
     );
     expect(probe.kind).toBe("playlist");
-    if (probe.kind !== "playlist") {
-      return;
-    }
+    if (probe.kind !== "playlist") return;
     expect(probe.site).toBe("youtube.com");
     expect(probe.entries).toEqual([
       {
@@ -264,9 +260,7 @@ describe("formats without codec names", () => {
       "https://archive.org/details/BigBuckBunny_124",
       "web",
     );
-    if (probe.kind !== "single") {
-      throw new Error("expected a single probe");
-    }
+    if (probe.kind !== "single") throw new Error("expected a single probe");
     expect(probe.videoOptions.map((option) => option.height)).toEqual([
       720, 360,
     ]);

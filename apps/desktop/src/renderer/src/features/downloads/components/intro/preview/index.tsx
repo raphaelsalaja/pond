@@ -17,12 +17,8 @@ const ROWS: ReadonlyArray<{
 ];
 
 function Status({ progress }: { progress: number }) {
-  if (progress === 100) {
-    return <Intro.Label tone="faint">Done</Intro.Label>;
-  }
-  if (progress === 0) {
-    return <Intro.Label tone="faint">Queued</Intro.Label>;
-  }
+  if (progress === 100) return <Intro.Label tone="faint">Done</Intro.Label>;
+  if (progress === 0) return <Intro.Label tone="faint">Queued</Intro.Label>;
   return (
     <span className={styles.track}>
       <span className={styles.fill} style={{ width: `${progress}%` }} />

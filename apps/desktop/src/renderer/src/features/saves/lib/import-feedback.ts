@@ -49,14 +49,10 @@ function failedDescription({ kind, failed }: ImportOutcome): string {
 export function importToast(outcome: ImportOutcome): ImportToast | null {
   if (outcome.imported > 0) {
     const title = successTitle(outcome);
-    if (outcome.failed === 0) {
-      return { title };
-    }
+    if (outcome.failed === 0) return { title };
     return { title, description: failedDescription(outcome) };
   }
-  if (outcome.failed === 0) {
-    return null;
-  }
+  if (outcome.failed === 0) return null;
   return {
     title: outcome.folderName
       ? `Couldn't save to "${outcome.folderName}"`
@@ -72,9 +68,7 @@ export function showImportedAction(
   ids: ReadonlyArray<string>,
   show: (ids: ReadonlyArray<string>) => void,
 ): ImportShowAction {
-  if (ids.length === 0) {
-    return {};
-  }
+  if (ids.length === 0) return {};
   return {
     action: { label: "Show in Library", onClick: () => show(ids) },
     timeout: SHOW_ACTION_TIMEOUT_MS,

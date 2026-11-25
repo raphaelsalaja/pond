@@ -29,17 +29,13 @@ function json(uri: URL, value: McpToolBody): ReadResourceResult {
 function variable(variables: Variables, name: string): string {
   const raw = variables[name];
   const value = Array.isArray(raw) ? raw[0] : raw;
-  if (value === undefined) {
-    throw new Error(`The URI has no ${name}.`);
-  }
+  if (value === undefined) throw new Error(`The URI has no ${name}.`);
   return decodeURIComponent(value);
 }
 
 async function requireSearch(): Promise<void> {
   const denied = await accessError("search");
-  if (denied) {
-    throw new Error(denied);
-  }
+  if (denied) throw new Error(denied);
 }
 
 async function folderIds(prefix: string): Promise<Array<string>> {
@@ -94,9 +90,7 @@ export function registerPondResources(server: McpServer): void {
     async (uri, variables) => {
       await requireSearch();
       const result = await readSave({ id: variable(variables, "id") });
-      if ("error" in result) {
-        throw new Error(result.error);
-      }
+      if ("error" in result) throw new Error(result.error);
       return json(uri, result.save);
     },
   );
@@ -104,9 +98,7 @@ export function registerPondResources(server: McpServer): void {
     "folder",
     new ResourceTemplate("pond://folder/{id}", {
       list: async () => {
-        if (await accessError("search")) {
-          return { resources: [] };
-        }
+        if (await accessError("search")) return { resources: [] };
         const { folders } = await listLibraryFolders();
         return {
           resources: folders.map((folder) => ({

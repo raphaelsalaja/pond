@@ -44,9 +44,7 @@ export function Scrubber({ className, renderPreview }: ScrubberProps) {
 
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
-    if (rect.width === 0) {
-      return;
-    }
+    if (rect.width === 0) return;
     setPointer({
       at: clamp((event.clientX - rect.left) / rect.width, 0, 1),
       inside: true,

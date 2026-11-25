@@ -67,9 +67,7 @@ const defaultStore: CollectionFolderStore = {
             ne(saves.status, "skipped"),
           ),
         );
-      for (const row of rows) {
-        found.set(row.sourceId, row.id);
-      }
+      for (const row of rows) found.set(row.sourceId, row.id);
     }
     return found;
   },
@@ -113,9 +111,7 @@ async function resolveCollectionFolders(
   const resolved = new Map<string, string>();
   let root: Folder | null = null;
   const rootFolder = async (): Promise<Folder> => {
-    if (root) {
-      return root;
-    }
+    if (root) return root;
     const label = sourceLabel(account.source);
     root =
       folders.find(
@@ -168,13 +164,9 @@ export async function fileCollectionSaves(
       : filing === "every"
         ? everyCollection
         : [];
-  if (collections.length === 0) {
-    return 0;
-  }
+  if (collections.length === 0) return 0;
   const tagged = mergeTags(entries);
-  if (tagged.length === 0) {
-    return 0;
-  }
+  if (tagged.length === 0) return 0;
 
   const folderFor = await resolveCollectionFolders(account, collections, store);
   const saveIds = await store.saveIds(
@@ -185,20 +177,14 @@ export async function fileCollectionSaves(
   const assignments: Array<{ saveId: string; folderIds: Array<string> }> = [];
   for (const entry of tagged) {
     const saveId = saveIds.get(entry.sourceId);
-    if (!saveId) {
-      continue;
-    }
+    if (!saveId) continue;
     const have = current.get(saveId) ?? [];
     const add = new Set<string>();
     for (const collectionId of entry.collectionIds ?? []) {
       const folderId = folderFor.get(collectionId);
-      if (folderId && !have.includes(folderId)) {
-        add.add(folderId);
-      }
+      if (folderId && !have.includes(folderId)) add.add(folderId);
     }
-    if (add.size === 0) {
-      continue;
-    }
+    if (add.size === 0) continue;
     assignments.push({ saveId, folderIds: [...have, ...add] });
   }
   if (assignments.length > 0) {
@@ -229,13 +215,9 @@ function mergeTags(
 ): Array<CollectionEntry> {
   const tags = new Map<string, Set<string>>();
   for (const entry of entries) {
-    if (!entry.collectionIds?.length) {
-      continue;
-    }
+    if (!entry.collectionIds?.length) continue;
     const ids = tags.get(entry.sourceId) ?? new Set<string>();
-    for (const id of entry.collectionIds) {
-      ids.add(id);
-    }
+    for (const id of entry.collectionIds) ids.add(id);
     tags.set(entry.sourceId, ids);
   }
   return Array.from(tags, ([sourceId, ids]) => ({

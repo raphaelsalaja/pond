@@ -21,9 +21,7 @@ interface BuildViewerMenuOptions {
 export function fileIndexFromSlide(
   slide: Element | null | undefined,
 ): number | null {
-  if (!slide) {
-    return null;
-  }
+  if (!slide) return null;
   const raw = slide.getAttribute("data-file-index");
   if (raw === null || raw === "") {
     return null;
@@ -53,9 +51,7 @@ function adaptVideoItems(
         onClick: () => void setVideoThumbnail(save.id, video),
       };
     }
-    if (item.type !== "submenu" && item.type !== "group") {
-      return item;
-    }
+    if (item.type !== "submenu" && item.type !== "group") return item;
 
     const nested = adaptVideoItems(item.items, save, video);
     return item.type === "submenu" && item.label === "Export"
@@ -85,8 +81,6 @@ export function buildViewerMenu(
     openWithApps,
     opened: true,
   });
-  if (!video?.videoWidth) {
-    return base;
-  }
+  if (!video?.videoWidth) return base;
   return adaptVideoItems(base, save, video);
 }

@@ -69,18 +69,14 @@ export async function changeSaveFolders(input: {
   add: ReadonlyArray<SaveFolderReference>;
   remove: ReadonlyArray<SaveFolderReference>;
 }): Promise<void> {
-  if (input.saveIds.length === 0) {
-    return;
-  }
+  if (input.saveIds.length === 0) return;
   const addIds = input.add.map((folder) => folder.id);
   const result = await window.pond.query("folders.assign", {
     saveIds: [...input.saveIds],
     addIds,
     removeIds: input.remove.map((folder) => folder.id),
   });
-  if (addIds.length) {
-    saveLibraryBridge.rememberFolderDestinations(addIds);
-  }
+  if (addIds.length) saveLibraryBridge.rememberFolderDestinations(addIds);
   await saveLibraryBridge.refreshFolders();
   const adding = input.add.length > 0;
   notifyFolderMembershipChange(
@@ -98,9 +94,7 @@ export async function assignSavesToFolder(
   folder: SaveFolderReference,
   onUndo?: () => void,
 ): Promise<boolean> {
-  if (ids.length === 0) {
-    return false;
-  }
+  if (ids.length === 0) return false;
   try {
     const result = await window.pond.query("folders.addSaves", {
       folderId: folder.id,
@@ -155,9 +149,7 @@ export async function removeSavesFromFolder(
   ids: ReadonlyArray<string>,
   folder: SaveFolderReference,
 ): Promise<void> {
-  if (ids.length === 0) {
-    return;
-  }
+  if (ids.length === 0) return;
   try {
     await changeSaveFolders({ saveIds: ids, add: [], remove: [folder] });
   } catch (error) {

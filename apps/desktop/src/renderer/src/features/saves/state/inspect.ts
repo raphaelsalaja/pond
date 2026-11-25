@@ -8,9 +8,7 @@ interface InspectState {
 }
 
 function readNavigator(): boolean {
-  if (!globalThis.window) {
-    return false;
-  }
+  if (!globalThis.window) return false;
   try {
     return window.localStorage.getItem("pond.viewer.showNavigator") === "1";
   } catch {

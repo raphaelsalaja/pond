@@ -27,9 +27,7 @@ export function FolderTemplateDialogHost() {
   const state = useFolderTemplateDialog();
   const presentation = useRetainedDialogPayload(state);
   const payload = presentation.payload;
-  if (!payload) {
-    return null;
-  }
+  if (!payload) return null;
   return payload.mode === "apply" ? (
     <ApplyTemplateDialog
       key={payload.id}
@@ -113,9 +111,7 @@ function ApplyTemplateDialog({
   }
 
   async function create() {
-    if (!selected || busy) {
-      return;
-    }
+    if (!selected || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -176,9 +172,7 @@ function ApplyTemplateDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next && !busy) {
-          closeFolderTemplateDialog();
-        }
+        if (!next && !busy) closeFolderTemplateDialog();
       }}
     >
       <Dialog.Portal>
@@ -206,9 +200,7 @@ function ApplyTemplateDialog({
                     value={selected ? [selected.id] : []}
                     onValueChange={(next) => {
                       const [id] = next;
-                      if (id) {
-                        select(id);
-                      }
+                      if (id) select(id);
                     }}
                   >
                     <p className={styles.heading}>Built-In</p>
@@ -307,9 +299,7 @@ function SaveTemplateDialog({
   const subfoldersId = useId();
 
   async function save() {
-    if (busy) {
-      return;
-    }
+    if (busy) return;
     if (!name.trim()) {
       setError("Enter a template name.");
       field.current?.focus();
@@ -337,9 +327,7 @@ function SaveTemplateDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next && !busy) {
-          closeFolderTemplateDialog();
-        }
+        if (!next && !busy) closeFolderTemplateDialog();
       }}
     >
       <Dialog.Portal>

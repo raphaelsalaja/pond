@@ -45,12 +45,8 @@ export function posterRepairIndexes(
   const { videos, posters } = videoPosterSlots(files);
   const indexes: Array<number> = [];
   for (let index = 0; index < videos.length; index += 1) {
-    if (!videos[index]) {
-      continue;
-    }
-    if (!posters[index]) {
-      indexes.push(index);
-    }
+    if (!videos[index]) continue;
+    if (!posters[index]) indexes.push(index);
   }
   return indexes;
 }
@@ -62,18 +58,12 @@ export function needsPosterRepair(files: ReadonlyArray<SaveFile>): boolean {
 export function youtubeThumbnailUrl(
   rawJson: RawJson | null | undefined,
 ): string | null {
-  if (!rawJson) {
-    return null;
-  }
-  if (rawJson.ytdlp?.thumbnail) {
-    return rawJson.ytdlp.thumbnail;
-  }
+  if (!rawJson) return null;
+  if (rawJson.ytdlp?.thumbnail) return rawJson.ytdlp.thumbnail;
 
   const media = rawJson.capture?.media ?? [];
   for (const entry of media) {
-    if (entry.posterUrl) {
-      return entry.posterUrl;
-    }
+    if (entry.posterUrl) return entry.posterUrl;
   }
   for (const entry of media) {
     if (
@@ -89,9 +79,7 @@ export function youtubeThumbnailUrl(
 const IMAGE_EXTENSIONS = /\.(jpe?g|png|webp|avif|gif)$/i;
 
 function isImageUrl(url: string | null | undefined): url is string {
-  if (!url) {
-    return false;
-  }
+  if (!url) return false;
   try {
     return IMAGE_EXTENSIONS.test(new URL(url).pathname);
   } catch {
@@ -106,21 +94,13 @@ export function remotePosterUrl(
   const videos = walkCaptureMedia(rawJson?.capture).filter(
     (m) => m.type === "video",
   );
-  if (videos.length === 0) {
-    return null;
-  }
+  if (videos.length === 0) return null;
   for (const m of videos) {
-    if (m.posterUrl) {
-      return m.posterUrl;
-    }
+    if (m.posterUrl) return m.posterUrl;
   }
-  if (rawJson?.ytdlp?.thumbnail) {
-    return rawJson.ytdlp.thumbnail;
-  }
+  if (rawJson?.ytdlp?.thumbnail) return rawJson.ytdlp.thumbnail;
   for (const m of videos) {
-    if (isImageUrl(m.url)) {
-      return m.url;
-    }
+    if (isImageUrl(m.url)) return m.url;
   }
   return isImageUrl(mediaUrl) ? mediaUrl : null;
 }

@@ -34,9 +34,7 @@ export function startLibraryDisplacementWatch(): () => void {
         ),
       );
     }
-    if (!watcher && placement !== "missing") {
-      arm();
-    }
+    if (!watcher && placement !== "missing") arm();
   };
 
   const arm = (): void => {

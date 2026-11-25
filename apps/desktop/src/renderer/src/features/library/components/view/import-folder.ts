@@ -12,9 +12,7 @@ export function importFolderFor({
   nav: LibraryNav;
   folders: ReadonlyArray<Folder>;
 }): Folder | undefined {
-  if (mode !== "library" || nav.kind !== "folder") {
-    return undefined;
-  }
+  if (mode !== "library" || nav.kind !== "folder") return undefined;
   const { id } = nav;
   return folders.find((folder) => folder.id === id);
 }

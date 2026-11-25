@@ -166,16 +166,11 @@ if (process.platform === "darwin") {
   });
 }
 
-if (process.platform === "win32") {
-  app.setAppUserModelId("so.pond.desktop");
-}
+if (process.platform === "win32") app.setAppUserModelId("so.pond.desktop");
 
 const logFile = resolveLogFile(app);
-if (logFile) {
-  log.transports.file.resolvePathFn = () => logFile;
-} else {
-  log.transports.file.level = false;
-}
+if (logFile) log.transports.file.resolvePathFn = () => logFile;
+else log.transports.file.level = false;
 log.initialize();
 /** The window forwards its console warnings here, so echoing main's log back into that console would loop forever. */
 log.transports.ipc.level = false;
@@ -248,9 +243,7 @@ void singleInstanceLock.then((acquired) => {
 app.on("open-url", (event, url) => {
   event.preventDefault();
   const destination = handleDeepLink(url, getMainWindow());
-  if (app.isReady() && destination === "library") {
-    void openLibraryWindow();
-  }
+  if (app.isReady() && destination === "library") void openLibraryWindow();
 });
 
 let started = false;
@@ -261,15 +254,11 @@ let quitPreparing = false;
 
 app.on("second-instance", (_event, argv) => {
   /** Showing a window while quitting cancels the quit, and this instance would keep the lock. */
-  if (quitPreparing) {
-    return;
-  }
+  if (quitPreparing) return;
   if (!launched) {
     /** Too early to open a window; the initial window picks up the stored link. */
     const url = deepLinkArg(argv);
-    if (url) {
-      handleDeepLink(url, null);
-    }
+    if (url) handleDeepLink(url, null);
     return;
   }
   handleSecondInstance(argv, {
@@ -288,9 +277,7 @@ const flushDroppedFiles = () =>
 app.on("open-file", (event, path) => {
   event.preventDefault();
   queueOpenFile(path);
-  if (launched && !quitPreparing) {
-    setImmediate(flushDroppedFiles);
-  }
+  if (launched && !quitPreparing) setImmediate(flushDroppedFiles);
 });
 
 void app
@@ -307,9 +294,7 @@ void app
     }
 
     const paths = await openActiveLibrary();
-    if (!paths) {
-      return;
-    }
+    if (!paths) return;
     log.info("[pond] paths", paths);
     const initialDestination = initialDeepLink
       ? handleDeepLink(initialDeepLink, getMainWindow())
@@ -432,15 +417,10 @@ async function openActiveLibrary(): Promise<PondPaths | null> {
     ensureDefaultLibrary();
     return resolvePaths();
   } catch (error) {
-    if (!(error instanceof LibraryMetadataError)) {
-      throw error;
-    }
+    if (!(error instanceof LibraryMetadataError)) throw error;
     log.error("[pond] Library metadata is unreadable", error.file, error.cause);
-    if (wantsMcp) {
-      app.exit(1);
-    } else {
-      await recoverUnreadableLibrary(error);
-    }
+    if (wantsMcp) app.exit(1);
+    else await recoverUnreadableLibrary(error);
     return null;
   }
 }
@@ -731,12 +711,8 @@ async function shutdownForQuit(): Promise<void> {
 
 /** Marks the app quitting first, so a later `quitAndInstall` close is not cancelled. */
 function prepareQuit(): Promise<void> {
-  if (quitPrepared) {
-    return Promise.resolve();
-  }
-  if (quitPreparation) {
-    return quitPreparation;
-  }
+  if (quitPrepared) return Promise.resolve();
+  if (quitPreparation) return quitPreparation;
   quitPreparing = true;
   beginQuit();
   quitPreparation = shutdownForQuit().then(

@@ -31,9 +31,7 @@ it("copies the Local API Token without rendering it", async () => {
     const button = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
       (candidate) => candidate.textContent === "Copy Token",
     );
-    if (!button) {
-      throw new Error("Missing copy token button");
-    }
+    if (!button) throw new Error("Missing copy token button");
     await act(async () => button.click());
     expect(copied).toEqual(["secret-token"]);
     expect(button.textContent).toBe("Copied");

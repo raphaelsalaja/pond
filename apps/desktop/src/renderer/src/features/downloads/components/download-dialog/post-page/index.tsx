@@ -26,9 +26,7 @@ function includesOf(probe: DownloadPostProbe): string {
     count === 1 ? "1 image" : count > 1 ? `${count} images` : null,
     probe.text ? "text" : null,
   ].filter((part) => part !== null);
-  if (parts.length === 0) {
-    return "The page link";
-  }
+  if (parts.length === 0) return "The page link";
   const joined = parts.join(" and ");
   return joined.charAt(0).toUpperCase() + joined.slice(1);
 }
@@ -128,9 +126,7 @@ export function PostPage({
               })}
               onChooseFolder={() =>
                 void folder.choose().then((picked) => {
-                  if (picked) {
-                    setDestination("file");
-                  }
+                  if (picked) setDestination("file");
                 })
               }
               unavailable={images ? [] : LIBRARY_ONLY}

@@ -32,9 +32,7 @@ export function clampRatio(w: number, h: number): number {
 }
 
 export function aspectCoverKey(unit: MediaUnit | null): string {
-  if (!unit) {
-    return "";
-  }
+  if (!unit) return "";
   return unit.isVideo ? (unit.posterKey ?? unit.key) : unit.key;
 }
 
@@ -50,9 +48,7 @@ function coverKeyForSave(save: Save, opts: MediaPickOptions): string {
   }
   const fingerprint = optsCacheKey(opts);
   const cached = byOpts.get(fingerprint);
-  if (cached !== undefined) {
-    return cached;
-  }
+  if (cached !== undefined) return cached;
   const coverKey = aspectCoverKey(pickCardUnit(save, opts));
   byOpts.set(fingerprint, coverKey);
   return coverKey;
@@ -107,15 +103,11 @@ function dimPair(
 }
 
 function touchMeasured(key: string, ratio: number): void {
-  if (measuredAspects.has(key)) {
-    measuredAspects.delete(key);
-  }
+  if (measuredAspects.has(key)) measuredAspects.delete(key);
   measuredAspects.set(key, ratio);
   while (measuredAspects.size > MAX_MEASURED) {
     const oldest = measuredAspects.keys().next().value;
-    if (oldest === undefined) {
-      return;
-    }
+    if (oldest === undefined) return;
     measuredAspects.delete(oldest);
   }
 }
@@ -130,14 +122,10 @@ const StoredAspectsSchema = z.record(
 );
 
 function hydrateFromStorage(): void {
-  if (!("localStorage" in globalThis)) {
-    return;
-  }
+  if (!("localStorage" in globalThis)) return;
   try {
     const raw = localStorage.getItem(MASONRY_ASPECT_CACHE_KEY);
-    if (!raw) {
-      return;
-    }
+    if (!raw) return;
     const parsed = StoredAspectsSchema.parse(JSON.parse(raw));
     const entries = Object.entries(parsed).filter(
       (entry): entry is [string, number] => entry[1] !== null,
@@ -153,14 +141,10 @@ function hydrateFromStorage(): void {
 
 const persistSoon = debounce(
   () => {
-    if (!("localStorage" in globalThis)) {
-      return;
-    }
+    if (!("localStorage" in globalThis)) return;
     try {
       const obj: Record<string, number> = {};
-      for (const [id, ratio] of measuredAspects) {
-        obj[id] = ratio;
-      }
+      for (const [id, ratio] of measuredAspects) obj[id] = ratio;
       localStorage.setItem(MASONRY_ASPECT_CACHE_KEY, JSON.stringify(obj));
     } catch {
       /** Storage can be full or blocked; measured aspects still apply for this session. */
@@ -183,18 +167,14 @@ export function aspectFor(save: Save, opts: MediaPickOptions = {}): number {
   const coverKey = coverKeyForSave(save, opts);
   const key = measuredKey(save.id, coverKey);
   const measured = measuredAspects.get(key);
-  if (measured !== undefined) {
-    return measured;
-  }
+  if (measured !== undefined) return measured;
   let byCover = fallbackCache.get(save);
   if (!byCover) {
     byCover = new Map();
     fallbackCache.set(save, byCover);
   }
   const cached = byCover.get(coverKey);
-  if (cached !== undefined) {
-    return cached;
-  }
+  if (cached !== undefined) return cached;
   const unit = pickCardUnit(save, opts);
   const { w, h } = aspectDimsFor(save, opts, unit);
   const ratio = w && h ? clampRatio(w, h) : 1;
@@ -226,19 +206,13 @@ function schedule() {
       cancelAnimationFrame(rafScheduled);
       rafScheduled = 0;
     }
-    if (burstTimer !== 0) {
-      clearTimeout(burstTimer);
-    }
+    if (burstTimer !== 0) clearTimeout(burstTimer);
     burstTimer = setTimeout(flush, BURST_DEBOUNCE_MS);
     return;
   }
 
-  if (burstTimer !== 0) {
-    return;
-  }
-  if (rafScheduled !== 0) {
-    return;
-  }
+  if (burstTimer !== 0) return;
+  if (rafScheduled !== 0) return;
   if (!("requestAnimationFrame" in globalThis)) {
     flush();
     return;
@@ -252,16 +226,12 @@ export function recordAspect(
   h: number,
   opts: { soft?: boolean; coverKey?: string } = {},
 ): void {
-  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
-    return;
-  }
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return;
   const ratio = clampRatio(w, h);
   const key = measuredKey(saveId, opts.coverKey ?? "");
   const prev = measuredAspects.get(key);
   const minDelta = opts.soft ? SOFT_MIN_DELTA : HARD_MIN_DELTA;
-  if (prev !== undefined && Math.abs(prev - ratio) < minDelta) {
-    return;
-  }
+  if (prev !== undefined && Math.abs(prev - ratio) < minDelta) return;
   touchMeasured(key, ratio);
   persistSoon();
   schedule();

@@ -20,9 +20,7 @@ export function folderRows(folders: ReadonlyArray<Folder>): Array<FolderRow> {
   const seen = new Set<string>();
   const walk = (parent: string | null, depth: number, path: Array<string>) => {
     for (const folder of children.get(parent) ?? []) {
-      if (seen.has(folder.id)) {
-        continue;
-      }
+      if (seen.has(folder.id)) continue;
       seen.add(folder.id);
       rows.push({ folder, depth, path });
       walk(folder.id, depth + 1, [...path, folder.name]);
@@ -30,9 +28,7 @@ export function folderRows(folders: ReadonlyArray<Folder>): Array<FolderRow> {
   };
   walk(null, 0, []);
   for (const folder of folders) {
-    if (seen.has(folder.id)) {
-      continue;
-    }
+    if (seen.has(folder.id)) continue;
     seen.add(folder.id);
     rows.push({ folder, depth: 0, path: [] });
     walk(folder.id, 1, [folder.name]);
@@ -45,9 +41,7 @@ export function searchFolders(
   query: string,
 ): Array<FolderRow> {
   const needle = query.trim().toLowerCase();
-  if (!needle) {
-    return [...rows];
-  }
+  if (!needle) return [...rows];
   return rows.filter((row) => row.folder.name.toLowerCase().includes(needle));
 }
 

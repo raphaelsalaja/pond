@@ -11,13 +11,9 @@ export function inject(): void {
     id: "pinterest",
     match: (req: RequestLens) => req.method === "POST" && SAVE_RE.test(req.url),
     async onResponse(req, res) {
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
       const id = pinIdFromBody(await req.readBody());
-      if (!id || emitted.has(id)) {
-        return;
-      }
+      if (!id || emitted.has(id)) return;
       emitted.add(id);
       capture(`https://www.pinterest.com/pin/${id}/`, "pinterest:save");
     },

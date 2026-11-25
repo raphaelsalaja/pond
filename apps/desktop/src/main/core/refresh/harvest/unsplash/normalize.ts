@@ -32,15 +32,9 @@ export function inPageUnsplashNormalize(validators: BrowserValidators) {
       url: `https://unsplash.com/photos/${asset.id}`,
       listKinds: ["saved"],
     };
-    if (asset.alt_description) {
-      entry.title = asset.alt_description;
-    }
-    if (asset.description) {
-      entry.description = asset.description;
-    }
-    if (asset.user?.name) {
-      entry.author = asset.user.name;
-    }
+    if (asset.alt_description) entry.title = asset.alt_description;
+    if (asset.description) entry.description = asset.description;
+    if (asset.user?.name) entry.author = asset.user.name;
     const media = asset.urls?.raw ?? asset.urls?.full;
     if (media) {
       entry.mediaUrl = media;
@@ -53,34 +47,19 @@ export function inPageUnsplashNormalize(validators: BrowserValidators) {
   function assetPage(asset: UnsplashAsset): UnsplashAssetPage {
     const page: UnsplashAssetPage = { mediaUrls: [], meta: {} };
     const title = asset.description || asset.alt_description;
-    if (title) {
-      page.title = title;
-    }
-    if (asset.description) {
-      page.description = asset.description;
-    }
+    if (title) page.title = title;
+    if (asset.description) page.description = asset.description;
     const user = asset.user;
-    if (user?.username) {
-      page.author = `@${user.username}`;
-    } else if (user?.name) {
-      page.author = user.name;
-    }
+    if (user?.username) page.author = `@${user.username}`;
+    else if (user?.name) page.author = user.name;
     const media = asset.urls?.raw ?? asset.urls?.full;
-    if (media) {
-      page.mediaUrls.push({ url: media, type: "image" });
-    }
-    if (user?.name) {
-      page.meta.authorName = user.name;
-    }
+    if (media) page.mediaUrls.push({ url: media, type: "image" });
+    if (user?.name) page.meta.authorName = user.name;
     if (user?.profile_image?.large) {
       page.meta.authorAvatar = user.profile_image.large;
     }
-    if (user?.links?.html) {
-      page.meta.authorUrl = user.links.html;
-    }
-    if (asset.created_at) {
-      page.meta.publishedAt = asset.created_at;
-    }
+    if (user?.links?.html) page.meta.authorUrl = user.links.html;
+    if (asset.created_at) page.meta.publishedAt = asset.created_at;
     return page;
   }
 

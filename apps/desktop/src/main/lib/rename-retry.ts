@@ -29,9 +29,7 @@ function shouldRetry(
   attempt: number,
   platform: NodeJS.Platform,
 ): boolean {
-  if (platform !== "win32" || attempt >= ATTEMPTS) {
-    return false;
-  }
+  if (platform !== "win32" || attempt >= ATTEMPTS) return false;
   return code !== undefined && RETRYABLE_CODES.has(code);
 }
 

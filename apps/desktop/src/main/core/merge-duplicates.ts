@@ -36,18 +36,14 @@ const runtime: DuplicateMergeRuntime = {
   folders: folderIdsForSave,
   async setFolders(id, ids) {
     const result = await setSaveFolders(id, ids);
-    if (!result.ok) {
-      return result;
-    }
+    if (!result.ok) return result;
     const [updated] = await (
       await getDb()
     )
       .select()
       .from(saves)
       .where(inArray(saves.id, [id]));
-    if (!updated) {
-      throw new Error("The survivor no longer exists.");
-    }
+    if (!updated) throw new Error("The survivor no longer exists.");
     await writeSaveInfo(updated);
     return result;
   },
@@ -180,9 +176,7 @@ async function preserveDuplicates(
   }
   const extras = ids.map((id) => {
     const save = byId.get(id);
-    if (!save) {
-      throw new Error("A duplicate no longer exists.");
-    }
+    if (!save) throw new Error("A duplicate no longer exists.");
     return save;
   });
   const ordered = [keep, ...extras];
@@ -190,9 +184,7 @@ async function preserveDuplicates(
   const tagKeys = new Set<string>();
   for (const tag of ordered.flatMap((save) => save.tags ?? [])) {
     const key = labelKey(tag);
-    if (!key || tagKeys.has(key)) {
-      continue;
-    }
+    if (!key || tagKeys.has(key)) continue;
     tagKeys.add(key);
     tags.push(tag);
   }
@@ -221,9 +213,7 @@ async function preserveDuplicates(
   }
   let notes: Array<string> = [];
   for (const note of ordered.map((save) => save.notes?.trim())) {
-    if (!note || notes.some((kept) => kept.includes(note))) {
-      continue;
-    }
+    if (!note || notes.some((kept) => kept.includes(note))) continue;
     notes = [...notes.filter((kept) => !note.includes(kept)), note];
   }
   const mergedNotes = notes.length > 0 ? notes.join("\n\n") : null;

@@ -4,9 +4,7 @@ import { sym } from "./lib/menu-symbol";
 
 export function attachEditableContextMenu(contents: WebContents): void {
   contents.on("context-menu", (_event, params) => {
-    if (!params.isEditable) {
-      return;
-    }
+    if (!params.isEditable) return;
 
     const template: Array<MenuItemConstructorOptions> = [];
 

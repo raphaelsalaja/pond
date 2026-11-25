@@ -59,9 +59,7 @@ export function MymindConnectForm({
   }, [active]);
 
   const submit = async () => {
-    if (!active || submitting.current || !kid.trim() || !secret.trim()) {
-      return;
-    }
+    if (!active || submitting.current || !kid.trim() || !secret.trim()) return;
     submitting.current = true;
     setBusy(true);
     setError(null);
@@ -71,13 +69,9 @@ export function MymindConnectForm({
         kid: kid.trim(),
         secret: secret.trim(),
       };
-      if (accountId) {
-        input.accountId = accountId;
-      }
+      if (accountId) input.accountId = accountId;
       const result = await connect(input);
-      if (revision !== request.current) {
-        return;
-      }
+      if (revision !== request.current) return;
       if (!result.ok) {
         setError(result.error);
         return;
@@ -91,9 +85,7 @@ export function MymindConnectForm({
       }
     } finally {
       submitting.current = false;
-      if (revision === request.current) {
-        setBusy(false);
-      }
+      if (revision === request.current) setBusy(false);
     }
   };
 

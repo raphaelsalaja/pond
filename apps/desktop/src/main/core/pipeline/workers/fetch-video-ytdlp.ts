@@ -75,9 +75,7 @@ export async function runFetchVideoYtdlp(
   runtime: FetchVideoRuntime = defaultRuntime,
 ): Promise<void> {
   const save = await runtime.readSave(saveId);
-  if (!save) {
-    return;
-  }
+  if (!save) return;
 
   if (payload.download) {
     await runRequestedDownload(saveId, save, payload.download, ctx, runtime);
@@ -106,9 +104,7 @@ export async function runFetchVideoYtdlp(
   }
 
   const target = resolveYtDlpTarget(save);
-  if (!target) {
-    return;
-  }
+  if (!target) return;
 
   const captureMedia = readCaptureMedia(save.rawJson);
   if (!captureMedia?.some((m) => m.type === "video")) {
@@ -143,12 +139,8 @@ export async function runFetchVideoYtdlp(
     allowPlaylist,
     expectedCount: expected,
   };
-  if (ctx?.signal) {
-    request.signal = ctx.signal;
-  }
-  if (ctx?.reportActivity) {
-    request.reportActivity = ctx.reportActivity;
-  }
+  if (ctx?.signal) request.signal = ctx.signal;
+  if (ctx?.reportActivity) request.reportActivity = ctx.reportActivity;
   const dl = await runtime.downloadVideo(request);
   if (!dl || dl.items.length === 0) {
     throw new TransientError(
@@ -163,9 +155,7 @@ export async function runFetchVideoYtdlp(
 
     for (let i = 0; i < dl.items.length; i++) {
       const item = dl.items[i];
-      if (!item) {
-        continue;
-      }
+      if (!item) continue;
       const files = await filesForItem(item, i, save.source);
       if (!files) {
         throw new TransientError(
@@ -187,9 +177,7 @@ export async function runFetchVideoYtdlp(
       patch.rawJson = rawJson;
       if (!save.author) {
         const author = saveAuthorFrom(rawJson.capture);
-        if (author) {
-          patch.author = author;
-        }
+        if (author) patch.author = author;
       }
     }
     ctx?.signal?.throwIfAborted();
@@ -254,12 +242,8 @@ async function runRequestedDownload(
     expectedCount: expected,
     request,
   };
-  if (ctx?.signal) {
-    args.signal = ctx.signal;
-  }
-  if (ctx?.reportActivity) {
-    args.reportActivity = ctx.reportActivity;
-  }
+  if (ctx?.signal) args.signal = ctx.signal;
+  if (ctx?.reportActivity) args.reportActivity = ctx.reportActivity;
   const dl = await runtime.downloadVideo(args);
   if (!dl || dl.items.length === 0) {
     throw new TransientError(
@@ -287,9 +271,7 @@ async function runRequestedDownload(
     const newFiles: Array<WriteFileArgs> = [];
     for (let i = 0; i < converted.items.length; i++) {
       const item = converted.items[i];
-      if (!item) {
-        continue;
-      }
+      if (!item) continue;
       const ext = extname(item.path).toLowerCase();
       const plan: ItemPlan = audio
         ? {
@@ -321,9 +303,7 @@ async function runRequestedDownload(
 
     const patch: Partial<NewSave> = {};
     if (gif) {
-      if (!hasVideo) {
-        patch.mediaType = "image";
-      }
+      if (!hasVideo) patch.mediaType = "image";
     } else if (!audio) {
       patch.mediaType = "video";
       const dims = newFiles.find((file) => file.kind === "video");
@@ -370,9 +350,7 @@ async function runCaptionsDownload(
     accountId: save.accountId,
     lang: request.subtitleLang,
   };
-  if (ctx?.signal) {
-    args.signal = ctx.signal;
-  }
+  if (ctx?.signal) args.signal = ctx.signal;
   const captions = await runtime.downloadCaptions(args);
   if (!captions) {
     throw new TerminalError(`fetch-video-ytdlp: no captions for ${saveId}`);
@@ -417,9 +395,7 @@ async function runCaptionsDownload(
     const hasMedia = files.some(
       (file) => isVideoFile(file) || file.kind === "audio",
     );
-    if (!hasMedia) {
-      patch.mediaType = "text";
-    }
+    if (!hasMedia) patch.mediaType = "text";
     applyYtdlpInfo(save, captions.infoJson, patch);
     ctx?.reportActivity?.({ phase: "saving" });
     patch.fileSize = fileSizeAfterMediaWrite(save.files, newFiles, [
@@ -441,16 +417,12 @@ function applyYtdlpInfo(
   info: RawYtdlp | null,
   patch: Partial<NewSave>,
 ): void {
-  if (!info) {
-    return;
-  }
+  if (!info) return;
   const rawJson = mergeYtdlpInfo(save.rawJson, info);
   patch.rawJson = rawJson;
   if (!save.author) {
     const author = saveAuthorFrom(rawJson.capture);
-    if (author) {
-      patch.author = author;
-    }
+    if (author) patch.author = author;
   }
 }
 
@@ -521,9 +493,7 @@ async function filesForItem(
       : Promise.resolve(null),
     ...item.subtitles.map((sub) => readPath(sub.path)),
   ]);
-  if (!mediaBuf) {
-    return null;
-  }
+  if (!mediaBuf) return null;
 
   const dims =
     plan.kind === "video"
@@ -550,9 +520,7 @@ async function filesForItem(
       platformBytes: platformPosterBuf,
       platformMimeType: item.posterMimeType,
     });
-    if (poster) {
-      out.push(poster);
-    }
+    if (poster) out.push(poster);
   } else if (
     plan.poster === "platform" &&
     platformPosterBuf &&
@@ -570,9 +538,7 @@ async function filesForItem(
   for (let i = 0; i < item.subtitles.length; i++) {
     const sub = item.subtitles[i];
     const subBuf = subtitleBufs[i];
-    if (!sub || !subBuf) {
-      continue;
-    }
+    if (!sub || !subBuf) continue;
     out.push({
       kind: "subtitle",
       filename: sub.filename,
@@ -632,9 +598,7 @@ function mergeYtdlpInfo(
 function dimsFromYtdlpInfo(
   info: RawYtdlp | null | undefined,
 ): { width: number; height: number } | null {
-  if (!info) {
-    return null;
-  }
+  if (!info) return null;
   const width = Number(info.width);
   const height = Number(info.height);
   if (

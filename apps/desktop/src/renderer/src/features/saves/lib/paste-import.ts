@@ -66,19 +66,13 @@ function filePaths(data: DataTransfer): Array<string> {
 /** Reads what a paste or drop would import, without importing it. */
 export function pasteImportOf(data: DataTransfer): PasteImport | null {
   const paths = filePaths(data);
-  if (paths.length) {
-    return { kind: "files", paths };
-  }
+  if (paths.length) return { kind: "files", paths };
   const text = data.getData("text/uri-list") || data.getData("text/plain");
   const textPaths = filePathsFromText(text);
-  if (textPaths.length) {
-    return { kind: "files", paths: textPaths };
-  }
+  if (textPaths.length) return { kind: "files", paths: textPaths };
   /** Browsers often advertise a `Files` type for copied links; prefer URL text before image import. */
   const urls = asUrlList(text);
-  if (urls) {
-    return { kind: "urls", urls };
-  }
+  if (urls) return { kind: "urls", urls };
   const types = Array.from(data.types ?? []);
   /** Finder paste often exposes `Files` with an empty FileList; main reads the native pasteboard. */
   if (
@@ -100,9 +94,7 @@ interface FilesInput {
 
 function filesInput(paths: Array<string>, folderId: string | undefined) {
   const input: FilesInput = { paths };
-  if (folderId) {
-    input.folderIds = [folderId];
-  }
+  if (folderId) input.folderIds = [folderId];
   return input;
 }
 
@@ -111,9 +103,7 @@ async function importPlan(
   folderId: string | undefined,
 ): Promise<PlanResult> {
   const into: FolderInput = {};
-  if (folderId) {
-    into.folderId = folderId;
-  }
+  if (folderId) into.folderId = folderId;
   switch (plan.kind) {
     case "files": {
       const reply = ImportReplySchema.parse(
@@ -127,11 +117,8 @@ async function importPlan(
         const reply = ImportReplySchema.parse(
           await window.pond.query("saves.quickAdd", { ...into, url }),
         );
-        if (reply.ok && reply.id) {
-          result.ids.push(reply.id);
-        } else {
-          result.failed += 1;
-        }
+        if (reply.ok && reply.id) result.ids.push(reply.id);
+        else result.failed += 1;
       }
       return result;
     }

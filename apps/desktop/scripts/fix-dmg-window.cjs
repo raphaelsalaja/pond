@@ -11,13 +11,9 @@ const SECTORS_PER_MB = 2048;
 const FORMAT = "ULFO";
 
 exports.default = async function fixDmgWindows(buildResult) {
-  if (process.platform !== "darwin") {
-    return;
-  }
+  if (process.platform !== "darwin") return;
   for (const file of buildResult.artifactPaths) {
-    if (file.endsWith(".dmg")) {
-      await bakeFinderLayout(file);
-    }
+    if (file.endsWith(".dmg")) await bakeFinderLayout(file);
   }
 };
 
@@ -80,9 +76,7 @@ function waitUntilUnmounted() {
     }
   }
   for (let i = 0; i < 20; i++) {
-    if (!existsSync("/Volumes/Pond") && !existsSync("/Volumes/Pond 1")) {
-      return;
-    }
+    if (!existsSync("/Volumes/Pond") && !existsSync("/Volumes/Pond 1")) return;
     execFileSync("sleep", ["0.25"]);
   }
 }
@@ -102,9 +96,7 @@ function attachRw(image) {
 
 function waitForVolume() {
   for (let i = 0; i < 20; i++) {
-    if (existsSync("/Volumes/Pond")) {
-      return "/Volumes/Pond";
-    }
+    if (existsSync("/Volumes/Pond")) return "/Volumes/Pond";
     execFileSync("sleep", ["0.25"]);
   }
   throw new Error("Pond volume did not appear after attach");

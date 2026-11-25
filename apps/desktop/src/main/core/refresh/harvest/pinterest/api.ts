@@ -187,9 +187,7 @@ export async function fetchPinterestCapture({
     };
   }
   const page = parsePinPage(await res.text());
-  if (page.kind !== "pin") {
-    return { ok: false, reason: page.kind };
-  }
+  if (page.kind !== "pin") return { ok: false, reason: page.kind };
   return { ok: true, capture: buildCapture(sourceId, url, page.pin) };
 }
 
@@ -206,14 +204,10 @@ export function parsePinPage(html: string): PinPage {
   let cursor = 0;
   while (true) {
     const idx = html.indexOf(callOpen, cursor);
-    if (idx < 0) {
-      break;
-    }
+    if (idx < 0) break;
     const argStart = idx + callOpen.length;
     const callEnd = findCallEnd(html, argStart);
-    if (callEnd < 0) {
-      break;
-    }
+    if (callEnd < 0) break;
     const inner = html.slice(argStart, callEnd);
     const secondArgOffset = findSecondArgStart(inner);
     if (secondArgOffset >= 0) {
@@ -243,9 +237,7 @@ function mergePins(pins: Array<JsonObject>): JsonObject {
   const out: JsonObject = {};
   const keys = new Set<string>();
   for (const p of pins) {
-    for (const k of Object.keys(p)) {
-      keys.add(k);
-    }
+    for (const k of Object.keys(p)) keys.add(k);
   }
   for (const key of keys) {
     let best: JsonValue | undefined;
@@ -262,9 +254,7 @@ function mergePins(pins: Array<JsonObject>): JsonObject {
         bestScore = score;
       }
     }
-    if (best !== undefined) {
-      out[key] = best;
-    }
+    if (best !== undefined) out[key] = best;
   }
   return out;
 }
@@ -280,9 +270,7 @@ function findCallEnd(s: string, start: number): number {
         i += 1;
         continue;
       }
-      if (c === '"') {
-        inStr = false;
-      }
+      if (c === '"') inStr = false;
       continue;
     }
     if (c === '"') {
@@ -295,9 +283,7 @@ function findCallEnd(s: string, start: number): number {
       depthParen += 1;
     } else if (c === ")") {
       depthParen -= 1;
-      if (depthParen === 0) {
-        return i;
-      }
+      if (depthParen === 0) return i;
     }
   }
   return -1;
@@ -314,9 +300,7 @@ function findSecondArgStart(inner: string): number {
         i += 1;
         continue;
       }
-      if (c === '"') {
-        inStr = false;
-      }
+      if (c === '"') inStr = false;
       continue;
     }
     if (c === '"') {
@@ -347,9 +331,7 @@ function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
 
   const creator = pickCreator(pin);
   const author = ((): Capture["author"] => {
-    if (!creator) {
-      return undefined;
-    }
+    if (!creator) return undefined;
     const name = creator.fullName ?? undefined;
     const handle = creator.username ?? undefined;
     const avatarUrl =
@@ -364,18 +346,10 @@ function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
         ? `https://www.pinterest.com/${creator.username}/`
         : undefined);
     const out: NonNullable<Capture["author"]> = {};
-    if (name) {
-      out.name = name;
-    }
-    if (handle) {
-      out.handle = handle;
-    }
-    if (avatarUrl) {
-      out.avatarUrl = avatarUrl;
-    }
-    if (profileUrl) {
-      out.profileUrl = profileUrl;
-    }
+    if (name) out.name = name;
+    if (handle) out.handle = handle;
+    if (avatarUrl) out.avatarUrl = avatarUrl;
+    if (profileUrl) out.profileUrl = profileUrl;
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
@@ -393,24 +367,16 @@ function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
     if (aggregated?.aggregatedStats?.saves !== undefined) {
       out.saves = aggregated.aggregatedStats.saves;
     }
-    if (pin.repinCount !== undefined) {
-      out.repins = pin.repinCount;
-    }
-    if (pin.shareCount !== undefined) {
-      out.shares = pin.shareCount;
-    }
+    if (pin.repinCount !== undefined) out.repins = pin.repinCount;
+    if (pin.shareCount !== undefined) out.shares = pin.shareCount;
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
   const extras = ((): CaptureExtras | undefined => {
     const out: CaptureExtras = {};
     const externalLink = pickStr([pin.link, pin.mobileLink]);
-    if (externalLink) {
-      out.externalLink = externalLink;
-    }
-    if (pin.dominantColor) {
-      out.dominantColor = pin.dominantColor;
-    }
+    if (externalLink) out.externalLink = externalLink;
+    if (pin.dominantColor) out.dominantColor = pin.dominantColor;
     if (pin.board?.url) {
       const boardUrl = pin.board.url.startsWith("http")
         ? pin.board.url
@@ -432,24 +398,12 @@ function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
     url,
     media,
   };
-  if (title) {
-    capture.title = title;
-  }
-  if (description) {
-    capture.description = description;
-  }
-  if (author) {
-    capture.author = author;
-  }
-  if (publishedAt) {
-    capture.publishedAt = publishedAt;
-  }
-  if (metrics) {
-    capture.metrics = metrics;
-  }
-  if (extras) {
-    capture.extras = extras;
-  }
+  if (title) capture.title = title;
+  if (description) capture.description = description;
+  if (author) capture.author = author;
+  if (publishedAt) capture.publishedAt = publishedAt;
+  if (metrics) capture.metrics = metrics;
+  if (extras) capture.extras = extras;
   return capture;
 }
 
@@ -472,23 +426,15 @@ function mediaFromPin(pin: RelayPin): Array<CaptureMedia> {
     ...httpUrls(pin.storyPinData).filter((url) => /\.mp4(?:$|\?)/i.test(url)),
   ]);
   const url = video ?? still;
-  if (!url) {
-    return [];
-  }
+  if (!url) return [];
   const dims = pin.images_736x ?? pin.images_564x ?? pin.images_474x;
   const entry: CaptureMedia = {
     url,
     type: video ? "video" : "image",
   };
-  if (video && still) {
-    entry.posterUrl = still;
-  }
-  if (!video && dims?.width !== undefined) {
-    entry.width = dims.width;
-  }
-  if (!video && dims?.height !== undefined) {
-    entry.height = dims.height;
-  }
+  if (video && still) entry.posterUrl = still;
+  if (!video && dims?.width !== undefined) entry.width = dims.width;
+  if (!video && dims?.height !== undefined) entry.height = dims.height;
   return [entry];
 }
 
@@ -501,9 +447,7 @@ function videoListUrls(
   const preferred = pickStr(
     ["V_720P", "V_EXP7", "V_HLSV3_MOBILE"].map((key) => list[key]?.url),
   );
-  if (preferred) {
-    return [preferred];
-  }
+  if (preferred) return [preferred];
   return Object.values(list).flatMap((item) => (item.url ? [item.url] : []));
 }
 
@@ -526,13 +470,9 @@ function httpUrls(value: JsonValue | undefined): Array<string> {
 }
 
 function parsePinterestDate(raw: string | undefined): string | undefined {
-  if (!raw) {
-    return undefined;
-  }
+  if (!raw) return undefined;
   const d = new Date(raw);
-  if (Number.isNaN(d.getTime())) {
-    return undefined;
-  }
+  if (Number.isNaN(d.getTime())) return undefined;
   return d.toISOString();
 }
 
@@ -546,9 +486,7 @@ function pickCreator(pin: RelayPin): RelayUser | null {
   let best: RelayUser | null = null;
   let bestScore = -1;
   for (const c of candidates) {
-    if (!c) {
-      continue;
-    }
+    if (!c) continue;
     const score =
       (c.fullName ? 2 : 0) +
       (c.imageLargeUrl ? 3 : c.imageMediumUrl ? 2 : c.imageSmallUrl ? 1 : 0) +
@@ -562,9 +500,7 @@ function pickCreator(pin: RelayPin): RelayUser | null {
 }
 
 function cleanSeoTitle(seoTitle: string | undefined): string | null {
-  if (!seoTitle) {
-    return null;
-  }
+  if (!seoTitle) return null;
   const head = seoTitle.split(/\s+\|\s+/)[0]?.trim();
   return head && head.length >= 3 ? head : seoTitle;
 }
@@ -572,18 +508,14 @@ function cleanSeoTitle(seoTitle: string | undefined): string | null {
 function pickDescription(pin: RelayPin): string | null {
   for (const c of [pin.description, pin.closeupUnifiedDescription]) {
     const t = (c ?? "").trim();
-    if (t.length >= 3) {
-      return t;
-    }
+    if (t.length >= 3) return t;
   }
   return null;
 }
 
 function pickStr(values: Array<string | undefined | null>): string | null {
   for (const v of values) {
-    if (v?.trim()) {
-      return v.trim();
-    }
+    if (v?.trim()) return v.trim();
   }
   return null;
 }

@@ -26,8 +26,6 @@ export const BoardContext = createContext<BoardActions | null>(null);
 
 export function useBoard(): BoardActions {
   const board = useContext(BoardContext);
-  if (!board) {
-    throw new Error("Canvas items render inside a board.");
-  }
+  if (!board) throw new Error("Canvas items render inside a board.");
   return board;
 }

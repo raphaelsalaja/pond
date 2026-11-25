@@ -35,9 +35,7 @@ async function encode(
   const type = format === "jpeg" ? "image/jpeg" : "image/png";
   const blob = await canvas.convertToBlob({ type, quality: JPEG_QUALITY });
   const bytes = new Uint8Array(await blob.arrayBuffer());
-  if (bytes.length > MAX_IMAGE_BYTES) {
-    throw new ScreenshotError(TOO_LARGE);
-  }
+  if (bytes.length > MAX_IMAGE_BYTES) throw new ScreenshotError(TOO_LARGE);
   let binary = "";
   for (let offset = 0; offset < bytes.length; offset += 8192) {
     binary += String.fromCharCode(...bytes.subarray(offset, offset + 8192));
@@ -61,9 +59,7 @@ async function render(
   const height = Math.max(1, Math.round(crop.height * scale));
   const canvas = new OffscreenCanvas(width, height);
   const context = canvas.getContext("2d");
-  if (!context) {
-    throw new ScreenshotError("Screenshots aren't available.");
-  }
+  if (!context) throw new ScreenshotError("Screenshots aren't available.");
   if (options.format === "jpeg") {
     context.fillStyle = "#fff";
     context.fillRect(0, 0, width, height);
@@ -283,9 +279,7 @@ export async function captureFullPage(
         }
       }
     }
-    if (!canvas) {
-      throw new ScreenshotError("Pond couldn't capture this page.");
-    }
+    if (!canvas) throw new ScreenshotError("Pond couldn't capture this page.");
     const full = { x: 0, y: 0, width: canvas.width, height: canvas.height };
     return await render(canvas, full, density, options);
   } finally {

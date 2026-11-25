@@ -24,15 +24,11 @@ export function ThreadsMedia({
   compact?: boolean;
 }) {
   const tiles = media.slice(0, MAX_TILES);
-  if (tiles.length === 0) {
-    return null;
-  }
+  if (tiles.length === 0) return null;
 
   if (tiles.length === 1) {
     const first = tiles[0];
-    if (!first) {
-      return null;
-    }
+    if (!first) return null;
     return <Single media={first} compact={compact} />;
   }
 
@@ -61,9 +57,7 @@ function Single({
   const ratio =
     media.width && media.height ? media.width / media.height : undefined;
   const style: SingleMediaStyle = { "--threads-media-max-h": `${maxH}px` };
-  if (ratio) {
-    style["--threads-media-ratio"] = String(ratio);
-  }
+  if (ratio) style["--threads-media-ratio"] = String(ratio);
   return (
     <div
       className={styles.single}

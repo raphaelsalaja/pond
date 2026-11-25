@@ -17,9 +17,7 @@ export async function ensureSettings(): Promise<void> {
 }
 
 export async function storeSettings(next: PondSettings): Promise<void> {
-  if (JSON.stringify(next) === JSON.stringify(await getSettings())) {
-    return;
-  }
+  if (JSON.stringify(next) === JSON.stringify(await getSettings())) return;
   await item.setValue(next);
 }
 

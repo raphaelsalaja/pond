@@ -31,9 +31,7 @@ async function connect() {
     (result: JSONRPCResultResponse["result"]) => void
   >();
   client.onmessage = (message) => {
-    if (!isJSONRPCResultResponse(message)) {
-      return;
-    }
+    if (!isJSONRPCResultResponse(message)) return;
     waiting.get(message.id)?.(message.result);
   };
   await client.start();

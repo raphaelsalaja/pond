@@ -62,9 +62,7 @@ export class RedditPostExtractor implements Extractor {
   async extract(input: ExtractInput): Promise<Capture> {
     const match = firstMatch(input.url, this.validUrl);
     const postId = match?.[1] ?? null;
-    if (!postId) {
-      throw new TerminalError("could not parse reddit post id");
-    }
+    if (!postId) throw new TerminalError("could not parse reddit post id");
     return captureFromSource({
       url: input.url.href,
       source: "reddit",

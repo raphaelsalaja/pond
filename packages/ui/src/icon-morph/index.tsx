@@ -36,9 +36,7 @@ export function IconMorph({ icon: Icon, ...props }: IconMorphProps) {
   useLayoutEffect(() => {
     const from = settled.current;
     settled.current = Icon;
-    if (from === Icon || reduced) {
-      return;
-    }
+    if (from === Icon || reduced) return;
     const plan = pageHidden() ? null : planMorph(from, Icon);
     if (!plan) {
       setFrame(null);
@@ -62,9 +60,7 @@ export function IconMorph({ icon: Icon, ...props }: IconMorphProps) {
       </Swap>
     );
   }
-  if (!frame || !Icon.glyph) {
-    return <Icon {...props} />;
-  }
+  if (!frame || !Icon.glyph) return <Icon {...props} />;
 
   const { plan, t } = frame;
   const variant = Icon.glyph.style;

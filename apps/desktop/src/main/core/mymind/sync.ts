@@ -40,9 +40,7 @@ export async function importNewMymindObjects(
   const imported: Array<string> = [];
   let processed = 0;
   let hasMore = false;
-  if (start >= end) {
-    return { imported, processed, hasMore };
-  }
+  if (start >= end) return { imported, processed, hasMore };
 
   for await (const object of dependencies.client.listCreatedObjects({
     start,
@@ -66,16 +64,12 @@ export async function importNewMymindObjects(
     const result = await dependencies.importObject(object);
     signal.throwIfAborted();
     processed += 1;
-    if (result.imported) {
-      imported.push(result.id);
-    }
+    if (result.imported) imported.push(result.id);
   }
 
   signal.throwIfAborted();
   // A partial stream must keep its lower bound until every item is processed.
-  if (!hasMore) {
-    state.checkedThrough = new Date(end).toISOString();
-  }
+  if (!hasMore) state.checkedThrough = new Date(end).toISOString();
   delete state.retryAt;
   await dependencies.persist();
   return { imported, processed, hasMore };

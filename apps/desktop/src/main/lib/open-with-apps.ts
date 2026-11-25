@@ -17,9 +17,7 @@ export interface OpenWithAppInfo {
 export function parseOpenWithPayload(raw: string): OpenWithPayload {
   try {
     const parsed = PayloadSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success) {
-      return { defaultPath: null, paths: [] };
-    }
+    if (!parsed.success) return { defaultPath: null, paths: [] };
     return parsed.data;
   } catch {
     return { defaultPath: null, paths: [] };
@@ -42,20 +40,14 @@ export function rankOpenWithApps(
   const seen = new Set<string>();
   const apps: Array<OpenWithAppInfo> = [];
   const add = (path: string, isDefault: boolean) => {
-    if (!path.endsWith(".app") || seen.has(path)) {
-      return;
-    }
+    if (!path.endsWith(".app") || seen.has(path)) return;
     seen.add(path);
     apps.push({ path, name: appDisplayName(path), isDefault });
   };
-  if (input.defaultPath) {
-    add(input.defaultPath, true);
-  }
+  if (input.defaultPath) add(input.defaultPath, true);
   const rest = [...input.paths].sort((a, b) =>
     appDisplayName(a).localeCompare(appDisplayName(b)),
   );
-  for (const path of rest) {
-    add(path, path === input.defaultPath);
-  }
+  for (const path of rest) add(path, path === input.defaultPath);
   return apps.slice(0, limit);
 }

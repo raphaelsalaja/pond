@@ -29,9 +29,7 @@ const SHORT_TITLE = 40;
 /** A Save's title cut at a word near the limit, for naming it inside a sentence. */
 export function shortTitle(title: string, limit = SHORT_TITLE): string {
   const clean = reviewTitle(title);
-  if (clean.length <= limit) {
-    return clean;
-  }
+  if (clean.length <= limit) return clean;
   const cut = clean.slice(0, limit);
   const space = cut.lastIndexOf(" ");
   return `${(space > limit / 2 ? cut.slice(0, space) : cut).replace(/[\s,.;:–—-]+$/, "")}…`;
@@ -157,9 +155,7 @@ export function reviewOutcome(
 ): ReviewOutcome {
   const tally = { applied: 0, dismissed: 0, undone: 0 };
   for (const change of changes) {
-    if (change.status !== "pending") {
-      tally[change.status] += 1;
-    }
+    if (change.status !== "pending") tally[change.status] += 1;
   }
   const parts = (
     [
@@ -216,11 +212,8 @@ export function groupChanges(
   for (const change of changes) {
     const { key, parts } = groupKey(change, folderName);
     const group = groups.get(key);
-    if (group) {
-      group.changes.push(change);
-    } else {
-      groups.set(key, { key, parts, changes: [change] });
-    }
+    if (group) group.changes.push(change);
+    else groups.set(key, { key, parts, changes: [change] });
   }
   return [...groups.values()];
 }
@@ -258,9 +251,7 @@ function chipClause(
   folderName: (id: string) => string,
 ): ProposalClause {
   const [first] = group.changes;
-  if (first?.field !== "tags" && first?.field !== "folders") {
-    return [];
-  }
+  if (first?.field !== "tags" && first?.field !== "folders") return [];
   const place = first.field === "folders" ? "folder" : "tag";
   const name = place === "folder" ? folderName : String;
   const chips = chipDiff(first.before, first.after);
@@ -277,12 +268,8 @@ function chipClause(
     segment.kind === "places" && segment.items.length > 0;
   const saves: ProposalSegment = { kind: "saves", changes: group.changes };
   if (place === "tag") {
-    if (!has(removed)) {
-      return [text("tag "), saves, text(" with "), added];
-    }
-    if (!has(added)) {
-      return [text("remove "), removed, text(" from "), saves];
-    }
+    if (!has(removed)) return [text("tag "), saves, text(" with "), added];
+    if (!has(added)) return [text("remove "), removed, text(" from "), saves];
     return [
       text("tag "),
       saves,
@@ -292,12 +279,8 @@ function chipClause(
       removed,
     ];
   }
-  if (!has(removed)) {
-    return [text("add "), saves, text(" to "), added];
-  }
-  if (!has(added)) {
-    return [text("take "), saves, text(" out of "), removed];
-  }
+  if (!has(removed)) return [text("add "), saves, text(" to "), added];
+  if (!has(added)) return [text("take "), saves, text(" out of "), removed];
   return [text("move "), saves, text(" from "), removed, text(" to "), added];
 }
 
@@ -306,9 +289,7 @@ function groupClauses(
   folderName: (id: string) => string,
 ): Array<ProposalClause> {
   const [first] = group.changes;
-  if (!first) {
-    return [];
-  }
+  if (!first) return [];
   const saves: ProposalSegment = { kind: "saves", changes: group.changes };
   switch (first.field) {
     case "tags":

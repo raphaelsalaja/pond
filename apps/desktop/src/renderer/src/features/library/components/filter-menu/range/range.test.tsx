@@ -22,9 +22,7 @@ describe("custom filter controls", () => {
 
   async function fill(index: number, value: string) {
     const input = host.querySelectorAll("input")[index];
-    if (!input) {
-      throw new Error("Missing filter input");
-    }
+    if (!input) throw new Error("Missing filter input");
     await act(async () => {
       Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,

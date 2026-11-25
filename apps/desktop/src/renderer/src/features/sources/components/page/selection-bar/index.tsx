@@ -33,9 +33,7 @@ export function SourceSelectionBar() {
         label="Fetch New Saves"
         disabled={fetchable.length === 0}
         onClick={() => {
-          for (const row of fetchable) {
-            void window.pond.syncRunNow(row.id);
-          }
+          for (const row of fetchable) void window.pond.syncRunNow(row.id);
         }}
       >
         <IconRefresh />

@@ -60,9 +60,7 @@ export function actualScale(input: {
   naturalWidth: number;
   fittedWidth: number;
 }): number {
-  if (input.naturalWidth <= 0 || input.fittedWidth <= 0) {
-    return 1;
-  }
+  if (input.naturalWidth <= 0 || input.fittedWidth <= 0) return 1;
   return input.naturalWidth / input.fittedWidth;
 }
 
@@ -143,9 +141,7 @@ export function useImageViewport({
   };
 
   useEffect(() => {
-    if (!rememberPosition) {
-      return;
-    }
+    if (!rememberPosition) return;
     const timer = window.setTimeout(
       () => viewerMemory.setImage(src, pose),
       150,
@@ -154,9 +150,7 @@ export function useImageViewport({
   }, [pose, rememberPosition, src]);
   useEffect(
     () => () => {
-      if (rememberPosition) {
-        viewerMemory.setImage(src, latestPose.current);
-      }
+      if (rememberPosition) viewerMemory.setImage(src, latestPose.current);
     },
     [rememberPosition, src],
   );
@@ -173,9 +167,7 @@ export function useImageViewport({
   /** Fitted bounds must exist before first paint so the open transition lands on the image, not the whole stage. */
   useLayoutEffect(() => {
     const element = frame.current;
-    if (!element) {
-      return;
-    }
+    if (!element) return;
     const measure = () => {
       const width = element.clientWidth;
       const height = element.clientHeight;
@@ -186,9 +178,7 @@ export function useImageViewport({
       );
     };
     measure();
-    if (!globalThis.ResizeObserver) {
-      return;
-    }
+    if (!globalThis.ResizeObserver) return;
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
@@ -307,12 +297,8 @@ export function useImageViewport({
   }, []);
 
   const reportImage = (width: number, height: number) => {
-    if (!(Number.isFinite(width) && Number.isFinite(height))) {
-      return;
-    }
-    if (width <= 0 || height <= 0) {
-      return;
-    }
+    if (!(Number.isFinite(width) && Number.isFinite(height))) return;
+    if (width <= 0 || height <= 0) return;
     setDecoded((current) =>
       current.src === src && current.width === width ? current : { src, width },
     );

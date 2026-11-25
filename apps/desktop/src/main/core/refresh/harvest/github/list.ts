@@ -93,9 +93,7 @@ async function inPageGithubStars(
     const rows: Array<StarEntry> = [];
     for (const link of list.querySelectorAll<HTMLAnchorElement>("h3 > a")) {
       const path = REPO_PATH.exec(link.getAttribute("href") ?? "");
-      if (!path?.[1] || !path[2]) {
-        continue;
-      }
+      if (!path?.[1] || !path[2]) continue;
       const name = `${path[1]}/${path[2]}`;
       const row = link.closest("div.col-12") ?? link.parentElement;
       const about = row
@@ -107,9 +105,7 @@ async function inPageGithubStars(
         title: name,
         author: path[1],
       };
-      if (about) {
-        entry.description = about;
-      }
+      if (about) entry.description = about;
       rows.push(entry);
     }
     const next = Array.from(
@@ -132,12 +128,8 @@ async function inPageGithubStars(
     url.searchParams.set("after", after);
     try {
       const res = await fetch(url.toString(), { credentials: "include" });
-      if (res.status === 429) {
-        return "rate_limited";
-      }
-      if (!res.ok) {
-        return null;
-      }
+      if (res.status === 429) return "rate_limited";
+      if (!res.ok) return null;
       return new DOMParser().parseFromString(await res.text(), "text/html");
     } catch {
       return null;
@@ -171,9 +163,7 @@ async function inPageGithubStars(
     }
     let pageFresh = 0;
     for (const row of read.rows) {
-      if (seen.has(row.sourceId)) {
-        continue;
-      }
+      if (seen.has(row.sourceId)) continue;
       seen.add(row.sourceId);
       if (!known.has(row.sourceId)) {
         fresh += 1;
@@ -217,9 +207,7 @@ async function inPageGithubStars(
         ? unfinished()
         : { ok: false, reason: "rate_limited" };
     }
-    if (!next) {
-      return unfinished();
-    }
+    if (!next) return unfinished();
     doc = next;
   }
   return unfinished();

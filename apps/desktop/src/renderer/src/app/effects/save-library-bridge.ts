@@ -52,9 +52,7 @@ registerSaveLibraryBridge({
   showLibrary: (nav, predicate) => {
     resetFilters();
     selectLibraryNav(nav);
-    if (predicate) {
-      setQuery({ combinator: "and", rules: [predicate] });
-    }
+    if (predicate) setQuery({ combinator: "and", rules: [predicate] });
   },
   setVisualProbe: ({ id, label }) =>
     setVisualProbe({ kind: "saveId", id, label }),

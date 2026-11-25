@@ -11,9 +11,7 @@ import type { HelperProcess } from "./haptic-player";
 const HELPER = "pond-haptics";
 
 function helperPath(): string | null {
-  if (process.platform !== "darwin") {
-    return null;
-  }
+  if (process.platform !== "darwin") return null;
   const path = app.isPackaged
     ? join(process.resourcesPath, "bin", HELPER)
     : join(app.getAppPath(), "resources", "bin", HELPER);
@@ -22,15 +20,11 @@ function helperPath(): string | null {
 
 function launchHelper(): HelperProcess | null {
   const path = helperPath();
-  if (!path) {
-    return null;
-  }
+  if (!path) return null;
   const child = spawn(path, [], { stdio: ["pipe", "ignore", "ignore"] });
   child.on("error", (err) => log.warn("[pond] haptics helper failed", err));
   child.on("exit", (code, signal) => {
-    if (code !== 0) {
-      log.warn("[pond] haptics helper exited", { code, signal });
-    }
+    if (code !== 0) log.warn("[pond] haptics helper exited", { code, signal });
   });
   return child;
 }

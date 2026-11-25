@@ -35,9 +35,7 @@ function shareImage(): string | null {
     'meta[property="og:image"], meta[name="twitter:image"]',
   );
   const content = meta?.content;
-  if (!content) {
-    return null;
-  }
+  if (!content) return null;
   try {
     const url = new URL(content, location.href);
     return url.protocol === "https:" || url.protocol === "http:"
@@ -49,12 +47,8 @@ function shareImage(): string | null {
 }
 
 function previewSource(draft: DetailsDraft): string | null {
-  if (draft.preview) {
-    return draft.preview.src;
-  }
-  if (draft.kind === "page" && draft.url === location.href) {
-    return shareImage();
-  }
+  if (draft.preview) return draft.preview.src;
+  if (draft.kind === "page" && draft.url === location.href) return shareImage();
   return null;
 }
 
@@ -77,14 +71,10 @@ function Preview({ draft }: { draft: DetailsDraft }) {
           alt=""
           onError={() => setFailed(true)}
           onLoad={(event) => {
-            if (!media || size) {
-              return;
-            }
+            if (!media || size) return;
             const { naturalWidth: width, naturalHeight: height } =
               event.currentTarget;
-            if (width && height) {
-              setSize({ width, height });
-            }
+            if (width && height) setSize({ width, height });
           }}
         />
       ) : (
@@ -127,9 +117,7 @@ export function Details({ draft, library, container, onFinish }: DetailsProps) {
       modal="trap-focus"
       disablePointerDismissal
       onOpenChange={(open) => {
-        if (!open) {
-          onFinish(null);
-        }
+        if (!open) onFinish(null);
       }}
     >
       <Dialog.Portal container={container}>

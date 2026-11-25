@@ -21,9 +21,7 @@ for (const section of REPORT.sections) {
 export function Audit({ t }: { t: number }) {
   const rise = ease.outQuint(progress(t, CUES.auditIn, 900));
   const away = ease.inOut(progress(t, CUES.auditOut, 420));
-  if (t < CUES.auditIn - 20 || away >= 1) {
-    return null;
-  }
+  if (t < CUES.auditIn - 20 || away >= 1) return null;
 
   const drift = ease.inOut(
     progress(t, CUES.findings, CUES.auditOut - CUES.findings),

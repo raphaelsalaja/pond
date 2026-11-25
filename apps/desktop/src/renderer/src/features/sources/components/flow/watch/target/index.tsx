@@ -88,9 +88,7 @@ function useWatchTargetState({
   };
 
   const submit = async () => {
-    if (!canSubmit || submitting.current) {
-      return;
-    }
+    if (!canSubmit || submitting.current) return;
     if (!input || mismatch) {
       setMissing(!input);
       inputRef.current?.focus();
@@ -142,9 +140,7 @@ const WatchTargetContext = createContext<ReturnType<
 
 function useWatchTarget() {
   const state = useContext(WatchTargetContext);
-  if (!state) {
-    throw new Error("WatchTarget parts need a WatchTargetProvider");
-  }
+  if (!state) throw new Error("WatchTarget parts need a WatchTargetProvider");
   return state;
 }
 
@@ -171,12 +167,8 @@ export function WatchTargetRoot({ children }: { children: ReactNode }) {
   const { accounts } = useAccounts();
   const [source, setSource] = useState(activeSource);
   /** The flow clears its source on close, before the popup finishes animating out. */
-  if (activeSource && activeSource !== source) {
-    setSource(activeSource);
-  }
-  if (!source) {
-    return children;
-  }
+  if (activeSource && activeSource !== source) setSource(activeSource);
+  if (!source) return children;
   const connectedSources = accounts
     .filter((account) => account.connected)
     .map((account) => account.source);

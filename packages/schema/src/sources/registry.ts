@@ -275,18 +275,14 @@ const BY_ID = new Map<string, SourceDescriptor>(
 
 export function descriptorFor(id: ExternalSource): SourceDescriptor {
   const descriptor = BY_ID.get(id);
-  if (!descriptor) {
-    throw new Error(`no source descriptor for "${id}"`);
-  }
+  if (!descriptor) throw new Error(`no source descriptor for "${id}"`);
   return descriptor;
 }
 
 export function syncConfigFor(id: string): SourceSyncConfig {
   const descriptor = BY_ID.get(id);
   const override = descriptor?.sync;
-  if (!override) {
-    return NO_SYNC;
-  }
+  if (!override) return NO_SYNC;
   return {
     strategy: override.strategy ?? NO_SYNC.strategy,
     rate: { ...DEFAULT_RATE_PROFILE, ...override.rate },

@@ -10,9 +10,7 @@ function noSave(): null {
 
 function draftOf(input: QuickCaptureSubmit) {
   const { draft } = quickCapturePlan(input, "id", noSave);
-  if (!draft) {
-    throw new Error("Missing draft");
-  }
+  if (!draft) throw new Error("Missing draft");
   return draft;
 }
 

@@ -6,9 +6,7 @@ export function useEscape(onEscape: () => void): void {
   const handle = useEffectEvent(onEscape);
   useEffect(() => {
     const listener = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") {
-        return;
-      }
+      if (event.key !== "Escape") return;
       const [target] = event.composedPath();
       /** An open combobox closes its own popup first. */
       if (

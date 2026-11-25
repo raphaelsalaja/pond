@@ -18,20 +18,14 @@ export function createMemoCache<T>(
   let inflight: Promise<T> | null = null;
 
   function fresh(): boolean {
-    if (!entry) {
-      return false;
-    }
+    if (!entry) return false;
     return Date.now() - entry.computedAtMs < ttlMs;
   }
 
   return {
     async get() {
-      if (entry && fresh()) {
-        return entry.value;
-      }
-      if (inflight) {
-        return inflight;
-      }
+      if (entry && fresh()) return entry.value;
+      if (inflight) return inflight;
       inflight = (async () => {
         const value = await compute();
         entry = { value, computedAtMs: Date.now() };

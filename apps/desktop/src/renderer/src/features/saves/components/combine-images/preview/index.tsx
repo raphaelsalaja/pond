@@ -26,9 +26,7 @@ function useSize<T extends HTMLElement>() {
   const [size, setSize] = useState({ width: 0, height: 0 });
   useLayoutEffect(() => {
     const element = ref.current;
-    if (!element) {
-      return;
-    }
+    if (!element) return;
     const measure = () =>
       setSize({ width: element.clientWidth, height: element.clientHeight });
     measure();
@@ -163,9 +161,7 @@ function Canvas({
     >
       {images.map(({ save, file }, index) => {
         const item = layout.items[index];
-        if (!item) {
-          return null;
-        }
+        if (!item) return null;
         const width = item.width * scale;
         return (
           <img

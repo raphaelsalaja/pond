@@ -124,14 +124,10 @@ export interface CosmosViewer {
 
 export function viewerFromMeData(data: CosmosMeData): CosmosViewer | null {
   const me = data.me;
-  if (!me) {
-    return null;
-  }
+  if (!me) return null;
   const userId = me.id === undefined ? null : String(me.id);
   const handle = handleFromUsername(me.username);
-  if (!userId || !handle) {
-    return null;
-  }
+  if (!userId || !handle) return null;
   const avatar = me.avatarUrl;
   return {
     userId,
@@ -164,17 +160,13 @@ export interface ClustersPage {
 }
 
 function entryFromTile(tile: CosmosTile | null | undefined): ListEntry | null {
-  if (tile?.id === undefined) {
-    return null;
-  }
+  if (tile?.id === undefined) return null;
   const sourceId = String(tile.id);
   const entry: ListEntry = {
     sourceId,
     url: tile.shareUrl ?? `https://www.cosmos.so/e/${sourceId}`,
   };
-  if (tile.createdAt !== undefined) {
-    entry.savedAt = tile.createdAt;
-  }
+  if (tile.createdAt !== undefined) entry.savedAt = tile.createdAt;
   return entry;
 }
 
@@ -222,9 +214,7 @@ export function pageFromClusters(data: CosmosClustersData): ClustersPage {
       itemCount: cluster.numberOfElements ?? null,
     };
     const owner = cluster.owner?.username;
-    if (owner) {
-      collection.ownerUsername = owner;
-    }
+    if (owner) collection.ownerUsername = owner;
     collections.push(collection);
   }
   return {
@@ -234,12 +224,8 @@ export function pageFromClusters(data: CosmosClustersData): ClustersPage {
 }
 
 function handleFromUsername(value: string | undefined): string | null {
-  if (value === undefined) {
-    return null;
-  }
+  if (value === undefined) return null;
   const handle = value.replace(/^@/, "").trim();
-  if (!/^[A-Za-z0-9_-]{2,40}$/.test(handle)) {
-    return null;
-  }
+  if (!/^[A-Za-z0-9_-]{2,40}$/.test(handle)) return null;
   return handle;
 }

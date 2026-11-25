@@ -14,9 +14,7 @@ export function pop(element: Element | null | undefined): void {
     return;
   }
   for (const animation of element.getAnimations()) {
-    if (animation.id === POP_ID) {
-      animation.cancel();
-    }
+    if (animation.id === POP_ID) animation.cancel();
   }
   element.animate(POP_FRAMES, { duration: 200, id: POP_ID });
 }

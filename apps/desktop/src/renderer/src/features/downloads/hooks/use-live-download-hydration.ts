@@ -20,9 +20,7 @@ function startHydration(): () => void {
   ) => {
     try {
       const ids = InflightIdsSchema.parse(await window.pond.query(name, {}));
-      if (stopped) {
-        return;
-      }
+      if (stopped) return;
       if (name === "downloads.ingestingOrFailed") {
         live = ids;
         await hydrateLiveDownloadSaves(ids, () => stopped);
@@ -48,9 +46,7 @@ function startHydration(): () => void {
 export function useLiveDownloadHydration(): void {
   useEffect(() => {
     subscribers += 1;
-    if (subscribers === 1) {
-      stopHydration = startHydration();
-    }
+    if (subscribers === 1) stopHydration = startHydration();
     return () => {
       subscribers -= 1;
       if (subscribers === 0) {

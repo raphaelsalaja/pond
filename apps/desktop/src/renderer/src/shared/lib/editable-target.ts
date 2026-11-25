@@ -36,9 +36,7 @@ function isEditableElement(element: Element): boolean {
       return true;
     }
     const mode = element.contentEditable?.toLowerCase();
-    if (mode === "true" || mode === "plaintext-only") {
-      return true;
-    }
+    if (mode === "true" || mode === "plaintext-only") return true;
   }
   return (
     element.closest(
@@ -55,23 +53,15 @@ export function isEditableTarget(
 }
 
 export function eventFromEditable(event: KeyboardEvent): boolean {
-  if (isEditableTarget(document.activeElement)) {
-    return true;
-  }
-  if (isEditableTarget(event.target)) {
-    return true;
-  }
+  if (isEditableTarget(document.activeElement)) return true;
+  if (isEditableTarget(event.target)) return true;
   return event.composedPath().some((node) => isEditableTarget(node));
 }
 
 /** Typing in a field owns unmodified keys and other chords; Search stays available unless the field already handled it. */
 export function appHotkeyBlockedByEditable(event: KeyboardEvent): boolean {
-  if (!eventFromEditable(event)) {
-    return false;
-  }
-  if (event.defaultPrevented) {
-    return true;
-  }
+  if (!eventFromEditable(event)) return false;
+  if (event.defaultPrevented) return true;
   return !matchesShortcut(event, "library.search");
 }
 
@@ -79,9 +69,7 @@ export function stopAppHotkeysFromEditable(event: {
   nativeEvent: KeyboardEvent;
   stopPropagation: () => void;
 }): void {
-  if (!appHotkeyBlockedByEditable(event.nativeEvent)) {
-    return;
-  }
+  if (!appHotkeyBlockedByEditable(event.nativeEvent)) return;
   event.stopPropagation();
   event.nativeEvent.stopImmediatePropagation();
 }

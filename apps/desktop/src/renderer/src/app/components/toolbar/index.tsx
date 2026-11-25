@@ -75,22 +75,15 @@ function Breadcrumbs() {
     : undefined;
 
   function navigate(crumb: Breadcrumb) {
-    if (crumb.path === pathname) {
-      closeSave();
-    } else {
-      router.history.push(crumb.path);
-    }
+    if (crumb.path === pathname) closeSave();
+    else router.history.push(crumb.path);
   }
 
   function folderMenu(crumb: Breadcrumb) {
-    if (crumb.nav?.kind !== "folder") {
-      return null;
-    }
+    if (crumb.nav?.kind !== "folder") return null;
     const folderId = crumb.nav.id;
     const folder = folderRows.find((entry) => entry.id === folderId);
-    if (!folder) {
-      return null;
-    }
+    if (!folder) return null;
     const presentation = folderViews[folder.id];
     return {
       folder,

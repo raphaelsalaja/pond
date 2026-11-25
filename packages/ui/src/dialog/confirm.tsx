@@ -37,9 +37,7 @@ export function ConfirmDialogHost() {
       variant="alert"
       handle={handle}
       onOpenChange={(_, details) => {
-        if (pending.current) {
-          details.cancel();
-        }
+        if (pending.current) details.cancel();
       }}
     >
       {({ payload }) =>

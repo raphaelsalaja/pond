@@ -31,9 +31,7 @@ export function registerIntegrationCommands(
       child.once("error", reject);
       child.once("exit", resolve);
     });
-    if (code !== 0) {
-      throw new Error(`Pond MCP exited with code ${code}.`);
-    }
+    if (code !== 0) throw new Error(`Pond MCP exited with code ${code}.`);
     return { stopped: true };
   });
   action(
@@ -133,9 +131,7 @@ export function registerIntegrationCommands(
     });
     const results = [];
     for await (const line of input) {
-      if (!line.trim()) {
-        break;
-      }
+      if (!line.trim()) break;
       const page = await api.query({
         query: { combinator: "and", rules: [] },
         keywords: line.trim(),

@@ -7,9 +7,7 @@ import type { DownloadPostProbe } from "@shared/downloader-contracts";
 const TITLE_LIMIT = 120;
 
 function siteOf(source: Source, url: string): string {
-  if (source !== "web") {
-    return sourceLabel(source);
-  }
+  if (source !== "web") return sourceLabel(source);
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
@@ -26,9 +24,7 @@ function imagesOf(capture: Capture): Array<string> {
   const own =
     capture.media.length > 0 ? capture.media : walkCaptureMedia(capture);
   const images = own.flatMap((media) => {
-    if (media.type === "image") {
-      return [media.url];
-    }
+    if (media.type === "image") return [media.url];
     return media.posterUrl ? [media.posterUrl] : [];
   });
   if (images.length === 0 && capture.card?.imageUrl) {

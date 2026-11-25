@@ -33,13 +33,9 @@ function findByLabel(
   label: string,
 ): ReturnType<typeof buildTrayTemplate>[number] | undefined {
   for (const item of items) {
-    if (item.label === label) {
-      return item;
-    }
+    if (item.label === label) return item;
     const nested = item.submenu && findByLabel(item.submenu, label);
-    if (nested) {
-      return nested;
-    }
+    if (nested) return nested;
   }
 }
 

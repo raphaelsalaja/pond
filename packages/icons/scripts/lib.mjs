@@ -31,14 +31,9 @@ export function emit(outputs, { check, command }) {
   for (const [path, source, raw] of outputs) {
     const formatted = raw ? source : format(path, source);
     const current = existsSync(path) ? readFileSync(path, "utf8") : null;
-    if (current === formatted) {
-      continue;
-    }
-    if (check) {
-      stale.push(relative(repoRoot, path));
-    } else {
-      writeFileSync(path, formatted);
-    }
+    if (current === formatted) continue;
+    if (check) stale.push(relative(repoRoot, path));
+    else writeFileSync(path, formatted);
   }
   if (check && stale.length > 0) {
     throw new Error(`${stale.join(", ")} out of date. Run ${command}.`);

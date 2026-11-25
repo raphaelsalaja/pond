@@ -11,18 +11,14 @@ function hasTitle(save: Save): boolean {
 function deriveTitle(save: Save): string | null {
   const source =
     save.caption ?? firstLine(save.ocrText) ?? firstLine(save.description);
-  if (!source) {
-    return null;
-  }
+  if (!source) return null;
   const sentence = source.split(/(?<=[.!?])\s/)[0] ?? source;
   const title = sentence.trim().replaceAll(/\s+/g, " ").slice(0, 80);
   return title.length > 0 ? title : null;
 }
 
 function firstLine(text: string | null | undefined): string | null {
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
   const line = text.split(/\r?\n/).find((l) => l.trim().length > 0);
   return line ? line.trim() : null;
 }
@@ -45,9 +41,7 @@ export const autoTitleEnricher: Enricher = {
   },
   async run(save: Save) {
     const title = deriveTitle(save);
-    if (!title) {
-      return null;
-    }
+    if (!title) return null;
     const current = pool.get(save.id) ?? save;
     if (!hasTitle(current)) {
       await mutateSave(save.id, { title }, { actorReason: "ai:auto-title" });

@@ -20,19 +20,13 @@ export function toMillis(
 
 export function durationSeconds(s: SaveLike): number | null {
   const raw = s.rawJson;
-  if (!raw) {
-    return null;
-  }
+  if (!raw) return null;
 
   const fromCapture = raw.capture?.duration ?? 0;
-  if (fromCapture > 0) {
-    return fromCapture;
-  }
+  if (fromCapture > 0) return fromCapture;
 
   for (const m of raw.capture?.media ?? []) {
-    if ((m.durationSec ?? 0) > 0) {
-      return m.durationSec ?? null;
-    }
+    if ((m.durationSec ?? 0) > 0) return m.durationSec ?? null;
   }
 
   const ytdlpDuration = raw.ytdlp?.duration ?? 0;

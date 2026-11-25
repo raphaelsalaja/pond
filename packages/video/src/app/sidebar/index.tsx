@@ -63,9 +63,7 @@ interface RowProps extends Omit<TreeRow, "label"> {
 /** A tree row that grows into place as it lands, so rows below slide instead of jumping. */
 function Row({ t, at, icon, label, count, depth = 0, color, pulse }: RowProps) {
   const k = ease.outQuint(progress(t, at, 520));
-  if (k <= 0) {
-    return null;
-  }
+  if (k <= 0) return null;
   const again =
     pulse === undefined || t < pulse
       ? 0

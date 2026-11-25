@@ -49,9 +49,7 @@ export function TagGroup({
 function GroupHeader() {
   const { row, rowRef, renaming, saveRename, finishRename, buildMenuItems } =
     useTagRow();
-  if (row.kind !== "group") {
-    return null;
-  }
+  if (row.kind !== "group") return null;
   const members = row.children.length;
 
   const title = members > 0 ? `${row.group.name}` : row.group.name;

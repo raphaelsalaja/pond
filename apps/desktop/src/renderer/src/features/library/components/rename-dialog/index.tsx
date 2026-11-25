@@ -78,9 +78,7 @@ export function RenameDialog({
       onClose={closeRenameDialog}
       onRename={async (request) => {
         const result = await window.pond.query("saves.batchRename", request);
-        if (!result.ok) {
-          throw new Error("Enter a name and try again.");
-        }
+        if (!result.ok) throw new Error("Enter a name and try again.");
         await reloadSaves(request.ids);
         closeRenameDialog();
       }}

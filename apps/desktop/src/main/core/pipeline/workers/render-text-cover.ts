@@ -52,9 +52,7 @@ function needsTextCover(save: TextCoverSave, imageFallback = false): boolean {
   const search = searchCardFromSave(save) !== null;
   const hasProse =
     search || Boolean(save.description?.trim()) || save.mediaType === "text";
-  if (!hasProse) {
-    return false;
-  }
+  if (!hasProse) return false;
   if (!search && !textBodyFromFields(save.description, save.title)) {
     return false;
   }
@@ -70,9 +68,7 @@ function needsTextCover(save: TextCoverSave, imageFallback = false): boolean {
     return false;
   }
   return !files.some((f) => {
-    if (isAuxiliaryKind(f.kind)) {
-      return false;
-    }
+    if (isAuxiliaryKind(f.kind)) return false;
     return (
       isOriginalImageKind(f.kind) ||
       f.kind === "video" ||
@@ -131,9 +127,7 @@ async function stampVersion(
     extractedAt: base?.extractedAt ?? new Date().toISOString(),
     renderTextCoverVersion: RENDER_TEXT_COVER_VERSION,
   };
-  if (base?.ytdlp) {
-    rawJson.ytdlp = base.ytdlp;
-  }
+  if (base?.ytdlp) rawJson.ytdlp = base.ytdlp;
   await runtime.persistSave(
     save.id,
     { rawJson },
@@ -150,9 +144,7 @@ export function runRenderTextCover(
 ): Promise<number> {
   /** The pipeline task and the library card both ask for a cover; one render must serve both. */
   const pending = inFlight.get(saveId);
-  if (pending) {
-    return pending;
-  }
+  if (pending) return pending;
   const run = renderTextCover(saveId, opts, runtime).finally(() => {
     inFlight.delete(saveId);
   });
@@ -166,15 +158,9 @@ async function renderTextCover(
   runtime: RenderTextCoverRuntime,
 ): Promise<number> {
   const save = await runtime.readSave(saveId);
-  if (!save) {
-    return 0;
-  }
-  if (rendersPostCard(save.source)) {
-    return 0;
-  }
-  if (!needsTextCover(save, opts.imageFallback === true)) {
-    return 0;
-  }
+  if (!save) return 0;
+  if (rendersPostCard(save.source)) return 0;
+  if (!needsTextCover(save, opts.imageFallback === true)) return 0;
 
   if (
     !opts.force &&
@@ -199,13 +185,9 @@ async function renderTextCover(
       ? runtime.renderSearchCard(search, scheme)
       : runtime.renderCard(body, scheme);
   const light = await render("light");
-  if (!light) {
-    return 0;
-  }
+  if (!light) return 0;
   const dark = await render("dark");
-  if (!dark) {
-    return 0;
-  }
+  if (!dark) return 0;
 
   await writeCover(runtime, saveId, THUMBNAIL_KIND, TEXT_THUMBNAIL_FILE, light);
   await writeCover(

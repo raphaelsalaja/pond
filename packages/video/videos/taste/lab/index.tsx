@@ -12,9 +12,7 @@ const TOP = 215;
 export function Lab({ t }: { t: number }) {
   const rise = ease.outQuint(progress(t, CUES.labIn, 900));
   const away = ease.inOut(progress(t, CUES.labOut, 420));
-  if (t < CUES.labIn - 20 || away >= 1) {
-    return null;
-  }
+  if (t < CUES.labIn - 20 || away >= 1) return null;
 
   const push = ease.inOut(progress(t, CUES.rooms, CUES.labOut - CUES.rooms));
 

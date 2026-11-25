@@ -136,9 +136,7 @@ function TitleField({
   const [syncedTitle, setSyncedTitle] = useState(title);
   if (title !== syncedTitle) {
     setSyncedTitle(title);
-    if (title.trim() !== draft.trim()) {
-      setDraft(title);
-    }
+    if (title.trim() !== draft.trim()) setDraft(title);
   }
   const inputRef = useRef<HTMLInputElement>(null);
   const persist = useMemo(
@@ -147,9 +145,7 @@ function TitleField({
         (id: string, next: string) => {
           const value = next.trim() || null;
           const current = pool.get(id)?.title?.trim() || null;
-          if (value === current) {
-            return;
-          }
+          if (value === current) return;
           void mutateSave(id, { title: value }, { actorReason: "user:rename" });
         },
         { wait: 400 },
@@ -158,9 +154,7 @@ function TitleField({
   );
 
   useEffect(() => {
-    if (autoFocus) {
-      inputRef.current?.focus();
-    }
+    if (autoFocus) inputRef.current?.focus();
   }, [autoFocus]);
 
   useEffect(() => () => persist.flush(), [persist]);
@@ -233,9 +227,7 @@ function PersistPlugin({ save }: { save: Save }) {
       return;
     }
     const markdown = markdownFromEditor(editor);
-    if (markdown === last.current) {
-      return;
-    }
+    if (markdown === last.current) return;
     last.current = markdown;
     persistRef.current?.maybeExecute(save.id, markdown);
   }, [editor, editorState, save.id]);

@@ -35,43 +35,31 @@ function ItemRow({ variant }: { variant: "row" | "card" | "index" }) {
   const selected = useSelector(selectionStore, (state) =>
     state.selectedIds.has(row.id),
   );
-  if (row.kind !== "tag") {
-    return null;
-  }
+  if (row.kind !== "tag") return null;
 
   function selectRange() {
     actions.toggleRow(row.id, true);
   }
 
   function openFromPointer(event: MouseEvent<HTMLDivElement>) {
-    if (variant !== "index") {
-      return;
-    }
+    if (variant !== "index") return;
     if (event.shiftKey) {
       selectRange();
       return;
     }
-    if (renaming || fromControl(event.target)) {
-      return;
-    }
+    if (renaming || fromControl(event.target)) return;
     openTagItems();
   }
 
   function openFromKeyboard(event: KeyboardEvent<HTMLDivElement>) {
-    if (variant !== "index") {
-      return;
-    }
-    if (event.key !== "Enter" && event.key !== " ") {
-      return;
-    }
+    if (variant !== "index") return;
+    if (event.key !== "Enter" && event.key !== " ") return;
     if (event.shiftKey) {
       event.preventDefault();
       selectRange();
       return;
     }
-    if (renaming || fromControl(event.target)) {
-      return;
-    }
+    if (renaming || fromControl(event.target)) return;
     event.preventDefault();
     openTagItems();
   }

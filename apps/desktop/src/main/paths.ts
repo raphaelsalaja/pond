@@ -31,9 +31,7 @@ export interface PondPaths {
 let cached: PondPaths | null = null;
 
 function ensureDir(p: string): string {
-  if (!existsSync(p)) {
-    mkdirSync(p, { recursive: true });
-  }
+  if (!existsSync(p)) mkdirSync(p, { recursive: true });
   return p;
 }
 

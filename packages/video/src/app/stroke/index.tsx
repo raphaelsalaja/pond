@@ -20,9 +20,7 @@ function strokePath(points: ReadonlyArray<StrokePoint>, size: number) {
     },
   );
   const [startX, startY] = outline[0] ?? [];
-  if (startX === undefined || startY === undefined) {
-    return "";
-  }
+  if (startX === undefined || startY === undefined) return "";
   const curves = outline.map(([x = 0, y = 0], index) => {
     const [nextX = x, nextY = y] = outline[(index + 1) % outline.length] ?? [];
     return `${format(x)} ${format(y)} ${format((x + nextX) / 2)} ${format((y + nextY) / 2)}`;
@@ -41,9 +39,7 @@ interface StrokeProps {
 /** A marker drawing on a canvas, drawn on point by point. */
 export function Stroke({ points, progress = 1, color, size = 4 }: StrokeProps) {
   const count = Math.round(points.length * progress);
-  if (count < 2) {
-    return null;
-  }
+  if (count < 2) return null;
   return (
     <svg className={styles.stroke} aria-hidden>
       <path d={strokePath(points.slice(0, count), size)} fill={INK[color]} />

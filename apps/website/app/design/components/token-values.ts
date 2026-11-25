@@ -13,9 +13,7 @@ export function useTokenValues<T extends HTMLElement>(
 
   useLayoutEffect(() => {
     const element = ref.current;
-    if (!element) {
-      return;
-    }
+    if (!element) return;
     const style = getComputedStyle(element);
     setValues(
       Object.fromEntries(

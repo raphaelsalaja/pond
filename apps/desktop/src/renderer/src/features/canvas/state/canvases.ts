@@ -43,9 +43,7 @@ function canvasPath(id: string): string {
 
 export function canvasIdFromPath(pathname: string): string | null {
   const match = /^\/canvas\/([^/]+)\/?$/.exec(pathname);
-  if (!match?.[1]) {
-    return null;
-  }
+  if (!match?.[1]) return null;
   try {
     return decodeURIComponent(match[1]);
   } catch {
@@ -115,9 +113,7 @@ export const canvases = {
   async rename(id: string, name: string): Promise<void> {
     await window.pond.query("canvases.rename", { id, name });
     const cached = documents.get(id);
-    if (cached) {
-      documents.set(id, { ...cached, name: name.trim() });
-    }
+    if (cached) documents.set(id, { ...cached, name: name.trim() });
     await canvases.refresh();
   },
   async remove(id: string): Promise<void> {
@@ -143,9 +139,7 @@ export const canvases = {
     saveIds: ReadonlyArray<string>,
     placement?: Placement,
   ): Promise<void> {
-    if (!saveIds.length) {
-      return;
-    }
+    if (!saveIds.length) return;
     if (openBoard?.id === id) {
       openBoard.addSaves(saveIds, placement);
       return;
@@ -159,23 +153,15 @@ export const canvases = {
   },
   async load(id: string): Promise<Canvas | null> {
     const cached = documents.get(id);
-    if (cached) {
-      return cached;
-    }
+    if (cached) return cached;
     const canvas = await window.pond.query("canvases.get", { id });
-    if (canvas) {
-      documents.set(id, canvas);
-    }
+    if (canvas) documents.set(id, canvas);
     return canvas;
   },
   async persist(id: string, content: CanvasContent): Promise<void> {
-    if (removed.has(id)) {
-      return;
-    }
+    if (removed.has(id)) return;
     const cached = documents.get(id);
-    if (cached) {
-      documents.set(id, { ...cached, ...content });
-    }
+    if (cached) documents.set(id, { ...cached, ...content });
     const { updatedAt } = await window.pond.query("canvases.update", {
       id,
       content,
@@ -190,9 +176,7 @@ export const canvases = {
   attachBoard(board: OpenBoard): () => void {
     openBoard = board;
     return () => {
-      if (openBoard === board) {
-        openBoard = null;
-      }
+      if (openBoard === board) openBoard = null;
     };
   },
   startEditing(id: string): void {

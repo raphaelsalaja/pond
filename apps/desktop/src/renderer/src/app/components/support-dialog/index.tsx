@@ -26,9 +26,7 @@ export function SupportDialog() {
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) {
-          supportDialog.close();
-        }
+        if (!next) supportDialog.close();
       }}
     >
       <Dialog.Portal>

@@ -48,15 +48,11 @@ function within(ms, promise, what) {
 /** Shown windows go offscreen without focus so a run never covers or steals from the desktop. */
 function keepOffscreen(win) {
   const park = () => {
-    if (win.isDestroyed()) {
-      return;
-    }
+    if (win.isDestroyed()) return;
     const right = Math.max(
       ...screen.getAllDisplays().map((d) => d.bounds.x + d.bounds.width),
     );
-    if (win.getPosition()[0] < right) {
-      win.setPosition(right + 400, 0);
-    }
+    if (win.getPosition()[0] < right) win.setPosition(right + 400, 0);
   };
   win.webContents.setBackgroundThrottling(false);
   const showInactive = win.showInactive.bind(win);
@@ -76,9 +72,7 @@ async function mainWindow() {
     const win = BrowserWindow.getAllWindows().find((w) =>
       w.webContents.getURL().includes("/index.html"),
     );
-    if (win) {
-      return win;
-    }
+    if (win) return win;
     await sleep(50);
   }
   throw new Error("The Library window did not open");
@@ -120,9 +114,7 @@ async function openLibrary(sandbox, { prefs, size, onStep = () => {} } = {}) {
   await app.whenReady();
   onStep("open window");
   const win = await mainWindow();
-  if (size) {
-    win.setContentSize(size.width, size.height);
-  }
+  if (size) win.setContentSize(size.width, size.height);
   onStep("render");
   await rendered(win);
   const info = await evalIn(win, 'window.pond.query("library.info", {})');
@@ -142,9 +134,7 @@ async function openLibrary(sandbox, { prefs, size, onStep = () => {} } = {}) {
   await sleep(500);
   await rendered(win);
   /** A reload before the first paint swallows ready-to-show, and a hidden window never runs requestAnimationFrame. */
-  if (!win.isVisible()) {
-    win.showInactive();
-  }
+  if (!win.isVisible()) win.showInactive();
   return win;
 }
 
@@ -193,15 +183,11 @@ function resolveWindow(main, target) {
   }
   if (isFunction(target)) {
     const found = BrowserWindow.getAllWindows().find(target);
-    if (!found) {
-      throw new Error("No window matches the predicate");
-    }
+    if (!found) throw new Error("No window matches the predicate");
     return found;
   }
   const found = BrowserWindow.fromId(Number(target));
-  if (!found) {
-    throw new Error(`No window with id ${target}`);
-  }
+  if (!found) throw new Error(`No window with id ${target}`);
   return found;
 }
 
@@ -440,9 +426,7 @@ function driver(main, { sandbox, onStep = () => {} }) {
           saveIds: options.saveIds,
         });
       }
-      if (options.quickAccess) {
-        await ctx.seed.quickAccess([folder.id]);
-      }
+      if (options.quickAccess) await ctx.seed.quickAccess([folder.id]);
       ctx.seed.folders.push(folder);
       return folder;
     },
@@ -500,9 +484,7 @@ function track(target, onStep, names) {
 
 /** Six image Saves in three folders, the first two pinned to quick access. */
 async function seedLibrary(ctx) {
-  for (const fixture of FIXTURES) {
-    await ctx.seed.image(fixture);
-  }
+  for (const fixture of FIXTURES) await ctx.seed.image(fixture);
   const [a, b, c, d, e, f] = ctx.seed.saves;
   await ctx.seed.folder("Moodboard", { saveIds: [a, b, c] });
   await ctx.seed.folder("References", { saveIds: [d, e] });

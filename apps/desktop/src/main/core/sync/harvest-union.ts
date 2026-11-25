@@ -11,9 +11,7 @@ export function unionById<T>(
   const indexById = new Map<string, number>();
   for (const [i, entry] of out.entries()) {
     const key = id(entry);
-    if (!indexById.has(key)) {
-      indexById.set(key, i);
-    }
+    if (!indexById.has(key)) indexById.set(key, i);
   }
   for (const entry of extra) {
     const key = id(entry);
@@ -24,9 +22,7 @@ export function unionById<T>(
       continue;
     }
     const kept = out[idx];
-    if (merge && kept) {
-      out[idx] = merge(kept, entry);
-    }
+    if (merge && kept) out[idx] = merge(kept, entry);
   }
   return out;
 }

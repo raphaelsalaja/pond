@@ -78,9 +78,7 @@ async function checkPreview(window, mediaType) {
 
 app.on("web-contents-created", (_, contents) => {
   contents.on("did-finish-load", () => {
-    if (started || !contents.getURL().includes("index.html")) {
-      return;
-    }
+    if (started || !contents.getURL().includes("index.html")) return;
     started = true;
     void run(contents).catch(fail);
   });

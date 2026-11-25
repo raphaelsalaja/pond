@@ -22,9 +22,7 @@ function RunLine({
   const running =
     Boolean(fish.activity) && isRoutineDue(routine, now.getTime());
   const failed = !running && routine.lastRun?.status === "failed";
-  if (!running && !failed) {
-    return null;
-  }
+  if (!running && !failed) return null;
   return (
     <span className={styles.run} data-tone={failed ? "error" : undefined}>
       <Badge.Dot tone={running ? "accent" : "negative"} live={running} />

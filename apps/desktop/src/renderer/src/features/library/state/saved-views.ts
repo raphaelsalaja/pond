@@ -138,9 +138,7 @@ export const savedViews = {
       loaded: true,
     }));
     const { activeViewId } = getViewState();
-    if (!activeViewId) {
-      return;
-    }
+    if (!activeViewId) return;
     const active = store.state.views.find((view) => view.id === activeViewId);
     if (!active) {
       getAppHistory()?.replace("/");
@@ -210,16 +208,12 @@ export const savedViews = {
       patch.layout = state.layout;
     }
     const result = await window.pond.query("savedViews.update", { id, patch });
-    if (!result.ok) {
-      throw new Error("Could not update this smart folder item.");
-    }
+    if (!result.ok) throw new Error("Could not update this smart folder item.");
     await savedViews.refresh();
   },
   async duplicate(id: string): Promise<SavedView> {
     const view = store.state.views.find((entry) => entry.id === id);
-    if (!view) {
-      throw new Error("This smart folder item no longer exists.");
-    }
+    if (!view) throw new Error("This smart folder item no longer exists.");
     const result = await window.pond.query("savedViews.create", {
       name: `${view.name} Copy`,
       kind: view.kind,
@@ -235,9 +229,7 @@ export const savedViews = {
     }
     await savedViews.refresh();
     const copy = store.state.views.find((entry) => entry.id === result.id);
-    if (!copy) {
-      throw new Error("The duplicate could not be loaded.");
-    }
+    if (!copy) throw new Error("The duplicate could not be loaded.");
     return copy;
   },
   async edit(id: string, name: string, query: Query): Promise<void> {
@@ -246,19 +238,13 @@ export const savedViews = {
       id,
       patch: { name, query },
     });
-    if (!result.ok) {
-      throw new Error("Could not save these rules.");
-    }
+    if (!result.ok) throw new Error("Could not save these rules.");
     await savedViews.refresh();
-    if (active) {
-      savedViews.select(id, { replace: true });
-    }
+    if (active) savedViews.select(id, { replace: true });
   },
   async rename(id: string, name: string): Promise<void> {
     const result = await window.pond.query("savedViews.rename", { id, name });
-    if (!result.ok) {
-      throw new Error("Could not rename this smart folder item.");
-    }
+    if (!result.ok) throw new Error("Could not rename this smart folder item.");
     await savedViews.refresh();
   },
   async move(id: string, parentId: string | null): Promise<void> {
@@ -266,16 +252,12 @@ export const savedViews = {
       id,
       patch: { parentId },
     });
-    if (!result.ok) {
-      throw new Error("Could not move this smart folder item.");
-    }
+    if (!result.ok) throw new Error("Could not move this smart folder item.");
     await savedViews.refresh();
   },
   async remove(id: string): Promise<void> {
     const result = await window.pond.query("savedViews.delete", { id });
-    if (!result.ok) {
-      throw new Error("Could not delete this smart folder item.");
-    }
+    if (!result.ok) throw new Error("Could not delete this smart folder item.");
     await savedViews.refresh();
   },
   async reorder(ids: Array<string>): Promise<void> {
@@ -283,9 +265,7 @@ export const savedViews = {
       return;
     }
     const result = await window.pond.query("savedViews.reorder", { ids });
-    if (!result.ok) {
-      throw new Error("Could not reorder these smart folders.");
-    }
+    if (!result.ok) throw new Error("Could not reorder these smart folders.");
     await savedViews.refresh();
   },
 };

@@ -61,9 +61,7 @@ function dayRange(value: SaveTime): [number, number] | null {
     return null;
   }
   const start = new Date(value);
-  if (Number.isNaN(start.getTime())) {
-    return null;
-  }
+  if (Number.isNaN(start.getTime())) return null;
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
@@ -172,9 +170,7 @@ export function factFilters(
     default: {
       const date = DATE_FIELDS.get(fact.id);
       const range = date ? dayRange(date.at(save)) : null;
-      if (!date || !range) {
-        return [];
-      }
+      if (!date || !range) return [];
       return [
         show(`Show Saves ${date.verb} ${fact.display}`, {
           field: date.field,

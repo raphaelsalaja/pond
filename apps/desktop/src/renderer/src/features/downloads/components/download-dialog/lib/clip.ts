@@ -47,9 +47,7 @@ export function clipOf(
 
 /** The frame nearest a time, from the evenly spaced frames yt-dlp pulled. */
 export function frameAt(clip: Clip, time: number): string | null {
-  if (clip.frames.length === 0 || clip.duration <= 0) {
-    return null;
-  }
+  if (clip.frames.length === 0 || clip.duration <= 0) return null;
   const index = Math.min(
     clip.frames.length - 1,
     Math.floor((time / clip.duration) * clip.frames.length),

@@ -45,18 +45,14 @@ function attachGuestContextMenu(guest: WebContents): void {
       });
     }
     if (link) {
-      if (template.length > 0) {
-        template.push({ type: "separator" });
-      }
+      if (template.length > 0) template.push({ type: "separator" });
       template.push({
         label: "Open Link in Browser",
         click: () => void shell.openExternal(link),
       });
     }
 
-    if (template.length > 0) {
-      Menu.buildFromTemplate(template).popup();
-    }
+    if (template.length > 0) Menu.buildFromTemplate(template).popup();
   });
 }
 
@@ -79,9 +75,7 @@ export function hardenArchiveWebviews(win: BrowserWindow): void {
       return { action: "deny" };
     });
     guest.on("will-navigate", (event, url) => {
-      if (url.startsWith("pond://")) {
-        return;
-      }
+      if (url.startsWith("pond://")) return;
       event.preventDefault();
       forwardNavigation(win, guest.id, url);
     });
@@ -93,8 +87,6 @@ function forwardNavigation(
   guestId: number,
   url: string,
 ): void {
-  if (win.isDestroyed()) {
-    return;
-  }
+  if (win.isDestroyed()) return;
   win.webContents.send(IPC.archiveNavigate, { guestId, url });
 }

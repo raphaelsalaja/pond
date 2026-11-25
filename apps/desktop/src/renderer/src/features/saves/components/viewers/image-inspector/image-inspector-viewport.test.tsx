@@ -44,9 +44,7 @@ it("shows persisted transforms and keeps a cancelled crop draft out of storage",
   expect(inspector.button("Apply Crop").disabled).toBe(true);
   expect(inspector.host.querySelectorAll("[data-handle]")).toHaveLength(8);
   expect(image?.style.transform).toBe("none");
-  if (!frame) {
-    throw new Error("Missing image inspection frame");
-  }
+  if (!frame) throw new Error("Missing image inspection frame");
   expect(frame.getAttribute("data-mode")).toBe("crop");
   expect(inspector.prepareFrame()).toBe(frame);
   await act(async () => {
@@ -151,9 +149,7 @@ it("pans at fit with two-finger drag", async () => {
   const image = inspector.host.querySelector("img");
   const frame = image?.closest("[data-background]");
   const position = image?.parentElement?.parentElement;
-  if (!frame || !position) {
-    throw new Error("Missing image inspection frame");
-  }
+  if (!frame || !position) throw new Error("Missing image inspection frame");
   expect(position.style.transform).toBe("translate(0px, 0px) scale(1)");
   await act(async () => {
     frame.dispatchEvent(

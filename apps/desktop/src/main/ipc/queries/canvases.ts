@@ -66,9 +66,7 @@ export const canvasesQueries = {
     ({ id, saveIds }) => addSavesToCanvas(id, saveIds),
   ),
   "canvases.capture": query(Rect, async (rect, event) => {
-    if (!event) {
-      throw new Error("Capturing a canvas needs its window.");
-    }
+    if (!event) throw new Error("Capturing a canvas needs its window.");
     const image = await event.sender.capturePage({
       x: Math.round(rect.x),
       y: Math.round(rect.y),

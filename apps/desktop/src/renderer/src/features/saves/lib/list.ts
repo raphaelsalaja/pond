@@ -28,15 +28,9 @@ interface ModeFilterOptions {
 }
 
 function isRenderable(save: Save): boolean {
-  if (pickCardUnit(save)) {
-    return true;
-  }
-  if (save.mediaType === "link" || save.mediaType === "text") {
-    return true;
-  }
-  if (save.url && !save.url.startsWith("pond:")) {
-    return true;
-  }
+  if (pickCardUnit(save)) return true;
+  if (save.mediaType === "link" || save.mediaType === "text") return true;
+  if (save.url && !save.url.startsWith("pond:")) return true;
   return false;
 }
 
@@ -46,42 +40,24 @@ export function applyModeFilter(
 ): Array<Save> {
   return saves.filter((save) => {
     if (mode === "trash") {
-      if (!save.deletedAt) {
-        return false;
-      }
+      if (!save.deletedAt) return false;
     } else {
-      if (save.deletedAt) {
-        return false;
-      }
-      if (!isVisibleInLibrary(save)) {
-        return false;
-      }
-      if (!isRenderable(save)) {
-        return false;
-      }
+      if (save.deletedAt) return false;
+      if (!isVisibleInLibrary(save)) return false;
+      if (!isRenderable(save)) return false;
     }
     if (sourceFilter && save.source.toLowerCase() !== sourceFilter) {
       return false;
     }
-    if (mode === "untagged" && save.tags.length > 0) {
-      return false;
-    }
-    if (mode === "recents" && !recentsOrder?.has(save.id)) {
-      return false;
-    }
+    if (mode === "untagged" && save.tags.length > 0) return false;
+    if (mode === "recents" && !recentsOrder?.has(save.id)) return false;
     return true;
   });
 }
 
 function isVisibleInLibrary(save: Save): boolean {
-  if (save.status === "complete") {
-    return true;
-  }
-  if (save.status !== "ingesting") {
-    return false;
-  }
-  if ((save.files?.length ?? 0) > 0) {
-    return true;
-  }
+  if (save.status === "complete") return true;
+  if (save.status !== "ingesting") return false;
+  if ((save.files?.length ?? 0) > 0) return true;
   return save.mediaType === "link" || save.mediaType === "text";
 }

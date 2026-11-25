@@ -10,9 +10,7 @@ export function containImage(
   frame: ImageBounds,
   ratio: number | null,
 ): ImageBounds {
-  if (!ratio || !frame.width || !frame.height) {
-    return frame;
-  }
+  if (!ratio || !frame.width || !frame.height) return frame;
   const width = Math.min(frame.width, frame.height * ratio);
   const height = width / ratio;
   return {
@@ -56,9 +54,7 @@ export function viewToImagePoint(
     { left: 0, top: 0, width: frame.width, height: frame.height },
     ratio,
   );
-  if (!bounds.width || !bounds.height) {
-    return { x: 0, y: 0 };
-  }
+  if (!bounds.width || !bounds.height) return { x: 0, y: 0 };
   return {
     x: (localX - bounds.left) / bounds.width,
     y: (localY - bounds.top) / bounds.height,
@@ -88,9 +84,7 @@ function snapValue(
   let distance = threshold;
   for (const guide of guides) {
     const nextDistance = Math.abs(value - guide);
-    if (nextDistance > distance) {
-      continue;
-    }
+    if (nextDistance > distance) continue;
     closest = guide;
     distance = nextDistance;
   }
@@ -195,9 +189,7 @@ export function resizeCrop(
 }
 
 export function lockCropAspect(crop: ImageCrop, ratio: number): ImageCrop {
-  if (!Number.isFinite(ratio) || ratio <= 0) {
-    return crop;
-  }
+  if (!Number.isFinite(ratio) || ratio <= 0) return crop;
   const next =
     crop.w / crop.h > ratio
       ? { ...crop, w: crop.h * ratio }

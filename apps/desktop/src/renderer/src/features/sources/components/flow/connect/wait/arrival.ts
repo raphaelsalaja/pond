@@ -17,9 +17,7 @@ export function findArrivedAccount<T extends ConnectArrivalAccount>(
       (account) =>
         account.id === importedAccountId && account.source === source,
     );
-    if (imported) {
-      return imported;
-    }
+    if (imported) return imported;
   }
   return list.find(
     (account) =>

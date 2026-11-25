@@ -102,9 +102,7 @@ function pick(items: Array<MenuItemSpec>, label: string): void {
   const match = [...items, ...group(items)].find(
     (item) => "label" in item && item.label === label,
   );
-  if (match?.type !== "checkbox") {
-    throw new Error(`Missing item: ${label}`);
-  }
+  if (match?.type !== "checkbox") throw new Error(`Missing item: ${label}`);
   match.onCheckedChange?.(true);
 }
 

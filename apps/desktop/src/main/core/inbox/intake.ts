@@ -6,9 +6,7 @@ import type { InboxChannel, InboxFields } from "@pond/schema/inbox";
 export function inboxChannelForTrigger(
   trigger: string | undefined,
 ): InboxChannel {
-  if (!trigger) {
-    return "captures";
-  }
+  if (!trigger) return "captures";
   if (
     trigger.startsWith("sync:") ||
     trigger === "cron" ||

@@ -25,12 +25,8 @@ function records(value: JsonValue): Array<JsonValue> {
 
 function pathValues(value: JsonValue): Array<string> {
   const text = z.string().safeParse(value);
-  if (text.success) {
-    return [text.data];
-  }
-  if (Array.isArray(value)) {
-    return value.flatMap(pathValues);
-  }
+  if (text.success) return [text.data];
+  if (Array.isArray(value)) return value.flatMap(pathValues);
   const object = JsonObjectSchema.safeParse(value);
   if (object.success) {
     return ["path", "filePath", "url"].flatMap((key) => {
@@ -57,9 +53,7 @@ function formatCell(cell: JsonValue | undefined): string {
 
 function table(value: JsonValue, header: boolean): string {
   const rows = tabularRows(value);
-  if (rows.length === 0) {
-    return String(value ?? "");
-  }
+  if (rows.length === 0) return String(value ?? "");
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))];
   const lines = rows.map((row) =>
     columns.map((column) => formatCell(row[column])).join("\t"),
@@ -116,9 +110,7 @@ export function formatOutput(value: JsonValue, options: OutputOptions): string {
     return `${table(value, !options.noHeader)}${separator}`;
   }
   const text = z.string().safeParse(value);
-  if (text.success) {
-    return `${text.data}${separator}`;
-  }
+  if (text.success) return `${text.data}${separator}`;
   return `${JSON.stringify(value, null, options.compact ? undefined : 2)}${separator}`;
 }
 
@@ -127,7 +119,5 @@ export function writeOutput(
   options: OutputOptions,
   stream: Pick<NodeJS.WriteStream, "write"> = process.stdout,
 ): void {
-  if (!options.quiet) {
-    stream.write(formatOutput(value, options));
-  }
+  if (!options.quiet) stream.write(formatOutput(value, options));
 }

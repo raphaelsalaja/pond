@@ -40,9 +40,7 @@ function liveItems(
   const items: Array<PickerModel> = [];
   for (const row of providers) {
     const catalog = ASSISTANT_MODELS.find((model) => model.id === row.provider);
-    if (!catalog || !row.ok || !row.models.length) {
-      continue;
-    }
+    if (!catalog || !row.ok || !row.models.length) continue;
     for (const model of [...row.models].sort((a, b) =>
       a.name.localeCompare(b.name),
     )) {
@@ -291,9 +289,7 @@ export function ModelPicker({
                     key={choice.id}
                     selected={choice.id === provider}
                     onClick={() => {
-                      if (choice.id === provider || !nextModel) {
-                        return;
-                      }
+                      if (choice.id === provider || !nextModel) return;
                       onChange({
                         provider: choice.id,
                         modelId: nextModel.id,
@@ -325,9 +321,7 @@ export function ModelPicker({
         onItemHighlighted={(element) => {
           const key = element?.dataset.modelKey;
           const model = visibleItems.find((item) => item.key === key);
-          if (element && model) {
-            activateModel(model, element);
-          }
+          if (element && model) activateModel(model, element);
         }}
       >
         <Menu.SubmenuTrigger className={styles["option-submenu"]}>

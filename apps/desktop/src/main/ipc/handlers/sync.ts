@@ -70,18 +70,13 @@ export function registerSyncHandlers(): void {
   });
 
   safeHandle(IPC.governorSetPaused, async (_, paused: boolean) => {
-    if (paused) {
-      pauseAll();
-    } else {
-      resumeAll();
-    }
+    if (paused) pauseAll();
+    else resumeAll();
     return { ok: true as const, allPaused: isAllPaused() };
   });
 
   safeHandle(IPC.governorResumeSource, async (_, source: string) => {
-    if (isSource(source)) {
-      resumeSource(source);
-    }
+    if (isSource(source)) resumeSource(source);
     return { ok: true as const };
   });
 }

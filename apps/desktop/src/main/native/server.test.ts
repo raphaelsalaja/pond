@@ -36,9 +36,7 @@ async function readFrame(
     socket.on("data", (chunk) => {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       const decoded = tryDecodeFrame(Buffer.concat(chunks));
-      if (decoded.status === "need-more") {
-        return;
-      }
+      if (decoded.status === "need-more") return;
       if (decoded.status === "invalid") {
         reject(new Error(decoded.error));
         return;
@@ -67,9 +65,7 @@ describe("native server", () => {
   let dir: string | null = null;
 
   afterEach(async () => {
-    if (dir) {
-      await rm(dir, { recursive: true, force: true });
-    }
+    if (dir) await rm(dir, { recursive: true, force: true });
     dir = null;
   });
 
@@ -263,9 +259,7 @@ async function readFrameRaw(path: string, bytes: Buffer): Promise<JsonValue> {
     socket.on("data", (chunk) => {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       const decoded = tryDecodeFrame(Buffer.concat(chunks));
-      if (decoded.status === "need-more") {
-        return;
-      }
+      if (decoded.status === "need-more") return;
       if (decoded.status === "invalid") {
         reject(new Error(decoded.error));
         return;

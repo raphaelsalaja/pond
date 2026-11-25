@@ -128,18 +128,12 @@ export function inPageLinkedInNormalize() {
     candidates: Array<string | null | undefined>,
   ): PostRef | null {
     for (const value of candidates) {
-      if (!value) {
-        continue;
-      }
+      if (!value) continue;
       const match = POST_URN.exec(value) ?? POST_SLUG.exec(value);
       const kind = match?.[1]?.toLowerCase();
       const id = match?.[2];
-      if (!kind || !id) {
-        continue;
-      }
-      if (kind === "ugcpost") {
-        return { kind: "ugcPost", id };
-      }
+      if (!kind || !id) continue;
+      if (kind === "ugcpost") return { kind: "ugcPost", id };
       return { kind: kind === "share" ? "share" : "activity", id };
     }
     return null;
@@ -150,14 +144,10 @@ export function inPageLinkedInNormalize() {
   }
 
   function profileUrl(href: string | null | undefined): string | undefined {
-    if (!href) {
-      return undefined;
-    }
+    if (!href) return undefined;
     try {
       const url = new URL(href, "https://www.linkedin.com");
-      if (!/(?:^|\.)linkedin\.com$/.test(url.hostname)) {
-        return undefined;
-      }
+      if (!/(?:^|\.)linkedin\.com$/.test(url.hostname)) return undefined;
       const path = PROFILE_PATH.exec(url.pathname)?.[0];
       return path ? `https://www.linkedin.com${path}/` : undefined;
     } catch {
@@ -167,9 +157,7 @@ export function inPageLinkedInNormalize() {
 
   function vanityOf(profile: string | undefined): string | undefined {
     const raw = profile ? /\/in\/([^/]+)\/$/.exec(profile)?.[1] : undefined;
-    if (!raw) {
-      return undefined;
-    }
+    if (!raw) return undefined;
     try {
       return decodeURIComponent(raw);
     } catch {
@@ -178,9 +166,7 @@ export function inPageLinkedInNormalize() {
   }
 
   function clean(text: string | null | undefined): string {
-    if (!text) {
-      return "";
-    }
+    if (!text) return "";
     return String(text)
       .replaceAll("\u00A0", " ")
       .split("\n")
@@ -192,12 +178,8 @@ export function inPageLinkedInNormalize() {
 
   function titleFrom(text: string): string | undefined {
     const line = text.split("\n")[0]?.trim();
-    if (!line) {
-      return undefined;
-    }
-    if (line.length <= TITLE_CAP) {
-      return line;
-    }
+    if (!line) return undefined;
+    if (line.length <= TITLE_CAP) return line;
     return `${line.slice(0, TITLE_CAP - 1).trimEnd()}…`;
   }
 
@@ -217,14 +199,10 @@ export function inPageLinkedInNormalize() {
   function largestImage(vector: VoyagerVectorImage | undefined): string {
     const root = vector?.rootUrl;
     const artifacts = vector?.artifacts ?? [];
-    if (!root || artifacts.length === 0) {
-      return "";
-    }
+    if (!root || artifacts.length === 0) return "";
     let best = artifacts[0];
     for (const artifact of artifacts) {
-      if ((artifact?.width ?? 0) > (best?.width ?? 0)) {
-        best = artifact;
-      }
+      if ((artifact?.width ?? 0) > (best?.width ?? 0)) best = artifact;
     }
     const segment = best?.fileIdentifyingUrlPathSegment;
     return segment ? `${root}${segment}` : "";
@@ -237,9 +215,7 @@ export function inPageLinkedInNormalize() {
         largestImage(detail?.vectorImage) ||
         largestImage(detail?.nonEntityProfilePicture?.vectorImage) ||
         detail?.imageUrl?.url;
-      if (url) {
-        return url;
-      }
+      if (url) return url;
     }
     return "";
   }
@@ -261,9 +237,7 @@ export function inPageLinkedInNormalize() {
       result.entityUrn,
       result.navigationUrl,
     ]);
-    if (!ref) {
-      return null;
-    }
+    if (!ref) return null;
     const entry: ListEntry = {
       sourceId: ref.id,
       url: postUrl(ref),
@@ -272,16 +246,10 @@ export function inPageLinkedInNormalize() {
     const text = clean(result.summary?.text);
     const title =
       titleFrom(text) ?? clean(result.entityEmbeddedObject?.title?.text);
-    if (title) {
-      entry.title = title;
-    }
-    if (text) {
-      entry.description = text;
-    }
+    if (title) entry.title = title;
+    if (text) entry.description = text;
     const author = clean(result.title?.text);
-    if (author) {
-      entry.author = author;
-    }
+    if (author) entry.author = author;
     return withImage(entry, imageOf(result.entityEmbeddedObject?.image));
   }
 
@@ -295,9 +263,7 @@ export function inPageLinkedInNormalize() {
     );
     const byUrn = new Map<string, VoyagerEntityResult>();
     for (const item of included) {
-      if (item.entityUrn) {
-        byUrn.set(item.entityUrn, item);
-      }
+      if (item.entityUrn) byUrn.set(item.entityUrn, item);
     }
     const ordered: Array<VoyagerEntityResult> = [];
     const placed = new Set<VoyagerEntityResult>();
@@ -306,9 +272,7 @@ export function inPageLinkedInNormalize() {
       for (const slot of cluster?.items ?? []) {
         const inline = slot?.item?.entityResult;
         const urn = slot?.item?.["*entityResult"];
-        if (!inline && !urn) {
-          continue;
-        }
+        if (!inline && !urn) continue;
         slots += 1;
         const result = inline ?? (urn ? byUrn.get(urn) : undefined);
         if (result && !placed.has(result)) {
@@ -318,9 +282,7 @@ export function inPageLinkedInNormalize() {
       }
     }
     for (const item of included) {
-      if (placed.has(item)) {
-        continue;
-      }
+      if (placed.has(item)) continue;
       placed.add(item);
       ordered.push(item);
     }
@@ -328,9 +290,7 @@ export function inPageLinkedInNormalize() {
     const seen = new Set<string>();
     for (const result of ordered) {
       const entry = entryFromResult(result);
-      if (!entry || seen.has(entry.sourceId)) {
-        continue;
-      }
+      if (!entry || seen.has(entry.sourceId)) continue;
       seen.add(entry.sourceId);
       entries.push(entry);
     }
@@ -339,17 +299,13 @@ export function inPageLinkedInNormalize() {
       count: Math.max(slots, ordered.length),
     };
     const total = collection?.paging?.total;
-    if (total !== undefined && Number.isFinite(total)) {
-      page.total = total;
-    }
+    if (total !== undefined && Number.isFinite(total)) page.total = total;
     return page;
   }
 
   /** Reads `<br>` as a line break and drops LinkedIn's inline "see more" controls. */
   function textOf(el: Element | null | undefined): string {
-    if (!el) {
-      return "";
-    }
+    if (!el) return "";
     const copy = el.ownerDocument.createElement("div");
     copy.append(el.cloneNode(true));
     for (const br of Array.from(copy.querySelectorAll("br"))) {
@@ -377,9 +333,7 @@ export function inPageLinkedInNormalize() {
         el.getAttribute("data-chameleon-result-urn"),
         postLink?.getAttribute("href"),
       ]);
-      if (!ref || seen.has(ref.id)) {
-        continue;
-      }
+      if (!ref || seen.has(ref.id)) continue;
       seen.add(ref.id);
       const entry: ListEntry = {
         sourceId: ref.id,
@@ -388,16 +342,10 @@ export function inPageLinkedInNormalize() {
       };
       const text = textOf(el.querySelector(RESULT_SUMMARY));
       const title = titleFrom(text);
-      if (title) {
-        entry.title = title;
-      }
-      if (text) {
-        entry.description = text;
-      }
+      if (title) entry.title = title;
+      if (text) entry.description = text;
       const author = clean(el.querySelector(RESULT_AUTHOR)?.textContent);
-      if (author) {
-        entry.author = author;
-      }
+      if (author) entry.author = author;
       entries.push(withImage(entry, srcOf(el.querySelector(RESULT_IMAGE))));
     }
     return entries;
@@ -416,54 +364,35 @@ export function inPageLinkedInNormalize() {
     const authorUrl = profileUrl(actorHref);
     const name = clean(root.querySelector(ACTOR_NAME)?.textContent);
     const vanity = vanityOf(authorUrl);
-    if (vanity) {
-      page.author = vanity;
-    } else if (name) {
-      page.author = name;
-    }
-    if (name && vanity) {
-      page.meta.authorName = name;
-    }
-    if (authorUrl) {
-      page.meta.authorUrl = authorUrl;
-    }
+    if (vanity) page.author = vanity;
+    else if (name) page.author = name;
+    if (name && vanity) page.meta.authorName = name;
+    if (authorUrl) page.meta.authorUrl = authorUrl;
     const avatar = srcOf(root.querySelector(ACTOR_AVATAR));
-    if (avatar) {
-      page.meta.authorAvatar = avatar;
-    }
+    if (avatar) page.meta.authorAvatar = avatar;
 
     const text = textOf(root.querySelector(COMMENTARY));
-    if (text) {
-      page.description = text;
-    }
+    if (text) page.description = text;
 
     for (const img of Array.from(root.querySelectorAll(IMAGES))) {
       addImage(page, srcOf(img));
     }
     const poster = root.querySelector(VIDEO)?.getAttribute("poster") ?? "";
-    if (poster.startsWith("http")) {
-      addImage(page, poster);
-    }
+    if (poster.startsWith("http")) addImage(page, poster);
     addImage(page, srcOf(root.querySelector(DOCUMENT_COVER)));
     const documentTitle = clean(
       root.querySelector(DOCUMENT_FRAME)?.getAttribute("title"),
     );
 
     const articleUrl = root.querySelector(ARTICLE_LINK)?.getAttribute("href");
-    if (articleUrl?.startsWith("http")) {
-      page.meta.upstreamUrl = articleUrl;
-    }
+    if (articleUrl?.startsWith("http")) page.meta.upstreamUrl = articleUrl;
     addImage(page, srcOf(root.querySelector(ARTICLE_IMAGE)));
     const articleTitle = clean(root.querySelector(ARTICLE_TITLE)?.textContent);
 
     const title = titleFrom(text) || documentTitle || articleTitle;
-    if (title) {
-      page.title = title;
-    }
+    if (title) page.title = title;
     const publishedAt = publishedAtFromId(id);
-    if (publishedAt) {
-      page.meta.publishedAt = publishedAt;
-    }
+    if (publishedAt) page.meta.publishedAt = publishedAt;
     return page;
   }
 

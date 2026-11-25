@@ -10,18 +10,14 @@ function nativeAvailable() {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
 
 const databases: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of databases.splice(0)) {
-    db.close();
-  }
+  for (const db of databases.splice(0)) db.close();
 });
 function setup() {
   const sqlite = new Database(":memory:");

@@ -30,9 +30,7 @@ const STAGE_LABELS = {
 } satisfies Record<Op, string>;
 
 export function stageLabel(op: Op, source: string): string {
-  if (op === "capture_tweet" && source === "threads") {
-    return "Capturing post";
-  }
+  if (op === "capture_tweet" && source === "threads") return "Capturing post";
   return STAGE_LABELS[op];
 }
 
@@ -40,9 +38,7 @@ export function preferIngestError(
   current: string | null,
   next: string | null | undefined,
 ): string | null {
-  if (!next) {
-    return current;
-  }
+  if (!next) return current;
   if (
     !current ||
     (current.startsWith("blocked by") && !next.startsWith("blocked by"))
@@ -54,13 +50,9 @@ export function preferIngestError(
 
 function toRow(save: Save): QueueRow | null {
   let status: RowStatus;
-  if (save.status === "ingesting") {
-    status = "saving";
-  } else if (save.status === "failed") {
-    status = "failed";
-  } else {
-    return null;
-  }
+  if (save.status === "ingesting") status = "saving";
+  else if (save.status === "failed") status = "failed";
+  else return null;
 
   const tasks = save.tasks ?? [];
   let done = 0;
@@ -92,16 +84,12 @@ function toRow(save: Save): QueueRow | null {
 }
 
 export function humanizeError(error: string | null): string {
-  if (!error) {
-    return "Couldn't finish this save";
-  }
+  if (!error) return "Couldn't finish this save";
   const tail = error
     .replace(/^[A-Za-z]*Error:\s*/, "")
     .replace(/^[a-z0-9_]+:\s*/, "")
     .trim();
-  if (!tail) {
-    return "Couldn't finish this save";
-  }
+  if (!tail) return "Couldn't finish this save";
   return tail.charAt(0).toUpperCase() + tail.slice(1);
 }
 
@@ -112,9 +100,7 @@ export function projectQueue(saves: ReadonlyArray<Save>): QueueProjection {
       continue;
     }
     const row = toRow(save);
-    if (row) {
-      rows.push(row);
-    }
+    if (row) rows.push(row);
   }
   const saving = rows
     .filter((r) => r.status === "saving")

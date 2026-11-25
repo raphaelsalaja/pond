@@ -14,27 +14,13 @@ export const TaskPayloadSchema = z
 export type TaskPayload = z.infer<typeof TaskPayloadSchema>;
 
 export function isInteractiveTrigger(trigger: string | undefined): boolean {
-  if (!trigger) {
-    return true;
-  }
-  if (trigger.startsWith("sync:")) {
-    return false;
-  }
-  if (trigger.startsWith("watch:")) {
-    return false;
-  }
-  if (trigger.startsWith("pipeline:")) {
-    return false;
-  }
-  if (trigger.startsWith("enqueue:")) {
-    return false;
-  }
-  if (trigger.startsWith("user:import")) {
-    return false;
-  }
-  if (trigger === "cron" || trigger === "manual") {
-    return false;
-  }
+  if (!trigger) return true;
+  if (trigger.startsWith("sync:")) return false;
+  if (trigger.startsWith("watch:")) return false;
+  if (trigger.startsWith("pipeline:")) return false;
+  if (trigger.startsWith("enqueue:")) return false;
+  if (trigger.startsWith("user:import")) return false;
+  if (trigger === "cron" || trigger === "manual") return false;
   return true;
 }
 
@@ -66,15 +52,9 @@ export function canDispatchTask(input: {
   if (input.interactive) {
     return input.inflightInteractive < input.interactiveCap;
   }
-  if (input.paused) {
-    return false;
-  }
+  if (input.paused) return false;
   const backgroundInflight = input.inflightGlobal - input.inflightInteractive;
-  if (backgroundInflight >= input.backgroundCap) {
-    return false;
-  }
-  if (input.inflightForOp >= input.opCap) {
-    return false;
-  }
+  if (backgroundInflight >= input.backgroundCap) return false;
+  if (input.inflightForOp >= input.opCap) return false;
   return true;
 }

@@ -32,22 +32,16 @@ export function createIdleResource<T extends Disposable>({
     stopIdle();
     const current = pending;
     pending = null;
-    if (!current) {
-      return Promise.resolve();
-    }
+    if (!current) return Promise.resolve();
     return current.then((value) => value.dispose()).catch(() => undefined);
   }
 
   function loaded(): Promise<T> {
-    if (pending) {
-      return pending;
-    }
+    if (pending) return pending;
     const loading = load();
     pending = loading;
     loading.catch(() => {
-      if (pending === loading) {
-        pending = null;
-      }
+      if (pending === loading) pending = null;
     });
     return loading;
   }
@@ -63,17 +57,13 @@ export function createIdleResource<T extends Disposable>({
         if (active === 0) {
           cancelIdle = schedule(() => {
             cancelIdle = null;
-            if (active === 0) {
-              void disposeNow();
-            }
+            if (active === 0) void disposeNow();
           }, idleMs);
         }
       }
     },
     release() {
-      if (active > 0) {
-        return Promise.resolve();
-      }
+      if (active > 0) return Promise.resolve();
       return disposeNow();
     },
   };

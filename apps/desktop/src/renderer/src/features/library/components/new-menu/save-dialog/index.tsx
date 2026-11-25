@@ -19,9 +19,7 @@ export function SaveDialog({
   const field = useRef<HTMLTextAreaElement>(null);
 
   async function submit() {
-    if (submitting.current) {
-      return;
-    }
+    if (submitting.current) return;
     if (!text.trim()) {
       setError("Add at least one link.");
       field.current?.focus();
@@ -52,9 +50,7 @@ export function SaveDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(open) => {
-        if (!open && !submitting.current) {
-          onClose();
-        }
+        if (!open && !submitting.current) onClose();
       }}
     >
       <Dialog.Portal>

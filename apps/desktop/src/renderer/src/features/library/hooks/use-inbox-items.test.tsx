@@ -37,9 +37,7 @@ function addInboxSave(id: string) {
       ],
     }),
   );
-  if (!save) {
-    throw new Error("Invalid Save fixture");
-  }
+  if (!save) throw new Error("Invalid Save fixture");
   fixtures.set(id, save);
   pool.upsert({ ...save, inboxState: "review" });
 }
@@ -138,9 +136,7 @@ it("keeps a skipped save listed but marks it read", async () => {
 it("drops a save removed from the Inbox while it remains in the queue", async () => {
   await mount();
   const fixture = fixtures.get("b");
-  if (!fixture) {
-    throw new Error("Missing fixture");
-  }
+  if (!fixture) throw new Error("Missing fixture");
   await act(async () => {
     pool.upsert({ ...fixture, inboxState: null, inboxUntil: null });
   });
@@ -150,9 +146,7 @@ it("drops a save removed from the Inbox while it remains in the queue", async ()
 it("drops a save whose state leaves the scope and restores it when it returns", async () => {
   await mount();
   const fixture = fixtures.get("b");
-  if (!fixture) {
-    throw new Error("Missing fixture");
-  }
+  if (!fixture) throw new Error("Missing fixture");
   await act(async () => {
     pool.upsert({ ...fixture, inboxState: "processed" });
   });

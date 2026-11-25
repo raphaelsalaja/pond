@@ -12,9 +12,7 @@ function Start({
   covered: boolean;
   onLoad?: ReactEventHandler<HTMLImageElement>;
 }) {
-  if (!src) {
-    return null;
-  }
+  if (!src) return null;
   return (
     <img
       src={src}
@@ -31,9 +29,7 @@ function Start({
 
 function End({ src }: { src?: string }) {
   const { state } = useVideo();
-  if (!src || !state.ended) {
-    return null;
-  }
+  if (!src || !state.ended) return null;
   return <img src={src} alt="" className={styles.poster} draggable={false} />;
 }
 

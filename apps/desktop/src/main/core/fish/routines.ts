@@ -72,9 +72,7 @@ const defaultDependencies: RoutineDependencies = {
     return assistantMessages.parse(await listMessages(chatId));
   },
   async savesInScope(saveIds, fish, inInbox) {
-    if (!saveIds.length) {
-      return [];
-    }
+    if (!saveIds.length) return [];
     const db = await getDb();
     const rows = await db
       .select({ id: saves.id })
@@ -129,9 +127,7 @@ export async function runFishRoutine(
   trigger: RoutineTrigger,
   deps: RoutineDependencies = defaultDependencies,
 ): Promise<FishRun | null> {
-  if (running.has(fish.id)) {
-    return null;
-  }
+  if (running.has(fish.id)) return null;
   running.add(fish.id);
   const at = deps.now();
   const finish = (result: Omit<FishRun, "routineId" | "routineName">) => {
@@ -174,9 +170,7 @@ export async function runFishRoutine(
       },
     });
     if (!result.accepted) {
-      if (chat.created) {
-        await deps.deleteChat(chat.id);
-      }
+      if (chat.created) await deps.deleteChat(chat.id);
       return finish({
         chatId: null,
         at,
@@ -237,9 +231,7 @@ async function runArrivalRoutines(
     const routines = fish.routines.filter(
       (routine) => routine.when.kind === kind && !routine.paused,
     );
-    if (!routines.length) {
-      continue;
-    }
+    if (!routines.length) continue;
     const inScope = await deps.savesInScope(saveIds, fish, kind === "inbox");
     if (!inScope.length) {
       continue;

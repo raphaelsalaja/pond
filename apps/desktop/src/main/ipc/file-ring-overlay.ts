@@ -63,11 +63,8 @@ async function openFileRing(): Promise<void> {
 }
 
 export async function toggleFileRing(): Promise<void> {
-  if (isFileRingOverlayOpen()) {
-    closeFileRingOverlay();
-  } else {
-    await openFileRing();
-  }
+  if (isFileRingOverlayOpen()) closeFileRingOverlay();
+  else await openFileRing();
 }
 
 const DROP_DEPS: OverlayDropDeps = {
@@ -88,9 +85,7 @@ const DROP_DEPS: OverlayDropDeps = {
 };
 
 function assertOwner(id: number): void {
-  if (!fileRingOverlayOwnsSender(id)) {
-    throw new Error("Not the File To ring");
-  }
+  if (!fileRingOverlayOwnsSender(id)) throw new Error("Not the File To ring");
 }
 
 export function registerFileRingOverlayIpc(): void {
@@ -115,9 +110,7 @@ export function registerFileRingOverlayIpc(): void {
       return;
     }
     const id = overlayMenuAction(target.action);
-    if (id) {
-      await runLibraryMenuAction(id);
-    }
+    if (id) await runLibraryMenuAction(id);
   });
   safeHandle(FILE_RING_OVERLAY_IPC.drop, (event, raw) => {
     assertOwner(event.sender.id);

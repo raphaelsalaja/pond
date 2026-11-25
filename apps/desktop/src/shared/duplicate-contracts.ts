@@ -137,14 +137,10 @@ export function describeDuplicate(pair: DuplicatePair): string {
     ),
   );
   /** A soundtrack only ever supports a video match, so it doesn't change what the pair is. */
-  if (kinds.has("video")) {
-    kinds.delete("audio");
-  }
+  if (kinds.has("video")) kinds.delete("audio");
   if (kinds.size === 1) {
     const [kind] = kinds;
-    if (kind) {
-      return NEAR_COPY[kind];
-    }
+    if (kind) return NEAR_COPY[kind];
   }
   return "Same Content, Re-Encoded";
 }
@@ -162,8 +158,6 @@ export function describeDuplicateGroup(
     }),
   );
   const [only] = lines;
-  if (lines.size === 1 && only) {
-    return only;
-  }
+  if (lines.size === 1 && only) return only;
   return group.relation === "exact" ? "Same Files" : "Same Content";
 }

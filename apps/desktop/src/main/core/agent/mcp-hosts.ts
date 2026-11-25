@@ -68,9 +68,7 @@ export function mcpDeeplinkUrl(id: "cursor" | "vscode"): string | null {
 export function configListsPond(text: string): boolean {
   try {
     const config = McpConfigSchema.safeParse(JSON.parse(text));
-    if (!config.success) {
-      return false;
-    }
+    if (!config.success) return false;
     return Object.entries(config.data.mcpServers).some(
       ([name, server]) =>
         name.toLowerCase() === "pond" ||
@@ -103,9 +101,7 @@ export async function mcpClientStatus(): Promise<Array<McpClientStatus>> {
   return Promise.all(
     MCP_DETECTED_CLIENTS.map(async (id) => {
       const host = MCP_HOST_CATALOG.find((entry) => entry.id === id);
-      if (!host) {
-        return { id, installed: false, connected: false };
-      }
+      if (!host) return { id, installed: false, connected: false };
       const raw =
         process.platform === "win32"
           ? (host.windowsConfigPath ?? host.configPath)

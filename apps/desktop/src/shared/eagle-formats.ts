@@ -305,9 +305,7 @@ export type EagleFormatGroup = keyof typeof EAGLE_FORMAT_GROUPS;
 
 const GROUP_BY_EXTENSION = new Map<string, EagleFormatGroup>();
 for (const group of Object.keys(EAGLE_FORMAT_GROUPS)) {
-  if (!isEagleFormatGroup(group)) {
-    continue;
-  }
+  if (!isEagleFormatGroup(group)) continue;
   for (const extension of EAGLE_FORMAT_GROUPS[group]) {
     GROUP_BY_EXTENSION.set(extension, group);
   }

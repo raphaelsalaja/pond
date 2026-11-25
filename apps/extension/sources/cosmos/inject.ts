@@ -6,9 +6,7 @@ const GRAPHQL_HOST_RE = /(^|\.)api\.cosmos\.so$/i;
 const SAVE_OP = "EditElementsConnectionsToClusters";
 
 function isCosmosGraphql(url: string | undefined | null): boolean {
-  if (!url) {
-    return false;
-  }
+  if (!url) return false;
   try {
     const u = new URL(url, location.href);
     return GRAPHQL_HOST_RE.test(u.hostname) && u.pathname === "/graphql";
@@ -29,9 +27,7 @@ export function inject(): void {
   const emitted = new Set<string>();
 
   function emitElement(id: string): void {
-    if (!id || emitted.has(id)) {
-      return;
-    }
+    if (!id || emitted.has(id)) return;
     emitted.add(id);
     capture(`https://www.cosmos.so/e/${id}`, "cosmos:save");
   }

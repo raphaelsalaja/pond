@@ -11,9 +11,7 @@ const pendingTaskRefresh = new Set<string>();
 let flushScheduled = false;
 
 function scheduleFlush(): void {
-  if (flushScheduled) {
-    return;
-  }
+  if (flushScheduled) return;
   flushScheduled = true;
   const run = () => {
     flushScheduled = false;
@@ -23,12 +21,8 @@ function scheduleFlush(): void {
     pending.clear();
     const refresh = [...pendingTaskRefresh];
     pendingTaskRefresh.clear();
-    for (const id of deletes) {
-      deleteSave(id);
-    }
-    if (upserts.length > 0) {
-      bulkUpsertSaves(upserts);
-    }
+    for (const id of deletes) deleteSave(id);
+    if (upserts.length > 0) bulkUpsertSaves(upserts);
     if (refresh.length > 0) {
       reloadSaves(refresh).catch((cause: unknown) =>
         log.warn("[pond saves] task refresh failed", cause),
@@ -69,9 +63,7 @@ export function applyActionCoalesced(event: SyncActionEvent): void {
   if (event.action === "U") {
     const patch = event.data;
     const base = pending.get(event.modelId) ?? pool.get(event.modelId);
-    if (!base && !patch?.url) {
-      return;
-    }
+    if (!base && !patch?.url) return;
     const merged = normalise(
       base
         ? { ...base, ...patch, id: base.id }
@@ -94,9 +86,7 @@ export function applyActionCoalesced(event: SyncActionEvent): void {
 
   if (event.action === "A") {
     const base = pending.get(event.modelId) ?? pool.get(event.modelId);
-    if (!base) {
-      return;
-    }
+    if (!base) return;
     const merged = normalise({
       ...base,
       ...event.data,

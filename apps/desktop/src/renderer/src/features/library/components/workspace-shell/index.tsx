@@ -32,9 +32,7 @@ function useInstantOnChange(
   }
 
   useEffect(() => {
-    if (!instant) {
-      return;
-    }
+    if (!instant) return;
     const id = requestAnimationFrame(() => setInstant(false));
     return () => cancelAnimationFrame(id);
   }, [instant]);
@@ -79,9 +77,7 @@ type RailProps = ComponentPropsWithoutRef<"div">;
 
 function Rail(props: RailProps) {
   const { sidebarHidden } = useShellLayout();
-  if (sidebarHidden) {
-    return null;
-  }
+  if (sidebarHidden) return null;
   return <Window.Rail {...props} />;
 }
 

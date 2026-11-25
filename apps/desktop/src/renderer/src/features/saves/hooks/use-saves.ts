@@ -13,9 +13,7 @@ export function useSave(id: string | null | undefined): Save | undefined {
 export function useRetainedSaves(ids: ReadonlyArray<string>): void {
   const key = ids.join("\n");
   useEffect(() => {
-    if (!key) {
-      return;
-    }
+    if (!key) return;
     const held = key.split("\n");
     return protectSaves(() => held);
   }, [key]);

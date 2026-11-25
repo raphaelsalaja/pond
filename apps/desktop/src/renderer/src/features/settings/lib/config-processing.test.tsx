@@ -23,9 +23,7 @@ describe("sensitive-content processing settings", () => {
     const blur = processingItems().find(
       (item) => item?.key === "blurSensitiveThumbnails",
     );
-    if (blur?.control !== "switch") {
-      throw new Error("Missing blur switch");
-    }
+    if (blur?.control !== "switch") throw new Error("Missing blur switch");
     expect(blur.visible).toBeUndefined();
     expect(blur.disabled?.(DEFAULT_PREFS.ai)).toBe(true);
     expect(
@@ -130,9 +128,7 @@ describe("sensitive-content processing settings", () => {
         ),
       );
       const input = host.querySelector("input");
-      if (!input) {
-        throw new Error("Missing local model ID input");
-      }
+      if (!input) throw new Error("Missing local model ID input");
       await act(async () => {
         Object.getOwnPropertyDescriptor(
           HTMLInputElement.prototype,

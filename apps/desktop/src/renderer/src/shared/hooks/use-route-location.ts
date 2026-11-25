@@ -10,9 +10,7 @@ const committed = new WeakMap<AnyRouter, Store<RouteLocation>>();
 
 function committedLocation(router: AnyRouter): Store<RouteLocation> {
   const existing = committed.get(router);
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
   const store = new Store<RouteLocation>(
     router.state.resolvedLocation ?? router.state.location,
   );

@@ -280,11 +280,8 @@ beforeAll(async () => {
 
 afterAll(async () => {
   process.env.PATH = originalPath;
-  if (originalCodexHome === undefined) {
-    delete process.env.CODEX_HOME;
-  } else {
-    process.env.CODEX_HOME = originalCodexHome;
-  }
+  if (originalCodexHome === undefined) delete process.env.CODEX_HOME;
+  else process.env.CODEX_HOME = originalCodexHome;
   delete process.env.POND_CLI_PID;
   delete process.env.POND_CLI_AUTH;
   delete process.env.POND_CLI_AUTH_STORE;
@@ -294,11 +291,8 @@ afterAll(async () => {
   delete process.env.POND_CLI_LEAK_SKILL;
   delete process.env.POND_CLI_UNSAFE_CATALOG;
   for (const [name, value] of Object.entries(originalKeys)) {
-    if (value === undefined) {
-      delete process.env[name];
-    } else {
-      process.env[name] = value;
-    }
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
   }
   await rm(directory, { recursive: true, force: true });
 });

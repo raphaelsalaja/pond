@@ -48,9 +48,7 @@ async function startMedia(
   urls: Array<string>,
   request: DownloadRequest,
 ): Promise<{ started: number; failed: number }> {
-  if (urls.length === 0) {
-    return { started: 0, failed: 0 };
-  }
+  if (urls.length === 0) return { started: 0, failed: 0 };
   try {
     const { ids, failed } = await window.pond.query("downloader.start", {
       urls,

@@ -31,9 +31,7 @@ function remember(key: string, hits: ReadonlyArray<SaveHit>): void {
   cache.delete(key);
   cache.set(key, hits);
   const oldest = cache.keys().next().value;
-  if (cache.size > CACHE_SIZE && oldest !== undefined) {
-    cache.delete(oldest);
-  }
+  if (cache.size > CACHE_SIZE && oldest !== undefined) cache.delete(oldest);
 }
 
 function wait(ms: number, signal: AbortSignal): Promise<void> {
@@ -95,14 +93,10 @@ export function useSaveLookup(
   const [state, setState] = useState<LookupState | null>(null);
 
   useEffect(() => {
-    if (!trimmed || cache.has(key)) {
-      return;
-    }
+    if (!trimmed || cache.has(key)) return;
     const controller = new AbortController();
     lookup(trimmed, retrieve, controller.signal, (hits, done) => {
-      if (done) {
-        remember(key, hits);
-      }
+      if (done) remember(key, hits);
       setState({ key, query: trimmed, hits, searching: !done });
     }).catch((cause: unknown) => {
       if (controller.signal.aborted) {
@@ -114,16 +108,10 @@ export function useSaveLookup(
     return () => controller.abort();
   }, [key, trimmed, retrieve]);
 
-  if (!trimmed) {
-    return { query: "", hits: [], searching: false };
-  }
-  if (state?.key === key) {
-    return state;
-  }
+  if (!trimmed) return { query: "", hits: [], searching: false };
+  if (state?.key === key) return state;
   const cached = cache.get(key);
-  if (cached) {
-    return { query: trimmed, hits: cached, searching: false };
-  }
+  if (cached) return { query: trimmed, hits: cached, searching: false };
   return {
     query: trimmed,
     hits: state && refines(trimmed, state.query) ? state.hits : [],

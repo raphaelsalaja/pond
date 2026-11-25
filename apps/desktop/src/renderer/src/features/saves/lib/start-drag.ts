@@ -44,9 +44,7 @@ export function clearDraggingSaveIds(): void {
 export function isLibrarySaveDrag(
   dataTransfer: SaveDragDataTransfer | null | undefined,
 ): boolean {
-  if (draggingIds.length) {
-    return true;
-  }
+  if (draggingIds.length) return true;
   return Array.from(dataTransfer?.types ?? []).includes(SAVE_DRAG_TYPE);
 }
 
@@ -54,9 +52,7 @@ export function saveDropIds(
   dataTransfer: SaveDragDataTransfer | null | undefined,
 ): Array<string> {
   const fromMime = dataTransfer?.getData(SAVE_DRAG_TYPE).trim();
-  if (fromMime) {
-    return fromMime.split(",").filter(Boolean);
-  }
+  if (fromMime) return fromMime.split(",").filter(Boolean);
   return draggingIds;
 }
 
@@ -113,9 +109,7 @@ function announce(message: string): void {
   }
   dragAnnouncement.textContent = "";
   requestAnimationFrame(() => {
-    if (dragAnnouncement) {
-      dragAnnouncement.textContent = message;
-    }
+    if (dragAnnouncement) dragAnnouncement.textContent = message;
   });
 }
 
@@ -163,9 +157,7 @@ function installNativeSessionListeners(): void {
     idle = setTimeout(finishDrag, NATIVE_DRAG_IDLE_MS);
   };
   const released = (event: PointerEvent) => {
-    if (live && event.buttons === 0) {
-      endSaveDrag();
-    }
+    if (live && event.buttons === 0) endSaveDrag();
   };
   idle = setTimeout(finishDrag, NATIVE_DRAG_IDLE_MS);
   window.addEventListener("drop", finishDrag);
@@ -237,9 +229,7 @@ export function beginSaveDrag(id: string, event?: SaveDragStartEvent): void {
         error: errorCopy(cause, "Try dragging again."),
       }))
       .then((result) => {
-        if (result.ok || draggingIds !== session) {
-          return;
-        }
+        if (result.ok || draggingIds !== session) return;
         endSaveDrag();
         notify({
           id: "save-drag",

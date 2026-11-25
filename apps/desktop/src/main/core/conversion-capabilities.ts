@@ -314,9 +314,7 @@ export function conversionCapabilities(input?: {
   ffmpegPath?: string | null;
 }): Promise<Array<ConversionCapability>> {
   const ffmpegPath = input?.ffmpegPath ?? binariesAvailable().ffmpeg;
-  if (cached?.ffmpegPath === ffmpegPath) {
-    return cached.value;
-  }
+  if (cached?.ffmpegPath === ffmpegPath) return cached.value;
   const value = loadConversionCapabilities(ffmpegPath);
   cached = { ffmpegPath, value };
   return value;
@@ -385,11 +383,8 @@ async function readFfmpegList(
     const values = new Set<string>();
     for (const line of stdout.split("\n")) {
       const match = pattern.exec(line);
-      if (match?.[1]) {
-        for (const value of match[1].split(",")) {
-          values.add(value);
-        }
-      }
+      if (match?.[1])
+        for (const value of match[1].split(",")) values.add(value);
     }
     return values;
   } catch {

@@ -181,9 +181,7 @@ function Rail({ className, ...props }: ComponentPropsWithoutRef<"div">) {
   useLayoutEffect(() => {
     const element = ref.current;
     const root = element?.closest<HTMLElement>('[data-slot="window"]');
-    if (!element || !root) {
-      return;
-    }
+    if (!element || !root) return;
     const write = () =>
       root.style.setProperty("--window-rail-width", `${element.offsetWidth}px`);
     const resize = new ResizeObserver(write);
@@ -248,9 +246,7 @@ function Handle({
       onCollapse={onCollapse}
     />
   );
-  if (!onCollapse) {
-    return handle;
-  }
+  if (!onCollapse) return handle;
   return (
     <Tooltip
       label={Tooltip.Label("Click to collapse", collapseShortcut)}

@@ -67,9 +67,7 @@ export function cancelAllSyncs(): void {
 
 export function cancelSync(accountId: string): void {
   const entry = inFlight.get(accountId);
-  if (!entry) {
-    return;
-  }
+  if (!entry) return;
   entry.controller.abort();
   emit({
     accountId,

@@ -112,20 +112,14 @@ export async function fetchDownload(
       while (true) {
         signal.throwIfAborted();
         const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
+        if (done) break;
         signal.throwIfAborted();
-        if (value.byteLength === 0) {
-          continue;
-        }
+        if (value.byteLength === 0) continue;
         resetIdleTimer();
         const now = Date.now();
         transfer.request.firstByteMs ??= now - startedAt;
         received += value.byteLength;
-        if (received > maxBytes) {
-          throw new DownloadSizeError();
-        }
+        if (received > maxBytes) throw new DownloadSizeError();
         chunks.push(value);
         transfer.state = "receiving";
         transfer.receivedBytes = received;
@@ -152,9 +146,7 @@ export async function fetchDownload(
     report("processing");
     return { response, bytes: Buffer.concat(chunks, received) };
   } catch (error) {
-    if (reader) {
-      await reader.cancel().catch(() => {});
-    }
+    if (reader) await reader.cancel().catch(() => {});
     transfer.state = "failed";
     transfer.bytesPerSecond = undefined;
     transfer.etaSeconds = undefined;

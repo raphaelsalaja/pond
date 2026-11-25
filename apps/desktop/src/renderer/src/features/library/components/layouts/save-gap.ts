@@ -6,15 +6,11 @@ const GAP_MIN = 0;
 const GAP_KEY = "pond.itemGap";
 
 function readGap(): number {
-  if (!globalThis.window) {
-    return LIBRARY_SAVE_GAP;
-  }
+  if (!globalThis.window) return LIBRARY_SAVE_GAP;
   try {
     const raw = window.localStorage.getItem(GAP_KEY);
     const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
-    if (!Number.isFinite(parsed)) {
-      return LIBRARY_SAVE_GAP;
-    }
+    if (!Number.isFinite(parsed)) return LIBRARY_SAVE_GAP;
     return Math.max(GAP_MIN, parsed);
   } catch {
     return LIBRARY_SAVE_GAP;

@@ -11,9 +11,7 @@ function saveMentionHref(id: string): string {
 }
 
 export function parseSaveMentionHref(href: string): string | null {
-  if (!href.startsWith(SAVE_HREF)) {
-    return null;
-  }
+  if (!href.startsWith(SAVE_HREF)) return null;
   try {
     return decodeURIComponent(href.slice(SAVE_HREF.length)) || null;
   } catch {
@@ -30,12 +28,8 @@ export const saveMentionCodec: TokenCodec = {
     let last = 0;
     for (const match of text.matchAll(SAVE_LINK)) {
       const id = parseSaveMentionHref(`${SAVE_HREF}${match[2]}`);
-      if (!id) {
-        continue;
-      }
-      if (match.index > last) {
-        value.push(text.slice(last, match.index));
-      }
+      if (!id) continue;
+      if (match.index > last) value.push(text.slice(last, match.index));
       value.push({
         type: "save",
         value: id,
@@ -43,9 +37,7 @@ export const saveMentionCodec: TokenCodec = {
       });
       last = match.index + match[0].length;
     }
-    if (last < text.length) {
-      value.push(text.slice(last));
-    }
+    if (last < text.length) value.push(text.slice(last));
     return value;
   },
 };
@@ -55,9 +47,7 @@ export function saveMentionIds(markdown: string): Set<string> {
   const ids = new Set<string>();
   for (const match of markdown.matchAll(SAVE_LINK)) {
     const id = parseSaveMentionHref(`${SAVE_HREF}${match[2]}`);
-    if (id) {
-      ids.add(id);
-    }
+    if (id) ids.add(id);
   }
   return ids;
 }

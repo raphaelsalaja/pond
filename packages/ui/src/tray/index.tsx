@@ -37,9 +37,7 @@ interface PillProps extends Omit<
  * @remarks Ignores `defaultPrevented`: a focusable disabled item prevents every key but Tab.
  */
 function focusEdgeItem(event: React.KeyboardEvent<HTMLDivElement>) {
-  if (event.key !== "Home" && event.key !== "End") {
-    return;
-  }
+  if (event.key !== "Home" && event.key !== "End") return;
   const pill = event.currentTarget;
   const target = event.target;
   if (!isHTMLElement(target) || !target.matches(`.${styles.item}`)) {
@@ -49,9 +47,7 @@ function focusEdgeItem(event: React.KeyboardEvent<HTMLDivElement>) {
     pill.querySelectorAll<HTMLElement>(`.${styles.item}:not([disabled])`),
   ).filter((item) => item.parentElement?.closest(`.${styles.pill}`) === pill);
   const item = event.key === "Home" ? items[0] : items.at(-1);
-  if (!item) {
-    return;
-  }
+  if (!item) return;
   event.preventDefault();
   item.focus();
 }

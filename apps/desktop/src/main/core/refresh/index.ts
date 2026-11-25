@@ -35,12 +35,8 @@ export async function refreshSave(
   const db = await getDb();
   const rows = await db.select().from(saves).where(eq(saves.id, saveId));
   const current = rows[0];
-  if (!current) {
-    return { ok: false, reason: "not_found" };
-  }
-  if (!current.url) {
-    return { ok: false, reason: "no_url" };
-  }
+  if (!current) return { ok: false, reason: "not_found" };
+  if (!current.url) return { ok: false, reason: "no_url" };
   try {
     const generationId = await createQueueGeneration({
       kind: "refresh",
@@ -175,9 +171,7 @@ export async function refreshSave(
       log.warn("[pond refresh] no harvest_metadata task", saveId);
       return { ok: false, reason: "internal_error" };
     }
-    if (missing.length > 0) {
-      db.insert(tasks).values(missing).run();
-    }
+    if (missing.length > 0) db.insert(tasks).values(missing).run();
 
     await persistSave(
       saveId,

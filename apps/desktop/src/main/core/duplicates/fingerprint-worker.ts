@@ -25,9 +25,7 @@ let swept = false;
 let rerun = false;
 
 function schedule(delay: number): void {
-  if (!started || timer) {
-    return;
-  }
+  if (!started || timer) return;
   timer = setTimeout(() => {
     timer = null;
     void tick();
@@ -61,9 +59,7 @@ function ingestRunning(sqlite: Database.Database): boolean {
 }
 
 async function tick(): Promise<void> {
-  if (!started) {
-    return;
-  }
+  if (!started) return;
   if (running) {
     rerun = true;
     return;
@@ -95,9 +91,7 @@ async function tick(): Promise<void> {
     schedule(PAUSE_POLL_MS);
   } finally {
     running = false;
-    if (rerun) {
-      schedule(BATCH_GAP_MS);
-    }
+    if (rerun) schedule(BATCH_GAP_MS);
   }
 }
 
@@ -108,9 +102,7 @@ export function kickFingerprintWorker(): void {
 }
 
 export async function startFingerprintWorker(): Promise<void> {
-  if (started) {
-    return;
-  }
+  if (started) return;
   started = true;
   thermal =
     process.platform === "darwin"
@@ -130,9 +122,7 @@ export async function startFingerprintWorker(): Promise<void> {
 
 export function stopFingerprintWorker(): void {
   started = false;
-  if (timer) {
-    clearTimeout(timer);
-  }
+  if (timer) clearTimeout(timer);
   timer = null;
   powerMonitor.off("on-ac", kickFingerprintWorker);
   powerMonitor.off("resume", kickFingerprintWorker);

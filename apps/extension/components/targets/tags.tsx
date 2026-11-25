@@ -21,9 +21,7 @@ function merge(current: Array<string>, added: Array<string>): Array<string> {
   const seen = new Set(current.map((tag) => tag.toLowerCase()));
   const next = [...current];
   for (const tag of added) {
-    if (seen.has(tag.toLowerCase())) {
-      continue;
-    }
+    if (seen.has(tag.toLowerCase())) continue;
     seen.add(tag.toLowerCase());
     next.push(tag);
   }

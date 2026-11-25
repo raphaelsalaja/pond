@@ -24,15 +24,11 @@ export function useRectangleSelection() {
   useEffect(() => () => cancelRef.current?.(), []);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || !isLibraryBackgroundTarget(event.target)) {
-      return;
-    }
+    if (event.button !== 0 || !isLibraryBackgroundTarget(event.target)) return;
     const grid = event.currentTarget.querySelector<HTMLElement>(
       "[data-save-collection]",
     );
-    if (!grid) {
-      return;
-    }
+    if (!grid) return;
     const bounds = grid.getBoundingClientRect();
     const parent = findScrollParent(grid);
     if (
@@ -59,14 +55,10 @@ export function useRectangleSelection() {
     let frame = 0;
     const pointerId = event.pointerId;
     grid.focus({ preventScroll: true });
-    if (!additive) {
-      clearSaveSelection();
-    }
+    if (!additive) clearSaveSelection();
 
     const update = () => {
-      if (stopped) {
-        return;
-      }
+      if (stopped) return;
       if (key !== resultNavigation.key()) {
         finish(false);
         return;
@@ -74,9 +66,7 @@ export function useRectangleSelection() {
       const rect = grid.getBoundingClientRect();
       const end = { x: pointer.x - rect.left, y: pointer.y - rect.top };
       dragging ||= Math.hypot(end.x - start.x, end.y - start.y) >= 4;
-      if (!dragging) {
-        return;
-      }
+      if (!dragging) return;
       const area = {
         left: Math.min(start.x, end.x),
         top: Math.min(start.y, end.y),
@@ -88,9 +78,7 @@ export function useRectangleSelection() {
       const cursor = hits.at(-1) ?? (additive ? originalCursor : null);
       selection.setCursor(cursor);
       primarySelection.set(cursor);
-      if (hits[0]) {
-        selection.setAnchor(hits[0]);
-      }
+      if (hits[0]) selection.setAnchor(hits[0]);
       const viewport = parent.getBoundingClientRect();
       const top = Math.max(viewport.top, area.top + rect.top);
       const bottom = Math.min(
@@ -105,9 +93,7 @@ export function useRectangleSelection() {
       });
     };
     const tick = () => {
-      if (stopped) {
-        return;
-      }
+      if (stopped) return;
       if (dragging) {
         const viewport = parent.getBoundingClientRect();
         const edge = 36;
@@ -125,16 +111,12 @@ export function useRectangleSelection() {
       frame = requestAnimationFrame(tick);
     };
     const move = (next: globalThis.PointerEvent) => {
-      if (next.pointerId !== pointerId) {
-        return;
-      }
+      if (next.pointerId !== pointerId) return;
       pointer = { x: next.clientX, y: next.clientY };
       update();
     };
     const finish = (restore: boolean) => {
-      if (stopped) {
-        return;
-      }
+      if (stopped) return;
       stopped = true;
       cancelAnimationFrame(frame);
       window.removeEventListener("pointermove", move);
@@ -148,22 +130,16 @@ export function useRectangleSelection() {
         selection.clear();
         selection.set(original);
         selection.setCursor(originalCursor);
-        if (originalAnchor) {
-          selection.setAnchor(originalAnchor);
-        }
+        if (originalAnchor) selection.setAnchor(originalAnchor);
         primarySelection.set(originalPrimary);
       }
     };
     const up = (next: globalThis.PointerEvent) => {
-      if (next.pointerId === pointerId) {
-        finish(false);
-      }
+      if (next.pointerId === pointerId) finish(false);
     };
     const cancel = () => finish(true);
     const keydown = (next: KeyboardEvent) => {
-      if (next.key !== "Escape") {
-        return;
-      }
+      if (next.key !== "Escape") return;
       next.preventDefault();
       next.stopImmediatePropagation();
       cancel();

@@ -47,9 +47,7 @@ export function getStorageGuardState(): StorageGuardStatus {
 }
 
 export async function startStorageWatcher(): Promise<void> {
-  if (timer) {
-    return;
-  }
+  if (timer) return;
   await applyStorageWatcherPrefs();
 }
 
@@ -101,18 +99,14 @@ export async function applyStorageWatcherPrefs(): Promise<void> {
     void runTick();
     return;
   }
-  if (timer) {
-    clearInterval(timer);
-  }
+  if (timer) clearInterval(timer);
   intervalMs = nextMs;
   timer = setInterval(() => void runTick(), nextMs);
   void runTick();
 }
 
 function clampInterval(minutes: number): number {
-  if (!Number.isFinite(minutes)) {
-    return 5;
-  }
+  if (!Number.isFinite(minutes)) return 5;
   return Math.max(1, Math.min(60, Math.floor(minutes)));
 }
 
@@ -125,9 +119,7 @@ async function runTick(): Promise<void> {
     return;
   }
   const cfg = prefs.storage;
-  if (!cfg.guardsEnabled) {
-    return;
-  }
+  if (!cfg.guardsEnabled) return;
 
   const someWindowVisible = BrowserWindow.getAllWindows().some(
     (w) => !w.isDestroyed() && w.isVisible(),

@@ -35,15 +35,10 @@ export function BuiltInVisibilityMenu({
   const [dialogMounted, setDialogMounted] = useState(false);
 
   const setBadgeStyle = (style: SidebarBadgeStyle | "default") => {
-    if (!destination) {
-      return;
-    }
+    if (!destination) return;
     const badgeOverrides = { ...sidebar.badgeOverrides };
-    if (style === "default") {
-      delete badgeOverrides[destination];
-    } else {
-      badgeOverrides[destination] = style;
-    }
+    if (style === "default") delete badgeOverrides[destination];
+    else badgeOverrides[destination] = style;
     void patch({ badgeOverrides });
   };
 

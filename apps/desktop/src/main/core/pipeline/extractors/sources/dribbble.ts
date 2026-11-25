@@ -47,12 +47,8 @@ export class DribbbleShotExtractor implements Extractor {
 
   handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
-    if (segments.length !== 1 || !first) {
-      return null;
-    }
-    if (DRIBBBLE_RESERVED.has(first.toLowerCase())) {
-      return null;
-    }
+    if (segments.length !== 1 || !first) return null;
+    if (DRIBBBLE_RESERVED.has(first.toLowerCase())) return null;
     return /^[A-Za-z0-9_-]{2,40}$/.test(first) ? first : null;
   }
 
@@ -75,9 +71,7 @@ export class DribbbleShotExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("dribbble", input.url.href);
-    if (!sourceId) {
-      throw new TerminalError("could not parse dribbble shot");
-    }
+    if (!sourceId) throw new TerminalError("could not parse dribbble shot");
     return captureFromSource({
       url: input.url.href,
       source: "dribbble",

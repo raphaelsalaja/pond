@@ -15,12 +15,8 @@ export function mediaTransformStyle(save: Save): CSSProperties {
     parts.push("scaleY(-1)");
   }
   const style: CSSProperties = {};
-  if (parts.length > 0) {
-    style.transform = parts.join(" ");
-  }
-  if (save.crop) {
-    style.clipPath = cropClip(save.crop);
-  }
+  if (parts.length > 0) style.transform = parts.join(" ");
+  if (save.crop) style.clipPath = cropClip(save.crop);
   return style;
 }
 

@@ -56,9 +56,7 @@ describe("rectangle selection cancellation", () => {
   let cleanupLayout: () => void;
   function element(selector: string) {
     const node = host.querySelector<HTMLElement>(selector);
-    if (!node) {
-      throw new Error(`Missing ${selector}`);
-    }
+    if (!node) throw new Error(`Missing ${selector}`);
     return node;
   }
   beforeEach(async () => {

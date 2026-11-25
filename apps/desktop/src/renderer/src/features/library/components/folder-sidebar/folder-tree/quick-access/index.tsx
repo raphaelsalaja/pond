@@ -156,14 +156,10 @@ export function QuickAccess({
   async function moveQuickView(id: string, offset: -1 | 1): Promise<void> {
     const current = quickViewIds.indexOf(id);
     const target = current + offset;
-    if (current < 0 || target < 0 || target >= quickViewIds.length) {
-      return;
-    }
+    if (current < 0 || target < 0 || target >= quickViewIds.length) return;
     const ordered = [...quickViewIds];
     const [moved] = ordered.splice(current, 1);
-    if (!moved) {
-      return;
-    }
+    if (!moved) return;
     ordered.splice(target, 0, moved);
     await Promise.all(
       ordered.map((viewId, quickAccessOrder) =>
@@ -172,9 +168,7 @@ export function QuickAccess({
     );
   }
 
-  if (quickFolders.length === 0 && quickViews.length === 0) {
-    return null;
-  }
+  if (quickFolders.length === 0 && quickViews.length === 0) return null;
 
   return (
     <Sidebar.Group

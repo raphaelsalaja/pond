@@ -118,9 +118,7 @@ it("persists visibility, preserves it after rejection, and restores all models",
           <CatalogHarness
             models={models}
             onSave={(next) => {
-              if (reject) {
-                throw new Error("Disk unavailable");
-              }
+              if (reject) throw new Error("Disk unavailable");
               saved = next;
             }}
           />,
@@ -130,9 +128,7 @@ it("persists visibility, preserves it after rejection, and restores all models",
     const alpha = host.querySelector<HTMLButtonElement>(
       '[aria-label="Show Alpha in model pickers"]',
     );
-    if (!alpha) {
-      throw new Error("Missing model checkbox");
-    }
+    if (!alpha) throw new Error("Missing model checkbox");
     expect(host.textContent).toContain("200K");
     expect(host.textContent).toContain("OpenAI");
     expect(host.textContent).not.toContain("Max Output");
@@ -284,9 +280,7 @@ it("collapses providers independently and reveals search matches", async () => {
     const anthropic = host.querySelector<HTMLButtonElement>(
       'h2 button[aria-label="Anthropic"]',
     );
-    if (!anthropic) {
-      throw new Error("Missing provider toggle");
-    }
+    if (!anthropic) throw new Error("Missing provider toggle");
     expect(anthropic.getAttribute("aria-expanded")).toBe("true");
     await act(async () => anthropic.click());
     expect(anthropic.getAttribute("aria-expanded")).toBe("false");

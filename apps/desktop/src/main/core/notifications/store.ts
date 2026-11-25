@@ -64,17 +64,11 @@ export function capNotifications(
   const drop = new Set<string>();
   const over = () => items.length - drop.size > NOTIFICATION_CAP;
   for (const item of oldestFirst) {
-    if (!over()) {
-      break;
-    }
-    if (item.readAt !== undefined) {
-      drop.add(item.id);
-    }
+    if (!over()) break;
+    if (item.readAt !== undefined) drop.add(item.id);
   }
   for (const item of oldestFirst) {
-    if (!over()) {
-      break;
-    }
+    if (!over()) break;
     drop.add(item.id);
   }
   return items.filter((item) => !drop.has(item.id));
@@ -123,9 +117,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
 
   async function load() {
     const libraryId = deps.libraryId();
-    if (cache?.libraryId === libraryId) {
-      return cache;
-    }
+    if (cache?.libraryId === libraryId) return cache;
     const items = await read(libraryId);
     cache = { libraryId, items };
     return cache;
@@ -135,9 +127,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
     const run = queue.then(async () => {
       const current = await load();
       const next = change(current.items, deps.now());
-      if (!next) {
-        return;
-      }
+      if (!next) return;
       const items = capNotifications(next);
       await write(current.libraryId, items);
       cache = { libraryId: current.libraryId, items };
@@ -153,9 +143,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
   ): Promise<void> {
     const wanted = new Set(ids);
     return mutate((items, now) => {
-      if (!items.some((item) => wanted.has(item.id))) {
-        return null;
-      }
+      if (!items.some((item) => wanted.has(item.id))) return null;
       return items.map((item) =>
         wanted.has(item.id) ? patch(item, now) : item,
       );
@@ -188,9 +176,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
         existing.kind === input.kind &&
         existing.priority === input.priority &&
         JSON.stringify(existing.target) === JSON.stringify(input.target);
-      if (same) {
-        return null;
-      }
+      if (same) return null;
       const next: InboxNotification = {
         id: input.id,
         kind: input.kind,

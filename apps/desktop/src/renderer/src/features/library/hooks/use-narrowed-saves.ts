@@ -90,11 +90,8 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   // again when a Save opens would change the query, clear the page, and the
   // preview would read that empty page as the Save leaving.
   const [addedSince, setAddedSince] = useState<number | null>(null);
-  if (recentlyAdded && addedSince === null) {
-    setAddedSince(recentlyAddedSince());
-  } else if (!recentlyAdded && addedSince !== null) {
-    setAddedSince(null);
-  }
+  if (recentlyAdded && addedSince === null) setAddedSince(recentlyAddedSince());
+  else if (!recentlyAdded && addedSince !== null) setAddedSince(null);
   useEffect(() => {
     if (viewsReady) {
       activateFolderPresentation(
@@ -185,9 +182,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = window.pond.onSyncAction(() => {
-      if (timer) {
-        return;
-      }
+      if (timer) return;
       timer = setTimeout(() => {
         timer = undefined;
         void session.load();
@@ -224,9 +219,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
     const byId = new Map(saves.map((save) => [save.id, save]));
     for (const id of page?.ids ?? []) {
       const save = byId.get(id);
-      if (save) {
-        rows.push({ ...save, folderIds: memberships[id] ?? [] });
-      }
+      if (save) rows.push({ ...save, folderIds: memberships[id] ?? [] });
     }
     if (mode === "recents") {
       const order = new Map(
@@ -260,9 +253,7 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
     loadedIds: () => {
       const pageIds = session.snapshot().page?.ids ?? [];
       const extra = departedRef.current;
-      if (extra.length === 0) {
-        return pageIds;
-      }
+      if (extra.length === 0) return pageIds;
       const seen = new Set(pageIds);
       const missing = extra.filter((id) => !seen.has(id));
       return missing.length === 0 ? pageIds : [...pageIds, ...missing];

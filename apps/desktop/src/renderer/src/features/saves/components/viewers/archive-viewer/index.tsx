@@ -40,18 +40,14 @@ export function SaveArchiveViewer({ save }: { save: Save }) {
   useEffect(() => {
     let alive = true;
     void loadArchiveManifest(save).then((m) => {
-      if (alive) {
-        setManifest(m);
-      }
+      if (alive) setManifest(m);
     });
     return () => {
       alive = false;
     };
   }, [save]);
 
-  if (!manifest || manifest.pages.length === 0) {
-    return null;
-  }
+  if (!manifest || manifest.pages.length === 0) return null;
   return (
     <ViewerChrome>
       <ArchiveFrame key={save.id} save={save} manifest={manifest} />
@@ -86,9 +82,7 @@ function ArchiveFrame({
     const map = new Map<string, number>();
     manifest.pages.forEach((page, i) => {
       const key = archiveUrlKey(page.url);
-      if (!map.has(key)) {
-        map.set(key, i);
-      }
+      if (!map.has(key)) map.set(key, i);
     });
     return map;
   }, [manifest]);
@@ -129,9 +123,7 @@ function ArchiveFrame({
     });
   }, [pageIndexByKey, visit]);
 
-  if (!page || !src) {
-    return null;
-  }
+  if (!page || !src) return null;
 
   const address = displayArchiveAddress(page.url);
   const buildPageItems = (): Array<MenuItemSpec> =>
@@ -141,9 +133,7 @@ function ArchiveFrame({
       indicator: "check",
       checked: index === pageIndex,
       onCheckedChange: (checked) => {
-        if (checked) {
-          visit(index);
-        }
+        if (checked) visit(index);
       },
     }));
 

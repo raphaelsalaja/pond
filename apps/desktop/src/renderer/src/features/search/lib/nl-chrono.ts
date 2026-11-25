@@ -130,15 +130,9 @@ function directionalPredicate(
   lo: Date,
   hi: Date,
 ): Predicate {
-  if (dir === "before") {
-    return { field, operator: "lt", value: isoDay(lo) };
-  }
-  if (dir === "after") {
-    return { field, operator: "gte", value: isoDay(hi) };
-  }
-  if (dir === "since") {
-    return { field, operator: "gte", value: isoDay(lo) };
-  }
+  if (dir === "before") return { field, operator: "lt", value: isoDay(lo) };
+  if (dir === "after") return { field, operator: "gte", value: isoDay(hi) };
+  if (dir === "since") return { field, operator: "gte", value: isoDay(lo) };
   return { field, operator: "between", value: [isoDay(lo), isoDay(hi)] };
 }
 
@@ -147,9 +141,7 @@ function rollingPrefix(
   start: number,
 ): Omit<DatePrefix, "dir"> | null {
   const m = PREFIX_RE.exec(input.slice(0, start));
-  if (m?.[2]) {
-    return null;
-  }
+  if (m?.[2]) return null;
   const qualifier = m?.[1]?.toLowerCase();
   return {
     field: qualifier ? (QUALIFIER.get(qualifier) ?? "savedAt") : "savedAt",
@@ -178,13 +170,9 @@ export function extractDates(
     for (let m = re.exec(input); m; m = re.exec(input)) {
       const start = m.index;
       const end = start + m[0].length;
-      if (overlaps(start, end)) {
-        continue;
-      }
+      if (overlaps(start, end)) continue;
       const prefix = rollingPrefix(input, start);
-      if (!prefix) {
-        continue;
-      }
+      if (!prefix) continue;
       claim(prefix.from, end, {
         field: prefix.field,
         operator: "gte",
@@ -196,20 +184,12 @@ export function extractDates(
   const results = parseDates(input, ref, { forwardDate: false });
   for (let idx = 0; idx < results.length; idx += 1) {
     const r = results[idx];
-    if (!r) {
-      continue;
-    }
+    if (!r) continue;
     const start = r.index;
     const end = start + r.text.length;
-    if (overlaps(start, end)) {
-      continue;
-    }
-    if (isTimeOnly(r.start)) {
-      continue;
-    }
-    if (DURATION_TEXT.test(r.text) && !/\bago\b/i.test(r.text)) {
-      continue;
-    }
+    if (overlaps(start, end)) continue;
+    if (isTimeOnly(r.start)) continue;
+    if (DURATION_TEXT.test(r.text) && !/\bago\b/i.test(r.text)) continue;
 
     const { field, dir, from } = readPrefix(input, start);
 
@@ -235,9 +215,7 @@ export function extractDates(
   for (let m = YEAR_RE.exec(input); m; m = YEAR_RE.exec(input)) {
     const start = m.index;
     const end = start + m[0].length;
-    if (overlaps(start, end)) {
-      continue;
-    }
+    if (overlaps(start, end)) continue;
     const { field, dir, from } = readPrefix(input, start);
     const [lo, hi] = yearRange(Number.parseInt(m[0], 10));
     claim(from, end, directionalPredicate(field, dir, lo, hi));

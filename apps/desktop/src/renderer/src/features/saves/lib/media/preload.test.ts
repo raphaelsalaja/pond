@@ -93,16 +93,12 @@ describe("preloadImage", () => {
   });
 
   afterEach(() => {
-    for (const url of heldImageUrls()) {
-      cancelPreload(url);
-    }
+    for (const url of heldImageUrls()) cancelPreload(url);
     Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
   });
 
   it("holds the most recent originals and drops the oldest", () => {
-    for (const name of ["1", "2", "3", "4"]) {
-      preloadImage(`pond://p/${name}`);
-    }
+    for (const name of ["1", "2", "3", "4"]) preloadImage(`pond://p/${name}`);
     preloadImage("pond://p/2");
     preloadImage("pond://p/5");
 

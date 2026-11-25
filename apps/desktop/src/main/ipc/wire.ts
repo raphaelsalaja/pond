@@ -34,9 +34,7 @@ export function toWireSave(
     ingestStartedAt: toMs(row.ingestStartedAt),
     ingestCompletedAt: toMs(row.ingestCompletedAt),
   };
-  if (taskRows) {
-    wire.tasks = taskRows.map(toWireTask);
-  }
+  if (taskRows) wire.tasks = taskRows.map(toWireTask);
   return wire;
 }
 
@@ -98,9 +96,7 @@ const TIMESTAMP_KEYS = [
 
 function normaliseDataPayload(value: SyncAction["data"]): WireSyncPayload {
   const payload = WirePayloadSchema.parse(value);
-  if (payload === null) {
-    return null;
-  }
+  if (payload === null) return null;
   return Array.isArray(payload)
     ? payload.map(normaliseRow)
     : normaliseRow(payload);

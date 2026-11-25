@@ -6,12 +6,8 @@ function numberInRange(
   value: number | null,
   { min, max, integer, required }: NumberRule,
 ): boolean {
-  if (value === null) {
-    return !required;
-  }
-  if (Number.isNaN(value) || value < min || value > max) {
-    return false;
-  }
+  if (value === null) return !required;
+  if (Number.isNaN(value) || value < min || value > max) return false;
   return !integer || Number.isInteger(value);
 }
 
@@ -113,9 +109,7 @@ function SelectField<Value extends string>({
       value={value}
       items={items}
       onValueChange={(next) => {
-        if (next !== null) {
-          onChange(next);
-        }
+        if (next !== null) onChange(next);
       }}
     >
       <div className={styles.field}>

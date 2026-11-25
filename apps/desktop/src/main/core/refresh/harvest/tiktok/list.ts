@@ -40,9 +40,7 @@ async function inPageTiktokList(
     labels: Array<string>,
   ): HTMLElement | null => {
     const direct = document.querySelector<HTMLElement>(selectors);
-    if (direct) {
-      return direct;
-    }
+    if (direct) return direct;
     const tabs = Array.from(
       document.querySelectorAll<HTMLElement>(
         'button[role="tab"], a[role="tab"], [role="tab"]',
@@ -71,9 +69,7 @@ async function inPageTiktokList(
         setTimeout(r, 250);
       });
     }
-    if (!tab) {
-      return false;
-    }
+    if (!tab) return false;
     tab.click();
     await new Promise((r) => {
       setTimeout(r, 1500);
@@ -97,9 +93,7 @@ async function inPageTiktokList(
     );
     for (const a of links) {
       const id = norm.extractVideoId(a.href);
-      if (!id || seen.has(id)) {
-        continue;
-      }
+      if (!id || seen.has(id)) continue;
       seen.add(id);
 
       let pathname = "";
@@ -141,9 +135,7 @@ async function inPageTiktokList(
       knownIds: args.knownIds,
       hydrateSelector: 'a[href*="/video/"]',
     });
-    if (!walked.ok) {
-      return walked;
-    }
+    if (!walked.ok) return walked;
     return { ok: true, entries: walked.entries, reachedEnd: walked.reachedEnd };
   }
 
@@ -188,9 +180,7 @@ async function inPageTiktokList(
       knownIds: args.knownIds,
       hydrateSelector: 'a[href*="/video/"]',
     });
-    if (!favorites.ok) {
-      return favorites;
-    }
+    if (!favorites.ok) return favorites;
     favoriteEntries = withListKind(favorites.entries, "saved");
     favoritesEnd = favorites.reachedEnd;
   }

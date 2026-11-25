@@ -29,15 +29,11 @@ const ROUTES: ReadonlyArray<
 
 /** Unlisted routes stay limited to the Local API Token, so new routes are private until they're added here. */
 export function routeAccess(method: string, path: string): RouteAccess {
-  if (!path.startsWith(`${PREFIX}/`)) {
-    return "internal";
-  }
+  if (!path.startsWith(`${PREFIX}/`)) return "internal";
   const route = path.slice(PREFIX.length);
   const verb = method === "HEAD" ? "GET" : method;
   for (const [routeMethod, pattern, access] of ROUTES) {
-    if (routeMethod === verb && pattern.test(route)) {
-      return access;
-    }
+    if (routeMethod === verb && pattern.test(route)) return access;
   }
   return "internal";
 }

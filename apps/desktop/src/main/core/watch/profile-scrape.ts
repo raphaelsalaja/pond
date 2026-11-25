@@ -22,9 +22,7 @@ function profileUrl(
   kind?: WatchKind,
 ): string | null {
   const h = encodeURIComponent(handle);
-  if (source === "instagram") {
-    return `https://www.instagram.com/${h}/`;
-  }
+  if (source === "instagram") return `https://www.instagram.com/${h}/`;
   if (source === "twitter") {
     return kind === "list"
       ? `https://x.com/i/lists/${h}`
@@ -81,15 +79,11 @@ export async function listProfileWatch(
   kind?: WatchKind,
 ): Promise<WatchHarvestResult> {
   const target = profileUrl(source, handle, kind);
-  if (!target) {
-    return { ok: false, reason: "unknown" };
-  }
+  if (!target) return { ok: false, reason: "unknown" };
   const lease = await leaseWindow(source, { partition });
   try {
     const navOk = await navigateWithTimeout(lease.win, target, NAV_TIMEOUT_MS);
-    if (!navOk) {
-      return { ok: false, reason: "timeout" };
-    }
+    if (!navOk) return { ok: false, reason: "timeout" };
     const landedUrl = lease.win.webContents.getURL();
     const challenge = looksLikeChallenge(landedUrl);
     if (challenge) {
@@ -119,9 +113,7 @@ export async function listProfileWatch(
     const seen = new Set<string>();
     for (const link of page.data.links) {
       const sourceId = sourceIdFromUrl(source, link);
-      if (!sourceId || seen.has(sourceId)) {
-        continue;
-      }
+      if (!sourceId || seen.has(sourceId)) continue;
       seen.add(sourceId);
       entries.push({ url: link, sourceId });
     }

@@ -37,9 +37,7 @@ export function buildFolderTreeMenu(
         });
         const self = leaf(folder, icon);
         const nested = build(folder.id);
-        if (!nested.length) {
-          return [self];
-        }
+        if (!nested.length) return [self];
         return [
           {
             type: "submenu",

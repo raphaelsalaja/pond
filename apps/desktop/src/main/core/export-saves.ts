@@ -25,17 +25,13 @@ function folderReferences(query: Query): Set<string> {
   const result = new Set<string>();
   for (const rule of query.rules) {
     if (isGroup(rule)) {
-      for (const id of folderReferences(rule)) {
-        result.add(id);
-      }
+      for (const id of folderReferences(rule)) result.add(id);
     } else if (
       rule.field === "folder" &&
       rule.operator !== "empty" &&
       Array.isArray(rule.value)
     ) {
-      for (const id of rule.value) {
-        result.add(String(id));
-      }
+      for (const id of rule.value) result.add(String(id));
     }
   }
   return result;
@@ -89,9 +85,7 @@ async function exportSelection(
   options: { includeDerived?: boolean } = {},
 ) {
   const unique = [...new Set(ids.filter(Boolean))];
-  if (unique.length === 0) {
-    throw new Error("Select Saves to export.");
-  }
+  if (unique.length === 0) throw new Error("Select Saves to export.");
   const db = await getDb();
   const rows = await db.select().from(saves).where(inArray(saves.id, unique));
   if (rows.length !== unique.length) {
@@ -238,9 +232,7 @@ export async function availableExportPath(
       parent,
       `${count === 1 ? name : `${name} ${count}`}${extension}`,
     );
-    if (!(await stat(path).catch(() => null))) {
-      return path;
-    }
+    if (!(await stat(path).catch(() => null))) return path;
   }
 }
 

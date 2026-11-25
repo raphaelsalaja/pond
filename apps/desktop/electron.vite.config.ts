@@ -23,9 +23,7 @@ interface ChunkInfo {
 
 /** Rolldown otherwise parks a vendor export in an app chunk and circular-inits (drizzle-orm `count` in library-retrieval). */
 function vendorChunkName(id: string) {
-  if (!id.includes("node_modules")) {
-    return null;
-  }
+  if (!id.includes("node_modules")) return null;
   // Only the lazily loaded Fish composer uses these, and they import nothing from other UI SDK components.
   if (
     /@ui-sdk\/(?:core|react)\/dist\/(?:components\/)?(?:token-input|trigger-menu)[/.]/.test(

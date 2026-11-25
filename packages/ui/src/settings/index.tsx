@@ -27,9 +27,7 @@ function Page({
   ...props
 }: PageProps) {
   const pageStyle: PageStyle = { ...style };
-  if (inset) {
-    pageStyle["--settings-padding-inline-inset"] = `${inset}px`;
-  }
+  if (inset) pageStyle["--settings-padding-inline-inset"] = `${inset}px`;
   return (
     <div
       className={cn(styles.page, className)}

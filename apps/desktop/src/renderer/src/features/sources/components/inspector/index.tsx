@@ -212,12 +212,8 @@ function SourceDetailData({
   id: string;
   children: (model: SourceDetailModel) => ReactNode;
 }) {
-  if (kind === "folder") {
-    return <FolderData>{children}</FolderData>;
-  }
-  if (kind === "watch") {
-    return <WatchData id={id}>{children}</WatchData>;
-  }
+  if (kind === "folder") return <FolderData>{children}</FolderData>;
+  if (kind === "watch") return <WatchData id={id}>{children}</WatchData>;
   return <AccountData id={id}>{children}</AccountData>;
 }
 
@@ -225,9 +221,7 @@ function resolveSourceDetailPage(
   model: SourceDetailModel,
   requested?: SourceDetailsPage,
 ): SourceDetailPageDef | null {
-  if (model.status !== "ready") {
-    return null;
-  }
+  if (model.status !== "ready") return null;
   const find = (id?: SourceDetailsPage) =>
     id ? model.pages.find((page) => page.id === id) : undefined;
   return find(requested) ?? find(model.initialPage) ?? model.pages[0] ?? null;
@@ -264,9 +258,7 @@ export function SourceDetailNavView({
       </Sidebar.Item>
     );
   };
-  if (model.status !== "ready") {
-    return null;
-  }
+  if (model.status !== "ready") return null;
   return (
     <>
       <Sidebar.GroupHeader>
@@ -354,12 +346,8 @@ export function SourceDetailView({
 }
 
 function fetchedLabel(model: CardModel): string {
-  if (model.lastText === "now") {
-    return "Fetching now";
-  }
-  if (model.lastText === "—") {
-    return "Not fetched yet";
-  }
+  if (model.lastText === "now") return "Fetching now";
+  if (model.lastText === "—") return "Not fetched yet";
   return `Last fetched ${model.lastText}`;
 }
 
@@ -591,12 +579,8 @@ function addedLabel(value: string): string {
 }
 
 function accountLabel(account: AccountRow): string {
-  if (account.label) {
-    return account.label;
-  }
-  if (account.handle) {
-    return `@${account.handle}`;
-  }
+  if (account.label) return account.label;
+  if (account.handle) return `@${account.handle}`;
   return getSourceDef(account.source).label;
 }
 
@@ -622,9 +606,7 @@ async function saveAccountNickname(
   value: string,
 ): Promise<void> {
   const next = value.trim() || null;
-  if (next === account.label) {
-    return;
-  }
+  if (next === account.label) return;
   await window.pond.query("accounts.setLabel", {
     accountId: account.id,
     label: next,
@@ -636,9 +618,7 @@ async function saveWatchNickname(
   value: string,
 ): Promise<void> {
   const next = value.trim() || null;
-  if (next === watch.label) {
-    return;
-  }
+  if (next === watch.label) return;
   await window.pond.query("watches.setLabel", {
     watchId: watch.id,
     label: next,
@@ -970,9 +950,7 @@ function NicknameItem({
     savedValue.current = nickname;
   }, [nickname]);
   const save = async (next: string) => {
-    if (next === savedValue.current) {
-      return;
-    }
+    if (next === savedValue.current) return;
     setStatus("saving");
     try {
       await onSave(next);

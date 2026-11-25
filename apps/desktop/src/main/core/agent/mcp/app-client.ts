@@ -54,9 +54,7 @@ async function post(target: AppNavigation): Promise<NavigateResult> {
   } catch {
     throw new PondClosed();
   }
-  if (response.ok) {
-    return { ok: true };
-  }
+  if (response.ok) return { ok: true };
   const body = ErrorBodySchema.safeParse(
     await response.json().catch(() => null),
   );
@@ -68,9 +66,7 @@ async function post(target: AppNavigation): Promise<NavigateResult> {
 }
 
 function launchPond(): boolean {
-  if (!app.isPackaged) {
-    return false;
-  }
+  if (!app.isPackaged) return false;
   if (process.platform === "darwin") {
     openAppInstance({
       execPath: process.execPath,

@@ -31,15 +31,11 @@ export async function bridge(source: ExternalSource): Promise<void> {
       return;
     }
     const message = envelope.message;
-    if (!isRecord(message)) {
-      return;
-    }
+    if (!isRecord(message)) return;
 
     if (message.kind === "capture") {
       const url = asText(at(message, "payload", "url"));
-      if (!url) {
-        return;
-      }
+      if (!url) return;
       const accepted = acceptHookCapture(
         source,
         { url, trigger: asText(at(message, "payload", "trigger")) },
@@ -55,12 +51,8 @@ export async function bridge(source: ExternalSource): Promise<void> {
     if (message.kind === "log") {
       const level = message.level;
       const text = asText(message.message);
-      if (text === undefined) {
-        return;
-      }
-      if (level !== "info" && level !== "warn" && level !== "error") {
-        return;
-      }
+      if (text === undefined) return;
+      if (level !== "info" && level !== "warn" && level !== "error") return;
       const entry: PondLogEntry = { level, message: text };
       const detail = asText(message.data);
       if (detail !== undefined) {

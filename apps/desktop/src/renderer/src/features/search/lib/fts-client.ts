@@ -13,9 +13,7 @@ export async function searchFtsScores(
   opts?: { deletedOnly?: boolean; limit?: number },
 ): Promise<Map<string, number>> {
   const trimmed = q.trim();
-  if (!trimmed) {
-    return new Map();
-  }
+  if (!trimmed) return new Map();
   const res = FtsReplySchema.parse(
     await window.pond.query("saves.searchFts", {
       q: trimmed,

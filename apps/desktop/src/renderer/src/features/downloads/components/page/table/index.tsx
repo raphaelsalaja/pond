@@ -103,9 +103,7 @@ export function DownloadTable({
       selectionCheckboxes
       selectOnClick
       onRowClick={(row, event) => {
-        if (event && event.detail < 2) {
-          return;
-        }
+        if (event && event.detail < 2) return;
         if (row.transfer) {
           if (transferRevealable(row.transfer)) {
             void revealTransfer(row.transfer);
@@ -113,9 +111,7 @@ export function DownloadTable({
           return;
         }
         const current = rowsById.get(row.id);
-        if (current) {
-          openDownloadSave(current);
-        }
+        if (current) openDownloadSave(current);
       }}
       renderRow={renderRow}
       onSelectionChange={(ids) => {

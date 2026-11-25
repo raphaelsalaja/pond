@@ -49,28 +49,18 @@ export {
 
 export function sourcePausedUntil(source: Source): number {
   loadState();
-  if (allPaused) {
-    return Number.MAX_SAFE_INTEGER;
-  }
-  if (manualPaused.has(source)) {
-    return Number.MAX_SAFE_INTEGER;
-  }
+  if (allPaused) return Number.MAX_SAFE_INTEGER;
+  if (manualPaused.has(source)) return Number.MAX_SAFE_INTEGER;
   const t = now();
   let until = 0;
   const cd = cooldownUntil.get(source) ?? 0;
-  if (cd > until) {
-    until = cd;
-  }
+  if (cd > until) until = cd;
   const br = breakerUntil.get(source) ?? 0;
-  if (br > until) {
-    until = br;
-  }
+  if (br > until) until = br;
   const ar = atRisk.get(source);
   if (ar) {
     const parkUntil = ar.since + AT_RISK_PARK_MS;
-    if (parkUntil > until) {
-      until = parkUntil;
-    }
+    if (parkUntil > until) until = parkUntil;
   }
   const budget = budgetUntil(source);
   if (budget > until) {
@@ -83,9 +73,7 @@ export function sourcePausedUntil(source: Source): number {
 const budgetParkLogged = new Map<Source, number>();
 
 function noteBudgetPark(source: Source, until: number): void {
-  if (until <= now() || budgetParkLogged.get(source) === until) {
-    return;
-  }
+  if (until <= now() || budgetParkLogged.get(source) === until) return;
   budgetParkLogged.set(source, until);
   const p = profile(source);
   log.warn(
@@ -94,15 +82,11 @@ function noteBudgetPark(source: Source, until: number): void {
 }
 
 export function setSourceCooldown(source: Source, ms: number): void {
-  if (ms <= 0) {
-    return;
-  }
+  if (ms <= 0) return;
   loadState();
   const until = now() + ms;
   const prev = cooldownUntil.get(source) ?? 0;
-  if (until <= prev) {
-    return;
-  }
+  if (until <= prev) return;
   cooldownUntil.set(source, until);
   log.info("[pond governor] cooldown set", { source, ms });
   void transitionSourceGate({
@@ -224,9 +208,7 @@ function recentCount(log_: Array<number>, windowMs: number): number {
   let count = 0;
   for (let i = log_.length - 1; i >= 0; i--) {
     const ts = log_[i];
-    if (ts === undefined || ts < cutoff) {
-      break;
-    }
+    if (ts === undefined || ts < cutoff) break;
     count += 1;
   }
   return count;
@@ -240,14 +222,10 @@ function budgetUntil(source: Source): number {
     [HOUR_MS, p.maxPerHour],
     [DAY_MS, p.maxPerDay],
   ] as const) {
-    if (recentCount(log_, windowMs) < max) {
-      continue;
-    }
+    if (recentCount(log_, windowMs) < max) continue;
     const oldest = log_[Math.max(0, log_.length - max)] ?? now();
     const free = oldest + windowMs;
-    if (free > until) {
-      until = free;
-    }
+    if (free > until) until = free;
   }
   return until;
 }
@@ -293,13 +271,9 @@ export async function acquire(
       : Number.MAX_SAFE_INTEGER;
 
   for (;;) {
-    if (opts.signal?.aborted) {
-      throw new GovernorAbortError();
-    }
+    if (opts.signal?.aborted) throw new GovernorAbortError();
     const until = sourcePausedUntil(source);
-    if (until === 0) {
-      break;
-    }
+    if (until === 0) break;
     if (until >= Number.MAX_SAFE_INTEGER) {
       const slice = Math.min(2000, deadline - now());
       if (slice <= 0) {
@@ -319,9 +293,7 @@ export async function acquire(
   for (;;) {
     const log_ = pruneLog(source);
     const inWindow = recentCount(log_, p.windowMs);
-    if (inWindow < p.maxPerWindow) {
-      break;
-    }
+    if (inWindow < p.maxPerWindow) break;
     const oldest = log_[log_.length - inWindow] ?? now();
     const waitMs = Math.min(oldest + p.windowMs - now(), deadline - now());
     if (waitMs <= 0 && deadline <= now()) {
@@ -334,17 +306,13 @@ export async function acquire(
   const gap = effectiveDelay(source, opts.firstSync ?? false);
   const spacingWait = last + gap - now();
   if (spacingWait > 0) {
-    if (now() + spacingWait > deadline) {
-      throw new GovernorAbortError();
-    }
+    if (now() + spacingWait > deadline) throw new GovernorAbortError();
     await wait(spacingWait, opts.signal);
   }
 
   for (;;) {
     const admission = await recordSourceRequest(source);
-    if (admission.admitted) {
-      break;
-    }
+    if (admission.admitted) break;
     if (admission.reason === "auth_required") {
       throw new AuthRequiredError(
         `Connect ${sourceLabel(source)} with the Pond extension`,
@@ -352,9 +320,7 @@ export async function acquire(
       );
     }
     const remaining = deadline - now();
-    if (remaining <= 0) {
-      throw new GovernorAbortError();
-    }
+    if (remaining <= 0) throw new GovernorAbortError();
     const gateWait =
       admission.nextRunAt >= Number.MAX_SAFE_INTEGER
         ? Math.min(2000, remaining)
@@ -411,9 +377,7 @@ export function report(source: Source, input: ReportInput): ReportResult {
     return { cooldownMs: ms };
   }
 
-  if (input.ok) {
-    noteSuccess(source);
-  }
+  if (input.ok) noteSuccess(source);
   return { cooldownMs: 0 };
 }
 

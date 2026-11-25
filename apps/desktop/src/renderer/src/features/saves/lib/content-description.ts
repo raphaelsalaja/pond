@@ -17,11 +17,7 @@ function isTwitterShortUrl(url: string): boolean {
 export function composeContentDescription(save: Save): string {
   const base = stripTwitterShortUrls(save.description?.trim() ?? "");
   const cardUrl = readCardUrl(save);
-  if (!cardUrl || isTwitterShortUrl(cardUrl)) {
-    return base;
-  }
-  if (!base) {
-    return cardUrl;
-  }
+  if (!cardUrl || isTwitterShortUrl(cardUrl)) return base;
+  if (!base) return cardUrl;
   return base.includes(cardUrl) ? base : `${base} ${cardUrl}`;
 }

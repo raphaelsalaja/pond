@@ -11,15 +11,10 @@ export function assetsBySha(
   const bySha = new Map<string, Array<LibraryAsset>>();
   for (const save of saves) {
     for (const asset of save.assets) {
-      if (!isSha256(asset.sha256) || !include(asset)) {
-        continue;
-      }
+      if (!isSha256(asset.sha256) || !include(asset)) continue;
       const list = bySha.get(asset.sha256);
-      if (list) {
-        list.push(asset);
-      } else {
-        bySha.set(asset.sha256, [asset]);
-      }
+      if (list) list.push(asset);
+      else bySha.set(asset.sha256, [asset]);
     }
   }
   return bySha;
@@ -35,9 +30,7 @@ export function expandShaMatch(
   for (const a of left.slice(0, MAX_FANOUT)) {
     for (const b of right.slice(0, MAX_FANOUT)) {
       const match = assetFound(evidence(a, b), supporting?.(a, b) ?? false);
-      if (match) {
-        found.push(match);
-      }
+      if (match) found.push(match);
     }
   }
   return found;

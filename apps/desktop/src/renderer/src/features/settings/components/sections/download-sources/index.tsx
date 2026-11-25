@@ -69,9 +69,7 @@ export function MissingVideos({ source }: { source?: ExternalSource }) {
             ? queuedVideosTitle(result.queued)
             : "Couldn't download videos",
         });
-        if (result.ok && result.queued > 0) {
-          setQueued(true);
-        }
+        if (result.ok && result.queued > 0) setQueued(true);
       })
       .catch(() =>
         notify({

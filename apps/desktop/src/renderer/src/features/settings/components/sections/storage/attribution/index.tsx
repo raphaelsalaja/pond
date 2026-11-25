@@ -19,9 +19,7 @@ interface Share {
 
 function labelForSourceIdentity(identity: string): string {
   const source = getSourceDefForIdentity(identity);
-  if (source?.source === "local") {
-    return "Local Files";
-  }
+  if (source?.source === "local") return "Local Files";
   return source?.label ?? identity;
 }
 

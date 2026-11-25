@@ -79,23 +79,15 @@ export class PinterestPinExtractor implements Extractor {
 
   authCookies(name: string, value?: string): boolean {
     /** `_pinterest_sess` is set for everyone; `_auth` is `"0"` while signed out. */
-    if (name !== "_auth") {
-      return false;
-    }
+    if (name !== "_auth") return false;
     return value === undefined || value === "1";
   }
 
   handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
-    if (!first) {
-      return null;
-    }
-    if (PINTEREST_RESERVED_ROOTS.has(first.toLowerCase())) {
-      return null;
-    }
-    if (!/^[A-Za-z0-9._-]{2,40}$/.test(first)) {
-      return null;
-    }
+    if (!first) return null;
+    if (PINTEREST_RESERVED_ROOTS.has(first.toLowerCase())) return null;
+    if (!/^[A-Za-z0-9._-]{2,40}$/.test(first)) return null;
     return first;
   }
 
@@ -117,9 +109,7 @@ export class PinterestPinExtractor implements Extractor {
   async extract(input: ExtractInput): Promise<Capture> {
     const match = firstMatch(input.url, this.validUrl);
     const pinId = match?.[1] ?? null;
-    if (!pinId) {
-      throw new TerminalError("could not parse pinterest id");
-    }
+    if (!pinId) throw new TerminalError("could not parse pinterest id");
 
     return captureFromSource({
       url: input.url.href,

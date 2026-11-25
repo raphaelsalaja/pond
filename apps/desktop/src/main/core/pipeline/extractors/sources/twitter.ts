@@ -30,9 +30,7 @@ export class TwitterTweetExtractor implements Extractor {
   async extract(input: ExtractInput): Promise<Capture> {
     const match = firstMatch(input.url, this.validUrl);
     const tweetId = match?.[1] ?? null;
-    if (!tweetId) {
-      throw new TerminalError("could not parse tweet id");
-    }
+    if (!tweetId) throw new TerminalError("could not parse tweet id");
     return captureFromSource({
       url: `https://x.com/i/web/status/${tweetId}`,
       source: "twitter",

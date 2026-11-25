@@ -20,9 +20,7 @@ const ManifestSchema = z.object({
 let scratch = "";
 
 afterEach(async () => {
-  if (scratch) {
-    await rm(scratch, { recursive: true, force: true });
-  }
+  if (scratch) await rm(scratch, { recursive: true, force: true });
   scratch = "";
 });
 
@@ -30,9 +28,7 @@ async function unpack(path: string): Promise<string> {
   scratch = await mkdtemp(join(tmpdir(), "pond-mcpb-"));
   const zip = await JSZip.loadAsync(await readFile(path));
   for (const [name, entry] of Object.entries(zip.files)) {
-    if (entry.dir) {
-      continue;
-    }
+    if (entry.dir) continue;
     const target = join(scratch, name);
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, await entry.async("nodebuffer"));

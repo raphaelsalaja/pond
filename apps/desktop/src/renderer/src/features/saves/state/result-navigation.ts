@@ -47,9 +47,7 @@ export const resultNavigation = {
   setLayout(items: ReadonlyArray<ResultRectangle>): () => void {
     rectangles = items;
     return () => {
-      if (rectangles === items) {
-        rectangles = [];
-      }
+      if (rectangles === items) rectangles = [];
     };
   },
   neighbor(
@@ -68,9 +66,7 @@ export const resultNavigation = {
     return (source.loadedIds?.() ?? source.ids).length > previous;
   },
   shouldFocus(): boolean {
-    if (!focusOnReveal || !("document" in globalThis)) {
-      return false;
-    }
+    if (!focusOnReveal || !("document" in globalThis)) return false;
     const active = document.activeElement;
     return (
       active === focusOwner ||
@@ -105,22 +101,16 @@ export const resultNavigation = {
     const loadedIndex = source.ids.indexOf(id);
     const loaded =
       loadedIndex >= 0 ? source.ids[loadedIndex + delta] : undefined;
-    if (loaded) {
-      return loaded;
-    }
+    if (loaded) return loaded;
     const ids = await this.ids();
     const index = ids.indexOf(id);
     return index < 0 ? null : (ids[index + delta] ?? null);
   },
   registerReveal(callback: (id: string) => void): () => void {
     reveal = callback;
-    if (pendingReveal) {
-      callback(pendingReveal);
-    }
+    if (pendingReveal) callback(pendingReveal);
     return () => {
-      if (reveal === callback) {
-        reveal = null;
-      }
+      if (reveal === callback) reveal = null;
     };
   },
   async reveal(id: string, options: { focus?: boolean } = {}): Promise<void> {
@@ -134,16 +124,10 @@ export const resultNavigation = {
     ) {
       const previous = (source.loadedIds?.() ?? source.ids).length;
       await source.loadMore();
-      if (source.key !== key || pendingReveal !== id) {
-        return;
-      }
-      if ((source.loadedIds?.() ?? source.ids).length <= previous) {
-        break;
-      }
+      if (source.key !== key || pendingReveal !== id) return;
+      if ((source.loadedIds?.() ?? source.ids).length <= previous) break;
     }
-    if (source.key === key) {
-      reveal?.(id);
-    }
+    if (source.key === key) reveal?.(id);
   },
   didReveal(id: string): void {
     if (pendingReveal === id) {
@@ -164,9 +148,7 @@ export const resultNavigation = {
       }
       const before = held;
       held = null;
-      if (!before || before.key !== source.key) {
-        return;
-      }
+      if (!before || before.key !== source.key) return;
       const remaining = new Set(source.ids);
       const index = before.ids.indexOf(id);
       onLeave(

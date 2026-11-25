@@ -169,9 +169,7 @@ export function LibraryView() {
       data.paging.loading &&
       data.filteredIds.length === 0 &&
       !data.paging.settledEmpty;
-    if (unsettled) {
-      return;
-    }
+    if (unsettled) return;
     publishedKey.current = key;
     libraryViewContext.set(data.filteredIds, data.mode);
     resultNavigation.setSource({
@@ -213,15 +211,9 @@ export function LibraryView() {
         data-library-grid=""
         onPointerDown={marquee.onPointerDown}
         onMouseDown={(event) => {
-          if (event.defaultPrevented || event.button !== 0) {
-            return;
-          }
-          if (event.metaKey || event.ctrlKey || event.shiftKey) {
-            return;
-          }
-          if (!isLibraryBackgroundTarget(event.target)) {
-            return;
-          }
+          if (event.defaultPrevented || event.button !== 0) return;
+          if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+          if (!isLibraryBackgroundTarget(event.target)) return;
           clearSaveSelection();
         }}
         onDragOver={actions.onDragOver}

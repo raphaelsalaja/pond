@@ -137,14 +137,10 @@ async function moveSavedViewQuickAccess(
 ): Promise<void> {
   const current = ids.indexOf(id);
   const target = current + offset;
-  if (current < 0 || target < 0 || target >= ids.length) {
-    return;
-  }
+  if (current < 0 || target < 0 || target >= ids.length) return;
   const ordered = [...ids];
   const [moved] = ordered.splice(current, 1);
-  if (!moved) {
-    return;
-  }
+  if (!moved) return;
   ordered.splice(target, 0, moved);
   await Promise.all(
     ordered.map((viewId, quickAccessOrder) =>
@@ -198,9 +194,7 @@ export function entryItems({
           openEditor({ mode: "edit", view });
           return;
         }
-        if (!active) {
-          onSelect();
-        }
+        if (!active) onSelect();
         filterToolbar.setOpen(true);
       },
     },

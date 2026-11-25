@@ -37,9 +37,7 @@ async function refetch(id: string): Promise<Save | undefined> {
 }
 
 function metaFor(opts: MutateOpts): TxMeta | undefined {
-  if (!opts.actorReason) {
-    return undefined;
-  }
+  if (!opts.actorReason) return undefined;
   return { actor: "user", actorReason: opts.actorReason };
 }
 
@@ -65,9 +63,7 @@ function snapshotBefore(prev: Save, patch: SaveEdit): Partial<NewSave> {
   const previous = toNewSave(prev);
   const before: Partial<NewSave> = {};
   for (const [key, value] of Object.entries(previous)) {
-    if (!Object.hasOwn(patch, key)) {
-      continue;
-    }
+    if (!Object.hasOwn(patch, key)) continue;
     Object.assign(before, { [key]: value });
   }
   return before;
@@ -80,9 +76,7 @@ export async function mutateSave(
 ): Promise<void> {
   const prev = pool.get(id) ?? (await refetch(id));
   if (!prev) {
-    if (opts.throwOnError) {
-      throw new Error("This save is no longer available.");
-    }
+    if (opts.throwOnError) throw new Error("This save is no longer available.");
     return;
   }
   const tx: Transaction = {
@@ -93,9 +87,7 @@ export async function mutateSave(
     before: snapshotBefore(prev, patch),
   };
   const meta = metaFor(opts);
-  if (meta) {
-    tx.meta = meta;
-  }
+  if (meta) tx.meta = meta;
   const result = await optimistic(
     () => pool.upsert({ ...prev, ...patch }),
     () => pool.upsert(prev),
@@ -113,9 +105,7 @@ export async function setSaveTags(
   tags: Array<string>,
 ): Promise<void> {
   const prev = pool.get(id) ?? (await refetch(id));
-  if (!prev) {
-    return;
-  }
+  if (!prev) return;
   await optimistic(
     () => pool.upsert({ ...prev, tags }),
     () => pool.upsert(prev),
@@ -125,9 +115,7 @@ export async function setSaveTags(
 
 export async function untrashSave(id: string): Promise<void> {
   const prev = pool.get(id) ?? (await refetch(id));
-  if (!prev) {
-    return;
-  }
+  if (!prev) return;
   await optimistic(
     () => pool.upsert({ ...prev, deletedAt: null }),
     () => pool.upsert(prev),
@@ -137,9 +125,7 @@ export async function untrashSave(id: string): Promise<void> {
 
 export async function purgeSave(id: string): Promise<void> {
   const prev = pool.get(id) ?? (await refetch(id));
-  if (!prev) {
-    return;
-  }
+  if (!prev) return;
   await optimistic(
     () => pool.delete(id),
     () => pool.upsert(prev),
@@ -171,9 +157,7 @@ export async function bulkMutation(
   deps: BulkMutationDeps = bulkMutationDeps,
 ): Promise<BulkEditResult> {
   const targets = [...new Set(ids)];
-  if (!targets.length) {
-    return { changed: 0, undoId: null };
-  }
+  if (!targets.length) return { changed: 0, undoId: null };
   const before = targets.flatMap((id) => {
     const save = pool.get(id);
     return save ? [save] : [];

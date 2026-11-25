@@ -26,9 +26,7 @@ export class MarkedRefExtractor implements Extractor {
 
   /** Clerk sets `__client_uat` for visitors too, with `0` until someone signs in. */
   authCookies(name: string, value?: string): boolean {
-    if (!/^__client_uat(?:_[\w-]+)?$/.test(name)) {
-      return false;
-    }
+    if (!/^__client_uat(?:_[\w-]+)?$/.test(name)) return false;
     return value === undefined || (value.length > 0 && value !== "0");
   }
 
@@ -49,9 +47,7 @@ export class MarkedRefExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("marked", input.url.href);
-    if (!sourceId) {
-      throw new TerminalError("could not parse marked ref");
-    }
+    if (!sourceId) throw new TerminalError("could not parse marked ref");
     return captureFromSource({
       url: `https://marked.dev/ref/${sourceId}`,
       source: "marked",

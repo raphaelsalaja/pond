@@ -92,9 +92,7 @@ describe("tag context menu", () => {
     const merge = buildTagMenuItems(actions({ onMerge })).find(
       (item) => item.type === "submenu" && item.label === "Merge Into",
     );
-    if (merge?.type !== "submenu") {
-      throw new Error("Missing merge menu");
-    }
+    if (merge?.type !== "submenu") throw new Error("Missing merge menu");
     const target = merge.items[0];
     if (!target || target.type === "separator" || target.type === "submenu") {
       throw new Error("Missing merge target");

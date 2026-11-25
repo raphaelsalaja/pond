@@ -20,9 +20,7 @@ export function Roles({ label, roles, className, ...props }: RolesProps) {
   useLayoutEffect(() => {
     const root = ref.current;
     const probe = root?.querySelector<HTMLElement>("[data-probe]");
-    if (!root || !probe) {
-      return;
-    }
+    if (!root || !probe) return;
     const base = luminance(getComputedStyle(probe).backgroundColor);
     const swatches = root.querySelectorAll<HTMLElement>("[data-swatch]");
     setRatios(

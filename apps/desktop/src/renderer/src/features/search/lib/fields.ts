@@ -141,9 +141,7 @@ export function describePredicate(predicate: Predicate): PredicateChip {
   switch (meta.type) {
     case "enum": {
       const negated = operator === "neq" || operator === "nin";
-      if (field === "post") {
-        return { ...base, label: meta.label, negated };
-      }
+      if (field === "post") return { ...base, label: meta.label, negated };
       const list = (Array.isArray(value) ? value : [value]).map((v) =>
         field === "account" ? accountChipLabel(String(v)) : String(v),
       );

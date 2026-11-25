@@ -45,9 +45,7 @@ function resolveTrayIconFile(names: Array<string>): string | null {
   for (const root of roots) {
     for (const name of names) {
       const path = join(root, name);
-      if (existsSync(path)) {
-        return path;
-      }
+      if (existsSync(path)) return path;
     }
   }
   return null;
@@ -60,9 +58,7 @@ function templateFromPath(path: string): NativeImage {
 }
 
 function markTemplate(img: NativeImage): void {
-  if (process.platform === "darwin") {
-    img.setTemplateImage(true);
-  }
+  if (process.platform === "darwin") img.setTemplateImage(true);
 }
 
 function makePlaceholderIcon(): NativeImage {
@@ -119,9 +115,7 @@ function drawGlyphRgba(size: number): Buffer {
       if (inside) {
         const dx = x - cx + 0.5;
         const dy = y - cy + 0.5;
-        if (dx * dx + dy * dy <= rippleR * rippleR) {
-          inside = false;
-        }
+        if (dx * dx + dy * dy <= rippleR * rippleR) inside = false;
       }
       if (inside) {
         rgba[i + 3] = 255;

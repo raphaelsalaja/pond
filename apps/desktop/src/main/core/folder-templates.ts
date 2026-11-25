@@ -72,9 +72,7 @@ function findFolderTemplate(
   const template = [...BUILT_IN_FOLDER_TEMPLATES, ...custom].find(
     (entry) => entry.id === id,
   );
-  if (!template) {
-    throw new Error("This template no longer exists.");
-  }
+  if (!template) throw new Error("This template no longer exists.");
   return template;
 }
 

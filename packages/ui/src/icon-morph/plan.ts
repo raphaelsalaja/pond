@@ -60,9 +60,7 @@ let probe: SVGPathElement | null = null;
 function measure(d: string): SVGPathElement | null {
   if (!probe) {
     const doc = globalThis.document;
-    if (!doc?.body) {
-      return null;
-    }
+    if (!doc?.body) return null;
     const svg = doc.createElementNS(SVG_NS, "svg");
     svg.setAttribute("aria-hidden", "true");
     svg.style.cssText =
@@ -71,9 +69,7 @@ function measure(d: string): SVGPathElement | null {
     svg.append(probe);
     doc.body.append(svg);
   }
-  if (!("getTotalLength" in probe)) {
-    return null;
-  }
+  if (!("getTotalLength" in probe)) return null;
   probe.setAttribute("d", d);
   return probe;
 }
@@ -84,9 +80,7 @@ function num(attrs: Attrs, key: string, fallback = 0) {
 }
 
 function toPath(tag: string, attrs: Attrs): string | null {
-  if (tag === "path") {
-    return attrs.d ?? null;
-  }
+  if (tag === "path") return attrs.d ?? null;
   if (tag === "circle") {
     const [cx, cy, r] = [num(attrs, "cx"), num(attrs, "cy"), num(attrs, "r")];
     return `M${cx - r} ${cy}A${r} ${r} 0 1 0 ${cx + r} ${cy}A${r} ${r} 0 1 0 ${cx - r} ${cy}Z`;
@@ -130,9 +124,7 @@ function subpaths(d: string): Array<string> {
 /** Rings end on their start point too, so a ring morphing into an open line stays closed without a `Z`. */
 function sample(d: string): Array<Point> | null {
   const path = measure(d);
-  if (!path) {
-    return null;
-  }
+  if (!path) return null;
   const length = path.getTotalLength();
   const points: Array<Point> = [];
   for (let index = 0; index < SAMPLES; index += 1) {
@@ -146,18 +138,14 @@ function contoursOf(nodes: IconNode): Array<Contour> | null {
   const contours: Array<Contour> = [];
   for (const [tag, attrs] of nodes) {
     const d = toPath(tag, attrs);
-    if (!d) {
-      return null;
-    }
+    if (!d) return null;
     const paint = Object.fromEntries(
       Object.entries(attrs).filter(([key]) => !GEOMETRY.has(key)),
     );
     for (const sub of subpaths(d)) {
       const closed = /z\s*$/i.test(sub.trim());
       const points = sample(sub);
-      if (!points) {
-        return null;
-      }
+      if (!points) return null;
       contours.push({ points, closed, paint });
     }
   }
@@ -169,9 +157,7 @@ function cost(a: Array<Point>, b: Array<Point>) {
   for (let index = 0; index < a.length; index += 1) {
     const p = a[index];
     const q = b[index];
-    if (p && q) {
-      total += (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2;
-    }
+    if (p && q) total += (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2;
   }
   return total;
 }
@@ -183,9 +169,7 @@ function rotations(points: Array<Point>): Array<Array<Point>> {
     for (let shift = 0; shift < ring.length; shift += 1) {
       const rotated = [...ring.slice(shift), ...ring.slice(0, shift)];
       const start = rotated[0];
-      if (start) {
-        out.push([...rotated, start]);
-      }
+      if (start) out.push([...rotated, start]);
     }
   }
   return out;
@@ -249,14 +233,10 @@ export function planMorph(
 ): MorphPlan | null {
   const a = from.glyph;
   const b = to.glyph;
-  if (!a || !b || a.style !== b.style) {
-    return null;
-  }
+  if (!a || !b || a.style !== b.style) return null;
   const key = `${from.displayName}>${to.displayName}`;
   const cached = plans.get(key);
-  if (cached !== undefined) {
-    return cached;
-  }
+  if (cached !== undefined) return cached;
 
   const toSigs = b.nodes.map(sig);
   const used = new Set<number>();
@@ -296,9 +276,7 @@ export function planMorph(
   for (const { i, j, from, to } of pairs) {
     const s = source[i];
     const t = target[j];
-    if (!s || !t || takenFrom.has(i) || takenTo.has(j)) {
-      continue;
-    }
+    if (!s || !t || takenFrom.has(i) || takenTo.has(j)) continue;
     takenFrom.add(i);
     takenTo.add(j);
     tracks.push({

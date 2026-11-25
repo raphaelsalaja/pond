@@ -108,11 +108,8 @@ export interface ApiBinary {
 
 function params(values: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(values)) {
-    if (value !== undefined) {
-      search.set(key, String(value));
-    }
-  }
+  for (const [key, value] of Object.entries(values))
+    if (value !== undefined) search.set(key, String(value));
   return search.toString();
 }
 
@@ -177,18 +174,10 @@ function endpoint(value: string, allowRemote: boolean): string {
 }
 
 function failureKind(status: number, code?: string): ApiFailure {
-  if (code === "invalid_json" || code === "invalid_request") {
-    return "invalid";
-  }
-  if (status === 401 || status === 403) {
-    return "authentication";
-  }
-  if (status === 404) {
-    return "not-found";
-  }
-  if (status === 409 || status === 422 || status === 429) {
-    return "conflict";
-  }
+  if (code === "invalid_json" || code === "invalid_request") return "invalid";
+  if (status === 401 || status === 403) return "authentication";
+  if (status === 404) return "not-found";
+  if (status === 409 || status === 422 || status === 429) return "conflict";
   return status >= 500 ? "internal" : "response";
 }
 
@@ -224,9 +213,7 @@ export class PondApi {
     const headers: ApiHeaders = {
       "content-type": "application/json",
     };
-    if (authorization) {
-      headers.authorization = authorization;
-    }
+    if (authorization) headers.authorization = authorization;
     Object.assign(headers, Object.fromEntries(new Headers(init.headers)));
     try {
       return await this.fetcher(`${this.baseUrl}${path}`, {
@@ -277,9 +264,7 @@ export class PondApi {
     init: RequestInit = {},
   ): Promise<Output> {
     const response = await this.send(path, init);
-    if (!response.ok) {
-      throw await this.failure(response);
-    }
+    if (!response.ok) throw await this.failure(response);
     const decoded = ApiJsonSchema.safeParse(
       await response.json().catch(() => null),
     );
@@ -316,9 +301,7 @@ export class PondApi {
 
   private async binary(path: string): Promise<ApiBinary> {
     const response = await this.send(path);
-    if (!response.ok) {
-      throw await this.failure(response);
-    }
+    if (!response.ok) throw await this.failure(response);
     return {
       type: response.headers.get("content-type") ?? "application/octet-stream",
       bytes: new Uint8Array(await response.arrayBuffer()),

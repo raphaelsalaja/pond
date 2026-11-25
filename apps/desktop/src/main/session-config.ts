@@ -22,9 +22,7 @@ export function productionResponseHeaders(
   responseHeaders: Record<string, Array<string>> | undefined,
 ): Record<string, Array<string>> | undefined {
   /** pond:// serves the archive viewer and wabac's service worker; injecting the app CSP/COEP there breaks replay. The app document itself loads from file://, so its CSP is unaffected. */
-  if (url.startsWith("pond://")) {
-    return responseHeaders;
-  }
+  if (url.startsWith("pond://")) return responseHeaders;
   const headers = { ...responseHeaders };
   for (const key of Object.keys(headers)) {
     if (key.toLowerCase() === "content-security-policy") {
@@ -33,9 +31,7 @@ export function productionResponseHeaders(
   }
   headers["Content-Security-Policy"] = [PROD_CSP];
   /** file:// is never cross-origin isolated, and COEP there makes Chromium block the file:// inference worker, which this hook cannot give a COEP header. */
-  if (url.startsWith("file://")) {
-    return headers;
-  }
+  if (url.startsWith("file://")) return headers;
   /** Cross-origin isolation lets onnxruntime-web use multi-threaded WASM; `credentialless` keeps remote media loading without requiring CORP on the third party. */
   headers["Cross-Origin-Opener-Policy"] = ["same-origin"];
   headers["Cross-Origin-Embedder-Policy"] = ["credentialless"];

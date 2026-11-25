@@ -50,13 +50,9 @@ export function parseSourceDetailPath(
   pathname: string,
   page?: SourceDetailsPage,
 ): SourceDetailTarget | null {
-  if (!isSourceDetailPath(pathname)) {
-    return null;
-  }
+  if (!isSourceDetailPath(pathname)) return null;
   const [kind, id] = pathname.slice("/sources/".length).split("/");
-  if (!kind || !id || !isSourceDetailsKind(kind)) {
-    return null;
-  }
+  if (!kind || !id || !isSourceDetailsKind(kind)) return null;
   return {
     kind,
     id: decodeURIComponent(id),

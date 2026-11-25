@@ -41,16 +41,10 @@ async function inPageUnsplashHarvest(
       ?.trim() ?? "";
   const image = meta("og:image");
   const title = meta("og:title");
-  if (!image && !title) {
-    return null;
-  }
+  if (!image && !title) return null;
   const page: UnsplashAssetPage = { mediaUrls: [], meta: {} };
-  if (title) {
-    page.title = title;
-  }
-  if (image) {
-    page.mediaUrls.push({ url: image, type: "image" });
-  }
+  if (title) page.title = title;
+  if (image) page.mediaUrls.push({ url: image, type: "image" });
   return page;
 }
 

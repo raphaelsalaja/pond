@@ -39,9 +39,7 @@ export function AutomaticTagsDialog({
     void window.pond
       .query("folders.rules.get", { id: folderId })
       .then((result) => {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         setSelected(result.tags);
         setInitial(result.tags);
         setInherited(result.inheritedTags);
@@ -60,9 +58,7 @@ export function AutomaticTagsDialog({
   }, [folderId]);
 
   function toggle(name: string) {
-    if (loading || busy) {
-      return;
-    }
+    if (loading || busy) return;
     const key = name.toLowerCase();
     setSelected((current) =>
       current.some((item) => item.toLowerCase() === key)
@@ -93,9 +89,7 @@ export function AutomaticTagsDialog({
     <Dialog.Root
       open
       onOpenChange={(open) => {
-        if (!open && !busy) {
-          onClose();
-        }
+        if (!open && !busy) onClose();
       }}
     >
       <Dialog.Portal>

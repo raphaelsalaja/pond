@@ -48,9 +48,7 @@ export function outcomeFromResponse(
   response: NativeResponse,
 ): CaptureOutcome {
   if (!response.ok) {
-    if (response.error === "offline") {
-      return { status: "offline", id };
-    }
+    if (response.error === "offline") return { status: "offline", id };
     return {
       status: "failed",
       id,
@@ -58,28 +56,20 @@ export function outcomeFromResponse(
     };
   }
   const receipt = CaptureReceiptSchema.safeParse(response.data);
-  if (!receipt.success) {
-    return { status: "sending", id };
-  }
+  if (!receipt.success) return { status: "sending", id };
   const { state, saveIds, duplicateCount, error, warning } = receipt.data;
   if (state === "failed" || state === "cancelled") {
     return { status: "failed", id, message: error ?? GENERIC_ERROR };
   }
-  if (state !== "complete") {
-    return { status: "sending", id };
-  }
+  if (state !== "complete") return { status: "sending", id };
   const saveId = saveIds[0];
   const status =
     duplicateCount > 0 && duplicateCount === saveIds.length
       ? "duplicate"
       : "saved";
   const outcome: CaptureOutcome = { status, id };
-  if (saveId) {
-    outcome.saveId = saveId;
-  }
-  if (warning) {
-    outcome.warning = warning;
-  }
+  if (saveId) outcome.saveId = saveId;
+  if (warning) outcome.warning = warning;
   return outcome;
 }
 

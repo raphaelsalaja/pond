@@ -53,17 +53,13 @@ export async function imageFingerprint(
     width: IMAGE_PRINT_DECODE_SIZE,
     height: IMAGE_PRINT_DECODE_SIZE,
   });
-  if (isLowDetailHash(print.full)) {
-    return { status: "low-detail" };
-  }
+  if (isLowDetailHash(print.full)) return { status: "low-detail" };
   return { status: "ok", value: encodeImagePrint(print) };
 }
 
 async function videoFingerprint(path: string): Promise<FingerprintOutcome> {
   const duration = await probeMediaDuration(path);
-  if (!duration) {
-    return { status: "failed", error: "No readable duration" };
-  }
+  if (!duration) return { status: "failed", error: "No readable duration" };
   const plan = videoSampleTimes(duration);
   const frames = await sampleGrayFrames(path, {
     windowSeconds: plan.windowSeconds,
@@ -71,9 +67,7 @@ async function videoFingerprint(path: string): Promise<FingerprintOutcome> {
     width: DHASH_WIDTH,
     height: DHASH_HEIGHT,
   });
-  if (!frames?.length) {
-    return { status: "failed", error: "No frames decoded" };
-  }
+  if (!frames?.length) return { status: "failed", error: "No frames decoded" };
   const print = videoPrintFromFrames(
     duration,
     plan.windowSeconds / frames.length,
@@ -87,9 +81,7 @@ async function videoFingerprint(path: string): Promise<FingerprintOutcome> {
 
 async function audioFingerprint(path: string): Promise<FingerprintOutcome> {
   const duration = await probeMediaDuration(path);
-  if (!duration) {
-    return { status: "failed", error: "No readable duration" };
-  }
+  if (!duration) return { status: "failed", error: "No readable duration" };
   let samples: Float32Array;
   try {
     ({ audio: samples } = await decodeAudioSamples(
@@ -112,9 +104,7 @@ async function audioFingerprint(path: string): Promise<FingerprintOutcome> {
     return { status: "low-detail" };
   }
   const print = audioPrintFromSamples(samples, duration);
-  if (print.frames.length === 0) {
-    return { status: "low-detail" };
-  }
+  if (print.frames.length === 0) return { status: "low-detail" };
   return { status: "ok", value: encodeAudioPrint(print) };
 }
 

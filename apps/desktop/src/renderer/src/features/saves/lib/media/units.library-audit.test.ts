@@ -60,13 +60,9 @@ describe.skipIf(!LIBRARY_PATH)("live library media units", () => {
       }
 
       for (const unit of units) {
-        if (!unit.isVideo) {
-          continue;
-        }
+        if (!unit.isVideo) continue;
         videoCount += 1;
-        if (!unit.posterUrl) {
-          videosWithoutPosters.push(save.id);
-        }
+        if (!unit.posterUrl) videosWithoutPosters.push(save.id);
       }
     }
 

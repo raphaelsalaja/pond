@@ -120,9 +120,7 @@ async function publishValidatedText(input: CompletionInput, text: string) {
   for (let index = 0; index < chunks.length; index++) {
     input.abortController.signal.throwIfAborted();
     input.onText(chunks[index] ?? "");
-    if (index < chunks.length - 1) {
-      await wait(textChunkDelayMs);
-    }
+    if (index < chunks.length - 1) await wait(textChunkDelayMs);
   }
 }
 
@@ -135,9 +133,7 @@ function uniqueSources(
 }
 
 function serializableMessage(message: ModelMessage) {
-  if (!Array.isArray(message.content)) {
-    return message;
-  }
+  if (!Array.isArray(message.content)) return message;
   return {
     ...message,
     content: message.content.map((part) => {
@@ -158,11 +154,8 @@ function messageTurns(
 ): Array<Array<ModelMessage>> {
   const turns: Array<Array<ModelMessage>> = [];
   for (const message of messages) {
-    if (message.role === "user" || !turns.length) {
-      turns.push([message]);
-    } else {
-      turns.at(-1)?.push(message);
-    }
+    if (message.role === "user" || !turns.length) turns.push([message]);
+    else turns.at(-1)?.push(message);
   }
   return turns;
 }
@@ -172,9 +165,7 @@ function turnTokens(
   encode: (value: string) => Array<number>,
 ): number {
   const binaryParts = turn.reduce((total, message) => {
-    if (!Array.isArray(message.content)) {
-      return total;
-    }
+    if (!Array.isArray(message.content)) return total;
     return (
       total +
       message.content.filter((part) => {
@@ -220,13 +211,9 @@ export function budgetMessages(
   const kept = [latest];
   for (let index = turns.length - 2; index >= 0; index--) {
     const turn = turns[index];
-    if (!turn) {
-      continue;
-    }
+    if (!turn) continue;
     const size = turnTokens(turn, encode);
-    if (total + size > inputBudget) {
-      break;
-    }
+    if (total + size > inputBudget) break;
     total += size;
     kept.unshift(turn);
   }
@@ -237,18 +224,10 @@ function nativeFastOptions(
   provider: AgentProviderId,
   enabled: boolean,
 ): Record<string, Record<string, string>> | undefined {
-  if (!enabled) {
-    return undefined;
-  }
-  if (provider === "openai") {
-    return { openai: { serviceTier: "fast" } };
-  }
-  if (provider === "anthropic") {
-    return { anthropic: { speed: "fast" } };
-  }
-  if (provider === "gemini") {
-    return { google: { serviceTier: "priority" } };
-  }
+  if (!enabled) return undefined;
+  if (provider === "openai") return { openai: { serviceTier: "fast" } };
+  if (provider === "anthropic") return { anthropic: { speed: "fast" } };
+  if (provider === "gemini") return { google: { serviceTier: "priority" } };
   return undefined;
 }
 
@@ -306,13 +285,9 @@ function attachFilesToLatestUserMessage(
     return messages;
   }
   const index = messages.findLastIndex((message) => message.role === "user");
-  if (index < 0) {
-    return messages;
-  }
+  if (index < 0) return messages;
   const message = messages[index];
-  if (message?.role !== "user") {
-    return messages;
-  }
+  if (message?.role !== "user") return messages;
   const content = Array.isArray(message.content)
     ? [...message.content]
     : [{ type: "text" as const, text: message.content }];
@@ -354,13 +329,9 @@ const providerError = z.union([
 ]);
 
 function providerErrorMessage(error: z.infer<typeof providerError>): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message;
-  }
+  if (error instanceof Error && error.message.trim()) return error.message;
   const asString = z.string().safeParse(error);
-  if (asString.success && asString.data.trim()) {
-    return asString.data;
-  }
+  if (asString.success && asString.data.trim()) return asString.data;
   const parsed = z
     .object({
       message: z.string().optional(),
@@ -370,14 +341,10 @@ function providerErrorMessage(error: z.infer<typeof providerError>): string {
     })
     .safeParse(error);
   if (parsed.success) {
-    if (parsed.data.message?.trim()) {
-      return parsed.data.message;
-    }
+    if (parsed.data.message?.trim()) return parsed.data.message;
     const nested = parsed.data.error;
     const nestedText = z.string().safeParse(nested);
-    if (nestedText.success && nestedText.data.trim()) {
-      return nestedText.data;
-    }
+    if (nestedText.success && nestedText.data.trim()) return nestedText.data;
     const nestedObject = z
       .object({ message: z.string().optional() })
       .safeParse(nested);
@@ -394,9 +361,7 @@ export async function completeWithTools(
 ): Promise<string> {
   input.abortController.signal.throwIfAborted();
   const languageModel = input.languageModel ?? (await loadModel(input));
-  if (!languageModel) {
-    throw new Error("Choose a supported model in Settings.");
-  }
+  if (!languageModel) throw new Error("Choose a supported model in Settings.");
   const compact = input.provider === "apple";
   const specs = compact ? compactTools(input.tools) : input.tools;
   const tools = Object.fromEntries(
@@ -478,9 +443,7 @@ export async function completeWithTools(
   /** Text written before a tool call goes out as its own message so the user hears back while the tools run. */
   const publishHeadsUp = async () => {
     const pending = assembled.slice(published);
-    if (!pending.trim()) {
-      return;
-    }
+    if (!pending.trim()) return;
     if (
       answerProblem(pending) ||
       evidenceAnswerProblem(pending, evidenceCount())
@@ -507,9 +470,7 @@ export async function completeWithTools(
       const failed = z
         .object({ type: z.literal("error"), error: z.unknown() })
         .safeParse(part);
-      if (failed.success) {
-        throw failed.data.error;
-      }
+      if (failed.success) throw failed.data.error;
       const tool = z
         .object({ type: z.enum(["tool-input-start", "tool-call"]) })
         .safeParse(part);
@@ -520,9 +481,7 @@ export async function completeWithTools(
       const delta = z
         .object({ type: z.literal("text-delta"), text: z.string() })
         .safeParse(part);
-      if (!delta.success || !delta.data.text) {
-        continue;
-      }
+      if (!delta.success || !delta.data.text) continue;
       assembled += delta.data.text;
       if (!writing) {
         writing = true;

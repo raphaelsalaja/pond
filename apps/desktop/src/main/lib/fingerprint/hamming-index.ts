@@ -49,11 +49,8 @@ export class HammingIndex<T> {
     for (const [chunk, bucket] of this.#buckets.entries()) {
       const key = chunkOf(low, high, chunk);
       const ids = bucket.get(key);
-      if (ids) {
-        ids.push(id);
-      } else {
-        bucket.set(key, [id]);
-      }
+      if (ids) ids.push(id);
+      else bucket.set(key, [id]);
     }
   }
 
@@ -67,15 +64,11 @@ export class HammingIndex<T> {
       for (const key of nearbyKeys(chunkOf(low, high, chunk), flips)) {
         for (const id of bucket.get(key) ?? []) {
           const entry = this.#entries[id];
-          if (!entry || this.#seen[id] === stamp) {
-            continue;
-          }
+          if (!entry || this.#seen[id] === stamp) continue;
           this.#seen[id] = stamp;
           const distance =
             popcount32(entry.low ^ low) + popcount32(entry.high ^ high);
-          if (distance <= radius) {
-            found.push({ value: entry.value, distance });
-          }
+          if (distance <= radius) found.push({ value: entry.value, distance });
         }
       }
     }

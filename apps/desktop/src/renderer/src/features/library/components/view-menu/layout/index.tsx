@@ -18,9 +18,7 @@ export function LayoutSection() {
       items={OPTIONS}
       value={state.layout}
       onValueChange={(value) => {
-        if (value !== null) {
-          actions.setLayout(value);
-        }
+        if (value !== null) actions.setLayout(value);
       }}
     >
       <ViewMenuRow.Root>

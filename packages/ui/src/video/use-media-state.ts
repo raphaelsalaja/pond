@@ -118,9 +118,7 @@ export function useMediaState(
 
   useEffect(() => {
     const v = videoEl;
-    if (!v) {
-      return;
-    }
+    if (!v) return;
     const sync = () => {
       setState((s) => ({
         ...s,
@@ -143,26 +141,14 @@ export function useMediaState(
     const RESUME_EVENTS = ["playing", "canplay", "seeked", "pause"] as const;
     const WAIT_EVENTS = ["waiting", "stalled", "seeking"] as const;
 
-    for (const event of MEDIA_EVENTS) {
-      v.addEventListener(event, sync);
-    }
-    for (const event of WAIT_EVENTS) {
-      v.addEventListener(event, onWaiting);
-    }
-    for (const event of RESUME_EVENTS) {
-      v.addEventListener(event, onResume);
-    }
+    for (const event of MEDIA_EVENTS) v.addEventListener(event, sync);
+    for (const event of WAIT_EVENTS) v.addEventListener(event, onWaiting);
+    for (const event of RESUME_EVENTS) v.addEventListener(event, onResume);
     sync();
     return () => {
-      for (const event of MEDIA_EVENTS) {
-        v.removeEventListener(event, sync);
-      }
-      for (const event of WAIT_EVENTS) {
-        v.removeEventListener(event, onWaiting);
-      }
-      for (const event of RESUME_EVENTS) {
-        v.removeEventListener(event, onResume);
-      }
+      for (const event of MEDIA_EVENTS) v.removeEventListener(event, sync);
+      for (const event of WAIT_EVENTS) v.removeEventListener(event, onWaiting);
+      for (const event of RESUME_EVENTS) v.removeEventListener(event, onResume);
     };
   }, [videoEl]);
 
@@ -181,23 +167,17 @@ export function useMediaState(
 
   const seek = useCallback((time: number) => {
     const v = videoRef.current;
-    if (!v) {
-      return;
-    }
+    if (!v) return;
     const d = v.duration;
     v.currentTime = Number.isFinite(d) ? clamp(time, 0, d) : Math.max(0, time);
   }, []);
 
   const setVolume = useCallback((volume: number) => {
     const v = videoRef.current;
-    if (!v) {
-      return;
-    }
+    if (!v) return;
     const next = clamp(volume, 0, 1);
     v.volume = next;
-    if (next > 0 && v.muted) {
-      v.muted = false;
-    }
+    if (next > 0 && v.muted) v.muted = false;
   }, []);
 
   const actions = useMemo<MediaActions>(
@@ -218,28 +198,20 @@ export function useMediaState(
       seek,
       seekBy: (delta: number) => {
         const v = videoRef.current;
-        if (v) {
-          seek(v.currentTime + delta);
-        }
+        if (v) seek(v.currentTime + delta);
       },
       setVolume,
       toggleMute: () => {
         const v = videoRef.current;
-        if (v) {
-          v.muted = !v.muted;
-        }
+        if (v) v.muted = !v.muted;
       },
       setRate: (rate: number) => {
         const v = videoRef.current;
-        if (v) {
-          v.playbackRate = rate;
-        }
+        if (v) v.playbackRate = rate;
       },
       toggleFullscreen: () => {
         const target = fullscreenTargetRef.current ?? rootRef.current;
-        if (!target) {
-          return;
-        }
+        if (!target) return;
         if (document.fullscreenElement === target) {
           void document.exitFullscreen().catch(keepScreenMode);
         } else {
@@ -248,16 +220,10 @@ export function useMediaState(
       },
       stepFrame: (delta: number) => {
         const v = videoRef.current;
-        if (!v) {
-          return;
-        }
+        if (!v) return;
         const next = frameStepTime(v.currentTime, delta, frameRate);
-        if (next === null) {
-          return;
-        }
-        if (!v.paused) {
-          v.pause();
-        }
+        if (next === null) return;
+        if (!v.paused) v.pause();
         seek(next);
       },
     }),

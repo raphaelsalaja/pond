@@ -43,9 +43,7 @@ describe("durable capture queue", () => {
     const { root, ports, queue } = await fixture(
       async (_item, _meta, identity) => {
         calls.push(identity);
-        if (identity.endsWith(":1") && fail) {
-          throw new Error("offline");
-        }
+        if (identity.endsWith(":1") && fail) throw new Error("offline");
         return { id: identity };
       },
     );

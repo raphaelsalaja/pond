@@ -36,9 +36,7 @@ async function printOf(image: Buffer): Promise<ImagePrint> {
   const outcome = await imageFingerprint(image);
   expect(outcome.status).toBe("ok");
   const print = outcome.value ? decodeImagePrint(outcome.value) : null;
-  if (!print) {
-    throw new Error("No print");
-  }
+  if (!print) throw new Error("No print");
   return print;
 }
 
@@ -72,9 +70,7 @@ beforeAll(async () => {
 
 function print(name: string): ImagePrint {
   const found = prints[name];
-  if (!found) {
-    throw new Error(`No print for ${name}`);
-  }
+  if (!found) throw new Error(`No print for ${name}`);
   return found;
 }
 
@@ -133,13 +129,9 @@ describe("image fingerprints", () => {
     const image = new Map<string, Uint8Array>();
     for (const [index, name] of names.entries()) {
       const file = images[name];
-      if (!file) {
-        throw new Error(`No ${name} image`);
-      }
+      if (!file) throw new Error(`No ${name} image`);
       const outcome = await imageFingerprint(file);
-      if (outcome.value) {
-        image.set(sha(index), outcome.value);
-      }
+      if (outcome.value) image.set(sha(index), outcome.value);
     }
     const { pairs } = matchLibrary(saves, {
       classifyUrl: () => null,

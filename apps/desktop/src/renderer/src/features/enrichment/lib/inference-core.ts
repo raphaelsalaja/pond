@@ -94,9 +94,7 @@ function memo<T>(
   load: () => Promise<T>,
 ): Promise<T> {
   const existing = cache.get(key);
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
   const p = load();
   cache.set(key, p);
   p.catch(() => cache.delete(key));
@@ -362,9 +360,7 @@ export async function coreEmbedVideoFrames(
   duration: number,
 ): Promise<Float32Array> {
   return embeddingProfiles.use("text-image", async ({ model, processor }) => {
-    if (frames.length === 0) {
-      throw new Error("Video has no frames");
-    }
+    if (frames.length === 0) throw new Error("Video has no frames");
     const combined = new Float32Array(embeddingDimensions());
     /** Batching bounds attention and vision scratch space instead of allocating one graph for all 32 frames. */
     const batchSize = 16;
@@ -372,9 +368,7 @@ export async function coreEmbedVideoFrames(
       const batch = frames.slice(start, start + batchSize);
       const first = batch[0];
       const last = batch.at(-1);
-      if (!first || !last) {
-        continue;
-      }
+      if (!first || !last) continue;
       const video = new RawVideo(
         batch.map(
           (frame) =>

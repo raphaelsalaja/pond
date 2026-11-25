@@ -1,8 +1,6 @@
 export function saveLink(save: { id: string; libraryId?: string }): string {
   const url = new URL(`pond://item/${encodeURIComponent(save.id)}`);
-  if (save.libraryId) {
-    url.searchParams.set("library", save.libraryId);
-  }
+  if (save.libraryId) url.searchParams.set("library", save.libraryId);
   return url.toString();
 }
 

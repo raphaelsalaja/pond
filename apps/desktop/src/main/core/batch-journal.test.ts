@@ -58,9 +58,7 @@ it("restores successful earlier files and the partially written failing file bef
       transactions,
       async applyDisk(tx) {
         await writeFile(info(tx.id), "partial");
-        if (tx.id === "b") {
-          throw new Error("disk full");
-        }
+        if (tx.id === "b") throw new Error("disk full");
       },
       commitIndex() {
         committed = true;

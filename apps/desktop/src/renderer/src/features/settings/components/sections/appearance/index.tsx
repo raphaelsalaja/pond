@@ -176,9 +176,7 @@ export function ThemePresetRow({
               return;
             }
             const preset = getPreset(id);
-            if (!preset) {
-              return;
-            }
+            if (!preset) return;
             if (side === "light") {
               state.patch({
                 lightPresetId: id,
@@ -314,9 +312,7 @@ export function ThemeContrastRow({
               value={String(contrast)}
               onChange={(e) => {
                 const n = Number(e.target.value);
-                if (Number.isFinite(n)) {
-                  setContrast(n);
-                }
+                if (Number.isFinite(n)) setContrast(n);
               }}
               style={{ width: 44, textAlign: "right" }}
             />

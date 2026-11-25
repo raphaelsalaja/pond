@@ -116,9 +116,7 @@ export function normalizeSidebarDestinationOrder(
 ): Array<SidebarDestination> {
   const unique = [...new Set(order)];
   for (const [defaultIndex, destination] of SIDEBAR_DESTINATIONS.entries()) {
-    if (unique.includes(destination)) {
-      continue;
-    }
+    if (unique.includes(destination)) continue;
     let insertionIndex = 0;
     for (let index = defaultIndex - 1; index >= 0; index -= 1) {
       const candidate = SIDEBAR_DESTINATIONS[index];
@@ -140,11 +138,8 @@ const sidebar = z.object({
     .catch({})
     .transform((overrides) => {
       const known: Partial<Record<SidebarDestination, SidebarBadgeStyle>> = {};
-      for (const [destination, style] of Object.entries(overrides)) {
-        if (isSidebarDestination(destination)) {
-          known[destination] = style;
-        }
-      }
+      for (const [destination, style] of Object.entries(overrides))
+        if (isSidebarDestination(destination)) known[destination] = style;
       return known;
     }),
   order: z
@@ -384,11 +379,8 @@ const sync = z.object({
     .default({})
     .transform((accounts) => {
       const known: SyncAccounts = {};
-      for (const [id, account] of Object.entries(accounts)) {
-        if (isSource(account.source)) {
-          known[id] = account;
-        }
-      }
+      for (const [id, account] of Object.entries(accounts))
+        if (isSource(account.source)) known[id] = account;
       return known;
     }),
   watches: z.custom<SyncWatches>().default({}),

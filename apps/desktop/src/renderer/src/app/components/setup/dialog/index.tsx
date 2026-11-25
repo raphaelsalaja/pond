@@ -49,9 +49,7 @@ export function SetupDialog({
 
   const previousIndex = useRef(index);
   useEffect(() => {
-    if (previousIndex.current === index) {
-      return;
-    }
+    if (previousIndex.current === index) return;
     previousIndex.current = index;
     headingRef.current?.focus({ preventScroll: true });
   }, [index]);
@@ -89,19 +87,13 @@ export function SetupDialog({
   const canOpenExisting = id === "welcome" && profile === "new";
 
   const openExisting = async () => {
-    if (busy || opening) {
-      return;
-    }
+    if (busy || opening) return;
     setOpening(true);
     patch({ error: "" });
     const failure = await openExistingLibrary();
-    if (failure === "") {
-      return;
-    }
+    if (failure === "") return;
     setOpening(false);
-    if (failure) {
-      patch({ error: failure });
-    }
+    if (failure) patch({ error: failure });
   };
 
   const next = async () => {
@@ -113,23 +105,15 @@ export function SetupDialog({
     }
     if (id === "library") {
       const relaunching = relaunchesLibrary(choices, library, profile);
-      if (relaunching) {
-        setupResume.mark();
-      }
+      if (relaunching) setupResume.mark();
       const done = await run(() =>
         finishSetup(choices, session.initial, library, profile),
       );
-      if (done) {
-        return go(1);
-      }
-      if (relaunching) {
-        setupResume.clear();
-      }
+      if (done) return go(1);
+      if (relaunching) setupResume.clear();
       return;
     }
-    if (!last) {
-      return go(1);
-    }
+    if (!last) return go(1);
     setupFlow.close();
   };
 
@@ -167,9 +151,7 @@ export function SetupDialog({
       open={open}
       disablePointerDismissal
       onOpenChangeComplete={(nextOpen) => {
-        if (!nextOpen) {
-          setSession(() => null);
-        }
+        if (!nextOpen) setSession(() => null);
       }}
     >
       <Dialog.Portal>

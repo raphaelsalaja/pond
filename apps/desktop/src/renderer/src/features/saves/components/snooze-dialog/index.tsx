@@ -56,9 +56,7 @@ function SnoozeDialog({
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) {
-          closeSnoozeDialog();
-        }
+        if (!next) closeSnoozeDialog();
       }}
     >
       <Dialog.Portal>
@@ -117,9 +115,7 @@ function SnoozeDialog({
             <Dialog.Confirm
               disabled={until === null}
               onClick={() => {
-                if (until !== null) {
-                  snooze(until);
-                }
+                if (until !== null) snooze(until);
               }}
             >
               Snooze

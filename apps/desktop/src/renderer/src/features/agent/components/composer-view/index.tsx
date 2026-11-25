@@ -72,18 +72,12 @@ function Send({ children, ...props }: ActionProps) {
 function useGrown(empty: boolean) {
   const field = useRef<HTMLDivElement>(null);
   const [grown, setGrown] = useState(false);
-  if (empty && grown) {
-    setGrown(false);
-  }
+  if (empty && grown) setGrown(false);
   useEffect(() => {
     const node = field.current;
-    if (!node) {
-      return;
-    }
+    if (!node) return;
     const observer = new ResizeObserver(() => {
-      if (node.offsetHeight > ONE_LINE_MAX_HEIGHT) {
-        setGrown(true);
-      }
+      if (node.offsetHeight > ONE_LINE_MAX_HEIGHT) setGrown(true);
     });
     observer.observe(node);
     return () => observer.disconnect();

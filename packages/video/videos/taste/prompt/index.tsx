@@ -13,9 +13,7 @@ const ZOOM = 1.7;
 export function Prompt({ t }: { t: number }) {
   const rise = ease.outQuint(progress(t, CUES.composerIn, 900));
   const away = ease.inOut(progress(t, CUES.promptOut, 420));
-  if (t < CUES.composerIn - 20 || away >= 1) {
-    return null;
-  }
+  if (t < CUES.composerIn - 20 || away >= 1) return null;
 
   const typed = Math.round(
     PROMPT.length * progress(t, CUES.typeStart, CUES.typeLength),

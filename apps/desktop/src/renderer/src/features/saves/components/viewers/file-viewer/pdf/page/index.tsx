@@ -33,14 +33,10 @@ export function PdfPage({
 
   useEffect(() => {
     const figure = figureRef.current;
-    if (render || !figure || !scrollRoot) {
-      return;
-    }
+    if (render || !figure || !scrollRoot) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          onNear(pageNumber);
-        }
+        if (entries.some((entry) => entry.isIntersecting)) onNear(pageNumber);
       },
       { root: scrollRoot, rootMargin: "100% 0px" },
     );
@@ -49,17 +45,13 @@ export function PdfPage({
   }, [onNear, pageNumber, render, scrollRoot]);
 
   useEffect(() => {
-    if (!render) {
-      return;
-    }
+    if (!render) return;
     let active = true;
     let renderTask: ReturnType<
       Awaited<ReturnType<typeof document.getPage>>["render"]
     > | null = null;
     void document.getPage(pageNumber).then((page) => {
-      if (!active || !canvasRef.current) {
-        return;
-      }
+      if (!active || !canvasRef.current) return;
       const base = page.getViewport({ scale: 1, rotation });
       const cssScale = Math.min(2, width / base.width);
       const pixelRatio = Math.min(globalThis.devicePixelRatio || 1, 2);
@@ -69,9 +61,7 @@ export function PdfPage({
       });
       const canvas = canvasRef.current;
       const context = canvas.getContext("2d");
-      if (!context) {
-        return;
-      }
+      if (!context) return;
       canvas.width = Math.ceil(viewport.width);
       canvas.height = Math.ceil(viewport.height);
       canvas.style.width = `${Math.round(viewport.width / pixelRatio)}px`;

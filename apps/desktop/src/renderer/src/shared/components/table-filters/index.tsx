@@ -44,11 +44,8 @@ export function TableFilterChip<T extends string>({
             checked={selected.has(option.id)}
             onCheckedChange={(checked) => {
               const next = new Set(selected);
-              if (checked) {
-                next.add(option.id);
-              } else {
-                next.delete(option.id);
-              }
+              if (checked) next.add(option.id);
+              else next.delete(option.id);
               onChange(next);
             }}
           >

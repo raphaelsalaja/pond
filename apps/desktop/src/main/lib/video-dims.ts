@@ -23,9 +23,7 @@ async function probeVideoMetadata(
   }
 
   const size = stderr.match(/Video:.*?\s(\d{2,5})x(\d{2,5})/);
-  if (!size) {
-    return null;
-  }
+  if (!size) return null;
   let width = Number(size[1]);
   let height = Number(size[2]);
   if (
@@ -65,9 +63,7 @@ function runFfmpegProbe(
     let settled = false;
 
     const timer = setTimeout(() => {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       try {
         killProcessTree(child, "SIGKILL");
@@ -79,22 +75,16 @@ function runFfmpegProbe(
 
     child.stderr?.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
-      if (stderr.length > 64_000) {
-        stderr = stderr.slice(-64_000);
-      }
+      if (stderr.length > 64_000) stderr = stderr.slice(-64_000);
     });
     child.on("error", (err) => {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       clearTimeout(timer);
       resolve({ code: -1, stderr: String(err) });
     });
     child.on("close", (code) => {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       clearTimeout(timer);
       resolve({ code: code ?? -1, stderr });
@@ -108,25 +98,17 @@ export async function probeVideoDims(
   videoPath: string,
 ): Promise<VideoMetadata> {
   const info = await stat(videoPath).catch(() => null);
-  if (!info) {
-    return null;
-  }
+  if (!info) return null;
   const key = `${videoPath}:${info.size}:${info.mtimeMs}`;
   const existing = probes.get(key);
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
   const probe = probeVideoMetadata(videoPath);
   probes.set(key, probe);
   if (probes.size > 128) {
     const oldest = probes.keys().next().value;
-    if (oldest) {
-      probes.delete(oldest);
-    }
+    if (oldest) probes.delete(oldest);
   }
   const result = await probe;
-  if (!result) {
-    probes.delete(key);
-  }
+  if (!result) probes.delete(key);
   return result;
 }

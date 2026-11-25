@@ -30,9 +30,7 @@ function nativeSqliteAvailable(): boolean {
     probe.close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
@@ -40,9 +38,7 @@ function nativeSqliteAvailable(): boolean {
 const databases: Array<Database.Database> = [];
 
 afterEach(() => {
-  for (const db of databases.splice(0)) {
-    db.close();
-  }
+  for (const db of databases.splice(0)) db.close();
 });
 
 function setup() {

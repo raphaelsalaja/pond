@@ -113,9 +113,7 @@ export function ArchiveFileViewer({
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!entries || !needle) {
-      return entries ?? [];
-    }
+    if (!entries || !needle) return entries ?? [];
     return entries.filter((entry) => entry.name.toLowerCase().includes(needle));
   }, [entries, query]);
 

@@ -631,15 +631,7 @@ function installHook(name: string, source: string): void {
   });
 }
 
-if (isTwitter) {
-  installHook("twitter", TWITTER_HOOK);
-}
-if (isCosmos) {
-  installHook("cosmos", COSMOS_HOOK);
-}
-if (isInstagram) {
-  installHook("instagram", INSTAGRAM_HOOK);
-}
-if (isThreads) {
-  installHook("threads", THREADS_HOOK);
-}
+if (isTwitter) installHook("twitter", TWITTER_HOOK);
+if (isCosmos) installHook("cosmos", COSMOS_HOOK);
+if (isInstagram) installHook("instagram", INSTAGRAM_HOOK);
+if (isThreads) installHook("threads", THREADS_HOOK);

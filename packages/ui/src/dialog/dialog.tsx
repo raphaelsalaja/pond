@@ -125,14 +125,9 @@ function Portal({
 }
 
 function assignRef<T>(ref: ForwardedRef<T>, value: T | null) {
-  if (!ref) {
-    return;
-  }
-  if ("current" in ref) {
-    ref.current = value;
-  } else {
-    ref(value);
-  }
+  if (!ref) return;
+  if ("current" in ref) ref.current = value;
+  else ref(value);
 }
 
 const PortalTarget = forwardRef<
@@ -151,9 +146,7 @@ const PortalTarget = forwardRef<
 
   useLayoutEffect(() => {
     const node = localRef.current;
-    if (!node) {
-      return;
-    }
+    if (!node) return;
     setContainer(node);
     return () => {
       setContainer((current) => (current === node ? null : current));
@@ -235,9 +228,7 @@ function PagedPopup({
   }, []);
 
   useEffect(() => {
-    if (!size) {
-      return;
-    }
+    if (!size) return;
     const id = requestAnimationFrame(() => setAnimateSize(true));
     return () => cancelAnimationFrame(id);
   }, [size]);
@@ -347,9 +338,7 @@ function Viewport({ className, children, ...props }: ViewportProps) {
   const previousPage = useRef(pageId);
 
   useLayoutEffect(() => {
-    if (previousPage.current === pageId) {
-      return;
-    }
+    if (previousPage.current === pageId) return;
     previousPage.current = pageId;
     viewportRef.current
       ?.querySelector<HTMLElement>("[data-dialog-page]:not([inert])")
@@ -376,9 +365,7 @@ function Page({ children }: { children: React.ReactNode }) {
 
   useLayoutEffect(() => {
     const node = ref.current;
-    if (!node || !present) {
-      return;
-    }
+    if (!node || !present) return;
     const viewport = node.parentElement;
     const chrome = Array.from(viewport?.parentElement?.children ?? []).filter(
       (element): element is HTMLElement =>
@@ -396,9 +383,7 @@ function Page({ children }: { children: React.ReactNode }) {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(node);
-    for (const element of chrome) {
-      observer.observe(element);
-    }
+    for (const element of chrome) observer.observe(element);
     return () => observer.disconnect();
   }, [present, setSize]);
 

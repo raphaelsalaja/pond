@@ -32,9 +32,7 @@ export function matches(query: Query, save: SaveLike): boolean {
 
 function evalClause(c: Clause, s: SaveLike): boolean {
   if (isGroup(c)) {
-    if (c.rules.length === 0) {
-      return !c.not;
-    }
+    if (c.rules.length === 0) return !c.not;
     const ok =
       c.combinator === "or"
         ? c.rules.some((child) => evalClause(child, s))
@@ -46,12 +44,8 @@ function evalClause(c: Clause, s: SaveLike): boolean {
 }
 
 function evalPredicate(p: Predicate, s: SaveLike): boolean {
-  if (p.field === "aspect") {
-    return matchesAspect(p, s);
-  }
-  if (p.field === "post") {
-    return matchesSplitPost(p.operator, p.value, s);
-  }
+  if (p.field === "aspect") return matchesAspect(p, s);
+  if (p.field === "post") return matchesSplitPost(p.operator, p.value, s);
   const projected = FIELD_DESCRIPTORS[p.field].project(s);
   return runComparator(p.operator, projected, p.value);
 }
@@ -88,9 +82,7 @@ function runComparator(
       return numLike(projected) >= resolveNumeric(value);
     case "between": {
       const pair = Pair.safeParse(value);
-      if (!pair.success) {
-        return false;
-      }
+      if (!pair.success) return false;
       const lo = resolveNumeric(pair.data[0]);
       const hi = resolveNumeric(pair.data[1]);
       const x = numLike(projected);
@@ -189,9 +181,7 @@ function withLists(
   fallback = false,
 ): boolean {
   const want = TextList.safeParse(value);
-  if (!Array.isArray(projected) || !want.success) {
-    return fallback;
-  }
+  if (!Array.isArray(projected) || !want.success) return fallback;
   return run(projected, want.data);
 }
 
@@ -213,30 +203,20 @@ function scalarEqual(a: FieldValue, b: PredicateValue): boolean {
 
 function numLike(v: FieldValue): number {
   const num = Numeric.safeParse(v);
-  if (num.success) {
-    return num.data;
-  }
+  if (num.success) return num.data;
   const text = Timestamp.safeParse(v);
-  if (!text.success) {
-    return Number.NaN;
-  }
+  if (!text.success) return Number.NaN;
   const parsed = Date.parse(text.data);
-  if (Number.isFinite(parsed)) {
-    return parsed;
-  }
+  if (Number.isFinite(parsed)) return parsed;
   const float = Number.parseFloat(text.data);
   return Number.isFinite(float) ? float : Number.NaN;
 }
 
 function resolveNumeric(v: PredicateValue): number {
   const num = Numeric.safeParse(v);
-  if (num.success) {
-    return num.data;
-  }
+  if (num.success) return num.data;
   const text = Timestamp.safeParse(v);
-  if (!text.success) {
-    return Number.NaN;
-  }
+  if (!text.success) return Number.NaN;
   const raw = text.data;
   if (raw === "today") {
     const day = new Date();
@@ -245,14 +225,10 @@ function resolveNumeric(v: PredicateValue): number {
   }
   if (raw.startsWith("P") || raw.startsWith("-P") || raw.startsWith("+P")) {
     const ms = isoDurationToMillis(raw);
-    if (ms !== null) {
-      return Date.now() + ms;
-    }
+    if (ms !== null) return Date.now() + ms;
   }
   const parsed = Date.parse(raw);
-  if (Number.isFinite(parsed)) {
-    return parsed;
-  }
+  if (Number.isFinite(parsed)) return parsed;
   const float = Number.parseFloat(raw);
   return Number.isFinite(float) ? float : Number.NaN;
 }

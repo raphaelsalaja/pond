@@ -101,9 +101,7 @@ async function saveeGraphql<T>(
     log.warn("[pond savee-api] fetch threw", error);
     return { ok: false, status: 0 };
   }
-  if (res.status === 429) {
-    return { ok: false, status: 429 };
-  }
+  if (res.status === 429) return { ok: false, status: 429 };
   try {
     const envelope = EnvelopeSchema.parse(await res.json());
     if (
@@ -124,9 +122,7 @@ function failure(status: number): Extract<ListHarvestResult, { ok: false }> {
   if (status === 401 || status === 403) {
     return { ok: false, reason: "auth_required" };
   }
-  if (status === 429) {
-    return { ok: false, reason: "rate_limited" };
-  }
+  if (status === 429) return { ok: false, reason: "rate_limited" };
   return { ok: false, reason: "unknown" };
 }
 
@@ -134,9 +130,7 @@ async function viewerUsername(
   post: SaveePost,
 ): Promise<{ ok: true; username: string } | { ok: false; status: number }> {
   const viewer = await saveeGraphql(post, VIEWER_QUERY, {}, ViewerSchema);
-  if (!viewer.ok) {
-    return viewer;
-  }
+  if (!viewer.ok) return viewer;
   const username = viewer.json.auth?.user?.username;
   return username ? { ok: true, username } : { ok: false, status: 401 };
 }
@@ -153,9 +147,7 @@ export async function readSaveeItems(
   post: SaveePost,
 ): Promise<ListHarvestResult> {
   const viewer = await viewerUsername(post);
-  if (!viewer.ok) {
-    return failure(viewer.status);
-  }
+  if (!viewer.ok) return failure(viewer.status);
 
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
@@ -169,9 +161,7 @@ export async function readSaveeItems(
       username: viewer.username,
       limit: PAGE_SIZE,
     };
-    if (cursor) {
-      variables.cursor = cursor;
-    }
+    if (cursor) variables.cursor = cursor;
     const result = await saveeGraphql(
       post,
       ITEMS_QUERY,
@@ -179,9 +169,7 @@ export async function readSaveeItems(
       UserItemsSchema,
     );
     if (!result.ok) {
-      if (page === 0) {
-        return failure(result.status);
-      }
+      if (page === 0) return failure(result.status);
       log.warn("[pond savee-api] items page failed", result.status);
       return partial(entries, cursor);
     }
@@ -197,9 +185,7 @@ export async function readSaveeItems(
       ) {
         return { ok: true, entries, reachedEnd: true, seen: entries.length };
       }
-      if (!known.has(item.shortID)) {
-        fresh += 1;
-      }
+      if (!known.has(item.shortID)) fresh += 1;
       entries.push(itemEntry(item));
     }
     if (earlyStop && items.length > 0 && fresh === 0) {
@@ -233,9 +219,7 @@ function partial(
     reachedEnd: false,
     seen: entries.length,
   };
-  if (cursor) {
-    result.resumeCursor = cursor;
-  }
+  if (cursor) result.resumeCursor = cursor;
   return result;
 }
 

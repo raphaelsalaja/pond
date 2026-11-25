@@ -14,9 +14,7 @@ export function requestQuickPreview(
   saveId: string,
   options: QuickPreviewOptions = {},
 ): void {
-  for (const listener of listeners) {
-    listener(saveId, options);
-  }
+  for (const listener of listeners) listener(saveId, options);
 }
 
 export function onQuickPreviewRequest(

@@ -42,9 +42,7 @@ export function useSourceTableRows() {
     const folder = watchedFolder.data
       ? toFolderTableRow(watchedFolder.data)
       : null;
-    if (folder) {
-      next.push(folder);
-    }
+    if (folder) next.push(folder);
     return next;
   }, [accounts, watches, watchedFolder.data, byAccount]);
 

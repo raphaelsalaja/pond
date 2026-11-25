@@ -47,9 +47,7 @@ function useDemoCycle(paused = false) {
     reduceMotion ? "library" : "harvest",
   );
   useEffect(() => {
-    if (reduceMotion || paused) {
-      return;
-    }
+    if (reduceMotion || paused) return;
     const id = setTimeout(() => {
       const next = (DEMO_STATES.indexOf(state) + 1) % DEMO_STATES.length;
       setState(DEMO_STATES[next] ?? "harvest");

@@ -10,17 +10,11 @@ const FRESH_MS = 5000;
 let syncedAt = 0;
 
 const sync = createSingleFlightTrigger(async (force) => {
-  if (!force && Date.now() - syncedAt < FRESH_MS) {
-    return;
-  }
+  if (!force && Date.now() - syncedAt < FRESH_MS) return;
   const result = await nativeCall({ type: "extension.settings" });
-  if (!result.ok) {
-    return;
-  }
+  if (!result.ok) return;
   const parsed = ExtensionSettingsSchema.safeParse(result.data);
-  if (!parsed.success) {
-    return;
-  }
+  if (!parsed.success) return;
   syncedAt = Date.now();
   await storeSettings(settingsFromPond(parsed.data));
 });

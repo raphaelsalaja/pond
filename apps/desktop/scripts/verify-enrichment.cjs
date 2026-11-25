@@ -15,9 +15,7 @@ for (const fixture of fixtures.files) {
   fixtureHash.update(fs.readFileSync(fixture.path));
 }
 const fixtureDigest = fixtureHash.digest("hex");
-if (mode === "benchmark") {
-  assert.equal(fixtureDigest, fixtures.digest);
-}
+if (mode === "benchmark") assert.equal(fixtureDigest, fixtures.digest);
 const main =
   process.env.POND_VERIFY_MAIN ||
   path.resolve(__dirname, "../out/main/index.js");

@@ -124,12 +124,8 @@ function groupMenu(
     ...entries.flatMap((entry): Array<MenuItemSpec> => {
       const items = entry.items();
       const actions = items.filter((item) => item.type !== "separator");
-      if (actions.length === 0) {
-        return [];
-      }
-      if (actions.length === 1) {
-        return actions;
-      }
+      if (actions.length === 0) return [];
+      if (actions.length === 1) return actions;
       return [{ type: "submenu", label: entry.label, items }];
     }),
   ];

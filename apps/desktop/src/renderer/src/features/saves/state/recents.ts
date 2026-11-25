@@ -22,9 +22,7 @@ const RecentsSchema = z.array(
 
 let hydrated = false;
 function hydrate(): void {
-  if (hydrated) {
-    return;
-  }
+  if (hydrated) return;
   hydrated = true;
   void loadPrefs()
     .then((prefs) => {
@@ -69,9 +67,7 @@ export function useRecents(): Array<RecentSaveVisit> {
 
 export function useTrackVisit(saveId: string | null | undefined): void {
   useEffect(() => {
-    if (!saveId) {
-      return;
-    }
+    if (!saveId) return;
     recordVisit(saveId);
   }, [saveId]);
 }

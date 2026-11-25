@@ -32,9 +32,7 @@ const TYPES = [
 
 function loadMedia(input: ApiLibraryQueryInput | null) {
   return async ({ cursor }: { cursor?: ApiCursor | null }) => {
-    if (!input) {
-      return { data: NONE, hasMore: false };
-    }
+    if (!input) return { data: NONE, hasMore: false };
     const page = await pond().query({ ...input, limit: PAGE_SIZE, cursor });
     return { data: page.saves ?? [], hasMore: page.nextCursor !== null, cursor: page.nextCursor };
   };

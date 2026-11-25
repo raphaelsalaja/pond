@@ -40,15 +40,11 @@ export function RecentFolderMenu({
   }, [listId]);
 
   function pick(folder: FolderMenuItem | undefined) {
-    if (folder && folder.count !== selectionSize) {
-      onPick(folder);
-    }
+    if (folder && folder.count !== selectionSize) onPick(folder);
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.metaKey || event.ctrlKey || event.altKey) {
-      return;
-    }
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
     const digit = /^[1-9]$/.test(event.key) ? Number(event.key) : null;
     if (digit !== null) {
       event.preventDefault();
@@ -59,9 +55,7 @@ export function RecentFolderMenu({
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
       event.stopPropagation();
-      if (!shown.length) {
-        return;
-      }
+      if (!shown.length) return;
       const step = event.key === "ArrowDown" ? 1 : -1;
       setActive((activeIndex + step + shown.length) % shown.length);
       return;
@@ -72,9 +66,7 @@ export function RecentFolderMenu({
       pick(shown[activeIndex]);
       return;
     }
-    if (event.key !== "Escape" && event.key !== "Tab") {
-      event.stopPropagation();
-    }
+    if (event.key !== "Escape" && event.key !== "Tab") event.stopPropagation();
   }
 
   return (

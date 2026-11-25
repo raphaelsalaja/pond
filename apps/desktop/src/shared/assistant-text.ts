@@ -31,9 +31,7 @@ export function splitMessages(text: string): Array<string> {
   let current: Array<string> = [];
   let fenced = false;
   for (const line of text.split("\n")) {
-    if (FENCE.test(line)) {
-      fenced = !fenced;
-    }
+    if (FENCE.test(line)) fenced = !fenced;
     if (!fenced && line.trim() === MESSAGE_BREAK) {
       messages.push(current.join("\n"));
       current = [];

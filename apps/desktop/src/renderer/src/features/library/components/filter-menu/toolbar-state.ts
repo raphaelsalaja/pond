@@ -86,9 +86,7 @@ function parseList<T>(
   item: z.ZodType<T>,
 ): Array<T> | null {
   const saved = StoredList.safeParse(JSON.parse(text ?? "null"));
-  if (!saved.success) {
-    return null;
-  }
+  if (!saved.success) return null;
   return [
     ...new Set(
       saved.data.flatMap((value) => {
@@ -167,17 +165,13 @@ export const filterToolbar = {
   },
   setPinned(field: FieldId, pinned: boolean): void {
     const fields = store.state.pinned.filter((value) => value !== field);
-    if (pinned) {
-      fields.push(field);
-    }
+    if (pinned) fields.push(field);
     writeViewPref("filterFields", JSON.stringify(fields));
     store.setState((state) => ({ ...state, pinned: fields }));
   },
   setOverlayPinned(overlay: OverlayId, pinned: boolean): void {
     const overlays = store.state.overlays.filter((value) => value !== overlay);
-    if (pinned) {
-      overlays.push(overlay);
-    }
+    if (pinned) overlays.push(overlay);
     writeViewPref("filterOverlays", JSON.stringify(overlays));
     store.setState((state) => ({ ...state, overlays }));
   },

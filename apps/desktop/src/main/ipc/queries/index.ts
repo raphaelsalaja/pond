@@ -112,9 +112,7 @@ export function registerQueryHandler(): void {
   );
   safeHandle(IPC.query, async (event, name: string, raw?: QueryParams) => {
     const parsedName = QueryNameSchema.safeParse(name);
-    if (!parsedName.success) {
-      throw new Error(`unknown query: ${name}`);
-    }
+    if (!parsedName.success) throw new Error(`unknown query: ${name}`);
     if (
       combineImagesWindowOwnsSender(event.sender.id) &&
       !COMBINE_IMAGES_QUERY_NAMES.has(parsedName.data)
@@ -122,9 +120,7 @@ export function registerQueryHandler(): void {
       throw new Error("This action is unavailable in this window.");
     }
     const handler = queryRegistry[parsedName.data];
-    if (!handler) {
-      throw new Error(`unknown query: ${name}`);
-    }
+    if (!handler) throw new Error(`unknown query: ${name}`);
     const startedAt = performance.now();
     try {
       return await handler(raw, event);
@@ -133,9 +129,7 @@ export function registerQueryHandler(): void {
       throw error;
     } finally {
       const ms = Math.round(performance.now() - startedAt);
-      if (ms >= SLOW_QUERY_MS) {
-        log.warn("[pond perf] slow query", { name, ms });
-      }
+      if (ms >= SLOW_QUERY_MS) log.warn("[pond perf] slow query", { name, ms });
     }
   });
 }

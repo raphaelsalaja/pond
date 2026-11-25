@@ -34,13 +34,9 @@ export function mergeUniqueTags(
   const next = [...current];
   for (const raw of incoming) {
     const t = raw.trim();
-    if (!t) {
-      continue;
-    }
+    if (!t) continue;
     const key = t.toLowerCase();
-    if (seen.has(key)) {
-      continue;
-    }
+    if (seen.has(key)) continue;
     seen.add(key);
     next.push(t);
   }

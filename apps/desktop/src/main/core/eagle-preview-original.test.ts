@@ -10,18 +10,14 @@ function nativeAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
 
 const opened: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of opened.splice(0)) {
-    db.close();
-  }
+  for (const db of opened.splice(0)) db.close();
 });
 
 const INSERT =

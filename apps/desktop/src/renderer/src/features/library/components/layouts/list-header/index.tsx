@@ -60,9 +60,7 @@ export function ListHeader() {
   const { state, actions } = useView();
   const sort = (key: ListColumnKey) => {
     const sortKey = sortKeyFor(key);
-    if (!sortKey) {
-      return;
-    }
+    if (!sortKey) return;
     actions.setSort({
       key: sortKey,
       dir:

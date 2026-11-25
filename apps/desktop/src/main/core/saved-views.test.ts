@@ -21,9 +21,7 @@ function nativeSqliteAvailable(): boolean {
     probe.close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
@@ -31,9 +29,7 @@ function nativeSqliteAvailable(): boolean {
 const databases: Array<Database.Database> = [];
 
 afterEach(() => {
-  for (const db of databases.splice(0)) {
-    db.close();
-  }
+  for (const db of databases.splice(0)) db.close();
 });
 
 function setup() {
@@ -73,9 +69,7 @@ function setup() {
   };
   async function create(input: Parameters<typeof createView>[0]) {
     const result = await createView(input, runtime);
-    if (!result.ok || !result.id) {
-      throw new Error("Fixture create failed");
-    }
+    if (!result.ok || !result.id) throw new Error("Fixture create failed");
     return result.id;
   }
   return { db, sqlite, runtime, batches, create };
@@ -110,9 +104,7 @@ describe.skipIf(!nativeSqliteAvailable())("saved view hierarchy", () => {
       createView({ name: "Reference", parentId: group }, runtime),
       deleteView(group, runtime),
     ]);
-    if (!created.ok) {
-      throw new Error(created.error);
-    }
+    if (!created.ok) throw new Error(created.error);
     expect(deleted.ok).toBe(true);
     expect(await listViews(runtime)).toEqual([
       expect.objectContaining({ id: created.id, parentId: null }),

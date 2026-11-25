@@ -32,9 +32,7 @@ describe("folder icons", () => {
   });
 
   it("gives every icon search keywords", () => {
-    for (const icon of FOLDER_ICONS) {
-      expect(icon.keywords.trim()).not.toBe("");
-    }
+    for (const icon of FOLDER_ICONS) expect(icon.keywords.trim()).not.toBe("");
   });
 });
 

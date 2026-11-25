@@ -35,18 +35,12 @@ export function richNote(value: string): string {
     /<\/?([a-z0-9]+)(?:\s[^>]*)?\/?>/gi,
     (tag, name: string) => {
       const lower = name.toLowerCase();
-      if (!ALLOWED.has(lower)) {
-        return "";
-      }
-      if (lower === "br") {
-        return "<br>";
-      }
+      if (!ALLOWED.has(lower)) return "";
+      if (lower === "br") return "<br>";
       return tag.startsWith("</") ? `</${lower}>` : `<${lower}>`;
     },
   );
-  if (!/<(b|strong|i|em|u|ul|ol|li|p)\b/i.test(clean)) {
-    return plainOf(clean);
-  }
+  if (!/<(b|strong|i|em|u|ul|ol|li|p)\b/i.test(clean)) return plainOf(clean);
   return clean;
 }
 

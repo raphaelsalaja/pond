@@ -26,13 +26,9 @@ function versionIsCurrent(
 export async function ensureSaves(ids: ReadonlyArray<string>): Promise<void> {
   const missing: Array<string> = [];
   for (const id of ids) {
-    if (!pool.get(id)) {
-      missing.push(id);
-    }
+    if (!pool.get(id)) missing.push(id);
   }
-  if (missing.length === 0) {
-    return;
-  }
+  if (missing.length === 0) return;
   const requestedVersions = versionsFor(missing);
   const rows = SavePatchesSchema.parse(
     await window.pond.query("saves.getMany", { ids: missing }),
@@ -45,9 +41,7 @@ export async function ensureSaves(ids: ReadonlyArray<string>): Promise<void> {
         !pool.get(row.id) &&
         versionIsCurrent(row.id, requestedVersions),
     );
-  if (normalised.length > 0) {
-    bulkUpsertSaves(normalised);
-  }
+  if (normalised.length > 0) bulkUpsertSaves(normalised);
 }
 
 export async function reloadSaves(ids: ReadonlyArray<string>): Promise<void> {
@@ -64,7 +58,5 @@ export async function reloadSaves(ids: ReadonlyArray<string>): Promise<void> {
       (row): row is Save =>
         row !== null && versionIsCurrent(row.id, requestedVersions),
     );
-  if (normalised.length > 0) {
-    bulkUpsertSaves(normalised);
-  }
+  if (normalised.length > 0) bulkUpsertSaves(normalised);
 }

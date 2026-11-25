@@ -110,9 +110,7 @@ export async function relatedSavesWithStore(
   const neighbors = store
     .neighbors(source.vector, Math.max(limit * 8, 200))
     .filter((candidate) => candidate.id !== input.id);
-  if (!neighbors.length) {
-    return { items: [] };
-  }
+  if (!neighbors.length) return { items: [] };
   const candidateIds = neighbors.map((candidate) => candidate.id);
   const [admissibleIds, alreadyOrganizedIds] = await Promise.all([
     store.admissibleIds(candidateIds, source.model),
@@ -146,9 +144,7 @@ function relatedSavesStore(db: Db): RelatedSavesStore {
         .where(eq(saves.id, id))
         .limit(1);
       const vector = parseJsonVector(source?.clipEmbedding);
-      if (!source?.clipModel || !vector) {
-        return null;
-      }
+      if (!source?.clipModel || !vector) return null;
       return {
         vector,
         model: source.clipModel,
@@ -160,9 +156,7 @@ function relatedSavesStore(db: Db): RelatedSavesStore {
       return knnVec(db.$raw, "clip", vector, limit);
     },
     async admissibleIds(ids, model) {
-      if (!ids.length) {
-        return new Set();
-      }
+      if (!ids.length) return new Set();
       const rows = await db
         .select({ id: saves.id })
         .from(saves)
@@ -177,16 +171,12 @@ function relatedSavesStore(db: Db): RelatedSavesStore {
       return new Set(rows.map((row) => row.id));
     },
     async alreadyOrganizedIds(sourceId, candidateIds) {
-      if (!candidateIds.length) {
-        return new Set();
-      }
+      if (!candidateIds.length) return new Set();
       const sourceFolders = await db
         .select({ folderId: saveFolders.folderId })
         .from(saveFolders)
         .where(eq(saveFolders.saveId, sourceId));
-      if (!sourceFolders.length) {
-        return new Set();
-      }
+      if (!sourceFolders.length) return new Set();
       const rows = await db
         .selectDistinct({ id: saveFolders.saveId })
         .from(saveFolders)

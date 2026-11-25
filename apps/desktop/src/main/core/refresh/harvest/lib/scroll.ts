@@ -41,18 +41,12 @@ export function inPageScrollCollect() {
       let addedAny = false;
       let addedFresh = false;
       for (const r of rows) {
-        if (collected.has(r.sourceId)) {
-          continue;
-        }
+        if (collected.has(r.sourceId)) continue;
         collected.set(r.sourceId, r);
         addedAny = true;
-        if (!known.has(r.sourceId)) {
-          addedFresh = true;
-        }
+        if (!known.has(r.sourceId)) addedFresh = true;
       }
-      if (!earlyStopEnabled) {
-        return false;
-      }
+      if (!earlyStopEnabled) return false;
       if (addedFresh) {
         knownBatchStreak = 0;
       } else if (addedAny) {
@@ -91,9 +85,7 @@ export function inPageScrollCollect() {
             : document.querySelector<HTMLAnchorElement>(
                 "a[rel*='next'], span.next-button > a",
               );
-        if (!next) {
-          break;
-        }
+        if (!next) break;
         next.click();
         await new Promise((r) => {
           setTimeout(r, nextDelayMs);
@@ -119,9 +111,7 @@ export function inPageScrollCollect() {
       const sh = document.documentElement.scrollHeight;
       if (sh === lastHeight) {
         stable += 1;
-        if (stable >= stableThreshold) {
-          return result(true);
-        }
+        if (stable >= stableThreshold) return result(true);
       } else {
         stable = 0;
         lastHeight = sh;

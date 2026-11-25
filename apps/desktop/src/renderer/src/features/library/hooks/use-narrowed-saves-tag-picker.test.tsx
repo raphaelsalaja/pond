@@ -43,9 +43,7 @@ function save(id: string) {
     files: [],
     tags: [],
   });
-  if (!row) {
-    throw new Error("Invalid fixture");
-  }
+  if (!row) throw new Error("Invalid fixture");
   return row;
 }
 
@@ -159,9 +157,7 @@ async function settle(expected: string): Promise<void> {
     const loading = document
       .querySelector("[data-loading]")
       ?.getAttribute("data-loading");
-    if (ids === expected && loading === "false") {
-      return;
-    }
+    if (ids === expected && loading === "false") return;
   }
   throw new Error(
     `Filtered view did not settle: ${document.body.textContent ?? ""}`,

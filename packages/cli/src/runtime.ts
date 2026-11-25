@@ -35,9 +35,7 @@ export function pondLaunchCommand(
   }
   // The deb keeps its executable at a fixed path; an AppImage is launched
   // through the desktop entry its integration installs.
-  if (exists("/opt/Pond/pond")) {
-    return { file: "/opt/Pond/pond", args: [] };
-  }
+  if (exists("/opt/Pond/pond")) return { file: "/opt/Pond/pond", args: [] };
   return { file: "xdg-open", args: ["pond://library"] };
 }
 
@@ -60,20 +58,14 @@ export async function ensurePondAvailable(
   baseUrl: string,
   timeout: number,
 ): Promise<void> {
-  if (await ready(baseUrl, Math.min(timeout, 750))) {
-    return;
-  }
+  if (await ready(baseUrl, Math.min(timeout, 750))) return;
   const launched = launchPond();
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     await delay(250);
     const failure = launched.failure();
-    if (failure) {
-      throw new Error(`Could not start Pond: ${failure.message}`);
-    }
-    if (await ready(baseUrl, Math.min(750, deadline - Date.now()))) {
-      return;
-    }
+    if (failure) throw new Error(`Could not start Pond: ${failure.message}`);
+    if (await ready(baseUrl, Math.min(750, deadline - Date.now()))) return;
   }
   throw new Error(
     "Pond did not start before the timeout. Open the app and try again.",

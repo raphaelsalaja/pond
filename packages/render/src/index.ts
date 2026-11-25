@@ -365,9 +365,7 @@ export async function createPostRenderer(
     const status = fn(ptr, bytes.length);
     wasm.dealloc(ptr, bytes.length);
     const out = output();
-    if (status !== 0) {
-      throw new Error(decoder.decode(out));
-    }
+    if (status !== 0) throw new Error(decoder.decode(out));
     return out;
   };
 
@@ -385,9 +383,7 @@ export async function createPostRenderer(
       index,
     );
     wasm.dealloc(namePtr, name.length);
-    if (status !== 0) {
-      throw new Error(decoder.decode(output()));
-    }
+    if (status !== 0) throw new Error(decoder.decode(output()));
     registered.add(file);
   };
 
@@ -395,9 +391,7 @@ export async function createPostRenderer(
   const faces = parseWasmJson(output(), isHostFaces, "face list");
 
   const loadFace = async (face: HostFace) => {
-    if (registered.has(face.file)) {
-      return;
-    }
+    if (registered.has(face.file)) return;
     if (face.pack === "emoji") {
       register(face.file, await emojiFont(config.cacheDir), 0);
       return;
@@ -405,9 +399,7 @@ export async function createPostRenderer(
     const bundled = join(config.fontsDir, face.file);
     const source = MAC_FACES.get(face.file) ?? { path: bundled };
     if (!existsSync(source.path)) {
-      if (source.optional) {
-        return;
-      }
+      if (source.optional) return;
       throw new Error(`Font ${face.file} not found at ${source.path}`);
     }
     register(face.file, await readFile(source.path), source.index ?? 0);
@@ -429,9 +421,7 @@ export async function createPostRenderer(
   let disposed = false;
   return {
     async render(source, post, options = {}) {
-      if (disposed) {
-        throw new Error("Post renderer was disposed");
-      }
+      if (disposed) throw new Error("Post renderer was disposed");
       const request = encoder.encode(
         JSON.stringify({ source, post, options }).replaceAll(
           LONE_SURROGATE_ESCAPE,
@@ -472,9 +462,7 @@ async function emojiFont(cacheDir: string | undefined): Promise<Uint8Array> {
   const cached = cacheDir
     ? join(cacheDir, `AppleColorEmoji-64-${key}.ttf`)
     : undefined;
-  if (cached && existsSync(cached)) {
-    return readFile(cached);
-  }
+  if (cached && existsSync(cached)) return readFile(cached);
   const font = extractEmojiStrike(await readFile(EMOJI_TTC));
   if (cached && cacheDir) {
     await mkdir(cacheDir, { recursive: true });

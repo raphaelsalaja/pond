@@ -37,8 +37,6 @@ export function capturedCardToken(
   document: { token: string; ready: boolean } | null,
   requestedToken: string,
 ): string | null {
-  if (!document?.ready || document.token !== requestedToken) {
-    return null;
-  }
+  if (!document?.ready || document.token !== requestedToken) return null;
   return document.token;
 }

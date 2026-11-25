@@ -70,9 +70,7 @@ function streamResponse(chunks: Array<Uint8Array>) {
   return new Response(
     new ReadableStream<Uint8Array>({
       start(controller) {
-        for (const chunk of chunks) {
-          controller.enqueue(chunk);
-        }
+        for (const chunk of chunks) controller.enqueue(chunk);
         controller.close();
       },
     }),

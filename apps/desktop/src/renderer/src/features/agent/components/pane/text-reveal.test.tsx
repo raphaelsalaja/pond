@@ -44,9 +44,7 @@ function createReveal() {
   const root = createRoot(host);
   let mounted = true;
   const unmount = async () => {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     await act(async () => root.unmount());
     mounted = false;
   };
@@ -78,9 +76,7 @@ function createReveal() {
       const callbacks = [...frames.values()];
       frames.clear();
       await act(async () => {
-        for (const callback of callbacks) {
-          callback(now);
-        }
+        for (const callback of callbacks) callback(now);
       });
     },
     unmount,
@@ -107,9 +103,7 @@ it("reveals Unicode letters on animation frames without splitting a code point",
   expect(reveal.text).toBe("🌿");
   await reveal.advance();
   expect(reveal.text).toBe("🌿P");
-  for (let frame = 0; frame < 4; frame++) {
-    await reveal.advance();
-  }
+  for (let frame = 0; frame < 4; frame++) await reveal.advance();
   expect(reveal.text).toBe("🌿Pond");
   expect(reveal.pending).toBe(false);
   expect(reveal.scheduled).toBe(0);

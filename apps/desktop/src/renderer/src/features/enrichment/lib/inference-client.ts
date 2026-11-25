@@ -126,18 +126,12 @@ let releaseWhenIdle = false;
 
 export function releaseIdleInferenceWorker(): void {
   releaseWhenIdle = true;
-  if (pending.size > 0) {
-    return;
-  }
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-  }
+  if (pending.size > 0) return;
+  if (idleTimer) clearTimeout(idleTimer);
   idleTimer = null;
   releaseWhenIdle = false;
   const current = worker;
-  if (!current) {
-    return;
-  }
+  if (!current) return;
   const id = nextId++;
   const finish = (): void => {
     if (pending.size === 0 && worker === current) {
@@ -156,12 +150,8 @@ export function releaseIdleInferenceWorker(): void {
 }
 
 function scheduleIdleRelease(): void {
-  if (pending.size > 0 || !worker) {
-    return;
-  }
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-  }
+  if (pending.size > 0 || !worker) return;
+  if (idleTimer) clearTimeout(idleTimer);
   idleTimer = setTimeout(
     releaseIdleInferenceWorker,
     releaseWhenIdle ? 0 : 15_000,
@@ -169,19 +159,13 @@ function scheduleIdleRelease(): void {
 }
 
 function failAllPending(error: Error): void {
-  for (const p of pending.values()) {
-    p.reject(error);
-  }
+  for (const p of pending.values()) p.reject(error);
   pending.clear();
 }
 
 function ensureWorker(): Worker | null {
-  if (workerBroken) {
-    return null;
-  }
-  if (worker) {
-    return worker;
-  }
+  if (workerBroken) return null;
+  if (worker) return worker;
   try {
     const w = new Worker(new URL("./inference-worker.ts", import.meta.url), {
       type: "module",
@@ -189,15 +173,10 @@ function ensureWorker(): Worker | null {
     w.onmessage = (event: MessageEvent<InferenceResponse>) => {
       const msg = event.data;
       const p = pending.get(msg.id);
-      if (!p) {
-        return;
-      }
+      if (!p) return;
       pending.delete(msg.id);
-      if (msg.ok) {
-        p.resolve(msg.result);
-      } else {
-        p.reject(new Error(msg.error));
-      }
+      if (msg.ok) p.resolve(msg.result);
+      else p.reject(new Error(msg.error));
       scheduleIdleRelease();
     };
     w.onerror = (event) => {
@@ -206,9 +185,7 @@ function ensureWorker(): Worker | null {
       worker?.terminate();
       worker = null;
       failAllPending(new Error("inference worker crashed"));
-      if (idleTimer) {
-        clearTimeout(idleTimer);
-      }
+      if (idleTimer) clearTimeout(idleTimer);
       idleTimer = null;
     };
     worker = w;
@@ -235,14 +212,10 @@ function callWorker<T extends InferenceResult>(
   msg: RequestBody,
   transfer: Array<Transferable>,
 ): Promise<T> {
-  if (idleTimer) {
-    clearTimeout(idleTimer);
-  }
+  if (idleTimer) clearTimeout(idleTimer);
   idleTimer = null;
   const w = ensureWorker();
-  if (!w) {
-    return Promise.reject(new Error("inference worker unavailable"));
-  }
+  if (!w) return Promise.reject(new Error("inference worker unavailable"));
   const id = nextId++;
   return new Promise<T>((resolve, reject) => {
     pending.set(id, {
@@ -272,9 +245,7 @@ async function viaWorker<T>(
   fallback: () => Promise<T>,
 ): Promise<T> {
   if (workerBroken) {
-    if (workerEverStarted) {
-      throw new Error("inference worker crashed");
-    }
+    if (workerEverStarted) throw new Error("inference worker crashed");
     return fallback();
   }
   try {

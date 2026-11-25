@@ -92,9 +92,7 @@ async function inPageRedditList(
   }
 
   const apiResult = await fetchSavedViaApi(username);
-  if (apiResult) {
-    return apiResult;
-  }
+  if (apiResult) return apiResult;
   return await fallbackDomScroll();
 
   async function fetchSavedViaApi(
@@ -125,9 +123,7 @@ async function inPageRedditList(
         raw_json: "1",
         type: "links",
       });
-      if (after) {
-        params.set("after", after);
-      }
+      if (after) params.set("after", after);
       const url = `/user/${encodeURIComponent(handle)}/saved.json?${params}`;
 
       let json: RedditListing | null;
@@ -150,14 +146,10 @@ async function inPageRedditList(
             ok: false,
             reason: "rate_limited",
           };
-          if (Number.isFinite(n)) {
-            limited.retryAfterSec = Math.max(0, n);
-          }
+          if (Number.isFinite(n)) limited.retryAfterSec = Math.max(0, n);
           return limited;
         }
-        if (!res.ok) {
-          return null;
-        }
+        if (!res.ok) return null;
 
         const body: unknown = await res.json();
         json = isListing(body) ? body : null;
@@ -181,9 +173,7 @@ async function inPageRedditList(
         }
         const data: RedditPost = child.data ?? {};
         const id = asText(data.id) ?? null;
-        if (!id) {
-          continue;
-        }
+        if (!id) continue;
         const permalink = asText(data.permalink) ?? `/comments/${id}/`;
         const urlAbs = permalink.startsWith("http")
           ? permalink
@@ -198,16 +188,12 @@ async function inPageRedditList(
         const author = asText(data.author);
         const createdUtc = asNumber(data.created_utc);
         const entry: Entry = { sourceId: id, url: urlAbs };
-        if (title !== undefined) {
-          entry.title = title;
-        }
+        if (title !== undefined) entry.title = title;
         if (selftext) {
           entry.description =
             selftext.length > 4000 ? `${selftext.slice(0, 4000)}…` : selftext;
         }
-        if (author !== undefined) {
-          entry.author = author;
-        }
+        if (author !== undefined) entry.author = author;
         if (thumb) {
           entry.mediaUrl = thumb;
           entry.mediaUrls = [{ url: thumb, type: "image" }];
@@ -216,9 +202,7 @@ async function inPageRedditList(
         if (createdUtc !== undefined) {
           entry.savedAt = new Date(createdUtc * 1000).toISOString();
         }
-        if (!known.has(id)) {
-          pageFresh += 1;
-        }
+        if (!known.has(id)) pageFresh += 1;
         entries.push(entry);
       }
 
@@ -262,9 +246,7 @@ async function inPageRedditList(
       );
       for (const a of links) {
         const id = norm.extractPostId(a.href);
-        if (!id || seen.has(id)) {
-          continue;
-        }
+        if (!id || seen.has(id)) continue;
         seen.add(id);
         let href = a.href;
         try {
@@ -279,9 +261,7 @@ async function inPageRedditList(
       )) {
         const id = post.getAttribute("id")?.replace(/^t3_/, "") ?? null;
         const permalink = post.getAttribute("permalink");
-        if (!id || seen.has(id) || !permalink) {
-          continue;
-        }
+        if (!id || seen.has(id) || !permalink) continue;
         seen.add(id);
         out.push({
           sourceId: id,
@@ -309,9 +289,7 @@ async function inPageRedditList(
     const collected = new Map<string, StubEntry>();
     function ingestRows(rows: Array<StubEntry>): void {
       for (const r of rows) {
-        if (!collected.has(r.sourceId)) {
-          collected.set(r.sourceId, r);
-        }
+        if (!collected.has(r.sourceId)) collected.set(r.sourceId, r);
       }
     }
 
@@ -332,9 +310,7 @@ async function inPageRedditList(
       for (const row of batch) {
         if (!collected.has(row.sourceId)) {
           collected.set(row.sourceId, row);
-          if (!known.has(row.sourceId)) {
-            pageFresh += 1;
-          }
+          if (!known.has(row.sourceId)) pageFresh += 1;
         } else if (!known.has(row.sourceId)) {
           pageFresh += 1;
         }
@@ -346,16 +322,11 @@ async function inPageRedditList(
           fresh: [...collected.keys()].filter((id) => !known.has(id)).length,
         },
       });
-      if (collected.size === before) {
-        stable += 1;
-      } else {
-        stable = 0;
-      }
+      if (collected.size === before) stable += 1;
+      else stable = 0;
       if (earlyStopEnabled && batch.length > 0 && pageFresh === 0) {
         knownBatchStreak += 1;
-        if (knownBatchStreak >= 3) {
-          break;
-        }
+        if (knownBatchStreak >= 3) break;
       } else {
         knownBatchStreak = 0;
       }

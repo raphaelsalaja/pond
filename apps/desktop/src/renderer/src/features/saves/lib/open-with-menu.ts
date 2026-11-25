@@ -19,14 +19,10 @@ export function openWithKind(save: Save, fileIndex?: number | null): string {
       ? save.files[0]
       : save.files[fileIndex];
   const mime = file?.mimeType?.trim();
-  if (mime) {
-    return mime.toLowerCase();
-  }
+  if (mime) return mime.toLowerCase();
   const path = file?.path ?? "";
   const dot = path.lastIndexOf(".");
-  if (dot >= 0) {
-    return path.slice(dot).toLowerCase();
-  }
+  if (dot >= 0) return path.slice(dot).toLowerCase();
   return save.mediaType ?? save.id;
 }
 
@@ -96,9 +92,7 @@ export async function loadOpenWithApps({
   onApps: (apps: Array<OpenWithApp>) => void;
 }): Promise<void> {
   const cached = appsByKind.get(kind);
-  if (cached?.length) {
-    onApps(cached);
-  }
+  if (cached?.length) onApps(cached);
   try {
     const apps = await listOpenWithApps(ids, fileIndex);
     if (apps.length) {
@@ -111,15 +105,11 @@ export async function loadOpenWithApps({
       return;
     }
     const next = await listOpenWithApps(ids, fileIndex, true);
-    if (!next.length) {
-      return;
-    }
+    if (!next.length) return;
     appsByKind.set(kind, next);
     onApps(next);
   } catch {
-    if (cached?.length) {
-      onApps(cached);
-    }
+    if (cached?.length) onApps(cached);
   }
 }
 

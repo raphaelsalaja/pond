@@ -9,9 +9,7 @@ export function FileAttachments({
   files: Array<AssistantFileAttachment>;
   onRemove?: (id: string) => void;
 }) {
-  if (files.length === 0) {
-    return null;
-  }
+  if (files.length === 0) return null;
   return (
     <Chip.Root className={styles.files} aria-label="Attached files">
       {files.map((file) => (

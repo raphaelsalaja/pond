@@ -53,9 +53,7 @@ export function toolForKey(
   key: string,
   shift: boolean,
 ): CanvasTool | undefined {
-  if (shift) {
-    return shiftedTool(key);
-  }
+  if (shift) return shiftedTool(key);
   switch (key.toLowerCase()) {
     case "v":
       return "select";
@@ -121,9 +119,7 @@ const MODES: ReadonlyArray<{
 ];
 
 function place(mark: HTMLElement, button: HTMLElement, animate: boolean) {
-  if (!animate) {
-    mark.dataset.snap = "";
-  }
+  if (!animate) mark.dataset.snap = "";
   mark.style.translate = `${button.offsetLeft}px ${button.offsetTop}px`;
   mark.style.width = `${button.offsetWidth}px`;
   mark.style.height = `${button.offsetHeight}px`;
@@ -183,9 +179,7 @@ export function Tools({
   useLayoutEffect(() => {
     const mark = indicator.current;
     const button = buttons.current.get(tool);
-    if (!mark || !button) {
-      return;
-    }
+    if (!mark || !button) return;
     place(mark, button, placed.current);
     placed.current = true;
   }, [tool]);
@@ -193,14 +187,10 @@ export function Tools({
   useLayoutEffect(() => {
     const mark = indicator.current;
     const bar = mark?.parentElement;
-    if (!mark || !bar) {
-      return;
-    }
+    if (!mark || !bar) return;
     const observer = new ResizeObserver(() => {
       const active = bar.querySelector<HTMLElement>("[data-pressed]");
-      if (active) {
-        place(mark, active, false);
-      }
+      if (active) place(mark, active, false);
     });
     observer.observe(bar);
     return () => observer.disconnect();
@@ -224,11 +214,8 @@ export function Tools({
             >
               <Toolbar.Button
                 ref={(node: HTMLButtonElement | null) => {
-                  if (node) {
-                    buttons.current.set(mode, node);
-                  } else {
-                    buttons.current.delete(mode);
-                  }
+                  if (node) buttons.current.set(mode, node);
+                  else buttons.current.delete(mode);
                 }}
                 render={
                   <Button

@@ -35,18 +35,14 @@ async function inPageTiktokCollections(): Promise<CollectionsReply> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       const found = document.querySelector<HTMLElement>(selector);
-      if (found) {
-        return found;
-      }
+      if (found) return found;
       await wait(250);
     }
     return null;
   };
 
   const favorites = await find('[data-e2e="favorites-tab"]', 10_000);
-  if (!favorites) {
-    return { ok: false, reason: "unknown" };
-  }
+  if (!favorites) return { ok: false, reason: "unknown" };
   favorites.click();
   const section = await find('[data-e2e="sub-tab-collections"]', 8000);
   if (!section) {
@@ -91,9 +87,7 @@ async function inPageTiktokCollections(): Promise<CollectionsReply> {
     const match = /\/collection\/(.+)-(\d+)\/?$/.exec(path);
     const title = match?.[1];
     const id = match?.[2];
-    if (!title || !id || seen.has(id)) {
-      continue;
-    }
+    if (!title || !id || seen.has(id)) continue;
     seen.add(id);
     const labels = card.querySelectorAll(
       '[data-e2e="collection-card-footer"] span',

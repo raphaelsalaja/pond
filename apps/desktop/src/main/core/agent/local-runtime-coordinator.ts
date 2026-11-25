@@ -57,9 +57,7 @@ function runtimeKey(runtime: LocalRuntime): string {
 }
 
 function positiveTimeout(timeoutMs: number): number {
-  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
-    return 1;
-  }
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) return 1;
   return Math.max(1, Math.round(timeoutMs));
 }
 
@@ -69,9 +67,7 @@ export function createLocalRuntimeCoordinator(): LocalRuntimeCoordinator {
 
   function stateFor(key: string): RuntimeState {
     const existing = states.get(key);
-    if (existing) {
-      return existing;
-    }
+    if (existing) return existing;
     const created: RuntimeState = {
       active: false,
       interactive: [],
@@ -82,9 +78,7 @@ export function createLocalRuntimeCoordinator(): LocalRuntimeCoordinator {
   }
 
   function drain(key: string, state: RuntimeState): void {
-    if (state.active) {
-      return;
-    }
+    if (state.active) return;
     const next = state.interactive.shift() ?? state.background.shift();
     if (!next) {
       states.delete(key);
@@ -121,18 +115,14 @@ export function createLocalRuntimeCoordinator(): LocalRuntimeCoordinator {
             ? state.interactive
             : state.background;
         const index = queue.indexOf(job);
-        if (index >= 0) {
-          queue.splice(index, 1);
-        }
+        if (index >= 0) queue.splice(index, 1);
       };
       const cleanup = (): void => {
         clearTimeout(timer);
         request.signal.removeEventListener("abort", onAbort);
       };
       const settleFailure = (reason: LocalRuntimeCoordinationFailure): void => {
-        if (settled) {
-          return;
-        }
+        if (settled) return;
         settled = true;
         rejectResult(new LocalRuntimeCoordinationError(reason));
       };
@@ -176,9 +166,7 @@ export function createLocalRuntimeCoordinator(): LocalRuntimeCoordinator {
           );
         },
         cancel(reason) {
-          if (settled) {
-            return;
-          }
+          if (settled) return;
           controller.abort();
           settleFailure(reason);
           if (!started) {

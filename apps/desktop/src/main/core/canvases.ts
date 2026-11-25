@@ -55,21 +55,15 @@ function write(root: string, canvas: Canvas): Canvas {
 
 function requireCanvas(id: string, root: string): Canvas {
   const canvas = readCanvas(id, root);
-  if (!canvas) {
-    throw new Error("This canvas no longer exists.");
-  }
+  if (!canvas) throw new Error("This canvas no longer exists.");
   return canvas;
 }
 
 function uniqueName(base: string, taken: ReadonlyArray<string>): string {
   const names = new Set(taken.map((name) => name.toLocaleLowerCase()));
-  if (!names.has(base.toLocaleLowerCase())) {
-    return base;
-  }
+  if (!names.has(base.toLocaleLowerCase())) return base;
   let suffix = 2;
-  while (names.has(`${base} ${suffix}`.toLocaleLowerCase())) {
-    suffix += 1;
-  }
+  while (names.has(`${base} ${suffix}`.toLocaleLowerCase())) suffix += 1;
   return `${base} ${suffix}`;
 }
 
@@ -106,9 +100,7 @@ export function readCanvas(id: string, root = libraryRoot()): Canvas | null {
   const file = canvasFile(root, id);
   const stored = readBundleJson(file);
   if (!stored) {
-    if (existsSync(file)) {
-      throw new Error("This canvas could not be read.");
-    }
+    if (existsSync(file)) throw new Error("This canvas could not be read.");
     return null;
   }
   return CanvasSchema.parse(stored.data);
@@ -122,14 +114,10 @@ export function listCanvases(root = libraryRoot()): Array<CanvasSummary> {
   const summaries: Array<CanvasSummary> = [];
   for (const name of readdirSync(directory)) {
     const id = name.endsWith(".json") ? name.slice(0, -".json".length) : "";
-    if (!CanvasIdSchema.safeParse(id).success) {
-      continue;
-    }
+    if (!CanvasIdSchema.safeParse(id).success) continue;
     try {
       const canvas = readCanvas(id, root);
-      if (canvas) {
-        summaries.push(summarize(canvas));
-      }
+      if (canvas) summaries.push(summarize(canvas));
     } catch (error) {
       log.warn("[pond canvases] skipped unreadable canvas", name, error);
     }
@@ -171,9 +159,7 @@ export function renameCanvas(
   now = Date.now(),
 ): void {
   const trimmed = name.trim();
-  if (!trimmed) {
-    throw new Error("Give the canvas a name.");
-  }
+  if (!trimmed) throw new Error("Give the canvas a name.");
   write(root, { ...requireCanvas(id, root), name: trimmed, updatedAt: now });
 }
 
@@ -196,9 +182,7 @@ export function addSavesToCanvas(
 ): Canvas {
   const canvas = requireCanvas(id, root);
   const added = placeSaves(canvas, saveIds);
-  if (!added.length) {
-    return canvas;
-  }
+  if (!added.length) return canvas;
   return write(root, {
     ...canvas,
     items: [...canvas.items, ...added],

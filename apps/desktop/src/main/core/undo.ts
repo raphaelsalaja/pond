@@ -59,15 +59,11 @@ export function createUndoHistory(
         }),
       );
       await runEffect(step.effects?.undo);
-      if (epoch === started) {
-        redoStack.push(step);
-      }
+      if (epoch === started) redoStack.push(step);
       return true;
     } catch (error) {
       log.warn("[pond undo] failed", error);
-      if (epoch === started) {
-        undoStack.push(step);
-      }
+      if (epoch === started) undoStack.push(step);
       return false;
     }
   }
@@ -81,33 +77,25 @@ export function createUndoHistory(
         })),
       );
       await runEffect(step.effects?.redo);
-      if (epoch === started) {
-        undoStack.push(step);
-      }
+      if (epoch === started) undoStack.push(step);
       return true;
     } catch (error) {
       log.warn("[pond redo] failed", error);
-      if (epoch === started) {
-        redoStack.push(step);
-      }
+      if (epoch === started) redoStack.push(step);
       return false;
     }
   }
   function undoLatest(): Promise<UndoLatestResult> {
     return serialize(async () => {
       const step = undoStack.pop();
-      if (!step) {
-        return { ok: false, step: null };
-      }
+      if (!step) return { ok: false, step: null };
       return { ok: await revert(step), step: step.id };
     });
   }
   function redoLatest(): Promise<UndoLatestResult> {
     return serialize(async () => {
       const step = redoStack.pop();
-      if (!step) {
-        return { ok: false, step: null };
-      }
+      if (!step) return { ok: false, step: null };
       return { ok: await reapply(step), step: step.id };
     });
   }
@@ -125,9 +113,7 @@ export function createUndoHistory(
         transactions: structuredClone(transactions),
         effects,
       });
-      if (undoStack.length > MAX_HISTORY) {
-        undoStack.shift();
-      }
+      if (undoStack.length > MAX_HISTORY) undoStack.shift();
       redoStack.length = 0;
       return id;
     },
@@ -150,9 +136,7 @@ export function createUndoHistory(
           return "stale";
         }
         const step = undoStack.pop();
-        if (!step) {
-          return "stale";
-        }
+        if (!step) return "stale";
         return (await revert(step)) ? "done" : "failed";
       }),
     /** Reapplies one undone step only while it is still the latest undo; an already-redone step reports `done`. */
@@ -165,9 +149,7 @@ export function createUndoHistory(
           return "stale";
         }
         const step = redoStack.pop();
-        if (!step) {
-          return "stale";
-        }
+        if (!step) return "stale";
         return (await reapply(step)) ? "done" : "failed";
       }),
     canUndo: (): boolean => undoStack.length > 0,

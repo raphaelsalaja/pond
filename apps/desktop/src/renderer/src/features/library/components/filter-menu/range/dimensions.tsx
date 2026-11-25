@@ -130,9 +130,7 @@ export function DimensionsFilter({
       onSubmit={(event) => {
         event.preventDefault();
         schedule();
-        if (!valid) {
-          return;
-        }
+        if (!valid) return;
         onChange([
           ...rows.filter(
             (row) => row.field !== "width" && row.field !== "height",

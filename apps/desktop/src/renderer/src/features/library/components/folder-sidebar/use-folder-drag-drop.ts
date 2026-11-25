@@ -90,13 +90,9 @@ export function useFolderDragDrop({
     draggedId: string,
     drop: FolderDropTarget,
   ): Promise<void> {
-    if (!folderMoveTarget(draggedId, drop)) {
-      return;
-    }
+    if (!folderMoveTarget(draggedId, drop)) return;
     const move = planFolderDrop(draggedId, drop, folderRows);
-    if (!move) {
-      return;
-    }
+    if (!move) return;
     try {
       const ids = selectedIds.includes(draggedId) ? selectedIds : [draggedId];
       if (ids.length > 1) {
@@ -109,9 +105,7 @@ export function useFolderDragDrop({
         await window.pond.query("folders.move", move);
       }
       await folders.refresh();
-      if (move.parentId) {
-        revealFolder(move.parentId);
-      }
+      if (move.parentId) revealFolder(move.parentId);
     } catch (error) {
       notify({
         id: "move-folder",
@@ -133,20 +127,14 @@ export function useFolderDragDrop({
   function handlersFor(folder: Folder) {
     return {
       onDragEnter(event: React.DragEvent<HTMLElement>) {
-        if (!isLibrarySaveDrag(event.dataTransfer)) {
-          return;
-        }
+        if (!isLibrarySaveDrag(event.dataTransfer)) return;
         const depths = dragDepthRef.current;
         depths.set(folder.id, (depths.get(folder.id) ?? 0) + 1);
       },
       onDragOver(event: React.DragEvent<HTMLElement>) {
-        if (!isLibrarySaveDrag(event.dataTransfer)) {
-          return;
-        }
+        if (!isLibrarySaveDrag(event.dataTransfer)) return;
         const ids = saveDropIds(event.dataTransfer);
-        if (ids.length === 0) {
-          return;
-        }
+        if (ids.length === 0) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = "copy";
         if (!dragDepthRef.current.has(folder.id)) {
@@ -167,17 +155,12 @@ export function useFolderDragDrop({
       onDragLeave() {
         const depths = dragDepthRef.current;
         const depth = (depths.get(folder.id) ?? 0) - 1;
-        if (depth > 0) {
-          depths.set(folder.id, depth);
-        } else {
-          leaveFolder(folder.id);
-        }
+        if (depth > 0) depths.set(folder.id, depth);
+        else leaveFolder(folder.id);
       },
       onDrop(event: React.DragEvent<HTMLElement>) {
         const ids = saveDropIds(event.dataTransfer);
-        if (ids.length === 0) {
-          return;
-        }
+        if (ids.length === 0) return;
         event.preventDefault();
         dragDepthRef.current.clear();
         setFolderDrop(null);

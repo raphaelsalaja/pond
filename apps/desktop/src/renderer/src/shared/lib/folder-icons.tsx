@@ -1354,9 +1354,7 @@ export function FolderIcon({
         : option.Icon;
   const css = folderColorCss(color);
   const style = css ? { color: css } : undefined;
-  if (!state) {
-    return <Icon size={size} style={style} />;
-  }
+  if (!state) return <Icon size={size} style={style} />;
   return <IconMorph icon={Icon} size={size} style={style} />;
 }
 
@@ -1383,9 +1381,7 @@ export function searchFolderIcons(
   query: string,
 ): ReadonlyArray<FolderIconOption> {
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  if (!words.length) {
-    return FOLDER_ICONS;
-  }
+  if (!words.length) return FOLDER_ICONS;
   const named = (icon: FolderIconOption) =>
     words.every((word) =>
       icon.label
@@ -1403,13 +1399,9 @@ export function searchFolderIcons(
 export function folderSwatchCss(
   color: string | null | undefined,
 ): string | undefined {
-  if (!color) {
-    return undefined;
-  }
+  if (!color) return undefined;
   const swatch = FOLDER_SWATCHES.find((item) => item.id === color);
-  if (swatch) {
-    return swatch.css;
-  }
+  if (swatch) return swatch.css;
   return color.startsWith("#") ? color : undefined;
 }
 
@@ -1418,8 +1410,6 @@ export function folderColorCss(
   color: string | null | undefined,
 ): string | undefined {
   const css = folderSwatchCss(color);
-  if (!css || !color?.startsWith("#")) {
-    return css;
-  }
+  if (!css || !color?.startsWith("#")) return css;
   return `oklch(from ${css} clamp(var(--folder-ink-min, 0), l, var(--folder-ink-max, 1)) c h)`;
 }

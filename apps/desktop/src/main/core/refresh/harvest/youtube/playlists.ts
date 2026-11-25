@@ -66,18 +66,14 @@ export function parseYoutubePlaylists(
     name: string,
     itemCount: number | null,
   ) => {
-    if (!id || seen.has(id)) {
-      return;
-    }
+    if (!id || seen.has(id)) return;
     seen.add(id);
     out.push({ id, name: name || id, itemCount });
   };
   walk(data, (key, value) => {
     if (key === "lockupViewModel") {
       const lockup = LockupSchema.parse(value);
-      if (lockup.contentType !== "LOCKUP_CONTENT_TYPE_PLAYLIST") {
-        return;
-      }
+      if (lockup.contentType !== "LOCKUP_CONTENT_TYPE_PLAYLIST") return;
       add(
         lockup.contentId,
         lockup.metadata?.lockupMetadataViewModel?.title?.content ?? "",
@@ -101,13 +97,9 @@ export function parseYoutubePlaylists(
 function videoCount(lockup: JsonValue): number | null {
   let count: number | null = null;
   walk(lockup, (key, value) => {
-    if (count !== null || key !== "text") {
-      return;
-    }
+    if (count !== null || key !== "text") return;
     const text = Text.parse(value);
-    if (text && /\bvideos?\b/i.test(text)) {
-      count = parseCount(text);
-    }
+    if (text && /\bvideos?\b/i.test(text)) count = parseCount(text);
   });
   return count;
 }
@@ -122,9 +114,7 @@ function walk(
   visit: (key: string, value: JsonValue) => void,
 ): void {
   if (Array.isArray(value)) {
-    for (const item of value) {
-      walk(item, visit);
-    }
+    for (const item of value) walk(item, visit);
     return;
   }
   if (!isJsonObject(value)) {

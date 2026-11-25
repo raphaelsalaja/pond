@@ -33,9 +33,7 @@ async function choose(label: string, optionLabel: string) {
   const trigger = host.querySelector<HTMLButtonElement>(
     `button[aria-label="${label}"]`,
   );
-  if (!trigger) {
-    throw new Error(`Missing ${label} selector`);
-  }
+  if (!trigger) throw new Error(`Missing ${label} selector`);
   await act(async () => trigger.click());
   const option = [...document.querySelectorAll('[role="option"]')].find(
     (item) => item.textContent === optionLabel,
@@ -47,9 +45,7 @@ async function choose(label: string, optionLabel: string) {
 }
 async function toggleSchedule() {
   const toggle = host.querySelector<HTMLButtonElement>('[role="switch"]');
-  if (!toggle) {
-    throw new Error("Missing schedule switch");
-  }
+  if (!toggle) throw new Error("Missing schedule switch");
   await act(async () => toggle.click());
 }
 it("saves edits automatically without saving on mount", async () => {

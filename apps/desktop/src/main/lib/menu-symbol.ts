@@ -9,9 +9,7 @@ const cache = new Map<string, NativeImage | undefined>();
 export function sym(
   name: string,
 ): { icon: NativeImage } | Record<string, never> {
-  if (process.platform !== "darwin") {
-    return {};
-  }
+  if (process.platform !== "darwin") return {};
   let img = cache.get(name);
   if (img === undefined && !cache.has(name)) {
     img = load(name);
@@ -23,9 +21,7 @@ export function sym(
 function load(name: string): NativeImage | undefined {
   try {
     const source = nativeImage.createFromNamedImage(name);
-    if (source.isEmpty()) {
-      return undefined;
-    }
+    if (source.isEmpty()) return undefined;
     const { width, height } = source.getSize();
     const long = Math.max(width, height, 1);
     const sized = source.resize({
@@ -33,9 +29,7 @@ function load(name: string): NativeImage | undefined {
       height: Math.max(1, Math.round((height / long) * MENU_SYMBOL_PX)),
       quality: "best",
     });
-    if (sized.isEmpty()) {
-      return undefined;
-    }
+    if (sized.isEmpty()) return undefined;
     sized.setTemplateImage(true);
     return sized;
   } catch {

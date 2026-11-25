@@ -30,11 +30,8 @@ export function kickReconciler(): void {
 
 export async function setReconcilerPaused(paused: boolean): Promise<boolean> {
   const reconciler = await loadReconciler();
-  if (paused) {
-    reconciler.pauseReconciler();
-  } else {
-    reconciler.resumeReconciler();
-  }
+  if (paused) reconciler.pauseReconciler();
+  else reconciler.resumeReconciler();
   return reconciler.isReconcilerPaused();
 }
 

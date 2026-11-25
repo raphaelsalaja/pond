@@ -84,9 +84,7 @@ async function fetchResource<
     referer: "https://www.pinterest.com/",
     "user-agent": CHROME_UA,
   });
-  if (csrf) {
-    headers.set("x-csrftoken", csrf);
-  }
+  if (csrf) headers.set("x-csrftoken", csrf);
   let res: Response;
   try {
     res = await ses.fetch(url, { headers });
@@ -102,12 +100,8 @@ async function fetchResource<
   if (res.status === 401 || res.status === 403) {
     return { ok: false, reason: "auth_required" };
   }
-  if (res.status === 429) {
-    return { ok: false, reason: "rate_limited" };
-  }
-  if (!res.ok) {
-    return { ok: false, reason: "unknown" };
-  }
+  if (res.status === 429) return { ok: false, reason: "rate_limited" };
+  if (!res.ok) return { ok: false, reason: "unknown" };
   let json: T;
   try {
     json = schema.parse(JSON.parse(await res.text()));

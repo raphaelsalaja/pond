@@ -166,9 +166,7 @@ function StatusCell({ row }: { row: DownloadViewRow }) {
       <span className={styles.label}>{label}</span>
     </span>
   );
-  if (!reason) {
-    return content;
-  }
+  if (!reason) return content;
   return (
     <Tooltip label={reason} side="top">
       {content}
@@ -374,9 +372,7 @@ function serverHost(row: DownloadViewRow): string {
   const host = row.activity?.transfers.find(
     (transfer) => transfer.request?.host,
   )?.request?.host;
-  if (host) {
-    return host;
-  }
+  if (host) return host;
   try {
     return new URL(row.url).host;
   } catch {
@@ -386,9 +382,7 @@ function serverHost(row: DownloadViewRow): string {
 
 function ServerCell({ row }: { row: DownloadViewRow }) {
   const host = serverHost(row);
-  if (!host) {
-    return <MetricCell value={EMPTY_METRIC} />;
-  }
+  if (!host) return <MetricCell value={EMPTY_METRIC} />;
   return (
     <span className={`${styles.metric} ${styles.added}`} title={host}>
       {host}
@@ -398,9 +392,7 @@ function ServerCell({ row }: { row: DownloadViewRow }) {
 
 function ErrorCell({ row }: { row: DownloadViewRow }) {
   const error = row.error?.trim() ?? "";
-  if (!error) {
-    return <MetricCell value={EMPTY_METRIC} />;
-  }
+  if (!error) return <MetricCell value={EMPTY_METRIC} />;
   return (
     <span className={`${styles.metric} ${styles.added}`} title={error}>
       {error}

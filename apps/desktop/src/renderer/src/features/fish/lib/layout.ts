@@ -29,9 +29,7 @@ export function fishLayout(
 }
 
 export function shelfOf(layout: FishLayout, id: string): string | null {
-  if (layout[id]) {
-    return id;
-  }
+  if (layout[id]) return id;
   return Object.keys(layout).find((key) => layout[key]?.includes(id)) ?? null;
 }
 

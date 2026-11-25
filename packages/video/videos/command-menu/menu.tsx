@@ -107,9 +107,7 @@ const fold = (text: string) => text.toLowerCase();
 /** Keyword hits as the library's full-text search returns them: titles with a word that starts with the query. */
 function keywordHits(query: string): Array<Item> {
   const q = fold(query.trim());
-  if (q.length < 2) {
-    return [];
-  }
+  if (q.length < 2) return [];
   return SAVES.filter((shot) =>
     fold(shot.title)
       .split(/[\s,]+/)
@@ -132,9 +130,7 @@ function rank(items: ReadonlyArray<Item>, query: string): Array<Ranked> {
     const matched =
       !match || weight === 0 ? 0 : match.score === 1 ? 1 : match.score * weight;
     const score = Math.max(matched, item.scoreFloor ?? 0);
-    if (score < MIN_SCORE) {
-      continue;
-    }
+    if (score < MIN_SCORE) continue;
     ranked.push({ item, score, ranges: match?.ranges ?? [] });
   }
   return ranked;
@@ -149,25 +145,18 @@ function rows(
   const groups = new Map<string, Array<Ranked>>();
   for (const entry of ranked) {
     const list = groups.get(entry.item.group);
-    if (list) {
-      list.push(entry);
-    } else {
-      groups.set(entry.item.group, [entry]);
-    }
+    if (list) list.push(entry);
+    else groups.set(entry.item.group, [entry]);
   }
   const ordered = [...groups];
   if (byScore) {
-    for (const [, list] of ordered) {
-      list.sort((a, b) => b.score - a.score);
-    }
+    for (const [, list] of ordered) list.sort((a, b) => b.score - a.score);
     ordered.sort(([, a], [, b]) => (b[0]?.score ?? 0) - (a[0]?.score ?? 0));
   }
   const out: Array<PaletteRow> = [];
   let index = 0;
   for (const [label, list] of ordered) {
-    if (label) {
-      out.push({ kind: "group", label, divided: out.length > 0 });
-    }
+    if (label) out.push({ kind: "group", label, divided: out.length > 0 });
     for (const entry of list.slice(0, limits[label] ?? list.length)) {
       out.push({
         kind: "entry",

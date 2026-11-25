@@ -125,9 +125,7 @@ export async function stdinLines(): Promise<Array<string>> {
   const input = createInterface({ input: process.stdin });
   for await (const line of input) {
     const value = line.trim();
-    if (value) {
-      values.push(value);
-    }
+    if (value) values.push(value);
   }
   return values;
 }

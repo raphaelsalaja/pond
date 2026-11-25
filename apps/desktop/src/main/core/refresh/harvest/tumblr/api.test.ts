@@ -34,9 +34,7 @@ function post(id: string, likedTimestamp: number) {
 function serve(pages: Record<string, JsonValue>, status = 200) {
   respond = async (raw) => {
     const url = new URL(raw);
-    if (url.pathname === "/") {
-      return new Response(HOME);
-    }
+    if (url.pathname === "/") return new Response(HOME);
     if (url.pathname === "/api/v2/user/info") {
       return json(
         {
@@ -151,9 +149,7 @@ describe("readTumblrCapture", () => {
   it("reads the permalink timeline for the blog in the URL", async () => {
     respond = async (raw) => {
       const url = new URL(raw);
-      if (url.pathname === "/") {
-        return new Response(HOME);
-      }
+      if (url.pathname === "/") return new Response(HOME);
       if (url.pathname === "/api/v2/blog/pascalcampion/posts/1/permalink") {
         return json({
           response: { timeline: { elements: [post("1", 100)] } },

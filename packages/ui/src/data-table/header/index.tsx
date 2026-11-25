@@ -84,9 +84,7 @@ function HeaderCell<T extends RowData>({
   };
 
   const resizeWithKeyboard = (event: ReactKeyboardEvent) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
-      return;
-    }
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
     event.stopPropagation();
     const width = headRef.current?.getBoundingClientRect().width ?? 0;
@@ -188,9 +186,7 @@ export function DataTableHeader<T extends RowData>() {
         order={ids}
         onOrderChange={(next) => {
           const move = movedColumn(ids, next);
-          if (move) {
-            actions.reorderColumns(move.from, move.to);
-          }
+          if (move) actions.reorderColumns(move.from, move.to);
         }}
         columnLabel={labelFor}
         aria-rowindex={1}

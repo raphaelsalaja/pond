@@ -34,9 +34,7 @@ export interface MatchResult {
 function dismissedFilter(
   dismissed: ReadonlyArray<DuplicateDismissal> | undefined,
 ): (pair: DuplicatePair) => boolean {
-  if (!dismissed?.length) {
-    return () => true;
-  }
+  if (!dismissed?.length) return () => true;
   const weakest = new Map<string, number>();
   for (const item of dismissed) {
     const key = pairKey(item.ids[0], item.ids[1]);
@@ -89,9 +87,7 @@ export function matchLibrary(
   const keep = dismissedFilter(options.dismissed);
   const pairs = sortPairs(buildPairs(found, assetCounts).filter(keep));
   const groups = groupPairs(pairs);
-  if (!options.scope) {
-    return { pairs, groups };
-  }
+  if (!options.scope) return { pairs, groups };
 
   const scope = options.scope;
   const scopedGroups = groups.filter((group) =>
@@ -102,9 +98,7 @@ export function matchLibrary(
   for (const group of scopedGroups) {
     for (const position of group.pairs) {
       const pair = pairs[position];
-      if (!pair || remap.has(position)) {
-        continue;
-      }
+      if (!pair || remap.has(position)) continue;
       remap.set(position, scopedPairs.length);
       scopedPairs.push(pair);
     }

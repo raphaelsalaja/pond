@@ -12,9 +12,7 @@ const createdAt = new Date(0);
 const databases: Array<Database.Database> = [];
 
 afterEach(() => {
-  for (const database of databases.splice(0)) {
-    database.close();
-  }
+  for (const database of databases.splice(0)) database.close();
 });
 
 function nativeSqliteAvailable(): boolean {
@@ -22,9 +20,7 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }

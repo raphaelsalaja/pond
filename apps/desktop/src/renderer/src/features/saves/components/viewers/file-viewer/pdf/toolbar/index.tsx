@@ -135,9 +135,7 @@ export function PdfToolbar({
         onSubmit={(event) => {
           event.preventDefault();
           const next = Number.parseInt(pageEntry, 10);
-          if (Number.isFinite(next)) {
-            goToPage(next);
-          }
+          if (Number.isFinite(next)) goToPage(next);
         }}
       >
         <Input.Root size="sm" variant="secondary">
@@ -149,11 +147,8 @@ export function PdfToolbar({
             onChange={(event) => setPageEntry(event.target.value)}
             onBlur={() => {
               const next = Number.parseInt(pageEntry, 10);
-              if (Number.isFinite(next)) {
-                goToPage(next);
-              } else {
-                setPageEntry(String(currentPage));
-              }
+              if (Number.isFinite(next)) goToPage(next);
+              else setPageEntry(String(currentPage));
             }}
           />
         </Input.Root>

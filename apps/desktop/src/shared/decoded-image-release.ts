@@ -13,9 +13,7 @@ export function shouldReleaseDecodedImages(
   previous: DecodedImageHold | null,
   next: DecodedImageHold,
 ): boolean {
-  if (!previous) {
-    return false;
-  }
+  if (!previous) return false;
   const leftGrid = previous.surface === "grid" && next.surface !== "grid";
   const closedViewer = previous.viewerOpen && !next.viewerOpen;
   const pressureRose =

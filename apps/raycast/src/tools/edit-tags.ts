@@ -17,9 +17,7 @@ type Input = {
 export default async function tool(input: Input) {
   const add = cleanTags(input.add ?? []);
   const remove = cleanTags(input.remove ?? []);
-  if (!add.length && !remove.length) {
-    throw new Error("Pass at least one tag to add or remove.");
-  }
+  if (!add.length && !remove.length) throw new Error("Pass at least one tag to add or remove.");
   return pond().editTags({ ids: input.ids, libraryId: input.libraryId, add, remove });
 }
 

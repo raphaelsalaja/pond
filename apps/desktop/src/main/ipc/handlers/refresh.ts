@@ -79,9 +79,7 @@ export function registerRefreshHandlers(): void {
 
   safeHandle(IPC.sourceConnect, async (_, source: string) => {
     try {
-      if (!isSource(source)) {
-        return { ok: false as const, mode: "external" };
-      }
+      if (!isSource(source)) return { ok: false as const, mode: "external" };
       if (connectsByHandle(source)) {
         return { ok: true as const, mode: "external" as const };
       }

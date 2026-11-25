@@ -26,8 +26,6 @@ export async function describeSaves(ids: ReadonlyArray<string>, libraryId: strin
   const saves = await loadSaves(ids, libraryId).catch(() => []);
   const titles = saves.slice(0, NAMED).map((save) => saveTitle(save));
   const rest = ids.length - titles.length;
-  if (!titles.length) {
-    return `${ids.length} saves`;
-  }
+  if (!titles.length) return `${ids.length} saves`;
   return rest > 0 ? `${titles.join(", ")} and ${rest} more` : titles.join(", ");
 }

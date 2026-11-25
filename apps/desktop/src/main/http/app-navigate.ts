@@ -16,9 +16,7 @@ export async function appNavigateHandler(c: Context) {
   const parsed = AppNavigationSchema.safeParse(
     await c.req.json().catch(() => null),
   );
-  if (!parsed.success) {
-    return invalidRequest(c, parsed.error);
-  }
+  if (!parsed.success) return invalidRequest(c, parsed.error);
   const { navigateApp } = await import("../app-navigation");
   await navigateApp(parsed.data);
   return c.json({ status: "success", data: { ok: true } });

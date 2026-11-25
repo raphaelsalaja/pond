@@ -74,13 +74,9 @@ function idsFromResponse(
           .catch([]),
       })
       .safeParse(json);
-    if (!parsed.success) {
-      return [];
-    }
+    if (!parsed.success) return [];
     return parsed.data.models.flatMap((row) => {
-      if (!row) {
-        return [];
-      }
+      if (!row) return [];
       const methods = row.supportedGenerationMethods;
       if (
         methods.length &&
@@ -134,9 +130,7 @@ function idsFromResponse(
     .safeParse(json);
   return parsed.success
     ? parsed.data.data.flatMap((row) => {
-        if (!row?.id) {
-          return [];
-        }
+        if (!row?.id) return [];
         const capabilities = row.capabilities;
         const localCapabilities =
           capabilities && !Array.isArray(capabilities)
@@ -166,25 +160,13 @@ function isChatModel(
   id: string,
   outputModalities?: Array<string>,
 ): boolean {
-  if (SKIP.test(id)) {
-    return false;
-  }
-  if (provider === "ollama" || provider === "lmstudio") {
-    return true;
-  }
+  if (SKIP.test(id)) return false;
+  if (provider === "ollama" || provider === "lmstudio") return true;
   const n = id.toLowerCase();
-  if (provider === "openai") {
-    return /^(gpt-|o[1-9]|chatgpt-)/.test(n);
-  }
-  if (provider === "anthropic") {
-    return n.includes("claude");
-  }
-  if (provider === "gemini") {
-    return n.includes("gemini");
-  }
-  if (provider === "deepseek") {
-    return n.includes("deepseek");
-  }
+  if (provider === "openai") return /^(gpt-|o[1-9]|chatgpt-)/.test(n);
+  if (provider === "anthropic") return n.includes("claude");
+  if (provider === "gemini") return n.includes("gemini");
+  if (provider === "deepseek") return n.includes("deepseek");
   if (provider === "openrouter") {
     if (outputModalities?.length) {
       return outputModalities.includes("text") && outputModalities.length === 1;

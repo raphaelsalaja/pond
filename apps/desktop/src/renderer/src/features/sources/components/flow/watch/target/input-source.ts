@@ -16,9 +16,7 @@ export function watchInputSource(
       : { type: "unsupported" };
   }
   const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(value);
-  if (hasScheme && !/^https?:\/\//i.test(value)) {
-    return { type: "unsupported" };
-  }
+  if (hasScheme && !/^https?:\/\//i.test(value)) return { type: "unsupported" };
   const candidate = hasScheme ? value : `https://${value}`;
   const source = hostToSource(candidate);
   if (source && isWatchableSource(source)) {

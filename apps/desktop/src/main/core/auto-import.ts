@@ -49,9 +49,7 @@ export function readAutoImportLog(): Promise<AutoImportLog> {
 
 export async function stopAutoImport(): Promise<void> {
   generation += 1;
-  if (timer) {
-    clearInterval(timer);
-  }
+  if (timer) clearInterval(timer);
   timer = null;
   const previous = worker;
   worker = null;
@@ -64,9 +62,7 @@ export async function startAutoImport(): Promise<void> {
   const root = resolve(libraryRoot());
   const prefs = await getPrefs();
   const cfg = prefs.autoImport;
-  if (current !== generation || !cfg.enabled || !cfg.path) {
-    return;
-  }
+  if (current !== generation || !cfg.enabled || !cfg.path) return;
   const directory = resolve(cfg.path);
   if (
     directory === root ||
@@ -118,9 +114,7 @@ export async function startAutoImport(): Promise<void> {
   worker = next;
   let scanning = false;
   const tick = async () => {
-    if (scanning || current !== generation) {
-      return;
-    }
+    if (scanning || current !== generation) return;
 
     scanning = true;
     try {
@@ -132,7 +126,5 @@ export async function startAutoImport(): Promise<void> {
     }
   };
   await tick();
-  if (current === generation) {
-    timer = setInterval(() => void tick(), 1000);
-  }
+  if (current === generation) timer = setInterval(() => void tick(), 1000);
 }

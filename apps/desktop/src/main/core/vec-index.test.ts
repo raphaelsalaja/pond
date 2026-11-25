@@ -23,9 +23,7 @@ function openMemoryDb(context: TestContext) {
   try {
     return new Database(":memory:");
   } catch (error) {
-    if (nativeRequired) {
-      throw error;
-    }
+    if (nativeRequired) throw error;
     context.skip(
       "better-sqlite3 cannot load under plain Node (set POND_REQUIRE_NATIVE=1 to require it)",
     );

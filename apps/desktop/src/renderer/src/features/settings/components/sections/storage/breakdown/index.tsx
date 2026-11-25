@@ -25,9 +25,7 @@ function Entry({ segment }: { segment: StorageSegment }) {
 export function StorageBreakdown({ breakdown }: { breakdown: Breakdown }) {
   const reduceMotion = useReducedMotion();
   const segments = storageSegments(breakdown);
-  if (!segments.length) {
-    return null;
-  }
+  if (!segments.length) return null;
 
   function reveal(id: string) {
     document.getElementById(id)?.scrollIntoView({

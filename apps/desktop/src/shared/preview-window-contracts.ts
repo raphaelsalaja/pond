@@ -121,9 +121,7 @@ const DETACHED_SPECIALIST_EXTENSIONS = new Set([
 export function previewMediaProfile(
   file: Pick<SaveFile, "kind" | "path" | "mimeType">,
 ): PreviewMediaProfile | null {
-  if (isAuxiliaryKind(file.kind)) {
-    return null;
-  }
+  if (isAuxiliaryKind(file.kind)) return null;
   const format = classifyLibraryFile(file.path, file.mimeType);
 
   switch (format.previewKind) {

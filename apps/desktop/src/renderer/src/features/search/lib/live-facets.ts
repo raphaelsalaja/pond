@@ -6,11 +6,8 @@ import type { NlFacets } from "@/features/search/lib/nl-query";
 
 function bump(map: Map<string, number>, key: string, delta: number): void {
   const next = (map.get(key) ?? 0) + delta;
-  if (next <= 0) {
-    map.delete(key);
-  } else {
-    map.set(key, next);
-  }
+  if (next <= 0) map.delete(key);
+  else map.set(key, next);
 }
 
 function ranked(map: Map<string, number>): Array<string> {
@@ -28,16 +25,10 @@ let attached = false;
 let cached: NlFacets | null = null;
 
 function applySave(save: Save, sign: 1 | -1): void {
-  if (save.deletedAt) {
-    return;
-  }
+  if (save.deletedAt) return;
   const identity = sourceIdentity(save);
-  if (identity) {
-    bump(sources, identity, sign);
-  }
-  for (const tag of save.tags ?? []) {
-    bump(tags, tag.toLowerCase(), sign);
-  }
+  if (identity) bump(sources, identity, sign);
+  for (const tag of save.tags ?? []) bump(tags, tag.toLowerCase(), sign);
   const type =
     save.source === "web"
       ? webTypeKey(save)
@@ -52,9 +43,7 @@ function applySave(save: Save, sign: 1 | -1): void {
     bump(types, type, sign);
   }
   const author = save.author?.trim();
-  if (author) {
-    bump(creators, author.toLowerCase(), sign);
-  }
+  if (author) bump(creators, author.toLowerCase(), sign);
 }
 
 function rebuildFromPool(): void {
@@ -73,9 +62,7 @@ function rebuildFromPool(): void {
 function patchIds(ids: ReadonlyArray<string>): void {
   for (const id of ids) {
     const prev = contributed.get(id);
-    if (prev) {
-      applySave(prev, -1);
-    }
+    if (prev) applySave(prev, -1);
     const next = pool.get(id);
     if (next) {
       applySave(next, 1);
@@ -88,9 +75,7 @@ function patchIds(ids: ReadonlyArray<string>): void {
 }
 
 function ensureAttached(): void {
-  if (attached) {
-    return;
-  }
+  if (attached) return;
   attached = true;
   rebuildFromPool();
   onPoolDirty((ids) => {
@@ -104,9 +89,7 @@ function ensureAttached(): void {
 
 export function computeLiveFacets(_saves?: ReadonlyArray<Save>): NlFacets {
   ensureAttached();
-  if (cached) {
-    return cached;
-  }
+  if (cached) return cached;
   cached = {
     sources: ranked(sources),
     tags: ranked(tags),

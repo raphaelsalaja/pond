@@ -113,9 +113,7 @@ export function createApiTokenStore(
   }
 
   async function authenticate(presented: string): Promise<ApiTokenInfo | null> {
-    if (!presented.startsWith(TOKEN_PREFIX)) {
-      return null;
-    }
+    if (!presented.startsWith(TOKEN_PREFIX)) return null;
     const presentedDigest = digest(presented);
     const match = (await load()).find((entry) => {
       const stored = Buffer.from(entry.hash, "hex");
@@ -124,9 +122,7 @@ export function createApiTokenStore(
         timingSafeEqual(stored, presentedDigest)
       );
     });
-    if (!match) {
-      return null;
-    }
+    if (!match) return null;
     const usedAt = now();
     if (isStale(match, usedAt)) {
       /** Decided again inside the queue, so uses that arrive before the first write lands record once. */

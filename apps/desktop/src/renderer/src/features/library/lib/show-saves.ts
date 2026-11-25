@@ -24,9 +24,7 @@ export function showSavesInLibrary(
   ids: ReadonlyArray<string>,
   folderId?: string,
 ): void {
-  if (ids.length === 0) {
-    return;
-  }
+  if (ids.length === 0) return;
   const nav: LibraryNav = folderId
     ? { kind: "folder", id: folderId }
     : { kind: "all" };
@@ -34,7 +32,5 @@ export function showSavesInLibrary(
   selectLibraryNav(nav);
   selectSaves(ids);
   /** Entering the grid or a new view clears the selection and drops a pending scroll, so both repeat on its first results. */
-  if (!settled) {
-    resultNavigation.onNextSource(() => selectSaves(ids));
-  }
+  if (!settled) resultNavigation.onNextSource(() => selectSaves(ids));
 }

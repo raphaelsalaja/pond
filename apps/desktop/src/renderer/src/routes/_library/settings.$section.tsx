@@ -27,9 +27,7 @@ function SettingsSectionRoute() {
   const { section } = Route.useParams();
   const hash = useRouteLocation((location) => {
     const value = location.hash;
-    if (!value) {
-      return null;
-    }
+    if (!value) return null;
     return value.replace(/^#/, "") || null;
   });
   return <SettingsDetail section={section} hash={hash} />;

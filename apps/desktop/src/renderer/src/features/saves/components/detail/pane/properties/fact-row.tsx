@@ -115,9 +115,7 @@ export function SourceMark({
   logo: string | null;
   Icon: IconComponent | null;
 }) {
-  if (logo) {
-    return <img className={styles.logo} src={logo} alt="" />;
-  }
+  if (logo) return <img className={styles.logo} src={logo} alt="" />;
   return Icon ? (
     <BrandTile size={16} rounding="full">
       <Icon />

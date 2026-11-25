@@ -33,13 +33,9 @@ function usage() {
 }
 
 function parseArguments(argv) {
-  if (argv.length !== 2) {
-    usage();
-  }
+  if (argv.length !== 2) usage();
   const [flag, input] = argv;
-  if (!input || (flag !== "--audio" && flag !== "--video")) {
-    usage();
-  }
+  if (!input || (flag !== "--audio" && flag !== "--video")) usage();
   return { modality: flag.slice(2), input: resolve(input) };
 }
 

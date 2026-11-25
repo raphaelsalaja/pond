@@ -34,9 +34,7 @@ async function fixture() {
     memberships.set(id, [id === "keep" ? "folder-a" : "folder-b"]);
   }
   const extra = rows.get("extra");
-  if (!extra) {
-    throw new Error("Missing test Save.");
-  }
+  if (!extra) throw new Error("Missing test Save.");
   await writeFile(join(root, "extra", "clip.mp4"), "extra video");
   extra.files.push({
     kind: "video",
@@ -61,22 +59,13 @@ async function fixture() {
     },
     async commit(transactions) {
       for (const tx of transactions) {
-        if (tx.model !== "save") {
-          throw new Error("Unexpected transaction.");
-        }
+        if (tx.model !== "save") throw new Error("Unexpected transaction.");
         const row = rows.get(tx.id);
-        if (!row) {
-          throw new Error("Missing Save.");
-        }
-        if (tx.kind === "update") {
-          Object.assign(row, tx.patch);
-        } else if (tx.kind === "trash") {
-          row.deletedAt = new Date();
-        } else if (tx.kind === "untrash") {
-          row.deletedAt = null;
-        } else {
-          throw new Error("Unexpected mutation.");
-        }
+        if (!row) throw new Error("Missing Save.");
+        if (tx.kind === "update") Object.assign(row, tx.patch);
+        else if (tx.kind === "trash") row.deletedAt = new Date();
+        else if (tx.kind === "untrash") row.deletedAt = null;
+        else throw new Error("Unexpected mutation.");
       }
       commits.push(transactions);
     },
@@ -92,9 +81,7 @@ describe("merge duplicates", () => {
       { keepId: "keep", ids: ["extra"] },
       runtime,
     );
-    if (!result.receipt) {
-      throw new Error("Missing merge receipt.");
-    }
+    if (!result.receipt) throw new Error("Missing merge receipt.");
     await undoDuplicateMerge(result.receipt, runtime);
     expect(rows.get("keep")).toEqual(original);
     expect(memberships.get("keep")).toEqual(["folder-a"]);
@@ -107,13 +94,9 @@ describe("merge duplicates", () => {
       { keepId: "keep", ids: ["extra"] },
       runtime,
     );
-    if (!result.receipt) {
-      throw new Error("Missing merge receipt.");
-    }
+    if (!result.receipt) throw new Error("Missing merge receipt.");
     const keep = rows.get("keep");
-    if (!keep) {
-      throw new Error("Missing survivor.");
-    }
+    if (!keep) throw new Error("Missing survivor.");
     keep.tags = ["new work"];
     await expect(undoDuplicateMerge(result.receipt, runtime)).rejects.toThrow(
       "edited",
@@ -163,9 +146,7 @@ describe("merge duplicates", () => {
       mergeDuplicateSaves({ keepId: "missing", ids: ["extra"] }, runtime),
     ).rejects.toThrow("existing survivor");
     const keep = rows.get("keep");
-    if (!keep) {
-      throw new Error("Missing test Save.");
-    }
+    if (!keep) throw new Error("Missing test Save.");
     keep.deletedAt = new Date();
     await expect(
       mergeDuplicateSaves({ keepId: "keep", ids: ["extra"] }, runtime),

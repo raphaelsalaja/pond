@@ -25,9 +25,7 @@ it("installs a font into the Pond fonts directory and removes it", async () => {
       cacheRefreshes += 1;
     },
   });
-  if (!activated.ok) {
-    throw new Error(activated.error);
-  }
+  if (!activated.ok) throw new Error(activated.error);
   expect(activated.path.startsWith(join(fontsDir, "Pond"))).toBe(true);
   expect(await readFile(activated.path, "utf8")).toBe("font");
   expect(cacheRefreshes).toBe(1);
@@ -104,9 +102,7 @@ it("installs per-user Windows fonts in the Fonts root and registers them", async
     platform: "win32",
     runRegistry,
   });
-  if (!activated.ok) {
-    throw new Error(activated.error);
-  }
+  if (!activated.ok) throw new Error(activated.error);
   expect(activated.path).toBe(join(fontsDir, "save-1.otf"));
   expect(registry).toEqual([
     [

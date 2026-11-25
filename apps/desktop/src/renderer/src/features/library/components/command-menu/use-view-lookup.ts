@@ -44,9 +44,7 @@ export function useViewLookup(
   const [state, setState] = useState<LookupState | null>(null);
 
   useEffect(() => {
-    if (!key) {
-      return;
-    }
+    if (!key) return;
     let cancelled = false;
     const timer = setTimeout(() => {
       void window.pond
@@ -65,9 +63,7 @@ export function useViewLookup(
           return [];
         })
         .then((ids) => {
-          if (!cancelled) {
-            setState({ key, query: trimmed, ids });
-          }
+          if (!cancelled) setState({ key, query: trimmed, ids });
         });
     }, DELAY_MS);
     return () => {
@@ -76,12 +72,8 @@ export function useViewLookup(
     };
   }, [key, trimmed, request, keywordScopes]);
 
-  if (!key) {
-    return IDLE;
-  }
-  if (state?.key === key) {
-    return { ids: state.ids, searching: false };
-  }
+  if (!key) return IDLE;
+  if (state?.key === key) return { ids: state.ids, searching: false };
   if (
     state?.key.startsWith(`${request}\n${scopes}\n`) &&
     (trimmed.startsWith(state.query) || state.query.startsWith(trimmed))

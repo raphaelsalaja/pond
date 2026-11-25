@@ -47,9 +47,7 @@ export function at(
 ): JsonValue | undefined {
   let current = value;
   for (const key of path) {
-    if (!isRecord(current)) {
-      return undefined;
-    }
+    if (!isRecord(current)) return undefined;
     current = current[key];
   }
   return current;
@@ -57,9 +55,7 @@ export function at(
 
 /** Page hooks must never throw, so a body that is not JSON reads as absent. */
 export function parseJsonValue(text: string | null): JsonValue | null {
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
   try {
     const parsed: unknown = JSON.parse(text);
     return isJsonValue(parsed) ? parsed : null;

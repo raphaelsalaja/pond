@@ -122,15 +122,11 @@ export const captures = createCaptureQueue({
           rating: metadata.rating,
           inboxChannel: "captures",
         });
-        if (!result.ok) {
-          throw new Error(result.error);
-        }
+        if (!result.ok) throw new Error(result.error);
         id = result.id;
         duplicate = Boolean(result.skipped);
       } finally {
-        if (temp) {
-          await rm(temp, { recursive: true, force: true });
-        }
+        if (temp) await rm(temp, { recursive: true, force: true });
       }
     }
     const db = await getDb();

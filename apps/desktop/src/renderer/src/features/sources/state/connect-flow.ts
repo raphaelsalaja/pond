@@ -57,9 +57,7 @@ export const connectFlow = {
   },
   retry(): void {
     const source = store.state.source;
-    if (!source) {
-      return;
-    }
+    if (!source) return;
     store.setState((s) => ({ ...s, problem: null }));
     void requestConnection(source);
   },
@@ -68,9 +66,7 @@ export const connectFlow = {
     store.setState((s) =>
       s.completed ? s : { ...s, completed: true, problem: null, account },
     );
-    if (already) {
-      return;
-    }
+    if (already) return;
     playUiSuccess();
     const callback = onConnected;
     onConnected = null;
@@ -79,9 +75,7 @@ export const connectFlow = {
   /** Success arrives through the `sessionImported` broadcast the arrival hook already listens for. */
   async submitHandle(handle: string): Promise<void> {
     const source = store.state.source;
-    if (!source) {
-      return;
-    }
+    if (!source) return;
     store.setState((s) => ({ ...s, problem: null }));
     try {
       const result = await window.pond.connectSourceHandle(source, handle);
@@ -105,9 +99,7 @@ export const connectFlow = {
     onConnected = null;
     const waiting = store.state.waiting;
     store.setState((s) => (s.waiting === null ? s : { ...s, waiting: null }));
-    if (waiting) {
-      void window.pond.clearPendingSession(waiting);
-    }
+    if (waiting) void window.pond.clearPendingSession(waiting);
   },
 };
 
@@ -140,14 +132,10 @@ export function useConnectProblem(): ConnectProblem | null {
 }
 
 async function requestConnection(source: Source): Promise<void> {
-  if (connectsByHandle(source)) {
-    return;
-  }
+  if (connectsByHandle(source)) return;
   try {
     const result = await window.pond.connectSource(source);
-    if (!result.ok) {
-      markProblem(source, "unavailable");
-    }
+    if (!result.ok) markProblem(source, "unavailable");
   } catch {
     markProblem(source, "unavailable");
   }

@@ -28,9 +28,7 @@ export function DataTableActionBar<T extends RowData>({
 }) {
   const { selectionStore, actions } = useDataTable<T>();
   const count = useSelector(selectionStore, (s) => s.selectedIds.size);
-  if (count === 0) {
-    return null;
-  }
+  if (count === 0) return null;
   const selection: ActionBarSelection = {
     count,
     ids: Array.from(selectionStore.state.selectedIds),

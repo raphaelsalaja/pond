@@ -138,9 +138,7 @@ export function CombineSettings({
             value={[options.output]}
             onValueChange={(value) => {
               const next = OUTPUTS.find((item) => item.value === value[0]);
-              if (next) {
-                update("output", next.value);
-              }
+              if (next) update("output", next.value);
             }}
           >
             {OUTPUTS.map((item) => (
@@ -315,9 +313,7 @@ function IconToggles<const Value extends string>({
       value={[value]}
       onValueChange={(next) => {
         const match = items.find((item) => item.value === next[0]);
-        if (match) {
-          onChange(match.value);
-        }
+        if (match) onChange(match.value);
       }}
     >
       {items.map((item) => (
@@ -393,9 +389,7 @@ function ValueSelect<const Value extends string | number>({
       value={value}
       onValueChange={(next) => {
         const match = items.find((item) => item.value === next);
-        if (match) {
-          onChange(match.value);
-        }
+        if (match) onChange(match.value);
       }}
     >
       <Select.Trigger aria-label={label} size="sm" width="full">

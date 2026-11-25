@@ -178,9 +178,7 @@ export function flattenEagleFolders(
 ): Array<FlattenedEagleFolder> {
   const out: Array<FlattenedEagleFolder> = [];
   for (const [sortOrder, folder] of folders.entries()) {
-    if (!folder.id || folder.password) {
-      continue;
-    }
+    if (!folder.id || folder.password) continue;
     out.push({
       id: folder.id,
       name: folder.name?.trim() || "Untitled",
@@ -233,9 +231,7 @@ async function resolveImagesDir(libraryPath: string): Promise<string | null> {
   try {
     const entries = await readdir(libraryPath, { withFileTypes: true });
     for (const entry of entries) {
-      if (!entry.isDirectory() || !entry.name.endsWith(".library")) {
-        continue;
-      }
+      if (!entry.isDirectory() || !entry.name.endsWith(".library")) continue;
       const nested = join(libraryPath, entry.name, "images");
       try {
         if ((await stat(nested)).isDirectory()) {
@@ -260,9 +256,7 @@ async function resolveLibraryMeta(
     join(imagesDir, "..", "metadata.json"),
   ]) {
     const doc = await readJson(path, EagleLibrarySchema);
-    if (doc) {
-      return doc;
-    }
+    if (doc) return doc;
   }
   return { folders: [], smartFolders: [], tagsGroups: [], quickAccess: [] };
 }
@@ -292,9 +286,7 @@ async function importEagle(
   opts: EagleImportOptions = {},
 ): Promise<EagleImportResult> {
   const imagesDir = await resolveImagesDir(libraryPath);
-  if (!imagesDir) {
-    return emptyResult("not_eagle_library");
-  }
+  if (!imagesDir) return emptyResult("not_eagle_library");
 
   const libraryMeta = await resolveLibraryMeta(libraryPath, imagesDir);
   const lockedFolders = collectLockedEagleFolders(libraryMeta.folders);
@@ -308,9 +300,7 @@ async function importEagle(
   let deletedSkipped = 0;
   const dropped = new Set<string>();
   const approximated = new Set<string>();
-  if (libraryMeta.quickAccess.length) {
-    dropped.add("Quick Access shortcuts");
-  }
+  if (libraryMeta.quickAccess.length) dropped.add("Quick Access shortcuts");
   const existingViews = opts.dryRun ? [] : await listViews();
   const ruleFolders = opts.dryRun
     ? new Map(

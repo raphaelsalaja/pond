@@ -246,20 +246,14 @@ function splitDrawing(
     const absolute: StrokePoint = [x + item.x, y + item.y, pressure];
     if (hits(absolute, eraser, radius)) {
       removed = true;
-      if (current.length > 1) {
-        runs.push(current);
-      }
+      if (current.length > 1) runs.push(current);
       current = [];
       continue;
     }
     current.push(absolute);
   }
-  if (current.length > 1) {
-    runs.push(current);
-  }
-  if (!removed) {
-    return null;
-  }
+  if (current.length > 1) runs.push(current);
+  if (!removed) return null;
   return runs.flatMap((points) => {
     const drawing = drawingFrom(
       points,

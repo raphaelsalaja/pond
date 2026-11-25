@@ -41,9 +41,7 @@ function codeDelimiter(text: string, minimum: number): string {
 }
 
 function textNode(node: ProseNode): string {
-  if (node.text === undefined) {
-    return invalidContent();
-  }
+  if (node.text === undefined) return invalidContent();
   const marks = node.marks ?? [];
   const isCode = marks.some((mark) => mark.type === "code");
   let text = escapeText(node.text);
@@ -53,15 +51,9 @@ function textNode(node: ProseNode): string {
     text = `${delimiter}${padding}${node.text}${padding}${delimiter}`;
   }
   for (const mark of marks) {
-    if (mark.type === "bold" || mark.type === "strong") {
-      text = `**${text}**`;
-    }
-    if (mark.type === "italic" || mark.type === "em") {
-      text = `*${text}*`;
-    }
-    if (mark.type === "strike") {
-      text = `~~${text}~~`;
-    }
+    if (mark.type === "bold" || mark.type === "strong") text = `**${text}**`;
+    if (mark.type === "italic" || mark.type === "em") text = `*${text}*`;
+    if (mark.type === "strike") text = `~~${text}~~`;
     if (mark.type === "link") {
       const href = mark.attrs?.href;
       if (!href) {
@@ -131,9 +123,7 @@ function renderNode(node: ProseNode): string {
       .join("");
     const fence = codeDelimiter(code, 3);
     const language = node.attrs?.language ?? "";
-    if (!/^[\w+-]*$/.test(language)) {
-      return invalidContent();
-    }
+    if (!/^[\w+-]*$/.test(language)) return invalidContent();
     return `${fence}${language}\n${code}\n${fence}\n\n`;
   }
 
@@ -154,20 +144,14 @@ function renderNode(node: ProseNode): string {
         .map((line) => (line ? `> ${line}` : ">"))
         .join("\n")}\n\n`;
     default:
-      if (node.text !== undefined) {
-        return `${escapeText(node.text)}${children}`;
-      }
-      if (node.content !== undefined) {
-        return children;
-      }
+      if (node.text !== undefined) return `${escapeText(node.text)}${children}`;
+      if (node.content !== undefined) return children;
       return invalidContent();
   }
 }
 
 export function mymindContentText(content: MymindObject["content"]): string {
-  if (!content) {
-    return "";
-  }
+  if (!content) return "";
   if (content.type === "text/markdown" || content.type === "text/plain") {
     const text = z.string().safeParse(content.body);
     return text.success ? text.data : invalidContent();

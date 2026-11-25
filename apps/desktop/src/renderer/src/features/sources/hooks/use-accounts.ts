@@ -101,9 +101,7 @@ export async function refetchAccounts(): Promise<Array<AccountRow>> {
         lastSyncedAt: account.sync.lastSyncedAt,
         lastError: account.sync.lastError,
       };
-      if (account.syncing) {
-        status.state = "running";
-      }
+      if (account.syncing) status.state = "running";
       syncMonitor.seed(account.id, account.source, status);
     }
     return rows;
@@ -135,9 +133,7 @@ export function useAccounts(): AccountsResult {
       }
     });
     return () => {
-      if (timer) {
-        clearTimeout(timer);
-      }
+      if (timer) clearTimeout(timer);
     };
   }, []);
 

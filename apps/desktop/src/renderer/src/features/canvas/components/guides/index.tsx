@@ -9,9 +9,7 @@ interface GuidesProps {
 
 export function Guides({ guides }: GuidesProps) {
   const zoom = useStore((state) => state.transform[2]);
-  if (!guides.length) {
-    return null;
-  }
+  if (!guides.length) return null;
   return (
     <ViewportPortal>
       {guides.map((guide) => (

@@ -107,9 +107,7 @@ function TokenRow({
                   id: token.id,
                 });
                 await onRevoked();
-                if (!ok) {
-                  throw new Error("That token was already revoked.");
-                }
+                if (!ok) throw new Error("That token was already revoked.");
               },
             })
           }

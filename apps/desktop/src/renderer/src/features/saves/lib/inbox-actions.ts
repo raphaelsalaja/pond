@@ -38,9 +38,7 @@ async function changeInbox(
     onUndo,
   }: InboxChange,
 ): Promise<number> {
-  if (ids.length === 0) {
-    return 0;
-  }
+  if (ids.length === 0) return 0;
   try {
     const { changed, undoId } = await bulkMutation(ids, operation);
     if (changed > 0) {

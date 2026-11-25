@@ -309,9 +309,7 @@ describe("Library repair previews", () => {
     await service.apply({ token: preview.token });
 
     const transaction = committed[0]?.[0];
-    if (!transaction) {
-      throw new Error("Missing repair transaction");
-    }
+    if (!transaction) throw new Error("Missing repair transaction");
     expect(transaction).toMatchObject({
       fileRenames: [
         {

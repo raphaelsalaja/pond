@@ -85,9 +85,7 @@ export function DuplicateReview({
     void window.pond
       .query("saves.findDuplicates", ids ? { ids } : {})
       .then((result) => {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         setGroups(result.groups);
         setPairs(result.pairs);
         setPending(result.index.pending);
@@ -108,36 +106,22 @@ export function DuplicateReview({
   const shown = useMemo(() => arrange(groups, saveId), [groups, saveId]);
   const keeperOf = (group: DuplicateGroup) => {
     const key = groupKey(group);
-    if (picks[key]) {
-      return picks[key];
-    }
-    if (saveId && group.ids.includes(saveId)) {
-      return saveId;
-    }
+    if (picks[key]) return picks[key];
+    if (saveId && group.ids.includes(saveId)) return saveId;
     return undefined;
   };
   const trashing = new Set<string>();
   const plan = shown.flatMap((group) => {
     const key = groupKey(group);
-    if (!isMergeable(group) || skipped.has(key)) {
-      return [];
-    }
+    if (!isMergeable(group) || skipped.has(key)) return [];
     const keepId =
       keeperOf(group) ?? defaultKeeper(group.ids, (id) => pool.get(id));
-    if (trashing.has(keepId)) {
-      return [];
-    }
+    if (trashing.has(keepId)) return [];
     const selected = group.ids.filter(
       (id) => id === keepId || !trashing.has(id),
     );
-    if (selected.length < 2) {
-      return [];
-    }
-    for (const id of selected) {
-      if (id !== keepId) {
-        trashing.add(id);
-      }
-    }
+    if (selected.length < 2) return [];
+    for (const id of selected) if (id !== keepId) trashing.add(id);
     return [{ keepId, ids: selected }];
   });
   const hasMergeable = shown.some(isMergeable);
@@ -155,9 +139,7 @@ export function DuplicateReview({
   });
 
   const merge = async () => {
-    if (merging || (plan.length === 0 && keptSeparate.length === 0)) {
-      return;
-    }
+    if (merging || (plan.length === 0 && keptSeparate.length === 0)) return;
     setMerging(true);
     setError(null);
     const merged: Array<{ keepId: string; ids: Array<string> }> = [];
@@ -211,9 +193,7 @@ export function DuplicateReview({
     <Dialog.Root
       open
       onOpenChange={(open) => {
-        if (!open && !merging) {
-          closeDuplicateReview();
-        }
+        if (!open && !merging) closeDuplicateReview();
       }}
     >
       <Dialog.Portal>
@@ -248,9 +228,7 @@ export function DuplicateReview({
               >
                 {virtual.getVirtualItems().map((row) => {
                   const group = shown[row.index];
-                  if (!group) {
-                    return null;
-                  }
+                  if (!group) return null;
                   const key = groupKey(group);
                   return (
                     <div
@@ -273,11 +251,8 @@ export function DuplicateReview({
                         onInclude={(include) =>
                           setSkipped((current) => {
                             const next = new Set(current);
-                            if (include) {
-                              next.delete(key);
-                            } else {
-                              next.add(key);
-                            }
+                            if (include) next.delete(key);
+                            else next.add(key);
                             return next;
                           })
                         }

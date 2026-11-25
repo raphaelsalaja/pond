@@ -65,9 +65,7 @@ beforeEach(() => {
     url: "https://www.instagram.com/p/abc/",
     source: "instagram",
   });
-  if (!save) {
-    throw new Error("Invalid save fixture");
-  }
+  if (!save) throw new Error("Invalid save fixture");
   pool.upsert(save);
 });
 

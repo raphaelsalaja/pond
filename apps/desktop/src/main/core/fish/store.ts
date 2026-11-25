@@ -57,13 +57,9 @@ function defaultFish(now: number): Fish {
 
 function uniqueName(base: string, taken: ReadonlyArray<Fish>): string {
   const names = new Set(taken.map((fish) => fish.name.toLocaleLowerCase()));
-  if (!names.has(base.toLocaleLowerCase())) {
-    return base;
-  }
+  if (!names.has(base.toLocaleLowerCase())) return base;
   let suffix = 2;
-  while (names.has(`${base} ${suffix}`.toLocaleLowerCase())) {
-    suffix += 1;
-  }
+  while (names.has(`${base} ${suffix}`.toLocaleLowerCase())) suffix += 1;
   return `${base} ${suffix}`;
 }
 
@@ -94,13 +90,9 @@ const StoredFishSchema = z.preprocess((raw) => {
       updatedAt: z.number().optional(),
     })
     .safeParse(raw);
-  if (!fish.success || fish.data.routines !== undefined) {
-    return raw;
-  }
+  if (!fish.success || fish.data.routines !== undefined) return raw;
   const { routine, ...rest } = fish.data;
-  if (!routine || routine.kind === "off") {
-    return { ...rest, routines: [] };
-  }
+  if (!routine || routine.kind === "off") return { ...rest, routines: [] };
   const when: FishWhen =
     routine.kind === "newSaves"
       ? { kind: "newSaves" }
@@ -135,9 +127,7 @@ export function listFish(
   const file = fishFile(root);
   const stored = readBundleJson(file);
   if (!stored) {
-    if (existsSync(file)) {
-      throw new Error("Your fish could not be read.");
-    }
+    if (existsSync(file)) throw new Error("Your fish could not be read.");
     return [defaultFish(now)];
   }
   const school = z.array(StoredFishSchema).parse(stored.data);
@@ -155,9 +145,7 @@ export function readFish(
 
 function requireFish(school: ReadonlyArray<Fish>, id: string): Fish {
   const fish = school.find((entry) => entry.id === id);
-  if (!fish) {
-    throw new Error("This fish no longer exists.");
-  }
+  if (!fish) throw new Error("This fish no longer exists.");
   return fish;
 }
 
@@ -245,16 +233,12 @@ export function markFishSeen(
 ): void {
   const school = listFish(root);
   const current = school.find((fish) => fish.id === id);
-  if (!current) {
-    return;
-  }
+  if (!current) return;
   const unseen =
     current.lastRun?.seen === false ||
     current.runs?.some((run) => !run.seen) ||
     current.routines.some((routine) => routine.lastRun?.seen === false);
-  if (!unseen) {
-    return;
-  }
+  if (!unseen) return;
   const next = FishSchema.parse({
     ...current,
     lastRun: current.lastRun && seen(current.lastRun),
@@ -341,9 +325,7 @@ export function arrangeFish(
   const arranged: Array<Fish> = [];
   for (const placement of parsed) {
     const fish = byId.get(placement.id);
-    if (!fish || placed.has(fish.id)) {
-      continue;
-    }
+    if (!fish || placed.has(fish.id)) continue;
     placed.add(fish.id);
     const section =
       !placement.pinned && placement.section && sections.has(placement.section)
@@ -356,9 +338,7 @@ export function arrangeFish(
 
 function requireRoutine(fish: Fish, routineId: string): FishRoutine {
   const routine = fish.routines.find((entry) => entry.id === routineId);
-  if (!routine) {
-    throw new Error("This routine no longer exists.");
-  }
+  if (!routine) throw new Error("This routine no longer exists.");
   return routine;
 }
 
@@ -439,9 +419,7 @@ export function updateRoutine(
     root,
     now,
   );
-  if (!routine) {
-    throw new Error("This routine no longer exists.");
-  }
+  if (!routine) throw new Error("This routine no longer exists.");
   return { fish, routine };
 }
 
@@ -481,8 +459,6 @@ export function deleteRoutine(
     root,
     now,
   );
-  if (!routine) {
-    throw new Error("This routine no longer exists.");
-  }
+  if (!routine) throw new Error("This routine no longer exists.");
   return { fish, routine };
 }

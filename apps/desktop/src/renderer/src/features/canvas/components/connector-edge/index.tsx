@@ -89,9 +89,7 @@ function Relation({ cap, ink }: { cap: CanvasCap; ink: string }) {
 }
 
 function Cap({ id, cap, ink }: CapProps) {
-  if (cap === "none") {
-    return null;
-  }
+  if (cap === "none") return null;
   if (isRelation(cap)) {
     return (
       <marker

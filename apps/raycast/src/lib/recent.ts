@@ -18,9 +18,7 @@ export async function recordOpened(save: Pick<ApiSave, "id">): Promise<void> {
 /** Ids from another library or for deleted saves simply match nothing. */
 export async function recentlyOpened(): Promise<Array<ApiSave>> {
   const ids = await readIds();
-  if (!ids.length) {
-    return [];
-  }
+  if (!ids.length) return [];
   const page = await pond().query({ scope: { saveIds: ids }, include: ["saves"], limit: LIMIT });
   const byId = new Map((page.saves ?? []).map((save) => [save.id, save]));
   return ids.flatMap((id) => byId.get(id) ?? []);

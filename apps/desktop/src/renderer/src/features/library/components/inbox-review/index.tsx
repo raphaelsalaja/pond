@@ -41,17 +41,12 @@ export function InboxReview() {
   const saveOpen = useOpenSaveId() !== null;
 
   useEffect(() => {
-    if (scope) {
-      void inboxReview.start(scope);
-    } else {
-      inboxReview.exit();
-    }
+    if (scope) void inboxReview.start(scope);
+    else inboxReview.exit();
   }, [scope]);
 
   /** Stay mounted under the Save overlay: unmounting restarts the review effect and the queue loses its place. */
-  if (!scope || saveOpen) {
-    return null;
-  }
+  if (!scope || saveOpen) return null;
   return <InboxPage scope={scope} queue={loaded === scope ? queue : null} />;
 }
 
@@ -83,9 +78,7 @@ function InboxPage({
   /** A resolved notification or settled work drops back to the deck instead of a blank pane. */
   const open = notification !== null || progress !== undefined;
   useEffect(() => {
-    if (selectedId && !open) {
-      inboxPicker.select(null);
-    }
+    if (selectedId && !open) inboxPicker.select(null);
   }, [selectedId, open]);
 
   const close = () => (total > 0 ? inboxPicker.select(null) : leaveInbox());

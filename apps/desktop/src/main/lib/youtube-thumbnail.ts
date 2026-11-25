@@ -46,9 +46,7 @@ export function youtubeShortPosterPlan(
 }
 
 function youtubeVideoIdFromUrl(url: string | null | undefined): string | null {
-  if (!url) {
-    return null;
-  }
+  if (!url) return null;
   let parsed: URL;
   try {
     parsed = new URL(url);
@@ -62,21 +60,15 @@ function youtubeVideoIdFromUrl(url: string | null | undefined): string | null {
   }
   if (host === "youtube.com" || host.endsWith(".youtube.com")) {
     const fromQuery = parsed.searchParams.get("v");
-    if (fromQuery && VIDEO_ID.test(fromQuery)) {
-      return fromQuery;
-    }
+    if (fromQuery && VIDEO_ID.test(fromQuery)) return fromQuery;
     const shorts = /^\/shorts\/([A-Za-z0-9_-]{11})(?:\/|$)/.exec(
       parsed.pathname,
     );
-    if (shorts?.[1]) {
-      return shorts[1];
-    }
+    if (shorts?.[1]) return shorts[1];
   }
   if (host === "ytimg.com" || host.endsWith(".ytimg.com")) {
     const thumb = /\/vi(?:_webp)?\/([A-Za-z0-9_-]{11})\//.exec(parsed.pathname);
-    if (thumb?.[1]) {
-      return thumb[1];
-    }
+    if (thumb?.[1]) return thumb[1];
   }
   return null;
 }
@@ -141,9 +133,7 @@ function dedupe(urls: Array<string>): Array<string> {
   const seen = new Set<string>();
   const out: Array<string> = [];
   for (const url of urls) {
-    if (seen.has(url)) {
-      continue;
-    }
+    if (seen.has(url)) continue;
     seen.add(url);
     out.push(url);
   }

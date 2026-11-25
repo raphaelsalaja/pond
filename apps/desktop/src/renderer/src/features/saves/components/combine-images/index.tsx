@@ -40,9 +40,7 @@ function useImages(order: ReadonlyArray<string>): Array<CombineImage> {
   return useMemo(
     () =>
       saves.flatMap((save) => {
-        if (!save) {
-          return [];
-        }
+        if (!save) return [];
         const file = pickCombineImageFile(save.files, cover);
         return file ? [{ save, file }] : [];
       }),
@@ -92,9 +90,7 @@ export function CombineImages({
   const reorder = (from: number, to: number) => {
     const shown = images.map(({ save }) => save.id);
     const [moved] = shown.splice(from, 1);
-    if (!moved) {
-      return;
-    }
+    if (!moved) return;
     shown.splice(to, 0, moved);
     setOrder(shown);
   };
@@ -142,9 +138,7 @@ export function CombineImages({
             ? `${formatPlural(result.skipped, { one: "file was", other: "files were" })} skipped.`
             : undefined,
       });
-      if (!exporting && options.deleteOriginals) {
-        setOrder([]);
-      }
+      if (!exporting && options.deleteOriginals) setOrder([]);
     } catch (error) {
       notify({
         id: "combine-images",
@@ -161,9 +155,7 @@ export function CombineImages({
       className={styles.window}
       aria-label="Combine Images"
       onDragOver={(event) => {
-        if (!carriesFiles(event)) {
-          return;
-        }
+        if (!carriesFiles(event)) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = "copy";
         setDropping(true);
@@ -179,9 +171,7 @@ export function CombineImages({
       }}
       onDrop={(event) => {
         setDropping(false);
-        if (!carriesFiles(event)) {
-          return;
-        }
+        if (!carriesFiles(event)) return;
         event.preventDefault();
         void drop(Array.from(event.dataTransfer.files));
       }}

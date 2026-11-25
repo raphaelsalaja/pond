@@ -56,9 +56,7 @@ export function dedupePredicates(
       p.value,
       p.negate ?? false,
     ]);
-    if (seen.has(key)) {
-      continue;
-    }
+    if (seen.has(key)) continue;
     seen.add(key);
     out.push(p);
   }
@@ -138,9 +136,7 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
       continue;
     }
 
-    if (!FILLER.has(word)) {
-      residual.push(word);
-    }
+    if (!FILLER.has(word)) residual.push(word);
     negateNext = false;
     i += 1;
   }

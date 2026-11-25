@@ -72,9 +72,7 @@ function compressVideos(ids: Array<string>): void {
 
 async function pollVideoCompression(id: string): Promise<void> {
   const job = await window.pond.query("conversion.status", { id });
-  if (!job) {
-    return;
-  }
+  if (!job) return;
   if (job.status === "running") {
     notify({
       id: `video-compression-${id}`,
@@ -186,9 +184,7 @@ async function pollCompression(
   copy: { done: string; failed: string },
 ): Promise<void> {
   const job = await window.pond.query("conversion.status", { id });
-  if (!job) {
-    return;
-  }
+  if (!job) return;
   if (job.status === "running") {
     setTimeout(() => void pollCompression(id, copy), 500);
     return;

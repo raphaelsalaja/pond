@@ -73,18 +73,14 @@ export function Minimap({ items, shown }: MinimapProps) {
         aria-label="Minimap"
         data-dragging={held ? "" : undefined}
         onPointerDown={(event) => {
-          if (event.button !== 0 || !width || !height) {
-            return;
-          }
+          if (event.button !== 0 || !width || !height) return;
           event.preventDefault();
           event.currentTarget.setPointerCapture(event.pointerId);
           const point = pointIn(event);
           const grip = grabOffset(point, view);
           drag.current = { grab: grip ?? { x: 0, y: 0 }, frame };
           setHeld(frame);
-          if (grip) {
-            return;
-          }
+          if (grip) return;
           void flow.setViewport(
             viewportAt(point, { x: 0, y: 0 }, frame, viewport.zoom, screen),
             { duration: reduceMotion ? 0 : NAVIGATE_MS },
@@ -92,9 +88,7 @@ export function Minimap({ items, shown }: MinimapProps) {
         }}
         onPointerMove={(event) => {
           const current = drag.current;
-          if (!current) {
-            return;
-          }
+          if (!current) return;
           void flow.setViewport(
             viewportAt(
               pointIn(event),

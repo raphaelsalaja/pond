@@ -64,9 +64,7 @@ const IMPORT_DROPS: RingDropHandlers<Folder, PasteImport> = {
     void runPasteImport(plan, { id: folder.id, name: folder.name }),
   createFolder: (plan) => {
     void runPasteImport(plan).then((ids) => {
-      if (ids.length > 0) {
-        createFolderWithSaves(ids);
-      }
+      if (ids.length > 0) createFolderWithSaves(ids);
     });
   },
 };
@@ -192,9 +190,7 @@ export function FileRing() {
   const open = (live && inside && shift) || held !== null;
 
   useEffect(() => {
-    if (!enabled) {
-      return;
-    }
+    if (!enabled) return;
     let internal = false;
     const start = (next: RingSource) => {
       const { folderRows, folderViews, fileRing } = latest.current;
@@ -202,9 +198,7 @@ export function FileRing() {
         fileRing.items ??
         autoRingItems(folderRows, folderViews, recentFolderIds());
       const layout = layoutRing(items, folderRows, sourceActions(next));
-      if (!ringOpens(layout, fileRing.items !== null)) {
-        return;
-      }
+      if (!ringOpens(layout, fileRing.items !== null)) return;
       const folderIds = items.flatMap((item) =>
         item.kind === "folder" ? [item.folderId] : [],
       );
@@ -256,14 +250,10 @@ export function FileRing() {
 
   /** Native drags report no `relatedTarget`, so leaving the window shows up as enter and leave events no longer balancing. */
   useEffect(() => {
-    if (!live) {
-      return;
-    }
+    if (!live) return;
     let depth = 1;
     const endImport = () => {
-      if (!importingRef.current) {
-        return;
-      }
+      if (!importingRef.current) return;
       importingRef.current = false;
       setImporting(false);
     };
@@ -283,9 +273,7 @@ export function FileRing() {
     };
     const leave = () => {
       depth -= 1;
-      if (depth > 0) {
-        return;
-      }
+      if (depth > 0) return;
       depth = 0;
       setInside(false);
       setHovered(null);
@@ -304,9 +292,7 @@ export function FileRing() {
   }, [live]);
 
   useEffect(() => {
-    if (!ring) {
-      return;
-    }
+    if (!ring) return;
     let active = true;
     const covers = ring.folderIds.flatMap(
       (id) => latest.current.folderViews[id]?.coverSaveId ?? [],
@@ -314,9 +300,7 @@ export function FileRing() {
     void window.pond
       .query("saves.sidebarCounts", {})
       .then((next) => {
-        if (active && next) {
-          setCounts(next.folders);
-        }
+        if (active && next) setCounts(next.folders);
       })
       .catch((cause: unknown) =>
         log.warn("[pond] file ring counts failed", cause),
@@ -328,9 +312,7 @@ export function FileRing() {
       })
       .then(async (next) => {
         await ensureSaves([...covers, ...Object.values(next).flat()]);
-        if (active) {
-          setPreviews(next);
-        }
+        if (active) setPreviews(next);
       })
       .catch((cause: unknown) =>
         log.warn("[pond] file ring previews failed", cause),
@@ -341,9 +323,7 @@ export function FileRing() {
   }, [ring]);
 
   useEffect(() => {
-    if (held === null) {
-      return;
-    }
+    if (held === null) return;
     const timer = setTimeout(() => setHeld(null), HOLD_MS);
     return () => clearTimeout(timer);
   }, [held]);
@@ -358,17 +338,13 @@ export function FileRing() {
 
   function targetAt(event: React.DragEvent) {
     const disc = discRef.current;
-    if (!disc) {
-      return null;
-    }
+    if (!disc) return null;
     const hit = ringHitAt(
       event.clientX,
       event.clientY,
       disc.getBoundingClientRect(),
     );
-    if (hit === null || hit === "hub") {
-      return null;
-    }
+    if (hit === null || hit === "hub") return null;
     const target = layout[hit];
     return acceptsDrop(target) ? { slot: hit, target } : null;
   }
@@ -381,9 +357,7 @@ export function FileRing() {
   }
 
   function onDragOver(event: React.DragEvent) {
-    if (!live || !open || !accepts(event.dataTransfer)) {
-      return;
-    }
+    if (!live || !open || !accepts(event.dataTransfer)) return;
     const hit = targetAt(event);
     setHovered(hit?.slot ?? null);
     if (announcedRef.current !== (hit?.slot ?? null)) {
@@ -395,27 +369,21 @@ export function FileRing() {
         );
       }
     }
-    if (!hit) {
-      return;
-    }
+    if (!hit) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
   }
 
   function onDrop(event: React.DragEvent) {
     const hit = live && open ? targetAt(event) : null;
-    if (!hit) {
-      return;
-    }
+    if (!hit) return;
     event.preventDefault();
     const dropped =
       source?.kind === "import"
         ? dropImport(event, hit.target)
         : dropSaves(event, hit.target);
     setHovered(null);
-    if (dropped) {
-      setHeld(hit.slot);
-    }
+    if (dropped) setHeld(hit.slot);
   }
 
   const shown = held ?? hovered;

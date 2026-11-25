@@ -109,9 +109,7 @@ export function Roll({
       >
         {items.map((item, i) => {
           const distance = Math.abs(i - index);
-          if (distance >= 1) {
-            return null;
-          }
+          if (distance >= 1) return null;
           return (
             <span
               key={item.name}

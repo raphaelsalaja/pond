@@ -61,17 +61,13 @@ export function SettingsSidebarView({
     const bySection = new Map<string, SectionResult>();
     for (const { item } of fuse.search(needle)) {
       const section = sectionForId(item.sectionId);
-      if (!section) {
-        continue;
-      }
+      if (!section) continue;
       let group = bySection.get(item.sectionId);
       if (!group) {
         group = { section, items: [] };
         bySection.set(item.sectionId, group);
       }
-      if (item.itemKey) {
-        group.items.push(item);
-      }
+      if (item.itemKey) group.items.push(item);
     }
     return [...bySection.values()];
   }, [needle, fuse]);

@@ -50,9 +50,7 @@ export class InstagramPostExtractor implements Extractor {
   async extract(input: ExtractInput): Promise<Capture> {
     const match = firstMatch(input.url, this.validUrl);
     const code = match?.[1] ?? null;
-    if (!code) {
-      throw new TerminalError("could not parse instagram code");
-    }
+    if (!code) throw new TerminalError("could not parse instagram code");
     const segment = /\/reels?\//i.test(input.url.href)
       ? "reel"
       : /\/tv\//i.test(input.url.href)

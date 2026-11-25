@@ -51,9 +51,7 @@ export const EaglePaletteSchema = z.union([
 export function eaglePaletteColor(
   palette: z.infer<typeof EaglePaletteSchema>,
 ): string {
-  if (z.string().safeParse(palette).success) {
-    return z.string().parse(palette);
-  }
+  if (z.string().safeParse(palette).success) return z.string().parse(palette);
   const channels = z
     .object({ color: z.tuple([z.number(), z.number(), z.number()]) })
     .parse(palette).color;
@@ -82,9 +80,7 @@ function mapRule(
       field === "folder"
         ? strings.data.map((id) => folders.get(id))
         : strings.data;
-    if (value.some((id) => !id)) {
-      return null;
-    }
+    if (value.some((id) => !id)) return null;
     const operators = {
       intersection: "every",
       union: "some",
@@ -146,9 +142,7 @@ function mapRule(
     const method = z
       .enum(["equal", "contain", "uncontain"])
       .safeParse(rule.method);
-    if (!value.success || !method.success) {
-      return null;
-    }
+    if (!value.success || !method.success) return null;
     return {
       field,
       operator: method.data === "equal" ? "eq" : "contains",
@@ -286,9 +280,7 @@ function mapRule(
       .string()
       .regex(/^#?[0-9a-f]{6}$/i)
       .safeParse(rule.value);
-    if (!hex.success) {
-      return null;
-    }
+    if (!hex.success) return null;
     return {
       field: "color",
       operator: "near",
@@ -311,9 +303,7 @@ function mapRule(
         "panoramic-portrait",
       ])
       .safeParse(rule.value);
-    if (!orientation.success) {
-      return null;
-    }
+    if (!orientation.success) return null;
     return {
       field: "shape",
       operator: rule.method === "equal" ? "eq" : "neq",
@@ -325,9 +315,7 @@ function mapRule(
     ["contain", "uncontain"].includes(rule.method)
   ) {
     const value = z.string().trim().min(1).safeParse(rule.value);
-    if (!value.success) {
-      return null;
-    }
+    if (!value.success) return null;
     const negate = rule.method === "uncontain";
     return {
       combinator: negate ? "and" : "or",
@@ -387,18 +375,14 @@ export function eagleSmartFolderQuery(
     const rules: Query["rules"] = [];
     for (const rule of condition.rules) {
       const mapped = mapRule(rule, folders);
-      if (!mapped) {
-        return null;
-      }
+      if (!mapped) return null;
       rules.push(mapped);
     }
     const group: Query = {
       combinator: condition.match === "AND" ? "and" : "or",
       rules,
     };
-    if (condition.boolean === "FALSE") {
-      group.not = true;
-    }
+    if (condition.boolean === "FALSE") group.not = true;
     groups.push(group);
   }
   return groups.length === 1

@@ -13,9 +13,7 @@ function commandPaths(command: Command, parent = ""): Array<string> {
 function commandAt(program: Command, path: string): Command {
   return path.split(" ").reduce((parent, name) => {
     const command = parent.commands.find((child) => child.name() === name);
-    if (!command) {
-      throw new Error(`Missing command ${path}.`);
-    }
+    if (!command) throw new Error(`Missing command ${path}.`);
     return command;
   }, program);
 }

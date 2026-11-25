@@ -113,16 +113,12 @@ const runtime: VideoCompressionRuntime = {
   },
   async probe(path) {
     const { ffmpeg } = binariesAvailable();
-    if (!ffmpeg) {
-      throw new Error("FFmpeg is required to compress videos.");
-    }
+    if (!ffmpeg) throw new Error("FFmpeg is required to compress videos.");
     return parseVideoProbe(await ffmpegInfo(ffmpeg, path));
   },
   async encode(input) {
     const { ffmpeg } = binariesAvailable();
-    if (!ffmpeg) {
-      throw new Error("FFmpeg is required to compress videos.");
-    }
+    if (!ffmpeg) throw new Error("FFmpeg is required to compress videos.");
     await runFfmpeg({
       path: ffmpeg,
       args: input.args,
@@ -227,9 +223,7 @@ async function compressSaveVideos(input: {
 }): Promise<{ bytesBefore: number; bytesAfter: number } | null> {
   const { save, operations } = input;
   const videos = (save.files ?? []).filter(isCompressibleVideo);
-  if (videos.length === 0) {
-    return null;
-  }
+  if (videos.length === 0) return null;
   const workspace = await operations.workspace();
   try {
     const encoded: Array<EncodedVideo> = [];
@@ -237,9 +231,7 @@ async function compressSaveVideos(input: {
       input.signal.throwIfAborted();
       const source = join(input.directory, file.path);
       const probe = await operations.probe(source);
-      if (!isSafeSource(probe) || probe.duration === null) {
-        continue;
-      }
+      if (!isSafeSource(probe) || probe.duration === null) continue;
       const output = join(workspace.path, `${index}.mp4`);
       await operations.encode({
         source,
@@ -273,23 +265,17 @@ async function compressSaveVideos(input: {
         sha256: await operations.hash(output),
       });
     }
-    if (encoded.length === 0) {
-      return null;
-    }
+    if (encoded.length === 0) return null;
     input.signal.throwIfAborted();
     input.assertActive?.();
     /** Encodes can take hours, so commit against the Save as it is now, not as the batch found it. */
     const { saves: fresh } = await operations.load([save.id]);
     const current = fresh.find((row) => row.id === save.id);
-    if (!current) {
-      return null;
-    }
+    if (!current) return null;
     const replacements = encoded.filter((item) =>
       isStillReplaceable(current, item),
     );
-    if (replacements.length === 0) {
-      return null;
-    }
+    if (replacements.length === 0) return null;
     await operations.commit(videoCompressionTransaction(current, replacements));
     return {
       bytesBefore: replacements.reduce(
@@ -406,15 +392,9 @@ export function isFaithfulEncode(
   source: VideoProbe,
   encoded: VideoProbe,
 ): boolean {
-  if (encoded.videoCodec !== "hevc") {
-    return false;
-  }
-  if (source.audioCodec !== null && encoded.audioCodec === null) {
-    return false;
-  }
-  if (source.duration === null || encoded.duration === null) {
-    return false;
-  }
+  if (encoded.videoCodec !== "hevc") return false;
+  if (source.audioCodec !== null && encoded.audioCodec === null) return false;
+  if (source.duration === null || encoded.duration === null) return false;
   const tolerance = Math.max(0.5, source.duration * 0.02);
   return Math.abs(source.duration - encoded.duration) <= tolerance;
 }
@@ -426,9 +406,7 @@ function videoCompressionTransaction(
   const byPath = new Map(replacements.map((item) => [item.file.path, item]));
   const files = (save.files ?? []).map((file): SaveFile => {
     const replacement = byPath.get(file.path);
-    if (!replacement) {
-      return file;
-    }
+    if (!replacement) return file;
     return {
       ...file,
       path: replacement.path,
@@ -474,9 +452,7 @@ function videoCompressionTransaction(
     })),
     meta: { actor: "user", actorReason: "video:compress" },
   };
-  if (renames.length > 0) {
-    transaction.fileRenames = renames;
-  }
+  if (renames.length > 0) transaction.fileRenames = renames;
   return transaction;
 }
 
@@ -522,8 +498,6 @@ export function encodeTimeout(duration: number): number {
 
 export function parseDuration(output: string): number | null {
   const match = /Duration:\s*(\d+):(\d{2}):(\d{2}(?:\.\d+)?)/.exec(output);
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
   return Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
 }

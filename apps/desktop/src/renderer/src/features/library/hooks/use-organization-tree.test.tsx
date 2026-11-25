@@ -57,9 +57,7 @@ afterEach(async () => {
 });
 function row(id: string) {
   const element = host.querySelector<HTMLElement>(`[data-tree-id="${id}"]`);
-  if (!element) {
-    throw new Error(`Missing row ${id}`);
-  }
+  if (!element) throw new Error(`Missing row ${id}`);
   return element;
 }
 async function click(id: string, modifiers: MouseEventInit = {}) {

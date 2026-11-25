@@ -67,9 +67,7 @@ describe.skipIf(process.env.POND_BENCH_LIBRARY !== "1")("bulk pool", () => {
               createdAt: i,
               deletedAt: null,
             });
-            if (!save) {
-              throw new Error("Invalid synthetic Save");
-            }
+            if (!save) throw new Error("Invalid synthetic Save");
             return save;
           });
           const fixtureMs = performance.now() - fixtureStarted;

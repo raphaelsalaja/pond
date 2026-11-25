@@ -83,9 +83,7 @@ export function useImageGestures({
       }
     },
     onPointerDown: (event) => {
-      if (!active) {
-        return;
-      }
+      if (!active) return;
       const handle = cropHandleFromTarget(event.target);
       if (
         isElement(event.target) &&

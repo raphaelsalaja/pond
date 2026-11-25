@@ -181,14 +181,10 @@ async function resolvePreviewTarget(
 ): Promise<PreviewTarget> {
   const db = await getDb();
   const row = db.select().from(saves).where(eq(saves.id, saveId)).get();
-  if (!row) {
-    throw userError("The Save no longer exists.");
-  }
+  if (!row) throw userError("The Save no longer exists.");
   const save = toWireSave(row);
   const file = save.files[fileIndex];
-  if (!file) {
-    throw userError("The file no longer exists.");
-  }
+  if (!file) throw userError("The file no longer exists.");
   const previewTarget = previewTargetForFile({
     saveId,
     title: save.title,
@@ -199,9 +195,7 @@ async function resolvePreviewTarget(
     throw userError("This file cannot open in a preview window.");
   }
   const target = await resolveSaveFilePath(saveId, fileIndex);
-  if (!target.ok) {
-    throw userError("The original file is unavailable.");
-  }
+  if (!target.ok) throw userError("The original file is unavailable.");
   return previewTarget;
 }
 
@@ -221,9 +215,7 @@ async function createPreviewWindow(
     input.kind,
   );
   const prefs = await getPrefs();
-  if (generation !== libraryGeneration) {
-    throw userError("The Library changed.");
-  }
+  if (generation !== libraryGeneration) throw userError("The Library changed.");
   const presentation = input.kind === "presentation";
   const options: BrowserWindowConstructorOptions = {
     title: detachedWindowTitle(target.title),
@@ -245,9 +237,7 @@ async function createPreviewWindow(
       backgroundThrottling: false,
     },
   };
-  if (!presentation) {
-    Object.assign(options, detachedWindowChrome());
-  }
+  if (!presentation) Object.assign(options, detachedWindowChrome());
   const window = new BrowserWindow(options);
   const state: PreviewWindowState = {
     windowId: window.id,
@@ -280,9 +270,7 @@ async function createPreviewWindow(
   window.on("enter-full-screen", updateFullscreen);
   window.on("leave-full-screen", updateFullscreen);
   window.once("ready-to-show", () => {
-    if (presentation) {
-      window.setFullScreen(true);
-    }
+    if (presentation) window.setFullScreen(true);
     window.show();
   });
   followInterfaceZoom(window.webContents, { getPrefs, subscribePrefs });
@@ -301,9 +289,7 @@ async function createPreviewWindow(
     }
     return { windowId: window.id };
   } catch (error) {
-    if (!window.isDestroyed()) {
-      window.destroy();
-    }
+    if (!window.isDestroyed()) window.destroy();
     throw error;
   }
 }
@@ -499,9 +485,7 @@ export function openPreviewWindowCount(): number {
 export function closePreviewWindows(): void {
   libraryGeneration++;
   for (const entry of entries.values()) {
-    if (!entry.window.isDestroyed()) {
-      entry.window.close();
-    }
+    if (!entry.window.isDestroyed()) entry.window.close();
   }
   entries.clear();
 }
@@ -509,9 +493,7 @@ export function closePreviewWindows(): void {
 export function registerPreviewWindowHandlers(bus: IpcMain): void {
   subscribePrefs((prefs) => {
     for (const entry of entries.values()) {
-      if (entry.window.isDestroyed()) {
-        continue;
-      }
+      if (entry.window.isDestroyed()) continue;
       entry.state = {
         ...entry.state,
         reduceMotion: prefs.preferences.reduceMotion,
@@ -521,39 +503,27 @@ export function registerPreviewWindowHandlers(bus: IpcMain): void {
     }
   });
   bus.handle(IPC.previewOpen, (event, raw) => {
-    if (!isTrustedSender(event)) {
-      throw new Error("untrusted sender");
-    }
+    if (!isTrustedSender(event)) throw new Error("untrusted sender");
     return createPreviewWindow(PreviewWindowOpenSchema.parse(raw));
   });
   bus.handle(IPC.previewConfigure, (event, raw) => {
-    if (!isTrustedSender(event)) {
-      throw new Error("untrusted sender");
-    }
+    if (!isTrustedSender(event)) throw new Error("untrusted sender");
     configurePreviewWindow(PreviewWindowConfigureSchema.parse(raw));
   });
   bus.handle(IPC.previewNavigate, (event, raw) => {
-    if (!isTrustedSender(event)) {
-      throw new Error("untrusted sender");
-    }
+    if (!isTrustedSender(event)) throw new Error("untrusted sender");
     return navigatePreviewWindow(PreviewWindowNavigateSchema.parse(raw));
   });
   bus.handle(IPC.previewNeighborRequest, (event, raw) => {
-    if (!isTrustedSender(event)) {
-      throw new Error("untrusted sender");
-    }
+    if (!isTrustedSender(event)) throw new Error("untrusted sender");
     requestPreviewNeighbor(event, PreviewNeighborRequestSchema.parse(raw));
   });
   bus.handle(IPC.previewFileAction, (event, raw) => {
-    if (!isTrustedSender(event)) {
-      throw new Error("untrusted sender");
-    }
+    if (!isTrustedSender(event)) throw new Error("untrusted sender");
     return runPreviewFileAction(event, PreviewFileActionSchema.parse(raw));
   });
   bus.handle(IPC.previewClose, (event, raw) => {
-    if (!isTrustedSender(event)) {
-      throw new Error("untrusted sender");
-    }
+    if (!isTrustedSender(event)) throw new Error("untrusted sender");
     closePreviewWindow(PreviewWindowIdSchema.parse(raw));
   });
 }

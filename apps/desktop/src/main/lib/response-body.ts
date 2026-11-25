@@ -15,9 +15,7 @@ export async function readResponseBodyWithinBudget(
   let byteLength = 0;
   while (true) {
     const chunk = await reader.read();
-    if (chunk.done) {
-      break;
-    }
+    if (chunk.done) break;
     byteLength += chunk.value.byteLength;
     if (byteLength > maxBytes) {
       await reader.cancel();
@@ -25,9 +23,7 @@ export async function readResponseBodyWithinBudget(
     }
     chunks.push(chunk.value);
   }
-  if (byteLength === 0) {
-    return null;
-  }
+  if (byteLength === 0) return null;
   const body = new Uint8Array(byteLength);
   let offset = 0;
   for (const chunk of chunks) {

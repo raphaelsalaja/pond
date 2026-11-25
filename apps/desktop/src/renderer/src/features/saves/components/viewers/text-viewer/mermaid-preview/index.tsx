@@ -25,9 +25,7 @@ export function MermaidPreview() {
             });
           }
           if ($isElementNode(node)) {
-            for (const child of node.getChildren()) {
-              visit(child);
-            }
+            for (const child of node.getChildren()) visit(child);
           }
         };
         visit($getRoot());
@@ -35,9 +33,7 @@ export function MermaidPreview() {
       for (const item of pending) {
         seen.add(item.key);
         const block = editor.getElementByKey(item.key);
-        if (!block) {
-          continue;
-        }
+        if (!block) continue;
         let host = hosts.get(item.key);
         if (!host) {
           host = document.createElement("div");
@@ -49,9 +45,7 @@ export function MermaidPreview() {
         void renderDiagram(host, item.source);
       }
       for (const [key, host] of hosts) {
-        if (seen.has(key)) {
-          continue;
-        }
+        if (seen.has(key)) continue;
         host.remove();
         hosts.delete(key);
       }
@@ -65,9 +59,7 @@ export function MermaidPreview() {
 }
 
 async function renderDiagram(host: HTMLElement, source: string): Promise<void> {
-  if (host.dataset.source === source) {
-    return;
-  }
+  if (host.dataset.source === source) return;
   host.dataset.source = source;
   try {
     const mermaid = (await import("mermaid")).default;

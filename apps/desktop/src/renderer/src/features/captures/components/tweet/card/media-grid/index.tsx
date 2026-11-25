@@ -16,9 +16,7 @@ interface MediaGridStyle extends CSSProperties {
 }
 
 function singleRatio(m: TweetCardMedia): string | undefined {
-  if (!m.width || !m.height) {
-    return undefined;
-  }
+  if (!m.width || !m.height) return undefined;
   if (m.type === "video") {
     const clamped = Math.min(
       VIDEO_MAX_RATIO,
@@ -37,9 +35,7 @@ export function MediaGrid({
   compact?: boolean;
 }) {
   const tiles = media.slice(0, MAX_TILES);
-  if (tiles.length === 0) {
-    return null;
-  }
+  if (tiles.length === 0) return null;
 
   const count = tiles.length;
   const single = count === 1 ? tiles[0] : undefined;

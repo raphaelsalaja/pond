@@ -17,9 +17,7 @@ const SAVE_ROOT_FIELDS = new Set([
 type HeaderReader = (name: string) => string | null;
 
 function formParams(bodyStr: string | null): URLSearchParams | null {
-  if (!bodyStr) {
-    return null;
-  }
+  if (!bodyStr) return null;
   try {
     return new URLSearchParams(bodyStr);
   } catch {
@@ -41,9 +39,7 @@ function friendlyName(
 export function mediaIdToShortcode(id: string): string | null {
   try {
     const mediaId = String(id).split("_", 1)[0];
-    if (!mediaId) {
-      return null;
-    }
+    if (!mediaId) return null;
     let n = BigInt(mediaId);
     let s = "";
     while (n > 0n) {
@@ -61,24 +57,14 @@ export function isSaveMutation(
   bodyStr: string | null,
 ): boolean {
   const name = friendlyName(getHeader, bodyStr);
-  if (name && SAVE_OPERATIONS.has(name)) {
-    return true;
-  }
-  if (name && /unsave|remove/i.test(name)) {
-    return false;
-  }
+  if (name && SAVE_OPERATIONS.has(name)) return true;
+  if (name && /unsave|remove/i.test(name)) return false;
   const root = getHeader("x-root-field-name");
   if (root && !/unsave|remove/i.test(root)) {
-    if (SAVE_ROOT_FIELDS.has(root) || root.endsWith("__save")) {
-      return true;
-    }
+    if (SAVE_ROOT_FIELDS.has(root) || root.endsWith("__save")) return true;
   }
   if (bodyStr) {
-    for (const op of SAVE_OPERATIONS) {
-      if (bodyStr.includes(op)) {
-        return true;
-      }
-    }
+    for (const op of SAVE_OPERATIONS) if (bodyStr.includes(op)) return true;
     if (
       /xdt_api__v1__web__save__media_id__save(?!_unsave)/.test(bodyStr) &&
       !/unsave/i.test(bodyStr)
@@ -90,9 +76,7 @@ export function isSaveMutation(
 }
 
 export function isLikeRestUrl(url: string): boolean {
-  if (/unlike/i.test(url)) {
-    return false;
-  }
+  if (/unlike/i.test(url)) return false;
   return /\/(?:web\/likes\/[^/]+\/like|api\/v1\/(?:web\/likes\/[^/]+\/like|media\/[^/]+\/like))\b/i.test(
     url,
   );
@@ -103,27 +87,17 @@ export function isLikeMutation(
   url: string,
   bodyStr: string | null,
 ): boolean {
-  if (isLikeRestUrl(url)) {
-    return true;
-  }
+  if (isLikeRestUrl(url)) return true;
   const friendly = friendlyName(getHeader, bodyStr) ?? "";
-  if (/unlike/i.test(friendly)) {
-    return false;
-  }
-  if (/like/i.test(friendly) && /mutation/i.test(friendly)) {
-    return true;
-  }
+  if (/unlike/i.test(friendly)) return false;
+  if (/like/i.test(friendly) && /mutation/i.test(friendly)) return true;
   const root = getHeader("x-root-field-name");
-  if (root?.endsWith("__like") && !/unlike/i.test(root)) {
-    return true;
-  }
+  if (root?.endsWith("__like") && !/unlike/i.test(root)) return true;
   if (bodyStr) {
     if (/Unlike/i.test(bodyStr) && /usePolarisLikeMediaUnlike/.test(bodyStr)) {
       return false;
     }
-    if (bodyStr.includes("usePolarisLikeMediaLikeMutation")) {
-      return true;
-    }
+    if (bodyStr.includes("usePolarisLikeMediaLikeMutation")) return true;
     if (
       /use\w*Like\w*Mutation/.test(bodyStr) &&
       !/Unlike/i.test(bodyStr) &&

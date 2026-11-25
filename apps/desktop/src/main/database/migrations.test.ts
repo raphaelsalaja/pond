@@ -21,9 +21,7 @@ function nativeSqliteAvailable(): boolean {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
@@ -84,9 +82,7 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
           .prepare(`pragma table_info(${config.name})`)
           .all()
           .map((row) => z.object({ name: z.string() }).parse(row).name);
-        if (present.length === 0) {
-          continue;
-        }
+        if (present.length === 0) continue;
         expect(present, config.name).toEqual(
           expect.arrayContaining(config.columns.map((column) => column.name)),
         );
@@ -188,9 +184,7 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
         combinator: "and",
         rules: [{ field: "post", operator: "eq", value: "instagram:DAbC" }],
       });
-      if (!where) {
-        throw new Error("Expected a post predicate");
-      }
+      if (!where) throw new Error("Expected a post predicate");
       const compiled = new SQLiteSyncDialect().sqlToQuery(where);
       const plan = db
         .prepare(

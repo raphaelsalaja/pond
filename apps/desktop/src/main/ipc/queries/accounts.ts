@@ -103,9 +103,7 @@ export function createSetImportScopeQuery(
     }),
     async (params) => {
       const account = await dependencies.getAccount(params.accountId);
-      if (!account) {
-        return ACCOUNT_NOT_FOUND;
-      }
+      if (!account) return ACCOUNT_NOT_FOUND;
       const normalized = normalizeImportScope(account.source, params.scope);
       if (!normalized.ok) {
         return {
@@ -172,13 +170,9 @@ export function createImportOptionsQuery(
     z.strictObject({ accountId: z.string().trim().min(1) }),
     async (params) => {
       const account = await dependencies.getAccount(params.accountId);
-      if (!account) {
-        return ACCOUNT_NOT_FOUND;
-      }
+      if (!account) return ACCOUNT_NOT_FOUND;
       const kind = importScopeOptions(account.source).collections;
-      if (!kind) {
-        return { ok: true as const, collections: null };
-      }
+      if (!kind) return { ok: true as const, collections: null };
       const label = sourceLabel(account.source);
       const nouns = COLLECTION_NOUNS[kind];
       const needsHandle = collectionsNeedHandle(account.source);
@@ -259,9 +253,7 @@ export const accountsQueries = {
         avatarUrl: null,
         avatarCheckedAt: null,
       });
-      if (!account) {
-        return ACCOUNT_NOT_FOUND;
-      }
+      if (!account) return ACCOUNT_NOT_FOUND;
       fillMissingAvatars();
       return { ok: true as const, account };
     },
@@ -285,9 +277,7 @@ export const accountsQueries = {
     z.object({ accountId: StringParam }),
     async (params) => {
       const account = await getAccount(params.accountId);
-      if (!account) {
-        return ACCOUNT_NOT_FOUND;
-      }
+      if (!account) return ACCOUNT_NOT_FOUND;
       await removeAccount(params.accountId);
       return { ok: true as const };
     },
@@ -297,9 +287,7 @@ export const accountsQueries = {
     z.object({ accountId: StringParam }),
     async (params) => {
       const account = await getAccount(params.accountId);
-      if (account?.source !== "bluesky") {
-        return ACCOUNT_NOT_FOUND;
-      }
+      if (account?.source !== "bluesky") return ACCOUNT_NOT_FOUND;
       const { blueskySessionStatus } =
         await import("../../core/refresh/harvest/bluesky/session");
       const status = await blueskySessionStatus(account);
@@ -315,9 +303,7 @@ export const accountsQueries = {
     z.object({ accountId: StringParam }),
     async (params) => {
       const account = await getAccount(params.accountId);
-      if (account?.source !== "bluesky") {
-        return ACCOUNT_NOT_FOUND;
-      }
+      if (account?.source !== "bluesky") return ACCOUNT_NOT_FOUND;
       const { signInToBluesky } =
         await import("../../core/refresh/harvest/bluesky/session");
       const result = await signInToBluesky(account);
@@ -342,9 +328,7 @@ export const accountsQueries = {
     z.object({ accountId: StringParam }),
     async (params) => {
       const account = await getAccount(params.accountId);
-      if (account?.source !== "bluesky") {
-        return ACCOUNT_NOT_FOUND;
-      }
+      if (account?.source !== "bluesky") return ACCOUNT_NOT_FOUND;
       const { signOutOfBluesky } =
         await import("../../core/refresh/harvest/bluesky/session");
       await signOutOfBluesky(account);

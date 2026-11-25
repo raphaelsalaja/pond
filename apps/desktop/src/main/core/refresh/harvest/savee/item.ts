@@ -65,15 +65,9 @@ async function inPageSaveeHarvest(
   const title =
     ld?.name?.trim() ||
     meta("og:title").replace(/\s+by\s+.+?\s+–\s+Savee$/, "");
-  if (title) {
-    page.title = title;
-  }
-  if (ld?.creator?.name) {
-    page.author = ld.creator.name;
-  }
-  if (ld?.creator?.url) {
-    page.meta.authorUrl = ld.creator.url;
-  }
+  if (title) page.title = title;
+  if (ld?.creator?.name) page.author = ld.creator.name;
+  if (ld?.creator?.url) page.meta.authorUrl = ld.creator.url;
   const media = ld?.contentUrl || meta("og:image");
   if (media) {
     page.mediaUrls.push({

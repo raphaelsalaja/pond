@@ -26,9 +26,7 @@ const TWITTER_EPOCH_MS = 1_288_834_974_657n;
 
 /** X status ids are snowflakes, so a quote saved without its time still has one. */
 function snowflakeIso(id: string | undefined): string | undefined {
-  if (!id || !/^\d{15,20}$/.test(id)) {
-    return undefined;
-  }
+  if (!id || !/^\d{15,20}$/.test(id)) return undefined;
   const ms = Number((BigInt(id) >> 22n) + TWITTER_EPOCH_MS);
   return new Date(ms).toISOString();
 }
@@ -54,9 +52,7 @@ function hostOf(url: string): string | undefined {
 function mapMedia(media: ReadonlyArray<CaptureMedia>): Array<XMedia> {
   const out: Array<XMedia> = [];
   for (const m of media) {
-    if (m.type === "link" || isAvatarUrl(m.url)) {
-      continue;
-    }
+    if (m.type === "link" || isAvatarUrl(m.url)) continue;
     const item: XMedia = {
       kind: m.type === "video" ? "video" : "image",
       width: m.width ?? 0,
@@ -93,17 +89,11 @@ function mapPost(
     post.author.avatar = capture.author.avatarUrl;
   }
   const media = mapMedia(capture.media ?? []);
-  if (media.length > 0) {
-    post.media = media;
-  }
+  if (media.length > 0) post.media = media;
   const published = capture.publishedAt ?? snowflakeIso(capture.id);
   const createdAt = published ? localIso(published) : undefined;
-  if (createdAt) {
-    post.createdAt = createdAt;
-  }
-  if (now) {
-    post.now = now;
-  }
+  if (createdAt) post.createdAt = createdAt;
+  if (now) post.now = now;
   return post;
 }
 

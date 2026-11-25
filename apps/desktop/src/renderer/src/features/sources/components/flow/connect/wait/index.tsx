@@ -29,9 +29,7 @@ export function ConnectWaitSection() {
   const problem = useConnectProblem();
   const account = useConnectedAccount();
   useConnectArrival();
-  if (!source) {
-    return null;
-  }
+  if (!source) return null;
   const label = getSourceDef(source).label;
   const byHandle = connectsByHandle(source);
   const step = completed ? "connected" : (problem ?? "waiting");
@@ -194,9 +192,7 @@ function useExtensionSilent(): boolean {
       const result = await window.pond
         .query("sources.extensionLastSeen", {})
         .catch(() => null);
-      if (cancelled || !result) {
-        return;
-      }
+      if (cancelled || !result) return;
       const heard = result.at !== null && result.at >= startedAt;
       setSilent(!heard && Date.now() - startedAt >= EXTENSION_SILENT_MS);
     };
@@ -265,9 +261,7 @@ function useConnectArrival(): void {
   const { refetch } = useAccounts();
 
   useEffect(() => {
-    if (!waiting) {
-      return;
-    }
+    if (!waiting) return;
     const source = waiting;
     let cancelled = false;
     let arrivedOnce = false;
@@ -276,21 +270,15 @@ function useConnectArrival(): void {
     let importedAccountId: string | null = null;
 
     const finish = (account: AccountRow) => {
-      if (cancelled || arrivedOnce) {
-        return;
-      }
+      if (cancelled || arrivedOnce) return;
       arrivedOnce = true;
       syncMonitor.seed(account.id, source, { connected: true });
-      if (!account.sync.importPending) {
-        void window.pond.syncRunNow(account.id);
-      }
+      if (!account.sync.importPending) void window.pond.syncRunNow(account.id);
       connectFlow.complete(account);
     };
 
     const tick = () => {
-      if (cancelled || arrivedOnce) {
-        return;
-      }
+      if (cancelled || arrivedOnce) return;
       if (inflight) {
         pending = true;
         return;
@@ -299,18 +287,14 @@ function useConnectArrival(): void {
       void (async () => {
         try {
           const list = await refetch();
-          if (cancelled || arrivedOnce) {
-            return;
-          }
+          if (cancelled || arrivedOnce) return;
           const arrived = findArrivedAccount(
             list,
             source,
             connectedBefore,
             importedAccountId,
           );
-          if (!arrived) {
-            return;
-          }
+          if (!arrived) return;
           finish(arrived);
         } catch {
           /** A failed refetch is retried on the next tick. */
@@ -325,16 +309,12 @@ function useConnectArrival(): void {
     };
 
     const stopListen = window.pond.onSessionImported((payload) => {
-      if (payload.source !== source) {
-        return;
-      }
+      if (payload.source !== source) return;
       importedAccountId = payload.accountId;
       tick();
     });
     const stopFailureListen = window.pond.onSessionImportFailed((payload) => {
-      if (payload.source !== source) {
-        return;
-      }
+      if (payload.source !== source) return;
       connectFlow.rejectSession(source, payload.reason);
     });
 

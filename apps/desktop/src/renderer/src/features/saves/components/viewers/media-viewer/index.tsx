@@ -73,9 +73,7 @@ export function MediaViewer({
     () =>
       buildMediaUnits(save, { theme }).flatMap((u) => {
         const fileIndex = save.files.findIndex((f) => f.path === u.key);
-        if (fileIndex < 0) {
-          return [];
-        }
+        if (fileIndex < 0) return [];
         const file = save.files[fileIndex];
         const poster = u.posterKey
           ? save.files.find((f) => f.path === u.posterKey)
@@ -113,9 +111,7 @@ export function MediaViewer({
       onPositionChange?.(null);
       return;
     }
-    if (slides.length !== 1) {
-      return;
-    }
+    if (slides.length !== 1) return;
     onActiveFileIndexChange?.(firstFileIndex);
     onPositionChange?.({ index: 0, count: 1, fileIndex: firstFileIndex });
   }, [
@@ -131,9 +127,7 @@ export function MediaViewer({
 
   if (slides.length === 1) {
     const only = slides[0];
-    if (!only) {
-      return null;
-    }
+    if (!only) return null;
     return (
       <MediaViewerFrame showControls={showControls}>
         <Slide
@@ -188,9 +182,7 @@ export function MediaViewerFrame({
     bindingKeys(shortcuts, "viewer.copy-frame"),
     (event) => {
       const video = activeVideo();
-      if (!video) {
-        return;
-      }
+      if (!video) return;
       event.preventDefault();
       void copyVideoFrame(video);
     },
@@ -200,9 +192,7 @@ export function MediaViewerFrame({
     bindingKeys(shortcuts, "viewer.save-frame"),
     (event) => {
       const video = activeVideo();
-      if (!video) {
-        return;
-      }
+      if (!video) return;
       event.preventDefault();
       void saveVideoFrame(video);
     },
@@ -212,9 +202,7 @@ export function MediaViewerFrame({
     bindingKeys(shortcuts, "viewer.mute"),
     (event) => {
       const video = activeVideo();
-      if (!video) {
-        return;
-      }
+      if (!video) return;
       event.preventDefault();
       video.muted = !video.muted;
     },
@@ -291,9 +279,7 @@ function Carousel({
   }, [active, slides, onActiveFileIndexChange, onPositionChange]);
 
   useEffect(() => {
-    if (!navRef) {
-      return;
-    }
+    if (!navRef) return;
     navRef.current = { step };
     return () => {
       navRef.current = null;

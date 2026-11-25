@@ -125,9 +125,7 @@ async function squash(image: RawImage): Promise<ImageData> {
   const bitmap = await createImageBitmap(source);
   const canvas = new OffscreenCanvas(INPUT_SIZE, INPUT_SIZE);
   const context = canvas.getContext("2d");
-  if (!context) {
-    throw new Error("Sensitive-content canvas unavailable");
-  }
+  if (!context) throw new Error("Sensitive-content canvas unavailable");
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
   context.drawImage(bitmap, 0, 0, INPUT_SIZE, INPUT_SIZE);
@@ -171,9 +169,7 @@ async function classifyBatch(
     }
     const outputs = await session.run({ [inputName]: input });
     const output = outputs[outputName];
-    if (!output) {
-      throw new Error("Sensitive-content model returned no logits");
-    }
+    if (!output) throw new Error("Sensitive-content model returned no logits");
     try {
       if (!isFloat32Array(output.data)) {
         throw new Error("Sensitive-content model returned invalid logits");
@@ -209,7 +205,5 @@ export async function runSensitiveModel(
 export async function disposeSensitiveModel(): Promise<void> {
   const current = sessionPromise;
   sessionPromise = null;
-  if (current) {
-    await (await current).release();
-  }
+  if (current) await (await current).release();
 }

@@ -47,9 +47,7 @@ export async function prepareNativeHostBinary(
 ): Promise<string> {
   const platform = input.platform ?? process.platform;
   const packaged = input.packaged ?? false;
-  if (platform !== "linux" || !packaged || !input.appImage) {
-    return input.source;
-  }
+  if (platform !== "linux" || !packaged || !input.appImage) return input.source;
 
   const target = stableLinuxNativeHostPath(
     basename(input.source),

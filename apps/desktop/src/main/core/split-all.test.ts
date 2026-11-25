@@ -159,12 +159,8 @@ describe("runSplitAll", () => {
       ["a", "b", "c", "d"].map((id) => candidate(id)),
       {
         async split(id) {
-          if (id === "b") {
-            throw new Error("disk full");
-          }
-          if (id === "c") {
-            return { ok: false, reason: "single" };
-          }
+          if (id === "b") throw new Error("disk full");
+          if (id === "c") return { ok: false, reason: "single" };
           return { ok: true, created: [`${id}-2`, `${id}-3`] };
         },
       },
@@ -258,12 +254,8 @@ function carouselLibrary(count: number) {
       return null;
     },
     async create(row) {
-      if (quit()) {
-        throw new Error("Pond quit");
-      }
-      if (!row.id) {
-        throw new Error("Slides arrive with an ID");
-      }
+      if (quit()) throw new Error("Pond quit");
+      if (!row.id) throw new Error("Slides arrive with an ID");
       rows.set(row.id, {
         ...carousel(),
         ...row,
@@ -274,9 +266,7 @@ function carouselLibrary(count: number) {
     },
     async copyFiles(_from, to, files) {
       copies += 1;
-      if (quit()) {
-        throw new Error("Pond quit");
-      }
+      if (quit()) throw new Error("Pond quit");
       const slide = rows.get(to);
       if (slide) {
         rows.set(to, { ...slide, files: [...files], status: "complete" });
@@ -285,12 +275,8 @@ function carouselLibrary(count: number) {
     },
     async copyMemberships() {},
     async discard(fresh) {
-      if (quit()) {
-        return;
-      }
-      for (const id of fresh) {
-        rows.delete(id);
-      }
+      if (quit()) return;
+      for (const id of fresh) rows.delete(id);
     },
     async updateOriginal(id, { patch }) {
       const save = rows.get(id);
@@ -363,8 +349,6 @@ describe("split all after a quit", () => {
     expect(saves).toHaveLength(75);
     const keys = saves.map((save) => `${save.source} ${save.sourceId}`);
     expect(new Set(keys).size).toBe(75);
-    for (const save of saves) {
-      expect(slideFiles(save.files)).toHaveLength(1);
-    }
+    for (const save of saves) expect(slideFiles(save.files)).toHaveLength(1);
   });
 });

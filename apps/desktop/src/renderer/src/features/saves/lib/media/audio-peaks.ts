@@ -6,9 +6,7 @@ export function downsamplePeaks(
     return [];
   }
   const peaks = Array.from({ length: buckets }, () => 0);
-  if (samples.length === 0) {
-    return peaks;
-  }
+  if (samples.length === 0) return peaks;
   const width = samples.length / buckets;
   for (let index = 0; index < buckets; index += 1) {
     const start = Math.floor(index * width);

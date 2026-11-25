@@ -136,9 +136,7 @@ function fakeRuntime(options: { failId?: string } = {}) {
     },
     async rollback(saveIds, folderIds) {
       rolledBack.push([...saveIds, ...folderIds]);
-      for (const id of saveIds) {
-        imported.delete(id.replace(/^imported-/, ""));
-      }
+      for (const id of saveIds) imported.delete(id.replace(/^imported-/, ""));
     },
   };
   return { runtime, imported, rolledBack, folders };
@@ -230,9 +228,7 @@ describe("Eagle package round trip", () => {
       tags: ["Print", "Layout"],
     });
     const importedThumbnail = target.imported.get("save-1")?.thumbnail;
-    if (!importedThumbnail) {
-      throw new Error("Missing imported thumbnail");
-    }
+    if (!importedThumbnail) throw new Error("Missing imported thumbnail");
     expect((await sharp(importedThumbnail).metadata()).format).toBe("png");
     await expect(
       importEaglePackage(destination, target.runtime),

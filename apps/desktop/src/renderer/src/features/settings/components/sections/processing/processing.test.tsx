@@ -6,9 +6,7 @@ import { ProcessingStatusCard } from "./";
 import styles from "./styles.module.css";
 
 function styleClass(name: string | undefined): string {
-  if (!name) {
-    throw new Error("Missing processing style");
-  }
+  if (!name) throw new Error("Missing processing style");
   return name;
 }
 

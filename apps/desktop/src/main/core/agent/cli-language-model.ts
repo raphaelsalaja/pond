@@ -80,9 +80,7 @@ async function generate(
       });
       args.push("-");
     }
-    if (model !== "default") {
-      args.push("--model", model);
-    }
+    if (model !== "default") args.push("--model", model);
     const result = await runCli({
       provider,
       args,
@@ -133,9 +131,7 @@ async function generate(
             result: z.string().optional(),
           })
           .parse(JSON.parse(result.stdout));
-        if (response.is_error) {
-          throw new Error("CLI request failed");
-        }
+        if (response.is_error) throw new Error("CLI request failed");
         reply =
           response.structured_output ??
           replySchema.parse(JSON.parse(response.result ?? ""));
@@ -208,9 +204,7 @@ export function createCliLanguageModel(
         provider,
         options.abortSignal,
       );
-      if (!connection.ok) {
-        throw new Error(connection.error);
-      }
+      if (!connection.ok) throw new Error(connection.error);
       verified = true;
     }
     return generate(provider, model, options);

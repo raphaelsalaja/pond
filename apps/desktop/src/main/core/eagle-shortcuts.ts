@@ -165,35 +165,21 @@ export function normalizeEagleShortcut(
     .split("+")
     .map((part) => part.trim())
     .filter(Boolean);
-  if (parts.length === 0) {
-    return null;
-  }
+  if (parts.length === 0) return null;
   const normalized = parts.map((part, index) => {
     const lower = part.toLowerCase();
     if (index < parts.length - 1) {
-      if (lower === "command" || lower === "cmd") {
-        return "Mod";
-      }
-      if (lower === "option") {
-        return "Alt";
-      }
-      if (lower === "ctrl") {
-        return "Control";
-      }
-      if (lower === "shift") {
-        return "Shift";
-      }
-      if (lower === "control") {
-        return "Control";
-      }
+      if (lower === "command" || lower === "cmd") return "Mod";
+      if (lower === "option") return "Alt";
+      if (lower === "ctrl") return "Control";
+      if (lower === "shift") return "Shift";
+      if (lower === "control") return "Control";
       return part;
     }
     return normalizeEagleKey(part);
   });
   const shortcut = normalized.join("+");
-  if (!isValidShortcut(shortcut)) {
-    return null;
-  }
+  if (!isValidShortcut(shortcut)) return null;
   return normalizeHotkey(shortcut, platform);
 }
 
@@ -205,16 +191,12 @@ export function mapEagleShortcuts(
   for (const mapping of shortcutMappings(platform)) {
     for (const source of mapping.sources) {
       const value = keybinds[source]?.trim();
-      if (!value) {
-        continue;
-      }
+      if (!value) continue;
       const shortcut = normalizeEagleShortcut(
         value,
         shortcutPlatformFromName(platform),
       );
-      if (shortcut) {
-        overrides[mapping.target] = shortcut;
-      }
+      if (shortcut) overrides[mapping.target] = shortcut;
       break;
     }
   }
@@ -228,9 +210,7 @@ export function parseEagleShortcuts(
   let parsed: z.infer<typeof EagleSettingsSchema>;
   try {
     const result = EagleSettingsSchema.safeParse(JSON.parse(text));
-    if (!result.success) {
-      return { status: "invalid", overrides: {} };
-    }
+    if (!result.success) return { status: "invalid", overrides: {} };
     parsed = result.data;
   } catch {
     return { status: "invalid", overrides: {} };

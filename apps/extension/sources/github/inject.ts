@@ -17,20 +17,12 @@ export function starredRepoUrl(
     return null;
   }
   const fromPath = STAR_PATH_RE.exec(url.pathname)?.[1];
-  if (fromPath) {
-    return `https://github.com/${fromPath}`;
-  }
-  if (!GRAPHQL_RE.test(url.pathname)) {
-    return null;
-  }
+  if (fromPath) return `https://github.com/${fromPath}`;
+  if (!GRAPHQL_RE.test(url.pathname)) return null;
   const text = `${url.search} ${body ?? ""}`;
-  if (!/addStar/i.test(text)) {
-    return null;
-  }
+  if (!/addStar/i.test(text)) return null;
   const [owner, name] = new URL(pageUrl).pathname.split("/").filter(Boolean);
-  if (!owner || !name) {
-    return null;
-  }
+  if (!owner || !name) return null;
   const candidate = `https://github.com/${owner}/${name}`;
   return GITHUB_REPO_PATTERN.test(candidate) ? candidate : null;
 }
@@ -42,13 +34,9 @@ export function inject(): void {
       req.method === "POST" &&
       (STAR_PATH_RE.test(pathOf(req.url)) || GRAPHQL_RE.test(req.url)),
     async onResponse(req, res) {
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
       const url = starredRepoUrl(req.url, await req.readBody(), location.href);
-      if (url) {
-        capture(url, "github:star");
-      }
+      if (url) capture(url, "github:star");
     },
   });
 }

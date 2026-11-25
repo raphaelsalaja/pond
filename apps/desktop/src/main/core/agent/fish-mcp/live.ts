@@ -63,9 +63,7 @@ async function connectLive(
     });
   }
   client.onclose = () => {
-    if (stderr) {
-      log.info("[pond fish-mcp] server closed", server.name, stderr);
-    }
+    if (stderr) log.info("[pond fish-mcp] server closed", server.name, stderr);
     onClose();
   };
   try {

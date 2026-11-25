@@ -50,9 +50,7 @@ export function createSortableAnnouncements(
       return `${labelFor(active.id)} is over ${sortablePositionAnnouncement(over.id, items, labelFor)}`;
     },
     onDragEnd({ active, over }) {
-      if (!over) {
-        return `${labelFor(active.id)} was dropped without moving.`;
-      }
+      if (!over) return `${labelFor(active.id)} was dropped without moving.`;
       return `Dropped ${labelFor(active.id)} at ${sortablePositionAnnouncement(over.id, items, labelFor)}`;
     },
     onDragCancel({ active }) {

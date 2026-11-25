@@ -30,9 +30,7 @@ export function buildCandidates(facets: NlFacets): Array<Candidate> {
   const out: Array<Candidate> = [];
   const push = (phrase: string, field: Predicate["field"], value: string) => {
     const p = phrase.trim().toLowerCase();
-    if (p) {
-      out.push({ phrase: p, field, value });
-    }
+    if (p) out.push({ phrase: p, field, value });
   };
 
   for (const [word, type] of TYPE_SYNONYMS) {
@@ -48,9 +46,7 @@ export function buildCandidates(facets: NlFacets): Array<Candidate> {
   for (const [word, source] of SOURCE_SYNONYMS) {
     push(word, "source", source);
   }
-  for (const source of facets.sources) {
-    push(source, "source", source);
-  }
+  for (const source of facets.sources) push(source, "source", source);
 
   for (const color of COLOR_PRESETS) {
     push(color.label, "color", color.hex.toLowerCase());
@@ -63,12 +59,8 @@ export function buildCandidates(facets: NlFacets): Array<Candidate> {
     push(word, "aspect", aspect);
   }
 
-  for (const tag of facets.tags) {
-    push(tag, "tags", tag);
-  }
-  for (const creator of facets.creators) {
-    push(creator, "creator", creator);
-  }
+  for (const tag of facets.tags) push(tag, "tags", tag);
+  for (const creator of facets.creators) push(creator, "creator", creator);
 
   /** Longest phrase first so "are.na" beats "arena". */
   out.sort(
@@ -159,9 +151,7 @@ export function toPredicates(acc: Accumulator): Array<Predicate> {
     negate: boolean,
   ) => {
     const [first, ...rest] = [...values];
-    if (first === undefined) {
-      return;
-    }
+    if (first === undefined) return;
     if (rest.length === 0) {
       out.push({ field, operator: negate ? "neq" : "eq", value: first });
     } else {
@@ -228,9 +218,7 @@ export function toPredicates(acc: Accumulator): Array<Predicate> {
 
 function parseCount(word: string): number | null {
   const known = NUMBER_WORDS.get(word);
-  if (known !== undefined) {
-    return known;
-  }
+  if (known !== undefined) return known;
   if (/^\d+$/.test(word)) {
     const n = Number.parseInt(word, 10);
     return Number.isFinite(n) ? n : null;
@@ -239,9 +227,7 @@ function parseCount(word: string): number | null {
 }
 
 function parseQuantity(word: string): number | null {
-  if (word === "a" || word === "an") {
-    return 1;
-  }
+  if (word === "a" || word === "an") return 1;
   return parseCount(word);
 }
 
@@ -261,9 +247,7 @@ function parseDurationAt(
   const n = parseQuantity(w0);
   if (n !== null) {
     const unit = DURATION_UNITS.get((words[i + 1] ?? "").toLowerCase());
-    if (unit) {
-      return { seconds: Math.round(n * unit), len: 2 };
-    }
+    if (unit) return { seconds: Math.round(n * unit), len: 2 };
   }
   return null;
 }
@@ -333,15 +317,11 @@ export function matchSortLimit(
   }
 
   const sort = SORT_WORDS.get(at(0));
-  if (sort) {
-    return { sort, len: 1 };
-  }
+  if (sort) return { sort, len: 1 };
 
   if (at(0) === "top" || at(0) === "first") {
     const n = parseCount(at(1));
-    if (n !== null && n > 0) {
-      return { limit: n, len: 2 };
-    }
+    if (n !== null && n > 0) return { limit: n, len: 2 };
   }
 
   const lead = parseCount(at(0));
@@ -354,15 +334,9 @@ export function matchSortLimit(
 }
 
 function optionalFieldForNoun(noun: string): FieldId | null {
-  if (/^notes?$/.test(noun)) {
-    return "note";
-  }
-  if (/^captions?$/.test(noun)) {
-    return "caption";
-  }
-  if (/^(transcripts?|subtitles?)$/.test(noun)) {
-    return "transcript";
-  }
+  if (/^notes?$/.test(noun)) return "note";
+  if (/^captions?$/.test(noun)) return "caption";
+  if (/^(transcripts?|subtitles?)$/.test(noun)) return "transcript";
   return null;
 }
 
@@ -397,22 +371,16 @@ export function matchIntent(
   }
 
   const head = at(0);
-  if (!WITH_WORDS.has(head) && !WITHOUT_WORDS.has(head)) {
-    return null;
-  }
+  if (!WITH_WORDS.has(head) && !WITHOUT_WORDS.has(head)) return null;
   const negated = WITHOUT_WORDS.has(head);
 
   let k = 1;
-  if (at(k) === "a" || at(k) === "an" || at(k) === "any") {
-    k += 1;
-  }
+  if (at(k) === "a" || at(k) === "an" || at(k) === "any") k += 1;
   const noun = at(k);
 
   if (/^tags?$/.test(noun)) {
     const pred: Predicate = { field: "tags", operator: "empty", value: true };
-    if (!negated) {
-      pred.negate = true;
-    }
+    if (!negated) pred.negate = true;
     return { pred, len: k + 1 };
   }
 

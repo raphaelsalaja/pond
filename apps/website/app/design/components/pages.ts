@@ -66,9 +66,7 @@ function pageOrder(): Array<Page> {
 /** Pages scroll inside the panel, so links skip Next's window scroll and a same-page hash lands here. */
 export function reveal(href: string) {
   const [path, id] = href.split("#");
-  if (!id || path !== window.location.pathname) {
-    return;
-  }
+  if (!id || path !== window.location.pathname) return;
   document.getElementById(id)?.scrollIntoView();
 }
 
@@ -80,8 +78,6 @@ interface Neighbors {
 export function neighbors(href: string): Neighbors {
   const order = pageOrder();
   const index = order.findIndex((page) => page.href === href);
-  if (index === -1) {
-    return { previous: undefined, next: undefined };
-  }
+  if (index === -1) return { previous: undefined, next: undefined };
   return { previous: order[index - 1], next: order[index + 1] };
 }

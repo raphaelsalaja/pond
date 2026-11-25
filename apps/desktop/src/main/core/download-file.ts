@@ -45,15 +45,11 @@ function decoded(value: string): string {
 
 function dispositionName(headers: Headers): string | null {
   const value = headers.get("content-disposition");
-  if (!value) {
-    return null;
-  }
+  if (!value) return null;
   const encoded = /filename\*\s*=\s*(?:[\w-]+'[\w-]*')?"?([^";]+)"?/i.exec(
     value,
   )?.[1];
-  if (encoded) {
-    return decoded(encoded.trim());
-  }
+  if (encoded) return decoded(encoded.trim());
   return /filename\s*=\s*"?([^";]+)"?/i.exec(value)?.[1]?.trim() || null;
 }
 
@@ -63,9 +59,7 @@ export function fileNameOf(url: string, headers: Headers): string {
     parsed.pathname.split("/").filter(Boolean).at(-1) ?? "",
   );
   const name = dispositionName(headers) || segment || parsed.hostname;
-  if (/\.[a-z0-9]{1,8}$/i.test(name)) {
-    return name;
-  }
+  if (/\.[a-z0-9]{1,8}$/i.test(name)) return name;
   const mime = mimeOf(headers);
   /** Image CDNs like Twitter's put the format in the query instead of the path. */
   const format = parsed.searchParams.get("format");
@@ -85,9 +79,7 @@ export function fileProbeOf(
   headers: Headers,
 ): DownloadFileProbe | null {
   const mimeType = mimeOf(headers);
-  if (isPage(mimeType)) {
-    return null;
-  }
+  if (isPage(mimeType)) return null;
   const length = Number(headers.get("content-length"));
   return {
     kind: "file",
@@ -115,9 +107,7 @@ export async function probeFile(
 ): Promise<DownloadFileProbe | null> {
   const response = await request(url, signal);
   await response.body?.cancel();
-  if (!response.ok) {
-    return null;
-  }
+  if (!response.ok) return null;
   return fileProbeOf(response.url || url, response.headers);
 }
 
@@ -144,9 +134,7 @@ export async function fetchFile(
   let total = 0;
   for await (const chunk of response.body ?? []) {
     total += chunk.byteLength;
-    if (total > MAX_FILE_BYTES) {
-      throw new FileTooLargeError();
-    }
+    if (total > MAX_FILE_BYTES) throw new FileTooLargeError();
     chunks.push(chunk);
   }
   return {

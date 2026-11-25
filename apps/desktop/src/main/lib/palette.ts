@@ -36,9 +36,7 @@ export async function extractPalette(
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
-      if (r === undefined || g === undefined || b === undefined) {
-        continue;
-      }
+      if (r === undefined || g === undefined || b === undefined) continue;
       const key = `${r >> 4}-${g >> 4}-${b >> 4}`;
       const entry = buckets.get(key) ?? { count: 0, r: 0, g: 0, b: 0 };
       entry.count++;
@@ -64,25 +62,17 @@ export async function extractPalette(
 
     const chosen: Array<Swatch> = [];
     const pushUnique = (sw: Swatch) => {
-      if (chosen.length >= count) {
-        return;
-      }
-      if (chosen.some((c) => distance(c, sw) < 48)) {
-        return;
-      }
+      if (chosen.length >= count) return;
+      if (chosen.some((c) => distance(c, sw) < 48)) return;
       chosen.push(sw);
     };
-    for (const sw of vibrant) {
-      pushUnique(sw);
-    }
+    for (const sw of vibrant) pushUnique(sw);
 
     if (chosen.length < count) {
       const byFrequency = swatches
         .filter((sw) => !chosen.includes(sw))
         .sort((a, b) => b.count - a.count);
-      for (const sw of byFrequency) {
-        pushUnique(sw);
-      }
+      for (const sw of byFrequency) pushUnique(sw);
     }
 
     return chosen.map((sw) => toHex(sw.r, sw.g, sw.b));

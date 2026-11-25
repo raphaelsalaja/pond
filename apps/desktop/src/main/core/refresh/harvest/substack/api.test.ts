@@ -60,14 +60,10 @@ type Route = (url: URL) => Response | undefined;
 function serve(...routes: Array<Route>) {
   respond = async (raw) => {
     const url = new URL(raw);
-    if (url.pathname === "/api/v1/user/profile/self") {
-      return json(PROFILE);
-    }
+    if (url.pathname === "/api/v1/user/profile/self") return json(PROFILE);
     for (const route of routes) {
       const res = route(url);
-      if (res) {
-        return res;
-      }
+      if (res) return res;
     }
     return new Response("missing", { status: 404 });
   };
@@ -132,9 +128,7 @@ describe("harvestSubstackLists", () => {
     );
     const result = await harvestSubstackLists({ knownIds: [] });
     expect(result).toMatchObject({ ok: true, reachedEnd: true });
-    if (!result.ok) {
-      return;
-    }
+    if (!result.ok) return;
     expect(
       result.entries.map((e) => [e.sourceId, e.listKinds?.slice().sort()]),
     ).toEqual([
@@ -197,9 +191,7 @@ describe("harvestSubstackSubscriptions", () => {
       2,
     );
     expect(result).toMatchObject({ ok: true, reachedEnd: false, seen: 3 });
-    if (!result.ok) {
-      return;
-    }
+    if (!result.ok) return;
     expect(result.entries).toEqual([
       {
         sourceId: "stratechery.substack.com/p/newest",

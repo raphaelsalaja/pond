@@ -18,11 +18,8 @@ export default (h, s) => {
       const rising = side(at(1)) > side(at(0));
       for (let k = 0; k < 40; k++) {
         const mid = (lo + hi) / 2;
-        if (side(at(mid)) < target === rising) {
-          lo = mid;
-        } else {
-          hi = mid;
-        }
+        if (side(at(mid)) < target === rising) lo = mid;
+        else hi = mid;
       }
       return lo;
     };

@@ -21,17 +21,11 @@ const saveCitation = /^#save-[1-9]\d*$/;
 const trailingPunctuation = /^[,.;:!?)}\]]/;
 
 function endsWithSaveCitation(node: MarkdownNode): boolean {
-  if (node.type === "link") {
-    return saveCitation.test(node.url ?? "");
-  }
-  if (!node.children) {
-    return false;
-  }
+  if (node.type === "link") return saveCitation.test(node.url ?? "");
+  if (!node.children) return false;
   for (let index = node.children.length - 1; index >= 0; index -= 1) {
     const child = node.children[index];
-    if (!child || (child.type === "text" && !child.value)) {
-      continue;
-    }
+    if (!child || (child.type === "text" && !child.value)) continue;
     return endsWithSaveCitation(child);
   }
   return false;
@@ -54,12 +48,8 @@ function bindCitationPunctuation(children: Array<MarkdownNode>) {
 }
 
 function bindCitationPunctuationInTree(node: MarkdownNode) {
-  if (!node.children) {
-    return;
-  }
-  for (const child of node.children) {
-    bindCitationPunctuationInTree(child);
-  }
+  if (!node.children) return;
+  for (const child of node.children) bindCitationPunctuationInTree(child);
   bindCitationPunctuation(node.children);
 }
 
@@ -71,13 +61,9 @@ export function remarkSaveCitations({
   source: string;
 }) {
   return (tree: MarkdownNode) => {
-    if (!count) {
-      return;
-    }
+    if (!count) return;
     function visit(node: MarkdownNode) {
-      if (!node.children || excluded.has(node.type)) {
-        return;
-      }
+      if (!node.children || excluded.has(node.type)) return;
       node.children = node.children.flatMap((child) => {
         if (child.type !== "text" || !child.value) {
           visit(child);
@@ -132,9 +118,7 @@ export function remarkSaveCitations({
           }
           cursor = match.index + match[0].length;
         }
-        if (!cursor) {
-          return [child];
-        }
+        if (!cursor) return [child];
         parts.push({ type: "text", value: child.value.slice(cursor) });
         return parts;
       });

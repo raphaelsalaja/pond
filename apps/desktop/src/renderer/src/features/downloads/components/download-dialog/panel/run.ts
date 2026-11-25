@@ -21,9 +21,7 @@ async function toLibrary(url: string, title: string, request: DownloadRequest) {
       urls: [url],
       request,
     });
-    if (ids.length === 0) {
-      throw new Error(START_FAILED);
-    }
+    if (ids.length === 0) throw new Error(START_FAILED);
     notify({
       id: "download-start",
       title: "Downloading",

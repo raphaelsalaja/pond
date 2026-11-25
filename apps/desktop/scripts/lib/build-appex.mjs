@@ -16,9 +16,7 @@ function appBundleId(fail) {
     "utf8",
   );
   const match = yml.match(/^appId:\s*(\S+)\s*$/m);
-  if (!match) {
-    fail("electron-builder.yml has no top-level appId");
-  }
+  if (!match) fail("electron-builder.yml has no top-level appId");
   return match[1];
 }
 
@@ -48,16 +46,12 @@ export function buildAppex({
     }
   };
 
-  if (process.platform !== "darwin") {
-    skip(`${kind} are macOS only`);
-  }
+  if (process.platform !== "darwin") skip(`${kind} are macOS only`);
   const swiftc = spawnSync("xcrun", ["--find", "swiftc"], {
     encoding: "utf8",
   });
   if (swiftc.error || swiftc.status !== 0) {
-    if (process.env.CI) {
-      fail(`swiftc is required to build the ${kind}`);
-    }
+    if (process.env.CI) fail(`swiftc is required to build the ${kind}`);
     skip("swiftc is not installed");
   }
 

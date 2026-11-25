@@ -23,12 +23,8 @@ export function AddMenu({
     setBusy(true);
     try {
       const picked = await window.pond.query("agent.pickAttachments", {});
-      if (!picked.ok) {
-        throw new Error(picked.error);
-      }
-      if (picked.files.length === 0) {
-        return;
-      }
+      if (!picked.ok) throw new Error(picked.error);
+      if (picked.files.length === 0) return;
       await onAttach(picked.files);
     } catch (error) {
       notify({
@@ -44,9 +40,7 @@ export function AddMenu({
   return (
     <Menu.Root
       onOpenChange={(open) => {
-        if (open) {
-          chose.current = false;
-        }
+        if (open) chose.current = false;
       }}
     >
       <Tooltip label="Add" side="top">

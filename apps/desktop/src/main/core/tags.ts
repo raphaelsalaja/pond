@@ -38,9 +38,7 @@ export async function listTags() {
 
 export async function createTag(input: CreateTagInput): Promise<OkResult> {
   const name = normalizeLabelName(input.name);
-  if (!name) {
-    return { ok: false, error: "Enter a tag name." };
-  }
+  if (!name) return { ok: false, error: "Enter a tag name." };
   const data: NewTag = {
     id: ulid(),
     name,
@@ -81,17 +79,13 @@ export async function renameTag(
   for (const row of all) {
     const current = (row.tags ?? []).slice();
     const idx = current.findIndex((t) => labelKey(t) === fromKey);
-    if (idx === -1) {
-      continue;
-    }
+    if (idx === -1) continue;
     const collidesWithExistingTarget =
       fromKey !== toKey && current.some((t) => labelKey(t) === toKey);
     if (collidesWithExistingTarget) {
       current.splice(idx, 1);
     } else {
-      if (current[idx] === toStored) {
-        continue;
-      }
+      if (current[idx] === toStored) continue;
       current[idx] = toStored;
     }
     txs.push({
@@ -115,9 +109,7 @@ export async function renameTag(
     });
   }
 
-  if (txs.length === 0) {
-    return { ok: true, affected: 0 };
-  }
+  if (txs.length === 0) return { ok: true, affected: 0 };
   await executeBatch(txs);
   return { ok: true, affected: txs.length };
 }
@@ -142,9 +134,7 @@ export async function mergeTags(
   for (const row of all) {
     const current = (row.tags ?? []).slice();
     const idx = current.findIndex((t) => labelKey(t) === fromKey);
-    if (idx === -1) {
-      continue;
-    }
+    if (idx === -1) continue;
     if (current.some((t) => labelKey(t) === toKey)) {
       current.splice(idx, 1);
     } else {
@@ -179,9 +169,7 @@ export async function mergeTags(
     });
   }
 
-  if (txs.length === 0) {
-    return { ok: true, affected: 0 };
-  }
+  if (txs.length === 0) return { ok: true, affected: 0 };
   await executeBatch(txs);
   return { ok: true, affected: txs.length };
 }
@@ -198,21 +186,15 @@ export async function updateTag(
   const key = labelKey(name) || name.trim().toLowerCase();
   const db = await getDb();
   const row = await tagByLowerName(db, key);
-  if (!row) {
-    return { ok: false, error: "Tag not found." };
-  }
+  if (!row) return { ok: false, error: "Tag not found." };
 
   const next: TagPatch = {};
-  if ("starred" in patch) {
-    next.starred = Boolean(patch.starred);
-  }
+  if ("starred" in patch) next.starred = Boolean(patch.starred);
   if ("description" in patch) {
     const description = patch.description?.trim() ?? "";
     next.description = description || null;
   }
-  if (Object.keys(next).length === 0) {
-    return { ok: true };
-  }
+  if (Object.keys(next).length === 0) return { ok: true };
 
   await executeTransaction({
     kind: "update",
@@ -234,9 +216,7 @@ export async function deleteTag(
   const txs: Array<Transaction> = [];
   for (const row of all) {
     const current = (row.tags ?? []).filter((t) => labelKey(t) !== key);
-    if (current.length === (row.tags?.length ?? 0)) {
-      continue;
-    }
+    if (current.length === (row.tags?.length ?? 0)) continue;
     txs.push({
       kind: "update",
       model: "save",
@@ -256,9 +236,7 @@ export async function deleteTag(
       meta: { actor: "user", actorReason: "tag-delete" },
     });
   }
-  if (txs.length === 0) {
-    return { ok: true, affected: 0 };
-  }
+  if (txs.length === 0) return { ok: true, affected: 0 };
   await executeBatch(txs);
   return { ok: true, affected: txs.length };
 }
@@ -268,13 +246,9 @@ export function normalizeTagList(names: Array<string>): Array<string> {
   const out: Array<string> = [];
   for (const raw of names) {
     const n = normalizeLabelName(raw);
-    if (!n) {
-      continue;
-    }
+    if (!n) continue;
     const key = n.toLowerCase();
-    if (seen.has(key)) {
-      continue;
-    }
+    if (seen.has(key)) continue;
     seen.add(key);
     out.push(n);
   }
@@ -291,9 +265,7 @@ export async function setSaveTags(
     .from(savesTable)
     .where(eq(savesTable.id, saveId));
   const row = rows[0];
-  if (!row) {
-    return { ok: false, error: "Save not found." };
-  }
+  if (!row) return { ok: false, error: "Save not found." };
   const normalized = normalizeTagList(next);
   const registry = await prepareTagRegistryUpdates(normalized);
   await executeBatch([
@@ -317,9 +289,7 @@ export async function addTagsToSaves(
   actorReason: string,
 ): Promise<number> {
   const add = normalizeTagList(names);
-  if (add.length === 0 || saveIds.length === 0) {
-    return 0;
-  }
+  if (add.length === 0 || saveIds.length === 0) return 0;
   const db = await getDb();
   const txs: Array<Transaction> = [];
   for (let offset = 0; offset < saveIds.length; offset += 500) {
@@ -329,9 +299,7 @@ export async function addTagsToSaves(
       .where(inArray(savesTable.id, saveIds.slice(offset, offset + 500)));
     for (const row of rows) {
       const next = normalizeTagList([...row.tags, ...add]);
-      if (next.length === row.tags.length) {
-        continue;
-      }
+      if (next.length === row.tags.length) continue;
       txs.push({
         kind: "update",
         model: "save",
@@ -342,9 +310,7 @@ export async function addTagsToSaves(
       });
     }
   }
-  if (txs.length === 0) {
-    return 0;
-  }
+  if (txs.length === 0) return 0;
   await executeBatch([...(await prepareTagRegistryUpdates(add)), ...txs]);
   return txs.length;
 }

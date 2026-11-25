@@ -14,9 +14,7 @@ export function ZoomSection() {
       items={options}
       value={selected?.value}
       onValueChange={(value) => {
-        if (value !== null) {
-          actions.setZoom(value);
-        }
+        if (value !== null) actions.setZoom(value);
       }}
     >
       <ViewMenuRow.Root>

@@ -126,9 +126,7 @@ function identityKind(target: SourceMenuTarget): string {
 }
 
 function targetName(target: SourceMenuTarget): string {
-  if (target.label) {
-    return target.label;
-  }
+  if (target.label) return target.label;
   if (target.handle) {
     return watchHandleLabel(target.handle, target.watchKind);
   }
@@ -163,9 +161,7 @@ function profileItems(target: SourceMenuTarget): Array<MenuItemSpec> {
       onClick: url
         ? () => {
             void window.pond.openExternal(url).then((result) => {
-              if (result.ok) {
-                return;
-              }
+              if (result.ok) return;
               notify({
                 id: "source-open-profile",
                 title: `Couldn't open ${sourceLabel}. Try again.`,
@@ -242,12 +238,8 @@ function primaryFetchItem(target: SourceMenuTarget): MenuItemSpec {
 }
 
 function importScopeItem(target: SourceMenuTarget): MenuItemSpec | null {
-  if (target.type !== "account") {
-    return null;
-  }
-  if (!target.importPending && !hasImportChoices(target.source)) {
-    return null;
-  }
+  if (target.type !== "account") return null;
+  if (!target.importPending && !hasImportChoices(target.source)) return null;
   return {
     label: "Choose What to Import",
     icon: <IconSliders />,
@@ -260,9 +252,7 @@ function fetchItems(target: SourceMenuTarget): Array<MenuItemSpec> {
   const items: Array<MenuItemSpec> = target.importPending
     ? []
     : [primaryFetchItem(target)];
-  if (scopeItem) {
-    items.push(scopeItem);
-  }
+  if (scopeItem) items.push(scopeItem);
   if (target.type === "account" && target.source === "mymind") {
     items.push({
       label: "Import Older Saves",
@@ -472,9 +462,7 @@ function profileRows(target: SourceMenuTarget): Array<SourceActionRow> {
           name: `Open ${sourceLabel} ${kind}`,
           onClick: () => {
             void window.pond.openExternal(url).then((result) => {
-              if (result.ok) {
-                return;
-              }
+              if (result.ok) return;
               notify({
                 id: "source-open-profile",
                 title: `Couldn't open ${sourceLabel}. Try again.`,
@@ -582,9 +570,7 @@ function fetchRows(target: SourceMenuTarget): Array<SourceActionRow> {
           },
     ],
   });
-  if (target.type !== "account") {
-    return rows;
-  }
+  if (target.type !== "account") return rows;
   if (target.source === "mymind") {
     rows.push({
       id: "older",
@@ -753,9 +739,7 @@ export function buildSourceActionMenu(
     ? targetOrTargets
     : [targetOrTargets];
   const target = targets[0];
-  if (!target) {
-    return [];
-  }
+  if (!target) return [];
   return targets.length === 1
     ? singleSourceMenu(target, options)
     : batchSourceMenu(targets);

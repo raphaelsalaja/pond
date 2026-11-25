@@ -67,9 +67,7 @@ export async function inBackground(
   id: HealthCategoryId,
   run: () => Promise<void>,
 ): Promise<void> {
-  if (running.state.has(id)) {
-    return;
-  }
+  if (running.state.has(id)) return;
   running.setState((state) => new Set(state).add(id));
   try {
     await run();
@@ -157,17 +155,11 @@ export function usePosterVerification(): void {
   const overview = useHealthOverview();
   const media = overview.data?.media;
   useEffect(() => {
-    if (!media || awaitingPosters.size === 0) {
-      return;
-    }
+    if (!media || awaitingPosters.size === 0) return;
     const active = new Set(media.activeSaveIds);
     const settled = [...awaitingPosters].filter((id) => !active.has(id));
-    if (settled.length === 0 || media.state === "indexing") {
-      return;
-    }
-    for (const id of settled) {
-      awaitingPosters.delete(id);
-    }
+    if (settled.length === 0 || media.state === "indexing") return;
+    for (const id of settled) awaitingPosters.delete(id);
     void recheckSaves(qc, settled);
   }, [media, qc]);
 }
@@ -187,9 +179,7 @@ export async function startCheck(qc: QueryClient): Promise<void> {
 
 export async function cancelCheck(qc: QueryClient): Promise<void> {
   const job = await window.pond.query("libraryHealth.cancel", {});
-  if (job) {
-    setJob(qc, job);
-  }
+  if (job) setJob(qc, job);
 }
 
 function setJob(qc: QueryClient, job: LibraryHealthJob): void {
@@ -229,9 +219,7 @@ export function repairSaves(
   const unique = [...new Set(saveIds)];
   const start = () =>
     inBackground(category, () => repairInBackground(qc, kind, unique));
-  if (kind !== "invalid-content") {
-    return start();
-  }
+  if (kind !== "invalid-content") return start();
   Dialog.confirm({
     title: "Repair Original Files",
     description: `${formatPlural(unique.length, SAVES)} with missing or damaged files move to Trash. Restore the files from a backup first to keep them.`,
@@ -258,9 +246,7 @@ async function followRepair(
   while (job.status === "queued" || job.status === "running") {
     await delay(REPAIR_POLL_MS);
     const next = await window.pond.query("libraryRepairs.get", { id: job.id });
-    if (!next) {
-      throw new Error("Pond lost track of this repair. Try again.");
-    }
+    if (!next) throw new Error("Pond lost track of this repair. Try again.");
     if (next.status !== job.status || next.processed !== job.processed) {
       movedAt = Date.now();
     } else if (Date.now() - movedAt > REPAIR_STALL_MS) {
@@ -291,9 +277,7 @@ async function repairInBackground(
     timeout: 0,
   });
   const progress = (job: LibraryRepairJob) => {
-    if (job.total === 0) {
-      return;
-    }
+    if (job.total === 0) return;
     updateNotification({
       id,
       title,

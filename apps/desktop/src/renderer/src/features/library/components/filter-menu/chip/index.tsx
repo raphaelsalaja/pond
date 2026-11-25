@@ -14,9 +14,7 @@ export function FilterChip({ onOpen, ...props }: FilterChipProps) {
   return (
     <Chip.Filter
       onOpenChange={(open) => {
-        if (!open) {
-          return;
-        }
+        if (!open) return;
         libraryHeader.closePopover();
         onOpen?.();
       }}

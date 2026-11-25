@@ -19,17 +19,13 @@ export function usePlayer(clip: Clip, drag: ReturnType<typeof useRangeDrag>) {
 
   const seek = (next: number) => {
     const clamped = Math.min(duration, Math.max(0, next));
-    if (video.current) {
-      video.current.currentTime = clamped;
-    }
+    if (video.current) video.current.currentTime = clamped;
     setTime(clamped);
   };
 
   useEffect(() => {
     const element = video.current;
-    if (!element) {
-      return;
-    }
+    if (!element) return;
     if (!playing) {
       element.pause();
       return;
@@ -40,9 +36,7 @@ export function usePlayer(clip: Clip, drag: ReturnType<typeof useRangeDrag>) {
     void element.play().catch(() => setPlaying(false));
     let frame = 0;
     const tick = () => {
-      if (element.currentTime >= range.end) {
-        element.currentTime = range.start;
-      }
+      if (element.currentTime >= range.end) element.currentTime = range.start;
       setTime(element.currentTime);
       frame = requestAnimationFrame(tick);
     };
@@ -73,9 +67,7 @@ export function usePlayer(clip: Clip, drag: ReturnType<typeof useRangeDrag>) {
     playing,
     playable,
     toggle: () => {
-      if (playable) {
-        setPlaying((current) => !current);
-      }
+      if (playable) setPlaying((current) => !current);
     },
     seek,
     fail: () => {

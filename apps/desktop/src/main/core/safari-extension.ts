@@ -107,13 +107,9 @@ export function parsePluginkit(output: string): Array<RegisteredExtension> {
       found.push(previous);
       continue;
     }
-    if (!previous) {
-      continue;
-    }
+    if (!previous) continue;
     const property = line.match(/^\s+(Path|Parent Bundle) = (.+?)\s*$/);
-    if (property?.[1] === "Path") {
-      previous.path = property[2] ?? null;
-    }
+    if (property?.[1] === "Path") previous.path = property[2] ?? null;
   }
   return found;
 }
@@ -153,9 +149,7 @@ async function bundledExtension(
   path: string;
   bundleId: string | null;
 } | null> {
-  if (!resources) {
-    return null;
-  }
+  if (!resources) return null;
   const plugIns = join(resources, "..", "PlugIns");
   if (!existsSync(plugIns)) {
     return null;
@@ -167,14 +161,10 @@ async function bundledExtension(
     return null;
   }
   for (const entry of entries) {
-    if (!entry.endsWith(".appex")) {
-      continue;
-    }
+    if (!entry.endsWith(".appex")) continue;
     const path = join(plugIns, entry);
     const text = await plistText(join(path, "Contents", "Info.plist"), run);
-    if (!text?.includes(SAFARI_EXTENSION_POINT)) {
-      continue;
-    }
+    if (!text?.includes(SAFARI_EXTENSION_POINT)) continue;
     const bundleId =
       text.match(
         /<key>CFBundleIdentifier<\/key>\s*<string>([^<]+)<\/string>/,
@@ -290,13 +280,9 @@ const SETTINGS_TIMEOUT_MS = 15_000;
 function loadSettingsModule(
   resources: string | undefined,
 ): SafariSettingsModule | null {
-  if (!resources) {
-    return null;
-  }
+  if (!resources) return null;
   const path = join(resources, "safari-settings.node");
-  if (!existsSync(path)) {
-    return null;
-  }
+  if (!existsSync(path)) return null;
   try {
     const loaded: unknown = requireNative(path);
     if (!isSafariSettingsModule(loaded)) {
@@ -399,9 +385,7 @@ export async function openSafari(): Promise<OkResult> {
     return { ok: false, error: "Safari is only available on macOS." };
   }
   const failure = await shell.openPath("/Applications/Safari.app");
-  if (!failure) {
-    return { ok: true };
-  }
+  if (!failure) return { ok: true };
   try {
     await execFileAsync("open", ["-b", "com.apple.Safari"]);
     return { ok: true };

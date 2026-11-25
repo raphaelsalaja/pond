@@ -62,9 +62,7 @@ describe("blank documents", () => {
   it("writes a file with the document extension", async () => {
     const path = await writeBlankDocumentFile("word");
     expect(path).toMatch(/Untitled\.docx$/);
-    if (path) {
-      scratch.push(dirname(path));
-    }
+    if (path) scratch.push(dirname(path));
     const bytes = path ? await readFile(path) : Buffer.alloc(0);
     expect(bytes.byteLength).toBeGreaterThan(0);
     expect(bytes.subarray(0, 2).toString("utf8")).toBe("PK");

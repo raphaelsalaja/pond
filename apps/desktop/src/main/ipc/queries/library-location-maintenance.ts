@@ -196,9 +196,7 @@ export const libraryLocationMaintenanceQueries = {
           path: result.path,
           sourceRemoved,
         };
-        if (sourceRemoved) {
-          return moved;
-        }
+        if (sourceRemoved) return moved;
         return { ...moved, cleanupPath: srcResolved };
       } catch (error) {
         await resumeLibraryWork();

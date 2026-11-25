@@ -24,9 +24,7 @@ export function openSources(intent?: SourcesIntent): void {
   if (router && router.state.location.pathname !== "/sources") {
     getAppHistory()?.push("/sources");
   }
-  if (!intent) {
-    return;
-  }
+  if (!intent) return;
   switch (intent.type) {
     case "new-source":
       sourceNewMenu.open();

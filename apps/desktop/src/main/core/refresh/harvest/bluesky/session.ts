@@ -86,9 +86,7 @@ function bookmarkPageExpression(cursor: string | undefined): string {
 }
 
 async function readSession(win: BrowserWindow): Promise<BlueskySession | null> {
-  if (win.isDestroyed()) {
-    return null;
-  }
+  if (win.isDestroyed()) return null;
   try {
     return SessionSchema.parse(
       await win.webContents.executeJavaScript(SESSION_EXPRESSION, true),
@@ -128,14 +126,10 @@ function pageIn(win: BrowserWindow, did: string): BookmarkPage {
       );
     try {
       const first = await run();
-      if (first?.status !== 400 && first?.status !== 401) {
-        return first;
-      }
+      if (first?.status !== 400 && first?.status !== 401) return first;
       /** An expired token answers 400 ExpiredToken; a reload lets the client renew it. */
       win.webContents.reload();
-      if (!(await waitForSession(win, did))) {
-        return first;
-      }
+      if (!(await waitForSession(win, did))) return first;
       return await run();
     } catch (error) {
       log.warn("[pond bluesky] bookmark page failed", error);
@@ -149,9 +143,7 @@ export async function harvestBlueskyBookmarks(
   did: string,
   partition: string | undefined,
 ): Promise<ListHarvestResult> {
-  if (!partition) {
-    return { ok: false, reason: "auth_required" };
-  }
+  if (!partition) return { ok: false, reason: "auth_required" };
   const lease = await leaseWindow("bluesky", { partition });
   try {
     if (!(await navigateWithTimeout(lease.win, `${WEB}/`, NAV_TIMEOUT_MS))) {
@@ -273,17 +265,13 @@ async function watchSignIn(
     await sleep(1000);
     const status = statusFor(account, await readSession(win));
     if (status.signedIn) {
-      if (!win.isDestroyed()) {
-        win.close();
-      }
+      if (!win.isDestroyed()) win.close();
       log.info("[pond bluesky] signed in for bookmarks", account.id);
       return { ok: true, handle: status.handle };
     }
     otherHandle = status.otherHandle;
   }
-  if (!win.isDestroyed()) {
-    win.close();
-  }
+  if (!win.isDestroyed()) win.close();
   return otherHandle
     ? { ok: false, reason: "other_account", otherHandle }
     : { ok: false, reason: "cancelled", otherHandle: null };

@@ -22,15 +22,9 @@ export function harvestShouldAdoptSave(
   connectedAccountIds: ReadonlySet<string>,
   adoptOrphaned = true,
 ): boolean {
-  if (!adoptOrphaned) {
-    return false;
-  }
-  if (!accountId || save.accountId === null) {
-    return false;
-  }
-  if (save.accountId === accountId) {
-    return false;
-  }
+  if (!adoptOrphaned) return false;
+  if (!accountId || save.accountId === null) return false;
+  if (save.accountId === accountId) return false;
   return !connectedAccountIds.has(save.accountId);
 }
 

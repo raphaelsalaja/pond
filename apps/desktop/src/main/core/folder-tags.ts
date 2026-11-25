@@ -18,9 +18,7 @@ export function inheritedFolderTags(
       }
       visited.add(current);
       const folder = byId.get(current);
-      if (!folder) {
-        throw new Error("A destination folder no longer exists.");
-      }
+      if (!folder) throw new Error("A destination folder no longer exists.");
       tags.push(...(rules[current]?.automaticTags ?? []));
       current = folder.parentId;
     }

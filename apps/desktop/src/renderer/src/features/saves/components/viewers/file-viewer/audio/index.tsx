@@ -42,9 +42,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
       .then((response) => response.arrayBuffer())
       .then((buffer) => context.decodeAudioData(buffer))
       .then((audio) => {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         const samples = audio.getChannelData(0);
         const peaks = downsamplePeaks(samples, 120);
         const canvas = canvasRef.current;
@@ -113,26 +111,20 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
           aria-valuetext={`${formatAudioTime(currentTime)} of ${formatAudioTime(duration)}`}
           onKeyDown={(event) => {
             const audio = audioRef.current;
-            if (!audio?.duration) {
-              return;
-            }
+            if (!audio?.duration) return;
             const next = waveformSeekTarget(
               event.key,
               audio.currentTime,
               audio.duration,
             );
-            if (next === null) {
-              return;
-            }
+            if (next === null) return;
             event.preventDefault();
             event.stopPropagation();
             audio.currentTime = next;
           }}
           onClick={(event) => {
             const audio = audioRef.current;
-            if (!audio?.duration) {
-              return;
-            }
+            if (!audio?.duration) return;
             const rect = event.currentTarget.getBoundingClientRect();
             audio.currentTime =
               ((event.clientX - rect.left) / rect.width) * audio.duration;
@@ -184,14 +176,9 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
               label={playing ? "Pause" : "Play"}
               onClick={() => {
                 const audio = audioRef.current;
-                if (!audio) {
-                  return;
-                }
-                if (audio.paused) {
-                  void audio.play();
-                } else {
-                  audio.pause();
-                }
+                if (!audio) return;
+                if (audio.paused) void audio.play();
+                else audio.pause();
               }}
             >
               {playing ? <IconMediaPause /> : <IconMediaPlay />}
@@ -215,9 +202,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
               onValueChange={(value) => {
                 const next = isValueList(value) ? (value[0] ?? 0) : value;
                 setCurrentTime(next);
-                if (audioRef.current) {
-                  audioRef.current.currentTime = next;
-                }
+                if (audioRef.current) audioRef.current.currentTime = next;
               }}
             >
               <Slider.Control>
@@ -230,9 +215,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
             <Select.Root
               value={speed}
               onValueChange={(value) => {
-                if (value === null) {
-                  return;
-                }
+                if (value === null) return;
                 setSpeed(value);
                 if (audioRef.current) {
                   audioRef.current.playbackRate = Number(value);
@@ -265,9 +248,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
                 const next = isValueList(value) ? (value[0] ?? 1) : value;
                 setVolume(next);
                 setMuted(false);
-                if (audioRef.current) {
-                  audioRef.current.volume = next;
-                }
+                if (audioRef.current) audioRef.current.volume = next;
               }}
             >
               <Slider.Control>
@@ -288,14 +269,9 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
               label="Full Screen"
               onClick={() => {
                 const root = rootRef.current;
-                if (!root) {
-                  return;
-                }
-                if (document.fullscreenElement) {
-                  void document.exitFullscreen();
-                } else {
-                  void root.requestFullscreen();
-                }
+                if (!root) return;
+                if (document.fullscreenElement) void document.exitFullscreen();
+                else void root.requestFullscreen();
               }}
             >
               <IconFullScreen />
@@ -337,9 +313,7 @@ function waveformSeekTarget(
 }
 
 function formatAudioTime(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) {
-    return "0:00";
-  }
+  if (!Number.isFinite(value) || value <= 0) return "0:00";
   const minutes = Math.floor(value / 60);
   const seconds = Math.floor(value % 60);
   return `${minutes}:${String(seconds).padStart(2, "0")}`;

@@ -26,9 +26,7 @@ function hexInput(): HTMLInputElement {
   const input = host.querySelector<HTMLInputElement>(
     '[aria-label="Background hex"]',
   );
-  if (!input) {
-    throw new Error("Missing background hex input");
-  }
+  if (!input) throw new Error("Missing background hex input");
   return input;
 }
 
@@ -36,17 +34,13 @@ function swatchStyle(): string {
   const swatch = host.querySelector<HTMLElement>(
     '[aria-label="Background picker"]',
   );
-  if (!swatch) {
-    throw new Error("Missing background swatch");
-  }
+  if (!swatch) throw new Error("Missing background swatch");
   return swatch.getAttribute("style") ?? "";
 }
 
 function appliedColor(): string {
   const node = host.querySelector("[data-applied]");
-  if (!node) {
-    throw new Error("Missing applied color");
-  }
+  if (!node) throw new Error("Missing applied color");
   return node.getAttribute("data-applied") ?? "";
 }
 

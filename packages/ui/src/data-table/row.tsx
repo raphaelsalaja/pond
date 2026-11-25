@@ -95,14 +95,10 @@ function RowImpl<T extends RowData>({
       api.focusRow(rowId);
     }
     if (e.metaKey || e.ctrlKey || e.shiftKey) {
-      if (api.selectionEnabled) {
-        api.toggleRow(rowId, e.shiftKey);
-      }
+      if (api.selectionEnabled) api.toggleRow(rowId, e.shiftKey);
       return;
     }
-    if (api.selectionEnabled && api.selectOnClick) {
-      api.selectRow(rowId);
-    }
+    if (api.selectionEnabled && api.selectOnClick) api.selectRow(rowId);
     api.onRowClick?.(data, e);
   };
 

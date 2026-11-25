@@ -81,9 +81,7 @@ ipcRenderer.on(IPC.menuOpenSave, (_: IpcRendererEvent, id: string) =>
 const agentFilter = createNavigationMailbox<Query>();
 ipcRenderer.on(IPC.agentFilter, (_: IpcRendererEvent, query: WireJson) => {
   const parsed = FilterQuery.safeParse(query);
-  if (parsed.success) {
-    agentFilter.receive(parsed.data);
-  }
+  if (parsed.success) agentFilter.receive(parsed.data);
 });
 
 const query: QueryClient = (name, ...args) =>
@@ -155,9 +153,7 @@ const api = {
   },
 
   libraryId(): string {
-    if (cachedLibraryId) {
-      return cachedLibraryId;
-    }
+    if (cachedLibraryId) return cachedLibraryId;
     try {
       const value: unknown = ipcRenderer.sendSync(IPC.libraryId);
       cachedLibraryId = isString(value) && value.length > 0 ? value : "unbound";
@@ -548,9 +544,7 @@ const api = {
     const { port1, port2 } = new MessageChannel();
     let closed = false;
     const close = () => {
-      if (closed) {
-        return;
-      }
+      if (closed) return;
       closed = true;
       port1.onmessage = null;
       port1.onmessageerror = null;
@@ -568,9 +562,7 @@ const api = {
       }
     };
     port1.addEventListener("close", () => {
-      if (closed) {
-        return;
-      }
+      if (closed) return;
       close();
       receive({ type: "end" });
     });
@@ -618,9 +610,7 @@ const api = {
 
 function readShellHint(): ShellHint {
   const arg = process.argv.find((a) => a.startsWith(SHELL_HINT_ARG));
-  if (!arg) {
-    return {};
-  }
+  if (!arg) return {};
   try {
     const parsed = ShellHintSchema.safeParse(
       JSON.parse(arg.slice(SHELL_HINT_ARG.length)),

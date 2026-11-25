@@ -31,13 +31,9 @@ function isAppGroupModule(value: unknown): value is AppGroupModule {
 function loadAppGroupModule(
   resources: string | undefined,
 ): AppGroupModule | null {
-  if (!resources) {
-    return null;
-  }
+  if (!resources) return null;
   const path = join(resources, "app-group.node");
-  if (!existsSync(path)) {
-    return null;
-  }
+  if (!existsSync(path)) return null;
   try {
     const loaded: unknown = requireNative(path);
     if (!isAppGroupModule(loaded)) {

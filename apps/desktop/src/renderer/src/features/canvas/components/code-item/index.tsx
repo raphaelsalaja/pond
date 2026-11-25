@@ -25,9 +25,7 @@ export function CodeItem({
   const lines = useHighlight(data.text, data.language, !editing);
 
   useEffect(() => {
-    if (editing) {
-      field.current?.focus();
-    }
+    if (editing) field.current?.focus();
   }, [editing]);
 
   return (
@@ -68,9 +66,7 @@ export function CodeItem({
                 event.currentTarget.blur();
                 return;
               }
-              if (event.key !== "Tab") {
-                return;
-              }
+              if (event.key !== "Tab") return;
               event.preventDefault();
               const element = event.currentTarget;
               element.setRangeText(

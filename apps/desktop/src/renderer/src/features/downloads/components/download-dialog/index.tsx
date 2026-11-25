@@ -123,9 +123,7 @@ export function DownloadDialogHost() {
     <Dialog.Root
       open={open}
       onOpenChange={(next) => {
-        if (!next) {
-          downloadDialog.close();
-        }
+        if (!next) downloadDialog.close();
       }}
     >
       <Dialog.Portal>
@@ -190,13 +188,9 @@ export function DownloadFlow({
   /** One read per link, so retyping a link or going back to it reuses the result. */
   const probeOnce = (url: string) => {
     const known = reads.current.get(url);
-    if (known) {
-      return known;
-    }
+    if (known) return known;
     const next = probe(url).then((result) => {
-      if (!result.ok) {
-        reads.current.delete(url);
-      }
+      if (!result.ok) reads.current.delete(url);
       return result;
     });
     reads.current.set(url, next);
@@ -219,9 +213,7 @@ export function DownloadFlow({
     const work = async () => {
       for (let url = queue.shift(); url; url = queue.shift()) {
         const result = await probeOnce(url);
-        if (attempt.current !== id) {
-          return;
-        }
+        if (attempt.current !== id) return;
         setRows((current) =>
           current.flatMap((row): Array<ListRow> => {
             if (row.url !== url) {
@@ -301,9 +293,7 @@ export function DownloadFlow({
     setBusy(true);
     setError(null);
     const result = await probeOnce(urls[0] ?? "");
-    if (attempt.current !== id) {
-      return;
-    }
+    if (attempt.current !== id) return;
     setBusy(false);
     if (!result.ok) {
       readKey.current = "";
@@ -348,13 +338,9 @@ export function DownloadFlow({
     setError(null);
     clearTimeout(typing.current);
     const urls = extractLinks(value);
-    if (urls.join(" ") === readKey.current) {
-      return;
-    }
+    if (urls.join(" ") === readKey.current) return;
     if (urls.length === 0) {
-      if (value.trim() !== "") {
-        return;
-      }
+      if (value.trim() !== "") return;
       attempt.current += 1;
       readKey.current = "";
       setBusy(false);
@@ -392,9 +378,7 @@ export function DownloadFlow({
       .query("downloader.clipboardLinks", {})
       .then(({ urls }) => {
         const [url] = urls;
-        if (urls.length !== 1 || !url || readKey.current !== "") {
-          return;
-        }
+        if (urls.length !== 1 || !url || readKey.current !== "") return;
         setInput(url);
         void read([url]);
       })
@@ -408,9 +392,7 @@ export function DownloadFlow({
 
   const start = () => {
     const picked = rows.filter((row) => row.selected && row.state === "ready");
-    if (picked.length === 0) {
-      return;
-    }
+    if (picked.length === 0) return;
     downloadDialog.close();
     void startLinks({
       media: picked.filter((row) => row.kind === "media").map((row) => row.url),

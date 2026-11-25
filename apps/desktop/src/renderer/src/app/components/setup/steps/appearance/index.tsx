@@ -36,9 +36,7 @@ export function ThemeOptions({ choices, update }: StepProps) {
             value={[choices.appearance]}
             onValueChange={(value) => {
               const next = MODES.find((item) => item.value === value[0]);
-              if (next) {
-                update({ appearance: next.value });
-              }
+              if (next) update({ appearance: next.value });
             }}
           >
             {MODES.map(({ value, label }) => (
@@ -69,9 +67,7 @@ export function ThemeOptions({ choices, update }: StepProps) {
             disabled={choices.appearance === "dark"}
             onChange={(lightPreset) => {
               const preset = getPreset(lightPreset);
-              if (preset) {
-                update({ lightPreset, lightTheme: preset.def });
-              }
+              if (preset) update({ lightPreset, lightTheme: preset.def });
             }}
           />
         </Settings.ItemControl>
@@ -96,9 +92,7 @@ export function ThemeOptions({ choices, update }: StepProps) {
             disabled={choices.appearance === "light"}
             onChange={(darkPreset) => {
               const preset = getPreset(darkPreset);
-              if (preset) {
-                update({ darkPreset, darkTheme: preset.def });
-              }
+              if (preset) update({ darkPreset, darkTheme: preset.def });
             }}
           />
         </Settings.ItemControl>

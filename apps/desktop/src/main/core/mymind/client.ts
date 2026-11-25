@@ -73,22 +73,14 @@ function retryTime(headers: Headers, now: number): number | undefined {
   for (const policy of (headers.get("ratelimit") ?? "").split(",")) {
     const remaining = /(?:^|;)\s*r\s*=\s*(\d+)/i.exec(policy)?.[1];
     const reset = /(?:^|;)\s*t\s*=\s*(\d+)/i.exec(policy)?.[1];
-    if (remaining === "0" && reset) {
-      seconds = Math.max(seconds, Number(reset));
-    }
+    if (remaining === "0" && reset) seconds = Math.max(seconds, Number(reset));
   }
-  if (seconds > 0) {
-    return now + seconds * 1000;
-  }
+  if (seconds > 0) return now + seconds * 1000;
 
   const retryAfter = headers.get("retry-after");
-  if (!retryAfter) {
-    return undefined;
-  }
+  if (!retryAfter) return undefined;
   const delay = Number(retryAfter);
-  if (Number.isFinite(delay) && delay > 0) {
-    return now + delay * 1000;
-  }
+  if (Number.isFinite(delay) && delay > 0) return now + delay * 1000;
   const date = Date.parse(retryAfter);
   return date > now ? date : undefined;
 }
@@ -136,19 +128,13 @@ async function* readObjects(
         signal?.throwIfAborted();
         const line = pending.slice(0, newline).trim();
         pending = pending.slice(newline + 1);
-        if (line) {
-          yield parseObject(line);
-        }
+        if (line) yield parseObject(line);
         newline = pending.indexOf("\n");
       }
-      if (result.done) {
-        break;
-      }
+      if (result.done) break;
     }
     signal?.throwIfAborted();
-    if (pending.trim()) {
-      yield parseObject(pending);
-    }
+    if (pending.trim()) yield parseObject(pending);
   } finally {
     signal?.removeEventListener("abort", cancel);
     await reader.cancel().catch(() => {});

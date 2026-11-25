@@ -198,15 +198,9 @@ export function menuLabelText(value: ReactNode): string | null {
 }
 
 function specKey(spec: MenuItemSpec, index: number): string | number {
-  if ("id" in spec && spec.id) {
-    return spec.id;
-  }
-  if (spec.type === "separator") {
-    return `sep-${index}`;
-  }
-  if (!("label" in spec)) {
-    return index;
-  }
+  if ("id" in spec && spec.id) return spec.id;
+  if (spec.type === "separator") return `sep-${index}`;
+  if (!("label" in spec)) return index;
 
   const label = menuLabelText(spec.label);
   if (label === null) {
@@ -232,9 +226,7 @@ function filterLabel(
     | MenuLinkItem
     | MenuSubmenuItem,
 ): string | undefined {
-  if (!spec.keywords) {
-    return undefined;
-  }
+  if (!spec.keywords) return undefined;
   const label = menuLabelText(spec.label);
   return label === null ? undefined : `${label} ${spec.keywords}`;
 }

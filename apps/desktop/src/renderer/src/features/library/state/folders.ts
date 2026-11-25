@@ -23,9 +23,7 @@ export const folders = {
   },
   forSave(saveId: string): Array<Folder> {
     const ids = store.state.bySave[saveId] ?? [];
-    if (ids.length === 0) {
-      return [];
-    }
+    if (ids.length === 0) return [];
     const byId = new Map(
       store.state.folders.map((folder) => [folder.id, folder]),
     );

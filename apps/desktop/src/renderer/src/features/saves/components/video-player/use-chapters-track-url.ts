@@ -17,9 +17,7 @@ export function useChaptersTrackUrl(
     // oxlint-disable-next-line react/set-state-in-effect -- the blob URL is created and revoked by this effect so StrictMode remounts never reuse a revoked URL
     setTrack({ chapters, url: next });
     return () => {
-      if (next) {
-        URL.revokeObjectURL(next);
-      }
+      if (next) URL.revokeObjectURL(next);
     };
   }, [chapters]);
   return track && track.chapters === chapters ? track.url : null;

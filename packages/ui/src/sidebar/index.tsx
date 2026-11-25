@@ -315,9 +315,7 @@ function CollapsibleGroupContent({
   const contentId = props.id ?? id;
   useLayoutEffect(() => {
     const content = document.getElementById(contentId);
-    if (open || !content?.contains(document.activeElement)) {
-      return;
-    }
+    if (open || !content?.contains(document.activeElement)) return;
     const parent = content.parentElement;
     const controller = parent?.querySelector<HTMLElement>(
       '[role="treeitem"], button[aria-expanded]',

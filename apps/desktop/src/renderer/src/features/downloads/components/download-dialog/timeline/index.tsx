@@ -26,9 +26,7 @@ function rulerTimes(duration: number, most: number) {
 /** Evenly spaced pictures for the track, from the storyboard or the pulled frames. */
 function stripCells(clip: Clip) {
   const { storyboard } = clip.probe;
-  if (!storyboard && clip.frames.length < 2) {
-    return [];
-  }
+  if (!storyboard && clip.frames.length < 2) return [];
   return Array.from({ length: STRIP_CELLS }, (_, index) => {
     const time = ((index + 0.5) / STRIP_CELLS) * clip.duration;
     return {
@@ -80,9 +78,7 @@ export function Timeline({
 
   const timeAt = (clientX: number) => {
     const box = ruler.current?.getBoundingClientRect();
-    if (!box || box.width === 0) {
-      return 0;
-    }
+    if (!box || box.width === 0) return 0;
     return Math.min(
       duration,
       Math.max(0, ((clientX - box.left) / box.width) * duration),
@@ -97,9 +93,7 @@ export function Timeline({
       player.seek(timeAt(event.clientX));
     },
     onPointerMove: (event: PointerEvent<HTMLElement>) => {
-      if (scrubbing.current) {
-        player.seek(timeAt(event.clientX));
-      }
+      if (scrubbing.current) player.seek(timeAt(event.clientX));
     },
     onPointerUp: () => {
       scrubbing.current = false;

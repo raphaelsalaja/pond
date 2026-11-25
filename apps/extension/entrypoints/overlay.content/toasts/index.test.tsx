@@ -31,9 +31,7 @@ function rule(selector: string) {
 }
 
 function className(value: string | undefined, name: string) {
-  if (value === undefined) {
-    throw new Error(`Missing ${name} class`);
-  }
+  if (value === undefined) throw new Error(`Missing ${name} class`);
   return value;
 }
 
@@ -58,9 +56,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  for (const style of applied) {
-    style.remove();
-  }
+  for (const style of applied) style.remove();
   applied.length = 0;
 });
 

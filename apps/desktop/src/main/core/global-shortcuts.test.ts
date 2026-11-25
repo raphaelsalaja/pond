@@ -15,9 +15,7 @@ function fixture() {
   const controller = new GlobalShortcutController(
     {
       register(key, callback) {
-        if (blocked.has(key) || callbacks.has(key)) {
-          return false;
-        }
+        if (blocked.has(key) || callbacks.has(key)) return false;
         callbacks.set(key, callback);
         return true;
       },
@@ -107,9 +105,7 @@ describe("global shortcut registration", () => {
     const controller = new GlobalShortcutController(
       {
         register(key, callback) {
-          if (key.endsWith("+L")) {
-            return false;
-          }
+          if (key.endsWith("+L")) return false;
           callbacks.set(key, callback);
           return true;
         },

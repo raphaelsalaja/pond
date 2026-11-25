@@ -47,9 +47,7 @@ export async function resolveAccountHandle(
 ): Promise<string | null> {
   const { source } = account;
   const cached = normalizeHandle(account.handle);
-  if (cached && isCachedHandleValid(source, cached)) {
-    return cached;
-  }
+  if (cached && isCachedHandleValid(source, cached)) return cached;
   if (cached) {
     log.info(
       `[pond sync:${source}] ignoring invalid cached handle "${cached}"; re-resolving`,
@@ -78,20 +76,14 @@ export async function resolveAccountHandle(
 export async function ensureAccountHandle(
   account: ConnectedAccount,
 ): Promise<void> {
-  if (normalizeHandle(account.handle)) {
-    return;
-  }
-  if (!extractorFor(account.source)?.probeExpression) {
-    return;
-  }
+  if (normalizeHandle(account.handle)) return;
+  if (!extractorFor(account.source)?.probeExpression) return;
   try {
     const probed = await probeUserHandle(
       account.source,
       partitionForAccount(account.id),
     );
-    if (!probed) {
-      return;
-    }
+    if (!probed) return;
     log.info(`[pond sync:${account.source}] probed handle`, probed);
     await persistAccountHandle(account, probed);
   } catch (error) {

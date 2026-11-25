@@ -98,16 +98,10 @@ export class TikTokVideoExtractor implements Extractor {
 
   handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
-    if (!first) {
-      return null;
-    }
+    if (!first) return null;
     const handle = first.startsWith("@") ? first.slice(1) : first;
-    if (TIKTOK_RESERVED_ROOTS.has(handle.toLowerCase())) {
-      return null;
-    }
-    if (!/^[A-Za-z0-9._]{2,24}$/.test(handle)) {
-      return null;
-    }
+    if (TIKTOK_RESERVED_ROOTS.has(handle.toLowerCase())) return null;
+    if (!/^[A-Za-z0-9._]{2,24}$/.test(handle)) return null;
     return handle;
   }
 
@@ -134,9 +128,7 @@ export class TikTokVideoExtractor implements Extractor {
     const canonical = input.url.href;
     const match = firstMatch(input.url, this.validUrl);
     const tiktokId = match?.[1] ?? canonical;
-    if (!tiktokId) {
-      throw new TerminalError("could not parse tiktok id");
-    }
+    if (!tiktokId) throw new TerminalError("could not parse tiktok id");
     return captureFromSource({
       url: canonical,
       source: "tiktok",

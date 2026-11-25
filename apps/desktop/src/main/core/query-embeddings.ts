@@ -135,9 +135,7 @@ export function cosineSimilarity(
   left: ArrayLike<number>,
   right: ArrayLike<number>,
 ): number | null {
-  if (!left.length || left.length !== right.length) {
-    return null;
-  }
+  if (!left.length || left.length !== right.length) return null;
   let dot = 0;
   let leftMagnitude = 0;
   let rightMagnitude = 0;
@@ -148,9 +146,7 @@ export function cosineSimilarity(
     leftMagnitude += a * a;
     rightMagnitude += b * b;
   }
-  if (!leftMagnitude || !rightMagnitude) {
-    return null;
-  }
+  if (!leftMagnitude || !rightMagnitude) return null;
   return dot / Math.sqrt(leftMagnitude * rightMagnitude);
 }
 
@@ -199,14 +195,10 @@ export async function encodeQueryEmbeddings(
   task: EmbeddingQueryTask = "search",
 ): Promise<QueryEmbeddings> {
   const trimmed = query.trim();
-  if (!trimmed) {
-    return {};
-  }
+  if (!trimmed) return {};
   const resolvedPrefs = prefs ?? (await getPrefs());
   const channels = queryEmbeddingChannels(media, resolvedPrefs.ai);
-  if (!channels.text && !channels.media) {
-    return {};
-  }
+  if (!channels.text && !channels.media) return {};
 
   const vector = await embeddingText.use(async ({ model, tokenizer }) => {
     const inputs = tokenizeEmbeddingTexts(

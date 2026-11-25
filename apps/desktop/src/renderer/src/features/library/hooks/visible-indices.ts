@@ -16,11 +16,8 @@ function lowerBoundMonotonic<T extends PositionedItem>(
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
     const item = items[mid];
-    if (!item || item.top + item.height < viewMin) {
-      lo = mid + 1;
-    } else {
-      hi = mid;
-    }
+    if (!item || item.top + item.height < viewMin) lo = mid + 1;
+    else hi = mid;
   }
   return lo;
 }
@@ -34,11 +31,8 @@ function upperBoundMonotonic<T extends PositionedItem>(
   while (lo < hi) {
     const mid = (lo + hi) >> 1;
     const item = items[mid];
-    if (!item || item.top <= viewMax) {
-      lo = mid + 1;
-    } else {
-      hi = mid;
-    }
+    if (!item || item.top <= viewMax) lo = mid + 1;
+    else hi = mid;
   }
   return lo;
 }
@@ -65,15 +59,9 @@ function computeVisibleScan<T extends PositionedItem>(
   const out: Array<number> = [];
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    if (!item) {
-      continue;
-    }
-    if (item.top + item.height < viewMin) {
-      continue;
-    }
-    if (item.top > viewMax) {
-      continue;
-    }
+    if (!item) continue;
+    if (item.top + item.height < viewMin) continue;
+    if (item.top > viewMax) continue;
     out.push(i);
   }
   return out;

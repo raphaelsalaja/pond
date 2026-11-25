@@ -17,9 +17,7 @@ export default async function Command(
   const typed = props.arguments.url?.trim();
   await saveWithToast(
     async () => {
-      if (typed) {
-        return parseWebUrl(typed) ?? typed;
-      }
+      if (typed) return parseWebUrl(typed) ?? typed;
       return (await findUrl())?.url ?? null;
     },
     { tags: parseTags(props.arguments.tags), folderId: props.launchContext?.folderId },

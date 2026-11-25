@@ -11,17 +11,12 @@ export function webTypeKey(save: {
 export function majorityMediaType(
   kinds: ReadonlyArray<"image" | "video">,
 ): "image" | "video" | null {
-  if (kinds.length === 0) {
-    return null;
-  }
+  if (kinds.length === 0) return null;
   let videos = 0;
   let images = 0;
   for (const kind of kinds) {
-    if (kind === "video") {
-      videos += 1;
-    } else {
-      images += 1;
-    }
+    if (kind === "video") videos += 1;
+    else images += 1;
   }
   return videos > images ? "video" : "image";
 }

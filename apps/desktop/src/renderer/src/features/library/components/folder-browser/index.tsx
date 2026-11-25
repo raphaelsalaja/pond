@@ -81,9 +81,7 @@ function FolderCard({
     previewFour,
   ]
     .flatMap((save) => {
-      if (!save) {
-        return [];
-      }
+      if (!save) return [];
       const src = folderCoverUrl(save, 360, theme);
       return src ? [{ id: save.id, src }] : [];
     })
@@ -273,9 +271,7 @@ export function FolderBrowser({
     const load = async () => {
       try {
         const next = await window.pond.query("folders.summaries", { parentId });
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         setSummaries(next);
         const summaryById = new Map(
           next.map((summary) => [summary.id, summary]),

@@ -18,9 +18,7 @@ export function registerTrashCron() {
     fn: async () => {
       const prefs = await getPrefs();
       const days = prefs.trash.autoEmptyDays;
-      if (days === null) {
-        return;
-      }
+      if (days === null) return;
       const purged = await emptyTrashOlderThan(days);
       if (purged > 0) {
         log.info(
@@ -74,9 +72,7 @@ export function registerSyncCron() {
     every: 60_000,
     initialDelay: 60_000,
     fn: async () => {
-      if (running) {
-        return;
-      }
+      if (running) return;
       running = true;
       try {
         const prefs = await getPrefs();
@@ -90,9 +86,7 @@ export function registerSyncCron() {
           calendarSince = Date.now();
         }
         calendarRule = rule;
-        if (!cron.enabled) {
-          return;
-        }
+        if (!cron.enabled) return;
         if (isSyncBlockedByStorageGuard()) {
           log.info("[pond sync-cron] storage guard active, skipping");
           return;
@@ -115,12 +109,8 @@ export function registerSyncCron() {
             });
           }
           const latest = (await getPrefs()).sync.cron;
-          if (JSON.stringify(latest) !== JSON.stringify(cron)) {
-            return;
-          }
-          if (!net.isOnline() || isSyncBlockedByStorageGuard()) {
-            return;
-          }
+          if (JSON.stringify(latest) !== JSON.stringify(cron)) return;
+          if (!net.isOnline() || isSyncBlockedByStorageGuard()) return;
           lastSyncCronRunAt = Date.now();
           log.info("[pond sync-cron] starting background sync", {
             intervalHours: cron.intervalHours,

@@ -28,11 +28,8 @@ export function useSaveSelection(
     toggle: (id, checked) =>
       setSelected((current) => {
         const next = new Set(current);
-        if (checked) {
-          next.add(id);
-        } else {
-          next.delete(id);
-        }
+        if (checked) next.add(id);
+        else next.delete(id);
         return next;
       }),
     setAll: (checked) =>

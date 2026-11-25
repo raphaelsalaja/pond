@@ -29,9 +29,7 @@ export function DrawLayer({
   const [preview, setPreview] = useState<string | null>(null);
 
   const push = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (client.current.length >= MAX_POINTS) {
-      return;
-    }
+    if (client.current.length >= MAX_POINTS) return;
     const bounds = event.currentTarget.getBoundingClientRect();
     const pressure = event.pointerType === "pen" ? event.pressure : 0.5;
     screen.current.push([
@@ -54,9 +52,7 @@ export function DrawLayer({
     screen.current = [];
     client.current = [];
     setPreview(null);
-    if (!points.length) {
-      return;
-    }
+    if (!points.length) return;
     if (mode === "erase") {
       onErase(points);
       return;
@@ -70,18 +66,14 @@ export function DrawLayer({
       className={styles.layer}
       data-erase={mode === "erase" || undefined}
       onPointerDown={(event) => {
-        if (event.button !== 0) {
-          return;
-        }
+        if (event.button !== 0) return;
         event.currentTarget.setPointerCapture(event.pointerId);
         screen.current = [];
         client.current = [];
         push(event);
       }}
       onPointerMove={(event) => {
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-          push(event);
-        }
+        if (event.currentTarget.hasPointerCapture(event.pointerId)) push(event);
       }}
       onPointerUp={finish}
       onPointerCancel={finish}

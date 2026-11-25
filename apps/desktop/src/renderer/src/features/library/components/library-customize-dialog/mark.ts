@@ -15,23 +15,15 @@ export const PREVIEW_GLYPH = 60;
 export const PREVIEW_EMOJI = 52;
 
 export function markKey(mark: LibraryMark): string {
-  if (mark.kind === "image") {
-    return `image:${mark.src ?? "default"}`;
-  }
-  if (mark.kind === "pond") {
-    return `pond:${mark.tint}`;
-  }
-  if (mark.kind === "emoji") {
-    return `emoji:${mark.emoji}`;
-  }
+  if (mark.kind === "image") return `image:${mark.src ?? "default"}`;
+  if (mark.kind === "pond") return `pond:${mark.tint}`;
+  if (mark.kind === "emoji") return `emoji:${mark.emoji}`;
   return `icon:${mark.icon}`;
 }
 
 /** The default tint is what a Library without a stored logo already shows. */
 export function isDefaultMark(mark: LibraryMark): boolean {
-  if (mark.kind === "image") {
-    return mark.src === null;
-  }
+  if (mark.kind === "image") return mark.src === null;
   return mark.kind === "pond" && mark.tint === DEFAULT_APP_ICON;
 }
 
@@ -40,32 +32,22 @@ export async function markToLogo(
   mark: LibraryMark,
   tile: HTMLElement | null,
 ): Promise<string | null> {
-  if (isDefaultMark(mark)) {
-    return null;
-  }
-  if (mark.kind === "image") {
-    return mark.src;
-  }
+  if (isDefaultMark(mark)) return null;
+  if (mark.kind === "image") return mark.src;
   if (mark.kind === "pond") {
     const result = await window.pond.query("library.identity.pondLogo", {
       tint: mark.tint,
     });
-    if (!result.ok) {
-      throw new Error("Couldn't load the Pond logo. Try again.");
-    }
+    if (!result.ok) throw new Error("Couldn't load the Pond logo. Try again.");
     return result.icon;
   }
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
   canvas.height = SIZE;
   const context = canvas.getContext("2d");
-  if (!context) {
-    throw new Error("Canvas is unavailable.");
-  }
+  if (!context) throw new Error("Canvas is unavailable.");
   const preview = tile?.querySelector(`[data-mark="${markKey(mark)}"]`);
-  if (!tile || !preview) {
-    throw new Error("Logo preview is missing.");
-  }
+  if (!tile || !preview) throw new Error("Logo preview is missing.");
 
   context.fillStyle = resolveColor(tile, "--tile-color");
   context.fillRect(0, 0, SIZE, SIZE);
@@ -85,9 +67,7 @@ export async function markToLogo(
   }
 
   const glyph = preview.querySelector("svg");
-  if (!glyph) {
-    throw new Error("Logo preview is missing.");
-  }
+  if (!glyph) throw new Error("Logo preview is missing.");
   const extent = PREVIEW_GLYPH * scale;
   const image = await svgImage(
     glyph,

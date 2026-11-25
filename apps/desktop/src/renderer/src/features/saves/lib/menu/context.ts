@@ -34,13 +34,9 @@ export function contextMenuSaves(clicked: Save): Array<Save> {
     const out: Array<Save> = [];
     for (const id of selection.snapshot()) {
       const save = pool.get(id);
-      if (save) {
-        out.push(save);
-      }
+      if (save) out.push(save);
     }
-    if (out.length > 1) {
-      return out;
-    }
+    if (out.length > 1) return out;
   }
   return [clicked];
 }
@@ -62,9 +58,7 @@ export function createSaveMenuContext(
     ? saveOrSaves
     : [saveOrSaves];
   const save = saves[0];
-  if (!save) {
-    return null;
-  }
+  if (!save) return null;
   const ids =
     selection.has(save.id) && selection.size() > saves.length
       ? [...selection.snapshot()]

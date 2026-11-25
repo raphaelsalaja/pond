@@ -17,9 +17,7 @@ export function resolveLogFile(
       /** Opening a directory can succeed on Windows, so the descriptor must be checked for a file. */
       const descriptor = openSync(file, "a");
       try {
-        if (!fstatSync(descriptor).isFile()) {
-          continue;
-        }
+        if (!fstatSync(descriptor).isFile()) continue;
       } finally {
         closeSync(descriptor);
       }

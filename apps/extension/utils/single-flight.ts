@@ -11,9 +11,7 @@ export function createSingleFlightTrigger(
     while (true) {
       forcedReplayPending = false;
       await run(force);
-      if (!forcedReplayPending) {
-        return;
-      }
+      if (!forcedReplayPending) return;
       force = true;
     }
   };

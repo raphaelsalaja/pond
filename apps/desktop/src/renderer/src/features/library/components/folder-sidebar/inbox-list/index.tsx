@@ -198,11 +198,8 @@ function runs(items: ReadonlyArray<InboxItem>): Array<Run> {
   for (const item of items) {
     const section = item.type === "progress" ? null : (item.section ?? null);
     const last = out.at(-1);
-    if (last && last.section === section) {
-      last.items.push(item);
-    } else {
-      out.push({ section, items: [item] });
-    }
+    if (last && last.section === section) last.items.push(item);
+    else out.push({ section, items: [item] });
   }
   return out;
 }
@@ -221,9 +218,7 @@ export function InboxList() {
         buildBackgroundItems={() => []}
         onOpenSave={(save) => {
           const index = queue?.ids.indexOf(save.id) ?? -1;
-          if (index >= 0) {
-            inboxReview.jump(index);
-          }
+          if (index >= 0) inboxReview.jump(index);
         }}
       >
         <div>

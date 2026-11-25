@@ -75,9 +75,7 @@ export const savesImportTransferQueries = {
         properties: ["openDirectory", "openFile"],
       });
       const target = picked.filePaths[0];
-      if (picked.canceled || !target) {
-        return { ok: false, reason: "cancelled" };
-      }
+      if (picked.canceled || !target) return { ok: false, reason: "cancelled" };
       try {
         return {
           ok: true,
@@ -158,9 +156,7 @@ export const savesImportTransferQueries = {
     }),
     async (params) => {
       const paths = params.paths.filter(Boolean);
-      if (paths.length === 0) {
-        return { ok: false, error: "no_files" };
-      }
+      if (paths.length === 0) return { ok: false, error: "no_files" };
       const candidates =
         params.duplicatePolicy === "use-existing" ||
         Object.values(params.duplicateDecisions).some(

@@ -19,9 +19,7 @@ let unsubscribePrefs: (() => void) | undefined;
 
 export function setMenuRecents(entries: Array<RecentMenuEntry>): void {
   recentEntries = entries.slice(0, RECENTS_MENU_CAP);
-  if (activeDeps) {
-    buildAndSetMenu(activeDeps);
-  }
+  if (activeDeps) buildAndSetMenu(activeDeps);
 }
 
 export function installAppMenu(deps: AppMenuDeps): void {
@@ -30,13 +28,9 @@ export function installAppMenu(deps: AppMenuDeps): void {
   unsubscribePrefs?.();
   let menuKey = JSON.stringify(deps.shortcuts);
   unsubscribePrefs = subscribePrefs((prefs) => {
-    if (!activeDeps) {
-      return;
-    }
+    if (!activeDeps) return;
     const nextKey = JSON.stringify(prefs.shortcuts);
-    if (nextKey === menuKey) {
-      return;
-    }
+    if (nextKey === menuKey) return;
     menuKey = nextKey;
     activeDeps = {
       ...activeDeps,

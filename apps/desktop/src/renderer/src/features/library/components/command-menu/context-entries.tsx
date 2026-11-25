@@ -165,9 +165,7 @@ export function useContextEntries(
   return useMemo(() => {
     const entries = saveEntries(saves, opened, searching);
     entries.push(...pageEntries);
-    if (!onCollection || !nav) {
-      return entries;
-    }
+    if (!onCollection || !nav) return entries;
     if (nav.kind === "folder") {
       const folder = folderRows.find((row) => row.id === nav.id);
       if (folder) {

@@ -23,9 +23,7 @@ export const textEmbeddingEnricher: Enricher = {
   },
   async run(save: Save) {
     const text = saveEmbeddingText(save);
-    if (!save.title?.trim() && !text) {
-      return null;
-    }
+    if (!save.title?.trim() && !text) return null;
     const vec = await embedDocument(save.title, text);
     const model = embedModelVersion();
     setEmbedding(save.id, vec, model);

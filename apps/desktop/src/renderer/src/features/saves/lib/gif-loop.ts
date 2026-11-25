@@ -9,9 +9,7 @@ export function clampGifFrame(
   count: number,
   loop: [number, number] | null,
 ): number {
-  if (count <= 0) {
-    return 0;
-  }
+  if (count <= 0) return 0;
   const [rawStart, rawEnd] = loop ?? [0, count - 1];
   const start = Math.max(0, Math.min(rawStart, count - 1));
   const end = Math.max(start, Math.min(rawEnd, count - 1));
@@ -23,9 +21,7 @@ export function nextGifFrame(
   count: number,
   loop: [number, number] | null,
 ): number {
-  if (count <= 0) {
-    return 0;
-  }
+  if (count <= 0) return 0;
   const current = clampGifFrame(index, count, loop);
   const [rawStart, rawEnd] = loop ?? [0, count - 1];
   const start = Math.max(0, Math.min(rawStart, count - 1));

@@ -108,9 +108,7 @@ describe("Hamming index", () => {
       hashes.push(base ^ (1n << BigInt(flip * 5)) ^ (1n << BigInt(flip)));
     }
     const lookup = new HammingIndex<number>();
-    for (const [index, hash] of hashes.entries()) {
-      lookup.add(hash, index);
-    }
+    for (const [index, hash] of hashes.entries()) lookup.add(hash, index);
     for (const radius of [0, 2, 6, 10]) {
       for (const query of [base, hashes[500] ?? 0n, randomHash(next)]) {
         const expected = hashes

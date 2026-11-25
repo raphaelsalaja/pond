@@ -34,9 +34,7 @@ export function buildViewerItems(
   let videoIndex = 0;
 
   const originals = save.files.flatMap((file, fileIndex) => {
-    if (isAuxiliaryKind(file.kind) || isPostRenderKind(file.kind)) {
-      return [];
-    }
+    if (isAuxiliaryKind(file.kind) || isPostRenderKind(file.kind)) return [];
 
     const capability = viewerCapabilityFor(file);
     const item: ViewerItem = {
@@ -49,9 +47,7 @@ export function buildViewerItems(
     if (capability.surface === "temporal") {
       const poster = posters[videoIndex] ?? posters[0];
       videoIndex += 1;
-      if (poster) {
-        item.posterUrl = buildPondUrl(save.id, poster);
-      }
+      if (poster) item.posterUrl = buildPondUrl(save.id, poster);
     }
 
     return [item];
@@ -73,9 +69,7 @@ export function buildViewerItems(
     ];
   }
 
-  if (originals.length > 0) {
-    return originals;
-  }
+  if (originals.length > 0) return originals;
 
   const dark = options.theme === "dark";
   const preferredRenderKind = dark
@@ -92,9 +86,7 @@ export function buildViewerItems(
     save.files.find((file) => file.kind === preferredThumbnailKind) ??
     save.files.find((file) => isThumbnailKind(file.kind)) ??
     posters[0];
-  if (!presentable) {
-    return [];
-  }
+  if (!presentable) return [];
 
   const fileIndex = save.files.indexOf(presentable);
   return [

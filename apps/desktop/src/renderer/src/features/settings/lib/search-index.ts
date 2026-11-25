@@ -35,9 +35,7 @@ function asText(node: ReactNode): string | undefined {
 function isStaticallyHidden(
   visible: ((values: SettingsValues) => boolean) | undefined,
 ): boolean {
-  if (!visible) {
-    return false;
-  }
+  if (!visible) return false;
   let readsValues = false;
   /** SAFETY: the probe only answers property reads, and every read marks the predicate as value-dependent. */
   const probe = new Proxy(
@@ -58,9 +56,7 @@ function isStaticallyHidden(
 }
 
 function itemTitle(item: Item): string | undefined {
-  if (item.control === "custom") {
-    return asText(item.title);
-  }
+  if (item.control === "custom") return asText(item.title);
   return item.title;
 }
 
@@ -82,13 +78,9 @@ function itemEntries(
     return entries;
   }
   for (const item of group.items ?? []) {
-    if (isStaticallyHidden(item.visible)) {
-      continue;
-    }
+    if (isStaticallyHidden(item.visible)) continue;
     const title = itemTitle(item);
-    if (!title) {
-      continue;
-    }
+    if (!title) continue;
     const description = itemDescription(item);
     entries.push({
       id: `${section.id}:${item.key}`,

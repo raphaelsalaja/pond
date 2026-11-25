@@ -86,9 +86,7 @@ export function FileRingOverlay() {
   useEffect(() => {
     let live = true;
     void window.pondRing?.ready().then((next) => {
-      if (!live || !next) {
-        return;
-      }
+      if (!live || !next) return;
       paintShell(next.shell);
       setSnapshot(next);
     });
@@ -98,9 +96,7 @@ export function FileRingOverlay() {
   }, []);
 
   useEffect(() => {
-    if (!snapshot) {
-      return;
-    }
+    if (!snapshot) return;
     const frame = requestAnimationFrame(() => {
       menuRef.current?.focus();
       void window.pondRing?.present();
@@ -109,9 +105,7 @@ export function FileRingOverlay() {
   }, [snapshot]);
 
   useEffect(() => {
-    if (!result) {
-      return;
-    }
+    if (!result) return;
     const timer = setTimeout(dismiss, RESULT_MS);
     return () => clearTimeout(timer);
   }, [result]);
@@ -124,9 +118,7 @@ export function FileRingOverlay() {
 
   function slotAt(event: React.MouseEvent): RingSlot | "hub" | null {
     const disc = discRef.current;
-    if (!disc) {
-      return null;
-    }
+    if (!disc) return null;
     return ringHitAt(
       event.clientX,
       event.clientY,
@@ -152,9 +144,7 @@ export function FileRingOverlay() {
   }
 
   function onPointerMove(event: React.PointerEvent) {
-    if (result) {
-      return;
-    }
+    if (result) return;
     const hit = slotAt(event);
     setActive(hit && hit !== "hub" && layout[hit] ? hit : null);
   }
@@ -174,9 +164,7 @@ export function FileRingOverlay() {
       dismiss();
       return;
     }
-    if (result || filled.length === 0) {
-      return;
-    }
+    if (result || filled.length === 0) return;
     const step =
       event.key === "ArrowRight" || event.key === "ArrowDown"
         ? 1
@@ -198,9 +186,7 @@ export function FileRingOverlay() {
 
   function folderAt(event: React.DragEvent) {
     const hit = slotAt(event);
-    if (hit === null || hit === "hub") {
-      return null;
-    }
+    if (hit === null || hit === "hub") return null;
     const target = layout[hit];
     return target?.kind === "folder"
       ? { slot: hit, folder: target.folder }
@@ -208,28 +194,20 @@ export function FileRingOverlay() {
   }
 
   function onDragOver(event: React.DragEvent) {
-    if (result) {
-      return;
-    }
+    if (result) return;
     const hit = folderAt(event);
     setActive(hit?.slot ?? null);
-    if (!hit) {
-      return;
-    }
+    if (!hit) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
   }
 
   async function onDrop(event: React.DragEvent) {
     const hit = result ? null : folderAt(event);
-    if (!hit) {
-      return;
-    }
+    if (!hit) return;
     event.preventDefault();
     const api = window.pondRing;
-    if (!api) {
-      return;
-    }
+    if (!api) return;
     const payload = dropPayload(event.dataTransfer, hit.folder.id, (file) =>
       api.pathForFile(file),
     );
@@ -270,9 +248,7 @@ export function FileRingOverlay() {
         <Disc.Slots role="none">
           {RING_SLOTS.map((slot) => {
             const item = layout[slot];
-            if (!item) {
-              return null;
-            }
+            if (!item) return null;
             if (item.kind === "action") {
               const { label, Icon } = RING_ACTIONS[item.action];
               return (

@@ -95,9 +95,7 @@ export function Grid({ t, tiles, look = "1.0", selected }: GridProps) {
       {tiles.map((tile, i) => {
         const rect = rects[i];
         const k = ease.outQuint(progress(t, tile.at, 560));
-        if (!rect || k <= 0) {
-          return null;
-        }
+        if (!rect || k <= 0) return null;
         return (
           <figure
             key={tile.key}

@@ -76,9 +76,7 @@ function collectLeaves(
       continue;
     }
     if (item.type === "custom") {
-      if (matchesCustom(terms)) {
-        out.push(item);
-      }
+      if (matchesCustom(terms)) out.push(item);
       continue;
     }
     if (item.type === "radio") {
@@ -94,9 +92,7 @@ function collectLeaves(
         .map((option) =>
           breadcrumb.length > 0 ? { ...option, breadcrumb } : option,
         );
-      if (options.length > 0) {
-        out.push({ ...item, options });
-      }
+      if (options.length > 0) out.push({ ...item, options });
       continue;
     }
     if (matchesAll(`${path} ${textOf(item)}`, terms)) {
@@ -111,8 +107,6 @@ export function filterMenuItems(
   query: string,
 ): Array<MenuItemSpec> {
   const terms = query.trim().split(/\s+/).filter(Boolean);
-  if (terms.length === 0) {
-    return items;
-  }
+  if (terms.length === 0) return items;
   return collectLeaves(items, terms, "", []);
 }

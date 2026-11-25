@@ -37,9 +37,7 @@ function loadCanonical(
     .from(agentChats)
     .where(eq(agentChats.id, chatId))
     .get();
-  if (!thread?.transcript) {
-    return [];
-  }
+  if (!thread?.transcript) return [];
   const parsed = z
     .array(
       z.object({
@@ -48,13 +46,9 @@ function loadCanonical(
       }),
     )
     .safeParse(JSON.parse(thread.transcript));
-  if (!parsed.success) {
-    return [];
-  }
+  if (!parsed.success) return [];
   return parsed.data.flatMap((row) => {
-    if (row.role !== "user" && row.role !== "assistant") {
-      return [];
-    }
+    if (row.role !== "user" && row.role !== "assistant") return [];
     const content =
       z.string().safeParse(row.content).data ??
       (Array.isArray(row.content)

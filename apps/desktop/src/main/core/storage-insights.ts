@@ -85,9 +85,7 @@ function isMediaType(value: string | null): value is MediaType {
 /** Groups match the Library's own filter projections, so each row opens the Saves it counted. */
 function filterProjection(id: "type" | "source"): SQL {
   const projection = FIELD_DESCRIPTORS[id].sqlProjection?.();
-  if (!projection) {
-    throw new Error(`The ${id} filter has no SQL projection.`);
-  }
+  if (!projection) throw new Error(`The ${id} filter has no SQL projection.`);
   return projection;
 }
 
@@ -325,9 +323,7 @@ export function duplicateStorage(db: Db): DuplicateStorageResult {
     const originals = (row.files ?? []).filter(
       (file) => !isAuxiliaryKind(file.kind),
     );
-    if (!originals.length || originals.some((file) => !file.sha256)) {
-      continue;
-    }
+    if (!originals.length || originals.some((file) => !file.sha256)) continue;
     const key = originals
       .map((file) => file.sha256.toLowerCase())
       .sort()

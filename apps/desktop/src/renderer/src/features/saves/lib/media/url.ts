@@ -75,9 +75,7 @@ function thumbnailWidth(
 
 export function pickAuthorAvatarUrl(save: Save): string | null {
   const local = (save.files ?? []).find((f) => f.kind === "avatar");
-  if (local) {
-    return buildPondUrl(save.id, local);
-  }
+  if (local) return buildPondUrl(save.id, local);
 
   const url = save.rawJson?.capture?.author?.avatarUrl;
   return url && url.trim().length > 0 ? url : null;
@@ -85,9 +83,7 @@ export function pickAuthorAvatarUrl(save: Save): string | null {
 
 export function pickSourceIconUrl(save: Save): string | null {
   const local = (save.files ?? []).find((f) => f.kind === "source_icon");
-  if (local) {
-    return buildPondUrl(save.id, local);
-  }
+  if (local) return buildPondUrl(save.id, local);
 
   const url = save.rawJson?.capture?.extras?.faviconUrl;
   return url && url.trim().length > 0 ? url : null;

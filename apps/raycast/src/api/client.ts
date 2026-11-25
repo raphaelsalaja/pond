@@ -25,9 +25,7 @@ async function isInstalled(): Promise<boolean> {
 async function verify(probe: PondApi): Promise<void> {
   try {
     const info = await probe.appInfo();
-    if (!supportsApi(info.apiVersion)) {
-      throw new PondProblem("outdated", `You have Pond ${info.version}.`);
-    }
+    if (!supportsApi(info.apiVersion)) throw new PondProblem("outdated", `You have Pond ${info.version}.`);
   } catch (error) {
     if (error instanceof PondApiError && error.kind === "connection") {
       throw new PondProblem((await isInstalled()) ? "not-running" : "not-installed", error.message);

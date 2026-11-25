@@ -50,9 +50,7 @@ function Layouts() {
       value={[view.layout]}
       onValueChange={([next]) => {
         const match = LAYOUTS.find((option) => option.value === next);
-        if (match) {
-          view.setLayout(match.value);
-        }
+        if (match) view.setLayout(match.value);
       }}
     >
       {LAYOUTS.map((option) => (
@@ -80,9 +78,7 @@ function Presets() {
         value={view.preset ? [view.preset] : []}
         onValueChange={([next]) => {
           const match = PRESETS.find((preset) => preset.value === next);
-          if (match) {
-            view.applyPreset(match);
-          }
+          if (match) view.applyPreset(match);
         }}
       >
         {PRESETS.map((preset) => (

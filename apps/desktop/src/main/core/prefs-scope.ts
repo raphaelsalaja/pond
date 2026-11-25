@@ -246,14 +246,10 @@ export function splitPrefsPatch(patch: DeepPartial<Prefs>): SplitPrefsPatch {
   const pond: DeepPartial<PondPrefs> = {};
   const app: DeepPartial<AppPrefs> = {};
   for (const key of POND_PREF_KEYS) {
-    if (patch[key] !== undefined) {
-      assignSlice(pond, key, patch[key]);
-    }
+    if (patch[key] !== undefined) assignSlice(pond, key, patch[key]);
   }
   for (const key of APP_PREF_KEYS) {
-    if (patch[key] !== undefined) {
-      assignSlice(app, key, patch[key]);
-    }
+    if (patch[key] !== undefined) assignSlice(app, key, patch[key]);
   }
   return { app, pond };
 }

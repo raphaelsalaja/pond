@@ -19,27 +19,13 @@ export interface EnqueueSeed {
 
 export function seedToInsertColumns(seed: EnqueueSeed): Partial<NewSave> {
   const out: Partial<NewSave> = { rawJson: seed.rawJson };
-  if (seed.title !== undefined) {
-    out.title = seed.title;
-  }
-  if (seed.description !== undefined) {
-    out.description = seed.description;
-  }
-  if (seed.author !== undefined) {
-    out.author = seed.author;
-  }
-  if (seed.mediaUrl !== undefined) {
-    out.mediaUrl = seed.mediaUrl;
-  }
-  if (seed.mediaType !== undefined) {
-    out.mediaType = seed.mediaType;
-  }
-  if (seed.publishedAt !== undefined) {
-    out.publishedAt = seed.publishedAt;
-  }
-  if (seed.lang !== undefined) {
-    out.lang = seed.lang;
-  }
+  if (seed.title !== undefined) out.title = seed.title;
+  if (seed.description !== undefined) out.description = seed.description;
+  if (seed.author !== undefined) out.author = seed.author;
+  if (seed.mediaUrl !== undefined) out.mediaUrl = seed.mediaUrl;
+  if (seed.mediaType !== undefined) out.mediaType = seed.mediaType;
+  if (seed.publishedAt !== undefined) out.publishedAt = seed.publishedAt;
+  if (seed.lang !== undefined) out.lang = seed.lang;
   return out;
 }
 
@@ -63,9 +49,7 @@ export async function applySeedToExistingSave(
     })
     .returning()
     .all()[0];
-  if (inserted) {
-    broadcastSyncAction(inserted);
-  }
+  if (inserted) broadcastSyncAction(inserted);
 }
 
 interface SeedMerge {
@@ -105,9 +89,7 @@ export function mergeSeedIntoExistingSave(
     ) {
       Object.assign(nextAuthor, { [key]: fresh });
       filled.push(`capture.author.${key}`);
-      if (key === "avatarUrl") {
-        didFillAvatarUrl = true;
-      }
+      if (key === "avatarUrl") didFillAvatarUrl = true;
     }
   }
 
@@ -138,12 +120,8 @@ export function mergeSeedIntoExistingSave(
   const baseRaw = existingRaw ?? seedRaw;
   const baseCapture = existingCapture ?? seedCapture;
   const nextCapture: Capture = { ...baseCapture, author: nextAuthor };
-  if (nextMetrics) {
-    nextCapture.metrics = nextMetrics;
-  }
-  if (nextCard) {
-    nextCapture.card = nextCard;
-  }
+  if (nextMetrics) nextCapture.metrics = nextMetrics;
+  if (nextCard) nextCapture.card = nextCard;
   const nextRaw: RawJson = { ...baseRaw, capture: nextCapture };
 
   return { changed: true, filled, didFillAvatarUrl, rawJson: nextRaw };
@@ -153,9 +131,7 @@ export async function persistEnrichment(
   saveId: string,
   merge: SeedMerge,
 ): Promise<void> {
-  if (!merge.changed || !merge.rawJson) {
-    return;
-  }
+  if (!merge.changed || !merge.rawJson) return;
   const db = await getDb();
   const patch: Partial<NewSave> = { rawJson: merge.rawJson };
   db.update(saves).set(patch).where(eq(saves.id, saveId)).run();
@@ -172,9 +148,7 @@ export async function persistEnrichment(
     })
     .returning()
     .all()[0];
-  if (inserted) {
-    broadcastSyncAction(inserted);
-  }
+  if (inserted) broadcastSyncAction(inserted);
 }
 
 export async function rependFetchAvatar(saveId: string): Promise<void> {

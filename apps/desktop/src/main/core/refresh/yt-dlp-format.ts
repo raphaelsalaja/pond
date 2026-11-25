@@ -78,9 +78,7 @@ export function cookieAttempts(
 
 function maxFilesizeArg(prefs: VideoDownloadSettings): string | null {
   const mb = prefs.maxFileSizeMb;
-  if (mb === null || mb === undefined || mb <= 0) {
-    return null;
-  }
+  if (mb === null || mb === undefined || mb <= 0) return null;
   return `${mb}M`;
 }
 
@@ -92,9 +90,7 @@ function sectionArg(range: DownloadRange): string {
 function requestedContainer(
   request: DownloadRequest | undefined,
 ): "mp4" | "webm" | null {
-  if (!request?.container) {
-    return null;
-  }
+  if (!request?.container) return null;
   return request.container === "webm" ? "webm" : "mp4";
 }
 
@@ -143,9 +139,7 @@ export function downloadArgv(input: DownloadArgvInput): Array<string> {
     argv.push("--write-thumbnail", "--convert-thumbnails", "jpg");
   }
   const filesize = maxFilesizeArg(prefs);
-  if (filesize) {
-    argv.unshift("--max-filesize", filesize);
-  }
+  if (filesize) argv.unshift("--max-filesize", filesize);
 
   if (ffmpeg) {
     argv.push("--ffmpeg-location", ffmpeg);
@@ -157,12 +151,8 @@ export function downloadArgv(input: DownloadArgvInput): Array<string> {
         "--audio-quality",
         "0",
       );
-      if (prefs.embedMetadata) {
-        argv.push("--embed-metadata");
-      }
-      if (prefs.embedThumbnail) {
-        argv.push("--embed-thumbnail");
-      }
+      if (prefs.embedMetadata) argv.push("--embed-metadata");
+      if (prefs.embedThumbnail) argv.push("--embed-thumbnail");
     } else {
       const container = requestedContainer(request);
       if (container) {
@@ -175,15 +165,9 @@ export function downloadArgv(input: DownloadArgvInput): Array<string> {
       } else if (prefs.container !== "auto") {
         argv.push("--merge-output-format", prefs.container);
       }
-      if (prefs.embedMetadata) {
-        argv.push("--embed-metadata");
-      }
-      if (prefs.embedThumbnail) {
-        argv.push("--embed-thumbnail");
-      }
-      if (prefs.embedChapters && !range) {
-        argv.push("--embed-chapters");
-      }
+      if (prefs.embedMetadata) argv.push("--embed-metadata");
+      if (prefs.embedThumbnail) argv.push("--embed-thumbnail");
+      if (prefs.embedChapters && !range) argv.push("--embed-chapters");
       if (prefs.sponsorblockRemove && !range) {
         argv.push("--sponsorblock-remove", "all");
       }
@@ -193,9 +177,7 @@ export function downloadArgv(input: DownloadArgvInput): Array<string> {
     }
     if (range) {
       argv.push("--download-sections", sectionArg(range));
-      if (!audio) {
-        argv.push("--force-keyframes-at-cuts");
-      }
+      if (!audio) argv.push("--force-keyframes-at-cuts");
     }
   } else if (!audio) {
     argv.push("-f", "b[ext=mp4]/b");
@@ -208,9 +190,7 @@ export function downloadArgv(input: DownloadArgvInput): Array<string> {
       "--sub-langs",
       prefs.subtitleLang,
     );
-    if (ffmpeg) {
-      argv.push("--convert-subs", "srt");
-    }
+    if (ffmpeg) argv.push("--convert-subs", "srt");
   }
   return argv;
 }

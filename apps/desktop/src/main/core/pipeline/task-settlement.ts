@@ -72,9 +72,7 @@ export function gateForSource(source: Source): PipelineTaskEvent["gate"] {
 }
 
 function leaseGuard(task: Task) {
-  if (!task.leaseToken) {
-    return;
-  }
+  if (!task.leaseToken) return;
   return and(
     eq(tasks.id, task.id),
     eq(tasks.status, "running"),
@@ -85,9 +83,7 @@ function leaseGuard(task: Task) {
 
 export async function markDone(task: Task): Promise<boolean> {
   const guard = leaseGuard(task);
-  if (!guard) {
-    return false;
-  }
+  if (!guard) return false;
   const db = await getDb();
   const result = db
     .update(tasks)
@@ -120,9 +116,7 @@ export interface FailureResult {
  * trip the breaker and park every other save for the same source.
  */
 export function countsTowardSourceBreaker(cause: unknown): boolean {
-  if (cause instanceof CaptureIncompleteError) {
-    return false;
-  }
+  if (cause instanceof CaptureIncompleteError) return false;
   return (
     cause instanceof TransientError || cause instanceof WorkerWatchdogError
   );
@@ -217,9 +211,7 @@ export async function handleFailure(
     attempts: task.attempts,
     maxAttempts: task.maxAttempts,
   });
-  if (decision.status === "blocked") {
-    metrics.tasksBlocked++;
-  }
+  if (decision.status === "blocked") metrics.tasksBlocked++;
   const db = await getDb();
 
   const nonFatalTerminal =
@@ -242,9 +234,7 @@ export async function handleFailure(
       })
       .where(guard)
       .run();
-    if (result.changes === 1) {
-      await maybeFinalizeSave(task.saveId);
-    }
+    if (result.changes === 1) await maybeFinalizeSave(task.saveId);
     return {
       outcome: "failed",
       nextRunAt: decision.nextRunAt.getTime(),
@@ -376,9 +366,7 @@ async function markSignInNeeded(source: Source, saveId: string): Promise<void> {
   /** Matches partitionForIngest: a Save without its own Account harvests through the source's first Account. */
   const account =
     accounts.find((candidate) => candidate.id === owner) ?? accounts[0];
-  if (!account) {
-    return;
-  }
+  if (!account) return;
   await patchAccountSync(account.id, { lastError: "auth_required" });
   emit({
     accountId: account.id,
@@ -396,21 +384,15 @@ export async function maybeFinalizeSave(saveId: string): Promise<void> {
     .from(saves)
     .where(eq(saves.id, saveId))
     .get();
-  if (save?.status !== "ingesting") {
-    return;
-  }
+  if (save?.status !== "ingesting") return;
   const rows = db
     .select({ status: tasks.status })
     .from(tasks)
     .where(eq(tasks.saveId, saveId))
     .all();
-  if (rows.length === 0) {
-    return;
-  }
+  if (rows.length === 0) return;
   const allDone = rows.every((t) => t.status === "done");
-  if (!allDone) {
-    return;
-  }
+  if (!allDone) return;
   await persistSave(
     saveId,
     { status: "complete", ingestCompletedAt: new Date() },

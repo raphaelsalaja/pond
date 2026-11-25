@@ -34,9 +34,7 @@ describe("mcp hosts", () => {
       (host) => host.id === "claude-desktop",
     );
     const vscode = MCP_HOST_CATALOG.find((host) => host.id === "vscode");
-    if (!claude || !vscode) {
-      throw new Error("Missing MCP host fixture");
-    }
+    if (!claude || !vscode) throw new Error("Missing MCP host fixture");
     expect(mcpHostConfigPath(claude, "Win32")).toBe(
       String.raw`%APPDATA%\Claude\claude_desktop_config.json`,
     );

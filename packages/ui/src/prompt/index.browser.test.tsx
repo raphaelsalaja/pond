@@ -34,9 +34,7 @@ function Question({ onSubmit }: { onSubmit?: (answer: string) => void }) {
               onFocus={() => setChoice(OTHER)}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  onSubmit?.(text);
-                }
+                if (event.key === "Enter") onSubmit?.(text);
               }}
             />
           </Prompt.Choices>

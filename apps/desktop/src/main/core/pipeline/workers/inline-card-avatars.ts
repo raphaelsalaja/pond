@@ -33,12 +33,8 @@ export async function inlineCaptureAvatars(
   ]);
 
   const inlined: InlinedAvatars = { capture: next };
-  if (avatarFile) {
-    inlined.avatarFile = avatarFile;
-  }
-  if (sourceUrl && avatarFile) {
-    inlined.avatarSourceUrl = sourceUrl;
-  }
+  if (avatarFile) inlined.avatarFile = avatarFile;
+  if (sourceUrl && avatarFile) inlined.avatarSourceUrl = sourceUrl;
   return inlined;
 }
 
@@ -47,31 +43,23 @@ async function inlineAuthorAvatar(
   save: Save,
 ): Promise<TxSaveFile | undefined> {
   const author = capture.author;
-  if (!author?.avatarUrl) {
-    return undefined;
-  }
+  if (!author?.avatarUrl) return undefined;
   const fromDisk = await readDiskAvatar(save);
   if (fromDisk) {
     author.avatarUrl = fromDisk;
     return undefined;
   }
   const fetched = await urlToDataUrl(author.avatarUrl);
-  if (!fetched) {
-    return undefined;
-  }
+  if (!fetched) return undefined;
   author.avatarUrl = fetched.dataUrl;
   return fetched.file;
 }
 
 async function inlineQuotedAvatar(capture: Capture): Promise<void> {
   const quoted = quotedAuthor(capture);
-  if (!quoted?.avatarUrl || quoted.avatarUrl.startsWith("data:")) {
-    return;
-  }
+  if (!quoted?.avatarUrl || quoted.avatarUrl.startsWith("data:")) return;
   const fetched = await urlToDataUrl(quoted.avatarUrl);
-  if (fetched) {
-    quoted.avatarUrl = fetched.dataUrl;
-  }
+  if (fetched) quoted.avatarUrl = fetched.dataUrl;
 }
 
 function quotedAuthor(capture: Capture): { avatarUrl?: string } | undefined {
@@ -80,23 +68,17 @@ function quotedAuthor(capture: Capture): { avatarUrl?: string } | undefined {
 
 async function inlineCardMedia(capture: Capture, save: Save): Promise<void> {
   const urls = collectCardImageUrls(capture);
-  if (urls.length === 0) {
-    return;
-  }
+  if (urls.length === 0) return;
 
   const byPosition = mediaFilesByUrl(capture, save.files ?? []);
   const rewritten = new Map<string, string>();
   await Promise.all(
     urls.map(async (url) => {
       const dataUrl = await resolveCardImage(url, save, byPosition.get(url));
-      if (dataUrl) {
-        rewritten.set(url, dataUrl);
-      }
+      if (dataUrl) rewritten.set(url, dataUrl);
     }),
   );
-  if (rewritten.size === 0) {
-    return;
-  }
+  if (rewritten.size === 0) return;
 
   const swap = (url: string | undefined): string | undefined =>
     url ? (rewritten.get(url) ?? url) : undefined;
@@ -113,32 +95,22 @@ async function inlineCardMedia(capture: Capture, save: Save): Promise<void> {
 
   for (const card of [capture.card, capture.quoted?.card]) {
     const next = swap(card?.imageUrl);
-    if (card && next) {
-      card.imageUrl = next;
-    }
+    if (card && next) card.imageUrl = next;
   }
 }
 
 function collectCardImageUrls(capture: Capture): Array<string> {
   const urls: Array<string> = [];
   const add = (url: string | undefined) => {
-    if (url && isHttpUrl(url)) {
-      urls.push(url);
-    }
+    if (url && isHttpUrl(url)) urls.push(url);
   };
   for (const m of capture.media ?? []) {
-    if (m.type === "video") {
-      add(m.posterUrl);
-    } else if (m.type === "image") {
-      add(m.url);
-    }
+    if (m.type === "video") add(m.posterUrl);
+    else if (m.type === "image") add(m.url);
   }
   for (const m of capture.quoted?.media ?? []) {
-    if (m.type === "video") {
-      add(m.posterUrl);
-    } else if (m.type === "image") {
-      add(m.url);
-    }
+    if (m.type === "video") add(m.posterUrl);
+    else if (m.type === "image") add(m.url);
   }
   add(capture.card?.imageUrl);
   add(capture.quoted?.card?.imageUrl);
@@ -168,15 +140,11 @@ async function resolveCardImage(
   const fromDisk =
     (await readDiskBySourceUrl(save, url)) ??
     (positional ? await readSaveFileBytes(save, positional) : null);
-  if (fromDisk) {
-    return bytesToCardDataUrl(fromDisk.bytes, fromDisk.mime);
-  }
+  if (fromDisk) return bytesToCardDataUrl(fromDisk.bytes, fromDisk.mime);
 
   for (const candidate of twimgCandidates(url)) {
     const fetched = await fetchCardImage(candidate);
-    if (fetched) {
-      return bytesToCardDataUrl(fetched.bytes, fetched.mime);
-    }
+    if (fetched) return bytesToCardDataUrl(fetched.bytes, fetched.mime);
   }
   return null;
 }
@@ -185,12 +153,8 @@ function twimgCandidates(url: string): Array<string> {
   const out = [url];
   try {
     const u = new URL(url);
-    if (u.hostname !== "pbs.twimg.com") {
-      return out;
-    }
-    if (u.searchParams.get("name") !== "orig") {
-      return out;
-    }
+    if (u.hostname !== "pbs.twimg.com") return out;
+    if (u.searchParams.get("name") !== "orig") return out;
     const large = new URL(url);
     large.searchParams.set("name", "large");
     out.push(large.toString());
@@ -211,13 +175,9 @@ async function fetchCardImage(
       redirect: "follow",
       signal: AbortSignal.timeout(CARD_FETCH_TIMEOUT_MS),
     });
-    if (!res.ok) {
-      return null;
-    }
+    if (!res.ok) return null;
     const mime = res.headers.get("content-type")?.split(";")[0]?.trim() ?? "";
-    if (mime && !mime.startsWith("image/")) {
-      return null;
-    }
+    if (mime && !mime.startsWith("image/")) return null;
     const bytes = Buffer.from(await res.arrayBuffer());
     if (bytes.byteLength === 0 || bytes.byteLength > CARD_FETCH_MAX_BYTES) {
       return null;
@@ -236,9 +196,7 @@ async function bytesToCardDataUrl(
     const pipeline = sharp(bytes, { failOn: "none" });
     const meta = await pipeline.metadata();
     if ((meta.pages ?? 1) > 1) {
-      if (bytes.byteLength > CARD_FETCH_MAX_BYTES) {
-        return null;
-      }
+      if (bytes.byteLength > CARD_FETCH_MAX_BYTES) return null;
       return `data:${mime || "image/gif"};base64,${bytes.toString("base64")}`;
     }
     const { data } = await pipeline
@@ -250,9 +208,7 @@ async function bytesToCardDataUrl(
       .toBuffer({ resolveWithObject: true });
     return `data:image/jpeg;base64,${data.toString("base64")}`;
   } catch {
-    if (bytes.byteLength > 500_000) {
-      return null;
-    }
+    if (bytes.byteLength > 500_000) return null;
     const fallback = mime.startsWith("image/") ? mime : "image/jpeg";
     return `data:${fallback};base64,${bytes.toString("base64")}`;
   }
@@ -263,21 +219,15 @@ async function readDiskBySourceUrl(
   url: string,
 ): Promise<{ bytes: Buffer; mime: string } | null> {
   const file = (save.files ?? []).find((f) => f.sourceUrl === url);
-  if (!file) {
-    return null;
-  }
+  if (!file) return null;
   return readSaveFileBytes(save, file);
 }
 
 async function readDiskAvatar(save: Save): Promise<string | null> {
   const file = (save.files ?? []).find((f) => f.kind === "avatar");
-  if (!file) {
-    return null;
-  }
+  if (!file) return null;
   const read = await readSaveFileBytes(save, file);
-  if (!read) {
-    return null;
-  }
+  if (!read) return null;
   return `data:${read.mime};base64,${read.bytes.toString("base64")}`;
 }
 
@@ -286,9 +236,7 @@ async function readSaveFileBytes(
   file: SaveFile,
 ): Promise<{ bytes: Buffer; mime: string } | null> {
   const path = saveFile(save.id, file.path);
-  if (!existsSync(path)) {
-    return null;
-  }
+  if (!existsSync(path)) return null;
   try {
     const bytes = await readLibraryMedia(path);
     return {
@@ -303,13 +251,9 @@ async function readSaveFileBytes(
 async function urlToDataUrl(
   url: string,
 ): Promise<{ dataUrl: string; file: TxSaveFile } | null> {
-  if (url.startsWith("data:")) {
-    return null;
-  }
+  if (url.startsWith("data:")) return null;
   const outcome = await fetchAvatarToTxFile(url);
-  if (!("file" in outcome)) {
-    return null;
-  }
+  if (!("file" in outcome)) return null;
   const mime = outcome.file.mimeType ?? "image/jpeg";
   const bytes = Buffer.from(outcome.file.bytes);
   return {

@@ -33,14 +33,10 @@ export interface CaptureRequest {
 
 function toastFor(title: string, outcome: CaptureOutcome): OverlayToast {
   const toast: OverlayToast = { id: outcome.id, status: outcome.status, title };
-  if (outcome.status === "failed") {
-    toast.message = outcome.message;
-  }
+  if (outcome.status === "failed") toast.message = outcome.message;
   if (outcome.status === "saved" || outcome.status === "duplicate") {
     toast.saveId = outcome.saveId;
-    if (outcome.warning) {
-      toast.message = outcome.warning;
-    }
+    if (outcome.warning) toast.message = outcome.warning;
   }
   return toast;
 }
@@ -52,13 +48,9 @@ async function pollUntilSettled(id: string): Promise<CaptureOutcome | null> {
     });
     const response = await nativeCall({ type: "capture.status", id });
     /** Pond builds without `capture.status` answer `invalid`; the save still lands. */
-    if (!response.ok) {
-      return null;
-    }
+    if (!response.ok) return null;
     const outcome = outcomeFromResponse(id, response);
-    if (isSettled(outcome)) {
-      return outcome;
-    }
+    if (isSettled(outcome)) return outcome;
   }
   return null;
 }
@@ -90,16 +82,12 @@ export async function submitCapture(
   if (outcome.status !== "failed" && outcome.status !== "offline") {
     void rememberTargets(folderIds, tags);
   }
-  if (tab !== undefined) {
-    void announce(tab, toastFor(title, outcome));
-  }
+  if (tab !== undefined) void announce(tab, toastFor(title, outcome));
   if (!isSettled(outcome)) {
     void pollUntilSettled(id).then(async (polled) => {
       /** Pond accepted the save, so without a final state it is queued, not lost. */
       const settled: CaptureOutcome = polled ?? { status: "saved", id };
-      if (tab !== undefined) {
-        await announce(tab, toastFor(title, settled));
-      }
+      if (tab !== undefined) await announce(tab, toastFor(title, settled));
     });
   }
   return outcome;
@@ -115,9 +103,7 @@ function pageUrl(tab: chrome.tabs.Tab | undefined): string | undefined {
 
 export function pageDraft(tab: chrome.tabs.Tab): DetailsDraft | null {
   const url = pageUrl(tab);
-  if (!url) {
-    return null;
-  }
+  if (!url) return null;
   return {
     kind: "page",
     items: [{ kind: "url", url, title: tab.title || undefined }],
@@ -133,9 +119,7 @@ export function linkDraft(
   label: string | undefined,
   trigger: string,
 ): DetailsDraft | null {
-  if (!isWebUrl(url)) {
-    return null;
-  }
+  if (!isWebUrl(url)) return null;
   return {
     kind: "link",
     items: [{ kind: "url", url }],
@@ -152,9 +136,7 @@ export function mediaDraft(
   trigger: string,
   title?: string,
 ): DetailsDraft | null {
-  if (!isWebUrl(url)) {
-    return null;
-  }
+  if (!isWebUrl(url)) return null;
   return {
     kind: "media",
     items: [{ kind: "asset", url }],
@@ -184,9 +166,7 @@ export function screenshotDraft(
 }
 
 async function draftCookies(draft: DetailsDraft) {
-  if (draft.kind === "screenshot") {
-    return undefined;
-  }
+  if (draft.kind === "screenshot") return undefined;
   const from = draft.kind === "media" ? draft.originUrl : draft.url;
   return from ? await cookiesForUrl(from) : undefined;
 }
@@ -229,9 +209,7 @@ export async function offerDraft(
       draft,
       library,
     }));
-    if (await showOverlay(tabId, request)) {
-      return;
-    }
+    if (await showOverlay(tabId, request)) return;
   }
   await saveDraft(draft, tabId);
 }

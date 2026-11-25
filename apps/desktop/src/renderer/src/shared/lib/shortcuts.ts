@@ -62,9 +62,7 @@ export function bindingKeys(
   id: ShortcutKeyId,
 ): NonNullable<ShortcutDef["keys"]> {
   const keys = bindings[id].keys;
-  if (!keys) {
-    throw new Error(`Shortcut "${id}" has no key binding`);
-  }
+  if (!keys) throw new Error(`Shortcut "${id}" has no key binding`);
   return keys;
 }
 
@@ -96,9 +94,7 @@ export function bindingSequence(
   id: ShortcutSequenceId,
 ): NonNullable<ShortcutDef["sequence"]> {
   const sequence = bindings[id].sequence;
-  if (!sequence) {
-    throw new Error(`Shortcut "${id}" has no sequence binding`);
-  }
+  if (!sequence) throw new Error(`Shortcut "${id}" has no sequence binding`);
   return sequence;
 }
 
@@ -139,9 +135,7 @@ function unfuseGlyphs(token: string): Array<string> {
   let i = 0;
   while (i < token.length) {
     const ch = token[i];
-    if (ch === undefined) {
-      break;
-    }
+    if (ch === undefined) break;
     if (MODIFIER_GLYPH.test(ch) && i < token.length - 1) {
       parts.push(ch);
       i += 1;
@@ -183,9 +177,7 @@ function defOf(id: ShortcutId): ShortcutDef {
 
 export function shortcutGlyphs(id: ShortcutId): Array<string> {
   const def = defOf(id);
-  if (def.keys) {
-    return chordGlyphs(def.keys);
-  }
+  if (def.keys) return chordGlyphs(def.keys);
   if (def.sequence) {
     return def.sequence.flatMap((step) => chordGlyphs(step));
   }

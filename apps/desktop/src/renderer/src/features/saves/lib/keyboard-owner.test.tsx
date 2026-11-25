@@ -18,9 +18,7 @@ function surface(attribute: string, value = "") {
 }
 const key = () => new KeyboardEvent("keydown", { key: "Backspace" });
 afterEach(() => {
-  for (const node of nodes) {
-    node.remove();
-  }
+  for (const node of nodes) node.remove();
   nodes.length = 0;
   selection.clear();
   primarySelection.set(null);

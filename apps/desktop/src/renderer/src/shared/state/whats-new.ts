@@ -48,18 +48,12 @@ export const whatsNewDialog = {
   },
   openOffer(): void {
     const { offer } = store.state;
-    if (offer) {
-      whatsNewDialog.open(offer.versions);
-    }
+    if (offer) whatsNewDialog.open(offer.versions);
   },
   close(): void {
     const { open, offer } = store.state;
-    if (!open) {
-      return;
-    }
-    if (offer) {
-      writeWhatsNewSeen(offer.version);
-    }
+    if (!open) return;
+    if (offer) writeWhatsNewSeen(offer.version);
     store.setState((s) => ({ ...s, open: false, offer: null }));
   },
   isOpen(): boolean {

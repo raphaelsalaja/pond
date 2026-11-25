@@ -15,9 +15,7 @@ export function inferredLookupResult(
   content: string,
   sources: Array<AssistantSource>,
 ) {
-  if (sources.length < 2) {
-    return null;
-  }
+  if (sources.length < 2) return null;
   const lines = content
     .trim()
     .split(/\n+/)
@@ -28,27 +26,19 @@ export function inferredLookupResult(
   }
   const references: Array<number> = [];
   for (const line of lines) {
-    if (!/^(?:(?:\d+[.)]|[-*+])\s+)?\[\d+\]/.test(line)) {
-      return null;
-    }
+    if (!/^(?:(?:\d+[.)]|[-*+])\s+)?\[\d+\]/.test(line)) return null;
     const matches = [...line.matchAll(/\[(\d+)\](?:\(#save-(\d+)\))?/g)];
-    if (!matches.length) {
-      return null;
-    }
+    if (!matches.length) return null;
     for (const match of matches) {
       const reference = Number(match[2] ?? match[1]);
-      if (reference < 1 || reference > sources.length) {
-        return null;
-      }
+      if (reference < 1 || reference > sources.length) return null;
       references.push(reference);
     }
   }
   const saveIds = [...new Set(references)].flatMap(
     (reference) => sources[reference - 1]?.id ?? [],
   );
-  if (saveIds.length < 2) {
-    return null;
-  }
+  if (saveIds.length < 2) return null;
   return { title: "References", saveIds } as const;
 }
 

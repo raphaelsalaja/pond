@@ -51,14 +51,10 @@ export async function harvestThreadsLists(
   let entries: Array<SavedEntry & { listKinds: Array<ListKind> }> = [];
   const gaps: Array<ThreadsListGap> = [];
   for (const [index, kind] of kinds.entries()) {
-    if (signal.aborted) {
-      break;
-    }
+    if (signal.aborted) break;
     const result = await harvest(kind, args);
     if (!result.ok) {
-      if (index === 0) {
-        return { ...result, kind };
-      }
+      if (index === 0) return { ...result, kind };
       gaps.push({ kind, reason: result.reason });
       continue;
     }

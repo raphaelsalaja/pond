@@ -101,18 +101,12 @@ export function startViewUrlSync(router: AnyRouter): () => void {
   const current = (): RouteLocation => router.parseLocation(history.location);
 
   const write = () => {
-    if (!context) {
-      return;
-    }
+    if (!context) return;
     const location = current();
-    if (location.pathname !== context.pathname) {
-      return;
-    }
+    if (location.pathname !== context.pathname) return;
     const view = stateView();
     const key = JSON.stringify(view);
-    if (key === written) {
-      return;
-    }
+    if (key === written) return;
     written = key;
     const search = patchSearch(
       location.search,
@@ -127,9 +121,7 @@ export function startViewUrlSync(router: AnyRouter): () => void {
   const sync = () => {
     const location = current();
     const meta = routeMeta(router, location.pathname);
-    if (meta.surface !== "grid") {
-      return;
-    }
+    if (meta.surface !== "grid") return;
     const fresh = context?.pathname !== location.pathname;
     let base: Query = EMPTY_QUERY;
     applying = true;
@@ -157,9 +149,7 @@ export function startViewUrlSync(router: AnyRouter): () => void {
       context = { pathname: location.pathname, base };
       const next = locationView(location.search, meta, base);
       const key = JSON.stringify(next);
-      if (!fresh && key === written) {
-        return;
-      }
+      if (!fresh && key === written) return;
       applyLocationView(next, fresh);
       written = JSON.stringify(stateView());
     } finally {
@@ -183,15 +173,11 @@ export function startViewUrlSync(router: AnyRouter): () => void {
   };
 
   const stopStore = subscribeViewStore(() => {
-    if (!applying) {
-      write();
-    }
+    if (!applying) write();
   });
   const stopHistory = history.subscribe(sync);
   const stopViews = subscribeSavedViews(() => {
-    if (waitingForViews) {
-      sync();
-    }
+    if (waitingForViews) sync();
   });
   sync();
   return () => {

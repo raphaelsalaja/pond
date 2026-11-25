@@ -57,9 +57,7 @@ export async function ensureVideoPreviewProxy(
   src: string,
 ): Promise<{ ok: true; url: string } | { ok: false; error: string }> {
   const resolved = resolvePondSavePath(src);
-  if (!resolved) {
-    return { ok: false, error: "The video file is unavailable." };
-  }
+  if (!resolved) return { ok: false, error: "The video file is unavailable." };
   const ffmpeg = binariesAvailable().ffmpeg;
   if (!ffmpeg) {
     return {
@@ -128,9 +126,7 @@ async function createVideoPreviewProxy(input: {
       buildVideoPreviewArguments(input.source, temporary),
     );
     const output = await stat(temporary);
-    if (output.size === 0) {
-      throw new Error("FFmpeg wrote an empty preview.");
-    }
+    if (output.size === 0) throw new Error("FFmpeg wrote an empty preview.");
     await rename(temporary, input.destination);
     return input.destination;
   } finally {
@@ -159,11 +155,8 @@ function runFfmpeg(path: string, args: Array<string>): Promise<void> {
     });
     child.once("close", (code) => {
       clearTimeout(timer);
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`));
-      }
+      if (code === 0) resolve();
+      else reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`));
     });
   });
 }

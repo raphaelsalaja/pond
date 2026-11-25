@@ -61,9 +61,7 @@ export function runEnsurePoster(
   opts: EnsurePosterOptions = {},
 ): Promise<void> {
   const existing = posterInflight.get(saveId);
-  if (existing) {
-    return existing;
-  }
+  if (existing) return existing;
   const task = ensurePoster(saveId, opts).finally(() =>
     posterInflight.delete(saveId),
   );
@@ -76,9 +74,7 @@ async function ensurePoster(
   opts: EnsurePosterOptions = {},
 ): Promise<void> {
   const save = await readSave(saveId);
-  if (!save) {
-    return;
-  }
+  if (!save) return;
 
   let files = save.files ?? [];
   const slotted = videoPosterSlots(files);
@@ -132,9 +128,7 @@ async function ensurePoster(
 
   const newFiles: Array<PosterWrite> = [];
   for (const { video, index } of targets) {
-    if (!video) {
-      continue;
-    }
+    if (!video) continue;
     if (replacing && !repairIndexes.has(index)) {
       const kept = await readExistingPoster(saveId, posters[index], index);
       if (kept) {
@@ -159,17 +153,13 @@ async function ensurePoster(
     newFiles.push(produced);
   }
 
-  if (newFiles.length === 0) {
-    return;
-  }
+  if (newFiles.length === 0) return;
 
   const options: Parameters<typeof persistSave>[2] = {
     actorReason: "pipeline:ensure-poster",
     newFiles,
   };
-  if (replacing) {
-    options.replaceFilesWithKind = "poster";
-  }
+  if (replacing) options.replaceFilesWithKind = "poster";
   await persistSave(saveId, {}, options);
   const latest = await readSave(saveId);
   /** The thumbnail is rendered from the poster, so a new poster makes the old one stale. */
@@ -191,9 +181,7 @@ async function hydrateVideoDims(
         return { file, changed: false };
       }
       const dims = await probeVideoDims(join(saveDir(saveId), file.path));
-      if (!dims) {
-        return { file, changed: false };
-      }
+      if (!dims) return { file, changed: false };
       return { file: { ...file, ...dims }, changed: true };
     }),
   );
@@ -213,15 +201,11 @@ async function producePoster(args: {
 }): Promise<PosterWrite | null> {
   if (usesPlatformPoster(args.source)) {
     const platform = await platformPosterFromSave(args.rawJson, args.index);
-    if (platform) {
-      return platform;
-    }
+    if (platform) return platform;
   }
   const source = join(saveDir(args.saveId), args.video.path);
   const filename = posterFilename(args.index, ".jpg");
-  if (!args.worker) {
-    return buildFirstFramePoster(source, filename);
-  }
+  if (!args.worker) return buildFirstFramePoster(source, filename);
   const result = QueueWorkerPosterResultSchema.nullable().parse(
     await runQueueWorkerJob(
       {
@@ -243,9 +227,7 @@ export async function ensureRemotePoster(
   force: boolean,
   runtime: RemotePosterRuntime = defaultRemotePosterRuntime,
 ): Promise<void> {
-  if (!force && videoPosterSlots(save.files ?? []).posters.length > 0) {
-    return;
-  }
+  if (!force && videoPosterSlots(save.files ?? []).posters.length > 0) return;
   const url = remotePosterUrl(save.rawJson, save.mediaUrl);
   const poster = await loadPoster(
     save.rawJson,
@@ -253,9 +235,7 @@ export async function ensureRemotePoster(
     0,
     runtime.fetchAvatarToTxFile,
   );
-  if (!poster) {
-    return;
-  }
+  if (!poster) return;
   const updated = await runtime.persistSave(
     saveId,
     {},
@@ -294,15 +274,9 @@ async function loadPoster(
   let fallback: PosterWrite | null = null;
   for (const url of plan.attempts) {
     const poster = await posterFromUrl(url, index, fetchImage);
-    if (!poster) {
-      continue;
-    }
-    if (isPortraitPoster(poster)) {
-      return poster;
-    }
-    if (url === plan.fallbackUrl) {
-      fallback = poster;
-    }
+    if (!poster) continue;
+    if (isPortraitPoster(poster)) return poster;
+    if (url === plan.fallbackUrl) fallback = poster;
   }
   return fallback;
 }
@@ -322,13 +296,9 @@ async function posterFromUrl(
   fetchImage: typeof fetchAvatarToTxFile,
 ): Promise<PosterWrite | null> {
   const outcome = await fetchImage(url);
-  if (!("file" in outcome) || !outcome.file) {
-    return null;
-  }
+  if (!("file" in outcome) || !outcome.file) return null;
   const bytes = Buffer.from(outcome.file.bytes);
-  if (bytes.byteLength === 0) {
-    return null;
-  }
+  if (bytes.byteLength === 0) return null;
   const dims = await probeImageDims(bytes);
   const name = outcome.file.filename;
   const ext = name.includes(".") ? `.${name.split(".").pop()}` : ".jpg";
@@ -346,14 +316,10 @@ async function readExistingPoster(
   poster: SaveFile | undefined,
   index: number,
 ): Promise<PosterWrite | null> {
-  if (!poster) {
-    return null;
-  }
+  if (!poster) return null;
   try {
     const bytes = await readLibraryMedia(join(saveDir(saveId), poster.path));
-    if (bytes.byteLength === 0) {
-      return null;
-    }
+    if (bytes.byteLength === 0) return null;
     const ext = poster.path.includes(".")
       ? `.${poster.path.split(".").pop()}`
       : ".jpg";

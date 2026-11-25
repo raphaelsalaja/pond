@@ -45,9 +45,7 @@ export function filterByNav<T extends { id: string }>(
     return tags.filter((tag) => !groupedIds.has(tag.id));
   }
   const ids = groupTagIds.get(navId);
-  if (!ids) {
-    return [];
-  }
+  if (!ids) return [];
   return tags.filter((tag) => ids.has(tag.id));
 }
 

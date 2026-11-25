@@ -39,9 +39,7 @@ export function NameCell({ index = false }: { index?: boolean }) {
 
 export function ActionsCell() {
   const { renaming, buildMenuItems } = useTagRow();
-  if (renaming) {
-    return null;
-  }
+  if (renaming) return null;
   return (
     <SpecMenu buildItems={buildMenuItems} align="end">
       <Menu.Trigger

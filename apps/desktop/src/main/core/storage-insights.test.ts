@@ -16,18 +16,14 @@ function nativeAvailable() {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
 
 const opened: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of opened.splice(0)) {
-    db.close();
-  }
+  for (const db of opened.splice(0)) db.close();
 });
 
 interface FileFixture {
@@ -59,9 +55,7 @@ function open(
   const folder = raw.prepare(
     "insert into folders(id,parent_id,name) values(?,?,?)",
   );
-  for (const entry of folders) {
-    folder.run(entry.id, entry.parentId, entry.id);
-  }
+  for (const entry of folders) folder.run(entry.id, entry.parentId, entry.id);
   const insert = raw.prepare(
     "insert into saves(id,source,source_id,url,status,title,media_type,file_size,files,deleted_at) values(?,?,?,?,?,?,?,?,?,?)",
   );
@@ -83,9 +77,7 @@ function open(
       JSON.stringify(entries),
       save.deleted ? Date.now() : null,
     );
-    for (const id of save.folders ?? []) {
-      member.run(save.id, id);
-    }
+    for (const id of save.folders ?? []) member.run(save.id, id);
   }
   return wrapSqlite(raw);
 }

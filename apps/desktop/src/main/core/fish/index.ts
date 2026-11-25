@@ -21,23 +21,14 @@ export function startFishRoutines(runtime: {
   const reviewing = new Set<string>();
   let timer: NodeJS.Timeout | undefined;
   runtime.onSyncAction((action) => {
-    if (action.modelName !== "save" || action.actor === "agent") {
-      return;
-    }
+    if (action.modelName !== "save" || action.actor === "agent") return;
     const entersReview =
       (action.action === "I" || action.action === "U") &&
       EntersReviewSchema.safeParse(action.data).success;
-    if (action.action === "I") {
-      created.add(action.modelId);
-    } else if (!entersReview) {
-      return;
-    }
-    if (entersReview) {
-      reviewing.add(action.modelId);
-    }
-    if (timer) {
-      return;
-    }
+    if (action.action === "I") created.add(action.modelId);
+    else if (!entersReview) return;
+    if (entersReview) reviewing.add(action.modelId);
+    if (timer) return;
     timer = setTimeout(() => {
       timer = undefined;
       const saveIds = [...created];
@@ -45,12 +36,8 @@ export function startFishRoutines(runtime: {
       created.clear();
       reviewing.clear();
       void import("./routines").then(async (routines) => {
-        if (saveIds.length) {
-          await routines.runNewSaveRoutines(saveIds);
-        }
-        if (inboxIds.length) {
-          await routines.runInboxRoutines(inboxIds);
-        }
+        if (saveIds.length) await routines.runNewSaveRoutines(saveIds);
+        if (inboxIds.length) await routines.runInboxRoutines(inboxIds);
       });
     }, NEW_SAVE_SETTLE_MS);
     timer.unref();

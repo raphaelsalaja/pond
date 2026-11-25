@@ -77,9 +77,7 @@ describe("Marked library walk", () => {
       reachedEnd: true,
       complete: true,
     });
-    if (!result.ok) {
-      return;
-    }
+    if (!result.ok) return;
     expect(result.entries[0]).toMatchObject({
       url: `https://marked.dev/ref/${NEW}`,
       savedAt: "2026-10-28T10:00:00.000Z",

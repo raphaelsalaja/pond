@@ -31,9 +31,7 @@ import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import type { DownloadViewRow } from "./columns";
 
 export function openDownloadSave(row: DownloadRow): void {
-  if (row.status === "complete") {
-    openSave(row.saveId);
-  }
+  if (row.status === "complete") openSave(row.saveId);
 }
 
 function copyText(text: string): void {
@@ -44,9 +42,7 @@ const WEB_LINK = /^https?:\/\//i;
 
 function openLink(url: string): void {
   void window.pond.openExternal(url).then((result) => {
-    if (result.ok) {
-      return;
-    }
+    if (result.ok) return;
     statusFeed.error(
       "Open link",
       "Couldn't open the link. Copy it and paste it into your browser.",
@@ -56,9 +52,7 @@ function openLink(url: string): void {
 
 function downloadErrorText(row: DownloadRow): string {
   const error = row.error?.trim();
-  if (error) {
-    return error;
-  }
+  if (error) return error;
   return row.lastError?.trim() ? humanizeError(row.lastError) : "";
 }
 
@@ -84,9 +78,7 @@ export function buildDownloadMenuItems(
       icon: <IconWindowShare />,
       hidden: single?.status !== "complete",
       onClick: () => {
-        if (single) {
-          openDownloadSave(single);
-        }
+        if (single) openDownloadSave(single);
       },
     },
     { type: "separator" },
@@ -155,9 +147,7 @@ export function DownloadContextMenu({
   return (
     <SpecContextMenu
       onOpen={() => {
-        if (selectionStore.state.selectedIds.has(row.id)) {
-          return;
-        }
+        if (selectionStore.state.selectedIds.has(row.id)) return;
         actions.replaceSelection([row.id]);
         downloadsSelection.set([row]);
       }}

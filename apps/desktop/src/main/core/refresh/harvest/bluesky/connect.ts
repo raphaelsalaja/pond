@@ -38,13 +38,9 @@ export async function connectByHandle(
 ): Promise<ConnectResult> {
   const trimmed = raw.trim().replace(/^@/, "");
   const handle = trimmed.startsWith("did:") ? trimmed : trimmed.toLowerCase();
-  if (!HANDLE.test(handle)) {
-    return { ok: false, reason: "invalid" };
-  }
+  if (!HANDLE.test(handle)) return { ok: false, reason: "invalid" };
   const resolved = await deps.resolve(handle);
-  if (!resolved) {
-    return { ok: false, reason: "not_found" };
-  }
+  if (!resolved) return { ok: false, reason: "not_found" };
   const existing = await deps.findByIdentity(resolved.did);
   const account =
     existing ??

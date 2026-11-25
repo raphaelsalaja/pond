@@ -9,9 +9,7 @@ export interface Rgb {
 
 export function parseHex(hex: string): Rgb | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m?.[1]) {
-    return null;
-  }
+  if (!m?.[1]) return null;
   const n = Number.parseInt(m[1], 16);
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
@@ -35,9 +33,7 @@ export function readColorMatch(
   value: PredicateValue | { hex: string; tolerance?: number } | undefined,
 ): { hex: string; tolerance: number } | null {
   const parsed = ColorMatch.safeParse(value);
-  if (!parsed.success || !parseHex(parsed.data.hex)) {
-    return null;
-  }
+  if (!parsed.success || !parseHex(parsed.data.hex)) return null;
   return {
     hex: `#${parsed.data.hex.trim().replace(/^#/, "").toLowerCase()}`,
     tolerance: parsed.data.tolerance,
@@ -50,21 +46,15 @@ export function colorNear(
   tolerance = DEFAULT_COLOR_TOLERANCE,
 ): boolean {
   const target = parseHex(targetHex);
-  if (!target) {
-    return false;
-  }
+  if (!target) return false;
   const tol2 = tolerance * tolerance;
   for (const hex of palette) {
     const c = parseHex(hex);
-    if (!c) {
-      continue;
-    }
+    if (!c) continue;
     const dr = c.r - target.r;
     const dg = c.g - target.g;
     const db = c.b - target.b;
-    if (dr * dr + dg * dg + db * db <= tol2) {
-      return true;
-    }
+    if (dr * dr + dg * dg + db * db <= tol2) return true;
   }
   return false;
 }

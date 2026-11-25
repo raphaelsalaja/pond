@@ -31,16 +31,11 @@ export function handleDeepLink(
 ): "library" | undefined {
   try {
     const parsed = new URL(url);
-    if (parsed.protocol !== "pond:") {
-      return;
-    }
+    if (parsed.protocol !== "pond:") return;
     if (parsed.hostname === "save") {
       const link = parseSaveLink(parsed);
-      if (link) {
-        void app.whenReady().then(() => handleSaveLink(link));
-      } else {
-        log.info("[pond deep-link] ignored", url);
-      }
+      if (link) void app.whenReady().then(() => handleSaveLink(link));
+      else log.info("[pond deep-link] ignored", url);
       return;
     }
     if (parsed.searchParams.has("library")) {
@@ -67,19 +62,13 @@ export function handleDeepLink(
       route = "/inbox";
     } else if (parsed.hostname === "item") {
       const id = parsed.pathname.replace(/^\//, "");
-      if (id) {
-        route = `/save/${encodeURIComponent(id)}`;
-      }
+      if (id) route = `/save/${encodeURIComponent(id)}`;
     } else if (parsed.hostname === "folder") {
       const id = parsed.pathname.replace(/^\//, "");
-      if (id) {
-        route = `/folders/${encodeURIComponent(id)}`;
-      }
+      if (id) route = `/folders/${encodeURIComponent(id)}`;
     } else if (parsed.hostname === "view") {
       const id = parsed.pathname.replace(/^\//, "");
-      if (id) {
-        route = `/views/${encodeURIComponent(id)}`;
-      }
+      if (id) route = `/views/${encodeURIComponent(id)}`;
     } else if (parsed.hostname === "search") {
       const q = parsed.searchParams.get("q") ?? "";
       route = `/?q=${encodeURIComponent(q)}`;
@@ -101,9 +90,7 @@ export function handleDeepLink(
       pendingDeepLink = route;
       return "library";
     }
-    if (target.isMinimized()) {
-      target.restore();
-    }
+    if (target.isMinimized()) target.restore();
     target.show();
     target.focus();
     target.webContents.send(IPC.nav, route);
@@ -130,9 +117,7 @@ export function handleSecondInstance(
   const url = deepLinkArg(argv);
   if (url) {
     const destination = deps.handleDeepLink(url, deps.getMainWindow());
-    if (destination === "library") {
-      void deps.openLibraryWindow();
-    }
+    if (destination === "library") void deps.openLibraryWindow();
     return;
   }
   /** openLibraryWindow also recreates a window that was closed. */

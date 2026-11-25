@@ -9,9 +9,7 @@ let wasmConfigured = false;
 let wasmThreads = 1;
 /** transformers.js/onnxruntime-web default to all logical cores, which pegs the machine on the CPU path; half the cores keeps the UI responsive while still making progress. */
 function capWasmThreads(): void {
-  if (wasmConfigured) {
-    return;
-  }
+  if (wasmConfigured) return;
   wasmConfigured = true;
   const cores = CoreCountSchema.parse(
     globalThis.navigator?.hardwareConcurrency,

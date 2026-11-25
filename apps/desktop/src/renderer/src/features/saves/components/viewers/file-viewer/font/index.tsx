@@ -63,16 +63,12 @@ export function FontViewer(props: ViewerProps & { url: string }) {
     void face
       .load()
       .then((font) => {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         document.fonts.add(font);
         setLoaded(true);
       })
       .catch(() => {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         setLoaded(false);
         setFailedSource(source);
       });

@@ -147,9 +147,7 @@ export function toDownloadProbe(
 }
 
 function siteOf(domain: string | null | undefined, url: string): string {
-  if (domain) {
-    return domain.replace(/^www\./, "");
-  }
+  if (domain) return domain.replace(/^www\./, "");
   try {
     return new URL(url).hostname.replace(/^www\./, "");
   } catch {
@@ -166,13 +164,9 @@ function bestThumbnail(
 ): string | null {
   let best: { url: string; score: number } | null = null;
   for (const thumb of thumbnails ?? []) {
-    if (!thumb.url?.startsWith("http")) {
-      continue;
-    }
+    if (!thumb.url?.startsWith("http")) continue;
     const score = (thumb.preference ?? 0) * 10_000 + (thumb.width ?? 0);
-    if (!best || score > best.score) {
-      best = { url: thumb.url, score };
-    }
+    if (!best || score > best.score) best = { url: thumb.url, score };
   }
   return best?.url ?? null;
 }
@@ -183,18 +177,14 @@ function playlistEntries(
   const out: Array<DownloadPlaylistEntry> = [];
   for (const entry of entries) {
     const url = entry.webpage_url || entry.url;
-    if (!url?.startsWith("http")) {
-      continue;
-    }
+    if (!url?.startsWith("http")) continue;
     out.push({
       url,
       title: entry.title?.trim() || "Untitled",
       duration: positive(entry.duration),
       thumbnail: entry.thumbnail || bestThumbnail(entry.thumbnails),
     });
-    if (out.length >= MAX_ENTRIES) {
-      break;
-    }
+    if (out.length >= MAX_ENTRIES) break;
   }
   return out;
 }
@@ -213,9 +203,7 @@ function heatmapOf(
     points.push({ start, end, value: Math.max(0, value) });
   }
   const peak = Math.max(0, ...points.map((point) => point.value));
-  if (peak <= 0) {
-    return [];
-  }
+  if (peak <= 0) return [];
   return points.map((point) => ({ ...point, value: point.value / peak }));
 }
 
@@ -242,37 +230,27 @@ function isStoryboard(format: Format): boolean {
 function storyboardOf(formats: Array<Format>): DownloadStoryboard | null {
   let best: DownloadStoryboard | null = null;
   for (const format of formats) {
-    if (!isStoryboard(format)) {
-      continue;
-    }
+    if (!isStoryboard(format)) continue;
     const columns = format.columns ?? 0;
     const rows = format.rows ?? 0;
     const tileWidth = format.width ?? 0;
     const tileHeight = format.height ?? 0;
-    if (columns < 1 || rows < 1 || tileWidth < 1 || tileHeight < 1) {
-      continue;
-    }
+    if (columns < 1 || rows < 1 || tileWidth < 1 || tileHeight < 1) continue;
     const sheets: DownloadStoryboard["sheets"] = [];
     let start = 0;
     for (const fragment of format.fragments ?? []) {
       const duration = fragment.duration ?? 0;
-      if (!fragment.url?.startsWith("http") || duration <= 0) {
-        continue;
-      }
+      if (!fragment.url?.startsWith("http") || duration <= 0) continue;
       sheets.push({ url: fragment.url, start, duration });
       start += duration;
     }
     const first = sheets[0];
-    if (!first) {
-      continue;
-    }
+    if (!first) continue;
     const interval =
       format.fps && format.fps > 0
         ? 1 / format.fps
         : first.duration / (columns * rows);
-    if (best && best.tileWidth >= tileWidth) {
-      continue;
-    }
+    if (best && best.tileWidth >= tileWidth) continue;
     best = { tileWidth, tileHeight, columns, rows, interval, sheets };
   }
   return best;
@@ -308,12 +286,8 @@ function bestAudio(
 ): { size: number | null } | null {
   let best: { size: number | null } | null = null;
   for (const format of formats) {
-    if (isStoryboard(format)) {
-      continue;
-    }
-    if (hasCodec(format.vcodec) || !hasCodec(format.acodec)) {
-      continue;
-    }
+    if (isStoryboard(format)) continue;
+    if (hasCodec(format.vcodec) || !hasCodec(format.acodec)) continue;
     best = { size: sizeOf(format, duration) };
   }
   return best;
@@ -327,13 +301,9 @@ function videoOptionsOf(
   const audio = bestAudio(formats, duration);
   const byHeight = new Map<number, DownloadVideoOption>();
   for (const format of formats) {
-    if (isStoryboard(format)) {
-      continue;
-    }
+    if (isStoryboard(format)) continue;
     const height = format.height ?? 0;
-    if (height < 144 || !hasVideo(format)) {
-      continue;
-    }
+    if (height < 144 || !hasVideo(format)) continue;
     const own = sizeOf(format, duration);
     const muxed = format.acodec !== "none";
     const size = own === null ? null : muxed ? own : own + (audio?.size ?? 0);
@@ -349,12 +319,8 @@ const GATED_HEADERS = /^(cookie|authorization|referer|origin)$/i;
 
 function playableUrl(format: Format): string | null {
   const url = format.url;
-  if (!url?.startsWith("http")) {
-    return null;
-  }
-  if (format.protocol && !/^https?$/.test(format.protocol)) {
-    return null;
-  }
+  if (!url?.startsWith("http")) return null;
+  if (format.protocol && !/^https?$/.test(format.protocol)) return null;
   if (
     Object.keys(format.http_headers ?? {}).some((key) =>
       GATED_HEADERS.test(key),
@@ -378,13 +344,9 @@ function previewOf(formats: Array<Format>): string | null {
   let best: { url: string; height: number } | null = null;
   let audioOnly: string | null = null;
   for (const format of formats) {
-    if (isStoryboard(format) || format.acodec === "none") {
-      continue;
-    }
+    if (isStoryboard(format) || format.acodec === "none") continue;
     const url = playableUrl(format);
-    if (!url) {
-      continue;
-    }
+    if (!url) continue;
     if (!hasVideo(format)) {
       audioOnly ??= url;
       continue;
@@ -396,9 +358,7 @@ function previewOf(formats: Array<Format>): string | null {
       (fits
         ? best.height > PREVIEW_MAX_HEIGHT || height >= best.height
         : best.height > PREVIEW_MAX_HEIGHT && height < best.height);
-    if (better) {
-      best = { url, height };
-    }
+    if (better) best = { url, height };
   }
   return best?.url ?? (formats.some(hasVideo) ? null : audioOnly);
 }
@@ -412,9 +372,7 @@ export interface FrameSource {
 /** The smallest direct video stream, so seeking a frame reads as few bytes as possible. */
 export function frameSourceOf(info: YtdlpProbeInfo): FrameSource | null {
   const duration = positive(info.duration);
-  if (!duration) {
-    return null;
-  }
+  if (!duration) return null;
   let best: { format: Format; height: number } | null = null;
   for (const format of info.formats ?? []) {
     if (isStoryboard(format) || !hasVideo(format)) {
@@ -430,17 +388,11 @@ export function frameSourceOf(info: YtdlpProbeInfo): FrameSource | null {
       continue;
     }
     const height = format.height ?? 0;
-    if (height < 144) {
-      continue;
-    }
-    if (best && best.height <= height) {
-      continue;
-    }
+    if (height < 144) continue;
+    if (best && best.height <= height) continue;
     best = { format, height };
   }
-  if (!best?.format.url) {
-    return null;
-  }
+  if (!best?.format.url) return null;
   return {
     url: best.format.url,
     headers: best.format.http_headers ?? {},
@@ -455,20 +407,14 @@ function captionsOf(
   const out: Array<DownloadCaption> = [];
   const seen = new Set<string>();
   for (const [lang, tracks] of Object.entries(manual ?? {})) {
-    if (lang === "live_chat" || tracks.length === 0) {
-      continue;
-    }
+    if (lang === "live_chat" || tracks.length === 0) continue;
     seen.add(lang);
     out.push({ lang, name: tracks[0]?.name || lang, automatic: false });
   }
   for (const [lang, tracks] of Object.entries(automatic ?? {})) {
-    if (!lang.endsWith("-orig") || tracks.length === 0) {
-      continue;
-    }
+    if (!lang.endsWith("-orig") || tracks.length === 0) continue;
     const base = lang.slice(0, -"-orig".length);
-    if (seen.has(base)) {
-      continue;
-    }
+    if (seen.has(base)) continue;
     seen.add(base);
     const name = (tracks[0]?.name || base).replace(/\s*\(Original\)$/i, "");
     out.push({ lang, name, automatic: true });

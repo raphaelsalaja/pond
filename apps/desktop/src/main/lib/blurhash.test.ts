@@ -28,9 +28,7 @@ describe("encodeBlurhash", () => {
     expect(hash).toEqual(expect.any(String));
     expect(hash?.length).toBeGreaterThan(6);
 
-    if (!hash) {
-      throw new Error("expected a hash");
-    }
+    if (!hash) throw new Error("expected a hash");
     const pixels = decode(hash, 4, 4);
     const r = pixels[0];
     const g = pixels[1];

@@ -61,12 +61,8 @@ function actionsPage(entry: MenuEntry): MenuPage | null {
 }
 
 function resultsAnnouncement(query: string, count: number): string {
-  if (!query) {
-    return "";
-  }
-  if (count === 0) {
-    return "No results found";
-  }
+  if (!query) return "";
+  if (count === 0) return "No results found";
   return formatPlural(count, { one: "result", other: "results" });
 }
 
@@ -115,9 +111,7 @@ function CommandMenu({
 
   function back(): boolean {
     const frame = stack.at(-1);
-    if (!frame) {
-      return false;
-    }
+    if (!frame) return false;
     setStack(stack.slice(0, -1));
     setQuery(frame.query);
     setActiveId(frame.activeId);
@@ -127,38 +121,27 @@ function CommandMenu({
 
   function execute(index: number): void {
     const entry = entries[index]?.entry;
-    if (!entry) {
-      return;
-    }
+    if (!entry) return;
     const next = entry.page?.();
-    if (next) {
-      openPage(next);
-    } else if (entry.run) {
-      runAfterClose(entry.run);
-    }
+    if (next) openPage(next);
+    else if (entry.run) runAfterClose(entry.run);
   }
 
   function openActions(): boolean {
     const next = active && actionsPage(active);
-    if (!next) {
-      return false;
-    }
+    if (!next) return false;
     openPage(next);
     return true;
   }
 
   function moveTo(index: number): void {
     const entry = entries[index]?.entry;
-    if (entry) {
-      setActiveId(entry.id);
-    }
+    if (entry) setActiveId(entry.id);
   }
 
   function move(delta: number): void {
     const count = entries.length;
-    if (count > 0) {
-      moveTo((activeIndex + delta + count) % count);
-    }
+    if (count > 0) moveTo((activeIndex + delta + count) % count);
   }
 
   function jump(delta: number): void {
@@ -194,9 +177,7 @@ function CommandMenu({
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
     const { nativeEvent, key, metaKey, ctrlKey, shiftKey, altKey } = event;
-    if (nativeEvent.isComposing || nativeEvent.keyCode === 229) {
-      return;
-    }
+    if (nativeEvent.isComposing || nativeEvent.keyCode === 229) return;
     const input = event.currentTarget;
     const collapsed = input.selectionStart === input.selectionEnd;
     const atStart = collapsed && input.selectionStart === 0;
@@ -295,9 +276,7 @@ export function CommandMenuHost({
     <Dialog.Root
       open={open}
       onOpenChange={(nextOpen, details) => {
-        if (nextOpen) {
-          return;
-        }
+        if (nextOpen) return;
         if (details.reason === "escape-key" && backRef.current?.()) {
           details.cancel();
           return;

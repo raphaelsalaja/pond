@@ -11,9 +11,7 @@ function accentColor(element: Element, amount: number): Array<number> {
   const color = getComputedStyle(probe).color;
   probe.remove();
   const context = document.createElement("canvas").getContext("2d");
-  if (!context) {
-    return [0, 0, 0];
-  }
+  if (!context) return [0, 0, 0];
   context.fillStyle = color;
   context.fillRect(0, 0, 1, 1);
   const [r = 0, g = 0, b = 0] = context.getImageData(0, 0, 1, 1).data;
@@ -26,9 +24,7 @@ export function ConnectGlow() {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!completed || !canvas) {
-      return;
-    }
+    if (!completed || !canvas) return;
     const colors: GlowColors = {
       start: accentColor(canvas, 18),
       middle: accentColor(canvas, 11),
@@ -38,9 +34,7 @@ export function ConnectGlow() {
     const origin = () => {
       const target = canvas.parentElement?.querySelector("[data-glow-origin]");
       const bounds = canvas.getBoundingClientRect();
-      if (!target) {
-        return { x: bounds.width / 2, y: 96 };
-      }
+      if (!target) return { x: bounds.width / 2, y: 96 };
       const rect = target.getBoundingClientRect();
       return {
         x: rect.left + rect.width / 2 - bounds.left,
@@ -51,8 +45,6 @@ export function ConnectGlow() {
     return startGlow(canvas, colors, origin, still);
   }, [completed]);
 
-  if (!completed) {
-    return null;
-  }
+  if (!completed) return null;
   return <canvas ref={canvasRef} className={styles.glow} />;
 }

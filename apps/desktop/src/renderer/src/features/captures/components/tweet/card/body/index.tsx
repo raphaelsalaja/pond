@@ -9,9 +9,7 @@ function renderTokens(text: string): Array<ReactNode> {
   let key = 0;
   for (const match of text.matchAll(ENTITY)) {
     const idx = match.index ?? 0;
-    if (idx > last) {
-      out.push(text.slice(last, idx));
-    }
+    if (idx > last) out.push(text.slice(last, idx));
     const token = match[0];
     out.push(
       <span key={`e${key}`} className={styles.entity}>
@@ -23,9 +21,7 @@ function renderTokens(text: string): Array<ReactNode> {
     key += 1;
     last = idx + token.length;
   }
-  if (last < text.length) {
-    out.push(text.slice(last));
-  }
+  if (last < text.length) out.push(text.slice(last));
   return out;
 }
 

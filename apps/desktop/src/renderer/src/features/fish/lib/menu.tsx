@@ -62,9 +62,7 @@ function moveFishTo(id: string, shelf: string): Promise<void> {
 function createFish(section?: string): void {
   void runFishAction(async () => {
     const created = await fish.create();
-    if (section) {
-      await moveFishTo(created.id, section);
-    }
+    if (section) await moveFishTo(created.id, section);
     fish.open(created.id);
     fish.startEditing(created.id);
   });
@@ -113,9 +111,7 @@ function shiftSection(section: FishSection, by: -1 | 1): void {
   const sections = [...fish.sections()];
   const from = sections.findIndex((entry) => entry.id === section.id);
   const to = from + by;
-  if (from < 0 || to < 0 || to >= sections.length) {
-    return;
-  }
+  if (from < 0 || to < 0 || to >= sections.length) return;
   sections.splice(from, 1);
   sections.splice(to, 0, section);
   void runFishAction(

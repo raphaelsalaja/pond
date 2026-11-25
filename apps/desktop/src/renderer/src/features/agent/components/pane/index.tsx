@@ -132,9 +132,7 @@ function AgentPaneContent({
     ? fromUIMessage(lastResponse, state.chatId ?? "pending").metadata
     : undefined;
   const reviews = messages.flatMap((message) => {
-    if (message.role !== "assistant") {
-      return [];
-    }
+    if (message.role !== "assistant") return [];
     const changes = fromUIMessage(message, state.chatId ?? "pending").metadata
       ?.changes;
     return changes?.length ? [{ messageId: message.id, changes }] : [];
@@ -165,18 +163,14 @@ function AgentPaneContent({
     input.current?.focus();
   }
   useEffect(() => {
-    if (state.focusRequest) {
-      requestAnimationFrame(() => input.current?.focus());
-    }
+    if (state.focusRequest) requestAnimationFrame(() => input.current?.focus());
   }, [state.focusRequest]);
   function attach(sources: Array<AssistantSource>) {
     assistant.attach(sources);
     requestAnimationFrame(focus);
   }
   function submit(content = state.draft) {
-    if (!provider || running) {
-      return;
-    }
+    if (!provider || running) return;
     assistant.setDraft(content);
     /** queue sends immediately unless another fish's reply is still running. */
     void assistant.queue(provider, {
@@ -185,9 +179,7 @@ function AgentPaneContent({
     });
   }
   function queue(content: string) {
-    if (!provider) {
-      return;
-    }
+    if (!provider) return;
     assistant.setDraft(content);
     void assistant.queue(provider, {
       modelId,
@@ -195,18 +187,14 @@ function AgentPaneContent({
     });
   }
   function regenerate() {
-    if (!provider || running) {
-      return;
-    }
+    if (!provider || running) return;
     void assistant.regenerate(provider, {
       modelId,
       controls: runControlsForOptions(modelOptions),
     });
   }
   async function answerQuestion(messageId: string, answer: string) {
-    if (!provider || running) {
-      return;
-    }
+    if (!provider || running) return;
     await assistant.answerQuestion(messageId, answer, provider, {
       modelId,
       controls: runControlsForOptions(modelOptions),

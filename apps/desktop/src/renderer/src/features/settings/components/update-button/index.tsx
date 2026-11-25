@@ -6,9 +6,7 @@ import { useUpdateNotice } from "@/features/settings/components/update-dialog/us
 import styles from "./styles.module.css";
 
 function label(notice: UpdateNotice): string {
-  if (notice.phase === "downloaded") {
-    return "Restart to Update";
-  }
+  if (notice.phase === "downloaded") return "Restart to Update";
   if (notice.downloading) {
     return notice.progress === undefined
       ? "Downloading Update"
@@ -19,9 +17,7 @@ function label(notice: UpdateNotice): string {
 
 export function UpdateButton() {
   const notice = useUpdateNotice();
-  if (!notice) {
-    return null;
-  }
+  if (!notice) return null;
 
   const text = label(notice);
   return (

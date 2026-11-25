@@ -30,9 +30,7 @@ export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
       : null;
   }
   const page = parsePageBlob(raw);
-  if (!page) {
-    return null;
-  }
+  if (!page) return null;
   return captureFromTweetDraft(
     draftFromDomHarvest({
       source: "twitter",

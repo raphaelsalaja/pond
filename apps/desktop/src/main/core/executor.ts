@@ -49,12 +49,8 @@ interface ExecuteOptions {
 type TagRow = Tag;
 
 function dataForSyncAction(tx: Transaction): SyncActionPayload {
-  if ("data" in tx) {
-    return tx.data;
-  }
-  if ("patch" in tx) {
-    return tx.patch;
-  }
+  if ("data" in tx) return tx.data;
+  if ("patch" in tx) return tx.patch;
   switch (tx.kind) {
     case "trash":
       return { deletedAt: new Date() };
@@ -144,11 +140,8 @@ function trashIngestChange(
   const trashedIds: Array<string> = [];
   const restoredIds: Array<string> = [];
   for (const [id, kind] of kindById) {
-    if (kind === "trash") {
-      trashedIds.push(id);
-    } else {
-      restoredIds.push(id);
-    }
+    if (kind === "trash") trashedIds.push(id);
+    else restoredIds.push(id);
   }
   return { trashedIds, restoredIds };
 }
@@ -156,9 +149,7 @@ function trashIngestChange(
 export function withMutationScope<T>(operation: () => Promise<T>): Promise<T> {
   return mutationQueue.run(async () => {
     const blocked = blockedLibraries.get(libraryRoot());
-    if (blocked) {
-      throw blocked;
-    }
+    if (blocked) throw blocked;
     return operation();
   });
 }
@@ -175,9 +166,7 @@ export async function executeTransaction(
   opts: ExecuteOptions = {},
 ): Promise<SyncAction> {
   const [action] = await executeBatch([tx], opts);
-  if (!action) {
-    throw new Error("The transaction produced no sync action.");
-  }
+  if (!action) throw new Error("The transaction produced no sync action.");
   return action;
 }
 
@@ -197,9 +186,7 @@ async function executeSerializedBatch(
   }
   const root = libraryRoot();
   const blocked = blockedLibraries.get(root);
-  if (blocked) {
-    throw blocked;
-  }
+  if (blocked) throw blocked;
   const batchId = ulid();
   const db = await getDb();
   const raw = db.$raw;
@@ -245,9 +232,7 @@ async function executeSerializedBatch(
             })
             .returning()
             .all()[0];
-          if (!inserted) {
-            throw new Error("sync_actions insert returned no row");
-          }
+          if (!inserted) throw new Error("sync_actions insert returned no row");
           out.push(inserted);
         }
         if (
@@ -269,9 +254,7 @@ async function executeSerializedBatch(
     throw cause;
   });
 
-  if (withBatch.some((tx) => isTagModel(tx.model))) {
-    scheduleTagsDump();
-  }
+  if (withBatch.some((tx) => isTagModel(tx.model))) scheduleTagsDump();
 
   writesSinceTrim += actions.length;
   if (writesSinceTrim >= 500) {
@@ -292,15 +275,11 @@ async function executeSerializedBatch(
   if (!opts.silent) {
     for (let i = 0; i < actions.length; i += 1) {
       const action = actions[i];
-      if (action && !withBatch[i]?.meta?.silent) {
-        broadcastSyncAction(action);
-      }
+      if (action && !withBatch[i]?.meta?.silent) broadcastSyncAction(action);
     }
   }
   const ingestChange = trashIngestChange(withBatch);
-  if (ingestChange && onTrashIngest) {
-    await onTrashIngest(ingestChange);
-  }
+  if (ingestChange && onTrashIngest) await onTrashIngest(ingestChange);
   return actions;
 }
 
@@ -309,9 +288,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
     await writeFolderMemberships(tx.id, tx.patch.folderIds);
     return;
   }
-  if (tx.model !== "save") {
-    return;
-  }
+  if (tx.model !== "save") return;
   switch (tx.kind) {
     case "create": {
       await writeSaveFiles(tx.id, tx.data, tx.files ?? []);
@@ -351,9 +328,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
         tx.files ?? [],
       );
       if (patched) {
-        if (tx.titleLock) {
-          setUserTitleLock(tx.id, tx.titleLock.after);
-        }
+        if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
         return;
       }
 
@@ -376,9 +351,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
         current.files.length === 0 &&
         canPersistBeforeMaterialization(tx.patch)
       ) {
-        if (tx.titleLock) {
-          setUserTitleLock(tx.id, tx.titleLock.after);
-        }
+        if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
         return;
       }
 
@@ -391,9 +364,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
           tx.files.map((f) => f.filename),
         );
         await writeSaveFiles(tx.id, merged, tx.files);
-        if (tx.titleLock) {
-          setUserTitleLock(tx.id, tx.titleLock.after);
-        }
+        if (tx.titleLock) setUserTitleLock(tx.id, tx.titleLock.after);
         return;
       }
       throw new Error(
@@ -492,14 +463,10 @@ function applyToIndex(
           .from(savesTable)
           .where(eq(savesTable.id, tx.id))
           .get();
-        if (!current) {
-          throw new Error("The Save no longer exists.");
-        }
+        if (!current) throw new Error("The Save no longer exists.");
         const entries = Object.entries(current);
         for (const [key, expected] of Object.entries(tx.before)) {
-          if (expected === undefined) {
-            continue;
-          }
+          if (expected === undefined) continue;
           const actual = entries.find(([field]) => field === key)?.[1];
           if (JSON.stringify(actual) !== JSON.stringify(expected)) {
             throw new Error("The Save changed. Review the operation again.");

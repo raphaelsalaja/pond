@@ -39,9 +39,7 @@ export function createFishMcpQueries(
 
   async function statusFor(id: string): Promise<FishMcpServerStatus> {
     const found = (await statuses()).find((s) => s.server.id === id);
-    if (!found) {
-      throw userError("That server no longer exists.");
-    }
+    if (!found) throw userError("That server no longer exists.");
     return found;
   }
 

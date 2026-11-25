@@ -10,9 +10,7 @@ const CARD_DIRS = ["tweet", "threads", "text-card"];
 function cssFiles(dir: string): Array<string> {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      return cssFiles(path);
-    }
+    if (entry.isDirectory()) return cssFiles(path);
     return entry.name.endsWith(".css") ? [path] : [];
   });
 }

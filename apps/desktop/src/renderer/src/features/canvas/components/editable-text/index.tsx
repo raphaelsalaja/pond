@@ -51,9 +51,7 @@ export function EditableText({
 
   useEffect(() => {
     const element = field.current;
-    if (!editing || !element) {
-      return;
-    }
+    if (!editing || !element) return;
     element.focus();
     element.setSelectionRange(element.value.length, element.value.length);
   }, [editing]);
@@ -86,9 +84,7 @@ export function EditableText({
         onBlur={() => board.finishEditing(id)}
         onKeyDown={(event) => {
           event.stopPropagation();
-          if (event.nativeEvent.isComposing) {
-            return;
-          }
+          if (event.nativeEvent.isComposing) return;
           if (event.key === "Escape") {
             event.currentTarget.blur();
             return;
@@ -149,15 +145,10 @@ function RichNote({
 
   useEffect(() => {
     const element = field.current;
-    if (!element || started.current) {
-      return;
-    }
+    if (!element || started.current) return;
     started.current = true;
-    if (isRichNote(text)) {
-      element.innerHTML = richNote(text);
-    } else {
-      element.textContent = text;
-    }
+    if (isRichNote(text)) element.innerHTML = richNote(text);
+    else element.textContent = text;
     element.focus();
   }, [text]);
 
@@ -197,9 +188,7 @@ function RichNote({
         onBlur={() => board.finishEditing(id)}
         onKeyDown={(event) => {
           event.stopPropagation();
-          if (event.key === "Escape") {
-            event.currentTarget.blur();
-          }
+          if (event.key === "Escape") event.currentTarget.blur();
         }}
       />
     </div>

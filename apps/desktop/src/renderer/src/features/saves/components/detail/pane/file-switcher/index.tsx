@@ -19,9 +19,7 @@ export function FileSwitcher({
   shortcuts?: boolean;
 }) {
   const { index, count, onPrevious, onNext } = pager;
-  if (count < 2) {
-    return null;
-  }
+  if (count < 2) return null;
 
   return (
     <div className={styles.switcher}>

@@ -115,9 +115,7 @@ export async function recoverMissingLibrary(
   ports: MissingLibraryPorts = windowMissingLibraryPorts(missing),
 ): Promise<boolean> {
   const recovered = await recoverMissingLibraryLoop(missing, ports);
-  if (recovered) {
-    ports.settle?.();
-  }
+  if (recovered) ports.settle?.();
   return recovered;
 }
 
@@ -129,28 +127,20 @@ async function recoverMissingLibraryLoop(
     "If you moved it, locate it. If it's on a drive or in iCloud, wait until it's available, then try again.";
   for (;;) {
     const choice = await ports.ask(detail);
-    if (choice === "quit") {
-      return false;
-    }
+    if (choice === "quit") return false;
     if (choice === "retry") {
-      if (existsSync(missing)) {
-        return true;
-      }
+      if (existsSync(missing)) return true;
       detail =
         "It's still missing. Connect the drive it's on and try again, or locate it.";
       continue;
     }
     if (choice === "new") {
-      if (ports.create()) {
-        return true;
-      }
+      if (ports.create()) return true;
       detail = "Couldn't create a new Library. Locate an existing one instead.";
       continue;
     }
     const path = await ports.pick();
-    if (!path) {
-      continue;
-    }
+    if (!path) continue;
     const located = normalizeLibraryPath(path);
     const problem = ports.check(located);
     if (problem) {
@@ -187,9 +177,7 @@ export async function recoverUnreadableLibrary(
       properties: ["openFile", "openDirectory"],
     });
     const path = picked.filePaths[0];
-    if (picked.canceled || !path) {
-      continue;
-    }
+    if (picked.canceled || !path) continue;
     const next = checkLibrary(path);
     if (next) {
       problem = next;

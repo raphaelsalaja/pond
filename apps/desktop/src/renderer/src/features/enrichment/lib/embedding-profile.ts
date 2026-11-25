@@ -33,9 +33,7 @@ export function createEmbeddingProfileCache<T extends LoadedEmbeddingProfile>(
     },
     dispose() {
       const done = transition.then(async () => {
-        if (loaded) {
-          await loaded.dispose();
-        }
+        if (loaded) await loaded.dispose();
         loaded = null;
       });
       transition = done.then(

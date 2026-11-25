@@ -27,9 +27,7 @@ function useSaveMenu() {
   const [openWithApps, setOpenWithApps] = useState<Array<OpenWithApp>>([]);
   return {
     open(save: Save) {
-      if (!selection.has(save.id)) {
-        selectOnlySave(save.id);
-      }
+      if (!selection.has(save.id)) selectOnlySave(save.id);
       const targets = contextMenuSaves(save);
       const kind = openWithKind(targets[0] ?? save);
       void loadOpenWithApps({
@@ -56,9 +54,7 @@ interface SaveContextMenuProps {
 
 export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
   const menu = useSaveMenu();
-  if (useContext(HostedContext)) {
-    return children;
-  }
+  if (useContext(HostedContext)) return children;
   return (
     <SpecContextMenu
       search

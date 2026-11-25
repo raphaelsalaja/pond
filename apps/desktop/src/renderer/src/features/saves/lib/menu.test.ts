@@ -62,30 +62,22 @@ function sectionItems(
 
 function checkboxLabeled(items: Array<MenuItemSpec>, label: string) {
   for (const item of items) {
-    if (item.type === "checkbox" && item.label === label) {
-      return item;
-    }
+    if (item.type === "checkbox" && item.label === label) return item;
   }
   throw new Error(`Missing ${label}`);
 }
 
 function containsSubmenu(items: Array<MenuItemSpec>): boolean {
   return items.some((item) => {
-    if (item.type === "submenu") {
-      return true;
-    }
+    if (item.type === "submenu") return true;
     return item.type === "group" ? containsSubmenu(item.items) : false;
   });
 }
 
 function visibleLeafItems(items: Array<MenuItemSpec>): Array<MenuItemSpec> {
   return items.flatMap((item) => {
-    if ("hidden" in item && item.hidden) {
-      return [];
-    }
-    if (item.type === "group") {
-      return visibleLeafItems(item.items);
-    }
+    if ("hidden" in item && item.hidden) return [];
+    if (item.type === "group") return visibleLeafItems(item.items);
     if (
       item.type === "separator" ||
       item.type === "custom" ||
@@ -354,9 +346,7 @@ describe("buildSaveMenu", () => {
     });
 
     const corrected = pool.get(save.id);
-    if (!corrected) {
-      throw new Error("Missing corrected Save");
-    }
+    if (!corrected) throw new Error("Missing corrected Save");
     const again = buildSaveMenu(corrected, { clipboardEmpty: true });
     const restore = checkboxLabeled(again, "Sensitive Content");
     expect(restore.checked).toBe(false);

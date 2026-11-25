@@ -35,17 +35,13 @@ export function TableItem({
 
   useEffect(() => {
     const table = grid.current;
-    if (!table) {
-      return;
-    }
+    if (!table) return;
     const remember = (event: MouseEvent) => {
       if (!isElement(event.target)) {
         return;
       }
       const cell = event.target.closest<HTMLElement>("[data-cell]");
-      if (cell?.dataset.cell) {
-        target.current = cell.dataset.cell;
-      }
+      if (cell?.dataset.cell) target.current = cell.dataset.cell;
     };
     table.addEventListener("dblclick", remember, { capture: true });
     return () =>
@@ -53,9 +49,7 @@ export function TableItem({
   }, []);
 
   useEffect(() => {
-    if (!editing) {
-      return;
-    }
+    if (!editing) return;
     grid.current
       ?.querySelector<HTMLTextAreaElement>(
         `textarea[data-cell="${target.current}"]`,

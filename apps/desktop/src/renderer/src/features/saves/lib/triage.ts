@@ -19,16 +19,12 @@ function savesLabel(count: number): string {
 }
 
 function trashTitle(count: number): string {
-  if (count === 1) {
-    return "Moved to Trash";
-  }
+  if (count === 1) return "Moved to Trash";
   return `Moved ${savesLabel(count)} to Trash`;
 }
 
 function restoredTitle(count: number): string {
-  if (count === 1) {
-    return "Restored from Trash";
-  }
+  if (count === 1) return "Restored from Trash";
   return `Restored ${savesLabel(count)}`;
 }
 
@@ -71,15 +67,11 @@ export async function moveSavesToTrash(
   ids: ReadonlyArray<string>,
 ): Promise<void> {
   const targets = ids.filter((id) => !pool.get(id)?.deletedAt);
-  if (!targets.length) {
-    return;
-  }
+  if (!targets.length) return;
   await tumbleToTrash(targets);
   try {
     const { changed, undoId } = await bulkMutation(targets, { kind: "trash" });
-    if (!changed) {
-      return;
-    }
+    if (!changed) return;
     notifyUndoable({
       id: "trash",
       title: trashTitle(changed),
@@ -109,28 +101,19 @@ export async function showResult(
   from: string | null,
 ): Promise<void> {
   await ensureSaves([next]);
-  if (primarySelectionStore.state.id !== from) {
-    return;
-  }
+  if (primarySelectionStore.state.id !== from) return;
   const detail = openSaveId() !== null;
   selectOnlySave(next);
-  if (detail) {
-    openSave(next);
-  } else {
-    await resultNavigation.reveal(next);
-  }
+  if (detail) openSave(next);
+  else await resultNavigation.reveal(next);
 }
 
 /** Moves to a neighbor without touching the Save, so folders, tags, notes, rating and favorite stay as they were. */
 export async function skipSave(delta: 1 | -1): Promise<void> {
   const current = primarySelectionStore.state.id;
-  if (!current) {
-    return;
-  }
+  if (!current) return;
   const next = await resultNavigation.next(current, delta);
-  if (primarySelectionStore.state.id !== current) {
-    return;
-  }
+  if (primarySelectionStore.state.id !== current) return;
   if (!next) {
     notify({
       id: "skip-end",

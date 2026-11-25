@@ -20,9 +20,7 @@ const load = async (path) => import(pathToFileURL(path).href);
 function render(script) {
   const parts = [script(helpers, style)].flat(Infinity).filter(Boolean);
   const solid = parts.every((p) => toPart(p).solid);
-  if (!solid) {
-    return { style: "outline", svg: draw(script, style) };
-  }
+  if (!solid) return { style: "outline", svg: draw(script, style) };
   const body = draw(script, style)
     .match(/<path[\s\S]*<\/svg>$/)[0]
     .replaceAll(' fill="currentColor" stroke="none"', "");
@@ -52,20 +50,15 @@ for (const name of scripts) {
     [null, mod.default],
     ["open", mod.open],
   ]) {
-    if (!script) {
-      continue;
-    }
+    if (!script) continue;
     const { style: kind, svg } = render(script);
     const file = `${name}/${kind}-18${state ? `-${state}` : ""}.svg`;
     writeFileSync(at("svg", file), `${svg}\n`);
     variants.push({ style: kind, size: 18, ...(state && { state }), file });
   }
   const keep = new Set(variants.map((v) => v.file.split("/")[1]));
-  for (const file of readdirSync(dir)) {
-    if (!keep.has(file)) {
-      rmSync(resolve(dir, file));
-    }
-  }
+  for (const file of readdirSync(dir))
+    if (!keep.has(file)) rmSync(resolve(dir, file));
   manifest[name].variants = variants;
 }
 

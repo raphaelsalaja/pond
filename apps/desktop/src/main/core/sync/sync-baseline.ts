@@ -29,9 +29,7 @@ export function knownIdsFromRows(
   const ids = new Set<string>();
   for (const row of rows) {
     ids.add(row.sourceId);
-    if (row.postSourceId) {
-      ids.add(row.postSourceId);
-    }
+    if (row.postSourceId) ids.add(row.postSourceId);
   }
   return ids;
 }
@@ -111,9 +109,7 @@ async function loadDismissedSourceIds(
     .from(deletedSourceIds)
     .where(eq(deletedSourceIds.source, account.source));
   const ids = knownIdsFromRows(trashed);
-  for (const row of removed) {
-    ids.add(row.sourceId);
-  }
+  for (const row of removed) ids.add(row.sourceId);
   return ids;
 }
 
@@ -145,18 +141,10 @@ export async function persistWatermark(
     lastError: null,
     knownCount: opts.total,
   };
-  if (opts.resumeCursor !== undefined) {
-    patch.resumeCursor = opts.resumeCursor;
-  }
-  if (opts.newestId) {
-    patch.highWaterMark = opts.newestId;
-  }
-  if (opts.full) {
-    patch.lastFullSyncAt = lastSyncedAt;
-  }
-  if (opts.collectionsChecked) {
-    patch.lastCollectionCheckAt = lastSyncedAt;
-  }
+  if (opts.resumeCursor !== undefined) patch.resumeCursor = opts.resumeCursor;
+  if (opts.newestId) patch.highWaterMark = opts.newestId;
+  if (opts.full) patch.lastFullSyncAt = lastSyncedAt;
+  if (opts.collectionsChecked) patch.lastCollectionCheckAt = lastSyncedAt;
   await patchAccountSync(accountId, patch);
   return lastSyncedAt;
 }

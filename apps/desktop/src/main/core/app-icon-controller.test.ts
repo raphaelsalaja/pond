@@ -71,9 +71,7 @@ describe("app icon controller", () => {
     const ports: AppIconPorts = {
       decide: () => ({ kind: "image", path: "grape/default.png" }),
       showImage(path) {
-        if (fail) {
-          throw new Error("dock unavailable");
-        }
+        if (fail) throw new Error("dock unavailable");
         h.dock.push(path);
       },
       showBuiltin() {},

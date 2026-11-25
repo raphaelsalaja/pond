@@ -41,9 +41,7 @@ export function citedSentence(citation: Element): Range | null {
       break;
     }
     if (node.parentElement?.closest("[data-citation]")) {
-      if (text.slice(afterCitation).trim()) {
-        afterCitation = text.length;
-      }
+      if (text.slice(afterCitation).trim()) afterCitation = text.length;
       continue;
     }
     if (!isText(node)) {
@@ -58,17 +56,11 @@ export function citedSentence(citation: Element): Range | null {
   for (const match of text.slice(base, end).matchAll(SENTENCE_END)) {
     start = base + match.index + match[0].length;
   }
-  while (start < end && /\s/.test(text.charAt(start))) {
-    start += 1;
-  }
-  if (start >= end) {
-    return null;
-  }
+  while (start < end && /\s/.test(text.charAt(start))) start += 1;
+  if (start >= end) return null;
   const from = locate(pieces, start);
   const to = locate(pieces, end);
-  if (!from || !to) {
-    return null;
-  }
+  if (!from || !to) return null;
   const range = document.createRange();
   range.setStart(...from);
   range.setEnd(...to);
@@ -76,19 +68,12 @@ export function citedSentence(citation: Element): Range | null {
 }
 
 export function showCitedSentence(citation: Element) {
-  if (!("Highlight" in globalThis) || !CSS.highlights) {
-    return;
-  }
+  if (!("Highlight" in globalThis) || !CSS.highlights) return;
   const range = citedSentence(citation);
-  if (range) {
-    CSS.highlights.set(HIGHLIGHT, new Highlight(range));
-  } else {
-    CSS.highlights.delete(HIGHLIGHT);
-  }
+  if (range) CSS.highlights.set(HIGHLIGHT, new Highlight(range));
+  else CSS.highlights.delete(HIGHLIGHT);
 }
 
 export function hideCitedSentence() {
-  if ("CSS" in globalThis) {
-    CSS.highlights?.delete(HIGHLIGHT);
-  }
+  if ("CSS" in globalThis) CSS.highlights?.delete(HIGHLIGHT);
 }

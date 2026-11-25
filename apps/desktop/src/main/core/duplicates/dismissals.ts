@@ -45,20 +45,14 @@ export function addDismissals(
   );
   let added = 0;
   for (const pair of pairs) {
-    if (pair.ids[0] === pair.ids[1]) {
-      continue;
-    }
+    if (pair.ids[0] === pair.ids[1]) continue;
     const ids = orderIds(pair.ids[0], pair.ids[1]);
     const key = pairKey(ids[0], ids[1]);
     const current = byPair.get(key);
-    if (current?.relation === pair.relation) {
-      continue;
-    }
+    if (current?.relation === pair.relation) continue;
     byPair.set(key, { ids, relation: pair.relation });
     added += 1;
   }
-  if (added > 0) {
-    writeBundleJson(file, [...byPair.values()]);
-  }
+  if (added > 0) writeBundleJson(file, [...byPair.values()]);
   return added;
 }

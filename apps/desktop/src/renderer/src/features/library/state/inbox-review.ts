@@ -45,9 +45,7 @@ export const inboxReview = {
       scope: { inbox: scope },
       limit: QUEUE_LIMIT,
     });
-    if (ticket !== request) {
-      return;
-    }
+    if (ticket !== request) return;
     store.setState(() => ({ scope, queue: startQueue(page.ids) }));
   },
   exit(): void {

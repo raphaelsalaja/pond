@@ -25,9 +25,7 @@ export class UnsplashAssetExtractor implements Extractor {
 
   handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
-    if (segments.length !== 1 || !first?.startsWith("@")) {
-      return null;
-    }
+    if (segments.length !== 1 || !first?.startsWith("@")) return null;
     const handle = first.slice(1);
     return /^[A-Za-z0-9_]{1,40}$/.test(handle) ? handle : null;
   }
@@ -51,9 +49,7 @@ export class UnsplashAssetExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("unsplash", input.url.href);
-    if (!sourceId) {
-      throw new TerminalError("could not parse unsplash photo");
-    }
+    if (!sourceId) throw new TerminalError("could not parse unsplash photo");
     return captureFromSource({
       url: `https://unsplash.com/photos/${sourceId}`,
       source: "unsplash",

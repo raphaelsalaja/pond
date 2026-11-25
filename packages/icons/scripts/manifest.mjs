@@ -33,9 +33,7 @@ function near(point, lines, within = TOLERANCE) {
     const dot = (point[0] - a[0]) * dx + (point[1] - a[1]) * dy;
     const t = length ? Math.max(0, Math.min(1, dot / length)) : 0;
     const d = Math.hypot(point[0] - a[0] - dx * t, point[1] - a[1] - dy * t);
-    if (d <= within) {
-      return true;
-    }
+    if (d <= within) return true;
   }
   return false;
 }
@@ -47,9 +45,7 @@ const points = (part) =>
 function coverage(part, nodes) {
   const lines = outline(nodes);
   const all = points(part);
-  if (all.length === 0) {
-    return 0;
-  }
+  if (all.length === 0) return 0;
   return all.filter((point) => near(point, lines)).length / all.length;
 }
 
@@ -114,12 +110,8 @@ export function validate({ glyphs, manifest, migration = {}, parts }) {
       miss("svg/manifest.json", "manifest-orphan", `${name} has no drawing`);
       continue;
     }
-    if (!entry.concept) {
-      miss(file, "concept-missing", "no concept");
-    }
-    if (!entry.tags?.length) {
-      miss(file, "tags-missing", "no tags");
-    }
+    if (!entry.concept) miss(file, "concept-missing", "no concept");
+    if (!entry.tags?.length) miss(file, "tags-missing", "no tags");
     if (entry.concept && !entry.picker) {
       const key = entry.concept.toLowerCase();
       concepts.set(key, [...(concepts.get(key) ?? []), name]);
@@ -183,9 +175,7 @@ export function validate({ glyphs, manifest, migration = {}, parts }) {
 
 export function report(misses) {
   const counts = new Map();
-  for (const { rule } of misses) {
-    counts.set(rule, (counts.get(rule) ?? 0) + 1);
-  }
+  for (const { rule } of misses) counts.set(rule, (counts.get(rule) ?? 0) + 1);
   const rows = [...counts].sort((a, b) => b[1] - a[1]);
   return [
     "# Icon report",

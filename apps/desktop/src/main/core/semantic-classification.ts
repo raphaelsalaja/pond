@@ -40,9 +40,7 @@ function cleanLabels(labels: Array<string>): Array<string> {
   for (const label of labels) {
     const value = label.replaceAll(/\s+/g, " ").trim();
     const key = value.toLowerCase();
-    if (!value || seen.has(key)) {
-      continue;
-    }
+    if (!value || seen.has(key)) continue;
     seen.add(key);
     cleaned.push(value);
   }
@@ -73,9 +71,7 @@ export async function classifyLabelsWithStore(
 
   const candidates = new Map<string, Array<number>>();
   for (const row of rows) {
-    if (!saveIds.includes(row.id) || candidates.has(row.id)) {
-      continue;
-    }
+    if (!saveIds.includes(row.id) || candidates.has(row.id)) continue;
     try {
       candidates.set(row.id, normalizedEmbeddingVector(row.vector));
     } catch {
@@ -91,9 +87,7 @@ export async function classifyLabelsWithStore(
         scores: labels
           .flatMap((label, index) => {
             const labelVector = labelVectors[index];
-            if (!labelVector) {
-              return [];
-            }
+            if (!labelVector) return [];
             const score = cosineSimilarity(vector, labelVector);
             return score === null ? [] : [{ label, score }];
           })
@@ -109,9 +103,7 @@ export async function classifyLabelsWithStore(
 function classificationStore(db: Db): SemanticClassificationStore {
   return {
     async candidates(ids, model) {
-      if (ids.length === 0) {
-        return [];
-      }
+      if (ids.length === 0) return [];
       const rows = await db
         .select({
           id: saves.id,

@@ -26,9 +26,7 @@ it("registers selected files without importing them into the library", async () 
 
   const picked = await attachments.pickLocalAttachments();
   expect(picked.ok).toBe(true);
-  if (!picked.ok) {
-    throw new Error(picked.error);
-  }
+  if (!picked.ok) throw new Error(picked.error);
   expect(picked.files).toEqual([
     expect.objectContaining({
       name: "reference.txt",

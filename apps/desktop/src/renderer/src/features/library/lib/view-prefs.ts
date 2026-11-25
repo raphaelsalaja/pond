@@ -28,9 +28,7 @@ const STORAGE_KEYS = {
 } satisfies Record<ViewPrefKey, string>;
 
 export function readViewPref(key: ViewPrefKey): string | null {
-  if (!globalThis.window) {
-    return null;
-  }
+  if (!globalThis.window) return null;
   try {
     return window.localStorage.getItem(STORAGE_KEYS[key]);
   } catch {
@@ -39,9 +37,7 @@ export function readViewPref(key: ViewPrefKey): string | null {
 }
 
 export function writeViewPref(key: ViewPrefKey, value: string): void {
-  if (!globalThis.window) {
-    return;
-  }
+  if (!globalThis.window) return;
   try {
     window.localStorage.setItem(STORAGE_KEYS[key], value);
   } catch {

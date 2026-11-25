@@ -148,9 +148,7 @@ export function createNewActions({
     const picked = await window.pond.query("saves.pickImportPaths", {
       kind,
     });
-    if (picked.paths.length === 0) {
-      return;
-    }
+    if (picked.paths.length === 0) return;
     await importFilePaths(picked.paths, folderId);
   }
 
@@ -163,9 +161,7 @@ export function createNewActions({
         folderId ? { paths, folderIds: [folderId] } : { paths },
       ),
     );
-    if (result.reason === "cancelled") {
-      return;
-    }
+    if (result.reason === "cancelled") return;
     if (!result.ok || !result.ids?.length) {
       throw new Error(
         "No files were imported. Choose readable, non-empty files.",
@@ -180,15 +176,11 @@ export function createNewActions({
     const picked = await window.pond.query("saves.pickImportPaths", {
       kind: "folders",
     });
-    if (picked.paths.length === 0) {
-      return;
-    }
+    if (picked.paths.length === 0) return;
     const result = SaveResultSchema.parse(
       await importFilesWithDuplicateReview({ paths: picked.paths }),
     );
-    if (result.reason === "cancelled") {
-      return;
-    }
+    if (result.reason === "cancelled") return;
     if (!result.ok || !result.ids?.length) {
       throw new Error(
         `No files were imported from the ${source} export. Choose its exported media folder.`,
@@ -201,9 +193,7 @@ export function createNewActions({
     const result = SaveResultSchema.parse(
       await importClipboardWithDuplicateReview({}),
     );
-    if (result.reason === "cancelled") {
-      return;
-    }
+    if (result.reason === "cancelled") return;
     if (!result.ok || !result.ids?.length) {
       throw new Error(
         "Copy an image or files first. Use Import from Links for URLs.",
@@ -215,9 +205,7 @@ export function createNewActions({
   async function importBookmarks(): Promise<void> {
     const result = await window.pond.query("saves.importBookmarks", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") {
-        return;
-      }
+      if (result.reason === "cancelled") return;
       throw new Error(result.error);
     }
     notify({
@@ -233,9 +221,7 @@ export function createNewActions({
   async function importMymind(): Promise<void> {
     const result = await window.pond.query("saves.importMymind", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") {
-        return;
-      }
+      if (result.reason === "cancelled") return;
       throw new Error(result.error);
     }
     notify({
@@ -251,9 +237,7 @@ export function createNewActions({
   async function importDataExport(): Promise<void> {
     const result = await window.pond.query("saves.importDataExport", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") {
-        return;
-      }
+      if (result.reason === "cancelled") return;
       throw new Error(result.error);
     }
     await refreshFolders();
@@ -276,9 +260,7 @@ export function createNewActions({
 
   async function importPageAssets(url: string): Promise<void> {
     const href = url.trim();
-    if (!href) {
-      throw new Error("Enter a website link.");
-    }
+    if (!href) throw new Error("Enter a website link.");
     const notificationId = notify({
       id: "new-import",
       title: "Extracting page assets",
@@ -307,9 +289,7 @@ export function createNewActions({
 
   async function importEagle(): Promise<void> {
     const picked = await window.pond.query("saves.pickEagleLibrary", {});
-    if (!picked.ok || !picked.path) {
-      return;
-    }
+    if (!picked.ok || !picked.path) return;
     const progressId = crypto.randomUUID();
     const notificationId = notify({
       id: "new-import",
@@ -319,9 +299,7 @@ export function createNewActions({
       timeout: 0,
     });
     const unsubscribe = onEagleImportProgress((progress) => {
-      if (progress.id !== progressId) {
-        return;
-      }
+      if (progress.id !== progressId) return;
       const hasItems = progress.total > 0;
       updateNotification({
         id: notificationId,
@@ -371,9 +349,7 @@ export function createNewActions({
   async function importPondPackage(): Promise<void> {
     const result = await window.pond.query("saves.importPackage", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") {
-        return;
-      }
+      if (result.reason === "cancelled") return;
       throw new Error(
         result.error || "Couldn't import the package. Try again.",
       );
@@ -392,9 +368,7 @@ export function createNewActions({
   async function importEaglePackage(): Promise<void> {
     const result = await window.pond.query("saves.importEaglePackage", {});
     if (!result.ok) {
-      if (result.reason === "cancelled") {
-        return;
-      }
+      if (result.reason === "cancelled") return;
       throw new Error(
         result.error || "Couldn't import the Eagle package. Try again.",
       );
@@ -578,18 +552,13 @@ export function createNewActions({
         const result = SaveResultSchema.parse(
           await window.pond.query("saves.quickAdd", { url }),
         );
-        if (!result.ok) {
-          failed.push(url);
-        } else if (result.id) {
-          added.push(result.id);
-        }
+        if (!result.ok) failed.push(url);
+        else if (result.id) added.push(result.id);
       } catch {
         failed.push(url);
       }
     }
-    if (added.length > 0) {
-      reportDownloading(added);
-    }
+    if (added.length > 0) reportDownloading(added);
     return failed;
   }
 

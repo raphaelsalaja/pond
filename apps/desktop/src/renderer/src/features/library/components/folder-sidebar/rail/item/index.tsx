@@ -45,9 +45,7 @@ export function Item({
         aria-current={current ? "page" : undefined}
         onPointerDown={(event) => {
           /** Switching on press hides the press-to-release gap; Control-click opens the context menu on macOS. */
-          if (event.button !== 0 || event.ctrlKey) {
-            return;
-          }
+          if (event.button !== 0 || event.ctrlKey) return;
           pressed.current = true;
           onSelect();
         }}
@@ -56,9 +54,7 @@ export function Item({
         }}
         onClick={() => {
           /** Keyboard and accessibility activation click without a pointer press first. */
-          if (!pressed.current) {
-            onSelect();
-          }
+          if (!pressed.current) onSelect();
           pressed.current = false;
         }}
       >

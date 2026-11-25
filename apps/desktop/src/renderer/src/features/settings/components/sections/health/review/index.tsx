@@ -59,9 +59,7 @@ function Root({ category, downloads, onNavigate, children }: RootProps) {
       : category.entries.filter((entry) => entry.status === filter);
 
   async function run(key: string, action: HealthAction): Promise<void> {
-    if (action.navigates) {
-      onNavigate?.();
-    }
+    if (action.navigates) onNavigate?.();
     setBusy(key);
     try {
       await action.run();
@@ -103,9 +101,7 @@ function useReview(): ReviewValue | null {
 
 function Filters({ className }: { className?: string }) {
   const review = useReview();
-  if (!review || review.breakdown.length < 2) {
-    return null;
-  }
+  if (!review || review.breakdown.length < 2) return null;
   const { breakdown, filter, setFilter, category } = review;
   return (
     <ToggleGroup
@@ -171,9 +167,7 @@ function EntryActions({
 
 function List({ className, ...props }: ComponentPropsWithoutRef<"ul">) {
   const review = useReview();
-  if (!review) {
-    return null;
-  }
+  if (!review) return null;
   const { shown, category } = review;
   if (shown.length === 0) {
     return category.entries.length > 0 ? (
@@ -200,9 +194,7 @@ function List({ className, ...props }: ComponentPropsWithoutRef<"ul">) {
 
 function Fact({ className, ...props }: ComponentPropsWithoutRef<"p">) {
   const review = useReview();
-  if (!review) {
-    return null;
-  }
+  if (!review) return null;
   return (
     <p className={className} {...props}>
       {categoryFact(review.category.id, THIS_DEVICE)}
@@ -212,9 +204,7 @@ function Fact({ className, ...props }: ComponentPropsWithoutRef<"p">) {
 
 function Note() {
   const review = useReview();
-  if (!review) {
-    return null;
-  }
+  if (!review) return null;
   const { category } = review;
   const unlisted = Math.max(0, category.total - category.entries.length);
   return unlisted > 0 ? (
@@ -234,9 +224,7 @@ function Actions({
 }) {
   const review = useReview();
   const bulk = review ? review.actionsFor(review.shown) : [];
-  if (!review || bulk.length === 0) {
-    return fallback;
-  }
+  if (!review || bulk.length === 0) return fallback;
   const { busy, running, run } = review;
   return bulk.map((action) => (
     <Button

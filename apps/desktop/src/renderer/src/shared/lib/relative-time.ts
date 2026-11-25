@@ -29,33 +29,19 @@ function ago(diff: number): string {
 }
 
 export function relativeTime(iso: string | null): string {
-  if (!iso) {
-    return "never";
-  }
+  if (!iso) return "never";
   const ms = new Date(iso).getTime();
-  if (!Number.isFinite(ms)) {
-    return "never";
-  }
+  if (!Number.isFinite(ms)) return "never";
   return ago(Date.now() - ms);
 }
 
 export function compactAge(ms: number): string {
   const diff = Math.max(0, Date.now() - ms);
-  if (diff < MINUTE) {
-    return "now";
-  }
-  if (diff < HOUR) {
-    return `${Math.floor(diff / MINUTE)}m`;
-  }
-  if (diff < DAY) {
-    return `${Math.floor(diff / HOUR)}h`;
-  }
-  if (diff < 7 * DAY) {
-    return `${Math.floor(diff / DAY)}d`;
-  }
-  if (diff < YEAR) {
-    return `${Math.floor(diff / (7 * DAY))}w`;
-  }
+  if (diff < MINUTE) return "now";
+  if (diff < HOUR) return `${Math.floor(diff / MINUTE)}m`;
+  if (diff < DAY) return `${Math.floor(diff / HOUR)}h`;
+  if (diff < 7 * DAY) return `${Math.floor(diff / DAY)}d`;
+  if (diff < YEAR) return `${Math.floor(diff / (7 * DAY))}w`;
   return `${Math.floor(diff / YEAR)}y`;
 }
 

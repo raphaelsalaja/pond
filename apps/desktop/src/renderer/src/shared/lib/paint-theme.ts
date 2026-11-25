@@ -11,9 +11,7 @@ let painted: { key: string; mode: ThemeMode } | null = null;
 export function paintTheme(input: ThemeInput, gamut: Gamut): ThemeMode {
   const { background, foreground, accent, contrast } = input;
   const key = JSON.stringify([background, foreground, accent, contrast, gamut]);
-  if (painted?.key === key) {
-    return painted.mode;
-  }
+  if (painted?.key === key) return painted.mode;
   const { mode, tokens } = buildThemeTokens(input, gamut);
   const root = document.documentElement;
   for (const [name, value] of Object.entries(tokens)) {

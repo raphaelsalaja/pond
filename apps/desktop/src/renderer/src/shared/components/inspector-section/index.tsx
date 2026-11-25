@@ -29,9 +29,7 @@ export function Section({
   const id = useId();
   const reduceMotion = useReducedMotion();
 
-  if (empty && !action) {
-    return null;
-  }
+  if (empty && !action) return null;
 
   if (!collapsible) {
     return (
@@ -62,9 +60,7 @@ export function Section({
       multiple
       value={expanded ? [title] : []}
       onValueChange={(next) => {
-        if (!empty) {
-          setOpen(next.includes(title));
-        }
+        if (!empty) setOpen(next.includes(title));
       }}
     >
       <Accordion.Item value={title} className={styles.item}>

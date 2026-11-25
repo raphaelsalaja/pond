@@ -56,15 +56,10 @@ function publish(next: MachinePace): void {
   motionHold = motionPaused(pace, Date.now());
   if ("document" in globalThis) {
     const root = document.documentElement;
-    if (motionHold) {
-      root.setAttribute("data-motion-paused", "true");
-    } else {
-      root.removeAttribute("data-motion-paused");
-    }
+    if (motionHold) root.setAttribute("data-motion-paused", "true");
+    else root.removeAttribute("data-motion-paused");
   }
-  for (const listener of listeners) {
-    listener();
-  }
+  for (const listener of listeners) listener();
 }
 
 function patch(partial: Partial<MachinePace>): void {
@@ -72,9 +67,7 @@ function patch(partial: Partial<MachinePace>): void {
 }
 
 function readFocus() {
-  if (!("document" in globalThis)) {
-    return { hidden: false, focused: true };
-  }
+  if (!("document" in globalThis)) return { hidden: false, focused: true };
   return { hidden: document.hidden, focused: document.hasFocus() };
 }
 
@@ -96,22 +89,16 @@ function bindHost(
   void api
     .machinePace()
     .then((wire) => {
-      if (cancelled) {
-        return;
-      }
+      if (cancelled) return;
       const parsed = MachinePaceWireSchema.safeParse(wire);
-      if (parsed.success) {
-        onHost(parsed.data);
-      }
+      if (parsed.success) onHost(parsed.data);
     })
     .catch((cause: unknown) => {
       log.warn("[pond machine-pace] reading the host pace failed", cause);
     });
   const detach = api.onMachinePace((wire) => {
     const parsed = MachinePaceWireSchema.safeParse(wire);
-    if (parsed.success) {
-      onHost(parsed.data);
-    }
+    if (parsed.success) onHost(parsed.data);
   });
   return () => {
     cancelled = true;
@@ -140,11 +127,8 @@ function listen(): () => void {
     const wasHot = pace.thermal === "serious" || pace.thermal === "critical";
     const nowHot = host.thermal === "serious" || host.thermal === "critical";
     let reliefAt = pace.reliefAt;
-    if (nowHot) {
-      reliefAt = null;
-    } else if (wasHot) {
-      reliefAt = Date.now();
-    }
+    if (nowHot) reliefAt = null;
+    else if (wasHot) reliefAt = Date.now();
     patch({
       onBattery: host.onBattery,
       thermal: host.thermal,
@@ -162,19 +146,13 @@ function listen(): () => void {
 
 export function retainMachinePace(): () => void {
   users += 1;
-  if (users === 1) {
-    stopListening = listen();
-  }
+  if (users === 1) stopListening = listen();
   return () => {
     users -= 1;
-    if (users > 0) {
-      return;
-    }
+    if (users > 0) return;
     stopListening();
     stopListening = () => {};
-    if (reliefTimer) {
-      clearTimeout(reliefTimer);
-    }
+    if (reliefTimer) clearTimeout(reliefTimer);
     reliefTimer = null;
     pace = idle();
     motionHold = false;

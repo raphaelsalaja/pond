@@ -44,13 +44,9 @@ function parse(text: string): Array<Word> {
     const chip = plain ? "plain" : accent ? "accent" : undefined;
     const body = plain ?? accent ?? bare ?? "";
     group++;
-    for (const part of body.split(" ")) {
-      words.push({ text: part, chip, group });
-    }
+    for (const part of body.split(" ")) words.push({ text: part, chip, group });
     const tail = plainTail || accentTail;
-    if (tail) {
-      words.push({ text: tail, group: ++group, tight: true });
-    }
+    if (tail) words.push({ text: tail, group: ++group, tight: true });
   }
   return words;
 }
@@ -72,11 +68,8 @@ export function Caption({
   const groups: Array<Array<Word>> = [];
   for (const word of parse(text)) {
     const last = groups.at(-1);
-    if (last && last[0]?.group === word.group) {
-      last.push(word);
-    } else {
-      groups.push([word]);
-    }
+    if (last && last[0]?.group === word.group) last.push(word);
+    else groups.push([word]);
   }
   const laidOut: Array<{
     group: Array<Word>;
@@ -141,9 +134,7 @@ export function Caption({
             </span>
           );
         });
-        if (!chip) {
-          return inner;
-        }
+        if (!chip) return inner;
         const mark = ease.outBack(
           progress(t, enter + first * stagger + 60, 520),
         );

@@ -94,9 +94,7 @@ function decodeEntities(text: string): string {
 function webUrl(raw: string): string | null {
   try {
     const url = new URL(decodeEntities(raw.trim()));
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return null;
-    }
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
     return url.hostname ? url.toString() : null;
   } catch {
     return null;
@@ -105,9 +103,7 @@ function webUrl(raw: string): string | null {
 
 /** Exporters disagree on units: Netscape uses seconds, some tools write milliseconds or microseconds. */
 function epochDate(value: number): Date | null {
-  if (!Number.isFinite(value) || value <= 0) {
-    return null;
-  }
+  if (!Number.isFinite(value) || value <= 0) return null;
   const ms = value < 1e11 ? value * 1000 : value < 1e14 ? value : value / 1000;
   return new Date(ms);
 }
@@ -170,9 +166,7 @@ export function parseNetscapeBookmarks(html: string): BookmarkFile {
     } else if (linkAttrs !== undefined) {
       const href = HREF_RE.exec(linkAttrs)?.[1];
       const url = href ? webUrl(href) : null;
-      if (!url) {
-        continue;
-      }
+      if (!url) continue;
       const added = ADD_DATE_RE.exec(linkAttrs)?.[1];
       collector.addBookmark(
         url,
@@ -190,9 +184,7 @@ export function parseNetscapeBookmarks(html: string): BookmarkFile {
 }
 
 function chromiumDate(value: string | undefined): Date | null {
-  if (!value || !/^\d+$/.test(value)) {
-    return null;
-  }
+  if (!value || !/^\d+$/.test(value)) return null;
   const ms = Number(BigInt(value) / 1000n) - WEBKIT_EPOCH_OFFSET_MS;
   return ms > 0 ? new Date(ms) : null;
 }
@@ -201,9 +193,7 @@ export function parseChromiumBookmarks(text: string): BookmarkFile | null {
   let parsed: z.infer<typeof ChromiumBookmarksSchema>;
   try {
     const result = ChromiumBookmarksSchema.safeParse(JSON.parse(text));
-    if (!result.success) {
-      return null;
-    }
+    if (!result.success) return null;
     parsed = result.data;
   } catch {
     return null;
@@ -225,9 +215,7 @@ export function parseChromiumBookmarks(text: string): BookmarkFile | null {
     }
   };
   const { bookmark_bar, other, synced } = parsed.roots;
-  for (const root of [bookmark_bar, other, synced]) {
-    walk(root?.children, null);
-  }
+  for (const root of [bookmark_bar, other, synced]) walk(root?.children, null);
   return collector.result();
 }
 
@@ -310,9 +298,7 @@ export async function importBookmarkFile(
     for (const { id, bookmark } of created) {
       for (const folderId of bookmark.folderIds) {
         const pondId = mapped.get(folderId);
-        if (!pondId) {
-          continue;
-        }
+        if (!pondId) continue;
         members.set(pondId, [...(members.get(pondId) ?? []), id]);
       }
     }

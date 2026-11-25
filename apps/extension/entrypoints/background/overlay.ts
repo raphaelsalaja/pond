@@ -62,9 +62,7 @@ const BADGE_TEXT = "#ffffff";
 function ignoreBadgeFailure() {}
 
 export function flashBadge(tabId: number | undefined, status: CaptureStatus) {
-  if (!browser.action || status === "sending") {
-    return;
-  }
+  if (!browser.action || status === "sending") return;
   const { text, color } = BADGES[status];
   void browser.action
     .setBadgeBackgroundColor(tabId === undefined ? { color } : { color, tabId })

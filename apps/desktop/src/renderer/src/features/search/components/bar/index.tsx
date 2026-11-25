@@ -68,9 +68,7 @@ function SearchField({ placeholder }: { placeholder: string }) {
   useEffect(() => {
     const serialized = seedInput.trim() || seedText;
     const current = editor.getEditorState().read($readSearchString);
-    if (current === serialized.trim()) {
-      return;
-    }
+    if (current === serialized.trim()) return;
     editor.update(
       () => {
         $writeSearchString(serialized);
@@ -82,14 +80,10 @@ function SearchField({ placeholder }: { placeholder: string }) {
   useEffect(() => {
     return editor.registerUpdateListener(
       ({ editorState, prevEditorState, tags }) => {
-        if (tags.has("search-store-sync")) {
-          return;
-        }
+        if (tags.has("search-store-sync")) return;
         editorState.read(() => {
           const raw = $readSearchString();
-          if (raw === prevEditorState.read($readSearchString)) {
-            return;
-          }
+          if (raw === prevEditorState.read($readSearchString)) return;
           setSearchDraft(raw);
         });
       },
@@ -97,9 +91,7 @@ function SearchField({ placeholder }: { placeholder: string }) {
   }, [editor]);
 
   useEffect(() => {
-    if (searchNonce === 0) {
-      return;
-    }
+    if (searchNonce === 0) return;
     editor.focus();
   }, [editor, searchNonce]);
 

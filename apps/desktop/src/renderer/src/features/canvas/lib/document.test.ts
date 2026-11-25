@@ -77,9 +77,7 @@ const items: Array<CanvasItem> = [
 
 function itemAt(index: number): CanvasItem {
   const item = items[index];
-  if (!item) {
-    throw new Error(`No item at ${index}`);
-  }
+  if (!item) throw new Error(`No item at ${index}`);
   return item;
 }
 
@@ -221,9 +219,7 @@ describe("canvas document", () => {
       "blue",
       4,
     );
-    if (!drawing) {
-      throw new Error("expected a drawing");
-    }
+    if (!drawing) throw new Error("expected a drawing");
     const resized = withBox(toNode(drawing), {
       x: 0,
       y: 0,
@@ -620,13 +616,9 @@ describe("canvas document", () => {
       color: "blue",
     };
     const first = branchOf({ items: [root], connectors: [] }, "root", "child");
-    if (!first) {
-      throw new Error("No branch");
-    }
+    if (!first) throw new Error("No branch");
     const second = branchOf(first.snapshot, first.created, "sibling");
-    if (!second) {
-      throw new Error("No sibling");
-    }
+    if (!second) throw new Error("No sibling");
     const { items: placed, connectors } = second.snapshot;
     expect(connectors.map((connector) => connector.from)).toEqual([
       "root",

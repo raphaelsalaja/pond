@@ -117,8 +117,6 @@ export async function extractPageAssets(
       error: "extract_failed",
     };
   } finally {
-    if (!win.isDestroyed()) {
-      win.destroy();
-    }
+    if (!win.isDestroyed()) win.destroy();
   }
 }

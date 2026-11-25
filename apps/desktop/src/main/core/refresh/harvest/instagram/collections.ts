@@ -79,9 +79,7 @@ export async function listInstagramCollections(
   readAt: (url: string) => Promise<CollectionsResult>,
 ): Promise<CollectionsResult> {
   const home = await readAt(INSTAGRAM_HOME_URL);
-  if (home.ok || home.reason !== "unknown" || !home.viewer) {
-    return home;
-  }
+  if (home.ok || home.reason !== "unknown" || !home.viewer) return home;
   return readAt(instagramSavedUrl(home.viewer));
 }
 
@@ -119,13 +117,9 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
   })();
 
   const graphql = await listViaGraphql();
-  if (graphql) {
-    return graphql;
-  }
+  if (graphql) return graphql;
   const rest = await listViaRest();
-  if (rest.ok) {
-    return rest;
-  }
+  if (rest.ok) return rest;
   const reason =
     rest.reason === "unknown" && (await signedOut())
       ? "auth_required"
@@ -135,9 +129,7 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
     reason,
     detail: tried.join("; ").slice(0, 600),
   };
-  if (viewer) {
-    failure.viewer = viewer;
-  }
+  if (viewer) failure.viewer = viewer;
   return failure;
 
   /** The web app lists collections through these persisted queries; Instagram retired the REST list for web sessions. */
@@ -180,14 +172,10 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
     for (const query of queries) {
       const live = pageModule(query.module)?.params?.id;
       const docIds = live ? [live] : [];
-      if (!docIds.includes(query.docId)) {
-        docIds.push(query.docId);
-      }
+      if (!docIds.includes(query.docId)) docIds.push(query.docId);
       for (const docId of docIds) {
         const listed = await walk(docId, query.field, query.variables);
-        if (listed) {
-          return listed;
-        }
+        if (listed) return listed;
       }
     }
     return null;
@@ -247,12 +235,8 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
         }
         for (const edge of connection.edges ?? []) {
           const node = edge.node;
-          if (!node || node.collection_id === undefined) {
-            continue;
-          }
-          if (/Auto/.test(node.__typename ?? "")) {
-            continue;
-          }
+          if (!node || node.collection_id === undefined) continue;
+          if (/Auto/.test(node.__typename ?? "")) continue;
           collections.push({
             id: String(node.collection_id),
             name: node.collection_name ?? "",
@@ -260,9 +244,7 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
           });
         }
         const next = connection.page_info;
-        if (!next?.has_next_page || !next.end_cursor) {
-          break;
-        }
+        if (!next?.has_next_page || !next.end_cursor) break;
         after = next.end_cursor;
         await new Promise((r) => {
           setTimeout(r, 250);
@@ -318,9 +300,7 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
       ) {
         return "auth_required";
       }
-      if (attempt.status === 429) {
-        return "rate_limited";
-      }
+      if (attempt.status === 429) return "rate_limited";
       if (!attempt.ok || !attempt.json || attempt.json.status === "fail") {
         return "unknown";
       }
@@ -341,9 +321,7 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
         collection_types: JSON.stringify(["MEDIA"]),
         include_public_only: "0",
       });
-      if (cursor) {
-        params.set("max_id", cursor);
-      }
+      if (cursor) params.set("max_id", cursor);
       let attempt = await list(params);
       let failure = verdict(attempt);
       if (failure === "unknown" && !apiHost) {
@@ -358,21 +336,15 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
         return { ok: false, reason: failure ?? "unknown" };
       }
       for (const item of json.items ?? []) {
-        if (item.collection_id === undefined) {
-          continue;
-        }
-        if (item.collection_type && item.collection_type !== "MEDIA") {
-          continue;
-        }
+        if (item.collection_id === undefined) continue;
+        if (item.collection_type && item.collection_type !== "MEDIA") continue;
         collections.push({
           id: String(item.collection_id),
           name: item.collection_name ?? "",
           count: item.collection_media_count ?? null,
         });
       }
-      if (!json.more_available || json.next_max_id === undefined) {
-        break;
-      }
+      if (!json.more_available || json.next_max_id === undefined) break;
       cursor = String(json.next_max_id);
       await new Promise((r) => {
         setTimeout(r, 250);

@@ -81,9 +81,7 @@ export function createTransferJobStore(directory: string) {
           throw cause;
         },
       );
-      if (!text) {
-        return;
-      }
+      if (!text) return;
       for (const job of z.array(TransferJobSchema).parse(JSON.parse(text))) {
         if (job.status === "running" || job.status === "cancelling") {
           job.status = "interrupted";
@@ -100,9 +98,7 @@ export function createTransferJobStore(directory: string) {
     operation: () => Promise<T>,
     retryId?: string,
   ): Promise<T> {
-    if (scope.getStore()?.active) {
-      return operation();
-    }
+    if (scope.getStore()?.active) return operation();
     await load();
     const previous = retryId ? entries.get(retryId) : undefined;
     if (
@@ -167,9 +163,7 @@ export function createTransferJobStore(directory: string) {
     try {
       await write();
       const result = await scope.run(context, operation);
-      if (context.cancelled) {
-        throw new TransferCancelledError();
-      }
+      if (context.cancelled) throw new TransferCancelledError();
       job.status = "completed";
       job.currentFile = null;
       return result;
@@ -208,9 +202,7 @@ export function createTransferJobStore(directory: string) {
     async dismiss(id: string): Promise<OkResult> {
       await load();
       const job = entries.get(id);
-      if (!job) {
-        return { ok: false, error: "This transfer is already gone." };
-      }
+      if (!job) return { ok: false, error: "This transfer is already gone." };
       if (
         running.has(job.id) ||
         job.status === "running" ||
@@ -248,9 +240,7 @@ function activeContext() {
   return current?.active ? current : undefined;
 }
 export function checkTransferCancellation(): void {
-  if (activeContext()?.cancelled) {
-    throw new TransferCancelledError();
-  }
+  if (activeContext()?.cancelled) throw new TransferCancelledError();
 }
 export async function transferPhase(
   phase: string,
@@ -258,9 +248,7 @@ export async function transferPhase(
 ): Promise<void> {
   checkTransferCancellation();
   const current = activeContext();
-  if (!current) {
-    return;
-  }
+  if (!current) return;
   Object.assign(current.job, {
     phase,
     total,
@@ -273,9 +261,7 @@ export async function transferPhase(
 }
 export async function transferProgress(path: string, size = 0): Promise<void> {
   const current = activeContext();
-  if (!current) {
-    return;
-  }
+  if (!current) return;
   current.job.completed += 1;
   current.job.bytes += size;
   current.job.currentFile = path;

@@ -94,9 +94,7 @@ function replaceSource(
   source: string,
   replacement: RenameTemplateValues["replacement"],
 ): string {
-  if (!replacement) {
-    return source;
-  }
+  if (!replacement) return source;
   const parsed = RenameReplacementSchema.parse(replacement);
   return source.replace(new RegExp(parsed.find, parsed.flags), parsed.replace);
 }

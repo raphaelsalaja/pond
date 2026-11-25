@@ -101,9 +101,7 @@ export const downloaderQueries = {
     return picked.canceled || !path ? null : downloads.choose(path);
   }),
   "downloader.reveal": query(DownloadRevealInputSchema, async ({ path }) => {
-    if (!(await loadExports()).owns(path)) {
-      return { ok: false };
-    }
+    if (!(await loadExports()).owns(path)) return { ok: false };
     shell.showItemInFolder(path);
     return { ok: true };
   }),

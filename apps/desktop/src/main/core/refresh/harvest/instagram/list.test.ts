@@ -19,9 +19,7 @@ function page(codes: Array<string>, next?: string): FeedPage {
     items: codes.map((code) => ({ media: { code, media_type: 1 } })),
     more_available: next !== undefined,
   };
-  if (next) {
-    feed.next_max_id = next;
-  }
+  if (next) feed.next_max_id = next;
   return feed;
 }
 

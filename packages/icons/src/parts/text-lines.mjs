@@ -15,12 +15,8 @@ export const line = (y, x0, x1) => `M ${x0} ${y} H ${x1}`;
 export const aligned = (anchor, spans) =>
   spans.map((w, i) => {
     const y = rows[i];
-    if (anchor === "left") {
-      return line(y, left, left + w);
-    }
-    if (anchor === "right") {
-      return line(y, right - w, right);
-    }
+    if (anchor === "left") return line(y, left, left + w);
+    if (anchor === "right") return line(y, right - w, right);
     return line(y, 9 - w / 2, 9 + w / 2);
   });
 

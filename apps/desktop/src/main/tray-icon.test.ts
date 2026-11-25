@@ -14,9 +14,7 @@ async function glyphBrightness(file: string): Promise<number> {
   let max = 0;
   let opaque = 0;
   for (let i = 0; i < data.length; i += 4) {
-    if ((data[i + 3] ?? 0) === 0) {
-      continue;
-    }
+    if ((data[i + 3] ?? 0) === 0) continue;
     opaque += 1;
     max = Math.max(max, data[i] ?? 0);
   }

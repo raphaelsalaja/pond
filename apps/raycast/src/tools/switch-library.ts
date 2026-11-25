@@ -9,15 +9,9 @@ type Input = {
 export default async function tool(input: Input) {
   const libraries = await pond().libraries();
   const library = libraries.find((item) => item.path === input.path);
-  if (!library) {
-    throw new Error("That path isn't in Pond's recent libraries. Call List Libraries for exact paths.");
-  }
-  if (library.active) {
-    return { name: library.name, path: library.path, alreadyActive: true };
-  }
-  if (!library.available) {
-    throw new Error(`Pond can't find ${library.name} on disk. Open it from Pond instead.`);
-  }
+  if (!library) throw new Error("That path isn't in Pond's recent libraries. Call List Libraries for exact paths.");
+  if (library.active) return { name: library.name, path: library.path, alreadyActive: true };
+  if (!library.available) throw new Error(`Pond can't find ${library.name} on disk. Open it from Pond instead.`);
   await pond().switchLibrary(library.path);
   return { name: library.name, path: library.path, alreadyActive: false };
 }

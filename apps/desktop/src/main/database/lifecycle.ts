@@ -18,9 +18,7 @@ let cachedGlobal: Db | null = null;
 let pondDbInflight: Promise<Db> | null = null;
 
 export async function getGlobalDb(): Promise<Db> {
-  if (cachedGlobal) {
-    return cachedGlobal;
-  }
+  if (cachedGlobal) return cachedGlobal;
   const paths = resolvePaths();
   log.info("[pond db] opening global", paths.globalDb);
   const sqlite = openSqlite(paths.globalDb, GLOBAL_CACHE_KIB);
@@ -30,12 +28,8 @@ export async function getGlobalDb(): Promise<Db> {
 }
 
 export async function getDb(): Promise<Db> {
-  if (cachedPond) {
-    return cachedPond;
-  }
-  if (pondDbInflight) {
-    return pondDbInflight;
-  }
+  if (cachedPond) return cachedPond;
+  if (pondDbInflight) return pondDbInflight;
 
   pondDbInflight = openPondDb().finally(() => {
     pondDbInflight = null;
@@ -86,9 +80,7 @@ function scheduleDataMigrations(
   vectorEnabled: boolean,
 ): void {
   setImmediate(() => {
-    if (!sqlite.open || cachedPond?.$raw !== sqlite) {
-      return;
-    }
+    if (!sqlite.open || cachedPond?.$raw !== sqlite) return;
     try {
       const updated = backfillFontActivationIndex(sqlite);
       if (updated > 0) {
@@ -100,9 +92,7 @@ function scheduleDataMigrations(
   });
 
   const runVecBatch = (): void => {
-    if (!sqlite.open || cachedPond?.$raw !== sqlite) {
-      return;
-    }
+    if (!sqlite.open || cachedPond?.$raw !== sqlite) return;
     try {
       const result = backfillVecBatch(sqlite);
       if (result.processed > 0) {
@@ -115,9 +105,7 @@ function scheduleDataMigrations(
       log.warn("[pond db] vec backfill failed", error);
     }
   };
-  if (vectorEnabled) {
-    setImmediate(runVecBatch);
-  }
+  if (vectorEnabled) setImmediate(runVecBatch);
 }
 
 export function closeDb(): void {
@@ -133,11 +121,7 @@ export function closeDb(): void {
 
 function ensureLibraryMetadata(): void {
   const paths = resolvePaths();
-  if (!existsSync(paths.libraryRoot)) {
-    return;
-  }
-  if (existsSync(paths.libraryMetadata)) {
-    return;
-  }
+  if (!existsSync(paths.libraryRoot)) return;
+  if (existsSync(paths.libraryMetadata)) return;
   readOrCreateLibraryId(paths.libraryRoot);
 }

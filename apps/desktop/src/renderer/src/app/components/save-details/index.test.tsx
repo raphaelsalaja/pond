@@ -99,9 +99,7 @@ describe("SaveDetails", () => {
       source: "local",
       tags: ["One"],
     });
-    if (!save) {
-      throw new Error("Invalid save fixture");
-    }
+    if (!save) throw new Error("Invalid save fixture");
     pool.upsert(save);
     host = document.createElement("div");
     document.body.append(host);
@@ -145,9 +143,7 @@ describe("SaveDetails", () => {
       source: "local",
       tags: ["Two"],
     });
-    if (!extra) {
-      throw new Error("Invalid save fixture");
-    }
+    if (!extra) throw new Error("Invalid save fixture");
     pool.upsert(extra);
     selection.set(["demo", "other"]);
     primarySelection.set("demo");
@@ -166,9 +162,7 @@ describe("SaveDetails", () => {
       source: "local",
       tags: ["Two"],
     });
-    if (!extra) {
-      throw new Error("Invalid save fixture");
-    }
+    if (!extra) throw new Error("Invalid save fixture");
     pool.upsert(extra);
     selection.set(["other"]);
     primarySelection.set("other");

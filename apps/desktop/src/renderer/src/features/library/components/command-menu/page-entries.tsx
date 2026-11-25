@@ -42,9 +42,7 @@ function useTagEntries(
   const groups = useTagGroups();
   return useMemo(() => {
     const tag = name ? tags.find((row) => same(row.name, name)) : undefined;
-    if (!tag) {
-      return [];
-    }
+    if (!tag) return [];
     const inGroup =
       groups.find((group) => group.tagNames.some((n) => same(n, tag.name)))
         ?.name ?? null;
@@ -67,15 +65,11 @@ function useTagEntries(
           group,
         }),
       onMoveToGroup: (group) => {
-        if (!inGroup || inGroup === group) {
-          return;
-        }
+        if (!inGroup || inGroup === group) return;
         void tagOperations.moveToGroup(tag.name, inGroup, group);
       },
       onRemoveFromGroup: () => {
-        if (!inGroup) {
-          return;
-        }
+        if (!inGroup) return;
         void window.pond.query("tagGroups.removeTag", {
           tag: tag.name,
           group: inGroup,
@@ -93,9 +87,7 @@ function useTagEntries(
           emptyError: "Enter a tag name.",
           onConfirm: async (value) => {
             const next = value.trim();
-            if (next === tag.name) {
-              return;
-            }
+            if (next === tag.name) return;
             await tagOperations.rename("tag", tag.name, next);
             selectLibraryNav({ kind: "tag", name: next });
           },
@@ -135,9 +127,7 @@ function useSavedViewEntries(
     const view = enabled
       ? views.find((entry) => entry.id === activeViewId)
       : undefined;
-    if (!view) {
-      return [];
-    }
+    if (!view) return [];
     const items = entryItems({
       view,
       views,
@@ -173,9 +163,7 @@ function useCanvasEntries(
 ): Array<MenuEntry> {
   const canvas = useCanvas(canvasIdFromPath(pathname));
   return useMemo(() => {
-    if (!canvas) {
-      return [];
-    }
+    if (!canvas) return [];
     const group = "Current Canvas";
     return offerEntries({
       group,
@@ -194,9 +182,7 @@ function useFishEntries(
 ): Array<MenuEntry> {
   const target = useFish(fishIdFromPath(pathname));
   return useMemo(() => {
-    if (!target) {
-      return [];
-    }
+    if (!target) return [];
     const group = "Current Fish";
     return offerEntries({
       group,

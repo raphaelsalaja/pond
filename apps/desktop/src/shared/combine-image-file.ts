@@ -25,9 +25,7 @@ export function pickCombineImageFile<T extends CombineSourceFile>(
   const tweetCover = cover.tweetCover ?? "media";
   const theme = cover.theme ?? "light";
   const card = themeCard(files, theme);
-  if (tweetCover === "screenshot" && card && combinable(card)) {
-    return card;
-  }
+  if (tweetCover === "screenshot" && card && combinable(card)) return card;
 
   const media = files.find(
     (file) =>
@@ -35,9 +33,7 @@ export function pickCombineImageFile<T extends CombineSourceFile>(
       !isAuxiliaryKind(file.kind) &&
       !isPostRenderKind(file.kind),
   );
-  if (media) {
-    return media;
-  }
+  if (media) return media;
   return card && combinable(card) ? card : null;
 }
 

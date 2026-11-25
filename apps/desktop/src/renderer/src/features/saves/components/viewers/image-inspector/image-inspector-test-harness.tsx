@@ -74,9 +74,7 @@ export function setupImageInspectorTest() {
         candidate.textContent === label ||
         candidate.getAttribute("aria-label") === label,
     );
-    if (!found) {
-      throw new Error(`Missing button ${label}`);
-    }
+    if (!found) throw new Error(`Missing button ${label}`);
     return found;
   };
   const render = async (

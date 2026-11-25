@@ -80,9 +80,7 @@ export function keyed<T extends Record<keyof T, number>>(
     const move = key.move ?? 600;
     const k = ease.inOut(progress(t, key.at - move, move));
     for (const [name, target] of Object.entries<number | undefined>(key)) {
-      if (name === "at" || name === "move" || target === undefined) {
-        continue;
-      }
+      if (name === "at" || name === "move" || target === undefined) continue;
       value.set(name, mix(value.get(name) ?? target, target, k));
     }
   }

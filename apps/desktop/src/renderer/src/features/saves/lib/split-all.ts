@@ -13,9 +13,7 @@ const store = new Store({ running: false });
 let tracking: Promise<void> | null = null;
 
 export function splittableDescription(count: number): string {
-  if (count === 0) {
-    return "No saves have several images or videos.";
-  }
+  if (count === 0) return "No saves have several images or videos.";
   return `Splits ${formatPlural(count, SAVES)} with several images or videos, which can't be undone.`;
 }
 
@@ -63,9 +61,7 @@ async function follow(first: SplitAllProgress): Promise<void> {
     while (progress.running) {
       await delay(POLL_MS);
       progress = await window.pond.query("saves.splitAllStatus", {});
-      if (!progress.running || progress.total === 0) {
-        continue;
-      }
+      if (!progress.running || progress.total === 0) continue;
       updateNotification({
         id,
         title: "Splitting saves",
@@ -107,9 +103,7 @@ export async function splitAllSaves(): Promise<void> {
 /** Picks a run back up after a reload, so its toast and the Settings button stay in step. */
 export async function resumeSplitAll(): Promise<void> {
   const progress = await window.pond.query("saves.splitAllStatus", {});
-  if (progress.running) {
-    await track(progress);
-  }
+  if (progress.running) await track(progress);
 }
 
 export function useSplitAllRunning(): boolean {

@@ -68,9 +68,7 @@ export function LivePhotoViewer({
           urls.push(next.captions);
         }
         if (!active) {
-          for (const objectUrl of urls) {
-            URL.revokeObjectURL(objectUrl);
-          }
+          for (const objectUrl of urls) URL.revokeObjectURL(objectUrl);
           return;
         }
         if (!next.image && !next.video) {
@@ -81,15 +79,11 @@ export function LivePhotoViewer({
         setMotion(!next.image && Boolean(next.video));
       })
       .catch(() => {
-        if (active) {
-          onUnavailable();
-        }
+        if (active) onUnavailable();
       });
     return () => {
       active = false;
-      for (const objectUrl of urls) {
-        URL.revokeObjectURL(objectUrl);
-      }
+      for (const objectUrl of urls) URL.revokeObjectURL(objectUrl);
     };
   }, [onUnavailable, url]);
 

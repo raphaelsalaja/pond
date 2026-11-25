@@ -231,9 +231,7 @@ export async function recoverBatchJournal(
   committed: (batchId: string) => boolean,
 ): Promise<void> {
   const parent = join(root, ".transactions");
-  if (!(await exists(parent))) {
-    return;
-  }
+  if (!(await exists(parent))) return;
   await rejectSymlinks(root, parent);
   for (const entry of await readdir(parent, { withFileTypes: true })) {
     if (!entry.isDirectory()) {

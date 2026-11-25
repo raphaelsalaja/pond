@@ -73,9 +73,7 @@ export function emitRendererFeedback(event: FeedbackEvent): Promise<void> {
 
 export async function openNotificationSettings(): Promise<boolean> {
   const url = notificationSettingsUrl(process.platform);
-  if (!url) {
-    return false;
-  }
+  if (!url) return false;
   await shell.openExternal(url);
   return true;
 }

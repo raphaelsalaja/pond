@@ -36,9 +36,7 @@ function parsePreviewPath(
   path: string,
 ): { id: string; generation: number | null; dark: boolean } | null {
   const match = path.match(/([^/.]+)(?:\.(\d+))?(\.dark)?\.png$/);
-  if (!match?.[1]) {
-    return null;
-  }
+  if (!match?.[1]) return null;
   return {
     id: match[1],
     generation: match[2] ? Number(match[2]) : null,
@@ -54,13 +52,9 @@ const previewsById = new Map<
 >();
 for (const [path, url] of Object.entries(previews)) {
   const parsed = PreviewUrlSchema.safeParse(url);
-  if (!parsed.success) {
-    continue;
-  }
+  if (!parsed.success) continue;
   const preview = parsePreviewPath(path);
-  if (!preview) {
-    continue;
-  }
+  if (!preview) continue;
   const entry = previewsById.get(preview.id) ?? {
     base: {},
     generations: new Map<number, PreviewSet>(),
@@ -102,8 +96,6 @@ export function appIconSwatch(
     generation === null
       ? icon.base
       : (icon.generations.get(generation) ?? icon.base);
-  if (appearance?.style === "dark" && set.dark) {
-    return set.dark;
-  }
+  if (appearance?.style === "dark" && set.dark) return set.dark;
   return set.light ?? icon.base.light ?? "";
 }

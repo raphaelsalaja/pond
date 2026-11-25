@@ -19,9 +19,7 @@ export function RaycastRow() {
       const result = await window.pond.query("clipboard.writeText", {
         text: token,
       });
-      if (!result.ok) {
-        throw new Error("Couldn't copy the token. Try again.");
-      }
+      if (!result.ok) throw new Error("Couldn't copy the token. Try again.");
       setCopied(true);
     } catch (error_) {
       setError(errorCopy(error_, "Couldn't copy the token. Try again."));

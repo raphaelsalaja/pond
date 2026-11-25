@@ -39,9 +39,7 @@ function treeOrder<Row extends { id: string; parentId: string | null }>(
   const ordered: Array<Row> = [];
   const visit = (parent: string | null) => {
     for (const row of children.get(parent) ?? []) {
-      if (selected.has(row.id)) {
-        ordered.push(row);
-      }
+      if (selected.has(row.id)) ordered.push(row);
       visit(row.id);
     }
   };
@@ -104,9 +102,7 @@ function OrganizationRenameDialog({
           kind === "folders"
             ? await window.pond.query("folders.renameBatch", request)
             : await window.pond.query("savedViews.renameBatch", request);
-        if (!result.ok) {
-          throw new Error(result.error ?? "Rename failed.");
-        }
+        if (!result.ok) throw new Error(result.error ?? "Rename failed.");
         await (kind === "folders" ? folders.refresh() : savedViews.refresh());
         notify({
           id: "organization-rename",

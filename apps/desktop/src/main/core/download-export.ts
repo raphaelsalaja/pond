@@ -78,9 +78,7 @@ export function createDownloadExports(runtime: DownloadExportRuntime) {
     path: string,
   ): Promise<DownloadExportResult> => {
     exported.add(path);
-    if (destination === "clipboard") {
-      await runtime.writeClipboardFiles([path]);
-    }
+    if (destination === "clipboard") await runtime.writeClipboardFiles([path]);
     return { ok: true, destination, path };
   };
 
@@ -95,9 +93,7 @@ export function createDownloadExports(runtime: DownloadExportRuntime) {
       source,
       lang: request.subtitleLang,
     });
-    if (!captions) {
-      return { ok: false, message: NO_CAPTIONS };
-    }
+    if (!captions) return { ok: false, message: NO_CAPTIONS };
     try {
       const cues = parseCaptions(captions.text);
       const format = request.transcriptFormat;
@@ -105,9 +101,7 @@ export function createDownloadExports(runtime: DownloadExportRuntime) {
         format === "txt"
           ? cuesToTranscript(cues, request.range)
           : cuesToSubtitles(cues, format, request.range);
-      if (!text.trim()) {
-        return { ok: false, message: NO_CAPTIONS };
-      }
+      if (!text.trim()) return { ok: false, message: NO_CAPTIONS };
       if (destination === "clipboard") {
         runtime.writeClipboardText(text);
         return { ok: true, destination, path: null };
@@ -198,9 +192,7 @@ export function createDownloadExports(runtime: DownloadExportRuntime) {
           request,
         });
         const first = download?.items[0];
-        if (!download || !first) {
-          return { ok: false, message: FAILED };
-        }
+        if (!download || !first) return { ok: false, message: FAILED };
         let converted: Awaited<ReturnType<typeof transcodeItems>> | null = null;
         try {
           converted = await runtime.transcodeItems({ items: [first], request });

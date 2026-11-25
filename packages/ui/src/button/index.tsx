@@ -70,9 +70,7 @@ export function Button({
     <Base
       {...props}
       onClick={(event) => {
-        if (icon) {
-          pop(event.currentTarget.querySelector(":scope > svg"));
-        }
+        if (icon) pop(event.currentTarget.querySelector(":scope > svg"));
         onClick?.(event);
       }}
       data-width={width}

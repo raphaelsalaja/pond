@@ -21,9 +21,7 @@ export function useCommandContext(
   });
   const active = items !== null;
   useEffect(() => {
-    if (!active) {
-      return;
-    }
+    if (!active) return;
     const key = Symbol(group);
     store.setState((current) =>
       new Map(current).set(key, {

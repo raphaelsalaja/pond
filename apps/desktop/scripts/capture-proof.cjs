@@ -41,9 +41,7 @@ const timeout = Number(arg("timeout", "180000"));
 const defaultCrop = parseCrop(arg("crop", ""));
 
 function parseCrop(value) {
-  if (!value) {
-    return undefined;
-  }
+  if (!value) return undefined;
   const [x, y, cropWidth] = value.split(",").map(Number);
   if (![x, y, cropWidth].every(Number.isFinite) || cropWidth <= 0) {
     console.error("capture-proof: --crop is x,y,width in window points");
@@ -195,9 +193,7 @@ function context(main) {
       record({ kind: "still", name, file: path.basename(file), ...STILL });
       if (options.pair) {
         const before = stills.get(options.pair);
-        if (!before) {
-          throw new Error(`No earlier shot named ${options.pair}`);
-        }
+        if (!before) throw new Error(`No earlier shot named ${options.pair}`);
         const pairName = `${options.pair}-vs-${name}`;
         writeFileSync(
           path.join(out, `${pairName}.png`),
@@ -256,15 +252,9 @@ function context(main) {
         const image = await next;
         const index = slot();
         const finished = done;
-        if (!finished) {
-          next = capture();
-        }
-        if (index >= written) {
-          await deliver(index, image);
-        }
-        if (finished) {
-          break;
-        }
+        if (!finished) next = capture();
+        if (index >= written) await deliver(index, image);
+        if (finished) break;
       }
       const end = slot();
       while (previous && written <= end) {

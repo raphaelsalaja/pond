@@ -25,16 +25,12 @@ class TestKeychainPort implements KeychainPort {
   }
 
   protect(value: string): Buffer {
-    if (!this.encryptionEnabled) {
-      throw new Error("Encryption unavailable.");
-    }
+    if (!this.encryptionEnabled) throw new Error("Encryption unavailable.");
     return Buffer.from(`protected:${value}`, "utf8");
   }
 
   unprotect(value: Buffer): string {
-    if (!this.decryptionEnabled) {
-      throw new Error("Decryption unavailable.");
-    }
+    if (!this.decryptionEnabled) throw new Error("Decryption unavailable.");
     const protectedValue = value.toString("utf8");
     if (!protectedValue.startsWith("protected:")) {
       throw new Error("Invalid protected value.");

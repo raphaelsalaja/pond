@@ -36,9 +36,7 @@ export const transcriptEnricher: Enricher = {
       return false;
     }
     /** Captions from the site are a better transcript than on-device speech recognition. */
-    if (save.transcriptModel === CAPTIONS_TRANSCRIPT_MODEL) {
-      return false;
-    }
+    if (save.transcriptModel === CAPTIONS_TRANSCRIPT_MODEL) return false;
     return save.transcriptModel !== whisperModelVersion();
   },
   async run(save: Save) {

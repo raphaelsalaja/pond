@@ -23,9 +23,7 @@ export function createHiddenLibraryRelease<W extends HiddenLibraryWindow>(
   let stopped = false;
 
   function cancel(): void {
-    if (!pending) {
-      return;
-    }
+    if (!pending) return;
     clearTimeout(pending.timer);
     pending = null;
   }
@@ -41,12 +39,8 @@ export function createHiddenLibraryRelease<W extends HiddenLibraryWindow>(
   }
 
   function settle(win: W): void {
-    if (stopped || win.isDestroyed() || !deps.isLibraryWindow(win)) {
-      return;
-    }
-    if (win.isVisible() || win.isFocused()) {
-      return;
-    }
+    if (stopped || win.isDestroyed() || !deps.isLibraryWindow(win)) return;
+    if (win.isVisible() || win.isFocused()) return;
     if (!deps.canRelease()) {
       arm(win);
       return;
@@ -56,15 +50,11 @@ export function createHiddenLibraryRelease<W extends HiddenLibraryWindow>(
 
   return {
     hidden(win: W): void {
-      if (stopped || !deps.isLibraryWindow(win)) {
-        return;
-      }
+      if (stopped || !deps.isLibraryWindow(win)) return;
       arm(win);
     },
     shown(win: W): void {
-      if (pending?.win === win) {
-        cancel();
-      }
+      if (pending?.win === win) cancel();
     },
     stop(): void {
       stopped = true;

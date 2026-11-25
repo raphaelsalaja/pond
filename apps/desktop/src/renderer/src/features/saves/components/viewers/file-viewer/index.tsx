@@ -181,9 +181,7 @@ function NativePreviewViewer(props: ViewerProps & { url: string }) {
 function ModelFileViewer(props: ViewerProps & { url: string }) {
   const [unavailable, setUnavailable] = useState(false);
   const onUnavailable = useCallback(() => setUnavailable(true), []);
-  if (unavailable) {
-    return <NativePreviewViewer {...props} />;
-  }
+  if (unavailable) return <NativePreviewViewer {...props} />;
   return (
     <div className={styles.preview}>
       <ModelViewer
@@ -200,9 +198,7 @@ function ModelFileViewer(props: ViewerProps & { url: string }) {
 function EpubFileViewer(props: ViewerProps & { url: string }) {
   const [unavailable, setUnavailable] = useState(false);
   const onUnavailable = useCallback(() => setUnavailable(true), []);
-  if (unavailable) {
-    return <NativePreviewViewer {...props} />;
-  }
+  if (unavailable) return <NativePreviewViewer {...props} />;
   return (
     <div className={styles.preview}>
       <EpubViewer
@@ -218,9 +214,7 @@ function EpubFileViewer(props: ViewerProps & { url: string }) {
 function ArchiveViewer(props: ViewerProps & { url: string }) {
   const [unavailable, setUnavailable] = useState(false);
   const onUnavailable = useCallback(() => setUnavailable(true), []);
-  if (unavailable) {
-    return <NativePreviewViewer {...props} />;
-  }
+  if (unavailable) return <NativePreviewViewer {...props} />;
   return (
     <div className={styles.preview}>
       <ArchiveFileViewer
@@ -238,9 +232,7 @@ function ArchiveViewer(props: ViewerProps & { url: string }) {
 function LivePhotoFileViewer(props: ViewerProps & { url: string }) {
   const [unavailable, setUnavailable] = useState(false);
   const onUnavailable = useCallback(() => setUnavailable(true), []);
-  if (unavailable) {
-    return <NativePreviewViewer {...props} />;
-  }
+  if (unavailable) return <NativePreviewViewer {...props} />;
   return (
     <div className={styles.preview}>
       <LivePhotoViewer
@@ -256,9 +248,7 @@ function LivePhotoFileViewer(props: ViewerProps & { url: string }) {
 function SafeWebFileViewer(props: ViewerProps & { url: string }) {
   const [unavailable, setUnavailable] = useState(false);
   const onUnavailable = useCallback(() => setUnavailable(true), []);
-  if (unavailable) {
-    return <NativePreviewViewer {...props} />;
-  }
+  if (unavailable) return <NativePreviewViewer {...props} />;
   return (
     <div className={styles.preview}>
       <SafeWebViewer

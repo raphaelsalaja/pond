@@ -57,15 +57,11 @@ export const statusFeed = {
   },
   done(id: number, message?: string): void {
     const entry = settle(id);
-    if (entry) {
-      finished(entry.label, message);
-    }
+    if (entry) finished(entry.label, message);
   },
   fail(id: number, message: string): void {
     const entry = settle(id);
-    if (entry) {
-      failed(entry.label, message);
-    }
+    if (entry) failed(entry.label, message);
   },
   dismiss(id: number): void {
     settle(id);

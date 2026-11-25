@@ -76,9 +76,7 @@ function button(label: string) {
 
 async function clickButton(label: string) {
   const node = button(label);
-  if (!node) {
-    throw new Error(`Missing button ${label}`);
-  }
+  if (!node) throw new Error(`Missing button ${label}`);
   await act(async () => node.click());
   await settle();
 }
@@ -86,9 +84,7 @@ async function clickButton(label: string) {
 async function waitForText(text: string, present: boolean) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
     const has = document.body.textContent?.includes(text) ?? false;
-    if (has === present) {
-      return;
-    }
+    if (has === present) return;
     await settle();
   }
   throw new Error(

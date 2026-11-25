@@ -11,9 +11,7 @@ function setup(isPackaged = false) {
   const controls = createRuntimeControls({
     async getPrefs() {
       events.push("read");
-      if (readError) {
-        throw readError;
-      }
+      if (readError) throw readError;
       return prefs;
     },
     invalidatePrefs() {
@@ -26,9 +24,7 @@ function setup(isPackaged = false) {
         host: bind === "lan" ? "0.0.0.0" : "127.0.0.1",
         async close() {
           events.push("close");
-          if (closeError) {
-            throw closeError;
-          }
+          if (closeError) throw closeError;
         },
       };
     },

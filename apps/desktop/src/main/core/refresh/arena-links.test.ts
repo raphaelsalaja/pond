@@ -16,18 +16,14 @@ function nativeAvailable() {
     new Database(":memory:").close();
     return true;
   } catch (error) {
-    if (process.versions.electron) {
-      throw error;
-    }
+    if (process.versions.electron) throw error;
     return false;
   }
 }
 
 const opened: Array<Database.Database> = [];
 afterEach(() => {
-  for (const db of opened.splice(0)) {
-    db.close();
-  }
+  for (const db of opened.splice(0)) db.close();
 });
 
 function openDb() {
@@ -194,16 +190,12 @@ function fakeLibrary(
       ids.filter((id) => !converted.has(id) && !ingesting.has(id)),
     queue: async (id) => {
       queued.push(id);
-      if (options.failing?.includes(id)) {
-        return false;
-      }
+      if (options.failing?.includes(id)) return false;
       ingesting.add(id);
       return true;
     },
     settle: async (batch) => {
-      if (settled.length >= interruptAfter) {
-        throw new Error("quit");
-      }
+      if (settled.length >= interruptAfter) throw new Error("quit");
       settled.push([...batch]);
       for (const id of batch) {
         ingesting.delete(id);
@@ -223,9 +215,7 @@ function fakeLibrary(
     },
     /** The durable queue finishes what was in flight when the app quit. */
     relaunch() {
-      for (const id of ingesting) {
-        converted.add(id);
-      }
+      for (const id of ingesting) converted.add(id);
       ingesting.clear();
       interruptAfter = Number.POSITIVE_INFINITY;
     },

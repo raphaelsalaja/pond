@@ -147,21 +147,11 @@ function useSidebarNav() {
   const route = routePanel(destination);
 
   function followedSection(): SidebarPanel | null {
-    if (editingFish) {
-      return "fish";
-    }
-    if (editingCanvas) {
-      return "canvases";
-    }
-    if (editingView || editingFolder) {
-      return "library";
-    }
-    if (activeFishId) {
-      return "fish";
-    }
-    if (activeCanvasId || canvasIntro) {
-      return "canvases";
-    }
+    if (editingFish) return "fish";
+    if (editingCanvas) return "canvases";
+    if (editingView || editingFolder) return "library";
+    if (activeFishId) return "fish";
+    if (activeCanvasId || canvasIntro) return "canvases";
     return route;
   }
 
@@ -183,9 +173,7 @@ function useSidebarNav() {
   function pickSection(next: RailSection) {
     libraryChrome.setSidebarPanel(next);
     if (next === "canvases") {
-      if (activeCanvasId || canvasIntro) {
-        return;
-      }
+      if (activeCanvasId || canvasIntro) return;
       const id = openable(canvases.snapshot(), lastOpened.canvases);
       if (id) {
         canvases.open(id);
@@ -193,15 +181,10 @@ function useSidebarNav() {
         getAppHistory()?.push(CANVASES_PATH);
       }
     } else if (next === "fish") {
-      if (activeFishId) {
-        return;
-      }
+      if (activeFishId) return;
       const id = openable(fish.snapshot(), lastOpened.fish);
-      if (id) {
-        fish.open(id);
-      } else if (canvasIntro) {
-        backToLibrary();
-      }
+      if (id) fish.open(id);
+      else if (canvasIntro) backToLibrary();
     } else if (railPage) {
       selectLibraryNav({ kind: "all" });
     } else if (activeCanvasId || activeFishId || canvasIntro || settings) {
@@ -229,12 +212,8 @@ export function FolderRail() {
   useHydrateCanvases();
   useHydrateFish();
   useLayoutEffect(() => {
-    if (activeCanvasId) {
-      lastOpened.canvases = activeCanvasId;
-    }
-    if (activeFishId) {
-      lastOpened.fish = activeFishId;
-    }
+    if (activeCanvasId) lastOpened.canvases = activeCanvasId;
+    if (activeFishId) lastOpened.fish = activeFishId;
   }, [activeCanvasId, activeFishId]);
   return (
     <Rail value={railValue} sections={visible} onSectionChange={pickSection} />
@@ -255,9 +234,7 @@ export function FolderSidebar() {
   useEffect(() => preloadWhenIdle(SettingsSidebar.preload), []);
   useHydrateSavedViews();
   useLayoutEffect(() => {
-    if (follow) {
-      libraryChrome.setSidebarPanel(follow);
-    }
+    if (follow) libraryChrome.setSidebarPanel(follow);
   }, [follow]);
 
   const scroll = (

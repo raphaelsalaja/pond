@@ -41,9 +41,7 @@ function setSelection(ids: Iterable<string>): void {
 
 function addToSelection(id: string): void {
   selectionStore.setState((s) => {
-    if (s.ids.has(id)) {
-      return s;
-    }
+    if (s.ids.has(id)) return s;
     const next = new Set(s.ids);
     next.add(id);
     return withIds(s, next);
@@ -53,11 +51,8 @@ function addToSelection(id: string): void {
 function toggleSelection(id: string): void {
   selectionStore.setState((s) => {
     const next = new Set(s.ids);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     return withIds(s, next);
   });
 }
@@ -109,9 +104,7 @@ function setSelectionRange(
 ): void {
   const fromIdx = allIds.indexOf(from);
   const toIdx = allIds.indexOf(to);
-  if (fromIdx < 0 || toIdx < 0) {
-    return;
-  }
+  if (fromIdx < 0 || toIdx < 0) return;
   const lo = Math.min(fromIdx, toIdx);
   const hi = Math.max(fromIdx, toIdx);
   selectionStore.setState((s) => withIds(s, new Set(allIds.slice(lo, hi + 1))));

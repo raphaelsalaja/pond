@@ -113,9 +113,7 @@ function Picker({
     >
       <Menu.Root
         onOpenChange={(open) => {
-          if (open) {
-            reset();
-          }
+          if (open) reset();
         }}
       >
         <Menu.Trigger

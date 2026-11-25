@@ -64,9 +64,7 @@ function buildTree(folders: ReadonlyArray<FolderMenuItem>): Array<FolderNode> {
   const nested = new Set<string>();
 
   for (const folder of folders) {
-    if (!folder.parentId || !byId.has(folder.parentId)) {
-      continue;
-    }
+    if (!folder.parentId || !byId.has(folder.parentId)) continue;
     const ancestors = new Set([folder.id]);
     let parentId: string | null | undefined = folder.parentId;
     let cyclic = false;
@@ -78,9 +76,7 @@ function buildTree(folders: ReadonlyArray<FolderMenuItem>): Array<FolderNode> {
       ancestors.add(parentId);
       parentId = byId.get(parentId)?.parentId;
     }
-    if (cyclic) {
-      continue;
-    }
+    if (cyclic) continue;
     children.set(folder.parentId, [
       ...(children.get(folder.parentId) ?? []),
       folder,
@@ -167,9 +163,7 @@ export function FolderMenu({
   );
   const normalizedQuery = query.trim().toLowerCase();
   const foldersForScope = useMemo(() => {
-    if (normalizedQuery) {
-      return searchFolders(flat, normalizedQuery);
-    }
+    if (normalizedQuery) return searchFolders(flat, normalizedQuery);
     return visibleTree(tree, collapsed);
   }, [collapsed, flat, normalizedQuery, tree]);
   const exactMatch = flat.some(
@@ -181,9 +175,7 @@ export function FolderMenu({
       kind: "folder" as const,
       folder,
     }));
-    if (!normalizedQuery || !onCreate || exactMatch) {
-      return folderRows;
-    }
+    if (!normalizedQuery || !onCreate || exactMatch) return folderRows;
     return [
       ...folderRows,
       { id: `create-${normalizedQuery}`, kind: "create", name: query.trim() },
@@ -194,11 +186,8 @@ export function FolderMenu({
   function toggleExpanded(id: string) {
     setCollapsed((current) => {
       const next = new Set(current);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -208,16 +197,12 @@ export function FolderMenu({
       void onCreate?.(row.name);
       return;
     }
-    if (row.folder.disabled) {
-      return;
-    }
+    if (row.folder.disabled) return;
     if (!batch) {
       void onToggle(row.folder);
       return;
     }
-    if (row.folder.count !== selectionSize) {
-      batch.onToggle(row.folder);
-    }
+    if (row.folder.count !== selectionSize) batch.onToggle(row.folder);
   }
 
   const cursor = usePickerCursor({
@@ -225,9 +210,7 @@ export function FolderMenu({
     getId: rowId,
     onActivate: activate,
     onHorizontalKey: (key, row) => {
-      if (!showTree || row.kind !== "folder") {
-        return false;
-      }
+      if (!showTree || row.kind !== "folder") return false;
       const { folder } = row;
       if (!folder.children.length) {
         return true;
@@ -245,9 +228,7 @@ export function FolderMenu({
   function onSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (batch && event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
-      if (batch.staged.size && !batch.applying) {
-        batch.onApply();
-      }
+      if (batch.staged.size && !batch.applying) batch.onApply();
       return;
     }
     cursor.inputProps.onKeyDown(event);

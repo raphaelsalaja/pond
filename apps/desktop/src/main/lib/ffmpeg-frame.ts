@@ -88,18 +88,14 @@ export async function extractSampledFrames(
     strategy === "embedding"
       ? embeddingFrameTimestamps(durationSec, maxFrames)
       : sampleFrameTimestamps(durationSec, maxFrames);
-  if (timestamps.length === 0) {
-    return null;
-  }
+  if (timestamps.length === 0) return null;
   const sampledDurationSec =
     strategy === "embedding" ? Math.min(durationSec, 32) : durationSec;
 
   let outputDir: string | null = null;
   let cleanupCalled = false;
   const cleanup = async () => {
-    if (cleanupCalled) {
-      return;
-    }
+    if (cleanupCalled) return;
     cleanupCalled = true;
     if (outputDir) {
       try {
@@ -232,9 +228,7 @@ async function extractJpeg(
   let outputDir: string | null = null;
   let cleanupCalled = false;
   const cleanup = async () => {
-    if (cleanupCalled) {
-      return;
-    }
+    if (cleanupCalled) return;
     cleanupCalled = true;
     if (outputDir) {
       try {
@@ -309,13 +303,9 @@ export async function sampleGrayFrames(
   },
 ): Promise<Array<Uint8Array> | null> {
   const { ffmpeg } = binariesAvailable();
-  if (!ffmpeg) {
-    return null;
-  }
+  if (!ffmpeg) return null;
   const { windowSeconds, count, width, height } = options;
-  if (!(windowSeconds > 0) || count < 1) {
-    return null;
-  }
+  if (!(windowSeconds > 0) || count < 1) return null;
   const frameBytes = width * height;
   const outcome = await runCapturingStdout(
     ffmpeg,
@@ -384,9 +374,7 @@ function runCapturingStdout(
     let stderr = "";
     let settled = false;
     const finish = (code: number, note = "") => {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       clearTimeout(timer);
       resolve({
@@ -433,9 +421,7 @@ async function probeDuration(
     HARD_TIMEOUT_MS,
   );
   const match = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(stderr);
-  if (!match) {
-    return null;
-  }
+  if (!match) return null;
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
   const seconds = Number(match[3]);
@@ -462,9 +448,7 @@ function runWithTimeout(
     let settled = false;
 
     const timer = setTimeout(() => {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       try {
         killProcessTree(child, "SIGKILL");
@@ -476,22 +460,16 @@ function runWithTimeout(
 
     child.stderr?.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
-      if (stderr.length > 32_000) {
-        stderr = stderr.slice(-32_000);
-      }
+      if (stderr.length > 32_000) stderr = stderr.slice(-32_000);
     });
     child.on("error", (err) => {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       clearTimeout(timer);
       resolve({ code: -1, stderr: String(err) });
     });
     child.on("close", (code) => {
-      if (settled) {
-        return;
-      }
+      if (settled) return;
       settled = true;
       clearTimeout(timer);
       resolve({ code: code ?? -1, stderr });

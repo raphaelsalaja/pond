@@ -25,9 +25,7 @@ export function useSplitPosts(enabled = true) {
 
 export function useSplitPostTitle(key: string | null): string | undefined {
   const posts = useSplitPosts(key !== null);
-  if (!key) {
-    return undefined;
-  }
+  if (!key) return undefined;
   const post = posts.data?.find((entry) => entry.key === key);
   return post ? postTitle(post) : undefined;
 }

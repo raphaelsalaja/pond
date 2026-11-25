@@ -131,9 +131,7 @@ export function withBox(
     width: box.width,
     height: box.height,
   };
-  if (node.type !== "drawing") {
-    return { ...node, ...frame };
-  }
+  if (node.type !== "drawing") return { ...node, ...frame };
   const scaleX = box.width / width;
   const scaleY = box.height / height;
   return {
@@ -223,9 +221,7 @@ export function toItem(node: CanvasNode): CanvasItem {
     width: round(Math.max(1, node.width ?? node.measured?.width ?? 1)),
     height: round(Math.max(1, node.height ?? node.measured?.height ?? 1)),
   };
-  if (isLocked(node)) {
-    frame.locked = true;
-  }
+  if (isLocked(node)) frame.locked = true;
   switch (node.type) {
     case "save":
       return { ...node.data, ...frame, kind: "save" };
@@ -432,9 +428,7 @@ export function sectionAround(
   color: CanvasColor,
 ): CanvasItem | null {
   const box = extentOf(frames);
-  if (!box) {
-    return null;
-  }
+  if (!box) return null;
   const x = box.left - GRID * 2;
   const y = box.top - GRID * 3;
   return {
@@ -503,9 +497,7 @@ export function resizeTable(
         height: round(item.height + cellHeight),
       };
     case "remove-row":
-      if (item.rows.length < 2) {
-        return item;
-      }
+      if (item.rows.length < 2) return item;
       return {
         ...item,
         rows: item.rows.slice(0, -1),
@@ -518,9 +510,7 @@ export function resizeTable(
         width: round(item.width + cellWidth),
       };
     case "remove-column":
-      if (columns < 2) {
-        return item;
-      }
+      if (columns < 2) return item;
       return {
         ...item,
         rows: item.rows.map((row) => row.slice(0, -1)),
@@ -561,19 +551,13 @@ export function groupChanges(
       node.data.group ? [[node.id, node.data.group] as const] : [],
     ),
   );
-  if (!groupOf.size) {
-    return changes;
-  }
+  if (!groupOf.size) return changes;
   const picked = new Set<string>();
   const dropped = new Set<string>();
   for (const change of changes) {
-    if (change.type !== "select") {
-      continue;
-    }
+    if (change.type !== "select") continue;
     const group = groupOf.get(change.id);
-    if (group) {
-      (change.selected ? picked : dropped).add(group);
-    }
+    if (group) (change.selected ? picked : dropped).add(group);
   }
   if (!picked.size && !dropped.size) {
     return changes;
@@ -644,11 +628,7 @@ function parentOf(
   children: ReadonlyMap<string, ReadonlyArray<string>>,
   id: string,
 ): string | null {
-  for (const [parent, kids] of children) {
-    if (kids.includes(id)) {
-      return parent;
-    }
-  }
+  for (const [parent, kids] of children) if (kids.includes(id)) return parent;
   return null;
 }
 
@@ -672,9 +652,7 @@ function layoutMindMap(
   const heights = new Map<string, number>();
   const heightOf = (node: string, trail: Set<string>): number => {
     const frame = frames.get(node);
-    if (!frame || trail.has(node)) {
-      return 0;
-    }
+    if (!frame || trail.has(node)) return 0;
     const kids = children.get(node) ?? [];
     const next = new Set(trail).add(node);
     const stacked =
@@ -693,9 +671,7 @@ function layoutMindMap(
     trail: Set<string>,
   ) => {
     const frame = frames.get(node);
-    if (!frame || trail.has(node)) {
-      return;
-    }
+    if (!frame || trail.has(node)) return;
     positions.set(node, { x: round(x), y: round(centerY - frame.height / 2) });
     const kids = children.get(node) ?? [];
     const next = new Set(trail).add(node);
@@ -723,15 +699,11 @@ export function branchOf(
   kind: "child" | "sibling",
 ): { snapshot: CanvasSnapshot; created: string } | null {
   const topic = snapshot.items.find((item) => item.id === id);
-  if (topic?.kind !== "topic") {
-    return null;
-  }
+  if (topic?.kind !== "topic") return null;
   const parentId =
     kind === "sibling" ? (parentOf(branchesOf(snapshot), id) ?? id) : id;
   const parent = snapshot.items.find((item) => item.id === parentId);
-  if (parent?.kind !== "topic") {
-    return null;
-  }
+  if (parent?.kind !== "topic") return null;
   const created: CanvasItem = {
     kind: "topic",
     id: newId(),
@@ -778,9 +750,7 @@ export function drawingFrom(
   size: number,
   ink?: "highlight",
 ): CanvasItem | null {
-  if (!points.length) {
-    return null;
-  }
+  if (!points.length) return null;
   const xs = points.map(([x]) => x);
   const ys = points.map(([, y]) => y);
   const left = Math.min(...xs) - size;
@@ -800,9 +770,7 @@ export function drawingFrom(
       round(pressure),
     ]),
   };
-  if (!ink) {
-    return drawing;
-  }
+  if (!ink) return drawing;
   return { ...drawing, ink };
 }
 
@@ -879,19 +847,13 @@ export function pasteOf(
 ): CanvasSnapshot {
   const seen = new Set(onBoard);
   const items = clip.items.filter((item) => {
-    if (item.kind !== "save") {
-      return true;
-    }
-    if (seen.has(item.saveId)) {
-      return false;
-    }
+    if (item.kind !== "save") return true;
+    if (seen.has(item.saveId)) return false;
     seen.add(item.saveId);
     return true;
   });
   const box = extentOf(items);
-  if (!box) {
-    return { items: [], connectors: [] };
-  }
+  if (!box) return { items: [], connectors: [] };
   return copyOf(
     { items, connectors: clip.connectors },
     {
@@ -919,9 +881,7 @@ export function alignFrames(
 ): Map<string, XYPosition> {
   const box = extentOf(frames);
   const moved = new Map<string, XYPosition>();
-  if (!box) {
-    return moved;
-  }
+  if (!box) return moved;
   for (const frame of frames) {
     const x =
       edge === "left"
@@ -954,9 +914,7 @@ export function distributeFrames(
   const sorted = [...frames].sort((a, b) => a[start] - b[start]);
   const moved = new Map<string, XYPosition>();
   const first = sorted[0];
-  if (!first || sorted.length < 3) {
-    return moved;
-  }
+  if (!first || sorted.length < 3) return moved;
   const end = Math.max(...sorted.map((frame) => frame[start] + frame[size]));
   const occupied = sorted.reduce((total, frame) => total + frame[size], 0);
   const gap = (end - first[start] - occupied) / (sorted.length - 1);
@@ -978,9 +936,7 @@ export function tidyFrames(
 ): Map<string, XYPosition> {
   const box = extentOf(frames);
   const moved = new Map<string, XYPosition>();
-  if (!box) {
-    return moved;
-  }
+  if (!box) return moved;
   const columns = Math.ceil(Math.sqrt(frames.length));
   const cell = Math.max(...frames.map((frame) => frame.width));
   const ordered = [...frames].sort((a, b) => a.y - b.y || a.x - b.x);
@@ -1006,12 +962,8 @@ export function reorder<Entry extends { id: string }>(
 ): Array<Entry> {
   const picked = list.filter((entry) => ids.has(entry.id));
   const rest = list.filter((entry) => !ids.has(entry.id));
-  if (move === "front") {
-    return [...rest, ...picked];
-  }
-  if (move === "back") {
-    return [...picked, ...rest];
-  }
+  if (move === "front") return [...rest, ...picked];
+  if (move === "back") return [...picked, ...rest];
   const next = [...list];
   const step = move === "forward" ? 1 : -1;
   const order =
@@ -1021,9 +973,7 @@ export function reorder<Entry extends { id: string }>(
   for (const index of order) {
     const here = next[index];
     const there = next[index + step];
-    if (!here || !there || !ids.has(here.id) || ids.has(there.id)) {
-      continue;
-    }
+    if (!here || !there || !ids.has(here.id) || ids.has(there.id)) continue;
     next[index] = there;
     next[index + step] = here;
   }
@@ -1040,18 +990,14 @@ export function createHistory(limit = 100) {
     },
     undo(current: CanvasSnapshot): CanvasSnapshot | null {
       const previous = past.at(-1);
-      if (!previous) {
-        return null;
-      }
+      if (!previous) return null;
       past = past.slice(0, -1);
       future = [...future, current];
       return previous;
     },
     redo(current: CanvasSnapshot): CanvasSnapshot | null {
       const next = future.at(-1);
-      if (!next) {
-        return null;
-      }
+      if (!next) return null;
       future = future.slice(0, -1);
       past = [...past, current];
       return next;

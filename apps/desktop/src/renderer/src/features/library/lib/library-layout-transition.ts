@@ -17,9 +17,7 @@ function now(): number {
 }
 
 function reducedMotion(): boolean {
-  if (document.documentElement.dataset.reduceMotion === "true") {
-    return true;
-  }
+  if (document.documentElement.dataset.reduceMotion === "true") return true;
   return (
     window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
   );
@@ -37,9 +35,7 @@ function intersects(a: DOMRect, b: DOMRect): boolean {
 }
 
 function clearPending(): void {
-  if (pending) {
-    delete pending.root.dataset.layoutTransition;
-  }
+  if (pending) delete pending.root.dataset.layoutTransition;
   pending = null;
 }
 
@@ -70,48 +66,32 @@ export function beginLibraryLayoutTransition(): void {
   const cards = new Map<string, DOMRect>();
   for (const card of viewport.querySelectorAll<HTMLElement>(CARD_SELECTOR)) {
     const id = card.dataset.saveId;
-    if (!id) {
-      continue;
-    }
+    if (!id) continue;
     const cardRect = card.getBoundingClientRect();
-    if (intersects(cardRect, viewportRect)) {
-      cards.set(id, cardRect);
-    }
+    if (intersects(cardRect, viewportRect)) cards.set(id, cardRect);
   }
 
   clearPending();
   pending = cards.size > 0 ? { capturedAt, cards, root } : null;
-  if (pending) {
-    root.dataset.layoutTransition = "";
-  }
+  if (pending) root.dataset.layoutTransition = "";
 }
 
 export function completeLibraryLayoutTransition(container: HTMLElement): void {
   const snapshot = pending;
-  if (!snapshot) {
-    return;
-  }
+  if (!snapshot) return;
   pending = null;
   delete snapshot.root.dataset.layoutTransition;
 
-  if (now() - snapshot.capturedAt > SNAPSHOT_MAX_AGE_MS) {
-    return;
-  }
-  if (container.closest("[data-slot=window]") !== snapshot.root) {
-    return;
-  }
+  if (now() - snapshot.capturedAt > SNAPSHOT_MAX_AGE_MS) return;
+  if (container.closest("[data-slot=window]") !== snapshot.root) return;
 
   for (const card of container.querySelectorAll<HTMLElement>(CARD_SELECTOR)) {
     const id = card.dataset.saveId;
     const before = id ? snapshot.cards.get(id) : undefined;
-    if (!before) {
-      continue;
-    }
+    if (!before) continue;
 
     const after = card.getBoundingClientRect();
-    if (after.width <= 0 || after.height <= 0) {
-      continue;
-    }
+    if (after.width <= 0 || after.height <= 0) continue;
     const deltaX = before.left - after.left;
     const deltaY = before.top - after.top;
     const scaleX = before.width / after.width;
@@ -119,14 +99,10 @@ export function completeLibraryLayoutTransition(container: HTMLElement): void {
     const moved = Math.abs(deltaX) >= 0.5 || Math.abs(deltaY) >= 0.5;
     const resized =
       Math.abs(scaleX - 1) >= 0.005 || Math.abs(scaleY - 1) >= 0.005;
-    if (!moved && !resized) {
-      continue;
-    }
+    if (!moved && !resized) continue;
 
     for (const animation of card.getAnimations()) {
-      if (animation.id === LAYOUT_ANIMATION_ID) {
-        animation.cancel();
-      }
+      if (animation.id === LAYOUT_ANIMATION_ID) animation.cancel();
     }
     const animation = card.animate(
       [

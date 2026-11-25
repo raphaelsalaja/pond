@@ -40,14 +40,10 @@ function LoadMoreSentinel({
   }, [onLoadMore]);
   useEffect(() => {
     const node = ref.current;
-    if (!node || loading || !globalThis.IntersectionObserver) {
-      return;
-    }
+    if (!node || loading || !globalThis.IntersectionObserver) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          load.current();
-        }
+        if (entries.some((entry) => entry.isIntersecting)) load.current();
       },
       { rootMargin: "240px 0px" },
     );

@@ -10,9 +10,7 @@ import { FEATURES, INTRO } from "./content";
 export function CanvasIntro() {
   const list = useCanvases();
   const loaded = useCanvasesLoaded();
-  if (!loaded) {
-    return null;
-  }
+  if (!loaded) return null;
   const first = list[0];
   if (first) {
     return <Navigate to="/canvas/$id" params={{ id: first.id }} replace />;

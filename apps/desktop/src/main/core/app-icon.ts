@@ -33,29 +33,21 @@ const DOCK_TILE_DARK_KEY = "DockTileDarkImage";
 const DOCK_TILE_CHANGED = "so.pond.desktop.dockTileChanged";
 
 function tintsRoot(): string {
-  if (app.isPackaged) {
-    return join(process.resourcesPath, "app-icons");
-  }
+  if (app.isPackaged) return join(process.resourcesPath, "app-icons");
   const packagedDev = join(
     app.getAppPath(),
     "../../packages/icons/brand/tints",
   );
-  if (existsSync(packagedDev)) {
-    return packagedDev;
-  }
+  if (existsSync(packagedDev)) return packagedDev;
   const fromOut = resolveMainOut("../../../../packages/icons/brand/tints");
   return existsSync(fromOut) ? fromOut : packagedDev;
 }
 
 /** Dock-ready tint images, written by scripts/prepare-dock-icons.mjs. */
 function dockIconsRoot(): string {
-  if (app.isPackaged) {
-    return join(process.resourcesPath, "dock-icons");
-  }
+  if (app.isPackaged) return join(process.resourcesPath, "dock-icons");
   const fromApp = join(app.getAppPath(), "build/dock-icons");
-  if (existsSync(fromApp)) {
-    return fromApp;
-  }
+  if (existsSync(fromApp)) return fromApp;
   const fromOut = resolveMainOut("../../build/dock-icons");
   return existsSync(fromOut) ? fromOut : fromApp;
 }
@@ -96,12 +88,8 @@ function availableIds(): Array<string> {
   }
   const ids: Array<string> = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (!entry.isDirectory()) {
-      continue;
-    }
-    if (appIconFile(entry.name)) {
-      ids.push(entry.name);
-    }
+    if (!entry.isDirectory()) continue;
+    if (appIconFile(entry.name)) ids.push(entry.name);
   }
   return sortAppIconIds(ids);
 }
@@ -138,9 +126,7 @@ const controller = createAppIconController({
       return;
     }
     const win = mainWindowState.current;
-    if (win && !win.isDestroyed()) {
-      win.setIcon(image);
-    }
+    if (win && !win.isDestroyed()) win.setIcon(image);
   },
   showBuiltin() {
     log.info("[pond] app icon", "built-in");
@@ -159,17 +145,13 @@ const FIRST_STYLE_TIMEOUT_MS = 1000;
  * shows on its way to a Dark or Clear one.
  */
 function watchStyleWhileColored(): Promise<void> {
-  if (styleKnown) {
-    return styleKnown;
-  }
+  if (styleKnown) return styleKnown;
   styleKnown = new Promise<void>((resolve) => {
     styleWatch = watchIconStyle((style) => {
       resolve();
       controller.setStyle(style);
     });
-    if (!styleWatch) {
-      resolve();
-    }
+    if (!styleWatch) resolve();
     setTimeout(resolve, FIRST_STYLE_TIMEOUT_MS);
   });
   return styleKnown;
@@ -203,9 +185,7 @@ export async function applyAppIcon(id?: string): Promise<void> {
     stopStyleWatch();
   } else {
     await watchStyleWhileColored();
-    if (ticket !== latestSwitch) {
-      return;
-    }
+    if (ticket !== latestSwitch) return;
     controller.select(resolved);
   }
   publishDockTile(resolved);
@@ -251,9 +231,7 @@ function restoreBuiltinDockIcon(): void {
  * one, so clear any that is left.
  */
 async function clearLegacyBundleIcon(): Promise<void> {
-  if (legacyBundleIconCleared) {
-    return;
-  }
+  if (legacyBundleIconCleared) return;
   legacyBundleIconCleared = true;
   const bundle = appBundlePath({
     platform: process.platform,
@@ -275,9 +253,7 @@ async function clearLegacyBundleIcon(): Promise<void> {
  * selected color.
  */
 function publishDockTile(id: string): void {
-  if (process.platform !== "darwin" || !app.isPackaged) {
-    return;
-  }
+  if (process.platform !== "darwin" || !app.isPackaged) return;
   const light =
     id === DEFAULT_APP_ICON ? null : styledIconFile(id, "default.png");
   const dark = id === DEFAULT_APP_ICON ? null : styledIconFile(id, "dark.png");

@@ -38,17 +38,13 @@ export function inPageRedditNormalize() {
     for (const sel of selectors) {
       const el = document.querySelector<HTMLMetaElement>(sel);
       const value = el?.content?.trim();
-      if (value) {
-        return value;
-      }
+      if (value) return value;
     }
     return undefined;
   };
 
   function httpUrl(raw: string | null | undefined): string | undefined {
-    if (!raw) {
-      return undefined;
-    }
+    if (!raw) return undefined;
     try {
       const href = new URL(raw, location.href).href;
       return /^https?:\/\//i.test(href) ? href : undefined;
@@ -65,9 +61,7 @@ export function inPageRedditNormalize() {
     raw: string | null | undefined,
   ): string | undefined {
     const href = httpUrl(raw);
-    if (!href) {
-      return undefined;
-    }
+    if (!href) return undefined;
     let url: URL;
     try {
       url = new URL(href);
@@ -92,42 +86,30 @@ export function inPageRedditNormalize() {
       return /\/\d{5,12}(?:[/?#]|$)/.test(url.pathname) ? href : undefined;
     }
     if (host === "tiktok.com" || host.endsWith(".tiktok.com")) {
-      if (/\/video\/\d+/.test(url.pathname)) {
-        return href;
-      }
-      if (host === "vm.tiktok.com" || host === "vt.tiktok.com") {
-        return href;
-      }
+      if (/\/video\/\d+/.test(url.pathname)) return href;
+      if (host === "vm.tiktok.com" || host === "vt.tiktok.com") return href;
     }
     return undefined;
   }
 
   function embedInPost(scope: Element): string | undefined {
     const own = embeddedVideoUrl(scope.getAttribute("content-href"));
-    if (own) {
-      return own;
-    }
+    if (own) return own;
     for (const el of Array.from(
       scope.querySelectorAll("[content-href], iframe"),
     )) {
       const video =
         embeddedVideoUrl(el.getAttribute("content-href")) ||
         embeddedVideoUrl(el.getAttribute("src"));
-      if (video) {
-        return video;
-      }
+      if (video) return video;
     }
     return undefined;
   }
 
   function videoPending(): boolean {
     const post = document.querySelector("shreddit-post");
-    if (!post) {
-      return false;
-    }
-    if (post.querySelector("shreddit-player[src]")) {
-      return false;
-    }
+    if (!post) return false;
+    if (post.querySelector("shreddit-player[src]")) return false;
     if (
       getMeta([
         'meta[property="og:video"]',
@@ -137,9 +119,7 @@ export function inPageRedditNormalize() {
     ) {
       return false;
     }
-    if (embeddedVideoUrl(post.getAttribute("content-href"))) {
-      return false;
-    }
+    if (embeddedVideoUrl(post.getAttribute("content-href"))) return false;
     const kind = post.getAttribute("post-type");
     return (
       kind === "video" ||
@@ -190,27 +170,19 @@ export function inPageRedditNormalize() {
         const m = location.pathname.match(/\/r\/([A-Za-z0-9_]+)/);
         return m ? `r/${m[1]}` : undefined;
       })();
-    if (subreddit) {
-      meta.subreddit = subreddit;
-    }
+    if (subreddit) meta.subreddit = subreddit;
 
     const created = post?.getAttribute("created-timestamp")?.trim();
-    if (created) {
-      meta.publishedAt = created;
-    }
+    if (created) meta.publishedAt = created;
 
     const metrics: RedditPostPageMetrics = {};
     const score = post?.getAttribute("score");
-    if (score && Number.isFinite(Number(score))) {
-      metrics.likes = Number(score);
-    }
+    if (score && Number.isFinite(Number(score))) metrics.likes = Number(score);
     const comments = post?.getAttribute("comment-count");
     if (comments && Number.isFinite(Number(comments))) {
       metrics.comments = Number(comments);
     }
-    if (Object.keys(metrics).length > 0) {
-      meta.metrics = metrics;
-    }
+    if (Object.keys(metrics).length > 0) meta.metrics = metrics;
 
     const ogVideo = httpUrl(
       getMeta([
@@ -258,9 +230,7 @@ export function inPageRedditNormalize() {
         undefined;
       out.mediaUrl = poster || videoSrc;
       const entry: RedditPostPageMedia = { url: videoSrc, type: "video" };
-      if (poster) {
-        entry.poster = poster;
-      }
+      if (poster) entry.poster = poster;
       out.mediaUrls = [entry];
       out.mediaType = "video";
     } else if (ogImage) {
@@ -275,12 +245,8 @@ export function inPageRedditNormalize() {
       meta.lang = lang;
     }
 
-    if (Object.keys(meta).length > 0) {
-      out.meta = meta;
-    }
-    if (!out.title && !out.description && !out.mediaUrl) {
-      return null;
-    }
+    if (Object.keys(meta).length > 0) out.meta = meta;
+    if (!out.title && !out.description && !out.mediaUrl) return null;
     return out;
   }
 

@@ -10,21 +10,14 @@ export function useImageDecoded(
 
   useEffect(() => {
     const element = image.current;
-    if (!element || !("decode" in element)) {
-      return;
-    }
+    if (!element || !("decode" in element)) return;
     let current = true;
     const reveal = () => {
-      if (current) {
-        setDecodedSrc(src);
-      }
+      if (current) setDecodedSrc(src);
     };
     element.decode().then(reveal, () => {
-      if (element.complete && element.naturalWidth > 0) {
-        reveal();
-      } else {
-        element.addEventListener("load", reveal, { once: true });
-      }
+      if (element.complete && element.naturalWidth > 0) reveal();
+      else element.addEventListener("load", reveal, { once: true });
     });
     return () => {
       current = false;

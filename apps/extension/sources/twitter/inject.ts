@@ -18,9 +18,7 @@ function triggerForUrl(url: string): "twitter:like" | "twitter:bookmark" {
 }
 
 function extractTweetId(body: string | null): string | null {
-  if (!body) {
-    return null;
-  }
+  if (!body) return null;
   try {
     const parsed: unknown = JSON.parse(body);
     const json = isJsonValue(parsed) ? parsed : null;
@@ -41,9 +39,7 @@ export function inject(): void {
     match: (req: RequestLens) =>
       req.method === "POST" && isCapturedEndpoint(req.url),
     async onResponse(req, res) {
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
       const id = extractTweetId(await req.readBody());
       if (id) {
         capture(`https://x.com/i/web/status/${id}`, triggerForUrl(req.url));

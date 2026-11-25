@@ -48,9 +48,7 @@ export function TagsSidebar() {
     const groupCounts = new Map<string, number>();
     for (const group of groups) {
       const members = group.tagIds.filter((id) => ids.has(id));
-      for (const id of members) {
-        grouped.add(id);
-      }
+      for (const id of members) grouped.add(id);
       groupCounts.set(group.id, members.length);
     }
     return {

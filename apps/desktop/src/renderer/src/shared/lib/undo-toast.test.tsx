@@ -38,9 +38,7 @@ function action(label: string): HTMLButtonElement {
       "[data-slot='toasts'] button",
     ),
   ].find((candidate) => candidate.textContent === label);
-  if (!button) {
-    throw new Error(`Missing ${label}`);
-  }
+  if (!button) throw new Error(`Missing ${label}`);
   return button;
 }
 

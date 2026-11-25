@@ -13,9 +13,7 @@ export async function startPondMcp(): Promise<void> {
   });
   let quitting = false;
   const quit = (reason: string) => {
-    if (quitting) {
-      return;
-    }
+    if (quitting) return;
     quitting = true;
     stopWatching();
     log.info("[pond mcp] host disconnected; quitting", reason);

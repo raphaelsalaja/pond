@@ -27,9 +27,7 @@ const YOUTUBE_EMBED: YouTubeEmbedConfig = {
   type: "youtube",
   parseUrl: (text) => {
     const id = parseYouTubeId(text);
-    if (!id) {
-      return null;
-    }
+    if (!id) return null;
     return { id, url: youtubeWatchUrl(id) };
   },
   insertNode: (editor: LexicalEditor, result: EmbedMatchResult) => {

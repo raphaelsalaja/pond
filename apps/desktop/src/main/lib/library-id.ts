@@ -36,9 +36,7 @@ export function libraryNameFromPath(root: string): string {
 }
 
 export function resolveLibraryId(root: string, committed: boolean): string {
-  if (committed && existsSync(root)) {
-    return readOrCreateLibraryId(root);
-  }
+  if (committed && existsSync(root)) return readOrCreateLibraryId(root);
   return UNBOUND_LIBRARY_ID;
 }
 

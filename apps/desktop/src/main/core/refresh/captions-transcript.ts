@@ -35,20 +35,14 @@ export function parseCaptions(text: string): Array<CaptionCue> {
   for (const block of text.replaceAll("\r", "").split(/\n{2,}/)) {
     const lines = block.split("\n");
     const timingIndex = lines.findIndex((line) => TIMING.test(line));
-    if (timingIndex < 0) {
-      continue;
-    }
+    if (timingIndex < 0) continue;
     const match = TIMING.exec(lines[timingIndex] ?? "");
-    if (!match?.[1] || !match[2]) {
-      continue;
-    }
+    if (!match?.[1] || !match[2]) continue;
     const start = seconds(match[1]);
     const end = seconds(match[2]);
     for (const raw of lines.slice(timingIndex + 1)) {
       const line = clean(raw);
-      if (!line || line === last) {
-        continue;
-      }
+      if (!line || line === last) continue;
       last = line;
       cues.push({ start, end, text: line });
     }
@@ -82,9 +76,7 @@ export function cuesToSubtitles(
   const offset = range?.start ?? 0;
   const merged: Array<CaptionCue> = [];
   for (const cue of cues) {
-    if (range && (cue.end <= range.start || cue.start >= range.end)) {
-      continue;
-    }
+    if (range && (cue.end <= range.start || cue.start >= range.end)) continue;
     const start = Math.max(0, cue.start - offset);
     const end = Math.max(
       start,
@@ -117,9 +109,7 @@ export function cuesToTranscript(
   const paragraphs: Array<string> = [];
   let current: { start: number; words: Array<string> } | null = null;
   for (const cue of cues) {
-    if (range && (cue.end <= range.start || cue.start >= range.end)) {
-      continue;
-    }
+    if (range && (cue.end <= range.start || cue.start >= range.end)) continue;
     const at = Math.max(0, cue.start - offset);
     if (!current || at - current.start >= PARAGRAPH_SECONDS) {
       if (current) {

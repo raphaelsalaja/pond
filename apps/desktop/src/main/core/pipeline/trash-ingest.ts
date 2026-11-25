@@ -72,9 +72,7 @@ export function releaseTrashedIngestSync(
         )`,
     )
     .run(TRASHED_INGEST_REASON, at, at, scoped, ids).changes;
-  for (const task of open) {
-    abortRunningIngest(task.id);
-  }
+  for (const task of open) abortRunningIngest(task.id);
   return {
     cancelled,
     generationIds: [
@@ -90,9 +88,7 @@ export function resumeTrashedIngestSync(
   saveIds: ReadonlyArray<string>,
   at: number,
 ): number {
-  if (saveIds.length === 0) {
-    return 0;
-  }
+  if (saveIds.length === 0) return 0;
   return sqlite
     .prepare(
       `UPDATE tasks

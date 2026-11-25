@@ -80,9 +80,7 @@ export class CollapsibleContainerNode extends ElementNode {
       const open = details.open;
       editor.update(() => {
         const latest = this.getLatest();
-        if (latest.getOpen() !== open) {
-          latest.setOpen(open);
-        }
+        if (latest.getOpen() !== open) latest.setOpen(open);
       });
     });
     return details;
@@ -105,9 +103,7 @@ export class CollapsibleContainerNode extends ElementNode {
   collapseAtStart(): boolean {
     const children: Array<LexicalNode> = [];
     for (const child of this.getChildren()) {
-      if ($isElementNode(child)) {
-        children.push(...child.getChildren());
-      }
+      if ($isElementNode(child)) children.push(...child.getChildren());
     }
     const paragraph = $createParagraphNode();
     paragraph.append(...children);
@@ -194,9 +190,7 @@ export class CollapsibleTitleNode extends ElementNode {
       const content = this.getNextSibling();
       if ($isCollapsibleContentNode(content)) {
         const first = content.getFirstChild();
-        if ($isElementNode(first)) {
-          return first;
-        }
+        if ($isElementNode(first)) return first;
         const paragraph = $createParagraphNode();
         content.append(paragraph);
         return paragraph;
@@ -260,9 +254,7 @@ export const COLLAPSE_NODES = [
 
 export function $inCollapsible(): boolean {
   const selection = $getSelection();
-  if (!$isRangeSelection(selection)) {
-    return false;
-  }
+  if (!$isRangeSelection(selection)) return false;
   return Boolean(
     $findMatchingParent(
       selection.anchor.getNode(),
@@ -289,9 +281,7 @@ export function CollapsiblePlugin() {
       editor.registerNodeTransform(CollapsibleContentNode, (node) => {
         const parent = node.getParent();
         if (!$isCollapsibleContainerNode(parent)) {
-          for (const child of node.getChildren()) {
-            node.insertBefore(child);
-          }
+          for (const child of node.getChildren()) node.insertBefore(child);
           node.remove();
         } else if (node.isEmpty()) {
           node.append($createParagraphNode());
@@ -310,9 +300,7 @@ export function CollapsiblePlugin() {
           !$isCollapsibleTitleNode(children[0]) ||
           !$isCollapsibleContentNode(children[1])
         ) {
-          for (const child of children) {
-            node.insertBefore(child);
-          }
+          for (const child of children) node.insertBefore(child);
           node.remove();
         }
       }),

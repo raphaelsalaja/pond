@@ -145,9 +145,7 @@ export function TagsSection() {
                       for (const group of groups) {
                         const was = expandedIds.includes(group.id);
                         const now = open.has(group.id);
-                        if (was !== now) {
-                          onToggleExpand(group.id, now);
-                        }
+                        if (was !== now) onToggleExpand(group.id, now);
                       }
                     }}
                     className={styles.groups}

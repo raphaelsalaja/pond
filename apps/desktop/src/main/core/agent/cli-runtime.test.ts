@@ -52,11 +52,8 @@ describe("prepareCodexRuntime credential isolation", () => {
       expect(String(failure)).toMatch(/Developer Mode/);
       expect(entries).toEqual([]);
     } finally {
-      if (original === undefined) {
-        delete process.env.CODEX_HOME;
-      } else {
-        process.env.CODEX_HOME = original;
-      }
+      if (original === undefined) delete process.env.CODEX_HOME;
+      else process.env.CODEX_HOME = original;
       await rm(source, { recursive: true, force: true });
     }
   });

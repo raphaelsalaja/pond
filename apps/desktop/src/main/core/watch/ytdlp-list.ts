@@ -60,9 +60,7 @@ export async function listYtdlpWatch(
     return { ok: false, reason: "unavailable" };
   }
   const target = listUrl(source, handle, kind);
-  if (!target) {
-    return { ok: false, reason: "unknown" };
-  }
+  if (!target) return { ok: false, reason: "unknown" };
 
   const argv = [
     "--flat-playlist",
@@ -80,12 +78,8 @@ export async function listYtdlpWatch(
     LIST_TIMEOUT_MS,
     signal,
   );
-  if (code === 124) {
-    return { ok: false, reason: "timeout" };
-  }
-  if (code === 125) {
-    return { ok: false, reason: "unknown" };
-  }
+  if (code === 124) return { ok: false, reason: "timeout" };
+  if (code === 125) return { ok: false, reason: "unknown" };
   if (code !== 0 && stdout.trim().length === 0) {
     const tail = stderr.slice(-300);
     log.warn("[pond watch:ytdlp] listing failed", source, handle, code, tail);
@@ -103,9 +97,7 @@ export async function listYtdlpWatch(
       continue;
     }
     const decoded = FlatEntrySchema.safeParse(trimmed);
-    if (!decoded.success) {
-      continue;
-    }
+    if (!decoded.success) continue;
     const parsed = decoded.data;
     const url =
       parsed.webpage_url ??
@@ -113,13 +105,9 @@ export async function listYtdlpWatch(
       (source === "youtube" && parsed.id
         ? `https://www.youtube.com/watch?v=${parsed.id}`
         : null);
-    if (!url) {
-      continue;
-    }
+    if (!url) continue;
     const sourceId = sourceIdFromUrl(source, url);
-    if (!sourceId || seen.has(sourceId)) {
-      continue;
-    }
+    if (!sourceId || seen.has(sourceId)) continue;
     seen.add(sourceId);
     entries.push({ url, sourceId });
   }

@@ -110,9 +110,7 @@ function ratio(a: string, b: string): number {
 
 function token(theme: ThemeTokens, name: string): string {
   const value = theme.tokens[`--ds-${name}`];
-  if (value === undefined) {
-    throw new Error(`missing --ds-${name}`);
-  }
+  if (value === undefined) throw new Error(`missing --ds-${name}`);
   return value;
 }
 
@@ -127,13 +125,9 @@ function build(
 ) {
   const key = `${solve.name} ${presetId} ${contrast} ${gamut}`;
   const hit = solved.get(key);
-  if (hit) {
-    return hit;
-  }
+  if (hit) return hit;
   const preset = THEME_PRESETS.find((p) => p.id === presetId);
-  if (!preset) {
-    throw new Error(`missing preset ${presetId}`);
-  }
+  if (!preset) throw new Error(`missing preset ${presetId}`);
   const tokens = solve({ ...preset.def, contrast }, gamut);
   solved.set(key, tokens);
   return tokens;

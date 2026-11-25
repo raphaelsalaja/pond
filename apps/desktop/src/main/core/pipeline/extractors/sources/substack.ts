@@ -23,9 +23,7 @@ export class SubstackPostExtractor implements Extractor {
 
   handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
-    if (segments.length !== 1 || !first?.startsWith("@")) {
-      return null;
-    }
+    if (segments.length !== 1 || !first?.startsWith("@")) return null;
     const handle = first.slice(1);
     return /^[A-Za-z0-9_-]{1,64}$/.test(handle) ? handle : null;
   }
@@ -52,9 +50,7 @@ export class SubstackPostExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("substack", input.url.href);
-    if (!sourceId) {
-      throw new TerminalError("could not parse substack post");
-    }
+    if (!sourceId) throw new TerminalError("could not parse substack post");
     const url = sourceId.startsWith("p-")
       ? `https://substack.com/home/post/${sourceId}`
       : `https://${sourceId}`;

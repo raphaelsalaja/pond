@@ -24,8 +24,6 @@ export const Route = createFileRoute("/_library/sources_/$kind/$id")({
 function SourceDetailRoute() {
   const { kind, id } = Route.useParams();
   const { page } = Route.useSearch();
-  if (!isSourceDetailsKind(kind)) {
-    return null;
-  }
+  if (!isSourceDetailsKind(kind)) return null;
   return <SourceDetail key={`${kind}:${id}`} kind={kind} id={id} page={page} />;
 }

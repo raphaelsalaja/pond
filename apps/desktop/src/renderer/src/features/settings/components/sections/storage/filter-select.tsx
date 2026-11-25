@@ -21,9 +21,7 @@ export function FilterSelect<Value extends string>({
       value={value}
       onValueChange={(next) => {
         const option = options.find((entry) => entry.value === next);
-        if (option) {
-          onChange(option.value);
-        }
+        if (option) onChange(option.value);
       }}
     >
       <Select.Trigger size="sm" aria-label={label}>

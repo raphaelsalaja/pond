@@ -83,9 +83,7 @@ it("keeps download actions in the row context menu", () => {
 
 function click(rows: Array<DownloadRow>, label: string) {
   const item = visible(rows).find((entry) => entry.label === label);
-  if (item && "onClick" in item) {
-    item.onClick?.();
-  }
+  if (item && "onClick" in item) item.onClick?.();
 }
 
 it("offers Copy Error whenever the download recorded an error", () => {

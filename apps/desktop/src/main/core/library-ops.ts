@@ -106,9 +106,7 @@ export async function relocateLibrary(
 
   if (mode === "copy") {
     for (const entry of await readdir(srcResolved)) {
-      if (isLibrarySidecar(entry)) {
-        continue;
-      }
+      if (isLibrarySidecar(entry)) continue;
       const from = join(srcResolved, entry);
       const to = join(destResolved, entry);
       if (existsSync(to)) {
@@ -147,9 +145,7 @@ export async function relocateLibrary(
 export async function syncLibraryRootMetadata(): Promise<void> {
   const pointerPath = readLibraryPointer();
   const pointer = pointerPath ? normalizeLibraryPath(pointerPath) : "";
-  if (!pointer) {
-    return;
-  }
+  if (!pointer) return;
 
   const globalDb = await getGlobalDb();
   const rows = await globalDb
@@ -157,9 +153,7 @@ export async function syncLibraryRootMetadata(): Promise<void> {
     .from(settingsTable)
     .where(eq(settingsTable.id, "singleton"));
   const stored = rows[0]?.libraryRoot ?? "";
-  if (isSamePath(stored, pointer)) {
-    return;
-  }
+  if (isSamePath(stored, pointer)) return;
 
   globalDb
     .insert(settingsTable)
@@ -193,16 +187,12 @@ export async function emptyTrashOlderThan(days: number): Promise<number> {
     meta: { actor: "system", actorReason: "trash-auto-empty" },
   }));
   await executeBatch(txs);
-  for (const tx of txs) {
-    recordForUndo(tx);
-  }
+  for (const tx of txs) recordForUndo(tx);
   return txs.length;
 }
 
 export async function purgeDirectory(target: string): Promise<number> {
-  if (!existsSync(target)) {
-    return 0;
-  }
+  if (!existsSync(target)) return 0;
   const entries = await readdir(target);
   for (const entry of entries) {
     await rm(join(target, entry), { recursive: true, force: true });

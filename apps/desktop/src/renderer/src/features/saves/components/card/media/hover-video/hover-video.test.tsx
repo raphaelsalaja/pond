@@ -59,9 +59,7 @@ it("plays on hover and ignores pointer movement while scrub on hover stays avail
   });
 
   const video = host.querySelector("video");
-  if (!video) {
-    throw new Error("Missing hover video");
-  }
+  if (!video) throw new Error("Missing hover video");
   Object.defineProperty(video, "duration", { configurable: true, value: 10 });
 
   await act(async () => {
@@ -101,9 +99,7 @@ async function renderClip(posterUrl?: string): Promise<HTMLVideoElement> {
     );
   });
   const video = host.querySelector("video");
-  if (!video) {
-    throw new Error("Missing hover video");
-  }
+  if (!video) throw new Error("Missing hover video");
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   return video;
 }

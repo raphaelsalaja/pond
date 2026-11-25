@@ -192,9 +192,7 @@ export const settingsQueries = {
     PrefsPatchParamsSchema,
     async (params): Promise<QueryResult<"settings.setPrefs">> => {
       const next = await setPrefs(params);
-      if ("preferences" in params) {
-        await syncShellChrome();
-      }
+      if ("preferences" in params) await syncShellChrome();
       if (
         params.window &&
         ("appIcon" in params.window || "appIconMatchesLibrary" in params.window)

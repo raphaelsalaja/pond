@@ -7,12 +7,8 @@ export function shortcutPlatformFromName(
   platform: string,
 ): "mac" | "windows" | "linux" {
   const value = platform.toLowerCase();
-  if (!value || value.includes("mac") || value === "darwin") {
-    return "mac";
-  }
-  if (value.includes("win")) {
-    return "windows";
-  }
+  if (!value || value.includes("mac") || value === "darwin") return "mac";
+  if (value.includes("win")) return "windows";
   return "linux";
 }
 

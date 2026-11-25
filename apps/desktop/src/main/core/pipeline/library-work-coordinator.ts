@@ -35,9 +35,7 @@ export function createLibraryWorkCoordinator(ops: LibraryWorkOperations) {
       ops.resumeLibraryTransfers();
       const wasPaused = reconcilerWasPaused;
       reconcilerWasPaused = null;
-      if (wasPaused === false) {
-        await ops.setReconcilerPaused(false);
-      }
+      if (wasPaused === false) await ops.setReconcilerPaused(false);
       await ops
         .startAutoImport()
         .catch((cause: unknown) =>

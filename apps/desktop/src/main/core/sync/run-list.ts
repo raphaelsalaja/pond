@@ -142,9 +142,7 @@ export async function syncListSource(
   const checkCollections = collectionCheckDue(plan, accountSync, baseline.full);
   /** Reading picked collections to the end reaches saves older than the recent window, which must count as known. */
   if (checkCollections && plan.collections && !baseline.full) {
-    for (const id of await loadAllKnownIds(account)) {
-      knownIds.add(id);
-    }
+    for (const id of await loadAllKnownIds(account)) knownIds.add(id);
   }
   const collectionEarlyStop = !(baseline.full || checkCollections);
   const listArgs: Parameters<typeof harvestSourceList>[1] = {
@@ -152,16 +150,10 @@ export async function syncListSource(
     earlyStop: !baseline.full,
     accountKey,
   };
-  if (resuming && resumeCursor) {
-    listArgs.resumeCursor = resumeCursor;
-  }
-  if (plan.listKinds.length > 0) {
-    listArgs.listKinds = plan.listKinds;
-  }
+  if (resuming && resumeCursor) listArgs.resumeCursor = resumeCursor;
+  if (plan.listKinds.length > 0) listArgs.listKinds = plan.listKinds;
   const savedSince = savedSinceStart(source, scope);
-  if (savedSince) {
-    listArgs.savedSince = savedSince.toISOString();
-  }
+  if (savedSince) listArgs.savedSince = savedSince.toISOString();
   const harvest: ListHarvestResult = plan.collections
     ? await harvestSourceCollections(
         source,
@@ -331,9 +323,7 @@ export async function syncListSource(
           ),
       })
     : NO_COLLECTION_PASS;
-  if (collectionPass.gap) {
-    gaps.push(collectionPass.gap);
-  }
+  if (collectionPass.gap) gaps.push(collectionPass.gap);
   const filing = [...combined, ...collectionPass.entries];
 
   for (const id of await mergeListKindsOntoExisting(source, combined)) {
@@ -416,9 +406,7 @@ export async function syncListSource(
   const bulk = await enqueue(
     fresh.map((entry) => {
       const item: EnqueueItem = { url: entry.url };
-      if (entry.listKinds) {
-        item.listKinds = entry.listKinds;
-      }
+      if (entry.listKinds) item.listKinds = entry.listKinds;
       return item;
     }),
     { trigger: `sync:${source}`, accountId, generationId },

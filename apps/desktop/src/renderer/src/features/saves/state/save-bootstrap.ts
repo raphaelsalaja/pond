@@ -105,12 +105,8 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
   let fullPoolInflight: Promise<void> | null = null;
 
   function bootPool(): Promise<void> {
-    if (bootPromise) {
-      return bootPromise;
-    }
-    if (started) {
-      return Promise.resolve();
-    }
+    if (bootPromise) return bootPromise;
+    if (started) return Promise.resolve();
     started = true;
 
     bootPromise = (async () => {
@@ -153,15 +149,9 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
   }
 
   function loadNextPage(): Promise<void> {
-    if (fullPoolInflight) {
-      return fullPoolInflight;
-    }
-    if (pageInflight) {
-      return pageInflight;
-    }
-    if (!pagingStore.state.hasMore) {
-      return Promise.resolve();
-    }
+    if (fullPoolInflight) return fullPoolInflight;
+    if (pageInflight) return pageInflight;
+    if (!pagingStore.state.hasMore) return Promise.resolve();
 
     pageInflight = fetchPage(pagingStore.state.nextCursor).finally(() => {
       pageInflight = null;
@@ -170,12 +160,8 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
   }
 
   function hydrateFullPool(): Promise<void> {
-    if (fullPoolInflight) {
-      return fullPoolInflight;
-    }
-    if (!pagingStore.state.hasMore) {
-      return Promise.resolve();
-    }
+    if (fullPoolInflight) return fullPoolInflight;
+    if (!pagingStore.state.hasMore) return Promise.resolve();
 
     fullPoolInflight = (async () => {
       const activePage = pageInflight;
@@ -235,15 +221,11 @@ export function createSaveBootstrap(dependencies: SaveBootstrapDependencies) {
   let subscribedToSync = false;
 
   function subscribeToSyncActions(): void {
-    if (subscribedToSync) {
-      return;
-    }
+    if (subscribedToSync) return;
     dependencies.onSyncAction((raw) => {
       try {
         const event = SyncActionEventSchema.safeParse(raw);
-        if (event.success) {
-          dependencies.applyActionCoalesced(event.data);
-        }
+        if (event.success) dependencies.applyActionCoalesced(event.data);
         dependencies.scheduleSnapshotWrite();
       } catch (error) {
         log.warn("[pond pool] applyAction failed", error, raw);

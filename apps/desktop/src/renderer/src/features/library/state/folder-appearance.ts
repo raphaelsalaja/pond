@@ -44,9 +44,7 @@ export function rememberFolderIcon(icon: FolderIconId): Promise<void> {
 
 export function rememberFolderColor(color: string | null): Promise<void> {
   const parsed = FolderColorSchema.safeParse(color);
-  if (!parsed.success) {
-    return Promise.resolve();
-  }
+  if (!parsed.success) return Promise.resolve();
   return remember((current) => ({
     recentColors: withRecent(current.recentColors, parsed.data),
   }));

@@ -49,9 +49,7 @@ function Probe({
 
 function image(): HTMLImageElement {
   const image = host.querySelector("img");
-  if (!image) {
-    throw new Error("expected image");
-  }
+  if (!image) throw new Error("expected image");
   return image;
 }
 

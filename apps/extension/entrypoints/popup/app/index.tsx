@@ -193,9 +193,7 @@ function Harvest({
 }
 
 function hostOf(url: string | undefined): string | null {
-  if (!url || !/^https?:\/\//i.test(url)) {
-    return null;
-  }
+  if (!url || !/^https?:\/\//i.test(url)) return null;
   try {
     return new URL(url).hostname;
   } catch {
@@ -218,9 +216,7 @@ function Shell({
 }
 
 async function openPondSettings() {
-  if (await sendMessage("openPond", "settings/extension")) {
-    window.close();
-  }
+  if (await sendMessage("openPond", "settings/extension")) window.close();
 }
 
 function MoreRows({ onShortcuts }: { onShortcuts: () => void }) {
@@ -341,20 +337,15 @@ function Commands({ result, refresh, returned, onShortcuts }: CommandsProps) {
   const harvest = host && tab?.url ? harvestSourceForUrl(tab.url) : null;
 
   const run = async (tool: CaptureTool) => {
-    if (tabId === undefined) {
-      return;
-    }
+    if (tabId === undefined) return;
     const outcome = await sendMessage("runTool", { tabId, tool }).catch(
       (): ToolResult => ({
         ok: false,
         message: "Pond couldn't start this capture. Try again.",
       }),
     );
-    if (outcome.ok) {
-      window.close();
-    } else {
-      setError(outcome.message);
-    }
+    if (outcome.ok) window.close();
+    else setError(outcome.message);
   };
 
   return (

@@ -50,18 +50,12 @@ export function normalizeListKinds(raw: ListKindInput): Array<ListKind> {
   const found = new Set<ListKind>();
   const visit = (value: ListKindInput): void => {
     if (isKindList(value)) {
-      for (const item of value) {
-        visit(item);
-      }
+      for (const item of value) visit(item);
       return;
     }
-    if (!value) {
-      return;
-    }
+    if (!value) return;
     const kind = canonicalListKind(value);
-    if (kind) {
-      found.add(kind);
-    }
+    if (kind) found.add(kind);
   };
   visit(raw);
   return LIST_KINDS.filter((kind) => found.has(kind));
@@ -83,8 +77,6 @@ export function listKindsEqual(a: ListKindInput, b: ListKindInput): boolean {
 
 export function formatListKinds(raw: ListKindInput): string | null {
   const kinds = normalizeListKinds(raw);
-  if (kinds.length === 0) {
-    return null;
-  }
+  if (kinds.length === 0) return null;
   return kinds.map((kind) => LIST_KIND_LABELS[kind]).join(", ");
 }

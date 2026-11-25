@@ -115,17 +115,11 @@ export function postEntry(
       ? `https://substack.com/home/post/${byId}`
       : substackPostUrl(post, publication),
   };
-  if (post.title) {
-    entry.title = post.title;
-  }
+  if (post.title) entry.title = post.title;
   const about = post.subtitle || post.description;
-  if (about) {
-    entry.description = about;
-  }
+  if (about) entry.description = about;
   const author = post.publishedBylines?.[0]?.name;
-  if (author) {
-    entry.author = author;
-  }
+  if (author) entry.author = author;
   if (post.cover_image) {
     entry.mediaUrl = post.cover_image;
     entry.mediaType = "image";
@@ -145,9 +139,7 @@ export function captureFromPost(
     url,
     media: post.cover_image ? [{ url: post.cover_image, type: "image" }] : [],
   };
-  if (post.title) {
-    capture.title = post.title;
-  }
+  if (post.title) capture.title = post.title;
   const body = post.body_html
     ? htmlToText(post.body_html)
     : (post.truncated_body_text ?? "");
@@ -159,25 +151,17 @@ export function captureFromPost(
       text.length > TEXT_LIMIT ? `${text.slice(0, TEXT_LIMIT)}…` : text;
   }
   const article = articleFromPost(post, body);
-  if (article) {
-    capture.article = article;
-  }
-  if (post.post_date) {
-    capture.publishedAt = post.post_date;
-  }
+  if (article) capture.article = article;
+  if (post.post_date) capture.publishedAt = post.post_date;
   const byline = post.publishedBylines?.[0];
   if (byline?.name || byline?.handle) {
     const author: CaptureAuthor = {};
-    if (byline.name) {
-      author.name = byline.name;
-    }
+    if (byline.name) author.name = byline.name;
     if (byline.handle) {
       author.handle = byline.handle;
       author.profileUrl = `https://substack.com/@${byline.handle}`;
     }
-    if (byline.photo_url) {
-      author.avatarUrl = byline.photo_url;
-    }
+    if (byline.photo_url) author.avatarUrl = byline.photo_url;
     capture.author = author;
   }
   const metrics: NonNullable<Capture["metrics"]> = {};
@@ -208,17 +192,11 @@ function articleFromPost(
     : post.truncated_body_text?.trim()
       ? `<p>${escapeHtml(post.truncated_body_text.trim())}</p>`
       : "";
-  if (!html) {
-    return null;
-  }
+  if (!html) return null;
   const article: CaptureArticle = { html };
   const subtitle = post.subtitle?.trim();
-  if (subtitle) {
-    article.subtitle = subtitle;
-  }
-  if (post.canonical_url) {
-    article.canonicalUrl = post.canonical_url;
-  }
+  if (subtitle) article.subtitle = subtitle;
+  if (post.canonical_url) article.canonicalUrl = post.canonical_url;
   const words = bodyText.split(/\s+/).filter(Boolean).length;
   if (
     post.audience &&
@@ -256,21 +234,15 @@ export function feedItems(xml: string, subdomain: string): Array<FeedItem> {
   for (const block of xml.match(/<item>[\s\S]*?<\/item>/g) ?? []) {
     const link = tagText(block, "link");
     const slug = link ? /\/p\/([A-Za-z0-9_-]+)/.exec(link)?.[1] : undefined;
-    if (!slug) {
-      continue;
-    }
+    if (!slug) continue;
     const item: FeedItem = {
       url: `https://${host}/p/${slug}`,
       sourceId: `${host}/p/${slug}`,
     };
     const title = tagText(block, "title");
-    if (title) {
-      item.title = title;
-    }
+    if (title) item.title = title;
     const author = tagText(block, "dc:creator");
-    if (author) {
-      item.author = author;
-    }
+    if (author) item.author = author;
     const date = tagText(block, "pubDate");
     const published = date ? Date.parse(date) : Number.NaN;
     if (Number.isFinite(published)) {
@@ -279,9 +251,7 @@ export function feedItems(xml: string, subdomain: string): Array<FeedItem> {
     const enclosure = /<enclosure[^>]*url="([^"]+)"[^>]*type="image\//.exec(
       block,
     )?.[1];
-    if (enclosure) {
-      item.mediaUrl = decodeEntities(enclosure);
-    }
+    if (enclosure) item.mediaUrl = decodeEntities(enclosure);
     items.push(item);
   }
   return items;
@@ -289,9 +259,7 @@ export function feedItems(xml: string, subdomain: string): Array<FeedItem> {
 
 function tagText(block: string, tag: string): string | undefined {
   const match = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`).exec(block);
-  if (!match?.[1]) {
-    return undefined;
-  }
+  if (!match?.[1]) return undefined;
   const raw = match[1].replace(/^<!\[CDATA\[([\s\S]*)\]\]>$/, "$1").trim();
   return raw ? decodeEntities(raw) : undefined;
 }

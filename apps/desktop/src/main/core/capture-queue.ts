@@ -126,15 +126,11 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
   }
   function run(job: Job) {
     const key = path(job.library, job.draft.id);
-    if (active.has(key)) {
-      return;
-    }
+    if (active.has(key)) return;
     const work = serial
       .then(() =>
         ports.transfer(async () => {
-          if (ports.root() !== job.library) {
-            return;
-          }
+          if (ports.root() !== job.library) return;
           if (existsSync(`${key}.cancel`)) {
             job.state = "cancelled";
             await persist(job);
@@ -155,9 +151,7 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
                 );
               }
               const item = job.draft.items[job.completed];
-              if (!item) {
-                break;
-              }
+              if (!item) break;
               const result = await ports.process(
                 item,
                 job.draft.metadata,
@@ -166,12 +160,8 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
                 job.draft.trigger,
               );
               job.saveIds.push(result.id);
-              if (result.duplicate) {
-                job.duplicateCount++;
-              }
-              if (result.warning) {
-                job.warning = result.warning;
-              }
+              if (result.duplicate) job.duplicateCount++;
+              if (result.warning) job.warning = result.warning;
               job.completed++;
               await persist(job);
             }
@@ -239,9 +229,7 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
           return receipt(job);
         }),
       );
-      if (result.state === "accepted") {
-        run(await read(root, draft.id));
-      }
+      if (result.state === "accepted") run(await read(root, draft.id));
       return result;
     },
     async status(id: string): Promise<CaptureReceipt> {
@@ -270,17 +258,13 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
             return receipt(job);
           }
           await rm(`${path(root, id)}.cancel`, { force: true });
-          if (metadata) {
-            job.draft.metadata = metadata;
-          }
+          if (metadata) job.draft.metadata = metadata;
           job.state = "accepted";
           await persist(job);
           return receipt(job);
         }),
       );
-      if (result.state === "accepted") {
-        run(await read(root, id));
-      }
+      if (result.state === "accepted") run(await read(root, id));
       return result;
     },
     async cancel(id: string): Promise<void> {
@@ -288,9 +272,7 @@ export function createCaptureQueue(ports: CaptureQueuePorts) {
       await serialize(() =>
         ports.transfer(async () => {
           const job = await read(root, id);
-          if (job.state === "complete") {
-            return;
-          }
+          if (job.state === "complete") return;
           if (active.has(path(root, id))) {
             await writeFile(`${path(root, id)}.cancel`, "cancel");
             return;

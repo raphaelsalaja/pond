@@ -6,8 +6,6 @@ export const MediaReadyContext = createContext<(() => void) | null>(null);
 export function useReportMediaReady(ready: boolean): void {
   const report = use(MediaReadyContext);
   useEffect(() => {
-    if (ready) {
-      report?.();
-    }
+    if (ready) report?.();
   }, [ready, report]);
 }

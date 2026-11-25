@@ -48,9 +48,7 @@ function settingsCrumbs(section: string | undefined): Array<Breadcrumb> {
   const crumbs: Array<Breadcrumb> = [
     { label: "Settings", path: "/settings", icon: IconNut },
   ];
-  if (!section) {
-    return crumbs;
-  }
+  if (!section) return crumbs;
   const entry = SETTINGS_BY_PATH.get(section);
   const parent = entry?.parent ? SETTINGS_BY_ID.get(entry.parent) : null;
   if (parent) {

@@ -113,9 +113,7 @@ export function BrowserExtensionDialog({
   async function openSafariSettings(): Promise<void> {
     setError(null);
     const result = await window.pond.query("extension.openSafariSettings", {});
-    if (result.ok) {
-      return;
-    }
+    if (result.ok) return;
     setNeedsUnsigned(result.reason === "unsigned-build");
     setError(result.error);
     await window.pond.query("extension.openSafari", {});

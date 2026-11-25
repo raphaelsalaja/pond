@@ -112,9 +112,7 @@ export function SaveSelectionBar() {
   const moreItems = () => {
     const saves = loadedSaves(ids);
     const first = saves[0];
-    if (!first) {
-      return [];
-    }
+    if (!first) return [];
     const peeked = peekOpenWithApps(openWithKind(first));
     return buildSaveMenu(
       saves,
@@ -123,9 +121,7 @@ export function SaveSelectionBar() {
   };
   const onMoreOpen = () => {
     const first = loadedSaves(ids)[0];
-    if (!first) {
-      return;
-    }
+    if (!first) return;
     void loadOpenWithApps({
       ids: [...ids],
       kind: openWithKind(first),

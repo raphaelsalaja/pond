@@ -130,9 +130,7 @@ describe("new menu spec", () => {
     const [newMenu] = buildNewMenuItems(["excel"], {
       excel: "data:image/png;base64,excel",
     });
-    if (newMenu?.type !== "submenu") {
-      throw new Error("Missing New submenu");
-    }
+    if (newMenu?.type !== "submenu") throw new Error("Missing New submenu");
     const excel = newMenu.items.find(
       (item) => "id" in item && item.id === "excel",
     );

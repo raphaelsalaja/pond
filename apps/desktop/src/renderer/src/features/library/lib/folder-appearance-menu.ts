@@ -84,9 +84,7 @@ function setColor(folderId: string, color: string | null): void {
   void window.pond
     .query("folders.setColor", { id: folderId, color })
     .then((result) => {
-      if (!result.ok) {
-        throw new Error(result.error);
-      }
+      if (!result.ok) throw new Error(result.error);
       void rememberFolderColor(color);
       return folders.refresh();
     })

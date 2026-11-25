@@ -25,21 +25,15 @@ function asOperations(json: JsonValue | null): Array<JsonRecord> {
 function pickSaveOpFromRequest(ops: Array<JsonRecord>): JsonRecord | null {
   for (const op of ops) {
     const operation = asText(op.operationName);
-    if (operation && SAVE_OPERATIONS.has(operation)) {
-      return op;
-    }
-    if (at(op, "variables", "connectableId")) {
-      return op;
-    }
+    if (operation && SAVE_OPERATIONS.has(operation)) return op;
+    if (at(op, "variables", "connectableId")) return op;
   }
   return null;
 }
 
 function pickSaveOpFromResponse(ops: Array<JsonRecord>): JsonRecord | null {
   for (const op of ops) {
-    if (at(op, "data", "create_connection", "connectable", "id")) {
-      return op;
-    }
+    if (at(op, "data", "create_connection", "connectable", "id")) return op;
   }
   return null;
 }
@@ -52,9 +46,7 @@ export function inject(): void {
   const emitted = new Set<string>();
 
   function emitBlock(blockId: string): void {
-    if (!blockId || emitted.has(blockId)) {
-      return;
-    }
+    if (!blockId || emitted.has(blockId)) return;
     emitted.add(blockId);
     capture(`https://www.are.na/block/${blockId}`, "arena:save");
   }
@@ -64,9 +56,7 @@ export function inject(): void {
     match: (req: RequestLens) =>
       req.method === "POST" && isInteresting(req.url),
     async onResponse(req, res) {
-      if (!res.ok) {
-        return;
-      }
+      if (!res.ok) return;
       const text = await res.readText();
       if (GRAPHQL_RE.test(req.url)) {
         const requestOp = pickSaveOpFromRequest(
@@ -75,29 +65,21 @@ export function inject(): void {
         const responseOp = pickSaveOpFromResponse(
           asOperations(parseJsonValue(text)),
         );
-        if (!requestOp && !responseOp) {
-          return;
-        }
+        if (!requestOp && !responseOp) return;
         const blockId = String(
           at(responseOp, "data", "create_connection", "connectable", "id") ??
             at(requestOp, "variables", "connectableId") ??
             "",
         );
-        if (blockId) {
-          emitBlock(blockId);
-        }
+        if (blockId) emitBlock(blockId);
         return;
       }
       if (CONN_RE.test(req.url) || BLOCK_RE.test(req.url)) {
         const json = parseJsonValue(text);
-        if (!isRecord(json)) {
-          return;
-        }
+        if (!isRecord(json)) return;
         const block = json.block ?? json.connectable ?? (json.id ? json : null);
         const blockId = at(block, "id");
-        if (blockId) {
-          emitBlock(String(blockId));
-        }
+        if (blockId) emitBlock(String(blockId));
       }
     },
   });

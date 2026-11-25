@@ -52,9 +52,7 @@ it("shows editable shortcuts without profile controls or explanatory copy", asyn
     const control = host.querySelector<HTMLInputElement>(
       'input[aria-label="Change Show Pond shortcut"]',
     );
-    if (!control) {
-      throw Error("Missing summon shortcut control");
-    }
+    if (!control) throw Error("Missing summon shortcut control");
     await act(async () => control.click());
     await act(async () =>
       control.dispatchEvent(

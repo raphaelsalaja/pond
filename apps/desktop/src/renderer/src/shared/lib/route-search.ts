@@ -24,11 +24,8 @@ export function patchSearch(
 ): RouteSearch {
   const next = new Map(Object.entries(search));
   for (const [key, value] of Object.entries(patch)) {
-    if (value === undefined) {
-      next.delete(key);
-    } else {
-      next.set(key, value);
-    }
+    if (value === undefined) next.delete(key);
+    else next.set(key, value);
   }
   return Object.fromEntries(next);
 }
@@ -39,9 +36,7 @@ export function hrefWithSearch(
   pathname?: string,
 ): string | null {
   const router = getAppRouter();
-  if (!router) {
-    return null;
-  }
+  if (!router) return null;
   const location = router.latestLocation;
   const current: unknown = location.search;
   const search = patchSearch(isRouteSearch(current) ? current : {}, patch);

@@ -8,17 +8,11 @@ export default defineContentScript({
   runAt: "document_start",
   main() {
     const source = hookSourceForUrl(location.href);
-    if (!source) {
-      return;
-    }
+    if (!source) return;
     void bridge(source);
-    if (source !== "twitter") {
-      return;
-    }
+    if (source !== "twitter") return;
     void getSettings().then((settings) => {
-      if (settings.enabled.twitter) {
-        mountPondSidebarLink();
-      }
+      if (settings.enabled.twitter) mountPondSidebarLink();
     });
   },
 });

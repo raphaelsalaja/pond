@@ -29,15 +29,9 @@ function endpointPatch(
   id: AssistantProvider,
   value: string,
 ): Partial<AgentPrefs> {
-  if (id === "ollama") {
-    return { ollamaBaseUrl: value };
-  }
-  if (id === "lmstudio") {
-    return { lmstudioBaseUrl: value };
-  }
-  if (id === "azure") {
-    return { azureResourceName: value };
-  }
+  if (id === "ollama") return { ollamaBaseUrl: value };
+  if (id === "lmstudio") return { lmstudioBaseUrl: value };
+  if (id === "azure") return { azureResourceName: value };
   return {};
 }
 
@@ -106,9 +100,7 @@ export function ProviderConnection({
     ]);
   };
   const save = async () => {
-    if (saving) {
-      return;
-    }
+    if (saving) return;
     setInvalid({ key: missingKey, endpoint: missingEndpoint });
     if (missingKey) {
       keyField.current?.focus();
@@ -131,20 +123,14 @@ export function ProviderConnection({
         const result = await window.pond.query("agent.listModels", {
           provider: catalog.id,
         });
-        if (!result.ok) {
-          throw new Error(result.error);
-        }
-        if (result.warning) {
-          throw new Error(result.warning);
-        }
+        if (!result.ok) throw new Error(result.error);
+        if (result.warning) throw new Error(result.warning);
       } else {
         const result = await window.pond.query("agent.saveKey", {
           provider: catalog.id,
           key: keyDraft.trim(),
         });
-        if (!result.ok) {
-          throw new Error(result.error);
-        }
+        if (!result.ok) throw new Error(result.error);
       }
       verified = true;
       if (!agent.languageModel) {
@@ -177,9 +163,7 @@ export function ProviderConnection({
       const result = await window.pond.query("agent.removeKey", {
         provider: catalog.id,
       });
-      if (!result.ok) {
-        throw new Error("Could not remove provider. Try again.");
-      }
+      if (!result.ok) throw new Error("Could not remove provider. Try again.");
       await onPatchAgent({
         addedProviders: (agent.addedProviders ?? []).filter(
           (id) => id !== catalog.id,

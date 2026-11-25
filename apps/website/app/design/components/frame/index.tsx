@@ -50,11 +50,8 @@ export function Frame({ className, children, ...props }: FrameProps) {
     const frame = requestAnimationFrame(() => {
       const id = window.location.hash.slice(1);
       const target = id ? document.getElementById(id) : null;
-      if (target) {
-        target.scrollIntoView({ behavior: "instant" });
-      } else {
-        scroller.current?.scrollTo({ top: 0, behavior: "instant" });
-      }
+      if (target) target.scrollIntoView({ behavior: "instant" });
+      else scroller.current?.scrollTo({ top: 0, behavior: "instant" });
     });
     return () => cancelAnimationFrame(frame);
   }, [pathname]);
@@ -65,11 +62,8 @@ export function Frame({ className, children, ...props }: FrameProps) {
     const previous = root.dataset.theme;
     root.dataset.theme = theme;
     return () => {
-      if (previous === undefined) {
-        delete root.dataset.theme;
-      } else {
-        root.dataset.theme = previous;
-      }
+      if (previous === undefined) delete root.dataset.theme;
+      else root.dataset.theme = previous;
     };
   }, [theme]);
 

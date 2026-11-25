@@ -58,9 +58,7 @@ function taskGroups(
   const groups = new Map<string, TaskGroup>();
   const group = (task: string) => {
     const existing = groups.get(task);
-    if (existing) {
-      return existing;
-    }
+    if (existing) return existing;
     const next: TaskGroup = {
       task,
       label: TASK_LABELS.get(task) ?? task,
@@ -117,9 +115,7 @@ function groupCount(group: TaskGroup): string {
 
 function specificReason(reason: string): string | null {
   const trimmed = reason.trim();
-  if (!trimmed || trimmed === GENERIC_REASON) {
-    return null;
-  }
+  if (!trimmed || trimmed === GENERIC_REASON) return null;
   return trimmed;
 }
 
@@ -127,18 +123,14 @@ function failureAction(
   total: number,
   step: FailureStep,
 ): { label: string; next: FailureStep } | null {
-  if (total <= FAILURE_SAMPLE) {
-    return null;
-  }
+  if (total <= FAILURE_SAMPLE) return null;
   const shown =
     step === "all"
       ? total
       : step === "more"
         ? Math.min(total, FAILURE_SAMPLE + FAILURE_PAGE)
         : FAILURE_SAMPLE;
-  if (shown >= total) {
-    return { label: "Show Less", next: "sample" };
-  }
+  if (shown >= total) return { label: "Show Less", next: "sample" };
   if (step === "sample" && total > FAILURE_SAMPLE + FAILURE_PAGE) {
     return { label: "Show More", next: "more" };
   }
@@ -256,9 +248,7 @@ function FailureSample({ group }: { group: FailureGroup }) {
 
 function FailureSamples({ rows }: { rows: ReadonlyArray<EnrichmentFailure> }) {
   const groups = groupFailures(rows);
-  if (groups.length === 0) {
-    return null;
-  }
+  if (groups.length === 0) return null;
   return (
     <ul className={styles.failures} aria-label="Failed tasks">
       {groups.map((group) => (
@@ -322,15 +312,11 @@ export function ProcessingStatus() {
     ai.enableSensitiveContent ||
     ai.enableAutoTitle;
   useEffect(() => {
-    if (!loaded || !enabled) {
-      return;
-    }
+    if (!loaded || !enabled) return;
     let active = true;
     void import("@/features/enrichment/missing-originals")
       .then((module) => {
-        if (active) {
-          return module.refreshMissingOriginals();
-        }
+        if (active) return module.refreshMissingOriginals();
         return undefined;
       })
       .catch((cause: unknown) => {
@@ -479,11 +465,8 @@ export function ProcessingStatusCard({
           variant="secondary"
           disabled={repair ? false : !loaded || !enabled || busy}
           onClick={() => {
-            if (repair) {
-              onRepair();
-            } else {
-              void handleCheck();
-            }
+            if (repair) onRepair();
+            else void handleCheck();
           }}
         >
           {repair

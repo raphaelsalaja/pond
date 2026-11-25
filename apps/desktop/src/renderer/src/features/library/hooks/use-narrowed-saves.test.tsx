@@ -91,9 +91,7 @@ describe("recently added preview", () => {
       title: "Recent reference",
       files: [],
     });
-    if (!save) {
-      throw new Error("Invalid fixture");
-    }
+    if (!save) throw new Error("Invalid fixture");
     pool.upsert(save);
     router = await openLibraryAt(
       `${pathForLibraryNav({ kind: "recentlyAdded" })}?save=${SAVE_ID}`,
@@ -184,9 +182,7 @@ async function settle(host: HTMLElement): Promise<void> {
     const loading = host
       .querySelector("[data-loading]")
       ?.getAttribute("data-loading");
-    if (ids === SAVE_ID && loading === "false") {
-      return;
-    }
+    if (ids === SAVE_ID && loading === "false") return;
   }
   throw new Error(`Recently Added did not settle: ${host.innerHTML}`);
 }

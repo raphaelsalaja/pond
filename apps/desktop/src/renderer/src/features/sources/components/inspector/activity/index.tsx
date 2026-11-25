@@ -20,9 +20,7 @@ function outcomeLabel(run: SourceRun): string {
     case "ok":
     case "noop": {
       const fresh = runFreshCount(run);
-      if (fresh === 0) {
-        return "No new saves";
-      }
+      if (fresh === 0) return "No new saves";
       return formatPlural(fresh, { one: "new save", other: "new saves" });
     }
     case "auth_required":
@@ -38,12 +36,8 @@ function outcomeLabel(run: SourceRun): string {
 
 function durationLabel(ms: number): string {
   const seconds = Math.round(ms / 1000);
-  if (seconds < 1) {
-    return "under a second";
-  }
-  if (seconds < 60) {
-    return `${seconds}s`;
-  }
+  if (seconds < 1) return "under a second";
+  if (seconds < 60) return `${seconds}s`;
   const minutes = Math.floor(seconds / 60);
   return `${minutes}m ${seconds % 60}s`;
 }

@@ -40,9 +40,7 @@ export function Layer({ store, container }: LayerProps) {
 
   const finish = async (result: OverlayResult | null) => {
     store.closeTool();
-    if (!result) {
-      return;
-    }
+    if (!result) return;
     /** Two frames let the picker unpaint before the background screenshots the tab. */
     await nextFrame();
     await nextFrame();

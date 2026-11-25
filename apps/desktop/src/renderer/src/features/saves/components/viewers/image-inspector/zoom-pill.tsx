@@ -16,9 +16,7 @@ export function buildZoomRatioItems(
     indicator: "check",
     checked: Math.round(actual * 100) === percent,
     onCheckedChange: (checked) => {
-      if (checked) {
-        onRatio(percent / 100);
-      }
+      if (checked) onRatio(percent / 100);
     },
   }));
 }

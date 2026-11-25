@@ -46,9 +46,7 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
     const url = props.url;
     void import("pdfjs-dist")
       .then(async (pdf) => {
-        if (!active) {
-          return;
-        }
+        if (!active) return;
         pdf.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
         task = pdf.getDocument({ url });
         const next = await task.promise;
@@ -75,9 +73,7 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
 
   const schedulePage = useCallback(
     (pageNumber: number) => {
-      if (!document) {
-        return;
-      }
+      if (!document) return;
       setPagesToRender((current) =>
         addPdfRenderWindow(current, pageNumber, document.numPages),
       );
@@ -87,9 +83,7 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
 
   useEffect(() => {
     const root = bodyRef.current;
-    if (!root) {
-      return;
-    }
+    if (!root) return;
     const update = () =>
       setViewport({ width: root.clientWidth, height: root.clientHeight });
     update();
@@ -119,9 +113,7 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
 
   const goToPage = useCallback(
     (pageNumber: number) => {
-      if (!document) {
-        return;
-      }
+      if (!document) return;
       const page = Math.min(document.numPages, Math.max(1, pageNumber));
       setCurrentPage(page);
       setPagesToRender((current) =>
@@ -142,15 +134,11 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
   );
 
   const syncCurrentPage = useCallback(() => {
-    if (scrollFrameRef.current !== null) {
-      return;
-    }
+    if (scrollFrameRef.current !== null) return;
     scrollFrameRef.current = requestAnimationFrame(() => {
       scrollFrameRef.current = null;
       const root = scrollRef.current;
-      if (!root) {
-        return;
-      }
+      if (!root) return;
       const rootTop = root.getBoundingClientRect().top;
       let nearestPage = currentPage;
       let nearestDistance = Number.POSITIVE_INFINITY;
@@ -166,9 +154,7 @@ export function PdfViewer(props: ViewerProps & { url: string }) {
           nearestPage = pageNumber;
         }
       }
-      if (Number.isFinite(nearestPage)) {
-        setCurrentPage(nearestPage);
-      }
+      if (Number.isFinite(nearestPage)) setCurrentPage(nearestPage);
     });
   }, [currentPage]);
 

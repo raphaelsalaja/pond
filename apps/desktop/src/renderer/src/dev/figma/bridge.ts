@@ -79,9 +79,7 @@ let busy = false;
 let chain: { id: string; endpoint: string } | null = null;
 
 async function loadCapture() {
-  if (window.figma?.captureForDesign) {
-    return;
-  }
+  if (window.figma?.captureForDesign) return;
   const source = await (await fetch(CAPTURE_URL)).blob();
   const url = URL.createObjectURL(source);
   try {
@@ -99,9 +97,7 @@ async function loadCapture() {
 
 async function runJob(job: Step) {
   if (job.jobs) {
-    for (const step of job.jobs) {
-      await runJob(step);
-    }
+    for (const step of job.jobs) await runJob(step);
     return;
   }
   if (job.reload) {
@@ -121,13 +117,9 @@ async function runJob(job: Step) {
     await ran;
   }
   await sleep(job.delay ?? 1500);
-  if (job.theme) {
-    paintTheme(THEMES[job.theme], "srgb");
-  }
+  if (job.theme) paintTheme(THEMES[job.theme], "srgb");
   if (job.captureId === "next") {
-    if (!chain) {
-      throw new Error("no chained capture id");
-    }
+    if (!chain) throw new Error("no chained capture id");
     job.captureId = chain.id;
     job.endpoint = chain.endpoint;
   }
@@ -200,9 +192,7 @@ async function runJob(job: Step) {
 }
 
 async function tick() {
-  if (busy) {
-    return;
-  }
+  if (busy) return;
   const res = await fetch("/src/dev/figma/job.txt", { cache: "no-store" });
   const text = (await res.text()).trim();
   if (!text.startsWith("{")) {

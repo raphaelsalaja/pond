@@ -26,9 +26,7 @@ function placeIndicator(
   tab: HTMLElement | null,
   animate: boolean,
 ): void {
-  if (!animate) {
-    indicator.dataset.snap = "";
-  }
+  if (!animate) indicator.dataset.snap = "";
   if (tab) {
     indicator.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop}px)`;
     indicator.style.width = `${tab.offsetWidth}px`;
@@ -57,14 +55,10 @@ export function ToggleGroup({
     (variant === "raised" || variant === "rail" || variant === "segmented");
 
   useLayoutEffect(() => {
-    if (!indicated) {
-      return;
-    }
+    if (!indicated) return;
     const indicator = indicatorRef.current;
     const root = indicator?.parentElement;
-    if (!indicator || !root) {
-      return;
-    }
+    if (!indicator || !root) return;
 
     let ready = false;
     const sync = (animate: boolean) => {

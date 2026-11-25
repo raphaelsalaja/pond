@@ -54,9 +54,7 @@ export async function writeMymindSyncState(
   state: MymindSyncState,
 ): Promise<void> {
   const parsed = MymindSyncStateSchema.safeParse(state);
-  if (!parsed.success) {
-    throw new Error("The mymind import state is invalid.");
-  }
+  if (!parsed.success) throw new Error("The mymind import state is invalid.");
   await writeBundleJsonAsync(statePath(root, accountId), parsed.data);
 }
 

@@ -38,9 +38,7 @@ export function saveDragIconSvg(
 }
 
 async function previewDataUrl(path: string | null): Promise<string | null> {
-  if (!path) {
-    return null;
-  }
+  if (!path) return null;
   try {
     const png = await sharp(path, { failOn: "none", pages: 1 })
       .rotate()
@@ -59,9 +57,7 @@ export async function renderSaveDragIcon(
   count: number,
 ): Promise<Buffer | null> {
   const dataUrls = await Promise.all(previews.slice(0, 3).map(previewDataUrl));
-  if (count <= 1 && !dataUrls[0]) {
-    return null;
-  }
+  if (count <= 1 && !dataUrls[0]) return null;
   try {
     return await sharp(Buffer.from(saveDragIconSvg(dataUrls, count)), {
       density: 72 * ICON_SCALE,

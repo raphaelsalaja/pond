@@ -50,38 +50,26 @@ export const ViewerSchema = z.object({
 
 /** The edge cursor is base64 of the appreciation time, written in UTC without a zone. */
 export function appreciatedAt(cursor: string | undefined): string | undefined {
-  if (!cursor) {
-    return undefined;
-  }
+  if (!cursor) return undefined;
   const text = Buffer.from(cursor, "base64").toString("utf8");
-  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)) {
-    return undefined;
-  }
+  if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(text)) return undefined;
   const at = new Date(`${text.replace(" ", "T")}Z`);
   return Number.isNaN(at.getTime()) ? undefined : at.toISOString();
 }
 
 export function appreciationEntry(edge: BehanceEdge): ListEntry | null {
   const node = edge.node;
-  if (!node) {
-    return null;
-  }
+  if (!node) return null;
   const entry: ListEntry = {
     sourceId: node.id,
     url: node.url ?? `https://www.behance.net/gallery/${node.id}/a`,
     listKinds: ["liked"],
   };
   const savedAt = appreciatedAt(edge.cursor);
-  if (savedAt) {
-    entry.savedAt = savedAt;
-  }
-  if (node.name) {
-    entry.title = node.name;
-  }
+  if (savedAt) entry.savedAt = savedAt;
+  if (node.name) entry.title = node.name;
   const owner = node.owners[0];
-  if (owner) {
-    entry.author = owner.displayName ?? owner.username;
-  }
+  if (owner) entry.author = owner.displayName ?? owner.username;
   const cover = node.covers?.size_original?.url ?? node.covers?.size_808?.url;
   if (cover) {
     entry.mediaUrl = cover;

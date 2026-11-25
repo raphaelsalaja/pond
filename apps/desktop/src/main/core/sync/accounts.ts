@@ -43,9 +43,7 @@ export async function findAccountByHandle(
   handle: string,
 ): Promise<ConnectedAccount | null> {
   const wanted = normalizeHandle(handle);
-  if (!wanted) {
-    return null;
-  }
+  if (!wanted) return null;
   const accounts = await listAccountsForSource(source);
   return (
     accounts.find((a) => normalizeHandle(a.handle ?? "") === wanted) ?? null
@@ -98,9 +96,7 @@ export async function patchAccount(
   let updated: ConnectedAccount | null = null;
   await writeAccounts((accounts) => {
     const current = accounts[accountId];
-    if (!current) {
-      return accounts;
-    }
+    if (!current) return accounts;
     const handle =
       patch.handle !== undefined
         ? normalizeHandle(patch.handle)
@@ -130,9 +126,7 @@ export async function patchAccountSync(
   let next: SourceSyncPrefs = { ...DEFAULT_SOURCE_SYNC_PREFS, ...patch };
   await writeAccounts((accounts) => {
     const current = accounts[accountId];
-    if (!current) {
-      return accounts;
-    }
+    if (!current) return accounts;
     next = { ...DEFAULT_SOURCE_SYNC_PREFS, ...current.sync, ...patch };
     return { ...accounts, [accountId]: { ...current, sync: next } };
   });
@@ -141,20 +135,14 @@ export async function patchAccountSync(
 
 export async function removeAccount(accountId: string): Promise<void> {
   const account = await getAccount(accountId);
-  if (account?.source === "mymind") {
-    cancelSync(accountId);
-  }
+  if (account?.source === "mymind") cancelSync(accountId);
   await writeAccounts((accounts) => {
-    if (!accounts[accountId]) {
-      return accounts;
-    }
+    if (!accounts[accountId]) return accounts;
     const next = { ...accounts };
     delete next[accountId];
     return next;
   });
-  if (account?.source === "mymind") {
-    await removeMymindCredential(accountId);
-  }
+  if (account?.source === "mymind") await removeMymindCredential(accountId);
   try {
     await session
       .fromPartition(partitionForAccount(accountId))
@@ -170,9 +158,7 @@ export async function partitionForIngest(
 ): Promise<string> {
   if (accountId) {
     const account = await getAccount(accountId);
-    if (account?.source === source) {
-      return partitionForAccount(account.id);
-    }
+    if (account?.source === source) return partitionForAccount(account.id);
   }
   const accounts = await listAccountsForSource(source);
   const first = accounts[0];
@@ -180,9 +166,7 @@ export async function partitionForIngest(
 }
 
 export function normalizeHandle(handle: string | null): string | null {
-  if (handle === null) {
-    return null;
-  }
+  if (handle === null) return null;
   const trimmed = handle.trim().replace(/^@/, "");
   return trimmed.length > 0 ? trimmed : null;
 }
@@ -195,8 +179,6 @@ async function writeAccounts(
   const prefs = await getPrefs();
   const current = prefs.sync.accounts ?? {};
   const next = update(current);
-  if (next === current) {
-    return;
-  }
+  if (next === current) return;
   await setPrefs({ sync: { accounts: next } });
 }

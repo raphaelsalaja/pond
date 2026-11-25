@@ -26,9 +26,7 @@ export function splitPostKey(
 
 export function parseSplitPostKey(key: string): SplitPostRef | null {
   const at = key.indexOf(":");
-  if (at <= 0 || at === key.length - 1) {
-    return null;
-  }
+  if (at <= 0 || at === key.length - 1) return null;
   return { source: key.slice(0, at), sourceId: key.slice(at + 1) };
 }
 
@@ -50,9 +48,7 @@ export function splitPostClause(
   raw: PredicateValue,
 ): SQL | null {
   const ref = readSplitPost(raw);
-  if (!ref || (operator !== "eq" && operator !== "neq")) {
-    return null;
-  }
+  if (!ref || (operator !== "eq" && operator !== "neq")) return null;
   const sourceId = splitPostSourceIdSql();
   const match = sql`(${saves.source} = ${ref.source} and ${sourceId} is not null and ${sourceId} = ${ref.sourceId})`;
   return operator === "eq" ? match : sql`not ${match}`;
@@ -66,12 +62,8 @@ export function matchesSplitPost(
   const ref = readSplitPost(raw);
   const key = splitPostKey(save);
   const same = ref !== null && key === `${ref.source}:${ref.sourceId}`;
-  if (operator === "eq") {
-    return same;
-  }
-  if (operator === "neq") {
-    return !same;
-  }
+  if (operator === "eq") return same;
+  if (operator === "neq") return !same;
   return false;
 }
 

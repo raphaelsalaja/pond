@@ -56,9 +56,7 @@ async function renderDialog(
       const button = [...document.body.querySelectorAll("button")].find(
         (candidate) => candidate.textContent?.trim() === label,
       );
-      if (!button) {
-        throw new Error(`No button labelled ${label}`);
-      }
+      if (!button) throw new Error(`No button labelled ${label}`);
       await act(async () => button.click());
     },
     async cleanup() {

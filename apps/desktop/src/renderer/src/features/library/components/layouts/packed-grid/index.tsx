@@ -68,18 +68,14 @@ export function findScrollAnchor(
   itemsByTop: ReadonlyArray<PackedItem>,
   localScrollTop: number,
 ): { item: PackedItem; offset: number } | null {
-  if (itemsByTop.length === 0) {
-    return null;
-  }
+  if (itemsByTop.length === 0) return null;
   let low = 0;
   let high = itemsByTop.length - 1;
   let best = 0;
   while (low <= high) {
     const mid = (low + high) >>> 1;
     const item = itemsByTop[mid];
-    if (!item) {
-      break;
-    }
+    if (!item) break;
     if (item.top <= localScrollTop) {
       best = mid;
       low = mid + 1;
@@ -88,16 +84,10 @@ export function findScrollAnchor(
     }
   }
   const bestItem = itemsByTop[best];
-  if (!bestItem) {
-    return null;
-  }
-  while (best > 0 && itemsByTop[best - 1]?.top === bestItem.top) {
-    best -= 1;
-  }
+  if (!bestItem) return null;
+  while (best > 0 && itemsByTop[best - 1]?.top === bestItem.top) best -= 1;
   const item = itemsByTop[best];
-  if (!item) {
-    return null;
-  }
+  if (!item) return null;
   return { item, offset: Math.max(0, localScrollTop - item.top) };
 }
 
@@ -196,24 +186,16 @@ export function PackedGrid({
   const [scrollMargin, setScrollMargin] = useState(0);
 
   useLayoutEffect(() => {
-    if (document.activeElement !== ref.current) {
-      return;
-    }
-    if (cursor && itemById.has(cursor)) {
-      return;
-    }
+    if (document.activeElement !== ref.current) return;
+    if (cursor && itemById.has(cursor)) return;
     const next = fallbackCursorId(itemsByTop, getScrollElement(), scrollMargin);
-    if (next && next !== cursor) {
-      selection.setCursor(next);
-    }
+    if (next && next !== cursor) selection.setCursor(next);
   }, [cursor, getScrollElement, itemById, itemsByTop, scrollMargin]);
 
   useLayoutEffect(() => {
     const node = ref.current;
     const parent = restoration?.ref.current ?? findScrollParent(node);
-    if (!node || !parent) {
-      return;
-    }
+    if (!node || !parent) return;
 
     const measure = () => {
       const parentRect = parent.getBoundingClientRect();
@@ -229,9 +211,7 @@ export function PackedGrid({
       "ResizeObserver" in globalThis ? new ResizeObserver(measure) : null;
     observer?.observe(node);
     observer?.observe(parent);
-    if (node.parentElement) {
-      observer?.observe(node.parentElement);
-    }
+    if (node.parentElement) observer?.observe(node.parentElement);
     window.addEventListener("resize", measure, { passive: true });
     return () => {
       observer?.disconnect();
@@ -240,14 +220,10 @@ export function PackedGrid({
   }, [restoration]);
 
   useLayoutEffect(() => {
-    if (!restoration) {
-      return;
-    }
+    if (!restoration) return;
     const parent = getScrollElement();
     const active = activeRestoration.current;
-    if (!parent || !active || active.key !== restoration.key) {
-      return;
-    }
+    if (!parent || !active || active.key !== restoration.key) return;
     parent.dataset.restoringScroll = "";
     const item = itemById.get(active.anchor.id);
     if (!item) {
@@ -255,9 +231,7 @@ export function PackedGrid({
         clearTimeout(restorationSettleTimer.current);
       }
       restorationSettleTimer.current = setTimeout(() => {
-        if (activeRestoration.current !== active) {
-          return;
-        }
+        if (activeRestoration.current !== active) return;
         activeRestoration.current = null;
         delete parent.dataset.restoringScroll;
         restorationSettleTimer.current = null;
@@ -270,19 +244,13 @@ export function PackedGrid({
       Math.abs(savedTop - target) <= ANCHOR_RESTORE_TOLERANCE_PX
         ? savedTop
         : target;
-    if (parent.scrollTop !== nextTop) {
-      parent.scrollTop = nextTop;
-    }
-    if (nextTop !== savedTop) {
-      rememberScroll(restoration.key, nextTop);
-    }
+    if (parent.scrollTop !== nextTop) parent.scrollTop = nextTop;
+    if (nextTop !== savedTop) rememberScroll(restoration.key, nextTop);
     if (restorationSettleTimer.current !== null) {
       clearTimeout(restorationSettleTimer.current);
     }
     restorationSettleTimer.current = setTimeout(() => {
-      if (activeRestoration.current !== active) {
-        return;
-      }
+      if (activeRestoration.current !== active) return;
       activeRestoration.current = null;
       delete parent.dataset.restoringScroll;
       restorationSettleTimer.current = null;
@@ -297,9 +265,7 @@ export function PackedGrid({
 
   useEffect(() => {
     const parent = getScrollElement();
-    if (!parent) {
-      return;
-    }
+    if (!parent) return;
     const cancel = () => {
       activeRestoration.current = null;
       if (restorationSettleTimer.current !== null) {
@@ -326,9 +292,7 @@ export function PackedGrid({
       resultNavigation.registerReveal((id) => {
         const item = itemById.get(id);
         const parent = getScrollElement();
-        if (!item || !parent) {
-          return;
-        }
+        if (!item || !parent) return;
         const top = scrollMargin + item.top;
         const bottom = top + item.height;
         if (top < parent.scrollTop) {
@@ -354,19 +318,13 @@ export function PackedGrid({
     useFlushSync: false,
     scrollMargin,
     initialOffset: () => {
-      if (!restoration) {
-        return 0;
-      }
+      if (!restoration) return 0;
       const active = activeRestoration.current;
       const anchor = active?.anchor ?? recallScrollAnchor(restoration.key);
       const savedTop = active?.top ?? recallScroll(restoration.key);
-      if (!anchor) {
-        return savedTop;
-      }
+      if (!anchor) return savedTop;
       const item = itemById.get(anchor.id);
-      if (!item) {
-        return savedTop;
-      }
+      if (!item) return savedTop;
       const anchoredTop = scrollMargin + item.top + anchor.offset;
       return Math.abs(savedTop - anchoredTop) <= ANCHOR_RESTORE_TOLERANCE_PX
         ? savedTop
@@ -380,17 +338,13 @@ export function PackedGrid({
         return;
       }
       const parent = getScrollElement();
-      if (!parent || "restoringScroll" in parent.dataset) {
-        return;
-      }
+      if (!parent || "restoringScroll" in parent.dataset) return;
       const top = instance.scrollOffset;
       const anchor = findScrollAnchor(
         itemsByTop,
         Math.max(0, top - scrollMargin),
       );
-      if (!anchor) {
-        return;
-      }
+      if (!anchor) return;
       rememberScrollAnchor(restoration.key, top, {
         id: anchor.item.id,
         offset: anchor.offset,
@@ -411,9 +365,7 @@ export function PackedGrid({
       : indexes;
   }, [activeId, items, mountedIndexes]);
   const runway = useMemo(() => {
-    if (!onRunwayChange) {
-      return [];
-    }
+    if (!onRunwayChange) return [];
     const mounted = new Set(visible);
     return indicesForVirtualBands(
       bands,
@@ -457,21 +409,15 @@ export function PackedGrid({
       data-save-collection=""
       tabIndex={0}
       onMouseDown={(event) => {
-        if (event.target !== event.currentTarget || event.button !== 0) {
-          return;
-        }
-        if (event.metaKey || event.ctrlKey || event.shiftKey) {
-          return;
-        }
+        if (event.target !== event.currentTarget || event.button !== 0) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey) return;
         // The list is as tall as the whole result. A gap click would focus it
         // and the browser would scroll the top into view.
         event.preventDefault();
         event.currentTarget.focus({ preventScroll: true });
       }}
       onFocus={(event) => {
-        if (event.target !== event.currentTarget) {
-          return;
-        }
+        if (event.target !== event.currentTarget) return;
         const cursorId = selection.getCursor();
         const present = cursorId !== null && itemById.has(cursorId);
         if (!present) {
@@ -480,9 +426,7 @@ export function PackedGrid({
             getScrollElement(),
             scrollMargin,
           );
-          if (next && next !== cursorId) {
-            selection.setCursor(next);
-          }
+          if (next && next !== cursorId) selection.setCursor(next);
           return;
         }
         void resultNavigation.reveal(cursorId);
@@ -497,9 +441,7 @@ export function PackedGrid({
         const option = activeId
           ? document.getElementById(`save-option-${activeId}`)
           : null;
-        if (!option) {
-          return;
-        }
+        if (!option) return;
         event.preventDefault();
         const rect = option.getBoundingClientRect();
         option.dispatchEvent(
@@ -538,9 +480,7 @@ export function SavePackedGrid({
   const hasDivider = divider !== null && divider !== undefined;
   useLayoutEffect(() => {
     const node = dividerRef.current;
-    if (!hasDivider || !node) {
-      return;
-    }
+    if (!hasDivider || !node) return;
     const measure = () => setDividerHeight(node.offsetHeight);
     measure();
     const observer =

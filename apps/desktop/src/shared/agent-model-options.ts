@@ -54,22 +54,14 @@ export function contextChoiceLabel(
   choice: AgentContextChoice,
   contextWindow?: number,
 ): string {
-  if (choice === "auto") {
-    return "Auto";
-  }
-  if (choice === contextWindow) {
-    return "Max";
-  }
+  if (choice === "auto") return "Auto";
+  if (choice === contextWindow) return "Max";
   return compactTokens(choice);
 }
 
 export function reasoningLabel(reasoning: AgentReasoning): string {
-  if (reasoning === "provider-default") {
-    return "Model Default";
-  }
-  if (reasoning === "xhigh") {
-    return "Maximum";
-  }
+  if (reasoning === "provider-default") return "Model Default";
+  if (reasoning === "xhigh") return "Maximum";
   return reasoning.charAt(0).toUpperCase() + reasoning.slice(1);
 }
 

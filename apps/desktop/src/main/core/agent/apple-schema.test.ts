@@ -74,9 +74,7 @@ describe("toAppleSchema", () => {
 
   it("stops at depth 6", () => {
     let schema: z.ZodType = z.string();
-    for (let i = 0; i < 8; i++) {
-      schema = z.object({ next: schema });
-    }
+    for (let i = 0; i < 8; i++) schema = z.object({ next: schema });
     expect(
       JSON.stringify(toAppleSchema(z.toJSONSchema(schema), "Deep")),
     ).not.toContain("Deep_next_next_next_next_next_next_next");

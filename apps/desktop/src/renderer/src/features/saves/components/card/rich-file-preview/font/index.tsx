@@ -23,9 +23,7 @@ export function FontCardPreview({
     void face
       .load()
       .then((font) => {
-        if (!alive) {
-          return;
-        }
+        if (!alive) return;
         document.fonts.add(font);
         setLoaded(true);
       })

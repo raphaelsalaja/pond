@@ -16,9 +16,7 @@ async function listFiles(root: string) {
     recursive: true,
     withFileTypes: true,
   })) {
-    if (!entry.isFile()) {
-      continue;
-    }
+    if (!entry.isFile()) continue;
     const path = join(entry.parentPath, entry.name);
     files.push({ path, size: (await stat(path)).size });
   }

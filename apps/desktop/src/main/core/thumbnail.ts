@@ -48,21 +48,15 @@ export async function getOrCreateThumbnail(
   req: ThumbnailRequest,
 ): Promise<{ path: string } | null> {
   const exact = lookupExactCachedThumbnail(req);
-  if (exact) {
-    return exact;
-  }
+  if (exact) return exact;
 
   const { saveId, sourcePath, width } = req;
   const version = await resolveVersion(sourcePath, req.version);
-  if (!version) {
-    return null;
-  }
+  if (!version) return null;
   const dir = join(thumbnailCacheRoot(), sanitizeSegment(saveId));
   const out = thumbnailOutput(dir, sourcePath, version, width);
 
-  if (existsSync(out)) {
-    return { path: out };
-  }
+  if (existsSync(out)) return { path: out };
 
   const existing = inflight.get(out);
   if (existing) {
@@ -71,9 +65,7 @@ export async function getOrCreateThumbnail(
   }
 
   const kind = await detectThumbnailKind(sourcePath);
-  if (!kind) {
-    return null;
-  }
+  if (!kind) return null;
   const task = generate(
     out,
     dir,
@@ -97,9 +89,7 @@ function lookupExactCachedThumbnail(req: {
   width: number;
   version: string | null;
 }): { path: string } | null {
-  if (!req.version) {
-    return null;
-  }
+  if (!req.version) return null;
   const dir = join(thumbnailCacheRoot(), sanitizeSegment(req.saveId));
   const out = thumbnailOutput(dir, req.sourcePath, req.version, req.width);
   return existsSync(out) ? { path: out } : null;
@@ -147,21 +137,15 @@ async function generateMany(
     const results = new Map<string, string>();
     try {
       const missing = outputs.filter(({ out }) => {
-        if (!existsSync(out)) {
-          return true;
-        }
+        if (!existsSync(out)) return true;
         results.set(out, out);
         return false;
       });
-      if (missing.length === 0) {
-        return results;
-      }
+      if (missing.length === 0) return results;
 
       const maxWidth = Math.max(...missing.map(({ width }) => width));
       const source = await thumbnailPipeline(sourcePath, maxWidth, kind);
-      if (!source) {
-        return results;
-      }
+      if (!source) return results;
       const { pipeline } = source;
 
       await mkdir(dir, { recursive: true });
@@ -200,9 +184,7 @@ async function thumbnailPipeline(
 } | null> {
   if (kind === "native") {
     const imported = await importedThumbnailSidecarPipeline(sourcePath);
-    if (imported) {
-      return imported;
-    }
+    if (imported) return imported;
   }
   if (kind === "native") {
     return nativeThumbnailPipeline(sourcePath, width);
@@ -222,14 +204,10 @@ async function detectThumbnailKind(
 ): Promise<ThumbnailKind | null> {
   const ext = extname(sourcePath).toLowerCase();
   const extensionKind = thumbnailKindForExtension(ext);
-  if (extensionKind && extensionKind !== "native") {
-    return extensionKind;
-  }
+  if (extensionKind && extensionKind !== "native") return extensionKind;
   try {
     const header = await readFileHeader(sourcePath);
-    if (!isRasterImageHeader(header)) {
-      return extensionKind;
-    }
+    if (!isRasterImageHeader(header)) return extensionKind;
     return isIsoBaseMediaHeader(header) ? "native" : "sharp";
   } catch {
     return extensionKind;
@@ -240,9 +218,7 @@ async function resolveVersion(
   sourcePath: string,
   version: string | null,
 ): Promise<string | null> {
-  if (version) {
-    return version;
-  }
+  if (version) return version;
   try {
     const [source, media] = await Promise.all([
       stat(sourcePath),
@@ -275,9 +251,7 @@ async function nativeThumbnailPipeline(
   metadata: Metadata;
 } | null> {
   const imported = await importedThumbnailSidecarPipeline(sourcePath);
-  if (imported) {
-    return imported;
-  }
+  if (imported) return imported;
   if (
     process.platform === "darwin" &&
     NATIVE_RASTER_EXT.has(extname(sourcePath).toLowerCase())
@@ -286,13 +260,9 @@ async function nativeThumbnailPipeline(
     return { pipeline, metadata: await pipeline.metadata() };
   }
   const raw = await rawThumbnailPipeline(sourcePath);
-  if (raw) {
-    return raw;
-  }
+  if (raw) return raw;
   const native = await osNativeThumbnail(sourcePath, width);
-  if (native) {
-    return native;
-  }
+  if (native) return native;
   return officeThumbnailPipeline(sourcePath);
 }
 
@@ -302,9 +272,7 @@ async function importedThumbnailSidecarPipeline(sourcePath: string): Promise<{
 } | null> {
   for (const name of thumbnailSidecarCandidates(sourcePath)) {
     const sidecarPath = join(dirname(sourcePath), name);
-    if (!existsSync(sidecarPath)) {
-      continue;
-    }
+    if (!existsSync(sidecarPath)) continue;
     try {
       const pipeline = sharp(await readLibraryMedia(sidecarPath), {
         failOn: "none",
@@ -322,14 +290,10 @@ async function rawThumbnailPipeline(sourcePath: string): Promise<{
   metadata: Metadata;
 } | null> {
   const extension = extname(sourcePath).toLowerCase().replace(/^\./, "");
-  if (eagleFormatGroup(extension) !== "rawImage") {
-    return null;
-  }
+  if (eagleFormatGroup(extension) !== "rawImage") return null;
   try {
     const jpeg = extractRawPreviewJpeg(await readLibraryMedia(sourcePath));
-    if (!jpeg) {
-      return null;
-    }
+    if (!jpeg) return null;
     const pipeline = sharp(jpeg, { failOn: "none" });
     return { pipeline, metadata: await pipeline.metadata() };
   } catch {
@@ -342,9 +306,7 @@ async function officeThumbnailPipeline(sourcePath: string): Promise<{
   metadata: Metadata;
 } | null> {
   const preview = await extractOfficePreview(sourcePath);
-  if (!preview) {
-    return null;
-  }
+  if (!preview) return null;
   try {
     const pipeline = sharp(preview, { failOn: "none" });
     return { pipeline, metadata: await pipeline.metadata() };
@@ -368,9 +330,7 @@ async function osNativeThumbnail(
     width,
     height: width,
   });
-  if (image.isEmpty()) {
-    return null;
-  }
+  if (image.isEmpty()) return null;
   const nativePipeline = sharp(image.toPNG(), { failOn: "none" });
   return {
     pipeline: nativePipeline,

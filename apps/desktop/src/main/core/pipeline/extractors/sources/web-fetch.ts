@@ -58,9 +58,7 @@ export async function fetchHtml(
     clearTimeout(timer);
   }
 
-  if (res.status === 403) {
-    return null;
-  }
+  if (res.status === 403) return null;
   if (res.status === 429) {
     throw new RateLimitedError(
       parseRetryAfter(res.headers.get("retry-after")),
@@ -80,9 +78,7 @@ export async function fetchHtml(
     throw new TerminalError(`web fetch body too large: ${length} bytes`);
   }
   const text = await readBodyCapped(res);
-  if (!text.trim()) {
-    throw new TerminalError("web fetch returned empty body");
-  }
+  if (!text.trim()) throw new TerminalError("web fetch returned empty body");
   if (format) {
     const document = convertTextDocument(text, format, url);
     return { html: wrapDocument(document), document };
@@ -95,16 +91,10 @@ function textDocumentFormat(
   contentType: string,
   url: string,
 ): "markdown" | "plain" | null {
-  if (/text\/markdown/i.test(contentType)) {
-    return "markdown";
-  }
-  if (!/text\/plain/i.test(contentType)) {
-    return null;
-  }
+  if (/text\/markdown/i.test(contentType)) return "markdown";
+  if (!/text\/plain/i.test(contentType)) return null;
   try {
-    if (/\.(md|markdown)$/i.test(new URL(url).pathname)) {
-      return "markdown";
-    }
+    if (/\.(md|markdown)$/i.test(new URL(url).pathname)) return "markdown";
   } catch {
     /* The URL already parsed for the fetch itself. */
   }
@@ -126,17 +116,13 @@ function wrapDocument(document: TextDocument): string {
 
 /** Content-Length is advisory and often absent, so the body is counted as it streams. */
 async function readBodyCapped(res: Response): Promise<string> {
-  if (!res.body) {
-    return res.text();
-  }
+  if (!res.body) return res.text();
   const reader = res.body.getReader();
   const chunks: Array<Uint8Array> = [];
   let total = 0;
   for (;;) {
     const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
+    if (done) break;
     total += value?.byteLength ?? 0;
     if (total > MAX_BODY_BYTES) {
       await reader.cancel();
@@ -144,9 +130,7 @@ async function readBodyCapped(res: Response): Promise<string> {
         `web fetch body exceeded ${MAX_BODY_BYTES} bytes`,
       );
     }
-    if (value) {
-      chunks.push(value);
-    }
+    if (value) chunks.push(value);
   }
   const body = new Uint8Array(total);
   let offset = 0;
@@ -158,9 +142,7 @@ async function readBodyCapped(res: Response): Promise<string> {
 }
 
 function assertPageStatus(status: number, label: string): void {
-  if (status < 400) {
-    return;
-  }
+  if (status < 400) return;
   if (status >= 500) {
     throw new TransientError(`${label} ${status}`);
   }
@@ -169,13 +151,9 @@ function assertPageStatus(status: number, label: string): void {
 
 /** Retry-After is either delta-seconds or an HTTP date. */
 function parseRetryAfter(header: string | null): number | undefined {
-  if (!header) {
-    return undefined;
-  }
+  if (!header) return undefined;
   const seconds = Number(header);
-  if (Number.isFinite(seconds) && seconds >= 0) {
-    return Math.round(seconds);
-  }
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds);
   const date = Date.parse(header);
   if (!Number.isNaN(date)) {
     return Math.max(0, Math.round((date - Date.now()) / 1000));

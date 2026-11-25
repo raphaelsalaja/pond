@@ -56,9 +56,7 @@ export function folderDndAnnouncements(
   drop: RefObject<FolderDropState | null>,
 ): Announcements {
   const destination = (target: FolderDropState) => {
-    if (target.id === FOLDER_ROOT_DROP_ID) {
-      return "to the end of Folders";
-    }
+    if (target.id === FOLDER_ROOT_DROP_ID) return "to the end of Folders";
     const folder = folderRows.find((item) => item.id === target.id);
     return `${relationFor(target.kind)} ${folder?.name ?? "folder"}`;
   };
@@ -68,12 +66,8 @@ export function folderDndAnnouncements(
       return `Picked up ${folder?.name ?? "folder"}.`;
     },
     onDragOver: ({ over }) => {
-      if (!over) {
-        return "The folder is no longer over a target.";
-      }
-      if (!drop.current) {
-        return "The folder can't move here.";
-      }
+      if (!over) return "The folder is no longer over a target.";
+      if (!drop.current) return "The folder can't move here.";
       return `Move folder ${destination(drop.current)}.`;
     },
     onDragEnd: ({ over }) => {

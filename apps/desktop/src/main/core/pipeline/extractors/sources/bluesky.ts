@@ -17,12 +17,8 @@ export class BlueskyPostExtractor implements Extractor {
 
   handleFromPath(segments: Array<string>): string | null {
     const [first, handle] = segments;
-    if (segments.length !== 2 || first !== "profile" || !handle) {
-      return null;
-    }
-    if (handle.startsWith("did:")) {
-      return handle;
-    }
+    if (segments.length !== 2 || first !== "profile" || !handle) return null;
+    if (handle.startsWith("did:")) return handle;
     return /^[a-z0-9.-]{3,253}$/i.test(handle) ? handle.toLowerCase() : null;
   }
 
@@ -44,9 +40,7 @@ export class BlueskyPostExtractor implements Extractor {
 
   async extract(input: ExtractInput): Promise<Capture> {
     const sourceId = sourceIdFromUrl("bluesky", input.url.href);
-    if (!sourceId) {
-      throw new TerminalError("could not parse bluesky post");
-    }
+    if (!sourceId) throw new TerminalError("could not parse bluesky post");
     return captureFromSource({
       url: input.url.href,
       source: "bluesky",

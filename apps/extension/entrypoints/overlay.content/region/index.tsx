@@ -28,12 +28,8 @@ type Gesture =
 /** The overlay covers the page, so look underneath it for the element you're pointing at. */
 function elementRect(point: Point): Rect | null {
   for (const element of document.elementsFromPoint(point.x, point.y)) {
-    if (element.closest("pond-overlay")) {
-      continue;
-    }
-    if (element === document.documentElement) {
-      return null;
-    }
+    if (element.closest("pond-overlay")) continue;
+    if (element === document.documentElement) return null;
     const box = element.getBoundingClientRect();
     return clipRect({
       x: box.left,
@@ -72,15 +68,11 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
 
   const save = () => {
     const region = box && viewportRegion(box);
-    if (region) {
-      onFinish({ kind: "region", region });
-    }
+    if (region) onFinish({ kind: "region", region });
   };
 
   const onKey = useEffectEvent((event: KeyboardEvent) => {
-    if (event.key !== "Enter" || !box) {
-      return;
-    }
+    if (event.key !== "Enter" || !box) return;
     event.preventDefault();
     event.stopPropagation();
     save();
@@ -92,9 +84,7 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
   }, []);
 
   const begin = (event: PointerEvent, next: Gesture) => {
-    if (event.button !== 0) {
-      return;
-    }
+    if (event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -104,21 +94,15 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
   const onMove = (event: PointerEvent) => {
     const at = eventPoint(event);
     if (!gesture) {
-      if (!box) {
-        setHover(elementRect(at));
-      }
+      if (!box) setHover(elementRect(at));
       return;
     }
     const dx = at.x - gesture.start.x;
     const dy = at.y - gesture.start.y;
     if (gesture.kind === "draw") {
       const moved = gesture.moved || Math.hypot(dx, dy) >= DRAG_THRESHOLD;
-      if (!moved) {
-        return;
-      }
-      if (!gesture.moved) {
-        setGesture({ ...gesture, moved });
-      }
+      if (!moved) return;
+      if (!gesture.moved) setGesture({ ...gesture, moved });
       setHover(null);
       setBox(rectBetween(gesture.start, at));
       return;
@@ -132,11 +116,8 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
 
   const onUp = () => {
     if (gesture?.kind === "draw") {
-      if (!gesture.moved) {
-        setBox(hover);
-      } else {
-        setBox((current) => (current ? clipRect(current) : null));
-      }
+      if (!gesture.moved) setBox(hover);
+      else setBox((current) => (current ? clipRect(current) : null));
       setHover(null);
     }
     setGesture(null);
@@ -155,9 +136,7 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
       onPointerUp={onUp}
       onPointerCancel={() => setGesture(null)}
       onPointerLeave={() => {
-        if (!gesture) {
-          setHover(null);
-        }
+        if (!gesture) setHover(null);
       }}
     >
       {hover && !box ? (

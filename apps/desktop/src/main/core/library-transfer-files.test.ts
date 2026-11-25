@@ -140,9 +140,7 @@ describe("copy into an inactive library", () => {
       skipped: 0,
     });
     const [name] = await readdir(join(target, "items"));
-    if (!name) {
-      throw new Error("Missing imported Save");
-    }
+    if (!name) throw new Error("Missing imported Save");
     const info = StoredInfoDocSchema.parse(
       JSON.parse(
         await readFile(join(target, "items", name, "info.json"), "utf8"),

@@ -49,9 +49,7 @@ export async function runFetchBlobs(
   ctx: FetchBlobsContext = {},
 ): Promise<void> {
   const save = await readSave(saveId);
-  if (!save) {
-    return;
-  }
+  if (!save) return;
 
   const icon =
     save.source === "web"
@@ -199,9 +197,7 @@ async function fetchMissingMedia(
         bytes,
         sourceUrl: entry.url,
       };
-      if (mimeType) {
-        write.mimeType = mimeType;
-      }
+      if (mimeType) write.mimeType = mimeType;
       if (dims) {
         write.width = dims.width;
         write.height = dims.height;
@@ -245,9 +241,7 @@ async function fetchMissingMedia(
     },
   );
   const saved = await readSave(saveId);
-  if (replaceStale) {
-    await ensureSaveThumbnail(saveId, saved, { force: true });
-  }
+  if (replaceStale) await ensureSaveThumbnail(saveId, saved, { force: true });
   await repairMismatchedThumbnail(saveId, saved);
   log.info("[pond pipeline:fetch-blobs] wrote", {
     saveId,
@@ -289,9 +283,7 @@ export function requireFetchedMedia(
   const transientMisses = results.filter(
     (result) => result.miss === "transient",
   ).length;
-  if (fetched.length > 0) {
-    return { fetched, transientMisses };
-  }
+  if (fetched.length > 0) return { fetched, transientMisses };
   if (transientMisses > 0) {
     throw new TransientError(
       `fetch-blobs: ${transientMisses}/${requestedCount} media transiently unavailable`,
@@ -381,12 +373,8 @@ export function collectMediaUrls(
       continue;
     }
     /* A harvest can store the author's avatar as tweet media; it is not part of the post, and a failed avatar fetch must not fail the save. */
-    if (isAvatarUrl(m.url)) {
-      continue;
-    }
-    if (seen.has(m.url)) {
-      continue;
-    }
+    if (isAvatarUrl(m.url)) continue;
+    if (seen.has(m.url)) continue;
     seen.add(m.url);
     out.push(m.url);
   }
@@ -399,9 +387,7 @@ function hasDirectVideoExtension(url: string): boolean {
   try {
     const path = new URL(url).pathname.toLowerCase();
     const dot = path.lastIndexOf(".");
-    if (dot === -1) {
-      return false;
-    }
+    if (dot === -1) return false;
     return DIRECT_VIDEO_EXTENSIONS.has(path.slice(dot));
   } catch {
     return false;
@@ -433,9 +419,7 @@ function missingMediaUrls(
   if (mapped.size > 0) {
     return urls.filter((u) => !mapped.has(u));
   }
-  if (mediaFiles.length >= urls.length) {
-    return [];
-  }
+  if (mediaFiles.length >= urls.length) return [];
   return urls;
 }
 

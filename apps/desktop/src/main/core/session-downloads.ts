@@ -50,9 +50,7 @@ export async function resumeSessionDownloads(
   const digest = cookies ? credentialDigest(account, cookies) : null;
   /** Replaying the credentials that hit the sign-in wall would only hit it again. */
   if (digest === null || seenCredentials.get(credentialKey) !== digest) {
-    if (digest !== null) {
-      seenCredentials.set(credentialKey, digest);
-    }
+    if (digest !== null) seenCredentials.set(credentialKey, digest);
     await liftSourceAuthStop(account.source);
   }
   const accounts = await listAccountsForSource(account.source);
@@ -115,9 +113,7 @@ export async function resumeSessionDownloads(
       ),
     )
     .all();
-  if (rows.length === 0) {
-    return 0;
-  }
+  if (rows.length === 0) return 0;
   let credentials: { digest: string; saveIds: Set<string> } | undefined;
   if (digest !== null) {
     const previous = resumedCredentials.get(credentialKey);
@@ -127,27 +123,19 @@ export async function resumeSessionDownloads(
   const ids = rows
     .map((row) => row.id)
     .filter((id) => !credentials?.saveIds.has(id));
-  if (ids.length === 0) {
-    return 0;
-  }
+  if (ids.length === 0) return 0;
   if (credentials) {
-    for (const id of ids) {
-      credentials.saveIds.add(id);
-    }
+    for (const id of ids) credentials.saveIds.add(id);
     resumedCredentials.set(credentialKey, credentials);
   }
   try {
     const queued = await retryFailedSaves(ids, { liftAuthStop: false });
     if (queued === 0) {
-      for (const id of ids) {
-        credentials?.saveIds.delete(id);
-      }
+      for (const id of ids) credentials?.saveIds.delete(id);
     }
     return queued;
   } catch (error) {
-    for (const id of ids) {
-      credentials?.saveIds.delete(id);
-    }
+    for (const id of ids) credentials?.saveIds.delete(id);
     throw error;
   }
 }

@@ -98,9 +98,7 @@ export function SourceSchedule({
               value={value}
               disabled={off || draft.paused}
               onValueChange={(next) => {
-                if (!next) {
-                  return;
-                }
+                if (!next) return;
                 void save({
                   ...draft,
                   intervalHours: next === DEFAULT ? null : Number(next),

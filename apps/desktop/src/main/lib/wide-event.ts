@@ -90,9 +90,7 @@ export async function commitSaveIngestEvent(
   try {
     const db = await getDb();
     const save = db.select().from(saves).where(eq(saves.id, saveId)).get();
-    if (!save) {
-      return;
-    }
+    if (!save) return;
     const taskRows = db
       .select({ attempts: tasks.attempts })
       .from(tasks)
@@ -123,9 +121,7 @@ export async function commitSaveIngestEvent(
 }
 
 export function toErrorInfo(cause: unknown): ErrorInfo | null {
-  if (!cause) {
-    return null;
-  }
+  if (!cause) return null;
   if (cause instanceof Error) {
     return { name: cause.name, message: cause.message };
   }
@@ -192,12 +188,8 @@ function formatSummary(ev: WideEvent): string {
         `attempt ${ev.attempts}/${ev.maxAttempts}`,
         `save=${ev.saveId.slice(0, 8)}`,
       ];
-      if (ev.error) {
-        meta.push(`${ev.error.name}: ${ev.error.message}`);
-      }
-      if (ev.gate) {
-        meta.push(`gate=${ev.gate.reason}`);
-      }
+      if (ev.error) meta.push(`${ev.error.name}: ${ev.error.message}`);
+      if (ev.gate) meta.push(`gate=${ev.gate.reason}`);
       if (ev.nextRunAt) {
         meta.push(`nextRunAt=+${Math.round((ev.nextRunAt - ev.ts) / 1000)}s`);
       }
@@ -234,15 +226,9 @@ function formatSummary(ev: WideEvent): string {
         `save=${ev.saveId.slice(0, 8)}`,
         `attempts=${ev.attempts}`,
       ];
-      if (ev.failedOp) {
-        meta.push(`failedAt=${ev.failedOp}`);
-      }
-      if (ev.error) {
-        meta.push(`${ev.error.name}: ${ev.error.message}`);
-      }
-      if (ev.fileCount) {
-        meta.push(`files=${ev.fileCount}`);
-      }
+      if (ev.failedOp) meta.push(`failedAt=${ev.failedOp}`);
+      if (ev.error) meta.push(`${ev.error.name}: ${ev.error.message}`);
+      if (ev.fileCount) meta.push(`files=${ev.fileCount}`);
       return `${tag} ${meta.join(" · ")}`;
     }
   }

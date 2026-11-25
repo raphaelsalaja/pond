@@ -15,9 +15,7 @@ export async function navigateApp(target: AppNavigation): Promise<void> {
   }
   await openLibraryWindow();
   const win = getMainWindow();
-  if (!win || win.isDestroyed()) {
-    return;
-  }
+  if (!win || win.isDestroyed()) return;
   if (win.webContents.isLoading()) {
     await once(win.webContents, "did-finish-load");
   }

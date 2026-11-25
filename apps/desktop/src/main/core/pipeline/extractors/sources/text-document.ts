@@ -36,9 +36,7 @@ function sourceFilename(format: "markdown" | "plain", url: string): string {
     const segment = new URL(url).pathname.split("/").filter(Boolean).at(-1);
     if (segment) {
       const decoded = decodeURIComponent(segment);
-      if (/\.[a-z0-9]+$/i.test(decoded)) {
-        return decoded;
-      }
+      if (/\.[a-z0-9]+$/i.test(decoded)) return decoded;
     }
   } catch {
     /* The URL already parsed for the fetch itself. */
@@ -61,9 +59,7 @@ function documentTitle(
   }
   try {
     const segment = new URL(url).pathname.split("/").filter(Boolean).at(-1);
-    if (!segment) {
-      return undefined;
-    }
+    if (!segment) return undefined;
     const decoded = decodeURIComponent(segment);
     return decoded.replace(/\.(md|markdown|txt)$/i, "") || undefined;
   } catch {
