@@ -7,7 +7,7 @@ import { ipcMain } from "electron";
 import log from "electron-log/main.js";
 import { POND_PROTOCOL } from "../../shared/constants";
 import type { ReasonResult } from "../../shared/query-contracts-shared";
-import { isAuxiliaryKind } from "../../shared/save-file-names";
+import { isAuxiliaryKind, POSTER_KIND } from "../../shared/save-file-names";
 import type { SaveFileFailure } from "../../shared/saves-contracts-shared";
 import { getDb } from "../db";
 import { canonicalPondSaveId } from "../lib/pond-url";
@@ -49,9 +49,30 @@ export function safeHandle<Args extends Array<unknown>, R>(
   });
 }
 
+type SaveFileRef = { kind: string; path: string };
+
 export async function resolveSaveFilePath(
   id: string,
   fileIndex: number | undefined,
+): Promise<ReasonResult<SaveFileFailure, { path: string }>> {
+  return resolveSaveFile(id, (files) => resolveRowFile(id, files, fileIndex));
+}
+
+/** Resolves the file `pick` chooses from the Save's files. A picked poster is allowed, so a video can be read through its frame; other auxiliary files are still refused. */
+export async function resolvePickedSaveFilePath(
+  id: string,
+  pick: (files: ReadonlyArray<SaveFileRef>) => number,
+): Promise<ReasonResult<SaveFileFailure, { path: string }>> {
+  return resolveSaveFile(id, (files) =>
+    resolveRowFile(id, files, pick(files), { allowPoster: true }),
+  );
+}
+
+async function resolveSaveFile(
+  id: string,
+  resolveFile: (
+    files: ReadonlyArray<SaveFileRef>,
+  ) => ReasonResult<SaveFileFailure, { path: string }>,
 ): Promise<ReasonResult<SaveFileFailure, { path: string }>> {
   try {
     const db = await getDb();
@@ -59,7 +80,7 @@ export async function resolveSaveFilePath(
     const row = rows[0];
     if (!row) return { ok: false, reason: "not_found" };
 
-    return resolveRowFile(id, toWireSave(row).files ?? [], fileIndex);
+    return resolveFile(toWireSave(row).files ?? []);
   } catch (error) {
     log.warn("[pond ipc] resolveSaveFilePath failed", error);
     return { ok: false, reason: "not_found" };
@@ -68,13 +89,15 @@ export async function resolveSaveFilePath(
 
 function resolveRowFile(
   id: string,
-  files: ReadonlyArray<{ kind: string; path: string }>,
+  files: ReadonlyArray<SaveFileRef>,
   fileIndex: number | undefined,
+  options: { allowPoster?: boolean } = {},
 ): ReasonResult<SaveFileFailure, { path: string }> {
   if (files.length === 0) return { ok: false, reason: "no_files" };
   const file = files[fileIndex ?? 0];
   if (!file) return { ok: false, reason: "out_of_range" };
-  if (isAuxiliaryKind(file.kind)) {
+  const allowed = options.allowPoster === true && file.kind === POSTER_KIND;
+  if (isAuxiliaryKind(file.kind) && !allowed) {
     return { ok: false, reason: "auxiliary_file" };
   }
   const absolute = resolvePath(saveFile(id, file.path));
@@ -88,7 +111,7 @@ function resolveRowFile(
 
 export function resolveOriginalFilePaths(
   id: string,
-  files: ReadonlyArray<{ kind: string; path: string }>,
+  files: ReadonlyArray<SaveFileRef>,
 ): Array<string> {
   return files.flatMap((_, index) => {
     const target = resolveRowFile(id, files, index);

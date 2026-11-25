@@ -2,6 +2,11 @@ import { extname } from "node:path";
 import type { Prefs } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { MediaUnderstandInputSchema } from "../../../shared/query-contracts-system";
+import {
+  isAuxiliaryKind,
+  isOriginalImageKind,
+  POSTER_KIND,
+} from "../../../shared/save-file-names";
 import { keyFor, listProviderModels } from "../../core/agent/keys";
 import { connectionFor } from "../../core/agent/provider-models";
 import { visionEnabled } from "../../core/agent/vision";
@@ -18,7 +23,7 @@ import {
   libraryMediaMetadata,
   readLibraryMedia,
 } from "../../core/storage/library-media-storage";
-import { resolveSaveFilePath } from "../helpers";
+import { resolvePickedSaveFilePath } from "../helpers";
 import { query } from "./params";
 import type { QueryHandlerMap } from "./params";
 
@@ -50,7 +55,7 @@ type MediaUnderstandingQueryDependencies = {
   libraryMediaMetadata: typeof libraryMediaMetadata;
   listProviderModels: typeof listProviderModels;
   readLibraryMedia: typeof readLibraryMedia;
-  resolveSaveFilePath: typeof resolveSaveFilePath;
+  resolvePickedSaveFilePath: typeof resolvePickedSaveFilePath;
   service: MediaUnderstanding;
 };
 
@@ -60,9 +65,33 @@ const defaultDependencies: MediaUnderstandingQueryDependencies = {
   libraryMediaMetadata,
   listProviderModels,
   readLibraryMedia,
-  resolveSaveFilePath,
+  resolvePickedSaveFilePath,
   service: createMediaUnderstanding(),
 };
+
+/** Locally imported images can carry a non-image kind, so a supported extension also marks an original image. */
+function isOriginalImage(file: { kind: string; path: string }): boolean {
+  if (isAuxiliaryKind(file.kind)) return false;
+  return (
+    isOriginalImageKind(file.kind) ||
+    IMAGE_MIME.has(extname(file.path).toLowerCase())
+  );
+}
+
+/**
+ * Harvested Saves often list an avatar, thumbnail, or article body before the
+ * post's media, so file 0 is not the picture. Read the first original image,
+ * then a video's poster. With neither, file 0 keeps the failure that explains
+ * why the Save has nothing to read.
+ */
+function pickMediaUnderstandingFile(
+  files: ReadonlyArray<{ kind: string; path: string }>,
+): number {
+  const image = files.findIndex(isOriginalImage);
+  if (image !== -1) return image;
+  const poster = files.findIndex((file) => file.kind === POSTER_KIND);
+  return poster === -1 ? 0 : poster;
+}
 
 function localProvider(value: string): LocalProvider | null {
   if (value === "ollama" || value === "lmstudio") return value;
@@ -124,7 +153,10 @@ export function createMediaUnderstandingQueries(
     "saves.understandMedia": query(
       MediaUnderstandInputSchema,
       async ({ saveId, task }) => {
-        const target = await resolved.resolveSaveFilePath(saveId, 0);
+        const target = await resolved.resolvePickedSaveFilePath(
+          saveId,
+          pickMediaUnderstandingFile,
+        );
         if (!target.ok) return target;
 
         const mimeType = IMAGE_MIME.get(extname(target.path).toLowerCase());
