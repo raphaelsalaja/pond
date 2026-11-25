@@ -2,9 +2,10 @@ import { expect, it } from "vitest";
 import { resolveWatchTarget } from "./resolve";
 import type { FetchWatchPage } from "./types";
 
+const unavailable: FetchWatchPage = async () =>
+  new Response(null, { status: 503 });
+
 it("does not guess an Are.na kind when the lookup is unavailable", async () => {
-  const unavailable: FetchWatchPage = async () =>
-    new Response(null, { status: 503 });
   await expect(
     resolveWatchTarget("arena", "example", unavailable),
   ).rejects.toThrow();

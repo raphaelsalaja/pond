@@ -235,19 +235,29 @@ it("sends a longer proposal as a lead and one bubble per change", async () => {
 });
 
 it("approves the whole proposal", async () => {
-  const run = vi.spyOn(review, "run").mockResolvedValue();
+  const run = vi.spyOn(review, "run");
   const changes = [tagChange(1, "pending"), tagChange(2, "pending", "Wood")];
   await renderReview(changes);
   await press("Approve");
   expect(run).toHaveBeenCalledWith("reply", changes, "apply", undefined);
+  expect(window.pond.query).toHaveBeenCalledWith("agent.review", {
+    messageId: "reply",
+    changeIds: changes.map((change) => change.id),
+    action: "apply",
+  });
 });
 
 it("denies the whole proposal", async () => {
-  const run = vi.spyOn(review, "run").mockResolvedValue();
+  const run = vi.spyOn(review, "run");
   const changes = [tagChange(1, "pending")];
   await renderReview(changes);
   await press("Deny");
   expect(run).toHaveBeenCalledWith("reply", changes, "dismiss", undefined);
+  expect(window.pond.query).toHaveBeenCalledWith("agent.review", {
+    messageId: "reply",
+    changeIds: changes.map((change) => change.id),
+    action: "dismiss",
+  });
 });
 
 it("settles a decided proposal into a receipt", async () => {

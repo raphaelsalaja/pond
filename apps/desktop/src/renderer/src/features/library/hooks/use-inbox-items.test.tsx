@@ -2,17 +2,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { inboxReview } from "@/features/library/state/inbox-review";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { useInboxItems } from "./use-inbox-items";
 import type { InboxItem } from "./use-inbox-items";
 
 let host: HTMLDivElement;
 let root: Root;
-let listed: Array<InboxItem> = [];
+/** Every list `useInboxItems` returned, newest last. */
+const renders: Array<Array<InboxItem>> = [];
 const fixtures = new Map<string, Save>();
 
 function addInboxSave(id: string) {
@@ -42,32 +44,50 @@ function addInboxSave(id: string) {
   pool.upsert({ ...save, inboxState: "review" });
 }
 
-function Probe() {
-  listed = useInboxItems();
+function Probe({ onRender }: { onRender: (items: Array<InboxItem>) => void }) {
+  onRender(useInboxItems());
   return null;
 }
 
+function listed(): Array<InboxItem> {
+  return renders.at(-1) ?? [];
+}
+
 function saveIds() {
-  return listed.flatMap((item) => (item.type === "save" ? [item.id] : []));
+  return listed().flatMap((item) => (item.type === "save" ? [item.id] : []));
 }
 
 beforeEach(() => {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  listed = [];
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      if (name === "saves.queryPage") {
-        return { ids: ["a", "b", "c"] };
-      }
-      if (name === "notifications.list") {
-        return [];
-      }
-      if (name === "libraryHealth.overview") {
-        return null;
-      }
-      return { changed: 1 };
+  renders.length = 0;
+  bridge.use({
+    query: {
+      "saves.queryPage": () => ({
+        ids: ["a", "b", "c"],
+        total: 3,
+        nextCursor: null,
+        libraryId: "library",
+        revision: 0,
+      }),
+      "notifications.list": () => [],
+      "libraryHealth.overview": () => ({
+        check: null,
+        job: null,
+        media: {
+          state: "idle",
+          prepared: 0,
+          remaining: 0,
+          currentTitle: null,
+          pauseReason: null,
+          lastError: null,
+          pendingPosters: 0,
+          activeSaveIds: [],
+          discovering: false,
+          failures: [],
+        },
+      }),
     },
   });
   addInboxSave("a");
@@ -81,7 +101,6 @@ afterEach(async () => {
   inboxReview.exit();
   pool.clear();
   fixtures.clear();
-  vi.unstubAllGlobals();
 });
 
 async function mount() {
@@ -91,7 +110,7 @@ async function mount() {
   await act(async () => {
     root.render(
       <QueryClientProvider client={client}>
-        <Probe />
+        <Probe onRender={(items) => renders.push(items)} />
       </QueryClientProvider>,
     );
     await inboxReview.start("review");
@@ -110,7 +129,9 @@ it("keeps a skipped save listed but marks it read", async () => {
   await mount();
   await act(async () => inboxReview.advance("skip"));
   expect(saveIds()).toEqual(["a", "b", "c"]);
-  const first = listed.find((item) => item.type === "save" && item.id === "a");
+  const first = listed().find(
+    (item) => item.type === "save" && item.id === "a",
+  );
   expect(first?.type === "save" && first.unread).toBe(false);
 });
 

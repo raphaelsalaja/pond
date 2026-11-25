@@ -63,7 +63,7 @@ const FILE: DownloadFileProbe = {
 
 type Call = {
   name: string;
-  input: object | undefined;
+  input: unknown;
 };
 
 beforeEach(() => {
@@ -94,7 +94,7 @@ async function renderDialog(
   links: Array<string>,
 ) {
   const calls: Array<Call> = [];
-  const record = (name: string, input?: object) => {
+  const record = <Input,>(name: string, input: Input) => {
     calls.push({ name, input });
   };
   // `window.pond` is read when a query runs, so one module instance is enough.

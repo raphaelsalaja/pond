@@ -10,7 +10,7 @@ type AddWatchReply = ReturnType<ProviderProps["addWatch"]>;
 let root: Root;
 let host: HTMLDivElement;
 let replies: Array<() => AddWatchReply>;
-let watches: { addWatch: ProviderProps["addWatch"] };
+let watches: Pick<ProviderProps, "addWatch">;
 let onAdded: ProviderProps["onAdded"];
 
 beforeEach(() => {

@@ -7,6 +7,28 @@ import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SpecMenu } from ".";
 
+function menuBody() {
+  const body = document.querySelector("[data-menu-body]");
+  const popup = body?.parentElement;
+  if (!isHTMLElement(body) || !isHTMLElement(popup)) {
+    throw new Error("Missing menu body");
+  }
+  return { body, popup };
+}
+
+function contentHeight(body: HTMLElement) {
+  const content = body.firstElementChild;
+  if (!isHTMLElement(content)) {
+    throw new Error("Missing menu content");
+  }
+  const style = getComputedStyle(body);
+  return (
+    content.offsetHeight +
+    Number.parseFloat(style.paddingTop) +
+    Number.parseFloat(style.paddingBottom)
+  );
+}
+
 describe("spec menu search", () => {
   let host: HTMLDivElement;
   let root: Root;
@@ -21,28 +43,6 @@ describe("spec menu search", () => {
     await act(async () => root.unmount());
     host.remove();
   });
-
-  function menuBody() {
-    const body = document.querySelector("[data-menu-body]");
-    const popup = body?.parentElement;
-    if (!isHTMLElement(body) || !isHTMLElement(popup)) {
-      throw new Error("Missing menu body");
-    }
-    return { body, popup };
-  }
-
-  function contentHeight(body: HTMLElement) {
-    const content = body.firstElementChild;
-    if (!isHTMLElement(content)) {
-      throw new Error("Missing menu content");
-    }
-    const style = getComputedStyle(body);
-    return (
-      content.offsetHeight +
-      Number.parseFloat(style.paddingTop) +
-      Number.parseFloat(style.paddingBottom)
-    );
-  }
 
   async function open(
     items: Array<MenuItemSpec> = [
@@ -140,10 +140,12 @@ describe("spec menu search", () => {
 
   it("keeps a sized height when the query matches nothing", async () => {
     await open();
-    const { popup } = menuBody();
-    await vi.waitFor(() =>
-      expect(popup.style.getPropertyValue("--popup-locked-width")).not.toBe(""),
-    );
+    const { popup, body: openBody } = menuBody();
+    /** The width locks in the layout effect, but `data-sized` lands a frame after the first measure. */
+    await vi.waitFor(() => {
+      expect(popup.style.getPropertyValue("--popup-locked-width")).not.toBe("");
+      expect(openBody.getAttribute("data-sized")).toBe("true");
+    });
     const lockedWidth = popup.style.getPropertyValue("--popup-locked-width");
     const search = document.querySelector('[aria-label="Search operations"]');
     if (!isHTMLTag(search, "input")) {

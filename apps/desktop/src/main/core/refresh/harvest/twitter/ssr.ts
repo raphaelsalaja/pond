@@ -13,14 +13,16 @@ export function inPageTwitterSsr() {
     for (const m of html.matchAll(re)) {
       const literal = (m[1] ?? "")
         .replaceAll(/\\x([0-9a-fA-F]{2})/g, String.raw`\u00$1`)
-        .replaceAll("\\'", "'");
+        .replaceAll(String.raw`\'`, "'");
       try {
         /** A quoted literal always parses to a string. */
         const body = String(JSON.parse(`"${literal}"`));
         if (body.startsWith("{")) {
           out.push(body);
         }
-      } catch {}
+      } catch {
+        /** A literal that is not a valid JSON string holds no response body. */
+      }
     }
     return out;
   }

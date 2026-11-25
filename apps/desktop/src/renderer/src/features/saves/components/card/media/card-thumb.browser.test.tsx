@@ -31,6 +31,7 @@ let root: Root;
 
 beforeEach(() => {
   bridge.use({
+    machinePace: async () => ({ thermal: "nominal", onBattery: false }),
     query: {
       "settings.getPrefs": () => currentPrefs(),
       "settings.setPrefs": () => ({ ok: true, prefs: currentPrefs() }),

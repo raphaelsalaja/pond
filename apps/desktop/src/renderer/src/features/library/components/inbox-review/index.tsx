@@ -1,5 +1,6 @@
 import { IconClock } from "@pond/icons";
 import { Button, Empty, EmptyPreview, Loader } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { ReviewDeck } from "@/features/library/components/inbox-review/deck";
 import { ReviewFinished } from "@/features/library/components/inbox-review/finished";
@@ -74,7 +75,7 @@ function InboxPage({
   useEffect(() => {
     if (ids) {
       void ensureSaves(ids).catch((cause: unknown) => {
-        console.warn("[pond inbox] loading review saves failed", cause);
+        log.warn("[pond inbox] loading review saves failed", cause);
       });
     }
   }, [ids]);

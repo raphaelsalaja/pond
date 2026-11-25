@@ -25,9 +25,9 @@ const StoredMetadataSchema = z.looseObject({
 });
 
 const RawMetadataSchema = z.looseObject({
-  icon: z.unknown(),
-  mark: z.unknown(),
-  accent: z.unknown(),
+  icon: z.unknown().optional(),
+  mark: z.unknown().optional(),
+  accent: z.unknown().optional(),
 });
 
 export interface LibraryIdentity {

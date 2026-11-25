@@ -42,6 +42,13 @@ function parseStored(raw: string | null): Array<StoredToken> {
   }
 }
 
+function isStale(token: StoredToken, usedAt: number): boolean {
+  return (
+    token.lastUsedAt === null ||
+    usedAt - token.lastUsedAt > LAST_USED_RESOLUTION_MS
+  );
+}
+
 /** Only a SHA-256 digest is kept, so a token is shown once, at creation. */
 export function createApiTokenStore(
   storage: ApiTokenStorage,
@@ -62,9 +69,13 @@ export function createApiTokenStore(
     },
   ): Promise<T> {
     const next = queue.then(async () => {
-      const { tokens, result } = change(await load());
-      await storage.write(JSON.stringify(tokens));
-      cache = tokens;
+      const current = await load();
+      const { tokens, result } = change(current);
+      /** A change that keeps the same list has nothing to write. */
+      if (tokens !== current) {
+        await storage.write(JSON.stringify(tokens));
+        cache = tokens;
+      }
       return result;
     });
     queue = next.catch(() => {});
@@ -117,14 +128,16 @@ export function createApiTokenStore(
       return null;
     }
     const usedAt = now();
-    if (
-      match.lastUsedAt === null ||
-      usedAt - match.lastUsedAt > LAST_USED_RESOLUTION_MS
-    ) {
+    if (isStale(match, usedAt)) {
+      /** Decided again inside the queue, so uses that arrive before the first write lands record once. */
       void mutate((tokens) => ({
-        tokens: tokens.map((entry) =>
-          entry.id === match.id ? { ...entry, lastUsedAt: usedAt } : entry,
-        ),
+        tokens: tokens.some(
+          (entry) => entry.id === match.id && isStale(entry, usedAt),
+        )
+          ? tokens.map((entry) =>
+              entry.id === match.id ? { ...entry, lastUsedAt: usedAt } : entry,
+            )
+          : tokens,
         result: undefined,
       })).catch((cause: unknown) =>
         log.warn("[pond api] token last-used update failed", cause),

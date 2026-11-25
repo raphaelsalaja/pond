@@ -1,8 +1,8 @@
-import type { WireSave } from "@shared/wire";
 import { afterEach, expect, it, vi } from "vitest";
 import { selection } from "@/features/saves/state/selection";
 import { tagClipboard } from "@/features/tags";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { pool } from "../state/pool";
 import { normalise, SavePatchSchema } from "./reconcile";
 import {
@@ -103,12 +103,9 @@ it("hydrates cold metadata before copying every selected URL", async () => {
     query: {
       "saves.getMany": (input) => {
         requested.push(input.ids);
-        const rows = input.ids.map((id) => ({
-          id,
-          url: `https://example.com/${id.slice(5)}`,
-        }));
-        /** SAFETY: ensureSaves parses rows through SavePatchesSchema, which fills every column these rows omit. */
-        return rows as Array<WireSave>;
+        return input.ids.map((id) =>
+          wireSave({ id, url: `https://example.com/${id.slice(5)}` }),
+        );
       },
       "clipboard.writeText": ({ text }) => {
         copied = text;

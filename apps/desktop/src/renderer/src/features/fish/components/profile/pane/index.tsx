@@ -37,7 +37,7 @@ function Header({
   );
 }
 
-interface BodyProps extends React.ComponentPropsWithoutRef<"div"> {}
+type BodyProps = React.ComponentPropsWithoutRef<"div">;
 
 function Body({ className, ...props }: BodyProps) {
   return (

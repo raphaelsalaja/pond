@@ -17,6 +17,10 @@ const receipt: CaptureReceipt = {
   duplicateCount: 0,
 };
 
+async function enqueueUnsupported(): Promise<EnqueueResult> {
+  throw new UnsupportedError("no extractor matches url");
+}
+
 function ports(overrides: Partial<NativePorts> = {}): NativePorts {
   return {
     enqueue: vi.fn(),
@@ -93,13 +97,10 @@ describe("dispatchNative", () => {
   });
 
   it("maps UnsupportedError to unsupported_url", async () => {
-    const enqueue = async (): Promise<EnqueueResult> => {
-      throw new UnsupportedError("no extractor matches url");
-    };
     await expect(
       dispatchNative(
         { type: "enqueue", url: "https://example.invalid/x" },
-        ports({ enqueue }),
+        ports({ enqueue: enqueueUnsupported }),
       ),
     ).resolves.toEqual({ ok: false, error: "unsupported_url" });
   });

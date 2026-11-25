@@ -1,17 +1,16 @@
-import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { SmartCollectionReview } from "./";
 
 it("rejects and closes a cluster preview without writing to the Library", async () => {
-  /** SAFETY: the review reads only each Save's id and title. */
   const representatives = [
-    { id: "design-a", title: "Design A" },
-    { id: "design-b", title: "Design B" },
-    { id: "design-c", title: "Design C" },
-  ] as Array<WireSave>;
+    wireSave({ id: "design-a", title: "Design A" }),
+    wireSave({ id: "design-b", title: "Design B" }),
+    wireSave({ id: "design-c", title: "Design C" }),
+  ];
   bridge.use({
     query: {
       "saves.semanticClusters": () => ({

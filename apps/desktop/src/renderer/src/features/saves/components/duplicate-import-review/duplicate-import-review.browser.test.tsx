@@ -1,6 +1,5 @@
 import "@/app/effects/save-library-bridge";
 import { PrefsSchema } from "@pond/schema";
-import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
@@ -11,6 +10,7 @@ import {
   importFilesWithDuplicateReview,
 } from "@/features/saves/state/duplicate-import-review";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { DuplicateImportReviewHost } from "./";
 
 let root: Root;
@@ -18,9 +18,8 @@ let host: HTMLDivElement;
 const first = "/Users/you/Downloads/a.png";
 const second = "/Users/you/Downloads/b.png";
 const paths = [first, second];
-/** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
 const existingRows = [
-  {
+  wireSave({
     id: "save-sunset",
     source: "local",
     sourceId: "sunset",
@@ -38,8 +37,8 @@ const existingRows = [
         height: 1000,
       },
     ],
-  },
-] as Array<WireSave>;
+  }),
+];
 
 beforeEach(() => {
   bridge.use({
@@ -59,6 +58,8 @@ beforeEach(() => {
       "saves.importFiles": () => ({ ok: true, ids: [] }),
       "saves.discardStagedClipboard": () => ({ ok: true }),
     },
+    /** The existing Save's image card paces its motion by the host's thermal state. */
+    machinePace: async () => ({ thermal: "nominal", onBattery: false }),
   });
   host = document.createElement("div");
   document.body.append(host);

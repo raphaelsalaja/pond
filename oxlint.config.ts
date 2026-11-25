@@ -156,6 +156,19 @@ export default defineConfig({
       },
     },
     {
+      files: [
+        "apps/desktop/src/main/core/conversion-benchmark.test.ts",
+        "apps/desktop/src/main/core/library-performance-benchmark.test.ts",
+        "apps/desktop/src/main/core/library-retrieval-benchmark.test.ts",
+        "apps/desktop/src/renderer/src/features/saves/lib/bulk-performance-benchmark.test.ts",
+      ],
+      rules: {
+        /** Opt-in benchmarks (`POND_BENCH_*`) run minutes of real work and measure wall-clock time against budgets by design. */
+        "landmines/no-elapsed-time-bound": "off",
+        "landmines/no-flake-masking": "off",
+      },
+    },
+    {
       files: ["**/*.tsx"],
       rules: {
         /** JSX handlers may be async; each one catches its own rejection. */

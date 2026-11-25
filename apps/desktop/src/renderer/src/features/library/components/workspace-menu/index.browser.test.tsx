@@ -8,6 +8,16 @@ import { libraryChrome } from "@/features/library/state/library-chrome";
 import { bridge } from "@/shared/test/pond-bridge";
 import { WorkspaceMenu } from ".";
 
+function menuItem(label: string): HTMLElement {
+  const item = [
+    ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+  ].find((entry) => entry.textContent?.includes(label));
+  if (!item) {
+    throw new Error(`Missing ${label}`);
+  }
+  return item;
+}
+
 describe("workspace menu", () => {
   let host: HTMLDivElement;
   let root: Root;
@@ -84,16 +94,6 @@ describe("workspace menu", () => {
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain("Library Settings"),
     );
-  }
-
-  function menuItem(label: string): HTMLElement {
-    const item = [
-      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
-    ].find((entry) => entry.textContent?.includes(label));
-    if (!item) {
-      throw new Error(`Missing ${label}`);
-    }
-    return item;
   }
 
   it("shows a compact library menu", async () => {

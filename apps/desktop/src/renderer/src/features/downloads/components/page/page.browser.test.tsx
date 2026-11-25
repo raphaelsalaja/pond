@@ -21,6 +21,7 @@ import { savesStore } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { bridge } from "@/shared/test/pond-bridge";
 import type { QueryHandlers } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { DownloadsPage } from "./";
 import { hydrateLiveDownloadSaves } from "./hydrate-live-saves";
 
@@ -70,9 +71,8 @@ function setSaves(saves: Array<Save>) {
     revision: state.revision + 1,
   }));
 }
-/** SAFETY: the pool and the Downloads table read only the fields `save()` fills. */
 function asWire(saves: Array<Save>): Array<WireSave> {
-  return saves as Array<WireSave>;
+  return saves.map((save) => wireSave(save));
 }
 let host: HTMLDivElement;
 let root: Root;

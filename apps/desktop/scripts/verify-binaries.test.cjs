@@ -201,12 +201,12 @@ void test("rejects a package without the tint icons", async () => {
 });
 
 async function writeMacRuntime(resourcesDirectory, arch, options = {}) {
-  const binaryDirectory = join(resourcesDirectory, "bin");
+  const binaryDirectory = path.join(resourcesDirectory, "bin");
   await mkdir(binaryDirectory, { recursive: true });
-  await writeFile(join(binaryDirectory, "ffmpeg"), "binary");
-  await writeFile(join(binaryDirectory, "pond-native-host"), "binary");
+  await writeFile(path.join(binaryDirectory, "ffmpeg"), "binary");
+  await writeFile(path.join(binaryDirectory, "pond-native-host"), "binary");
   await mkdir(
-    join(
+    path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/better-sqlite3/prebuilds",
     ),
@@ -221,51 +221,61 @@ async function writeMacRuntime(resourcesDirectory, arch, options = {}) {
     "darwin",
     arch,
   );
-  await mkdir(join(sqliteVec, ".."), { recursive: true });
+  await mkdir(path.join(sqliteVec, ".."), { recursive: true });
   await writeFile(sqliteVec, "binary");
-  const sharpDir = join(
+  const sharpDir = path.join(
     resourcesDirectory,
     `app.asar.unpacked/node_modules/@img/sharp-darwin-${arch}/lib`,
   );
   await mkdir(sharpDir, { recursive: true });
-  await writeFile(join(sharpDir, `sharp-darwin-${arch}.node`), "binary");
-  const libvipsDir = join(
+  await writeFile(path.join(sharpDir, `sharp-darwin-${arch}.node`), "binary");
+  const libvipsDir = path.join(
     resourcesDirectory,
     `app.asar.unpacked/node_modules/@img/sharp-libvips-darwin-${arch}/lib`,
   );
   await mkdir(libvipsDir, { recursive: true });
-  await writeFile(join(libvipsDir, "libvips.dylib"), "binary");
+  await writeFile(path.join(libvipsDir, "libvips.dylib"), "binary");
   if (arch === "arm64") {
-    const onnxDir = join(
+    const onnxDir = path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/darwin/arm64",
     );
     await mkdir(onnxDir, { recursive: true });
-    await writeFile(join(onnxDir, "onnxruntime_binding.node"), "binary");
-    await writeFile(join(onnxDir, "libonnxruntime.1.dylib"), "binary");
+    await writeFile(path.join(onnxDir, "onnxruntime_binding.node"), "binary");
+    await writeFile(path.join(onnxDir, "libonnxruntime.1.dylib"), "binary");
   }
   await writeTintIcon(resourcesDirectory);
   if (options.catalog !== false) {
     await writeFile(
-      join(resourcesDirectory, "Assets.car"),
+      path.join(resourcesDirectory, "Assets.car"),
       options.catalog ?? "binary",
     );
   }
 }
 
 for (const arch of ["arm64", "x64"]) {
-  test(`accepts a macOS ${arch} package with the Icon Composer catalog`, async () => {
+  void test(`accepts a macOS ${arch} package with the Icon Composer catalog`, async () => {
     await withTemporaryDirectory(async (appOutDir) => {
-      const resources = join(appOutDir, "Pond.app", "Contents", "Resources");
+      const resources = path.join(
+        appOutDir,
+        "Pond.app",
+        "Contents",
+        "Resources",
+      );
       await writeMacRuntime(resources, arch);
 
       await verify(buildContext(appOutDir, "darwin", arch));
     });
   });
 
-  test(`rejects a macOS ${arch} package without the Icon Composer catalog`, async () => {
+  void test(`rejects a macOS ${arch} package without the Icon Composer catalog`, async () => {
     await withTemporaryDirectory(async (appOutDir) => {
-      const resources = join(appOutDir, "Pond.app", "Contents", "Resources");
+      const resources = path.join(
+        appOutDir,
+        "Pond.app",
+        "Contents",
+        "Resources",
+      );
       await writeMacRuntime(resources, arch, { catalog: false });
 
       await assert.rejects(
@@ -276,9 +286,9 @@ for (const arch of ["arm64", "x64"]) {
   });
 }
 
-test("rejects a macOS package with an empty Icon Composer catalog", async () => {
+void test("rejects a macOS package with an empty Icon Composer catalog", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    const resources = join(appOutDir, "Pond.app", "Contents", "Resources");
+    const resources = path.join(appOutDir, "Pond.app", "Contents", "Resources");
     await writeMacRuntime(resources, "arm64", { catalog: "" });
 
     await assert.rejects(

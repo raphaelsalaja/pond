@@ -3,7 +3,7 @@ import type { Query } from "@pond/schema/filters/types";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RuleDialog } from "./rule-dialog";
 import type { RuleDialogProps } from "./rule-dialog";
 import {
@@ -124,7 +124,8 @@ describe("smart folder rule dialog", () => {
     expect(saved[0]?.name).toBe("Forests");
     expect(JSON.stringify(saved[0]?.query)).toContain("forest");
     expect(JSON.stringify(saved[0]?.query)).not.toContain("reference");
-    expect(closed).toBe(true);
+    // onClose waits for the exit animation to finish.
+    await vi.waitFor(() => expect(closed).toBe(true));
   });
 
   it("explains a missing name beside the field and focuses it", async () => {
@@ -208,7 +209,8 @@ describe("smart folder rule dialog", () => {
     expect(closed).toBe(false);
     await act(async () => button("Cancel").click());
     expect(attempts).toBe(1);
-    expect(closed).toBe(true);
+    // onClose waits for the exit animation to finish.
+    await vi.waitFor(() => expect(closed).toBe(true));
   });
 
   it("lists folders and tags with their parent or group, in the same order as the other pickers", async () => {

@@ -71,6 +71,11 @@ function Shell({ children }: { children: ReactNode }) {
   );
 }
 
+const swipe = (direction: NavigationDirection) =>
+  act(async () => {
+    bridge.emit("onNavigationSwipe", direction);
+  });
+
 describe("breadcrumb toolbar", () => {
   let host: HTMLDivElement;
   let root: Root;
@@ -298,10 +303,6 @@ describe("breadcrumb toolbar", () => {
   });
 
   it("follows back and forward swipes from the main process", async () => {
-    const swipe = (direction: NavigationDirection) =>
-      act(async () => {
-        bridge.emit("onNavigationSwipe", direction);
-      });
     const router = await mount("/");
     await act(async () => router.history.push("/sources"));
     await swipe("back");

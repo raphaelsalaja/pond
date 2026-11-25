@@ -482,7 +482,12 @@ describe("command menu", () => {
     await type("design");
     await press("ArrowDown");
     await act(async () => commandMenu.toggle());
+    // A real browser keeps the popup mounted through its exit animation.
+    await vi.waitFor(() => {
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+    });
     await act(async () => commandMenu.open());
+    await nextFrame();
 
     expect(input().value).toBe("");
     expect(active()).toBe("command:new-folder");

@@ -1,7 +1,7 @@
 import type { BulkEdit, BulkQueryResults } from "@shared/bulk-contracts";
-import type { WireSave } from "@shared/wire";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { onPoolDirty, pool, savesStore } from "../state/pool";
 import {
   bulkMutation,
@@ -53,12 +53,11 @@ it("shows an edit immediately and sends its previous value for undo", async () =
 
 it("refetches a Save the pool evicted before applying an edit", async () => {
   pool.clear();
-  /** SAFETY: `ensureSaves` parses rows with `SavePatchesSchema`, which fills every column this fixture omits. */
-  const row = {
+  const row = wireSave({
     id: "saved",
     title: "Before",
     url: "https://example.com",
-  } as WireSave;
+  });
   bridge.use({
     query: { "saves.getMany": () => [row] },
     tx: async () => {},

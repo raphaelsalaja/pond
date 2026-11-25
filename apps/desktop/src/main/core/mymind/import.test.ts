@@ -8,6 +8,12 @@ import { createMymindSyncState } from "./state";
 
 type ImportDependencies = NonNullable<Parameters<typeof importMymindObject>[1]>;
 
+interface ImportEffects {
+  getBlob: () => Promise<Response>;
+  persist: () => Promise<void>;
+  beforeWrite: () => void;
+}
+
 function failingOnce(error: Error): () => Promise<void> {
   let failed = false;
   return async () => {
@@ -29,11 +35,7 @@ function fixture(patch: Partial<MymindObject> = {}) {
     ...patch,
   });
   const state = createMymindSyncState(Date.parse(object.created) - 1000);
-  const effects: {
-    getBlob: () => Promise<Response>;
-    persist: () => Promise<void>;
-    beforeWrite: () => void;
-  } = {
+  const effects: ImportEffects = {
     getBlob: async () => new Response("file bytes"),
     persist: async () => {},
     beforeWrite: () => {},

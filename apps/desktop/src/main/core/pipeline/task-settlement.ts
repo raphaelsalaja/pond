@@ -21,16 +21,27 @@ import {
   snapshotSourceGate,
 } from "./rate-governor";
 import {
-  LibrarySwitchInterrupt,
   metrics,
   NON_FATAL_OPS,
   WorkerWatchdogError,
 } from "./reconciler-config";
-import type { DueTask } from "./reconciler-config";
+import type { DueTask, LibrarySwitchInterrupt } from "./reconciler-config";
 import { classifyError } from "./retry-policy";
 import { stopSourceForSignIn } from "./source-admission";
 import { isSourceTask } from "./source-tasks";
 import { FinalizeIncompleteError } from "./workers/finalize";
+
+/** Abort reasons are untyped, so the interrupt is recognised by its name. */
+export function isLibrarySwitchInterrupt(
+  cause: unknown,
+): cause is LibrarySwitchInterrupt {
+  return (
+    typeof cause === "object" &&
+    cause !== null &&
+    "name" in cause &&
+    cause.name === "LibrarySwitchInterrupt"
+  );
+}
 
 export async function enrichTaskEventWithSave(
   ev: PipelineTaskEvent,
@@ -130,7 +141,7 @@ export async function handleFailure(
       settled: false,
     };
   }
-  if (cause instanceof LibrarySwitchInterrupt) {
+  if (isLibrarySwitchInterrupt(cause)) {
     const db = await getDb();
     const now = new Date();
     const result = db

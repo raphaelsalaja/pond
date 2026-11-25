@@ -120,7 +120,7 @@ export function setupImageInspectorTest() {
     prepareFrame,
     render,
     get tx() {
-      return window.pond.tx;
+      return bridge.spy("tx");
     },
   };
 }

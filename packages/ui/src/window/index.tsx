@@ -54,7 +54,7 @@ function Root({
   );
 }
 
-interface ToolbarProps extends ComponentPropsWithoutRef<"div"> {}
+type ToolbarProps = ComponentPropsWithoutRef<"div">;
 
 function Toolbar({ className, ...props }: ToolbarProps) {
   return (
@@ -88,7 +88,7 @@ function Trailing({ className, ...props }: ClusterProps) {
   );
 }
 
-interface PanesProps extends ComponentPropsWithoutRef<"div"> {}
+type PanesProps = ComponentPropsWithoutRef<"div">;
 
 function Panes({ className, ...props }: PanesProps) {
   return (

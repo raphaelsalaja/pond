@@ -1,5 +1,4 @@
 import { DEFAULT_PREFS } from "@pond/schema";
-import type { WireSave } from "@shared/wire";
 import { RouterProvider } from "@tanstack/react-router";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -13,6 +12,7 @@ import {
 import { setLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import { folders } from "@/features/library/state/folders";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { FolderBrowser } from ".";
 
 const folderRows = [
@@ -34,13 +34,8 @@ const folderRows = [
   },
 ];
 
-/** SAFETY: the pool and folder cards read only the fields these rows fill, and `normalise` defaults the rest. */
-function wire(row: Partial<WireSave>): WireSave {
-  return row as WireSave;
-}
-
 const previewRows = [
-  wire({
+  wireSave({
     id: "preview-a",
     source: "local",
     sourceId: "preview-a",
@@ -60,7 +55,7 @@ const previewRows = [
     savedAt: 2,
     createdAt: 2,
   }),
-  wire({
+  wireSave({
     id: "preview-b",
     source: "local",
     sourceId: "preview-b",

@@ -141,7 +141,7 @@ function assertAppIcon(context) {
 
 /** Without the catalog, macOS 26+ draws icon.icns and the icon ignores Dark, Clear, and Tinted styles. */
 function assertIconCatalog(resourcesDir) {
-  const catalog = join(resourcesDir, "Assets.car");
+  const catalog = nodePath.join(resourcesDir, "Assets.car");
   if (!existsSync(catalog)) {
     throw new Error(
       `[pond verify] missing ${catalog}. ` +

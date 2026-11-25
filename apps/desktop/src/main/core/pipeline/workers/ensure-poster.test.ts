@@ -2,6 +2,8 @@ import type { SaveFile } from "@pond/schema/db";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
+import type { persistSave } from "../../persist-save";
+import type { ensureSaveThumbnail } from "../../save-thumbnail";
 import { ensureRemotePoster } from "./ensure-poster";
 import type { RemotePosterSave } from "./ensure-poster";
 
@@ -37,6 +39,9 @@ function jpeg(width: number, height: number) {
     .toBuffer();
 }
 
+type PersistArgs = Parameters<typeof persistSave>;
+type ThumbnailArgs = Parameters<typeof ensureSaveThumbnail>;
+
 type PosterFetch = (
   url: string,
 ) => Promise<ReturnType<typeof image> | { miss: "permanent" }>;
@@ -54,14 +59,12 @@ function recordingRuntime(fetchPoster: PosterFetch) {
         fetched.push(url);
         return fetchPoster(url);
       },
-      persistSave: async (id: string, patch: object, options: object) => {
+      persistSave: async (...[id, patch, options]: PersistArgs) => {
         persisted.push([id, patch, options]);
         return null;
       },
       ensureSaveThumbnail: async (
-        saveId: string,
-        save?: object | null,
-        options?: object,
+        ...[saveId, save, options]: ThumbnailArgs
       ) => {
         thumbnails.push([saveId, save, options]);
       },

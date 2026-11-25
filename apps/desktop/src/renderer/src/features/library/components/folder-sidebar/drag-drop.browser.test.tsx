@@ -77,6 +77,12 @@ function recordMove(): Promise<QueryInput<"folders.move">> {
   return moved.promise;
 }
 
+async function release(point: Point) {
+  await act(async () => {
+    document.dispatchEvent(pointer("pointerup", point));
+  });
+}
+
 describe("folder sidebar drag and drop", () => {
   const harness = createFolderSidebarHarness();
 
@@ -89,12 +95,6 @@ describe("folder sidebar drag and drop", () => {
         document.dispatchEvent(pointer("pointermove", point));
       });
     }
-  }
-
-  async function release(point: Point) {
-    await act(async () => {
-      document.dispatchEvent(pointer("pointerup", point));
-    });
   }
 
   beforeEach(() => harness.setup());

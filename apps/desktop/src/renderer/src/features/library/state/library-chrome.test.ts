@@ -1,14 +1,15 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import type * as LibraryChrome from "./library-chrome";
+
+const loadChrome = () => import("./library-chrome");
 
 describe("library chrome", () => {
-  let chrome: typeof LibraryChrome;
+  let chrome: Awaited<ReturnType<typeof loadChrome>>;
   let loadedWidth: number;
 
   beforeAll(async () => {
     localStorage.clear();
     localStorage.setItem("pond.sidebarWidth", "180");
-    chrome = await import("./library-chrome");
+    chrome = await loadChrome();
     loadedWidth = chrome.libraryChrome.getState().sidebarWidth;
   });
 

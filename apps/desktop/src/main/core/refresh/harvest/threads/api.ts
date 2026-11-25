@@ -153,11 +153,11 @@ async function inPageSavedApi(
         }
         return;
       }
-      if (!isJsonObject(value)) {
+      if (!isObjectNode(value)) {
         return;
       }
       const pageInfo = value.page_info;
-      const endCursor = isJsonObject(pageInfo)
+      const endCursor = isObjectNode(pageInfo)
         ? jsonString(pageInfo.end_cursor)
         : undefined;
       if (endCursor) {
@@ -182,7 +182,7 @@ async function inPageSavedApi(
         }
         return;
       }
-      if (!isJsonObject(value)) {
+      if (!isObjectNode(value)) {
         return;
       }
       const code = jsonString(value.code);
@@ -222,11 +222,11 @@ async function inPageSavedApi(
         }
         return;
       }
-      if (!isJsonObject(value)) {
+      if (!isObjectNode(value)) {
         return;
       }
       const pageInfo = value.page_info;
-      if (Array.isArray(value.edges) && isJsonObject(pageInfo)) {
+      if (Array.isArray(value.edges) && isObjectNode(pageInfo)) {
         const next = pageInfo.has_next_page;
         if (next === true || next === false) {
           found = next;
@@ -255,7 +255,10 @@ async function inPageSavedApi(
       continue;
     }
     try {
-      const json: JsonValue = JSON.parse(body);
+      const json: unknown = JSON.parse(body);
+      if (!isJsonTree(json)) {
+        continue;
+      }
       const ids = pagePostIds(json);
       if (ids.length === 0) {
         continue;
@@ -265,7 +268,9 @@ async function inPageSavedApi(
       if (listHasNextPage(json) === false) {
         preloadedLastPage = true;
       }
-    } catch {}
+    } catch {
+      /** A preloader that is not JSON leaves the first page to the network path. */
+    }
   }
 
   let template = getRequest();
@@ -277,7 +282,9 @@ async function inPageSavedApi(
       lastNudge = Date.now();
       try {
         window.scrollBy({ top: 2000, behavior: "instant" });
-      } catch {}
+      } catch {
+        /** The nudge only hurries the page; the wait loop still times out without it. */
+      }
     }
     await sleep(250);
     template = getRequest();

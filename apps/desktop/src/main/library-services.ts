@@ -19,15 +19,15 @@ export function watchLibraryFolder(): void {
       stopDisplacementWatch?.();
       stopDisplacementWatch = module.startLibraryDisplacementWatch();
     })
-    .catch((error: unknown) =>
-      log.warn("[pond] library displacement watch failed to start", error),
+    .catch((cause: unknown) =>
+      log.warn("[pond] library displacement watch failed to start", cause),
     );
 
   if (process.platform === "darwin" && !process.env.POND_SANDBOX) {
     void import("./core/library-folder-icon")
       .then((module) => module.applyLibraryFolderIcon(libraryRoot()))
-      .catch((error: unknown) =>
-        log.warn("[pond] library folder icon failed", error),
+      .catch((cause: unknown) =>
+        log.warn("[pond] library folder icon failed", cause),
       );
   }
 }
@@ -57,14 +57,14 @@ export async function startLibraryBackgroundWork(): Promise<void> {
       if (!live()) {
         return;
       }
-      await run().catch((error: unknown) =>
-        log.warn(`[pond] ${label} failed`, error),
+      await run().catch((cause: unknown) =>
+        log.warn(`[pond] ${label} failed`, cause),
       );
     };
 
   void scanModule
     .reconcileLibrary()
-    .catch((error: unknown) => log.warn("[pond] scan failed", error))
+    .catch((cause: unknown) => log.warn("[pond] scan failed", cause))
     .finally(() => {
       if (!live()) {
         return;
@@ -72,8 +72,8 @@ export async function startLibraryBackgroundWork(): Promise<void> {
       mediaModule.startMediaWarmer();
       void fingerprintModule
         .startFingerprintWorker()
-        .catch((error: unknown) =>
-          log.warn("[pond] fingerprint worker failed", error),
+        .catch((cause: unknown) =>
+          log.warn("[pond] fingerprint worker failed", cause),
         );
     })
     .then(
@@ -102,8 +102,8 @@ export async function startLibraryBackgroundWork(): Promise<void> {
     );
   void enrichmentModule
     .backfillEnrichmentSidecars()
-    .catch((error: unknown) =>
-      log.warn("[pond] enrichment sidecar backfill failed", error),
+    .catch((cause: unknown) =>
+      log.warn("[pond] enrichment sidecar backfill failed", cause),
     );
 }
 

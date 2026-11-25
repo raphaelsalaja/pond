@@ -39,6 +39,7 @@ const save: Save = {
 beforeEach(() => {
   decodes = [];
   bridge.use({
+    machinePace: async () => ({ thermal: "nominal", onBattery: false }),
     query: {
       "settings.getPrefs": () =>
         PrefsSchema.parse({ viewer: { thumbnailQuality: "quality" } }),

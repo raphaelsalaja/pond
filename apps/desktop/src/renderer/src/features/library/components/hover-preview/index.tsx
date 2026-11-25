@@ -2,6 +2,7 @@ import { IconMinus, IconPlus } from "@pond/icons";
 import { Button, cssVars, Dialog } from "@pond/ui";
 import { isHTMLElement } from "@pond/ui/dom";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import log from "electron-log/renderer";
 import {
   useCallback,
   useEffect,
@@ -159,7 +160,7 @@ export function HoverPreview() {
             current = saveId;
           }
         })().catch((cause: unknown) => {
-          console.warn("[pond preview] neighbor navigation failed", cause);
+          log.warn("[pond preview] neighbor navigation failed", cause);
         });
       }),
     [],
@@ -181,7 +182,7 @@ export function HoverPreview() {
         }
       })
       .catch((cause: unknown) => {
-        console.warn("[pond preview] step failed", cause);
+        log.warn("[pond preview] step failed", cause);
       });
   };
   const stepHotkey =
@@ -388,10 +389,7 @@ export function HoverPreview() {
                       ?.querySelector<HTMLElement>("[data-viewer-root]")
                       ?.requestFullscreen()
                       .catch((cause: unknown) => {
-                        console.warn(
-                          "[pond preview] full screen failed",
-                          cause,
-                        );
+                        log.warn("[pond preview] full screen failed", cause);
                       });
                   }
             }
@@ -464,7 +462,7 @@ export function HoverPreview() {
                   save={save}
                   onNavigate={(id) => {
                     void showSave(id).catch((cause: unknown) => {
-                      console.warn("[pond preview] navigation failed", cause);
+                      log.warn("[pond preview] navigation failed", cause);
                     });
                   }}
                   onPositionChange={onPositionChange}

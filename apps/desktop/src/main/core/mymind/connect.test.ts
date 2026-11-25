@@ -20,17 +20,19 @@ const existingAccount: ConnectedAccount = {
 
 type ConnectDependencies = NonNullable<Parameters<typeof connectMymind>[1]>;
 
+interface ConnectWorld {
+  root: string;
+  account: ConnectedAccount | null;
+  syncing: boolean;
+  validate: ConnectDependencies["validate"];
+  readState: () => ReturnType<ConnectDependencies["readState"]>;
+  writeCredential: () => Promise<void>;
+  createAccount: ConnectDependencies["createAccount"];
+}
+
 function fixture(existing: ConnectedAccount | null = null) {
   const state = createMymindSyncState(now - 10_000);
-  const world: {
-    root: string;
-    account: ConnectedAccount | null;
-    syncing: boolean;
-    validate: ConnectDependencies["validate"];
-    readState: () => ReturnType<ConnectDependencies["readState"]>;
-    writeCredential: () => Promise<void>;
-    createAccount: ConnectDependencies["createAccount"];
-  } = {
+  const world: ConnectWorld = {
     root: "/library",
     account: existing,
     syncing: false,

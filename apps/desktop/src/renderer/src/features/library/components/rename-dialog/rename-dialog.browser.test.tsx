@@ -1,5 +1,4 @@
 import { isHTMLTag } from "@pond/ui/dom";
-import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
@@ -9,19 +8,21 @@ import {
   openRenameDialog,
 } from "@/features/library/state/rename-dialog";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { RenameDialogHost } from "./host";
 
 let root: Root;
 let host: HTMLDivElement;
-/** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
-const rows = ["IMG_2041", "IMG_2042"].map((title) => ({
-  id: `save-${title}`,
-  source: "local",
-  sourceId: title,
-  url: `file:///${title}.png`,
-  title,
-  status: "complete",
-})) as Array<WireSave>;
+const rows = ["IMG_2041", "IMG_2042"].map((title) =>
+  wireSave({
+    id: `save-${title}`,
+    source: "local",
+    sourceId: title,
+    url: `file:///${title}.png`,
+    title,
+    status: "complete",
+  }),
+);
 
 beforeEach(() => {
   bridge.use({

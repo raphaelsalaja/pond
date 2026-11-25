@@ -10,7 +10,13 @@ export function withClass<State>(
   base: string | undefined,
   className: StateClassName<State>,
 ) {
-  return className instanceof Function
+  return isStateFunction(className)
     ? (state: State) => cn(base, className(state))
     : cn(base, className);
+}
+
+function isStateFunction<State>(
+  className: StateClassName<State>,
+): className is (state: State) => string | undefined {
+  return typeof className === "function";
 }

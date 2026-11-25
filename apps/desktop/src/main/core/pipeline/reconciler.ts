@@ -53,6 +53,7 @@ import {
   enrichTaskEventWithSave,
   gateForSource,
   handleFailure,
+  isLibrarySwitchInterrupt,
   markDone,
   maybeFinalizeSave,
 } from "./task-settlement";
@@ -623,10 +624,9 @@ async function dispatchTask(task: DueTask): Promise<void> {
     ev.attempts = task.attempts + 1;
   } catch (error) {
     activity.finish("failed");
-    const cause =
-      controller.signal.reason instanceof LibrarySwitchInterrupt
-        ? controller.signal.reason
-        : error;
+    const cause = isLibrarySwitchInterrupt(controller.signal.reason)
+      ? controller.signal.reason
+      : error;
     const result = await handleFailure(task, cause);
     if (result.settled) {
       await completeQueueGenerationIfSettled(task.generationId);

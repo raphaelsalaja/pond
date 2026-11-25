@@ -12,6 +12,7 @@ let root: Root;
 
 beforeEach(() => {
   bridge.use({
+    machinePace: async () => ({ thermal: "nominal", onBattery: false }),
     query: {
       "settings.getPrefs": () =>
         PrefsSchema.parse({

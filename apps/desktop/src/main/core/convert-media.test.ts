@@ -186,10 +186,7 @@ describe.skipIf(!ffmpegPath)("professional still-image export", () => {
         "-f",
         "null",
         "-",
-      ]).then(
-        () => null,
-        (cause: unknown) => String(cause),
-      );
+      ]).then(() => null, String);
       exported.push({
         format,
         bytes: (await readFile(output)).byteLength,

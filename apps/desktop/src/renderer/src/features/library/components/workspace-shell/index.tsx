@@ -75,7 +75,7 @@ function Root({ className, style, ...props }: RootProps) {
   );
 }
 
-interface RailProps extends ComponentPropsWithoutRef<"div"> {}
+type RailProps = ComponentPropsWithoutRef<"div">;
 
 function Rail(props: RailProps) {
   const { sidebarHidden } = useShellLayout();
@@ -85,7 +85,7 @@ function Rail(props: RailProps) {
   return <Window.Rail {...props} />;
 }
 
-interface ColumnProps extends ComponentPropsWithoutRef<"aside"> {}
+type ColumnProps = ComponentPropsWithoutRef<"aside">;
 
 function Sidebar(props: ColumnProps) {
   const width = useSidebarWidth();

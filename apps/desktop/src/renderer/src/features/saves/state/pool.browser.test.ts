@@ -1,6 +1,6 @@
-import type { WireSave } from "@shared/wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { ensureSaves } from "../lib/ensure-saves";
 import { normalise } from "../lib/reconcile";
 import type { Save } from "../types";
@@ -283,9 +283,7 @@ describe("bounded pool", () => {
     bridge.use({
       query: {
         "saves.getMany": ({ ids }) => {
-          const fetched = ids.map((id) => ({ id, savedAt: 0, createdAt: 1 }));
-          /** SAFETY: ensureSaves parses rows through SavePatchesSchema, which fills every column these rows omit. */
-          return fetched as Array<WireSave>;
+          return ids.map((id) => wireSave({ id, savedAt: 0, createdAt: 1 }));
         },
       },
     });

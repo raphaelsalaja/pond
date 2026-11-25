@@ -112,6 +112,17 @@ function splitExample(
   };
 }
 
+/** The in-memory engine's answer, which the SQL compiler must agree with. */
+function matchingIds(query: Query, rows: Array<SaveLike>): Array<string> {
+  const ids: Array<string> = [];
+  for (const save of rows) {
+    if (matches(query, save)) {
+      ids.push(save.id);
+    }
+  }
+  return ids;
+}
+
 function fixture(rows: Array<SaveLike> = examples) {
   const db = new Database(":memory:");
   db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL, files TEXT, source TEXT, media_type TEXT, raw_json TEXT, raw_slim TEXT, favorite INTEGER NOT NULL DEFAULT 0);
@@ -270,10 +281,7 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
             .all(...compiled.params),
         );
       expect(rows.map((row) => row.id)).toEqual(
-        examples
-          .filter((save) => matches(query, save))
-          .map((save) => save.id)
-          .sort(),
+        matchingIds(query, examples).sort(),
       );
       expect(queryIsFullySqlSupported(query)).toBe(true);
     } finally {
@@ -305,9 +313,7 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
             .all(...compiled.params),
         );
       expect(found.map((row) => row.id)).toEqual([expected]);
-      expect(
-        rows.filter((save) => matches(query, save)).map((save) => save.id),
-      ).toEqual([expected]);
+      expect(matchingIds(query, rows)).toEqual([expected]);
     } finally {
       db.close();
     }

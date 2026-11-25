@@ -62,6 +62,9 @@ it("expands verified results and adds the actual Save to the composer without op
       new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
     ),
   );
+  await vi.waitFor(() => {
+    expect(document.querySelector('[aria-label="Add Reference 1"]')).toBeNull();
+  });
   await act(async () =>
     host
       .querySelector<HTMLButtonElement>('[aria-label="Preview Reference 6"]')

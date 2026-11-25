@@ -658,7 +658,8 @@ it("sends the heads-up before a tool call as its own message while the tool runs
   });
 
   expect(publishedBeforeSearch).toHaveLength(1);
-  expect(publishedBeforeSearch[0]).toContain("Looking now.\n[[next]]\n");
+  /** Deltas stream word by word; what matters is the whole heads-up landed before the tool ran. */
+  expect(publishedBeforeSearch[0]?.join("")).toBe("Looking now.\n[[next]]\n");
   expect(splitMessages(reply)).toEqual([
     "Looking now.",
     "Nothing matched posters.",

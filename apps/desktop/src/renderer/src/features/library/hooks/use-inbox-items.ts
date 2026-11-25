@@ -154,7 +154,7 @@ function useInboxEntries(): Array<Entry> {
         if (!save) {
           return "unloaded";
         }
-        return save.deletedAt != null ? "deleted" : (save.inboxState ?? null);
+        return save.deletedAt !== null ? "deleted" : (save.inboxState ?? null);
       }),
     { compare: shallow },
   );

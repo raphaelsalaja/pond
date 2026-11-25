@@ -1,14 +1,12 @@
-import type { WireSave } from "@shared/wire";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { createPoolBootstrap } from "./bootstrap";
 import { pool } from "./pool";
 
-/** SAFETY: the bootstrap parses rows through SavePatchesSchema, which fills every column these rows omit. */
-const fresh = { id: "new", savedAt: 20 } as WireSave;
-/** SAFETY: the bootstrap parses rows through SavePatchesSchema, which fills every column these rows omit. */
-const cold = { id: "cold-save", savedAt: 10 } as WireSave;
+const fresh = wireSave({ id: "new", savedAt: 20 });
+const cold = wireSave({ id: "cold-save", savedAt: 10 });
 const firstPage = {
   rows: [fresh],
   nextCursor: { savedAt: 20, id: "new" },

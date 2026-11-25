@@ -4,6 +4,7 @@ import type { AssistantSource } from "@shared/assistant";
 import {
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -72,7 +73,9 @@ export function ComposerEditor({
   const restoring = useRef(false);
   const seen = useRef(new Set(attachments.map((save) => save.id)));
   const attached = useRef(attachments);
-  attached.current = attachments;
+  useLayoutEffect(() => {
+    attached.current = attachments;
+  }, [attachments]);
 
   useImperativeHandle(
     ref,

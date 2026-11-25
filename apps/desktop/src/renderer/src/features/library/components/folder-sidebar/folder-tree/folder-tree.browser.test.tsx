@@ -23,6 +23,28 @@ function pointer(type: string, clientY: number) {
   return event;
 }
 
+/**
+ * dnd-kit swallows document clicks for a moment after a drop, to eat the
+ * click a real pointerup makes. Waits until a click reaches its target again
+ * so the next test's clicks aren't lost.
+ */
+async function clicksReachTargets(): Promise<void> {
+  const probe = document.createElement("button");
+  let reached = false;
+  probe.addEventListener("click", () => {
+    reached = true;
+  });
+  document.body.append(probe);
+  try {
+    await vi.waitFor(() => {
+      probe.click();
+      expect(reached).toBe(true);
+    });
+  } finally {
+    probe.remove();
+  }
+}
+
 function option(label: string) {
   const button = document.querySelector<HTMLButtonElement>(
     `button[aria-label="${label}"]`,
@@ -287,7 +309,11 @@ describe("folder sidebar tree", () => {
       "splitPosts",
       "trash",
     ]);
-    expect(transitions).toContain("transform 0ms linear");
+    // Chromium serializes dnd-kit's "transform 0ms linear" without the zero duration.
+    const instant = document.createElement("div").style;
+    instant.transition = "transform 0ms linear";
+    expect(transitions).toContain(instant.transition);
+    await clicksReachTargets();
   });
 
   it("opens Quick Access folder operations from its row", async () => {
@@ -348,7 +374,10 @@ describe("folder sidebar tree", () => {
       );
     });
     await act(async () => harness.menuItem("Customize Folder").click());
-    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+    // The searchable context menu is also a dialog, mounted while it animates out.
+    const dialog = document.querySelector<HTMLElement>(
+      '[role="dialog"][data-open]',
+    );
     if (!dialog) {
       throw new Error("Missing customization dialog");
     }

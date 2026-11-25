@@ -1,3 +1,4 @@
+import type { JsonObject } from "@pond/schema/json";
 import { expect, it } from "vitest";
 import { agentStreamRequest } from "../../../shared/assistant";
 import {
@@ -35,6 +36,14 @@ async function finishedReplyBody(reply: {
   error: string | undefined;
   status: "stopped" | "error";
 }) {
+  const metadata: JsonObject = {
+    elapsedMs: 2500,
+    stopped: reply.stopped,
+    steps: [{ id: "read", label: "Read Save", status: reply.status }],
+  };
+  if (reply.error !== undefined) {
+    metadata.error = reply.error;
+  }
   const response = await streamAgentTurn(
     {
       chatId: "chat",
@@ -59,12 +68,7 @@ async function finishedReplyBody(reply: {
           role: "assistant",
           content: "",
           createdAt: new Date(),
-          metadata: {
-            elapsedMs: 2500,
-            stopped: reply.stopped,
-            steps: [{ id: "read", label: "Read Save", status: reply.status }],
-            ...(reply.error === undefined ? {} : { error: reply.error }),
-          },
+          metadata,
         },
       ],
     },

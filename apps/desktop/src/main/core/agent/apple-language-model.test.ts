@@ -19,10 +19,12 @@ const tools: CallOptions["tools"] = [
   },
 ];
 
-function helper(reply: AppleReply): {
+interface RecordingHelper {
   run: typeof runAppleHelper;
   requests: Array<AppleRequest>;
-} {
+}
+
+function helper(reply: AppleReply): RecordingHelper {
   const requests: Array<AppleRequest> = [];
   return {
     requests,

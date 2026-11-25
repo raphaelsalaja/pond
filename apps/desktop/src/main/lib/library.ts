@@ -347,7 +347,7 @@ export async function* scanLibrary(root?: string): AsyncGenerator<{
   mtimeMs: number;
 }> {
   const savesDir = root ? join(root, "items") : resolvePaths().savesDir;
-  let ids: Array<string> = [];
+  let ids: Array<string>;
   try {
     ids = await listSaveFolderIds(savesDir);
   } catch {

@@ -1,5 +1,4 @@
 import { PrefsSchema } from "@pond/schema";
-import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
@@ -9,12 +8,8 @@ import { resultNavigation, selection } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/pool";
 import { requestQuickPreview } from "@/features/saves/state/quick-preview";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { HoverPreview } from "./";
-
-/** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
-function wire(row: Partial<WireSave>): WireSave {
-  return row as WireSave;
-}
 
 it("hydrates and previews the next logical save beyond loaded grid rows", async () => {
   const first = normalise({
@@ -30,7 +25,7 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
   }
   pool.upsert(first);
   const next = [
-    wire({
+    wireSave({
       id: "quick-next",
       source: "web",
       sourceId: "next",

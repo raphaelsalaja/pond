@@ -2,7 +2,11 @@ import { IconFolderBan, IconTagSlash } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import { isPredicateList } from "@pond/schema/filters/types";
-import type { FieldId, Predicate } from "@pond/schema/filters/types";
+import type {
+  FieldId,
+  Predicate,
+  PredicateValue,
+} from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
 import { useState } from "react";
 import { FIELD_ICONS } from "@/features/search/query";
@@ -47,6 +51,11 @@ function optionValue(option: FilterOption): string {
     ? option.predicate.value[0]
     : option.predicate.value;
   return String(raw).toLowerCase();
+}
+
+/** A `stringArray` predicate holds a list of strings or numbers, so only those become one-item lists. */
+function isListItem(value: PredicateValue): value is string | number {
+  return typeof value === "string" || typeof value === "number";
 }
 
 function sortKey(option: FilterOption): string {
@@ -110,7 +119,7 @@ export function ChoiceFilter({
           label: String(value),
           predicate: { field, operator: "eq", value },
         });
-      } else if (typeof value === "string" || typeof value === "number") {
+      } else if (isListItem(value)) {
         allOptions.push({
           label: String(value),
           predicate: { field, operator: "some", value: [value] },

@@ -55,10 +55,11 @@ it("skips the default color", async () => {
   expect(window.pond.query).not.toHaveBeenCalled();
 });
 
+const offline = async () => {
+  throw new Error("offline");
+};
+
 it("never rejects when the write fails", async () => {
-  const offline = async () => {
-    throw new Error("offline");
-  };
   bridge.use({
     query: { "settings.getPrefs": offline, "settings.setPrefs": offline },
   });

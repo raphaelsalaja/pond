@@ -1,4 +1,5 @@
 import { PrefsSchema } from "@pond/schema";
+import { isHTMLTag } from "@pond/ui/dom";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
@@ -70,6 +71,22 @@ function fileName(src: string | null | undefined) {
   return src?.split("?")[0]?.split("/").pop();
 }
 
+/**
+ * The test browser has no `pond://` handler, so every original fails to load. Stop those failures
+ * before React sees them, so `decode()` and `loadedmetadata` alone decide when media shows, as they
+ * do in the app where the protocol serves the files.
+ */
+function ignoreMediaLoadFailure(event: Event) {
+  const { target } = event;
+  if (
+    isHTMLTag(target, "img") ||
+    isHTMLTag(target, "video") ||
+    isHTMLTag(target, "audio")
+  ) {
+    event.stopImmediatePropagation();
+  }
+}
+
 async function findToolbar(host: HTMLElement, label: string): Promise<void> {
   await vi.waitFor(() => {
     if (!host.querySelector(`[role="toolbar"][aria-label="${label}"]`)) {
@@ -78,10 +95,23 @@ async function findToolbar(host: HTMLElement, label: string): Promise<void> {
   });
 }
 
+/** A `pond://` font never loads in the test browser, so the font original shows as its viewer or its decode fallback. */
+async function findFontViewer(host: HTMLElement): Promise<void> {
+  await vi.waitFor(() => {
+    if (
+      !host.querySelector(
+        '[role="toolbar"][aria-label="Font"], [role="toolbar"][aria-label="File fallback"]',
+      )
+    ) {
+      throw new Error("Missing font viewer");
+    }
+  });
+}
+
 describe("SaveViewer", () => {
   let host: HTMLDivElement;
   let root: Root;
-  /** jsdom has no image decoding, so tests settle `decode()` explicitly. */
+  /** `pond://` images never load in tests, so tests settle `decode()` explicitly. */
   let decodes: Array<{ src: string; resolve: () => void }> = [];
   let navigation: ViewerNavigation | undefined;
 
@@ -178,6 +208,7 @@ describe("SaveViewer", () => {
     });
 
   beforeEach(() => {
+    window.addEventListener("error", ignoreMediaLoadFailure, true);
     decodes = [];
     navigation = undefined;
     Object.defineProperty(HTMLImageElement.prototype, "decode", {
@@ -187,27 +218,6 @@ describe("SaveViewer", () => {
           decodes.push({ src: this.src, resolve });
         });
       },
-    });
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("matchMedia", () => ({ matches: true }));
-    vi.stubGlobal(
-      "FontFace",
-      class {
-        async load() {
-          return this;
-        }
-      },
-    );
-    Object.defineProperty(document, "fonts", {
-      configurable: true,
-      value: { add() {}, delete() {} },
     });
     bridge.use({
       openSaveFile: async () => ({ ok: true }),
@@ -226,11 +236,10 @@ describe("SaveViewer", () => {
 
   afterEach(async () => {
     await act(async () => root.unmount());
+    window.removeEventListener("error", ignoreMediaLoadFailure, true);
     Reflect.deleteProperty(HTMLImageElement.prototype, "decode");
     host.remove();
     resultNavigation.setSource({ ids: [] });
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
   });
 
   it("navigates every original file in a mixed-format Save", async () => {
@@ -255,7 +264,7 @@ describe("SaveViewer", () => {
     expect(navigation?.index).toBe(1);
 
     await next();
-    await findToolbar(host, "Font");
+    await findFontViewer(host);
     expect(navigation?.index).toBe(2);
     expect(host.querySelectorAll("[data-viewer-root]")).toHaveLength(1);
     expect(host.querySelector('[aria-label="Next Slide"]')).toBeNull();
@@ -276,7 +285,7 @@ describe("SaveViewer", () => {
     await next();
     expect(host.querySelector('img[alt="Mixed viewer"]')).not.toBeNull();
     await next();
-    await findToolbar(host, "Font");
+    await findFontViewer(host);
   });
 
   describe("stepping between images", () => {
@@ -326,13 +335,6 @@ describe("SaveViewer", () => {
   });
 
   describe("stepping between Saves", () => {
-    beforeEach(() => {
-      vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
-      vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(
-        () => {},
-      );
-    });
-
     it("never lets an earlier Save's decode reveal a newer one", async () => {
       await show(imageSave("first"));
       await decodeFile("first.jpg");
@@ -403,8 +405,6 @@ describe("SaveViewer", () => {
   });
 
   it("offers Download Video until the video file arrives", async () => {
-    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
-    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
     bridge.use({
       query: { "saves.downloadVideo": () => ({ ok: true, queued: 1 }) },
     });
@@ -441,8 +441,6 @@ describe("SaveViewer", () => {
   });
 
   it("keeps zoom controls from covering the undownloaded video notice", async () => {
-    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
-    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
     const poster = file("poster.jpg", "poster", "image/jpeg");
     const save: Save = {
       ...mixedSave([poster]),

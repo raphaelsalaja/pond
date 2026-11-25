@@ -103,6 +103,7 @@ beforeEach(async () => {
   bulkEdits.length = 0;
   pageQueries = 0;
   bridge.use({
+    machinePace: async () => ({ thermal: "nominal", onBattery: false }),
     undo: async () => ({
       ok: true,
       step: null,

@@ -456,6 +456,10 @@ it("supports command defaults through the shared host", async () => {
   expect(document.querySelector('[role="alertdialog"]')).not.toBeNull();
   await act(async () => button("Confirm").click());
   expect(onConfirm).toHaveBeenCalledOnce();
+  /** The confirmation stays mounted through its exit animation; its Confirm button must be gone first. */
+  await vi.waitFor(() => {
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+  });
   await act(async () =>
     Dialog.prompt({ title: "Enter value", initialValue: "Value", onConfirm }),
   );

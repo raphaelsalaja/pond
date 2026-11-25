@@ -27,5 +27,4 @@ export function createPoolBootstrap() {
   });
 }
 
-export const { bootPool, pagingStore, loadNextPage, hydrateFullPool } =
-  createPoolBootstrap();
+export const { bootPool, pagingStore } = createPoolBootstrap();

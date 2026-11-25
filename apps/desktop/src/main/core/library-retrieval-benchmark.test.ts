@@ -303,11 +303,14 @@ for (const size of [1000, 10_000, 50_000]) {
                 const observed = await measure[name]();
                 expect(observed.ids).toEqual(expectedIds[name]);
                 expect(observed.fallback).toBe(false);
-                expect(observed.distances).toEqual(
-                  expectedDistances[name].map((distance) =>
-                    expect.closeTo(distance, 6),
-                  ),
+                expect(observed.distances).toHaveLength(
+                  expectedDistances[name].length,
                 );
+                for (const [index, distance] of expectedDistances[
+                  name
+                ].entries()) {
+                  expect(observed.distances[index]).toBeCloseTo(distance, 6);
+                }
                 if (repetition >= warmups) {
                   timings[name].push(observed.elapsed);
                 }

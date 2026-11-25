@@ -2,6 +2,7 @@ import { IconFile } from "@pond/icons";
 import { Button } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
+import log from "electron-log/renderer";
 import type { ComponentProps, CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -33,7 +34,7 @@ export function useSourceCovers(ids: Array<string>) {
     const parsed: unknown = JSON.parse(key);
     if (key !== "[]" && isIdList(parsed)) {
       void ensureSaves(parsed).catch((cause: unknown) => {
-        console.warn("[pond fish] loading source covers failed", cause);
+        log.warn("[pond fish] loading source covers failed", cause);
       });
     }
   }, [key]);

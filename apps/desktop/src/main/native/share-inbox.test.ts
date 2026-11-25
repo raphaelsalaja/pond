@@ -14,6 +14,10 @@ async function inbox() {
   return { root, drop, file };
 }
 
+async function importNoFiles() {
+  return { ok: false as const, error: "no_files" };
+}
+
 describe("inboxEntries", () => {
   it("keeps files inside the inbox", async () => {
     const { root, drop, file } = await inbox();
@@ -54,12 +58,8 @@ describe("importSharedFiles", () => {
 
   it("removes drop folders when the import fails", async () => {
     const { root, drop, file } = await inbox();
-    const importFiles = async () => ({
-      ok: false as const,
-      error: "no_files",
-    });
     await expect(
-      importSharedFiles([file], { root, importFiles }),
+      importSharedFiles([file], { root, importFiles: importNoFiles }),
     ).rejects.toThrow("no_files");
     expect(existsSync(drop)).toBe(false);
   });

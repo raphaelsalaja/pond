@@ -183,7 +183,9 @@ async function inPageBookmarksApi(
       lastNudge = Date.now();
       try {
         window.scrollBy({ top: 2000, behavior: "instant" });
-      } catch {}
+      } catch {
+        /** The nudge only hurries the page; the wait loop still times out without it. */
+      }
     }
     await sleep(250);
     template = getRequest();

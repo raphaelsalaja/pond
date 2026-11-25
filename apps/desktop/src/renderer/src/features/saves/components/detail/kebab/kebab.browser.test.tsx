@@ -61,7 +61,9 @@ describe("KebabMenu", () => {
 
     await act(async () => {
       trigger.click();
-      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve());
+      });
     });
     expect(document.body.textContent).not.toContain("Open Save");
     expect(document.body.textContent).toContain("Open With");

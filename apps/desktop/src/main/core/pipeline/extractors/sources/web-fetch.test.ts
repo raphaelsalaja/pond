@@ -13,6 +13,31 @@ function networkError(code: string) {
   return Object.assign(new TypeError("fetch failed"), { cause });
 }
 
+async function respondMissing() {
+  return htmlResponse("", 404);
+}
+
+async function respondMarkdown() {
+  return new Response("# Design Principles\n\nSome **bold** text.", {
+    status: 200,
+    headers: { "content-type": "text/markdown; charset=utf-8" },
+  });
+}
+
+async function respondPlainMarkdown() {
+  return new Response("# Readme", {
+    status: 200,
+    headers: { "content-type": "text/plain; charset=utf-8" },
+  });
+}
+
+async function respondPlainText() {
+  return new Response("line one\nline <two>", {
+    status: 200,
+    headers: { "content-type": "text/plain; charset=utf-8" },
+  });
+}
+
 describe("fetchHtml", () => {
   it("returns the page markup when the request succeeds", async () => {
     await expect(
@@ -48,23 +73,19 @@ describe("fetchHtml", () => {
       fetchHtml("https://example.com/", async () => htmlResponse("", 503)),
     ).rejects.toThrow("web fetch 503");
 
-    const missing = async () => htmlResponse("", 404);
-    await expect(fetchHtml("https://example.com/", missing)).rejects.toThrow(
-      "web fetch 404",
-    );
     await expect(
-      fetchHtml("https://example.com/", missing),
+      fetchHtml("https://example.com/", respondMissing),
+    ).rejects.toThrow("web fetch 404");
+    await expect(
+      fetchHtml("https://example.com/", respondMissing),
     ).rejects.not.toThrow("web fetch failed");
   });
 
   it("converts a markdown document instead of rejecting it", async () => {
-    const respond = async () =>
-      new Response("# Design Principles\n\nSome **bold** text.", {
-        status: 200,
-        headers: { "content-type": "text/markdown; charset=utf-8" },
-      });
-
-    const result = await fetchHtml("https://vercel.com/design.md", respond);
+    const result = await fetchHtml(
+      "https://vercel.com/design.md",
+      respondMarkdown,
+    );
     expect(result?.document?.format).toBe("markdown");
     expect(result?.document?.title).toBe("Design Principles");
     expect(result?.document?.bodyHtml).toContain("<h1>");
@@ -73,24 +94,18 @@ describe("fetchHtml", () => {
   });
 
   it("parses markdown served as plain text when the URL names it", async () => {
-    const respond = async () =>
-      new Response("# Readme", {
-        status: 200,
-        headers: { "content-type": "text/plain; charset=utf-8" },
-      });
-
-    const result = await fetchHtml("https://example.com/readme.md", respond);
+    const result = await fetchHtml(
+      "https://example.com/readme.md",
+      respondPlainMarkdown,
+    );
     expect(result?.document?.format).toBe("markdown");
   });
 
   it("wraps plain text in a pre block and titles it from the filename", async () => {
-    const respond = async () =>
-      new Response("line one\nline <two>", {
-        status: 200,
-        headers: { "content-type": "text/plain; charset=utf-8" },
-      });
-
-    const result = await fetchHtml("https://example.com/llms.txt", respond);
+    const result = await fetchHtml(
+      "https://example.com/llms.txt",
+      respondPlainText,
+    );
     expect(result?.document?.format).toBe("plain");
     expect(result?.document?.title).toBe("llms");
     expect(result?.document?.bodyHtml).toBe(

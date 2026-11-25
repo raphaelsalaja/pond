@@ -3,7 +3,7 @@ import { Button } from "@pond/ui";
 import { Message } from "@pond/ui/message";
 import type { AssistantChange } from "@shared/assistant";
 import { Fragment, useState } from "react";
-import type { ReactNode } from "react";
+import type { ReactElement } from "react";
 import { selectLibraryNav } from "@/features/library";
 import { openSave } from "@/features/saves/navigation";
 import { InlineReference, SaveReference } from "../../save-preview";
@@ -17,11 +17,10 @@ const SHOWN = 3;
 /** From this many changes the proposal reads better as separate messages than one long sentence. */
 const SEPARATE_FROM = 3;
 
-/** Joins items the way the sentence says them: "a", "a and b", "a, b and c". */
-function spoken(items: ReadonlyArray<ReactNode>): ReactNode {
+/** Joins keyed items the way the sentence says them: "a", "a and b", "a, b and c". */
+function spoken(items: ReadonlyArray<ReactElement>) {
   return items.map((item, index) => (
-    // biome-ignore lint/suspicious/noArrayIndexKey: the items never reorder within a render.
-    <Fragment key={index}>
+    <Fragment key={item.key}>
       {index === 0 ? null : index === items.length - 1 ? " and " : ", "}
       {item}
     </Fragment>
@@ -99,10 +98,39 @@ function Segment({ segment }: { segment: ProposalSegment }) {
   }
 }
 
+function segmentKey(segment: ProposalSegment): string {
+  switch (segment.kind) {
+    case "text":
+    case "value":
+      return `${segment.kind}:${segment.text}`;
+    case "places":
+      return `${segment.place}:${segment.items.map((item) => item.id).join(",")}`;
+    case "saves":
+      return `saves:${segment.changes.map((change) => change.id).join(",")}`;
+  }
+}
+
+function clauseKey(clause: ProposalClause): string {
+  return clause.map(segmentKey).join("|");
+}
+
+/** Keys items by their content and numbers repeats, so keys follow the items rather than their positions. */
+function byContent<T>(
+  items: ReadonlyArray<T>,
+  keyOf: (item: T) => string,
+): Array<{ key: string; item: T }> {
+  const seen = new Map<string, number>();
+  return items.map((item) => {
+    const base = keyOf(item);
+    const repeat = seen.get(base) ?? 0;
+    seen.set(base, repeat + 1);
+    return { key: repeat ? `${base}#${repeat}` : base, item };
+  });
+}
+
 function Clause({ clause }: { clause: ProposalClause }) {
-  return clause.map((segment, index) => (
-    // biome-ignore lint/suspicious/noArrayIndexKey: a clause's segments are fixed once built.
-    <Segment key={index} segment={segment} />
+  return byContent(clause, segmentKey).map(({ key, item }) => (
+    <Segment key={key} segment={item} />
   ));
 }
 
@@ -118,11 +146,10 @@ export function Proposal({
   if (clauses.length < SEPARATE_FROM) {
     return (
       <Message.Bubble className={styles.proposal}>
-        I'll{" "}
+        I&apos;ll{" "}
         {spoken(
-          clauses.map((clause, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: clauses keep the order the fish proposed them in.
-            <Clause key={index} clause={clause} />
+          byContent(clauses, clauseKey).map(({ key, item }) => (
+            <Clause key={key} clause={item} />
           )),
         )}
         .
@@ -133,13 +160,12 @@ export function Proposal({
   return (
     <>
       <Message.Bubble className={styles.proposal}>{lead}</Message.Bubble>
-      {items.map((clause, index) => (
+      {byContent(items, clauseKey).map(({ key, item }) => (
         <Message.Bubble
-          // biome-ignore lint/suspicious/noArrayIndexKey: clauses keep the order the fish proposed them in.
-          key={index}
+          key={key}
           className={`${styles.proposal} ${styles.item}`}
         >
-          <Clause clause={clause} />
+          <Clause clause={item} />
         </Message.Bubble>
       ))}
     </>

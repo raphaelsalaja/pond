@@ -2,7 +2,6 @@ import "@/app/effects/save-library-bridge";
 import { PrefsSchema } from "@pond/schema";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { mediaEmbeddingVersion } from "@shared/embeddings";
-import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
@@ -19,23 +18,23 @@ import { pool } from "@/features/saves/state/pool";
 import { setSaveViewerFileIndex } from "@/features/saves/state/save-viewer";
 import { primarySelection } from "@/features/saves/state/selection";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { SaveInspector } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
 let stopViewUrlSync: (() => void) | undefined;
 
-/** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
 const coldRows = [
-  {
+  wireSave({
     id: "cold",
     notes: "Other",
     source: "local",
     url: "https://other.test",
     tags: ["Shared"],
     fileSize: 2048,
-  },
-] as Array<WireSave>;
+  }),
+];
 
 function queryCalls() {
   return vi.mocked(window.pond.query).mock.calls;
@@ -717,9 +716,8 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
     throw new Error("Missing Save fixture");
   }
   pool.upsert({ ...current, clipModel: mediaEmbeddingVersion() });
-  /** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
   const relatedRows = [
-    {
+    wireSave({
       id: "related",
       title: "Related Save",
       source: "local",
@@ -734,8 +732,8 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
           size: 1024,
         },
       ],
-    },
-  ] as Array<WireSave>;
+    }),
+  ];
   bridge.use({
     query: {
       "saves.related": () => ({
@@ -744,6 +742,8 @@ it("loads Related Saves only when its tab opens and opens a selected Save", asyn
       "saves.getMany": () => relatedRows,
       "saves.rawJson": ({ id }) => ({ id, rawJson: null }),
     },
+    /** The related Save's image card paces its motion by the host's thermal state. */
+    machinePace: async () => ({ thermal: "nominal", onBattery: false }),
   });
 
   await act(async () => root.render(<SaveInspector saveId="a" />));

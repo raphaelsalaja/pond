@@ -133,7 +133,7 @@ async function readBodyCapped(res: Response): Promise<string> {
     }
     total += value?.byteLength ?? 0;
     if (total > MAX_BODY_BYTES) {
-      void reader.cancel().catch(() => {});
+      await reader.cancel();
       throw new TerminalError(
         `web fetch body exceeded ${MAX_BODY_BYTES} bytes`,
       );

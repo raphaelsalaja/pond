@@ -1,7 +1,7 @@
-import type { WireSave } from "@shared/wire";
 import { describe, expect, it, vi } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { applyActionCoalesced } from "./sync-coalesce";
 
 /** Coalesced actions flush on the next animation frame, ahead of any callback registered after them. */
@@ -65,7 +65,7 @@ describe("applyActionCoalesced", () => {
       nextRunAt: 0,
       updatedAt: 1,
     };
-    const row = {
+    const row = wireSave({
       id: "known-3",
       url: "https://example.com/gone",
       status: "failed",
@@ -76,9 +76,8 @@ describe("applyActionCoalesced", () => {
           lastError: "TerminalError: web fetch 404",
         },
       ],
-    };
-    /** SAFETY: reloadSaves parses rows through SavePatchesSchema, which fills every column this row omits. */
-    bridge.use({ query: { "saves.getMany": () => [row as WireSave] } });
+    });
+    bridge.use({ query: { "saves.getMany": () => [row] } });
     applyActionCoalesced({
       modelName: "save",
       modelId: "known-3",

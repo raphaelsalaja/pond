@@ -42,17 +42,19 @@ function fakeClient(tools: Array<Omit<McpTool, "inputSchema">>) {
   };
 }
 
+interface ManagerState {
+  servers: Array<FishMcpServerConfig>;
+  secrets: Record<string, string>;
+  connect: ManagerDeps["connect"];
+  now: number;
+}
+
 function manager(
   client = fakeClient([
     { name: "list_issues", annotations: { readOnlyHint: true } },
   ]),
 ) {
-  const state: {
-    servers: Array<FishMcpServerConfig>;
-    secrets: Record<string, string>;
-    connect: ManagerDeps["connect"];
-    now: number;
-  } = {
+  const state: ManagerState = {
     servers: [server],
     secrets: {},
     connect: async () => client.connection,

@@ -185,6 +185,10 @@ describe("sidebar background menu", () => {
     }
     await rightClick(scroll);
     await act(async () => harness.menuItem("New Smart Folder").click());
+    /** The background menu animates out; it must be gone before the field's own menu is checked. */
+    await vi.waitFor(() => {
+      expect(hasMenuItem("Sections")).toBe(false);
+    });
     const field = document.querySelector('[role="dialog"] input');
     if (!field) {
       throw new Error("Missing Smart Folder editor field");

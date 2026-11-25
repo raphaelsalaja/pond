@@ -6,7 +6,6 @@ import type {
   DuplicateScan,
 } from "@shared/duplicate-contracts";
 import type { QueryInput } from "@shared/query-contracts";
-import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import type { ReactElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -14,6 +13,7 @@ import { expect, it } from "vitest";
 import { normalise } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { DuplicateReview } from "./";
 
 function row(id: string) {
@@ -86,11 +86,6 @@ function scanOf(
   };
 }
 
-/** SAFETY: the pool reads only the fields `row()` fills, and `normalise` defaults the rest. */
-function wire(fields: Partial<WireSave>): WireSave {
-  return fields as WireSave;
-}
-
 function setup(
   groups: Array<{ relation: DuplicateRelation; ids: Array<string> }>,
   pending = 0,
@@ -106,7 +101,7 @@ function setup(
   bridge.use({
     query: {
       "saves.findDuplicates": () => scanOf(groups, pending),
-      "saves.getMany": ({ ids }) => ids.map((id) => wire(row(id))),
+      "saves.getMany": ({ ids }) => ids.map((id) => wireSave(row(id))),
       "settings.getPrefs": () => PrefsSchema.parse({}),
       "saves.dismissDuplicates": (input) => {
         dismissals.push(input);

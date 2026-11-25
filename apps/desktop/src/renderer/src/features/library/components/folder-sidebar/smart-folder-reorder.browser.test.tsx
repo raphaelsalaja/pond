@@ -47,13 +47,13 @@ describe("smart folder reordering", () => {
     if (!alpha || !beta) {
       throw new Error("Missing smart folder rows");
     }
+    const grab = beta.top + beta.height / 2;
     await act(async () => {
-      harness
-        .button("Beta")
-        .dispatchEvent(pointer("pointerdown", beta.top + beta.height / 2));
+      harness.button("Beta").dispatchEvent(pointer("pointerdown", grab));
     });
+    // Moves past the sensor's 4px activation distance so the drag starts.
     await act(async () => {
-      document.dispatchEvent(pointer("pointermove", beta.top + 10));
+      document.dispatchEvent(pointer("pointermove", grab - 10));
     });
     await act(async () => {
       document.dispatchEvent(pointer("pointermove", alpha.top + 4));
