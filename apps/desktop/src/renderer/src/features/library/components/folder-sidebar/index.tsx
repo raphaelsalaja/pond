@@ -21,7 +21,7 @@ import {
   useEditingFolderId,
   useFolders,
 } from "@/features/library/state/folders";
-import { lastGridHref } from "@/features/library/state/last-grid";
+import { lastGridHrefOutsideInbox } from "@/features/library/state/last-grid";
 import {
   type LibraryNav,
   libraryChrome,
@@ -165,7 +165,7 @@ function useSidebarNav() {
         : panel;
 
   function backToLibrary() {
-    getAppRouter()?.history.push(lastGridHref());
+    getAppRouter()?.history.push(lastGridHrefOutsideInbox());
   }
 
   function pickSection(next: RailSection) {
