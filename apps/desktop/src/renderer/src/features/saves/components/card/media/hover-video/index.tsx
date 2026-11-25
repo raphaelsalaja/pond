@@ -131,12 +131,21 @@ export function HoverVideo({
     setHoverPrimed(true);
   }, [hoverEnabled]);
 
-  const onPointerEnter = useCallback(() => {
+  const armHover = useCallback(() => {
     if (!hoverEnabled) return;
     window.clearTimeout(releaseTimer.current);
     window.clearTimeout(hoverTimer.current);
-    hoverTimer.current = window.setTimeout(activate, HOVER_DELAY_MS);
+    hoverTimer.current = window.setTimeout(() => {
+      hoverTimer.current = undefined;
+      activate();
+    }, HOVER_DELAY_MS);
   }, [activate, hoverEnabled]);
+
+  /** Enter fires once per hover, so a vetoed activation or a remount under a resting pointer never re-arms; movement does. */
+  const onPointerMove = useCallback(() => {
+    if (active || hoverTimer.current !== undefined) return;
+    armHover();
+  }, [active, armHover]);
 
   const onLeave = useCallback(() => {
     window.clearTimeout(hoverTimer.current);
@@ -212,7 +221,8 @@ export function HoverVideo({
         data-ready={videoReady ? "true" : undefined}
         data-resting={needsRestingVideo && videoReady ? "true" : undefined}
         aria-label={label}
-        onMouseEnter={onPointerEnter}
+        onMouseEnter={armHover}
+        onMouseMove={onPointerMove}
         onMouseLeave={onLeave}
         onFocus={activate}
         onBlur={onLeave}
