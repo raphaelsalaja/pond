@@ -1,6 +1,99 @@
-.field {
+.section {
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-sm);
   min-width: 0;
+}
+
+.header {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  justify-content: space-between;
+  height: var(--ds-leading-small);
+  padding-inline: var(--ds-space-lg) var(--ds-space-xs);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  line-height: var(--ds-leading-small);
+  color: var(--ds-foreground-secondary);
+}
+
+/* The 24px action overhangs the 18px heading row, so the heading-to-content gap stays put. */
+.header > :not(.title) {
+  margin-block: -3px;
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-md);
+}
+
+.chip {
+  display: inline-flex;
+  flex: none;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  height: var(--ds-size-xs);
+  padding-inline: calc(var(--ds-space-md) + var(--ds-space-2xs))
+    var(--ds-space-xs);
+  overflow: hidden;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-strong);
+  line-height: var(--ds-leading-mini);
+  color: var(--ds-foreground-primary);
+  white-space: nowrap;
+  background: var(--ds-background-primary);
+  border-radius: var(--ds-radius-full);
+  box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
+}
+
+.remove {
+  --button-height-xs: 16px;
+  --button-icon-size: 12px;
+}
+
+.label {
+  display: inline-flex;
+  gap: var(--ds-space-xs);
+  align-items: baseline;
+  min-width: 0;
+  max-width: 180px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.crumb,
+.separator {
+  flex: none;
+  color: var(--ds-foreground-tertiary);
+}
+
+.crumb {
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popup {
+  --ds-popup-min-width: 260px;
+  width: min(280px, var(--available-width));
+}
+
+.menu {
+  max-height: min(360px, calc(var(--available-height) - 72px));
 }

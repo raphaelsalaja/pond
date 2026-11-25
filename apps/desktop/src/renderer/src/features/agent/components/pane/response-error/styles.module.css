@@ -1,5 +1,4 @@
+/* The card stands a step apart from the reply above it and anything after it. */
 .notice {
-  width: 100%;
-  max-width: var(--message-max-width, 420px);
   margin-block: var(--ds-space-md);
 }

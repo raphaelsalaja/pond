@@ -6,6 +6,10 @@ For PR bodies, screenshots, and clips, read [pull requests](.github/PULL_REQUEST
 
 For module moves, state ownership, or main/preload/renderer interfaces, read [desktop architecture](apps/desktop/ARCHITECTURE.md). For domain naming, use [Domain language](#domain-language) below. For UI behavior, read [design principles](apps/desktop/src/renderer/src/PRINCIPLES.md).
 
+## UI SDK
+
+UI SDK is used only inside `packages/ui`, and Pond styles its parts itself, so its default `web.css` is not imported. Before using UI SDK, follow the `ui-sdk` skill if it's installed, and read `packages/ui/node_modules/@ui-sdk/react/docs/llms.txt`. To build a new component, also search `packages/ui/node_modules/@ui-sdk/react/docs/core.md` by heading, and read `rendering.md` next to it.
+
 ## Shared development runtime
 
 Long-running development and watch processes are shared, user-owned infrastructure.
