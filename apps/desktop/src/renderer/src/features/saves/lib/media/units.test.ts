@@ -68,8 +68,25 @@ describe("buildMediaUnits video posters", () => {
         isVideo: true,
         posterUrl: "pond://reel/media-1.jpg?v=abcdef123456",
         posterKey: "media-1.jpg",
+        posterIsCrossFile: true,
       },
     ]);
+  });
+
+  it("marks a platform poster as cross-file but not a first-frame extraction", () => {
+    const files = [
+      file("video", "video-1.mp4", "video/mp4"),
+      file("poster", "poster-1.jpg", "image/jpeg"),
+    ];
+    const youtube = buildMediaUnits(
+      makeSave({ id: "short", source: "youtube", files }),
+    );
+    expect(youtube[0]?.posterIsCrossFile).toBe(true);
+
+    const twitter = buildMediaUnits(
+      makeSave({ id: "tweet", source: "twitter", files }),
+    );
+    expect(twitter[0]?.posterIsCrossFile).toBeUndefined();
   });
 
   it("shows every file of a local gallery with one video and one image", () => {

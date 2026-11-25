@@ -6,6 +6,7 @@ import {
   typeLabelForPath,
 } from "@shared/file-format";
 import { isVideoFile } from "@shared/media-index";
+import { usesPlatformPoster } from "@shared/poster-policy";
 import {
   ARTICLE_KIND,
   isAuxiliaryKind,
@@ -50,6 +51,8 @@ export interface MediaUnit {
   isVideo: boolean;
   posterUrl?: string;
   posterKey?: string;
+  /** The poster is not derived from the video file: a platform cover or the post's separate cover image. Viewer underlays must not paint it. */
+  posterIsCrossFile?: boolean;
   requiresGeneratedPreview?: boolean;
 }
 
@@ -88,6 +91,12 @@ export function buildMediaUnits(
     : [];
 }
 
+/** A poster file is same-file only when it was extracted from the video's first frame; a cover image media file never is. */
+function posterIsCrossFile(poster: SaveFile, source: Save["source"]): boolean {
+  if (poster.kind !== POSTER_KIND) return true;
+  return usesPlatformPoster(source);
+}
+
 /** The Save's own photos and videos, without the rendered post card that stands in for text-only posts. */
 export function buildOriginalMediaUnits(save: Save): MediaUnit[] {
   const allFiles = save.files ?? [];
@@ -117,6 +126,9 @@ export function buildOriginalMediaUnits(save: Save): MediaUnit[] {
     if (poster) {
       unit.posterUrl = buildPondUrl(save.id, poster);
       unit.posterKey = poster.path;
+      if (posterIsCrossFile(poster, save.source)) {
+        unit.posterIsCrossFile = true;
+      }
     }
     return [unit];
   }
@@ -134,6 +146,9 @@ export function buildOriginalMediaUnits(save: Save): MediaUnit[] {
       if (poster) {
         unit.posterUrl = buildPondUrl(save.id, poster);
         unit.posterKey = poster.path;
+        if (posterIsCrossFile(poster, save.source)) {
+          unit.posterIsCrossFile = true;
+        }
       }
       units.push(unit);
       videoSeen++;
