@@ -4,6 +4,9 @@ import { convertTextDocument, type TextDocument } from "./text-document";
 
 const FETCH_TIMEOUT_MS = 15_000;
 
+/** Text documents and pages are metadata inputs, not media; anything larger is a download the pipeline never asked for. */
+const MAX_BODY_BYTES = 10 * 1024 * 1024;
+
 /**
  * undici caps response headers at 16 KiB. YouTube sends more than that, so the
  * plain fetch fails with UND_ERR_HEADERS_OVERFLOW before any body arrives. A
@@ -57,7 +60,10 @@ export async function fetchHtml(url: string): Promise<FetchHtmlSuccess | null> {
     throw new TerminalError(`web fetch non-html content-type: ${contentType}`);
   }
 
-  const text = await res.text();
+  const length = Number(res.headers.get("content-length") ?? 0);
+  if (length > MAX_BODY_BYTES)
+    throw new TerminalError(`web fetch body too large: ${length} bytes`);
+  const text = await readBodyCapped(res);
   if (!text.trim()) throw new TerminalError("web fetch returned empty body");
   if (format) {
     const document = convertTextDocument(text, format, url);
@@ -92,6 +98,33 @@ function wrapDocument(document: TextDocument): string {
     document.bodyHtml,
     "</body></html>",
   ].join("\n");
+}
+
+/** Content-Length is advisory and often absent, so the body is counted as it streams. */
+async function readBodyCapped(res: Response): Promise<string> {
+  if (!res.body) return res.text();
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value?.byteLength ?? 0;
+    if (total > MAX_BODY_BYTES) {
+      void reader.cancel().catch(() => {});
+      throw new TerminalError(
+        `web fetch body exceeded ${MAX_BODY_BYTES} bytes`,
+      );
+    }
+    if (value) chunks.push(value);
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(body);
 }
 
 function assertPageStatus(status: number, label: string): void {
