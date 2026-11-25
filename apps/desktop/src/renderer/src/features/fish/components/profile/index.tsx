@@ -2,10 +2,8 @@ import { IconPlus, IconTag } from "@pond/icons";
 import { Button } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { useEffect, useId, useRef, useState } from "react";
-import {
-  type InspectorDrafts,
-  InspectorTextField,
-} from "@/shared/components/inspector-text-field";
+import { InspectorTextField } from "@/shared/components/inspector-text-field";
+import type { InspectorDrafts } from "@/shared/components/inspector-text-field";
 import { FolderIcon } from "@/shared/lib/folder-icons";
 import { updateFish } from "../../lib/menu";
 import { fish as fishStore, useFish, useFishEditingId } from "../../state/fish";
@@ -56,7 +54,9 @@ export function FishProfile({
     return () => cancelAnimationFrame(frame);
   }, [editingId, fishId]);
 
-  if (!target) return null;
+  if (!target) {
+    return null;
+  }
   return (
     <section className={styles.root} aria-label={target.name}>
       <FishPane.Header onClose={onClose} />
@@ -76,7 +76,9 @@ export function FishProfile({
             maxLength={40}
             commit={async (value) => {
               const name = value.trim();
-              if (!name) throw new Error("Give this fish a name.");
+              if (!name) {
+                throw new Error("Give this fish a name.");
+              }
               await fishStore.update(target.id, { name });
             }}
           />

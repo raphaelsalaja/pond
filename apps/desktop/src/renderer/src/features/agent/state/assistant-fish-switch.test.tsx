@@ -9,14 +9,14 @@ import { assistant } from "./assistant";
 import {
   agentStreamBridge,
   createAssistantHarness,
-  type StreamReply,
 } from "./assistant.test-harness";
+import type { StreamReply } from "./assistant.test-harness";
 
 it("opens a clean chat for a fish spawned while another fish replies", async () => {
   const first = Promise.withResolvers<StreamReply>();
-  const requests: AgentStreamRequest[] = [];
+  const requests: Array<AgentStreamRequest> = [];
   let emit: ((chunk: AssistantChunk) => void) | null = null;
-  const koiMessages: AssistantMessage[] = [
+  const koiMessages: Array<AssistantMessage> = [
     {
       id: "koi-reply",
       chatId: "koi-latest",
@@ -27,13 +27,17 @@ it("opens a clean chat for a fish spawned while another fish replies", async () 
   ];
   const query = vi.fn(
     (name: string, args: { fishId?: string; chatId?: string }) => {
-      if (name === "agent.chats")
+      if (name === "agent.chats") {
         return Promise.resolve(
           args.fishId === "koi" ? [{ id: "koi-latest", title: "Latest" }] : [],
         );
-      if (name === "agent.messages")
+      }
+      if (name === "agent.messages") {
         return Promise.resolve(args.chatId === "koi-latest" ? koiMessages : []);
-      if (name === "agent.newChat") return Promise.resolve({ id: "guppy-new" });
+      }
+      if (name === "agent.newChat") {
+        return Promise.resolve({ id: "guppy-new" });
+      }
       return Promise.resolve([]);
     },
   );

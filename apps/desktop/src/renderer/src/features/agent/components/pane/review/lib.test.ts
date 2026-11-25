@@ -4,7 +4,6 @@ import {
   changeSummary,
   chipDiff,
   groupChanges,
-  type ProposalClause,
   proposalClauses,
   proposalList,
   reviewOutcome,
@@ -14,6 +13,7 @@ import {
   shortTitle,
   summaryParts,
 } from "./lib";
+import type { ProposalClause } from "./lib";
 
 function change(
   status: AssistantChange["status"],
@@ -151,7 +151,11 @@ describe("reviewOutcome", () => {
 });
 
 describe("groupChanges", () => {
-  const tag = (id: string, after: string[], before: string[] = []) => ({
+  const tag = (
+    id: string,
+    after: Array<string>,
+    before: Array<string> = [],
+  ) => ({
     ...change("pending"),
     id,
     saveId: id,
@@ -211,7 +215,11 @@ describe("proposalClauses", () => {
             : segment.text,
       )
       .join("");
-  const tags = (id: string, after: string[], before: string[] = []) => ({
+  const tags = (
+    id: string,
+    after: Array<string>,
+    before: Array<string> = [],
+  ) => ({
     ...change("pending"),
     id,
     saveId: id,
@@ -247,9 +255,8 @@ describe("proposalClauses", () => {
       after,
     });
     expect(
-      proposalClauses(
-        [folders, rename("r", "One"), rename("s", "Two")],
-        (id) => (id === "1" ? "Inbox" : "Cabin"),
+      proposalClauses([folders, rename("r", "One"), rename("s", "Two")], (id) =>
+        id === "1" ? "Inbox" : "Cabin",
       ).map(words),
     ).toEqual([
       "move [f] from Inbox to Cabin",

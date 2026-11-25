@@ -2,18 +2,13 @@ import { IconFolder, IconTag } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { Message } from "@pond/ui/message";
 import type { AssistantChange } from "@shared/assistant";
-import { Fragment, type ReactNode, useState } from "react";
+import { Fragment, useState } from "react";
+import type { ReactNode } from "react";
 import { selectLibraryNav } from "@/features/library";
 import { openSave } from "@/features/saves/navigation";
 import { InlineReference, SaveReference } from "../../save-preview";
-import {
-  type ProposalClause,
-  type ProposalPlace,
-  type ProposalSegment,
-  proposalList,
-  reviewTitle,
-  shortTitle,
-} from "../lib";
+import { proposalList, reviewTitle, shortTitle } from "../lib";
+import type { ProposalClause, ProposalPlace, ProposalSegment } from "../lib";
 import styles from "./styles.module.css";
 
 /** Saves named in a clause before the rest fold into "and N more". */
@@ -23,7 +18,7 @@ const SHOWN = 3;
 const SEPARATE_FROM = 3;
 
 /** Joins items the way the sentence says them: "a", "a and b", "a, b and c". */
-function spoken(items: readonly ReactNode[]): ReactNode {
+function spoken(items: ReadonlyArray<ReactNode>): ReactNode {
   return items.map((item, index) => (
     // biome-ignore lint/suspicious/noArrayIndexKey: the items never reorder within a render.
     <Fragment key={index}>
@@ -33,7 +28,7 @@ function spoken(items: readonly ReactNode[]): ReactNode {
   ));
 }
 
-function Saves({ changes }: { changes: readonly AssistantChange[] }) {
+function Saves({ changes }: { changes: ReadonlyArray<AssistantChange> }) {
   const [open, setOpen] = useState(false);
   const shown = open ? changes : changes.slice(0, SHOWN);
   const hidden = changes.length - shown.length;
@@ -69,7 +64,7 @@ function Places({
   items,
 }: {
   place: "tag" | "folder";
-  items: readonly ProposalPlace[];
+  items: ReadonlyArray<ProposalPlace>;
 }) {
   const Icon = place === "tag" ? IconTag : IconFolder;
   return spoken(
@@ -115,8 +110,12 @@ function Clause({ clause }: { clause: ProposalClause }) {
  * What the fish wants to change, sent the way it sends its other messages: a short proposal as one
  * bubble, a longer one as a lead and then one bubble per change, each citing its Saves, tags and folders.
  */
-export function Proposal({ clauses }: { clauses: readonly ProposalClause[] }) {
-  if (clauses.length < SEPARATE_FROM)
+export function Proposal({
+  clauses,
+}: {
+  clauses: ReadonlyArray<ProposalClause>;
+}) {
+  if (clauses.length < SEPARATE_FROM) {
     return (
       <Message.Bubble className={styles.proposal}>
         I'll{" "}
@@ -129,6 +128,7 @@ export function Proposal({ clauses }: { clauses: readonly ProposalClause[] }) {
         .
       </Message.Bubble>
     );
+  }
   const { lead, items } = proposalList(clauses);
   return (
     <>

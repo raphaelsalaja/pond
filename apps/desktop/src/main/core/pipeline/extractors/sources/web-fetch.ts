@@ -1,6 +1,7 @@
 import { browserUserAgent } from "../../../refresh/web-page-renderer";
 import { TerminalError, TransientError } from "../errors";
-import { convertTextDocument, type TextDocument } from "./text-document";
+import { convertTextDocument } from "./text-document";
+import type { TextDocument } from "./text-document";
 
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -69,10 +70,13 @@ export async function fetchHtml(
   }
 
   const length = Number(res.headers.get("content-length") ?? 0);
-  if (length > MAX_BODY_BYTES)
+  if (length > MAX_BODY_BYTES) {
     throw new TerminalError(`web fetch body too large: ${length} bytes`);
+  }
   const text = await readBodyCapped(res);
-  if (!text.trim()) throw new TerminalError("web fetch returned empty body");
+  if (!text.trim()) {
+    throw new TerminalError("web fetch returned empty body");
+  }
   if (format) {
     const document = convertTextDocument(text, format, url);
     return { html: wrapDocument(document), document };
@@ -85,10 +89,16 @@ function textDocumentFormat(
   contentType: string,
   url: string,
 ): "markdown" | "plain" | null {
-  if (/text\/markdown/i.test(contentType)) return "markdown";
-  if (!/text\/plain/i.test(contentType)) return null;
+  if (/text\/markdown/i.test(contentType)) {
+    return "markdown";
+  }
+  if (!/text\/plain/i.test(contentType)) {
+    return null;
+  }
   try {
-    if (/\.(md|markdown)$/i.test(new URL(url).pathname)) return "markdown";
+    if (/\.(md|markdown)$/i.test(new URL(url).pathname)) {
+      return "markdown";
+    }
   } catch {
     /* The URL already parsed for the fetch itself. */
   }
@@ -101,7 +111,7 @@ function wrapDocument(document: TextDocument): string {
   return [
     "<!doctype html>",
     '<html><head><meta charset="utf-8">',
-    `<title>${title.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</title>`,
+    `<title>${title.replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</title>`,
     "</head><body>",
     document.bodyHtml,
     "</body></html>",
@@ -110,13 +120,17 @@ function wrapDocument(document: TextDocument): string {
 
 /** Content-Length is advisory and often absent, so the body is counted as it streams. */
 async function readBodyCapped(res: Response): Promise<string> {
-  if (!res.body) return res.text();
+  if (!res.body) {
+    return res.text();
+  }
   const reader = res.body.getReader();
-  const chunks: Uint8Array[] = [];
+  const chunks: Array<Uint8Array> = [];
   let total = 0;
   for (;;) {
     const { done, value } = await reader.read();
-    if (done) break;
+    if (done) {
+      break;
+    }
     total += value?.byteLength ?? 0;
     if (total > MAX_BODY_BYTES) {
       void reader.cancel().catch(() => {});
@@ -124,7 +138,9 @@ async function readBodyCapped(res: Response): Promise<string> {
         `web fetch body exceeded ${MAX_BODY_BYTES} bytes`,
       );
     }
-    if (value) chunks.push(value);
+    if (value) {
+      chunks.push(value);
+    }
   }
   const body = new Uint8Array(total);
   let offset = 0;

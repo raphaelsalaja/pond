@@ -92,7 +92,7 @@ export function libraryContext(
   const sources = new Map<string, AssistantSource>();
   const changes = new Map<string, AssistantChange>();
   let question: AssistantQuestion | undefined;
-  let results: AssistantResultSet[] = [];
+  let results: Array<AssistantResultSet> = [];
   const forModel = (save: AssistantSource) =>
     boundedSource(save, [...sources.keys()].indexOf(save.id) + 1);
   function collect(rows: Array<AssistantSource>) {

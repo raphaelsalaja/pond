@@ -109,10 +109,7 @@ describe("mymind connection", () => {
     await expect(
       connectMymind({ ...credential, accountId: existing.id }, f.dependencies),
     ).resolves.toEqual({ ok: true, account: existing });
-    expect(f.spy.readState).toHaveBeenCalledWith(
-      "/library",
-      existing.id,
-    );
+    expect(f.spy.readState).toHaveBeenCalledWith("/library", existing.id);
     expect(f.spy.writeState).not.toHaveBeenCalled();
     expect(f.spy.createAccount).not.toHaveBeenCalled();
   });
@@ -204,9 +201,7 @@ describe("mymind connection", () => {
         f.dependencies,
       ),
     ).resolves.toEqual({ ok: false, error: "mymind Account not found." });
-    expect(f.spy.removeCredential).toHaveBeenCalledWith(
-      existingAccount.id,
-    );
+    expect(f.spy.removeCredential).toHaveBeenCalledWith(existingAccount.id);
     expect(f.spy.patchAccountSync).not.toHaveBeenCalled();
   });
 
@@ -219,10 +214,7 @@ describe("mymind connection", () => {
       "Disk is full.",
     );
     expect(f.spy.removeCredential).toHaveBeenCalledWith("new-account");
-    expect(f.spy.removeState).toHaveBeenCalledWith(
-      "/library",
-      "new-account",
-    );
+    expect(f.spy.removeState).toHaveBeenCalledWith("/library", "new-account");
   });
 
   it("removes incomplete setup if the Library changes during the key write", async () => {
@@ -235,10 +227,7 @@ describe("mymind connection", () => {
     ).resolves.toMatchObject({ ok: false });
     expect(f.spy.createAccount).not.toHaveBeenCalled();
     expect(f.spy.removeCredential).toHaveBeenCalledWith("new-account");
-    expect(f.spy.removeState).toHaveBeenCalledWith(
-      "/library",
-      "new-account",
-    );
+    expect(f.spy.removeState).toHaveBeenCalledWith("/library", "new-account");
   });
 
   it("does not update another Library after it writes the key", async () => {

@@ -29,7 +29,9 @@ export function SaveCards({
     (source) => <SourceThumbnail id={source.id} source={source} visual />,
   );
   useSourceCovers(items.map((item) => item.id));
-  if (!items.length) return null;
+  if (!items.length) {
+    return null;
+  }
   return (
     <section
       className={styles.cards}

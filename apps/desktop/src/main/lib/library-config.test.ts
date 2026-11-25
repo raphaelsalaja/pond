@@ -70,7 +70,10 @@ describe("asynchronous bundle files", () => {
     let exited: Promise<Array<unknown>> = Promise.resolve([]);
 
     beforeAll(() => {
-      fifoDir = join(tmpdir(), `pond-bundle-fifo-${Date.now()}-${Math.random()}`);
+      fifoDir = join(
+        tmpdir(),
+        `pond-bundle-fifo-${Date.now()}-${Math.random()}`,
+      );
       mkdirSync(fifoDir, { recursive: true });
       file = join(fifoDir, "slow.json");
       execFileSync("mkfifo", [file]);

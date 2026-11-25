@@ -163,9 +163,7 @@ describe("native server", () => {
         }
       });
 
-      it("matches the SID-qualified pipe used by the Windows native host", (
-        context,
-      ) => {
+      it("matches the SID-qualified pipe used by the Windows native host", (context) => {
         if (pondOwnsPipe) {
           context.skip("Pond is running and owns the native host pipe");
         }

@@ -336,9 +336,7 @@ describe("mymind API client", () => {
 
   it("reports a revoked key and uses Retry-After when no quota header is present", async () => {
     const { client, request } = fixture();
-    request.responses.push(
-      new Response("private data", { status: 401 }),
-    );
+    request.responses.push(new Response("private data", { status: 401 }));
     await expect(client.validateCredential()).rejects.toBeInstanceOf(
       MymindApiError,
     );

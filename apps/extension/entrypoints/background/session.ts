@@ -1,9 +1,9 @@
+import type { NativeRequest, NativeResponse } from "@pond/schema/native";
 import {
   ROTATING_SESSIONS,
   sessionImportResponseSchema,
   sessionRefreshResponseSchema,
 } from "@pond/schema/session";
-import type { NativeRequest, NativeResponse } from "@pond/schema/native";
 import type { ExtensionCookie } from "@pond/schema/session";
 import { SOURCES } from "@pond/schema/source-ids";
 import type { Source } from "@pond/schema/source-ids";
@@ -243,9 +243,7 @@ async function refreshSession(source: Source, api: SessionApi): Promise<void> {
 }
 
 /** Forwards each session your browser rotates, so Pond's copy of it stays signed in. */
-export function startSessionFollow(
-  api: SessionApi = browserSessionApi,
-): void {
+export function startSessionFollow(api: SessionApi = browserSessionApi): void {
   const settling = new Map<Source, ReturnType<typeof setTimeout>>();
   void (async () => {
     for (const source of ROTATING_SESSIONS.keys()) {

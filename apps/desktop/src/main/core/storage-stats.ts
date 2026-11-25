@@ -108,8 +108,8 @@ async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
         ? []
         : [{ name: d.name, isDir: d.isDirectory(), abs: join(root, d.name) }],
     );
-  } catch (err) {
-    log.warn("[pond storage-stats] failed to read library root", err);
+  } catch (error) {
+    log.warn("[pond storage-stats] failed to read library root", error);
     return { ...buckets, total: 0 };
   }
 
@@ -185,7 +185,9 @@ async function sumDirSizes(dir: string): Promise<number> {
   }
   const sizes = await Promise.all(
     dirents.map((entry) => {
-      if (isLibrarySidecar(entry.name) || entry.isSymbolicLink()) return 0;
+      if (isLibrarySidecar(entry.name) || entry.isSymbolicLink()) {
+        return 0;
+      }
       const abs = join(dir, entry.name);
       if (entry.isDirectory()) {
         return sumDirSizes(abs);

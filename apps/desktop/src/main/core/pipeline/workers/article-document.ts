@@ -15,8 +15,10 @@ interface SplitArticle {
 /** Moves the post body off the capture so `rawJson` stays small, and into its own file. */
 export function splitArticle(harvested: Capture): SplitArticle {
   const { article, ...capture } = harvested;
-  if (!article) return { capture, files: {} };
-  const newFiles: WriteFileArgs[] = [
+  if (!article) {
+    return { capture, files: {} };
+  }
+  const newFiles: Array<WriteFileArgs> = [
     {
       kind: ARTICLE_KIND,
       filename: ARTICLE_FILE,

@@ -178,8 +178,7 @@ describe("readSaveeCapture", () => {
   });
 
   it("reports an item that is gone", async () => {
-    const post: SaveePost = async () =>
-      json({ data: { itemByShortID: null } });
+    const post: SaveePost = async () => json({ data: { itemByShortID: null } });
     expect(await readSaveeCapture("gone", post)).toEqual({
       ok: false,
       reason: "not_found",

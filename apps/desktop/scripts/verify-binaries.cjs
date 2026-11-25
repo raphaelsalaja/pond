@@ -22,11 +22,21 @@ async function verify(
   pruneOnnxRuntime(resourcesDir, platform, arch);
   pruneBetterSqlitePrebuilds(resourcesDir, platform, arch);
   await verifyRuntimePackages(resourcesDir);
-  if (platform === "darwin") verifySharpRuntime(resourcesDir, arch);
-  if (platform === "linux") verifySharpLinuxRuntime(resourcesDir, arch);
-  if (platform === "win32") verifySharpWindowsRuntime(resourcesDir, arch);
-  if (platform === "win32" || platform === "linux") assertAppIcon(context);
-  if (platform === "darwin") assertIconCatalog(resourcesDir);
+  if (platform === "darwin") {
+    verifySharpRuntime(resourcesDir, arch);
+  }
+  if (platform === "linux") {
+    verifySharpLinuxRuntime(resourcesDir, arch);
+  }
+  if (platform === "win32") {
+    verifySharpWindowsRuntime(resourcesDir, arch);
+  }
+  if (platform === "win32" || platform === "linux") {
+    assertAppIcon(context);
+  }
+  if (platform === "darwin") {
+    assertIconCatalog(resourcesDir);
+  }
   assertTintIcons(resourcesDir);
   const onnxShipped = verifyOnnxRuntime(resourcesDir, platform, arch);
   const ffmpegPath = nodePath.join(resourcesDir, "bin", ffmpegName(platform));

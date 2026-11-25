@@ -87,14 +87,16 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
         tray.setToolTip(await buildTooltip());
         setTrayCount(tray, running);
         scheduleBusyPoll(ingesting > 0 || running > 0);
-      } catch (err) {
-        log.warn("[pond tray] refresh failed", err);
+      } catch (error) {
+        log.warn("[pond tray] refresh failed", error);
       }
     },
     destroy() {
       clearBusyPoll();
       nativeTheme.off("updated", onThemeUpdated);
-      if (process.platform === "darwin") tray.setTitle("");
+      if (process.platform === "darwin") {
+        tray.setTitle("");
+      }
       tray.destroy();
       handle = null;
     },
@@ -106,7 +108,9 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
 }
 
 function setTrayCount(tray: Tray, inflight: number): void {
-  if (process.platform !== "darwin") return;
+  if (process.platform !== "darwin") {
+    return;
+  }
   tray.setTitle(trayBadge({ inflight }), {
     fontType: "monospacedDigit",
   });

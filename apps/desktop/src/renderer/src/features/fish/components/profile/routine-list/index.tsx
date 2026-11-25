@@ -22,7 +22,9 @@ function RunLine({
   const running =
     Boolean(fish.activity) && isRoutineDue(routine, now.getTime());
   const failed = !running && routine.lastRun?.status === "failed";
-  if (!running && !failed) return null;
+  if (!running && !failed) {
+    return null;
+  }
   return (
     <span className={styles.run} data-tone={failed ? "error" : undefined}>
       <Badge.Dot tone={running ? "accent" : "negative"} live={running} />
@@ -39,12 +41,13 @@ export function RoutineList({
   onEditRoutine?: (routine: FishRoutine) => void;
 }) {
   const now = useNow();
-  if (!fish.routines.length)
+  if (!fish.routines.length) {
     return (
       <Empty.Root size="inline" variant="dashed">
         <Empty.Description>No Routines Yet</Empty.Description>
       </Empty.Root>
     );
+  }
   return (
     <ul className={styles.list}>
       {fish.routines.map((routine) => (

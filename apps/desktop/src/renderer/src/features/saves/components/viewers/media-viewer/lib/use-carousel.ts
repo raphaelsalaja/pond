@@ -33,7 +33,9 @@ function centerSlide(
 ) {
   const nodes = slideNodes(scroller);
   const slide = nodes[clamp(index, 0, nodes.length - 1)];
-  if (!slide) return;
+  if (!slide) {
+    return;
+  }
   const scrollerRect = scroller.getBoundingClientRect();
   const slideRect = slide.getBoundingClientRect();
   const delta =
@@ -45,8 +47,9 @@ function centerSlide(
     ? scrollerRect.width / scroller.offsetWidth
     : 1;
   const layoutDelta = scale ? delta / scale : delta;
-  if (Math.abs(layoutDelta) > 1)
+  if (Math.abs(layoutDelta) > 1) {
     scroller.scrollTo({ left: scroller.scrollLeft + layoutDelta, behavior });
+  }
 }
 
 export function useLockedSlideRatio() {

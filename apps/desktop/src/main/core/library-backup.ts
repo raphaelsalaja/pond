@@ -55,7 +55,9 @@ async function inventory(
 ): Promise<Array<BackupEntry>> {
   const files: Array<BackupEntry> = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (isLibrarySidecar(entry.name)) continue;
+    if (isLibrarySidecar(entry.name)) {
+      continue;
+    }
     const path = join(directory, entry.name);
     if (path === join(root, MANIFEST)) {
       continue;

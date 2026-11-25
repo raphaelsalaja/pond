@@ -48,7 +48,9 @@ export function InboxReview() {
   }, [scope]);
 
   /** Stay mounted under the Save overlay: unmounting restarts the review effect and the queue loses its place. */
-  if (!scope || saveOpen) return null;
+  if (!scope || saveOpen) {
+    return null;
+  }
   return <InboxPage scope={scope} queue={loaded === scope ? queue : null} />;
 }
 

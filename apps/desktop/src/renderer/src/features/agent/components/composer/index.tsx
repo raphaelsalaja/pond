@@ -1,8 +1,8 @@
 import { TokenInput } from "@pond/ui/token-input";
-import { type AssistantSource, assistantSources } from "@shared/assistant";
+import { assistantSources } from "@shared/assistant";
+import type { AssistantSource } from "@shared/assistant";
 import {
   useEffect,
-  useEffectEvent,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -15,7 +15,7 @@ import { SourceThumbnail } from "../pane/save-preview";
 import { SaveMentionChip, saveMentionCodec, saveMentionIds } from "./mention";
 import styles from "./styles.module.css";
 
-const MAX_LENGTH = 32000;
+const MAX_LENGTH = 32_000;
 const MAX_SAVES = 24;
 const searchSchema = z.object({ saves: assistantSources });
 
@@ -42,7 +42,7 @@ export interface ComposerEditorProps {
 }
 
 interface SearchResult {
-  saves: AssistantSource[];
+  saves: Array<AssistantSource>;
   error?: string;
 }
 
@@ -100,7 +100,9 @@ export function ComposerEditor({
     seen.current = new Set(attachments.map((save) => save.id));
     const present = saveMentionIds(input.getText(saveMentionCodec));
     for (const save of added) {
-      if (present.has(save.id)) continue;
+      if (present.has(save.id)) {
+        continue;
+      }
       input.insert([
         { type: "save", value: save.id, label: save.title || "Untitled" },
         " ",
@@ -127,17 +129,20 @@ export function ComposerEditor({
             const saves = searchSchema
               .parse(data)
               .saves.filter((save) => !taken.has(save.id));
-            if (!signal.aborted) setResult({ saves });
+            if (!signal.aborted) {
+              setResult({ saves });
+            }
             return saves.map((save) => ({
               value: save.id,
               label: save.title || "Untitled",
             }));
           } catch {
-            if (!signal.aborted)
+            if (!signal.aborted) {
               setResult({
                 saves: [],
                 error: "Could not search Saves. Type to try again.",
               });
+            }
             return [];
           }
         },
@@ -158,14 +163,18 @@ export function ComposerEditor({
     <div
       className={styles.root}
       onDragOverCapture={(event) => {
-        if (!isLibrarySaveDrag(event.dataTransfer)) return;
+        if (!isLibrarySaveDrag(event.dataTransfer)) {
+          return;
+        }
         event.preventDefault();
         event.stopPropagation();
         event.dataTransfer.dropEffect = "copy";
       }}
       onDropCapture={(event) => {
         const ids = saveDropIds(event.dataTransfer);
-        if (!ids.length) return;
+        if (!ids.length) {
+          return;
+        }
         event.preventDefault();
         event.stopPropagation();
         onDropIds(ids);
@@ -191,18 +200,24 @@ export function ComposerEditor({
           if (!restoring.current) {
             const kept = saveMentionIds(markdown);
             for (const token of details.removed) {
-              if (token.type === "save" && !kept.has(token.value))
+              if (token.type === "save" && !kept.has(token.value)) {
                 onRemove(token.value);
+              }
             }
           }
-          if (markdown === published.current) return;
+          if (markdown === published.current) {
+            return;
+          }
           published.current = markdown;
           onChange(markdown);
         }}
         onSubmit={(next) => {
           const markdown = TokenInput.toText(next, saveMentionCodec);
-          if (!running) onSend(markdown);
-          else onQueue?.(markdown);
+          if (!running) {
+            onSend(markdown);
+          } else {
+            onQueue?.(markdown);
+          }
         }}
       >
         <TokenInput.Editor
@@ -216,7 +231,9 @@ export function ComposerEditor({
           triggers={triggers}
           onSelect={(id) => {
             const save = result.saves.find((item) => item.id === id);
-            if (!save) return;
+            if (!save) {
+              return;
+            }
             seen.current.add(save.id);
             onAttach([save]);
           }}

@@ -1,16 +1,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { inboxReview } from "@/features/library/state/inbox-review";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
-import { type InboxItem, useInboxItems } from "./use-inbox-items";
+import { useInboxItems } from "./use-inbox-items";
+import type { InboxItem } from "./use-inbox-items";
 
 let host: HTMLDivElement;
 let root: Root;
-let listed: InboxItem[] = [];
+let listed: Array<InboxItem> = [];
 const fixtures = new Map<string, Save>();
 
 function addInboxSave(id: string) {
@@ -33,7 +35,9 @@ function addInboxSave(id: string) {
       ],
     }),
   );
-  if (!save) throw new Error("Invalid Save fixture");
+  if (!save) {
+    throw new Error("Invalid Save fixture");
+  }
   fixtures.set(id, save);
   pool.upsert({ ...save, inboxState: "review" });
 }
@@ -54,9 +58,15 @@ beforeEach(() => {
   listed = [];
   vi.stubGlobal("pond", {
     query: async (name: string) => {
-      if (name === "saves.queryPage") return { ids: ["a", "b", "c"] };
-      if (name === "notifications.list") return [];
-      if (name === "libraryHealth.overview") return null;
+      if (name === "saves.queryPage") {
+        return { ids: ["a", "b", "c"] };
+      }
+      if (name === "notifications.list") {
+        return [];
+      }
+      if (name === "libraryHealth.overview") {
+        return null;
+      }
       return { changed: 1 };
     },
   });
@@ -107,7 +117,9 @@ it("keeps a skipped save listed but marks it read", async () => {
 it("drops a save removed from the Inbox while it remains in the queue", async () => {
   await mount();
   const fixture = fixtures.get("b");
-  if (!fixture) throw new Error("Missing fixture");
+  if (!fixture) {
+    throw new Error("Missing fixture");
+  }
   await act(async () => {
     pool.upsert({ ...fixture, inboxState: null, inboxUntil: null });
   });
@@ -117,7 +129,9 @@ it("drops a save removed from the Inbox while it remains in the queue", async ()
 it("drops a save whose state leaves the scope and restores it when it returns", async () => {
   await mount();
   const fixture = fixtures.get("b");
-  if (!fixture) throw new Error("Missing fixture");
+  if (!fixture) {
+    throw new Error("Missing fixture");
+  }
   await act(async () => {
     pool.upsert({ ...fixture, inboxState: "processed" });
   });

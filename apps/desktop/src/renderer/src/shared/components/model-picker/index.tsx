@@ -13,8 +13,10 @@ import {
   reasoningLabel,
   supportsNativeFast,
 } from "@shared/agent-model-options";
-import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
-import { displayName, type ProviderModel } from "@shared/provider-models";
+import { ASSISTANT_MODELS } from "@shared/assistant";
+import type { AssistantProvider } from "@shared/assistant";
+import { displayName } from "@shared/provider-models";
+import type { ProviderModel } from "@shared/provider-models";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -38,7 +40,9 @@ function liveItems(
   const items: Array<PickerModel> = [];
   for (const row of providers) {
     const catalog = ASSISTANT_MODELS.find((model) => model.id === row.provider);
-    if (!catalog || !row.ok || !row.models.length) continue;
+    if (!catalog || !row.ok || !row.models.length) {
+      continue;
+    }
     for (const model of [...row.models].sort((a, b) =>
       a.name.localeCompare(b.name),
     )) {

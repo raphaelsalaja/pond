@@ -1,5 +1,6 @@
 import type { SaveFile } from "@pond/schema/db";
-import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
+import { walkCaptureMedia } from "@pond/schema/raw";
+import type { RawJson } from "@pond/schema/raw";
 import { isVideoFile } from "@shared/media-index";
 
 export { posterFilename, videoFilename } from "@shared/save-file-names";

@@ -37,10 +37,7 @@ function request(model = textModel("Hi! How can I help?")): CompletionInput {
   };
 }
 
-function tool(
-  name: string,
-  execute: ToolSpec["execute"] = vi.fn(),
-): ToolSpec {
+function tool(name: string, execute: ToolSpec["execute"] = vi.fn()): ToolSpec {
   return { name, description: name, schema: z.looseObject({}), execute };
 }
 
@@ -176,9 +173,7 @@ it("lets the model refine an empty search and curate results before answering", 
   const searchReplies = [{ saves: [] }, { saves: filmRows.slice(0, 2) }];
   const searches: Array<Parameters<typeof contextDependencies.searchLibrary>> =
     [];
-  const search: typeof contextDependencies.searchLibrary = async (
-    ...args
-  ) => {
+  const search: typeof contextDependencies.searchLibrary = async (...args) => {
     searches.push(args);
     const reply = searchReplies.shift();
     if (!reply) {

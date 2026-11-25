@@ -10,11 +10,9 @@ export function postNotification(post: NotificationPost): void {
   if (!bridged()) {
     return;
   }
-  void window.pond
-    .query("notifications.post", post)
-    .catch((cause: unknown) => {
-      log.warn("[pond notifications] posting a notification failed", cause);
-    });
+  void window.pond.query("notifications.post", post).catch((cause: unknown) => {
+    log.warn("[pond notifications] posting a notification failed", cause);
+  });
 }
 
 export function activityNotificationId(): string {

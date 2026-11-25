@@ -7,17 +7,19 @@ export function inPageTwitterSsr() {
    * the HTML as `kind:"Result.Ok",value:"<JSON as a JS string>"`, then
    * removes those scripts, so the page never requests them again.
    */
-  function ssrResponseBodies(html: string): string[] {
-    const out: string[] = [];
+  function ssrResponseBodies(html: string): Array<string> {
+    const out: Array<string> = [];
     const re = /kind:"Result\.Ok",value:"((?:[^"\\]|\\.)*)"/g;
     for (const m of html.matchAll(re)) {
       const literal = (m[1] ?? "")
-        .replace(/\\x([0-9a-fA-F]{2})/g, "\\u00$1")
-        .replace(/\\'/g, "'");
+        .replaceAll(/\\x([0-9a-fA-F]{2})/g, String.raw`\u00$1`)
+        .replaceAll("\\'", "'");
       try {
         /** A quoted literal always parses to a string. */
         const body = String(JSON.parse(`"${literal}"`));
-        if (body.startsWith("{")) out.push(body);
+        if (body.startsWith("{")) {
+          out.push(body);
+        }
       } catch {}
     }
     return out;

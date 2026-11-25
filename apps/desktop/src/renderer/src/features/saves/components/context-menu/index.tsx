@@ -1,5 +1,4 @@
 import type { MenuItemSpec } from "@pond/ui";
-import { isElement } from "@pond/ui/dom";
 import type { ReactElement } from "react";
 import { createContext, useContext, useState } from "react";
 import { useSave } from "@/features/saves/hooks/use-saves";
@@ -73,7 +72,9 @@ export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
 }
 
 function targetSaveId(target: EventTarget | null): string | null {
-  if (!(target instanceof Element)) return null;
+  if (!(target instanceof Element)) {
+    return null;
+  }
   return target.closest<HTMLElement>("[data-save-id]")?.dataset.saveId ?? null;
 }
 
@@ -108,7 +109,9 @@ export function SaveCollectionContextMenu({
           if (save) {
             menu.open(save);
             onOpenSave?.(save);
-          } else if (!acceptsBackground(element)) eventDetails.cancel();
+          } else if (!acceptsBackground(element)) {
+            eventDetails.cancel();
+          }
         }}
         buildItems={() =>
           target ? menu.items(target) : buildBackgroundItems()

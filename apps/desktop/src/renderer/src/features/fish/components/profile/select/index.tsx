@@ -1,7 +1,8 @@
 import { IconPlus, IconXmark } from "@pond/icons";
 import { Button, Chip, Empty, Menu } from "@pond/ui";
 import { FISH_SCOPE_CAP } from "@shared/fish-contracts";
-import { type ReactNode, useId } from "react";
+import { useId } from "react";
+import type { ReactNode } from "react";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
 import styles from "./styles.module.css";
 
@@ -14,9 +15,9 @@ export interface ScopeItem {
 
 interface FieldProps {
   noun: "Folder" | "Tag";
-  value: string[];
-  items: ScopeItem[];
-  onChange: (value: string[]) => void;
+  value: Array<string>;
+  items: Array<ScopeItem>;
+  onChange: (value: Array<string>) => void;
 }
 
 function Field({ noun, value, items, onChange }: FieldProps) {
@@ -89,8 +90,8 @@ function Picker({
   onToggle,
 }: {
   noun: "Folder" | "Tag";
-  items: ScopeItem[];
-  value: string[];
+  items: Array<ScopeItem>;
+  value: Array<string>;
   onToggle: (value: string) => void;
 }) {
   const { query, onValueChange, reset } = useMenuFilterQuery();
@@ -112,7 +113,9 @@ function Picker({
     >
       <Menu.Root
         onOpenChange={(open) => {
-          if (open) reset();
+          if (open) {
+            reset();
+          }
         }}
       >
         <Menu.Trigger

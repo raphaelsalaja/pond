@@ -125,7 +125,9 @@ describe("readBehanceAppreciations", () => {
   });
 
   it("resumes from a cursor", async () => {
-    const { post } = serve({ c9: page([edge(1, "2026-10-01 10:00:00")], null) });
+    const { post } = serve({
+      c9: page([edge(1, "2026-10-01 10:00:00")], null),
+    });
     const result = await readBehanceAppreciations(
       { knownIds: [], resumeCursor: "c9" },
       post,

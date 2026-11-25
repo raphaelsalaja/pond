@@ -91,9 +91,7 @@ describe("runRenderTextCover", () => {
         url,
         title: "malaga",
         description: null,
-        files: [
-          { kind: "source_icon", path: "icon.png", sha256: "", size: 1 },
-        ],
+        files: [{ kind: "source_icon", path: "icon.png", sha256: "", size: 1 }],
         rawJson: {
           capture: {
             id: url,

@@ -42,12 +42,18 @@ export function inPageTwitterNormalize() {
   }
 
   function parseMetric(label: string | null | undefined): number | undefined {
-    if (!label) return undefined;
+    if (!label) {
+      return undefined;
+    }
     /** The suffix must end the word: "48 Bookmarks" is 48, not 48 billion. */
     const m = label.match(/([\d.,]+)\s*(?:([KMB])(?![a-z]))?/i);
-    if (!m?.[1]) return undefined;
-    const num = Number.parseFloat(m[1].replace(/,/g, ""));
-    if (!Number.isFinite(num)) return undefined;
+    if (!m?.[1]) {
+      return undefined;
+    }
+    const num = Number.parseFloat(m[1].replaceAll(",", ""));
+    if (!Number.isFinite(num)) {
+      return undefined;
+    }
     const suffix = (m[2] ?? "").toUpperCase();
     const mult =
       suffix === "K"

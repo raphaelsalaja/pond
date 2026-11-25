@@ -1,8 +1,6 @@
 import { expect, it } from "vitest";
-import {
-  type DecodedImageHold,
-  shouldReleaseDecodedImages,
-} from "./decoded-image-release";
+import { shouldReleaseDecodedImages } from "./decoded-image-release";
+import type { DecodedImageHold } from "./decoded-image-release";
 
 function hold(patch: Partial<DecodedImageHold> = {}): DecodedImageHold {
   return {

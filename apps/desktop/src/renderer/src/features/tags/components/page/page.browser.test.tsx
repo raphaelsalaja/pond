@@ -81,7 +81,10 @@ describe("library Tags page", () => {
         },
         "tagGroups.create": () => ({ ok: true }),
         "tagGroups.update": () => ({ ok: true }),
-        "tagGroups.addTags": ({ tags }) => ({ ok: true, affected: tags.length }),
+        "tagGroups.addTags": ({ tags }) => ({
+          ok: true,
+          affected: tags.length,
+        }),
       },
     });
     createAttempts.length = 0;

@@ -267,12 +267,11 @@ for (const size of [1000, 10_000, 50_000]) {
                 };
               },
             };
-            const expectedIds: Record<keyof RetrievalTimings, Array<string>> =
-              {
-                adapter: expected.slice(0, 12),
-                exactSql: expected,
-                guardedBlobSql: expected,
-              };
+            const expectedIds: Record<keyof RetrievalTimings, Array<string>> = {
+              adapter: expected.slice(0, 12),
+              exactSql: expected,
+              guardedBlobSql: expected,
+            };
             const expectedDistances: Record<
               keyof RetrievalTimings,
               Array<number>

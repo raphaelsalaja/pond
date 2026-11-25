@@ -144,12 +144,18 @@ async function inPageSavedApi(
   const pageCursor = (json: JsonValue): string | null => {
     let found: string | null = null;
     const visit = (value: JsonValue): void => {
-      if (found) return;
-      if (Array.isArray(value)) {
-        for (const item of value) visit(item);
+      if (found) {
         return;
       }
-      if (!isJsonObject(value)) return;
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          visit(item);
+        }
+        return;
+      }
+      if (!isJsonObject(value)) {
+        return;
+      }
       const pageInfo = value.page_info;
       const endCursor = isJsonObject(pageInfo)
         ? jsonString(pageInfo.end_cursor)
@@ -158,21 +164,27 @@ async function inPageSavedApi(
         found = endCursor;
         return;
       }
-      for (const child of Object.values(value)) visit(child);
+      for (const child of Object.values(value)) {
+        visit(child);
+      }
     };
     visit(json);
     return found;
   };
 
-  const pagePostIds = (json: JsonValue): string[] => {
-    const ids: string[] = [];
+  const pagePostIds = (json: JsonValue): Array<string> => {
+    const ids: Array<string> = [];
     const seen = new Set<string>();
     const visit = (value: JsonValue, skip: boolean): void => {
       if (Array.isArray(value)) {
-        for (const item of value) visit(item, skip);
+        for (const item of value) {
+          visit(item, skip);
+        }
         return;
       }
-      if (!isJsonObject(value)) return;
+      if (!isJsonObject(value)) {
+        return;
+      }
       const code = jsonString(value.code);
       if (
         !skip &&
@@ -201,12 +213,18 @@ async function inPageSavedApi(
   const listHasNextPage = (json: JsonValue): boolean | undefined => {
     let found: boolean | undefined;
     const visit = (value: JsonValue): void => {
-      if (found !== undefined) return;
-      if (Array.isArray(value)) {
-        for (const item of value) visit(item);
+      if (found !== undefined) {
         return;
       }
-      if (!isJsonObject(value)) return;
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          visit(item);
+        }
+        return;
+      }
+      if (!isJsonObject(value)) {
+        return;
+      }
       const pageInfo = value.page_info;
       if (Array.isArray(value.edges) && isJsonObject(pageInfo)) {
         const next = pageInfo.has_next_page;
@@ -215,15 +233,17 @@ async function inPageSavedApi(
           return;
         }
       }
-      for (const child of Object.values(value)) visit(child);
+      for (const child of Object.values(value)) {
+        visit(child);
+      }
     };
     visit(json);
     return found;
   };
 
   /** Threads renders a list's first page into the HTML from its `…PageViewerQuery` preloader and only requests later pages, so read that page from the document. */
-  const preloaded: SavedCapture[] = [];
-  let preloadedIds: string[] = [];
+  const preloaded: Array<SavedCapture> = [];
+  let preloadedIds: Array<string> = [];
   let preloadedLastPage = false;
   for (const script of Array.from(
     document.querySelectorAll('script[type="application/json"]'),
@@ -237,10 +257,14 @@ async function inPageSavedApi(
     try {
       const json: JsonValue = JSON.parse(body);
       const ids = pagePostIds(json);
-      if (ids.length === 0) continue;
+      if (ids.length === 0) {
+        continue;
+      }
       preloaded.push({ url: location.href, body, status: 200 });
       preloadedIds = preloadedIds.concat(ids);
-      if (listHasNextPage(json) === false) preloadedLastPage = true;
+      if (listHasNextPage(json) === false) {
+        preloadedLastPage = true;
+      }
     } catch {}
   }
 
@@ -249,10 +273,10 @@ async function inPageSavedApi(
   const waitDeadline = waitStart + (preloadedLastPage ? 0 : 20_000);
   let lastNudge = waitStart;
   while (!template && Date.now() < waitDeadline) {
-    if (Date.now() - lastNudge > 1_500) {
+    if (Date.now() - lastNudge > 1500) {
       lastNudge = Date.now();
       try {
-        window.scrollBy({ top: 2_000, behavior: "instant" });
+        window.scrollBy({ top: 2000, behavior: "instant" });
       } catch {}
     }
     await sleep(250);
@@ -370,7 +394,7 @@ async function inPageSavedApi(
   };
   Object.assign(globalThis, { __pondHarvestStats: stats });
 
-  const captures: SavedCapture[] = [...preloaded];
+  const captures: Array<SavedCapture> = [...preloaded];
   const deadline = Date.now() + args.deadlineMs;
   const known = new Set<string>((args.knownIds ?? []).map(String));
   const earlyStopEnabled = known.size > 0;

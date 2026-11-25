@@ -52,40 +52,37 @@ function PasteTarget() {
 it.each([
   { kind: "native file", files: [new File(["image"], "drop image.png")] },
   { kind: "file URI", files: [] },
-])(
-  "imports a dropped $kind and confirms the save",
-  async ({ files }) => {
-    const host = document.createElement("div");
-    const root = createRoot(host);
-    try {
-      await act(async () =>
-        root.render(
-          <>
-            <DropTarget />
-            <ToastHost />
-          </>,
-        ),
-      );
-      const event = new Event("drop", { bubbles: true, cancelable: true });
-      Object.defineProperty(event, "dataTransfer", {
-        value: {
-          files,
-          getData: (type: string) =>
-            type === "text/uri-list" ? "file:///tmp/drop%20image.png" : "",
-        },
-      });
-      await act(async () => {
-        host.firstElementChild?.dispatchEvent(event);
-      });
-      expect(window.pond.query).toHaveBeenCalledWith("saves.importFiles", {
-        paths: ["/tmp/drop image.png"],
-      });
-      expect(toastText()).toContain("Saved to Pond");
-    } finally {
-      await act(async () => root.unmount());
-    }
-  },
-);
+])("imports a dropped $kind and confirms the save", async ({ files }) => {
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  try {
+    await act(async () =>
+      root.render(
+        <>
+          <DropTarget />
+          <ToastHost />
+        </>,
+      ),
+    );
+    const event = new Event("drop", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "dataTransfer", {
+      value: {
+        files,
+        getData: (type: string) =>
+          type === "text/uri-list" ? "file:///tmp/drop%20image.png" : "",
+      },
+    });
+    await act(async () => {
+      host.firstElementChild?.dispatchEvent(event);
+    });
+    expect(window.pond.query).toHaveBeenCalledWith("saves.importFiles", {
+      paths: ["/tmp/drop image.png"],
+    });
+    expect(toastText()).toContain("Saved to Pond");
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
 
 it("starts a dropped link immediately and does not claim it is saved", async () => {
   const host = document.createElement("div");

@@ -284,37 +284,34 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
   it.each([
     ["product", "shop"],
     ["link", "site"],
-  ])(
-    "agrees with in-memory evaluation for the %s type",
-    (type, expected) => {
-      const rows = [...examples, ...webExamples];
-      const query: Query = {
-        combinator: "and",
-        rules: [{ field: "type", operator: "eq", value: type }],
-      };
-      const db = fixture(rows);
-      try {
-        const where = buildWhere(query);
-        if (!where) {
-          throw new Error("Expected a filter predicate");
-        }
-        const compiled = new SQLiteSyncDialect().sqlToQuery(where);
-        const found = z
-          .array(z.object({ id: z.string() }))
-          .parse(
-            db
-              .prepare(`SELECT id FROM saves WHERE ${compiled.sql} ORDER BY id`)
-              .all(...compiled.params),
-          );
-        expect(found.map((row) => row.id)).toEqual([expected]);
-        expect(
-          rows.filter((save) => matches(query, save)).map((save) => save.id),
-        ).toEqual([expected]);
-      } finally {
-        db.close();
+  ])("agrees with in-memory evaluation for the %s type", (type, expected) => {
+    const rows = [...examples, ...webExamples];
+    const query: Query = {
+      combinator: "and",
+      rules: [{ field: "type", operator: "eq", value: type }],
+    };
+    const db = fixture(rows);
+    try {
+      const where = buildWhere(query);
+      if (!where) {
+        throw new Error("Expected a filter predicate");
       }
-    },
-  );
+      const compiled = new SQLiteSyncDialect().sqlToQuery(where);
+      const found = z
+        .array(z.object({ id: z.string() }))
+        .parse(
+          db
+            .prepare(`SELECT id FROM saves WHERE ${compiled.sql} ORDER BY id`)
+            .all(...compiled.params),
+        );
+      expect(found.map((row) => row.id)).toEqual([expected]);
+      expect(
+        rows.filter((save) => matches(query, save)).map((save) => save.id),
+      ).toEqual([expected]);
+    } finally {
+      db.close();
+    }
+  });
 
   it.each<["eq" | "neq", string, Array<string>]>([
     ["eq", "instagram:DAbC", ["post-a", "post-b"]],

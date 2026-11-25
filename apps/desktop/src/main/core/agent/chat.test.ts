@@ -27,9 +27,7 @@ interface ChatTestState {
   presence: Array<[string, FishPresence]>;
   scopes: Array<LibraryScope>;
 }
-const replyWithText: ChatDependencies["completeWithTools"] = async (
-  input,
-) => {
+const replyWithText: ChatDependencies["completeWithTools"] = async (input) => {
   input.onText("Reply");
   return "Reply";
 };

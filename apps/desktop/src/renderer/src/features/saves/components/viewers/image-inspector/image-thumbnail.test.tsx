@@ -108,10 +108,10 @@ describe("current image thumbnail", () => {
     expect(button).not.toBeNull();
     await act(async () => button?.click());
 
-    expect(window.pond.query).toHaveBeenCalledWith(
-      "saves.setImageThumbnail",
-      { id: "carousel", src: "pond://carousel/two.jpg" },
-    );
+    expect(window.pond.query).toHaveBeenCalledWith("saves.setImageThumbnail", {
+      id: "carousel",
+      src: "pond://carousel/two.jpg",
+    });
   });
 
   it("hides the action when the save has a single image", async () => {

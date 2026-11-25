@@ -103,7 +103,9 @@ const CLEAR_BACKGROUND = "#00000000";
 const appliedMaterial = new WeakMap<BrowserWindow, WindowMaterial | null>();
 
 function windowMaterial(prefs: Prefs | null): WindowMaterial | null {
-  if (process.platform !== "darwin" || !prefs?.window.translucent) return null;
+  if (process.platform !== "darwin" || !prefs?.window.translucent) {
+    return null;
+  }
   return prefs.window.translucentMaterial;
 }
 
@@ -124,7 +126,9 @@ export async function syncShellChrome(): Promise<void> {
       ? "#000000"
       : "#ffffff");
 
-  if (win.isDestroyed()) return;
+  if (win.isDestroyed()) {
+    return;
+  }
   if (process.platform === "darwin" && appliedMaterial.get(win) !== material) {
     win.setVibrancy(material);
     appliedMaterial.set(win, material);

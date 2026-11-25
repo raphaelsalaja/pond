@@ -1,6 +1,5 @@
 import { Button, Dialog } from "@pond/ui";
 import { extractLinks } from "@shared/downloader-contracts";
-import log from "electron-log/renderer";
 import type {
   DownloadFileProbe,
   DownloadPostProbe,
@@ -8,6 +7,7 @@ import type {
   DownloadRequest,
   DownloadSingleProbe,
 } from "@shared/downloader-contracts";
+import log from "electron-log/renderer";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import {

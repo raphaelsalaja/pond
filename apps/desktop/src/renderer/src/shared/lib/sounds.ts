@@ -122,9 +122,7 @@ export function emitFeedback(
   if (prefs?.feedback.sounds[event] !== false) {
     playTrashThunk();
   }
-  void window.pond
-    .query("feedback.emit", { event })
-    .catch((cause: unknown) => {
-      log.warn("[pond feedback] emitting feedback failed", cause);
-    });
+  void window.pond.query("feedback.emit", { event }).catch((cause: unknown) => {
+    log.warn("[pond feedback] emitting feedback failed", cause);
+  });
 }

@@ -11,7 +11,9 @@ function saveMentionHref(id: string): string {
 }
 
 export function parseSaveMentionHref(href: string): string | null {
-  if (!href.startsWith(SAVE_HREF)) return null;
+  if (!href.startsWith(SAVE_HREF)) {
+    return null;
+  }
   try {
     return decodeURIComponent(href.slice(SAVE_HREF.length)) || null;
   } catch {
@@ -22,22 +24,28 @@ export function parseSaveMentionHref(href: string): string | null {
 /** Save mentions travel as Markdown links to `pond-save:`, which replies render back as chips. */
 export const saveMentionCodec: TokenCodec = {
   format: (token) =>
-    `[${token.label.replace(/[\\[\]]/g, "\\$&")}](${saveMentionHref(token.value)})`,
+    `[${token.label.replaceAll(/[\\[\]]/g, String.raw`\$&`)}](${saveMentionHref(token.value)})`,
   parse: (text) => {
     const value: TokenInputValue = [];
     let last = 0;
     for (const match of text.matchAll(SAVE_LINK)) {
       const id = parseSaveMentionHref(`${SAVE_HREF}${match[2]}`);
-      if (!id) continue;
-      if (match.index > last) value.push(text.slice(last, match.index));
+      if (!id) {
+        continue;
+      }
+      if (match.index > last) {
+        value.push(text.slice(last, match.index));
+      }
       value.push({
         type: "save",
         value: id,
-        label: (match[1] ?? "").replace(/\\(.)/g, "$1") || "Untitled",
+        label: (match[1] ?? "").replaceAll(/\\(.)/g, "$1") || "Untitled",
       });
       last = match.index + match[0].length;
     }
-    if (last < text.length) value.push(text.slice(last));
+    if (last < text.length) {
+      value.push(text.slice(last));
+    }
     return value;
   },
 };
@@ -47,7 +55,9 @@ export function saveMentionIds(markdown: string): Set<string> {
   const ids = new Set<string>();
   for (const match of markdown.matchAll(SAVE_LINK)) {
     const id = parseSaveMentionHref(`${SAVE_HREF}${match[2]}`);
-    if (id) ids.add(id);
+    if (id) {
+      ids.add(id);
+    }
   }
   return ids;
 }

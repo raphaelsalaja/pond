@@ -31,8 +31,12 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
     ) {
       return true;
     }
-    if (u.hostname.includes("accounts.google.com")) return true;
-    if (u.hostname.includes("login.reddit.com")) return true;
+    if (u.hostname.includes("accounts.google.com")) {
+      return true;
+    }
+    if (u.hostname.includes("login.reddit.com")) {
+      return true;
+    }
     return false;
   } catch {
     return false;

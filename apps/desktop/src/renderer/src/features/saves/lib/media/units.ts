@@ -93,7 +93,9 @@ export function buildMediaUnits(
 
 /** A poster file is same-file only when it was extracted from the video's first frame; a cover image media file never is. */
 function posterIsCrossFile(poster: SaveFile, source: Save["source"]): boolean {
-  if (poster.kind !== POSTER_KIND) return true;
+  if (poster.kind !== POSTER_KIND) {
+    return true;
+  }
   return usesPlatformPoster(source);
 }
 

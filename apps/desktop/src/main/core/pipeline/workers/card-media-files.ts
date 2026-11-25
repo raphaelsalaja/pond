@@ -9,18 +9,24 @@ import type { Capture } from "@pond/schema/raw";
  */
 export function mediaFilesByUrl(
   capture: Capture,
-  files: readonly SaveFile[],
+  files: ReadonlyArray<SaveFile>,
 ): Map<string, SaveFile> {
   const out = new Map<string, SaveFile>();
   (capture.media ?? []).forEach((m, i) => {
-    if (m.type !== "image" && m.type !== "video") return;
+    if (m.type !== "image" && m.type !== "video") {
+      return;
+    }
     const video = m.type === "video";
     const url = video ? m.posterUrl : m.url;
-    if (!url) return;
+    if (!url) {
+      return;
+    }
     const kind = video ? "poster" : "image";
     const stem = `${video ? "poster" : "media"}-${i + 1}.`;
     const file = files.find((f) => f.kind === kind && f.path.startsWith(stem));
-    if (file) out.set(url, file);
+    if (file) {
+      out.set(url, file);
+    }
   });
   return out;
 }

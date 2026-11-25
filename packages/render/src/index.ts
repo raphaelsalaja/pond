@@ -405,7 +405,9 @@ export async function createPostRenderer(
     const bundled = join(config.fontsDir, face.file);
     const source = MAC_FACES.get(face.file) ?? { path: bundled };
     if (!existsSync(source.path)) {
-      if (source.optional) return;
+      if (source.optional) {
+        return;
+      }
       throw new Error(`Font ${face.file} not found at ${source.path}`);
     }
     register(face.file, await readFile(source.path), source.index ?? 0);

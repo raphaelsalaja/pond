@@ -364,7 +364,7 @@ export interface RichTweet {
     avatarUrl?: string;
     verified?: boolean;
   };
-  media: RichTweetMedia[];
+  media: Array<RichTweetMedia>;
   metrics: RichTweetMetrics;
   quoted?: RichTweet;
   replyTo?: { tweetId: string; url: string; handle: string };
@@ -396,7 +396,9 @@ export function parseBookmarksResponses(
     }
     const data = BookmarksResponseSchema.parse(json).data;
     const single = resolveTweet(data?.tweet_result_by_rest_id?.result);
-    if (single) out.set(single.tweetId, single);
+    if (single) {
+      out.set(single.tweetId, single);
+    }
     const user = data?.user?.result;
     const instructions =
       data?.bookmark_timeline_v2?.timeline?.instructions ??
@@ -424,11 +426,17 @@ function* iterateAddedEntries(
   instructions: Array<TimelineInstruction>,
 ): Generator<TimelineEntry> {
   for (const ix of instructions) {
-    if ((ix.type ?? ix.__typename) !== "TimelineAddEntries") continue;
+    if ((ix.type ?? ix.__typename) !== "TimelineAddEntries") {
+      continue;
+    }
     for (const entry of ix.entries ?? []) {
       const kind = entry.content?.entryType ?? entry.content?.__typename;
-      if (kind !== "TimelineTimelineItem") continue;
-      if (!(entry.entryId ?? entry.entry_id)?.startsWith("tweet-")) continue;
+      if (kind !== "TimelineTimelineItem") {
+        continue;
+      }
+      if (!(entry.entryId ?? entry.entry_id)?.startsWith("tweet-")) {
+        continue;
+      }
       yield entry;
     }
   }
@@ -436,7 +444,9 @@ function* iterateAddedEntries(
 
 function extractEntryTweet(entry: TimelineEntry): RichTweet | null {
   const itemContent = entry.content?.itemContent ?? entry.content?.content;
-  if (itemContent?.__typename !== "TimelineTweet") return null;
+  if (itemContent?.__typename !== "TimelineTweet") {
+    return null;
+  }
   return resolveTweet(itemContent.tweet_results?.result);
 }
 
@@ -456,7 +466,9 @@ function resolveTweet(raw: NestedNode): RichTweet | null {
 
 function richTweetFromNode(tweet: TweetNode): RichTweet | null {
   const tweetId = tweet.legacy?.id_str ?? tweet.rest_id;
-  if (!tweetId) return null;
+  if (!tweetId) {
+    return null;
+  }
   const handle = pickAuthorHandle(tweet);
   const avatarUrl = pickAuthorAvatar(tweet);
   const card = pickCard(tweet);
@@ -465,8 +477,12 @@ function richTweetFromNode(tweet: TweetNode): RichTweet | null {
     handle: handle ?? "",
     name: pickAuthorName(tweet) ?? handle ?? "",
   };
-  if (avatarUrl) author.avatarUrl = avatarUrl;
-  if (pickAuthorVerified(tweet)) author.verified = true;
+  if (avatarUrl) {
+    author.avatarUrl = avatarUrl;
+  }
+  if (pickAuthorVerified(tweet)) {
+    author.verified = true;
+  }
 
   const rich: RichTweet = {
     tweetId,
@@ -484,9 +500,13 @@ function richTweetFromNode(tweet: TweetNode): RichTweet | null {
       ) ?? undefined,
     raw: tweet,
   };
-  if (card) rich.card = card;
+  if (card) {
+    rich.card = card;
+  }
   const publishedAt = pickPublishedAt(tweet);
-  if (publishedAt) rich.publishedAt = publishedAt;
+  if (publishedAt) {
+    rich.publishedAt = publishedAt;
+  }
   const replyId =
     tweet.legacy?.in_reply_to_status_id_str ?? tweet.reply_to_results?.rest_id;
   const replyHandle =

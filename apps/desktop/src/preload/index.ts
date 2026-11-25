@@ -1,13 +1,8 @@
 import type { Prefs } from "@pond/schema";
 import type { Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
-import {
-  contextBridge,
-  type IpcRendererEvent,
-  ipcRenderer,
-  webFrame,
-  webUtils,
-} from "electron";
+import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
+import type { IpcRendererEvent } from "electron";
 import type { AgentStreamEvent } from "../shared/agent-stream";
 import type { ArenaLinkProgressEvent } from "../shared/arena-link-contracts";
 import type { AssistantChunk } from "../shared/assistant";

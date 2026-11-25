@@ -145,7 +145,9 @@ export async function interruptAndDrainReconciler(
   try {
     await pauseAndDrainReconciler(timeoutMs);
   } catch (error) {
-    if (!wasPaused) resumeReconciler();
+    if (!wasPaused) {
+      resumeReconciler();
+    }
     throw error;
   }
   return wasPaused;
@@ -153,7 +155,9 @@ export async function interruptAndDrainReconciler(
 
 /** Runs the startup lease and orphan recovery again after the open Library changes. */
 export async function reinitializeReconciler(): Promise<void> {
-  if (!started) return;
+  if (!started) {
+    return;
+  }
   await track(initializeReconciler());
 }
 

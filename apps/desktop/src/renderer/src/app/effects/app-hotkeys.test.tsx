@@ -248,9 +248,7 @@ describe("app hotkeys in text fields", () => {
     const input = document.createElement("input");
     await mount(input);
     const layout = getViewState().layout;
-    await act(async () =>
-      bridge.emit("onShortcutAction", "view.layout-cycle"),
-    );
+    await act(async () => bridge.emit("onShortcutAction", "view.layout-cycle"));
     expect(getViewState().layout).toBe(layout);
   });
 
@@ -274,9 +272,7 @@ describe("app hotkeys in text fields", () => {
   it("runs a global shortcut command outside an input", async () => {
     await mount();
     const layout = getViewState().layout;
-    await act(async () =>
-      bridge.emit("onShortcutAction", "view.layout-cycle"),
-    );
+    await act(async () => bridge.emit("onShortcutAction", "view.layout-cycle"));
     expect(getViewState().layout).not.toBe(layout);
   });
 });

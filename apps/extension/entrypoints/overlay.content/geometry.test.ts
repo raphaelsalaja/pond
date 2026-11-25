@@ -39,15 +39,17 @@ describe("overlay geometry", () => {
   });
 
   it("drops a selection too small to adjust", () => {
-    expect(clipRect({ x: 10, y: 10, width: 4, height: 40 }, viewport)).toBeNull();
-    expect(clipRect({ x: 790, y: 10, width: 40, height: 40 }, viewport)).toEqual(
-      {
-        x: 790,
-        y: 10,
-        width: 10,
-        height: 40,
-      },
-    );
+    expect(
+      clipRect({ x: 10, y: 10, width: 4, height: 40 }, viewport),
+    ).toBeNull();
+    expect(
+      clipRect({ x: 790, y: 10, width: 40, height: 40 }, viewport),
+    ).toEqual({
+      x: 790,
+      y: 10,
+      width: 10,
+      height: 40,
+    });
   });
 
   it("keeps a moved box inside the viewport", () => {

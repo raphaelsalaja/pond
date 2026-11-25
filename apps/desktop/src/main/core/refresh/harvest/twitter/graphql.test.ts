@@ -245,7 +245,7 @@ describe("parseBookmarksResponses", () => {
       },
     };
 
-    function timeline(entries: JsonObject[]) {
+    function timeline(entries: Array<JsonObject>) {
       return {
         timeline: {
           id: "t",
@@ -289,12 +289,12 @@ describe("parseBookmarksResponses", () => {
                   url: "https://video.twimg.com/v/pl.m3u8",
                 },
                 {
-                  bitrate: 832000,
+                  bitrate: 832_000,
                   content_type: "video/mp4",
                   url: "https://video.twimg.com/v/low.mp4",
                 },
                 {
-                  bitrate: 2176000,
+                  bitrate: 2_176_000,
                   content_type: "video/mp4",
                   url: "https://video.twimg.com/v/high.mp4",
                 },

@@ -233,8 +233,12 @@ export function FolderRail() {
   useHydrateCanvases();
   useHydrateFish();
   useLayoutEffect(() => {
-    if (activeCanvasId) lastOpened.canvases = activeCanvasId;
-    if (activeFishId) lastOpened.fish = activeFishId;
+    if (activeCanvasId) {
+      lastOpened.canvases = activeCanvasId;
+    }
+    if (activeFishId) {
+      lastOpened.fish = activeFishId;
+    }
   }, [activeCanvasId, activeFishId]);
   return (
     <Rail value={railValue} sections={visible} onSectionChange={pickSection} />
@@ -255,7 +259,9 @@ export function FolderSidebar() {
   useEffect(() => preloadWhenIdle(SettingsSidebar.preload), []);
   useHydrateSavedViews();
   useLayoutEffect(() => {
-    if (follow) libraryChrome.setSidebarPanel(follow);
+    if (follow) {
+      libraryChrome.setSidebarPanel(follow);
+    }
   }, [follow]);
 
   const scroll = (

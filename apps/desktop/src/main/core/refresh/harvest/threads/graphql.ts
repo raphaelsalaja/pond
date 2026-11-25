@@ -239,8 +239,8 @@ function parseGraphqlBody(body: string): JsonValue {
 }
 
 /** Walks a GraphQL payload for post nodes; skips quoted/reposted children and carousel items, which carry their own `code`, so they stay nested on the parent. */
-function collectThreadPosts(json: JsonValue): JsonObject[] {
-  const out: JsonObject[] = [];
+function collectThreadPosts(json: JsonValue): Array<JsonObject> {
+  const out: Array<JsonObject> = [];
   const seen = new Set<string>();
   walk(json, false, (node) => {
     const code = OptionalText.parse(node.code);

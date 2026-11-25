@@ -163,12 +163,12 @@ describe("a large Library", () => {
     }, 60_000);
 
     it("returns only the groups a scoped scan touches", () => {
-      expect(scoped?.groups.map((group) => [group.relation, group.ids])).toEqual(
-        [
-          ["exact", ["copy-3", "save-21"]],
-          ["near", ["photo-9", "resized-9"]],
-        ],
-      );
+      expect(
+        scoped?.groups.map((group) => [group.relation, group.ids]),
+      ).toEqual([
+        ["exact", ["copy-3", "save-21"]],
+        ["near", ["photo-9", "resized-9"]],
+      ]);
     });
   });
 });

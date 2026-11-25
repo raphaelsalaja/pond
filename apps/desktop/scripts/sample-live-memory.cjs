@@ -17,7 +17,9 @@ function pondProcesses() {
   const rows = [];
   for (const line of listing.split("\n")) {
     const match = line.trim().match(/^(\d+)\s+(\d+)\s+(\d+)\s+(.*)$/);
-    if (!match) continue;
+    if (!match) {
+      continue;
+    }
     const command = match[4];
     if (
       !command.includes("/Pond.app/Contents/") ||

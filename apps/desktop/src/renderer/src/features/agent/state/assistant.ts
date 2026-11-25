@@ -320,14 +320,22 @@ export const assistant = {
     };
     void refreshChats()
       .then(() => {
-        if (version !== historyVersion) return settle();
+        if (version !== historyVersion) {
+          return settle();
+        }
         const chatId = store.state.chats[0]?.id;
-        if (!chatId) return settle();
-        if (!wasBusy) return void assistant.openChat(chatId);
+        if (!chatId) {
+          return settle();
+        }
+        if (!wasBusy) {
+          return void assistant.openChat(chatId);
+        }
         /** openChat is blocked while a reply runs, so load this fish's own chat directly. */
         void loadMessages(chatId)
           .then((messages) => {
-            if (version !== historyVersion) return;
+            if (version !== historyVersion) {
+              return;
+            }
             hydratePondChat(chatId, messages);
             patch({
               chatId,
@@ -518,7 +526,9 @@ export const assistant = {
         });
       }
     } finally {
-      if (cancelledRequest === requestId) cancelledRequest = null;
+      if (cancelledRequest === requestId) {
+        cancelledRequest = null;
+      }
       patch({
         sending: false,
         requestId: null,
@@ -688,12 +698,21 @@ export function useAssistant() {
     }
     const unsubscribe = window.pond.onAgentChunk((chunk) => {
       /** A reply can finish in a chat the user has since left. */
-      if (store.state.runChatId && chunk.chatId !== store.state.runChatId)
+      if (store.state.runChatId && chunk.chatId !== store.state.runChatId) {
         return;
-      if (chunk.type === "activity") patch({ activity: chunk.activity });
-      if (chunk.type === "sources") patch({ sources: chunk.sources });
-      if (chunk.type === "results") patch({ results: chunk.results });
-      if (chunk.type === "steps") patch({ steps: chunk.steps });
+      }
+      if (chunk.type === "activity") {
+        patch({ activity: chunk.activity });
+      }
+      if (chunk.type === "sources") {
+        patch({ sources: chunk.sources });
+      }
+      if (chunk.type === "results") {
+        patch({ results: chunk.results });
+      }
+      if (chunk.type === "steps") {
+        patch({ steps: chunk.steps });
+      }
     });
     return () => {
       unsubscribe();

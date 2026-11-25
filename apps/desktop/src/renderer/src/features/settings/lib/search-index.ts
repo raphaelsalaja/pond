@@ -105,7 +105,9 @@ function itemEntries(
   return entries;
 }
 
-export function sectionEntries(section: SectionDef): Array<SettingsSearchEntry> {
+export function sectionEntries(
+  section: SectionDef,
+): Array<SettingsSearchEntry> {
   const { config } = section;
   const entries: Array<SettingsSearchEntry> = [];
 

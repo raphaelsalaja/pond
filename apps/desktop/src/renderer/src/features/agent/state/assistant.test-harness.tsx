@@ -29,8 +29,7 @@ export function chatRow(id: string, title: string | null = null): ChatRow {
 }
 
 export function messageRow(
-  message: Pick<MessageRow, "id" | "chatId" | "content"> &
-    Partial<MessageRow>,
+  message: Pick<MessageRow, "id" | "chatId" | "content"> & Partial<MessageRow>,
 ): MessageRow {
   return {
     role: "assistant",

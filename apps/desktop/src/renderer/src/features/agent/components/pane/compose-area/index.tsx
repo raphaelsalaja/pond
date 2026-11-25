@@ -2,11 +2,10 @@ import type { AgentModelOptions } from "@pond/schema";
 import { Button } from "@pond/ui";
 import { isNode } from "@pond/ui/dom";
 import type { AssistantProvider, AssistantSource } from "@shared/assistant";
-import { lazy, type RefObject, Suspense, useRef, useState } from "react";
-import {
-  type AssistantState,
-  assistant,
-} from "@/features/agent/state/assistant";
+import { lazy, Suspense, useRef, useState } from "react";
+import type { RefObject } from "react";
+import { assistant } from "@/features/agent/state/assistant";
+import type { AssistantState } from "@/features/agent/state/assistant";
 import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
 import { ModelPicker } from "@/shared/components/model-picker";
 import { openSettings } from "@/shared/lib/open-settings";

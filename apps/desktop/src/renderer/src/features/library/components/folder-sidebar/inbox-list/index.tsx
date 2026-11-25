@@ -12,11 +12,8 @@ import {
   useInboxReviewScope,
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
-import {
-  type InboxProgress,
-  NotificationIcon,
-  notificationTone,
-} from "@/features/notifications";
+import { NotificationIcon, notificationTone } from "@/features/notifications";
+import type { InboxProgress } from "@/features/notifications";
 import {
   displayTitleForSave,
   SaveCollectionContextMenu,
@@ -224,7 +221,9 @@ export function InboxList() {
         buildBackgroundItems={() => []}
         onOpenSave={(save) => {
           const index = queue?.ids.indexOf(save.id) ?? -1;
-          if (index >= 0) inboxReview.jump(index);
+          if (index >= 0) {
+            inboxReview.jump(index);
+          }
         }}
       >
         <div>

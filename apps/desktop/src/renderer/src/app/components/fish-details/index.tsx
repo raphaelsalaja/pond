@@ -27,8 +27,12 @@ export function FishDetails() {
   const tags = useTags();
 
   useEffect(() => {
-    if (editingId || routineId) libraryChrome.setDetailsOpen(true);
-    if (routineId) fish.closeRoutine();
+    if (editingId || routineId) {
+      libraryChrome.setDetailsOpen(true);
+    }
+    if (routineId) {
+      fish.closeRoutine();
+    }
   }, [editingId, routineId]);
 
   if (!fishId) {

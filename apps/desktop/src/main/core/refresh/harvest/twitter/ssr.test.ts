@@ -24,7 +24,7 @@ describe("ssrResponseBodies", () => {
     expect(JSON.parse(bodies[0] ?? "")).toEqual(tweet);
   });
 
-  it("decodes \\x escapes", () => {
+  it(String.raw`decodes \x escapes`, () => {
     const html = String.raw`kind:"Result.Ok",value:"{\"t\":\"\x3Cb\x3E\"}"`;
     expect(ssrResponseBodies(html)).toEqual(['{"t":"<b>"}']);
   });

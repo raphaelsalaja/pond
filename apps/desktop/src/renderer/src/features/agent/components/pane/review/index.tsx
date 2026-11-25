@@ -1,10 +1,7 @@
 import { Button } from "@pond/ui";
 import type { AssistantChange } from "@shared/assistant";
-import {
-  type ReviewPerform,
-  review,
-  useReview,
-} from "@/features/agent/state/review";
+import { review, useReview } from "@/features/agent/state/review";
+import type { ReviewPerform } from "@/features/agent/state/review";
 import { useFolders } from "@/features/library";
 import { cardKeys } from "../card-keys";
 import { QuestionCard } from "../question-card";
@@ -155,7 +152,7 @@ function TrashPrompt({
       ? { submit: () => act("apply"), cancel: () => act("dismiss") }
       : {},
   );
-  if (!pending)
+  if (!pending) {
     return (
       <QuestionCard.Summary
         label={emptied ? "Emptied Trash" : "Kept Trash"}
@@ -165,6 +162,7 @@ function TrashPrompt({
         muted={!emptied}
       />
     );
+  }
   return (
     <QuestionCard.Root aria-label="Empty Trash?" onKeyDown={onKeyDown}>
       <QuestionCard.Header

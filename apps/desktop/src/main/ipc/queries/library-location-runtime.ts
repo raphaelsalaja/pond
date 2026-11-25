@@ -20,9 +20,7 @@ import {
   stopLibraryTransfers,
 } from "../../core/library-transfers";
 import { downloadActivity } from "../../core/pipeline/download-activity";
-import {
-  createLibraryWorkCoordinator,
-} from "../../core/pipeline/library-work-coordinator";
+import { createLibraryWorkCoordinator } from "../../core/pipeline/library-work-coordinator";
 import type { LibraryWorkSuspension } from "../../core/pipeline/library-work-coordinator";
 import {
   interruptAndDrainReconciler,

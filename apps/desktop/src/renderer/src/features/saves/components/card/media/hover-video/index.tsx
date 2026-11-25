@@ -159,7 +159,9 @@ export function HoverVideo({
   }, [hoverEnabled]);
 
   const armHover = useCallback(() => {
-    if (!hoverEnabled) return;
+    if (!hoverEnabled) {
+      return;
+    }
     window.clearTimeout(releaseTimer.current);
     window.clearTimeout(hoverTimer.current);
     hoverTimer.current = window.setTimeout(() => {
@@ -170,7 +172,9 @@ export function HoverVideo({
 
   /** Enter fires once per hover, so a vetoed activation or a remount under a resting pointer never re-arms; movement does. */
   const onPointerMove = useCallback(() => {
-    if (active || hoverTimer.current !== undefined) return;
+    if (active || hoverTimer.current !== undefined) {
+      return;
+    }
     armHover();
   }, [active, armHover]);
 

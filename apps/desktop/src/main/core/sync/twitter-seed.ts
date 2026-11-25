@@ -8,10 +8,8 @@ import {
 } from "../capture/tweet-draft";
 import type { RichPostDraft } from "../capture/tweet-draft";
 import { pickTitle } from "../refresh/harvest/lib/title";
-import {
-  type BookmarksEntry,
-  draftFromRichTweet,
-} from "../refresh/harvest/twitter";
+import { draftFromRichTweet } from "../refresh/harvest/twitter";
+import type { BookmarksEntry } from "../refresh/harvest/twitter";
 
 interface SaveSeed {
   rawJson: RawJson;

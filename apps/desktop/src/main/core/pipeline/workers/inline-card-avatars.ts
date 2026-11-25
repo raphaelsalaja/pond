@@ -89,7 +89,9 @@ async function inlineCardMedia(capture: Capture, save: Save): Promise<void> {
   await Promise.all(
     urls.map(async (url) => {
       const dataUrl = await resolveCardImage(url, save, byPosition.get(url));
-      if (dataUrl) rewritten.set(url, dataUrl);
+      if (dataUrl) {
+        rewritten.set(url, dataUrl);
+      }
     }),
   );
   if (rewritten.size === 0) {
@@ -166,7 +168,9 @@ async function resolveCardImage(
   const fromDisk =
     (await readDiskBySourceUrl(save, url)) ??
     (positional ? await readSaveFileBytes(save, positional) : null);
-  if (fromDisk) return bytesToCardDataUrl(fromDisk.bytes, fromDisk.mime);
+  if (fromDisk) {
+    return bytesToCardDataUrl(fromDisk.bytes, fromDisk.mime);
+  }
 
   for (const candidate of twimgCandidates(url)) {
     const fetched = await fetchCardImage(candidate);

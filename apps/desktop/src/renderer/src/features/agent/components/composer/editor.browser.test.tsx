@@ -80,7 +80,9 @@ function Harness({
 
 function editable() {
   const node = host.querySelector<HTMLElement>('[role="textbox"]');
-  if (!node) throw new Error("Missing composer");
+  if (!node) {
+    throw new Error("Missing composer");
+  }
   return node;
 }
 
@@ -92,7 +94,9 @@ async function click(name: string) {
   const button = [...host.querySelectorAll("button")].find(
     (item) => item.textContent === name,
   );
-  if (!button) throw new Error(`Missing ${name}`);
+  if (!button) {
+    throw new Error(`Missing ${name}`);
+  }
   await act(async () => button.click());
 }
 
@@ -137,7 +141,7 @@ afterEach(async () => {
 
 it("writes Save mentions as pond-save links and reads them back", () => {
   const value = TokenInput.fromText(
-    "Compare [Suspiria \\[1977\\]](pond-save:film%2F1) and [Inferno](pond-save:inferno).",
+    String.raw`Compare [Suspiria \[1977\]](pond-save:film%2F1) and [Inferno](pond-save:inferno).`,
     saveMentionCodec,
   );
   expect(value).toEqual([
@@ -148,7 +152,7 @@ it("writes Save mentions as pond-save links and reads them back", () => {
     ".",
   ]);
   expect(TokenInput.toText(value, saveMentionCodec)).toBe(
-    "Compare [Suspiria \\[1977\\]](pond-save:film%2F1) and [Inferno](pond-save:inferno).",
+    String.raw`Compare [Suspiria \[1977\]](pond-save:film%2F1) and [Inferno](pond-save:inferno).`,
   );
 });
 

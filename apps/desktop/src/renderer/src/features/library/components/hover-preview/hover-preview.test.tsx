@@ -166,7 +166,9 @@ it("opens the save details from the expand button and closes the preview", async
     title: "Expand reference",
     files: [],
   });
-  if (!save) throw new Error("Invalid fixture");
+  if (!save) {
+    throw new Error("Invalid fixture");
+  }
   pool.upsert(save);
   bridge.use({
     query: { "settings.getPrefs": () => PrefsSchema.parse({}) },

@@ -106,7 +106,9 @@ export async function relocateLibrary(
 
   if (mode === "copy") {
     for (const entry of await readdir(srcResolved)) {
-      if (isLibrarySidecar(entry)) continue;
+      if (isLibrarySidecar(entry)) {
+        continue;
+      }
       const from = join(srcResolved, entry);
       const to = join(destResolved, entry);
       if (existsSync(to)) {

@@ -1,15 +1,11 @@
 import { createParts } from "@ui-sdk/react/primitive";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentProps,
-  type ComponentPropsWithoutRef,
-  type ReactNode,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
+import { useId, useLayoutEffect, useMemo, useRef } from "react";
+import type {
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  ReactNode,
 } from "react";
-import { isHTMLElement } from "../dom";
 import { Tooltip } from "../tooltip";
 import { useWindow, WindowContext } from "./context";
 import { windowHandle } from "./handle";
@@ -185,7 +181,9 @@ function Rail({ className, ...props }: ComponentPropsWithoutRef<"div">) {
   useLayoutEffect(() => {
     const element = ref.current;
     const root = element?.closest<HTMLElement>('[data-slot="window"]');
-    if (!element || !root) return;
+    if (!element || !root) {
+      return;
+    }
     const write = () =>
       root.style.setProperty("--window-rail-width", `${element.offsetWidth}px`);
     const resize = new ResizeObserver(write);

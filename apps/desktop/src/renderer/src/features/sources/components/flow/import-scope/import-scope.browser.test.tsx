@@ -167,9 +167,9 @@ it("saves a new Account's choices without starting the import", async () => {
   await act(async () => toggle("Liked Posts").click());
   await saved();
   expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
-      accountId: "acc-instagram",
-      scope: { listKinds: ["saved"] },
-      start: false,
+    accountId: "acc-instagram",
+    scope: { listKinds: ["saved"] },
+    start: false,
   });
   expect(window.pond.syncRunNow).not.toHaveBeenCalled();
   expect(button("Start Import")).toBeTruthy();
@@ -200,9 +200,9 @@ it("saves an active Account's choices as you change them", async () => {
   await act(async () => toggle("Liked Posts").click());
   await saved();
   expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
-      accountId: "acc-instagram",
-      scope: {},
-      start: false,
+    accountId: "acc-instagram",
+    scope: {},
+    start: false,
   });
   expect(window.pond.syncRunNow).not.toHaveBeenCalled();
 });
@@ -216,9 +216,9 @@ it("saves an active Account with every list turned off", async () => {
   await act(async () => toggle("Saved Posts").click());
   await saved();
   expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
-      accountId: "acc-instagram",
-      scope: { listKinds: [] },
-      start: false,
+    accountId: "acc-instagram",
+    scope: { listKinds: [] },
+    start: false,
   });
   expect(host.querySelector('[role="alert"]')).toBeNull();
 });
@@ -280,9 +280,9 @@ it("keeps both Threads lists on for an Account connected before list choices", a
   await act(async () => toggle("Saved Posts").click());
   await saved();
   expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
-      accountId: "acc-threads",
-      scope: { listKinds: ["liked"] },
-      start: false,
+    accountId: "acc-threads",
+    scope: { listKinds: ["liked"] },
+    start: false,
   });
 });
 
@@ -444,12 +444,12 @@ it("syncs once you leave after picking collections, so older saves get filed", a
   await pick("Collections", "Design References");
   await saved();
   expect(window.pond.query).toHaveBeenCalledWith("accounts.setImportScope", {
-      accountId: "acc-instagram",
-      scope: {
-        listKinds: ["saved"],
-        collections: [{ id: "915", name: "Design References" }],
-      },
-      start: false,
+    accountId: "acc-instagram",
+    scope: {
+      listKinds: ["saved"],
+      collections: [{ id: "915", name: "Design References" }],
+    },
+    start: false,
   });
   await act(async () => {});
   expect(window.pond.syncRunNow).not.toHaveBeenCalled();

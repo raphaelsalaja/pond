@@ -329,10 +329,14 @@ export async function removeSave(id: string): Promise<void> {
   }
 }
 
-export async function listSaveFolderIds(savesDir: string): Promise<string[]> {
-  const ids: string[] = [];
+export async function listSaveFolderIds(
+  savesDir: string,
+): Promise<Array<string>> {
+  const ids: Array<string> = [];
   for (const entry of await readdir(savesDir, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !isSaveFolderName(entry.name)) continue;
+    if (!entry.isDirectory() || !isSaveFolderName(entry.name)) {
+      continue;
+    }
     ids.push(entry.name.slice(0, -".info".length));
   }
   return ids;
@@ -343,7 +347,7 @@ export async function* scanLibrary(root?: string): AsyncGenerator<{
   mtimeMs: number;
 }> {
   const savesDir = root ? join(root, "items") : resolvePaths().savesDir;
-  let ids: string[] = [];
+  let ids: Array<string> = [];
   try {
     ids = await listSaveFolderIds(savesDir);
   } catch {

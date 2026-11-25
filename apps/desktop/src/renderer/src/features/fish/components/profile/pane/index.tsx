@@ -3,8 +3,10 @@ import { Button, Pane } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
-interface HeaderProps
-  extends Omit<React.ComponentPropsWithoutRef<"header">, "title"> {
+interface HeaderProps extends Omit<
+  React.ComponentPropsWithoutRef<"header">,
+  "title"
+> {
   title?: React.ReactNode;
   onClose: () => void;
 }

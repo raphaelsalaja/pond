@@ -44,12 +44,18 @@ function resourcesDir(): string | null {
 
 /** Arial, Apple Color Emoji and Hiragino are read from macOS; Pond may not ship them. */
 function getRenderer(): Promise<PostRenderer | null> {
-  if (process.platform !== "darwin") return Promise.resolve(null);
+  if (process.platform !== "darwin") {
+    return Promise.resolve(null);
+  }
   /** Without a build there is nothing to cache, so one built later is picked up without a restart. */
   const dir = renderer ? null : resourcesDir();
-  if (!renderer && !dir) return Promise.resolve(null);
+  if (!renderer && !dir) {
+    return Promise.resolve(null);
+  }
   renderer ??= (async () => {
-    if (!dir) return null;
+    if (!dir) {
+      return null;
+    }
     try {
       return await createPostRenderer({
         wasmPath: join(dir, "pond-render.wasm"),

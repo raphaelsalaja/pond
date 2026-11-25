@@ -6,12 +6,11 @@ import {
   agentModelOptionsKey,
   runControlsForOptions,
 } from "@shared/agent-model-options";
-import {
-  ASSISTANT_ACTIVITY_LABELS,
-  ASSISTANT_MODELS,
-  type AssistantActivity,
-  type AssistantProvider,
-  type AssistantSource,
+import { ASSISTANT_ACTIVITY_LABELS, ASSISTANT_MODELS } from "@shared/assistant";
+import type {
+  AssistantActivity,
+  AssistantProvider,
+  AssistantSource,
 } from "@shared/assistant";
 import { DEFAULT_FISH_NAME } from "@shared/fish-contracts";
 import type { FishColor } from "@shared/fish-contracts";

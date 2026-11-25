@@ -191,7 +191,7 @@ export function SaveCitation({
       showCitedSentence(event.currentTarget),
     onBlur: hideCitedSentence,
   };
-  if (compact)
+  if (compact) {
     return (
       <Button
         type="button"
@@ -206,6 +206,7 @@ export function SaveCitation({
         <span>{reference}</span>
       </Button>
     );
+  }
   return (
     <InlineReference
       data-citation=""

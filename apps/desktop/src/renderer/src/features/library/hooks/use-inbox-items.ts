@@ -151,7 +151,9 @@ function useInboxEntries(): Array<Entry> {
     (state) =>
       ids.map((id) => {
         const save = state.byId.get(id);
-        if (!save) return "unloaded";
+        if (!save) {
+          return "unloaded";
+        }
         return save.deletedAt != null ? "deleted" : (save.inboxState ?? null);
       }),
     { compare: shallow },
@@ -169,11 +171,15 @@ function useInboxEntries(): Array<Entry> {
 
     /** Resolved outcomes and saves whose state left the scope drop out; an unloaded save stays as a placeholder. */
     const scopeState = scope === "snoozed" ? "snoozed" : "review";
-    const saves = ids.flatMap((id, index): Entry[] => {
+    const saves = ids.flatMap((id, index): Array<Entry> => {
       const outcome = queue?.outcomes[id];
       const state = states[index];
-      if (outcome !== undefined && outcome !== "skip") return [];
-      if (state !== "unloaded" && state !== scopeState) return [];
+      if (outcome !== undefined && outcome !== "skip") {
+        return [];
+      }
+      if (state !== "unloaded" && state !== scopeState) {
+        return [];
+      }
       const entry: Entry = {
         type: "save",
         key: `save:${id}`,

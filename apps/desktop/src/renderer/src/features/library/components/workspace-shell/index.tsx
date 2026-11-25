@@ -1,10 +1,6 @@
 import { cn, cssVars, Window } from "@pond/ui";
-import {
-  type ComponentPropsWithoutRef,
-  useDeferredValue,
-  useEffect,
-  useState,
-} from "react";
+import { useDeferredValue, useEffect, useState } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import {
   DETAILS_WIDTH_DEFAULT,
   DETAILS_WIDTH_MAX,
@@ -83,7 +79,9 @@ interface RailProps extends ComponentPropsWithoutRef<"div"> {}
 
 function Rail(props: RailProps) {
   const { sidebarHidden } = useShellLayout();
-  if (sidebarHidden) return null;
+  if (sidebarHidden) {
+    return null;
+  }
   return <Window.Rail {...props} />;
 }
 

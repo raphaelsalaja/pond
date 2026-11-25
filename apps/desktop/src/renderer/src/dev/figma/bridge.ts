@@ -200,7 +200,9 @@ async function runJob(job: Step) {
 }
 
 async function tick() {
-  if (busy) return;
+  if (busy) {
+    return;
+  }
   const res = await fetch("/src/dev/figma/job.txt", { cache: "no-store" });
   const text = (await res.text()).trim();
   if (!text.startsWith("{")) {

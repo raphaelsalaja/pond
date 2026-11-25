@@ -241,7 +241,6 @@ describe("Eagle package round trip", () => {
 });
 
 describe("Eagle package transfer", () => {
-
   it("imports a synthetic Eagle directory and preserves nested mappings", async () => {
     const fixture = await directoryFixture();
     const target = fakeRuntime();

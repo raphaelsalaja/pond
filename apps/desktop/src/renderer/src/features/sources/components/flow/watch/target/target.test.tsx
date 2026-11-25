@@ -101,7 +101,10 @@ it("is a plain input that only submits on Watch", async () => {
   expect(watches.addWatch).not.toHaveBeenCalled();
   expect(watchButton().disabled).toBe(false);
   await submit();
-  expect(watches.addWatch).toHaveBeenCalledExactlyOnceWith("youtube", "drumarjohnson");
+  expect(watches.addWatch).toHaveBeenCalledExactlyOnceWith(
+    "youtube",
+    "drumarjohnson",
+  );
   await finishAdding();
   expect(onAdded).toHaveBeenCalledWith("watch-1");
 });

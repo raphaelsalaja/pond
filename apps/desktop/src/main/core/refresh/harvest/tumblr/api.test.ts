@@ -3,8 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { readTumblrCapture, readTumblrLikes } from "./api";
 import type { TumblrGet } from "./api";
 
-const missing: TumblrGet = async () =>
-  new Response("missing", { status: 404 });
+const missing: TumblrGet = async () => new Response("missing", { status: 404 });
 
 let respond: TumblrGet = missing;
 const calls: Array<Parameters<TumblrGet>> = [];

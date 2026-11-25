@@ -118,10 +118,7 @@ export const bridge = {
   },
 
   /** Delivers an event to every listener the app registered through `pond.on*`. */
-  emit<K extends Subscription>(
-    key: K,
-    ...args: Parameters<Listener<K>>
-  ): void {
+  emit<K extends Subscription>(key: K, ...args: Parameters<Listener<K>>): void {
     for (const listener of listeners.get(key) ?? []) {
       /** SAFETY: listeners for `key` were registered through `PondApi[key]`, so they accept its event arguments. */
       (listener as (...values: Parameters<Listener<K>>) => void)(...args);

@@ -33,7 +33,7 @@ interface TimelineEntry {
 interface TimelineInstruction {
   type?: string;
   __typename?: string;
-  entries?: TimelineEntry[];
+  entries?: Array<TimelineEntry>;
 }
 
 interface Timeline {
@@ -179,10 +179,10 @@ async function inPageBookmarksApi(
   const waitDeadline = waitStart + 20_000;
   let lastNudge = waitStart;
   while (!template && Date.now() < waitDeadline) {
-    if (Date.now() - lastNudge > 1_500) {
+    if (Date.now() - lastNudge > 1500) {
       lastNudge = Date.now();
       try {
-        window.scrollBy({ top: 2_000, behavior: "instant" });
+        window.scrollBy({ top: 2000, behavior: "instant" });
       } catch {}
     }
     await sleep(250);
@@ -256,8 +256,12 @@ async function inPageBookmarksApi(
   };
   const extractCursor = (json: BookmarksResponse): string | null => {
     for (const e of addedEntries(json)) {
-      if (!(e.entryId ?? e.entry_id)?.startsWith("cursor-bottom")) continue;
-      if (e.content?.value !== undefined) return e.content.value;
+      if (!(e.entryId ?? e.entry_id)?.startsWith("cursor-bottom")) {
+        continue;
+      }
+      if (e.content?.value !== undefined) {
+        return e.content.value;
+      }
     }
     return null;
   };

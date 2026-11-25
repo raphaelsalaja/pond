@@ -945,7 +945,9 @@ describe("buildSaveMenu", () => {
           row("Shots", "Refs"),
           row("Inbox", null),
         ],
-        "folders.memberships": () => [{ saveId: "file-save", folderId: "Refs" }],
+        "folders.memberships": () => [
+          { saveId: "file-save", folderId: "Refs" },
+        ],
       },
     });
     await folders.refresh();
@@ -975,8 +977,9 @@ describe("buildSaveMenu", () => {
     expect(action).toMatchObject({
       shortcut: shortcutGlyphs("save.assign-multiple-folders"),
     });
-    if (!action || !("onClick" in action))
+    if (!action || !("onClick" in action)) {
       throw new Error("Missing Add to Multiple Folders action");
+    }
     action.onClick?.();
     expect(folderPickerStore.state.mode).toBe("multiple");
     expect(folderPickerStore.state.ids.length).toBeGreaterThan(0);
@@ -1050,7 +1053,9 @@ describe("buildSaveMenu", () => {
             createdAt: new Date(),
           },
         ],
-        "folders.memberships": () => [{ saveId: "file-save", folderId: "refs" }],
+        "folders.memberships": () => [
+          { saveId: "file-save", folderId: "refs" },
+        ],
       },
     });
     await folders.refresh();

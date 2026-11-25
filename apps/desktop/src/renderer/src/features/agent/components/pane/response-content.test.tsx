@@ -58,7 +58,7 @@ async function press(label: string) {
   await act(async () => button?.click());
 }
 
-async function renderReview(changes: AssistantChange[]) {
+async function renderReview(changes: Array<AssistantChange>) {
   await act(async () =>
     root.render(
       <ResponseContent
