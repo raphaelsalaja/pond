@@ -25,6 +25,7 @@
   display: flex;
   flex: 1;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
 
   &[hidden] {
@@ -39,6 +40,7 @@
   flex: 1;
   flex-direction: column;
   gap: var(--ds-space-lg);
+  min-width: 0;
   min-height: 0;
   padding-block: var(--ds-space-xl) var(--ds-space-2xl);
   overflow: hidden auto;
@@ -48,6 +50,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-xl);
+  min-width: 0;
 }
 
 .count {
