@@ -47,8 +47,11 @@ describe("parseBookmarkFolders", () => {
 const CapturesSchema = z.array(z.object({ url: z.string() }));
 
 /** Stands in for X: the bookmarks list has loaded, and routing to a folder sends that folder's request. */
-function bookmarksPage(url: string) {
-  const dom = new JSDOM('<div data-testid="primaryColumn"></div>', {
+function bookmarksPage(
+  url: string,
+  markup = '<div data-testid="primaryColumn"></div>',
+) {
+  const dom = new JSDOM(markup, {
     runScripts: "outside-only",
     url,
   });
@@ -79,6 +82,16 @@ describe("buildOpenBookmarkFolderExpression", () => {
     expect(await open("2111")).toBe(true);
     expect(dom.window.location.pathname).toBe("/i/history/bookmarks/2111");
     expect(captures()).toEqual([{ url: "BookmarkFolderTimeline" }]);
+  });
+
+  it("opens folders on x-web, which renders without test ids", async () => {
+    const { dom, open } = bookmarksPage(
+      "https://x.com/i/history",
+      "<main></main>",
+    );
+
+    expect(await open("2111")).toBe(true);
+    expect(dom.window.location.pathname).toBe("/i/history/bookmarks/2111");
   });
 
   it("keeps the older bookmarks path when X hasn't moved it under History", async () => {
