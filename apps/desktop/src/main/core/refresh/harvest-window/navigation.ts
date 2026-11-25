@@ -24,6 +24,13 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
     ) {
       return true;
     }
+    /** X's x-web client sends signed-out visitors to its onboarding flow with the page they wanted. */
+    if (
+      p.startsWith("/i/jf/onboarding") &&
+      u.searchParams.has("redirect_after_login")
+    ) {
+      return true;
+    }
     if (u.hostname.includes("accounts.google.com")) return true;
     if (u.hostname.includes("login.reddit.com")) return true;
     return false;
