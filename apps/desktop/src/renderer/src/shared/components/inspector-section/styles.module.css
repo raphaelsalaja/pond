@@ -1,7 +1,6 @@
 .section {
   flex-shrink: 0;
-  padding-top: var(--ds-space-xl);
-  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+  padding-top: var(--ds-space-md);
 }
 
 .item {
@@ -36,7 +35,7 @@
   min-width: 0;
   font-size: var(--ds-text-small);
   font-weight: var(--ds-weight-medium);
-  line-height: 1.5;
+  line-height: var(--ds-leading-small);
   color: var(--ds-foreground-primary);
 }
 

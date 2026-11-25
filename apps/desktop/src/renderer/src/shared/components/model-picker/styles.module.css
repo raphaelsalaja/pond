@@ -29,6 +29,14 @@
   color: var(--ds-foreground-tertiary);
 }
 
+.expand {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  margin-left: var(--ds-space-2xs);
+  color: var(--ds-foreground-tertiary);
+}
+
 .option-submenu > svg:last-child {
   margin-inline-start: var(--ds-space-md);
 }
