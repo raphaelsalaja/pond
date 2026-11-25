@@ -1,6 +1,7 @@
 import { Button } from "@pond/ui";
+import { useId } from "react";
 import { openSettings } from "@/shared/lib/open-settings";
-import { ErrorNotice } from "../../error-notice";
+import { QuestionCard } from "../question-card";
 import styles from "./styles.module.css";
 
 const OPENAI_BILLING_URL =
@@ -46,15 +47,24 @@ export function responseErrorCopy(error: string): ResponseErrorCopy {
   };
 }
 
+/** A reply that failed, said on the same card the fish asks and confirms with. */
 export function ResponseError({ error }: { error: string }) {
+  const titleId = useId();
   const copy = responseErrorCopy(error);
   const action = copy.action;
   return (
-    <ErrorNotice
+    <QuestionCard.Root
       className={styles.notice}
-      title={copy.title}
-      actions={
-        action ? (
+      role="alert"
+      aria-labelledby={titleId}
+    >
+      <QuestionCard.Header
+        title={copy.title}
+        titleId={titleId}
+        description={copy.description}
+      />
+      {action ? (
+        <QuestionCard.Footer>
           <Button
             variant="secondary"
             size="sm"
@@ -66,10 +76,8 @@ export function ResponseError({ error }: { error: string }) {
           >
             {action.label}
           </Button>
-        ) : null
-      }
-    >
-      {copy.description}
-    </ErrorNotice>
+        </QuestionCard.Footer>
+      ) : null}
+    </QuestionCard.Root>
   );
 }
