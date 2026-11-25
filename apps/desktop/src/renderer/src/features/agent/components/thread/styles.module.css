@@ -20,7 +20,8 @@
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  padding: var(--ds-space-xl) var(--ds-space-2xl) var(--ds-space-lg);
+  /* No end padding: the sticky footer sits on the bottom edge and owns the space under the composer. */
+  padding: var(--ds-space-xl) var(--ds-space-2xl) 0;
   overflow: auto;
   scrollbar-gutter: stable;
 }
@@ -45,22 +46,26 @@
   position: sticky;
   bottom: 0;
   z-index: 1;
-  padding-top: 48px;
+  padding-top: 64px;
+  padding-bottom: var(--ds-space-lg);
   margin-top: auto;
 }
 
+/* Content dissolves over the whole space above the composer on an eased curve, never in a hard band. */
 .footer::before {
   position: absolute;
-  inset: 0 -24px -12px;
+  inset: 0 -24px;
   z-index: -1;
   pointer-events: none;
   content: "";
   background: linear-gradient(
     to bottom,
     transparent 0,
-    color-mix(in oklab, var(--ds-background-primary) 30%, transparent) 8px,
-    color-mix(in oklab, var(--ds-background-primary) 75%, transparent) 20px,
-    var(--ds-background-primary) 32px
+    color-mix(in oklab, var(--ds-background-primary) 8%, transparent) 12px,
+    color-mix(in oklab, var(--ds-background-primary) 25%, transparent) 24px,
+    color-mix(in oklab, var(--ds-background-primary) 50%, transparent) 36px,
+    color-mix(in oklab, var(--ds-background-primary) 78%, transparent) 48px,
+    var(--ds-background-primary) 64px
   );
 }
 

@@ -12,7 +12,7 @@ import { IconFolder, IconStar } from "@pond/icons";
 ```
 
 <!-- counts -->
-371 icons: 355 outline and 16 solid, plus 145 open states. 90 are folder picker objects. 18 registered parts.
+372 icons: 356 outline and 16 solid, plus 145 open states. 90 are folder picker objects. 18 registered parts.
 <!-- /counts -->
 
 There is one drawing per glyph, and nearly every glyph is a line drawing.
@@ -56,10 +56,6 @@ helpers in `helpers.mjs` from the measurements in `style.json`.
    `parts/`, checks the manifest against the drawings, then rebuilds
    `index.ts`, `concepts.md`, and the counts above. When a check fails it
    writes `REPORT.md` and stops. CI runs the check with `--check`.
-
-Browse the set in `lab/index.html`, opened straight from disk in any
-browser: search by tag, the concepts table, parts boards, and the stroke
-test. `generate` writes the page's `lab/data.js`, so run it once first.
 
 ## Brand marks
 
