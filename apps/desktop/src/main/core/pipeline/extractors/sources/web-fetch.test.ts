@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { RateLimitedError } from "../errors";
 import { fetchHtml } from "./web-fetch";
 
 function htmlResponse(body: string, status = 200) {
@@ -53,6 +54,53 @@ describe("fetchHtml", () => {
     await expect(fetchHtml("https://example.com/")).rejects.toThrow(
       "web fetch failed: fetch failed (ECONNRESET)",
     );
+  });
+
+  it("defers a 429 as rate limited with the response retry-after", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("", {
+          status: 429,
+          headers: { "retry-after": "60" },
+        }),
+      ),
+    );
+
+    const error = await fetchHtml("https://example.com/").catch((e) => e);
+    expect(error).toBeInstanceOf(RateLimitedError);
+    expect(error.retryAfterSec).toBe(60);
+    expect(error.message).toContain("web fetch 429");
+  });
+
+  it("parses a retry-after HTTP date into seconds", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("", {
+          status: 429,
+          headers: {
+            "retry-after": new Date(Date.now() + 120_000).toUTCString(),
+          },
+        }),
+      ),
+    );
+
+    const error = await fetchHtml("https://example.com/").catch((e) => e);
+    expect(error).toBeInstanceOf(RateLimitedError);
+    expect(error.retryAfterSec).toBeGreaterThan(100);
+    expect(error.retryAfterSec).toBeLessThanOrEqual(120);
+  });
+
+  it("defers a 429 without a retry-after header", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("", { status: 429 })),
+    );
+
+    const error = await fetchHtml("https://example.com/").catch((e) => e);
+    expect(error).toBeInstanceOf(RateLimitedError);
+    expect(error.retryAfterSec).toBeUndefined();
   });
 
   it("treats a server error as transient and a missing page as terminal", async () => {
