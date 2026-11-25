@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { draftInChat, openFishChat } from "@/features/agent";
+import { draftInChat } from "@/features/agent";
 import {
+  fish,
   fishIdFromPath,
   useFishEditingId,
   useOpenRoutineId,
@@ -25,6 +26,7 @@ export function FishDetails() {
 
   useEffect(() => {
     if (editingId || routineId) libraryChrome.setDetailsOpen(true);
+    if (routineId) fish.closeRoutine();
   }, [editingId, routineId]);
 
   if (!fishId) return null;
@@ -34,10 +36,10 @@ export function FishDetails() {
       folders={folders}
       tagNames={tags.map((tag) => tag.name)}
       onClose={() => libraryChrome.setDetailsOpen(false)}
+      onNewRoutine={() => draftInChat("Set up a routine: ")}
       onEditRoutine={(routine) =>
         draftInChat(`Edit your routine: ${routine.name}. `)
       }
-      onOpenChat={(chatId) => openFishChat(fishId, chatId)}
     />
   );
 }

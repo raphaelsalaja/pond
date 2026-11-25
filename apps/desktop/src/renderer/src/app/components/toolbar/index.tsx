@@ -1,7 +1,7 @@
 import { IconAlbum2, IconDots } from "@pond/icons";
 import { Button, Menu, Window } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
-import { lazy, Suspense, useState } from "react";
+import { useState } from "react";
 import { ChromeHistoryNav } from "@/app/components/chrome-toolbar";
 import { canvasIdFromPath, useCanvas } from "@/features/canvas";
 import { fishIdFromPath } from "@/features/fish";
@@ -37,12 +37,6 @@ import { usePrefs } from "@/shared/state/prefs";
 import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
 import { saveLabel } from "./labels";
 import styles from "./styles.module.css";
-
-const FishChatActions = lazy(() =>
-  import("@/features/agent/chat-actions").then((module) => ({
-    default: module.FishChatActions,
-  })),
-);
 
 function Breadcrumbs() {
   const router = useRouter();
@@ -278,11 +272,6 @@ function Trailing() {
   const details = useShellDetails();
   return (
     <Window.Trailing>
-      {details === "fish" ? (
-        <Suspense fallback={null}>
-          <FishChatActions />
-        </Suspense>
-      ) : null}
       {details ? <SidebarToggle side="right" open={detailsOpen} /> : null}
     </Window.Trailing>
   );

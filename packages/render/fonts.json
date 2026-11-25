@@ -74,5 +74,45 @@
     "pack": "sf",
     "variations": { "wght": 700, "opsz": 17 },
     "ranges": [[0, 1114111]]
+  },
+  {
+    "kind": "fallback",
+    "family": "Noto Sans Oriya",
+    "weight": 400,
+    "file": "NotoSansOriya.ttf",
+    "pack": "scripts",
+    "ranges": [[2816, 2943]]
+  },
+  {
+    "kind": "fallback",
+    "family": "Noto Sans Kannada",
+    "weight": 400,
+    "file": "NotoSansKannada.ttf",
+    "pack": "scripts",
+    "ranges": [[3200, 3327]]
+  },
+  {
+    "kind": "fallback",
+    "family": "Thonburi",
+    "weight": 400,
+    "file": "Thonburi.ttf",
+    "pack": "scripts",
+    "ranges": [[3584, 3711]]
+  },
+  {
+    "kind": "fallback",
+    "family": "Kohinoor Devanagari",
+    "weight": 400,
+    "file": "KohinoorDevanagari.ttf",
+    "pack": "scripts",
+    "ranges": [[2304, 2431], [43232, 43263]]
+  },
+  {
+    "kind": "fallback",
+    "family": "Kohinoor Bangla",
+    "weight": 400,
+    "file": "KohinoorBangla.ttf",
+    "pack": "scripts",
+    "ranges": [[2432, 2559]]
   }
 ]

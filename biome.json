@@ -16,13 +16,10 @@
       "!branding",
       "!.mobbin",
       "!.impeccable",
-      "!apps/desktop/src/renderer/src/prototypes",
       "!packages/icons/concepts.md",
-      "!packages/icons/lab",
       "!packages/icons/next",
       "!packages/icons/seed",
       "!packages/icons/svg/manifest.json",
-      "!packages/ui/lab",
       "!packages/theme/src/colors/palette.css",
       "!packages/theme/src/colors/scale.css"
     ]
