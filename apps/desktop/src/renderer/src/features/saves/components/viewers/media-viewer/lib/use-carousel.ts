@@ -9,13 +9,15 @@ function slideNodes(scroller: HTMLElement) {
 
 function centeredIndex(scroller: HTMLElement): number {
   /** Slide rects are transform-aware, so the viewport must be too: clientWidth ignores an in-flight FLIP. */
-  const rect = scroller.getBoundingClientRect();
-  const viewportCenter = rect.left + rect.width / 2;
+  const scrollerRect = scroller.getBoundingClientRect();
+  const viewportCenter = scrollerRect.left + scrollerRect.width / 2;
   let best = 0;
   let bestDist = Number.POSITIVE_INFINITY;
   slideNodes(scroller).forEach((node, i) => {
-    const rect = node.getBoundingClientRect();
-    const dist = Math.abs((rect.left + rect.right) / 2 - viewportCenter);
+    const slideRect = node.getBoundingClientRect();
+    const dist = Math.abs(
+      (slideRect.left + slideRect.right) / 2 - viewportCenter,
+    );
     if (dist < bestDist) {
       bestDist = dist;
       best = i;
@@ -32,12 +34,19 @@ function centerSlide(
   const nodes = slideNodes(scroller);
   const slide = nodes[clamp(index, 0, nodes.length - 1)];
   if (!slide) return;
-  const elRect = scroller.getBoundingClientRect();
+  const scrollerRect = scroller.getBoundingClientRect();
   const slideRect = slide.getBoundingClientRect();
   const delta =
-    slideRect.left + slideRect.width / 2 - (elRect.left + elRect.width / 2);
-  if (Math.abs(delta) > 1)
-    scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior });
+    slideRect.left +
+    slideRect.width / 2 -
+    (scrollerRect.left + scrollerRect.width / 2);
+  /** scrollLeft is layout space; divide the visual delta by the in-flight FLIP scale. */
+  const scale = scroller.offsetWidth
+    ? scrollerRect.width / scroller.offsetWidth
+    : 1;
+  const layoutDelta = scale ? delta / scale : delta;
+  if (Math.abs(layoutDelta) > 1)
+    scroller.scrollTo({ left: scroller.scrollLeft + layoutDelta, behavior });
 }
 
 export function useLockedSlideRatio() {
