@@ -1,0 +1,295 @@
+/*
+ * Lens's question card: flat, on a hairline border with no shadow. Each part pads itself: the
+ * question, options as separate outlined rows, then a footer strip.
+ */
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-width: var(--message-max-width, 400px);
+  overflow: hidden;
+  font-size: var(--ds-text-body);
+  line-height: 20px;
+  color: var(--ds-foreground-primary);
+  background: var(--ds-background-primary);
+  border: 1px solid
+    color-mix(in oklab, var(--ds-border-subtle) 50%, transparent);
+  border-radius: var(--ds-radius-lg);
+  animation: enter var(--ds-duration-medium) var(--ds-easing-snap) both;
+}
+
+.header {
+  display: flex;
+  gap: var(--ds-space-lg);
+  align-items: flex-start;
+  min-width: 0;
+  padding: var(--ds-space-xl) var(--ds-space-xl) var(--ds-space-2xs);
+}
+
+/* Straight into the footer, or with nothing after it, the question keeps its own bottom padding. */
+.header:is(:last-child, :has(+ .footer)) {
+  padding-bottom: var(--ds-space-xl);
+}
+
+/* Title and summary share one size; weight and color carry the difference. */
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2xs);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  line-height: 20px;
+  color: var(--ds-foreground-primary);
+}
+
+.description {
+  margin: 0;
+  color: var(--ds-foreground-secondary);
+  text-wrap: pretty;
+}
+
+/* Each option is its own outlined row; the chosen one is outlined in the accent. */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-sm);
+  min-width: 0;
+  padding: var(--ds-space-lg) var(--ds-space-xl) var(--ds-space-md);
+  margin: 0;
+  border: 0;
+}
+
+/* Straight into the footer, the options keep the same room below them as the question has above. */
+.options:has(+ .footer) {
+  padding-bottom: var(--ds-space-xl);
+}
+
+.option {
+  display: flex;
+  gap: var(--ds-space-lg);
+  align-items: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: var(--ds-space-md) var(--ds-space-lg);
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  background: var(--ds-background-primary);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in oklab, var(--ds-border-subtle) 50%, transparent);
+  transition:
+    background-color var(--ds-duration-medium) var(--ds-easing-in-out),
+    box-shadow var(--ds-duration-medium) var(--ds-easing-in-out);
+
+  @media (hover: hover) {
+    &:hover {
+      background: color-mix(
+        in oklab,
+        var(--ds-surface-primary) 40%,
+        transparent
+      );
+    }
+  }
+
+  &[data-selected] {
+    background: color-mix(in oklab, var(--ds-surface-primary) 60%, transparent);
+    box-shadow: inset 0 0 0 1px var(--ds-accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 0 0 1px var(--ds-border-subtle),
+      0 0 0 1px var(--ds-background-primary),
+      0 0 0 3px var(--ds-foreground-primary);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+/* A filled radio in the accent with a white dot, like Lens's. */
+.radio {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  background: color-mix(in oklab, var(--ds-surface-primary) 50%, transparent);
+  border: 1px solid
+    color-mix(in oklab, var(--ds-border-subtle) 65%, transparent);
+  border-radius: var(--ds-radius-full);
+  transition:
+    background-color var(--ds-duration-snap) var(--ds-easing-standard),
+    border-color var(--ds-duration-snap) var(--ds-easing-standard);
+
+  .option[data-selected] & {
+    background: var(--ds-accent);
+    border-color: var(--ds-accent);
+  }
+
+  .option[data-selected] &::after {
+    width: 6px;
+    height: 6px;
+    content: "";
+    background: var(--ds-accent-contrast);
+    border-radius: var(--ds-radius-full);
+  }
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.label {
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
+}
+
+.hint {
+  color: var(--ds-foreground-tertiary);
+}
+
+.error {
+  margin: 0 var(--ds-space-xl) var(--ds-space-lg);
+  font-size: var(--ds-text-small);
+  color: var(--ds-danger-foreground);
+}
+
+.shortcut {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  font-family: inherit;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  line-height: 18px;
+  color: var(--ds-foreground-secondary);
+  background: var(--ds-surface-secondary);
+  border-radius: var(--ds-radius-xs);
+}
+
+/* A strip under a hairline, with the actions at the end. */
+.footer {
+  display: flex;
+  gap: var(--ds-space-md);
+  align-items: center;
+  justify-content: flex-end;
+  padding: var(--ds-space-lg) var(--ds-space-xl);
+  border-top: 1px solid
+    color-mix(in oklab, var(--ds-border-subtle) 50%, transparent);
+}
+
+/* The folded card: one line of what happened, an action at the end. */
+.summary {
+  gap: 0;
+  padding: var(--ds-space-md) var(--ds-space-md) var(--ds-space-md)
+    var(--ds-space-xl);
+}
+
+.summary-row {
+  display: flex;
+  gap: var(--ds-space-lg);
+  align-items: center;
+  min-width: 0;
+  min-height: var(--ds-size-sm);
+}
+
+.summary-toggle {
+  display: flex;
+  flex: 1;
+  gap: var(--ds-space-sm);
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  text-align: start;
+}
+
+/* One line when there's room; in a narrow column the detail drops under the label instead of breaking apart. */
+.summary-text {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  column-gap: var(--ds-space-sm);
+  align-items: baseline;
+  min-width: 0;
+}
+
+.summary-label {
+  max-width: 100%;
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-primary);
+
+  .summary[data-muted] & {
+    color: var(--ds-foreground-secondary);
+  }
+}
+
+.summary-detail {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-foreground-tertiary);
+  white-space: nowrap;
+}
+
+.summary-action {
+  display: flex;
+  flex: none;
+  gap: var(--ds-space-xs);
+  align-items: center;
+}
+
+.summary-body {
+  padding: var(--ds-space-md) var(--ds-space-sm) var(--ds-space-2xs) 0;
+  margin-top: var(--ds-space-md);
+  border-top: 1px solid
+    color-mix(in oklab, var(--ds-border-subtle) 55%, transparent);
+}
+
+.chevron {
+  flex: none;
+  color: var(--ds-foreground-tertiary);
+  transition: rotate var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &[data-open] {
+    rotate: 180deg;
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: none;
+  }
+
+  .option,
+  .radio,
+  .shortcut,
+  .chevron {
+    transition: none;
+  }
+}

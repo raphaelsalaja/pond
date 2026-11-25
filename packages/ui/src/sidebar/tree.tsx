@@ -10,21 +10,8 @@ import {
 } from "@ui-sdk/react/tree";
 import { clsx as cn } from "clsx";
 import type { ComponentProps } from "react";
+import { withClass } from "../shared/state-class";
 import styles from "./styles.module.css";
-
-type StateClassName<State> =
-  | string
-  | ((state: State) => string | undefined)
-  | undefined;
-
-function withClass<State>(
-  base: string | undefined,
-  className: StateClassName<State>,
-) {
-  return className instanceof Function
-    ? (state: State) => cn(base, className(state))
-    : cn(base, className);
-}
 
 type TreeProps<Mode extends TreeMode = "single"> = TreeRootProps<Mode>;
 

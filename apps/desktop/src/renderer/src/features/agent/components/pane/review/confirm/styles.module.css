@@ -1,0 +1,4 @@
+/* The card stands a step apart from the bubbles above it. */
+.card {
+  margin-top: var(--ds-space-md);
+}
