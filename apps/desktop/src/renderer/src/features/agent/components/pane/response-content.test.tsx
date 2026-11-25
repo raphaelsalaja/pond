@@ -383,6 +383,7 @@ it("leaves a finished reply without a work summary", async () => {
     error: null,
     failed: null,
     queued: null,
+    runChatId: null,
     focusRequest: 0,
   };
   await act(async () =>
@@ -429,6 +430,7 @@ const idle: AssistantState = {
   error: null,
   failed: null,
   queued: null,
+  runChatId: null,
   focusRequest: 0,
 };
 

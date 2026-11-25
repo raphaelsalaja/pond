@@ -75,7 +75,7 @@ export function ComposeArea({
   return (
     <div className={styles["compose-area"]}>
       <ResponseAnnouncement
-        key={state.chatId ?? "draft"}
+        key={state.chatId ?? `new:${state.fishId}`}
         running={running}
         responseId={lastAssistantId}
         requiredAction={requiredAction}
@@ -198,7 +198,7 @@ export function ComposeArea({
           }
           editor={
             <ComposerEditor
-              key={state.chatId ?? "draft"}
+              key={state.chatId ?? `new:${state.fishId}`}
               ref={inputRef}
               value={state.draft}
               disabled={state.loading || !provider}
