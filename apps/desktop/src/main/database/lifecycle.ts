@@ -8,6 +8,7 @@ import { backfillVecBatch } from "../core/vec-index";
 import { readOrCreateLibraryId } from "../lib/library-id";
 import { pinOpenLibrary } from "../lib/library-placement";
 import { resolvePaths } from "../paths";
+import { markStartup } from "../startup-timing";
 import { GLOBAL_CACHE_KIB, openSqlite, wrapSqlite } from "./client";
 import type { Db } from "./client";
 import { migrateGlobal } from "./migrations";
@@ -66,6 +67,7 @@ async function openPondDb(): Promise<Db> {
     throw error;
   }
   cachedPond = opened;
+  markStartup("index-open");
 
   ensureLibraryMetadata();
   pinOpenLibrary(paths.libraryRoot, paths.libraryId);

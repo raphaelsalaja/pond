@@ -368,6 +368,15 @@ void app
       trayEnabled: launchPrefs?.quickCapture.menuBarIcon !== false,
     });
     if (shouldOpenInitialWindow(launchedHidden, initialDestination)) {
+      /**
+       * Open the index while the renderer fetches and parses its bundle; its first queries wait on it.
+       * `getDb` defers to `setImmediate`, so this runs after `createWindow` starts the load, not before.
+       */
+      app.once("browser-window-created", () => {
+        getDb().catch((cause: unknown) => {
+          log.warn("[pond] early index open failed; retrying", cause);
+        });
+      });
       await createWindow();
     } else {
       void settleDockAfterClose();

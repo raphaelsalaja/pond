@@ -111,7 +111,7 @@ rendered, not the number of commits.
    overhead directly with production.
 3. Capture startup only after an approved restart. Retain existing
    `[pond startup]` milestones (modules-loaded, app-ready, window-created,
-   window-shown, renderer-ready). Separately mark first usable Library: visible
+   index-open, window-shown, renderer-ready). Separately mark first usable Library: visible
    populated results and an input responding. Renderer-ready is not proof of
    usability. Label fresh-process versus warm-process, OS disk cache state
    (unknown unless controlled), and model state. Do not claim in-memory seeding

@@ -4,6 +4,7 @@ export type StartupMark =
   | "modules-loaded"
   | "app-ready"
   | "window-created"
+  | "index-open"
   | "window-shown"
   | "renderer-ready";
 
