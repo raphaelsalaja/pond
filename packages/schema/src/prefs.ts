@@ -240,7 +240,7 @@ const inbox = z.object({
 });
 
 export const INBOX_ORDERINGS = ["newest", "priority"] as const;
-export const INBOX_GROUPINGS = ["none", "type", "date"] as const;
+export const INBOX_GROUPINGS = ["none", "type", "source", "date"] as const;
 
 const inboxDisplay = z.object({
   ordering: z.enum(INBOX_ORDERINGS).catch("newest"),
