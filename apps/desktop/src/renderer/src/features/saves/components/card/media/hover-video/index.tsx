@@ -68,10 +68,13 @@ export function HoverVideo({
           coverKey,
         });
       }
-      rememberCardThumbnail(src, image.currentSrc || image.src);
+      /** A cross-file poster must not become the viewer underlay; cardThumbnails are same-file by contract. */
+      if (!unit.posterIsCrossFile) {
+        rememberCardThumbnail(src, image.currentSrc || image.src);
+      }
       onReady?.();
     },
-    [coverKey, hasVideoDims, onReady, saveId, src],
+    [coverKey, hasVideoDims, onReady, saveId, src, unit.posterIsCrossFile],
   );
   const poster = useImageReady(effectivePosterUrl ?? null, reportPosterReady);
 

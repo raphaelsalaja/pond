@@ -46,6 +46,7 @@ interface VideoPlayerProps {
   saveId?: string;
   fileIndex?: number;
   poster?: string;
+  posterIsCrossFile?: boolean;
   title?: string | null;
   artist?: string | null;
   chapters?: readonly ChapterCue[];
@@ -216,6 +217,7 @@ export function VideoPlayer({
   saveId,
   fileIndex = 0,
   poster,
+  posterIsCrossFile,
   title,
   artist,
   chapters,
@@ -316,7 +318,9 @@ export function VideoPlayer({
         rotation={rotation}
         mirrored={mirrored}
         ratio={ratio}
-        placeholder={cardThumbnailFor(src) ?? poster}
+        placeholder={
+          cardThumbnailFor(src) ?? (posterIsCrossFile ? undefined : poster)
+        }
         onError={onError}
         onLoadedMetadata={onLoadedMetadata}
       >
