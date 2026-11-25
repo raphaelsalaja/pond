@@ -1,8 +1,12 @@
+/* A conversation, not a document: replies sit in a quiet gray bubble about a reading column wide, yours in a pill, with a springy arrival. */
 .message {
-  --message-max-width: min(80%, 560px);
+  --message-max-width: min(80%, 400px);
   --message-line-height: 22px;
-  --message-padding-block: var(--ds-space-sm);
-  --message-radius: var(--ds-radius-lg);
+  --message-padding-block: calc(var(--ds-space-md) + var(--ds-space-2xs));
+  --message-padding-inline: calc(var(--ds-space-lg) + var(--ds-space-2xs));
+  --message-radius: var(--ds-radius-2xl);
+  /* Where two bubbles from the same sender meet, on the sender's side, so a run reads as one group. */
+  --message-join: var(--ds-radius-sm);
   --message-fill: var(--ds-surface-primary);
   --message-foreground: var(--ds-foreground-primary);
 
@@ -47,8 +51,8 @@
 .body {
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-2xs);
-  align-items: stretch;
+  gap: var(--ds-space-xs);
+  align-items: flex-start;
   width: 100%;
   min-width: 0;
 }
@@ -61,15 +65,15 @@
   max-width: 100%;
 }
 
-.bubble + :not(.bubble) {
-  margin-top: var(--ds-space-xl);
+/* Cards and lists after a reply stand apart from it; a block that opens with its own bubble, like a proposal, joins the group. */
+.body > .bubble + :not(.bubble, :has(> :first-child > .bubble:first-child)) {
+  margin-top: var(--ds-space-lg);
 }
 
 .bubble {
-  align-self: flex-start;
   width: fit-content;
   max-width: var(--message-max-width);
-  padding: var(--message-padding-block) var(--ds-space-lg);
+  padding: var(--message-padding-block) var(--message-padding-inline);
   anchor-name: --message-bubble;
   line-height: var(--message-line-height);
   color: var(--message-foreground);
@@ -79,25 +83,47 @@
 }
 
 .message[data-from="user"] .bubble {
-  align-self: flex-end;
-  color: var(--message-accent-foreground, var(--ds-foreground-inverse));
-  background: var(--message-accent, var(--ds-background-inverse));
+  color: var(--message-accent-foreground, var(--ds-foreground-primary));
+  background: var(--message-accent, var(--ds-surface-tertiary));
 }
 
-.message[data-from="assistant"] .bubble + .bubble {
-  border-start-start-radius: var(--ds-radius-sm);
+/* Your messages are short, so they read as pills. */
+.message[data-from="user"] .bubble {
+  border-radius: calc(
+    var(--message-line-height) /
+    2 +
+    var(--message-padding-block)
+  );
 }
 
-.message[data-from="assistant"] .bubble:has(+ .bubble) {
-  border-end-start-radius: var(--ds-radius-sm);
+/*
+ * Stacked bubbles join like a chat app's: the first keeps its top round, the last its bottom, and the
+ * corners between them on the sender's side tighten. A reply's bubbles also join a proposal that
+ * opens with its own bubble right after them.
+ */
+.message[data-from="assistant"] .bubble:has(+ .bubble),
+.message[data-from="assistant"]
+  .body
+  > .bubble:has(+ * > :first-child > .bubble:first-child) {
+  border-end-start-radius: var(--message-join);
 }
 
-.message[data-from="user"] .bubble + .bubble {
-  border-start-end-radius: var(--ds-radius-sm);
+.message[data-from="assistant"] .bubble + .bubble,
+.message[data-from="assistant"]
+  .body
+  > .bubble
+  + *
+  > :first-child
+  > .bubble:first-child {
+  border-start-start-radius: var(--message-join);
 }
 
 .message[data-from="user"] .bubble:has(+ .bubble) {
-  border-end-end-radius: var(--ds-radius-sm);
+  border-end-end-radius: var(--message-join);
+}
+
+.message[data-from="user"] .bubble + .bubble {
+  border-start-end-radius: var(--message-join);
 }
 
 .actions {
@@ -116,6 +142,11 @@
   height: 24px;
   aspect-ratio: auto;
   padding-inline: 0;
+  transition: scale var(--ds-duration-fast) var(--ds-easing-snap);
+
+  &:active {
+    scale: 0.88;
+  }
 }
 
 .retry[data-spinning] > svg {
@@ -132,8 +163,13 @@
   .retry[data-spinning] > svg {
     animation: none;
   }
+
+  .actions button {
+    transition: none;
+  }
 }
 
+/* Actions sit beside the last bubble, out of the conversation's way until you reach for them. */
 .message > .actions {
   position: absolute;
   top: anchor(center, 50%);
@@ -213,7 +249,7 @@
 @keyframes enter {
   from {
     opacity: 0;
-    scale: 0.985;
-    translate: 0 12px;
+    scale: 0.96;
+    translate: 0 10px;
   }
 }

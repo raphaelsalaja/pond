@@ -1908,6 +1908,24 @@ export const IconChevronRight = /* @__PURE__ */ createIcon(
     ],
   ],
 );
+export const IconChevronUpDown = /* @__PURE__ */ createIcon(
+  "ChevronUpDown",
+  "outline",
+  [
+    [
+      "path",
+      {
+        d: "M 5.75 6.75 L 8.25 4.375 A 1.125 1.125 0 0 1 9.875 4.375 L 12.25 6.75",
+      },
+    ],
+    [
+      "path",
+      {
+        d: "M 5.75 11.25 L 8.25 13.75 A 1.125 1.125 0 0 0 9.875 13.75 L 12.25 11.25",
+      },
+    ],
+  ],
+);
 export const IconChip = /* @__PURE__ */ createIcon("Chip", "outline", [
   [
     "path",

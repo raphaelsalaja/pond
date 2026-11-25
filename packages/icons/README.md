@@ -12,7 +12,7 @@ import { IconFolder, IconStar } from "@pond/icons";
 ```
 
 <!-- counts -->
-371 icons: 355 outline and 16 solid, plus 145 open states. 90 are folder picker objects. 18 registered parts.
+372 icons: 356 outline and 16 solid, plus 145 open states. 90 are folder picker objects. 18 registered parts.
 <!-- /counts -->
 
 There is one drawing per glyph, and nearly every glyph is a line drawing.

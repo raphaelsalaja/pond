@@ -150,7 +150,7 @@ export const fish = {
     replace(await window.pond.query("fish.deleteRoutine", { id, routineId }));
     if (store.state.routine?.routineId === routineId) fish.closeRoutine();
   },
-  /** Opens the fish's page with one of its routines showing in the details pane. */
+  /** Opens the fish's page with its details pane, where the routine is listed. */
   openRoutine(fishId: string, routineId: string): void {
     const router = getAppRouter();
     if (router && fishIdFromPath(router.state.location.pathname) !== fishId)
