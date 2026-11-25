@@ -8,8 +8,9 @@ function slideNodes(scroller: HTMLElement) {
 }
 
 function centeredIndex(scroller: HTMLElement): number {
-  const viewportCenter =
-    scroller.getBoundingClientRect().left + scroller.clientWidth / 2;
+  /** Slide rects are transform-aware, so the viewport must be too: clientWidth ignores an in-flight FLIP. */
+  const rect = scroller.getBoundingClientRect();
+  const viewportCenter = rect.left + rect.width / 2;
   let best = 0;
   let bestDist = Number.POSITIVE_INFINITY;
   slideNodes(scroller).forEach((node, i) => {
@@ -34,9 +35,7 @@ function centerSlide(
   const elRect = scroller.getBoundingClientRect();
   const slideRect = slide.getBoundingClientRect();
   const delta =
-    slideRect.left +
-    slideRect.width / 2 -
-    (elRect.left + scroller.clientWidth / 2);
+    slideRect.left + slideRect.width / 2 - (elRect.left + elRect.width / 2);
   if (Math.abs(delta) > 1)
     scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior });
 }
