@@ -178,13 +178,17 @@ it("splits provider and model choices into separate submenus", async () => {
   if (!selectedModel || !modelMenu) {
     throw new Error("Missing selected model menu item");
   }
+  /** The menu scales in, and a row hovered mid-animation keeps its scaled offset, so hover once it has settled to full size. */
+  await vi.waitFor(() => {
+    expect(
+      Math.abs(
+        modelMenu.getBoundingClientRect().height - modelMenu.offsetHeight,
+      ),
+    ).toBeLessThan(0.5);
+  });
   await act(async () => {
-    selectedModel?.dispatchEvent(
-      new MouseEvent("mouseover", { bubbles: true }),
-    );
-    selectedModel?.dispatchEvent(
-      new MouseEvent("mousemove", { bubbles: true }),
-    );
+    selectedModel.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+    selectedModel.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
   });
   expect(document.body.textContent).toContain(
     "Built for complex coding and knowledge work.",
@@ -194,9 +198,12 @@ it("splits provider and model choices into separate submenus", async () => {
     selectedModel.getBoundingClientRect().top -
     modelMenu.getBoundingClientRect().top;
   expect(offset).toBeGreaterThan(0);
-  expect(document.querySelector("aside")?.style.insetBlockStart).toBe(
-    `${offset}px`,
-  );
+  /** CSS rounds fractional pixels when it serializes the inline style. */
+  expect(
+    Number.parseFloat(
+      document.querySelector("aside")?.style.insetBlockStart ?? "",
+    ),
+  ).toBeCloseTo(offset, 1);
 
   const input = document.querySelector<HTMLInputElement>(
     'input[placeholder="Search…"]',

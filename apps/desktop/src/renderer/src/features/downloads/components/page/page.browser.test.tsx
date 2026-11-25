@@ -1029,9 +1029,12 @@ it("shows Library Transfers as rows in the Downloads table", async () => {
     },
   });
   await render();
-  expect(rowNames()[0]).toBe(
-    "/Users/user/Downloads/Geoid (Pond Export 2026-11-22)",
-  );
+  /** The transfer list arrives through its own query after the first paint. */
+  await vi.waitFor(() => {
+    expect(rowNames()[0]).toBe(
+      "/Users/user/Downloads/Geoid (Pond Export 2026-11-22)",
+    );
+  });
   expect(
     host.querySelector('[role="row"] [title="Export Files"]'),
   ).not.toBeNull();

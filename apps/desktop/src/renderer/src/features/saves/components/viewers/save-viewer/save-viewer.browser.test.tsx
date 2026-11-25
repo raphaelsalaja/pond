@@ -95,17 +95,23 @@ async function findToolbar(host: HTMLElement, label: string): Promise<void> {
   });
 }
 
-/** A `pond://` font never loads in the test browser, so the font original shows as its viewer or its decode fallback. */
+/**
+ * A `pond://` font never loads in the test browser, so the font original shows as its viewer or its decode fallback.
+ * The fallback's toolbar is portaled into the viewer chrome, and the failed decode can take seconds on the Windows runner.
+ */
 async function findFontViewer(host: HTMLElement): Promise<void> {
-  await vi.waitFor(() => {
-    if (
-      !host.querySelector(
-        '[role="toolbar"][aria-label="Font"], [role="toolbar"][aria-label="File fallback"]',
-      )
-    ) {
-      throw new Error("Missing font viewer");
-    }
-  });
+  await vi.waitFor(
+    () => {
+      if (
+        !host.querySelector(
+          '[role="toolbar"][aria-label="Font"], [data-viewer-fallback]',
+        )
+      ) {
+        throw new Error("Missing font viewer");
+      }
+    },
+    { timeout: 5000 },
+  );
 }
 
 describe("SaveViewer", () => {
