@@ -104,6 +104,16 @@ it("keeps a skipped save listed but marks it read", async () => {
   expect(first?.type === "save" && first.unread).toBe(false);
 });
 
+it("drops a save removed from the Inbox while it remains in the queue", async () => {
+  await mount();
+  const fixture = fixtures.get("b");
+  if (!fixture) throw new Error("Missing fixture");
+  await act(async () => {
+    pool.upsert({ ...fixture, inboxState: null, inboxUntil: null });
+  });
+  expect(saveIds()).toEqual(["a", "c"]);
+});
+
 it("drops a save whose state leaves the scope and restores it when it returns", async () => {
   await mount();
   const fixture = fixtures.get("b");

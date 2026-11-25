@@ -139,7 +139,8 @@ function useInboxEntries(): Entry[] {
     (state) =>
       ids.map((id) => {
         const save = state.byId.get(id);
-        return save?.deletedAt != null ? "deleted" : (save?.inboxState ?? null);
+        if (!save) return "unloaded";
+        return save.deletedAt != null ? "deleted" : (save.inboxState ?? null);
       }),
     { compare: shallow },
   );
@@ -154,14 +155,13 @@ function useInboxEntries(): Entry[] {
         ? entry.index === current
         : entry.key === selected);
 
-    /** Resolved outcomes and saves whose state left the scope drop out; the deck still owns the fixed queue. */
+    /** Resolved outcomes and saves whose state left the scope drop out; an unloaded save stays as a placeholder. */
     const scopeState = scope === "snoozed" ? "snoozed" : "review";
     const saves = ids.flatMap((id, index): Entry[] => {
       const outcome = queue?.outcomes[id];
       const state = states[index];
       if (outcome !== undefined && outcome !== "skip") return [];
-      if (state === "deleted" || (state !== null && state !== scopeState))
-        return [];
+      if (state !== "unloaded" && state !== scopeState) return [];
       const entry: Entry = {
         type: "save",
         key: `save:${id}`,
