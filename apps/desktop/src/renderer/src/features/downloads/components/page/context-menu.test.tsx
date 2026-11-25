@@ -112,7 +112,7 @@ it("opens the source link in the browser", () => {
 function actionStates(status: DownloadRow["status"]) {
   return Object.fromEntries(
     visible([row(status)]).map((item): [string, boolean] => [
-      item.label,
+      String(item.label),
       "disabled" in item ? (item.disabled ?? false) : false,
     ]),
   );

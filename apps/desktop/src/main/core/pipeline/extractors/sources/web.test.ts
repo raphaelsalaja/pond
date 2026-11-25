@@ -259,6 +259,11 @@ it("captures a converted text document as the save's article", async () => {
         format: "markdown",
         title: "Design Principles",
         bodyHtml: "<h1>Design Principles</h1><p>Body.</p>",
+        source: {
+          text: "# Design Principles\n\nBody.",
+          filename: "design.md",
+          mimeType: "text/markdown",
+        },
       },
     }),
     renderHtml: renderRecorder().renderHtml,
@@ -271,6 +276,11 @@ it("captures a converted text document as the save's article", async () => {
   expect(capture.article).toEqual({
     html: "<h1>Design Principles</h1><p>Body.</p>",
     canonicalUrl: "https://vercel.com/design.md",
+    source: {
+      text: "# Design Principles\n\nBody.",
+      filename: "design.md",
+      mimeType: "text/markdown",
+    },
   });
   expect(capture.extras?.textDocument).toBe(true);
 });

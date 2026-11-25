@@ -35,7 +35,7 @@ beforeEach(async () => {
         savedPrefs = PrefsSchema.parse({
           ...savedPrefs,
           ...patch,
-          viewer: { ...savedPrefs.viewer, ...patch.viewer },
+          viewer: { ...savedPrefs.viewer, ...patch?.viewer },
         });
         return { ok: true, prefs: structuredClone(savedPrefs) };
       },

@@ -27,6 +27,7 @@ let root: Root;
 let router: LibraryTestRouter;
 
 const bulkEdits: Array<BulkEdit> = [];
+let pageQueries = 0;
 
 function addInboxSave(id: string, title: string) {
   const save = normalise(
@@ -100,6 +101,7 @@ beforeEach(async () => {
   document.body.append(host);
   root = createRoot(host);
   bulkEdits.length = 0;
+  pageQueries = 0;
   bridge.use({
     undo: async () => ({
       ok: true,
@@ -130,13 +132,16 @@ beforeEach(async () => {
         bulkEdits.push(input);
         return { changed: 1, undoId: "step-1" };
       },
-      "saves.queryPage": () => ({
-        ids: ["a", "b"],
-        total: 2,
-        nextCursor: null,
-        libraryId: "library",
-        revision: 0,
-      }),
+      "saves.queryPage": () => {
+        pageQueries += 1;
+        return {
+          ids: ["a", "b"],
+          total: 2,
+          nextCursor: null,
+          libraryId: "library",
+          revision: 0,
+        };
+      },
       "saves.sidebarCounts": () => ({
         library: 2,
         uncategorized: 2,
@@ -243,9 +248,7 @@ it("keeps the review position when a Save preview opens and closes", async () =>
   await act(async () => press("ArrowDown"));
   expect(progress()).toBe("2 / 2");
   expect(topCard()?.textContent).toContain("Second");
-  const queries = requests.filter(
-    (request) => request.name === "saves.queryPage",
-  ).length;
+  const queries = pageQueries;
 
   await act(async () => openSave("b"));
   expect(stage()).toBeNull();
@@ -253,9 +256,7 @@ it("keeps the review position when a Save preview opens and closes", async () =>
   await act(async () => closeSave());
   expect(progress()).toBe("2 / 2");
   expect(topCard()?.textContent).toContain("Second");
-  expect(
-    requests.filter((request) => request.name === "saves.queryPage"),
-  ).toHaveLength(queries);
+  expect(pageQueries).toBe(queries);
 });
 
 it("closes on Escape and returns to the Library", async () => {

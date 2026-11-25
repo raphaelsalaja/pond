@@ -100,7 +100,7 @@ function openable(
 }
 
 function backToLibrary() {
-  getAppHistory()?.push(lastGridHref());
+  getAppHistory()?.push(lastGridHrefOutsideInbox());
 }
 
 function routePanel(destination: LibraryNav | null): RoutePanel | null {
@@ -179,10 +179,6 @@ function useSidebarNav() {
       : panel === "library"
         ? (railPage ?? "library")
         : panel;
-
-  function backToLibrary() {
-    getAppRouter()?.history.push(lastGridHrefOutsideInbox());
-  }
 
   function pickSection(next: RailSection) {
     libraryChrome.setSidebarPanel(next);

@@ -11,6 +11,11 @@ import { requestQuickPreview } from "@/features/saves/state/quick-preview";
 import { bridge } from "@/shared/test/pond-bridge";
 import { HoverPreview } from "./";
 
+/** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
+function wire(row: Partial<WireSave>): WireSave {
+  return row as WireSave;
+}
+
 it("hydrates and previews the next logical save beyond loaded grid rows", async () => {
   const first = normalise({
     id: "quick-first",
@@ -24,17 +29,16 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
     throw new Error("Invalid fixture");
   }
   pool.upsert(first);
-  /** SAFETY: ensureSaves parses rows through SavePatchesSchema, which reads only these fields. */
   const next = [
-    {
+    wire({
       id: "quick-next",
       source: "web",
       sourceId: "next",
       url: "https://fixture.test/two",
       title: "Next reference",
       files: [],
-    },
-  ] as Array<WireSave>;
+    }),
+  ];
   bridge.use({
     query: {
       "settings.getPrefs": () => PrefsSchema.parse({}),

@@ -1,3 +1,4 @@
+/// <reference types="@vitest/browser-playwright" />
 import { Dialog } from "@pond/ui";
 import { isHTMLElement } from "@pond/ui/dom";
 import { clsx as cn } from "clsx";

@@ -10,9 +10,14 @@ import type { PondApi } from "../../../../preload";
 type Awaitable<T> = T | Promise<T>;
 type Member = keyof PondApi;
 type Subscription = Extract<Member, `on${string}`>;
-type Command = Exclude<Member, Subscription | "query">;
-type Listener<K extends Subscription> = Parameters<PondApi[K]>[0];
 type Call = (...args: Array<never>) => unknown;
+type Method = Exclude<Member, Subscription | "query">;
+type Command = {
+  [K in Method]: PondApi[K] extends Call ? K : never;
+}[Method];
+/** Plain values the preload exposes, such as `systemLocale`. */
+type Value = Exclude<Method, Command>;
+type Listener<K extends Subscription> = Parameters<PondApi[K]>[0];
 
 export type QueryHandlers = {
   [Name in QueryName]?: (
@@ -21,10 +26,13 @@ export type QueryHandlers = {
 };
 
 export type BridgeHandlers = { [K in Command]?: PondApi[K] } & {
+  [K in Value]?: PondApi[K];
+} & {
   query?: QueryHandlers;
 };
 
 const commands = new Map<string, Call>();
+const values = new Map<string, unknown>();
 const queries = new Map<string, Call>();
 const listeners = new Map<string, Set<Call>>();
 let members: { [key: string]: Call } = {};
@@ -96,7 +104,14 @@ function member(key: string): Call {
 /** SAFETY: every property read resolves to a dispatcher that routes to the handlers registered for that member. */
 const api = new Proxy(
   {},
-  { get: (_, key) => (isMemberKey(key) ? member(key) : undefined) },
+  {
+    get: (_, key) => {
+      if (!isMemberKey(key)) {
+        return undefined;
+      }
+      return values.has(key) ? values.get(key) : member(key);
+    },
+  },
 ) as PondApi;
 
 export const bridge = {
@@ -106,8 +121,10 @@ export const bridge = {
   use(handlers: BridgeHandlers): void {
     const { query: queryHandlers, ...rest } = handlers;
     for (const [key, handler] of Object.entries(rest)) {
-      if (handler) {
+      if (typeof handler === "function") {
         commands.set(key, handler);
+      } else if (handler !== undefined) {
+        values.set(key, handler);
       }
     }
     for (const [name, handler] of Object.entries(queryHandlers ?? {})) {
@@ -132,6 +149,7 @@ export const bridge = {
 
   reset(): void {
     commands.clear();
+    values.clear();
     queries.clear();
     listeners.clear();
     members = {};

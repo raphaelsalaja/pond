@@ -126,7 +126,7 @@ export function observeSettledSize(
 
   apply();
   const stopObserving = host.observe(element, schedule);
-  const root = element.closest("[data-slot=window]");
+  const root = element.closest<HTMLElement>("[data-slot=window]");
   root?.addEventListener("transitionend", onTransitionEnd);
   root?.addEventListener("transitioncancel", onTransitionEnd);
 

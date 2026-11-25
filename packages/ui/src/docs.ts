@@ -49,6 +49,7 @@ import { docs as textReveal } from "./text-reveal/examples";
 import { docs as titleBar } from "./title-bar/examples";
 import { docs as toast } from "./toast/examples";
 import { docs as toggleGroup } from "./toggle-group/examples";
+import { docs as toggle } from "./toggle/examples";
 import { docs as tokenInput } from "./token-input/examples";
 import { docs as toolbar } from "./toolbar/examples";
 import { docs as tooltip } from "./tooltip/examples";

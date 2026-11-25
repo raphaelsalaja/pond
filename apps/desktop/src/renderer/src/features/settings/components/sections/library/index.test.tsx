@@ -40,7 +40,7 @@ describe("library settings", () => {
         "library.identity.cropIcon": () => ({ ok: true, icon: customLogo }),
         "library.identity.update": (input) => {
           libraryInfo = { ...libraryInfo, ...input };
-          updated.resolve(input);
+          updated.resolve(input ?? {});
           return { ok: true, ...libraryInfo };
         },
         "library.rename": (input) => {

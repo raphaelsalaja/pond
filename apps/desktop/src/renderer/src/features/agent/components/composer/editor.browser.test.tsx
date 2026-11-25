@@ -125,7 +125,17 @@ beforeEach(() => {
   bridge.use({
     query: {
       "agent.searchSaves": () => ({
-        saves: [{ ...save, author: null, notes: null, description: null }],
+        saves: [
+          {
+            id: "film",
+            title: "Suspiria",
+            url: "https://example.com/film",
+            source: "arena",
+            author: null,
+            notes: null,
+            description: null,
+          },
+        ],
       }),
     },
   });

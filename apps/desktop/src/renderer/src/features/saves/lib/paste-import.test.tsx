@@ -104,8 +104,8 @@ it("selects exactly the imported Saves in their folder, keeping the failure coun
 it("selects the pasted links that were added in All, not the ones that failed", async () => {
   bridge.use({
     query: {
-      "saves.quickAdd": ({ url }) =>
-        url === "https://one.test/"
+      "saves.quickAdd": (input) =>
+        input?.url === "https://one.test/"
           ? { ok: true, id: "one" }
           : { ok: false, error: "unsupported_url" },
     },

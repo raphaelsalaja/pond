@@ -103,8 +103,7 @@ describe("archive_page automatic archive", () => {
   });
 
   it("skips the browser crawl for a converted text document", async () => {
-    const { save, readSave, autoArchivePages, crawlSite, persistArchive } =
-      setup(true);
+    const { save, runtime, calls } = setup(true);
     save.rawJson = storedAsRawJson({
       capture: {
         id: save.url,
@@ -114,15 +113,10 @@ describe("archive_page automatic archive", () => {
       },
     });
 
-    await runArchivePage("save-1", {}, ctx, {
-      readSave,
-      autoArchive: autoArchivePages,
-      crawlSite,
-      persistArchive,
-    });
+    await runArchivePage("save-1", {}, ctx, runtime);
 
-    expect(crawlSite).not.toHaveBeenCalled();
-    expect(persistArchive).not.toHaveBeenCalled();
+    expect(calls.crawls).toEqual([]);
+    expect(calls.persists).toBe(0);
   });
 
   it("finishes the save without an archive when the page sits behind a login wall", async () => {

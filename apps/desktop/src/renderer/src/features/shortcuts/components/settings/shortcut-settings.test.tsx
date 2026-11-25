@@ -87,7 +87,7 @@ it("records keys for the unbound ring shortcut and clears it back to unbound", a
       "settings.getPrefs": () => prefs,
       "settings.globalShortcutStatus": () => ({ enabled: true, errors: [] }),
       "settings.setPrefs": (input) => {
-        const overrides = input.shortcuts?.overrides ?? {};
+        const overrides = input?.shortcuts?.overrides ?? {};
         saved.push(overrides);
         prefs = { ...prefs, shortcuts: { ...prefs.shortcuts, overrides } };
         return { ok: true, prefs };

@@ -9,7 +9,10 @@ import { librarySearchSchema } from "@/features/search/lib/schemas";
 import { Route as FolderRoute } from "@/routes/_library/_grid/folders.$folderId";
 import { Route as InboxRoute } from "@/routes/_library/_grid/inbox";
 import { Route as SnoozedRoute } from "@/routes/_library/_grid/inbox.snoozed";
-import { Route as IndexRoute } from "@/routes/_library/_grid/index";
+import {
+  Route as IndexRoute,
+  redirectLegacyIndexSearch,
+} from "@/routes/_library/_grid/index";
 import { Route as RandomRoute } from "@/routes/_library/_grid/random";
 import { Route as RecentlyAddedRoute } from "@/routes/_library/_grid/recently-added";
 import { Route as RecentsRoute } from "@/routes/_library/_grid/recents";
@@ -77,7 +80,7 @@ export function createLibraryTestRouter(
     path: "/",
     staticData: IndexRoute.options.staticData,
     validateSearch: IndexRoute.options.validateSearch,
-    beforeLoad: IndexRoute.options.beforeLoad,
+    beforeLoad: ({ search }) => redirectLegacyIndexSearch(search),
   });
   const gridChildren = [
     indexChild,

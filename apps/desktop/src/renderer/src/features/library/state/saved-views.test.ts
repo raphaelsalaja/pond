@@ -73,7 +73,11 @@ describe("saved smart folder operations", () => {
           if (failMutation) {
             return failed;
           }
-          const created = { ...view("new", null, "saved_view"), ...input };
+          const created: SavedView = {
+            ...view("new", null, "saved_view"),
+            ...input,
+            query: input.query ?? EMPTY_QUERY,
+          };
           records = [...records, created];
           return { ok: true, id: created.id };
         },
@@ -82,7 +86,9 @@ describe("saved smart folder operations", () => {
             return failed;
           }
           records = records.map((entry) =>
-            entry.id === id ? { ...entry, ...patch } : entry,
+            entry.id === id
+              ? { ...entry, ...patch, query: patch.query ?? entry.query }
+              : entry,
           );
           return { ok: true };
         },

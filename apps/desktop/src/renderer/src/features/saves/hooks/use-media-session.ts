@@ -82,7 +82,7 @@ function useArtworkBlob(
     };
   }, [url]);
 
-  return loaded?.url === url ? loaded.artwork : undefined;
+  return loaded && loaded.url === url ? loaded.artwork : undefined;
 }
 
 function bindAction(

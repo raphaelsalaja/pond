@@ -105,14 +105,17 @@ export function ChoiceFilter({
       ) {
         continue;
       }
-      allOptions.push({
-        label: String(value),
-        predicate: {
-          field,
-          operator: meta.type === "stringArray" ? "some" : "eq",
-          value: meta.type === "stringArray" ? [value] : value,
-        },
-      });
+      if (meta.type !== "stringArray") {
+        allOptions.push({
+          label: String(value),
+          predicate: { field, operator: "eq", value },
+        });
+      } else if (typeof value === "string" || typeof value === "number") {
+        allOptions.push({
+          label: String(value),
+          predicate: { field, operator: "some", value: [value] },
+        });
+      }
     }
   }
   const countOf = (option: FilterOption) =>

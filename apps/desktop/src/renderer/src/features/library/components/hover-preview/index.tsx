@@ -20,7 +20,6 @@ import {
   MediaViewer,
   onQuickPreviewRequest,
   openSave,
-  type PreviewStepBinding,
   previewFileIndex,
   previewStepRuns,
   runViewerAction,

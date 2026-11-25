@@ -63,7 +63,7 @@ async function finishedReplyBody(reply: {
             elapsedMs: 2500,
             stopped: reply.stopped,
             steps: [{ id: "read", label: "Read Save", status: reply.status }],
-            error: reply.error,
+            ...(reply.error === undefined ? {} : { error: reply.error }),
           },
         },
       ],

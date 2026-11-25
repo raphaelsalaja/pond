@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { Ref, RefObject } from "react";
 import { z } from "zod";
 import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
 import { stopAppHotkeysFromEditable } from "@/shared/lib/editable-target";

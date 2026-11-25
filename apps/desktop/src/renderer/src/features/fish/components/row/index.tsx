@@ -7,7 +7,7 @@ import {
 } from "@/shared/components/spec-context-menu";
 import { fishItems } from "../../lib/menu";
 import { rowPreview, rowTime, rowTimestamp } from "../../lib/row";
-import { useRunClock } from "../../lib/runs";
+import { useNow } from "../../lib/use-now";
 import { fish as fishStore } from "../../state/fish";
 import { FishMark, fishMood } from "../mark";
 import type { FishDragProps } from "../sortable";
@@ -26,7 +26,7 @@ export function FishRow({
   const mood = fishMood(fish);
   const preview = rowPreview(fish);
   const at = fish.activity ? null : rowTimestamp(fish);
-  const now = useRunClock();
+  const now = useNow();
 
   return (
     <SpecContextMenu
