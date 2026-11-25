@@ -28,7 +28,7 @@ function asset(id: string) {
   };
 }
 
-function bookmarks(total: number, ids: string[]): Reply {
+function bookmarks(total: number, ids: Array<string>): Reply {
   return { status: 200, body: { total, results: ids.map(asset) } };
 }
 
@@ -42,12 +42,12 @@ const ME: Reply = { status: 200, body: { username: "pond" } };
 async function walk(
   args: Partial<ListHarvestArgs>,
   replies: Map<string, Reply>,
-): Promise<{ result: ListHarvestResult; requested: string[] }> {
+): Promise<{ result: ListHarvestResult; requested: Array<string> }> {
   const dom = new JSDOM("<!doctype html><body></body>", {
     url: UNSPLASH_LIST_URL,
     runScripts: "outside-only",
   });
-  const requested: string[] = [];
+  const requested: Array<string> = [];
   Object.assign(dom.window, {
     setTimeout: (fn: () => void) => setTimeout(fn, 0),
     fetch: async (url: string) => {
@@ -71,7 +71,7 @@ async function walk(
   return { result, requested };
 }
 
-function ids(result: ListHarvestResult): string[] {
+function ids(result: ListHarvestResult): Array<string> {
   return result.ok ? result.entries.map((entry) => entry.sourceId) : [];
 }
 

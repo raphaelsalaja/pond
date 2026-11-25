@@ -7,7 +7,7 @@ import type { AppleSchema } from "./apple-schema";
 
 const HELPER = "pond-apple-model";
 const TIMEOUT_MS = 120_000;
-const DEFAULT_CONTEXT_SIZE = 4_096;
+const DEFAULT_CONTEXT_SIZE = 4096;
 
 export type AppleRequest =
   | { command: "status" }
@@ -74,8 +74,9 @@ export function runAppleHelper(
   signal?: AbortSignal,
 ): Promise<AppleReply> {
   const path = helperPath();
-  if (!existsSync(path))
+  if (!existsSync(path)) {
     return Promise.resolve({ ok: false, error: "missing" });
+  }
   return new Promise((resolve) => {
     const child = spawn(path, [], {
       stdio: ["pipe", "pipe", "ignore"],

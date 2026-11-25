@@ -15,7 +15,7 @@ describe("query transport parsing", () => {
     expect(operation()).toBe("");
   });
   it("rejects malformed required input before invoking the operation", () => {
-    const handled: string[][] = [];
+    const handled: Array<Array<string>> = [];
     const operation = query(z.object({ ids: z.array(z.string()) }), ({ ids }) =>
       handled.push(ids),
     );

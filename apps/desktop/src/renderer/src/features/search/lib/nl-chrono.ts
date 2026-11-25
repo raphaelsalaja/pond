@@ -1,12 +1,12 @@
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
-import * as chrono from "chrono-node";
+import { parse as parseDates } from "chrono-node";
 import { ROLLING_WINDOWS } from "@/features/search/lib/nl-vocabulary";
 
-type ChronoResult = ReturnType<typeof chrono.parse>[number];
+type ChronoResult = ReturnType<typeof parseDates>[number];
 type ChronoComponents = ChronoResult["start"];
 
 interface DateExtraction {
-  predicates: Predicate[];
+  predicates: Array<Predicate>;
   rest: string;
 }
 
@@ -81,7 +81,9 @@ function impliedRange(c: ChronoComponents): [Date, Date] {
 }
 
 function lowerWithYear(c: ChronoComponents, year: number | null): Date {
-  if (year == null || c.isCertain("year")) return impliedRange(c)[0];
+  if (year === null || c.isCertain("year")) {
+    return impliedRange(c)[0];
+  }
   const month = (c.get("month") ?? 1) - 1;
   const day = c.isCertain("day") ? (c.get("day") ?? 1) : 1;
   return widen(c, new Date(year, month, day))[0];
@@ -151,8 +153,8 @@ export function extractDates(
   input: string,
   ref: Date = new Date(),
 ): DateExtraction {
-  const predicates: Predicate[] = [];
-  const consumed: Span[] = [];
+  const predicates: Array<Predicate> = [];
+  const consumed: Array<Span> = [];
   const overlaps = (s: number, e: number) =>
     consumed.some((c) => s < c.end && e > c.start);
   const claim = (s: number, e: number, pred: Predicate) => {
@@ -161,7 +163,10 @@ export function extractDates(
   };
 
   for (const [phrase, iso] of ROLLING_WINDOWS) {
-    const re = new RegExp(`\\b${phrase.replace(/\s+/g, "\\s+")}\\b`, "gi");
+    const re = new RegExp(
+      `\\b${phrase.replaceAll(/\s+/g, String.raw`\s+`)}\\b`,
+      "gi",
+    );
     for (let m = re.exec(input); m; m = re.exec(input)) {
       const start = m.index;
       const end = start + m[0].length;
@@ -176,7 +181,7 @@ export function extractDates(
     }
   }
 
-  const results = chrono.parse(input, ref, { forwardDate: false });
+  const results = parseDates(input, ref, { forwardDate: false });
   for (let idx = 0; idx < results.length; idx += 1) {
     const r = results[idx];
     if (!r) continue;

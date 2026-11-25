@@ -1,9 +1,5 @@
-import {
-  type ConnectedAccount,
-  deletedSourceIds,
-  type SourceSyncPrefs,
-  saves,
-} from "@pond/schema/db";
+import { deletedSourceIds, saves } from "@pond/schema/db";
+import type { ConnectedAccount, SourceSyncPrefs } from "@pond/schema/db";
 import { and, count, desc, eq, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "../../db";
 import { knownIdsForFetch, trashedBaselineWhere } from "../deleted-sources";
@@ -41,8 +37,9 @@ export function knownIdsFromRows(
 export function syncBaselineWhere(
   account: Pick<ConnectedAccount, "id" | "source">,
 ) {
-  if (account.source === "mymind")
+  if (account.source === "mymind") {
     return and(eq(saves.accountId, account.id), isNull(saves.deletedAt));
+  }
   return and(
     eq(saves.source, account.source),
     or(eq(saves.accountId, account.id), isNull(saves.accountId)),
@@ -81,7 +78,7 @@ export async function loadSyncBaseline(
       .orderBy(desc(saves.savedAt))
       .limit(RECENT_KNOWN_WINDOW);
     liveIds = knownIdsFromRows(rows);
-    const totalRow = await db
+    const totalRow = db
       .select({ c: count() })
       .from(saves)
       .where(syncBaselineWhere(account))
@@ -120,7 +117,7 @@ export async function countSavesForAccount(
   account: Pick<ConnectedAccount, "id" | "source">,
 ): Promise<number> {
   const db = await getDb();
-  const totalRow = await db
+  const totalRow = db
     .select({ c: count() })
     .from(saves)
     .where(syncBaselineWhere(account))

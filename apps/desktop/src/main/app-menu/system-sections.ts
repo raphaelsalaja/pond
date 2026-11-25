@@ -12,8 +12,10 @@ export function buildSettingsItem(context: AppMenuContext): AppMenuItem {
 export function buildApplicationSections(
   context: AppMenuContext,
   settingsItem: AppMenuItem,
-): AppMenuItem[] {
-  if (!context.isMac) return [];
+): Array<AppMenuItem> {
+  if (!context.isMac) {
+    return [];
+  }
 
   return [
     {
@@ -49,21 +51,30 @@ export function buildWindowSection(context: AppMenuContext): AppMenuItem {
     submenu: [
       { role: "minimize" },
       { role: "zoom" },
-      ...(!context.isMac ? ([{ role: "close" }] satisfies AppMenuItem[]) : []),
+      ...(!context.isMac
+        ? ([{ role: "close" }] satisfies Array<AppMenuItem>)
+        : []),
       { type: "separator" },
       {
         label: "Library Window",
         click: context.openLibraryWindow,
       },
       ...(context.isMac
-        ? ([{ type: "separator" }, { role: "front" }] satisfies AppMenuItem[])
+        ? ([
+            { type: "separator" },
+            { role: "front" },
+          ] satisfies Array<AppMenuItem>)
         : []),
     ],
   };
 }
 
-export function buildDeveloperSections(context: AppMenuContext): AppMenuItem[] {
-  if (context.isPackaged) return [];
+export function buildDeveloperSections(
+  context: AppMenuContext,
+): Array<AppMenuItem> {
+  if (context.isPackaged) {
+    return [];
+  }
 
   return [
     {
@@ -94,7 +105,7 @@ export function buildHelpSection(context: AppMenuContext): AppMenuItem {
               label: `About ${context.appName}`,
             },
             { type: "separator" },
-          ] satisfies AppMenuItem[])
+          ] satisfies Array<AppMenuItem>)
         : []),
       {
         label: "Help Center",

@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { Checkbox } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 const row = { display: "inline-flex", alignItems: "center", gap: 8 } as const;
 

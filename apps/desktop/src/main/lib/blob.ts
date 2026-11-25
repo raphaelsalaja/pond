@@ -7,12 +7,8 @@ import {
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
 import sharp from "sharp";
-import {
-  DownloadSizeError,
-  fetchDownload,
-  type MediaFetcher,
-  type TransferOptions,
-} from "./download-transfer";
+import { DownloadSizeError, fetchDownload } from "./download-transfer";
+import type { MediaFetcher, TransferOptions } from "./download-transfer";
 
 const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024;
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -21,6 +17,7 @@ const DOWNLOAD_TIMEOUT_MS = 30_000;
 interface FetchMediaOptions extends TransferOptions {
   fileCount?: number;
   imageMaxBytes?: number | null;
+  fetcher?: MediaFetcher;
   /** Fetches through the harvest session, whose cookies hold a bot challenge the harvest window already solved. */
   challengeFetcher?: MediaFetcher;
 }
@@ -198,8 +195,8 @@ async function fetchSmallImageToTxFile(
       redirect: "follow",
       signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
     });
-  } catch (err) {
-    log.warn(`[pond blob] ${baseName} fetch failed`, imageUrl, err);
+  } catch (error) {
+    log.warn(`[pond blob] ${baseName} fetch failed`, imageUrl, error);
     return { miss: "transient" };
   }
   if (!res.ok) {
@@ -220,8 +217,8 @@ async function fetchSmallImageToTxFile(
   let buf: Buffer;
   try {
     buf = Buffer.from(await res.arrayBuffer());
-  } catch (err) {
-    log.warn(`[pond blob] ${baseName} body read failed`, imageUrl, err);
+  } catch (error) {
+    log.warn(`[pond blob] ${baseName} body read failed`, imageUrl, error);
     return { miss: "transient" };
   }
   if (buf.byteLength > MAX_AVATAR_BYTES) {
@@ -267,10 +264,10 @@ export function fetchSourceIconToTxFile(
 }
 
 export async function fetchMediaBatch(
-  urls: string[],
+  urls: Array<string>,
   options: FetchMediaOptions = {},
-): Promise<MediaBatchEntry[]> {
-  const unique: string[] = [];
+): Promise<Array<MediaBatchEntry>> {
+  const unique: Array<string> = [];
   const seen = new Set<string>();
   for (const u of urls) {
     if (!u || seen.has(u)) continue;
@@ -280,7 +277,7 @@ export async function fetchMediaBatch(
   if (unique.length === 0) return [];
 
   const limit = pLimit(6);
-  const results: MediaBatchEntry[] = await Promise.all(
+  const results: Array<MediaBatchEntry> = await Promise.all(
     unique.map((u, i) =>
       limit(async (): Promise<MediaBatchEntry> => {
         try {
@@ -291,9 +288,11 @@ export async function fetchMediaBatch(
           return "file" in outcome
             ? { url: u, file: outcome.file }
             : { url: u, file: null, miss: outcome.miss };
-        } catch (err) {
-          if (options.signal?.aborted) throw err;
-          log.warn("[pond blob] batch fetch failed", u, err);
+        } catch (error) {
+          if (options.signal?.aborted) {
+            throw error;
+          }
+          log.warn("[pond blob] batch fetch failed", u, error);
           return { url: u, file: null, miss: "transient" };
         }
       }),

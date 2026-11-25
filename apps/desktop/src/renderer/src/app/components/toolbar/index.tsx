@@ -34,7 +34,8 @@ import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { useRouteMeta } from "@/shared/lib/route-meta";
 import { usePrefs } from "@/shared/state/prefs";
-import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
+import { buildBreadcrumbs } from "./breadcrumbs";
+import type { Breadcrumb } from "./breadcrumbs";
 import { saveLabel } from "./labels";
 import styles from "./styles.module.css";
 
@@ -143,8 +144,9 @@ function Breadcrumbs() {
     <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
       <ol className={styles.trail}>
         {crumbs.map((crumb, index) => {
-          if (hidden.length && index > 1 && index < crumbs.length - 2)
+          if (hidden.length && index > 1 && index < crumbs.length - 2) {
             return null;
+          }
           if (hidden.length && index === 1) {
             return (
               <li className={styles.overflow} key="ancestors">

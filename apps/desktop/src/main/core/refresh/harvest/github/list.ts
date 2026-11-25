@@ -49,7 +49,7 @@ async function inPageGithubStars(
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: StarEntry[] = [];
+  const entries: Array<StarEntry> = [];
   const seen = new Set<string>();
   let fresh = 0;
   let cursor: string | null = args.resumeCursor ?? null;
@@ -85,10 +85,12 @@ async function inPageGithubStars(
 
   function readPage(
     doc: Document,
-  ): { rows: StarEntry[]; next: string | null } | null {
+  ): { rows: Array<StarEntry>; next: string | null } | null {
     const list = doc.querySelector("#user-starred-repos");
-    if (!list) return null;
-    const rows: StarEntry[] = [];
+    if (!list) {
+      return null;
+    }
+    const rows: Array<StarEntry> = [];
     for (const link of list.querySelectorAll<HTMLAnchorElement>("h3 > a")) {
       const path = REPO_PATH.exec(link.getAttribute("href") ?? "");
       if (!path?.[1] || !path[2]) continue;
@@ -137,8 +139,9 @@ async function inPageGithubStars(
   let doc: Document = document;
   if (cursor) {
     const resumed = await load(cursor);
-    if (resumed === "rate_limited")
+    if (resumed === "rate_limited") {
       return { ok: false, reason: "rate_limited" };
+    }
     if (resumed) {
       doc = resumed;
     } else {
@@ -195,7 +198,9 @@ async function inPageGithubStars(
       return { ok: true, entries, reachedEnd: true, seen: entries.length };
     }
 
-    await new Promise((resolve) => setTimeout(resolve, PAGE_DELAY_MS));
+    await new Promise((resolve) => {
+      setTimeout(resolve, PAGE_DELAY_MS);
+    });
     const next = await load(read.next);
     if (next === "rate_limited") {
       return entries.length > 0

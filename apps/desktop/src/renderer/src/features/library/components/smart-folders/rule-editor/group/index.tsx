@@ -1,5 +1,6 @@
 import { IconMinus, IconPlus } from "@pond/icons";
-import { isGroup, type Query } from "@pond/schema/filters/types";
+import { isGroup } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import { Button } from "@pond/ui";
 import { useId } from "react";
 import { Predicate } from "../predicate";

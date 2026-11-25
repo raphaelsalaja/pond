@@ -1,7 +1,9 @@
 import { matches } from "@pond/schema/filters/match";
-import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import { beforeEach, describe, expect, it } from "vitest";
-import { type SearchView, searchViewKey } from "../lib/search-view";
+import { searchViewKey } from "../lib/search-view";
+import type { SearchView } from "../lib/search-view";
 import { combineQueries } from "../lib/smart-folders";
 import {
   activateFolderPresentation,
@@ -258,24 +260,24 @@ describe("smart folder selection", () => {
   });
 });
 
+function applyUrlSort(urlSort: { key: string; dir: "asc" | "desc" } | null) {
+  applyLocationView(
+    {
+      q: "",
+      query: EMPTY_QUERY,
+      semanticQuery: null,
+      searchAllView: null,
+      urlSort,
+    },
+    true,
+  );
+}
+
 describe("sort precedence", () => {
   beforeEach(() => {
     resetFilters();
     setSort({ key: "savedAt", dir: "desc" });
   });
-
-  function applyUrlSort(urlSort: { key: string; dir: "asc" | "desc" } | null) {
-    applyLocationView(
-      {
-        q: "",
-        query: EMPTY_QUERY,
-        semanticQuery: null,
-        searchAllView: null,
-        urlSort,
-      },
-      true,
-    );
-  }
 
   it("lets the URL sort win over the presentation sort", () => {
     applyUrlSort({ key: "title", dir: "asc" });

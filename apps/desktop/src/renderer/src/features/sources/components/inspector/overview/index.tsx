@@ -1,6 +1,7 @@
 import type { Source } from "@pond/schema/db";
 import { Button, Settings } from "@pond/ui";
-import { useEffect, useMemo } from "react";
+import log from "electron-log/renderer";
+import { useEffect, useMemo, useState } from "react";
 import { viewAccountItems } from "@/features/library";
 import { SaveStrip } from "@/features/library/save-strip";
 import { ensureSaves } from "@/features/saves/pool";
@@ -50,11 +51,14 @@ export function SourceOverview({
   );
   const recentKey = recent.join(",");
   useEffect(() => {
-    if (recentKey)
-      void ensureSaves(recentKey.split(",")).catch(() => undefined);
+    if (recentKey) {
+      void ensureSaves(recentKey.split(",")).catch((cause: unknown) => {
+        log.warn("[pond sources] recent saves load failed", cause);
+      });
+    }
   }, [recentKey]);
 
-  const since = Date.now() - MONTH_MS;
+  const [since] = useState(() => Date.now() - MONTH_MS);
   const runs = (history.data ?? []).filter((run) => run.ts >= since);
   const month = runs.reduce((sum, run) => sum + runFreshCount(run), 0);
   const succeeded = runs.filter(

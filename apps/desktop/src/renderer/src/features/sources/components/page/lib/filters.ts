@@ -36,10 +36,10 @@ export function defaultSourceFilters(): SourceFilters {
   };
 }
 
-export const SOURCE_STATUS_OPTIONS: readonly {
+export const SOURCE_STATUS_OPTIONS: ReadonlyArray<{
   id: SourceStatusId;
   label: string;
-}[] = [
+}> = [
   { id: "active", label: "Active" },
   { id: "syncing", label: "Syncing" },
   { id: "failed", label: "Failed" },

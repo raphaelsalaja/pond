@@ -1,7 +1,7 @@
 import { Button, Input, Select, Settings, Tooltip } from "@pond/ui";
 import type { LogoSource } from "@shared/logo-crop";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { z } from "zod";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
 import { LogoCropDialog } from "@/shared/components/logo-crop-dialog";
@@ -51,7 +51,7 @@ export function LibrarySettings() {
           <Settings.ItemDetails>
             <Settings.ItemTitle>Recent Libraries</Settings.ItemTitle>
             <Settings.ItemDescription>
-              Switch to a library you've opened before.
+              Switch to a library you&apos;ve opened before.
               <StatusNote error={openRecent.error?.message} />
             </Settings.ItemDescription>
           </Settings.ItemDetails>
@@ -104,8 +104,16 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
   const [logoError, setLogoError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
 
-  useEffect(() => setName(info?.name ?? ""), [info?.name]);
-  useEffect(() => setLogo(info?.icon ?? null), [info?.icon]);
+  const [syncedName, setSyncedName] = useState(info?.name);
+  if (syncedName !== info?.name) {
+    setSyncedName(info?.name);
+    setName(info?.name ?? "");
+  }
+  const [syncedIcon, setSyncedIcon] = useState(info?.icon);
+  if (syncedIcon !== info?.icon) {
+    setSyncedIcon(info?.icon);
+    setLogo(info?.icon ?? null);
+  }
 
   const refreshIdentity = async () => {
     await Promise.all([
@@ -131,8 +139,9 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
     try {
       const result = await window.pond.query("library.identity.pickIcon", {});
       if (!result.ok) {
-        if (result.reason !== "cancelled")
+        if (result.reason !== "cancelled") {
           setLogoError("Choose a supported image.");
+        }
         return;
       }
       setCropSource(result.image);
@@ -264,8 +273,9 @@ function LibraryIdentitySettings({ info }: { info?: LibraryInfo }) {
               }}
               onBlur={() => void saveName()}
               onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.nativeEvent.isComposing)
+                if (event.key === "Enter" && !event.nativeEvent.isComposing) {
                   event.currentTarget.blur();
+                }
                 if (event.key === "Escape" && info) {
                   setName(info.name);
                   setNameError(null);

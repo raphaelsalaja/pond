@@ -15,7 +15,7 @@ import styles from "./styles.module.css";
 
 interface ChoiceValueProps {
   rule: Predicate;
-  choices: readonly RuleChoice[];
+  choices: ReadonlyArray<RuleChoice>;
   onChange: (value: PredicateValue) => void;
 }
 
@@ -60,8 +60,9 @@ function DateValue({ value, onChange, label }: DateValueProps) {
     { value: "-P30D", label: "30 Days Ago" },
     { value: "-P1Y", label: "1 Year Ago" },
   ];
-  if (relative && !presets.some((preset) => preset.value === raw))
+  if (relative && !presets.some((preset) => preset.value === raw)) {
     presets.push({ value: raw, label: raw });
+  }
   return (
     <div className={styles.values}>
       <RuleSelect.Single
@@ -91,9 +92,10 @@ interface RuleValueProps {
 export function RuleValue({ rule, choices, onChange }: RuleValueProps) {
   const field = FIELD_DESCRIPTORS[rule.field];
   const label = `${field.label} Value`;
-  if (rule.operator === "empty")
+  if (rule.operator === "empty") {
     return <span className={styles["no-value"]}>No values</span>;
-  if (rule.operator === "exists")
+  }
+  if (rule.operator === "exists") {
     return (
       <RuleSelect.Single
         value={rule.value === false ? "false" : "true"}
@@ -105,6 +107,7 @@ export function RuleValue({ rule, choices, onChange }: RuleValueProps) {
         onChange={(value) => onChange(value === "true")}
       />
     );
+  }
   if (rule.operator === "near") {
     const color = colorValueSchema.safeParse(rule.value);
     const hex = color.success
@@ -166,12 +169,14 @@ export function RuleValue({ rule, choices, onChange }: RuleValueProps) {
       </div>
     );
   }
-  if (field.type === "date")
+  if (field.type === "date") {
     return <DateValue value={rule.value} onChange={onChange} label={label} />;
+  }
   const options = choicesFor(field, choices);
   if (listOperators.has(rule.operator)) {
-    if (options.length > 0 || field.id === "folder")
+    if (options.length > 0 || field.id === "folder") {
       return <ChoiceValue rule={rule} choices={options} onChange={onChange} />;
+    }
     const parsed = listValueSchema.safeParse(rule.value);
     return (
       <FieldInput
@@ -185,7 +190,7 @@ export function RuleValue({ rule, choices, onChange }: RuleValueProps) {
       />
     );
   }
-  if (options.length > 0 && field.type === "enum" && field.id !== "aspect")
+  if (options.length > 0 && field.type === "enum" && field.id !== "aspect") {
     return (
       <RuleSelect.Single
         label={label}
@@ -194,6 +199,7 @@ export function RuleValue({ rule, choices, onChange }: RuleValueProps) {
         onChange={onChange}
       />
     );
+  }
   return (
     <FieldInput
       label={label}

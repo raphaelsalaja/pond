@@ -2,10 +2,9 @@
 /** Writes installer sizes and the largest packaged entries to the GitHub job summary, so each pull request shows what the app weighs. */
 
 import { appendFileSync, existsSync, lstatSync, readdirSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, relative, resolve, sep } from "node:path";
 
-const dist = resolve(dirname(fileURLToPath(import.meta.url)), "../dist");
+const dist = resolve(import.meta.dirname, "../dist");
 const INSTALLER = /\.(dmg|exe|AppImage|deb|zip)$/;
 const TOP = 15;
 const MB = 1024 * 1024;
@@ -50,8 +49,11 @@ function largestEntries(root) {
     expanded.some((dir) => dir === path || dir.startsWith(`${path}${sep}`));
   return expanded
     .flatMap((dir) => readdirSync(dir).map((name) => join(dir, name)))
-    .filter((path) => !isExpanded(path))
-    .map((path) => ({ path: relative(root, path), bytes: sizeOf(path) }))
+    .flatMap((path) =>
+      isExpanded(path)
+        ? []
+        : [{ path: relative(root, path), bytes: sizeOf(path) }],
+    )
     .sort((a, b) => b.bytes - a.bytes)
     .slice(0, TOP);
 }

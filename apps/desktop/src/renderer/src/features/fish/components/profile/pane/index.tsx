@@ -3,8 +3,10 @@ import { Button, Pane } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
-interface HeaderProps
-  extends Omit<React.ComponentPropsWithoutRef<"header">, "title"> {
+interface HeaderProps extends Omit<
+  React.ComponentPropsWithoutRef<"header">,
+  "title"
+> {
   title?: React.ReactNode;
   onClose: () => void;
 }
@@ -35,7 +37,7 @@ function Header({
   );
 }
 
-interface BodyProps extends React.ComponentPropsWithoutRef<"div"> {}
+type BodyProps = React.ComponentPropsWithoutRef<"div">;
 
 function Body({ className, ...props }: BodyProps) {
   return (

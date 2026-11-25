@@ -12,12 +12,11 @@ import type { ImportOrigin } from "./import-origin";
 import type { InboxState } from "./inbox";
 import type { JsonObject } from "./json";
 import type { ListKind } from "./list-kinds";
-import {
-  DEFAULT_IMAGE_DOWNLOAD,
-  DEFAULT_VIDEO_DOWNLOAD,
-  type StoredImageDownload,
-  type StoredPrefsEnvelope,
-  type StoredVideoDownload,
+import { DEFAULT_IMAGE_DOWNLOAD, DEFAULT_VIDEO_DOWNLOAD } from "./prefs";
+import type {
+  StoredImageDownload,
+  StoredPrefsEnvelope,
+  StoredVideoDownload,
 } from "./prefs";
 import type { RawJson } from "./raw";
 import type { Source } from "./source-ids";
@@ -176,15 +175,15 @@ export const saves = sqliteTable(
     rawJson: text("raw_json", { mode: "json" }).$type<RawJson | null>(),
     rawSlim: text("raw_slim", { mode: "json" }).$type<RawJson | null>(),
     tags: text("tags", { mode: "json" })
-      .$type<string[]>()
+      .$type<Array<string>>()
       .notNull()
       .default(sql`'[]'`),
     listKinds: text("list_kinds", { mode: "json" })
-      .$type<ListKind[]>()
+      .$type<Array<ListKind>>()
       .notNull()
       .default(sql`'[]'`),
     files: text("files", { mode: "json" })
-      .$type<SaveFile[]>()
+      .$type<Array<SaveFile>>()
       .notNull()
       .default(sql`'[]'`),
     coverIndex: integer("cover_index").notNull().default(0),
@@ -210,7 +209,7 @@ export const saves = sqliteTable(
     fontActivated: integer("font_activated", { mode: "boolean" })
       .notNull()
       .default(false),
-    embedding: text("embedding", { mode: "json" }).$type<number[]>(),
+    embedding: text("embedding", { mode: "json" }).$type<Array<number>>(),
     embeddingModel: text("embedding_model"),
     caption: text("caption"),
     captionModel: text("caption_model"),
@@ -218,14 +217,18 @@ export const saves = sqliteTable(
     ocrModel: text("ocr_model"),
     transcript: text("transcript"),
     transcriptModel: text("transcript_model"),
-    clipEmbedding: text("clip_embedding", { mode: "json" }).$type<number[]>(),
+    clipEmbedding: text("clip_embedding", { mode: "json" }).$type<
+      Array<number>
+    >(),
     clipModel: text("clip_model"),
-    aesthetic: text("aesthetic", { mode: "json" }).$type<string[]>(),
+    aesthetic: text("aesthetic", { mode: "json" }).$type<Array<string>>(),
     aestheticModel: text("aesthetic_model"),
     sensitiveScore: real("sensitive_score"),
     sensitiveModel: text("sensitive_model"),
     autoTitleModel: text("auto_title_model"),
-    suggestedTags: text("suggested_tags", { mode: "json" }).$type<string[]>(),
+    suggestedTags: text("suggested_tags", { mode: "json" }).$type<
+      Array<string>
+    >(),
     suggestedTagsModel: text("suggested_tags_model"),
     rating: integer("rating"),
     favorite: integer("favorite", { mode: "boolean" }).notNull().default(false),
@@ -236,7 +239,7 @@ export const saves = sqliteTable(
     flipY: integer("flip_y", { mode: "boolean" }).notNull().default(false),
     crop: text("crop", { mode: "json" }).$type<ImageCrop | null>(),
     dominantColors: text("dominant_colors", { mode: "json" })
-      .$type<string[]>()
+      .$type<Array<string>>()
       .notNull()
       .default(sql`'[]'`),
     primaryColor: text("primary_color"),

@@ -1,4 +1,5 @@
-import { DEFAULT_PREFS, type Prefs } from "@pond/schema/db";
+import { DEFAULT_PREFS } from "@pond/schema/db";
+import type { Prefs } from "@pond/schema/db";
 import { describe, expect, it, vi } from "vitest";
 import { startLaunchSync } from "./launch";
 
@@ -7,12 +8,14 @@ function prefs(launch: boolean): Prefs {
 }
 
 function deps(input: { launch: boolean; online?: boolean; blocked?: boolean }) {
-  return {
-    getPrefs: vi.fn(async () => prefs(input.launch)),
-    isOnline: vi.fn(() => input.online ?? true),
-    isBlocked: vi.fn(() => input.blocked ?? false),
-    syncAll: vi.fn(async () => {}),
+  const d = {
+    getPrefs: async () => prefs(input.launch),
+    isOnline: () => input.online ?? true,
+    isBlocked: () => input.blocked ?? false,
+    syncAll: async () => {},
   };
+  vi.spyOn(d, "syncAll");
+  return d;
 }
 
 describe("startLaunchSync", () => {

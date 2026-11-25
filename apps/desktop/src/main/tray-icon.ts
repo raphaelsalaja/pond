@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
-import { app, type NativeImage, nativeImage, nativeTheme } from "electron";
+import { app, nativeImage, nativeTheme } from "electron";
+import type { NativeImage } from "electron";
 import log from "electron-log/main.js";
 import { appDataRoot } from "./paths";
 
@@ -15,7 +16,7 @@ const TRAY_SLOT_PX = 22;
 export function trayIconNames(
   platform: NodeJS.Platform,
   darkColors: boolean,
-): string[] {
+): Array<string> {
   if (platform === "win32" || platform === "linux") {
     return [darkColors ? "trayWinLight.png" : "trayWinDark.png"];
   }
@@ -34,7 +35,7 @@ export function loadTrayIcon(): NativeImage {
   return makePlaceholderIcon();
 }
 
-function resolveTrayIconFile(names: string[]): string | null {
+function resolveTrayIconFile(names: Array<string>): string | null {
   const roots = [
     process.resourcesPath ?? "",
     join(__dirname, "../../resources"),
@@ -76,8 +77,8 @@ function placeholderImage(png: Buffer, filename: string): NativeImage {
       markTemplate(img);
       return img;
     }
-  } catch (err) {
-    log.warn("[pond tray] placeholder draw failed", err);
+  } catch (error) {
+    log.warn("[pond tray] placeholder draw failed", error);
   }
   try {
     const fallback = join(appDataRoot(), filename);
@@ -161,14 +162,16 @@ function crc32(buf: Buffer): number {
     crcTable = new Uint32Array(256);
     for (let n = 0; n < 256; n++) {
       let c = n;
-      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      for (let k = 0; k < 8; k++) {
+        c = c & 1 ? 0xed_b8_83_20 ^ (c >>> 1) : c >>> 1;
+      }
       crcTable[n] = c >>> 0;
     }
   }
-  let c = 0xffffffff;
+  let c = 0xff_ff_ff_ff;
   for (let i = 0; i < buf.length; i++) {
     const byte = buf[i] ?? 0;
     c = (crcTable[(c ^ byte) & 0xff] ?? 0) ^ (c >>> 8);
   }
-  return (c ^ 0xffffffff) >>> 0;
+  return (c ^ 0xff_ff_ff_ff) >>> 0;
 }

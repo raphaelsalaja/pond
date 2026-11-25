@@ -1,4 +1,6 @@
-import { type PageItem, sendMessage } from "@/utils/messaging";
+import { isElement, isHTMLTag } from "@pond/ui/dom";
+import { sendMessage } from "@/utils/messaging";
+import type { PageItem } from "@/utils/messaging";
 import { getSettings, watchSettings } from "@/utils/settings";
 import type { PondSettings } from "@/utils/types";
 
@@ -7,27 +9,32 @@ function webUrl(url: string | undefined): string | null {
 }
 
 function itemAt(target: EventTarget | null): PageItem | null {
-  if (!(target instanceof Element) || target.closest("pond-overlay"))
+  if (!isElement(target) || target.closest("pond-overlay")) {
     return null;
+  }
   const media = target.closest("img, video, picture");
-  const image =
-    media instanceof HTMLPictureElement ? media.querySelector("img") : media;
-  if (image instanceof HTMLImageElement) {
+  const image = isHTMLTag(media, "picture")
+    ? media.querySelector("img")
+    : media;
+  if (isHTMLTag(image, "img")) {
     const url = webUrl(image.currentSrc || image.src);
     if (url) return { kind: "media", url, title: image.alt || undefined };
   }
-  if (image instanceof HTMLVideoElement) {
+  if (isHTMLTag(image, "video")) {
     const url = webUrl(image.currentSrc || image.src) ?? webUrl(image.poster);
     if (url) return { kind: "media", url };
   }
   const link = target.closest("a[href]");
-  if (link instanceof HTMLAnchorElement) {
+  if (isHTMLTag(link, "a")) {
     const url = webUrl(link.href);
     const title = link.textContent?.trim().slice(0, 200);
     if (url) return { kind: "link", url, title: title || undefined };
   }
   return null;
 }
+
+/** A content script left behind by an extension reload can't reach the background, and the page has nowhere to show it. */
+function ignoreOrphaned() {}
 
 export default defineContentScript({
   matches: ["<all_urls>"],
@@ -52,7 +59,7 @@ export default defineContentScript({
         event.preventDefault();
         event.stopPropagation();
         void sendMessage("gesture", { kind: "alt-click", item }).catch(
-          () => {},
+          ignoreOrphaned,
         );
       },
       { capture: true },

@@ -12,7 +12,7 @@ import {
 import { openSave } from "@/features/saves/navigation";
 
 interface SaveStripProps {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   columns?: number;
   label: string;
 }

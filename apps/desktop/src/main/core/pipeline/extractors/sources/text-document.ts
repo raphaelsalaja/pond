@@ -16,7 +16,7 @@ export function convertTextDocument(
   /** SAFETY: `async: false` makes `marked.parse` return the rendered string synchronously. */
   const bodyHtml =
     format === "markdown"
-      ? (marked.parse(text, { async: false }) as string)
+      ? marked.parse(text, { async: false })
       : `<pre>${escapeText(text)}</pre>`;
   return {
     format,
@@ -52,8 +52,10 @@ function documentTitle(
 ): string | undefined {
   if (format === "markdown") {
     const heading = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(bodyHtml);
-    const text = heading?.[1]?.replace(/<[^>]+>/g, "").trim();
-    if (text) return decodeEntities(text);
+    const text = heading?.[1]?.replaceAll(/<[^>]+>/g, "").trim();
+    if (text) {
+      return decodeEntities(text);
+    }
   }
   try {
     const segment = new URL(url).pathname.split("/").filter(Boolean).at(-1);
@@ -67,16 +69,16 @@ function documentTitle(
 
 function escapeText(text: string): string {
   return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 function decodeEntities(text: string): string {
   return text
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&amp;/g, "&");
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'")
+    .replaceAll("&amp;", "&");
 }

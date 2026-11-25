@@ -1,3 +1,4 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { App, ease, mix, progress, scatter } from "@pond/video";
 import { useLayoutEffect, useRef, useState } from "react";
 import { KOI_SPOT } from "../data";
@@ -17,8 +18,8 @@ interface Word {
   accent?: boolean;
 }
 
-const BEFORE: Word[] = [{ text: "Introducing" }];
-const AFTER: Word[] = [
+const BEFORE: Array<Word> = [{ text: "Introducing" }];
+const AFTER: Array<Word> = [
   { text: "Fish" },
   { text: "in" },
   { text: "Pond" },
@@ -41,15 +42,19 @@ export function Intro({ t, enter, exit, dock, fly }: IntroProps) {
   const [spot, setSpot] = useState({ x: 960, y: Y });
   useLayoutEffect(() => {
     const node = slot.current;
-    if (!node) return;
-    /** SAFETY: in an HTML document an element's `offsetParent` is an `HTMLElement` or null. */
+    if (!node) {
+      return;
+    }
+    const parent = node.offsetParent;
     const next = {
-      x: (node.offsetParent as HTMLElement | null)?.offsetLeft ?? 0,
+      x: isHTMLElement(parent) ? parent.offsetLeft : 0,
       y: Y,
     };
     next.x += node.offsetLeft + node.offsetWidth / 2;
-    if (next.x !== spot.x) setSpot(next);
-  });
+    if (next.x !== spot.x) {
+      setSpot(next);
+    }
+  }, [t, enter, exit, dock, fly, spot.x]);
 
   const flight = ease.inOut(progress(t, CUES.chatRise, fly));
   const arrive = ease.outQuint(progress(t, CUES.schoolIn + 300, 1700));
@@ -67,10 +72,27 @@ export function Intro({ t, enter, exit, dock, fly }: IntroProps) {
   );
   const alone = t >= exit + 200;
 
+  const laidOut: Array<{
+    word: Word;
+    at: number;
+    letters: Array<[number, string]>;
+  }> = [];
   let index = 0;
   let letter = 0;
-  const word = ({ text, accent }: Word) => {
-    const at = enter + index++ * STAGGER;
+  for (const entry of [...BEFORE, ...AFTER]) {
+    const letters: Array<[number, string]> = [];
+    for (const char of Array.from(entry.text)) {
+      letters.push([letter, char]);
+      letter += 1;
+    }
+    laidOut.push({ word: entry, at: enter + index * STAGGER, letters });
+    index += 1;
+  }
+  const word = ({
+    word: { text, accent },
+    at,
+    letters,
+  }: (typeof laidOut)[number]) => {
     const show = progress(t, at, 360);
     const tone = Math.round(
       mix(GRAY, INK, ease.inOut(progress(t, at + 140, 480))),
@@ -86,8 +108,7 @@ export function Intro({ t, enter, exit, dock, fly }: IntroProps) {
           transform: `translateY(${(1 - ease.outQuint(show)) * 10}px)`,
         }}
       >
-        {[...text].map((char) => {
-          const k = letter++;
+        {letters.map(([k, char]) => {
           const out = progress(t, exit + scatter(k) * 280, 160);
           return (
             <span key={k} style={{ opacity: 1 - out }}>
@@ -103,9 +124,9 @@ export function Intro({ t, enter, exit, dock, fly }: IntroProps) {
     <>
       {t < exit + 600 ? (
         <div className={styles.line} style={{ top: Y, fontSize: SIZE }}>
-          {BEFORE.map(word)}
+          {laidOut.slice(0, BEFORE.length).map(word)}
           <span ref={slot} className={styles.slot} style={{ width: INLINE }} />
-          {AFTER.map(word)}
+          {laidOut.slice(BEFORE.length).map(word)}
         </div>
       ) : null}
       {flight < 1 ? (

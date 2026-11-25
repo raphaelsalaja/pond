@@ -77,7 +77,7 @@
   &[data-zoom][data-ending-style] {
     transition:
       opacity var(--ds-duration-medium) var(--ds-easing-standard)
-      var(--ds-duration-fast),
+        var(--ds-duration-fast),
       transform var(--ds-duration-glide) var(--ds-easing-glide),
       border-radius var(--ds-duration-glide) var(--ds-easing-glide),
       box-shadow var(--ds-duration-glide) var(--ds-easing-glide);

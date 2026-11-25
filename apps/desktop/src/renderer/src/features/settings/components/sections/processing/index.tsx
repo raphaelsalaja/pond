@@ -1,10 +1,11 @@
 import { IconCircleCheck, IconCircleWarning, IconPowerOff } from "@pond/icons";
 import { Button, Loader, Reveal, Settings, Tooltip } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect, useId, useState } from "react";
-import {
-  type EnrichmentFailure,
-  type MissingOriginal,
-  useEnrichmentStatus,
+import { useEnrichmentStatus } from "@/features/enrichment/status";
+import type {
+  EnrichmentFailure,
+  MissingOriginal,
 } from "@/features/enrichment/status";
 import { openLibraryRepair } from "@/features/library/repair";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
@@ -39,21 +40,21 @@ interface TaskGroup {
   label: string;
   left: number;
   failed: number;
-  saves: NamedSave[];
+  saves: Array<NamedSave>;
 }
 
 interface FailureGroup {
   task: string;
   label: string;
-  rows: EnrichmentFailure[];
+  rows: Array<EnrichmentFailure>;
 }
 
 type FailureStep = "sample" | "more" | "all";
 
 function taskGroups(
   active: ReadonlySet<string>,
-  failed: readonly EnrichmentFailure[],
-): TaskGroup[] {
+  failed: ReadonlyArray<EnrichmentFailure>,
+): Array<TaskGroup> {
   const groups = new Map<string, TaskGroup>();
   const group = (task: string) => {
     const existing = groups.get(task);
@@ -82,7 +83,9 @@ function taskGroups(
   return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label));
 }
 
-function groupFailures(rows: readonly EnrichmentFailure[]): FailureGroup[] {
+function groupFailures(
+  rows: ReadonlyArray<EnrichmentFailure>,
+): Array<FailureGroup> {
   const groups = new Map<string, FailureGroup>();
   for (const row of rows) {
     const existing = groups.get(row.task);
@@ -100,9 +103,13 @@ function groupFailures(rows: readonly EnrichmentFailure[]): FailureGroup[] {
 }
 
 function groupCount(group: TaskGroup): string {
-  const parts: string[] = [];
-  if (group.left) parts.push(`${formatNumber(group.left)} left`);
-  if (group.failed) parts.push(`${formatNumber(group.failed)} failed`);
+  const parts: Array<string> = [];
+  if (group.left) {
+    parts.push(`${formatNumber(group.left)} left`);
+  }
+  if (group.failed) {
+    parts.push(`${formatNumber(group.failed)} failed`);
+  }
   return parts.join(", ");
 }
 
@@ -136,9 +143,11 @@ function saveLabel(save: { id: string; title: string | null }): string {
 
 function failureRows(
   failedKeys: ReadonlySet<string>,
-  failures: readonly EnrichmentFailure[] | undefined,
-): EnrichmentFailure[] {
-  if (failures && failures.length > 0) return [...failures];
+  failures: ReadonlyArray<EnrichmentFailure> | undefined,
+): Array<EnrichmentFailure> {
+  if (failures && failures.length > 0) {
+    return [...failures];
+  }
   return [...failedKeys].map((key) => {
     const index = key.indexOf(":");
     const task = index === -1 ? key : key.slice(0, index);
@@ -153,7 +162,7 @@ function failureRows(
   });
 }
 
-function missingDetail(missing: readonly MissingOriginal[]): string {
+function missingDetail(missing: ReadonlyArray<MissingOriginal>): string {
   const names = missing.map(saveLabel).join(", ");
   return missing.length === 1
     ? `Files missing for ${names}.`
@@ -237,7 +246,7 @@ function FailureSample({ group }: { group: FailureGroup }) {
   );
 }
 
-function FailureSamples({ rows }: { rows: readonly EnrichmentFailure[] }) {
+function FailureSamples({ rows }: { rows: ReadonlyArray<EnrichmentFailure> }) {
   const groups = groupFailures(rows);
   if (groups.length === 0) return null;
   return (
@@ -249,7 +258,7 @@ function FailureSamples({ rows }: { rows: readonly EnrichmentFailure[] }) {
   );
 }
 
-function TaskBreakdown({ groups }: { groups: readonly TaskGroup[] }) {
+function TaskBreakdown({ groups }: { groups: ReadonlyArray<TaskGroup> }) {
   return (
     <span className={styles.breakdown}>
       {groups.map((group) => {
@@ -310,7 +319,9 @@ export function ProcessingStatus() {
         if (active) return module.refreshMissingOriginals();
         return undefined;
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond settings] missing originals refresh failed", cause);
+      });
     return () => {
       active = false;
     };
@@ -337,8 +348,8 @@ export function ProcessingStatusCard({
     inflight: number;
     activeKeys: ReadonlySet<string>;
     failedKeys: ReadonlySet<string>;
-    failures?: readonly EnrichmentFailure[];
-    missingOriginals?: readonly MissingOriginal[];
+    failures?: ReadonlyArray<EnrichmentFailure>;
+    missingOriginals?: ReadonlyArray<MissingOriginal>;
   };
   enabled: boolean;
   loaded?: boolean;
@@ -395,7 +406,7 @@ export function ProcessingStatusCard({
                 missing.length > 0 ? missingDetail(missing) : null,
                 showFailures ? failureSummary(rows.length) : null,
               ]
-                .filter((part) => part != null)
+                .filter((part) => part !== null)
                 .join(" ")
             : enabled
               ? `New saves are processed on ${THIS_DEVICE}.`

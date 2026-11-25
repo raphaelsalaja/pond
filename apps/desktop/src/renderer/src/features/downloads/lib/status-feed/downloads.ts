@@ -1,10 +1,5 @@
-import {
-  OPS,
-  type Op,
-  SOURCES,
-  type Source,
-  type TaskDeferredReason,
-} from "@pond/schema/db";
+import { OPS, SOURCES } from "@pond/schema/db";
+import type { Op, Source, TaskDeferredReason } from "@pond/schema/db";
 import { INGEST_OUTCOMES } from "@pond/schema/events";
 import { hostToSource } from "@pond/schema/sources";
 import type { TransferJob } from "@shared/transfer-contracts";
@@ -94,10 +89,10 @@ export interface DownloadFilters {
   q: string;
 }
 
-export const STATUS_FILTER_OPTIONS: readonly {
+export const STATUS_FILTER_OPTIONS: ReadonlyArray<{
   id: StatusFilter;
   label: string;
-}[] = [
+}> = [
   { id: "active", label: "Active" },
   { id: "waiting", label: "Waiting" },
   { id: "failed", label: "Failed" },
@@ -106,9 +101,9 @@ export const STATUS_FILTER_OPTIONS: readonly {
   { id: "complete", label: "Completed" },
 ];
 
-const DEFAULT_STATUS_FILTERS: readonly StatusFilter[] =
-  STATUS_FILTER_OPTIONS.map((option) => option.id).filter(
-    (id) => id !== "complete",
+const DEFAULT_STATUS_FILTERS: ReadonlyArray<StatusFilter> =
+  STATUS_FILTER_OPTIONS.flatMap((option) =>
+    option.id === "complete" ? [] : [option.id],
   );
 
 export function defaultDownloadFilters(): DownloadFilters {
@@ -216,10 +211,14 @@ const DOWNLOAD_STATUS_RANK = {
   complete: 9,
 } satisfies Record<DownloadStatus, number>;
 
-export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
-  const rows: DownloadRow[] = [];
+export function projectLiveDownloads(
+  saves: ReadonlyArray<Save>,
+): Array<DownloadRow> {
+  const rows: Array<DownloadRow> = [];
   for (const save of saves) {
-    if (save.deletedAt != null || save.source === "local") continue;
+    if (save.deletedAt !== null || save.source === "local") {
+      continue;
+    }
     const status = liveStatus(save);
     if (!status) continue;
     const tasks = save.tasks ?? [];
@@ -266,12 +265,21 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
 }
 
 export function statusBucket(status: DownloadStatus): StatusFilter {
-  if (status === "failed" || status === "blocked" || status === "dead")
+  if (status === "failed" || status === "blocked" || status === "dead") {
     return "failed";
-  if (status === "cancelled") return "cancelled";
-  if (status === "skipped") return "skipped";
-  if (status === "complete") return "complete";
-  if (status === "running") return "active";
+  }
+  if (status === "cancelled") {
+    return "cancelled";
+  }
+  if (status === "skipped") {
+    return "skipped";
+  }
+  if (status === "complete") {
+    return "complete";
+  }
+  if (status === "running") {
+    return "active";
+  }
   return "waiting";
 }
 
@@ -305,9 +313,9 @@ export function matchesDownloadFilters(
 }
 
 export function mergeDownloadRows(
-  live: readonly DownloadRow[],
-  history: readonly DownloadRow[],
-): DownloadRow[] {
+  live: ReadonlyArray<DownloadRow>,
+  history: ReadonlyArray<DownloadRow>,
+): Array<DownloadRow> {
   const liveIds = new Set(live.map((r) => r.saveId));
   const extra = history.filter((r) => !liveIds.has(r.saveId));
   return [...live, ...extra];

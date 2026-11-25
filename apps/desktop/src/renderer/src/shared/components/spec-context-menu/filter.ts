@@ -1,12 +1,16 @@
-import { Menu, type MenuItemSpec } from "@pond/ui";
-import { Children, isValidElement, type ReactNode } from "react";
+import { Menu } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { Children, isValidElement } from "react";
+import type { ReactNode } from "react";
 
 const { contains } = Menu.getFilter();
 
 function labelText(label: ReactNode): string {
   const labels = Children.toArray(label);
   const value = labels.length === 1 ? labels[0] : null;
-  return value != null && !isValidElement(value) ? String(value) : "";
+  return value !== null && value !== undefined && !isValidElement(value)
+    ? String(value)
+    : "";
 }
 
 function keywordsOf(item: MenuItemSpec): string {
@@ -26,17 +30,17 @@ function isDisabled(item: MenuItemSpec): boolean {
   return "disabled" in item && Boolean(item.disabled);
 }
 
-function matchesAll(text: string, terms: string[]): boolean {
+function matchesAll(text: string, terms: Array<string>): boolean {
   return terms.every((term) => contains(text, term));
 }
 
-function matchesCustom(terms: string[]): boolean {
+function matchesCustom(terms: Array<string>): boolean {
   return terms.some((term) => /color|icon|swatch/i.test(term));
 }
 
 function withBreadcrumb(
   item: MenuItemSpec,
-  breadcrumb: ReactNode[],
+  breadcrumb: Array<ReactNode>,
 ): MenuItemSpec {
   if (
     breadcrumb.length === 0 ||
@@ -52,12 +56,12 @@ function withBreadcrumb(
 }
 
 function collectLeaves(
-  items: MenuItemSpec[],
-  terms: string[],
+  items: Array<MenuItemSpec>,
+  terms: Array<string>,
   path: string,
-  breadcrumb: ReactNode[],
-): MenuItemSpec[] {
-  const out: MenuItemSpec[] = [];
+  breadcrumb: Array<ReactNode>,
+): Array<MenuItemSpec> {
+  const out: Array<MenuItemSpec> = [];
   for (const item of items) {
     if (item.type === "separator" || isHidden(item) || isDisabled(item)) {
       continue;
@@ -99,9 +103,9 @@ function collectLeaves(
 }
 
 export function filterMenuItems(
-  items: MenuItemSpec[],
+  items: Array<MenuItemSpec>,
   query: string,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const terms = query.trim().split(/\s+/).filter(Boolean);
   if (terms.length === 0) return items;
   return collectLeaves(items, terms, "", []);

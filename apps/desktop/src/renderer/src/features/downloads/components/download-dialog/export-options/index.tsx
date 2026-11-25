@@ -16,16 +16,13 @@ import { EnumSelect } from "@/shared/components/enum-select";
 import type { Clip } from "../lib/clip";
 import { qualityLabel } from "../lib/estimate";
 import { MODES } from "../options";
-import {
-  type CompressionLevel,
-  type Container,
-  type ExportDestination,
-  GIF_FPS,
-  GIF_MAX_SECONDS,
-  gifAllowed,
-  type Settings,
-  saveToHint,
-  type TranscriptFormat,
+import { GIF_FPS, GIF_MAX_SECONDS, gifAllowed, saveToHint } from "./settings";
+import type {
+  CompressionLevel,
+  Container,
+  ExportDestination,
+  Settings,
+  TranscriptFormat,
 } from "./settings";
 import styles from "./styles.module.css";
 
@@ -94,7 +91,7 @@ interface TileOption<T extends string> {
 
 interface TilesProps<T extends string> {
   label: string;
-  options: readonly TileOption<T>[];
+  options: ReadonlyArray<TileOption<T>>;
   value: T;
   onValueChange: (value: T) => void;
 }
@@ -135,7 +132,7 @@ interface SettingsProps {
   settings: Settings;
 }
 
-const TRANSCRIPT_FORMATS: readonly TileOption<TranscriptFormat>[] = [
+const TRANSCRIPT_FORMATS: ReadonlyArray<TileOption<TranscriptFormat>> = [
   { value: "txt", label: "Text" },
   { value: "srt", label: "SRT" },
   { value: "vtt", label: "VTT" },
@@ -176,7 +173,7 @@ function Format({ clip, settings }: SettingsProps) {
   }
 
   const long = !gifAllowed(clip);
-  const containers: readonly TileOption<Container>[] = [
+  const containers: ReadonlyArray<TileOption<Container>> = [
     { value: "mp4", label: "MP4" },
     { value: "webm", label: "WebM" },
     { value: "gif", label: "GIF", disabled: long },
@@ -254,9 +251,11 @@ function FrameRate({ clip, settings }: SettingsProps) {
   );
 }
 
-const COMPRESSIONS: readonly (TileOption<CompressionLevel> & {
-  hint: string;
-})[] = [
+const COMPRESSIONS: ReadonlyArray<
+  TileOption<CompressionLevel> & {
+    hint: string;
+  }
+> = [
   {
     value: "original",
     label: "Original",
@@ -326,7 +325,7 @@ function Language({ clip }: { clip: Clip }) {
   );
 }
 
-const DESTINATIONS: readonly TileOption<ExportDestination>[] = [
+const DESTINATIONS: ReadonlyArray<TileOption<ExportDestination>> = [
   {
     value: "library",
     label: (
@@ -362,7 +361,7 @@ interface SaveToProps {
   hint: string | null;
   onChooseFolder: () => void;
   /** Destinations this download can't go to. */
-  unavailable?: readonly ExportDestination[];
+  unavailable?: ReadonlyArray<ExportDestination>;
 }
 
 /** Library, File or Clipboard, with the folder File saves into. */

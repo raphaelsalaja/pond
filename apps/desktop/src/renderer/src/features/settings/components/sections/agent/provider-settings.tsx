@@ -1,19 +1,21 @@
 import { Menu, Settings } from "@pond/ui";
 import {
-  type AssistantCatalog,
-  type AssistantProvider,
   assistantCatalog,
   offeredProviders,
-  type ProviderGroup,
   providerGroup,
+} from "@shared/assistant";
+import type {
+  AssistantCatalog,
+  AssistantProvider,
+  ProviderGroup,
 } from "@shared/assistant";
 import type { ReactNode } from "react";
 import { AnimateHeight } from "@/shared/components/animate-height";
 import { IS_MAC, THIS_DEVICE } from "@/shared/lib/platform";
 import { ProviderLogo } from "./icons";
 import { ProviderConnection } from "./provider";
-import styles from "./styles.module.css";
 import type { AgentPrefs, KeyRow } from "./types";
+import styles from "./styles.module.css";
 
 export const GROUPS = [
   {
@@ -41,7 +43,7 @@ export const GROUPS = [
 export function isListedProvider(
   provider: AssistantProvider,
   agent: AgentPrefs | null | undefined,
-  keys: KeyRow[],
+  keys: Array<KeyRow>,
 ) {
   return (
     Boolean(agent?.addedProviders?.includes(provider)) ||
@@ -50,14 +52,14 @@ export function isListedProvider(
 }
 
 export function addedProvidersWith(
-  added: string[] | undefined,
-  keys: KeyRow[],
+  added: Array<string> | undefined,
+  keys: Array<KeyRow>,
   provider: AssistantProvider,
 ) {
   return [
     ...new Set([
       ...(added ?? []).filter((id) => id !== provider),
-      ...keys.filter((row) => row.hasKey).map((row) => row.provider),
+      ...keys.flatMap((row) => (row.hasKey ? [row.provider] : [])),
       provider,
     ]),
   ];
@@ -66,10 +68,10 @@ export function addedProvidersWith(
 export function listedCatalog(
   kind: ProviderGroup,
   agent: AgentPrefs | null | undefined,
-  keys: KeyRow[],
+  keys: Array<KeyRow>,
 ) {
   const seen = new Set<string>();
-  const listed: AssistantCatalog[] = [];
+  const listed: Array<AssistantCatalog> = [];
   const add = (id: string) => {
     if (seen.has(id)) return;
     const entry = assistantCatalog(id);
@@ -102,7 +104,7 @@ function ProviderList({ children }: { children: ReactNode }) {
 function remainingProviders(
   kind: ProviderGroup,
   agent: AgentPrefs,
-  keys: KeyRow[],
+  keys: Array<KeyRow>,
 ) {
   return offeredProviders(kind).filter(
     (entry) =>
@@ -119,7 +121,7 @@ export function ProviderSettings({
   onRefresh,
 }: {
   agent: AgentPrefs;
-  keys: KeyRow[];
+  keys: Array<KeyRow>;
   onAdd: (provider: AssistantProvider) => void;
   onPatchAgent: (patch: Partial<AgentPrefs>) => void | Promise<void>;
   onRefresh: () => Promise<void>;
@@ -176,7 +178,7 @@ function AddProviderMenu({
 }: {
   kind: ProviderGroup;
   agent: AgentPrefs;
-  keys: KeyRow[];
+  keys: Array<KeyRow>;
   onAdd: (provider: AssistantProvider) => void;
 }) {
   const providers = remainingProviders(kind, agent, keys);

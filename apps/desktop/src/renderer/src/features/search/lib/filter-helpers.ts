@@ -1,9 +1,9 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
-import {
-  COMPARATORS_BY_TYPE,
-  type ComparatorId,
-  type FieldId,
-  type Predicate,
+import { COMPARATORS_BY_TYPE } from "@pond/schema/filters/types";
+import type {
+  ComparatorId,
+  FieldId,
+  Predicate,
 } from "@pond/schema/filters/types";
 import { z } from "zod";
 
@@ -37,9 +37,11 @@ function emptyValueFor(operator: ComparatorId) {
 export function predicateIsActive(p: Predicate): boolean {
   if (p.operator === "exists" || p.operator === "empty") return true;
   const v = p.value;
-  if (v == null) return false;
+  if (v === null || v === undefined) {
+    return false;
+  }
   if (Array.isArray(v)) {
-    return v.some((x) => x !== "" && x !== 0 && x != null);
+    return v.some((x) => x !== "" && x !== 0 && x !== null && x !== undefined);
   }
   const text = z.string().safeParse(v);
   return text.success ? text.data.trim().length > 0 : true;

@@ -1,8 +1,8 @@
 import { IconFolderDots, IconFolderOpen } from "@pond/icons";
 import { useState } from "react";
+import { IconMorph } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { IconMorph } from ".";
 
 function FolderToggle() {
   const [open, setOpen] = useState(false);

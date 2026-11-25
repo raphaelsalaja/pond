@@ -5,10 +5,11 @@ export default ({ poly }, s) => {
   const half = (x1 - x0) / 2;
   const T = 3.5;
   let B = half;
-  for (let i = 0; i < 8; i++)
+  for (let i = 0; i < 8; i++) {
     B =
       half +
       s.box * (1 / Math.tan(Math.atan((bottom - top) / (B - T)) / 2) - 1);
+  }
   return poly(
     [
       [9 - T, top],

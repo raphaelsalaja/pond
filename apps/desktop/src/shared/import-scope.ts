@@ -9,13 +9,13 @@ import type {
 
 export interface ImportScopeOptions {
   /** Lists the Account sync walks separately, so leaving one out skips its requests. */
-  listKinds: readonly ListKind[];
+  listKinds: ReadonlyArray<ListKind>;
   /** The kind of collection that can narrow the saved list, or null when the sync can only walk all of it. */
   collections: ImportCollectionKind | null;
   /** Whether Add to Folders can file every collection when none are picked; false where an empty pick means one default list. */
   fileEveryCollection: boolean;
   /** Media kinds the Source mixes; empty when every save holds the same kind. */
-  mediaKinds: readonly ImportMediaKind[];
+  mediaKinds: ReadonlyArray<ImportMediaKind>;
   /** Whether captures carry a publish date the `since` limit can compare. */
   since: boolean;
   /** Set when `since` compares the day you saved an item, because the Source has no publish date. */
@@ -42,8 +42,8 @@ const EVERYTHING_ONLY: ImportScopeOptions = {
   since: false,
 };
 
-const SAVED_AND_LIKED: readonly ListKind[] = ["saved", "liked"];
-const ALL_MEDIA: readonly ImportMediaKind[] = ["image", "video", "text"];
+const SAVED_AND_LIKED: ReadonlyArray<ListKind> = ["saved", "liked"];
+const ALL_MEDIA: ReadonlyArray<ImportMediaKind> = ["image", "video", "text"];
 
 const IMPORT_SCOPE_OPTIONS = {
   mymind: EVERYTHING_ONLY,
@@ -184,8 +184,9 @@ export function normalizeImportScope(
   if (scope.listKinds && options.listKinds.length > 0) {
     const chosen = new Set(scope.listKinds);
     const listKinds = options.listKinds.filter((kind) => chosen.has(kind));
-    if (listKinds.length === 0) next.listKinds = [];
-    else if (listKinds.length < options.listKinds.length) {
+    if (listKinds.length === 0) {
+      next.listKinds = [];
+    } else if (listKinds.length < options.listKinds.length) {
       next.listKinds = listKinds;
     }
   }
@@ -245,10 +246,10 @@ export function accountImportScope(
 
 /** Sources with Accounts where none imports Likes, so the extension stops saving likes there too. */
 export function sourcesSkippingLikes(
-  accounts: readonly {
+  accounts: ReadonlyArray<{
     source: Source;
     sync: { importScope?: ImportScope; syncLikes?: boolean };
-  }[],
+  }>,
 ): Set<Source> {
   const skipping = new Set<Source>();
   const importing = new Set<Source>();
@@ -307,7 +308,7 @@ export type ImportFilterReason = "list" | "media" | "since";
 /** Skips a save only from lists the scope leaves out; a save on no known list is kept. */
 export function listFilterReason(
   scope: ImportScope | undefined,
-  listKinds: readonly ListKind[],
+  listKinds: ReadonlyArray<ListKind>,
 ): "list" | null {
   if (!scope?.listKinds || listKinds.length === 0) return null;
   return listKinds.some((kind) => scope.listKinds?.includes(kind))
@@ -330,7 +331,7 @@ export function savedSinceStart(
 export function importFilterReason(
   scope: ImportScope | undefined,
   save: {
-    listKinds: readonly ListKind[];
+    listKinds: ReadonlyArray<ListKind>;
     mediaType: MediaType | null;
     publishedAt: Date | null;
   },
@@ -368,10 +369,10 @@ export function sinceStart(since: string): Date | null {
 }
 
 function uniqueCollections(
-  collections: readonly ImportCollection[],
-): ImportCollection[] {
+  collections: ReadonlyArray<ImportCollection>,
+): Array<ImportCollection> {
   const seen = new Set<string>();
-  const out: ImportCollection[] = [];
+  const out: Array<ImportCollection> = [];
   for (const collection of collections) {
     const id = collection.id.trim();
     if (!id || seen.has(id)) continue;

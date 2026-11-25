@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import * as schema from "@pond/schema/db";
+import { deletedSourceIds } from "@pond/schema/db";
 import { buildWhere } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { is } from "drizzle-orm";
@@ -11,9 +11,10 @@ import {
   SQLiteSyncDialect,
   SQLiteTable,
 } from "drizzle-orm/sqlite-core";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { migratePond } from "./migrations";
+import { libraryTables } from "./tables";
 
 function nativeSqliteAvailable(): boolean {
   try {
@@ -72,8 +73,10 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     const db = new Database(":memory:");
     try {
       migratePond(db);
-      for (const table of Object.values(schema)) {
-        if (!is(table, SQLiteTable)) continue;
+      for (const table of Object.values(libraryTables)) {
+        if (!is(table, SQLiteTable)) {
+          continue;
+        }
         const config = getTableConfig(table);
         const present = db
           .prepare(`pragma table_info(${config.name})`)
@@ -162,13 +165,9 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
       expect(
         db.prepare("SELECT source_id FROM deleted_source_ids").all(),
       ).toEqual([{ source_id: "100" }]);
-      const orm = drizzle(db, { schema });
+      const orm = drizzle(db, { schema: libraryTables });
       const again = { source: "twitter" as const, sourceId: "100" };
-      orm
-        .insert(schema.deletedSourceIds)
-        .values(again)
-        .onConflictDoNothing()
-        .run();
+      orm.insert(deletedSourceIds).values(again).onConflictDoNothing().run();
       expect(
         db.prepare("SELECT source_id FROM deleted_source_ids").all(),
       ).toEqual([{ source_id: "100" }]);
@@ -199,20 +198,33 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     }
   });
 
-  it("creates scheduler indexes and reruns without changes", () => {
-    const root = mkdtempSync(join(tmpdir(), "pond-migration-"));
-    try {
-      const created = new Database(join(root, "index.db"));
+  describe("on a library file", () => {
+    let root = "";
+    let created: Database.Database | null = null;
+
+    beforeAll(() => {
+      root = mkdtempSync(join(tmpdir(), "pond-migration-"));
+      created = new Database(join(root, "index.db"));
       migratePond(created);
+    });
+
+    afterAll(() => {
+      created?.close();
+      rmSync(root, { recursive: true, force: true });
+    });
+
+    it("creates scheduler indexes and reruns without changes", () => {
+      const db = created;
+      if (!db) {
+        throw new Error("Expected a migrated library file");
+      }
       const schemaSql = () =>
-        created
-          .prepare("SELECT name, sql FROM sqlite_master ORDER BY name")
-          .all();
+        db.prepare("SELECT name, sql FROM sqlite_master ORDER BY name").all();
       const before = schemaSql();
-      migratePond(created);
+      migratePond(db);
       expect(schemaSql()).toEqual(before);
 
-      const indexes = created
+      const indexes = db
         .prepare("PRAGMA index_list(tasks)")
         .all()
         .map((row) => z.object({ name: z.string() }).parse(row).name);
@@ -225,14 +237,11 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
         ]),
       );
       expect(
-        created
+        db
           .prepare("PRAGMA index_list(saves)")
           .all()
           .map((row) => z.object({ name: z.string() }).parse(row).name),
       ).toContain("saves_split_post_idx");
-      created.close();
-    } finally {
-      rmSync(root, { recursive: true, force: true });
-    }
-  }, 30_000);
+    });
+  });
 });

@@ -20,12 +20,15 @@ export function hubCopy(
   counts: Partial<Record<string, number>> | null,
   saveCount: number | null,
 ): HubCopy {
-  if (!target) return { title: "File To" };
-  if (target.kind === "action")
+  if (!target) {
+    return { title: "File To" };
+  }
+  if (target.kind === "action") {
     return {
       title: RING_ACTIONS[target.action].label,
       detail: saveCount === null ? undefined : formatPlural(saveCount, SAVES),
     };
+  }
   const count = counts?.[target.folder.id];
   return {
     title: target.folder.name,

@@ -49,7 +49,7 @@ function ThumbnailViewer({ open, saveId }: { open: boolean; saveId: string }) {
             />
           ) : (
             <Empty.Root>
-              <Empty.Title>Couldn't load the thumbnail</Empty.Title>
+              <Empty.Title>Couldn&apos;t load the thumbnail</Empty.Title>
             </Empty.Root>
           )}
         </Dialog.Popup>

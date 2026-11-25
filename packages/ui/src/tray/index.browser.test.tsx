@@ -1,7 +1,7 @@
 import { IconArrowDown, IconArrowUp, IconShare } from "@pond/icons";
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { userEvent } from "vitest/browser";
 import { Tray } from ".";
 
 async function renderTray(orientation: "horizontal" | "vertical") {

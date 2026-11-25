@@ -1,6 +1,8 @@
 function concise(text: string): string | undefined {
-  const normalized = text.trim().replace(/\s+/g, " ");
-  if (!normalized) return undefined;
+  const normalized = text.trim().replaceAll(/\s+/g, " ");
+  if (!normalized) {
+    return undefined;
+  }
   const title = normalized.charAt(0).toLocaleUpperCase() + normalized.slice(1);
   if (title.length <= 48) return title;
   const prefix = title.slice(0, 47);

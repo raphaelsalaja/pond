@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import { createImportPicker, ImportKindSchema } from "./import-picker";
 
 function fixture(focused: { id: number } | null = null, canceled = false) {
-  const opened: {
+  const opened: Array<{
     window: { id: number } | null;
     options: OpenDialogOptions;
-  }[] = [];
+  }> = [];
   const pick = createImportPicker({
     focusedWindow: () => focused,
     async open(window, options) {

@@ -1,5 +1,6 @@
 import { IconFile, IconImage, IconLink2 } from "@pond/icons";
-import { type CSSProperties, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import { BlurHash } from "@/features/saves";
 import {
   aspectFor,

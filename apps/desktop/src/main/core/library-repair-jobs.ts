@@ -16,7 +16,7 @@ const MAX_RETAINED_JOBS = 100;
 
 export function startLibraryRepairPreview(
   kind: LibraryRepairKind,
-  saveIds?: readonly string[],
+  saveIds?: ReadonlyArray<string>,
 ): LibraryRepairJob {
   const record = createJob("preview", kind);
   void runPreview(record, saveIds);
@@ -70,7 +70,7 @@ function createJob(
 
 async function runPreview(
   record: RepairJobRecord,
-  saveIds: readonly string[] | undefined,
+  saveIds: ReadonlyArray<string> | undefined,
 ): Promise<void> {
   record.job.status = "running";
   try {

@@ -41,7 +41,9 @@ function readKey(key: ListColumnKey): boolean {
   if (!globalThis.window) return LIST_COLUMN_DEFAULTS[key];
   try {
     const raw = window.localStorage.getItem(`pond.list.${key}`);
-    if (raw == null) return LIST_COLUMN_DEFAULTS[key];
+    if (raw === null) {
+      return LIST_COLUMN_DEFAULTS[key];
+    }
     return raw === "1";
   } catch {
     return LIST_COLUMN_DEFAULTS[key];
@@ -60,7 +62,9 @@ export function setListColumn(key: ListColumnKey, value: boolean): void {
   if (globalThis.window) {
     try {
       window.localStorage.setItem(`pond.list.${key}`, value ? "1" : "0");
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the column still applies for this session. */
+    }
   }
   store.setState((s) => (s[key] === value ? s : { ...s, [key]: value }));
 }
@@ -78,7 +82,9 @@ export function formatListDimension(
 }
 
 export function formatListRating(rating: number | null | undefined): string {
-  if (rating == null || rating <= 0) return "—";
+  if (rating === undefined || rating === null || rating <= 0) {
+    return "—";
+  }
   return String(rating);
 }
 

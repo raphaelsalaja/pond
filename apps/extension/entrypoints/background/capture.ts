@@ -4,11 +4,8 @@ import { hostToSource, sourceLabel } from "@pond/schema/source-ids";
 import { allowsSiteCapture } from "@/utils/hook-capture";
 import type { DetailsDraft, DetailsPreview } from "@/utils/messaging";
 import { nativeCall } from "@/utils/native";
-import {
-  type CaptureOutcome,
-  isSettled,
-  outcomeFromResponse,
-} from "@/utils/outcome";
+import { isSettled, outcomeFromResponse } from "@/utils/outcome";
+import type { CaptureOutcome } from "@/utils/outcome";
 import type { OverlayToast } from "@/utils/overlay-messaging";
 import { rememberTargets } from "@/utils/recent-targets";
 import { getSettings } from "@/utils/settings";
@@ -28,7 +25,7 @@ export interface CaptureRequest {
   trigger?: string;
   originUrl?: string;
   metadata?: Metadata;
-  cookies?: ExtensionCookie[];
+  cookies?: Array<ExtensionCookie>;
   fishId?: string;
   /** The tab to confirm the save on; omit when nothing should be shown. */
   announceTab?: number;
@@ -46,7 +43,9 @@ function toastFor(title: string, outcome: CaptureOutcome): OverlayToast {
 
 async function pollUntilSettled(id: string): Promise<CaptureOutcome | null> {
   for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    await new Promise((resolve) => {
+      setTimeout(resolve, POLL_INTERVAL_MS);
+    });
     const response = await nativeCall({ type: "capture.status", id });
     /** Pond builds without `capture.status` answer `invalid`; the save still lands. */
     if (!response.ok) return null;

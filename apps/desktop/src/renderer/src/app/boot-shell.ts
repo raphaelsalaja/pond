@@ -1,5 +1,6 @@
 import { initScrollFade } from "@pond/ui/scroll-fade";
-import { type ShellHint, ShellHintSchema } from "@shared/shell-hint";
+import { ShellHintSchema } from "@shared/shell-hint";
+import type { ShellHint } from "@shared/shell-hint";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
 import { displayGamut, paintTheme } from "@/shared/lib/paint-theme";
 

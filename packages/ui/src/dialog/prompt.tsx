@@ -1,11 +1,5 @@
-import {
-  type ComponentProps,
-  type ReactNode,
-  type RefObject,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { useId, useRef, useState } from "react";
+import type { ComponentProps, ReactNode, RefObject } from "react";
 import { Button } from "../button";
 import { Input } from "../input";
 import { DialogParts as Dialog } from "./dialog";

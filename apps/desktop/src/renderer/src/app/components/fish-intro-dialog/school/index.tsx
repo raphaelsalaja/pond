@@ -12,7 +12,7 @@ interface Member {
   species: FishSpecies;
 }
 
-const OTHERS: readonly Member[] = [
+const OTHERS: ReadonlyArray<Member> = [
   { color: "gold", species: "goldfish" },
   { color: "teal", species: "puffer" },
   { color: "red", species: "clownfish" },

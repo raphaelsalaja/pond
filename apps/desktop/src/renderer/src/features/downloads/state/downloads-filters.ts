@@ -2,10 +2,12 @@ import type { Source } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import {
-  type DownloadFilters,
   defaultDownloadFilters,
   downloadFiltersActive,
-  type StatusFilter,
+} from "@/features/downloads/lib/status-feed/downloads";
+import type {
+  DownloadFilters,
+  StatusFilter,
 } from "@/features/downloads/lib/status-feed/downloads";
 
 const store = new Store<DownloadFilters>(defaultDownloadFilters());

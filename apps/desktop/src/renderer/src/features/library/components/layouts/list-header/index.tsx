@@ -1,11 +1,13 @@
-import { Button, type MenuItemSpec } from "@pond/ui";
-import { type SortKey, useView } from "@/features/library/hooks/use-view";
+import { Button } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { useView } from "@/features/library/hooks/use-view";
+import type { SortKey } from "@/features/library/hooks/use-view";
 import {
   LIST_COLUMN_OPTIONS,
-  type ListColumnKey,
   setListColumn,
   useListColumns,
 } from "@/features/saves";
+import type { ListColumnKey } from "@/features/saves";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import styles from "./styles.module.css";
 
@@ -43,7 +45,7 @@ function sortKeyFor(column: ListColumnKey): SortKey | null {
 export function buildListColumnItems(
   columns: ReturnType<typeof useListColumns>,
   onChange: (key: ListColumnKey, visible: boolean) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return LIST_COLUMN_OPTIONS.map(({ key, label }) => ({
     type: "checkbox",
     label,

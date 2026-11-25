@@ -11,17 +11,18 @@ export interface ActivityEntry {
   readonly startedAt: number;
 }
 
-const store = new Store<{ entries: readonly ActivityEntry[] }>({
+const store = new Store<{ entries: ReadonlyArray<ActivityEntry> }>({
   entries: [],
 });
 let nextId = 1;
 
 function settle(id: number): ActivityEntry | null {
   const entry = store.state.entries.find((item) => item.id === id) ?? null;
-  if (entry)
+  if (entry) {
     store.setState((s) => ({
       entries: s.entries.filter((item) => item.id !== id),
     }));
+  }
   return entry;
 }
 
@@ -70,6 +71,6 @@ export const statusFeed = {
   },
 };
 
-export function useStatusFeed(): readonly ActivityEntry[] {
+export function useStatusFeed(): ReadonlyArray<ActivityEntry> {
   return useSelector(store, (s) => s.entries);
 }

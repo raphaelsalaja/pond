@@ -26,11 +26,14 @@ const layout = createTableColumnLayout({
 });
 
 export const sourcesColumnsLayout = {
-  snapshot: layout.snapshot,
-  setHidden: layout.setHidden,
-  setSort: layout.setSort,
-  applyVisibleOrder: layout.applyVisibleOrder,
-  reset: layout.reset,
+  snapshot: () => layout.snapshot(),
+  setHidden: (...args: Parameters<typeof layout.setHidden>) =>
+    layout.setHidden(...args),
+  setSort: (...args: Parameters<typeof layout.setSort>) =>
+    layout.setSort(...args),
+  applyVisibleOrder: (...args: Parameters<typeof layout.applyVisibleOrder>) =>
+    layout.applyVisibleOrder(...args),
+  reset: () => layout.reset(),
 };
 
 export function useSourcesColumnLayout() {

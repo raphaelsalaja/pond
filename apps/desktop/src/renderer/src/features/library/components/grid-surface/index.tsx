@@ -32,6 +32,7 @@ export function GridSurface() {
   const saveOpen = useOpenSaveId() !== null;
   const location = useRouteLocation((next) => next);
   const restoration = useScrollRestoration(location.pathname);
+  const { ref: viewportRef } = restoration;
   /** The grid stays mounted under an open Save, so a search change must not re-render it. */
   const view = useMemo(() => <LibraryView />, []);
   const navKind = useLibraryNav()?.kind ?? "all";
@@ -63,7 +64,7 @@ export function GridSurface() {
         )}
         <ScrollRestorationContext.Provider value={restoration}>
           <Shell.Main
-            ref={restoration.ref}
+            ref={viewportRef}
             className={styles.main}
             data-library-grid-viewport
           >

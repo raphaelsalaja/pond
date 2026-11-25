@@ -1,12 +1,12 @@
 /** Counts component renders per React commit with bippy, the fiber walk React Scan and React DevTools share. */
 import {
-  type Fiber,
   getDisplayName,
   instrument,
   isCompositeFiber,
   MemoComponentTag,
   traverseRenderedFibers,
 } from "bippy";
+import type { Fiber } from "bippy";
 
 interface Tally {
   total: Map<string, number>;

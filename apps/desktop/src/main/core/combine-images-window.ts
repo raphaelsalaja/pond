@@ -2,10 +2,12 @@ import { BrowserWindow, nativeTheme, screen } from "electron";
 import {
   COMBINE_IMAGES_WINDOW_IPC,
   CombineImagesDropSchema,
-  type CombineImagesWindowLoad,
-  type CombineImagesWindowOpen,
   CombineImagesWindowOpenSchema,
   isCombineImagesZoomAction,
+} from "../../shared/combine-images-contracts";
+import type {
+  CombineImagesWindowLoad,
+  CombineImagesWindowOpen,
 } from "../../shared/combine-images-contracts";
 import { attachEditableContextMenu } from "../context-menu";
 import { safeHandle } from "../ipc/helpers";
@@ -34,9 +36,12 @@ async function openCombineImagesWindow(
   load = { ...next, nonce: load.nonce + 1 };
   if (opening) await opening;
   if (combineWindow && !combineWindow.isDestroyed()) {
-    if (combineWindow.isMinimized()) combineWindow.restore();
-    if (delivered)
+    if (combineWindow.isMinimized()) {
+      combineWindow.restore();
+    }
+    if (delivered) {
       combineWindow.webContents.send(COMBINE_IMAGES_WINDOW_IPC.load, load);
+    }
     combineWindow.show();
     combineWindow.focus();
     return;
@@ -51,8 +56,9 @@ async function openCombineImagesWindow(
 /** App menu zoom accelerators would otherwise focus the Library and zoom its grid. */
 export function routeCombineImagesZoom(id: string): boolean {
   const focused = BrowserWindow.getFocusedWindow();
-  if (!focused || focused !== combineWindow || !isCombineImagesZoomAction(id))
+  if (!focused || focused !== combineWindow || !isCombineImagesZoomAction(id)) {
     return false;
+  }
   focused.webContents.send(COMBINE_IMAGES_WINDOW_IPC.zoom, id);
   return true;
 }
@@ -103,11 +109,13 @@ async function createCombineImagesWindow(): Promise<void> {
   });
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   try {
-    if (devUrl)
+    if (devUrl) {
       await win.loadURL(
         new URL("combine-images.html", `${devUrl}/`).toString(),
       );
-    else await win.loadFile(resolveMainOut("../renderer/combine-images.html"));
+    } else {
+      await win.loadFile(resolveMainOut("../renderer/combine-images.html"));
+    }
   } catch (error) {
     win.destroy();
     throw error;
@@ -115,8 +123,9 @@ async function createCombineImagesWindow(): Promise<void> {
 }
 
 function assertOwner(id: number): void {
-  if (!combineImagesWindowOwnsSender(id))
+  if (!combineImagesWindowOwnsSender(id)) {
     throw new Error("Not a Combine Images window");
+  }
 }
 
 export function registerCombineImagesWindowIpc(): void {
@@ -133,7 +142,7 @@ export function registerCombineImagesWindowIpc(): void {
   });
   safeHandle(
     COMBINE_IMAGES_WINDOW_IPC.resolveDrop,
-    (event, paths: readonly string[]) => {
+    (event, paths: ReadonlyArray<string>) => {
       assertOwner(event.sender.id);
       return resolveSaveDrop(CombineImagesDropSchema.parse(paths));
     },

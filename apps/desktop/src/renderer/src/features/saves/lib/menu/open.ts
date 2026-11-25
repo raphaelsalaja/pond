@@ -40,7 +40,7 @@ function openAllSaves(): void {
 
 function fileLocationItems(
   entries: ReadonlyArray<{ id: string; name: string }>,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     {
       label: "All",
@@ -66,7 +66,7 @@ export function buildOpenItems({
   openWithApps,
   hasHttpUrl,
   targetFile,
-}: SaveMenuContext): MenuItemSpec[] {
+}: SaveMenuContext): Array<MenuItemSpec> {
   const openWithItems = hasFiles
     ? openWithMenuItems(ids, fileIndex, openWithApps)
     : [];

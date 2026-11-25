@@ -1,4 +1,4 @@
-export type TextEncoding = "utf-8" | "utf-16le" | "utf-16be" | "windows-1252";
+export type TextEncoding = "utf8" | "utf-16le" | "utf-16be" | "windows-1252";
 
 export interface DecodedText {
   text: string;
@@ -39,7 +39,7 @@ export function decodeTextBytes(input: Uint8Array): DecodedText {
   ) {
     return {
       text: new TextDecoder("utf-8").decode(input.subarray(3)),
-      encoding: "utf-8",
+      encoding: "utf8",
       hadBom: true,
     };
   }
@@ -71,7 +71,7 @@ export function decodeTextBytes(input: Uint8Array): DecodedText {
   try {
     return {
       text: new TextDecoder("utf-8", { fatal: true }).decode(input),
-      encoding: "utf-8",
+      encoding: "utf8",
       hadBom: false,
     };
   } catch {

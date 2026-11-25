@@ -25,7 +25,7 @@ function Harness({ onSave }: { onSave: (patch: Partial<AgentPrefs>) => void }) {
 
 it("saves on blur, retains edits after a failed save, and retries", async () => {
   let rejectSave = true;
-  const saved: Partial<AgentPrefs>[] = [];
+  const saved: Array<Partial<AgentPrefs>> = [];
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);

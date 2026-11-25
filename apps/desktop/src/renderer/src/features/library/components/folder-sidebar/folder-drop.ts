@@ -89,7 +89,7 @@ export function pickFolderDropZone({
 /** The line after an expanded folder sits above its first child, so the drop lands there. */
 export function resolveFolderDropTarget(
   drop: FolderDropTarget,
-  visibleRows: readonly FolderDropRow[],
+  visibleRows: ReadonlyArray<FolderDropRow>,
 ): FolderDropTarget {
   if (drop.kind !== "after") return drop;
   const at = visibleRows.findIndex((row) => row.id === drop.id);
@@ -101,7 +101,7 @@ export function planFolderSidebarDrop(
   draggedId: string,
   target: FolderDropRow,
   kind: FolderDropKind,
-  folders: readonly FolderDropRow[],
+  folders: ReadonlyArray<FolderDropRow>,
 ): FolderDropMove | null {
   if (draggedId === target.id) return null;
   const inside = new Set(descendantFolderIds(draggedId, folders));
@@ -134,7 +134,7 @@ export function planFolderSidebarDrop(
 export function planFolderDrop(
   draggedId: string,
   drop: FolderDropTarget,
-  folders: readonly FolderDropRow[],
+  folders: ReadonlyArray<FolderDropRow>,
 ): FolderDropMove | null {
   if (drop.id === FOLDER_ROOT_DROP_ID) {
     const roots = folders.filter((row) => row.parentId === null);

@@ -1,9 +1,6 @@
-import {
-  capture,
-  installInterceptor,
-  log,
-  type RequestLens,
-} from "@/utils/intercept";
+import { isElement } from "@pond/ui/dom";
+import { capture, installInterceptor, log } from "@/utils/intercept";
+import type { RequestLens } from "@/utils/intercept";
 import {
   extractMediaIdFromBody,
   isLikeMutation,
@@ -52,7 +49,9 @@ function kindFromHref(href: string | null): string {
 function findShortcodeAroundClick(
   target: EventTarget | null,
 ): { shortcode: string; kind: string } | null {
-  if (!(target instanceof Element)) return null;
+  if (!isElement(target)) {
+    return null;
+  }
   let cur: Element | null = target;
   let depth = 0;
   while (cur && depth < 30) {
@@ -75,7 +74,9 @@ function findLabeledElementFromTarget(
   target: EventTarget | null,
   looksLike: (label: string | null) => boolean,
 ): Element | null {
-  if (!(target instanceof Element)) return null;
+  if (!isElement(target)) {
+    return null;
+  }
   let cur: Element | null = target;
   let depth = 0;
   while (cur && depth < 8) {
@@ -126,8 +127,8 @@ export function inject(): void {
           `https://www.instagram.com/${ctx.kind}/${ctx.shortcode}/`,
           save ? "instagram:save" : "instagram:like",
         );
-      } catch (e) {
-        log("warn", "instagram dom-click hook error", String(e));
+      } catch (error) {
+        log("warn", "instagram dom-click hook error", String(error));
       }
     },
     true,

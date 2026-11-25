@@ -140,9 +140,14 @@ function blockEntry(
   row: z.infer<typeof ArenaBlockRowSchema>,
 ): ListEntry | null {
   const kind = (row.base_type ?? row.type ?? "").toLowerCase();
-  if (kind === "channel") return null;
-  const id = row.id != null ? String(row.id).trim() : "";
-  if (!id) return null;
+  if (kind === "channel") {
+    return null;
+  }
+  const id =
+    row.id !== null && row.id !== undefined ? String(row.id).trim() : "";
+  if (!id) {
+    return null;
+  }
   const entry: ListEntry = {
     sourceId: id,
     url: `https://www.are.na/block/${id}`,
@@ -166,8 +171,8 @@ export async function readArenaBlocks(
   const resume = readCursor(args.resumeCursor);
   let kind: ContentsKind = resume?.kind ?? "users";
   let page = resume?.page ?? 1;
-  let tryGroup = resume == null;
-  const entries: ListEntry[] = [];
+  let tryGroup = resume === null;
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   let knownStreak = 0;
   let fetched = 0;
@@ -205,12 +210,12 @@ export async function readArenaBlocks(
     let parsed: z.infer<typeof ArenaContentsSchema>;
     try {
       parsed = ArenaContentsSchema.parse(await res.json());
-    } catch (err) {
+    } catch (error) {
       log.warn(
         "[pond arena:list] contents parse failed",
         kind,
         page,
-        err instanceof Error ? err.message : "error",
+        error instanceof Error ? error.message : "error",
       );
       if (entries.length === 0) return { ok: false, reason: "unknown" };
       return unfinished();
@@ -231,7 +236,7 @@ export async function readArenaBlocks(
     const end =
       rows.length === 0 ||
       hasMore === false ||
-      (totalPages != null && page >= totalPages) ||
+      (totalPages !== null && totalPages !== undefined && page >= totalPages) ||
       (hasMore !== true && rows.length < PER_PAGE);
     if (end || page >= MAX_PAGES) return finished();
 
@@ -255,8 +260,8 @@ async function pacedFetch(
 ): Promise<Response> {
   try {
     await acquire(ARENA_SOURCE);
-  } catch (err) {
-    if (err instanceof AuthRequiredError) {
+  } catch (error) {
+    if (error instanceof AuthRequiredError) {
       return new Response(null, { status: 401 });
     }
     return new Response(null, {
@@ -272,10 +277,10 @@ async function pacedFetch(
       headers: res.headers,
     });
     return res;
-  } catch (err) {
+  } catch (error) {
     log.warn(
       "[pond arena:list] fetch failed",
-      err instanceof Error ? err.message : "error",
+      error instanceof Error ? error.message : "error",
     );
     report(ARENA_SOURCE, { ok: false });
     return new Response(null, { status: 503 });
@@ -297,10 +302,10 @@ async function readArenaAccessToken(
   if (!res.ok) return null;
   try {
     return arenaAccessToken(await res.text());
-  } catch (err) {
+  } catch (error) {
     log.warn(
       "[pond arena:list] profile parse failed",
-      err instanceof Error ? err.message : "error",
+      error instanceof Error ? error.message : "error",
     );
     return null;
   }

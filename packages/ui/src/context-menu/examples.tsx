@@ -1,7 +1,7 @@
 import { IconCopy, IconPencil, IconTrash } from "@pond/icons";
+import { ContextMenu } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { ContextMenu } from ".";
 
 function FolderActions() {
   return (

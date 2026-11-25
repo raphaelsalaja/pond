@@ -1,13 +1,13 @@
 import { extname } from "node:path";
 import { IPC } from "../shared/constants";
 
-let pendingPaths: string[] = [];
+let pendingPaths: Array<string> = [];
 
 interface OpenFilesWindow {
   isDestroyed(): boolean;
   webContents: {
     isLoading(): boolean;
-    send(channel: string, paths: string[]): void;
+    send(channel: string, paths: Array<string>): void;
     once(event: "did-finish-load", listener: () => void): void;
   };
 }
@@ -32,7 +32,9 @@ export async function flushOpenFiles(deps: {
   if (!win || win.isDestroyed()) return;
   const send = () => win.webContents.send(IPC.openFiles, paths);
   /** A window that is still loading cannot receive IPC. */
-  if (win.webContents.isLoading())
+  if (win.webContents.isLoading()) {
     win.webContents.once("did-finish-load", send);
-  else send();
+  } else {
+    send();
+  }
 }

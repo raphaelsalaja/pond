@@ -13,7 +13,7 @@ it.each([24, 30, 60])(
 );
 it("preserves fractional timing and reports unavailable metadata", () => {
   expect(frameRateFromProbe("Video: h264, 1920x1080, 29.97 fps")).toBe(
-    30000 / 1001,
+    30_000 / 1001,
   );
   expect(frameRateFromProbe("Video: h264, 1920x1080")).toBeNull();
   expect(frameRateFromProbe("Video: h264, 1920x1080, 0 fps")).toBeNull();

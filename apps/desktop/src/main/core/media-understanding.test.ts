@@ -3,8 +3,10 @@ import { loadModel } from "./agent/adapter";
 import {
   createMediaUnderstanding,
   MediaUnderstandingError,
-  type MediaUnderstandingGenerationInput,
-  type MediaUnderstandingOperationalMetric,
+} from "./media-understanding";
+import type {
+  MediaUnderstandingGenerationInput,
+  MediaUnderstandingOperationalMetric,
 } from "./media-understanding";
 
 const connection = {
@@ -38,7 +40,7 @@ function request(signal = new AbortController().signal) {
 describe("media understanding", () => {
   it("sends image bytes before the fixed caption prompt and stamps the model", async () => {
     const model = await testModel();
-    const calls: MediaUnderstandingGenerationInput[] = [];
+    const calls: Array<MediaUnderstandingGenerationInput> = [];
     const service = createMediaUnderstanding({
       loadModel: async () => model,
       generateText: async (input) => {
@@ -80,7 +82,7 @@ describe("media understanding", () => {
 
   it("uses a separate OCR budget and preserves visible text", async () => {
     const model = await testModel();
-    const calls: MediaUnderstandingGenerationInput[] = [];
+    const calls: Array<MediaUnderstandingGenerationInput> = [];
     const service = createMediaUnderstanding({
       loadModel: async () => model,
       generateText: async (input) => {
@@ -199,7 +201,7 @@ describe("media understanding", () => {
     vi.useFakeTimers();
     try {
       const model = await testModel();
-      const metrics: MediaUnderstandingOperationalMetric[] = [];
+      const metrics: Array<MediaUnderstandingOperationalMetric> = [];
       const service = createMediaUnderstanding({
         timeoutMs: 500,
         loadModel: async () => model,
@@ -213,7 +215,7 @@ describe("media understanding", () => {
           }),
         metrics: { record: (metric) => metrics.push(metric) },
         now: (() => {
-          let time = 1_000;
+          let time = 1000;
           return () => (time += 25);
         })(),
       });
@@ -247,7 +249,7 @@ describe("media understanding", () => {
 
   it("records warm success without fallback and bounds the model identifier", async () => {
     const model = await testModel();
-    const metrics: MediaUnderstandingOperationalMetric[] = [];
+    const metrics: Array<MediaUnderstandingOperationalMetric> = [];
     const service = createMediaUnderstanding({
       loadModel: async () => model,
       generateText: async () => ({ text: "A bicycle." }),

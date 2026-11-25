@@ -1,5 +1,6 @@
 import { Button, Dialog, Settings } from "@pond/ui";
-import { type QueryClient, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { formatBytes } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
 import { refreshStorage, useStorageSnapshot } from "./lib/queries";
@@ -13,7 +14,7 @@ interface Cache {
   rebuilds: string;
 }
 
-const CACHES: readonly Cache[] = [
+const CACHES: ReadonlyArray<Cache> = [
   {
     query: "reset.clearVideoCache",
     bucket: "videoCache",

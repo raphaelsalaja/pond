@@ -14,7 +14,7 @@ export interface WatchTarget {
   avatarUrl?: string;
 }
 
-const ARENA_PROBE_TIMEOUT_MS = 8_000;
+const ARENA_PROBE_TIMEOUT_MS = 8000;
 
 const ARENA_USER_TABS = new Set([
   "channels",
@@ -39,11 +39,11 @@ function parseUrl(input: string): URL | null {
   }
 }
 
-function segmentsOf(url: URL): string[] {
+function segmentsOf(url: URL): Array<string> {
   return url.pathname.split("/").filter(Boolean).map(decodeURIComponent);
 }
 
-function hostIs(url: URL, ...domains: string[]): boolean {
+function hostIs(url: URL, ...domains: Array<string>): boolean {
   const host = url.hostname.toLowerCase();
   return domains.some((d) => host === d || host.endsWith(`.${d}`));
 }
@@ -159,9 +159,9 @@ async function probeArena(
       if (res.status !== 404) {
         throw new Error("Are.na could not be checked.");
       }
-    } catch (err) {
-      log.warn("[pond watch:resolve] arena probe failed", slug, err);
-      throw err;
+    } catch (error) {
+      log.warn("[pond watch:resolve] arena probe failed", slug, error);
+      throw error;
     }
   }
   return null;
@@ -197,7 +197,7 @@ function resolveYoutube(input: string, url: URL | null): WatchTarget | null {
 function resolveSimpleUser(
   input: string,
   url: URL | null,
-  domains: string[],
+  domains: Array<string>,
 ): WatchTarget | null {
   if (url) {
     if (!hostIs(url, ...domains)) return null;
@@ -241,8 +241,9 @@ function resolvePinterest(input: string, url: URL | null): WatchTarget | null {
     }
     const segs = segmentsOf(url);
     const first = segs[0];
-    if (!first || PINTEREST_RESERVED_ROOTS.has(first.toLowerCase()))
+    if (!first || PINTEREST_RESERVED_ROOTS.has(first.toLowerCase())) {
       return null;
+    }
     const board = segs[1];
     if (board && !board.startsWith("_") && board !== "feed.rss") {
       return target("board", `${first}/${board}`);

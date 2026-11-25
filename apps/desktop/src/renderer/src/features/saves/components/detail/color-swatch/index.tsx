@@ -1,5 +1,6 @@
 import { IconCopy, IconMagnifier, IconPalette } from "@pond/icons";
-import { Chip, Menu, type MenuItemSpec } from "@pond/ui";
+import { Chip, Menu } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { pool } from "@/features/saves/state/pool";
@@ -13,7 +14,7 @@ export function buildColorSwatchMenu(
   primary: boolean,
   setPrimary: (primary: boolean) => void,
   copyValue: (value: string) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const formats = colorCopyFormats(color);
   if (!formats) return [];
   return [

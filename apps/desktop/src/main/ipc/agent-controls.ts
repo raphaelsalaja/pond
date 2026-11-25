@@ -2,7 +2,8 @@ import { PrefsSchema, SOURCES } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
 import { SETTINGS_SECTIONS } from "@pond/schema/settings";
 import { z } from "zod";
-import { IPC, type MenuActionId } from "../../shared/constants";
+import { IPC } from "../../shared/constants";
+import type { MenuActionId } from "../../shared/constants";
 import type { PondOperation } from "../core/agent/operations";
 import {
   isAllPaused,
@@ -102,9 +103,9 @@ const viewCommands = [
   "view.zoom-reset",
   "view.sidebar.toggle",
   "view.grayscale",
-] as const satisfies readonly MenuActionId[];
+] as const satisfies ReadonlyArray<MenuActionId>;
 
-export const agentControlOperations: PondOperation[] = [
+export const agentControlOperations: Array<PondOperation> = [
   operation(
     "settings.preferenceSchema",
     "Read valid preference field names and enum choices. Read this and settings.getPrefs before settings.setPrefs; send only requested fields in the patch.",
@@ -224,10 +225,14 @@ export const agentControlOperations: PondOperation[] = [
     "review",
     accountInput.and(forceInput),
     async ({ accountId, forceFull }): Promise<JsonValue> => {
-      if (isSyncing(accountId)) return { ok: false, reason: "already_running" };
-      if (await getWatch(accountId))
+      if (isSyncing(accountId)) {
+        return { ok: false, reason: "already_running" };
+      }
+      if (await getWatch(accountId)) {
         void watchNow(accountId, { trigger: "manual" });
-      else void syncAccount(accountId, { trigger: "manual", forceFull });
+      } else {
+        void syncAccount(accountId, { trigger: "manual", forceFull });
+      }
       return { scheduled: true };
     },
   ),

@@ -20,7 +20,7 @@ export function SourceSelectionBar() {
     <SelectionBar.Root
       label="Selected Sources"
       count={rows.length}
-      onClear={sourcesSelection.clear}
+      onClear={() => sourcesSelection.clear()}
     >
       <SelectionBar.Action
         label="Show Saved Items"

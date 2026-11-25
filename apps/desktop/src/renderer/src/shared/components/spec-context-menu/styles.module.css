@@ -1,7 +1,7 @@
 .popup {
-  max-height: min(720px, var(--available-height));
-  min-width: var(--popup-locked-width, var(--ds-popup-min-width));
   width: var(--popup-locked-width, var(--ds-popup-width));
+  min-width: var(--popup-locked-width, var(--ds-popup-min-width));
+  max-height: min(720px, var(--available-height));
   overflow: hidden;
   interpolate-size: numeric-only;
 }

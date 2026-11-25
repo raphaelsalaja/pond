@@ -3,7 +3,7 @@ import { join, relative, sep } from "node:path";
 import yauzl from "yauzl";
 
 export interface ExportReader {
-  paths: string[];
+  paths: Array<string>;
   readText: (path: string) => Promise<string>;
   close: () => Promise<void>;
 }
@@ -22,8 +22,9 @@ async function folderReader(root: string): Promise<ExportReader> {
     paths,
     readText: async (path) => {
       const file = join(root, ...path.split("/"));
-      if ((await stat(file)).size > MAX_TEXT_BYTES)
+      if ((await stat(file)).size > MAX_TEXT_BYTES) {
         throw new Error("too_large");
+      }
       return readFile(file, "utf8");
     },
     close: async () => {},
@@ -31,11 +32,11 @@ async function folderReader(root: string): Promise<ExportReader> {
 }
 
 function openZip(path: string): Promise<yauzl.ZipFile> {
-  return new Promise((resolve, reject) =>
+  return new Promise((resolve, reject) => {
     yauzl.open(path, { lazyEntries: true, autoClose: false }, (error, zip) =>
       error ? reject(error) : resolve(zip),
-    ),
-  );
+    );
+  });
 }
 
 function readEntries(zip: yauzl.ZipFile): Promise<Map<string, yauzl.Entry>> {
@@ -57,8 +58,10 @@ function readEntryText(
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     zip.openReadStream(entry, (error, stream) => {
-      if (error) return reject(error);
-      const chunks: Buffer[] = [];
+      if (error) {
+        return reject(error);
+      }
+      const chunks: Array<Buffer> = [];
       stream.on("data", (chunk: Buffer) => chunks.push(chunk));
       stream.once("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
       stream.once("error", reject);

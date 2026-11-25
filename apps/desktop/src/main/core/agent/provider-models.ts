@@ -1,15 +1,10 @@
 import type { JsonValue } from "@pond/schema/json";
 import { z } from "zod";
-import {
-  chosenModelId,
-  displayName,
-  type ProviderModel,
-} from "../../../shared/provider-models";
+import { chosenModelId, displayName } from "../../../shared/provider-models";
+import type { ProviderModel } from "../../../shared/provider-models";
 import type { AgentProviderId } from "./keys";
-import {
-  type DeclaredLocalModelCapabilities,
-  normalizeLocalModel,
-} from "./local-model-capabilities";
+import { normalizeLocalModel } from "./local-model-capabilities";
+import type { DeclaredLocalModelCapabilities } from "./local-model-capabilities";
 
 export type { ProviderModel } from "../../../shared/provider-models";
 export { displayName };
@@ -20,15 +15,20 @@ const SKIP =
 export function modelsFromProviderResponse(
   provider: AgentProviderId,
   json: JsonValue | undefined,
-): ProviderModel[] {
+): Array<ProviderModel> {
   const ids = idsFromResponse(provider, json);
   const seen = new Set<string>();
-  const models: ProviderModel[] = [];
+  const models: Array<ProviderModel> = [];
   const local = provider === "ollama" || provider === "lmstudio";
   for (const raw of ids) {
     const id = raw.id.trim();
-    if (!id || seen.has(id) || !isChatModel(provider, id, raw.outputModalities))
+    if (
+      !id ||
+      seen.has(id) ||
+      !isChatModel(provider, id, raw.outputModalities)
+    ) {
       continue;
+    }
     seen.add(id);
     const name = raw.name.trim() || (local ? id : displayName(id));
     const model: ProviderModel = local
@@ -53,7 +53,7 @@ function idsFromResponse(
   name: string;
   sizeBytes?: number;
   localCapabilities?: DeclaredLocalModelCapabilities;
-  outputModalities?: string[];
+  outputModalities?: Array<string>;
 }> {
   const stringField = z.string().catch("");
   const byteSize = z.number().int().positive().optional().catch(undefined);
@@ -82,8 +82,9 @@ function idsFromResponse(
         methods.length &&
         !methods.includes("generateContent") &&
         !methods.includes("generateContentStream")
-      )
+      ) {
         return [];
+      }
       const id = row.name.replace(/^models\//, "");
       return id ? [{ id, name: row.displayName }] : [];
     });
@@ -157,7 +158,7 @@ function idsFromResponse(
 function isChatModel(
   provider: AgentProviderId,
   id: string,
-  outputModalities?: string[],
+  outputModalities?: Array<string>,
 ): boolean {
   if (SKIP.test(id)) return false;
   if (provider === "ollama" || provider === "lmstudio") return true;
@@ -167,8 +168,9 @@ function isChatModel(
   if (provider === "gemini") return n.includes("gemini");
   if (provider === "deepseek") return n.includes("deepseek");
   if (provider === "openrouter") {
-    if (outputModalities?.length)
+    if (outputModalities?.length) {
       return outputModalities.includes("text") && outputModalities.length === 1;
+    }
     return !/(embed|whisper|tts|dall-e|moderation)/.test(n);
   }
   return true;
@@ -199,10 +201,12 @@ export function connectionFor(
   catalogFallback: string,
 ) {
   const modelId = resolveModelId(provider, prefs, catalogFallback);
-  if (provider === "ollama")
+  if (provider === "ollama") {
     return { modelId, baseUrl: prefs.ollamaBaseUrl || undefined };
-  if (provider === "lmstudio")
+  }
+  if (provider === "lmstudio") {
     return { modelId, baseUrl: prefs.lmstudioBaseUrl || undefined };
+  }
   if (provider === "azure") {
     const resource = prefs.azureResourceName?.trim();
     return {

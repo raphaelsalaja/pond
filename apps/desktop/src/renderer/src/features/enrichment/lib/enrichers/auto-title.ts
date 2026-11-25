@@ -13,7 +13,7 @@ function deriveTitle(save: Save): string | null {
     save.caption ?? firstLine(save.ocrText) ?? firstLine(save.description);
   if (!source) return null;
   const sentence = source.split(/(?<=[.!?])\s/)[0] ?? source;
-  const title = sentence.trim().replace(/\s+/g, " ").slice(0, 80);
+  const title = sentence.trim().replaceAll(/\s+/g, " ").slice(0, 80);
   return title.length > 0 ? title : null;
 }
 
@@ -28,9 +28,15 @@ export const autoTitleEnricher: Enricher = {
   dependsOn: ["caption", "ocr"],
   enabled: (prefs) => prefs?.ai?.enableAutoTitle === true,
   eligible(save: Save) {
-    if (save.status !== "complete" || save.deletedAt != null) return false;
-    if (hasTitle(save)) return false;
-    if (save.autoTitleModel === AUTO_TITLE_VERSION) return false;
+    if (save.status !== "complete" || save.deletedAt !== null) {
+      return false;
+    }
+    if (hasTitle(save)) {
+      return false;
+    }
+    if (save.autoTitleModel === AUTO_TITLE_VERSION) {
+      return false;
+    }
     return !!deriveTitle(save);
   },
   async run(save: Save) {

@@ -23,11 +23,15 @@ export function classifyIconStyle(input: {
   theme: string;
   interface: string;
 }): AppIconStyle {
-  if (input.theme.startsWith("Clear") || input.theme.startsWith("Tinted"))
+  if (input.theme.startsWith("Clear") || input.theme.startsWith("Tinted")) {
     return "monochrome";
-  if (input.theme.endsWith("Dark")) return "dark";
-  if (input.theme.endsWith("Automatic") && input.interface === "Dark")
+  }
+  if (input.theme.endsWith("Dark")) {
     return "dark";
+  }
+  if (input.theme.endsWith("Automatic") && input.interface === "Dark") {
+    return "dark";
+  }
   return "light";
 }
 
@@ -61,8 +65,9 @@ export function macosMajor(
 
 /** Reads the current icon style once, for showing previews that match it. */
 export function readIconStyle(): AppIconStyle | null {
-  if (!supportsIconStyles(process.platform, process.getSystemVersion()))
+  if (!supportsIconStyles(process.platform, process.getSystemVersion())) {
     return null;
+  }
   return classifyIconStyle({
     theme: systemPreferences.getUserDefault(
       "AppleIconAppearanceTheme",
@@ -79,8 +84,9 @@ function helperPath(): string | null {
   if (
     !app.isPackaged ||
     !supportsIconStyles(process.platform, process.getSystemVersion())
-  )
+  ) {
     return null;
+  }
   const path = join(process.resourcesPath, "bin", HELPER);
   return existsSync(path) ? path : null;
 }

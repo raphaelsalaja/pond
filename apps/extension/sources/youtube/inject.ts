@@ -1,15 +1,7 @@
-import {
-  capture,
-  installInterceptor,
-  type RequestLens,
-} from "@/utils/intercept";
-import {
-  asText,
-  at,
-  isRecord,
-  type JsonValue,
-  parseJsonValue,
-} from "@/utils/json";
+import { capture, installInterceptor } from "@/utils/intercept";
+import type { RequestLens } from "@/utils/intercept";
+import { asText, at, isRecord, parseJsonValue } from "@/utils/json";
+import type { JsonValue } from "@/utils/json";
 
 const YOUTUBEI_RE = /\/youtubei\/v1\//i;
 const PLAYLIST_EDIT_HINT_RE =

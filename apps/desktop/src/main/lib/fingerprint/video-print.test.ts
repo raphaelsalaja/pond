@@ -4,29 +4,30 @@ import {
   decodeVideoPrint,
   durationsClose,
   encodeVideoPrint,
-  type VideoPrint,
   videoSampleTimes,
 } from "./video-print";
+import type { VideoPrint } from "./video-print";
 
 function random(seed: number) {
   let state = seed >>> 0;
   return () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
     return state;
   };
 }
 
 /** Random 64-bit hashes carry about half their bits, so none of them reads as a low-detail frame. */
-function scene(seed: number, length: number): bigint[] {
+function scene(seed: number, length: number): Array<bigint> {
   const next = random(seed);
-  const frames: bigint[] = [];
-  for (let index = 0; index < length; index++)
+  const frames: Array<bigint> = [];
+  for (let index = 0; index < length; index++) {
     frames.push((BigInt(next()) << 32n) | BigInt(next()));
+  }
   return frames;
 }
 
 function video(
-  frames: bigint[],
+  frames: Array<bigint>,
   intervalSeconds = 1,
   durationSeconds = frames.length * intervalSeconds,
 ): VideoPrint {

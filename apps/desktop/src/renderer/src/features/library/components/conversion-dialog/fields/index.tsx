@@ -97,11 +97,11 @@ function SelectField<Value extends string>({
 }: {
   label: string;
   value: Value;
-  items: {
+  items: Array<{
     value: Value;
     label: string;
     disabled?: boolean;
-  }[];
+  }>;
   onChange: (value: Value) => void;
 }) {
   return (

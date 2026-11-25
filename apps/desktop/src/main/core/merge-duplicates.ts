@@ -1,6 +1,7 @@
 import { realpath } from "node:fs/promises";
 import { basename, relative, resolve, sep } from "node:path";
-import { type Save, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { Save } from "@pond/schema/db";
 import { labelKey } from "@pond/schema/label-name";
 import type { Transaction, TxMeta } from "@pond/schema/tx";
 import type { OkResult } from "@shared/query-contracts-shared";
@@ -20,11 +21,11 @@ type MergeSave = Pick<
 >;
 
 export interface DuplicateMergeRuntime {
-  read(ids: string[]): Promise<MergeSave[]>;
+  read(ids: Array<string>): Promise<Array<MergeSave>>;
   directory(id: string): string;
-  folders(id: string): Promise<string[]>;
-  setFolders(id: string, ids: string[]): Promise<OkResult>;
-  commit(transactions: Transaction[]): Promise<void>;
+  folders(id: string): Promise<Array<string>>;
+  setFolders(id: string, ids: Array<string>): Promise<OkResult>;
+  commit(transactions: Array<Transaction>): Promise<void>;
 }
 
 const runtime: DuplicateMergeRuntime = {
@@ -36,7 +37,9 @@ const runtime: DuplicateMergeRuntime = {
   async setFolders(id, ids) {
     const result = await setSaveFolders(id, ids);
     if (!result.ok) return result;
-    const [updated] = await (await getDb())
+    const [updated] = await (
+      await getDb()
+    )
       .select()
       .from(saves)
       .where(inArray(saves.id, [id]));
@@ -51,7 +54,7 @@ const runtime: DuplicateMergeRuntime = {
 
 interface DuplicateMergeInput {
   keepId: string;
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   meta?: TxMeta;
 }
 
@@ -93,8 +96,9 @@ async function restoreDuplicateMerge(
     keep.deletedAt ||
     rows.length !== receipt.ids.length + 1 ||
     rows.some((save) => save.id !== receipt.keepId && !save.deletedAt)
-  )
+  ) {
     throw new Error("The merged Saves changed since this action.");
+  }
   const current = mergeMetadataSchema.parse(keep);
   const currentFolders = await dependencies.folders(keep.id);
   if (
@@ -102,10 +106,11 @@ async function restoreDuplicateMerge(
       JSON.stringify(mergeMetadataSchema.parse(receipt.after)) ||
     JSON.stringify([...currentFolders].sort()) !==
       JSON.stringify([...receipt.foldersAfter].sort())
-  )
+  ) {
     throw new Error(
       "The survivor was edited after merging. Restore the duplicates from Trash instead.",
     );
+  }
   const meta: TxMeta = { actor: "agent", actorReason: "assistant:undo-merge" };
   await dependencies.commit([
     {
@@ -117,8 +122,9 @@ async function restoreDuplicateMerge(
       meta,
     },
   ]);
-  if (!(await dependencies.setFolders(keep.id, receipt.foldersBefore)).ok)
+  if (!(await dependencies.setFolders(keep.id, receipt.foldersBefore)).ok) {
     throw new Error("Could not restore the survivor's folders.");
+  }
   await dependencies.commit(
     receipt.ids.map((id) => ({ kind: "untrash", model: "save", id, meta })),
   );
@@ -140,8 +146,9 @@ async function mergeSaves(
   try {
     return await operation;
   } finally {
-    if (mergeQueues.get(dependencies) === settled)
+    if (mergeQueues.get(dependencies) === settled) {
       mergeQueues.delete(dependencies);
+    }
   }
 }
 
@@ -151,8 +158,9 @@ async function preserveDuplicates(
 ) {
   const keepId = input.keepId.trim();
   const ids = [...new Set(input.ids.filter((id) => id && id !== keepId))];
-  if (!keepId || ids.length === 0)
+  if (!keepId || ids.length === 0) {
     return { ok: false as const, error: "Choose duplicates to merge." };
+  }
   const rows = await dependencies.read([keepId, ...ids]);
   const byId = new Map(rows.map((save) => [save.id, save]));
   const keep = byId.get(keepId);
@@ -172,7 +180,7 @@ async function preserveDuplicates(
     return save;
   });
   const ordered = [keep, ...extras];
-  const tags: string[] = [];
+  const tags: Array<string> = [];
   const tagKeys = new Set<string>();
   for (const tag of ordered.flatMap((save) => save.tags ?? [])) {
     const key = labelKey(tag);
@@ -192,16 +200,18 @@ async function preserveDuplicates(
       if (
         file.sha256 &&
         files.some((candidate) => candidate.sha256 === file.sha256)
-      )
+      ) {
         continue;
+      }
       const source = await realpath(resolve(sourceRoot, file.path));
-      if (!source.startsWith(`${sourceRoot}${sep}`))
+      if (!source.startsWith(`${sourceRoot}${sep}`)) {
         throw new Error("A duplicate file resolves outside its Save.");
+      }
       const copied = await copyExportFile(source, target, basename(file.path));
       files.push({ ...file, path: relative(target, copied) });
     }
   }
-  let notes: string[] = [];
+  let notes: Array<string> = [];
   for (const note of ordered.map((save) => save.notes?.trim())) {
     if (!note || notes.some((kept) => kept.includes(note))) continue;
     notes = [...notes.filter((kept) => !note.includes(kept)), note];
@@ -240,8 +250,9 @@ async function preserveDuplicates(
     },
   ]);
   const assigned = await dependencies.setFolders(keepId, folderIds);
-  if (!assigned.ok)
+  if (!assigned.ok) {
     throw new Error("Could not preserve the duplicates' folders.");
+  }
   await dependencies.commit(
     ids.map((id) => ({ kind: "trash", model: "save", id, meta })),
   );
@@ -282,8 +293,9 @@ export function undoDuplicateMerge(
     try {
       return await operation;
     } finally {
-      if (mergeQueues.get(dependencies) === settled)
+      if (mergeQueues.get(dependencies) === settled) {
         mergeQueues.delete(dependencies);
+      }
     }
   });
 }

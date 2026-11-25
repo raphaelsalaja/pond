@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { ToolbarAction } from "@/utils/types";
 import { createToolbarApply, toolbarSkipsDetails } from "./toolbar";
 
+function ignoreAction(_action: ToolbarAction): void {}
+
 describe("toolbarSkipsDetails", () => {
   it("saves in one click only for Save Page", () => {
     expect(toolbarSkipsDetails("save")).toBe(true);
@@ -11,8 +13,8 @@ describe("toolbarSkipsDetails", () => {
 
 describe("createToolbarApply", () => {
   it("drops a settings read that finishes after a newer one", async () => {
-    let resolveStale: (action: ToolbarAction) => void = () => {};
-    const applied: ToolbarAction[] = [];
+    let resolveStale: (action: ToolbarAction) => void = ignoreAction;
+    const applied: Array<ToolbarAction> = [];
     let reads = 0;
     const applyCurrent = createToolbarApply({
       read: () => {

@@ -3,8 +3,10 @@ import type { BrowserWindowConstructorOptions } from "electron";
 import { BrowserWindow, nativeTheme, shell } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
-import { IPC, type MenuActionId } from "../shared/constants";
-import { SHELL_HINT_ARG, type ShellHint } from "../shared/shell-hint";
+import { IPC } from "../shared/constants";
+import type { MenuActionId } from "../shared/constants";
+import { SHELL_HINT_ARG } from "../shared/shell-hint";
+import type { ShellHint } from "../shared/shell-hint";
 import { SYSTEM_LOCALE_ARG } from "../shared/system-locale";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
@@ -20,7 +22,8 @@ import { systemLocale } from "./lib/system-locale";
 import { shouldStayResident } from "./lifecycle";
 import { markStartup } from "./startup-timing";
 import { resolveTheme } from "./theme";
-import { ensureTray, isTrayVisible, type TrayHandle } from "./tray";
+import { ensureTray, isTrayVisible } from "./tray";
+import type { TrayHandle } from "./tray";
 
 import { mainWindowState } from "./window-state";
 
@@ -158,9 +161,8 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
       ? "#000000"
       : "#ffffff");
 
-  const { applyPreferredAppIcon, resolveAppIconPath } = await import(
-    "./core/app-icon"
-  );
+  const { applyPreferredAppIcon, resolveAppIconPath } =
+    await import("./core/app-icon");
   const appIcon = resolveAppIconPath(prefs?.window.appIcon ?? DEFAULT_APP_ICON);
   const material = windowMaterial(prefs);
 
@@ -211,9 +213,12 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   });
   /** On macOS, Logi Options+ and three-finger trackpad swipes send back and forward as swipes. */
   win.on("swipe", (_event, direction) => {
-    if (direction === "left") win.webContents.send(IPC.navigationSwipe, "back");
-    if (direction === "right")
+    if (direction === "left") {
+      win.webContents.send(IPC.navigationSwipe, "back");
+    }
+    if (direction === "right") {
       win.webContents.send(IPC.navigationSwipe, "forward");
+    }
   });
   lockRendererZoom(win.webContents);
   followInterfaceZoom(win.webContents, { getPrefs, subscribePrefs });
@@ -234,9 +239,11 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
       saveBoundsTimer = null;
       if (win.isDestroyed()) return;
       const b = usableWindowBounds(win.getBounds());
-      if (!b) return;
-      void setPrefs({ window: { bounds: b } }).catch((err) =>
-        log.warn("[pond] persist window bounds failed", err),
+      if (!b) {
+        return;
+      }
+      void setPrefs({ window: { bounds: b } }).catch((cause: unknown) =>
+        log.warn("[pond] persist window bounds failed", cause),
       );
     }, 400);
   };
@@ -244,8 +251,9 @@ async function buildLibraryWindow(): Promise<BrowserWindow> {
   win.on("move", saveBounds);
   /** macOS hides the traffic lights in full screen, so the renderer drops their inset. */
   const sendFullScreen = () => {
-    if (!win.isDestroyed())
+    if (!win.isDestroyed()) {
       win.webContents.send(IPC.windowFullScreen, win.isFullScreen());
+    }
   };
   win.on("enter-full-screen", sendFullScreen);
   win.on("leave-full-screen", sendFullScreen);
@@ -411,10 +419,10 @@ export async function initTray(): Promise<void> {
       },
       onMenuAction: runLibraryMenuAction,
     });
-  } catch (err) {
+  } catch (error) {
     log.error(
       "[pond] failed to create tray; menu-bar icon will be unavailable",
-      err,
+      error,
     );
   }
 }

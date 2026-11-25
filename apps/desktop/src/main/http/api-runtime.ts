@@ -1,14 +1,15 @@
 import type { BulkEdit } from "../../shared/bulk-contracts";
 import { activeLibraryId } from "../core/active-library-query";
-import { type Db, getDb } from "../db";
+import { getDb } from "../db";
+import type { Db } from "../db";
 import { bulkQueries } from "../ipc/queries/bulk";
 import { foldersQueries } from "../ipc/queries/folders";
 import { PondError } from "../lib/pond-error";
 
 export type FolderAssignment = {
-  saveIds: string[];
-  addIds: string[];
-  removeIds: string[];
+  saveIds: Array<string>;
+  addIds: Array<string>;
+  removeIds: Array<string>;
 };
 
 export interface ApiRuntime {
@@ -36,10 +37,11 @@ export function requireLibrary(
   requested: string | undefined,
 ): string {
   const active = runtime.libraryId();
-  if (requested && requested !== active)
+  if (requested && requested !== active) {
     throw new PondError(
       "library_mismatch",
       "The active Library changed. Run the request again.",
     );
+  }
   return active;
 }

@@ -85,16 +85,26 @@ export async function listInstagramCollections(
 
 /** Lists the collections you made; the automatic "All posts" collection is the saved list itself. */
 async function inPageInstagramCollections(): Promise<CollectionsReply> {
-  const tried: string[] = [];
+  const tried: Array<string> = [];
   const pageModule = <K extends keyof PageModules>(
     name: K,
   ): PageModules[K] | undefined => {
+    const isModule = (value: unknown): value is PageModules[K] =>
+      Object(value) === value;
     try {
-      return globalThis.require?.(name);
+      const loaded: unknown = globalThis.require?.(name);
+      return isModule(loaded) ? loaded : undefined;
     } catch {
       return undefined;
     }
   };
+  const isGraphqlReply = (value: unknown): value is GraphqlReply =>
+    Object(value) === value;
+  const isCollectionsPage = (value: unknown): value is CollectionsPage =>
+    Object(value) === value;
+  const isSignInPrompt = (
+    value: unknown,
+  ): value is { require_login?: boolean } => Object(value) === value;
   const clip = (part: string) => part.slice(0, 96);
   const viewer = (() => {
     try {
@@ -184,9 +194,9 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
       for (let page = 0; page < 20; page++) {
         let status = 0;
         let json: GraphqlReply | null = null;
-        let note = "";
+        let note: string;
         try {
-          const res = await fetch("/api/graphql", {
+          const res: Response = await fetch("/api/graphql", {
             method: "POST",
             credentials: "include",
             headers: {
@@ -203,14 +213,17 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
           });
           status = res.status;
           note = res.headers.get("content-type") ?? "";
-          const text = await res.text();
+          const text: string = await res.text();
           try {
-            json = JSON.parse(text.replace(/^for \(;;\);/, ""));
+            const parsed: unknown = JSON.parse(
+              text.replace(/^for \(;;\);/, ""),
+            );
+            json = isGraphqlReply(parsed) ? parsed : null;
           } catch {
             json = null;
           }
-        } catch (e) {
-          note = String(e);
+        } catch (error) {
+          note = String(error);
         }
         const connection = json?.data?.viewer?.[field];
         if (!connection) {
@@ -233,7 +246,9 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
         const next = connection.page_info;
         if (!next?.has_next_page || !next.end_cursor) break;
         after = next.end_cursor;
-        await new Promise((r) => setTimeout(r, 250));
+        await new Promise((r) => {
+          setTimeout(r, 250);
+        });
       }
       return { ok: true, collections };
     }
@@ -263,11 +278,12 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
             },
           },
         );
-        const json: CollectionsPage | null = await res.json().catch(() => null);
+        const body: unknown = await res.json().catch(() => null);
+        const json = isCollectionsPage(body) ? body : null;
         const note = res.headers.get("content-type") ?? "";
         return { host, ok: res.ok, status: res.status, json, note };
-      } catch (e) {
-        return { host, ok: false, status: 0, json: null, note: String(e) };
+      } catch (error) {
+        return { host, ok: false, status: 0, json: null, note: String(error) };
       }
     };
     const verdict = (attempt: Attempt): CollectionFailureReason | null => {
@@ -330,7 +346,9 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
       }
       if (!json.more_available || json.next_max_id === undefined) break;
       cursor = String(json.next_max_id);
-      await new Promise((r) => setTimeout(r, 250));
+      await new Promise((r) => {
+        setTimeout(r, 250);
+      });
     }
     return { ok: true, collections };
   }
@@ -345,11 +363,11 @@ async function inPageInstagramCollections(): Promise<CollectionsReply> {
           "x-requested-with": "XMLHttpRequest",
         },
       });
-      if (res.status === 401 || res.status === 403) return true;
-      const json: { require_login?: boolean } | null = await res
-        .json()
-        .catch(() => null);
-      return json?.require_login === true;
+      if (res.status === 401 || res.status === 403) {
+        return true;
+      }
+      const body: unknown = await res.json().catch(() => null);
+      return isSignInPrompt(body) && body.require_login === true;
     } catch {
       return false;
     }

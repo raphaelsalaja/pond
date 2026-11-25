@@ -5,8 +5,8 @@ import type { BookmarksCapture, RichTweet } from "./graphql";
 
 declare global {
   var __pondBookmarksHookInstalled: boolean | undefined;
-  var __pondBookmarksCaptures: BookmarksCapture[] | undefined;
-  var __pondLikesCaptures: BookmarksCapture[] | undefined;
+  var __pondBookmarksCaptures: Array<BookmarksCapture> | undefined;
+  var __pondLikesCaptures: Array<BookmarksCapture> | undefined;
   var __pondHarvestStats: HarvestStats | undefined;
 }
 
@@ -21,13 +21,13 @@ export interface HarvestStats {
 }
 
 export interface BookmarksHarvestArgs {
-  knownIds: string[];
+  knownIds: Array<string>;
 }
 
 export interface BookmarksEntry {
   tweetId: string;
   /** Bookmark folders the post was found in. */
-  collectionIds?: string[];
+  collectionIds?: Array<string>;
   url: string;
   bookmarkedAt?: string;
   title?: string;
@@ -40,7 +40,7 @@ export interface BookmarksEntry {
     poster?: string;
   }>;
   rich?: RichTweet;
-  listKinds?: ListKind[];
+  listKinds?: Array<ListKind>;
 }
 
 interface Scroller {
@@ -71,15 +71,15 @@ interface BookmarksHarvestDebug {
     hasPrimaryColumn: boolean;
     hasLoginAffordance: boolean;
     articleCountAfterBail: number;
-    emptyTestIds: string[];
+    emptyTestIds: Array<string>;
   };
 }
 
 export type BookmarksHarvestResult =
   | {
       ok: true;
-      entries: BookmarksEntry[];
-      captures: BookmarksCapture[];
+      entries: Array<BookmarksEntry>;
+      captures: Array<BookmarksCapture>;
       reachedEnd: boolean;
       debug?: BookmarksHarvestDebug;
     }
@@ -127,9 +127,9 @@ async function inPageBookmarks(
     };
   }
 
-  const known = new Set(args.knownIds.map((s) => String(s)));
+  const known = new Set(args.knownIds.map(String));
   const seen = new Map<string, BookmarksEntry>();
-  const captures: BookmarksCapture[] = [];
+  const captures: Array<BookmarksCapture> = [];
 
   const debug: BookmarksHarvestDebug = {
     hydrateSawArticle: false,
@@ -191,9 +191,11 @@ async function inPageBookmarks(
     const link = article.querySelector<HTMLAnchorElement>(
       'a[href*="/status/"]',
     );
-    if (!link) return null;
-    let tweetId: string | null = null;
-    let pathname = "";
+    if (!link) {
+      return null;
+    }
+    let tweetId: string | null;
+    let pathname: string;
     try {
       const u = new URL(link.href, "https://x.com");
       pathname = u.pathname;
@@ -280,7 +282,9 @@ async function inPageBookmarks(
         u.searchParams.set("name", "orig");
         return u.toString();
       }
-    } catch {}
+    } catch {
+      /** An unparseable URL is kept as given. */
+    }
     return url;
   };
 
@@ -299,8 +303,8 @@ async function inPageBookmarks(
     return added;
   };
 
-  const freshEntries = (): BookmarksEntry[] => {
-    const out: BookmarksEntry[] = [];
+  const freshEntries = (): Array<BookmarksEntry> => {
+    const out: Array<BookmarksEntry> = [];
     for (const [id, entry] of seen) {
       if (known.has(id)) continue;
       out.push(entry);
@@ -327,7 +331,9 @@ async function inPageBookmarks(
       break;
     }
     publishStats("hydrate");
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   debug.hydrateSawArticle = sawArticle;
   debug.hydrateMs = Date.now() - hydrateStart;
@@ -335,8 +341,10 @@ async function inPageBookmarks(
   if (!sawArticle) {
     const empty = document.querySelector('[data-testid="emptyState"]');
     const buildAncestry = (el: Element | null): string => {
-      if (!el) return "";
-      const parts: string[] = [];
+      if (!el) {
+        return "";
+      }
+      const parts: Array<string> = [];
       let cur: Element | null = el;
       let depth = 0;
       while (cur && depth < 12) {
@@ -348,7 +356,7 @@ async function inPageBookmarks(
       }
       return parts.join(" > ");
     };
-    const collectEmptyTestIds = (): string[] => {
+    const collectEmptyTestIds = (): Array<string> => {
       const out = new Set<string>();
       for (const el of Array.from(
         document.querySelectorAll<HTMLElement>("[data-testid]"),
@@ -447,7 +455,9 @@ async function inPageBookmarks(
         behavior: "instant",
       });
     }
-    await new Promise((r) => setTimeout(r, 700 + Math.random() * 300));
+    await new Promise((r) => {
+      setTimeout(r, 700 + Math.random() * 300);
+    });
     debug.scrollIterations += 1;
     stats.scrolls += 1;
 

@@ -5,6 +5,16 @@ import {
   createSetImportScopeQuery,
 } from "./accounts";
 
+type SetImportScopeDependencies = NonNullable<
+  Parameters<typeof createSetImportScopeQuery>[0]
+>;
+type ImportOptionsDependencies = NonNullable<
+  Parameters<typeof createImportOptionsQuery>[0]
+>;
+type CollectionList = Awaited<
+  ReturnType<ImportOptionsDependencies["listSourceCollections"]>
+>;
+
 function account(source: ConnectedAccount["source"]): ConnectedAccount {
   return {
     id: `${source}:123`,
@@ -24,17 +34,43 @@ function account(source: ConnectedAccount["source"]): ConnectedAccount {
   };
 }
 
+function scopeDependencies(current: ConnectedAccount) {
+  const dependencies: SetImportScopeDependencies = {
+    getAccount: async () => current,
+    patchAccountSync: async () => current.sync,
+    releaseFilteredSaves: async () => 0,
+  };
+  return {
+    dependencies,
+    patchAccountSync: vi.spyOn(dependencies, "patchAccountSync"),
+    releaseFilteredSaves: vi.spyOn(dependencies, "releaseFilteredSaves"),
+  };
+}
+
+function optionsDependencies(
+  current: ConnectedAccount,
+  handle: string | null,
+  collections: CollectionList,
+) {
+  const dependencies: ImportOptionsDependencies = {
+    getAccount: async () => current,
+    resolveAccountHandle: async () => handle,
+    listSourceCollections: async () => collections,
+  };
+  return {
+    dependencies,
+    resolveAccountHandle: vi.spyOn(dependencies, "resolveAccountHandle"),
+    listSourceCollections: vi.spyOn(dependencies, "listSourceCollections"),
+  };
+}
+
 describe("accounts.setImportScope", () => {
   it("confirms a pending Account with the chosen boards", async () => {
     const pending = account("pinterest");
     pending.sync.importPending = true;
-    const patchAccountSync = vi.fn(async () => pending.sync);
-    const releaseFilteredSaves = vi.fn(async () => 0);
-    const operation = createSetImportScopeQuery({
-      getAccount: vi.fn(async () => pending),
-      patchAccountSync,
-      releaseFilteredSaves,
-    });
+    const { dependencies, patchAccountSync, releaseFilteredSaves } =
+      scopeDependencies(pending);
+    const operation = createSetImportScopeQuery(dependencies);
 
     await expect(
       operation({
@@ -56,12 +92,8 @@ describe("accounts.setImportScope", () => {
   it("keeps a pending Account waiting when the save doesn't start it", async () => {
     const pending = account("twitter");
     pending.sync.importPending = true;
-    const patchAccountSync = vi.fn(async () => pending.sync);
-    const operation = createSetImportScopeQuery({
-      getAccount: vi.fn(async () => pending),
-      patchAccountSync,
-      releaseFilteredSaves: vi.fn(async () => 0),
-    });
+    const { dependencies, patchAccountSync } = scopeDependencies(pending);
+    const operation = createSetImportScopeQuery(dependencies);
 
     await operation({
       accountId: "twitter:123",
@@ -79,13 +111,9 @@ describe("accounts.setImportScope", () => {
   });
 
   it("stores everything for options the Source can't honor", async () => {
-    const patchAccountSync = vi.fn(async () => account("tumblr").sync);
-    const releaseFilteredSaves = vi.fn(async () => 0);
-    const operation = createSetImportScopeQuery({
-      getAccount: vi.fn(async () => account("tumblr")),
-      patchAccountSync,
-      releaseFilteredSaves,
-    });
+    const { dependencies, patchAccountSync, releaseFilteredSaves } =
+      scopeDependencies(account("tumblr"));
+    const operation = createSetImportScopeQuery(dependencies);
 
     await operation({
       accountId: "tumblr:123",
@@ -101,12 +129,8 @@ describe("accounts.setImportScope", () => {
   it("carries a legacy X Likes opt-out into the scope", async () => {
     const legacy = account("twitter");
     legacy.sync.syncLikes = false;
-    const patchAccountSync = vi.fn(async () => legacy.sync);
-    const operation = createSetImportScopeQuery({
-      getAccount: vi.fn(async () => legacy),
-      patchAccountSync,
-      releaseFilteredSaves: vi.fn(async () => 0),
-    });
+    const { dependencies, patchAccountSync } = scopeDependencies(legacy);
+    const operation = createSetImportScopeQuery(dependencies);
 
     await operation({
       accountId: "twitter:123",
@@ -120,12 +144,10 @@ describe("accounts.setImportScope", () => {
   });
 
   it("rejects a date that isn't on the calendar", async () => {
-    const patchAccountSync = vi.fn(async () => account("reddit").sync);
-    const operation = createSetImportScopeQuery({
-      getAccount: vi.fn(async () => account("reddit")),
-      patchAccountSync,
-      releaseFilteredSaves: vi.fn(async () => 0),
-    });
+    const { dependencies, patchAccountSync } = scopeDependencies(
+      account("reddit"),
+    );
+    const operation = createSetImportScopeQuery(dependencies);
 
     await expect(
       operation({ accountId: "reddit:123", scope: { since: "2026-02-30" } }),
@@ -137,12 +159,10 @@ describe("accounts.setImportScope", () => {
   });
 
   it("saves every list off on an Account that already imported", async () => {
-    const patchAccountSync = vi.fn(async () => account("instagram").sync);
-    const operation = createSetImportScopeQuery({
-      getAccount: vi.fn(async () => account("instagram")),
-      patchAccountSync,
-      releaseFilteredSaves: vi.fn(async () => 0),
-    });
+    const { dependencies, patchAccountSync } = scopeDependencies(
+      account("instagram"),
+    );
+    const operation = createSetImportScopeQuery(dependencies);
 
     await expect(
       operation({ accountId: "instagram:123", scope: { listKinds: [] } }),
@@ -151,12 +171,10 @@ describe("accounts.setImportScope", () => {
   });
 
   it("rejects starting a first import with every list off without writing", async () => {
-    const patchAccountSync = vi.fn(async () => account("instagram").sync);
-    const operation = createSetImportScopeQuery({
-      getAccount: vi.fn(async () => account("instagram")),
-      patchAccountSync,
-      releaseFilteredSaves: vi.fn(),
-    });
+    const { dependencies, patchAccountSync } = scopeDependencies(
+      account("instagram"),
+    );
+    const operation = createSetImportScopeQuery(dependencies);
 
     await expect(
       operation({
@@ -187,13 +205,15 @@ describe("accounts.setImportScope", () => {
 });
 
 describe("accounts.importOptions", () => {
+  const noCollections: CollectionList = { ok: true, collections: [] };
+
   it("returns no collections for Sources that import everything", async () => {
-    const listSourceCollections = vi.fn();
-    const operation = createImportOptionsQuery({
-      getAccount: vi.fn(async () => account("reddit")),
-      resolveAccountHandle: vi.fn(async () => "raphael"),
-      listSourceCollections,
-    });
+    const { dependencies, listSourceCollections } = optionsDependencies(
+      account("reddit"),
+      "raphael",
+      noCollections,
+    );
+    const operation = createImportOptionsQuery(dependencies);
 
     await expect(operation({ accountId: "reddit:123" })).resolves.toEqual({
       ok: true,
@@ -203,15 +223,15 @@ describe("accounts.importOptions", () => {
   });
 
   it("lists Pinterest boards through the Account's session", async () => {
-    const listSourceCollections = vi.fn(async () => ({
-      ok: true as const,
-      collections: [{ id: "915", name: "Design References", itemCount: 42 }],
-    }));
-    const operation = createImportOptionsQuery({
-      getAccount: vi.fn(async () => account("pinterest")),
-      resolveAccountHandle: vi.fn(async () => "raphael"),
-      listSourceCollections,
-    });
+    const { dependencies, listSourceCollections } = optionsDependencies(
+      account("pinterest"),
+      "raphael",
+      {
+        ok: true,
+        collections: [{ id: "915", name: "Design References", itemCount: 42 }],
+      },
+    );
+    const operation = createImportOptionsQuery(dependencies);
 
     await expect(operation({ accountId: "pinterest:123" })).resolves.toEqual({
       ok: true,
@@ -224,15 +244,15 @@ describe("accounts.importOptions", () => {
   });
 
   it("lists Cosmos collections through the Account's session", async () => {
-    const listSourceCollections = vi.fn(async () => ({
-      ok: true as const,
-      collections: [{ id: "7", name: "Recipes", itemCount: 12 }],
-    }));
-    const operation = createImportOptionsQuery({
-      getAccount: vi.fn(async () => account("cosmos")),
-      resolveAccountHandle: vi.fn(async () => "raphael"),
-      listSourceCollections,
-    });
+    const { dependencies, listSourceCollections } = optionsDependencies(
+      account("cosmos"),
+      "raphael",
+      {
+        ok: true,
+        collections: [{ id: "7", name: "Recipes", itemCount: 12 }],
+      },
+    );
+    const operation = createImportOptionsQuery(dependencies);
 
     await expect(operation({ accountId: "cosmos:123" })).resolves.toEqual({
       ok: true,
@@ -245,14 +265,12 @@ describe("accounts.importOptions", () => {
   });
 
   it("explains a signed-out session", async () => {
-    const operation = createImportOptionsQuery({
-      getAccount: vi.fn(async () => account("pinterest")),
-      resolveAccountHandle: vi.fn(async () => "raphael"),
-      listSourceCollections: vi.fn(async () => ({
-        ok: false as const,
-        reason: "auth_required" as const,
-      })),
-    });
+    const { dependencies } = optionsDependencies(
+      account("pinterest"),
+      "raphael",
+      { ok: false, reason: "auth_required" },
+    );
+    const operation = createImportOptionsQuery(dependencies);
 
     await expect(operation({ accountId: "pinterest:123" })).resolves.toEqual({
       ok: false,
@@ -262,16 +280,12 @@ describe("accounts.importOptions", () => {
   });
 
   it("lists Instagram collections without looking up the username", async () => {
-    const listSourceCollections = vi.fn(async () => ({
-      ok: true as const,
-      collections: [{ id: "c1", name: "Recipes", itemCount: 3 }],
-    }));
-    const resolveAccountHandle = vi.fn(async () => null);
-    const operation = createImportOptionsQuery({
-      getAccount: vi.fn(async () => account("instagram")),
-      resolveAccountHandle,
-      listSourceCollections,
-    });
+    const { dependencies, resolveAccountHandle, listSourceCollections } =
+      optionsDependencies(account("instagram"), null, {
+        ok: true,
+        collections: [{ id: "c1", name: "Recipes", itemCount: 3 }],
+      });
+    const operation = createImportOptionsQuery(dependencies);
 
     await expect(operation({ accountId: "instagram:123" })).resolves.toEqual({
       ok: true,
@@ -285,12 +299,12 @@ describe("accounts.importOptions", () => {
   });
 
   it("asks for a TikTok username before reading collections", async () => {
-    const listSourceCollections = vi.fn();
-    const operation = createImportOptionsQuery({
-      getAccount: vi.fn(async () => account("tiktok")),
-      resolveAccountHandle: vi.fn(async () => null),
-      listSourceCollections,
-    });
+    const { dependencies, listSourceCollections } = optionsDependencies(
+      account("tiktok"),
+      null,
+      noCollections,
+    );
+    const operation = createImportOptionsQuery(dependencies);
 
     await expect(operation({ accountId: "tiktok:123" })).resolves.toEqual({
       ok: false,
@@ -301,14 +315,11 @@ describe("accounts.importOptions", () => {
   });
 
   it("explains an Instagram checkpoint", async () => {
-    const operation = createImportOptionsQuery({
-      getAccount: vi.fn(async () => account("instagram")),
-      resolveAccountHandle: vi.fn(async () => null),
-      listSourceCollections: vi.fn(async () => ({
-        ok: false as const,
-        reason: "checkpoint" as const,
-      })),
+    const { dependencies } = optionsDependencies(account("instagram"), null, {
+      ok: false,
+      reason: "checkpoint",
     });
+    const operation = createImportOptionsQuery(dependencies);
 
     await expect(operation({ accountId: "instagram:123" })).resolves.toEqual({
       ok: false,

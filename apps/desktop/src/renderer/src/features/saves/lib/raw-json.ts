@@ -27,6 +27,7 @@ export async function ensureRawJson(id: string): Promise<void> {
     if (rawJson) full.add(rawJson);
     if (pool.get(id)) patchSaveRawJson(id, rawJson);
   } catch {
+    /** The Save keeps its trimmed rawJson; the next request retries. */
   } finally {
     inflight.delete(id);
   }

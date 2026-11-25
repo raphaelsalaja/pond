@@ -120,8 +120,8 @@ it("commits replacement bytes, metadata, derived images, and Undo as one batch",
     .png({ compressionLevel: 0 })
     .toBuffer();
   const thumbnail = await sharp(source).resize(20, 10).png().toBuffer();
-  const committed: Transaction[][] = [];
-  const undo: Transaction[][] = [];
+  const committed: Array<Array<Transaction>> = [];
+  const undo: Array<Array<Transaction>> = [];
   const result = await compressExistingImages(
     {
       ids: ["save"],

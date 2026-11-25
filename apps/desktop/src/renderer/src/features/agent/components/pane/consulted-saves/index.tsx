@@ -18,10 +18,10 @@ export interface ReferenceItem {
 }
 
 export function toReferenceItems(
-  ids: string[],
-  sources: AssistantSource[],
+  ids: Array<string>,
+  sources: Array<AssistantSource>,
   renderMedia?: (source: AssistantSource) => ReactNode,
-): ReferenceItem[] {
+): Array<ReferenceItem> {
   const byId = new Map(sources.map((source) => [source.id, source]));
   return [...new Set(ids)].flatMap((id) => {
     const source = byId.get(id);
@@ -48,10 +48,10 @@ export function SavePreview({
   onAttach,
 }: {
   item: ReferenceItem;
-  sources: AssistantSource[];
-  attachedIds: string[];
+  sources: Array<AssistantSource>;
+  attachedIds: Array<string>;
   onOpenSave: (id: string) => void;
-  onAttach: (sources: AssistantSource[]) => void;
+  onAttach: (sources: Array<AssistantSource>) => void;
 }) {
   const attached = attachedIds.includes(item.id);
   return (
@@ -115,11 +115,11 @@ export function ConsultedSaves({
   onAttach,
   renderMedia,
 }: {
-  sources: AssistantSource[];
-  saveIds?: string[];
-  attachedIds?: string[];
+  sources: Array<AssistantSource>;
+  saveIds?: Array<string>;
+  attachedIds?: Array<string>;
   onOpenSave: (id: string) => void;
-  onAttach: (sources: AssistantSource[]) => void;
+  onAttach: (sources: Array<AssistantSource>) => void;
   renderMedia?: (source: AssistantSource) => ReactNode;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -190,10 +190,10 @@ export function ReferencedSavesPopover({
   onClose,
 }: {
   open: boolean;
-  sources: AssistantSource[];
-  attachedIds: string[];
+  sources: Array<AssistantSource>;
+  attachedIds: Array<string>;
   anchorRef: RefObject<HTMLElement | null>;
-  onAttach: (sources: AssistantSource[]) => void;
+  onAttach: (sources: Array<AssistantSource>) => void;
   onClose: () => void;
 }) {
   return (

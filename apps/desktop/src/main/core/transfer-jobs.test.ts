@@ -12,14 +12,15 @@ import { join } from "node:path";
 import { ulid } from "ulid";
 import { afterEach, expect, it } from "vitest";
 import type { TransferRequest } from "../../shared/transfer-contracts";
-import { type ExportItem, exportFiles } from "./export-files";
+import { exportFiles } from "./export-files";
+import type { ExportItem } from "./export-files";
 import {
   checkTransferCancellation,
   createTransferJobStore,
   transferPhase,
 } from "./transfer-jobs";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -37,7 +38,7 @@ async function fixture() {
     destination,
     ids: ["first", "second"],
   };
-  const items: ExportItem[] = [];
+  const items: Array<ExportItem> = [];
   for (const id of request.ids ?? []) {
     const source = join(root, id);
     await mkdir(source);
@@ -71,8 +72,9 @@ async function fixture() {
     store: createTransferJobStore(directory),
   };
 }
+function noop() {}
 function deferred() {
-  let release = () => {};
+  let release: () => void = noop;
   const promise = new Promise<void>((resolve) => {
     release = resolve;
   });

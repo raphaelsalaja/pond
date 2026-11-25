@@ -1,4 +1,5 @@
-import { type SaveStatus, saveFolders, saves } from "@pond/schema/db";
+import { saveFolders, saves } from "@pond/schema/db";
+import type { SaveStatus } from "@pond/schema/db";
 import { and, asc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import {
   mediaEmbeddingVersion,
@@ -10,8 +11,8 @@ import { knnVec, parseJsonVector } from "./vec-index";
 export interface SemanticClusterCandidate {
   id: string;
   title: string | null;
-  tags: string[];
-  vector: number[];
+  tags: Array<string>;
+  vector: Array<number>;
 }
 
 export interface SemanticClusterEdge {
@@ -22,21 +23,20 @@ export interface SemanticClusterEdge {
 export interface SemanticClusterPreview {
   clusters: Array<{
     id: string;
-    labels: string[];
-    memberIds: string[];
+    labels: Array<string>;
+    memberIds: Array<string>;
   }>;
-  unclustered: string[];
+  unclustered: Array<string>;
 }
 
-export interface SemanticClusterSourceCandidate
-  extends SemanticClusterCandidate {
+export interface SemanticClusterSourceCandidate extends SemanticClusterCandidate {
   model: string;
   status: SaveStatus;
   deleted: boolean;
 }
 
 export interface SemanticClusterScope {
-  saveIds?: string[];
+  saveIds?: Array<string>;
   folderId?: string;
 }
 
@@ -45,19 +45,19 @@ export interface SemanticClustersStore {
     scope: SemanticClusterScope,
     model: string,
     limit: number,
-  ): Promise<SemanticClusterSourceCandidate[]>;
+  ): Promise<Array<SemanticClusterSourceCandidate>>;
   neighbors(
-    vector: number[],
+    vector: Array<number>,
     limit: number,
   ): Array<{ id: string; distance: number }>;
 }
 
 const MIN_CLUSTER_SIZE = 3;
 const MAX_CLUSTER_LABELS = 3;
-const MAX_CLUSTER_CANDIDATES = 2_000;
+const MAX_CLUSTER_CANDIDATES = 2000;
 const MAX_NEIGHBORS_PER_SAVE = 24;
 
-function cosineDistance(left: number[], right: number[]): number {
+function cosineDistance(left: Array<number>, right: Array<number>): number {
   if (left.length !== right.length || left.length === 0) {
     return Number.POSITIVE_INFINITY;
   }
@@ -68,12 +68,15 @@ function cosineDistance(left: number[], right: number[]): number {
   return 1 - Math.min(1, Math.max(-1, dot));
 }
 
-function clusterLabels(candidates: SemanticClusterCandidate[]): string[] {
+function clusterLabels(
+  candidates: Array<SemanticClusterCandidate>,
+): Array<string> {
   const counts = new Map<string, { count: number; label: string }>();
   for (const candidate of candidates) {
-    const labels = [candidate.title, ...candidate.tags]
-      .map((label) => label?.replace(/\s+/g, " ").trim())
-      .filter((label): label is string => Boolean(label));
+    const labels = [candidate.title, ...candidate.tags].flatMap((raw) => {
+      const label = raw?.replaceAll(/\s+/g, " ").trim();
+      return label ? [label] : [];
+    });
     const seen = new Set<string>();
     for (const label of labels) {
       const key = label.toLowerCase();
@@ -99,8 +102,8 @@ function clusterLabels(candidates: SemanticClusterCandidate[]): string[] {
 }
 
 export function previewSemanticClusters(input: {
-  candidates: SemanticClusterCandidate[];
-  edges: SemanticClusterEdge[];
+  candidates: Array<SemanticClusterCandidate>;
+  edges: Array<SemanticClusterEdge>;
   distance: number;
 }): SemanticClusterPreview {
   const candidates = [...input.candidates].sort((left, right) =>
@@ -139,7 +142,7 @@ export function previewSemanticClusters(input: {
     }
   }
 
-  const components = new Map<string, SemanticClusterCandidate[]>();
+  const components = new Map<string, Array<SemanticClusterCandidate>>();
   for (const candidate of candidates) {
     const id = root(candidate.id);
     const current = components.get(id);
@@ -148,7 +151,7 @@ export function previewSemanticClusters(input: {
   }
 
   const clusters: SemanticClusterPreview["clusters"] = [];
-  const unclustered: string[] = [];
+  const unclustered: Array<string> = [];
   for (const component of components.values()) {
     const memberIds = component.map((candidate) => candidate.id).sort();
     if (memberIds.length < MIN_CLUSTER_SIZE) {
@@ -172,10 +175,10 @@ export function previewSemanticClusters(input: {
 }
 
 function eligibleCandidates(
-  rows: SemanticClusterSourceCandidate[],
+  rows: Array<SemanticClusterSourceCandidate>,
   model: string,
   limit: number,
-): SemanticClusterCandidate[] {
+): Array<SemanticClusterCandidate> {
   const eligible = new Map<string, SemanticClusterCandidate>();
   for (const row of [...rows].sort((left, right) =>
     left.id < right.id ? -1 : left.id > right.id ? 1 : 0,
@@ -228,7 +231,7 @@ export async function semanticClustersWithStore(
   }
 
   const candidateIds = new Set(candidates.map(({ id }) => id));
-  const edges: SemanticClusterEdge[] = [];
+  const edges: Array<SemanticClusterEdge> = [];
   const neighborLimit = Math.min(MAX_NEIGHBORS_PER_SAVE + 1, candidates.length);
   for (const candidate of candidates) {
     const neighbors = store

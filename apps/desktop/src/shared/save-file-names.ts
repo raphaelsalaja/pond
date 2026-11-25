@@ -101,7 +101,9 @@ export function webpThumbnailFilename(existingFilename: string): string {
 }
 
 /** Existing Pond and Eagle sidecars still use the PNG suffix. */
-export function thumbnailSidecarCandidates(originalFilename: string): string[] {
+export function thumbnailSidecarCandidates(
+  originalFilename: string,
+): Array<string> {
   const base = basenameOf(originalFilename);
   return [`${base}${THUMBNAIL_WEBP_SUFFIX}`, `${base}${THUMBNAIL_PNG_SUFFIX}`];
 }
@@ -166,7 +168,7 @@ export function primaryOriginalPath(
 }
 
 export function pickCardFile<T extends { kind: string; path: string }>(
-  files: readonly T[],
+  files: ReadonlyArray<T>,
 ): T | null {
   const hasOriginal = files.some((file) => !isAuxiliaryKind(file.kind));
   const usableThumb = (file: T) =>

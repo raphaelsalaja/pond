@@ -16,11 +16,10 @@ import {
   IconUser,
 } from "@pond/icons";
 import { Sidebar } from "@pond/ui";
-import { type ReactNode, useMemo } from "react";
-import {
-  SOURCE_STATUS_OPTIONS,
-  type SourceStatusId,
-} from "@/features/sources/components/page/lib/filters";
+import { useMemo } from "react";
+import type { ReactNode } from "react";
+import { SOURCE_STATUS_OPTIONS } from "@/features/sources/components/page/lib/filters";
+import type { SourceStatusId } from "@/features/sources/components/page/lib/filters";
 import { useSourceTableRows } from "@/features/sources/hooks/use-source-table-rows";
 import {
   sourcesFilters,
@@ -35,7 +34,7 @@ const STATUS_ICONS = {
   offline: <IconCircleXmark />,
 } satisfies Record<SourceStatusId, ReactNode>;
 
-const TYPES: { label: string; icon: ReactNode }[] = [
+const TYPES: Array<{ label: string; icon: ReactNode }> = [
   { label: "Account", icon: <IconUser /> },
   { label: "Folder", icon: <IconFolder /> },
   { label: "Channel", icon: <IconTv /> },
@@ -77,7 +76,7 @@ function Row({
   );
 }
 
-function show(statuses: SourceStatusId[], types: string[]): void {
+function show(statuses: Array<SourceStatusId>, types: Array<string>): void {
   sourcesFilters.setStatuses(new Set(statuses));
   sourcesFilters.setTypes(new Set(types));
 }
@@ -87,8 +86,9 @@ export function SourcesSidebar() {
   const filters = useSourcesFilters();
   const typeCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const row of rows)
+    for (const row of rows) {
       counts.set(row.kindLabel, (counts.get(row.kindLabel) ?? 0) + 1);
+    }
     return counts;
   }, [rows]);
   const unfiltered = filters.statuses.size === 0 && filters.types.size === 0;

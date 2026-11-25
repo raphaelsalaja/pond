@@ -1,26 +1,22 @@
 import { PrefsSchema } from "@pond/schema";
 import { THUMBNAIL_CACHE_VERSION } from "@shared/media-index";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type { Save } from "@/features/saves/types";
 import { loadPrefs } from "@/shared/state/prefs";
+import { bridge } from "@/shared/test/pond-bridge";
 import { CardImage } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
-  vi.stubGlobal("pond", {
-    query: async () => PrefsSchema.parse({}),
-    tx: async () => ({ ok: true }),
+  bridge.use({
+    machinePace: async () => ({ thermal: "nominal", onBattery: false }),
+    query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
   });
-  vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(
-    100,
-  );
-  vi.spyOn(HTMLImageElement.prototype, "naturalHeight", "get").mockReturnValue(
-    80,
-  );
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -29,8 +25,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
 });
 
 it("keeps a Balanced card on the thumbnail that covers it", async () => {

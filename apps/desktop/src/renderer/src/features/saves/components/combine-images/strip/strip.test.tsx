@@ -1,5 +1,7 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { act, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
 import type { CombineImage } from "../preview";
@@ -69,7 +71,9 @@ function order() {
 
 function press(key: string) {
   const target = document.activeElement;
-  if (!(target instanceof HTMLElement)) throw new Error("Nothing focused");
+  if (!isHTMLElement(target)) {
+    throw new Error("Nothing focused");
+  }
   target.dispatchEvent(
     new KeyboardEvent("keydown", {
       key,

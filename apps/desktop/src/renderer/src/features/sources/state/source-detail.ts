@@ -1,7 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { z } from "zod";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
 
 export type SourceDetailsKind = "account" | "watch" | "folder";
 
@@ -17,11 +17,11 @@ export const SourceDetailsPageSchema = z.enum([
 
 export type SourceDetailsPage = z.infer<typeof SourceDetailsPageSchema>;
 
-const SOURCE_DETAILS_KINDS: readonly string[] = [
+const SOURCE_DETAILS_KINDS: ReadonlyArray<string> = [
   "account",
   "watch",
   "folder",
-] satisfies SourceDetailsKind[];
+] satisfies Array<SourceDetailsKind>;
 
 export function isSourceDetailsKind(value: string): value is SourceDetailsKind {
   return SOURCE_DETAILS_KINDS.includes(value);
@@ -71,29 +71,29 @@ const store = new Store<SourceDetailState>({
 });
 
 function open(kind: SourceDetailsKind, id: string, page?: SourceDetailsPage) {
-  getAppRouter()?.history.push(sourceDetailHref(kind, id, page));
+  getAppHistory()?.push(sourceDetailHref(kind, id, page));
 }
 
 export const sourceDetail = {
-  openAccount(id: string, page?: SourceDetailsPage): void {
+  openAccount: (id: string, page?: SourceDetailsPage): void => {
     open("account", id, page);
   },
-  openWatch(id: string): void {
+  openWatch: (id: string): void => {
     open("watch", id);
   },
-  openFolder(path: string): void {
+  openFolder: (path: string): void => {
     open("folder", path);
   },
-  close(): void {
+  close: (): void => {
     const router = getAppRouter();
     if (router && isSourceDetailPath(router.state.location.pathname)) {
-      router.history.push("/sources");
+      getAppHistory()?.push("/sources");
     }
   },
-  changed(): void {
+  changed: (): void => {
     store.setState((s) => ({ ...s, revision: s.revision + 1 }));
   },
-  setName(name: string | null): void {
+  setName: (name: string | null): void => {
     store.setState((s) => (s.name === name ? s : { ...s, name }));
   },
 };

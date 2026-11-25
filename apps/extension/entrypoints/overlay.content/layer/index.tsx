@@ -1,5 +1,11 @@
-import { useLayoutEffect, useState, useSyncExternalStore } from "react";
-import { type OverlayResult, sendMessage } from "@/utils/messaging";
+import {
+  useCallback,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { sendMessage } from "@/utils/messaging";
+import type { OverlayResult } from "@/utils/messaging";
 import { paintTheme } from "@/utils/paint-theme";
 import { Details } from "../details";
 import { ImagePicker } from "../images";
@@ -14,14 +20,17 @@ interface LayerProps {
 }
 
 function nextFrame(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
 }
 
 export function Layer({ store, container }: LayerProps) {
-  const { appearance, tool } = useSyncExternalStore(
-    store.subscribe,
-    store.getState,
+  const subscribe = useCallback(
+    (listener: () => void) => store.subscribe(listener),
+    [store],
   );
+  const { appearance, tool } = useSyncExternalStore(subscribe, store.getState);
   const [layer, setLayer] = useState<HTMLDivElement | null>(null);
 
   useLayoutEffect(

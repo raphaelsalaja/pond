@@ -1,13 +1,12 @@
 import { Dialog } from "@pond/ui";
 import {
-  type KeyboardEvent,
-  type RefObject,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import type { KeyboardEvent, RefObject } from "react";
 import {
   commandMenu,
   useCommandMenuOpen,
@@ -19,10 +18,10 @@ import { formatPlural } from "@/shared/lib/format";
 import { usePrefs } from "@/shared/state/prefs";
 import { ResultsList } from "./results-list";
 import { SearchField } from "./search-field";
-import styles from "./styles.module.css";
 import type { MenuEntry, MenuPage } from "./types";
 import { useKeyboardMode } from "./use-keyboard-mode";
 import { useMenuModel } from "./use-menu-model";
+import styles from "./styles.module.css";
 
 const PAGE_STEP = 8;
 
@@ -75,7 +74,7 @@ function CommandMenu({
   const inputRef = useRef<HTMLInputElement>(null);
   const keyboard = useKeyboardMode();
   const [query, setQuery] = useState("");
-  const [stack, setStack] = useState<readonly Frame[]>([]);
+  const [stack, setStack] = useState<ReadonlyArray<Frame>>([]);
   const [direction, setDirection] = useState<"forward" | "back">();
   const [activeId, setActiveId] = useState<string>();
   const [focused, setFocused] = useState(true);
@@ -186,25 +185,42 @@ function CommandMenu({
     const chord = ctrlKey && !metaKey && !altKey && !shiftKey;
 
     let handled = true;
-    if (key === "ArrowDown" && metaKey) jump(entries.length);
-    else if (key === "ArrowUp" && metaKey) jump(-entries.length);
-    else if (key === "ArrowDown" || (chord && (key === "n" || key === "j")))
+    if (key === "ArrowDown" && metaKey) {
+      jump(entries.length);
+    } else if (key === "ArrowUp" && metaKey) {
+      jump(-entries.length);
+    } else if (key === "ArrowDown" || (chord && (key === "n" || key === "j"))) {
       move(1);
-    else if (key === "ArrowUp" || (chord && (key === "p" || key === "k")))
+    } else if (key === "ArrowUp" || (chord && (key === "p" || key === "k"))) {
       move(-1);
-    else if (key === "Home") jump(-entries.length);
-    else if (key === "End") jump(entries.length);
-    else if (key === "PageDown") jump(PAGE_STEP);
-    else if (key === "PageUp") jump(-PAGE_STEP);
-    else if (key === "Enter" && metaKey) openActions();
-    else if (key === "Enter") execute(activeIndex);
-    else if (key === "Tab" && shiftKey) back();
-    else if (key === "Tab") openActions();
-    else if (key === "ArrowRight" && atEnd) handled = openActions();
-    else if (key === "ArrowLeft" && atStart) handled = back();
-    else if (key === "Backspace" && query === "") handled = back();
-    else handled = false;
-    if (handled) event.preventDefault();
+    } else if (key === "Home") {
+      jump(-entries.length);
+    } else if (key === "End") {
+      jump(entries.length);
+    } else if (key === "PageDown") {
+      jump(PAGE_STEP);
+    } else if (key === "PageUp") {
+      jump(-PAGE_STEP);
+    } else if (key === "Enter" && metaKey) {
+      openActions();
+    } else if (key === "Enter") {
+      execute(activeIndex);
+    } else if (key === "Tab" && shiftKey) {
+      back();
+    } else if (key === "Tab") {
+      openActions();
+    } else if (key === "ArrowRight" && atEnd) {
+      handled = openActions();
+    } else if (key === "ArrowLeft" && atStart) {
+      handled = back();
+    } else if (key === "Backspace" && query === "") {
+      handled = back();
+    } else {
+      handled = false;
+    }
+    if (handled) {
+      event.preventDefault();
+    }
   }
 
   return (

@@ -1,10 +1,12 @@
+import log from "electron-log/renderer";
+import { z } from "zod";
 import { getAppRouter } from "@/shared/lib/app-router";
 import { paintTheme } from "@/shared/lib/paint-theme";
 
-interface Job {
-  id: string;
+interface Step {
+  id?: string;
   name?: string;
-  jobs?: Job[];
+  jobs?: Array<Step>;
   path?: string;
   theme?: "light" | "dark";
   run?: string;
@@ -14,6 +16,29 @@ interface Job {
   selector?: string;
   reload?: boolean;
 }
+
+const StepSchema: z.ZodType<Step> = z.lazy(() =>
+  z.object({
+    id: z.string().optional(),
+    name: z.string().optional(),
+    jobs: z.array(StepSchema).optional(),
+    path: z.string().optional(),
+    theme: z.enum(["light", "dark"]).optional(),
+    run: z.string().optional(),
+    delay: z.number().optional(),
+    captureId: z.string().optional(),
+    endpoint: z.string().optional(),
+    selector: z.string().optional(),
+    reload: z.boolean().optional(),
+  }),
+);
+
+/** Only the top-level request needs an id, to mark it done. */
+const JobSchema = z.intersection(StepSchema, z.object({ id: z.string() }));
+
+const SubmitResponseSchema = z.object({
+  nextCaptureId: z.string().optional(),
+});
 
 const THEMES = {
   light: {
@@ -46,7 +71,10 @@ declare global {
   }
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number) =>
+  new Promise((r) => {
+    setTimeout(r, ms);
+  });
 let busy = false;
 let chain: { id: string; endpoint: string } | null = null;
 
@@ -67,7 +95,7 @@ async function loadCapture() {
   }
 }
 
-async function runJob(job: Job) {
+async function runJob(job: Step) {
   if (job.jobs) {
     for (const step of job.jobs) await runJob(step);
     return;
@@ -76,9 +104,18 @@ async function runJob(job: Job) {
     location.reload();
     return;
   }
-  if (job.path) await getAppRouter()?.navigate({ to: job.path });
-  if (job.theme) paintTheme(THEMES[job.theme], "srgb");
-  if (job.run) await new Function(`return (async () => { ${job.run} })()`)();
+  if (job.path) {
+    await getAppRouter()?.navigate({ to: job.path });
+  }
+  if (job.theme) {
+    paintTheme(THEMES[job.theme], "srgb");
+  }
+  if (job.run) {
+    const ran: unknown = new Function(
+      `return (async () => { ${job.run} })()`,
+    ).call(undefined);
+    await ran;
+  }
   await sleep(job.delay ?? 1500);
   if (job.theme) paintTheme(THEMES[job.theme], "srgb");
   if (job.captureId === "next") {
@@ -87,7 +124,7 @@ async function runJob(job: Job) {
     job.endpoint = chain.endpoint;
   }
   if (job.captureId && job.endpoint) {
-    console.warn(
+    log.warn(
       "[figma-bridge] capture start",
       job.path,
       job.theme,
@@ -106,22 +143,25 @@ async function runJob(job: Job) {
       window.fetch = async (input, init) => {
         const res = await nativeFetch(input, init);
         if (String(input).includes(`/capture/${job.captureId}/submit`)) {
-          /** SAFETY: Figma's submit endpoint answers with this JSON, and a failed read falls back to `{}`. */
-          const body = (await res
+          const json: unknown = await res
             .clone()
             .json()
-            .catch(() => ({}))) as { nextCaptureId?: string };
+            .catch(() => ({}));
+          const body = SubmitResponseSchema.safeParse(json);
+          const nextCaptureId = body.success
+            ? body.data.nextCaptureId
+            : undefined;
           const endpoint = job.endpoint ?? "";
-          chain = body.nextCaptureId
+          chain = nextCaptureId
             ? {
-                id: body.nextCaptureId,
+                id: nextCaptureId,
                 endpoint: endpoint.replace(
                   /\/capture\/[^/]+\/submit/,
-                  `/capture/${body.nextCaptureId}/submit`,
+                  `/capture/${nextCaptureId}/submit`,
                 ),
               }
             : null;
-          console.warn(
+          log.warn(
             "[figma-bridge] submitted",
             job.captureId,
             job.name ?? job.path,
@@ -147,7 +187,7 @@ async function runJob(job: Job) {
       window.cancelAnimationFrame = caf;
       document.getElementById("__figma_capture_toolbar_host__")?.remove();
     }
-    console.warn("[figma-bridge] capture done", job.path, job.theme);
+    log.warn("[figma-bridge] capture done", job.path, job.theme);
   }
 }
 
@@ -155,13 +195,16 @@ async function tick() {
   if (busy) return;
   const res = await fetch("/src/dev/figma/job.txt", { cache: "no-store" });
   const text = (await res.text()).trim();
-  if (!text.startsWith("{")) return;
-  /** SAFETY: job.txt is a local capture request written in the `Job` format. */
-  const job = JSON.parse(text) as Job;
-  if (localStorage.getItem(DONE_KEY) === job.id) return;
+  if (!text.startsWith("{")) {
+    return;
+  }
+  const job = JobSchema.parse(JSON.parse(text));
+  if (localStorage.getItem(DONE_KEY) === job.id) {
+    return;
+  }
   localStorage.setItem(DONE_KEY, job.id);
   busy = true;
-  console.warn("[figma-bridge] job", job.id);
+  log.warn("[figma-bridge] job", job.id);
   /** Hidden windows never advance CSS animations, so entrance keyframes would capture at opacity 0. */
   const still = document.createElement("style");
   still.textContent =
@@ -170,7 +213,7 @@ async function tick() {
   try {
     await runJob(job);
   } catch (error) {
-    console.error("[figma-bridge]", error);
+    log.error("[figma-bridge]", error);
   } finally {
     still.remove();
     busy = false;
@@ -180,6 +223,8 @@ async function tick() {
 clearInterval(window.__figmaBridge);
 window.__figmaBridge = window.setInterval(
   () =>
-    void tick().catch((error) => console.warn("[figma-bridge] tick", error)),
+    void tick().catch((cause: unknown) =>
+      log.warn("[figma-bridge] tick", cause),
+    ),
   1000,
 );

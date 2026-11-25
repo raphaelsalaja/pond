@@ -3,19 +3,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { saves } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
-import {
-  type CombineImageCover,
-  pickCombineImageFile,
-} from "@shared/combine-image-file";
-import {
-  type CombineImagesOptions,
-  CombineImagesOptionsSchema,
-} from "@shared/combine-images-contracts";
+import { pickCombineImageFile } from "@shared/combine-image-file";
+import type { CombineImageCover } from "@shared/combine-image-file";
+import { CombineImagesOptionsSchema } from "@shared/combine-images-contracts";
+import type { CombineImagesOptions } from "@shared/combine-images-contracts";
 import { layoutCombinedImages } from "@shared/combine-images-layout";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { inArray } from "drizzle-orm";
 import pLimit from "p-limit";
-import sharp, { type OverlayOptions } from "sharp";
+import sharp from "sharp";
+import type { OverlayOptions } from "sharp";
 import { getDb } from "../db";
 import { resolveSaveFilePath } from "../ipc/helpers";
 import { executeBatch } from "./executor";
@@ -39,7 +36,7 @@ export async function joinRasterImages(
     }),
   );
   const layout = layoutCombinedImages(sources, options);
-  const composites: OverlayOptions[] = await Promise.all(
+  const composites: Array<OverlayOptions> = await Promise.all(
     sources.map(async (source, index) => {
       const { left, top, width, height } = layout.items[index] ?? {
         left: 0,
@@ -99,7 +96,7 @@ export async function joinRasterImages(
 }
 
 export async function combineImages(input: {
-  ids: string[];
+  ids: Array<string>;
   folderId?: string | null;
   options?: Partial<CombineImagesOptions>;
   cover?: CombineImageCover;
@@ -141,8 +138,9 @@ export async function combineImages(input: {
   const directory = await mkdtemp(join(tmpdir(), "pond-combine-"));
   try {
     const options = CombineImagesOptionsSchema.parse(input.options ?? {});
-    if (options.output === "export" && !options.outputPath)
+    if (options.output === "export" && !options.outputPath) {
       return { ok: false, error: "Choose an export location." };
+    }
     const bytes = await joinRasterImages(imageInputs, options);
     const extension = options.format === "jpeg" ? "jpg" : options.format;
     const path =
@@ -170,11 +168,13 @@ export async function combineImages(input: {
 }
 
 async function trashCombinedOriginals(
-  ids: string[],
+  ids: Array<string>,
   enabled: boolean,
 ): Promise<void> {
-  if (!enabled) return;
-  const transactions: Transaction[] = ids.map((id) => ({
+  if (!enabled) {
+    return;
+  }
+  const transactions: Array<Transaction> = ids.map((id) => ({
     kind: "trash",
     model: "save",
     id,

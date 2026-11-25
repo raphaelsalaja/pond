@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   clipRect,
   moveRect,
@@ -7,28 +7,26 @@ import {
   viewportRegion,
 } from "./geometry";
 
-describe("overlay geometry", () => {
-  beforeEach(() => {
-    vi.stubGlobal("innerWidth", 800);
-    vi.stubGlobal("innerHeight", 600);
-  });
-  afterEach(() => vi.unstubAllGlobals());
+const viewport = { width: 800, height: 600 };
 
+describe("overlay geometry", () => {
   it("clips an element to the viewport", () => {
-    expect(viewportRegion({ x: -20, y: 500, width: 200, height: 400 })).toEqual(
-      {
-        x: 0,
-        y: 500,
-        width: 180,
-        height: 100,
-        viewportWidth: 800,
-        viewportHeight: 600,
-      },
-    );
+    expect(
+      viewportRegion({ x: -20, y: 500, width: 200, height: 400 }, viewport),
+    ).toEqual({
+      x: 0,
+      y: 500,
+      width: 180,
+      height: 100,
+      viewportWidth: 800,
+      viewportHeight: 600,
+    });
   });
 
   it("drops an element outside the viewport", () => {
-    expect(viewportRegion({ x: 900, y: 0, width: 50, height: 50 })).toBeNull();
+    expect(
+      viewportRegion({ x: 900, y: 0, width: 50, height: 50 }, viewport),
+    ).toBeNull();
   });
 
   it("normalizes a drag in any direction", () => {
@@ -41,8 +39,12 @@ describe("overlay geometry", () => {
   });
 
   it("drops a selection too small to adjust", () => {
-    expect(clipRect({ x: 10, y: 10, width: 4, height: 40 })).toBeNull();
-    expect(clipRect({ x: 790, y: 10, width: 40, height: 40 })).toEqual({
+    expect(
+      clipRect({ x: 10, y: 10, width: 4, height: 40 }, viewport),
+    ).toBeNull();
+    expect(
+      clipRect({ x: 790, y: 10, width: 40, height: 40 }, viewport),
+    ).toEqual({
       x: 790,
       y: 10,
       width: 10,
@@ -52,24 +54,27 @@ describe("overlay geometry", () => {
 
   it("keeps a moved box inside the viewport", () => {
     expect(
-      moveRect({ x: 700, y: 10, width: 200, height: 100 }, 50, -50),
+      moveRect({ x: 700, y: 10, width: 200, height: 100 }, 50, -50, viewport),
     ).toEqual({ x: 600, y: 0, width: 200, height: 100 });
   });
 
   it("resizes from a corner and flips past the opposite edge", () => {
     const box = { x: 100, y: 100, width: 100, height: 100 };
-    expect(resizeRect(box, "se", 50, 20)).toEqual({
+    expect(resizeRect(box, "se", 50, 20, viewport)).toEqual({
       x: 100,
       y: 100,
       width: 150,
       height: 120,
     });
-    expect(resizeRect(box, "w", 150, 0)).toEqual({
+    expect(resizeRect(box, "w", 150, 0, viewport)).toEqual({
       x: 200,
       y: 100,
       width: 50,
       height: 100,
     });
-    expect(resizeRect(box, "n", 0, -500)).toMatchObject({ y: 0, height: 200 });
+    expect(resizeRect(box, "n", 0, -500, viewport)).toMatchObject({
+      y: 0,
+      height: 200,
+    });
   });
 });

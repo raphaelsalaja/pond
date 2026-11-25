@@ -20,9 +20,9 @@ export interface ListingEntry {
   likes?: number;
   comments?: number;
   mediaUrl?: string;
-  mediaUrls?: ListingMedia[];
+  mediaUrls?: Array<ListingMedia>;
   mediaType?: MediaType;
-  listKinds?: ListKind[];
+  listKinds?: Array<ListKind>;
 }
 
 export type RedditListingKind = "saved" | "upvoted";
@@ -42,7 +42,7 @@ export function redditListingUrl(
 }
 
 export interface ListingPage {
-  entries: ListingEntry[];
+  entries: Array<ListingEntry>;
   after: string | null;
 }
 
@@ -193,15 +193,20 @@ export function avatarFromMeJson(account: RedditAccount): string | null {
 }
 
 function cleanAvatarUrl(raw: string | undefined): string | null {
-  if (raw === undefined) return null;
-  const url = raw.replace(/&amp;/g, "&").replace(/\\\//g, "/").trim();
+  if (raw === undefined) {
+    return null;
+  }
+  const url = raw
+    .replaceAll("&amp;", "&")
+    .replaceAll(String.raw`\/`, "/")
+    .trim();
   return /^https?:\/\//i.test(url) ? url : null;
 }
 
 export function entriesFromListing(listing: RedditListing): ListingPage {
   if (listing.error === 403) return { entries: [], after: null };
   const children = listing.data?.children ?? [];
-  const entries: ListingEntry[] = [];
+  const entries: Array<ListingEntry> = [];
   for (const child of children) {
     if (child.kind !== "t3") continue;
     const data = child.data;
@@ -388,16 +393,20 @@ function youtubeVideoUrl(raw: string): string | null {
 
 function firstPreviewUrl(data: RedditLink): string | undefined {
   const source = data.preview?.images?.[0]?.source;
-  return source?.url?.replace(/&amp;/g, "&");
+  return source?.url?.replaceAll("&amp;", "&");
 }
 
-function galleryUrls(data: RedditPost): ListingMedia[] {
+function galleryUrls(data: RedditPost): Array<ListingMedia> {
   const meta = data.media_metadata;
-  if (!meta) return [];
-  const out: ListingMedia[] = [];
+  if (!meta) {
+    return [];
+  }
+  const out: Array<ListingMedia> = [];
   for (const value of Object.values(meta)) {
-    const url = value.s?.u?.replace(/&amp;/g, "&");
-    if (url) out.push({ url, type: "image" });
+    const url = value.s?.u?.replaceAll("&amp;", "&");
+    if (url) {
+      out.push({ url, type: "image" });
+    }
   }
   return out;
 }

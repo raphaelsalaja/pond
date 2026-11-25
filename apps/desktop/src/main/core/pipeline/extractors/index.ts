@@ -60,7 +60,7 @@ const WEB_EXTRACTOR: Extractor = {
   },
 };
 
-export const EXTRACTOR_LIST: readonly Extractor[] = Object.values(
+export const EXTRACTOR_LIST: ReadonlyArray<Extractor> = Object.values(
   EXTRACTORS,
 ).filter((extractor) => extractor !== null);
 

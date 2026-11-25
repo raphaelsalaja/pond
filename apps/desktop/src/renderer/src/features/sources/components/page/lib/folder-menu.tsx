@@ -6,7 +6,8 @@ import {
   IconMediaPlay,
   IconTrash,
 } from "@pond/icons";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import type { SourceActionSections } from "@/features/sources/lib/source-menu";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import { formatPlural } from "@/shared/lib/format";
@@ -149,7 +150,7 @@ export function buildFolderRows(
 export function buildFolderMenu(
   target: FolderMenuTarget,
   onChanged: () => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     {
       type: "group",

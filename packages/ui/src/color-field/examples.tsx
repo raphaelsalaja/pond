@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { ComponentDocs } from "../shared/docs";
 import { ColorField } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 function LiveField({ label, initial }: { label: string; initial: string }) {
   const [value, setValue] = useState(initial);

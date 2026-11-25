@@ -17,12 +17,8 @@ import { libraryHeader } from "@/features/library/state/library-header";
 import { fieldIcon } from "@/features/search/query";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
 import { FilterPopup } from "../chip";
-import {
-  FILTER_SECTIONS,
-  type FilterOption,
-  fieldMatchesQuery,
-  presetOptions,
-} from "../options";
+import { FILTER_SECTIONS, fieldMatchesQuery, presetOptions } from "../options";
+import type { FilterOption } from "../options";
 import { filterToolbar, useFilterToolbar } from "../toolbar-state";
 import styles from "./styles.module.css";
 
@@ -40,8 +36,8 @@ export function CustomizeFilters({
   semanticActive,
   visualActive,
 }: {
-  choices: Partial<Record<FieldId, FilterOption[]>>;
-  activeFields: FieldId[];
+  choices: Partial<Record<FieldId, Array<FilterOption>>>;
+  activeFields: Array<FieldId>;
   semanticActive: boolean;
   visualActive: boolean;
 }) {
@@ -108,7 +104,7 @@ export function CustomizeFilters({
 
   const renderSubmenu = (
     label: keyof typeof SECTION_ICONS,
-    items: ReturnType<typeof renderField>[],
+    items: Array<ReturnType<typeof renderField>>,
   ) => {
     const Icon = SECTION_ICONS[label];
     return (

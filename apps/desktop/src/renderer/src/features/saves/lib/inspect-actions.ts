@@ -1,5 +1,6 @@
 import type { ImageCrop } from "@pond/schema/db";
-import { mutateSave, type SaveEdit } from "@/features/saves/lib/mutate";
+import { mutateSave } from "@/features/saves/lib/mutate";
+import type { SaveEdit } from "@/features/saves/lib/mutate";
 import type { Save } from "@/features/saves/types";
 
 export function rotatePatch(save: Save, delta: number): SaveEdit {

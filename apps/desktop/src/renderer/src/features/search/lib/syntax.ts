@@ -21,7 +21,7 @@ interface DatePreset {
   iso: string;
 }
 
-export const DATE_PRESETS: readonly DatePreset[] = [
+export const DATE_PRESETS: ReadonlyArray<DatePreset> = [
   { slug: "today", label: "Today", iso: "today" },
   { slug: "past-3-days", label: "Past 3 Days", iso: "-P3D" },
   { slug: "past-week", label: "Past Week", iso: "-P1W" },
@@ -32,10 +32,10 @@ export const DATE_PRESETS: readonly DatePreset[] = [
 
 interface TokenFieldSpec {
   field: FieldId;
-  keys: readonly string[];
+  keys: ReadonlyArray<string>;
 }
 
-const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
+const TOKEN_FIELDS: ReadonlyArray<TokenFieldSpec> = [
   { field: "title", keys: ["name", "title"] },
   { field: "tags", keys: ["tag", "tags"] },
   { field: "folder", keys: ["folder", "folders"] },
@@ -97,8 +97,8 @@ interface RawToken {
   end: number;
 }
 
-function tokenize(input: string): RawToken[] {
-  const tokens: RawToken[] = [];
+function tokenize(input: string): Array<RawToken> {
+  const tokens: Array<RawToken> = [];
   const n = input.length;
   let i = 0;
   while (i < n) {
@@ -147,7 +147,7 @@ function unquote(value: string): string {
   return t;
 }
 
-function splitList(value: string): string[] {
+function splitList(value: string): Array<string> {
   return value
     .split(",")
     .map(unquote)
@@ -259,10 +259,12 @@ function buildPredicate(token: FieldToken): Predicate | null {
     }
     case "boolean": {
       const value = raw.toLowerCase();
-      if (OPTIONAL_FALSE.has(value))
+      if (OPTIONAL_FALSE.has(value)) {
         return { field, operator: "eq", value: negate };
-      if (BOOLEAN_TRUE.has(value))
+      }
+      if (BOOLEAN_TRUE.has(value)) {
         return { field, operator: "eq", value: !negate };
+      }
       return null;
     }
     case "string": {
@@ -310,13 +312,13 @@ function buildPredicate(token: FieldToken): Predicate | null {
 }
 
 interface ParsedSearch {
-  predicates: Predicate[];
+  predicates: Array<Predicate>;
   text: string;
 }
 
 export function parseSearchInput(input: string): ParsedSearch {
-  const predicates: Predicate[] = [];
-  const free: string[] = [];
+  const predicates: Array<Predicate> = [];
+  const free: Array<string> = [];
 
   for (const token of tokenize(input)) {
     const matched = matchFieldToken(token.text);
@@ -431,8 +433,10 @@ export function serializePredicate(predicate: Predicate): string | null {
 }
 
 export function serializeQuery(query: Query | null | undefined): string {
-  if (!query) return "";
-  const parts: string[] = [];
+  if (!query) {
+    return "";
+  }
+  const parts: Array<string> = [];
   for (const rule of query.rules) {
     if (!isPredicate(rule)) continue;
     const token = serializePredicate(rule);

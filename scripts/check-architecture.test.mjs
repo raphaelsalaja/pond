@@ -11,7 +11,7 @@ import {
   runtimeImports,
 } from "./check-architecture.mjs";
 
-test("runtime graph distinguishes type-only imports and preserves lazy dependencies", () => {
+void test("runtime graph distinguishes type-only imports and preserves lazy dependencies", () => {
   assert.deepEqual(
     runtimeImports(`
     import type { A } from './types';
@@ -27,7 +27,7 @@ test("runtime graph distinguishes type-only imports and preserves lazy dependenc
   );
 });
 
-test("detects cycles while permitting convergent dependencies", () => {
+void test("detects cycles while permitting convergent dependencies", () => {
   const graph = new Map([
     ["a", ["b", "leaf"]],
     ["b", ["a", "leaf"]],
@@ -38,7 +38,7 @@ test("detects cycles while permitting convergent dependencies", () => {
   assert.deepEqual(dependencyCycles(graph), [["a", "b"], ["self"]]);
 });
 
-test("ownership checks can include type-only imports and exports", () => {
+void test("ownership checks can include type-only imports and exports", () => {
   assert.deepEqual(
     runtimeImports(
       "import type { A } from './owner'; export type { B } from './other';",
@@ -49,7 +49,7 @@ test("ownership checks can include type-only imports and exports", () => {
   );
 });
 
-test("save features cannot depend on Library features", () => {
+void test("save features cannot depend on Library features", () => {
   assert.match(
     rendererOwnershipError(
       "renderer/src/features/saves/lib/menu.ts",
@@ -66,7 +66,7 @@ test("save features cannot depend on Library features", () => {
   );
 });
 
-test("features import other features only through root entries", () => {
+void test("features import other features only through root entries", () => {
   assert.match(
     featureEntryError(
       "renderer/src/features/library/components/grid.tsx",
@@ -79,7 +79,7 @@ test("features import other features only through root entries", () => {
     "renderer/src/features/saves/pool.ts",
     "renderer/src/features/library/state/folders.ts",
     "renderer/src/shared/lib/format.ts",
-  ])
+  ]) {
     assert.equal(
       featureEntryError(
         "renderer/src/features/library/components/grid.tsx",
@@ -87,6 +87,7 @@ test("features import other features only through root entries", () => {
       ),
       null,
     );
+  }
   assert.equal(
     featureEntryError(
       "renderer/src/app/index.tsx",
@@ -96,7 +97,7 @@ test("features import other features only through root entries", () => {
   );
 });
 
-test("reports imports from undeclared workspace packages", () => {
+void test("reports imports from undeclared workspace packages", () => {
   const root = mkdtempSync(join(tmpdir(), "pond-architecture-"));
   const app = join(root, "app");
   const shared = join(root, "shared");

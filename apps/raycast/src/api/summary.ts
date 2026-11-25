@@ -13,8 +13,8 @@ export interface SaveSummary {
   sourceName: string;
   author: string | null;
   kind: string | null;
-  tags: string[];
-  folderIds: string[];
+  tags: Array<string>;
+  folderIds: Array<string>;
   savedAt: string;
   rating: number | null;
   note: string | null;

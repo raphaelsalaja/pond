@@ -1,14 +1,13 @@
-import { ContextMenu, Menu, type MenuItemSpec } from "@pond/ui";
-import {
-  type ComponentProps,
-  type CSSProperties,
-  type ReactElement,
-  type ReactNode,
-  type RefObject,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
+import { ContextMenu, Menu } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { isElement } from "@pond/ui/dom";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type {
+  ComponentProps,
+  CSSProperties,
+  ReactElement,
+  ReactNode,
+  RefObject,
 } from "react";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
 import { filterMenuItems } from "./filter";
@@ -28,12 +27,14 @@ const DEFAULT_POPUP_STYLE: PopupStyle = {
 };
 
 function isEditableTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
-  return target.closest('input, textarea, [contenteditable="true"]') != null;
+  if (!isElement(target)) {
+    return false;
+  }
+  return target.closest('input, textarea, [contenteditable="true"]') !== null;
 }
 
 export interface SpecMenuChromeProps {
-  buildItems: () => MenuItemSpec[];
+  buildItems: () => Array<MenuItemSpec>;
   search?: boolean;
   searchLabel?: string;
   onOpen?: (eventDetails: OpenChangeDetails) => void;
@@ -91,13 +92,17 @@ function useMenuBodyHeight<LayoutKey>(
   }, [bodyRef, layoutKey]);
 
   useEffect(() => {
-    if (height == null) return;
+    if (height === null) {
+      return;
+    }
     const id = requestAnimationFrame(() => setSized(true));
     return () => cancelAnimationFrame(id);
   }, [height]);
 
   const style: CSSProperties & { "--body-height"?: string } = {};
-  if (height != null) style["--body-height"] = `${height}px`;
+  if (height !== null) {
+    style["--body-height"] = `${height}px`;
+  }
   return { contentRef, sized, style };
 }
 
@@ -105,7 +110,7 @@ function SearchResults({
   items,
   Items,
 }: {
-  items: MenuItemSpec[];
+  items: Array<MenuItemSpec>;
   Items: typeof ContextMenu.Items;
 }) {
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -211,7 +216,7 @@ export function SpecContextMenu({
 }
 
 interface SpecMenuProps {
-  buildItems: () => MenuItemSpec[];
+  buildItems: () => Array<MenuItemSpec>;
   search?: boolean;
   searchLabel?: string;
   onOpen?: () => void;

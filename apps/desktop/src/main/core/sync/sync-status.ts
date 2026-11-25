@@ -40,8 +40,8 @@ export function emit(update: SyncStatusUpdate): void {
   for (const cb of listeners) {
     try {
       cb(update);
-    } catch (err) {
-      log.warn("[pond sync] status listener threw", err);
+    } catch (error) {
+      log.warn("[pond sync] status listener threw", error);
     }
   }
 }

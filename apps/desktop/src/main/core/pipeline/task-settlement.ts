@@ -1,10 +1,5 @@
-import {
-  queueGenerations,
-  type Source,
-  saves,
-  type Task,
-  tasks,
-} from "@pond/schema/db";
+import { queueGenerations, saves, tasks } from "@pond/schema/db";
+import type { Source, Task } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
 import { sourceLabel } from "@pond/schema/sources";
 import { and, eq, inArray } from "drizzle-orm";
@@ -26,16 +21,27 @@ import {
   snapshotSourceGate,
 } from "./rate-governor";
 import {
-  type DueTask,
-  LibrarySwitchInterrupt,
   metrics,
   NON_FATAL_OPS,
   WorkerWatchdogError,
 } from "./reconciler-config";
+import type { DueTask, LibrarySwitchInterrupt } from "./reconciler-config";
 import { classifyError } from "./retry-policy";
 import { stopSourceForSignIn } from "./source-admission";
 import { isSourceTask } from "./source-tasks";
 import { FinalizeIncompleteError } from "./workers/finalize";
+
+/** Abort reasons are untyped, so the interrupt is recognised by its name. */
+export function isLibrarySwitchInterrupt(
+  cause: unknown,
+): cause is LibrarySwitchInterrupt {
+  return (
+    typeof cause === "object" &&
+    cause !== null &&
+    "name" in cause &&
+    cause.name === "LibrarySwitchInterrupt"
+  );
+}
 
 export async function enrichTaskEventWithSave(
   ev: PipelineTaskEvent,
@@ -129,7 +135,7 @@ export async function handleFailure(
       settled: false,
     };
   }
-  if (cause instanceof LibrarySwitchInterrupt) {
+  if (isLibrarySwitchInterrupt(cause)) {
     const db = await getDb();
     const now = new Date();
     const result = db
@@ -187,9 +193,11 @@ export async function handleFailure(
         log.warn(
           `[pond pipeline] ${source} needs sign-in; parked its queued requests`,
         );
-        await markSignInNeeded(source, task.saveId).catch((error) =>
-          log.warn("[pond pipeline] sign-in status update failed", error),
-        );
+        try {
+          await markSignInNeeded(source, task.saveId);
+        } catch (error) {
+          log.warn("[pond pipeline] sign-in status update failed", error);
+        }
       }
     } else if (cause instanceof RateLimitedError) {
       const ms = (cause.retryAfterSec ?? 60) * 1000;

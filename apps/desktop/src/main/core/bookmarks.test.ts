@@ -1,12 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-  type BookmarkFile,
-  type BookmarkImportDependencies,
   importBookmarkFile,
   parseBookmarkFile,
   parseChromiumBookmarks,
   parseNetscapeBookmarks,
 } from "./bookmarks";
+import type { BookmarkFile, BookmarkImportDependencies } from "./bookmarks";
 
 describe("parseNetscapeBookmarks", () => {
   it("reads http(s) links from a Netscape bookmark file", () => {
@@ -76,10 +75,10 @@ describe("parseNetscapeBookmarks", () => {
   });
 });
 
-describe("parseChromiumBookmarks", () => {
-  const microsSince1601 = (ms: number) =>
-    String((BigInt(ms) + 11_644_473_600_000n) * 1000n);
+const microsSince1601 = (ms: number) =>
+  String((BigInt(ms) + 11_644_473_600_000n) * 1000n);
 
+describe("parseChromiumBookmarks", () => {
   it("walks every root and converts WebKit timestamps", () => {
     const json = JSON.stringify({
       checksum: "x",
@@ -150,23 +149,42 @@ describe("parseChromiumBookmarks", () => {
   });
 });
 
-describe("importBookmarkFile", () => {
-  function dependencies(existing: string[] = []) {
-    let next = 0;
-    return {
-      enqueueLink: vi.fn(async (url: string) => ({
-        id: `save-${next++}`,
-        created: !existing.includes(url),
-      })),
-      persistImported: vi.fn(async () => {}),
-      importFolders: vi.fn(
-        async (folders: BookmarkFile["folders"]) =>
-          new Map(folders.map((folder) => [folder.id, `pond-${folder.id}`])),
-      ),
-      addToFolder: vi.fn(async () => ({ ok: true as const })),
-    } satisfies BookmarkImportDependencies;
-  }
+type Deps = BookmarkImportDependencies;
 
+function dependencies(
+  existing: Array<string> = [],
+  { enqueueFails = false }: { enqueueFails?: boolean } = {},
+) {
+  let next = 0;
+  const enqueued: Array<Parameters<Deps["enqueueLink"]>> = [];
+  const persisted: Array<Parameters<Deps["persistImported"]>> = [];
+  const importedFolders: Array<Parameters<Deps["importFolders"]>> = [];
+  const addedToFolder: Array<Parameters<Deps["addToFolder"]>> = [];
+  const deps: Deps = {
+    enqueueLink: async (...args) => {
+      enqueued.push(args);
+      if (enqueueFails) {
+        throw new Error("unsupported");
+      }
+      return { id: `save-${next++}`, created: !existing.includes(args[0]) };
+    },
+    persistImported: async (...args) => {
+      persisted.push(args);
+    },
+    importFolders: async (...args) => {
+      importedFolders.push(args);
+      const [folders] = args;
+      return new Map(folders.map((folder) => [folder.id, `pond-${folder.id}`]));
+    },
+    addToFolder: async (...args) => {
+      addedToFolder.push(args);
+      return { ok: true };
+    },
+  };
+  return { deps, enqueued, persisted, importedFolders, addedToFolder };
+}
+
+describe("importBookmarkFile", () => {
   const file: BookmarkFile = {
     folders: [
       { id: "design", name: "Design", parentId: null, sortOrder: 0 },
@@ -189,13 +207,15 @@ describe("importBookmarkFile", () => {
   };
 
   it("marks, dates and files only the Saves it creates", async () => {
-    const deps = dependencies(["https://example.com/old"]);
+    const { deps, persisted, importedFolders, addedToFolder } = dependencies([
+      "https://example.com/old",
+    ]);
     await expect(importBookmarkFile(file, deps)).resolves.toEqual({
       ok: true,
       imported: 2,
       skipped: 1,
     });
-    expect(deps.persistImported.mock.calls).toEqual([
+    expect(persisted).toEqual([
       [
         "save-0",
         {
@@ -206,17 +226,12 @@ describe("importBookmarkFile", () => {
       ],
       ["save-2", { importedFrom: "bookmarks" }],
     ]);
-    expect(deps.importFolders).toHaveBeenCalledExactlyOnceWith([
-      file.folders[0],
-      file.folders[1],
-    ]);
-    expect(deps.addToFolder).toHaveBeenCalledExactlyOnceWith("pond-type", [
-      "save-0",
-    ]);
+    expect(importedFolders).toEqual([[[file.folders[0], file.folders[1]]]]);
+    expect(addedToFolder).toEqual([["pond-type", ["save-0"]]]);
   });
 
   it("records the origin the caller names", async () => {
-    const deps = dependencies();
+    const { deps, persisted } = dependencies();
     await importBookmarkFile(
       {
         bookmarks: [
@@ -227,13 +242,11 @@ describe("importBookmarkFile", () => {
       deps,
       "data-export",
     );
-    expect(deps.persistImported).toHaveBeenCalledExactlyOnceWith("save-0", {
-      importedFrom: "data-export",
-    });
+    expect(persisted).toEqual([["save-0", { importedFrom: "data-export" }]]);
   });
 
   it("passes each bookmark's list kinds to the enqueue", async () => {
-    const deps = dependencies();
+    const { deps, enqueued } = dependencies();
     await importBookmarkFile(
       {
         bookmarks: [
@@ -249,26 +262,17 @@ describe("importBookmarkFile", () => {
       },
       deps,
     );
-    expect(deps.enqueueLink).toHaveBeenNthCalledWith(
-      1,
-      "https://x.com/i/web/status/1",
-      ["liked"],
-    );
-    expect(deps.enqueueLink).toHaveBeenNthCalledWith(
-      2,
-      "https://example.com/plain",
-      undefined,
-    );
+    expect(enqueued[0]).toEqual(["https://x.com/i/web/status/1", ["liked"]]);
+    expect(enqueued[1]).toEqual(["https://example.com/plain", undefined]);
   });
 
   it("counts links that fail to queue as skipped", async () => {
-    const deps = dependencies();
-    deps.enqueueLink.mockRejectedValue(new Error("unsupported"));
+    const { deps, importedFolders } = dependencies([], { enqueueFails: true });
     await expect(importBookmarkFile(file, deps)).resolves.toEqual({
       ok: true,
       imported: 0,
       skipped: 3,
     });
-    expect(deps.importFolders).not.toHaveBeenCalled();
+    expect(importedFolders).toEqual([]);
   });
 });

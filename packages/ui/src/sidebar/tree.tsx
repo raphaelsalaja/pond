@@ -4,10 +4,9 @@ import {
   TreeItemIndicator,
   TreeItemLabel,
   TreeItem as TreeItemPart,
-  type TreeMode,
   Tree as TreeRoot,
-  type TreeProps as TreeRootProps,
 } from "@ui-sdk/react/tree";
+import type { TreeMode, TreeProps as TreeRootProps } from "@ui-sdk/react/tree";
 import { clsx as cn } from "clsx";
 import type { ComponentProps } from "react";
 import { withClass } from "../shared/state-class";

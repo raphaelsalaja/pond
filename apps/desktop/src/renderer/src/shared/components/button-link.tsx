@@ -1,9 +1,12 @@
-import { Button, type ButtonProps } from "@pond/ui";
+import { Button } from "@pond/ui";
+import type { ButtonProps } from "@pond/ui";
 import { createLink } from "@tanstack/react-router";
 import type { Ref } from "react";
 
-interface ButtonAnchorProps
-  extends Omit<ButtonProps, "render" | "nativeButton" | "ref"> {
+interface ButtonAnchorProps extends Omit<
+  ButtonProps,
+  "render" | "nativeButton" | "ref"
+> {
   href?: string;
   ref?: Ref<HTMLAnchorElement>;
 }

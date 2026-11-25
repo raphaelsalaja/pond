@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 import type { SaveCardOverlayModel } from "@/features/saves/components/card/model";
 import { Card } from "./";
@@ -22,37 +23,39 @@ const emptyOverlay: SaveCardOverlayModel = {
   fileCount: null,
 };
 
-describe("Save card selection circle", () => {
-  function renderCard(checked: boolean, calls: string[]) {
-    act(() => {
-      root?.render(
-        <div
-          role="listbox"
-          aria-label="Test Saves"
-          tabIndex={0}
-          onKeyDown={() => calls.push("list keydown")}
-          onPointerDown={() => calls.push("list pointerdown")}
-          onMouseDown={() => calls.push("list mousedown")}
-          onClick={() => calls.push("list click")}
-          onDoubleClick={() => calls.push("list double click")}
-        >
-          <Card.Root>
-            <Card.Select onClick={() => calls.push("open")}>Save</Card.Select>
-            <Card.Pick checked={checked} onClick={() => calls.push("pick")} />
-          </Card.Root>
-        </div>,
-      );
-    });
-    const pick = container?.querySelector<HTMLElement>('[role="checkbox"]');
-    if (!pick) throw new Error("Missing selection circle");
-    return pick;
+function renderCard(checked: boolean, calls: Array<string>) {
+  act(() => {
+    root?.render(
+      <div
+        role="listbox"
+        aria-label="Test Saves"
+        tabIndex={0}
+        onKeyDown={() => calls.push("list keydown")}
+        onPointerDown={() => calls.push("list pointerdown")}
+        onMouseDown={() => calls.push("list mousedown")}
+        onClick={() => calls.push("list click")}
+        onDoubleClick={() => calls.push("list double click")}
+      >
+        <Card.Root>
+          <Card.Select onClick={() => calls.push("open")}>Save</Card.Select>
+          <Card.Pick checked={checked} onClick={() => calls.push("pick")} />
+        </Card.Root>
+      </div>,
+    );
+  });
+  const pick = container?.querySelector<HTMLElement>('[role="checkbox"]');
+  if (!pick) {
+    throw new Error("Missing selection circle");
   }
+  return pick;
+}
 
+describe("Save card selection circle", () => {
   it("toggles selection without opening the Save, dragging, or reaching the card", () => {
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
-    const calls: string[] = [];
+    const calls: Array<string> = [];
     const pick = renderCard(false, calls);
 
     expect(pick.getAttribute("tabindex")).toBe("-1");

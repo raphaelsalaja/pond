@@ -22,7 +22,8 @@ import {
   libraryViews,
   searchSaves,
 } from "./api-library";
-import { type ApiRuntime, apiRuntime } from "./api-runtime";
+import { apiRuntime } from "./api-runtime";
+import type { ApiRuntime } from "./api-runtime";
 import { apiSavesByIds } from "./api-saves";
 import { handleApiError, invalidRequest } from "./errors";
 

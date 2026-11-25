@@ -106,11 +106,13 @@ function present(
     } finally {
       busy = false;
     }
-    if (outcome === "stale")
+    if (outcome === "stale") {
       show(`Can't ${direction} ${options.subject}`, null, {
         description: "Other changes came after it.",
       });
-    else await settle(direction, outcome === "done");
+    } else {
+      await settle(direction, outcome === "done");
+    }
   }
 
   async function settle(direction: Direction, done: boolean) {

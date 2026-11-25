@@ -11,8 +11,8 @@ export interface QuerySessionState {
 }
 export interface QuerySessionRuntime {
   page(request: LibraryQueryRequest): Promise<LibraryQueryPage>;
-  ids(request: LibraryQueryRequest): Promise<{ ids: string[] }>;
-  refresh(ids: readonly string[]): Promise<void>;
+  ids(request: LibraryQueryRequest): Promise<{ ids: Array<string> }>;
+  refresh(ids: ReadonlyArray<string>): Promise<void>;
 }
 function scopeKey(request: LibraryQueryRequest): string {
   return JSON.stringify({ ...request, keywords: undefined });
@@ -106,16 +106,20 @@ export function createQuerySession(
       pageKey = capturedKey;
       rememberPage(pages, capturedKey, page);
       /** Sync actions reload the page; an identical result must not rebuild the grid. */
-      if (!dequal(previous, page)) update({ page });
-    } catch (cause) {
-      if (!current()) return;
+      if (!dequal(previous, page)) {
+        update({ page });
+      }
+    } catch (error) {
+      if (!current()) {
+        return;
+      }
       if (append) {
         active = false;
         await load(false);
         return;
       }
       update({
-        error: errorCopy(cause, "Couldn't complete the search. Try again."),
+        error: errorCopy(error, "Couldn't complete the search. Try again."),
       });
     } finally {
       if (current()) {

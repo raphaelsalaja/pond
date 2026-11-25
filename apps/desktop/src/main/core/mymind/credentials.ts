@@ -1,5 +1,6 @@
 import { deleteSecret, getSecret, setSecret } from "../../keychain";
-import { type MymindCredential, MymindCredentialSchema } from "./client";
+import { MymindCredentialSchema } from "./client";
+import type { MymindCredential } from "./client";
 
 const credentialKey = (accountId: string) => `mymind:${accountId}`;
 

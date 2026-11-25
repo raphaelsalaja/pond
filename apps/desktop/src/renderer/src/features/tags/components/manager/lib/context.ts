@@ -1,8 +1,8 @@
 import { createContext, use } from "react";
 
 interface TagsTableValue {
-  groups: string[];
-  tags: string[];
+  groups: Array<string>;
+  tags: Array<string>;
 }
 
 export const TagsTableContext = createContext<TagsTableValue | null>(null);

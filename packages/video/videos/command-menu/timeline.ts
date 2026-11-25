@@ -1,15 +1,15 @@
 import { LOCKUP_LENGTH, scenes } from "@pond/video";
 
-const LOGO = 17500;
+const LOGO = 17_500;
 
 export const { start, end } = scenes({
   hook: [0, 2800],
   reveal: [2800, 5600],
   typo: [5600, 8600],
-  list: [8600, 12000],
-  actions: [12000, 14800],
-  added: [14800, 17300],
-  outro: [17300, LOGO + LOCKUP_LENGTH],
+  list: [8600, 12_000],
+  actions: [12_000, 14_800],
+  added: [14_800, 17_300],
+  outro: [17_300, LOGO + LOCKUP_LENGTH],
 });
 
 export const DURATION = end("outro");
@@ -23,13 +23,13 @@ export const CUES = {
   typoType: 5750,
   selectAll: 8650,
   chairType: 8950,
-  down: 10900,
-  tab: 12000,
-  filterType: 12700,
-  enterFolder: 13550,
-  folderType: 14050,
-  enterChairs: 14750,
-  folderFocus: 15650,
-  added: 15700,
+  down: 10_900,
+  tab: 12_000,
+  filterType: 12_700,
+  enterFolder: 13_550,
+  folderType: 14_050,
+  enterChairs: 14_750,
+  folderFocus: 15_650,
+  added: 15_700,
   logo: LOGO,
 } as const;

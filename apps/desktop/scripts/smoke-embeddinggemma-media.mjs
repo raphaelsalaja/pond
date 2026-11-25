@@ -50,7 +50,7 @@ function decodePcm16MonoWav(bytes) {
   let format;
   let dataOffset;
   let dataLength;
-  for (let offset = 12; offset + 8 <= bytes.byteLength; ) {
+  for (let offset = 12; offset + 8 <= bytes.byteLength;) {
     const id = text(offset, 4);
     const size = view.getUint32(offset + 4, true);
     const payloadOffset = offset + 8;

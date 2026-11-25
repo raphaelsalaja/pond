@@ -1,9 +1,5 @@
-import {
-  definePatch,
-  type Layer,
-  type ReverbEffect,
-  type SoundDefinition,
-} from "@web-kits/audio";
+import { definePatch } from "@web-kits/audio";
+import type { Layer, ReverbEffect, SoundDefinition } from "@web-kits/audio";
 
 export const UI_SOUND_NAMES = [
   "tap",
@@ -76,7 +72,7 @@ function tick(frequency: Hertz, gain: number, delay?: number): Layer {
 }
 
 /** One switch contact: the snap plus a tink on the inharmonic partial a small hard body rings at. */
-function contact(pitch: number, level: number, delay?: number): Layer[] {
+function contact(pitch: number, level: number, delay?: number): Array<Layer> {
   return [
     snap({ frequency: pitch, decay: 0.0016, gain: 0.5 * level, delay }),
     tick(pitch * 1.62, 0.03 * level, delay),

@@ -8,7 +8,7 @@ import { useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import styles from "./styles.module.css";
 
-const ACCESS_ITEMS: { value: FishMcpToolAccess; label: string }[] = [
+const ACCESS_ITEMS: Array<{ value: FishMcpToolAccess; label: string }> = [
   { value: "review", label: "Ask First" },
   { value: "read", label: "Run Without Review" },
   { value: "off", label: "Off" },
@@ -31,8 +31,8 @@ export function ToolList({ status, onChanged, onClose }: ToolListProps) {
     try {
       await window.pond.query("fishMcp.test", { id: server.id });
       await onChanged();
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't reach the server. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't reach the server. Try again."));
     } finally {
       setTesting(false);
     }
@@ -125,8 +125,8 @@ function ToolRow({
         access,
       });
       await onChanged();
-    } catch (reason) {
-      onError(errorCopy(reason, "Couldn't change that tool. Try again."));
+    } catch (error) {
+      onError(errorCopy(error, "Couldn't change that tool. Try again."));
     } finally {
       setPending(null);
     }

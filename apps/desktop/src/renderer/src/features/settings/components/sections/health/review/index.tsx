@@ -1,26 +1,17 @@
-import { Button, type ButtonProps, Toggle, ToggleGroup } from "@pond/ui";
+import { Button, Toggle, ToggleGroup } from "@pond/ui";
+import type { ButtonProps } from "@pond/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentPropsWithoutRef,
-  createContext,
-  type ReactNode,
-  use,
-  useState,
-} from "react";
+import { createContext, use, useState } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import type { DownloadHealthRow } from "@/features/downloads/health";
 import { openSave } from "@/features/saves/navigation";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { THIS_DEVICE } from "@/shared/lib/platform";
-import { type HealthAction, healthActions } from "../actions";
-import {
-  categoryFact,
-  type HealthCategory,
-  type HealthEntry,
-  type HealthStatus,
-  STATUS_LABELS,
-  statusBreakdown,
-} from "../categories";
+import { healthActions } from "../actions";
+import type { HealthAction } from "../actions";
+import { categoryFact, STATUS_LABELS, statusBreakdown } from "../categories";
+import type { HealthCategory, HealthEntry, HealthStatus } from "../categories";
 import { HealthEntryRow } from "../entry";
 import { useCategoryRunning } from "../use-library-health";
 import styles from "./styles.module.css";
@@ -31,14 +22,14 @@ const SAVES = { one: "Save", other: "Saves" };
 
 interface ReviewValue {
   category: HealthCategory;
-  breakdown: [HealthStatus, number][];
+  breakdown: Array<[HealthStatus, number]>;
   filter: Filter;
   setFilter: (filter: Filter) => void;
-  shown: readonly HealthEntry[];
+  shown: ReadonlyArray<HealthEntry>;
   busy: string | null;
   running: boolean;
   run: (key: string, action: HealthAction) => Promise<void>;
-  actionsFor: (targets: readonly HealthEntry[]) => HealthAction[];
+  actionsFor: (targets: ReadonlyArray<HealthEntry>) => Array<HealthAction>;
   onNavigate: (() => void) | undefined;
 }
 
@@ -46,7 +37,7 @@ const ReviewContext = createContext<ReviewValue | null>(null);
 
 interface RootProps {
   category: HealthCategory;
-  downloads: readonly DownloadHealthRow[];
+  downloads: ReadonlyArray<DownloadHealthRow>;
   /** Runs before an action leaves this view, so a dialog can close first. */
   onNavigate?: () => void;
   children: ReactNode;
@@ -77,7 +68,9 @@ function Root({ category, downloads, onNavigate, children }: RootProps) {
     }
   }
 
-  function actionsFor(targets: readonly HealthEntry[]): HealthAction[] {
+  function actionsFor(
+    targets: ReadonlyArray<HealthEntry>,
+  ): Array<HealthAction> {
     return healthActions(category.id, targets, { qc, downloads });
   }
 
@@ -162,7 +155,7 @@ function EntryActions({
             size="xs"
             variant="secondary"
             loading={busy === `${entry.id}:${action.id}`}
-            disabled={busy != null || running}
+            disabled={busy !== null || running}
             onClick={() => void run(`${entry.id}:${action.id}`, action)}
           >
             {action.label}
@@ -239,7 +232,7 @@ function Actions({
       size={size}
       variant={action.primary ? "primary" : "secondary"}
       loading={busy === `bulk:${action.id}` || (running && action.primary)}
-      disabled={busy != null || running}
+      disabled={busy !== null || running}
       onClick={() => void run(`bulk:${action.id}`, action)}
     >
       {action.navigates || action.bulkOnly

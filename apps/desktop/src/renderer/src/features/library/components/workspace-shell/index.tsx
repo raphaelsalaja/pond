@@ -1,10 +1,6 @@
 import { cn, cssVars, Window } from "@pond/ui";
-import {
-  type ComponentPropsWithoutRef,
-  useDeferredValue,
-  useEffect,
-  useState,
-} from "react";
+import { useDeferredValue, useEffect, useState } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import {
   DETAILS_WIDTH_DEFAULT,
   DETAILS_WIDTH_MAX,
@@ -16,10 +12,8 @@ import {
   useDetailsWidth,
   useSidebarWidth,
 } from "@/features/library/state/library-chrome";
-import {
-  type ShellDetails,
-  useShellLayout,
-} from "@/features/library/state/shell-layout";
+import { useShellLayout } from "@/features/library/state/shell-layout";
+import type { ShellDetails } from "@/features/library/state/shell-layout";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import styles from "./styles.module.css";
 
@@ -46,7 +40,7 @@ function useInstantOnChange(
   return instant;
 }
 
-interface RootProps extends ComponentPropsWithoutRef<"div"> {}
+type RootProps = ComponentPropsWithoutRef<"div">;
 
 function Root({ className, style, ...props }: RootProps) {
   const layout = useShellLayout();
@@ -79,7 +73,7 @@ function Root({ className, style, ...props }: RootProps) {
   );
 }
 
-interface RailProps extends ComponentPropsWithoutRef<"div"> {}
+type RailProps = ComponentPropsWithoutRef<"div">;
 
 function Rail(props: RailProps) {
   const { sidebarHidden } = useShellLayout();
@@ -87,7 +81,7 @@ function Rail(props: RailProps) {
   return <Window.Rail {...props} />;
 }
 
-interface ColumnProps extends ComponentPropsWithoutRef<"aside"> {}
+type ColumnProps = ComponentPropsWithoutRef<"aside">;
 
 function Sidebar(props: ColumnProps) {
   const width = useSidebarWidth();
@@ -99,8 +93,8 @@ function Sidebar(props: ColumnProps) {
       defaultWidth={SIDEBAR_WIDTH_DEFAULT}
       width={width}
       collapseShortcut={<ShortcutKeys id="view.sidebar" />}
-      onResize={libraryChrome.setSidebarWidth}
-      onCollapse={libraryChrome.toggleSidebar}
+      onResize={(next) => libraryChrome.setSidebarWidth(next)}
+      onCollapse={() => libraryChrome.toggleSidebar()}
       {...props}
     />
   );
@@ -117,14 +111,14 @@ function Details(props: ColumnProps) {
       width={width}
       resizeLabel="Resize Details"
       collapseShortcut={<ShortcutKeys id="view.inspector" />}
-      onResize={libraryChrome.setDetailsWidth}
+      onResize={(next) => libraryChrome.setDetailsWidth(next)}
       onCollapse={() => libraryChrome.setDetailsOpen(false)}
       {...props}
     />
   );
 }
 
-interface ContentProps extends ComponentPropsWithoutRef<"div"> {}
+type ContentProps = ComponentPropsWithoutRef<"div">;
 
 function Content({ className, ...props }: ContentProps) {
   return <div className={cn(styles.content, className)} {...props} />;

@@ -1,4 +1,5 @@
 import type { RawImage } from "@huggingface/transformers";
+import log from "electron-log/renderer";
 import { z } from "zod";
 import type { FlorenceTask } from "./inference-core";
 import type {
@@ -45,7 +46,7 @@ export interface VideoEmbeddingFrame {
 
 interface PreparedRequest<T extends RequestBody> {
   request: T;
-  transfer: Transferable[];
+  transfer: Array<Transferable>;
 }
 
 export function createAudioEmbeddingRequest(
@@ -68,11 +69,11 @@ export function createAudioEmbeddingRequest(
 }
 
 export function createVideoEmbeddingRequest(
-  frames: VideoEmbeddingFrame[],
+  frames: Array<VideoEmbeddingFrame>,
   duration: number,
 ): PreparedRequest<{
   op: "embedVideoFrames";
-  frames: SerializedVideoFrame[];
+  frames: Array<SerializedVideoFrame>;
   duration: number;
 }> {
   if (frames.length === 0 || frames.length > MAX_EMBEDDING_VIDEO_FRAMES) {
@@ -179,7 +180,7 @@ function ensureWorker(): Worker | null {
       scheduleIdleRelease();
     };
     w.onerror = (event) => {
-      console.error("[inference] worker crashed", event.message);
+      log.error("[inference] worker crashed", event.message);
       workerBroken = true;
       worker?.terminate();
       worker = null;
@@ -190,10 +191,10 @@ function ensureWorker(): Worker | null {
     worker = w;
     workerEverStarted = true;
     return w;
-  } catch (err) {
-    console.error(
+  } catch (error) {
+    log.error(
       "[inference] failed to start worker; using in-thread inference",
-      err,
+      error,
     );
     workerBroken = true;
     return null;
@@ -209,7 +210,7 @@ const VectorsSchema = z.array(VectorSchema);
 function callWorker<T extends InferenceResult>(
   result: z.ZodType<T>,
   msg: RequestBody,
-  transfer: Transferable[],
+  transfer: Array<Transferable>,
 ): Promise<T> {
   if (idleTimer) clearTimeout(idleTimer);
   idleTimer = null;
@@ -249,10 +250,14 @@ async function viaWorker<T>(
   }
   try {
     return await run();
-  } catch (err) {
-    if (workerBroken && workerEverStarted) throw err;
-    if (workerBroken) return fallback();
-    throw err;
+  } catch (error) {
+    if (workerBroken && workerEverStarted) {
+      throw error;
+    }
+    if (workerBroken) {
+      return fallback();
+    }
+    throw error;
   }
 }
 
@@ -285,8 +290,8 @@ export function inferClipImage(image: RawImage): Promise<Float32Array> {
 
 export function inferClipAesthetic(
   image: RawImage,
-  labels: string[],
-): Promise<string[]> {
+  labels: Array<string>,
+): Promise<Array<string>> {
   return viaWorker(
     () => {
       const img = serializeImage(image);
@@ -301,7 +306,9 @@ export function inferClipAesthetic(
   );
 }
 
-export function inferSensitiveContent(images: RawImage[]): Promise<number[]> {
+export function inferSensitiveContent(
+  images: Array<RawImage>,
+): Promise<Array<number>> {
   return viaWorker(
     () => {
       const serialized = images.map(serializeImage);
@@ -322,7 +329,9 @@ export function inferEmbedText(text: string): Promise<Float32Array> {
   );
 }
 
-export function inferEmbedTexts(texts: string[]): Promise<Float32Array[]> {
+export function inferEmbedTexts(
+  texts: Array<string>,
+): Promise<Array<Float32Array>> {
   return viaWorker(
     () => callWorker(VectorsSchema, { op: "embedTexts", texts }, []),
     async () => (await import("./inference-core")).coreEmbedTexts(texts),
@@ -339,7 +348,7 @@ export function inferEmbedAudio(audio: Float32Array): Promise<Float32Array> {
 }
 
 export function inferEmbedVideoFrames(
-  frames: VideoEmbeddingFrame[],
+  frames: Array<VideoEmbeddingFrame>,
   duration: number,
 ): Promise<Float32Array> {
   const prepared = createVideoEmbeddingRequest(frames, duration);

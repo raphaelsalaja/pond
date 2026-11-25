@@ -1,3 +1,4 @@
+import { isElement } from "@pond/ui/dom";
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { useEffect } from "react";
 import { CANVASES_PATH, canvases } from "@/features/canvas";
@@ -34,7 +35,7 @@ import {
 } from "@/features/saves/lib/keyboard-owner";
 import { inspect } from "@/features/saves/state/inspect";
 import { openSources } from "@/features/sources/lib/open";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import {
   appHotkeyBlockedByEditable,
   isEditableTarget,
@@ -56,7 +57,7 @@ import { handleNativeMenuAction } from "./native-menu-actions";
 function scrollActiveViewport(position: "top" | "bottom"): void {
   const active = document.activeElement;
   const target =
-    active instanceof Element &&
+    isElement(active) &&
     active !== document.body &&
     active !== document.documentElement
       ? active.closest<HTMLElement>("[data-scroll-viewport]")
@@ -74,7 +75,7 @@ function scrollActiveViewport(position: "top" | "bottom"): void {
 }
 
 function go(path: string): void {
-  getAppRouter()?.history.push(path);
+  getAppHistory()?.push(path);
 }
 
 function cycleAppearance(): void {
@@ -82,11 +83,11 @@ function cycleAppearance(): void {
   const order = ["system", "light", "dark"] as const;
   const idx = order.indexOf(current);
   const next = order[(idx < 0 ? 0 : idx + 1) % order.length] ?? "system";
-  patchPrefsSection("preferences", { appearance: next });
+  void patchPrefsSection("preferences", { appearance: next });
 }
 
 function slideNavActive(): boolean {
-  return document.querySelector("[data-slide-nav]") != null;
+  return document.querySelector("[data-slide-nav]") !== null;
 }
 
 export function AppHotkeys() {
@@ -157,8 +158,9 @@ export function AppHotkeys() {
         if (
           document.activeElement !== document.body &&
           !collectionOwnsKeyboard()
-        )
+        ) {
           return;
+        }
         binding.callback();
       },
     })),
@@ -188,12 +190,12 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "nav.back"),
-        callback: () => getAppRouter()?.history.back(),
+        callback: () => getAppHistory()?.back(),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "nav.forward"),
-        callback: () => getAppRouter()?.history.forward(),
+        callback: () => getAppHistory()?.forward(),
         options: { ignoreInputs: true },
       },
       {
@@ -371,14 +373,16 @@ export function AppHotkeys() {
           active !== document.body &&
           !collectionOwnsKeyboard() &&
           !saveOwnsKeyboard(event)
-        )
+        ) {
           return;
+        }
         binding.callback(event);
         if (
           !("preventDefault" in binding.options) ||
           binding.options.preventDefault !== false
-        )
+        ) {
           event.preventDefault();
+        }
       },
       options: { ...binding.options, preventDefault: false },
     })),

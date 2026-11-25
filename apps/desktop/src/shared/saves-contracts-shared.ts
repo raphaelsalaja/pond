@@ -8,7 +8,7 @@ export interface SavesIdInput {
 }
 
 export interface SavesIdsInput {
-  ids: string[];
+  ids: Array<string>;
 }
 
 export interface SavesFileInput extends SavesIdInput {
@@ -33,12 +33,12 @@ export interface SavesRetrievalInput {
   query?: string;
   source?: Source;
   folderId?: string;
-  media?: MediaType[];
+  media?: Array<MediaType>;
   limit?: number;
-  saveIds?: string[];
+  saveIds?: Array<string>;
   visual?:
     | { kind: "saveId"; id: string }
-    | { kind: "vector"; model: string; values: number[] };
+    | { kind: "vector"; model: string; values: Array<number> };
 }
 
 const DerivedText = z.string().nullable().optional();

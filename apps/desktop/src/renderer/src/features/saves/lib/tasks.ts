@@ -12,9 +12,8 @@ import {
   retranscribe,
   runEnrichment,
   TASK_ENABLED,
-  type TaskResult,
-  type TaskScope,
 } from "@/features/enrichment";
+import type { TaskResult, TaskScope } from "@/features/enrichment";
 
 type TaskGroup = "tagging" | "enrichment" | "reprocess";
 
@@ -24,7 +23,7 @@ interface LibraryTask {
   description: string;
   action: string;
   group: TaskGroup;
-  keywords: string[];
+  keywords: Array<string>;
   selectable: boolean;
   precondition?: (prefs: Prefs | null) => string | null;
   run: (ids?: TaskScope) => TaskResult | Promise<TaskResult>;
@@ -36,7 +35,7 @@ function gate(
   return (prefs) => (TASK_ENABLED[key](prefs) ? null : DISABLED_HINTS[key]);
 }
 
-const TASKS: readonly LibraryTask[] = [
+const TASKS: ReadonlyArray<LibraryTask> = [
   {
     id: "auto-tag",
     label: "Apply Suggested Tags",
@@ -145,6 +144,6 @@ const TASKS: readonly LibraryTask[] = [
   },
 ];
 
-export function selectableTasks(): LibraryTask[] {
+export function selectableTasks(): Array<LibraryTask> {
   return TASKS.filter((t) => t.selectable);
 }

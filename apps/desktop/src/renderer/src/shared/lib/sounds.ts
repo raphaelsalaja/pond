@@ -1,6 +1,9 @@
-import { SOUND_PATCH, type UiSoundName } from "@pond/ui/sounds";
+import { SOUND_PATCH } from "@pond/ui/sounds";
+import type { UiSoundName } from "@pond/ui/sounds";
 import type { FeedbackEvent } from "@shared/feedback";
-import { ensureReady, type PlayOptions } from "@web-kits/audio";
+import { ensureReady } from "@web-kits/audio";
+import type { PlayOptions } from "@web-kits/audio";
+import log from "electron-log/renderer";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 type SoundKind = UiSoundName | "toggle";
@@ -13,6 +16,10 @@ const lastPlayed = new Map<SoundKind, number>();
 let lastSoundAt = -Infinity;
 let parkTimer: ReturnType<typeof setTimeout> | undefined;
 let parking: Promise<void> | null = null;
+
+function warnSoundFailed(cause: unknown): void {
+  log.warn("[pond sounds] playing a sound failed", cause);
+}
 
 function park(context: AudioContext, delay: number): void {
   clearTimeout(parkTimer);
@@ -63,7 +70,7 @@ function play(kind: SoundKind, name: UiSoundName, interfaceSound = true): void {
       SOUND_PATCH.play(name, opts);
       park(context, PARK_AFTER_MS);
     })
-    .catch(() => {});
+    .catch(warnSoundFailed);
 }
 
 /** Opening the audio device blocks for about 100 ms, so open it before the first click needs a sound. */
@@ -71,7 +78,7 @@ export function warmUiSounds(): void {
   if (reduceMotion() || !soundsEnabled(true)) return;
   void ready()
     .then((context) => park(context, 0))
-    .catch(() => {});
+    .catch(warnSoundFailed);
 }
 
 export function playUiTap(): void {
@@ -98,6 +105,10 @@ export function emitFeedback(
   event: Extract<FeedbackEvent, "saveDeletion" | "folderDeletion">,
 ): void {
   const prefs = getPrefsSnapshot();
-  if (prefs?.feedback.sounds[event] !== false) playTrashThunk();
-  void window.pond.query("feedback.emit", { event }).catch(() => {});
+  if (prefs?.feedback.sounds[event] !== false) {
+    playTrashThunk();
+  }
+  void window.pond.query("feedback.emit", { event }).catch((cause: unknown) => {
+    log.warn("[pond feedback] emitting feedback failed", cause);
+  });
 }

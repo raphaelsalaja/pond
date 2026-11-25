@@ -36,14 +36,15 @@ export function shiftRange(
 
 /** The span around the replay peak that stays above most of its height. */
 export function mostReplayed(
-  heatmap: readonly DownloadHeatPoint[],
+  heatmap: ReadonlyArray<DownloadHeatPoint>,
   duration: number,
 ): DownloadRange | null {
   if (heatmap.length < 3) return null;
   let peak = 0;
   for (let index = 1; index < heatmap.length; index++) {
-    if ((heatmap[index]?.value ?? 0) > (heatmap[peak]?.value ?? 0))
+    if ((heatmap[index]?.value ?? 0) > (heatmap[peak]?.value ?? 0)) {
       peak = index;
+    }
   }
   const top = heatmap[peak];
   if (!top) return null;
@@ -54,8 +55,9 @@ export function mostReplayed(
   while (
     right < heatmap.length - 1 &&
     (heatmap[right + 1]?.value ?? 0) >= floor
-  )
+  ) {
     right += 1;
+  }
   let start = heatmap[left]?.start ?? top.start;
   let end = heatmap[right]?.end ?? top.end;
   const center = (top.start + top.end) / 2;
@@ -107,7 +109,7 @@ export function storyboardTile(
 
 /** Catmull-Rom through the replay points, as an SVG area in a 1000 by 100 box. */
 export function heatmapPath(
-  heatmap: readonly DownloadHeatPoint[],
+  heatmap: ReadonlyArray<DownloadHeatPoint>,
   duration: number,
 ): string | null {
   if (heatmap.length < 2 || duration <= 0) return null;

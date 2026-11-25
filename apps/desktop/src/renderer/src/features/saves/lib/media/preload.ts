@@ -2,10 +2,8 @@ import {
   detailsPreviewUrl,
   pickCardUnit,
 } from "@/features/saves/lib/media/units";
-import {
-  buildViewerItems,
-  type ViewerItem,
-} from "@/features/saves/lib/media/viewer-item";
+import { buildViewerItems } from "@/features/saves/lib/media/viewer-item";
+import type { ViewerItem } from "@/features/saves/lib/media/viewer-item";
 import type { Save } from "@/features/saves/types";
 import type { ResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 
@@ -34,7 +32,7 @@ export function saveImageUrls(
   save: Save,
   theme: ResolvedTheme,
   options: { details: boolean },
-): string[] {
+): Array<string> {
   const urls = new Set<string>();
   const first = buildViewerItems(save, { theme })[0];
   const original = preloadableImageUrl(first);
@@ -78,6 +76,6 @@ export function cancelPreload(url: string): void {
   image.src = "";
 }
 
-export function heldImageUrls(): string[] {
+export function heldImageUrls(): Array<string> {
   return [...held.keys()];
 }

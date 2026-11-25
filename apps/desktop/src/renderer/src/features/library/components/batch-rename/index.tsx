@@ -10,10 +10,10 @@ import {
 import {
   applyRenameTemplate,
   literalReplacement,
-  type RenameOptions,
-  type RenameTextCase,
 } from "@shared/rename-template";
-import { type ReactNode, useId, useMemo, useRef, useState } from "react";
+import type { RenameOptions, RenameTextCase } from "@shared/rename-template";
+import { useId, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
 import styles from "./styles.module.css";
@@ -23,7 +23,7 @@ export interface BatchRenameItem {
   name: string;
   original?: string;
   date?: Date | number | string | null;
-  tags?: readonly string[];
+  tags?: ReadonlyArray<string>;
   preview?: ReactNode;
 }
 
@@ -33,7 +33,7 @@ export interface BatchRenameToken {
 }
 
 export interface BatchRenameRequest extends RenameOptions {
-  ids: string[];
+  ids: Array<string>;
   pattern: string;
 }
 
@@ -52,8 +52,10 @@ const CASES: ReadonlyArray<{ value: CaseChoice; text: string; label: string }> =
   ];
 
 function marked(text: string, needle: string, tone: "find" | "replace") {
-  if (!needle || !text.includes(needle)) return text;
-  const parts: ReactNode[] = [];
+  if (!needle || !text.includes(needle)) {
+    return text;
+  }
+  const parts: Array<ReactNode> = [];
   let offset = 0;
   for (const [index, part] of text.split(needle).entries()) {
     if (index > 0) {
@@ -81,8 +83,8 @@ export function BatchRenameDialog({
 }: {
   open: boolean;
   noun: { one: string; other: string };
-  items: readonly BatchRenameItem[];
-  tokens: readonly BatchRenameToken[];
+  items: ReadonlyArray<BatchRenameItem>;
+  tokens: ReadonlyArray<BatchRenameToken>;
   defaultPattern: string;
   onRename: (request: BatchRenameRequest) => Promise<void>;
   onClose: () => void;
@@ -147,7 +149,7 @@ export function BatchRenameDialog({
   const changed = rows.filter(
     (row) => row.status === "changed" || row.status === "repeated",
   ).length;
-  const previews = items.some((item) => item.preview);
+  const previews = items.some((item) => Boolean(item.preview));
   const filled =
     mode === "replace" ? find.length > 0 : request.pattern.length > 0;
 
@@ -183,10 +185,10 @@ export function BatchRenameDialog({
         ...request,
         ids: items.map((item) => item.id),
       });
-    } catch (cause) {
+    } catch (error_) {
       setError(
         errorCopy(
-          cause,
+          error_,
           `Couldn't rename these ${noun.other.toLowerCase()}. Try again.`,
         ),
       );

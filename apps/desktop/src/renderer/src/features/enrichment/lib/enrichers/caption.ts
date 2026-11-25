@@ -1,10 +1,8 @@
 import { DEFAULT_PREFS } from "@pond/schema";
 import type { Save } from "@/features/saves/types";
 import { representativeImageUrl } from "../image";
-import {
-  type MediaUnderstandingRouter,
-  mediaUnderstandingRouter,
-} from "../media-understanding-router";
+import { mediaUnderstandingRouter } from "../media-understanding-router";
+import type { MediaUnderstandingRouter } from "../media-understanding-router";
 import type { Enricher } from "../types";
 
 export function createCaptionEnricher(
@@ -14,8 +12,12 @@ export function createCaptionEnricher(
     id: "caption",
     enabled: (prefs) => prefs?.ai?.enableCaption === true,
     eligible(save: Save, prefs = DEFAULT_PREFS.ai) {
-      if (save.status !== "complete" || save.deletedAt != null) return false;
-      if (!representativeImageUrl(save)) return false;
+      if (save.status !== "complete" || save.deletedAt !== null) {
+        return false;
+      }
+      if (!representativeImageUrl(save)) {
+        return false;
+      }
       return save.captionModel !== router.primaryModel("caption", prefs);
     },
     async run(save: Save, prefs = DEFAULT_PREFS.ai) {

@@ -1,5 +1,6 @@
 import type { Menu } from "@pond/ui";
-import { type ComponentProps, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
+import type { ComponentProps } from "react";
 
 type FilterProviderProps = ComponentProps<typeof Menu.FilterProvider>;
 type ChangeDetails = Parameters<

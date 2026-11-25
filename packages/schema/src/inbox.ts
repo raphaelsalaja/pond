@@ -56,8 +56,9 @@ export function applyInboxChange(
   if (
     !next ||
     (next.inboxState === save.inboxState && next.inboxUntil === save.inboxUntil)
-  )
+  ) {
     return null;
+  }
   return next;
 }
 
@@ -65,12 +66,17 @@ function nextInbox(
   change: InboxChange,
   save: InboxFields & { deletedAt?: unknown },
 ): InboxFields | null {
-  if (change.kind === "snooze")
+  if (change.kind === "snooze") {
     return save.deletedAt ? null : inboxFields("snoozed", change.until);
-  if (change.state === "review")
+  }
+  if (change.state === "review") {
     return save.deletedAt ? null : inboxFields("review");
-  if (change.state === null) return save.inboxState ? NOT_IN_INBOX : null;
-  if (save.inboxState !== "review" && save.inboxState !== "snoozed")
+  }
+  if (change.state === null) {
+    return save.inboxState ? NOT_IN_INBOX : null;
+  }
+  if (save.inboxState !== "review" && save.inboxState !== "snoozed") {
     return null;
+  }
   return inboxFields("processed");
 }

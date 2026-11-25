@@ -1,17 +1,12 @@
 import { IconEyeSlash } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { typeLabelForPath } from "@shared/file-format";
-import {
-  type CSSProperties,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import {
-  type StageEntry,
-  type StageRole,
-  useHeldStage,
+import { useCallback, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import { useHeldStage } from "@/features/saves/hooks/use-held-stage";
+import type {
+  StageEntry,
+  StageRole,
 } from "@/features/saves/hooks/use-held-stage";
 import { useImageDecoded } from "@/features/saves/hooks/use-image-decoded";
 import {
@@ -46,7 +41,7 @@ function inspectorFormat(save: Save): string {
   );
 }
 
-function entries(saves: readonly Save[]) {
+function entries(saves: ReadonlyArray<Save>) {
   const next = saves.map((save) => ({
     save,
     url: detailsPreviewUrl(pickCardUnit(save)),
@@ -64,7 +59,7 @@ export interface Card {
 /** Cards kept mounted after the top card, so the next ones slide in instead of popping. */
 const STACK_DEPTH = 3;
 
-export function stackCards(save: Save): Card[] {
+export function stackCards(save: Save): Array<Card> {
   return buildOriginalMediaUnits(save).flatMap((unit) => {
     const url = detailsPreviewUrl(unit);
     if (!url) return [];
@@ -162,7 +157,7 @@ function Preview({
 interface Entry {
   save: Save;
   url: string | null;
-  stack: Card[];
+  stack: Array<Card>;
 }
 
 function Layer({
@@ -222,7 +217,7 @@ export function SavePreviews({
   fileIndex = null,
   activeKey = null,
 }: {
-  saves: readonly Save[];
+  saves: ReadonlyArray<Save>;
   fileIndex?: number | null;
   /** A stack card to show on top when the viewer isn't driving `fileIndex`. */
   activeKey?: string | null;

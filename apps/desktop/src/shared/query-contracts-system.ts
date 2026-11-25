@@ -125,7 +125,7 @@ interface RetrievalHit extends RetrievalSave {
   mediaType: MediaType | null;
   savedAt: Date;
   score: number;
-  channels: ("fts" | "text" | "media" | "recent")[];
+  channels: Array<"fts" | "text" | "media" | "recent">;
 }
 interface SyncRun {
   id: number;
@@ -173,8 +173,8 @@ type Attachment = AttachmentIdentity &
         transcript: string;
         transcriptTokens: number;
         rating: number | null;
-        tags: string[];
-        folderIds: string[];
+        tags: Array<string>;
+        folderIds: Array<string>;
         mediaType: MediaType | null;
         width: number | null;
         height: number | null;
@@ -182,30 +182,32 @@ type Attachment = AttachmentIdentity &
   );
 
 export interface SystemQueryResults {
-  "watches.list": { watches: (WatchedAccount & { syncing: boolean })[] };
+  "watches.list": { watches: Array<WatchedAccount & { syncing: boolean }> };
   "watches.resolve": { ok: false } | { ok: true; target: WatchTarget };
   "watches.add":
     | { ok: false; reason: string }
     | { ok: true; watch: WatchedAccount };
   "watches.setLabel": OkResult<{ watch: WatchedAccount }>;
   "watches.remove": OkResult;
-  "agent.keys": {
+  "agent.keys": Array<{
     provider: AssistantProvider;
     hasKey: boolean;
     masked: string | null;
     enabled: boolean;
-  }[];
+  }>;
   "agent.removeKey": OkResult;
   "agent.setKeyEnabled": OkResult;
   "agent.verifyKey": OkResult;
   "agent.listModels": ProviderModelsResult;
   "agent.listAvailableModels": {
-    providers: (ProviderModelsResult & { provider: AssistantProvider })[];
+    providers: Array<ProviderModelsResult & { provider: AssistantProvider }>;
   };
-  "agent.chats": (Omit<AgentChat, "canonicalTranscript"> & {
-    fishId: string;
-  })[];
-  "agent.messages": AgentMessage[];
+  "agent.chats": Array<
+    Omit<AgentChat, "canonicalTranscript"> & {
+      fishId: string;
+    }
+  >;
+  "agent.messages": Array<AgentMessage>;
   "agent.newChat": Omit<AgentChat, "canonicalTranscript"> & { fishId: string };
   "agent.deleteChat": OkResult;
   "agent.renameChat": OkResult;
@@ -215,31 +217,31 @@ export interface SystemQueryResults {
     | {
         ok: true;
         content: string;
-        attachments: AssistantSource[];
-        files: AssistantFileAttachment[];
+        attachments: Array<AssistantSource>;
+        files: Array<AssistantFileAttachment>;
         replyToQuestion?: string;
       }
     | { ok: false; error: string };
   "agent.stop": OkResult;
-  "agent.searchSaves": { saves: RetrievalSave[] };
-  "agent.attachments": Attachment[];
+  "agent.searchSaves": { saves: Array<RetrievalSave> };
+  "agent.attachments": Array<Attachment>;
   "agent.pickAttachments":
-    | { ok: true; files: AssistantFileAttachment[] }
+    | { ok: true; files: Array<AssistantFileAttachment> }
     | { ok: false; files: []; error: string };
-  "agent.review": { changes: AssistantChange[] };
+  "agent.review": { changes: Array<AssistantChange> };
   "agent.mcpSnippet": {
     command: string;
-    args: string[];
+    args: Array<string>;
     json: string;
     app: string;
   };
-  "agent.mcpClients": { clients: McpClientStatus[] };
+  "agent.mcpClients": { clients: Array<McpClientStatus> };
   "agent.openMcpInstall": OkResult;
   "saves.understandMedia": MediaUnderstandResult;
-  "saves.retrieve": { hits: RetrievalHit[]; saves: RetrievalSave[] };
-  "sync.history": { runs: SyncRun[] };
-  "sync.recent": { runs: SyncRun[] };
-  "sync.runs": { runs: SyncRun[] };
+  "saves.retrieve": { hits: Array<RetrievalHit>; saves: Array<RetrievalSave> };
+  "sync.history": { runs: Array<SyncRun> };
+  "sync.recent": { runs: Array<SyncRun> };
+  "sync.runs": { runs: Array<SyncRun> };
   "sync.stats": {
     itemsSynced: number;
     itemsSyncedPrev: number;
@@ -264,19 +266,19 @@ export interface SystemQueryResults {
   "settings.setSourceDownloadsCustom": OkResult<DownloadSettingsResult>;
   "settings.ingestToken": { token: string | null };
   "settings.rotateIngestToken": { token: string };
-  "apiTokens.list": { tokens: ApiTokenInfo[] };
+  "apiTokens.list": { tokens: Array<ApiTokenInfo> };
   "apiTokens.create": { token: string; info: ApiTokenInfo };
   "apiTokens.revoke": { ok: boolean };
   "settings.getOnboarded": { onboarded: boolean };
   "settings.setOnboarded": OkResult;
   "autoImport.status": Prefs["autoImport"] & {
-    history: {
+    history: Array<{
       at: number;
       name: string;
       mode: "copy" | "move";
       ok: boolean;
       id?: string;
-    }[];
+    }>;
   };
   "autoImport.set": OkResult;
   "autoImport.pickFolder": ReasonResult<"cancelled", { path: string }>;
@@ -296,8 +298,8 @@ export interface SystemQueryResults {
   "library.openInFinder": OkResult;
   "library.exportDebugReport": CancellableResult<{ path: string }>;
   "library.verifyIntegrity": OkResult<{
-    orphans?: string[];
-    missing?: string[];
+    orphans?: Array<string>;
+    missing?: Array<string>;
     errors?: Record<string, string>;
     totalIndexed?: number;
     totalOnDisk?: number;

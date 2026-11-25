@@ -2,10 +2,9 @@ import {
   buildWhere,
   colorNear,
   matches,
-  type Query,
   queryIsFullySqlSupported,
-  type SaveLike,
 } from "@pond/schema/filters";
+import type { Query, SaveLike } from "@pond/schema/filters";
 import Database from "better-sqlite3";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { describe, expect, it } from "vitest";
@@ -22,7 +21,7 @@ function nativeSqliteAvailable(): boolean {
   }
 }
 
-const examples: SaveLike[] = [
+const examples: Array<SaveLike> = [
   {
     id: "cat",
     source: "local",
@@ -59,7 +58,7 @@ const examples: SaveLike[] = [
   },
 ];
 
-const webExamples: SaveLike[] = [
+const webExamples: Array<SaveLike> = [
   {
     id: "shop",
     source: "web",
@@ -91,7 +90,11 @@ const webExamples: SaveLike[] = [
   },
 ];
 
-function splitExample(id: string, sourceId: string, media: number[]): SaveLike {
+function splitExample(
+  id: string,
+  sourceId: string,
+  media: Array<number>,
+): SaveLike {
   return {
     id,
     source: "instagram",
@@ -107,7 +110,18 @@ function splitExample(id: string, sourceId: string, media: number[]): SaveLike {
   };
 }
 
-function fixture(rows: SaveLike[] = examples) {
+/** The in-memory engine's answer, which the SQL compiler must agree with. */
+function matchingIds(query: Query, rows: Array<SaveLike>): Array<string> {
+  const ids: Array<string> = [];
+  for (const save of rows) {
+    if (matches(query, save)) {
+      ids.push(save.id);
+    }
+  }
+  return ids;
+}
+
+function fixture(rows: Array<SaveLike> = examples) {
   const db = new Database(":memory:");
   db.exec(`CREATE TABLE saves (id TEXT, title TEXT, tags TEXT, width INTEGER, height INTEGER, dominant_colors TEXT, sensitive_score REAL, files TEXT, source TEXT, media_type TEXT, raw_json TEXT, raw_slim TEXT, favorite INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE folders (id TEXT PRIMARY KEY, name TEXT);
@@ -144,14 +158,15 @@ function fixture(rows: SaveLike[] = examples) {
       save.favorite ? 1 : 0,
     );
     db.prepare("INSERT INTO saves_fts VALUES (?, ?)").run(save.id, save.title);
-    for (const folder of save.folderIds ?? [])
+    for (const folder of save.folderIds ?? []) {
       db.prepare("INSERT INTO save_folders VALUES (?, ?)").run(save.id, folder);
+    }
   }
   return db;
 }
 
 describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
-  const queries: Query[] = [
+  const queries: Array<Query> = [
     {
       combinator: "and",
       not: true,
@@ -262,10 +277,7 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
             .all(...compiled.params),
         );
       expect(rows.map((row) => row.id)).toEqual(
-        examples
-          .filter((save) => matches(query, save))
-          .map((save) => save.id)
-          .sort(),
+        matchingIds(query, examples).sort(),
       );
       expect(queryIsFullySqlSupported(query)).toBe(true);
     } finally {
@@ -273,39 +285,37 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
     }
   });
 
-  it.each(["product", "link"])(
-    "agrees with in-memory evaluation for the %s type",
-    (type) => {
-      const rows = [...examples, ...webExamples];
-      const query: Query = {
-        combinator: "and",
-        rules: [{ field: "type", operator: "eq", value: type }],
-      };
-      const db = fixture(rows);
-      try {
-        const where = buildWhere(query);
-        if (!where) throw new Error("Expected a filter predicate");
-        const compiled = new SQLiteSyncDialect().sqlToQuery(where);
-        const found = z
-          .array(z.object({ id: z.string() }))
-          .parse(
-            db
-              .prepare(`SELECT id FROM saves WHERE ${compiled.sql} ORDER BY id`)
-              .all(...compiled.params),
-          );
-        expect(found.map((row) => row.id)).toEqual([
-          type === "product" ? "shop" : "site",
-        ]);
-        expect(
-          rows.filter((save) => matches(query, save)).map((save) => save.id),
-        ).toEqual([type === "product" ? "shop" : "site"]);
-      } finally {
-        db.close();
+  it.each([
+    ["product", "shop"],
+    ["link", "site"],
+  ])("agrees with in-memory evaluation for the %s type", (type, expected) => {
+    const rows = [...examples, ...webExamples];
+    const query: Query = {
+      combinator: "and",
+      rules: [{ field: "type", operator: "eq", value: type }],
+    };
+    const db = fixture(rows);
+    try {
+      const where = buildWhere(query);
+      if (!where) {
+        throw new Error("Expected a filter predicate");
       }
-    },
-  );
+      const compiled = new SQLiteSyncDialect().sqlToQuery(where);
+      const found = z
+        .array(z.object({ id: z.string() }))
+        .parse(
+          db
+            .prepare(`SELECT id FROM saves WHERE ${compiled.sql} ORDER BY id`)
+            .all(...compiled.params),
+        );
+      expect(found.map((row) => row.id)).toEqual([expected]);
+      expect(matchingIds(query, rows)).toEqual([expected]);
+    } finally {
+      db.close();
+    }
+  });
 
-  it.each<["eq" | "neq", string, string[]]>([
+  it.each<["eq" | "neq", string, Array<string>]>([
     ["eq", "instagram:DAbC", ["post-a", "post-b"]],
     ["eq", "instagram:dAbC", []],
     ["eq", "x:DAbC", []],
@@ -338,8 +348,7 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
         expect(found.map((row) => row.id)).toEqual(ids);
         expect(
           rows
-            .filter((save) => matches(query, save))
-            .map((save) => save.id)
+            .flatMap((save) => (matches(query, save) ? [save.id] : []))
             .sort(),
         ).toEqual(ids);
         expect(queryIsFullySqlSupported(query)).toBe(true);
@@ -357,7 +366,7 @@ describe.skipIf(!nativeSqliteAvailable())("filter engine parity", () => {
         ['"cat food"', ["cat"]],
         ["-cat", ["dog", "none"]],
         ["cat OR -store", ["cat", "none"]],
-      ] satisfies Array<[string, string[]]>) {
+      ] satisfies Array<[string, Array<string>]>) {
         const where = compileKeywordWhere(query);
         if (!where) throw new Error("Expected a keyword predicate");
         const compiled = new SQLiteSyncDialect().sqlToQuery(where);

@@ -1,6 +1,7 @@
 import { runInNewContext } from "node:vm";
 import { JSDOM } from "jsdom";
 import { expect, it } from "vitest";
+import type { ListHarvestResult } from "../list-types";
 import { buildYoutubeListExpression } from "./list";
 
 const lockup = `<yt-lockup-view-model>
@@ -21,14 +22,20 @@ function runList(body: string, loggedIn: boolean) {
     `<!doctype html><html><body>${body}</body></html>`,
     { url: "https://www.youtube.com/playlist?list=WL" },
   );
-  return runInNewContext(buildYoutubeListExpression({ knownIds: [] }), {
-    document: window.document,
-    location: window.location,
-    window: { scrollBy: () => {}, innerHeight: 800 },
-    ytcfg: { get: (key: string) => (key === "LOGGED_IN" ? loggedIn : null) },
-    URL,
-    setTimeout: (fn: () => void) => setTimeout(fn, 0),
-  });
+  const result: Promise<ListHarvestResult> = runInNewContext(
+    buildYoutubeListExpression({ knownIds: [] }),
+    {
+      document: window.document,
+      location: window.location,
+      window: { scrollBy: () => {}, innerHeight: 800 },
+      ytcfg: {
+        get: (key: string) => (key === "LOGGED_IN" ? loggedIn : null),
+      },
+      URL,
+      setTimeout: (fn: () => void) => setTimeout(fn, 0),
+    },
+  );
+  return result;
 }
 
 it("reports a signed-out session instead of an empty list", async () => {
@@ -42,14 +49,18 @@ it("reports a signed-out session instead of an empty list", async () => {
 
 it("reads playlist items rendered as lockups", async () => {
   const result = await runList(lockup, true);
-  expect(result.entries).toEqual([
-    {
-      sourceId: "fOT0BUpITw8",
-      url: "https://www.youtube.com/watch?v=fOT0BUpITw8",
-      title: "BELLAKEO",
-      author: "Peso Pluma",
-      mediaUrl: "https://i.ytimg.com/vi/fOT0BUpITw8/hqdefault.jpg",
-      mediaType: "video",
-    },
-  ]);
+  expect(result).toEqual(
+    expect.objectContaining({
+      entries: [
+        {
+          sourceId: "fOT0BUpITw8",
+          url: "https://www.youtube.com/watch?v=fOT0BUpITw8",
+          title: "BELLAKEO",
+          author: "Peso Pluma",
+          mediaUrl: "https://i.ytimg.com/vi/fOT0BUpITw8/hqdefault.jpg",
+          mediaType: "video",
+        },
+      ],
+    }),
+  );
 });

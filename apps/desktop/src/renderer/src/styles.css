@@ -16,40 +16,40 @@
   font-family: allo-variable;
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
   src: url("./assets/fonts/allo/variable.woff2") format("woff2");
+  font-display: swap;
 }
 
 @font-face {
   font-family: allo-variable;
   font-style: italic;
   font-weight: 400;
-  font-display: swap;
   src: url("./assets/fonts/allo/oblique-400.woff2") format("woff2");
+  font-display: swap;
 }
 
 @font-face {
   font-family: allo-variable;
   font-style: italic;
   font-weight: 500;
-  font-display: swap;
   src: url("./assets/fonts/allo/oblique-500.woff2") format("woff2");
+  font-display: swap;
 }
 
 @font-face {
   font-family: allo-variable;
   font-style: italic;
   font-weight: 600;
-  font-display: swap;
   src: url("./assets/fonts/allo/oblique-600.woff2") format("woff2");
+  font-display: swap;
 }
 
 @font-face {
   font-family: allo-variable;
   font-style: italic;
   font-weight: 700;
-  font-display: swap;
   src: url("./assets/fonts/allo/oblique-700.woff2") format("woff2");
+  font-display: swap;
 }
 
 /* Same metrics as Allo; covers the symbols, Greek and Cyrillic Allo lacks. */
@@ -57,43 +57,43 @@
   font-family: inter-variable;
   font-style: normal;
   font-weight: 100 900;
-  font-display: swap;
   src: url("./assets/fonts/inter/variable.woff2") format("woff2");
+  font-display: swap;
 }
 
 @font-face {
   font-family: inter-variable;
   font-style: italic;
   font-weight: 100 900;
-  font-display: swap;
   src: url("./assets/fonts/inter/variable-italic.woff2") format("woff2");
+  font-display: swap;
 }
 
 @font-face {
   font-family: jetbrains-mono;
   font-style: normal;
   font-weight: 400;
-  font-display: swap;
   src: url("./assets/fonts/jetbrains-mono/latin-400-normal.woff2")
     format("woff2");
+  font-display: swap;
 }
 
 @font-face {
   font-family: jetbrains-mono;
   font-style: normal;
   font-weight: 500;
-  font-display: swap;
   src: url("./assets/fonts/jetbrains-mono/latin-500-normal.woff2")
     format("woff2");
+  font-display: swap;
 }
 
 @font-face {
   font-family: jetbrains-mono;
   font-style: normal;
   font-weight: 600;
-  font-display: swap;
   src: url("./assets/fonts/jetbrains-mono/latin-600-normal.woff2")
     format("woff2");
+  font-display: swap;
 }
 
 :root {

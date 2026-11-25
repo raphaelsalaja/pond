@@ -1,11 +1,19 @@
 import type { SaveLike } from "./save-like";
 
+function isDate(v: string | Date | number): v is Date {
+  return Object.prototype.toString.call(v) === "[object Date]";
+}
+
 export function toMillis(
   v: string | Date | number | null | undefined,
 ): number | null {
-  if (v == null) return null;
-  const ms = v instanceof Date ? v.getTime() : Number.parseFloat(String(v));
-  if (Number.isFinite(ms)) return ms;
+  if (v === null || v === undefined) {
+    return null;
+  }
+  const ms = isDate(v) ? v.getTime() : Number.parseFloat(String(v));
+  if (Number.isFinite(ms)) {
+    return ms;
+  }
   const parsed = Date.parse(String(v));
   return Number.isFinite(parsed) ? parsed : null;
 }

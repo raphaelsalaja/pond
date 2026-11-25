@@ -1,9 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo } from "react";
-import {
-  BatchRenameDialog,
-  type BatchRenameItem,
-} from "@/features/library/components/batch-rename";
+import { BatchRenameDialog } from "@/features/library/components/batch-rename";
+import type { BatchRenameItem } from "@/features/library/components/batch-rename";
 import { closeRenameDialog } from "@/features/library/state/rename-dialog";
 import { CardThumb } from "@/features/saves";
 import {
@@ -27,7 +25,7 @@ export function RenameDialog({
   ids,
   open,
 }: {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   open: boolean;
 }) {
   const saves = useSelector(
@@ -44,8 +42,10 @@ export function RenameDialog({
   }, [ids]);
   const items = useMemo(
     () =>
-      saves.flatMap((save): BatchRenameItem[] => {
-        if (!save) return [];
+      saves.flatMap((save): Array<BatchRenameItem> => {
+        if (!save) {
+          return [];
+        }
         const path = save.files[0]?.path;
         return [
           {

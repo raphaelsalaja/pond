@@ -42,9 +42,11 @@ export function createFishHandoff(deps: FishHandoffDeps) {
       if (!win || win.isDestroyed()) return;
       const payload: FishOpen = { fishId, saveIds: receipt.saveIds };
       const send = () => win.webContents.send(IPC.fishOpen, payload);
-      if (win.webContents.isLoading())
+      if (win.webContents.isLoading()) {
         win.webContents.once("did-finish-load", send);
-      else send();
+      } else {
+        send();
+      }
     },
   };
 }

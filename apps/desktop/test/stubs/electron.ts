@@ -1,7 +1,12 @@
 import { tmpdir } from "node:os";
 
+const paths = new Map<string, string>();
+
 export const app = {
-  getPath: () => tmpdir(),
+  getPath: (name: string) => paths.get(name) ?? tmpdir(),
+  setPath: (name: string, path: string) => {
+    paths.set(name, path);
+  },
   getVersion: () => "0.0.0",
   isPackaged: false,
 };
@@ -10,7 +15,7 @@ export const session = {};
 export const net = {};
 /** Tests open no windows, so main-process broadcasts reach none. */
 export class BrowserWindow {
-  static getAllWindows(): BrowserWindow[] {
+  static getAllWindows(): Array<BrowserWindow> {
     return [];
   }
   isDestroyed(): boolean {

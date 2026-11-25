@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { Combobox } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 const TAGS = ["Reference", "Design", "Typography", "Moodboard"];
 
@@ -7,7 +7,7 @@ function TagField({
   defaultValue = [],
   disabled,
 }: {
-  defaultValue?: string[];
+  defaultValue?: Array<string>;
   disabled?: boolean;
 }) {
   return (
@@ -19,7 +19,7 @@ function TagField({
     >
       <Combobox.InputGroup>
         <Combobox.Value>
-          {(selected: string[]) => (
+          {(selected: Array<string>) => (
             <Combobox.Chips>
               {selected.map((tag) => (
                 <Combobox.Chip key={tag}>

@@ -25,7 +25,7 @@ interface ItemBase {
   title: string;
   description?: ReactNode;
   tooltip?: string;
-  keywords?: string[];
+  keywords?: Array<string>;
   visible?: (values: SettingsValues) => boolean;
   disabled?: (values: SettingsValues) => boolean;
   apply?: () => void;
@@ -35,7 +35,11 @@ interface ItemBase {
 export type FieldItem = ItemBase &
   (
     | { control: "switch" }
-    | { control: "select"; options: SelectOption[]; placeholder?: ReactNode }
+    | {
+        control: "select";
+        options: Array<SelectOption>;
+        placeholder?: ReactNode;
+      }
     | {
         control: "range";
         min: number;
@@ -66,7 +70,7 @@ export interface ButtonItem {
   title: string;
   description?: ReactNode;
   tooltip?: string;
-  keywords?: string[];
+  keywords?: Array<string>;
   label: ReactNode;
   variant?: "secondary" | "destructive";
   visible?: (values: SettingsValues) => boolean;
@@ -79,7 +83,7 @@ export interface CustomItem {
   control: "custom";
   key: string;
   title?: string;
-  keywords?: string[];
+  keywords?: Array<string>;
   visible?: (values: SettingsValues) => boolean;
   disabled?: (values: SettingsValues) => boolean;
   prefsKey?: keyof Prefs;
@@ -95,7 +99,7 @@ export interface GroupConfig {
   anchor?: string;
   visible?: (values: SettingsValues) => boolean;
   fullWidth?: boolean;
-  items?: Item[];
+  items?: Array<Item>;
   render?: (binding: Binding) => ReactNode;
   prefsKey?: keyof Prefs;
   useBinding?: () => Binding;
@@ -104,16 +108,16 @@ export interface GroupConfig {
 export interface SectionConfig {
   title?: ReactNode;
   description?: ReactNode;
-  keywords?: string[];
+  keywords?: Array<string>;
   prefsKey?: keyof Prefs;
   useBinding?: () => Binding;
-  groups?: GroupConfig[];
+  groups?: Array<GroupConfig>;
   component?: ComponentType;
 }
 
 type FieldControl =
   | { control: "switch" }
-  | { control: "select"; options: SelectOption[]; placeholder?: ReactNode }
+  | { control: "select"; options: Array<SelectOption>; placeholder?: ReactNode }
   | {
       control: "range";
       min: number;
@@ -141,7 +145,7 @@ interface FieldMeta {
   title: string;
   description?: ReactNode;
   tooltip?: string;
-  keywords?: string[];
+  keywords?: Array<string>;
   visible?: (values: SettingsValues) => boolean;
   disabled?: (values: SettingsValues) => boolean;
   apply?: () => void;
@@ -165,22 +169,22 @@ interface TypedGroupInput<V> {
   anchor?: string;
   visible?: (values: SettingsValues) => boolean;
   fullWidth?: boolean;
-  items?: TypedItem<V>[];
+  items?: Array<TypedItem<V>>;
   render?: (binding: Binding) => ReactNode;
 }
 
 interface TypedSectionInput<V> {
   title?: ReactNode;
   description?: ReactNode;
-  keywords?: string[];
-  groups: TypedGroupInput<V>[];
+  keywords?: Array<string>;
+  groups: Array<TypedGroupInput<V>>;
 }
 
 interface CustomSectionInput {
   title?: ReactNode;
   description?: ReactNode;
-  keywords?: string[];
-  groups: GroupConfig[];
+  keywords?: Array<string>;
+  groups: Array<GroupConfig>;
 }
 
 export function defineSection<K extends keyof Prefs>(

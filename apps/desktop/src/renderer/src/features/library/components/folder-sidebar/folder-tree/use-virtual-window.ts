@@ -1,11 +1,11 @@
 import {
-  type RefObject,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import type { RefObject } from "react";
 
 /** One tree row: a 28px `Sidebar.Item`; rows sit flush. */
 export const FOLDER_ROW_SLOT = 28;
@@ -37,7 +37,7 @@ function findScroller(element: HTMLElement | null): HTMLElement | null {
 export function useVirtualWindow<T extends HTMLElement>(
   containerRef: RefObject<T | null>,
   count: number,
-  focusIds: readonly string[],
+  focusIds: ReadonlyArray<string>,
   indexOf: (id: string) => number | undefined,
 ): RowWindow {
   const [range, setRange] = useState<RowWindow>(() => ({
@@ -89,7 +89,6 @@ export function useVirtualWindow<T extends HTMLElement>(
   }, [count, focusIds, indexOf, containerRef]);
 
   const applyRef = useRef(apply);
-  applyRef.current = apply;
 
   const schedule = useCallback(() => {
     if (rafRef.current) return;
@@ -100,6 +99,7 @@ export function useVirtualWindow<T extends HTMLElement>(
   }, []);
 
   useLayoutEffect(() => {
+    applyRef.current = apply;
     apply();
   }, [apply]);
 

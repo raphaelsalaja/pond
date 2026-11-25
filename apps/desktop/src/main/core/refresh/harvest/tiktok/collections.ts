@@ -24,7 +24,10 @@ async function inPageTiktokCollections(): Promise<CollectionsReply> {
   if (location.pathname.startsWith("/login")) {
     return { ok: false, reason: "auth_required" };
   }
-  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const wait = (ms: number) =>
+    new Promise((r) => {
+      setTimeout(r, ms);
+    });
   const find = async (
     selector: string,
     timeoutMs: number,
@@ -41,20 +44,23 @@ async function inPageTiktokCollections(): Promise<CollectionsReply> {
   const favorites = await find('[data-e2e="favorites-tab"]', 10_000);
   if (!favorites) return { ok: false, reason: "unknown" };
   favorites.click();
-  const section = await find('[data-e2e="sub-tab-collections"]', 8_000);
-  if (!section) return { ok: true, collections: [] };
+  const section = await find('[data-e2e="sub-tab-collections"]', 8000);
+  if (!section) {
+    return { ok: true, collections: [] };
+  }
   /** The section switcher changes tab on focus, not click. */
   section.focus();
   section.click();
 
   const CARD = '[data-e2e="collection-list-item"]';
-  await find(CARD, 6_000);
+  await find(CARD, 6000);
   let last = -1;
   let stable = 0;
   for (let round = 0; round < 40 && stable < 3; round++) {
     const count = document.querySelectorAll(CARD).length;
-    if (count === last) stable += 1;
-    else {
+    if (count === last) {
+      stable += 1;
+    } else {
       stable = 0;
       last = count;
     }
@@ -69,8 +75,10 @@ async function inPageTiktokCollections(): Promise<CollectionsReply> {
     const link = card.querySelector<HTMLAnchorElement>(
       'a[href*="/collection/"]',
     );
-    if (!link) continue;
-    let path = "";
+    if (!link) {
+      continue;
+    }
+    let path: string;
     try {
       path = decodeURIComponent(new URL(link.href, location.origin).pathname);
     } catch {
@@ -84,7 +92,7 @@ async function inPageTiktokCollections(): Promise<CollectionsReply> {
     const labels = card.querySelectorAll(
       '[data-e2e="collection-card-footer"] span',
     );
-    const digits = (labels[1]?.textContent ?? "").replace(/\D/g, "");
+    const digits = (labels[1]?.textContent ?? "").replaceAll(/\D/g, "");
     collections.push({
       id,
       name: labels[0]?.textContent?.trim() || title,

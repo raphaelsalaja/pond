@@ -29,10 +29,10 @@ export interface ComponentDocs {
   name: string;
   tier: ComponentTier;
   summary: string;
-  parts: readonly Part[];
-  keyboard: readonly KeyBinding[];
-  accessibility: readonly string[];
-  examples: readonly Example[];
+  parts: ReadonlyArray<Part>;
+  keyboard: ReadonlyArray<KeyBinding>;
+  accessibility: ReadonlyArray<string>;
+  examples: ReadonlyArray<Example>;
 }
 
 export const TIER_LABELS = {

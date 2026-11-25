@@ -1,12 +1,11 @@
-import { type ButtonProps, PickerPanel } from "@pond/ui";
+import { PickerPanel } from "@pond/ui";
+import type { ButtonProps } from "@pond/ui";
 import { createContext, use, useCallback, useMemo, useState } from "react";
 import type { Save } from "@/features/saves/types";
 import { TagMenu } from "@/features/tags/components/menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
-import {
-  type TagGroupRow,
-  useTagGroups,
-} from "@/features/tags/state/tag-groups";
+import { useTagGroups } from "@/features/tags/state/tag-groups";
+import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import { useTags } from "@/features/tags/state/tags";
 import { usePrefs } from "@/shared/state/prefs";
 

@@ -7,7 +7,8 @@ import { applyImageTransformToFile } from "../../core/image-transform";
 import { getPrefs, setPrefs } from "../../core/prefs";
 import { probeVideoDims } from "../../lib/video-dims";
 import { resolveSaveFilePath } from "../helpers";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 export const inspectQueries = {
   "saves.cropAsCopy": query(

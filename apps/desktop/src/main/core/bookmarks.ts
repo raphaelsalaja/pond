@@ -6,7 +6,8 @@ import type { SavesImportCounts } from "@shared/saves-contracts-shared";
 import { z } from "zod";
 import { addSavesToFolder, importFolderTree } from "./folders";
 import { persistSave } from "./persist-save";
-import { type EnqueueOneResult, enqueue } from "./pipeline/enqueue";
+import { enqueue } from "./pipeline/enqueue";
+import type { EnqueueOneResult } from "./pipeline/enqueue";
 
 export interface BookmarkFolder {
   id: string;
@@ -18,13 +19,13 @@ export interface BookmarkFolder {
 export interface Bookmark {
   url: string;
   addedAt: Date | null;
-  folderIds: string[];
-  listKinds?: ListKind[];
+  folderIds: Array<string>;
+  listKinds?: Array<ListKind>;
 }
 
 export interface BookmarkFile {
-  bookmarks: Bookmark[];
-  folders: BookmarkFolder[];
+  bookmarks: Array<Bookmark>;
+  folders: Array<BookmarkFolder>;
 }
 
 const TOKEN_RE =
@@ -50,7 +51,7 @@ interface ChromiumNode {
   name?: string;
   url?: string;
   date_added?: string;
-  children?: ChromiumNode[];
+  children?: Array<ChromiumNode>;
 }
 
 const ChromiumNodeSchema: z.ZodType<ChromiumNode> = z.lazy(() =>
@@ -72,18 +73,22 @@ const ChromiumBookmarksSchema = z.object({
 });
 
 function decodeEntities(text: string): string {
-  return text.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (match, entity) => {
-    const code = entity.startsWith("#x")
-      ? Number.parseInt(entity.slice(2), 16)
-      : entity.startsWith("#")
-        ? Number.parseInt(entity.slice(1), 10)
-        : null;
-    if (code !== null)
-      return Number.isFinite(code) && code <= 0x10ffff
-        ? String.fromCodePoint(code)
-        : match;
-    return ENTITIES.get(entity.toLowerCase()) ?? match;
-  });
+  return text.replaceAll(
+    /&(#x[\da-f]+|#\d+|[a-z]+);/gi,
+    (match: string, entity: string) => {
+      const code = entity.startsWith("#x")
+        ? Number.parseInt(entity.slice(2), 16)
+        : entity.startsWith("#")
+          ? Number.parseInt(entity.slice(1), 10)
+          : null;
+      if (code !== null) {
+        return Number.isFinite(code) && code <= 0x10_ff_ff
+          ? String.fromCodePoint(code)
+          : match;
+      }
+      return ENTITIES.get(entity.toLowerCase()) ?? match;
+    },
+  );
 }
 
 function webUrl(raw: string): string | null {
@@ -104,7 +109,7 @@ function epochDate(value: number): Date | null {
 }
 
 class BookmarkCollector {
-  readonly folders: BookmarkFolder[] = [];
+  readonly folders: Array<BookmarkFolder> = [];
   private readonly byUrl = new Map<string, Bookmark>();
   private readonly childCounts = new Map<string | null, number>();
 
@@ -131,10 +136,12 @@ class BookmarkCollector {
       });
       return;
     }
-    if (folderId && !existing.folderIds.includes(folderId))
+    if (folderId && !existing.folderIds.includes(folderId)) {
       existing.folderIds.push(folderId);
-    if (addedAt && (!existing.addedAt || addedAt < existing.addedAt))
+    }
+    if (addedAt && (!existing.addedAt || addedAt < existing.addedAt)) {
       existing.addedAt = addedAt;
+    }
   }
 
   result(): BookmarkFile {
@@ -153,7 +160,7 @@ export function parseNetscapeBookmarks(html: string): BookmarkFile {
       pending = ROOT_FOLDER_RE.test(folderAttrs)
         ? parentId
         : collector.addFolder(
-            decodeEntities(folderName?.replace(/<[^>]*>/g, "") ?? ""),
+            decodeEntities(folderName?.replaceAll(/<[^>]*>/g, "") ?? ""),
             parentId,
           );
     } else if (linkAttrs !== undefined) {
@@ -192,12 +199,16 @@ export function parseChromiumBookmarks(text: string): BookmarkFile | null {
     return null;
   }
   const collector = new BookmarkCollector();
-  const walk = (children: ChromiumNode[] = [], folderId: string | null) => {
+  const walk = (
+    children: Array<ChromiumNode> = [],
+    folderId: string | null,
+  ) => {
     for (const child of children) {
       if (child.type === "url" && child.url) {
         const url = webUrl(child.url);
-        if (url)
+        if (url) {
           collector.addBookmark(url, chromiumDate(child.date_added), folderId);
+        }
       } else if (child.type === "folder") {
         walk(child.children, collector.addFolder(child.name ?? "", folderId));
       }
@@ -217,11 +228,13 @@ export function parseBookmarkFile(text: string): BookmarkFile | null {
 export interface BookmarkImportDependencies {
   enqueueLink: (
     url: string,
-    listKinds: ListKind[] | undefined,
+    listKinds: Array<ListKind> | undefined,
   ) => Promise<EnqueueOneResult>;
   persistImported: (id: string, patch: Partial<NewSave>) => Promise<void>;
-  importFolders: (folders: BookmarkFolder[]) => Promise<Map<string, string>>;
-  addToFolder: (folderId: string, saveIds: string[]) => Promise<OkSuccess>;
+  importFolders: (
+    folders: Array<BookmarkFolder>,
+  ) => Promise<Map<string, string>>;
+  addToFolder: (folderId: string, saveIds: Array<string>) => Promise<OkSuccess>;
 }
 
 const defaultDependencies: BookmarkImportDependencies = {
@@ -274,13 +287,14 @@ export async function importBookmarkFile(
         let at = byId.get(id);
         at;
         at = at.parentId ? byId.get(at.parentId) : undefined
-      )
+      ) {
         needed.add(at.id);
+      }
     }
     const mapped = await dependencies.importFolders(
       file.folders.filter((folder) => needed.has(folder.id)),
     );
-    const members = new Map<string, string[]>();
+    const members = new Map<string, Array<string>>();
     for (const { id, bookmark } of created) {
       for (const folderId of bookmark.folderIds) {
         const pondId = mapped.get(folderId);
@@ -288,8 +302,9 @@ export async function importBookmarkFile(
         members.set(pondId, [...(members.get(pondId) ?? []), id]);
       }
     }
-    for (const [folderId, saveIds] of members)
+    for (const [folderId, saveIds] of members) {
       await dependencies.addToFolder(folderId, saveIds);
+    }
   }
   return { ok: true, imported, skipped };
 }

@@ -77,7 +77,7 @@ export interface TiktokVideoPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: TiktokMedia[];
+  mediaUrls?: Array<TiktokMedia>;
   mediaType?: MediaType;
   meta?: TiktokVideoMeta;
 }
@@ -183,10 +183,17 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
         `script#${varName}, script[id="${varName}"]`,
       );
       if (script?.textContent) {
-        return JSON.parse(script.textContent);
+        const parsed: unknown = JSON.parse(script.textContent);
+        return isHydration(parsed) ? parsed : null;
       }
-    } catch {}
+    } catch {
+      /** Unparseable hydration falls back to the copy the page inlined. */
+    }
     return inlined || null;
+  }
+
+  function isHydration(value: unknown): value is TiktokHydration {
+    return validators.object.safeParse(value).success;
   }
 
   function isItemStruct(
@@ -231,15 +238,25 @@ export function inPageTiktokNormalize(validators: BrowserValidators) {
     const stats = item.stats;
     if (stats) {
       const metrics: NonNullable<TiktokVideoMeta["metrics"]> = {};
-      if (stats.diggCount !== undefined) metrics.likes = stats.diggCount;
-      if (stats.commentCount !== undefined)
+      if (stats.diggCount !== undefined) {
+        metrics.likes = stats.diggCount;
+      }
+      if (stats.commentCount !== undefined) {
         metrics.comments = stats.commentCount;
-      if (stats.shareCount !== undefined) metrics.shares = stats.shareCount;
-      if (stats.playCount !== undefined) metrics.plays = stats.playCount;
+      }
+      if (stats.shareCount !== undefined) {
+        metrics.shares = stats.shareCount;
+      }
+      if (stats.playCount !== undefined) {
+        metrics.plays = stats.playCount;
+      }
       /** collectCount is TikTok's "Favorites" button, the equivalent of bookmarks elsewhere. */
-      if (stats.collectCount !== undefined)
+      if (stats.collectCount !== undefined) {
         metrics.bookmarks = stats.collectCount;
-      if (Object.keys(metrics).length > 0) meta.metrics = metrics;
+      }
+      if (Object.keys(metrics).length > 0) {
+        meta.metrics = metrics;
+      }
     }
 
     const music = item.music;

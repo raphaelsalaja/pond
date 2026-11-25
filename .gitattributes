@@ -1,4 +1,4 @@
-# Normalize to LF on every platform: Biome and the shell hooks in .husky expect
+# Normalize to LF on every platform: Oxfmt and the shell hooks in .husky expect
 # it, and Windows checkouts must not rewrite files to CRLF.
 * text=auto eol=lf
 

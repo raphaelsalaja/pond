@@ -3,7 +3,8 @@ import { existsSync } from "node:fs";
 import { mkdir, stat } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
 import log from "electron-log/main.js";
-import sharp, { type Metadata } from "sharp";
+import sharp from "sharp";
+import type { Metadata } from "sharp";
 import { eagleFormatGroup } from "../../shared/eagle-formats";
 import { THUMBNAIL_CACHE_VERSION } from "../../shared/media-index";
 import { thumbnailSidecarCandidates } from "../../shared/save-file-names";
@@ -13,10 +14,9 @@ import {
   isIsoBaseMediaHeader,
   isRasterImageHeader,
   NATIVE_RASTER_EXT,
-  type ThumbnailKind,
-  type ThumbnailPriority,
   thumbnailKindForExtension,
 } from "../lib/thumbnail";
+import type { ThumbnailKind, ThumbnailPriority } from "../lib/thumbnail";
 import { thumbnailCacheRoot } from "../paths";
 import { extractOfficePreview } from "./office-preview";
 import { extractRawPreviewJpeg } from "./raw-preview";
@@ -127,7 +127,7 @@ async function generate(
 }
 
 async function generateMany(
-  outputs: readonly ThumbnailOutput[],
+  outputs: ReadonlyArray<ThumbnailOutput>,
   dir: string,
   sourcePath: string,
   kind: ThumbnailKind,
@@ -162,13 +162,13 @@ async function generateMany(
             bytes.fill(0);
           }
           results.set(out, out);
-        } catch (err) {
-          log.warn("[pond thumbnail] width failed", sourcePath, width, err);
+        } catch (error) {
+          log.warn("[pond thumbnail] width failed", sourcePath, width, error);
         }
       }
       return results;
-    } catch (err) {
-      log.warn("[pond thumbnail] generate failed", sourcePath, err);
+    } catch (error) {
+      log.warn("[pond thumbnail] generate failed", sourcePath, error);
       return results;
     }
   });
@@ -278,7 +278,9 @@ async function importedThumbnailSidecarPipeline(sourcePath: string): Promise<{
         failOn: "none",
       });
       return { pipeline, metadata: await pipeline.metadata() };
-    } catch {}
+    } catch {
+      /** An unreadable sidecar falls through to the next candidate. */
+    }
   }
   return null;
 }
@@ -338,7 +340,7 @@ async function osNativeThumbnail(
 
 async function readFileHeader(sourcePath: string): Promise<Buffer> {
   const { originalSize } = await libraryMediaMetadata(sourcePath);
-  const chunks: Buffer[] = [];
+  const chunks: Array<Buffer> = [];
   for await (const chunk of readLibraryMediaRange({
     path: sourcePath,
     start: 0,
@@ -350,5 +352,5 @@ async function readFileHeader(sourcePath: string): Promise<Buffer> {
 }
 
 function sanitizeSegment(value: string): string {
-  return value.replace(/[^a-zA-Z0-9_-]/g, "_");
+  return value.replaceAll(/[^a-zA-Z0-9_-]/g, "_");
 }

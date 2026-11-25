@@ -6,7 +6,7 @@ export interface QuickCapturePlan {
   /** Null when everything dropped is a Save already. */
   draft: CaptureDraft | null;
   /** Saves dragged out of Pond, filed instead of imported again. */
-  saveIds: string[];
+  saveIds: Array<string>;
 }
 
 function webUrl(line: string): string | null {
@@ -40,7 +40,7 @@ export function quickCapturePlan(
   saveIdFor: (path: string) => string | null,
 ): QuickCapturePlan {
   const items: CaptureDraft["items"] = [];
-  const saveIds: string[] = [];
+  const saveIds: Array<string> = [];
   const lines = input.text
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -54,9 +54,12 @@ export function quickCapturePlan(
     if (!saveId) items.push({ kind: "file", path });
     else if (!saveIds.includes(saveId)) saveIds.push(saveId);
   }
-  if (!items.length && !saveIds.length)
+  if (!items.length && !saveIds.length) {
     throw userError("Add a link, some text, or a file.");
-  if (!items.length) return { draft: null, saveIds };
+  }
+  if (!items.length) {
+    return { draft: null, saveIds };
+  }
   const metadata: CaptureDraft["metadata"] = {
     tags: [],
     folderIds: input.folderId ? [input.folderId] : [],

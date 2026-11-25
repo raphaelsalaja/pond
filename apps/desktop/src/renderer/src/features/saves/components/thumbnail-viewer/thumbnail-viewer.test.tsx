@@ -1,20 +1,22 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import {
   closeThumbnailViewer,
   openThumbnailViewer,
 } from "@/features/saves/state/thumbnail-viewer";
 import type { Save, SaveFile } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ThumbnailViewerHost } from ".";
 
 function file(kind: string, path: string, sha256: string): SaveFile {
   return { kind, path, sha256, size: 1 };
 }
 
-function save(id: string, files: SaveFile[]): Save {
+function save(id: string, files: Array<SaveFile>): Save {
   return {
     id,
     source: "local",
@@ -34,31 +36,25 @@ function save(id: string, files: SaveFile[]): Save {
   };
 }
 
+async function view(target: Save) {
+  pool.upsert(target);
+  await act(async () => openThumbnailViewer(target.id));
+}
+
+const dialog = () =>
+  document.querySelector<HTMLElement>(
+    '[role="dialog"][aria-label="Thumbnail"]',
+  );
+const image = () => dialog()?.querySelector("img") ?? null;
+
 describe("ThumbnailViewerHost", () => {
   let host: HTMLDivElement;
   let root: Root;
 
   beforeEach(async () => {
-    vi.stubGlobal("pond", {
-      onPrefsChanged: () => () => {},
-      query: async (name: string) =>
-        name === "settings.getPrefs" ? PrefsSchema.parse({}) : { ok: true },
+    bridge.use({
+      query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
     });
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    vi.stubGlobal("matchMedia", () => ({
-      matches: false,
-      addEventListener() {},
-      removeEventListener() {},
-      addListener() {},
-      removeListener() {},
-    }));
     document.documentElement.dataset.theme = "light";
     host = document.createElement("div");
     document.body.append(host);
@@ -72,19 +68,7 @@ describe("ThumbnailViewerHost", () => {
     host.remove();
     pool.clear();
     document.documentElement.removeAttribute("data-theme");
-    vi.unstubAllGlobals();
   });
-
-  async function view(target: Save) {
-    pool.upsert(target);
-    await act(async () => openThumbnailViewer(target.id));
-  }
-
-  const dialog = () =>
-    document.querySelector<HTMLElement>(
-      '[role="dialog"][aria-label="Thumbnail"]',
-    );
-  const image = () => dialog()?.querySelector("img") ?? null;
 
   it("shows the card's Thumbnail rather than the original", async () => {
     await view(

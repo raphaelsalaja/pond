@@ -7,7 +7,7 @@ import { Store } from "@tanstack/store";
 
 interface DuplicateImportReviewRequest {
   id: string;
-  candidates: DuplicateImportCandidate[];
+  candidates: Array<DuplicateImportCandidate>;
   resolve: (decisions: Record<string, DuplicateImportDecision> | null) => void;
 }
 
@@ -32,7 +32,7 @@ export function completeDuplicateImportReview(
 }
 
 function promptForDuplicateImport(
-  candidates: DuplicateImportCandidate[],
+  candidates: Array<DuplicateImportCandidate>,
 ): Promise<Record<string, DuplicateImportDecision> | null> {
   return new Promise((resolve) => {
     store.setState(() => ({
@@ -44,9 +44,9 @@ function promptForDuplicateImport(
 }
 
 interface FilesImportInput {
-  paths: string[];
-  tags?: string[];
-  folderIds?: string[];
+  paths: Array<string>;
+  tags?: Array<string>;
+  folderIds?: Array<string>;
   origin?: "files" | "clipboard";
 }
 
@@ -54,17 +54,19 @@ async function importReviewed(input: FilesImportInput) {
   const review = await window.pond.query("saves.reviewImportDuplicates", {
     paths: input.paths,
   });
-  if (review.candidates.length === 0)
+  if (review.candidates.length === 0) {
     return {
       result: await window.pond.query("saves.importFiles", input),
       notImported: [],
     };
+  }
   const decisions = await promptForDuplicateImport(review.candidates);
-  if (!decisions)
+  if (!decisions) {
     return {
       result: { ok: false as const, reason: "cancelled" as const },
       notImported: input.paths,
     };
+  }
   return {
     result: await window.pond.query("saves.importFiles", {
       ...input,
@@ -82,7 +84,7 @@ export async function importFilesWithDuplicateReview(input: FilesImportInput) {
 }
 
 export async function importClipboardWithDuplicateReview(input: {
-  folderIds?: string[];
+  folderIds?: Array<string>;
 }) {
   const staged = await window.pond.query("saves.stageClipboard", {});
   if (!staged.ok) return { ok: false as const, error: staged.error };
@@ -91,9 +93,10 @@ export async function importClipboardWithDuplicateReview(input: {
     paths: staged.paths,
     origin: "clipboard",
   });
-  if (notImported.length > 0)
+  if (notImported.length > 0) {
     await window.pond.query("saves.discardStagedClipboard", {
       paths: notImported,
     });
+  }
   return result;
 }

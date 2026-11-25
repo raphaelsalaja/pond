@@ -6,10 +6,10 @@ import {
   IconTrash,
 } from "@pond/icons";
 import type { TreeItemData } from "@ui-sdk/react/tree";
-import type { ComponentDocs } from "../shared/docs";
 import { Sidebar } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
-const folders: TreeItemData[] = [
+const folders: Array<TreeItemData> = [
   { value: "inbox", label: "Inbox" },
   {
     value: "design",
@@ -22,7 +22,7 @@ const folders: TreeItemData[] = [
   { value: "archive", label: "Archive" },
 ];
 
-function FolderRows({ items }: { items: TreeItemData[] }) {
+function FolderRows({ items }: { items: Array<TreeItemData> }) {
   return items.map((item) => (
     <Sidebar.TreeItem key={item.value} value={item.value}>
       <Sidebar.TreeRow>

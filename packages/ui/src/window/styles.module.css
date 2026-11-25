@@ -141,13 +141,13 @@
 /* The top row: a cell over the rail, then one cell per pane, each at least as wide as its controls. */
 .toolbar {
   display: grid;
-  grid-row: 1;
-  grid-column: 1 / -1;
   grid-template-columns:
     var(--window-rail-width)
     minmax(min-content, var(--window-left-width))
     minmax(0, 1fr)
     minmax(min-content, var(--window-right-width));
+  grid-row: 1;
+  grid-column: 1 / -1;
   min-width: 0;
   -webkit-app-region: drag;
 }
@@ -199,9 +199,8 @@
   justify-content: space-between;
   padding-inline: max(
       0px,
-      var(--window-chrome-start) -
-      var(--window-gutter-start) -
-      var(--window-rail-width)
+      var(--window-chrome-start) - var(--window-gutter-start) -
+        var(--window-rail-width)
     )
     var(--window-chrome-end);
 }

@@ -2,6 +2,12 @@ import type { LanguageModel } from "ai";
 import { describe, expect, it } from "vitest";
 import { createOpenCodeGoModel } from "./opencode-go";
 
+function isModelInstance(
+  model: LanguageModel,
+): model is Exclude<LanguageModel, string> {
+  return typeof model !== "string";
+}
+
 describe("OpenCode Go routing", () => {
   it.each([
     ["grok-4.7", "/openai/v1/responses", "authorization"],
@@ -31,10 +37,11 @@ describe("OpenCode Go routing", () => {
           });
         },
       );
-      /** SAFETY: this factory constructs an SDK model instance and never returns a registry model ID. */
-      const runnableModel = model as Exclude<LanguageModel, string>;
+      if (!isModelInstance(model)) {
+        throw new Error("Expected an SDK model instance");
+      }
       await expect(
-        runnableModel.doGenerate({
+        model.doGenerate({
           prompt: [
             { role: "user", content: [{ type: "text", text: "Hello" }] },
           ],

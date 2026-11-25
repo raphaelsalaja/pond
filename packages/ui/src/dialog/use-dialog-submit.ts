@@ -1,29 +1,32 @@
-import { type RefObject, useState } from "react";
+import { useState } from "react";
+import type { RefObject } from "react";
 
 export function useDialogSubmit(
-  pending: RefObject<boolean>,
+  pendingRef: RefObject<boolean>,
   close: () => void,
 ) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function submit(action: () => void | Promise<void>) {
-    if (pending.current) return;
-    pending.current = true;
+    if (pendingRef.current) {
+      return;
+    }
+    pendingRef.current = true;
     setBusy(true);
     setError(null);
     try {
       await action();
-      pending.current = false;
+      pendingRef.current = false;
       close();
-    } catch (reason) {
+    } catch (error_) {
       setError(
-        reason instanceof Error
-          ? reason.message
+        error_ instanceof Error
+          ? error_.message
           : "Couldn't complete this action. Try again.",
       );
     } finally {
-      pending.current = false;
+      pendingRef.current = false;
       setBusy(false);
     }
   }

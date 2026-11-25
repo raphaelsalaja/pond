@@ -52,7 +52,7 @@ import { accountChipLabel } from "@/features/search/lib/account-aliases";
 import { DATE_PRESETS, serializePredicate } from "@/features/search/lib/syntax";
 
 const orientationField = "shape";
-const FIELD_ICONS = {
+export const FIELD_ICONS = {
   title: Heading,
   tags: Tag,
   folder: FolderIcon,
@@ -156,12 +156,13 @@ export function describePredicate(predicate: Predicate): PredicateChip {
       return { ...base, label: list.join(", "), negated };
     }
     case "optional": {
-      if (operator === "contains")
+      if (operator === "contains") {
         return {
           ...base,
           label: `${meta.label}: ${String(value)}`,
           negated: false,
         };
+      }
       const has = value !== false;
       const noun = meta.label.toLowerCase();
       return {

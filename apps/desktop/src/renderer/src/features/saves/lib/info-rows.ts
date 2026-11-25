@@ -19,8 +19,8 @@ interface PaneRow {
   value: string;
 }
 
-export function collectInfoRows(save: Save): PaneRow[] {
-  const out: PaneRow[] = [];
+export function collectInfoRows(save: Save): Array<PaneRow> {
+  const out: Array<PaneRow> = [];
 
   const primary = pickPrimaryFile(save);
   const type = deriveTypeLabel(primary, save);

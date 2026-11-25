@@ -1,4 +1,5 @@
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import { z } from "zod";
 
 interface EmbeddingEntry {
@@ -57,12 +58,12 @@ export function setEmbedding(
       embedding: Array.from(vec),
       embeddingModel: model,
     })
-    .catch((err) => {
-      console.warn(`[embeddings] failed to persist vector for ${id}`, err);
+    .catch((cause: unknown) => {
+      log.warn(`[embeddings] failed to persist vector for ${id}`, cause);
     });
 }
 
-export function clearEmbeddings(ids?: readonly string[]): number {
+export function clearEmbeddings(ids?: ReadonlyArray<string>): number {
   if (ids && ids.length > 0) {
     let count = 0;
     store.setState((s) => {

@@ -1,7 +1,5 @@
-import {
-  type FolderTemplateNode,
-  orderFolderTemplateNodes,
-} from "@pond/schema/folder-templates";
+import { orderFolderTemplateNodes } from "@pond/schema/folder-templates";
+import type { FolderTemplateNode } from "@pond/schema/folder-templates";
 
 export interface FolderTemplateRow {
   node: FolderTemplateNode;
@@ -10,9 +8,9 @@ export interface FolderTemplateRow {
 
 /** Template folders in display order with their nesting depth, or none when the template is invalid. */
 export function folderTemplateRows(
-  nodes: readonly FolderTemplateNode[],
-): FolderTemplateRow[] {
-  let ordered: FolderTemplateNode[];
+  nodes: ReadonlyArray<FolderTemplateNode>,
+): Array<FolderTemplateRow> {
+  let ordered: Array<FolderTemplateNode>;
   try {
     ordered = orderFolderTemplateNodes(nodes);
   } catch {

@@ -4,9 +4,9 @@ import {
   IconMagnifier as Magnifier,
 } from "@pond/icons";
 import { clsx as cn } from "clsx";
-import { type HTMLMotionProps, motion } from "motion/react";
+import { motion } from "motion/react";
+import type { HTMLMotionProps } from "motion/react";
 import {
-  type ComponentProps,
   createContext,
   use,
   useId,
@@ -14,12 +14,13 @@ import {
   useRef,
   useState,
 } from "react";
+import type { ComponentProps } from "react";
 import { HoverHighlight } from "../hover-highlight";
 import { Input } from "../input";
 import { pop } from "../shared/pop";
 import { useEasedScrollClamp } from "./scroll-clamp";
-import styles from "./styles.module.css";
 import { Tree, TreeGroup, TreeIndicator, TreeItem, TreeRow } from "./tree";
+import styles from "./styles.module.css";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   width?: "default" | "full";
@@ -31,13 +32,13 @@ function Root({ className, width = "default", ...props }: RootProps) {
   );
 }
 
-interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}
+type ToolbarProps = React.ComponentPropsWithoutRef<"div">;
 
 function Toolbar({ ...props }: ToolbarProps) {
   return <div className={styles.toolbar} {...props} />;
 }
 
-interface HeaderProps extends React.ComponentPropsWithoutRef<"div"> {}
+type HeaderProps = React.ComponentPropsWithoutRef<"div">;
 
 function Header({ className, ...props }: HeaderProps) {
   return <div className={cn(styles.header, className)} {...props} />;
@@ -62,7 +63,7 @@ function Item({ className, size = "md", onClick, ...props }: ItemProps) {
   );
 }
 
-interface ItemLabelProps extends React.ComponentPropsWithoutRef<"span"> {}
+type ItemLabelProps = React.ComponentPropsWithoutRef<"span">;
 
 function ItemLabel({
   className,
@@ -77,9 +78,11 @@ function ItemLabel({
       onPointerEnter={(event) => {
         if (title === undefined) {
           const label = event.currentTarget;
-          if (label.scrollWidth > label.clientWidth)
+          if (label.scrollWidth > label.clientWidth) {
             label.title = label.textContent ?? "";
-          else label.removeAttribute("title");
+          } else {
+            label.removeAttribute("title");
+          }
         }
         onPointerEnter?.(event);
       }}
@@ -88,25 +91,25 @@ function ItemLabel({
   );
 }
 
-interface ItemDetailProps extends React.ComponentPropsWithoutRef<"span"> {}
+type ItemDetailProps = React.ComponentPropsWithoutRef<"span">;
 
 function ItemDetail({ className, ...props }: ItemDetailProps) {
   return <span className={cn(styles.detail, className)} {...props} />;
 }
 
-interface ItemTextProps extends React.ComponentPropsWithoutRef<"span"> {}
+type ItemTextProps = React.ComponentPropsWithoutRef<"span">;
 
 function ItemText({ className, ...props }: ItemTextProps) {
   return <span className={cn(styles.stack, className)} {...props} />;
 }
 
-interface TilesProps extends React.ComponentPropsWithoutRef<"div"> {}
+type TilesProps = React.ComponentPropsWithoutRef<"div">;
 
 function Tiles({ className, ...props }: TilesProps) {
   return <div className={cn(styles.tiles, className)} {...props} />;
 }
 
-interface TileProps extends Button.Props {}
+type TileProps = Button.Props;
 
 function Tile({ className, onClick, ...props }: TileProps) {
   return (
@@ -121,7 +124,7 @@ function Tile({ className, onClick, ...props }: TileProps) {
   );
 }
 
-interface ResultButtonProps extends Button.Props {}
+type ResultButtonProps = Button.Props;
 
 function ResultButton({ ...props }: ResultButtonProps) {
   return <Button className={styles.result} data-hover-row="" {...props} />;
@@ -141,25 +144,25 @@ function Icon({ className, source, ...props }: IconProps) {
   );
 }
 
-interface CountProps extends React.ComponentPropsWithoutRef<"span"> {}
+type CountProps = React.ComponentPropsWithoutRef<"span">;
 
 function Count({ className, ...props }: CountProps) {
   return <span className={cn(styles.count, className)} {...props} />;
 }
 
-interface GroupProps extends React.ComponentPropsWithRef<"div"> {}
+type GroupProps = React.ComponentPropsWithRef<"div">;
 
 function Group({ className, ...props }: GroupProps) {
   return <div className={cn(styles.group, className)} {...props} />;
 }
 
-interface GroupLabelProps extends React.ComponentPropsWithoutRef<"div"> {}
+type GroupLabelProps = React.ComponentPropsWithoutRef<"div">;
 
 function GroupLabel({ className, ...props }: GroupLabelProps) {
   return <div className={cn(styles.label, className)} {...props} />;
 }
 
-interface GroupHeaderProps extends React.ComponentPropsWithoutRef<"div"> {}
+type GroupHeaderProps = React.ComponentPropsWithoutRef<"div">;
 
 function GroupHeader({ className, ...props }: GroupHeaderProps) {
   return (
@@ -171,19 +174,19 @@ function GroupHeader({ className, ...props }: GroupHeaderProps) {
   );
 }
 
-interface GroupContentProps extends React.ComponentPropsWithoutRef<"div"> {}
+type GroupContentProps = React.ComponentPropsWithoutRef<"div">;
 
 function GroupContent({ ...props }: GroupContentProps) {
   return <div className={styles.panel} {...props} />;
 }
 
-interface FooterProps extends React.ComponentPropsWithoutRef<"div"> {}
+type FooterProps = React.ComponentPropsWithoutRef<"div">;
 
 function Footer({ className, ...props }: FooterProps) {
   return <div className={cn(styles.footer, className)} {...props} />;
 }
 
-interface ScrollProps extends React.ComponentPropsWithoutRef<"div"> {}
+type ScrollProps = React.ComponentPropsWithoutRef<"div">;
 
 function Scroll({ className, children, ...props }: ScrollProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -203,7 +206,7 @@ function Scroll({ className, children, ...props }: ScrollProps) {
   );
 }
 
-interface SearchProps extends ComponentProps<typeof Input.Field> {}
+type SearchProps = ComponentProps<typeof Input.Field>;
 
 function Search({ ...props }: SearchProps) {
   return (
@@ -216,7 +219,7 @@ function Search({ ...props }: SearchProps) {
   );
 }
 
-interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}
+type EmptyProps = React.ComponentPropsWithoutRef<"p">;
 
 function Empty({ ...props }: EmptyProps) {
   return <p className={styles.empty} {...props} />;
@@ -270,8 +273,7 @@ function CollapsibleGroup({
   );
 }
 
-interface CollapsibleGroupLabelProps
-  extends React.ComponentPropsWithoutRef<"button"> {}
+type CollapsibleGroupLabelProps = React.ComponentPropsWithoutRef<"button">;
 
 function CollapsibleGroupLabel({
   children,

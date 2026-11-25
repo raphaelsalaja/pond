@@ -1,6 +1,7 @@
 import type { TransferJob } from "@shared/transfer-contracts";
 import { expect, it } from "vitest";
-import { matchesDownloadFilters, type StatusFilter } from "./status-feed";
+import { matchesDownloadFilters } from "./status-feed";
+import type { StatusFilter } from "./status-feed";
 import {
   transferRevealable,
   transferStatusLabel,
@@ -22,8 +23,8 @@ function job(overrides: Partial<TransferJob> = {}): TransferJob {
     bytes: 0,
     currentFile: null,
     error: null,
-    startedAt: 1_000,
-    updatedAt: 4_000,
+    startedAt: 1000,
+    updatedAt: 4000,
     ...overrides,
   };
 }
@@ -45,7 +46,7 @@ it("shows a running export as an active Downloads row", () => {
 it("maps finished transfers onto Downloads statuses", () => {
   expect(transferToDownloadRow(job({ status: "completed" }))).toMatchObject({
     status: "complete",
-    durationMs: 3_000,
+    durationMs: 3000,
     live: false,
   });
   expect(transferToDownloadRow(job({ status: "interrupted" })).status).toBe(

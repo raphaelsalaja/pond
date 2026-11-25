@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { setTimeout as sleep } from "node:timers/promises";
-import { type Session, session } from "electron";
+import { session } from "electron";
+import type { Session } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { partitionForIngest } from "../../../sync/accounts";
@@ -109,8 +110,8 @@ async function behanceGraphql<T>(
   try {
     res = await post(JSON.stringify({ query, variables }));
     text = await res.text();
-  } catch (err) {
-    log.warn("[pond behance-api] fetch threw", err);
+  } catch (error) {
+    log.warn("[pond behance-api] fetch threw", error);
     return { ok: false, status: 0 };
   }
   if (res.status === 429) return { ok: false, status: 429 };
@@ -181,7 +182,7 @@ export async function readBehanceAppreciations(
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   let cursor = args.resumeCursor;
   let knownPageStreak = 0;
 
@@ -234,7 +235,7 @@ export async function readBehanceAppreciations(
 }
 
 function partial(
-  entries: ListEntry[],
+  entries: Array<ListEntry>,
   cursor: string | undefined,
 ): ListHarvestResult {
   const result: ListHarvestResult = {

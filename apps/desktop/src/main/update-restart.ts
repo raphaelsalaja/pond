@@ -32,5 +32,5 @@ export function prepareApplicationForUpdateInstall(): Promise<void> {
 export async function runUpdateRestart(deps: UpdateRestartDeps): Promise<void> {
   deps.armWatchdog();
   await deps.prepare();
-  deps.schedule(deps.quitAndInstall);
+  deps.schedule(() => deps.quitAndInstall());
 }

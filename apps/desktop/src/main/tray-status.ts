@@ -25,7 +25,7 @@ interface TrayTemplateItem {
   registerAccelerator?: boolean;
   role?: "quit";
   click?: () => void;
-  submenu?: TrayTemplateItem[];
+  submenu?: Array<TrayTemplateItem>;
 }
 
 export interface TrayTemplateActions {
@@ -91,9 +91,9 @@ export function buildTrayTemplate(
   options: {
     version: string;
     accelerators?: TrayAccelerators;
-    blankDocuments?: readonly TrayBlankDocument[];
+    blankDocuments?: ReadonlyArray<TrayBlankDocument>;
   },
-): TrayTemplateItem[] {
+): Array<TrayTemplateItem> {
   const accelerators = options.accelerators ?? {};
   const run = (
     label: string,
@@ -106,7 +106,7 @@ export function buildTrayTemplate(
     click: () => void actions.onMenuAction(id),
   });
 
-  const template: TrayTemplateItem[] = [
+  const template: Array<TrayTemplateItem> = [
     {
       label: trayHeaderLabel(status),
       enabled: false,

@@ -4,19 +4,17 @@ import {
   IconHistory,
   IconSidebarEdit,
 } from "@pond/icons";
-import {
-  isLockedSidebarDestination,
-  type SidebarBadgeStyle,
-  type SidebarDestination,
-} from "@pond/schema";
+import { isLockedSidebarDestination } from "@pond/schema";
+import type { SidebarBadgeStyle, SidebarDestination } from "@pond/schema";
 import type { MenuItemSpec } from "@pond/ui";
-import { type ReactElement, useState } from "react";
+import { useState } from "react";
+import type { ReactElement } from "react";
 import { clearRecents, useRecents } from "@/features/saves";
 import { SidebarCustomizationDialog } from "@/features/settings";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { usePrefs } from "@/shared/state/prefs";
 
-const BADGE_STYLES: readonly [SidebarBadgeStyle, string][] = [
+const BADGE_STYLES: ReadonlyArray<[SidebarBadgeStyle, string]> = [
   ["count", "Count"],
   ["none", "None"],
 ];
@@ -28,7 +26,7 @@ export function BuiltInVisibilityMenu({
 }: {
   children: ReactElement;
   destination?: SidebarDestination;
-  additionalItems?: () => MenuItemSpec[];
+  additionalItems?: () => Array<MenuItemSpec>;
 }) {
   const [sidebar, patch] = usePrefs("sidebar");
   const recents = useRecents();
@@ -46,8 +44,10 @@ export function BuiltInVisibilityMenu({
 
   const buildVisibilityItems = (
     destination: SidebarDestination,
-  ): MenuItemSpec[] => {
-    if (isLockedSidebarDestination(destination)) return [];
+  ): Array<MenuItemSpec> => {
+    if (isLockedSidebarDestination(destination)) {
+      return [];
+    }
     const setVisible = (visible: boolean) =>
       void patch({
         destinations: { ...sidebar.destinations, [destination]: visible },
@@ -77,8 +77,8 @@ export function BuiltInVisibilityMenu({
     ];
   };
 
-  const buildItems = (): MenuItemSpec[] => {
-    const visibilityItems: MenuItemSpec[] = destination
+  const buildItems = (): Array<MenuItemSpec> => {
+    const visibilityItems: Array<MenuItemSpec> = destination
       ? [
           ...buildVisibilityItems(destination),
           {

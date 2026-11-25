@@ -1,4 +1,5 @@
 import { Button, Loader, Settings } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useCallback, useEffect, useState } from "react";
 import { savePrefsSection, usePrefs } from "@/shared/state/prefs";
 import {
@@ -6,8 +7,13 @@ import {
   GROUPS,
   ProviderSettings,
 } from "./provider-settings";
+import { keyRowsSchema } from "./types";
+import type { KeyRow } from "./types";
 import styles from "./styles.module.css";
-import { type KeyRow, keyRowsSchema } from "./types";
+
+async function loadKeys(): Promise<Array<KeyRow>> {
+  return keyRowsSchema.parse(await window.pond.query("agent.keys", {}));
+}
 
 function ProvidersLoading() {
   return (
@@ -40,20 +46,30 @@ export function AgentSection() {
   const [agent, , loaded] = usePrefs("agent");
   const [error, setError] = useState("");
   const [keysLoaded, setKeysLoaded] = useState(false);
-  const [keys, setKeys] = useState<KeyRow[]>([]);
+  const [keys, setKeys] = useState<Array<KeyRow>>([]);
 
-  const refresh = useCallback(async () => {
-    setKeys(keyRowsSchema.parse(await window.pond.query("agent.keys", {})));
+  const showKeys = useCallback((rows: Array<KeyRow>) => {
+    setKeys(rows);
     setKeysLoaded(true);
     setError("");
   }, []);
 
+  const refresh = useCallback(async () => {
+    showKeys(await loadKeys());
+  }, [showKeys]);
+
+  const fail = useCallback((cause: unknown) => {
+    log.error(cause);
+    setError("Could not load providers. Try again.");
+  }, []);
+
   useEffect(() => {
-    void refresh().catch((cause) => {
-      console.error(cause);
-      setError("Could not load providers. Try again.");
-    });
-  }, [refresh]);
+    void loadKeys()
+      .then((rows) => {
+        showKeys(rows);
+      })
+      .catch(fail);
+  }, [showKeys, fail]);
 
   return (
     <Settings.Page>
@@ -91,15 +107,7 @@ export function AgentSection() {
               <Settings.ItemDescription>{error}</Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <Button
-                size="sm"
-                onClick={() =>
-                  void refresh().catch((cause) => {
-                    console.error(cause);
-                    setError("Could not load providers. Try again.");
-                  })
-                }
-              >
+              <Button size="sm" onClick={() => void refresh().catch(fail)}>
                 Retry
               </Button>
             </Settings.ItemControl>

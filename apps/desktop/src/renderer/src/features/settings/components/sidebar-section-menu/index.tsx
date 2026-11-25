@@ -6,10 +6,8 @@ import {
   SIDEBAR_SECTION_LABELS,
   setSidebarSectionVisible,
 } from "@/features/settings/lib/sidebar-customization";
-import {
-  SpecContextMenu,
-  type SpecMenuChromeProps,
-} from "@/shared/components/spec-context-menu";
+import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import type { SpecMenuChromeProps } from "@/shared/components/spec-context-menu";
 import { SidebarCustomizationDialog } from "../sidebar-customization-dialog";
 
 interface SidebarSectionMenuProps extends SpecMenuChromeProps {
@@ -23,7 +21,7 @@ export function SidebarSectionMenu({
 }: SidebarSectionMenuProps) {
   const [customizing, setCustomizing] = useState(false);
 
-  const items = (): MenuItemSpec[] => [
+  const items = (): Array<MenuItemSpec> => [
     ...buildItems(),
     { type: "separator" },
     {

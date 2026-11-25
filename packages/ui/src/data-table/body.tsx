@@ -1,7 +1,8 @@
 import { useSelector } from "@tanstack/react-store";
 import type { RowData, Row as TanstackRow } from "@tanstack/react-table";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
-import { type ReactNode, useCallback, useLayoutEffect } from "react";
+import { useCallback, useLayoutEffect } from "react";
+import type { ReactNode } from "react";
 import { cssVars } from "../css-vars";
 import { useDataTable } from "./context";
 import type { DATA_TABLE_FEATURES } from "./provider";
@@ -21,10 +22,11 @@ export function DataTableBody<T extends RowData>({
   scrollMargin?: number;
 }) {
   const { meta, selectionStore } = useDataTable<T>();
-  const { rows, rowApi, height, rowHeight, overscan } = meta;
+  const { rows, rowApi, height, rowHeight, overscan, rowElementId } = meta;
 
   const cursorId = useSelector(selectionStore, (s) => s.cursorId);
   const cursorIndex = rows.findIndex((row) => row.id === cursorId);
+  // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual returns unstable methods by design; the compiler skips memoizing this component.
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => meta.scrollRef.current,
@@ -34,8 +36,9 @@ export function DataTableBody<T extends RowData>({
     scrollPaddingStart: scrollMargin,
     rangeExtractor: (range) => {
       const indexes = defaultRangeExtractor(range);
-      if (cursorIndex >= 0 && !indexes.includes(cursorIndex))
+      if (cursorIndex >= 0 && !indexes.includes(cursorIndex)) {
         indexes.push(cursorIndex);
+      }
       return indexes.sort((a, b) => a - b);
     },
     enabled: height !== undefined,
@@ -44,27 +47,34 @@ export function DataTableBody<T extends RowData>({
   const revealRow = useCallback(
     (id: string) => {
       const index = rows.findIndex((row) => row.id === id);
-      if (index < 0) return;
-      if (height !== undefined)
+      if (index < 0) {
+        return;
+      }
+      if (height !== undefined) {
         virtualizer.scrollToIndex(index, { align: "auto" });
-      else
+      } else {
         document
-          .getElementById(meta.rowElementId(id))
+          .getElementById(rowElementId(id))
           ?.scrollIntoView?.({ block: "nearest" });
+      }
     },
-    [rows, height, meta.rowElementId, virtualizer],
+    [rows, height, rowElementId, virtualizer],
   );
 
   useLayoutEffect(() => {
-    meta.revealRow.current = revealRow;
+    const revealRef = meta.revealRow;
+    revealRef.current = revealRow;
     return () => {
-      if (meta.revealRow.current === revealRow) meta.revealRow.current = null;
+      if (revealRef.current === revealRow) {
+        revealRef.current = null;
+      }
     };
   }, [meta.revealRow, revealRow]);
 
   useLayoutEffect(() => {
-    if (cursorId && document.activeElement === meta.gridRef.current)
+    if (cursorId && document.activeElement === meta.gridRef.current) {
       revealRow(cursorId);
+    }
   }, [cursorId, meta.gridRef, revealRow]);
 
   const renderRow = (

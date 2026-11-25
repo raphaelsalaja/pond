@@ -1,53 +1,48 @@
-import type {
-  AgentStreamRequest,
-  AssistantChunk,
-  AssistantMessage,
-} from "@shared/assistant";
 import { act } from "react";
 import { expect, it, vi } from "vitest";
+import { z } from "zod";
+import { bridge } from "@/shared/test/pond-bridge";
 import { assistant } from "./assistant";
 import {
   agentStreamBridge,
+  chatRow,
   createAssistantHarness,
-  type StreamReply,
+  messageRow,
+  streamRequests,
 } from "./assistant.test-harness";
+import type { StreamReply } from "./assistant.test-harness";
+
+const ShownSchema = z.object({
+  fishId: z.string().nullable(),
+  chatId: z.string().nullable(),
+  messages: z.array(z.string()),
+  busy: z.boolean(),
+  draft: z.string(),
+  queued: z.string().nullable(),
+});
 
 it("opens a clean chat for a fish spawned while another fish replies", async () => {
   const first = Promise.withResolvers<StreamReply>();
-  const requests: AgentStreamRequest[] = [];
-  let emit: ((chunk: AssistantChunk) => void) | null = null;
-  const koiMessages: AssistantMessage[] = [
-    {
+  const { requests, record, request } = streamRequests();
+  const koiMessages = [
+    messageRow({
       id: "koi-reply",
       chatId: "koi-latest",
-      role: "assistant",
       content: "An earlier reply",
-      metadata: null,
-    },
+    }),
   ];
-  const query = vi.fn(
-    (name: string, args: { fishId?: string; chatId?: string }) => {
-      if (name === "agent.chats")
-        return Promise.resolve(
-          args.fishId === "koi" ? [{ id: "koi-latest", title: "Latest" }] : [],
-        );
-      if (name === "agent.messages")
-        return Promise.resolve(args.chatId === "koi-latest" ? koiMessages : []);
-      if (name === "agent.newChat") return Promise.resolve({ id: "guppy-new" });
-      return Promise.resolve([]);
+  bridge.use({
+    query: {
+      "agent.chats": (input) =>
+        input?.fishId === "koi" ? [chatRow("koi-latest", "Latest")] : [],
+      "agent.messages": ({ chatId }) =>
+        chatId === "koi-latest" ? koiMessages : [],
+      "agent.newChat": () => chatRow("guppy-new"),
     },
-  );
-  const agentStream = agentStreamBridge((request) => {
-    requests.push(request);
-    return requests.length === 1 ? first.promise : {};
-  });
-  vi.stubGlobal("pond", {
-    query,
-    agentStream,
-    onAgentChunk: (listener: (chunk: AssistantChunk) => void) => {
-      emit = listener;
-      return () => {};
-    },
+    agentStream: agentStreamBridge((sent) => {
+      record(sent);
+      return requests.length === 1 ? first.promise : {};
+    }),
   });
   const harness = createAssistantHarness((state) => ({
     fishId: state.fishId,
@@ -57,7 +52,8 @@ it("opens a clean chat for a fish spawned while another fish replies", async () 
     draft: state.draft,
     queued: state.queued?.content ?? null,
   }));
-  const shown = () => JSON.parse(harness.host.textContent ?? "{}");
+  const shown = () =>
+    ShownSchema.parse(JSON.parse(harness.host.textContent ?? "{}"));
   let pending: Promise<void> = Promise.resolve();
   await harness.mount();
   try {
@@ -70,7 +66,7 @@ it("opens a clean chat for a fish spawned while another fish replies", async () 
       assistant.setDraft("Explore the library");
       pending = assistant.send("openai");
     });
-    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    await request(1);
     expect(shown().busy).toBe(true);
 
     await act(async () => assistant.selectFish("guppy"));
@@ -88,7 +84,7 @@ it("opens a clean chat for a fish spawned while another fish replies", async () 
 
     /** The reply still running for koi must not drive guppy's status. */
     await act(async () =>
-      emit?.({
+      bridge.emit("onAgentChunk", {
         type: "activity",
         chatId: "koi-latest",
         requestId: requests[0]?.requestId ?? "",
@@ -107,7 +103,7 @@ it("opens a clean chat for a fish spawned while another fish replies", async () 
       first.resolve({ text: "An earlier reply" });
       await pending;
     });
-    await vi.waitFor(() => expect(requests).toHaveLength(2));
+    await request(2);
     expect(requests[1]).toMatchObject({ chatId: "guppy-new" });
     await vi.waitFor(() => expect(shown().busy).toBe(false));
     expect(shown()).toMatchObject({ chatId: "guppy-new", queued: null });
@@ -115,6 +111,5 @@ it("opens a clean chat for a fish spawned while another fish replies", async () 
     first.resolve({});
     await harness.unmount(async () => pending);
     assistant.newChat();
-    vi.unstubAllGlobals();
   }
 });

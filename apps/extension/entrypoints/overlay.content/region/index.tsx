@@ -1,20 +1,19 @@
 import { Button } from "@pond/ui/button";
 import { Popover } from "@pond/ui/popover";
 import { Toolbar } from "@pond/ui/toolbar";
-import { type PointerEvent, useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
+import type { PointerEvent } from "react";
 import type { OverlayResult } from "@/utils/messaging";
 import {
   clampPoint,
   clipRect,
   HANDLES,
-  type Handle,
   moveRect,
-  type Point,
-  type Rect,
   rectBetween,
   resizeRect,
   viewportRegion,
 } from "../geometry";
+import type { Handle, Point, Rect } from "../geometry";
 import { Hint } from "../hint";
 import { useEscape } from "../use-escape";
 import styles from "./styles.module.css";
@@ -40,6 +39,10 @@ function elementRect(point: Point): Rect | null {
     });
   }
   return null;
+}
+
+function eventPoint(event: PointerEvent) {
+  return clampPoint(event.clientX, event.clientY);
 }
 
 function boxStyle(rect: Rect) {
@@ -80,9 +83,6 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
     return () => window.removeEventListener("keydown", listener, true);
   }, []);
 
-  const point = (event: PointerEvent) =>
-    clampPoint(event.clientX, event.clientY);
-
   const begin = (event: PointerEvent, next: Gesture) => {
     if (event.button !== 0) return;
     event.preventDefault();
@@ -92,7 +92,7 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
   };
 
   const onMove = (event: PointerEvent) => {
-    const at = point(event);
+    const at = eventPoint(event);
     if (!gesture) {
       if (!box) setHover(elementRect(at));
       return;
@@ -130,7 +130,7 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
       className={styles.surface}
       data-picking={!box || undefined}
       onPointerDown={(event) =>
-        begin(event, { kind: "draw", start: point(event), moved: false })
+        begin(event, { kind: "draw", start: eventPoint(event), moved: false })
       }
       onPointerMove={onMove}
       onPointerUp={onUp}
@@ -149,7 +149,7 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
           style={boxStyle(box)}
           data-drawing={gesture?.kind === "draw" || undefined}
           onPointerDown={(event) =>
-            begin(event, { kind: "move", start: point(event), from: box })
+            begin(event, { kind: "move", start: eventPoint(event), from: box })
           }
         >
           <span className={styles.size}>
@@ -164,7 +164,7 @@ export function RegionPicker({ container, onFinish }: RegionPickerProps) {
                   onPointerDown={(event) =>
                     begin(event, {
                       kind: handle,
-                      start: point(event),
+                      start: eventPoint(event),
                       from: box,
                     })
                   }

@@ -11,10 +11,13 @@ export interface OpenWithApp {
   isDefault: boolean;
 }
 
-const appsByKind = new Map<string, OpenWithApp[]>();
+const appsByKind = new Map<string, Array<OpenWithApp>>();
 
 export function openWithKind(save: Save, fileIndex?: number | null): string {
-  const file = fileIndex == null ? save.files[0] : save.files[fileIndex];
+  const file =
+    fileIndex === undefined || fileIndex === null
+      ? save.files[0]
+      : save.files[fileIndex];
   const mime = file?.mimeType?.trim();
   if (mime) return mime.toLowerCase();
   const path = file?.path ?? "";
@@ -23,7 +26,7 @@ export function openWithKind(save: Save, fileIndex?: number | null): string {
   return save.mediaType ?? save.id;
 }
 
-export function peekOpenWithApps(kind: string): OpenWithApp[] {
+export function peekOpenWithApps(kind: string): Array<OpenWithApp> {
   return appsByKind.get(kind) ?? [];
 }
 
@@ -32,16 +35,17 @@ function notifyOpenWith(result: {
   reason?: string;
   error?: string;
 }): void {
-  if (!result.ok && result.reason !== "cancelled")
+  if (!result.ok && result.reason !== "cancelled") {
     notify({
       id: "open-with",
       title: "Couldn't open Save",
       description: result.error,
     });
+  }
 }
 
 export function openWith(
-  ids: string[],
+  ids: Array<string>,
   fileIndex: number | null,
   application: string,
 ): void {
@@ -56,10 +60,10 @@ export function openWith(
 }
 
 export function openWithMenuItems(
-  ids: string[],
+  ids: Array<string>,
   fileIndex: number | null,
-  apps: readonly OpenWithApp[],
-): MenuItemSpec[] {
+  apps: ReadonlyArray<OpenWithApp>,
+): Array<MenuItemSpec> {
   return apps.map((entry) => ({
     id: entry.path,
     label: entry.isDefault ? `${entry.name} (Default)` : entry.name,
@@ -82,10 +86,10 @@ export async function loadOpenWithApps({
   kind,
   onApps,
 }: {
-  ids: string[];
+  ids: Array<string>;
   fileIndex?: number | null;
   kind: string;
-  onApps: (apps: OpenWithApp[]) => void;
+  onApps: (apps: Array<OpenWithApp>) => void;
 }): Promise<void> {
   const cached = appsByKind.get(kind);
   if (cached?.length) onApps(cached);
@@ -97,7 +101,9 @@ export async function loadOpenWithApps({
     } else if (!cached?.length) {
       onApps([]);
     }
-    if (!apps.some((app) => app.icon == null)) return;
+    if (!apps.some((app) => app.icon === null)) {
+      return;
+    }
     const next = await listOpenWithApps(ids, fileIndex, true);
     if (!next.length) return;
     appsByKind.set(kind, next);
@@ -108,10 +114,10 @@ export async function loadOpenWithApps({
 }
 
 async function listOpenWithApps(
-  ids: string[],
+  ids: Array<string>,
   fileIndex?: number | null,
   includeIcons = false,
-): Promise<OpenWithApp[]> {
+): Promise<Array<OpenWithApp>> {
   const listed = await window.pond.query("saves.listOpenWith", {
     ids,
     fileIndex: fileIndex ?? undefined,

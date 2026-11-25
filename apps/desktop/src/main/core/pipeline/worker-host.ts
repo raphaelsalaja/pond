@@ -6,10 +6,10 @@ import { ulid } from "ulid";
 import { resolveMainOut } from "../../lib/resolve-preload";
 import { binariesAvailable, FFMPEG_PATH_ENV } from "../refresh/binaries";
 import { QueueWorkerResponseSchema } from "./worker-contract";
-import {
-  createQueueWorkerHost,
-  type QueueWorkerHostDependencies,
-  type QueueWorkerResult,
+import { createQueueWorkerHost } from "./worker-host-core";
+import type {
+  QueueWorkerHostDependencies,
+  QueueWorkerResult,
 } from "./worker-host-core";
 import { runsQueueWorkerInProcess } from "./worker-mode";
 import { executeQueueWorkerRequest } from "./worker-operations";
@@ -51,8 +51,9 @@ const dependencies: QueueWorkerHostDependencies = {
   onStopped: () => log.info("[pond queue workers] stopped"),
 };
 
-if (runsQueueWorkerInProcess())
+if (runsQueueWorkerInProcess()) {
   dependencies.execute = executeQueueWorkerRequest;
+}
 
 const host = createQueueWorkerHost(dependencies);
 

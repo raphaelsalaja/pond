@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createIdleResource } from "./idle-resource";
 
+function noop() {}
+
 function harness(options: { failLoad?: boolean } = {}) {
   const timers: Array<{ run: () => void; cancelled: boolean }> = [];
   let loads = 0;
@@ -16,7 +18,7 @@ function harness(options: { failLoad?: boolean } = {}) {
         },
       };
     },
-    idleMs: 1_000,
+    idleMs: 1000,
     schedule: (run) => {
       const timer = { run, cancelled: false };
       timers.push(timer);
@@ -61,7 +63,7 @@ describe("createIdleResource", () => {
 
   it("keeps the value while a use is still running", async () => {
     const h = harness();
-    let finish: () => void = () => undefined;
+    let finish: () => void = noop;
     const slow = h.resource.use(
       () =>
         new Promise<void>((resolve) => {

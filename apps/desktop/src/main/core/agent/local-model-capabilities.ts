@@ -1,13 +1,13 @@
-import {
-  type ModelCapabilities,
-  modelCapabilities,
-  type ProviderModel,
+import { modelCapabilities } from "../../../shared/provider-models";
+import type {
+  ModelCapabilities,
+  ProviderModel,
 } from "../../../shared/provider-models";
 
 type LocalProvider = "ollama" | "lmstudio";
 
 export type DeclaredLocalModelCapabilities =
-  | string[]
+  | Array<string>
   | {
       text?: boolean;
       vision?: boolean;

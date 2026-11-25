@@ -1,7 +1,7 @@
 import { IconArrowLeft, IconLink2 } from "@pond/icons";
+import { TitleBar } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { TitleBar } from ".";
 
 export const docs: ComponentDocs = {
   slug: "title-bar",

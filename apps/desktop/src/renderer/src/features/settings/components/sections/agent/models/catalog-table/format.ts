@@ -14,8 +14,8 @@ export function compactTokens(value: number | undefined): string {
     const millions = value / 1_000_000;
     return `${Number.isInteger(millions) ? millions : millions.toFixed(1)}M`;
   }
-  if (value >= 1_000) {
-    const thousands = value / 1_000;
+  if (value >= 1000) {
+    const thousands = value / 1000;
     return `${Number.isInteger(thousands) ? thousands : thousands.toFixed(1)}K`;
   }
   return String(value);
@@ -43,8 +43,10 @@ export function contextHint(value: number | undefined): string {
 }
 
 export function modelHint(model: CatalogModel): string {
-  const parts: string[] = [];
-  if (model.description) parts.push(model.description);
+  const parts: Array<string> = [];
+  if (model.description) {
+    parts.push(model.description);
+  }
   if (model.maxOutputTokens) {
     parts.push(`${formatNumber(model.maxOutputTokens)} output tokens`);
   }
@@ -52,8 +54,8 @@ export function modelHint(model: CatalogModel): string {
 }
 
 export function selectedIds(
-  models: CatalogModel[],
-  visibleIds: string[] | undefined,
+  models: Array<CatalogModel>,
+  visibleIds: Array<string> | undefined,
 ) {
   const selectable = models.filter((model) => model.available !== false);
   return new Set(visibleIds ?? selectable.map((model) => model.id));

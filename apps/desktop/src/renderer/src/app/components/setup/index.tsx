@@ -1,19 +1,10 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useBootReady, useSavePaging } from "@/features/saves/hooks/use-saves";
 import { loadPrefs } from "@/shared/state/prefs";
-import {
-  type SetupProfile,
-  type SetupStart,
-  setupFlow,
-  useSetupFlow,
-} from "@/shared/state/setup";
-import {
-  choicesFrom,
-  parentFolder,
-  SETUP_VERSION,
-  type Session,
-  STEP_IDS,
-} from "./model";
+import { setupFlow, useSetupFlow } from "@/shared/state/setup";
+import type { SetupProfile, SetupStart } from "@/shared/state/setup";
+import { choicesFrom, parentFolder, SETUP_VERSION, STEP_IDS } from "./model";
+import type { Session } from "./model";
 import { setupResume } from "./resume";
 
 const SetupDialog = lazy(() =>

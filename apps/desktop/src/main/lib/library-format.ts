@@ -1,9 +1,6 @@
-import type { Save } from "@pond/schema/db";
-import {
-  type InboxFields,
-  type InboxState,
-  InboxStateSchema,
-} from "@pond/schema/inbox";
+import type { NewSave, Save } from "@pond/schema/db";
+import { InboxStateSchema } from "@pond/schema/inbox";
+import type { InboxFields, InboxState } from "@pond/schema/inbox";
 import { z } from "zod";
 
 export const INFO_FILE = "info.json";
@@ -54,8 +51,8 @@ export interface InfoDoc {
   lang: string | null;
   siteName: string | null;
   notes: string | null;
-  tags: string[];
-  folderIds: string[];
+  tags: Array<string>;
+  folderIds: Array<string>;
   mediaType: string | null;
   coverIndex: number;
   width: number | null;
@@ -64,7 +61,7 @@ export interface InfoDoc {
   savedAt: string | null;
   createdAt: string | null;
   deletedAt: string | null;
-  files: InfoFile[];
+  files: Array<InfoFile>;
 }
 
 const nullableText = z.string().nullable().catch(null);
@@ -132,7 +129,7 @@ export const StoredInfoDocSchema = z.object({
 
 export type StoredInfoDoc = z.infer<typeof StoredInfoDocSchema>;
 
-export function infoFilesFromSave(files: Save["files"]): InfoFile[] {
+export function infoFilesFromSave(files: Save["files"]): Array<InfoFile> {
   return files.map((file) => ({
     kind: file.kind,
     path: file.path,
@@ -153,8 +150,10 @@ export function infoInbox(
   state: InboxState | null | undefined,
   until: number | null | undefined,
 ): InfoInbox | undefined {
-  if (!state) return undefined;
-  return state === "snoozed" && until != null
+  if (!state) {
+    return undefined;
+  }
+  return state === "snoozed" && until !== null && until !== undefined
     ? { state, until: new Date(until).toISOString() }
     : { state };
 }
@@ -169,9 +168,9 @@ export function inboxFromInfo(inbox: InfoInbox | undefined): InboxFields {
 }
 
 export function infoDocFromSave(
-  save: Save,
-  files: InfoFile[],
-  folderIds: string[] = [],
+  save: NewSave,
+  files: Array<InfoFile>,
+  folderIds: Array<string> = [],
 ): InfoDoc {
   return {
     userData: {
@@ -278,17 +277,30 @@ export function applyPatchToInfo(
       flipY: info.userData?.flipY ?? false,
       crop: info.userData?.crop ?? null,
     };
-    if (patch.rating !== undefined) next.userData.rating = patch.rating;
-    if (patch.favorite !== undefined)
+    if (patch.rating !== undefined) {
+      next.userData.rating = patch.rating;
+    }
+    if (patch.favorite !== undefined) {
       next.userData.favorite = patch.favorite ?? false;
-    if (patch.dominantColors !== undefined)
+    }
+    if (patch.dominantColors !== undefined) {
       next.userData.dominantColors = patch.dominantColors ?? [];
-    if (patch.primaryColor !== undefined)
+    }
+    if (patch.primaryColor !== undefined) {
       next.userData.primaryColor = patch.primaryColor;
-    if (patch.rotate !== undefined) next.userData.rotate = patch.rotate ?? 0;
-    if (patch.flipX !== undefined) next.userData.flipX = patch.flipX ?? false;
-    if (patch.flipY !== undefined) next.userData.flipY = patch.flipY ?? false;
-    if (patch.crop !== undefined) next.userData.crop = patch.crop;
+    }
+    if (patch.rotate !== undefined) {
+      next.userData.rotate = patch.rotate ?? 0;
+    }
+    if (patch.flipX !== undefined) {
+      next.userData.flipX = patch.flipX ?? false;
+    }
+    if (patch.flipY !== undefined) {
+      next.userData.flipY = patch.flipY ?? false;
+    }
+    if (patch.crop !== undefined) {
+      next.userData.crop = patch.crop;
+    }
   }
 
   if (patch.inboxState !== undefined || patch.inboxUntil !== undefined) {
@@ -298,28 +310,57 @@ export function applyPatchToInfo(
       patch.inboxUntil !== undefined ? patch.inboxUntil : current.inboxUntil,
     );
   }
-  if (patch.files !== undefined) next.files = infoFilesFromSave(patch.files);
-  if (patch.importedFrom !== undefined)
+  if (patch.files !== undefined) {
+    next.files = infoFilesFromSave(patch.files);
+  }
+  if (patch.importedFrom !== undefined) {
     next.importedFrom = patch.importedFrom ?? undefined;
-  if (patch.url !== undefined) next.url = patch.url;
-  if (patch.title !== undefined) next.title = patch.title ?? null;
-  if (patch.description !== undefined)
+  }
+  if (patch.url !== undefined) {
+    next.url = patch.url;
+  }
+  if (patch.title !== undefined) {
+    next.title = patch.title ?? null;
+  }
+  if (patch.description !== undefined) {
     next.description = patch.description ?? null;
-  if (patch.author !== undefined) next.author = patch.author ?? null;
-  if (patch.lang !== undefined) next.lang = patch.lang ?? null;
-  if (patch.siteName !== undefined) next.siteName = patch.siteName ?? null;
-  if (patch.notes !== undefined) next.notes = patch.notes ?? null;
-  if (patch.tags !== undefined) next.tags = patch.tags ?? [];
+  }
+  if (patch.author !== undefined) {
+    next.author = patch.author ?? null;
+  }
+  if (patch.lang !== undefined) {
+    next.lang = patch.lang ?? null;
+  }
+  if (patch.siteName !== undefined) {
+    next.siteName = patch.siteName ?? null;
+  }
+  if (patch.notes !== undefined) {
+    next.notes = patch.notes ?? null;
+  }
+  if (patch.tags !== undefined) {
+    next.tags = patch.tags ?? [];
+  }
   if ("folderIds" in patch) {
     const parsed = z.array(z.string()).safeParse(patch.folderIds);
     if (parsed.success) next.folderIds = parsed.data;
   }
-  if (patch.mediaType !== undefined) next.mediaType = patch.mediaType ?? null;
-  if (patch.coverIndex !== undefined) next.coverIndex = patch.coverIndex ?? 0;
-  if (patch.width !== undefined) next.width = patch.width ?? null;
-  if (patch.height !== undefined) next.height = patch.height ?? null;
-  if (patch.publishedAt !== undefined)
+  if (patch.mediaType !== undefined) {
+    next.mediaType = patch.mediaType ?? null;
+  }
+  if (patch.coverIndex !== undefined) {
+    next.coverIndex = patch.coverIndex ?? 0;
+  }
+  if (patch.width !== undefined) {
+    next.width = patch.width ?? null;
+  }
+  if (patch.height !== undefined) {
+    next.height = patch.height ?? null;
+  }
+  if (patch.publishedAt !== undefined) {
     next.publishedAt = toIso(patch.publishedAt);
-  if (patch.deletedAt !== undefined) next.deletedAt = toIso(patch.deletedAt);
+  }
+  if (patch.deletedAt !== undefined) {
+    next.deletedAt = toIso(patch.deletedAt);
+  }
   return next;
 }

@@ -1,4 +1,5 @@
-import { type SaveStatus, saveFolders, saves } from "@pond/schema/db";
+import { saveFolders, saves } from "@pond/schema/db";
+import type { SaveStatus } from "@pond/schema/db";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import {
   mediaEmbeddingVersion,
@@ -24,10 +25,10 @@ export interface RankedRecommendation {
 
 export function rankRecommendations(input: {
   sourceId: string;
-  semantic: SemanticRecommendationCandidate[];
+  semantic: Array<SemanticRecommendationCandidate>;
   alreadyOrganizedIds: ReadonlySet<string>;
   limit: number;
-}): RankedRecommendation[] {
+}): Array<RankedRecommendation> {
   const limit = Math.max(0, Math.floor(input.limit));
   return input.semantic
     .filter(
@@ -55,7 +56,7 @@ export function rankRecommendations(input: {
 const MAX_RELATED_SAVES = 100;
 
 interface RecommendationSource {
-  vector: number[];
+  vector: Array<number>;
   model: string;
   status: SaveStatus;
   deleted: boolean;
@@ -64,17 +65,20 @@ interface RecommendationSource {
 export interface RelatedSavesStore {
   source(id: string): Promise<RecommendationSource | null>;
   neighbors(
-    vector: number[],
+    vector: Array<number>,
     limit: number,
   ): Array<{ id: string; distance: number }>;
-  admissibleIds(ids: string[], model: string): Promise<ReadonlySet<string>>;
+  admissibleIds(
+    ids: Array<string>,
+    model: string,
+  ): Promise<ReadonlySet<string>>;
   alreadyOrganizedIds(
     sourceId: string,
-    candidateIds: string[],
+    candidateIds: Array<string>,
   ): Promise<ReadonlySet<string>>;
 }
 
-function isAdmissibleSourceVector(vector: number[]): boolean {
+function isAdmissibleSourceVector(vector: Array<number>): boolean {
   try {
     normalizedEmbeddingVector(vector);
     return true;
@@ -87,7 +91,7 @@ export async function relatedSavesWithStore(
   store: RelatedSavesStore,
   input: { id: string; limit?: number },
   currentModel = mediaEmbeddingVersion(),
-): Promise<{ items: RankedRecommendation[] }> {
+): Promise<{ items: Array<RankedRecommendation> }> {
   const limit = Math.min(
     Math.max(1, Math.floor(input.limit ?? 12)),
     MAX_RELATED_SAVES,
@@ -193,6 +197,6 @@ function relatedSavesStore(db: Db): RelatedSavesStore {
 export async function relatedSaves(
   db: Db,
   input: { id: string; limit?: number },
-): Promise<{ items: RankedRecommendation[] }> {
+): Promise<{ items: Array<RankedRecommendation> }> {
   return relatedSavesWithStore(relatedSavesStore(db), input);
 }

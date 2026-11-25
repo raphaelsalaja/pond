@@ -26,7 +26,7 @@ export type SortKey =
   | "rating";
 export type SortDir = "asc" | "desc";
 
-const SORT_KEYS: readonly SortKey[] = [
+const SORT_KEYS: ReadonlyArray<SortKey> = [
   "random",
   "manual",
   "savedAt",
@@ -65,9 +65,9 @@ export function needsFullPoolHydration(
 export function intersectSqlResults(
   saves: ReadonlyArray<Save>,
   sqlIds: ReadonlyArray<string>,
-): Save[] {
+): Array<Save> {
   const byId = new Map(saves.map((save) => [save.id, save]));
-  const list: Save[] = [];
+  const list: Array<Save> = [];
   for (const id of sqlIds) {
     const save = byId.get(id);
     if (save) list.push(save);
@@ -79,14 +79,15 @@ export function sortSaves(
   saves: ReadonlyArray<Save>,
   key: SortKey,
   dir: SortDir,
-): Save[] {
+): Array<Save> {
   const sign = dir === "asc" ? 1 : -1;
   const out = saves.slice();
   out.sort((a, b) => {
     const aMissing = isMissingSortValue(a, key);
     const bMissing = isMissingSortValue(b, key);
-    if (aMissing || bMissing)
+    if (aMissing || bMissing) {
       return aMissing === bMissing ? 0 : aMissing ? 1 : -1;
+    }
     return sign * cmp(a, b, key);
   });
   return out;
@@ -136,9 +137,15 @@ function cmp(a: Save, b: Save, key: SortKey): number {
 }
 
 function nullableNumber(a: number | null, b: number | null): number {
-  if (a == null && b == null) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
+  if (a === null && b === null) {
+    return 0;
+  }
+  if (a === null) {
+    return 1;
+  }
+  if (b === null) {
+    return -1;
+  }
   return a - b;
 }
 
@@ -154,7 +161,9 @@ function createdAtMs(s: Save): number {
 
 function publishedAtMs(s: Save): number | null {
   const value = s.publishedAt;
-  return value != null && Number.isFinite(value) ? value : null;
+  return value !== undefined && value !== null && Number.isFinite(value)
+    ? value
+    : null;
 }
 
 function titleFor(s: Save): string {
@@ -182,7 +191,9 @@ function sizeFor(s: Save): number | null {
 function areaFor(s: Save): number | null {
   const w = widthFor(s);
   const h = heightFor(s);
-  if (w == null || h == null) return null;
+  if (w === null || h === null) {
+    return null;
+  }
   return w * h;
 }
 
@@ -197,30 +208,32 @@ function heightFor(s: Save): number | null {
 function aspectRatioFor(s: Save): number | null {
   const w = widthFor(s);
   const h = heightFor(s);
-  if (w == null || h == null || w <= 0 || h <= 0) return null;
+  if (w === null || h === null || w <= 0 || h <= 0) {
+    return null;
+  }
   return w / h;
 }
 
 function isMissingSortValue(s: Save, key: SortKey): boolean {
   switch (key) {
     case "publishedAt":
-      return publishedAtMs(s) == null;
+      return publishedAtMs(s) === null;
     case "tagName":
-      return tagNameFor(s) == null;
+      return tagNameFor(s) === null;
     case "duration":
-      return saveDuration(s) == null;
+      return saveDuration(s) === null;
     case "fileSize":
-      return sizeFor(s) == null;
+      return sizeFor(s) === null;
     case "rating":
-      return s.rating == null;
+      return s.rating === undefined || s.rating === null;
     case "width":
-      return widthFor(s) == null;
+      return widthFor(s) === null;
     case "height":
-      return heightFor(s) == null;
+      return heightFor(s) === null;
     case "dimensions":
-      return areaFor(s) == null;
+      return areaFor(s) === null;
     case "aspectRatio":
-      return aspectRatioFor(s) == null;
+      return aspectRatioFor(s) === null;
     default:
       return false;
   }

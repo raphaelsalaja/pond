@@ -5,8 +5,8 @@ import {
   inferClipImage,
   inferEmbedAudio,
   inferEmbedVideoFrames,
-  type VideoEmbeddingFrame,
 } from "./inference-client";
+import type { VideoEmbeddingFrame } from "./inference-client";
 
 export function mediaModelVersion(): string {
   return mediaEmbeddingVersion();
@@ -41,12 +41,12 @@ export function mediaAudioEmbedding(
 }
 
 export function mediaVideoEmbedding(
-  frames: VideoEmbeddingFrame[],
+  frames: Array<VideoEmbeddingFrame>,
   duration: number,
 ): Promise<Float32Array> {
   return inferEmbedVideoFrames(frames, duration);
 }
 
-export function clipAesthetic(image: RawImage): Promise<string[]> {
+export function clipAesthetic(image: RawImage): Promise<Array<string>> {
   return inferClipAesthetic(image, [...AESTHETIC_LABELS]);
 }

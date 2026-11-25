@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 
 import { act, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { ColorField } from ".";
 
@@ -120,7 +121,7 @@ it("does not paint a theme from a partial background hex", async () => {
 });
 
 it("lets a background hex be selected and replaced before the applied color echoes", async () => {
-  const commits: string[] = [];
+  const commits: Array<string> = [];
   let value = "#FCFBF8";
   await renderField(value, (hex) => {
     commits.push(hex);
@@ -146,7 +147,7 @@ it("lets a background hex be selected and replaced before the applied color echo
 });
 
 it("shows an externally applied background instead of an in-progress draft", async () => {
-  const commits: string[] = [];
+  const commits: Array<string> = [];
   await renderField("#FCFBF8", (hex) => commits.push(hex));
   await typeHex("#FC");
   expect(hexInput().value).toBe("#FC");
@@ -157,7 +158,7 @@ it("shows an externally applied background instead of an in-progress draft", asy
 });
 
 it("restores the applied background when an unfinished edit is left", async () => {
-  const commits: string[] = [];
+  const commits: Array<string> = [];
   await renderField("#FCFBF8", (hex) => commits.push(hex));
 
   await typeHex("#FCF");

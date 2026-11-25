@@ -1,4 +1,5 @@
-import { type PointerEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { PointerEvent } from "react";
 import {
   clearSaveSelection,
   isLibraryBackgroundTarget,
@@ -30,8 +31,13 @@ export function useRectangleSelection() {
     if (!grid) return;
     const bounds = grid.getBoundingClientRect();
     const parent = findScrollParent(grid);
-    if (!parent || event.clientY < bounds.top || event.clientY > bounds.bottom)
+    if (
+      !parent ||
+      event.clientY < bounds.top ||
+      event.clientY > bounds.bottom
+    ) {
       return;
+    }
     cancelRef.current?.();
     const original = [...selection.snapshot()];
     const originalCursor = selection.getCursor();

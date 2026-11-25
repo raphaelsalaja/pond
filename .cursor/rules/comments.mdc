@@ -32,7 +32,7 @@ perf/safety constraint. If it fails that test, do not write it.
 - **No asides.** No parentheticals, hedges, hypotheticals ("raise only if…"), or best-practice sermons.
 - **No editorializing.** State the constraint, not the drama.
 - **File headers:** a single one-line JSDoc block, only when the module's purpose isn't obvious from its name.
-- **Exempt:** tool directives (`biome-ignore`, `ts-expect-error`), license headers, generated files.
+- **Exempt:** tool directives (`oxlint-disable`, `ts-expect-error`), license headers, generated files.
 
 ## Example
 

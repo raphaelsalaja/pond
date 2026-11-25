@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   createWindowsUserSidResolver,
   nativeSocketPath,
@@ -7,6 +7,8 @@ import {
   WINDOWS_SID_LOOKUP_TIMEOUT_MS,
   windowsNativePipePath,
 } from "./paths";
+
+const sid = async () => "S-1-5-21-10-20-30-1001";
 
 describe("nativeSocketPath", () => {
   it("uses the host contract's named pipe on Windows", async () => {
@@ -18,16 +20,19 @@ describe("nativeSocketPath", () => {
   });
 
   it("keeps a sandbox off the installed app's Windows pipe", async () => {
-    const sid = async () => "S-1-5-21-10-20-30-1001";
     const real = await nativeSocketPath("win32", sid, undefined);
-    const sandbox = await nativeSocketPath("win32", sid, "C:\\Temp\\sandbox-a");
+    const sandbox = await nativeSocketPath(
+      "win32",
+      sid,
+      String.raw`C:\Temp\sandbox-a`,
+    );
     expect(sandbox).not.toBe(real);
     expect(sandbox.startsWith(`${real}-sandbox-`)).toBe(true);
     await expect(
-      nativeSocketPath("win32", sid, "C:\\Temp\\sandbox-b"),
+      nativeSocketPath("win32", sid, String.raw`C:\Temp\sandbox-b`),
     ).resolves.not.toBe(sandbox);
     await expect(
-      nativeSocketPath("win32", sid, "C:\\Temp\\sandbox-a"),
+      nativeSocketPath("win32", sid, String.raw`C:\Temp\sandbox-a`),
     ).resolves.toBe(sandbox);
   });
 
@@ -35,9 +40,9 @@ describe("nativeSocketPath", () => {
     expect(
       parseWindowsUserSid('"DESKTOP\\Person","S-1-5-21-10-20-30-1001"\r\n'),
     ).toBe("S-1-5-21-10-20-30-1001");
-    expect(() => parseWindowsUserSid('"DESKTOP\\Person","not-a-sid"')).toThrow(
-      "current Windows user SID",
-    );
+    expect(() =>
+      parseWindowsUserSid(String.raw`"DESKTOP\Person","not-a-sid"`),
+    ).toThrow("current Windows user SID");
   });
 
   it("isolates native pipes by Windows user SID", () => {
@@ -51,11 +56,15 @@ describe("nativeSocketPath", () => {
 
   it("deduplicates concurrent SID lookups and caches successful results", async () => {
     const gate = Promise.withResolvers<string>();
-    const load = vi.fn(() => gate.promise);
+    let loads = 0;
+    const load = () => {
+      loads += 1;
+      return gate.promise;
+    };
     const resolveSid = createWindowsUserSidResolver(load);
     const first = nativeSocketPath("win32", resolveSid);
     const second = nativeSocketPath("win32", resolveSid);
-    expect(load).toHaveBeenCalledOnce();
+    expect(loads).toBe(1);
     gate.resolve("S-1-5-21-10-20-30-1001");
     await expect(Promise.all([first, second])).resolves.toEqual([
       String.raw`\\.\pipe\pond-native-host-S-1-5-21-10-20-30-1001`,
@@ -64,29 +73,38 @@ describe("nativeSocketPath", () => {
     await expect(nativeSocketPath("win32", resolveSid)).resolves.toBe(
       String.raw`\\.\pipe\pond-native-host-S-1-5-21-10-20-30-1001`,
     );
-    expect(load).toHaveBeenCalledOnce();
+    expect(loads).toBe(1);
   });
 
   it("clears a timed-out in-flight lookup so a retry can recover", async () => {
     const timedOut = Promise.withResolvers<string>();
-    const load = vi
-      .fn<() => Promise<string>>()
-      .mockReturnValueOnce(timedOut.promise)
-      .mockResolvedValueOnce("S-1-5-21-10-20-30-1001");
+    const answers = [
+      timedOut.promise,
+      Promise.resolve("S-1-5-21-10-20-30-1001"),
+    ];
+    let loads = 0;
+    const load = () => {
+      const answer = answers[loads];
+      loads += 1;
+      if (!answer) {
+        throw new Error("unexpected SID lookup");
+      }
+      return answer;
+    };
     const resolveSid = createWindowsUserSidResolver(load);
     const first = resolveSid();
     const second = resolveSid();
-    expect(load).toHaveBeenCalledOnce();
+    expect(loads).toBe(1);
     timedOut.reject(new Error("whoami timed out"));
     await expect(first).rejects.toThrow("whoami timed out");
     await expect(second).rejects.toThrow("whoami timed out");
     await expect(resolveSid()).resolves.toBe("S-1-5-21-10-20-30-1001");
-    expect(load).toHaveBeenCalledTimes(2);
+    expect(loads).toBe(2);
   });
 
   it("bounds the operating-system SID lookup", () => {
     expect(WINDOWS_SID_LOOKUP_TIMEOUT_MS).toBeGreaterThan(0);
-    expect(WINDOWS_SID_LOOKUP_TIMEOUT_MS).toBeLessThanOrEqual(5_000);
+    expect(WINDOWS_SID_LOOKUP_TIMEOUT_MS).toBeLessThanOrEqual(5000);
   });
 
   it("keeps the macOS Application Support socket", async () => {

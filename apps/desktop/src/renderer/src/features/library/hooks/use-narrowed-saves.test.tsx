@@ -1,17 +1,12 @@
 import { PrefsSchema } from "@pond/schema";
-import {
-  type LibraryQueryRequest,
-  LibraryQueryRequestSchema,
-} from "@shared/library-query";
+import { LibraryQueryRequestSchema } from "@shared/library-query";
 import { RouterContextProvider } from "@tanstack/react-router";
 import { act, useEffect, useState } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  currentLocation,
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/app/test/library-router";
+import { currentLocation, openLibraryAt } from "@/app/test/library-router";
+import type { LibraryTestRouter } from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { followDeparture } from "@/features/saves/lib/save-nav";
 import {
@@ -22,6 +17,7 @@ import {
 import { pool } from "@/features/saves/pool";
 import { clearRecents, useTrackVisit } from "@/features/saves/state/recents";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import { bridge } from "@/shared/test/pond-bridge";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
 const SAVE_ID = "recent-save";
@@ -50,9 +46,16 @@ function Collection({ preview }: { preview: boolean }) {
     });
   }, [paging]);
   useEffect(() => {
-    if (!preview || opened) return;
-    if (paging.loading || !paging.filtered.some((save) => save.id === SAVE_ID))
+    if (!preview || opened) {
       return;
+    }
+    if (
+      paging.loading ||
+      !paging.filtered.some((save) => save.id === SAVE_ID)
+    ) {
+      return;
+    }
+    // oxlint-disable-next-line react/set-state-in-effect -- The preview opens a commit after setSource publishes the list, as a real open after the grid renders would.
     setOpened(true);
   }, [opened, paging, preview]);
   return (
@@ -95,20 +98,22 @@ describe("recently added preview", () => {
     );
     selection.setCursor(SAVE_ID);
     primarySelection.set(SAVE_ID);
-    vi.stubGlobal("pond", {
-      query: vi.fn(async (name: string, input?: LibraryQueryRequest) => {
-        if (name === "settings.getPrefs") return prefs;
-        if (name === "settings.setPrefs") return { prefs };
-        if (name === "saves.queryPage") {
+    bridge.use({
+      query: {
+        "settings.getPrefs": () => prefs,
+        "settings.setPrefs": () => ({ ok: true, prefs }),
+        "saves.queryPage": (input) => {
           const request = LibraryQueryRequestSchema.parse(input);
           cutoffs.push(request.scope?.savedSince);
           return page();
-        }
-        if (name === "saves.queryIds") return { ids: [SAVE_ID] };
-        if (name === "saves.getMany") return [];
-        return [];
-      }),
-      onSyncAction: () => () => {},
+        },
+        "saves.queryIds": () => ({
+          ids: [SAVE_ID],
+          revision: 1,
+          libraryId: "library",
+        }),
+        "saves.getMany": () => [],
+      },
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -116,6 +121,7 @@ describe("recently added preview", () => {
   });
 
   afterEach(async () => {
+    vi.useRealTimers();
     await act(async () => root.unmount());
     host.remove();
     clearRecents();
@@ -123,7 +129,6 @@ describe("recently added preview", () => {
     selection.clear();
     primarySelection.set(null);
     resultNavigation.setSource({ ids: [] });
-    vi.unstubAllGlobals();
   });
 
   it("keeps the open save when a visit is recorded from Recently Added", async () => {
@@ -139,6 +144,7 @@ describe("recently added preview", () => {
     expect(cutoff).toEqual(expect.any(Number));
     const queriesBeforeOpen = cutoffs.length;
 
+    vi.useFakeTimers();
     await act(async () => {
       root.render(
         <RouterContextProvider router={router}>
@@ -147,7 +153,7 @@ describe("recently added preview", () => {
       );
     });
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 30));
+      await vi.advanceTimersByTimeAsync(30);
     });
 
     expect(host.querySelector("[data-ids]")?.getAttribute("data-ids")).toBe(
@@ -168,7 +174,9 @@ describe("recently added preview", () => {
 async function settle(host: HTMLElement): Promise<void> {
   for (let attempt = 0; attempt < 30; attempt++) {
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
     });
     const ids = host.querySelector("[data-ids]")?.getAttribute("data-ids");
     const loading = host

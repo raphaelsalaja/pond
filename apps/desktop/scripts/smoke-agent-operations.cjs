@@ -1,23 +1,23 @@
 const { app } = require("electron");
 const { mkdtempSync, mkdirSync, writeFileSync, rmSync } = require("node:fs");
 const { tmpdir } = require("node:os");
-const { join, resolve } = require("node:path");
+const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
-const sandbox = mkdtempSync(join(tmpdir(), "pond-agent-operations-"));
-const userData = join(sandbox, "app");
-const library = join(sandbox, "Test.pond");
+const sandbox = mkdtempSync(path.join(tmpdir(), "pond-agent-operations-"));
+const userData = path.join(sandbox, "app");
+const library = path.join(sandbox, "Test.pond");
 mkdirSync(userData);
 mkdirSync(library);
 app.setPath("userData", userData);
-app.setAppLogsPath(join(sandbox, "logs"));
+app.setAppLogsPath(path.join(sandbox, "logs"));
 writeFileSync(
-  join(userData, "library-location.json"),
+  path.join(userData, "library-location.json"),
   JSON.stringify({ path: library }),
 );
-const cache = resolve(__dirname, "../node_modules/.cache");
+const cache = path.resolve(__dirname, "../node_modules/.cache");
 mkdirSync(cache, { recursive: true });
-const bundleDirectory = mkdtempSync(join(cache, "pond-agent-operations-"));
+const bundleDirectory = mkdtempSync(path.join(cache, "pond-agent-operations-"));
 app.on("quit", () => {
   rmSync(sandbox, { recursive: true, force: true });
   rmSync(bundleDirectory, { recursive: true, force: true });
@@ -25,13 +25,13 @@ app.on("quit", () => {
 const timeout = setTimeout(() => {
   console.error("AGENT_OPERATIONS_FAILED: timed out");
   app.exit(1);
-}, 45000);
+}, 45_000);
 
-app.whenReady().then(async () => {
+void app.whenReady().then(async () => {
   try {
     const { build } = await import("vite");
-    const main = resolve(__dirname, "../src/main");
-    const entry = join(bundleDirectory, "entry.js");
+    const main = path.resolve(__dirname, "../src/main");
+    const entry = path.join(bundleDirectory, "entry.js");
     writeFileSync(
       entry,
       `
@@ -84,7 +84,7 @@ app.whenReady().then(async () => {
       },
     });
     const fixture = await import(
-      pathToFileURL(join(bundleDirectory, "smoke.mjs")).href
+      pathToFileURL(path.join(bundleDirectory, "smoke.mjs")).href
     );
     console.log(
       "AGENT_OPERATIONS_PASSED",

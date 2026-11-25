@@ -9,7 +9,11 @@ const ResultSchema = z.object({
   reachedEnd: z.boolean(),
 });
 
-function feed(codes: string[], hasNextPage: boolean, endCursor: string | null) {
+function feed(
+  codes: Array<string>,
+  hasNextPage: boolean,
+  endCursor: string | null,
+) {
   return {
     edges: codes.map((code) => ({
       node: {
@@ -62,7 +66,7 @@ function savedPage(firstPage: Feed, pages: Record<string, Feed> = {}) {
     runScripts: "outside-only",
     url: "https://www.threads.com/saved",
   });
-  const requested: string[] = [];
+  const requested: Array<string> = [];
   Object.assign(dom.window, {
     fetch: async (_url: string, init: { body: string }) => {
       const vars = z

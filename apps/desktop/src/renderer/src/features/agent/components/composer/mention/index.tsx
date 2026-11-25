@@ -22,7 +22,7 @@ export function parseSaveMentionHref(href: string): string | null {
 /** Save mentions travel as Markdown links to `pond-save:`, which replies render back as chips. */
 export const saveMentionCodec: TokenCodec = {
   format: (token) =>
-    `[${token.label.replace(/[\\[\]]/g, "\\$&")}](${saveMentionHref(token.value)})`,
+    `[${token.label.replaceAll(/[\\[\]]/g, String.raw`\$&`)}](${saveMentionHref(token.value)})`,
   parse: (text) => {
     const value: TokenInputValue = [];
     let last = 0;
@@ -33,7 +33,7 @@ export const saveMentionCodec: TokenCodec = {
       value.push({
         type: "save",
         value: id,
-        label: (match[1] ?? "").replace(/\\(.)/g, "$1") || "Untitled",
+        label: (match[1] ?? "").replaceAll(/\\(.)/g, "$1") || "Untitled",
       });
       last = match.index + match[0].length;
     }

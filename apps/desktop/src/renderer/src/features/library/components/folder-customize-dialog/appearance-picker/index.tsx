@@ -14,11 +14,10 @@ import { useFolderAppearanceRecents } from "@/features/library/state/folder-appe
 import {
   FOLDER_ICONS,
   FOLDER_SWATCHES,
-  type FolderIconId,
-  type FolderIconOption,
   folderSwatchCss,
   searchFolderIcons,
 } from "@/shared/lib/folder-icons";
+import type { FolderIconId, FolderIconOption } from "@/shared/lib/folder-icons";
 import styles from "./styles.module.css";
 
 interface AppearancePickerProps {
@@ -94,7 +93,9 @@ function IconChoice({
   );
 }
 
-function iconOptions(ids: readonly FolderIconId[]): FolderIconOption[] {
+function iconOptions(
+  ids: ReadonlyArray<FolderIconId>,
+): Array<FolderIconOption> {
   return ids.flatMap((id) => FOLDER_ICONS.find((icon) => icon.id === id) ?? []);
 }
 
@@ -130,8 +131,9 @@ function IconChoices({
               event.nativeEvent.isComposing ||
               !query ||
               !first
-            )
+            ) {
               return;
+            }
             event.preventDefault();
             onIconChange(first.id);
           }}

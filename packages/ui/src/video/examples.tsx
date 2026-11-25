@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import type { ComponentDocs } from "../shared/docs";
 import { Video } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 /** No `src`, so examples stay offline and never autoplay; the fill stands in for a frame. */
 const PLACEHOLDER = {

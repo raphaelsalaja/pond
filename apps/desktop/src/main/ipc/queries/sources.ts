@@ -1,8 +1,5 @@
-import {
-  type IncomingSaveRule,
-  type SourceSyncPrefs,
-  saves,
-} from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { IncomingSaveRule, SourceSyncPrefs } from "@pond/schema/db";
 import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { OkResult } from "../../../shared/query-contracts-shared";
@@ -12,7 +9,8 @@ import { getWatch, patchWatchSync } from "../../core/sync/watches";
 import { normalizeTagList } from "../../core/tags";
 import { getDb } from "../../db";
 import { lastNativeContactAt } from "../../native/rpc";
-import { type QueryHandlerMap, query, StringParam } from "./params";
+import { query, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const RECENT_LIMIT = 12;
 

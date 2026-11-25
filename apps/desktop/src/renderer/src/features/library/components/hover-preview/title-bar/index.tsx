@@ -7,15 +7,15 @@ import {
   IconXmark,
 } from "@pond/icons";
 import { Button, TitleBar, Tooltip } from "@pond/ui";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import {
   loadOpenWithApps,
-  type OpenWithApp,
   openWith,
   openWithKind,
   peekOpenWithApps,
-  type ViewerPosition,
 } from "@/features/saves";
+import type { OpenWithApp, ViewerPosition } from "@/features/saves";
 import type { Save } from "@/features/saves/types";
 import { CAN_SHARE } from "@/shared/lib/platform";
 import { notify } from "@/shared/lib/toast";
@@ -120,10 +120,20 @@ function Tool({
 
 function OpenWith({ save, fileIndex }: { save: Save; fileIndex: number }) {
   const kind = openWithKind(save, fileIndex);
-  const [apps, setApps] = useState<OpenWithApp[]>(() => peekOpenWithApps(kind));
+  const [apps, setApps] = useState<Array<OpenWithApp>>(() =>
+    peekOpenWithApps(kind),
+  );
+  const [appsFor, setAppsFor] = useState({ id: save.id, fileIndex, kind });
+  if (
+    appsFor.id !== save.id ||
+    appsFor.fileIndex !== fileIndex ||
+    appsFor.kind !== kind
+  ) {
+    setAppsFor({ id: save.id, fileIndex, kind });
+    setApps(peekOpenWithApps(kind));
+  }
   useEffect(() => {
     let current = true;
-    setApps(peekOpenWithApps(kind));
     void loadOpenWithApps({
       ids: [save.id],
       fileIndex,
@@ -158,11 +168,12 @@ function Share({ save, fileIndex }: { save: Save; fileIndex: number }) {
         void window.pond
           .query("saves.share", { id: save.id, fileIndex })
           .then((result) => {
-            if (!result.ok)
+            if (!result.ok) {
               notify({
                 id: "share",
                 title: result.error ?? "Couldn't share this file.",
               });
+            }
           });
       }}
     >

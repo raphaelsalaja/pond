@@ -32,7 +32,7 @@ export interface LibraryRepairIssue {
 export interface LibraryRepairPreview {
   token: string;
   expiresAt: number;
-  issues: LibraryRepairIssue[];
+  issues: Array<LibraryRepairIssue>;
   confirmation: LibraryRepairConfirmation;
 }
 

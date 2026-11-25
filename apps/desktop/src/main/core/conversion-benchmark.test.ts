@@ -5,10 +5,8 @@ import { join } from "node:path";
 import ffmpegPath from "ffmpeg-static";
 import sharp from "sharp";
 import { expect, it } from "vitest";
-import {
-  type ConversionFormat,
-  ConversionPresetSchema,
-} from "../../shared/conversion-contracts";
+import { ConversionPresetSchema } from "../../shared/conversion-contracts";
+import type { ConversionFormat } from "../../shared/conversion-contracts";
 import { conversionCapabilities } from "./conversion-capabilities";
 import { convertMedia } from "./convert-media";
 
@@ -25,7 +23,13 @@ it.skipIf(process.env.POND_BENCH_CONVERSION !== "1")(
         .png({ compressionLevel: 0 })
         .toFile(source);
       const capabilities = await conversionCapabilities({ ffmpegPath });
-      const wanted: ConversionFormat[] = ["webp", "avif", "tiff", "bmp", "exr"];
+      const wanted: Array<ConversionFormat> = [
+        "webp",
+        "avif",
+        "tiff",
+        "bmp",
+        "exr",
+      ];
       const results: Array<{
         format: ConversionFormat;
         milliseconds: number;
@@ -34,12 +38,13 @@ it.skipIf(process.env.POND_BENCH_CONVERSION !== "1")(
       const began = performance.now();
       for (const format of wanted) {
         if (
-          !capabilities.find(
+          !capabilities.some(
             (capability) =>
               capability.format === format && capability.available,
           )
-        )
+        ) {
           continue;
+        }
         const started = performance.now();
         const output = await convertMedia({
           source,

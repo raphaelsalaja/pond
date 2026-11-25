@@ -10,7 +10,7 @@ export interface Shot {
 export const media = (id: string) => `/media/${id}.jpg`;
 
 /** The Eagle library's items, in the order they land in the grid. */
-export const EAGLE: Shot[] = [
+export const EAGLE: Array<Shot> = [
   {
     id: "01M1Z5EJM0DK2SN3NBPY1SKNYD",
     title: "Lemaire AW25, look 28",
@@ -129,7 +129,7 @@ export interface Folder {
 }
 
 /** Eagle's folder tree, with the Pond swatch each Eagle color maps to. */
-export const FOLDERS: Folder[] = [
+export const FOLDERS: Array<Folder> = [
   { name: "Fashion", color: "var(--ds-orange)", count: 96 },
   { name: "Runway", color: "var(--ds-orange)", count: 41, depth: 1 },
   { name: "Interiors", color: "var(--ds-green)", count: 58 },
@@ -157,7 +157,7 @@ export interface Card {
   title: string;
   url: string;
   note: string;
-  tags: string[];
+  tags: Array<string>;
   created: string;
   shown: string;
   aspect: number;
@@ -166,7 +166,7 @@ export interface Card {
 }
 
 /** Rows of the mymind `cards.csv`. Only the first three become cards on screen. */
-export const MYMIND: Card[] = [
+export const MYMIND: Array<Card> = [
   {
     id: "k2x9a7",
     type: "Video",

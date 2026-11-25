@@ -1,4 +1,5 @@
-import { type ApiSave, SOURCES, sourceLabel } from "pond-api";
+import { SOURCES, sourceLabel } from "pond-api";
+import type { ApiSave } from "pond-api";
 import { hostname } from "./links";
 
 const LINKS = /https?:\/\/\S+/g;
@@ -28,13 +29,13 @@ export function kindName(kind: string | null): string | null {
 
 /** Captions often end in link shorteners and hashtag runs that crowd out the words you search by. */
 export function saveTitle(save: Pick<ApiSave, "title" | "description" | "author" | "url">): string {
-  const caption = (save.title || save.description || "").replace(LINKS, "").replace(/\s+/g, " ").trim();
+  const caption = (save.title || save.description || "").replaceAll(LINKS, "").replaceAll(/\s+/g, " ").trim();
   const words = caption.replace(TRAILING_HASHTAGS, "").trim();
   return words || caption || save.author || hostname(save.url) || "Untitled Save";
 }
 
 export function escapeMarkdown(value: string): string {
-  return value.replace(MARKDOWN_SYNTAX, "\\$&");
+  return value.replaceAll(MARKDOWN_SYNTAX, String.raw`\$&`);
 }
 
 export function savedSection(saved: Date, now: Date): string {
@@ -52,14 +53,14 @@ function startOfDay(date: Date): number {
 
 export interface Section<Item> {
   title: string;
-  items: Item[];
+  items: Array<Item>;
 }
 
 export function sectionsBySavedDay<Item extends { savedAt: number }>(
-  items: readonly Item[],
+  items: ReadonlyArray<Item>,
   now: Date,
-): Section<Item>[] {
-  const sections: Section<Item>[] = [];
+): Array<Section<Item>> {
+  const sections: Array<Section<Item>> = [];
   for (const item of items) {
     const title = savedSection(new Date(item.savedAt), now);
     const last = sections.at(-1);
@@ -111,8 +112,8 @@ export interface FolderPath {
 
 /** Folders nest, so a bare name is ambiguous when two parents share a child name. */
 export function folderPaths(
-  folders: readonly { id: string; name: string; parentId: string | null; color: string | null; count: number }[],
-): FolderPath[] {
+  folders: ReadonlyArray<{ id: string; name: string; parentId: string | null; color: string | null; count: number }>,
+): Array<FolderPath> {
   const byId = new Map(folders.map((folder) => [folder.id, folder]));
   function path(id: string, seen: Set<string>): string {
     const folder = byId.get(id);

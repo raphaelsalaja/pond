@@ -28,7 +28,7 @@ const fishHandoff = createFishHandoff({
   },
   activate: () => app.focus({ steal: true }),
 });
-onCaptureComplete(fishHandoff.complete);
+onCaptureComplete((receipt) => fishHandoff.complete(receipt));
 
 export function liveNativePorts(): NativePorts {
   return {
@@ -71,8 +71,9 @@ export function liveNativePorts(): NativePorts {
       ]);
       const [prefs, accounts] = await Promise.all([getPrefs(), listAccounts()]);
       const likes = { ...prefs.extension.likes };
-      for (const source of sourcesSkippingLikes(accounts))
+      for (const source of sourcesSkippingLikes(accounts)) {
         likes[source] = false;
+      }
       return { ...prefs.extension, likes };
     },
     sessionPending,

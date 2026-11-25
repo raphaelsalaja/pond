@@ -65,8 +65,10 @@ const FRONTMATTER = /^---\n([\s\S]*?)\n---\n([\s\S]*)$/;
 
 /** Parses one `changelog/<version>.md` file. Throws when the file breaks the format. */
 export function parseChangelogEntry(source: string): ChangelogEntry {
-  const match = FRONTMATTER.exec(source.replace(/\r\n/g, "\n"));
-  if (!match) throw new Error("Changelog entry needs a --- frontmatter block.");
+  const match = FRONTMATTER.exec(source.replaceAll("\r\n", "\n"));
+  if (!match) {
+    throw new Error("Changelog entry needs a --- frontmatter block.");
+  }
   const [, head = "", body = ""] = match;
 
   const fields: Record<string, string> = {};
@@ -77,7 +79,8 @@ export function parseChangelogEntry(source: string): ChangelogEntry {
     fields[line.slice(0, colon).trim()] = line.slice(colon + 1).trim();
   }
 
-  const sections: { category: ChangelogCategory; items: string[] }[] = [];
+  const sections: Array<{ category: ChangelogCategory; items: Array<string> }> =
+    [];
   for (const raw of body.split("\n")) {
     const line = raw.trim();
     if (!line) continue;
@@ -97,7 +100,7 @@ export function parseChangelogEntry(source: string): ChangelogEntry {
   return ChangelogEntrySchema.parse({ ...fields, sections });
 }
 
-function versionParts(version: string): number[] {
+function versionParts(version: string): Array<number> {
   return (version.split("-")[0] ?? "").split(".").map(Number);
 }
 

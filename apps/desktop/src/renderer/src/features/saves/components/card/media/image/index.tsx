@@ -63,10 +63,17 @@ export function CardImage({
     },
     [onReady, save.id, unit],
   );
-  const ready = useImageReady(src, reportReady, onBroken);
+  const {
+    ref: imageRef,
+    loaded,
+    onLoad,
+    onError,
+  } = useImageReady(src, reportReady, onBroken);
   useEffect(() => {
-    const image = ready.ref.current;
-    if (!animated || !image) return;
+    const image = imageRef.current;
+    if (!animated || !image) {
+      return;
+    }
     const updateVisibility = () => {
       const bounds = image.getBoundingClientRect();
       setVisible(
@@ -85,15 +92,13 @@ export function CardImage({
       observer.disconnect();
       document.removeEventListener("visibilitychange", updateVisibility);
     };
-  }, [animated, ready.ref]);
+  }, [animated, imageRef]);
 
   return (
     <>
-      {save.blurhash && !ready.loaded ? (
-        <BlurHash hash={save.blurhash} />
-      ) : null}
+      {save.blurhash && !loaded ? <BlurHash hash={save.blurhash} /> : null}
       <img
-        ref={ready.ref}
+        ref={imageRef}
         src={src}
         alt=""
         decoding="async"
@@ -103,9 +108,9 @@ export function CardImage({
         className={styles.media}
         draggable={false}
         data-fit={viewer.galleryFit}
-        data-loaded={!save.blurhash || ready.loaded ? "true" : "false"}
-        onLoad={ready.onLoad}
-        onError={ready.onError}
+        data-loaded={!save.blurhash || loaded ? "true" : "false"}
+        onLoad={onLoad}
+        onError={onError}
       />
     </>
   );

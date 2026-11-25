@@ -1,6 +1,6 @@
 import type { Op } from "@pond/schema/db";
 
-export const SOURCE_TASK_OPS: readonly Op[] = [
+export const SOURCE_TASK_OPS: ReadonlyArray<Op> = [
   "harvest_metadata",
   "capture_tweet",
   "archive_page",

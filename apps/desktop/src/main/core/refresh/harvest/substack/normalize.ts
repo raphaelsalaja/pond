@@ -165,10 +165,18 @@ export function captureFromPost(
     capture.author = author;
   }
   const metrics: NonNullable<Capture["metrics"]> = {};
-  if (post.reaction_count != null) metrics.likes = post.reaction_count;
-  if (post.comment_count != null) metrics.comments = post.comment_count;
-  if (Object.keys(metrics).length > 0) capture.metrics = metrics;
-  if (publication?.name) capture.extras = { publisher: publication.name };
+  if (post.reaction_count !== undefined && post.reaction_count !== null) {
+    metrics.likes = post.reaction_count;
+  }
+  if (post.comment_count !== undefined && post.comment_count !== null) {
+    metrics.comments = post.comment_count;
+  }
+  if (Object.keys(metrics).length > 0) {
+    capture.metrics = metrics;
+  }
+  if (publication?.name) {
+    capture.extras = { publisher: publication.name };
+  }
   return capture;
 }
 
@@ -194,7 +202,9 @@ function articleFromPost(
     post.audience &&
     post.audience !== "everyone" &&
     (!post.body_html?.trim() ||
-      (post.wordcount != null && words < post.wordcount * PREVIEW_RATIO))
+      (post.wordcount !== undefined &&
+        post.wordcount !== null &&
+        words < post.wordcount * PREVIEW_RATIO))
   ) {
     article.preview = true;
   }
@@ -203,9 +213,9 @@ function articleFromPost(
 
 function escapeHtml(text: string): string {
   return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }
 
 export interface FeedItem {
@@ -218,8 +228,8 @@ export interface FeedItem {
 }
 
 /** Items of a publication's RSS feed, addressed on its subdomain so they match saved and synced posts. */
-export function feedItems(xml: string, subdomain: string): FeedItem[] {
-  const items: FeedItem[] = [];
+export function feedItems(xml: string, subdomain: string): Array<FeedItem> {
+  const items: Array<FeedItem> = [];
   const host = `${subdomain.toLowerCase()}.substack.com`;
   for (const block of xml.match(/<item>[\s\S]*?<\/item>/g) ?? []) {
     const link = tagText(block, "link");
@@ -264,7 +274,7 @@ const NAMED_ENTITIES = new Map([
 ]);
 
 function decodeEntities(text: string): string {
-  return text.replace(
+  return text.replaceAll(
     /&(#x[0-9a-f]+|#\d+|[a-z]+);/gi,
     (whole, code: string) => {
       if (code[0] === "#") {
@@ -283,13 +293,13 @@ function decodeEntities(text: string): string {
 export function htmlToText(html: string): string {
   return decodeEntities(
     html
-      .replace(/<(script|style|figure|svg)[\s\S]*?<\/\1>/gi, "")
-      .replace(/<br\s*\/?>/gi, "\n")
-      .replace(/<li[^>]*>/gi, "\n- ")
-      .replace(/<\/(p|h[1-6]|blockquote|li|ul|ol|pre|div)>/gi, "\n\n")
-      .replace(/<[^>]+>/g, ""),
+      .replaceAll(/<(script|style|figure|svg)[\s\S]*?<\/\1>/gi, "")
+      .replaceAll(/<br\s*\/?>/gi, "\n")
+      .replaceAll(/<li[^>]*>/gi, "\n- ")
+      .replaceAll(/<\/(p|h[1-6]|blockquote|li|ul|ol|pre|div)>/gi, "\n\n")
+      .replaceAll(/<[^>]+>/g, ""),
   )
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
+    .replaceAll(/[ \t]+\n/g, "\n")
+    .replaceAll(/\n{3,}/g, "\n\n")
     .trim();
 }

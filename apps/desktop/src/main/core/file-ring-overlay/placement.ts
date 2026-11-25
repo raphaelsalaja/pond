@@ -26,7 +26,7 @@ function clamp(value: number, min: number, max: number): number {
 /** Centers on the pointer and slides inward at screen edges, on the display under the pointer or the nearest one. */
 export function overlayBounds(
   pointer: Point,
-  workAreas: readonly Rect[],
+  workAreas: ReadonlyArray<Rect>,
   size = OVERLAY_SIZE,
 ): Rect | null {
   const area = workAreas.toSorted(
@@ -62,11 +62,13 @@ export function overlayBehavior(
   platform: NodeJS.Platform,
   sessionType: string | undefined,
 ): OverlayBehavior {
-  if (platform === "darwin")
+  if (platform === "darwin") {
     return { panel: true, allWorkspaces: true, atPointer: true };
+  }
   /** Windows has no non-activating windows or workspace pinning, so the ring takes focus until it closes and shows on the current desktop only. */
-  if (platform === "win32")
+  if (platform === "win32") {
     return { panel: false, allWorkspaces: false, atPointer: true };
+  }
   /** Wayland hides the pointer outside Pond's windows and places windows itself, so the ring opens on the primary display instead. */
   return {
     panel: false,

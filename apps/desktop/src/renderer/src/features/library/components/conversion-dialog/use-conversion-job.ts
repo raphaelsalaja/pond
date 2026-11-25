@@ -3,23 +3,21 @@ import type {
   ConversionPreset,
 } from "@shared/conversion-contracts";
 import { useEffect, useState } from "react";
-import {
-  closeConversionDialog,
-  type ExportMode,
-} from "@/features/library/state/conversion-dialog";
+import { closeConversionDialog } from "@/features/library/state/conversion-dialog";
+import type { ExportMode } from "@/features/library/state/conversion-dialog";
 import { exportSelectionCsv, exportSelectionFiles } from "@/features/saves";
 import { errorCopy } from "@/shared/lib/error-copy";
 
 interface ExportRequest {
   mode: ExportMode;
-  ids: string[];
+  ids: Array<string>;
   fileIndex: number;
   preset: ConversionPreset;
 }
 
 async function exportSaves(
   mode: Exclude<ExportMode, "converted">,
-  ids: string[],
+  ids: Array<string>,
 ) {
   if (mode === "files") {
     const result = await exportSelectionFiles(ids);
@@ -35,17 +33,19 @@ async function exportSaves(
     const result = await window.pond.query("saves.exportEaglePackage", {
       ids,
     });
-    if (!result.ok && result.reason !== "cancelled")
+    if (!result.ok && result.reason !== "cancelled") {
       throw new Error(
         result.error || "Couldn't export the Eagle package. Try again.",
       );
+    }
     return;
   }
   const result = await window.pond.query("saves.exportPackage", { ids });
-  if (!result.ok && result.reason !== "cancelled")
+  if (!result.ok && result.reason !== "cancelled") {
     throw new Error(
       result.error || "Couldn't export the Pond package. Try again.",
     );
+  }
 }
 
 export function useConversionJob() {
@@ -64,12 +64,15 @@ export function useConversionJob() {
         const next = await window.pond.query("conversion.status", {
           id: job.id,
         });
-        if (!stopped && next) setJob(next);
-      } catch (cause) {
-        if (!stopped)
+        if (!stopped && next) {
+          setJob(next);
+        }
+      } catch (error_) {
+        if (!stopped) {
           setError(
-            errorCopy(cause, "Couldn't check export progress. Try again."),
+            errorCopy(error_, "Couldn't check export progress. Try again."),
           );
+        }
       }
       if (!stopped) timer = setTimeout(() => void poll(), 500);
     }
@@ -85,8 +88,8 @@ export function useConversionJob() {
     setError(null);
     try {
       await task();
-    } catch (cause) {
-      setError(errorCopy(cause, fallback));
+    } catch (error_) {
+      setError(errorCopy(error_, fallback));
     } finally {
       setBusy(false);
     }
@@ -112,8 +115,8 @@ export function useConversionJob() {
     if (!job) return;
     try {
       setJob(await window.pond.query("conversion.cancel", { id: job.id }));
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't cancel the export. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't cancel the export. Try again."));
     }
   }
 

@@ -33,28 +33,31 @@ import {
   CANVAS_THEMES,
   CANVAS_VALIGNS,
   CANVAS_WEIGHTS,
-  type CanvasAlign,
-  type CanvasBorder,
-  type CanvasCap,
-  type CanvasFill,
-  type CanvasLine,
-  type CanvasSide,
-  type CanvasTheme,
-  type CanvasValign,
-  type CanvasWeight,
+} from "@shared/canvas-contracts";
+import type {
+  CanvasAlign,
+  CanvasBorder,
+  CanvasCap,
+  CanvasFill,
+  CanvasLine,
+  CanvasSide,
+  CanvasTheme,
+  CanvasValign,
+  CanvasWeight,
 } from "@shared/canvas-contracts";
 import type { ComponentType, ReactElement, ReactNode } from "react";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
-import { type CanvasCommand, glyphsFor } from "./commands";
+import { glyphsFor } from "./commands";
+import type { CanvasCommand } from "./commands";
 import type { AlignEdge, LayerMove } from "./document";
 import {
   ALIGN_LABELS,
   CODE_LANGUAGES,
   FONT_LABELS,
   TEXT_SIZE_LABELS,
-  type TextStyle,
   VALIGN_LABELS,
 } from "./text-style";
+import type { TextStyle } from "./text-style";
 
 export type MenuTarget =
   | { kind: "pane"; minimap: boolean }
@@ -127,7 +130,7 @@ function item(
   };
 }
 
-export function arrangeItems(movable: number, run: Run): MenuItemSpec[] {
+export function arrangeItems(movable: number, run: Run): Array<MenuItemSpec> {
   return [
     ...ALIGNMENTS.map(({ edge, label, icon }) =>
       item(label, { type: "align", edge }, run, { icon }),
@@ -149,7 +152,7 @@ export function arrangeItems(movable: number, run: Run): MenuItemSpec[] {
   ];
 }
 
-export function boardItems(target: MenuTarget, run: Run): MenuItemSpec[] {
+export function boardItems(target: MenuTarget, run: Run): Array<MenuItemSpec> {
   if (target.kind === "pane") {
     return [
       item("Select All", { type: "select-all" }, run),
@@ -254,7 +257,10 @@ export function boardItems(target: MenuTarget, run: Run): MenuItemSpec[] {
   ];
 }
 
-function exportItems(scope: "board" | "selection", run: Run): MenuItemSpec[] {
+function exportItems(
+  scope: "board" | "selection",
+  run: Run,
+): Array<MenuItemSpec> {
   const noun = scope === "board" ? "Board" : "Selection";
   const glyphs = glyphsFor({ type: "export", format: "png" });
   return [
@@ -294,7 +300,7 @@ function choice<Value>(
 export function sizeItems(
   current: TextStyle["textSize"] | null,
   pick: (style: TextStyle) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return CANVAS_TEXT_SIZES.map((textSize) =>
     choice(TEXT_SIZE_LABELS[textSize], textSize, current, () =>
       pick({ textSize }),
@@ -305,7 +311,7 @@ export function sizeItems(
 export function fontItems(
   current: TextStyle["font"] | null,
   pick: (style: TextStyle) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return CANVAS_FONTS.map((font) =>
     choice(FONT_LABELS[font], font, current, () => pick({ font })),
   );
@@ -332,7 +338,7 @@ export function alignItems(
   current: { align: CanvasAlign | null; valign: CanvasValign | null },
   pick: (style: TextStyle) => void,
   vertical: boolean,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const horizontal = CANVAS_ALIGNS.map((align) =>
     choice(
       ALIGN_LABELS[align],
@@ -373,7 +379,7 @@ const BORDER_LABELS = {
 export function fillItems(
   current: CanvasFill | null,
   pick: (fill: CanvasFill) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return CANVAS_FILLS.map((fill) =>
     choice(FILL_LABELS[fill], fill, current, pick),
   );
@@ -382,7 +388,7 @@ export function fillItems(
 export function borderItems(
   current: CanvasBorder | null,
   pick: (border: CanvasBorder) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return CANVAS_BORDERS.map((border) =>
     choice(BORDER_LABELS[border], border, current, pick),
   );
@@ -396,7 +402,7 @@ const WEIGHT_LABELS = {
 export function weightItems(
   current: CanvasWeight | null,
   pick: (weight: CanvasWeight) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return CANVAS_WEIGHTS.map((weight) =>
     choice(WEIGHT_LABELS[weight], weight, current, pick),
   );
@@ -405,7 +411,7 @@ export function weightItems(
 export function connectorStrokeItems(
   current: { weight: CanvasWeight; dashed: boolean },
   pick: (style: { weight?: CanvasWeight; dashed?: boolean }) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     {
       type: "group",
@@ -439,7 +445,7 @@ const LINE_LABELS = {
 export function lineItems(
   current: CanvasLine,
   pick: (line: CanvasLine) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return CANVAS_LINES.map((line) => {
     const Icon = LINE_ICONS[line];
     return choice(LINE_LABELS[line], line, current, pick, <Icon />);
@@ -454,7 +460,7 @@ const THEME_LABELS = {
 export function themeItems(
   current: CanvasTheme | null,
   pick: (theme: CanvasTheme | undefined) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     choice<CanvasTheme | null>("Match App", null, current, () =>
       pick(undefined),
@@ -476,7 +482,7 @@ export type TableChange =
 
 export function tableItems(
   change: (change: TableChange) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     { label: "Add Row", onClick: () => change("add-row") },
     { label: "Add Column", onClick: () => change("add-column") },
@@ -489,7 +495,7 @@ export function tableItems(
 export function languageItems(
   current: string | null,
   pick: (language: string) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return CODE_LANGUAGES.map(({ id, label }) =>
     choice<string>(label, id, current, pick),
   );
@@ -521,7 +527,7 @@ function isRelation(cap: CanvasCap): boolean {
 export function capItems(
   current: CanvasCap,
   pick: (cap: CanvasCap) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const caps = CANVAS_CAPS.map((cap) =>
     choice(CAP_LABELS[cap], cap, current, pick),
   );

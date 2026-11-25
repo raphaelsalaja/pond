@@ -17,11 +17,11 @@ export function SaveCards({
   onOpenSave,
   onAttach,
 }: {
-  sources: AssistantSource[];
-  saveIds?: string[];
-  attachedIds?: string[];
+  sources: Array<AssistantSource>;
+  saveIds?: Array<string>;
+  attachedIds?: Array<string>;
   onOpenSave: (id: string) => void;
-  onAttach: (sources: AssistantSource[]) => void;
+  onAttach: (sources: Array<AssistantSource>) => void;
 }) {
   const items = toReferenceItems(
     saveIds ?? sources.map((source) => source.id),

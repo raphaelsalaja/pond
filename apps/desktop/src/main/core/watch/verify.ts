@@ -7,19 +7,19 @@ const CRAWLER_UA =
 
 function decodeText(text: string): string {
   return text
-    .replace(/&#(x[0-9a-f]+|\d+);/gi, (entity, code: string) => {
+    .replaceAll(/&#(x[0-9a-f]+|\d+);/gi, (entity, code: string) => {
       const point = code.toLowerCase().startsWith("x")
         ? Number.parseInt(code.slice(1), 16)
         : Number(code);
-      return point > 0 && point <= 0x10ffff
+      return point > 0 && point <= 0x10_ff_ff
         ? String.fromCodePoint(point)
         : entity;
     })
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;|&#39;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replaceAll("&quot;", '"')
+    .replaceAll(/&apos;|&#39;/g, "'")
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">");
 }
 
 function metadata(html: string): Map<string, string> {
@@ -27,8 +27,9 @@ function metadata(html: string): Map<string, string> {
   for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
     const attributes = new Map<string, string>();
     for (const match of tag.matchAll(/([\w:-]+)\s*=\s*(["'])(.*?)\2/gs)) {
-      if (match[1] && match[3] !== undefined)
+      if (match[1] && match[3] !== undefined) {
         attributes.set(match[1].toLowerCase(), decodeText(match[3]));
+      }
     }
     const name = attributes.get("property") ?? attributes.get("name");
     const content = attributes.get("content");
@@ -41,8 +42,9 @@ function targetUrl(source: Source, target: WatchTarget): string | null {
   const path = target.handle.split("/").map(encodeURIComponent).join("/");
   switch (source) {
     case "youtube": {
-      if (target.kind === "playlist")
+      if (target.kind === "playlist") {
         return `https://www.youtube.com/playlist?list=${encodeURIComponent(target.handle)}`;
+      }
       const owner = path.split("/")[0] ?? path;
       return /^UC[\w-]{20,}$/.test(owner)
         ? `https://www.youtube.com/channel/${owner}`
@@ -98,7 +100,7 @@ export async function verifyWatchTarget(
   const response = await fetchPage(url, {
     redirect: "follow",
     credentials: "omit",
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(8000),
     headers,
   });
   if (response.status === 404 || response.status === 410) return null;
@@ -125,7 +127,7 @@ export async function verifyWatchTarget(
         confirmed =
           /"channelMetadataRenderer"\s*:/.test(html) &&
           !!externalId &&
-          (samePage(vanity?.replace(/\\\//g, "/"), url) ||
+          (samePage(vanity?.replaceAll(String.raw`\/`, "/"), url) ||
             (owner.startsWith("uc") && externalId.toLowerCase() === owner));
       }
       break;
@@ -165,10 +167,29 @@ export async function verifyWatchTarget(
             !!title &&
             !!meta.get("og:image");
       break;
+    case "arena":
+    case "behance":
+    case "bluesky":
+    case "dribbble":
+    case "github":
+    case "linkedin":
+    case "local":
+    case "marked":
+    case "mymind":
+    case "reddit":
+    case "savee":
+    case "substack":
+    case "threads":
+    case "tumblr":
+    case "unsplash":
+    case "vimeo":
+    case "web":
+      break;
   }
   if (!confirmed) {
-    if (!title)
+    if (!title) {
       throw new Error("The platform did not provide account details.");
+    }
     return null;
   }
   const display = title
@@ -185,7 +206,7 @@ export async function verifyWatchTarget(
     /"image_xlarge_url"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/.exec(html)?.[1];
   const image =
     source === "pinterest"
-      ? pinterestImage?.replace(/\\\//g, "/")
+      ? pinterestImage?.replaceAll(String.raw`\/`, "/")
       : (meta.get("og:image:secure_url") ?? meta.get("og:image"));
   const avatar = image ? decodeText(image) : undefined;
   const result: WatchTarget = {

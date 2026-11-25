@@ -3,16 +3,41 @@ import type {
   QueueWorkerRequest,
   QueueWorkerResponse,
 } from "./worker-contract";
-import {
-  createQueueWorkerHost,
-  type QueueWorkerProcess,
-} from "./worker-host-core";
+import { createQueueWorkerHost } from "./worker-host-core";
+import type { QueueWorkerProcess } from "./worker-host-core";
+
+class PostSignal {
+  private count = 0;
+  private waiters: Array<{ target: number; resolve: () => void }> = [];
+
+  record(): void {
+    this.count += 1;
+    this.waiters = this.waiters.filter((waiter) => {
+      if (waiter.target > this.count) {
+        return true;
+      }
+      waiter.resolve();
+      return false;
+    });
+  }
+
+  reached(target: number): Promise<void> {
+    if (this.count >= target) {
+      return Promise.resolve();
+    }
+    const { promise, resolve } = Promise.withResolvers<void>();
+    this.waiters.push({ target, resolve });
+    return promise;
+  }
+}
 
 class FakeWorkerProcess implements QueueWorkerProcess {
-  readonly requests: QueueWorkerRequest[] = [];
+  readonly requests: Array<QueueWorkerRequest> = [];
   private messageListener: ((response: QueueWorkerResponse) => void) | null =
     null;
   private exitListener: ((code: number) => void) | null = null;
+
+  constructor(private readonly posts: PostSignal = new PostSignal()) {}
 
   onMessage(listener: (response: QueueWorkerResponse) => void): void {
     this.messageListener = listener;
@@ -24,6 +49,7 @@ class FakeWorkerProcess implements QueueWorkerProcess {
 
   postMessage(request: QueueWorkerRequest): void {
     this.requests.push(request);
+    this.posts.record();
   }
 
   killed = false;
@@ -61,11 +87,12 @@ function job(leaseToken: string) {
 }
 
 it("replaces a dead worker and continues queued jobs", async () => {
-  const workers: FakeWorkerProcess[] = [];
+  const workers: Array<FakeWorkerProcess> = [];
+  const posts = new PostSignal();
   let nextJobId = 0;
   const host = createQueueWorkerHost({
     spawn: () => {
-      const worker = new FakeWorkerProcess();
+      const worker = new FakeWorkerProcess(posts);
       workers.push(worker);
       return worker;
     },
@@ -78,7 +105,7 @@ it("replaces a dead worker and continues queued jobs", async () => {
   const second = host.run(job("second"));
   const third = host.run(job("third"));
 
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await posts.reached(2);
   expect(workers).toHaveLength(2);
   workers[0]?.exit(9);
   await expect(first).rejects.toThrow(
@@ -98,7 +125,7 @@ it("replaces a dead worker and continues queued jobs", async () => {
 });
 
 it("keeps media when an image worker dies instead of failing the save", async () => {
-  const workers: FakeWorkerProcess[] = [];
+  const workers: Array<FakeWorkerProcess> = [];
   const host = createQueueWorkerHost({
     spawn: () => {
       const worker = new FakeWorkerProcess();
@@ -123,12 +150,13 @@ it("keeps media when an image worker dies instead of failing the save", async ()
 });
 
 function idleHarness() {
-  const workers: FakeWorkerProcess[] = [];
+  const workers: Array<FakeWorkerProcess> = [];
+  const posts = new PostSignal();
   const timers: Array<{ run: () => void; cancelled: boolean }> = [];
   let nextJobId = 0;
   const host = createQueueWorkerHost({
     spawn: () => {
-      const worker = new FakeWorkerProcess();
+      const worker = new FakeWorkerProcess(posts);
       workers.push(worker);
       return worker;
     },
@@ -149,14 +177,14 @@ function idleHarness() {
     }
   };
   const killed = () => workers.filter((worker) => worker.killed);
-  return { host, workers, killed, fireIdle };
+  return { host, workers, posts, killed, fireIdle };
 }
 
 it("stops an idle worker and spawns a fresh one for the next job", async () => {
-  const { host, workers, killed, fireIdle } = idleHarness();
+  const { host, workers, posts, killed, fireIdle } = idleHarness();
 
   const first = host.run(job("first"));
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await posts.reached(1);
   workers[0]?.complete();
   await expect(first).resolves.toBeNull();
 
@@ -164,7 +192,7 @@ it("stops an idle worker and spawns a fresh one for the next job", async () => {
   expect(killed()).toEqual([workers[0]]);
 
   const second = host.run(job("second"));
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await posts.reached(2);
   expect(workers).toHaveLength(2);
   workers[1]?.complete();
   await expect(second).resolves.toBeNull();
@@ -172,15 +200,15 @@ it("stops an idle worker and spawns a fresh one for the next job", async () => {
 });
 
 it("keeps a worker that receives a job before it goes idle", async () => {
-  const { host, workers, killed, fireIdle } = idleHarness();
+  const { host, workers, posts, killed, fireIdle } = idleHarness();
 
   const first = host.run(job("first"));
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await posts.reached(1);
   workers[0]?.complete();
   await expect(first).resolves.toBeNull();
 
   const second = host.run(job("second"));
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await posts.reached(2);
   fireIdle();
   expect(killed()).toEqual([]);
   expect(workers).toHaveLength(1);
@@ -191,7 +219,7 @@ it("keeps a worker that receives a job before it goes idle", async () => {
 
 it("runs jobs in this process when spawning a worker would crash", async () => {
   let spawned = 0;
-  const requests: QueueWorkerRequest[] = [];
+  const requests: Array<QueueWorkerRequest> = [];
   const host = createQueueWorkerHost({
     spawn: () => {
       spawned += 1;

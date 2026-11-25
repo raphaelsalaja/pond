@@ -1,5 +1,6 @@
 import { open, stat } from "node:fs/promises";
-import { type SaveFile, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { SaveFile } from "@pond/schema/db";
 import {
   classifyLibraryFileFromHeader,
   libraryFilename,
@@ -12,7 +13,7 @@ import { getDb } from "../db";
 import { persistSave } from "./persist-save";
 
 export function replacementKind(
-  files: readonly Pick<SaveFile, "kind" | "path">[],
+  files: ReadonlyArray<Pick<SaveFile, "kind" | "path">>,
 ): string | null {
   return files.find((file) => !isAuxiliaryKind(file.kind))?.kind ?? null;
 }

@@ -34,7 +34,8 @@ import {
 } from "@pond/icons";
 import type { IconComponent, IconProps } from "@pond/icons/types";
 import { LOGO_PATH, LOGO_VIEW_BOX } from "@pond/ui";
-import { FOLDER_ICONS, type FolderIconId } from "@/shared/lib/folder-icons";
+import { FOLDER_ICONS } from "@/shared/lib/folder-icons";
+import type { FolderIconId } from "@/shared/lib/folder-icons";
 
 /** Padded so the mark sits at the optical size of the 18px fill icons. */
 const POND_INSET = 24;
@@ -99,11 +100,11 @@ function isFilled(id: FolderIconId): id is FilledIconId {
   return id in FILLS;
 }
 
-export const LIBRARY_ICONS: readonly {
+export const LIBRARY_ICONS: ReadonlyArray<{
   id: LibraryIconId;
   label: string;
   Icon: IconComponent;
-}[] = [
+}> = [
   { id: "pond", label: "Pond", Icon: PondIcon },
   ...FOLDER_ICONS.flatMap(({ id, label }) =>
     isFilled(id) ? [{ id, label, Icon: FILLS[id] }] : [],
@@ -147,7 +148,7 @@ export interface LibrarySwatch {
 }
 
 /** Step 9 is identical in light and dark themes, so saved logos look the same in both. */
-export const LIBRARY_SWATCHES: readonly LibrarySwatch[] = [
+export const LIBRARY_SWATCHES: ReadonlyArray<LibrarySwatch> = [
   ...HUES.map(([hue, label]) => ({
     id: hue,
     label,

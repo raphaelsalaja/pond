@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { dropPayload } from "./drop-payload";
 
-function data(files: File[], text: Record<string, string>) {
+function data(files: Array<File>, text: Record<string, string>) {
   return { files, getData: (format: string) => text[format] ?? "" };
 }
 
 const pathFor = (file: File) => `/Users/me/Desktop/${file.name}`;
+
+function unresolved(): string {
+  throw new Error("No path");
+}
 
 describe("overlay drop payload", () => {
   it("reads file paths first", () => {
@@ -37,9 +41,6 @@ describe("overlay drop payload", () => {
 
   it("skips files the platform can't resolve to a path", () => {
     const dropped = data([new File(["x"], "a.png")], {});
-    const unresolved = () => {
-      throw new Error("No path");
-    };
     expect(dropPayload(dropped, "moodboard", unresolved)).toBeNull();
   });
 });

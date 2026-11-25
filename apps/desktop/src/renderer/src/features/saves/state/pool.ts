@@ -12,7 +12,7 @@ function savedAtMs(save: Save): number {
   return Number.isFinite(save.savedAt) ? save.savedAt : 0;
 }
 
-function sortByRecency(list: Iterable<Save>): Save[] {
+function sortByRecency(list: Iterable<Save>): Array<Save> {
   return Array.from(list).sort((a, b) => savedAtMs(b) - savedAtMs(a));
 }
 
@@ -49,9 +49,9 @@ function sortedAfterSkip(
   list: ReadonlyArray<Save>,
   byId: Map<string, Save>,
   sorted: ReadonlyArray<Save>,
-): Save[] {
+): Array<Save> {
   const updated = new Map<string, Save>();
-  const prepend: Save[] = [];
+  const prepend: Array<Save> = [];
   for (const save of list) {
     if (byId.has(save.id)) updated.set(save.id, save);
     else prepend.push(save);
@@ -72,7 +72,7 @@ export const savesStore = new Store<SavesState>({
   revision: 0,
 });
 
-type DirtyListener = (ids: readonly string[]) => void;
+type DirtyListener = (ids: ReadonlyArray<string>) => void;
 const dirtyListeners = new Set<DirtyListener>();
 
 export function onPoolDirty(listener: DirtyListener): () => void {
@@ -82,16 +82,20 @@ export function onPoolDirty(listener: DirtyListener): () => void {
   };
 }
 
-function emitDirty(ids: readonly string[]): void {
-  if (ids.length === 0 || dirtyListeners.size === 0) return;
-  for (const listener of dirtyListeners) listener(ids);
+function emitDirty(ids: ReadonlyArray<string>): void {
+  if (ids.length === 0 || dirtyListeners.size === 0) {
+    return;
+  }
+  for (const listener of dirtyListeners) {
+    listener(ids);
+  }
 }
 
 /** Protected rows can hold the pool above this; only unprotected rows are evicted. */
-export const POOL_SOFT_CAP = 5_000;
+export const POOL_SOFT_CAP = 5000;
 /** Trimming below the cap leaves headroom so the next page load does not trim again. */
-export const POOL_TRIM_TARGET = 4_000;
-const TRIM_DELAY_MS = 1_000;
+export const POOL_TRIM_TARGET = 4000;
+const TRIM_DELAY_MS = 1000;
 
 /** Insertion order is recency: the first ID is the least recently touched. */
 const touched = new Set<string>();
@@ -173,7 +177,7 @@ export const pool = {
   delete(id: string): void {
     deleteSave(id);
   },
-  bulkDelete(ids: readonly string[]): void {
+  bulkDelete(ids: ReadonlyArray<string>): void {
     removeSaves(new Set(ids.filter((id) => savesStore.state.byId.has(id))));
   },
   clear(): void {

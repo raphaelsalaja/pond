@@ -1,4 +1,5 @@
 import { useDataTable } from "@pond/ui/data-table";
+import { isElement } from "@pond/ui/dom";
 import { useSelector } from "@tanstack/react-store";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { TagContextMenu } from "@/features/tags/components/context-menu";
@@ -10,8 +11,7 @@ import styles from "./styles.module.css";
 
 function fromControl(target: EventTarget | null) {
   return (
-    target instanceof Element &&
-    target.closest("button, input, textarea, a") !== null
+    isElement(target) && target.closest("button, input, textarea, a") !== null
   );
 }
 

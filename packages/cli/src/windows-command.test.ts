@@ -27,14 +27,15 @@ describe("quoteCmdArg", () => {
 
   it("quotes the Cursor JSON argument and escapes shell metacharacters", () => {
     expect(quoteCmdArg('{"name":"pond"}', 1)).toBe(
-      '^"{\\^"name\\^":\\^"pond\\^"}^"',
+      String.raw`^"{\^"name\^":\^"pond\^"}^"`,
     );
     expect(quoteCmdArg("a & b", 1)).toBe('^"a^ ^&^ b^"');
   });
 
   it("rejects characters cmd.exe would still expand", () => {
-    for (const arg of ["100%", "hi!", "a\nb", "a\0b"])
+    for (const arg of ["100%", "hi!", "a\nb", "a\0b"]) {
       expect(() => quoteCmdArg(arg)).toThrow();
+    }
   });
 });
 
@@ -55,17 +56,21 @@ describe("resolveWindowsCommand", () => {
 
 describe("windowsInvocation", () => {
   it("runs native executables directly", () => {
-    expect(windowsInvocation("C:\\bin\\claude.exe", ["mcp"])).toEqual({
-      file: "C:\\bin\\claude.exe",
+    expect(windowsInvocation(String.raw`C:\bin\claude.exe`, ["mcp"])).toEqual({
+      file: String.raw`C:\bin\claude.exe`,
       args: ["mcp"],
       verbatim: false,
     });
   });
 
   it("wraps .cmd shims in cmd.exe with a single quoted command line", () => {
-    const run = windowsInvocation("C:\\npm\\codex.cmd", ["mcp", "add"], {
-      ComSpec: "cmd.exe",
-    });
+    const run = windowsInvocation(
+      String.raw`C:\npm\codex.cmd`,
+      ["mcp", "add"],
+      {
+        ComSpec: "cmd.exe",
+      },
+    );
     expect(run.file).toBe("cmd.exe");
     expect(run.verbatim).toBe(true);
     expect(run.args.slice(0, 3)).toEqual(["/d", "/s", "/c"]);

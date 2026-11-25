@@ -1,14 +1,16 @@
 import { mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
-import { type NewSave, type Save, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { NewSave, Save } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import mime from "mime-types";
 import { getDb } from "../../db";
 import { executeTransaction, withMutationScope } from "../executor";
 import { createManualSave } from "../manual-import";
 import { persistSave } from "../persist-save";
-import { type EnqueueOneResult, enqueue } from "../pipeline/enqueue";
+import { enqueue } from "../pipeline/enqueue";
+import type { EnqueueOneResult } from "../pipeline/enqueue";
 import { setSaveTags } from "../tags";
 import { hasUserTitle } from "../user-metadata";
 import type { createMymindClient, MymindObject } from "./client";
@@ -18,7 +20,7 @@ import type { MymindSyncState } from "./state";
 interface MymindMetadata {
   title?: string;
   notes?: string;
-  tags: string[];
+  tags: Array<string>;
   createdAt: Date;
   savedAt: Date;
 }
@@ -109,14 +111,18 @@ function sourceUrl(object: MymindObject): string | undefined {
   throw new Error("mymind returned an invalid source URL.");
 }
 
+/** Abort only needs the pending read unblocked; the download's `finally` cancels and releases it again. */
+function ignoreAbortCancelFailure(): void {}
+
 async function downloadBlob(
   response: Response,
   directory: string,
   object: MymindObject,
   signal?: AbortSignal,
 ): Promise<string> {
-  if (!response.ok || !response.body)
+  if (!response.ok || !response.body) {
     throw new Error("The mymind file could not be downloaded.");
+  }
   const extension = mime.extension(response.headers.get("content-type") ?? "");
   const originalName = basename(
     (object.blob?.name || "mymind-file").replaceAll("\\", "/"),
@@ -129,7 +135,7 @@ async function downloadBlob(
   const path = join(directory, filename);
   const file = await open(path, "wx");
   const reader = response.body.getReader();
-  const cancel = () => void reader.cancel().catch(() => {});
+  const cancel = () => void reader.cancel().catch(ignoreAbortCancelFailure);
   signal?.addEventListener("abort", cancel, { once: true });
   try {
     while (true) {
@@ -188,8 +194,9 @@ export async function importMymindObject(
     savedAt: new Date(object.created),
   };
   const url = sourceUrl(object);
-  if (!url && !object.blob && !metadata.title && !metadata.notes)
+  if (!url && !object.blob && !metadata.title && !metadata.notes) {
     throw new Error("The mymind card is empty. Pond will try again later.");
+  }
 
   async function record(saveId: string, complete: boolean): Promise<void> {
     beforeWrite();

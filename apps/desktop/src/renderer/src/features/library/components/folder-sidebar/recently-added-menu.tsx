@@ -33,7 +33,7 @@ export function buildRecentlyAddedMenuItems({
 }: {
   hasItems: boolean;
   onChooseDate: () => void;
-}): MenuItemSpec[] {
+}): Array<MenuItemSpec> {
   return [
     {
       label: "Added Today",

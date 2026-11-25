@@ -22,8 +22,12 @@ export function ChromeHistoryNav() {
 
   const navigate = useEffectEvent((direction: NavigationDirection) => {
     if (direction === "back") {
-      if (canBack) router.history.back();
-    } else if (canForward) router.history.forward();
+      if (canBack) {
+        router.history.back();
+      }
+    } else if (canForward) {
+      router.history.forward();
+    }
   });
 
   useEffect(() => {

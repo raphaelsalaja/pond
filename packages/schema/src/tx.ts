@@ -28,8 +28,8 @@ export type Transaction =
       kind: "update";
       model: "save_folder";
       id: string;
-      patch: { folderIds: string[] };
-      before: { folderIds: string[] };
+      patch: { folderIds: Array<string> };
+      before: { folderIds: Array<string> };
       meta?: TxMeta;
     }
   | {
@@ -37,7 +37,7 @@ export type Transaction =
       model: "save";
       id: string;
       data: NewSave;
-      files?: TxSaveFile[];
+      files?: Array<TxSaveFile>;
       meta?: TxMeta;
     }
   | {
@@ -48,10 +48,10 @@ export type Transaction =
       before: Partial<NewSave>;
       titleLock?: { before: boolean; after: boolean };
       fileRenames?: Array<{ from: string; to: string }>;
-      files?: TxSaveFile[];
+      files?: Array<TxSaveFile>;
       /** Main-process temp files moved into the Save so large media is never buffered; renderers can't send these. */
       fileMoves?: Array<{ sourcePath: string; filename: string }>;
-      beforeFiles?: TxSaveFile[];
+      beforeFiles?: Array<TxSaveFile>;
       meta?: TxMeta;
     }
   | {
@@ -274,18 +274,24 @@ export function inverse(tx: Transaction): Transaction {
             before: tx.patch,
             meta: tx.meta,
           };
-          if (tx.titleLock)
+          if (tx.titleLock) {
             inverse.titleLock = {
               before: tx.titleLock.after,
               after: tx.titleLock.before,
             };
-          if (tx.beforeFiles) inverse.files = tx.beforeFiles;
-          if (tx.files) inverse.beforeFiles = tx.files;
-          if (tx.fileRenames)
+          }
+          if (tx.beforeFiles) {
+            inverse.files = tx.beforeFiles;
+          }
+          if (tx.files) {
+            inverse.beforeFiles = tx.files;
+          }
+          if (tx.fileRenames) {
             inverse.fileRenames = tx.fileRenames.map(({ from, to }) => ({
               from: to,
               to: from,
             }));
+          }
           return inverse;
         }
         case "tag":

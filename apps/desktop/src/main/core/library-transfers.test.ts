@@ -5,9 +5,11 @@ import {
   stopLibraryTransfers,
 } from "./library-transfers";
 
+function noop(): void {}
+
 afterEach(() => resumeLibraryTransfers());
 it("drains an active transfer and blocks new transfers while the library changes", async () => {
-  let release = () => {};
+  let release: () => void = noop;
   const pending = new Promise<void>((resolve) => {
     release = resolve;
   });
@@ -29,7 +31,7 @@ it("drains an active transfer and blocks new transfers while the library changes
   await expect(runLibraryTransfer(async () => 1)).resolves.toBe(1);
 });
 it("allows an admitted transfer to finish its nested export while draining", async () => {
-  let release = () => {};
+  let release: () => void = noop;
   const pending = new Promise<void>((resolve) => {
     release = resolve;
   });
@@ -44,7 +46,7 @@ it("allows an admitted transfer to finish its nested export while draining", asy
 });
 
 it("does not let deferred callbacks reuse admission after their transfer ends", async () => {
-  let release = () => {};
+  let release: () => void = noop;
   const later = new Promise<void>((resolve) => {
     release = resolve;
   });

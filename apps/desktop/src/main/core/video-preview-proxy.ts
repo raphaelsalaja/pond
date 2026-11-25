@@ -16,7 +16,7 @@ const inFlight = new Map<string, Promise<string | null>>();
 export function buildVideoPreviewArguments(
   source: string,
   output: string,
-): string[] {
+): Array<string> {
   return [
     "-nostdin",
     "-hide_banner",
@@ -134,7 +134,7 @@ async function createVideoPreviewProxy(input: {
   }
 }
 
-function runFfmpeg(path: string, args: string[]): Promise<void> {
+function runFfmpeg(path: string, args: Array<string>): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(path, args, {
       stdio: ["ignore", "ignore", "pipe"],
@@ -143,7 +143,7 @@ function runFfmpeg(path: string, args: string[]): Promise<void> {
     trackChildProcess(child);
     let stderr = "";
     child.stderr.on("data", (chunk: Buffer) => {
-      stderr = `${stderr}${chunk.toString("utf8")}`.slice(-2_000);
+      stderr = `${stderr}${chunk.toString("utf8")}`.slice(-2000);
     });
     const timer = setTimeout(() => {
       killProcessTree(child, "SIGKILL");

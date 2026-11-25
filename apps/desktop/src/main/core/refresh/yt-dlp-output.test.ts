@@ -9,7 +9,7 @@ import {
 } from "./yt-dlp-output";
 
 describe("pickProducedFiles", () => {
-  const dirs: string[] = [];
+  const dirs: Array<string> = [];
 
   afterEach(async () => {
     await Promise.all(

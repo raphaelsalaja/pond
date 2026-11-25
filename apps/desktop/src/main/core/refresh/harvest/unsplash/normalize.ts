@@ -1,6 +1,5 @@
 /// <reference lib="dom" />
 
-import type { JsonValue } from "@pond/schema/json";
 import type {
   BrowserValidators,
   UnsplashAsset,
@@ -22,8 +21,8 @@ export interface UnsplashAssetPage {
 
 /** Runs inside the page, so the list walk and the item harvest read one asset shape the same way. */
 export function inPageUnsplashNormalize(validators: BrowserValidators) {
-  function parseAsset(raw: JsonValue): UnsplashAsset | null {
-    const asset = validators.unsplashAsset.safeParse(raw);
+  async function readAsset(res: Response): Promise<UnsplashAsset | null> {
+    const asset = validators.unsplashAsset.safeParse(await res.json());
     return asset.success ? asset.data : null;
   }
 
@@ -64,5 +63,5 @@ export function inPageUnsplashNormalize(validators: BrowserValidators) {
     return page;
   }
 
-  return { parseAsset, assetEntry, assetPage };
+  return { readAsset, assetEntry, assetPage };
 }

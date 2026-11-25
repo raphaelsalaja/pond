@@ -2,7 +2,7 @@ import { saveFolders as saveFoldersTable } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import { getDb } from "../db";
 
-export async function folderIdsForSave(saveId: string): Promise<string[]> {
+export async function folderIdsForSave(saveId: string): Promise<Array<string>> {
   const db = await getDb();
   const rows = await db
     .select({ folderId: saveFoldersTable.folderId })

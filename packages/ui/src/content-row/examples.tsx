@@ -1,6 +1,6 @@
 import { IconDots, IconFolder, IconInbox } from "@pond/icons";
-import type { ComponentDocs } from "../shared/docs";
 import { ContentRow } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 export const docs: ComponentDocs = {
   slug: "content-row",

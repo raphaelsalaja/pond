@@ -2,11 +2,8 @@ import { IMPORT_ORIGIN_LABELS } from "@pond/schema/import-origin";
 import { collectInfoRows } from "@/features/saves/lib/info-rows";
 import { getSourceLabel } from "@/features/saves/lib/source-labels";
 import type { Save } from "@/features/saves/types";
-import {
-  type AccountRef,
-  accountDisplayName,
-  findAccountRef,
-} from "@/features/search/query";
+import { accountDisplayName, findAccountRef } from "@/features/search/query";
+import type { AccountRef } from "@/features/search/query";
 
 type RowKind = "author" | "account" | "platform" | "text";
 
@@ -70,7 +67,7 @@ const DETAIL_GROUPS = [
 
 export interface DetailGroup {
   title: string;
-  rows: DetailRow[];
+  rows: Array<DetailRow>;
 }
 
 function asHttpUrl(value: string | undefined): string | null {
@@ -128,7 +125,7 @@ export function pickAuthorProfileUrl(
 
 function pickFromRow(
   save: Pick<Save, "accountId">,
-  refs: readonly AccountRef[],
+  refs: ReadonlyArray<AccountRef>,
 ): DetailRow | null {
   const id = save.accountId?.trim();
   if (!id) return null;
@@ -148,9 +145,9 @@ function pickFromRow(
 
 export function collectIdentityRows(
   save: Save,
-  refs: readonly AccountRef[] = [],
-): DetailRow[] {
-  const rows: DetailRow[] = [
+  refs: ReadonlyArray<AccountRef> = [],
+): Array<DetailRow> {
+  const rows: Array<DetailRow> = [
     { id: "id", label: "ID", value: save.id, kind: "text" },
   ];
   if (save.author) {
@@ -186,10 +183,10 @@ export function collectIdentityRows(
   return rows;
 }
 
-export function groupDetailRows(rows: DetailRow[]): DetailGroup[] {
+export function groupDetailRows(rows: Array<DetailRow>): Array<DetailGroup> {
   const byId = new Map(rows.map((row) => [row.id, row]));
   const placed = new Set<string>();
-  const groups: DetailGroup[] = [];
+  const groups: Array<DetailGroup> = [];
 
   for (const group of DETAIL_GROUPS) {
     const next = group.ids.flatMap((id) => {
@@ -214,8 +211,8 @@ export function groupDetailRows(rows: DetailRow[]): DetailGroup[] {
 
 function normalizeForCompare(text: string): string {
   return text
-    .replace(/https?:\/\/\S+/gi, "")
-    .replace(/\s+/g, " ")
+    .replaceAll(/https?:\/\/\S+/gi, "")
+    .replaceAll(/\s+/g, " ")
     .trim()
     .toLowerCase();
 }

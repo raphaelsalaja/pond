@@ -2,14 +2,14 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, beforeAll, expect, it } from "vitest";
 import {
   renderSaveDragIcon,
   saveDragFileIconSize,
   saveDragIconSvg,
 } from "./save-drag-icon";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 /** Sharp's cache holds input files open, which blocks the temp cleanup on Windows. */
 sharp.cache(false);
@@ -51,9 +51,11 @@ it("leaves the count off a single save", () => {
 });
 
 /** The first SVG text render initializes fonts, which takes several seconds on Windows runners. */
-it("rasterizes a thumbnail into a 2x PNG and skips a save with nothing to show", {
-  timeout: 60_000,
-}, async () => {
+beforeAll(async () => {
+  await renderSaveDragIcon([null, null], 2);
+}, 60_000);
+
+it("rasterizes a thumbnail into a 2x PNG and skips a save with nothing to show", async () => {
   const root = await mkdtemp(join(tmpdir(), "pond-drag-icon-"));
   roots.push(root);
   const thumbnail = join(root, "clip.mp4_thumbnail.webp");

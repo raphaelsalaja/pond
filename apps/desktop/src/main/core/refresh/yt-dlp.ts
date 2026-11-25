@@ -18,8 +18,8 @@ import {
   pickProducedPoster,
   pickSubtitleFiles,
   readCompletedFiles,
-  type SubtitleFile,
 } from "./yt-dlp-output";
+import type { SubtitleFile } from "./yt-dlp-output";
 import { runWithTimeout } from "./yt-dlp-process";
 import { createYtdlpProgressReporter } from "./yt-dlp-progress";
 import { ensureYtDlp } from "./yt-dlp-updater";
@@ -44,11 +44,11 @@ export interface DownloadedVideoItem {
   infoJson: RawYtdlp | null;
   posterPath: string | null;
   posterMimeType: string | null;
-  subtitles: SubtitleFile[];
+  subtitles: Array<SubtitleFile>;
 }
 
 interface DownloadedVideos {
-  items: DownloadedVideoItem[];
+  items: Array<DownloadedVideoItem>;
   cleanup: () => Promise<void>;
 }
 
@@ -82,8 +82,8 @@ export async function downloadVideo(
     if (attemptDir) {
       try {
         await rm(attemptDir, { recursive: true, force: true });
-      } catch (err) {
-        log.warn("[pond yt-dlp] tmpdir cleanup failed", attemptDir, err);
+      } catch (error) {
+        log.warn("[pond yt-dlp] tmpdir cleanup failed", attemptDir, error);
       }
     }
   };
@@ -193,7 +193,7 @@ export async function downloadVideo(
       prefs.subtitles === "download" && args.request?.mode !== "audio"
         ? await pickSubtitleFiles(mediaDir)
         : [];
-    const items: DownloadedVideoItem[] = [];
+    const items: Array<DownloadedVideoItem> = [];
     for (let i = 0; i < produced.length; i++) {
       const file = produced[i];
       if (!file) continue;
@@ -216,8 +216,8 @@ export async function downloadVideo(
       return null;
     }
     return { items, cleanup };
-  } catch (err) {
-    log.warn("[pond yt-dlp] unexpected error", args.url, err);
+  } catch (error) {
+    log.warn("[pond yt-dlp] unexpected error", args.url, error);
     await cleanup();
     return null;
   }

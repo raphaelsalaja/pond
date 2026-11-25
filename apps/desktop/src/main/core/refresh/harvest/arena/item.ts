@@ -1,9 +1,11 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { type ArenaBlockPage, inPageArenaNormalize } from "./normalize";
+import { inPageArenaNormalize } from "./normalize";
+import type { ArenaBlockPage } from "./normalize";
 
 export function buildExpression(blockId: string): string {
   return buildItemExpression(inPageArenaNormalize, inPageArenaHarvest, blockId);
@@ -19,9 +21,12 @@ async function inPageArenaHarvest(
       document.querySelector(
         "[class*='BlockImage'], [class*='BlockText'], main img, main video",
       )
-    )
+    ) {
       break;
-    await new Promise((r) => setTimeout(r, 250));
+    }
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   return norm.extractBlockPageMeta();
 }

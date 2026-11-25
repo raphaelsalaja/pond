@@ -40,8 +40,9 @@ function edges(): Uint32Array {
 function hann(): Float64Array {
   if (window) return window;
   window = new Float64Array(FRAME_SIZE);
-  for (let index = 0; index < FRAME_SIZE; index++)
+  for (let index = 0; index < FRAME_SIZE; index++) {
     window[index] = 0.5 - 0.5 * Math.cos((2 * Math.PI * index) / FRAME_SIZE);
+  }
   return window;
 }
 
@@ -109,8 +110,9 @@ export function encodeAudioPrint(print: AudioPrint): Uint8Array {
   view.setFloat64(0, print.durationSeconds);
   view.setFloat64(8, print.hopSeconds);
   view.setUint32(16, print.frames.length);
-  for (const [index, frame] of print.frames.entries())
+  for (const [index, frame] of print.frames.entries()) {
     view.setUint32(HEADER_BYTES + index * 4, frame);
+  }
   return bytes;
 }
 
@@ -120,8 +122,9 @@ export function decodeAudioPrint(bytes: Uint8Array): AudioPrint | null {
   const count = view.getUint32(16);
   if (bytes.byteLength !== HEADER_BYTES + count * 4) return null;
   const frames = new Uint32Array(count);
-  for (let index = 0; index < count; index++)
+  for (let index = 0; index < count; index++) {
     frames[index] = view.getUint32(HEADER_BYTES + index * 4);
+  }
   const durationSeconds = view.getFloat64(0);
   const hopSeconds = view.getFloat64(8);
   if (!(durationSeconds > 0) || !(hopSeconds > 0)) return null;
@@ -148,13 +151,15 @@ export function compareAudioPrints(
     const overlap = to - from;
     if (overlap < MIN_OVERLAP_FRAMES) continue;
     let errors = 0;
-    for (let index = from; index < to; index++)
+    for (let index = from; index < to; index++) {
       errors += popcount32(
         ((left.frames[index] ?? 0) ^ (right.frames[index + shift] ?? 0)) | 0,
       );
+    }
     const bitErrorRate = errors / (overlap * 32);
-    if (!best || bitErrorRate < best.bitErrorRate)
+    if (!best || bitErrorRate < best.bitErrorRate) {
       best = { bitErrorRate, offsetSeconds: shift * left.hopSeconds };
+    }
   }
   if (!best || best.bitErrorRate > NEAR_BIT_ERROR_RATE) return null;
   return best;

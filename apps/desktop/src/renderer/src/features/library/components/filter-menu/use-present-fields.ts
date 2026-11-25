@@ -9,8 +9,12 @@ type FieldValue = ReturnType<(typeof FIELD_DESCRIPTORS)[FieldId]["project"]>;
 const SAVES_PER_CHUNK = 100;
 
 function hasValue(value: FieldValue): boolean {
-  if (Array.isArray(value)) return value.length > 0;
-  return value != null && value !== "" && value !== false;
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return (
+    value !== null && value !== undefined && value !== "" && value !== false
+  );
 }
 
 /** Null until the whole library is in memory, so a half-loaded pool never hides a field. */

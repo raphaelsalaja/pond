@@ -6,7 +6,6 @@ import { Review } from "./review";
 import {
   ASK,
   PHASES,
-  type Phase,
   REPLY,
   REVIEW_INDEX,
   SPRING,
@@ -14,6 +13,7 @@ import {
   TIMELINE,
   WORD_S,
 } from "./script";
+import type { Phase } from "./script";
 import { Step } from "./step";
 import styles from "./styles.module.css";
 
@@ -34,9 +34,15 @@ function useTimeline(): Phase {
 
 function useTyped(text: string, active: boolean): string {
   const [count, setCount] = useState(0);
-  useEffect(() => {
+  const [wasActive, setWasActive] = useState(active);
+  if (active !== wasActive) {
+    setWasActive(active);
     if (!active) {
       setCount(0);
+    }
+  }
+  useEffect(() => {
+    if (!active) {
       return;
     }
     const id = setInterval(

@@ -16,7 +16,7 @@ interface Property {
   value: ReactNode;
 }
 
-const PROPERTIES: Property[] = [
+const PROPERTIES: Array<Property> = [
   {
     label: "Folder",
     value: (

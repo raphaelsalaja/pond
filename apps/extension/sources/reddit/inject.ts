@@ -1,15 +1,8 @@
-import {
-  capture,
-  installInterceptor,
-  log,
-  type RequestLens,
-} from "@/utils/intercept";
-import {
-  asText,
-  isRecord,
-  type JsonRecord,
-  parseJsonRecord,
-} from "@/utils/json";
+import { isElement, isHTMLTag, isShadowRoot } from "@pond/ui/dom";
+import { capture, installInterceptor, log } from "@/utils/intercept";
+import type { RequestLens } from "@/utils/intercept";
+import { asText, isRecord, parseJsonRecord } from "@/utils/json";
+import type { JsonRecord } from "@/utils/json";
 
 declare global {
   interface Window {
@@ -23,12 +16,12 @@ const GRAPHQL_SAVE_RE = /\/svc\/shreddit\/graphql\b|gql\.reddit\.com/i;
 const POST_ID_RE = /t3_([a-z0-9]+)/i;
 const COMMENT_ID_RE = /t1_[a-z0-9]+/i;
 
-function composedNodes(ev: Event): EventTarget[] {
+function composedNodes(ev: Event): Array<EventTarget> {
   return ev.composedPath ? ev.composedPath() : [];
 }
 
 function compactText(raw: string | null | undefined): string {
-  return (raw ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+  return (raw ?? "").replaceAll(/\s+/g, " ").trim().toLowerCase();
 }
 
 function looksLikeSaveLabel(label: string | null): boolean {
@@ -95,23 +88,26 @@ function isSaveClickNode(el: Element): boolean {
   return text === "save" || text === "save post" || text === "bookmark";
 }
 
-function eventElements(ev: Event): Element[] {
+function eventElements(ev: Event): Array<Element> {
   const seen = new Set<Element>();
-  const out: Element[] = [];
+  const out: Array<Element> = [];
   const add = (node: EventTarget | null) => {
-    if (!(node instanceof Element) || seen.has(node)) return;
+    if (!isElement(node) || seen.has(node)) {
+      return;
+    }
     seen.add(node);
     out.push(node);
   };
-  for (const node of composedNodes(ev)) add(node);
-  if (ev.target instanceof Element) {
+  for (const node of composedNodes(ev)) {
+    add(node);
+  }
+  if (isElement(ev.target)) {
     let cur: Element | null = ev.target;
     let depth = 0;
     while (cur && depth < 24) {
       add(cur);
       const root = cur.getRootNode();
-      cur =
-        cur.parentElement ?? (root instanceof ShadowRoot ? root.host : null);
+      cur = cur.parentElement ?? (isShadowRoot(root) ? root.host : null);
       depth++;
     }
   }
@@ -148,16 +144,20 @@ function permalinkFromPost(post: Element): string | null {
   return m ? `https://redd.it/${m[1]}` : null;
 }
 
-function permalinkFromPath(path: EventTarget[]): string | null {
+function permalinkFromPath(path: Array<EventTarget>): string | null {
   for (const node of path) {
-    if (!(node instanceof Element)) continue;
+    if (!isElement(node)) {
+      continue;
+    }
     if (node.localName === "shreddit-post") {
       const url = permalinkFromPost(node);
       if (url) return url;
     }
     const fullname = node.getAttribute("data-fullname");
-    if (fullname?.startsWith("t3_")) return fullnameToUrl(fullname);
-    if (node instanceof HTMLAnchorElement && node.href.includes("/comments/")) {
+    if (fullname?.startsWith("t3_")) {
+      return fullnameToUrl(fullname);
+    }
+    if (isHTMLTag(node, "a") && node.href.includes("/comments/")) {
       return node.href;
     }
   }
@@ -249,14 +249,18 @@ export function isGraphqlSave(body: string | null): boolean {
 function voteDir(url: string, body: string | null): string | null {
   try {
     const fromQuery = new URL(url, location.href).searchParams.get("dir");
-    if (fromQuery != null) return fromQuery;
+    if (fromQuery !== null) {
+      return fromQuery;
+    }
   } catch {
     /* fall through to body */
   }
   if (!body) return null;
   try {
     const v = new URLSearchParams(body).get("dir");
-    if (v != null) return v;
+    if (v !== null) {
+      return v;
+    }
   } catch {
     /* not form-encoded */
   }
@@ -310,9 +314,11 @@ export function inject(): void {
         if (nearby) pendingPermalink = nearby;
         if (!isSaveClick(ev)) return;
         const url = nearby ?? pendingPermalink ?? permalinkFromLocation();
-        if (url) capture(url, "reddit:save");
-      } catch (e) {
-        log("warn", "reddit dom-click hook error", String(e));
+        if (url) {
+          capture(url, "reddit:save");
+        }
+      } catch (error) {
+        log("warn", "reddit dom-click hook error", String(error));
       }
     },
     true,

@@ -39,7 +39,7 @@ export function bufferedEnd(video: HTMLVideoElement): number {
 }
 
 export function stepPlaybackRate(rate: number, direction: 1 | -1): number {
-  const speeds: readonly number[] = SPEED_OPTIONS;
+  const speeds: ReadonlyArray<number> = SPEED_OPTIONS;
   const exact = speeds.indexOf(rate);
   if (exact >= 0) {
     return (

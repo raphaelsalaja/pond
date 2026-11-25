@@ -1,6 +1,7 @@
 import type { SavedView } from "@pond/schema/db";
 import { splitPostPredicate } from "@pond/schema/filters/fields";
-import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import type { QueryInput } from "@shared/query-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
@@ -17,7 +18,7 @@ import {
   setInheritedQuery,
 } from "@/features/library/state/view-store";
 import { descendantFolderIds } from "@/features/saves";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import { inboxScope, savedViewPath } from "@/shared/lib/library-nav";
 
 export type SavedViewEditorRequest =
@@ -30,7 +31,7 @@ export type SavedViewEditorRequest =
   | { token: number; mode: "edit"; viewId: string };
 
 interface SavedViewsState {
-  views: SavedView[];
+  views: Array<SavedView>;
   editingId: string | null;
   editorRequest: SavedViewEditorRequest;
   loaded: boolean;
@@ -87,7 +88,7 @@ function currentQuery(): Query {
 }
 
 export const savedViews = {
-  snapshot(): SavedView[] {
+  snapshot(): Array<SavedView> {
     return store.state.views;
   },
   startEditing(id: string): void {
@@ -96,7 +97,8 @@ export const savedViews = {
   finishEditing(id?: string): void {
     store.setState((state) => ({
       ...state,
-      editingId: id == null || state.editingId === id ? null : state.editingId,
+      editingId:
+        id === undefined || state.editingId === id ? null : state.editingId,
     }));
   },
   openEditor(input: {
@@ -138,19 +140,28 @@ export const savedViews = {
     const { activeViewId } = getViewState();
     if (!activeViewId) return;
     const active = store.state.views.find((view) => view.id === activeViewId);
-    if (!active) getAppRouter()?.history.replace("/");
-    else setInheritedQuery(inheritedQueryFor(active, store.state.views));
+    if (!active) {
+      getAppHistory()?.replace("/");
+    } else {
+      setInheritedQuery(inheritedQueryFor(active, store.state.views));
+    }
   },
   loaded(): boolean {
     return store.state.loaded;
   },
   select(id: string, options: { replace?: boolean } = {}): void {
-    if (!store.state.views.some((entry) => entry.id === id))
+    if (!store.state.views.some((entry) => entry.id === id)) {
       throw new Error("This smart folder item no longer exists.");
-    const router = getAppRouter();
-    if (!router) return;
-    if (options.replace) router.history.replace(savedViewPath(id));
-    else router.history.push(savedViewPath(id));
+    }
+    const history = getAppHistory();
+    if (!history) {
+      return;
+    }
+    if (options.replace) {
+      history.replace(savedViewPath(id));
+    } else {
+      history.push(savedViewPath(id));
+    }
   },
   async create(input: {
     kind: SavedView["kind"];
@@ -170,20 +181,23 @@ export const savedViews = {
       payload.layout = layout;
     }
     const result = await window.pond.query("savedViews.create", payload);
-    if (!result.ok || !result.id)
+    if (!result.ok || !result.id) {
       throw new Error("Could not create this smart folder item.");
+    }
     await savedViews.refresh();
     const view = store.state.views.find((entry) => entry.id === result.id);
-    if (!view)
+    if (!view) {
       throw new Error("The new smart folder item could not be loaded.");
+    }
     savedViews.select(view.id);
     return view;
   },
   async updateCurrent(id: string): Promise<void> {
     const state = getViewState();
     const view = store.state.views.find((entry) => entry.id === id);
-    if (!view || state.activeViewId !== id)
+    if (!view || state.activeViewId !== id) {
       throw new Error("Open this smart folder item before updating it.");
+    }
     const patch: QueryInput<"savedViews.update">["patch"] = {
       query: state.query,
     };
@@ -210,8 +224,9 @@ export const savedViews = {
       sortDir: view.sortDir,
       layout: view.layout,
     });
-    if (!result.ok || !result.id)
+    if (!result.ok || !result.id) {
       throw new Error("Could not duplicate this smart folder item.");
+    }
     await savedViews.refresh();
     const copy = store.state.views.find((entry) => entry.id === result.id);
     if (!copy) throw new Error("The duplicate could not be loaded.");
@@ -245,8 +260,10 @@ export const savedViews = {
     if (!result.ok) throw new Error("Could not delete this smart folder item.");
     await savedViews.refresh();
   },
-  async reorder(ids: string[]): Promise<void> {
-    if (ids.length === 0) return;
+  async reorder(ids: Array<string>): Promise<void> {
+    if (ids.length === 0) {
+      return;
+    }
     const result = await window.pond.query("savedViews.reorder", { ids });
     if (!result.ok) throw new Error("Could not reorder these smart folders.");
     await savedViews.refresh();
@@ -258,7 +275,7 @@ export function subscribeSavedViews(listener: () => void): () => void {
   return () => subscription.unsubscribe();
 }
 
-export function useSavedViews(): SavedView[] {
+export function useSavedViews(): Array<SavedView> {
   return useSelector(store, (s) => s.views);
 }
 

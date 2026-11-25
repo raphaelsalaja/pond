@@ -93,6 +93,9 @@ function parseObject(line: string): MymindObject {
   }
 }
 
+/** Abort only needs the pending read unblocked; the reader's `finally` cancels and releases it again. */
+function ignoreAbortCancelFailure(): void {}
+
 async function* readObjects(
   response: Response,
   signal?: AbortSignal,
@@ -101,14 +104,15 @@ async function* readObjects(
   if (
     contentType?.trim().toLowerCase() !== "application/jsonl" ||
     !response.body
-  )
+  ) {
     throw new Error("mymind did not return a complete item stream.");
+  }
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let pending = "";
   const cancel = () => {
-    void reader.cancel().catch(() => {});
+    void reader.cancel().catch(ignoreAbortCancelFailure);
   };
   signal?.addEventListener("abort", cancel, { once: true });
   try {
@@ -217,8 +221,9 @@ export function createMymindClient(
     },
 
     async *listCreatedObjects({ start, end, signal }: CreatedObjectsRequest) {
-      if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end)
+      if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) {
         throw new Error("The mymind import date range is invalid.");
+      }
       const query = new URLSearchParams({
         q: `created:${new Date(start).toISOString()}/PT${(end - start) / 1000}S`,
         contentAs: "text/markdown",

@@ -16,8 +16,9 @@ describe("GIF context menu", () => {
     ]);
     expect(items[1]).toMatchObject({ disabled: true });
     const thumbnail = items[0];
-    if (!thumbnail || thumbnail.type !== undefined)
+    if (!thumbnail || thumbnail.type !== undefined) {
       throw new Error("Missing thumbnail command");
+    }
     thumbnail.onClick?.();
     expect(onSetThumbnail).toHaveBeenCalledOnce();
   });

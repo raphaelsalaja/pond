@@ -23,7 +23,7 @@ export const LINKEDIN_PATTERNS = descriptorFor("linkedin").urlPatterns;
 
 export function firstMatch(
   url: URL,
-  patterns: readonly RegExp[],
+  patterns: ReadonlyArray<RegExp>,
 ): RegExpExecArray | null {
   const s = url.href;
   for (const rx of patterns) {

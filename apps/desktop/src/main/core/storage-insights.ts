@@ -1,19 +1,9 @@
-import { MEDIA_TYPES, type MediaType, saves } from "@pond/schema/db";
+import { MEDIA_TYPES, saves } from "@pond/schema/db";
+import type { MediaType } from "@pond/schema/db";
 import { FIELD_DESCRIPTORS, fileExtension } from "@pond/schema/filters/fields";
 import { isAuxiliaryKind } from "@shared/save-file-names";
-import {
-  and,
-  asc,
-  desc,
-  eq,
-  gt,
-  gte,
-  isNull,
-  ne,
-  or,
-  type SQL,
-  sql,
-} from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, isNull, ne, or, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import type {
   DuplicateStorageResult,
@@ -113,18 +103,25 @@ export function largestSaves(
     ne(saves.status, "skipped"),
     gt(saves.fileSize, 0),
   ];
-  const filters: (SQL | undefined)[] = [...sized];
+  const filters: Array<SQL | undefined> = [...sized];
   const search = input.search?.trim().toLowerCase();
-  if (search)
+  if (search) {
     filters.push(
       or(
         sql`instr(lower(coalesce(${saves.title}, '')), ${search}) > 0`,
         sql`instr(lower(${saves.url}), ${search}) > 0`,
       ),
     );
-  if (input.mediaType) filters.push(eq(saves.mediaType, input.mediaType));
-  if (input.source) filters.push(sql`${saves.source} = ${input.source}`);
-  if (input.minBytes) filters.push(gte(saves.fileSize, input.minBytes));
+  }
+  if (input.mediaType) {
+    filters.push(eq(saves.mediaType, input.mediaType));
+  }
+  if (input.source) {
+    filters.push(sql`${saves.source} = ${input.source}`);
+  }
+  if (input.minBytes) {
+    filters.push(gte(saves.fileSize, input.minBytes));
+  }
   const rows = db
     .select({
       id: saves.id,
@@ -170,12 +167,17 @@ export function largestFiles(
   db: Db,
   input: LargestFilesInput,
 ): LargestFilesResult {
-  const filters: SQL[] = [LIVE, sql`${FILE_SIZE} > 0`];
+  const filters: Array<SQL> = [LIVE, sql`${FILE_SIZE} > 0`];
   const search = input.search?.trim().toLowerCase();
-  if (search) filters.push(sql`instr(lower(${FILE_PATH}), ${search}) > 0`);
-  if (input.kind) filters.push(sql`${FILE_KIND} = ${input.kind}`);
-  if (input.extension)
+  if (search) {
+    filters.push(sql`instr(lower(${FILE_PATH}), ${search}) > 0`);
+  }
+  if (input.kind) {
+    filters.push(sql`${FILE_KIND} = ${input.kind}`);
+  }
+  if (input.extension) {
     filters.push(sql`pond_file_extension(${FILE_PATH}) = ${input.extension}`);
+  }
   const direction = input.order === "smallest" ? sql`asc` : sql`desc`;
   const rows = FileRows.parse(
     db.all(
@@ -222,7 +224,7 @@ export function largestFiles(
   };
 }
 
-function shares(db: Db, key: SQL): StorageShare[] {
+function shares(db: Db, key: SQL): Array<StorageShare> {
   return ShareRows.parse(
     db.all(
       sql`select ${key} as key, count(*) as saves, sum(${SAVE_BYTES}) as bytes
@@ -236,7 +238,7 @@ function shares(db: Db, key: SQL): StorageShare[] {
 }
 
 /** A Save in two folders counts toward both, but toward its top-level folder only once. */
-function folderShares(db: Db): FolderStorage[] {
+function folderShares(db: Db): Array<FolderStorage> {
   return FolderRows.parse(
     db.all(
       sql`with recursive tree(root_id, folder_id) as (
@@ -313,7 +315,10 @@ export function duplicateStorage(db: Db): DuplicateStorageResult {
     .from(saves)
     .where(and(isNull(saves.deletedAt), ne(saves.status, "skipped")))
     .all();
-  const byContent = new Map<string, { ids: string[]; bytes: number | null }>();
+  const byContent = new Map<
+    string,
+    { ids: Array<string>; bytes: number | null }
+  >();
   for (const row of rows) {
     const originals = (row.files ?? []).filter(
       (file) => !isAuxiliaryKind(file.kind),
@@ -334,9 +339,11 @@ export function duplicateStorage(db: Db): DuplicateStorageResult {
   }
   const exact = [...byContent.values()].filter((group) => group.ids.length > 1);
   let extraBytes = 0;
-  for (const group of exact)
-    if (group.bytes !== null)
+  for (const group of exact) {
+    if (group.bytes !== null) {
       extraBytes += group.bytes * (group.ids.length - 1);
+    }
+  }
   const ids = exact.flatMap((group) => group.ids);
   return { groups: exact.length, saves: ids.length, extraBytes, ids };
 }

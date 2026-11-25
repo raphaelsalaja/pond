@@ -40,11 +40,12 @@ describe("downloadStatusLabel", () => {
       ),
     ).toBe("In Progress");
     expect(downloadStatusLabel(row("retrying"), false)).toBe("Retrying");
-    vi.spyOn(Date, "now").mockReturnValue(0);
+    vi.useFakeTimers();
+    vi.setSystemTime(0);
     expect(
       downloadStatusLabel(row("retrying", { nextRunAt: 180_000 }), false),
     ).toBe("Retrying in 3m");
-    vi.restoreAllMocks();
+    vi.useRealTimers();
     expect(downloadStatusLabel(row("blocked"), false)).toBe("Failed");
     expect(downloadStatusLabel(row("failed"), false)).toBe("Failed");
     expect(downloadStatusLabel(row("dead", { attempts: 1 }), false)).toBe(

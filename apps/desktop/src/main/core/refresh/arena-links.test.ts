@@ -3,13 +3,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { ArenaLinkConversionProgress } from "../../../shared/arena-link-contracts";
 import { initializePondSchema } from "../../db";
 import {
-  type ArenaLinkJobDeps,
   convertArenaLinks,
   convertedArenaLinks,
   countIngesting,
   listUnconvertedArenaLinks,
   restoreLinkedPageHarvests,
 } from "./arena-links";
+import type { ArenaLinkJobDeps } from "./arena-links";
 
 function nativeAvailable() {
   try {
@@ -21,7 +21,7 @@ function nativeAvailable() {
   }
 }
 
-const opened: Database.Database[] = [];
+const opened: Array<Database.Database> = [];
 afterEach(() => {
   for (const db of opened.splice(0)) db.close();
 });
@@ -63,7 +63,7 @@ function insertSave(db: ReturnType<typeof openDb>, row: SaveRow): void {
       row.status ?? "complete",
       row.deletedAt ?? null,
       JSON.stringify({ capture, extractorId: "arena", extractedAt: "" }),
-      Number(row.id.replace(/\D/g, "") || 0),
+      Number(row.id.replaceAll(/\D/g, "") || 0),
     );
 }
 
@@ -175,11 +175,14 @@ describe.skipIf(!nativeAvailable())("Are.na Link selection", () => {
   });
 });
 
-function fakeLibrary(ids: string[], options: { failing?: string[] } = {}) {
+function fakeLibrary(
+  ids: Array<string>,
+  options: { failing?: Array<string> } = {},
+) {
   const converted = new Set<string>();
   const ingesting = new Set<string>();
-  const queued: string[] = [];
-  const settled: string[][] = [];
+  const queued: Array<string> = [];
+  const settled: Array<Array<string>> = [];
   let interruptAfter = Number.POSITIVE_INFINITY;
   const deps: ArenaLinkJobDeps = {
     batchSize: 2,
@@ -222,7 +225,7 @@ function fakeLibrary(ids: string[], options: { failing?: string[] } = {}) {
 describe("Are.na Link conversion", () => {
   it("queues bounded batches and waits for each to settle before the next", async () => {
     const library = fakeLibrary(["a", "b", "c", "d", "e"]);
-    const progress: ArenaLinkConversionProgress[] = [];
+    const progress: Array<ArenaLinkConversionProgress> = [];
 
     const result = await convertArenaLinks(
       (update) => progress.push(update),

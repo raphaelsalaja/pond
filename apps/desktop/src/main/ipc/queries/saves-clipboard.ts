@@ -11,12 +11,8 @@ import { getDb } from "../../db";
 import { writeFileRefsToClipboard } from "../../lib/clipboard-files";
 import { saveDir } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
-import {
-  FileIndexParam,
-  type QueryHandlerMap,
-  query,
-  StringParam,
-} from "./params";
+import { FileIndexParam, query, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const FileParams = z.object({ id: StringParam, fileIndex: FileIndexParam });
 
@@ -59,8 +55,9 @@ export const savesClipboardQueries = {
       if (!file) return { ok: false, reason: "missing" };
       const root = resolve(saveDir(id));
       const path = resolve(root, file.path);
-      if (!path.startsWith(`${root}${sep}`))
+      if (!path.startsWith(`${root}${sep}`)) {
         return { ok: false, reason: "unsafe_path" };
+      }
       try {
         const image = nativeImage.createFromBuffer(
           await readLibraryMedia(path),
@@ -120,8 +117,10 @@ export const savesClipboardQueries = {
       files: z.array(FileParams.catch({ id: "", fileIndex: 0 })).catch([]),
     }),
     async (params): Promise<QueryResult<"saves.copyFiles">> => {
-      if (params.files.length === 0) return { ok: false, reason: "not_found" };
-      const paths: string[] = [];
+      if (params.files.length === 0) {
+        return { ok: false, reason: "not_found" };
+      }
+      const paths: Array<string> = [];
       for (const entry of params.files) {
         if (!entry.id) continue;
         const target = await resolveSaveFilePath(entry.id, entry.fileIndex);

@@ -2,7 +2,7 @@ import { Select } from "@pond/ui/select";
 import type { FishTarget } from "@/utils/messaging";
 
 interface FishProps {
-  fish: FishTarget[];
+  fish: Array<FishTarget>;
   value: string | null;
   onValueChange: (value: string | null) => void;
   /** Popups render in the shadow root when the picker lives on a page. */

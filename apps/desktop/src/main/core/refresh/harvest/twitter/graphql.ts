@@ -364,7 +364,7 @@ export interface RichTweet {
     avatarUrl?: string;
     verified?: boolean;
   };
-  media: RichTweetMedia[];
+  media: Array<RichTweetMedia>;
   metrics: RichTweetMetrics;
   quoted?: RichTweet;
   replyTo?: { tweetId: string; url: string; handle: string };
@@ -374,15 +374,15 @@ export interface RichTweet {
 
 /** Reads tweets from list timelines (Bookmarks, Likes, folders) and from a post page's TweetResultByRestId and TweetDetail responses. */
 export function parseBookmarksResponses(
-  captures: BookmarksCapture[],
+  captures: Array<BookmarksCapture>,
 ): Map<string, RichTweet> {
   const out = new Map<string, RichTweet>();
   for (const cap of captures) {
     let json: unknown;
     try {
       json = JSON.parse(cap.body);
-    } catch (err) {
-      log.warn("[pond bookmarks] capture body not JSON", cap.url, err);
+    } catch (error) {
+      log.warn("[pond bookmarks] capture body not JSON", cap.url, error);
       continue;
     }
     const env = bookmarksEnvelope.safeParse(json);
@@ -417,7 +417,7 @@ export function parseBookmarksResponses(
 }
 
 function* iterateAddedEntries(
-  instructions: TimelineInstruction[],
+  instructions: Array<TimelineInstruction>,
 ): Generator<TimelineEntry> {
   for (const ix of instructions) {
     if ((ix.type ?? ix.__typename) !== "TimelineAddEntries") continue;
@@ -610,13 +610,13 @@ function pickAuthorAvatar(tweet: TweetNode): string | null {
   return raw.replace(/_normal(\.(?:jpg|jpeg|png|webp))/i, "_400x400$1");
 }
 
-function pickMedia(tweet: TweetNode): RichTweetMedia[] {
+function pickMedia(tweet: TweetNode): Array<RichTweetMedia> {
   const list =
     tweet.media_entities2 ??
     tweet.legacy?.extended_entities?.media ??
     tweet.legacy?.entities?.media ??
     [];
-  const out: RichTweetMedia[] = [];
+  const out: Array<RichTweetMedia> = [];
   const seen = new Set<string>();
   for (const item of list) {
     const mapped = mapMedia(item);
@@ -696,7 +696,9 @@ function upgradeTwimg(url: string): string {
       u.searchParams.set("name", "orig");
       return u.toString();
     }
-  } catch {}
+  } catch {
+    /** An unparseable URL is kept as given. */
+  }
   return url;
 }
 

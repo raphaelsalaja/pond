@@ -2,7 +2,8 @@ import {
   IconChevronRight as ChevronRight,
   IconPlus as Plus,
 } from "@pond/icons";
-import { PickerPanel, type PickerSelectionState } from "@pond/ui";
+import { PickerPanel } from "@pond/ui";
+import type { PickerSelectionState } from "@pond/ui";
 import type { ComponentPropsWithoutRef } from "react";
 import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
@@ -108,6 +109,7 @@ function Create({ create, ...props }: CreateProps) {
   return (
     <PickerPanel.Item
       {...props}
+      // oxlint-disable-next-line jsx-a11y/role-has-required-aria-props -- PickerPanel.Item sets aria-selected from `selected`
       role="option"
       selected="unchecked"
       data-create=""

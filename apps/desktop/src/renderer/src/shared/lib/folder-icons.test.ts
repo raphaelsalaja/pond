@@ -11,7 +11,7 @@ import {
   searchFolderIcons,
 } from "./folder-icons";
 
-function ids(query: string): string[] {
+function ids(query: string): Array<string> {
   return searchFolderIcons(query).map((icon) => icon.id);
 }
 

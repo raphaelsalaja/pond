@@ -5,11 +5,8 @@ import type {
   SavedHarvestResult,
 } from "../refresh/harvest/threads/saved-types";
 import { listHarvestPlan } from "./import-scope";
-import {
-  harvestThreadsLists,
-  type ThreadsListHarvester,
-  threadsListKinds,
-} from "./threads-lists";
+import { harvestThreadsLists, threadsListKinds } from "./threads-lists";
+import type { ThreadsListHarvester } from "./threads-lists";
 
 const SAVED_PAGE: SavedHarvestResult = {
   ok: true,
@@ -168,7 +165,7 @@ describe("harvestThreadsLists", () => {
 
   it("stops before the next list once the run is cancelled", async () => {
     const controller = new AbortController();
-    const calls: ThreadsListKind[] = [];
+    const calls: Array<ThreadsListKind> = [];
     const result = await harvestThreadsLists(
       ["saved", "liked"],
       { knownIds: [] },

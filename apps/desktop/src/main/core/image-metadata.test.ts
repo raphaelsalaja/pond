@@ -34,17 +34,17 @@ function fixture(): Buffer {
   buffer.writeUInt16LE(42, 8);
   buffer.writeUInt32LE(8, 10);
   buffer.writeUInt16LE(3, 14);
-  writeNumberEntry(buffer, 16, 0x010f, 2, 6, 50);
-  writeTextEntry(buffer, 28, 0x0110, 3, "R5\0");
-  writeNumberEntry(buffer, 40, 0x8769, 4, 1, 56);
+  writeNumberEntry(buffer, 16, 0x01_0f, 2, 6, 50);
+  writeTextEntry(buffer, 28, 0x01_10, 3, "R5\0");
+  writeNumberEntry(buffer, 40, 0x87_69, 4, 1, 56);
   buffer.write("Canon\0", 56, "ascii");
   buffer.writeUInt16LE(6, 62);
-  writeNumberEntry(buffer, 64, 0xa434, 2, 5, 134);
-  writeNumberEntry(buffer, 76, 0x920a, 5, 1, 159);
-  writeNumberEntry(buffer, 88, 0x829d, 5, 1, 167);
-  writeNumberEntry(buffer, 100, 0x829a, 5, 1, 175);
-  writeNumberEntry(buffer, 112, 0x8827, 3, 1, 200);
-  writeNumberEntry(buffer, 124, 0x9003, 2, 20, 139);
+  writeNumberEntry(buffer, 64, 0xa4_34, 2, 5, 134);
+  writeNumberEntry(buffer, 76, 0x92_0a, 5, 1, 159);
+  writeNumberEntry(buffer, 88, 0x82_9d, 5, 1, 167);
+  writeNumberEntry(buffer, 100, 0x82_9a, 5, 1, 175);
+  writeNumberEntry(buffer, 112, 0x88_27, 3, 1, 200);
+  writeNumberEntry(buffer, 124, 0x90_03, 2, 20, 139);
   buffer.write("RF24\0", 140, "ascii");
   buffer.write("2026:09:20 12:34:56\0", 145, "ascii");
   buffer.writeUInt32LE(50, 165);
@@ -102,8 +102,8 @@ describe("parseIptcKeywords", () => {
   it("reads the IPTC resource out of a JPEG APP13 Photoshop block", () => {
     const app13 = Buffer.concat([
       Buffer.from("Photoshop 3.0\0", "latin1"),
-      photoshopResource(0x0409, Buffer.from([0x1c, 0x02, 0x19, 0x00, 0x03])),
-      photoshopResource(0x0404, iim),
+      photoshopResource(0x04_09, Buffer.from([0x1c, 0x02, 0x19, 0x00, 0x03])),
+      photoshopResource(0x04_04, iim),
     ]);
     expect(parseIptcKeywords(app13)).toEqual(["Travel", "Sea"]);
   });

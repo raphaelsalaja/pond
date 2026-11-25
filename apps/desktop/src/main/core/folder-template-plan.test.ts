@@ -1,8 +1,8 @@
 import {
-  type FolderTemplate,
   FolderTemplatePrefsSchema,
   orderFolderTemplateNodes,
 } from "@pond/schema/folder-templates";
+import type { FolderTemplate } from "@pond/schema/folder-templates";
 import { BUILT_IN_FOLDER_TEMPLATES } from "@shared/folder-templates";
 import { describe, expect, it } from "vitest";
 import {
@@ -69,10 +69,11 @@ describe("orderFolderTemplateNodes", () => {
   });
 
   it("accepts every built-in template", () => {
-    for (const entry of BUILT_IN_FOLDER_TEMPLATES)
+    for (const entry of BUILT_IN_FOLDER_TEMPLATES) {
       expect(orderFolderTemplateNodes(entry.nodes)).toHaveLength(
         entry.nodes.length,
       );
+    }
   });
 });
 

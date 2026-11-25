@@ -19,9 +19,9 @@ export interface ProviderModel {
   catalogId?: string;
   description?: string;
   maxOutputTokens?: number;
-  capabilities?: string[];
+  capabilities?: Array<string>;
   modelCapabilities?: ModelCapabilities;
-  reasoningOptions?: AgentReasoning[];
+  reasoningOptions?: Array<AgentReasoning>;
   pricing?: {
     input?: string;
     output?: string;
@@ -31,7 +31,7 @@ export interface ProviderModel {
   available?: boolean;
 }
 
-export type ProviderModelsResult = { models: ProviderModel[] } & (
+export type ProviderModelsResult = { models: Array<ProviderModel> } & (
   | OkSuccess<{ warning?: string }>
   | OkFailure
 );
@@ -73,10 +73,12 @@ export function chosenModelId(
 }
 
 export function modelsForChooser(
-  models: ProviderModel[],
-  visibleIds: string[] | undefined,
-): ProviderModel[] {
-  if (visibleIds === undefined) return models;
+  models: Array<ProviderModel>,
+  visibleIds: Array<string> | undefined,
+): Array<ProviderModel> {
+  if (visibleIds === undefined) {
+    return models;
+  }
   return [...new Set(visibleIds)].map(
     (id) =>
       models.find((model) => model.id === id) ?? { id, name: displayName(id) },

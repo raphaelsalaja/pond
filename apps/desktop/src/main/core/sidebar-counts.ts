@@ -1,15 +1,7 @@
 import { saves } from "@pond/schema/db";
 import { EMPTY_QUERY } from "@pond/schema/filters";
-import {
-  and,
-  count,
-  eq,
-  inArray,
-  isNotNull,
-  isNull,
-  type SQL,
-  sql,
-} from "drizzle-orm";
+import { and, count, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import { recentlyAddedSince } from "../../shared/recently-added";
 import type { LibrarySidebarCounts } from "../../shared/sidebar-counts";
@@ -19,8 +11,8 @@ import { countSplitPosts } from "./split-posts";
 
 export function querySidebarCounts(
   db: Db,
-  hiddenFolderIds: readonly string[] = [],
-  recentIds: readonly string[] = [],
+  hiddenFolderIds: ReadonlyArray<string> = [],
+  recentIds: ReadonlyArray<string> = [],
   now = Date.now(),
 ): LibrarySidebarCounts {
   return db.$raw.transaction(() => {

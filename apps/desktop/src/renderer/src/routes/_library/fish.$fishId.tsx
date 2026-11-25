@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { AgentPane } from "@/features/agent/components/pane";
 import { assistant } from "@/features/agent/state/assistant";
@@ -23,7 +24,9 @@ function FishPage() {
   useEffect(() => {
     if (unseenAt === null || !unseenChat) return;
     void assistant.openChat(unseenChat);
-    void fishStore.markSeen(fishId).catch(() => undefined);
+    void fishStore.markSeen(fishId).catch((cause: unknown) => {
+      log.warn("[pond fish] marking the run seen failed", cause);
+    });
   }, [fishId, unseenChat, unseenAt]);
 
   return <AgentPane />;

@@ -13,11 +13,11 @@ import { z } from "zod";
 
 export type PondDataParts = {
   "pond-activity": { activity: AssistantActivity };
-  "pond-sources": AssistantSource[];
-  "pond-results": AssistantResultSet[];
-  "pond-steps": AssistantToolStep[];
+  "pond-sources": Array<AssistantSource>;
+  "pond-results": Array<AssistantResultSet>;
+  "pond-steps": Array<AssistantToolStep>;
   "pond-question": AssistantQuestion;
-  "pond-review": { changes: AssistantChange[] };
+  "pond-review": { changes: Array<AssistantChange> };
 };
 
 export type PondUIMessage = UIMessage<AssistantMetadata | null, PondDataParts>;
@@ -37,19 +37,24 @@ export function toUIMessage(message: AssistantMessage): PondUIMessage {
   const parts: PondUIMessage["parts"] = message.content
     ? [{ type: "text", text: message.content }]
     : [];
-  if (message.metadata?.question)
+  if (message.metadata?.question) {
     parts.push({ type: "data-pond-question", data: message.metadata.question });
-  if (message.metadata?.changes?.length)
+  }
+  if (message.metadata?.changes?.length) {
     parts.push({
       type: "data-pond-review",
       data: { changes: message.metadata.changes },
     });
-  if (message.metadata?.sources?.length)
+  }
+  if (message.metadata?.sources?.length) {
     parts.push({ type: "data-pond-sources", data: message.metadata.sources });
-  if (message.metadata?.results?.length)
+  }
+  if (message.metadata?.results?.length) {
     parts.push({ type: "data-pond-results", data: message.metadata.results });
-  if (message.metadata?.steps?.length)
+  }
+  if (message.metadata?.steps?.length) {
     parts.push({ type: "data-pond-steps", data: message.metadata.steps });
+  }
   return {
     id: message.id,
     role: message.role === "user" ? "user" : "assistant",
@@ -58,17 +63,25 @@ export function toUIMessage(message: AssistantMessage): PondUIMessage {
   };
 }
 
+type PondPart = PondUIMessage["parts"][number];
+
+/** UIMessage data parts are typed by PondDataParts, so a matching `type` fixes the data's shape. */
+function isDataPart<Name extends keyof PondDataParts>(
+  part: PondPart,
+  name: Name,
+): part is PondPart & { data: PondDataParts[Name] } {
+  return part.type === `data-${name}` && "data" in part;
+}
+
 export function partData<Name extends keyof PondDataParts>(
   message: PondUIMessage,
   name: Name,
 ): PondDataParts[Name] | undefined {
-  const type = `data-${name}`;
-  const part = message.parts.findLast((part) => part.type === type);
-  if (!part) return;
-  const parsed = z.object({ data: z.unknown() }).safeParse(part);
-  if (!parsed.success) return;
-  /** SAFETY: UIMessage data parts are typed by PondDataParts. */
-  return parsed.data.data as PondDataParts[Name];
+  const part = message.parts.findLast((part) => part.type === `data-${name}`);
+  if (!part || !isDataPart(part, name)) {
+    return;
+  }
+  return part.data;
 }
 
 export function fromUIMessage(

@@ -29,6 +29,8 @@ export function searchCardFromSave(save: {
     if (host) {
       card.iconUrl = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=128`;
     }
-  } catch {}
+  } catch {
+    /** A Save URL that doesn't parse keeps the card without a favicon. */
+  }
   return card;
 }

@@ -13,8 +13,7 @@
   width: 100%;
   height: var(--data-table-header-height, 36px);
   padding-inline: calc(
-    var(--data-table-inset, 0px) +
-    var(--data-table-gutter, 8px)
+    var(--data-table-inset, 0px) + var(--data-table-gutter, 8px)
   );
   border-bottom: var(
     --data-table-header-border,

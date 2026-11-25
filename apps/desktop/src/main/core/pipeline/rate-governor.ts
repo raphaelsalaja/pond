@@ -4,7 +4,6 @@ import log from "electron-log/main.js";
 import { AuthRequiredError } from "./extractors/errors";
 import {
   AT_RISK_PARK_MS,
-  type AtRiskKind,
   allPaused,
   atRisk,
   BREAKER_THRESHOLD,
@@ -26,7 +25,9 @@ import {
   requestLog,
   schedulePersist,
 } from "./rate-governor-state";
-import { type HeaderBag, parseRateSignal } from "./rate-headers";
+import type { AtRiskKind } from "./rate-governor-state";
+import { parseRateSignal } from "./rate-headers";
+import type { HeaderBag } from "./rate-headers";
 import {
   liftSourceAuthStop,
   noteDurableSourceFailure,
@@ -195,14 +196,14 @@ function effectiveDelay(source: Source, firstSync: boolean): number {
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
 
-function pruneLog(source: Source): number[] {
+function pruneLog(source: Source): Array<number> {
   const cutoff = now() - DAY_MS;
   const log_ = (requestLog.get(source) ?? []).filter((ts) => ts >= cutoff);
   requestLog.set(source, log_);
   return log_;
 }
 
-function recentCount(log_: number[], windowMs: number): number {
+function recentCount(log_: Array<number>, windowMs: number): number {
   const cutoff = now() - windowMs;
   let count = 0;
   for (let i = log_.length - 1; i >= 0; i--) {
@@ -244,7 +245,10 @@ class GovernorAbortError extends Error {
 
 const wait = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
-    if (signal?.aborted) return reject(new GovernorAbortError());
+    if (signal?.aborted) {
+      reject(new GovernorAbortError());
+      return;
+    }
     const id = setTimeout(() => {
       signal?.removeEventListener("abort", onAbort);
       resolve();
@@ -262,21 +266,27 @@ export async function acquire(
 ): Promise<void> {
   loadState();
   const deadline =
-    opts.maxWaitMs != null ? now() + opts.maxWaitMs : Number.MAX_SAFE_INTEGER;
+    opts.maxWaitMs !== undefined
+      ? now() + opts.maxWaitMs
+      : Number.MAX_SAFE_INTEGER;
 
   for (;;) {
     if (opts.signal?.aborted) throw new GovernorAbortError();
     const until = sourcePausedUntil(source);
     if (until === 0) break;
     if (until >= Number.MAX_SAFE_INTEGER) {
-      const slice = Math.min(2_000, deadline - now());
-      if (slice <= 0) throw new GovernorAbortError();
+      const slice = Math.min(2000, deadline - now());
+      if (slice <= 0) {
+        throw new GovernorAbortError();
+      }
       await wait(slice, opts.signal);
       continue;
     }
     const sleepMs = Math.min(until - now(), deadline - now());
-    if (sleepMs <= 0) throw new GovernorAbortError();
-    await wait(Math.min(sleepMs, 5_000), opts.signal);
+    if (sleepMs <= 0) {
+      throw new GovernorAbortError();
+    }
+    await wait(Math.min(sleepMs, 5000), opts.signal);
   }
 
   const p = profile(source);
@@ -286,8 +296,10 @@ export async function acquire(
     if (inWindow < p.maxPerWindow) break;
     const oldest = log_[log_.length - inWindow] ?? now();
     const waitMs = Math.min(oldest + p.windowMs - now(), deadline - now());
-    if (waitMs <= 0 && deadline <= now()) throw new GovernorAbortError();
-    await wait(Math.max(50, Math.min(waitMs, 5_000)), opts.signal);
+    if (waitMs <= 0 && deadline <= now()) {
+      throw new GovernorAbortError();
+    }
+    await wait(Math.max(50, Math.min(waitMs, 5000)), opts.signal);
   }
 
   const last = lastRequestAt.get(source) ?? 0;
@@ -311,8 +323,8 @@ export async function acquire(
     if (remaining <= 0) throw new GovernorAbortError();
     const gateWait =
       admission.nextRunAt >= Number.MAX_SAFE_INTEGER
-        ? Math.min(2_000, remaining)
-        : Math.min(Math.max(50, admission.nextRunAt - now()), 5_000, remaining);
+        ? Math.min(2000, remaining)
+        : Math.min(Math.max(50, admission.nextRunAt - now()), 5000, remaining);
     await wait(gateWait, opts.signal);
   }
 
@@ -348,15 +360,16 @@ export function report(source: Source, input: ReportInput): ReportResult {
       signal?.retryAfterSec ??
       Math.min(900, 60 * (multiplier.get(source) ?? 1));
     bumpMultiplier(source);
-    const ms = Math.max(1_000, sec * 1000);
+    const ms = Math.max(1000, sec * 1000);
     setSourceCooldown(source, ms);
     return { cooldownMs: ms };
   }
 
   if (
-    signal?.remaining != null &&
+    signal !== null &&
+    signal.remaining !== null &&
     signal.remaining <= 2 &&
-    signal.retryAfterSec != null &&
+    signal.retryAfterSec !== null &&
     signal.retryAfterSec > 0
   ) {
     const ms = signal.retryAfterSec * 1000;

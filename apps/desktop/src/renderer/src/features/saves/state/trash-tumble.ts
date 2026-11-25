@@ -12,14 +12,18 @@ function reduceMotion(): boolean {
   return document.documentElement.getAttribute("data-reduce-motion") === "true";
 }
 
-export async function tumbleToTrash(ids: readonly string[]): Promise<void> {
-  if (ids.length === 0 || reduceMotion()) return;
+export async function tumbleToTrash(ids: ReadonlyArray<string>): Promise<void> {
+  if (ids.length === 0 || reduceMotion()) {
+    return;
+  }
   store.setState((s) => {
     const next = new Set(s.ids);
     for (const id of ids) next.add(id);
     return { ids: next };
   });
-  await new Promise((resolve) => setTimeout(resolve, TUMBLE_MS));
+  await new Promise((resolve) => {
+    setTimeout(resolve, TUMBLE_MS);
+  });
   setTimeout(() => {
     store.setState((s) => {
       const next = new Set(s.ids);

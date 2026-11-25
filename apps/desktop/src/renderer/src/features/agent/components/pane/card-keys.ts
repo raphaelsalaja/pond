@@ -1,3 +1,4 @@
+import { isHTMLElement, isHTMLTag } from "@pond/ui/dom";
 import type { KeyboardEvent } from "react";
 
 interface CardKeys {
@@ -9,10 +10,10 @@ interface CardKeys {
 
 function typing(target: EventTarget) {
   return (
-    target instanceof HTMLElement &&
+    isHTMLElement(target) &&
     (target.isContentEditable ||
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement)
+      isHTMLTag(target, "input") ||
+      isHTMLTag(target, "textarea"))
   );
 }
 
@@ -39,7 +40,8 @@ export function cardKeys({ submit, cancel, pick }: CardKeys) {
       /^[1-9]$/.test(event.key) &&
       !typing(event.target) &&
       pick(Number(event.key) - 1, event.currentTarget)
-    )
+    ) {
       event.preventDefault();
+    }
   };
 }

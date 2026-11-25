@@ -3,11 +3,11 @@ import { z } from "zod";
 import { withMutationScope } from "../../core/executor";
 import {
   NullableStringParam,
-  type QueryHandlerMap,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 export const foldersQueries = {
   "folders.createBatch": query(
@@ -28,9 +28,8 @@ export const foldersQueries = {
       name: StringParam.optional(),
     }),
     async (params) => {
-      const { applyFolderTemplate } = await import(
-        "../../core/folder-templates"
-      );
+      const { applyFolderTemplate } =
+        await import("../../core/folder-templates");
       return applyFolderTemplate(params);
     },
   ),
@@ -42,27 +41,24 @@ export const foldersQueries = {
       description: z.string().optional(),
     }),
     async (params) => {
-      const { saveFolderAsTemplate } = await import(
-        "../../core/folder-templates"
-      );
+      const { saveFolderAsTemplate } =
+        await import("../../core/folder-templates");
       return saveFolderAsTemplate(params);
     },
   ),
   "folders.templates.duplicate": query(
     z.object({ templateId: StringParam }),
     async (params) => {
-      const { duplicateFolderTemplate } = await import(
-        "../../core/folder-templates"
-      );
+      const { duplicateFolderTemplate } =
+        await import("../../core/folder-templates");
       return duplicateFolderTemplate(params);
     },
   ),
   "folders.templates.delete": query(
     z.object({ templateId: StringParam }),
     async (params) => {
-      const { deleteFolderTemplate } = await import(
-        "../../core/folder-templates"
-      );
+      const { deleteFolderTemplate } =
+        await import("../../core/folder-templates");
       return deleteFolderTemplate(params);
     },
   ),
@@ -122,10 +118,10 @@ export const foldersQueries = {
     }),
     async (params) =>
       withMutationScope(async () => {
-        const { folderIdsForSave, assignSaveFolders } = await import(
-          "../../core/folders"
-        );
-        const assignments: Array<{ saveId: string; folderIds: string[] }> = [];
+        const { folderIdsForSave, assignSaveFolders } =
+          await import("../../core/folders");
+        const assignments: Array<{ saveId: string; folderIds: Array<string> }> =
+          [];
         for (const id of new Set(params.saveIds)) {
           const current = await folderIdsForSave(id);
           const removed = new Set(params.removeIds);
@@ -164,9 +160,8 @@ export const foldersQueries = {
   "folders.downloading": query(
     z.object({ folderIds: StringListParam }),
     async ({ folderIds }) => {
-      const { folderDownloadingCount } = await import(
-        "../../core/folder-summaries"
-      );
+      const { folderDownloadingCount } =
+        await import("../../core/folder-summaries");
       return { count: await folderDownloadingCount(folderIds) };
     },
   ),

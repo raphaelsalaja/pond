@@ -1,15 +1,12 @@
-import {
-  Menu,
-  type MenuItemConstructorOptions,
-  type WebContents,
-} from "electron";
+import { Menu } from "electron";
+import type { MenuItemConstructorOptions, WebContents } from "electron";
 import { sym } from "./lib/menu-symbol";
 
 export function attachEditableContextMenu(contents: WebContents): void {
   contents.on("context-menu", (_event, params) => {
     if (!params.isEditable) return;
 
-    const template: MenuItemConstructorOptions[] = [];
+    const template: Array<MenuItemConstructorOptions> = [];
 
     for (const suggestion of params.dictionarySuggestions) {
       template.push({
@@ -18,15 +15,17 @@ export function attachEditableContextMenu(contents: WebContents): void {
       });
     }
     if (params.misspelledWord) {
-      template.push({
-        ...sym("plus"),
-        label: "Add to Dictionary",
-        click: () =>
-          contents.session.addWordToSpellCheckerDictionary(
-            params.misspelledWord,
-          ),
-      });
-      template.push({ type: "separator" });
+      template.push(
+        {
+          ...sym("plus"),
+          label: "Add to Dictionary",
+          click: () =>
+            contents.session.addWordToSpellCheckerDictionary(
+              params.misspelledWord,
+            ),
+        },
+        { type: "separator" },
+      );
     }
 
     template.push(

@@ -9,7 +9,6 @@ import { buildFirstFramePoster } from "../../../lib/poster-from-frame";
 import {
   hasMediaDims,
   needsPosterRepair,
-  type PosterWrite,
   posterFilename,
   posterRepairIndexes,
   remotePosterUrl,
@@ -17,6 +16,7 @@ import {
   videoPosterSlots,
   youtubeThumbnailUrl,
 } from "../../../lib/poster-policy";
+import type { PosterWrite } from "../../../lib/poster-policy";
 import { probeVideoDims } from "../../../lib/video-dims";
 import { youtubeShortPosterPlan } from "../../../lib/youtube-thumbnail";
 import { saveDir } from "../../../paths";
@@ -101,7 +101,7 @@ async function ensurePoster(
   const forcePlatform =
     Boolean(opts.forcePlatform) &&
     usesPlatformPoster(save.source) &&
-    youtubeThumbnailUrl(save.rawJson) != null;
+    youtubeThumbnailUrl(save.rawJson) !== null;
   if (!opts.force && !forcePlatform && !needsPosterRepair(files)) {
     log.debug(
       "[pond pipeline:ensure-poster] posters already satisfy policy",
@@ -116,7 +116,9 @@ async function ensurePoster(
       ? videos.map((_, index) => index)
       : posterRepairIndexes(files),
   );
-  const replacing = [...repairIndexes].some((index) => posters[index] != null);
+  const replacing = [...repairIndexes].some(
+    (index) => posters[index] !== undefined,
+  );
   const targets = replacing
     ? videos.map((video, index) => ({ video, index }))
     : [...repairIndexes].map((index) => ({
@@ -124,7 +126,7 @@ async function ensurePoster(
         index,
       }));
 
-  const newFiles: PosterWrite[] = [];
+  const newFiles: Array<PosterWrite> = [];
   for (const { video, index } of targets) {
     if (!video) continue;
     if (replacing && !repairIndexes.has(index)) {
@@ -171,8 +173,8 @@ async function ensurePoster(
 
 async function hydrateVideoDims(
   saveId: string,
-  files: SaveFile[],
-): Promise<{ files: SaveFile[]; changed: boolean }> {
+  files: Array<SaveFile>,
+): Promise<{ files: Array<SaveFile>; changed: boolean }> {
   const probed = await Promise.all(
     files.map(async (file) => {
       if (!isVideoFile(file) || hasMediaDims(file)) {
@@ -281,8 +283,8 @@ async function loadPoster(
 
 function isPortraitPoster(poster: PosterWrite): boolean {
   return (
-    poster.width != null &&
-    poster.height != null &&
+    poster.width !== undefined &&
+    poster.height !== undefined &&
     poster.width > 0 &&
     poster.height > poster.width
   );

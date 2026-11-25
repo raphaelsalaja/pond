@@ -1,8 +1,5 @@
-import {
-  CANCEL_REASON,
-  SKIP_REASON,
-  type TaskDeferredReason,
-} from "@pond/schema/db";
+import { CANCEL_REASON, SKIP_REASON } from "@pond/schema/db";
+import type { TaskDeferredReason } from "@pond/schema/db";
 import type { QueueSourceGate } from "@shared/queue-contracts";
 import { describe, expect, it } from "vitest";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";

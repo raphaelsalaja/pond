@@ -5,7 +5,7 @@ interface DownloadDialogState {
   open: boolean;
   /** Bumps on every open, so a reopened dialog starts on a fresh link page. */
   session: number;
-  links: string[];
+  links: Array<string>;
 }
 
 const store = new Store<DownloadDialogState>({
@@ -15,7 +15,7 @@ const store = new Store<DownloadDialogState>({
 });
 
 export const downloadDialog = {
-  open(links: string[] = []): void {
+  open(links: Array<string> = []): void {
     store.setState((state) => ({
       open: true,
       session: state.open ? state.session : state.session + 1,

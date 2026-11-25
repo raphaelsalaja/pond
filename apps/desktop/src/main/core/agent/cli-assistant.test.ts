@@ -262,7 +262,9 @@ beforeAll(async () => {
         join(directory, `${name}.cmd`),
         `@"${process.execPath}" "%~dp0${name}.js" %*\r\n`,
       );
-    } else await writeFile(join(directory, name), fixture, { mode: 0o755 });
+    } else {
+      await writeFile(join(directory, name), fixture, { mode: 0o755 });
+    }
   }
   process.env.PATH = `${directory}${delimiter}${originalPath}`;
   process.env.CODEX_HOME = join(directory, "source-codex-home");
@@ -271,8 +273,9 @@ beforeAll(async () => {
     mode: 0o600,
   });
   process.env.POND_CLI_PID = join(directory, "child.pid");
-  for (const name of Object.keys(originalKeys))
+  for (const name of Object.keys(originalKeys)) {
     process.env[name] = "must-not-reach-subscription-child";
+  }
 });
 
 afterAll(async () => {
@@ -299,7 +302,7 @@ function run(
   content = "Find design",
   controller = new AbortController(),
 ) {
-  const calls: string[] = [];
+  const calls: Array<string> = [];
   let text = "";
   const result = completeWithTools({
     provider,
@@ -460,7 +463,9 @@ describe("subscription assistant through real CLI processes", () => {
           pid = Number(stored);
           break;
         }
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 20);
+        });
       }
       controller.abort();
       await rejected;

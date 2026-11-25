@@ -34,7 +34,8 @@ function listUrl(
 const FlatEntrySchema = z.preprocess(
   (text) => {
     try {
-      return JSON.parse(String(text));
+      const parsed: unknown = JSON.parse(String(text));
+      return parsed;
     } catch {
       return null;
     }
@@ -88,11 +89,13 @@ export async function listYtdlpWatch(
     return { ok: false, reason: "unavailable" };
   }
 
-  const entries: WatchEntry[] = [];
+  const entries: Array<WatchEntry> = [];
   const seen = new Set<string>();
   for (const line of stdout.split("\n")) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith("{")) continue;
+    if (!trimmed.startsWith("{")) {
+      continue;
+    }
     const decoded = FlatEntrySchema.safeParse(trimmed);
     if (!decoded.success) continue;
     const parsed = decoded.data;

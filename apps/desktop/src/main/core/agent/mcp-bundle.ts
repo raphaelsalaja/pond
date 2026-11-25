@@ -44,7 +44,7 @@ async function appIcon(): Promise<Buffer | null> {
 
 export async function writePondMcpBundle(
   command = process.execPath,
-  args: string[] = ["--mcp"],
+  args: Array<string> = ["--mcp"],
 ): Promise<string> {
   const icon = await appIcon();
   const manifest = {

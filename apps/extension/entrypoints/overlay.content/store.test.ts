@@ -24,7 +24,7 @@ function titlesFrom(event: {
 
 it("shows the first capture toast once the notification UI subscribes", () => {
   const store = createOverlayStore();
-  const seen: string[] = [];
+  const seen: Array<string> = [];
   store.show(capture("sending"), appearance);
   store.show(capture("duplicate"), appearance);
 
@@ -37,7 +37,7 @@ it("shows the first capture toast once the notification UI subscribes", () => {
 
 it("keeps Saving to Pond when the result arrives after the UI subscribes", () => {
   const store = createOverlayStore();
-  const seen: string[] = [];
+  const seen: Array<string> = [];
   store.show(capture("sending"), appearance);
   store.toasts[" subscribe"]((event) => {
     seen.push(titlesFrom(event));
@@ -49,7 +49,7 @@ it("keeps Saving to Pond when the result arrives after the UI subscribes", () =>
 
 it("does not restore a toast cleared before the UI subscribes", () => {
   const store = createOverlayStore();
-  const seen: string[] = [];
+  const seen: Array<string> = [];
   store.show(capture("sending"), appearance);
   store.show({ view: "clear" }, appearance);
   store.toasts[" subscribe"]((event) => {

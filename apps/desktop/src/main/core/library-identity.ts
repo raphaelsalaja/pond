@@ -2,10 +2,8 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
-import {
-  type LibraryMarkSource,
-  LibraryMarkSourceSchema,
-} from "../../shared/library-mark";
+import { LibraryMarkSourceSchema } from "../../shared/library-mark";
+import type { LibraryMarkSource } from "../../shared/library-mark";
 import { libraryNameFromPath } from "../lib/library-id";
 import { renameSyncWithRetry } from "../lib/rename-retry";
 
@@ -24,6 +22,12 @@ const StoredMetadataSchema = z.looseObject({
   icon: IconSchema.optional(),
   mark: LibraryMarkSourceSchema.optional().catch(undefined),
   accent: AccentSchema.optional(),
+});
+
+const RawMetadataSchema = z.looseObject({
+  icon: z.unknown().optional(),
+  mark: z.unknown().optional(),
+  accent: z.unknown().optional(),
 });
 
 export interface LibraryIdentity {
@@ -71,8 +75,12 @@ export function updateLibraryIdentity(
   patch: LibraryIdentityPatch,
 ): LibraryIdentity {
   const file = join(root, "metadata.json");
-  if (!existsSync(file)) throw new Error("Library metadata is missing.");
-  const current = JSON.parse(readFileSync(file, "utf8"));
+  if (!existsSync(file)) {
+    throw new Error("Library metadata is missing.");
+  }
+  const current = RawMetadataSchema.parse(
+    JSON.parse(readFileSync(file, "utf8")),
+  );
   /** A mark describes the stored icon, so a new icon without one drops the stale mark. */
   const mark =
     patch.mark !== undefined

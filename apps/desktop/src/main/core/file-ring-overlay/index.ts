@@ -1,8 +1,5 @@
-import {
-  BrowserWindow,
-  type BrowserWindowConstructorOptions,
-  screen,
-} from "electron";
+import { BrowserWindow, screen } from "electron";
+import type { BrowserWindowConstructorOptions } from "electron";
 import type { FileRingOverlaySnapshot } from "../../../shared/file-ring-overlay-contracts";
 import { lockRendererZoom } from "../../lib/lock-renderer-zoom";
 import { resolveMainOut, resolvePreload } from "../../lib/resolve-preload";
@@ -82,11 +79,12 @@ export async function openFileRingOverlay(
   win.webContents.on("will-navigate", (event) => event.preventDefault());
   win.setAlwaysOnTop(true, "pop-up-menu");
   /** Skipping the process type change keeps the Dock icon from blinking each time the ring opens. */
-  if (behavior.allWorkspaces)
+  if (behavior.allWorkspaces) {
     win.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
       skipTransformProcessType: true,
     });
+  }
   win.on("blur", () => {
     if (overlay === win) closeFileRingOverlay();
   });
@@ -97,9 +95,11 @@ export async function openFileRingOverlay(
   });
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   try {
-    if (devUrl)
+    if (devUrl) {
       await win.loadURL(new URL("file-ring.html", `${devUrl}/`).toString());
-    else await win.loadFile(resolveMainOut("../renderer/file-ring.html"));
+    } else {
+      await win.loadFile(resolveMainOut("../renderer/file-ring.html"));
+    }
   } catch (error) {
     if (!win.isDestroyed()) win.destroy();
     throw error;

@@ -1,11 +1,10 @@
-import {
-  resolveShortcuts,
-  SHORTCUT_PLATFORM,
-  type SHORTCUTS,
-  type ShortcutBindings,
-  type ShortcutDef,
-  type ShortcutId,
-  type ShortcutPreferences,
+import { resolveShortcuts, SHORTCUT_PLATFORM } from "@shared/shortcuts";
+import type {
+  SHORTCUTS,
+  ShortcutBindings,
+  ShortcutDef,
+  ShortcutId,
+  ShortcutPreferences,
 } from "@shared/shortcuts";
 import {
   formatForDisplay,
@@ -38,7 +37,7 @@ type ShortcutKeyId = {
 
 type ShortcutSequenceId = {
   [Id in ShortcutId]: (typeof SHORTCUTS)[Id] extends {
-    readonly sequence: readonly string[];
+    readonly sequence: ReadonlyArray<string>;
   }
     ? Id
     : never;
@@ -74,7 +73,7 @@ export function matchesBinding(
 ): boolean {
   const keys = bindings[id].keys;
   return (
-    keys != null &&
+    keys !== undefined &&
     matchesKeyboardEvent(
       event,
       parseHotkey(keys, SHORTCUT_PLATFORM),
@@ -99,16 +98,18 @@ export function bindingSequence(
   return sequence;
 }
 
+function normalized(keys: string): string {
+  return chordGlyphs(keys)
+    .map((key) => key.toLowerCase())
+    .sort()
+    .join("+");
+}
+
 export function shortcutConflict(
   id: ShortcutId,
   chord: string,
   preferences: ShortcutPreferences,
 ): string | null {
-  const normalized = (keys: string) =>
-    chordGlyphs(keys)
-      .map((key) => key.toLowerCase())
-      .sort()
-      .join("+");
   for (const [otherId, definition] of Object.entries(
     resolveShortcuts(preferences),
   )) {
@@ -116,8 +117,9 @@ export function shortcutConflict(
       otherId !== id &&
       definition.keys &&
       normalized(definition.keys) === normalized(chord)
-    )
+    ) {
       return definition.label;
+    }
   }
   return null;
 }
@@ -125,9 +127,11 @@ export function shortcutConflict(
 const MODIFIER_GLYPH = /[⌘⌃⌥⇧]/u;
 
 /** Peel fused modifier glyphs. formatForDisplay may emit `⌘,` with no separator. */
-function unfuseGlyphs(token: string): string[] {
-  if (token.length <= 1) return [token];
-  const parts: string[] = [];
+function unfuseGlyphs(token: string): Array<string> {
+  if (token.length <= 1) {
+    return [token];
+  }
+  const parts: Array<string> = [];
   let i = 0;
   while (i < token.length) {
     const ch = token[i];
@@ -151,14 +155,16 @@ const MAC_GLYPH_WORDS = new Map([
 
 /** Editor shortcuts are authored with macOS glyphs; other platforms spell the modifiers out. */
 export function platformGlyphs(
-  glyphs: readonly string[],
+  glyphs: ReadonlyArray<string>,
   platform = SHORTCUT_PLATFORM,
-): string[] {
-  if (platform === "mac") return [...glyphs];
+): Array<string> {
+  if (platform === "mac") {
+    return [...glyphs];
+  }
   return glyphs.map((glyph) => MAC_GLYPH_WORDS.get(glyph) ?? glyph);
 }
 
-export function chordGlyphs(keys: string): string[] {
+export function chordGlyphs(keys: string): Array<string> {
   return formatForDisplay(keys, { platform: SHORTCUT_PLATFORM })
     .split(/[\s+]+/)
     .filter(Boolean)
@@ -169,7 +175,7 @@ function defOf(id: ShortcutId): ShortcutDef {
   return resolveShortcuts(shortcutPreferences.state)[id];
 }
 
-export function shortcutGlyphs(id: ShortcutId): string[] {
+export function shortcutGlyphs(id: ShortcutId): Array<string> {
   const def = defOf(id);
   if (def.keys) return chordGlyphs(def.keys);
   if (def.sequence) {
@@ -182,6 +188,6 @@ export function shortcutChord(id: ShortcutId): string | null {
   return defOf(id).keys ?? null;
 }
 
-export function shortcutSequence(id: ShortcutId): readonly string[] | null {
+export function shortcutSequence(id: ShortcutId): ReadonlyArray<string> | null {
   return defOf(id).sequence ?? null;
 }

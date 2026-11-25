@@ -34,7 +34,9 @@ export function setLibrarySaveRadius(radius: number): void {
   if (globalThis.window) {
     try {
       window.localStorage.setItem(RADIUS_KEY, String(next));
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the in-memory radius still applies. */
+    }
   }
   store.setState(() => next);
 }

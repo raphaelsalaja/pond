@@ -5,7 +5,8 @@ import type {
   ComponentPropsWithoutRef,
   ReactNode,
 } from "react";
-import { Button, type ButtonProps } from "../button";
+import { Button } from "../button";
+import type { ButtonProps } from "../button";
 import { cssVars } from "../css-vars";
 import { Menu } from "../menu";
 import { Action, Clear, Item, Link } from "./item";
@@ -13,13 +14,13 @@ import styles from "./styles.module.css";
 
 export type { ChipTone } from "./item";
 
-interface RootProps extends ComponentPropsWithoutRef<"div"> {}
+type RootProps = ComponentPropsWithoutRef<"div">;
 
 function Root({ className, ...props }: RootProps) {
   return <div className={cn(styles.root, className)} {...props} />;
 }
 
-interface IconProps extends ComponentPropsWithoutRef<"span"> {}
+type IconProps = ComponentPropsWithoutRef<"span">;
 
 function Icon({ className, ...props }: IconProps) {
   return <span className={cn(styles.icon, className)} aria-hidden {...props} />;
@@ -94,8 +95,10 @@ function Swatch({ color, selected, className, style, ...props }: SwatchProps) {
   );
 }
 
-interface FilterProps
-  extends Omit<ComponentPropsWithoutRef<"div">, "children"> {
+interface FilterProps extends Omit<
+  ComponentPropsWithoutRef<"div">,
+  "children"
+> {
   icon: ReactNode;
   label: ReactNode;
   title?: string;
@@ -169,7 +172,7 @@ function Filter({
   );
 }
 
-interface PopupProps extends ComponentProps<typeof Menu.Popup> {}
+type PopupProps = ComponentProps<typeof Menu.Popup>;
 
 function Popup({ className, ...props }: PopupProps) {
   return <Menu.Popup className={cn(styles.popup, className)} {...props} />;

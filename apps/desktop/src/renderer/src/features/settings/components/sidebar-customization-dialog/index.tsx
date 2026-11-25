@@ -1,9 +1,5 @@
-import {
-  isLockedSidebarDestination,
-  SIDEBAR_SECTIONS,
-  type SidebarDestination,
-  type SidebarSection,
-} from "@pond/schema";
+import { isLockedSidebarDestination, SIDEBAR_SECTIONS } from "@pond/schema";
+import type { SidebarDestination, SidebarSection } from "@pond/schema";
 import { Button, Checkbox, Dialog, Switch } from "@pond/ui";
 import { useId } from "react";
 import {

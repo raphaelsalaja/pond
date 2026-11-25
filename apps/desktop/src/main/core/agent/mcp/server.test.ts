@@ -1,8 +1,10 @@
 import {
   InMemoryTransport,
   isJSONRPCResultResponse,
-  type JSONRPCRequest,
-  type JSONRPCResultResponse,
+} from "@modelcontextprotocol/server";
+import type {
+  JSONRPCRequest,
+  JSONRPCResultResponse,
 } from "@modelcontextprotocol/server";
 import { describe, expect, it } from "vitest";
 import { z } from "zod";

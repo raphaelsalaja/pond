@@ -21,8 +21,13 @@ export function useAutoHide(opts: {
     if (timer.current !== null) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
       const v = videoRef.current;
-      if (v && !v.paused && !rootRef.current?.contains(document.activeElement))
+      if (
+        v &&
+        !v.paused &&
+        !rootRef.current?.contains(document.activeElement)
+      ) {
         setControlsVisible(false);
+      }
     }, HIDE_DELAY_MS);
   }, [videoRef, rootRef]);
 
@@ -48,9 +53,14 @@ export function useAutoHide(opts: {
     };
   }, [rootRef, showControls]);
 
-  useEffect(() => {
-    if (ended) setControlsVisible(true);
-  }, [ended]);
+  const isEnded = Boolean(ended);
+  const [shownForEnd, setShownForEnd] = useState(false);
+  if (isEnded !== shownForEnd) {
+    setShownForEnd(isEnded);
+    if (isEnded) {
+      setControlsVisible(true);
+    }
+  }
 
   useEffect(
     () => () => {

@@ -13,7 +13,8 @@ import { renderPageHtml } from "../../../refresh/web-page-renderer";
 import { RateLimitedError, TerminalError, TransientError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { searchPageQuery } from "./search-page";
-import { type FetchHtmlSuccess, fetchHtml } from "./web-fetch";
+import { fetchHtml } from "./web-fetch";
+import type { FetchHtmlSuccess } from "./web-fetch";
 
 type WebExtras = {
   publisher?: string;
@@ -126,10 +127,14 @@ const pageMarkupProduct: metascraper.Rules = {
   },
 };
 
-function productsFromJsonLd(text: string): z.infer<typeof JsonLdProduct>[] {
-  const parsed = z.json().safeParse(safeJsonParse(text));
-  if (!parsed.success) return [];
-  const roots = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
+function productsFromJsonLd(
+  text: string,
+): Array<z.infer<typeof JsonLdProduct>> {
+  const data = parseJson(text);
+  if (data === undefined) {
+    return [];
+  }
+  const roots = Array.isArray(data) ? data : [data];
   const nodes = roots.flatMap((root) => {
     const graph = JsonLdGraph.safeParse(root);
     return graph.success ? [root, ...graph.data["@graph"]] : [root];
@@ -142,9 +147,10 @@ function productsFromJsonLd(text: string): z.infer<typeof JsonLdProduct>[] {
   });
 }
 
-function safeJsonParse(text: string) {
+function parseJson(text: string) {
   try {
-    return JSON.parse(text);
+    const parsed = z.json().safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : undefined;
   } catch {
     return undefined;
   }
@@ -177,7 +183,7 @@ const defaultDependencies: WebPageExtractorDependencies = {
 export class WebPageExtractor implements Extractor {
   readonly id = "web-page";
   readonly source = "web" as const;
-  readonly validUrl: readonly RegExp[] = [];
+  readonly validUrl: ReadonlyArray<RegExp> = [];
   readonly cookieDomain = null;
 
   constructor(
@@ -206,7 +212,7 @@ export class WebPageExtractor implements Extractor {
     const coverUrl = search
       ? undefined
       : (pickString(meta.image) ?? faviconUrl);
-    const media: CaptureMedia[] = coverUrl
+    const media: Array<CaptureMedia> = coverUrl
       ? [{ url: coverUrl, type: "image" }]
       : [];
 
@@ -251,10 +257,12 @@ export class WebPageExtractor implements Extractor {
 async function renderHtml(url: string, signal?: AbortSignal): Promise<string> {
   const rendered = await renderPageHtml(url, signal);
   if (!rendered.ok) {
-    if (rendered.reason === "navigation")
+    if (rendered.reason === "navigation") {
       throw new TransientError("web render: navigation failed");
-    if (rendered.reason === "read-timeout")
+    }
+    if (rendered.reason === "read-timeout") {
       throw new TransientError("web render: read timed out");
+    }
     throw new TerminalError("web render returned empty document");
   }
   assertPageStatus(rendered.status, "web render");
@@ -273,7 +281,9 @@ function assertPageStatus(status: number, label: string): void {
 }
 
 function pickString(value: string | null | undefined): string | undefined {
-  if (value == null) return undefined;
+  if (value === null || value === undefined) {
+    return undefined;
+  }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 }

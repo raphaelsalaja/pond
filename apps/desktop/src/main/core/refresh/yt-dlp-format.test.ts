@@ -19,6 +19,10 @@ describe("cookieAttempts", () => {
   });
 });
 
+function after(argv: Array<string>, flag: string): string | undefined {
+  return argv[argv.indexOf(flag) + 1];
+}
+
 describe("downloadArgv", () => {
   const base = {
     source: "youtube" as const,
@@ -37,10 +41,6 @@ describe("downloadArgv", () => {
     compression: "original",
     transcriptFormat: "txt",
   };
-
-  function after(argv: string[], flag: string): string | undefined {
-    return argv[argv.indexOf(flag) + 1];
-  }
 
   it("caps quality and lifts the size limit for a picked download", () => {
     const argv = downloadArgv({ ...base, request });

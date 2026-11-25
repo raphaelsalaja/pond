@@ -1,7 +1,8 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { ConnectedAccount, Source } from "@pond/schema/db";
 import { connectsByHandle } from "@pond/schema/sources";
-import { type Cookie, session, shell } from "electron";
+import { session, shell } from "electron";
+import type { Cookie } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { readMymindCredential } from "../../mymind/credentials";
@@ -26,8 +27,8 @@ export async function signInToSource(
     await shell.openExternal(url);
     log.info("[pond refresh:signin] opened external browser for", source, url);
     return { ok: true, mode: "external" };
-  } catch (err) {
-    log.warn("[pond refresh:signin] openExternal failed", source, err);
+  } catch (error) {
+    log.warn("[pond refresh:signin] openExternal failed", source, error);
     return { ok: false, mode: "external" };
   }
 }
@@ -52,9 +53,12 @@ export async function readPartitionCookie(
 export async function isAccountConnected(
   account: ConnectedAccount,
 ): Promise<boolean> {
-  if (account.source === "mymind")
+  if (account.source === "mymind") {
     return (await readMymindCredential(account.id)) !== null;
-  if (connectsByHandle(account.source)) return account.identityKey !== null;
+  }
+  if (connectsByHandle(account.source)) {
+    return account.identityKey !== null;
+  }
   return isPartitionSignedIn(account.source, partitionForAccount(account.id));
 }
 
@@ -79,7 +83,7 @@ export interface ImportableCookie {
 }
 
 export async function writePartitionCookies(args: {
-  cookies: ImportableCookie[];
+  cookies: Array<ImportableCookie>;
   partition: string;
 }): Promise<{ written: number; skipped: number }> {
   const persistent = session.fromPartition(args.partition);
@@ -102,13 +106,13 @@ export async function writePartitionCookies(args: {
     try {
       await persistent.cookies.set(details);
       written += 1;
-    } catch (err) {
+    } catch (error) {
       skipped += 1;
       log.warn(
         "[pond refresh:cookies] set failed",
         c.name,
         c.domain,
-        err instanceof Error ? err.message : err,
+        error instanceof Error ? error.message : error,
       );
     }
   }
@@ -187,8 +191,8 @@ export async function probeUserHandle(
     }
     const handle = raw.trim().replace(/^@/, "");
     return handle.length > 0 ? handle : null;
-  } catch (err) {
-    log.warn("[pond refresh:probe] unexpected error", source, err);
+  } catch (error) {
+    log.warn("[pond refresh:probe] unexpected error", source, error);
     return null;
   } finally {
     lease.release();
@@ -237,7 +241,7 @@ export function isAuthCookieName(
 async function listCookiesForSource(
   source: Source,
   partition: string,
-): Promise<Cookie[]> {
+): Promise<Array<Cookie>> {
   const persistent = session.fromPartition(partition);
   const domain = primaryDomainForSource(source);
   if (!domain) return [];
@@ -249,8 +253,8 @@ async function listCookiesForSource(
       const ck = (c.domain ?? "").replace(/^\./, "").toLowerCase();
       return ck === host || ck.endsWith(`.${host}`);
     });
-  } catch (err) {
-    log.warn("[pond refresh:window] cookies.get failed", domain, err);
+  } catch (error) {
+    log.warn("[pond refresh:window] cookies.get failed", domain, error);
     return [];
   }
 }

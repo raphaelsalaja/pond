@@ -8,7 +8,9 @@ interface SlideFileLike {
 }
 
 /** Original images and videos in file order, one per slide of a multi-media post. */
-export function slideFiles<T extends SlideFileLike>(files: readonly T[]): T[] {
+export function slideFiles<T extends SlideFileLike>(
+  files: ReadonlyArray<T>,
+): Array<T> {
   return files.filter(
     (file) =>
       !isAuxiliaryKind(file.kind) &&
@@ -17,7 +19,7 @@ export function slideFiles<T extends SlideFileLike>(files: readonly T[]): T[] {
 }
 
 export function canSplitFiles(
-  files: readonly SlideFileLike[],
+  files: ReadonlyArray<SlideFileLike>,
   minMedia = 2,
 ): boolean {
   return slideFiles(files).length >= minMedia;

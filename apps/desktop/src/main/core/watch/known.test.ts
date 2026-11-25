@@ -24,13 +24,13 @@ describe.skipIf(!nativeSqliteAvailable())("freshWatchEntries", () => {
 
   beforeAll(() => {
     dir = mkdtempSync(join(tmpdir(), "pond-watch-known-"));
-    vi.spyOn(app, "getPath").mockReturnValue(dir);
+    app.setPath("userData", dir);
     invalidatePaths();
     resolvePaths(join(dir, "Watch.pond"));
   });
 
   afterAll(async () => {
-    await closeDb();
+    closeDb();
     vi.restoreAllMocks();
     invalidatePaths();
     try {

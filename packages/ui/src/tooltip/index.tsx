@@ -1,14 +1,8 @@
 import { Tooltip as Base } from "@base-ui/react/tooltip";
 import { IconCircleInfo } from "@pond/icons";
 import { clsx } from "clsx";
-import {
-  type ComponentPropsWithoutRef,
-  createContext,
-  type ReactElement,
-  type ReactNode,
-  useContext,
-  useState,
-} from "react";
+import { createContext, useContext, useState } from "react";
+import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from "react";
 import styles from "./styles.module.css";
 
 function Root<Payload>(props: Base.Root.Props<Payload>) {
@@ -68,7 +62,9 @@ interface TooltipProps {
 }
 
 function tooltipContent(label: ReactNode, shortcut?: ReactNode): ReactNode {
-  if (shortcut == null) return label;
+  if (shortcut === null || shortcut === undefined) {
+    return label;
+  }
   return (
     <span className={styles.row}>
       <span className={styles.label}>{label}</span>
@@ -162,8 +158,10 @@ function Group({ children }: { children: ReactNode }) {
   );
 }
 
-interface InfoProps
-  extends Omit<ComponentPropsWithoutRef<"button">, "children"> {
+interface InfoProps extends Omit<
+  ComponentPropsWithoutRef<"button">,
+  "children"
+> {
   label: ReactNode;
   side?: TooltipProps["side"];
 }

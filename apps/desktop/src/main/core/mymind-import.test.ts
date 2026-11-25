@@ -4,10 +4,8 @@ import { join } from "node:path";
 import type { NewSave } from "@pond/schema/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ManualSaveInput } from "./manual-import";
-import {
-  importMymindExport,
-  type MymindImportDependencies,
-} from "./mymind-import";
+import { importMymindExport } from "./mymind-import";
+import type { MymindImportDependencies } from "./mymind-import";
 
 let root = "";
 let exportDirectory = "";
@@ -44,7 +42,9 @@ interface ImportFixture {
 }
 
 function csvCell(value: string): string {
-  if (/[",\r\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  if (/[",\r\n]/.test(value)) {
+    return `"${value.replaceAll('"', '""')}"`;
+  }
   return value;
 }
 
@@ -57,8 +57,9 @@ function createImportFixture(): ImportFixture {
     dependencies: {
       async createSave(input) {
         const sourceId = input.sourceId ?? `generated:${saves.size}`;
-        if (saves.has(sourceId))
+        if (saves.has(sourceId)) {
           return { ok: true, id: sourceId, skipped: true };
+        }
         saves.set(sourceId, input);
         return { ok: true, id: sourceId };
       },
@@ -143,8 +144,9 @@ describe("importMymindExport", () => {
     );
     const fixture = createImportFixture();
     fixture.dependencies.createSave = async (input) => {
-      if (!input.title && !input.note && !input.filePaths?.length)
+      if (!input.title && !input.note && !input.filePaths?.length) {
         return { ok: false, error: "empty Save" };
+      }
       fixture.saves.set(input.sourceId ?? "", input);
       return { ok: true, id: input.sourceId ?? "" };
     };

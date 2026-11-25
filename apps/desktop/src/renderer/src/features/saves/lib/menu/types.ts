@@ -4,26 +4,26 @@ import type { Save, SaveFile } from "@/features/saves/types";
 export interface BuildSaveMenuOptions {
   clipboardEmpty: boolean;
   fileIndex?: number | null;
-  openWithApps?: readonly OpenWithApp[];
+  openWithApps?: ReadonlyArray<OpenWithApp>;
   opened?: boolean;
   folderId?: string | null;
-  pinnedIds?: readonly string[];
+  pinnedIds?: ReadonlyArray<string>;
   coverSaveId?: string | null;
   fontActivated?: boolean;
 }
 
 export interface SaveMenuContext {
-  saves: readonly Save[];
+  saves: ReadonlyArray<Save>;
   save: Save;
-  ids: string[];
+  ids: Array<string>;
   batch: boolean;
   incomplete: boolean;
   clipboardEmpty: boolean;
   fileIndex: number | null;
-  openWithApps: readonly OpenWithApp[];
+  openWithApps: ReadonlyArray<OpenWithApp>;
   opened: boolean;
   resolvedFolderId: string | null;
-  resolvedPinned: readonly string[];
+  resolvedPinned: ReadonlyArray<string>;
   resolvedCover: string | null;
   inFolder: boolean;
   isPinned: boolean;

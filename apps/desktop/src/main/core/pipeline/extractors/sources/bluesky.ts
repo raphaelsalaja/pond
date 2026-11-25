@@ -15,7 +15,7 @@ export class BlueskyPostExtractor implements Extractor {
     return false;
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const [first, handle] = segments;
     if (segments.length !== 2 || first !== "profile" || !handle) return null;
     if (handle.startsWith("did:")) return handle;

@@ -103,7 +103,7 @@ export async function fetchDownload(
         throw new DownloadSizeError();
       }
     }
-    const chunks: Uint8Array[] = [];
+    const chunks: Array<Uint8Array> = [];
     let received = 0;
     let speedSampleAt = Date.now();
     let speedSampleBytes = 0;

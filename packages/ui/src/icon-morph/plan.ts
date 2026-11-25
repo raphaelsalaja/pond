@@ -4,7 +4,7 @@ type Attrs = Readonly<Record<string, string>>;
 type Point = readonly [number, number];
 
 interface Contour {
-  points: Point[];
+  points: Array<Point>;
   closed: boolean;
   /** Non-geometry attributes, such as a solid dot's fill. */
   paint: Attrs;
@@ -12,8 +12,8 @@ interface Contour {
 
 export interface Track {
   id: string;
-  from: Point[];
-  to: Point[];
+  from: Array<Point>;
+  to: Array<Point>;
   closed: boolean;
   paint: Attrs;
 }
@@ -26,16 +26,16 @@ export interface Fade {
 
 export interface MorphPlan {
   still: IconNode;
-  tracks: Track[];
-  leaving: Fade[];
-  entering: Fade[];
+  tracks: Array<Track>;
+  leaving: Array<Fade>;
+  entering: Array<Fade>;
 }
 
 interface Pair {
   i: number;
   j: number;
-  from: Point[];
-  to: Point[];
+  from: Array<Point>;
+  to: Array<Point>;
   cost: number;
 }
 
@@ -99,9 +99,9 @@ function toPath(tag: string, attrs: Attrs): string | null {
 }
 
 /** Splits a path into subpaths, each starting with an absolute move, so a morph never draws a line between them. */
-function subpaths(d: string): string[] {
+function subpaths(d: string): Array<string> {
   const parts = d.split(/(?=[Mm])/).filter((part) => part.trim());
-  const out: string[] = [];
+  const out: Array<string> = [];
   let sofar = "";
   for (const part of parts) {
     let piece = part;
@@ -122,11 +122,11 @@ function subpaths(d: string): string[] {
 }
 
 /** Rings end on their start point too, so a ring morphing into an open line stays closed without a `Z`. */
-function sample(d: string): Point[] | null {
+function sample(d: string): Array<Point> | null {
   const path = measure(d);
   if (!path) return null;
   const length = path.getTotalLength();
-  const points: Point[] = [];
+  const points: Array<Point> = [];
   for (let index = 0; index < SAMPLES; index += 1) {
     const point = path.getPointAtLength((length * index) / (SAMPLES - 1));
     points.push([point.x, point.y]);
@@ -134,8 +134,8 @@ function sample(d: string): Point[] | null {
   return points;
 }
 
-function contoursOf(nodes: IconNode): Contour[] | null {
-  const contours: Contour[] = [];
+function contoursOf(nodes: IconNode): Array<Contour> | null {
+  const contours: Array<Contour> = [];
   for (const [tag, attrs] of nodes) {
     const d = toPath(tag, attrs);
     if (!d) return null;
@@ -152,7 +152,7 @@ function contoursOf(nodes: IconNode): Contour[] | null {
   return contours;
 }
 
-function cost(a: Point[], b: Point[]) {
+function cost(a: Array<Point>, b: Array<Point>) {
   let total = 0;
   for (let index = 0; index < a.length; index += 1) {
     const p = a[index];
@@ -163,8 +163,8 @@ function cost(a: Point[], b: Point[]) {
 }
 
 /** Every start point and direction around a ring, each ending back on its start. */
-function rotations(points: Point[]): Point[][] {
-  const out: Point[][] = [];
+function rotations(points: Array<Point>): Array<Array<Point>> {
+  const out: Array<Array<Point>> = [];
   for (const ring of [points.slice(0, -1), points.slice(0, -1).reverse()]) {
     for (let shift = 0; shift < ring.length; shift += 1) {
       const rotated = [...ring.slice(shift), ...ring.slice(0, shift)];
@@ -176,8 +176,8 @@ function rotations(points: Point[]): Point[][] {
 }
 
 /** Picks the start point and direction on the ring side so each point travels the shortest way. */
-function align(from: Contour, to: Contour): [Point[], Point[]] {
-  const pairs: [Point[], Point[]][] = to.closed
+function align(from: Contour, to: Contour): [Array<Point>, Array<Point>] {
+  const pairs: Array<[Array<Point>, Array<Point>]> = to.closed
     ? rotations(to.points).map((points) => [from.points, points])
     : from.closed
       ? rotations(from.points).map((points) => [points, to.points])
@@ -197,7 +197,7 @@ function align(from: Contour, to: Contour): [Point[], Point[]] {
   return best;
 }
 
-export function polyline(points: readonly Point[], closed: boolean) {
+export function polyline(points: ReadonlyArray<Point>, closed: boolean) {
   const body = points
     .map(
       ([x, y], index) => `${index ? "L" : "M"}${x.toFixed(3)} ${y.toFixed(3)}`,
@@ -207,6 +207,24 @@ export function polyline(points: readonly Point[], closed: boolean) {
 }
 
 const plans = new Map<string, MorphPlan | null>();
+
+function sig([tag, attrs]: IconNode[number]) {
+  return `${tag}${JSON.stringify(attrs)}`;
+}
+
+function fades(contours: Array<Contour>, taken: Set<number>, side: string) {
+  return contours.flatMap((contour, index): Array<Fade> =>
+    taken.has(index)
+      ? []
+      : [
+          {
+            id: `${side}${index}`,
+            d: polyline(contour.points, contour.closed),
+            paint: contour.paint,
+          },
+        ],
+  );
+}
 
 /** Unchanged contours hold still, changed ones travel point by point, and leftovers fade in place. */
 export function planMorph(
@@ -220,12 +238,10 @@ export function planMorph(
   const cached = plans.get(key);
   if (cached !== undefined) return cached;
 
-  const sig = ([tag, attrs]: IconNode[number]) =>
-    `${tag}${JSON.stringify(attrs)}`;
   const toSigs = b.nodes.map(sig);
   const used = new Set<number>();
-  const still: IconNode[number][] = [];
-  const moving: IconNode[number][] = [];
+  const still: Array<IconNode[number]> = [];
+  const moving: Array<IconNode[number]> = [];
   for (const node of a.nodes) {
     const match = toSigs.findIndex(
       (value, index) => value === sig(node) && !used.has(index),
@@ -233,7 +249,9 @@ export function planMorph(
     if (match >= 0) {
       used.add(match);
       still.push(node);
-    } else moving.push(node);
+    } else {
+      moving.push(node);
+    }
   }
   const arriving = b.nodes.filter((_, index) => !used.has(index));
 
@@ -244,7 +262,7 @@ export function planMorph(
     return null;
   }
 
-  const pairs: Pair[] = [];
+  const pairs: Array<Pair> = [];
   source.forEach((s, i) => {
     target.forEach((t, j) => {
       const [from, to] = align(s, t);
@@ -254,7 +272,7 @@ export function planMorph(
   pairs.sort((x, y) => x.cost - y.cost);
   const takenFrom = new Set<number>();
   const takenTo = new Set<number>();
-  const tracks: Track[] = [];
+  const tracks: Array<Track> = [];
   for (const { i, j, from, to } of pairs) {
     const s = source[i];
     const t = target[j];
@@ -269,18 +287,6 @@ export function planMorph(
       paint: t.paint,
     });
   }
-  const fades = (contours: Contour[], taken: Set<number>, side: string) =>
-    contours.flatMap((contour, index): Fade[] =>
-      taken.has(index)
-        ? []
-        : [
-            {
-              id: `${side}${index}`,
-              d: polyline(contour.points, contour.closed),
-              paint: contour.paint,
-            },
-          ],
-    );
   const plan: MorphPlan = {
     still,
     tracks,

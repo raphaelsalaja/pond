@@ -34,14 +34,14 @@ export interface PaletteEntry {
   icon: ReactNode;
   detail?: string;
   /** One chord's glyphs per step, as `chordGlyphs` returns them. Two steps read "G then L". */
-  shortcut?: string[][];
+  shortcut?: Array<Array<string>>;
   /** A save row with a media preview. */
   tall?: boolean;
   /** Opens a page, so it shows the caret. */
   page?: boolean;
   /** Has secondary actions, so the active row shows the Tab key. */
   actions?: boolean;
-  ranges?: readonly MatchRange[];
+  ranges?: ReadonlyArray<MatchRange>;
 }
 
 export type PaletteRow =
@@ -54,7 +54,7 @@ export interface PaletteState {
   query: string;
   placeholder: string;
   crumb?: { title: string; context?: string };
-  rows: readonly PaletteRow[];
+  rows: ReadonlyArray<PaletteRow>;
   footer?: PaletteEntry;
   active: number;
   /** Changes when a page opens or closes, so the content slides in. */
@@ -64,7 +64,7 @@ export interface PaletteState {
   selected?: boolean;
 }
 
-function resultsHeight(rows: readonly PaletteRow[]) {
+function resultsHeight(rows: ReadonlyArray<PaletteRow>) {
   let height = PADDING;
   for (const row of rows) {
     if (row.kind === "group") height += row.divided ? DIVIDED : GROUP;
@@ -78,10 +78,12 @@ function Highlight({
   ranges = [],
 }: {
   text: string;
-  ranges?: readonly MatchRange[];
+  ranges?: ReadonlyArray<MatchRange>;
 }) {
-  if (ranges.length === 0) return text;
-  const parts: ReactNode[] = [];
+  if (ranges.length === 0) {
+    return text;
+  }
+  const parts: Array<ReactNode> = [];
   let cursor = 0;
   for (const [start, end] of ranges) {
     if (start > cursor) parts.push(text.slice(cursor, start));
@@ -155,7 +157,7 @@ interface CommandMenuProps {
   t: number;
   open: number;
   close: number;
-  states: readonly PaletteState[];
+  states: ReadonlyArray<PaletteState>;
 }
 
 /** Pond's command menu over a dimmed window: it resizes to each state's rows and slides pages in. Children of `App.Window`. */

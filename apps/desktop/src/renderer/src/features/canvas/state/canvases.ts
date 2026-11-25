@@ -6,10 +6,10 @@ import type {
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
 
 interface CanvasesState {
-  canvases: CanvasSummary[];
+  canvases: Array<CanvasSummary>;
   editingId: string | null;
   loaded: boolean;
 }
@@ -24,7 +24,7 @@ type Placement = "beside";
 
 interface OpenBoard {
   id: string;
-  addSaves(saveIds: readonly string[], placement?: Placement): void;
+  addSaves(saveIds: ReadonlyArray<string>, placement?: Placement): void;
 }
 
 /** The open board places incoming Saves itself, so a pending autosave never overwrites them. */
@@ -79,7 +79,7 @@ function replaceSummary(canvas: Canvas): void {
 }
 
 export const canvases = {
-  snapshot(): CanvasSummary[] {
+  snapshot(): Array<CanvasSummary> {
     return store.state.canvases;
   },
   async refresh(): Promise<void> {
@@ -94,10 +94,10 @@ export const canvases = {
     }));
   },
   open(id: string): void {
-    getAppRouter()?.history.push(canvasPath(id));
+    getAppHistory()?.push(canvasPath(id));
   },
   async create(
-    saveIds: readonly string[] = [],
+    saveIds: ReadonlyArray<string> = [],
     name?: string,
   ): Promise<Canvas> {
     const canvas = await window.pond.query("canvases.create", {
@@ -127,15 +127,16 @@ export const canvases = {
     documents.delete(id);
     await canvases.refresh();
     const router = getAppRouter();
-    if (router && canvasIdFromPath(router.state.location.pathname) === id)
-      router.history.push(store.state.canvases.length ? "/" : CANVASES_PATH);
+    if (router && canvasIdFromPath(router.state.location.pathname) === id) {
+      getAppHistory()?.push(store.state.canvases.length ? "/" : CANVASES_PATH);
+    }
   },
   isOpen(id: string): boolean {
     return openBoard?.id === id;
   },
   async addSaves(
     id: string,
-    saveIds: readonly string[],
+    saveIds: ReadonlyArray<string>,
     placement?: Placement,
   ): Promise<void> {
     if (!saveIds.length) return;
@@ -186,7 +187,7 @@ export const canvases = {
   },
 };
 
-export function useCanvases(): CanvasSummary[] {
+export function useCanvases(): Array<CanvasSummary> {
   return useSelector(store, (state) => state.canvases);
 }
 

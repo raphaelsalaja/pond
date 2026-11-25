@@ -1,7 +1,7 @@
 import { cn } from "@pond/ui";
 import styles from "./styles.module.css";
 
-interface InlineProps extends React.ComponentPropsWithoutRef<"code"> {}
+type InlineProps = React.ComponentPropsWithoutRef<"code">;
 
 function Inline({ className, ...props }: InlineProps) {
   return <code className={cn(styles.code, className)} {...props} />;

@@ -1,3 +1,5 @@
 declare module "virtual:video" {
-  export const video: import("../src/video").Video;
+  import type { Video } from "@pond/video";
+
+  export const video: Video;
 }

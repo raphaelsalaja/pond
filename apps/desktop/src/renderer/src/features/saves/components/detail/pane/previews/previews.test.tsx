@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   closeThumbnailViewer,
@@ -35,6 +36,19 @@ function imageSave(id: string, size?: { width: number; height: number }): Save {
     createdAt: 0,
     deletedAt: null,
   };
+}
+
+function postSave(): Save {
+  const save = imageSave("post");
+  const file = save.files[0];
+  if (!file) {
+    throw new Error("Missing fixture file");
+  }
+  save.files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => ({
+    ...file,
+    path: `${name}.jpg`,
+  }));
+  return save;
 }
 
 describe("SavePreviews", () => {
@@ -163,25 +177,17 @@ describe("SavePreviews", () => {
     expect(host.querySelector("[data-pending]")).toBeNull();
   });
 
-  function postSave(): Save {
-    const save = imageSave("post");
-    const file = save.files[0];
-    if (!file) throw new Error("Missing fixture file");
-    save.files = ["a", "b", "c", "d", "e", "f", "g"].map((name) => ({
-      ...file,
-      path: `${name}.jpg`,
-    }));
-    return save;
-  }
   const slots = () =>
     Object.fromEntries(
-      [...host.querySelectorAll("[data-slot]")].map((card) => [
-        card.getAttribute("data-slot"),
-        card
-          .querySelector("img")
-          ?.getAttribute("src")
-          ?.match(/(\w)\.jpg/)?.[1],
-      ]),
+      [...host.querySelectorAll("[data-slot]")].map(
+        (card): [string, string | undefined] => [
+          String(card.getAttribute("data-slot")),
+          card
+            .querySelector("img")
+            ?.getAttribute("src")
+            ?.match(/(\w)\.jpg/)?.[1],
+        ],
+      ),
     );
 
   it("stacks a Save's files with the first file on top", async () => {

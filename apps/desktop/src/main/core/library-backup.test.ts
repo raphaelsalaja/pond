@@ -19,7 +19,7 @@ import {
   verifyLibraryBackup,
 } from "./library-backup";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -134,11 +134,12 @@ describe("verified library backup", () => {
         source,
         destination,
         async onProgress(copied) {
-          if (copied === 1)
+          if (copied === 1) {
             await writeFile(
               join(source, "metadata.json"),
               JSON.stringify({ id: "library", name: "Changed" }),
             );
+          }
         },
       }),
     ).rejects.toThrow("changed during backup");

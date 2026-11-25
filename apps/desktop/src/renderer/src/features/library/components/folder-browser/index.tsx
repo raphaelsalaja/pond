@@ -2,7 +2,9 @@ import { IconChevronRight } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
 import { Button, Menu } from "@pond/ui";
 import type { FolderSummary } from "@shared/folder-contracts";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import log from "electron-log/renderer";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
 import {
@@ -25,7 +27,8 @@ import {
   SpecMenu,
 } from "@/shared/components/spec-context-menu";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
-import { FolderIcon, type FolderIconId } from "@/shared/lib/folder-icons";
+import { FolderIcon } from "@/shared/lib/folder-icons";
+import type { FolderIconId } from "@/shared/lib/folder-icons";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
@@ -43,7 +46,7 @@ function FolderCard({
   organization,
   galleryFit,
 }: {
-  organization: ReturnType<typeof useOrganizationTree>;
+  organization: Omit<ReturnType<typeof useOrganizationTree>, "root">;
   folder: Folder;
   summary: FolderSummary | undefined;
   customCoverSaveId: string | null;
@@ -184,12 +187,16 @@ function FolderCard({
               event.preventDefault();
               event.stopPropagation();
               void enterFolder(folder.id);
-            } else organization.rowProps(folder.id, 0).onKeyDown(event);
+            } else {
+              organization.rowProps(folder.id, 0).onKeyDown(event);
+            }
           }}
           onClick={(event) => {
-            if (event.shiftKey || event.metaKey || event.ctrlKey)
+            if (event.shiftKey || event.metaKey || event.ctrlKey) {
               organization.select(folder.id, event);
-            else void enterFolder(folder.id);
+            } else {
+              void enterFolder(folder.id);
+            }
           }}
           onDoubleClick={() => void enterFolder(folder.id)}
         >
@@ -247,12 +254,17 @@ export function FolderBrowser({
     () => folders.filter((folder) => folder.parentId === parentId),
     [folders, parentId],
   );
-  const organization = useOrganizationTree(children, () => {});
-  const [summaries, setSummaries] = useState<FolderSummary[]>([]);
+  const { root: treeRoot, ...organization } = useOrganizationTree(
+    children,
+    () => {},
+  );
+  const [summaries, setSummaries] = useState<Array<FolderSummary>>([]);
+  if (children.length === 0 && summaries.length > 0) {
+    setSummaries([]);
+  }
 
   useEffect(() => {
     if (children.length === 0) {
-      setSummaries([]);
       return;
     }
     let active = true;
@@ -273,7 +285,7 @@ export function FolderBrowser({
         });
         await ensureSaves(coverIds);
       } catch (error) {
-        console.warn("[pond] folder summaries failed", error);
+        log.warn("[pond] folder summaries failed", error);
       }
     };
     void load();
@@ -355,7 +367,7 @@ export function FolderBrowser({
             </fieldset>
           ) : null}
           <div
-            ref={organization.root}
+            ref={treeRoot}
             role="tree"
             aria-label="Subfolders"
             aria-multiselectable

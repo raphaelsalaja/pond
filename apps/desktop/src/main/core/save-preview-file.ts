@@ -24,7 +24,7 @@ function noThumbnail(): never {
 
 export async function savePreviewFile(
   id: string,
-  files: SaveFile[],
+  files: Array<SaveFile>,
   size: ApiThumbnailSize,
 ): Promise<{ path: string; type: string }> {
   const cover = pickCardFile(files);

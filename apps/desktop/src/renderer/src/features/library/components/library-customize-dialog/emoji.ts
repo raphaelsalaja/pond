@@ -1,4 +1,4 @@
-export const LIBRARY_EMOJI: readonly { emoji: string; label: string }[] = [
+export const LIBRARY_EMOJI: ReadonlyArray<{ emoji: string; label: string }> = [
   { emoji: "😀", label: "Grinning Face" },
   { emoji: "😎", label: "Cool Face" },
   { emoji: "🤓", label: "Nerd Face" },

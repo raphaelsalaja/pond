@@ -16,14 +16,16 @@ function saveCanGroup(save: Save): boolean {
 
 /** Saves load lazily, so a selection that isn't fully loaded still offers Group and the main process decides. */
 export function canGroupSelection(
-  saves: readonly Save[],
+  saves: ReadonlyArray<Save>,
   count: number,
 ): boolean {
   return count > 1 && saves.every(saveCanGroup);
 }
 
-export async function groupSaves(ids: readonly string[]): Promise<void> {
-  if (ids.length < 2) return;
+export async function groupSaves(ids: ReadonlyArray<string>): Promise<void> {
+  if (ids.length < 2) {
+    return;
+  }
   try {
     const result = await window.pond.query("saves.group", { ids: [...ids] });
     if (!result.ok) {

@@ -1,7 +1,8 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 
 interface TumblrPostPage {
@@ -25,7 +26,9 @@ async function inPageTumblrHarvest(): Promise<TumblrPostPage | null> {
     ) {
       break;
     }
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   const meta = (key: string): string =>
     document

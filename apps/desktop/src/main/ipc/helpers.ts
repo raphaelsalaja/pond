@@ -31,7 +31,7 @@ function isInsideLibrary(absolute: string): boolean {
   return absolute === root || absolute.startsWith(root + pathSep);
 }
 
-export function safeHandle<Args extends unknown[], R>(
+export function safeHandle<Args extends Array<unknown>, R>(
   channel: string,
   handler: (event: IpcMainInvokeEvent, ...args: Args) => R,
   bus: IpcMain = ipcMain,
@@ -60,8 +60,8 @@ export async function resolveSaveFilePath(
     if (!row) return { ok: false, reason: "not_found" };
 
     return resolveRowFile(id, toWireSave(row).files ?? [], fileIndex);
-  } catch (err) {
-    log.warn("[pond ipc] resolveSaveFilePath failed", err);
+  } catch (error) {
+    log.warn("[pond ipc] resolveSaveFilePath failed", error);
     return { ok: false, reason: "not_found" };
   }
 }
@@ -89,7 +89,7 @@ function resolveRowFile(
 export function resolveOriginalFilePaths(
   id: string,
   files: ReadonlyArray<{ kind: string; path: string }>,
-): string[] {
+): Array<string> {
   return files.flatMap((_, index) => {
     const target = resolveRowFile(id, files, index);
     return target.ok ? [target.path] : [];
@@ -107,8 +107,10 @@ const PREVIEW_KINDS = ["thumbnail", "poster"];
 /** One query for the whole selection, each save resolving its own file index. */
 export async function resolveSaveDragFiles(
   requests: ReadonlyArray<{ id: string; fileIndex: number }>,
-): Promise<SaveDragFile[]> {
-  if (requests.length === 0) return [];
+): Promise<Array<SaveDragFile>> {
+  if (requests.length === 0) {
+    return [];
+  }
   const db = await getDb();
   const rows = await db
     .select()

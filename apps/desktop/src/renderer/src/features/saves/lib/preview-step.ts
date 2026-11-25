@@ -1,4 +1,5 @@
-import { matchesBinding, type ShortcutBindings } from "@/shared/lib/shortcuts";
+import { matchesBinding } from "@/shared/lib/shortcuts";
+import type { ShortcutBindings } from "@/shared/lib/shortcuts";
 
 export type PreviewStepBinding = "step" | "video-step";
 

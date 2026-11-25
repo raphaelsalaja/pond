@@ -7,22 +7,22 @@ export type EmbeddingBenchmarkModality = "text" | "image" | "audio" | "video";
 export interface EmbeddingBenchmarkDocument {
   id: string;
   modality: EmbeddingBenchmarkModality;
-  vector: number[];
+  vector: Array<number>;
 }
 
 export interface EmbeddingBenchmarkQuery {
   id: string;
   modality: EmbeddingBenchmarkModality;
-  relevantIds: string[];
-  vector: number[];
+  relevantIds: Array<string>;
+  vector: Array<number>;
 }
 
 export interface EmbeddingBenchmarkCorpus {
   kind: "held-out" | "smoke";
   representative: boolean;
-  importantModalities: EmbeddingBenchmarkModality[];
-  documents: EmbeddingBenchmarkDocument[];
-  queries: EmbeddingBenchmarkQuery[];
+  importantModalities: Array<EmbeddingBenchmarkModality>;
+  documents: Array<EmbeddingBenchmarkDocument>;
+  queries: Array<EmbeddingBenchmarkQuery>;
 }
 
 export interface EmbeddingBenchmarkMetricSlice {
@@ -56,7 +56,7 @@ const FLOAT_COMPARISON_EPSILON = 1e-9;
 export function truncateAndNormalizeEmbedding(
   vector: ArrayLike<number>,
   dimensions: number,
-): number[] {
+): Array<number> {
   if (!Number.isInteger(dimensions) || dimensions < 1) {
     throw new Error("embedding dimensions must be a positive integer");
   }
@@ -83,12 +83,14 @@ export function truncateAndNormalizeEmbedding(
   return truncated.map((value) => value / magnitude);
 }
 
-function average(values: number[]): number {
-  if (values.length === 0) return 0;
+function average(values: Array<number>): number {
+  if (values.length === 0) {
+    return 0;
+  }
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function dot(left: number[], right: number[]): number {
+function dot(left: Array<number>, right: Array<number>): number {
   let score = 0;
   for (let index = 0; index < left.length; index += 1) {
     score += (left[index] ?? 0) * (right[index] ?? 0);
@@ -154,7 +156,7 @@ export interface EmbeddingDimensionDecision {
   accepted: boolean;
   overallRecallLossPoints: number;
   modalityRecallLossPoints: Partial<Record<EmbeddingBenchmarkModality, number>>;
-  reasons: string[];
+  reasons: Array<string>;
 }
 
 export function assessCompactDimension(
@@ -162,7 +164,7 @@ export function assessCompactDimension(
   baseline: EmbeddingDimensionResult,
   candidate: EmbeddingDimensionResult,
 ): EmbeddingDimensionDecision {
-  const reasons: string[] = [];
+  const reasons: Array<string> = [];
   const modalityRecallLossPoints: EmbeddingDimensionDecision["modalityRecallLossPoints"] =
     {};
   const overallRecallLossPoints =

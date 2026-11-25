@@ -1,4 +1,5 @@
-import { type RefObject, useLayoutEffect } from "react";
+import { useLayoutEffect } from "react";
+import type { RefObject } from "react";
 import { completeLibraryLayoutTransition } from "@/features/library/lib/library-layout-transition";
 
 export function useLibraryLayoutTransition<Version>(

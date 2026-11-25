@@ -19,15 +19,15 @@ import {
   mix,
   Pointer,
   progress,
-  type Tile,
   tileRect,
 } from "@pond/video";
+import type { Tile } from "@pond/video";
 import { added, LIBRARY, media, PREVIEW } from "../data";
 import { CUES, end } from "../timeline";
 import { Pane } from "./pane";
 import styles from "./styles.module.css";
 
-const TILES: Tile[] = LIBRARY.map((shot, index) => ({
+const TILES: Array<Tile> = LIBRARY.map((shot, index) => ({
   key: shot.id,
   src: media(shot.id),
   title: shot.title,

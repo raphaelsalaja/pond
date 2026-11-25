@@ -1,11 +1,8 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  CANCEL_REASON,
-  type ConnectedAccount,
-  type Source,
-} from "@pond/schema/db";
+import { CANCEL_REASON } from "@pond/schema/db";
+import type { ConnectedAccount, Source } from "@pond/schema/db";
 import { syncConfigFor } from "@pond/schema/sources";
 import Database from "better-sqlite3";
 import { app } from "electron";
@@ -50,12 +47,55 @@ function nativeSqliteAvailable(): boolean {
   }
 }
 
+async function seedFailedSave(id: string): Promise<void> {
+  const { $raw } = await getDb();
+  $raw
+    .prepare(
+      `INSERT INTO saves (id, source, source_id, url, status)
+      VALUES (?, 'web', ?, ?, 'failed')`,
+    )
+    .run(id, id, `https://example.com/${id}`);
+  $raw
+    .prepare(
+      `INSERT INTO tasks (
+        id, save_id, source, op, status, max_attempts, last_error
+      ) VALUES (?, ?, 'web', 'harvest_metadata', 'dead', 5, 'network failed')`,
+    )
+    .run(`task-${id}`, id);
+}
+
+function claim() {
+  return claimDueTasks({
+    owner: "test",
+    limit: 1,
+    availableInteractive: 0,
+    availableBackground: 1,
+    availableByOp: { harvest_metadata: 1 },
+  });
+}
+
+function claimHarvests(limit: number) {
+  return claimDueTasks({
+    owner: "test",
+    limit,
+    availableInteractive: 0,
+    availableBackground: limit,
+    availableByOp: { harvest_metadata: limit },
+  });
+}
+
+async function gate(source: Source) {
+  return (await getDb()).$raw
+    .prepare("SELECT state, reason FROM source_gates WHERE source = ?")
+    .get(source);
+}
+
 describe.skipIf(!nativeSqliteAvailable())("download recovery", () => {
   let directory = "";
 
   beforeEach(() => {
     directory = mkdtempSync(join(tmpdir(), "pond-task-recovery-"));
-    vi.spyOn(app, "getPath").mockReturnValue(directory);
+    app.setPath("userData", directory);
     invalidatePaths();
     resolvePaths(join(directory, "Recovery.pond"));
   });
@@ -66,33 +106,6 @@ describe.skipIf(!nativeSqliteAvailable())("download recovery", () => {
     invalidatePaths();
     rmSync(directory, { recursive: true, force: true });
   });
-
-  async function seedFailedSave(id: string): Promise<void> {
-    const { $raw } = await getDb();
-    $raw
-      .prepare(
-        `INSERT INTO saves (id, source, source_id, url, status)
-      VALUES (?, 'web', ?, ?, 'failed')`,
-      )
-      .run(id, id, `https://example.com/${id}`);
-    $raw
-      .prepare(
-        `INSERT INTO tasks (
-        id, save_id, source, op, status, max_attempts, last_error
-      ) VALUES (?, ?, 'web', 'harvest_metadata', 'dead', 5, 'network failed')`,
-      )
-      .run(`task-${id}`, id);
-  }
-
-  function claim() {
-    return claimDueTasks({
-      owner: "test",
-      limit: 1,
-      availableInteractive: 0,
-      availableBackground: 1,
-      availableByOp: { harvest_metadata: 1 },
-    });
-  }
 
   it("keeps retries queued until a failed Save receives a worker", async () => {
     await seedFailedSave("first");
@@ -129,8 +142,8 @@ describe.skipIf(!nativeSqliteAvailable())("download recovery", () => {
         deferred_reason, next_run_at, created_at
       ) VALUES (?, ?, 'twitter', 'capture_tweet', 'deferred', ?, 4, 'retry_backoff', ?, ?)`,
     );
-    insertTask.run("task-retry", "retry", 3, at - 5_000, at - 10_000);
-    insertTask.run("task-fresh", "fresh", 0, at - 1_000, at - 9_000);
+    insertTask.run("task-retry", "retry", 3, at - 5000, at - 10_000);
+    insertTask.run("task-fresh", "fresh", 0, at - 1000, at - 9000);
 
     const claimed = await claimDueTasks({
       owner: "test",
@@ -323,7 +336,7 @@ describe.skipIf(!nativeSqliteAvailable())("source sign-in stop", () => {
 
   beforeAll(async () => {
     directory = mkdtempSync(join(tmpdir(), "pond-sign-in-stop-"));
-    vi.spyOn(app, "getPath").mockReturnValue(directory);
+    app.setPath("userData", directory);
     invalidatePaths();
     invalidatePrefs();
     resolvePaths(join(directory, "Sign In Stop.pond"));
@@ -371,29 +384,15 @@ describe.skipIf(!nativeSqliteAvailable())("source sign-in stop", () => {
       .run(`task-${id}`, id, source, order);
   }
 
-  function claim(limit: number) {
-    return claimDueTasks({
-      owner: "test",
-      limit,
-      availableInteractive: 0,
-      availableBackground: limit,
-      availableByOp: { harvest_metadata: limit },
-    });
-  }
-
-  async function gate(source: Source) {
-    return (await getDb()).$raw
-      .prepare("SELECT state, reason FROM source_gates WHERE source = ?")
-      .get(source);
-  }
-
   async function failFirstInstagramHarvest() {
     await seed("instagram-1", "instagram", 1);
     await seed("instagram-2", "instagram", 2);
     await seed("instagram-3", "instagram", 3);
     await seed("twitter-1", "twitter", 4);
-    const [first] = await claim(1);
-    if (!first) throw new Error("no harvest was claimed");
+    const [first] = await claimHarvests(1);
+    if (!first) {
+      throw new Error("no harvest was claimed");
+    }
     expect(first.saveId).toBe("instagram-1");
     return handleFailure(
       first,
@@ -407,7 +406,9 @@ describe.skipIf(!nativeSqliteAvailable())("source sign-in stop", () => {
   it("parks every queued request for the source after one sign-in failure while other sources keep running", async () => {
     expect((await failFirstInstagramHarvest()).outcome).toBe("blocked");
 
-    expect((await claim(4)).map((task) => task.saveId)).toEqual(["twitter-1"]);
+    expect((await claimHarvests(4)).map((task) => task.saveId)).toEqual([
+      "twitter-1",
+    ]);
     expect(
       (await getDb()).$raw
         .prepare(
@@ -473,7 +474,7 @@ describe.skipIf(!nativeSqliteAvailable())("source sign-in stop", () => {
 
     expect((await createRetryGeneration(["instagram-1"])).queued).toBe(1);
     expect(await gate("instagram")).toEqual({ state: "closed", reason: null });
-    expect((await claim(4)).map((task) => task.saveId).sort()).toEqual([
+    expect((await claimHarvests(4)).map((task) => task.saveId).sort()).toEqual([
       "instagram-1",
       "instagram-2",
       "instagram-3",
@@ -489,6 +490,8 @@ describe.skipIf(!nativeSqliteAvailable())("source sign-in stop", () => {
       state: "open",
       reason: "auth_required",
     });
-    expect((await claim(4)).map((task) => task.saveId)).toEqual(["twitter-1"]);
+    expect((await claimHarvests(4)).map((task) => task.saveId)).toEqual([
+      "twitter-1",
+    ]);
   });
 });

@@ -1,9 +1,11 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { inPageMarkedNormalize, type MarkedRefPage } from "./normalize";
+import { inPageMarkedNormalize } from "./normalize";
+import type { MarkedRefPage } from "./normalize";
 
 export function buildExpression(refId: string): string {
   return buildItemExpression(inPageMarkedNormalize, inPageMarkedHarvest, refId);
@@ -20,9 +22,11 @@ async function inPageMarkedHarvest(
     headers: { "content-type": "application/json", accept: "application/json" },
     body: JSON.stringify({ args: [refId] }),
   });
-  if (!res.ok) return null;
-  const body: { data?: JsonValue } = await res.json();
-  const ref = norm.parseRef(body.data ?? null);
+  if (!res.ok) {
+    return null;
+  }
+  const body: unknown = await res.json();
+  const ref = norm.parseRef(norm.isReply(body) ? (body.data ?? null) : null);
   return ref ? norm.refPage(ref) : null;
 }
 

@@ -2,10 +2,9 @@
 
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
-const desktopRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const desktopRoot = resolve(import.meta.dirname, "../..");
 /** Matches the Safari appex in `build-safari-extension.mjs`. */
 const DEPLOYMENT_TARGET = "13.5";
 const ARCHS = ["arm64", "x86_64"];

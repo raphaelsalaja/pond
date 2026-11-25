@@ -75,8 +75,7 @@
 .face .media {
   width: min(
     var(--card-preview-height),
-    var(--card-preview-height) *
-    var(--media-aspect)
+    var(--card-preview-height) * var(--media-aspect)
   );
   aspect-ratio: var(--media-aspect);
   pointer-events: none;

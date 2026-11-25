@@ -65,14 +65,17 @@ function mapRule(
   const strings = z.array(z.string()).safeParse(rule.value);
   if (rule.property === "tags" || rule.property === "folders") {
     const field = rule.property === "tags" ? "tags" : "folder";
-    if (rule.method === "empty" || rule.method === "not-empty")
+    if (rule.method === "empty" || rule.method === "not-empty") {
       return {
         field,
         operator: "empty",
         value: null,
         negate: rule.method === "not-empty",
       };
-    if (!strings.success || strings.data.length === 0) return null;
+    }
+    if (!strings.success || strings.data.length === 0) {
+      return null;
+    }
     const value =
       field === "folder"
         ? strings.data.map((id) => folders.get(id))
@@ -118,8 +121,9 @@ function mapRule(
   }
   if (rule.property === "url" || rule.property === "annotation") {
     const field = rule.property === "url" ? "url" : "note";
-    if (rule.method === "empty" || rule.method === "not-empty")
+    if (rule.method === "empty" || rule.method === "not-empty") {
       return { field, operator: "exists", value: rule.method === "not-empty" };
+    }
     const value = z.string().trim().min(1).safeParse(rule.value);
     return value.success && ["contain", "uncontain"].includes(rule.method)
       ? {
@@ -159,7 +163,7 @@ function mapRule(
       "bpm",
     ].includes(rule.property) &&
     numbers.success &&
-    numbers.data[0] != null
+    numbers.data[0] !== undefined
   ) {
     const field = z
       .enum([
@@ -187,17 +191,20 @@ function mapRule(
     if (
       !method.success ||
       (method.data === "between" && numbers.data.length !== 2)
-    )
+    ) {
       return null;
-    if (field === "fileSize" && rule.unit !== "kb" && rule.unit !== "mb")
+    }
+    if (field === "fileSize" && rule.unit !== "kb" && rule.unit !== "mb") {
       return null;
-    if (field === "duration" && !["s", "m", "h"].includes(rule.unit ?? ""))
+    }
+    if (field === "duration" && !["s", "m", "h"].includes(rule.unit ?? "")) {
       return null;
+    }
     const factor =
       field === "fileSize"
         ? rule.unit === "kb"
           ? 1024
-          : 1048576
+          : 1_048_576
         : field === "duration"
           ? rule.unit === "h"
             ? 3600
@@ -215,25 +222,30 @@ function mapRule(
   if (
     ["createTime", "dateTimeOriginal", "timestamp"].includes(rule.property) &&
     numbers.success &&
-    numbers.data[0] != null
+    numbers.data[0] !== undefined
   ) {
     const first = numbers.data[0];
     const field = rule.property === "createTime" ? "savedAt" : "takenAt";
-    if (rule.method === "within" && Number.isInteger(first) && first > 0)
+    if (rule.method === "within" && Number.isInteger(first) && first > 0) {
       return { field, operator: "gte", value: `-P${first}D` };
+    }
     const second = numbers.data[1];
-    if (rule.method === "on")
-      return { field, operator: "between", value: [first, first + 86399999] };
-    if (rule.method === "after")
+    if (rule.method === "on") {
+      return { field, operator: "between", value: [first, first + 86_399_999] };
+    }
+    if (rule.method === "after") {
       return { field, operator: "gte", value: first };
-    if (rule.method === "before")
-      return { field, operator: "lte", value: first + 86400000 };
-    if (rule.method === "between" && second != null)
+    }
+    if (rule.method === "before") {
+      return { field, operator: "lte", value: first + 86_400_000 };
+    }
+    if (rule.method === "between" && second !== undefined) {
       return {
         field,
         operator: "between",
-        value: [first, second + 86400000],
+        value: [first, second + 86_400_000],
       };
+    }
   }
   if (
     rule.property === "rating" &&
@@ -242,22 +254,24 @@ function mapRule(
     const value = z
       .enum(["none", "1", "2", "3", "4", "5"])
       .safeParse(rule.value);
-    if (value.success)
+    if (value.success) {
       return {
         field: "rating",
         operator: rule.method === "equal" ? "eq" : "neq",
         value: value.data === "none" ? 0 : Number(value.data),
       };
+    }
   }
   if (
     rule.property === "fontActivated" &&
     ["activate", "deactivate"].includes(rule.method)
-  )
+  ) {
     return {
       field: "fontActivated",
       operator: "eq",
       value: rule.method === "activate",
     };
+  }
   if (
     rule.property === "color" &&
     ["similar", "accuracy"].includes(rule.method)
@@ -315,13 +329,16 @@ function mapRule(
   }
   if (rule.property === "type" && ["equal", "unequal"].includes(rule.method)) {
     const value = z.string().trim().min(1).safeParse(rule.value);
-    if (!value.success) return null;
-    if (["video", "audio", "font"].includes(value.data))
+    if (!value.success) {
+      return null;
+    }
+    if (["video", "audio", "font"].includes(value.data)) {
       return {
         field: "type",
         operator: rule.method === "equal" ? "eq" : "neq",
         value: value.data,
       };
+    }
     if (
       [
         "jpg",
@@ -337,12 +354,13 @@ function mapRule(
         "webp",
         "avif",
       ].includes(value.data)
-    )
+    ) {
       return {
         field: "format",
         operator: rule.method === "equal" ? "some" : "none",
         value: [value.data],
       };
+    }
   }
   return null;
 }
@@ -352,7 +370,7 @@ export function eagleSmartFolderQuery(
   folders: ReadonlyMap<string, string> = new Map(),
 ): Query | null {
   const normalized = EagleSmartFolderSchema.parse(folder);
-  const groups: Query[] = [];
+  const groups: Array<Query> = [];
   for (const condition of normalized.conditions) {
     const rules: Query["rules"] = [];
     for (const rule of condition.rules) {
@@ -375,7 +393,7 @@ export function eagleSmartFolderQuery(
 export function unsupportedEagleRules(
   folder: z.infer<typeof EagleSmartFolderSchema>,
   folders: ReadonlyMap<string, string>,
-): string[] {
+): Array<string> {
   return folder.conditions.flatMap((condition) =>
     condition.rules
       .filter((rule) => !mapRule(rule, folders))
@@ -386,7 +404,7 @@ export function unsupportedEagleRules(
 export function approximateEagleRules(
   folder: z.infer<typeof EagleSmartFolderSchema>,
   folders: ReadonlyMap<string, string>,
-): string[] {
+): Array<string> {
   return folder.conditions.flatMap((condition) =>
     condition.rules
       .filter(

@@ -6,13 +6,13 @@ import { afterEach, describe, expect, it } from "vitest";
 import { exportFiles } from "./export-files";
 import { importPondPackage } from "./pond-package";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
   );
 });
-async function fixture(extra: [string, string][] = []) {
+async function fixture(extra: Array<[string, string]> = []) {
   const root = await mkdtemp(join(tmpdir(), "pond-package-test-"));
   roots.push(root);
   const original = join(root, "original");
@@ -25,8 +25,9 @@ async function fixture(extra: [string, string][] = []) {
     ["two.jpg", "second"],
     ...extra,
   ]) {
-    if (!name || content === undefined)
+    if (!name || content === undefined) {
       throw new Error("Missing test original");
+    }
     await mkdir(dirname(join(original, name)), { recursive: true });
     await writeFile(join(original, name), content);
     files.push({
@@ -75,13 +76,13 @@ function destination(root: string) {
     string,
     {
       id: string;
-      paths: string[];
+      paths: Array<string>;
       title?: string | null;
       savedAt?: Date;
-      folders: string[];
+      folders: Array<string>;
     }
   >();
-  const names: string[] = [];
+  const names: Array<string> = [];
   const dependencies: NonNullable<Parameters<typeof importPondPackage>[1]> = {
     async folders(rows) {
       names.push(...rows.map((row) => row.name));

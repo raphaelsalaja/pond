@@ -45,8 +45,9 @@ function centerSlide(
     ? scrollerRect.width / scroller.offsetWidth
     : 1;
   const layoutDelta = scale ? delta / scale : delta;
-  if (Math.abs(layoutDelta) > 1)
+  if (Math.abs(layoutDelta) > 1) {
     scroller.scrollTo({ left: scroller.scrollLeft + layoutDelta, behavior });
+  }
 }
 
 export function useLockedSlideRatio() {
@@ -56,7 +57,9 @@ export function useLockedSlideRatio() {
   const reportRatio = useCallback((src: string, r: number) => {
     setRatios((prev) => {
       const cur = prev.get(src);
-      if (cur != null && Math.abs(cur - r) < 0.01) return prev;
+      if (cur !== undefined && Math.abs(cur - r) < 0.01) {
+        return prev;
+      }
       const next = new Map(prev);
       next.set(src, r);
       return next;
@@ -119,8 +122,9 @@ export function useCarouselNavigation(
   useEffect(() => {
     if (!scroller) return;
     const settle = () => {
-      if (aimedIndexRef.current === centeredIndex(scroller))
+      if (aimedIndexRef.current === centeredIndex(scroller)) {
         aimedIndexRef.current = null;
+      }
     };
     const release = () => {
       aimedIndexRef.current = null;

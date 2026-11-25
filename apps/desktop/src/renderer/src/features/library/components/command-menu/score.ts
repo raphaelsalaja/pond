@@ -9,7 +9,7 @@ export interface Searchable {
 
 export interface Match {
   score: number;
-  ranges: readonly MatchRange[];
+  ranges: ReadonlyArray<MatchRange>;
 }
 
 /** Anything below this is noise rather than a match. */
@@ -49,13 +49,16 @@ function fold(text: string): string {
       out += " ".repeat(char.length);
       continue;
     }
-    const folded = char.normalize("NFD").replace(DIACRITICS, "").toLowerCase();
+    const folded = char
+      .normalize("NFD")
+      .replaceAll(DIACRITICS, "")
+      .toLowerCase();
     out += folded.length === char.length ? folded : char;
   }
   return out;
 }
 
-function queryWords(query: string): string[] {
+function queryWords(query: string): Array<string> {
   return fold(query).split(" ").filter(Boolean);
 }
 
@@ -90,12 +93,14 @@ function abbreviationScore(target: string, abbreviation: string): number {
         } else if (before === " ") {
           score *= SPACE_WORD_JUMP;
           const spaces = target.slice(targetIndex, index - 1).match(SPACES);
-          if (spaces && targetIndex > 0)
+          if (spaces && targetIndex > 0) {
             score *= PENALTY_SKIPPED ** spaces.length;
+          }
         } else {
           score *= CHARACTER_JUMP;
-          if (targetIndex > 0)
+          if (targetIndex > 0) {
             score *= PENALTY_SKIPPED ** (index - targetIndex);
+          }
         }
         score *= POSITION_DECAY ** index;
       }
@@ -105,8 +110,9 @@ function abbreviationScore(target: string, abbreviation: string): number {
           (next === char && target.charAt(index - 1) !== char))
       ) {
         const transposed = inner(index + 1, abbreviationIndex + 2);
-        if (transposed * TRANSPOSITION > score)
+        if (transposed * TRANSPOSITION > score) {
           score = transposed * TRANSPOSITION;
+        }
       }
       if (score > best) best = score;
       index = target.indexOf(char, index + 1);
@@ -148,8 +154,10 @@ function singleWordScore(target: string, word: string): number {
   if (!target.includes(word.charAt(0))) return 0;
   const raw = abbreviationScore(target, word);
   if (target.includes(" ")) {
-    const joined = singleWordScore(target.replace(SPACES, ""), word);
-    if (joined > raw) return joined;
+    const joined = singleWordScore(target.replaceAll(SPACES, ""), word);
+    if (joined > raw) {
+      return joined;
+    }
   }
   return meaningful(
     raw * LENGTH_DECAY ** (target.length - word.length),
@@ -158,7 +166,7 @@ function singleWordScore(target: string, word: string): number {
   );
 }
 
-function wordOrderBonus(words: readonly string[], target: string): number {
+function wordOrderBonus(words: ReadonlyArray<string>, target: string): number {
   let previous = -1;
   let from = 0;
   for (const word of words) {
@@ -173,7 +181,7 @@ function wordOrderBonus(words: readonly string[], target: string): number {
 function multiWordScore(
   target: string,
   query: string,
-  words: readonly string[],
+  words: ReadonlyArray<string>,
 ): number {
   if (!words.some((word) => target.includes(word.charAt(0)))) return 0;
   const scores = words.map((word) =>
@@ -185,8 +193,9 @@ function multiWordScore(
   if (
     matched.length < words.length * 0.5 &&
     MISSING_WORD_PENALTY ** missing < 0.01
-  )
+  ) {
     return 0;
+  }
   const weak = scores.some((score) => score > 0 && score < 0.05) ? 0.3 : 1;
   const geometric =
     matched.reduce((product, score) => product * score, 1) **
@@ -222,7 +231,7 @@ export function withinOneEdit(a: string, b: string): boolean {
   if (a === b) return true;
   if (Math.abs(a.length - b.length) > 1) return false;
   if (a.length === b.length) {
-    const diffs: number[] = [];
+    const diffs: Array<number> = [];
     for (let i = 0; i < a.length; i++) {
       if (a[i] !== b[i]) diffs.push(i);
       if (diffs.length > 2) return false;
@@ -250,22 +259,28 @@ function typoPrefix(word: string, candidate: string): number | null {
   return null;
 }
 
-function typoMatches(targetWords: readonly string[], words: readonly string[]) {
+function typoMatches(
+  targetWords: ReadonlyArray<string>,
+  words: ReadonlyArray<string>,
+) {
   let typos = 0;
   for (const word of words) {
     if (targetWords.some((candidate) => candidate.startsWith(word))) continue;
     if (
       word.length < 4 ||
-      !targetWords.some((candidate) => typoPrefix(word, candidate) != null)
-    )
+      !targetWords.some((candidate) => typoPrefix(word, candidate) !== null)
+    ) {
       return false;
+    }
     typos++;
   }
   return typos > 0;
 }
 
-function matchesInitials(targetWords: readonly string[], query: string) {
-  if (query.length < 2 || query.includes(" ")) return false;
+function matchesInitials(targetWords: ReadonlyArray<string>, query: string) {
+  if (query.length < 2 || query.includes(" ")) {
+    return false;
+  }
   let next = 0;
   for (const word of targetWords) {
     if (word.charAt(0) === query.charAt(next)) next++;
@@ -274,7 +289,7 @@ function matchesInitials(targetWords: readonly string[], query: string) {
   return false;
 }
 
-function wordsOf(text: string): string[] {
+function wordsOf(text: string): Array<string> {
   return text.split(/[ _./]+/).filter(Boolean);
 }
 
@@ -313,9 +328,9 @@ export function matchItem(item: Searchable, query: string): Match | null {
   return { score, ranges: matchRanges(item.label, query) };
 }
 
-function mergeRanges(ranges: MatchRange[]): MatchRange[] {
+function mergeRanges(ranges: Array<MatchRange>): Array<MatchRange> {
   const sorted = [...ranges].sort((a, b) => a[0] - b[0]);
-  const out: [number, number][] = [];
+  const out: Array<[number, number]> = [];
   for (const [start, end] of sorted) {
     const last = out.at(-1);
     if (last && start <= last[1]) last[1] = Math.max(last[1], end);
@@ -324,18 +339,19 @@ function mergeRanges(ranges: MatchRange[]): MatchRange[] {
   return out;
 }
 
-function wordStarts(text: string): number[] {
-  const starts: number[] = [];
+function wordStarts(text: string): Array<number> {
+  const starts: Array<number> = [];
   for (let i = 0; i < text.length; i++) {
-    if (text[i] !== " " && (i === 0 || BOUNDARY.has(text.charAt(i - 1))))
+    if (text[i] !== " " && (i === 0 || BOUNDARY.has(text.charAt(i - 1)))) {
       starts.push(i);
+    }
   }
   return starts;
 }
 
-function subsequenceRanges(target: string, word: string): MatchRange[] {
+function subsequenceRanges(target: string, word: string): Array<MatchRange> {
   const starts = new Set(wordStarts(target));
-  const ranges: MatchRange[] = [];
+  const ranges: Array<MatchRange> = [];
   let from = 0;
   for (const char of word) {
     let index = -1;
@@ -355,9 +371,9 @@ function subsequenceRanges(target: string, word: string): MatchRange[] {
 }
 
 /** Character ranges in `label` to highlight for `query`. */
-export function matchRanges(label: string, query: string): MatchRange[] {
+export function matchRanges(label: string, query: string): Array<MatchRange> {
   const target = fold(label);
-  const ranges: MatchRange[] = [];
+  const ranges: Array<MatchRange> = [];
   for (const word of queryWords(query)) {
     const boundary = wordStarts(target).find((start) =>
       target.startsWith(word, start),
@@ -372,9 +388,9 @@ export function matchRanges(label: string, query: string): MatchRange[] {
         const end = target.indexOf(" ", start);
         const candidate = target.slice(start, end < 0 ? undefined : end);
         const length = word.length >= 4 ? typoPrefix(word, candidate) : null;
-        return length == null ? null : ([start, start + length] as const);
+        return length === null ? null : ([start, start + length] as const);
       })
-      .find((range) => range != null);
+      .find((range) => range !== null);
     if (typo) {
       ranges.push(typo);
       continue;

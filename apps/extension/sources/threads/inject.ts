@@ -1,17 +1,14 @@
-import {
-  capture,
-  installInterceptor,
-  log,
-  type RequestLens,
-} from "@/utils/intercept";
+import { isElement } from "@pond/ui/dom";
+import { capture, installInterceptor, log } from "@/utils/intercept";
+import type { RequestLens } from "@/utils/intercept";
 import {
   asNumber,
   asText,
+  isJsonValue,
   isRecord,
-  type JsonRecord,
-  type JsonValue,
   parseJsonRecord,
 } from "@/utils/json";
+import type { JsonRecord } from "@/utils/json";
 
 declare global {
   interface Window {
@@ -43,7 +40,7 @@ function looksLikeLikeLabel(label: string | null): boolean {
 }
 
 function isSaveMenuText(raw: string | null): boolean {
-  const t = (raw ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+  const t = (raw ?? "").replaceAll(/\s+/g, " ").trim().toLowerCase();
   return t === "save" || t === "bookmark" || t === "save post";
 }
 
@@ -55,7 +52,9 @@ function postHrefFrom(href: string | null): string | null {
 }
 
 function postUrlAround(target: EventTarget | null): string | null {
-  if (!(target instanceof Element)) return null;
+  if (!isElement(target)) {
+    return null;
+  }
   let cur: Element | null = target;
   let depth = 0;
   while (cur && depth < 30) {
@@ -75,7 +74,9 @@ function postUrlFromPath(): string | null {
 }
 
 function isSaveClick(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
+  if (!isElement(target)) {
+    return false;
+  }
 
   const menuItem = target.closest(
     '[role="menuitem"], [role="menuitemradio"], [role="option"]',
@@ -92,8 +93,10 @@ function isSaveClick(target: EventTarget | null): boolean {
       null;
     if (looksLikeSaveLabel(label)) return true;
     if (isSaveMenuText(clickable.textContent) && clickable.textContent) {
-      const compact = clickable.textContent.replace(/\s+/g, " ").trim();
-      if (compact.length > 0 && compact.length < 24) return true;
+      const compact = clickable.textContent.replaceAll(/\s+/g, " ").trim();
+      if (compact.length > 0 && compact.length < 24) {
+        return true;
+      }
     }
   }
 
@@ -110,7 +113,9 @@ function isSaveClick(target: EventTarget | null): boolean {
 }
 
 function isLikeClick(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
+  if (!isElement(target)) {
+    return false;
+  }
   const clickable = target.closest(
     'button, [role="button"], a[role="button"], div[role="button"], [tabindex="0"]',
   );
@@ -243,8 +248,8 @@ function parseVariables(bodyStr: string | null): JsonRecord | null {
   try {
     const raw = new URLSearchParams(bodyStr).get("variables");
     if (raw) {
-      const variables: JsonValue = JSON.parse(raw);
-      return isRecord(variables) ? variables : null;
+      const variables: unknown = JSON.parse(raw);
+      return isJsonValue(variables) && isRecord(variables) ? variables : null;
     }
   } catch {
     return variablesFromJson(bodyStr);
@@ -258,7 +263,10 @@ function variablesFromJson(bodyStr: string): JsonRecord | null {
   return isRecord(json.variables) ? json.variables : json;
 }
 
-function firstString(vars: JsonRecord, keys: readonly string[]): string | null {
+function firstString(
+  vars: JsonRecord,
+  keys: ReadonlyArray<string>,
+): string | null {
   for (const key of keys) {
     const value = vars[key];
     const text = asText(value);
@@ -318,9 +326,11 @@ export function inject(): void {
         }
         if (!isLikeClick(ev.target)) return;
         const url = nearby ?? pendingPostUrl ?? postUrlFromPath();
-        if (url) capture(url, "threads:like");
-      } catch (e) {
-        log("warn", "threads dom-click hook error", String(e));
+        if (url) {
+          capture(url, "threads:like");
+        }
+      } catch (error) {
+        log("warn", "threads dom-click hook error", String(error));
       }
     },
     true,

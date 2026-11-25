@@ -5,6 +5,7 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
+import log from "electron-log/renderer";
 import {
   $createTextNode,
   COMMAND_PRIORITY_LOW,
@@ -14,7 +15,8 @@ import {
   LineBreakNode,
   SKIP_DOM_SELECTION_TAG,
 } from "lexical";
-import { type ReactNode, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import type { ReactNode } from "react";
 import {
   setSearchDraft,
   useSearchInput,
@@ -42,7 +44,7 @@ export function SearchComposer({
       namespace: "search-composer",
       theme: { paragraph: styles.paragraph },
       onError: (error: Error) => {
-        console.error("[pond search]", error);
+        log.error("[pond search]", error);
       },
     }),
     [],

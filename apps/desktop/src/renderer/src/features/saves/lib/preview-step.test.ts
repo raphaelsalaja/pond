@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { resolveShortcuts } from "@/shared/lib/shortcuts";
-import { type PreviewStepBinding, previewStepRuns } from "./preview-step";
+import { previewStepRuns } from "./preview-step";
+import type { PreviewStepBinding } from "./preview-step";
 
 const defaults = resolveShortcuts({ profile: "pond", overrides: {} });
 

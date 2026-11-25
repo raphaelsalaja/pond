@@ -7,8 +7,8 @@ import {
   IconShare,
   IconTrash,
 } from "@pond/icons";
-import type { ComponentDocs } from "../shared/docs";
 import { Tray } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 export const docs: ComponentDocs = {
   slug: "tray",

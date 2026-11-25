@@ -1,4 +1,5 @@
-import { agentMessages, type Save, saves } from "@pond/schema/db";
+import { agentMessages, saves } from "@pond/schema/db";
+import type { Save } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
 import { eq, inArray, isNotNull } from "drizzle-orm";
 import { clipboard, shell } from "electron";
@@ -51,19 +52,18 @@ export const reviewInput = z.object({
 });
 
 function sameValue(
-  a: string | number | null | string[],
-  b: string | number | null | string[],
+  a: string | number | null | Array<string>,
+  b: string | number | null | Array<string>,
 ): boolean {
   return Array.isArray(a) && Array.isArray(b)
     ? JSON.stringify([...a].sort()) === JSON.stringify([...b].sort())
     : a === b;
 }
 
-interface ReviewSave
-  extends Pick<
-    Save,
-    "id" | "title" | "notes" | "tags" | "rating" | "deletedAt"
-  > {}
+type ReviewSave = Pick<
+  Save,
+  "id" | "title" | "notes" | "tags" | "rating" | "deletedAt"
+>;
 export const reviewDependencies = {
   async message(id: string) {
     const db = await getDb();
@@ -109,13 +109,15 @@ export async function reviewChanges(
   input: z.infer<typeof reviewInput>,
   deps: ReviewDependencies = reviewDependencies,
 ) {
-  if (reviewing.has(input.messageId))
+  if (reviewing.has(input.messageId)) {
     throw new Error("These changes are already being processed.");
+  }
   reviewing.add(input.messageId);
   try {
     const message = await deps.message(input.messageId);
-    if (message?.role !== "assistant")
+    if (message?.role !== "assistant") {
       throw new Error("This review no longer exists.");
+    }
     const metadata = assistantMetadata.parse(message.metadata ?? {});
     const changes = metadata.changes ?? [];
     const selected = new Set(input.changeIds);
@@ -127,8 +129,9 @@ export async function reviewChanges(
           : change.status === "pending";
       if (!eligible) continue;
       try {
-        if (input.action === "dismiss") change.status = "dismissed";
-        else if (change.field === "action") {
+        if (input.action === "dismiss") {
+          change.status = "dismissed";
+        } else if (change.field === "action") {
           await writeAction(change, input.action, deps);
           change.status = input.action === "undo" ? "undone" : "applied";
         } else {
@@ -148,14 +151,16 @@ export async function reviewChanges(
                     : current[change.field];
           const expected =
             input.action === "undo" ? change.after : change.before;
-          if (change.field !== "rating" && !sameValue(value, expected))
+          if (change.field !== "rating" && !sameValue(value, expected)) {
             throw new Error(
               "This value changed since the review. Your newer edit was kept.",
             );
-          if (change.field === "rating" && value !== expected)
+          }
+          if (change.field === "rating" && value !== expected) {
             throw new Error(
               "This value changed since the review. Your newer edit was kept.",
             );
+          }
           await writeChange(change, input.action, deps);
           change.status = input.action === "undo" ? "undone" : "applied";
         }
@@ -184,10 +189,11 @@ async function writeChange(
     const valid = new Set(
       (await deps.listFolders()).map((folder) => folder.id),
     );
-    if (ids.some((id) => !valid.has(id)))
+    if (ids.some((id) => !valid.has(id))) {
       throw new Error(
         "A folder no longer exists. Your current folders were kept.",
       );
+    }
     await deps.setSaveFolders(change.saveId, ids);
   } else if (change.field === "tags") {
     const result = await deps.setSaveTags(
@@ -254,8 +260,9 @@ async function writeAction(
   deps: ReviewDependencies,
 ) {
   if (change.action === "runOperation") {
-    if (action === "undo")
+    if (action === "undo") {
       throw new Error("Use Pond's Undo for this operation.");
+    }
     const request = agentOperationRequest.parse(change.payload);
     /** An idle server closes after 10 minutes, so a late Apply reconnects before it looks the tool up. */
     if (isMcpOperation(request.operation)) await deps.prepareTools();
@@ -265,31 +272,34 @@ async function writeAction(
   }
   const payload = ActionPayloadSchema.parse(change.payload ?? {});
   if (action === "undo") {
-    if (change.action === "folderCreate" && payload.id !== undefined)
+    if (change.action === "folderCreate" && payload.id !== undefined) {
       await deps.deleteFolder(payload.id);
-    else if (
+    } else if (
       change.action === "folderRename" &&
       payload.id !== undefined &&
       change.before
-    )
+    ) {
       await deps.renameFolder(payload.id, change.before);
-    else if (
+    } else if (
       change.action === "tagRename" &&
       change.before &&
       payload.to !== undefined
-    )
+    ) {
       await deps.renameTag(payload.to, change.before);
-    else if (change.action === "quickAdd" && payload.id !== undefined)
+    } else if (change.action === "quickAdd" && payload.id !== undefined) {
       await deps.executeTransaction({
         kind: "trash",
         model: "save",
         id: payload.id,
         meta: { actor: "agent", actorReason: "assistant:undo" },
       });
-    else if (change.action === "mergeDuplicates" && payload.ids !== undefined) {
-      if (payload.mergeReceipt)
+    } else if (
+      change.action === "mergeDuplicates" &&
+      payload.ids !== undefined
+    ) {
+      if (payload.mergeReceipt) {
         await deps.undoDuplicateMerge(payload.mergeReceipt);
-      else
+      } else {
         await deps.executeBatch(
           payload.ids
             .filter((id) => id !== payload.keepId)
@@ -300,7 +310,10 @@ async function writeAction(
               meta: { actor: "agent" as const, actorReason: "assistant:undo" },
             })),
         );
-    } else throw new Error("This action cannot be undone from here.");
+      }
+    } else {
+      throw new Error("This action cannot be undone from here.");
+    }
     return;
   }
   if (change.action === "folderCreate") {
@@ -327,8 +340,9 @@ async function writeAction(
       sortDir: payload.sortDir,
       layout: payload.layout,
     });
-    if (!created.ok || !created.id)
+    if (!created.ok || !created.id) {
       throw new Error("Could not create this saved view.");
+    }
     payload.id = created.id;
   } else if (change.action === "savedViewRename") {
     await updateView(String(payload.id ?? ""), { name: change.after });
@@ -349,8 +363,9 @@ async function writeAction(
       ids: payload.ids ?? [],
       meta: { actor: "agent", actorReason: "assistant:merge" },
     });
-    if (!result.ok || !result.receipt)
+    if (!result.ok || !result.receipt) {
       throw new Error("Could not merge these Saves.");
+    }
     payload.mergeReceipt = result.receipt;
   } else if (change.action === "exportFiles" || change.action === "exportCsv") {
     const directory = String(payload.directory ?? "");
@@ -365,13 +380,15 @@ async function writeAction(
     await archiveSiteForSave(change.saveId);
   } else if (change.action === "copyUrl") {
     const db = await getDb();
-    const row = await db
+    const row = db
       .select({ url: saves.url })
       .from(saves)
       .where(eq(saves.id, change.saveId))
       .get();
-    if (!row?.url) throw new Error("This Save has no URL.");
-    clipboard.writeText(row.url);
+    if (!row?.url) {
+      throw new Error("This Save has no URL.");
+    }
+    await clipboard.writeText(row.url);
   } else if (change.action === "reveal") {
     const target = await resolveSaveFilePath(change.saveId, 0);
     if (!target.ok) throw new Error("Could not reveal this Save.");
@@ -382,7 +399,7 @@ async function writeAction(
     const db = await getDb();
     const rows = await db.select().from(saves).where(inArray(saves.id, ids));
     let n = 0;
-    const txs: Transaction[] = [];
+    const txs: Array<Transaction> = [];
     for (const row of rows) {
       n += 1;
       const stored = row.files[0];
@@ -424,13 +441,13 @@ async function writeAction(
       })),
     );
   }
-  change.payload = z
-    .record(z.string(), z.json())
-    .parse(JSON.parse(JSON.stringify(payload)));
+  /** A JSON round trip, unlike structuredClone, drops the undefined and non-JSON values `z.json()` rejects. */
+  const serialized = JSON.stringify(payload);
+  change.payload = z.record(z.string(), z.json()).parse(JSON.parse(serialized));
 }
 
 async function exportToDirectory(
-  ids: string[],
+  ids: Array<string>,
   directory: string,
   csv: boolean,
 ) {

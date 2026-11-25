@@ -25,10 +25,9 @@ import {
   captureFullPage,
   captureRegion,
   captureVisible,
-  type Screenshot,
   ScreenshotError,
-  type ScreenshotOptions,
 } from "./screenshot";
+import type { Screenshot, ScreenshotOptions } from "./screenshot";
 import { cookiesForUrl } from "./session";
 import { syncSettings } from "./settings";
 import { toolbarSkipsDetails } from "./toolbar";

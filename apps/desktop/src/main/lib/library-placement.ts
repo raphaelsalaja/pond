@@ -28,8 +28,12 @@ export function classifyLibraryPlacement(
   open: LibraryAnchor,
   observed: LibraryObservation,
 ): LibraryPlacement {
-  if (!observed.rootExists || observed.metadataId == null) return "missing";
-  if (observed.metadataId !== open.libraryId) return "replaced";
+  if (!observed.rootExists || observed.metadataId === null) {
+    return "missing";
+  }
+  if (observed.metadataId !== open.libraryId) {
+    return "replaced";
+  }
   return "present";
 }
 
@@ -41,7 +45,7 @@ export function observeLibrarySync(root: string): LibraryObservation {
   } catch {
     return { rootExists: false, metadataId: null };
   }
-  let metadataId: string | null = null;
+  let metadataId: string | null;
   try {
     metadataId = readLibraryId(root);
   } catch {
@@ -94,7 +98,9 @@ export function libraryWriteBlock(root: string): string | null {
 }
 
 function noteDisplaced(root: string): void {
-  if (displacedRoot != null && isSamePath(displacedRoot, root)) return;
+  if (displacedRoot !== null && isSamePath(displacedRoot, root)) {
+    return;
+  }
   displacedRoot = root;
   const current = [...listeners];
   /** Defer so a save already inside the mutation queue can finish before rows are retired. */

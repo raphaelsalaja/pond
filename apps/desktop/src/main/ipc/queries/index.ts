@@ -124,9 +124,9 @@ export function registerQueryHandler(): void {
     const startedAt = performance.now();
     try {
       return await handler(raw, event);
-    } catch (err) {
-      log.error("[pond ipc] query failed", name, err);
-      throw err;
+    } catch (error) {
+      log.error("[pond ipc] query failed", name, error);
+      throw error;
     } finally {
       const ms = Math.round(performance.now() - startedAt);
       if (ms >= SLOW_QUERY_MS) log.warn("[pond perf] slow query", { name, ms });

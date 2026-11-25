@@ -11,7 +11,7 @@ const FOCUSED_TEXT_FIELD = `(() => {
 export async function selectAllInTextField(
   contents: Pick<WebContents, "executeJavaScript" | "selectAll">,
 ): Promise<void> {
-  const editable = await contents
+  const editable: unknown = await contents
     .executeJavaScript(FOCUSED_TEXT_FIELD)
     .catch(() => false);
   if (editable === true) contents.selectAll();

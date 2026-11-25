@@ -9,12 +9,12 @@ import type {
 } from "../../../shared/assistant";
 import {
   ASSISTANT_CHANGE_CAP,
-  type AssistantQuestion,
   assistantProposalInput,
   assistantQuestion,
   assistantResultSet,
   assistantSource,
 } from "../../../shared/assistant";
+import type { AssistantQuestion } from "../../../shared/assistant";
 import { folderIdsForSave, listFolders } from "../folders";
 import { normalizeTagList } from "../tags";
 import type { ToolSpec } from "./complete";
@@ -32,7 +32,6 @@ import {
   findDuplicatesInput,
   grepLibrary,
   grepLibraryInput,
-  type LibraryScope,
   libraryOverview,
   libraryOverviewInput,
   openSave,
@@ -44,6 +43,7 @@ import {
   setOverlay,
   setOverlayInput,
 } from "./tools";
+import type { LibraryScope } from "./tools";
 
 export const contextDependencies = {
   pondOperationTools,
@@ -80,9 +80,9 @@ export function libraryContext(
     scope: LibraryScope;
     signal: AbortSignal;
     onActivity: (activity: AssistantActivity) => void;
-    onSources: (sources: AssistantSource[]) => void;
-    onResults?: (results: AssistantResultSet[]) => void;
-    onSteps?: (steps: AssistantToolStep[]) => void;
+    onSources: (sources: Array<AssistantSource>) => void;
+    onResults?: (results: Array<AssistantResultSet>) => void;
+    onSteps?: (steps: Array<AssistantToolStep>) => void;
     visionEnabled?: () => boolean;
   },
   deps = contextDependencies,
@@ -90,10 +90,10 @@ export function libraryContext(
   const sources = new Map<string, AssistantSource>();
   const changes = new Map<string, AssistantChange>();
   let question: AssistantQuestion | undefined;
-  let results: AssistantResultSet[] = [];
+  let results: Array<AssistantResultSet> = [];
   const forModel = (save: AssistantSource) =>
     boundedSource(save, [...sources.keys()].indexOf(save.id) + 1);
-  function collect(rows: AssistantSource[]) {
+  function collect(rows: Array<AssistantSource>) {
     input.signal.throwIfAborted();
     let changed = false;
     for (const row of rows) {
@@ -116,9 +116,12 @@ export function libraryContext(
           current.saveIds.length === saveIds.length &&
           current.saveIds.every((id) => saveIds.includes(id)),
       )
-    )
+    ) {
       return "duplicate";
-    if (results.length >= 12) return "limit";
+    }
+    if (results.length >= 12) {
+      return "limit";
+    }
     results = [...results, { ...result, saveIds }];
     input.onResults?.(results);
     return "added";
@@ -130,7 +133,7 @@ export function libraryContext(
     collect(result.saves);
     return result.saves;
   }
-  const tools: ToolSpec[] = [
+  const tools: Array<ToolSpec> = [
     {
       name: "showSaves",
       description:
@@ -140,11 +143,13 @@ export function libraryContext(
         input.signal.throwIfAborted();
         const parsed = assistantResultSet.parse(args);
         const saveIds = [...new Set(parsed.saveIds)];
-        if (saveIds.some((id) => !sources.has(id)))
+        if (saveIds.some((id) => !sources.has(id))) {
           throw new Error("Only Saves read in this conversation can be shown.");
+        }
         const outcome = showResult({ ...parsed, saveIds });
-        if (outcome === "limit")
+        if (outcome === "limit") {
           throw new Error("Up to twelve result groups can be shown per reply.");
+        }
         return {
           shown: saveIds.length,
           references: saveIds.map((id) => ({
@@ -211,8 +216,9 @@ export function libraryContext(
         if (result.save && "url" in result.save) {
           const save = assistantSource.parse(result.save);
           collect([save]);
-          if (sources.has(save.id))
+          if (sources.has(save.id)) {
             return { ...result, reference: forModel(save).reference };
+          }
         }
         return result;
       },
@@ -281,14 +287,16 @@ export function libraryContext(
       schema: describeSavesInput,
       execute: async (args) => {
         input.signal.throwIfAborted();
-        if (!input.visionEnabled?.())
+        if (!input.visionEnabled?.()) {
           return { error: "Choose a vision model in Settings Models." };
+        }
         input.onActivity("reading");
         const parsed = describeSavesInput.parse(args);
         for (const id of parsed.ids) {
           const result = await deps.readSave({ id }, input.scope);
-          if (result.save && "url" in result.save)
+          if (result.save && "url" in result.save) {
             collect([assistantSource.parse(result.save)]);
+          }
         }
         return deps.describeSaves(parsed);
       },
@@ -344,7 +352,7 @@ export function libraryContext(
             ),
           ),
         );
-        const accepted: AssistantChange[] = [];
+        const accepted: Array<AssistantChange> = [];
         for (const proposal of proposals) {
           input.signal.throwIfAborted();
           if (proposal.field === "action") {
@@ -360,8 +368,12 @@ export function libraryContext(
               after: proposal.after,
               payload: proposal.payload,
             };
-            if (changes.size >= ASSISTANT_CHANGE_CAP && !changes.has(change.id))
+            if (
+              changes.size >= ASSISTANT_CHANGE_CAP &&
+              !changes.has(change.id)
+            ) {
               continue;
+            }
             changes.set(change.id, change);
             accepted.push(change);
             continue;
@@ -411,8 +423,9 @@ export function libraryContext(
             if (
               proposal.field === "folders" &&
               after.some((id) => !folders.has(id))
-            )
+            ) {
               continue;
+            }
             change = {
               ...base,
               field: proposal.field,
@@ -425,10 +438,12 @@ export function libraryContext(
               after,
             };
           }
-          if (JSON.stringify(change.before) === JSON.stringify(change.after))
+          if (JSON.stringify(change.before) === JSON.stringify(change.after)) {
             continue;
-          if (changes.size >= ASSISTANT_CHANGE_CAP && !changes.has(change.id))
+          }
+          if (changes.size >= ASSISTANT_CHANGE_CAP && !changes.has(change.id)) {
             continue;
+          }
           changes.set(change.id, change);
           accepted.push(change);
         }
@@ -447,9 +462,12 @@ export function libraryContext(
       propose: (request, _description, reason) => {
         const key = JSON.stringify(request);
         const existing = proposedOperations.get(key);
-        if (existing) return existing;
-        if (changes.size >= ASSISTANT_CHANGE_CAP)
+        if (existing) {
+          return existing;
+        }
+        if (changes.size >= ASSISTANT_CHANGE_CAP) {
           throw new Error("There are too many pending changes in this reply.");
+        }
         const id = ulid();
         changes.set(id, {
           id,

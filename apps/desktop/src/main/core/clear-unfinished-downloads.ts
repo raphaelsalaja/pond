@@ -5,9 +5,9 @@ import type { Db } from "../db";
 
 export async function clearUnfinishedDownloads(
   db: Db,
-  commit: (transactions: Transaction[]) => Promise<void>,
-  recordUndo: (transactions: Transaction[]) => void,
-): Promise<{ changed: number; ids: string[] }> {
+  commit: (transactions: Array<Transaction>) => Promise<void>,
+  recordUndo: (transactions: Array<Transaction>) => void,
+): Promise<{ changed: number; ids: Array<string> }> {
   const rows = db
     .select({ id: saves.id })
     .from(saves)
@@ -19,15 +19,15 @@ export async function clearUnfinishedDownloads(
       ),
     )
     .all();
-  const transactions = rows.map(
-    (row): Transaction => ({
-      kind: "trash",
-      model: "save",
-      id: row.id,
-      meta: { actor: "user", actorReason: "downloads:clear-unfinished" },
-    }),
-  );
-  if (transactions.length === 0) return { changed: 0, ids: [] };
+  const transactions = rows.map((row): Transaction => ({
+    kind: "trash",
+    model: "save",
+    id: row.id,
+    meta: { actor: "user", actorReason: "downloads:clear-unfinished" },
+  }));
+  if (transactions.length === 0) {
+    return { changed: 0, ids: [] };
+  }
   await commit(transactions);
   recordUndo(transactions);
   return { changed: transactions.length, ids: rows.map((row) => row.id) };

@@ -15,13 +15,11 @@ import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { ulid } from "ulid";
 import { z } from "zod";
 import { writeBundleJson } from "../lib/library-config";
-import {
-  INFO_SCHEMA,
-  type InfoDoc,
-  StoredInfoDocSchema,
-} from "../lib/library-format";
+import { INFO_SCHEMA, StoredInfoDocSchema } from "../lib/library-format";
+import type { InfoDoc } from "../lib/library-format";
 import { isSaveFolderName } from "../lib/library-sidecars";
-import { type ExportItem, exportFiles } from "./export-files";
+import { exportFiles } from "./export-files";
+import type { ExportItem } from "./export-files";
 import { verifyLibraryBackup } from "./library-backup";
 import { runLibraryTransfer } from "./library-transfers";
 import { OrganizationBundleSchema } from "./organization-bundle";
@@ -53,8 +51,9 @@ async function readOrganization(root: string) {
   const text = await readFile(path)
     .then((value) => value.toString("utf8"))
     .catch(() => null);
-  if (!text)
+  if (!text) {
     throw new Error("Open this library in Pond once before transferring it.");
+  }
   return { text, data: OrganizationEnvelope.parse(JSON.parse(text)).data };
 }
 async function readSaves(root: string, includeTrash = false) {
@@ -87,19 +86,20 @@ async function acquireLock(root: string) {
       !(error instanceof Error) ||
       !("code" in error) ||
       error.code !== "EEXIST"
-    )
+    ) {
       throw error;
+    }
     const lock = TransferLock.safeParse(
       JSON.parse(await readFile(path, "utf8")),
     );
     if (lock.success && lock.data.host === hostname()) {
       try {
         process.kill(lock.data.pid, 0);
-      } catch (cause) {
+      } catch (error_) {
         if (
-          cause instanceof Error &&
-          "code" in cause &&
-          cause.code === "ESRCH"
+          error_ instanceof Error &&
+          "code" in error_ &&
+          error_.code === "ESRCH"
         ) {
           await rm(path);
           return acquireLock(root);
@@ -108,6 +108,7 @@ async function acquireLock(root: string) {
     }
     throw new Error(
       "Another transfer is using this library. Wait for it to finish.",
+      { cause: error },
     );
   }
 }
@@ -115,8 +116,9 @@ async function acquireLock(root: string) {
 export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
   return runLibraryTransfer(async () => {
     const root = await realpath(libraryPath);
-    if ((await verifyLibraryBackup(root)).verifiedManifest)
+    if ((await verifyLibraryBackup(root)).verifiedManifest) {
       throw new Error("Restore this backup before adding Saves to it.");
+    }
     const lock = await acquireLock(root);
     try {
       const organization = await readOrganization(root);
@@ -146,8 +148,9 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
             const index = pending.findIndex(
               (folder) => !folder.parentId || mapped.has(folder.parentId),
             );
-            if (index < 0)
+            if (index < 0) {
               throw new Error("The package folder hierarchy is invalid.");
+            }
             const folder = pending.splice(index, 1)[0];
             if (!folder) throw new Error("The package folder is missing.");
             const parent = folder.parentId
@@ -176,10 +179,11 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
           if (
             readLibraryText(join(root, "organization.json")) !==
             expectedOrganization
-          )
+          ) {
             throw new Error(
               "The destination library changed during transfer. Try again after its edits finish.",
             );
+          }
           writeBundleJson(join(root, "organization.json"), organization.data);
           expectedOrganization = readLibraryText(
             join(root, "organization.json"),
@@ -190,10 +194,11 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
           if (
             readLibraryText(join(root, "organization.json")) !==
             expectedOrganization
-          )
+          ) {
             throw new Error(
               "The destination organization changed during transfer.",
             );
+          }
           const existing = await readPackageOrganization(
             root,
             organization.data.views,
@@ -214,9 +219,15 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
           const settingsFile = join(root, "settings.json");
           const settingsText = await readFile(settingsFile)
             .then((value) => value.toString("utf8"))
-            .catch((error: NodeJS.ErrnoException) => {
-              if (error.code === "ENOENT") return null;
-              throw error;
+            .catch((cause: unknown) => {
+              if (
+                cause instanceof Error &&
+                "code" in cause &&
+                cause.code === "ENOENT"
+              ) {
+                return null;
+              }
+              throw cause;
             });
           const settings = settingsText
             ? z
@@ -238,8 +249,9 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
           if (
             readLibraryText(join(root, "organization.json")) !==
             expectedOrganization
-          )
+          ) {
             throw new Error("The destination library changed during transfer.");
+          }
           const info: InfoDoc = {
             schema: INFO_SCHEMA,
             id,
@@ -322,12 +334,13 @@ export function copyPackageToLibrary(packagePath: string, libraryPath: string) {
             knownTags.add(name.toLowerCase());
             addedTags = true;
           }
-          if (addedTags)
+          if (addedTags) {
             writeBundleJson(join(root, "tags.json"), {
               tags: tagCatalog.tags,
               groups: tagCatalog.groups,
               members: tagCatalog.members,
             });
+          }
           existing.set(`${info.source}\0${info.sourceId}`, id);
         },
       });
@@ -345,7 +358,7 @@ export function packageLibrary(libraryPath: string, destination: string) {
     const root = await realpath(resolve(libraryPath));
     await verifyLibraryBackup(root);
     const organization = await readOrganization(root);
-    const items: ExportItem[] = [];
+    const items: Array<ExportItem> = [];
     for (const { directory, info } of await readSaves(root)) {
       if (info.deletedAt) continue;
       const sourcePath = join(directory, "source.json");

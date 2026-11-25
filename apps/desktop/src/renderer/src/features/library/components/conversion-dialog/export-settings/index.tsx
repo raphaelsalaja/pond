@@ -8,9 +8,9 @@ import {
   boxForMode,
   formatLabel,
   SIZE_ITEMS,
-  type SizeMode,
   sizeModeFor,
 } from "../export-plan";
+import type { SizeMode } from "../export-plan";
 import { ExportField } from "../fields";
 import styles from "./styles.module.css";
 
@@ -19,10 +19,16 @@ interface ExportSettingsProps {
   onPresetChange: Dispatch<SetStateAction<ConversionPreset>>;
   sizeMode: SizeMode;
   onSizeModeChange: (mode: SizeMode) => void;
-  presets: readonly ConversionPreset[];
-  capabilities: readonly ConversionCapability[];
+  presets: ReadonlyArray<ConversionPreset>;
+  capabilities: ReadonlyArray<ConversionCapability>;
   disabled: boolean;
   showErrors: boolean;
+}
+
+function isNumberList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return Array.isArray(value);
 }
 
 export function ExportSettings({
@@ -80,12 +86,13 @@ export function ExportSettings({
           const capability = capabilities.find(
             (value) => value.format === format,
           );
-          if (capability)
+          if (capability) {
             onPresetChange((current) => ({
               ...current,
               format: capability.format,
               lossless: capability.supportsLossless ? current.lossless : false,
             }));
+          }
         }}
       />
       <Slider.Root
@@ -97,7 +104,7 @@ export function ExportSettings({
         onValueChange={(quality) =>
           onPresetChange((current) => ({
             ...current,
-            quality: Array.isArray(quality)
+            quality: isNumberList(quality)
               ? (quality[0] ?? current.quality)
               : quality,
           }))
@@ -177,7 +184,7 @@ export function ExportSettings({
             suffix="sec"
             showError={showErrors}
             min={0}
-            max={86400}
+            max={86_400}
             value={preset.start}
             onChange={(start) =>
               onPresetChange((current) => ({

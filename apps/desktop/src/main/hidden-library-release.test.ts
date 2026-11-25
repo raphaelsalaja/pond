@@ -25,7 +25,7 @@ type FakeWindow = ReturnType<typeof fakeWindow>;
 
 function setup(options: { canRelease?: () => boolean } = {}) {
   const library = fakeWindow();
-  const released: FakeWindow[] = [];
+  const released: Array<FakeWindow> = [];
   const release = createHiddenLibraryRelease<FakeWindow>({
     isLibraryWindow: (win) => win === library,
     canRelease: options.canRelease ?? (() => true),

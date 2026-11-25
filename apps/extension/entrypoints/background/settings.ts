@@ -5,7 +5,7 @@ import { createSingleFlightTrigger } from "@/utils/single-flight";
 import { settingsFromPond } from "@/utils/types";
 
 /** Each fetch spawns the native host, so captures right after a sync reuse its result. */
-const FRESH_MS = 5_000;
+const FRESH_MS = 5000;
 
 let syncedAt = 0;
 

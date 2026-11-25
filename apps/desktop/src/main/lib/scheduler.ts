@@ -63,7 +63,7 @@ function stopAll(): void {
 async function run(job: Job): Promise<void> {
   try {
     await job.fn();
-  } catch (err) {
-    log.warn(`[pond scheduler] '${job.name}' tick failed`, err);
+  } catch (error) {
+    log.warn(`[pond scheduler] '${job.name}' tick failed`, error);
   }
 }

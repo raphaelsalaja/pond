@@ -62,8 +62,13 @@ function removeFromSelection(gone: ReadonlySet<string>): void {
     const anchor = s.anchor !== null && gone.has(s.anchor) ? null : s.anchor;
     const cursor = s.cursor !== null && gone.has(s.cursor) ? null : s.cursor;
     const kept = new Set([...s.ids].filter((id) => !gone.has(id)));
-    if (kept.size === s.ids.size && anchor === s.anchor && cursor === s.cursor)
+    if (
+      kept.size === s.ids.size &&
+      anchor === s.anchor &&
+      cursor === s.cursor
+    ) {
       return s;
+    }
     return { ...withIds(s, kept, anchor), cursor };
   });
 }
@@ -75,8 +80,9 @@ function clearSelection(): void {
       s.anchor === null &&
       s.cursor === null &&
       !s.picking
-    )
+    ) {
       return s;
+    }
     return initialSelection;
   });
 }
@@ -151,7 +157,7 @@ export const selection = {
   },
 };
 
-export function useSelectedIds(): readonly string[] {
+export function useSelectedIds(): ReadonlyArray<string> {
   return useSelector(selectionStore, (s) => s.snapshot);
 }
 

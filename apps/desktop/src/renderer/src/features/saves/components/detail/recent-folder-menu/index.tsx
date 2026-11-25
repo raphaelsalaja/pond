@@ -1,11 +1,6 @@
 import { Button, Keyboard, PickerPanel } from "@pond/ui";
-import {
-  type CSSProperties,
-  type KeyboardEvent,
-  useEffect,
-  useId,
-  useState,
-} from "react";
+import { useEffect, useId, useState } from "react";
+import type { CSSProperties, KeyboardEvent } from "react";
 import { FolderIcon, folderColorCss } from "@/shared/lib/folder-icons";
 import type { FolderMenuItem } from "../folder-menu";
 import styles from "./styles.module.css";
@@ -14,10 +9,10 @@ import styles from "./styles.module.css";
 const RECENT_FOLDER_LIMIT = 9;
 
 interface RecentFolderMenuProps {
-  folders: readonly FolderMenuItem[];
+  folders: ReadonlyArray<FolderMenuItem>;
   selectionSize: number;
-  onPick(folder: FolderMenuItem): void;
-  onShowAll(): void;
+  onPick: (folder: FolderMenuItem) => void;
+  onShowAll: () => void;
 }
 
 function iconStyle(

@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   CodexSymlinkUnavailableError,
   cmdShimInvocation,
@@ -20,25 +20,27 @@ function errno(code: string) {
   return Object.assign(new Error(code), { code });
 }
 
-describe("prepareCodexRuntime credential isolation", () => {
-  async function run(platform: NodeJS.Platform, code: string) {
-    const directory = await mkdtemp(join(tmpdir(), "pond-codex-test-"));
+async function run(platform: NodeJS.Platform, code: string) {
+  const directory = await mkdtemp(join(tmpdir(), "pond-codex-test-"));
+  try {
+    let failure: Error | undefined;
     try {
-      let failure: Error | undefined;
-      try {
-        await prepareCodexRuntime(directory, "default", undefined, {
-          symlink: () => Promise.reject(errno(code)),
-          platform,
-        });
-      } catch (error) {
-        if (error instanceof Error) failure = error;
+      await prepareCodexRuntime(directory, "default", undefined, {
+        symlink: () => Promise.reject(errno(code)),
+        platform,
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        failure = error;
       }
-      return { failure, entries: await readdir(join(directory, "codex-home")) };
-    } finally {
-      await rm(directory, { recursive: true, force: true });
     }
+    return { failure, entries: await readdir(join(directory, "codex-home")) };
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
+}
 
+describe("prepareCodexRuntime credential isolation", () => {
   it("fails with an actionable error and copies nothing when Windows refuses the symlink", async () => {
     const source = await mkdtemp(join(tmpdir(), "pond-codex-source-"));
     const original = process.env.CODEX_HOME;
@@ -216,39 +218,47 @@ describe("quoteCmdArg", () => {
 });
 
 describe.skipIf(process.platform !== "win32")("cmd shims on windows", () => {
-  it("passes arguments to a .cmd shim verbatim without running them", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "pond cli shim-"));
-    try {
-      const marker = join(directory, "injected");
-      await writeFile(
-        join(directory, "echo-args.js"),
-        "console.log(JSON.stringify(process.argv.slice(2)))",
-      );
-      await writeFile(
-        join(directory, "echo-args.cmd"),
-        `@"${process.execPath}" "%~dp0echo-args.js" %*\r\n`,
-      );
-      const args = [
-        "--print",
-        '{"type":"object"}',
-        `x" & echo pwned > "${marker}" & "`,
-        "a|b <c> (d) ^e",
-        "backslash\\",
-        "with space",
-      ];
-      const { file, args: cmdArgs } = cmdShimInvocation(
-        join(directory, "echo-args.cmd"),
-        args,
-      );
-      const result = spawnSync(file, cmdArgs, {
-        encoding: "utf8",
-        windowsVerbatimArguments: true,
-        windowsHide: true,
-      });
-      expect(JSON.parse(result.stdout)).toEqual(args);
-      expect(existsSync(marker)).toBe(false);
-    } finally {
-      await rm(directory, { recursive: true, force: true });
-    }
+  let directory = "";
+  let marker = "";
+  let args: Array<string> = [];
+  let stdout = "";
+
+  beforeAll(async () => {
+    directory = await mkdtemp(join(tmpdir(), "pond cli shim-"));
+    marker = join(directory, "injected");
+    args = [
+      "--print",
+      '{"type":"object"}',
+      `x" & echo pwned > "${marker}" & "`,
+      "a|b <c> (d) ^e",
+      "backslash\\",
+      "with space",
+    ];
+    await writeFile(
+      join(directory, "echo-args.js"),
+      "console.log(JSON.stringify(process.argv.slice(2)))",
+    );
+    await writeFile(
+      join(directory, "echo-args.cmd"),
+      `@"${process.execPath}" "%~dp0echo-args.js" %*\r\n`,
+    );
+    const { file, args: cmdArgs } = cmdShimInvocation(
+      join(directory, "echo-args.cmd"),
+      args,
+    );
+    stdout = spawnSync(file, cmdArgs, {
+      encoding: "utf8",
+      windowsVerbatimArguments: true,
+      windowsHide: true,
+    }).stdout;
+  });
+
+  afterAll(async () => {
+    await rm(directory, { recursive: true, force: true });
+  });
+
+  it("passes arguments to a .cmd shim verbatim without running them", () => {
+    expect(JSON.parse(stdout)).toEqual(args);
+    expect(existsSync(marker)).toBe(false);
   });
 });

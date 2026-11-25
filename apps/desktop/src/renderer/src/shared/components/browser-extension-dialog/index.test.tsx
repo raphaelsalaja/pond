@@ -1,59 +1,49 @@
+import type { OpenSafariResult } from "@shared/query-contracts-shared";
+import type { SafariExtensionStatus } from "@shared/safari-extension-contracts";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, expect, it, vi } from "vitest";
-
-type Status = {
-  state: string;
-  bundleId: string | null;
-  signature: string;
-};
+import { afterEach, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
+import { BrowserExtensionDialog } from "./index";
 
 const SIGNED = {
   bundleId: "so.pond.desktop.Extension",
   signature: "developer-id",
-};
+} as const;
 
-/**
- * `IS_MAC` is read from `navigator.platform` when the platform module first loads, so the
- * platform has to be in place before the dialog is imported and the module graph reset
- * between cases.
- */
 async function renderDialog(
-  platform: string,
-  status: Status | null,
-  settingsResult:
-    | { ok: true }
-    | { ok: false; reason: string; error: string } = {
-    ok: true,
-  },
+  mac: boolean,
+  status: SafariExtensionStatus | null,
+  settingsResult: OpenSafariResult = { ok: true },
 ) {
-  Object.defineProperty(globalThis.navigator, "platform", {
-    value: platform,
-    configurable: true,
-  });
-  vi.resetModules();
-  const calls: string[] = [];
-  vi.stubGlobal("pond", {
-    async query(name: string) {
-      calls.push(name);
-      if (name === "extension.safariStatus") {
-        if (!status) throw new Error("status unavailable");
+  const calls: Array<string> = [];
+  bridge.use({
+    query: {
+      "extension.safariStatus": () => {
+        calls.push("extension.safariStatus");
+        if (!status) {
+          throw new Error("status unavailable");
+        }
         return status;
-      }
-      if (name === "extension.openSafariSettings") return settingsResult;
-      if (name === "extension.openSafari") return { ok: true };
-      throw new Error(`Unexpected query: ${name}`);
+      },
+      "extension.openSafariSettings": () => {
+        calls.push("extension.openSafariSettings");
+        return settingsResult;
+      },
+      "extension.openSafari": () => {
+        calls.push("extension.openSafari");
+        return { ok: true };
+      },
     },
-    async openExternal() {
-      return { ok: true };
-    },
+    openExternal: async () => ({ ok: true }),
   });
-  const { BrowserExtensionDialog } = await import("./index");
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
   await act(async () =>
-    root.render(<BrowserExtensionDialog open onOpenChange={() => {}} />),
+    root.render(
+      <BrowserExtensionDialog open onOpenChange={() => {}} mac={mac} />,
+    ),
   );
   return {
     calls,
@@ -72,7 +62,6 @@ async function renderDialog(
     async cleanup() {
       await act(async () => root.unmount());
       host.remove();
-      vi.unstubAllGlobals();
     },
   };
 }
@@ -82,7 +71,7 @@ afterEach(() => {
 });
 
 it("reports Safari as enabled and offers no action", async () => {
-  const view = await renderDialog("MacIntel", { state: "enabled", ...SIGNED });
+  const view = await renderDialog(true, { state: "enabled", ...SIGNED });
   try {
     expect(view.text()).toContain("Safari");
     expect(view.text()).toContain("Enabled");
@@ -94,7 +83,7 @@ it("reports Safari as enabled and offers no action", async () => {
 });
 
 it("explains how to switch Safari on when it is installed but off", async () => {
-  const view = await renderDialog("MacIntel", { state: "disabled", ...SIGNED });
+  const view = await renderDialog(true, { state: "disabled", ...SIGNED });
   try {
     expect(view.text()).toContain("switched off in Safari");
     expect(view.buttons()).toContain("Open Safari Settings");
@@ -105,7 +94,7 @@ it("explains how to switch Safari on when it is installed but off", async () => 
 });
 
 it("opens Safari's settings at the extension", async () => {
-  const view = await renderDialog("MacIntel", { state: "disabled", ...SIGNED });
+  const view = await renderDialog(true, { state: "disabled", ...SIGNED });
   try {
     await view.click("Open Safari Settings");
     expect(view.calls).toContain("extension.openSafariSettings");
@@ -116,7 +105,7 @@ it("opens Safari's settings at the extension", async () => {
 });
 
 it("blames the code signature when Safari ignores an unsigned build", async () => {
-  const view = await renderDialog("MacIntel", {
+  const view = await renderDialog(true, {
     state: "not_registered",
     bundleId: "so.pond.desktop.Extension",
     signature: "ad-hoc",
@@ -130,7 +119,7 @@ it("blames the code signature when Safari ignores an unsigned build", async () =
 
 it("falls back to Allow unsigned extensions when Safari refuses the call", async () => {
   const view = await renderDialog(
-    "MacIntel",
+    true,
     {
       state: "not_registered",
       bundleId: "so.pond.desktop.Extension",
@@ -155,7 +144,7 @@ it("falls back to Allow unsigned extensions when Safari refuses the call", async
 
 it("keeps a signed build off the unsigned steps when Safari refuses", async () => {
   const view = await renderDialog(
-    "MacIntel",
+    true,
     { state: "disabled", ...SIGNED },
     {
       ok: false,
@@ -176,7 +165,7 @@ it("keeps a signed build off the unsigned steps when Safari refuses", async () =
 });
 
 it("asks a signed build Safari has not listed yet to open Safari once", async () => {
-  const view = await renderDialog("MacIntel", {
+  const view = await renderDialog(true, {
     state: "not_registered",
     ...SIGNED,
   });
@@ -189,7 +178,7 @@ it("asks a signed build Safari has not listed yet to open Safari once", async ()
 });
 
 it("says so when the build carries no appex", async () => {
-  const view = await renderDialog("MacIntel", {
+  const view = await renderDialog(true, {
     state: "not_bundled",
     bundleId: null,
     signature: "unknown",
@@ -203,7 +192,7 @@ it("says so when the build carries no appex", async () => {
 });
 
 it("hides the Safari row off macOS", async () => {
-  const view = await renderDialog("Linux x86_64", {
+  const view = await renderDialog(false, {
     state: "enabled",
     ...SIGNED,
   });

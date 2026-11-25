@@ -23,8 +23,8 @@ export type SourceSyncOverride = {
 export interface SourceDescriptor {
   readonly id: string;
   readonly label: string;
-  readonly hosts: readonly string[];
-  readonly urlPatterns: readonly RegExp[];
+  readonly hosts: ReadonlyArray<string>;
+  readonly urlPatterns: ReadonlyArray<RegExp>;
   /** Sources connect with a browser session, a public handle, or an API key. */
   readonly connect?: "session" | "handle" | "api-key";
   readonly sync?: SourceSyncOverride;

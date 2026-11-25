@@ -1,18 +1,23 @@
 import { Store } from "@tanstack/store";
 
 interface TagClipboardState {
-  readonly tags: readonly string[];
+  readonly tags: ReadonlyArray<string>;
 }
 
 const store = new Store<TagClipboardState>({ tags: [] });
 
 export const tagClipboard = {
-  get(): readonly string[] {
+  get(): ReadonlyArray<string> {
     return store.state.tags;
   },
-  set(next: readonly string[]): void {
+  set(next: ReadonlyArray<string>): void {
     const cleaned = Array.from(
-      new Set(next.map((t) => t.trim()).filter(Boolean)),
+      new Set(
+        next.flatMap((t) => {
+          const trimmed = t.trim();
+          return trimmed ? [trimmed] : [];
+        }),
+      ),
     );
     store.setState(() => ({ tags: cleaned }));
   },
@@ -22,9 +27,9 @@ export const tagClipboard = {
 };
 
 export function mergeUniqueTags(
-  current: readonly string[],
-  incoming: readonly string[],
-): string[] {
+  current: ReadonlyArray<string>,
+  incoming: ReadonlyArray<string>,
+): Array<string> {
   const seen = new Set(current.map((t) => t.toLowerCase()));
   const next = [...current];
   for (const raw of incoming) {

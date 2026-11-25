@@ -124,7 +124,7 @@ interface IdInput {
   id: string;
 }
 interface IdsInput {
-  ids: string[];
+  ids: Array<string>;
 }
 interface NameInput {
   name: string;
@@ -157,7 +157,8 @@ interface SavedViewInput {
 export type { OkResult } from "./query-contracts-shared";
 
 export interface QueryInputs
-  extends AccountQueryInputs,
+  extends
+    AccountQueryInputs,
     SafariExtensionQueryInputs,
     TransferQueryInputs,
     BulkQueryInputs,
@@ -183,8 +184,12 @@ export interface QueryInputs
     TagGroupQueryInputs {
   "saves.understandMedia": MediaUnderstandInput;
   "folders.rules.get": { id: string };
-  "folders.rules.set": { id: string; tags: string[]; applyExisting?: boolean };
-  "folders.createBatch": { names: string[]; parentId?: string | null };
+  "folders.rules.set": {
+    id: string;
+    tags: Array<string>;
+    applyExisting?: boolean;
+  };
+  "folders.createBatch": { names: Array<string>; parentId?: string | null };
   "folders.templates.list": EmptyInput;
   "folders.templates.apply": {
     templateId: string;
@@ -202,10 +207,10 @@ export interface QueryInputs
   "folders.createWithSaves": {
     name: string;
     parentId?: string | null;
-    saveIds: string[];
+    saveIds: Array<string>;
   };
   "folders.moveBatch": {
-    ids: string[];
+    ids: Array<string>;
     parentId: string | null;
     beforeId?: string;
   };
@@ -213,9 +218,9 @@ export interface QueryInputs
   "library.restoreBackup": { source?: string; destination?: string };
   "folders.move": { id: string; parentId: string | null; beforeId?: string };
   "folders.assign": {
-    saveIds: string[];
-    addIds: string[];
-    removeIds: string[];
+    saveIds: Array<string>;
+    addIds: Array<string>;
+    removeIds: Array<string>;
   };
   "savedViews.create": SavedViewInput;
   "savedViews.rename": { id: string; name: string };
@@ -235,8 +240,8 @@ export interface QueryInputs
   "folders.renameBatch": BatchRenameInput;
   "folders.setColor": { id: string; color: string | null };
   "folders.delete": { id: string; trashContainedSaves?: boolean };
-  "folders.setSaveFolders": { saveId: string; folderIds: string[] };
-  "folders.addSaves": { folderId: string; saveIds: string[] };
+  "folders.setSaveFolders": { saveId: string; folderIds: Array<string> };
+  "folders.addSaves": { folderId: string; saveIds: Array<string> };
   "tags.create": NameInput;
   "tags.rename": RenameInput;
   "tags.merge": RenameInput;
@@ -246,7 +251,7 @@ export interface QueryInputs
   };
   "tags.delete": NameInput;
   "tags.convertToGroup": NameInput;
-  "tags.setForSave": { saveId: string; tags: string[] };
+  "tags.setForSave": { saveId: string; tags: Array<string> };
   "settings.setVideoDownload": Partial<VideoDownloadSettings> & {
     source?: ExternalSource;
   };
@@ -308,8 +313,8 @@ export interface QueryInputs
     limit?: number;
     cursor?: { ts: number; id: number } | null;
     q?: string;
-    sources?: Source[];
-    ops?: Op[];
+    sources?: Array<Source>;
+    ops?: Array<Op>;
   };
   "downloads.ingestingOrFailed": EmptyInput;
   "downloads.clearUnfinished": EmptyInput;
@@ -335,7 +340,7 @@ export interface QueryInputs
   "agent.pickAttachments": EmptyInput;
   "agent.review": {
     messageId: string;
-    changeIds: string[];
+    changeIds: Array<string>;
     action: "apply" | "undo" | "dismiss";
   };
   "watches.list": EmptyInput;
@@ -345,7 +350,7 @@ export interface QueryInputs
   "settings.ingestToken": EmptyInput;
   "settings.rotateIngestToken": EmptyInput;
   "apiTokens.list": EmptyInput;
-  "apiTokens.create": { name: string; scopes: ApiTokenScope[] };
+  "apiTokens.create": { name: string; scopes: Array<ApiTokenScope> };
   "apiTokens.revoke": { id: string };
   "settings.getOnboarded": EmptyInput;
   "settings.setOnboarded": EmptyInput;
@@ -411,7 +416,8 @@ export interface QueryInputs
 }
 
 export interface QueryResults
-  extends AccountQueryResults,
+  extends
+    AccountQueryResults,
     SafariExtensionQueryResults,
     TransferQueryResults,
     BulkQueryResults,
@@ -436,12 +442,12 @@ export interface QueryResults
     LibraryHealthQueryResults,
     NotificationQueryResults,
     TagGroupQueryResults {
-  "folders.rules.get": { tags: string[]; inheritedTags: string[] };
+  "folders.rules.get": { tags: Array<string>; inheritedTags: Array<string> };
   "folders.rules.set": OkResult<{ affected: number }>;
-  "folders.createBatch": Folder[];
+  "folders.createBatch": Array<Folder>;
   "folders.templates.list": {
-    builtIn: readonly FolderTemplate[];
-    custom: FolderTemplate[];
+    builtIn: ReadonlyArray<FolderTemplate>;
+    custom: Array<FolderTemplate>;
   };
   "folders.templates.apply": { rootId: string; count: number } & UndoableChange;
   "folders.templates.saveFrom": FolderTemplate;
@@ -485,7 +491,7 @@ export interface QueryResults
   }>;
   "folders.move": OkResult<UndoableChange>;
   "folders.assign": OkResult<UndoableChange>;
-  "tags.list": Tag[];
+  "tags.list": Array<Tag>;
   "tags.rename": OkResult<{ affected: number }>;
   "tags.merge": OkResult<{ affected: number }>;
   "tags.update": OkResult;
@@ -493,12 +499,12 @@ export interface QueryResults
   "tags.convertToGroup": OkResult;
   "tags.setForSave": OkResult;
   "pipeline.status": { paused: boolean; inflight: number };
-  "pipeline.inflight": string[];
-  "downloads.ingestingOrFailed": string[];
-  "downloads.clearUnfinished": { changed: number; ids: string[] };
-  "downloads.activity": DownloadActivity[];
+  "pipeline.inflight": Array<string>;
+  "downloads.ingestingOrFailed": Array<string>;
+  "downloads.clearUnfinished": { changed: number; ids: Array<string> };
+  "downloads.activity": Array<DownloadActivity>;
   "downloads.history": {
-    rows: {
+    rows: Array<{
       id: number;
       saveId: string;
       title: string | null;
@@ -510,7 +516,7 @@ export interface QueryResults
       failedOp: Op | null;
       error: { name: string; message: string } | null;
       ts: number;
-    }[];
+    }>;
     nextCursor: { ts: number; id: number } | null;
   };
   "video.sampleFrames": OkResult<{
@@ -523,20 +529,20 @@ export interface QueryResults
   "video.setThumbnail": OkResult;
   "video.copyFilePath": OkResult;
 
-  "savedViews.list": SavedView[];
+  "savedViews.list": Array<SavedView>;
   "savedViews.create": OkResult<{ id: string }>;
   "savedViews.rename": OkResult;
   "savedViews.renameBatch": OkResult<{ renamed: number }>;
   "savedViews.update": OkResult;
   "savedViews.delete": OkResult;
   "savedViews.reorder": OkResult;
-  "folders.list": Folder[];
+  "folders.list": Array<Folder>;
   "folders.create": Folder;
   "folders.rename": OkResult;
   "folders.renameBatch": OkResult<{ renamed: number }>;
   "folders.setColor": OkResult;
   "folders.delete": OkResult;
-  "folders.memberships": { saveId: string; folderId: string }[];
+  "folders.memberships": Array<{ saveId: string; folderId: string }>;
   "folders.setSaveFolders": OkResult<UndoableChange>;
   "folders.addSaves": OkResult<UndoableChange>;
   "tags.create": OkResult;

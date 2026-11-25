@@ -11,8 +11,8 @@ import {
   Pointer,
   progress,
   submenuOf,
-  type Tile,
 } from "@pond/video";
+import type { Tile } from "@pond/video";
 import type { CSSProperties } from "react";
 import { EAGLE, EAGLE_TOTAL, FOLDERS, media, SMART } from "../data";
 import { CUES } from "../timeline";
@@ -26,7 +26,7 @@ const EAGLE_INDEX = IMPORT_ITEMS.findIndex(
 const ROOT = { ...NEW_MENU, items: NEW_ITEMS };
 const SUB = { ...submenuOf(NEW_MENU, 1, 224), items: IMPORT_ITEMS };
 
-const TILES: Tile[] = EAGLE.map((shot, index) => ({
+const TILES: Array<Tile> = EAGLE.map((shot, index) => ({
   key: shot.id,
   src: media(shot.id),
   title: shot.title,

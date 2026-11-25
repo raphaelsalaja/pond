@@ -16,8 +16,9 @@ export function estimateBpm(
   ) {
     let peak = 0;
     const end = Math.min(samples.length, index + step);
-    for (let sample = index; sample < end; sample += 1)
+    for (let sample = index; sample < end; sample += 1) {
       peak = Math.max(peak, Math.abs(samples[sample] ?? 0));
+    }
     envelope[out] = peak;
     energy += peak;
   }
@@ -35,8 +36,9 @@ export function estimateBpm(
   for (let lag = minLag; lag <= maxLag; lag += 1) {
     let sum = 0;
     const count = envelope.length - lag;
-    for (let index = 0; index + lag < envelope.length; index += 1)
+    for (let index = 0; index + lag < envelope.length; index += 1) {
       sum += (envelope[index] ?? 0) * (envelope[index + lag] ?? 0);
+    }
     const score = count > 0 ? sum / count : 0;
     scores[lag] = score;
     if (score > best) {

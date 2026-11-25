@@ -8,11 +8,12 @@ import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { pickTitle } from "../harvest/lib/title";
 import { buildSavedApiExpression } from "../harvest/threads/api";
 import { parseSavedResponses } from "../harvest/threads/graphql";
+import type { SavedCapture } from "../harvest/threads/graphql";
 import {
   buildThreadsListExpression,
   THREADS_LIST_PAGES,
-  type ThreadsListKind,
 } from "../harvest/threads/list";
+import type { ThreadsListKind } from "../harvest/threads/list";
 import type {
   SavedEntry,
   SavedHarvestArgs,
@@ -25,6 +26,9 @@ import {
   navigateWithTimeout,
 } from "./navigation";
 import { leaseWindow } from "./pool";
+
+/** A poll that lands mid-navigation fails; the next tick reads the stats again. */
+function ignoreMissedProgressPoll(): void {}
 
 interface SavedHarvestProgress {
   phase: "hydrate" | "scroll";
@@ -231,7 +235,7 @@ async function harvestThreadsFeed(
             scrolls: stats.scrolls,
           });
         })
-        .catch(() => {});
+        .catch(ignoreMissedProgressPoll);
     }, 1500);
 
     const runExpr = (expr: string): Promise<JsonValue> =>
@@ -315,7 +319,7 @@ async function harvestThreadsFeed(
 
     const rich = parseSavedResponses(result.captures);
     const seenIds = new Set<string>();
-    const merged: SavedEntry[] = [];
+    const merged: Array<SavedEntry> = [];
     for (const entry of result.entries) {
       if (seenIds.has(entry.postId)) continue;
       seenIds.add(entry.postId);
@@ -340,8 +344,8 @@ async function harvestThreadsFeed(
       captures: result.captures,
       reachedEnd: result.reachedEnd,
     };
-  } catch (err) {
-    log.warn("[pond threads-saved] unexpected error", err);
+  } catch (error) {
+    log.warn("[pond threads-saved] unexpected error", error);
     return { ok: false, reason: "timeout" };
   } finally {
     lease.release();
@@ -367,9 +371,9 @@ function enrichEntry(
 
 async function drainHookCaptures(
   win: BrowserWindow,
-): Promise<import("../harvest/threads/graphql").SavedCapture[]> {
+): Promise<Array<SavedCapture>> {
   try {
-    const raw = await win.webContents.executeJavaScript(
+    const raw: unknown = await win.webContents.executeJavaScript(
       "JSON.stringify(globalThis.__pondThreadsSavedCaptures ?? [])",
       true,
     );

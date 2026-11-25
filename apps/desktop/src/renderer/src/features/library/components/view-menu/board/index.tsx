@@ -1,6 +1,7 @@
 import { IconAscendingSorting, IconDescendingSorting } from "@pond/icons";
 import { Button, Switch, Toggle, ToggleGroup } from "@pond/ui";
-import { type ReactNode, useId } from "react";
+import { useId } from "react";
+import type { ReactNode } from "react";
 import { LIBRARY_SAVE_RADIUS_MAX } from "@/features/library/components/layouts/save-radius";
 import { Fields } from "../fields";
 import {

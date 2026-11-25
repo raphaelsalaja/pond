@@ -1,11 +1,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-import {
-  createPostRenderer,
-  type PostRenderer,
-  type RenderedPost,
-  type XPost,
-} from "@pond/render";
+import { createPostRenderer } from "@pond/render";
+import type { PostRenderer, RenderedPost, XPost } from "@pond/render";
 import type { Capture } from "@pond/schema/raw";
 import type { TweetCardData } from "@shared/tweet-card";
 import { app } from "electron";
@@ -60,8 +56,8 @@ function getRenderer(): Promise<PostRenderer | null> {
         fontsDir: join(dir, "fonts"),
         cacheDir: join(app.getPath("userData"), "render-cache"),
       });
-    } catch (err) {
-      log.warn("[pond render-post] renderer unavailable", err);
+    } catch (error) {
+      log.warn("[pond render-post] renderer unavailable", error);
       return null;
     }
   })();
@@ -115,8 +111,9 @@ async function fillImageSizes(post: XPost): Promise<void> {
       if (size) Object.assign(box, size);
     }),
   );
-  if (post.media)
+  if (post.media) {
     post.media = post.media.filter((m) => m.width > 0 && m.height > 0);
+  }
   if (post.quote?.media) {
     post.quote.media = post.quote.media.filter(
       (m) => m.width > 0 && m.height > 0,
@@ -133,8 +130,8 @@ async function withRenderer(
   if (!engine) return null;
   try {
     return await draw(engine);
-  } catch (err) {
-    log.warn(`[pond render-post] ${label} render failed`, err);
+  } catch (error) {
+    log.warn(`[pond render-post] ${label} render failed`, error);
     return null;
   } finally {
     scheduleIdleDispose();

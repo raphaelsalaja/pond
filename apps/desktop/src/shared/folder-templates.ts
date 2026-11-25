@@ -6,7 +6,7 @@ import type {
 function tree(
   root: Omit<FolderTemplateNode, "key" | "parentKey">,
   children: Array<Omit<FolderTemplateNode, "key" | "parentKey">>,
-): FolderTemplateNode[] {
+): Array<FolderTemplateNode> {
   return [
     { ...root, key: "root", parentKey: null },
     ...children.map((child, index) => ({
@@ -19,16 +19,17 @@ function tree(
 
 export function duplicateTemplateName(
   name: string,
-  taken: readonly string[],
+  taken: ReadonlyArray<string>,
 ): string {
   const used = new Set(taken.map((entry) => entry.toLowerCase()));
   let candidate = `${name} Copy`;
-  for (let n = 2; used.has(candidate.toLowerCase()); n++)
+  for (let n = 2; used.has(candidate.toLowerCase()); n++) {
     candidate = `${name} Copy ${n}`;
+  }
   return candidate;
 }
 
-export const BUILT_IN_FOLDER_TEMPLATES: readonly FolderTemplate[] = [
+export const BUILT_IN_FOLDER_TEMPLATES: ReadonlyArray<FolderTemplate> = [
   {
     id: "built-in:research",
     name: "Research",

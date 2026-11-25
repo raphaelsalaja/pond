@@ -4,9 +4,9 @@ import log from "electron-log/main.js";
 import {
   QUICK_CAPTURE_IPC,
   QuickCaptureDragSchema,
-  type QuickCaptureResult,
   QuickCaptureSubmitSchema,
 } from "../../shared/quick-capture-contracts";
+import type { QuickCaptureResult } from "../../shared/quick-capture-contracts";
 import { userError } from "../../shared/user-error";
 import { captures } from "../core/captures";
 import { addSavesToFolder, listFolders } from "../core/folders";
@@ -105,21 +105,26 @@ export function registerQuickCaptureIpc(): void {
       if (
         input.folderId &&
         !(await listFolders()).some((folder) => folder.id === input.folderId)
-      )
+      ) {
         throw userError("That folder no longer exists. Pick another folder.");
+      }
       const plan = quickCapturePlan(
         input,
         randomUUID(),
         (path) => resolveSaveDrop([path])[0] ?? null,
       );
-      if (!plan.draft && !input.folderId)
+      if (!plan.draft && !input.folderId) {
         throw userError(
           "These files are already in your Library. Pick a folder to file them.",
         );
+      }
       const filed = input.folderId ? plan.saveIds : [];
-      if (input.folderId && filed.length)
+      if (input.folderId && filed.length) {
         await addSavesToFolder(input.folderId, filed);
-      if (plan.draft) await captures.accept(plan.draft);
+      }
+      if (plan.draft) {
+        await captures.accept(plan.draft);
+      }
       keepQuickCaptureDraft(null);
       return { count: (plan.draft?.items.length ?? 0) + filed.length };
     },

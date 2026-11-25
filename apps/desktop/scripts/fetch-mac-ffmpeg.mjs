@@ -11,11 +11,10 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import { gunzipSync } from "node:zlib";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(import.meta.dirname, "..");
 const config = createRequire(import.meta.url)("ffmpeg-static/package.json")[
   "ffmpeg-static"
 ];

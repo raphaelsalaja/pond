@@ -2,7 +2,7 @@ import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import styles from "./styles.module.css";
 
-interface PageProps extends ComponentPropsWithoutRef<"div"> {}
+type PageProps = ComponentPropsWithoutRef<"div">;
 
 /** Whole-page first run for a place with nothing in it yet. */
 function Page({ className, children, ...props }: PageProps) {
@@ -15,37 +15,37 @@ function Page({ className, children, ...props }: PageProps) {
   );
 }
 
-interface HeroProps extends ComponentPropsWithoutRef<"div"> {}
+type HeroProps = ComponentPropsWithoutRef<"div">;
 
 function Hero({ className, ...props }: HeroProps) {
   return <div className={cn(styles.hero, className)} {...props} />;
 }
 
-interface CopyProps extends ComponentPropsWithoutRef<"div"> {}
+type CopyProps = ComponentPropsWithoutRef<"div">;
 
 function Copy({ className, ...props }: CopyProps) {
   return <div className={cn(styles.copy, className)} {...props} />;
 }
 
-interface TitleProps extends ComponentPropsWithoutRef<"h1"> {}
+type TitleProps = ComponentPropsWithoutRef<"h1">;
 
 function Title({ className, ...props }: TitleProps) {
   return <h1 className={cn(styles.title, className)} {...props} />;
 }
 
-interface DescriptionProps extends ComponentPropsWithoutRef<"p"> {}
+type DescriptionProps = ComponentPropsWithoutRef<"p">;
 
 function Description({ className, ...props }: DescriptionProps) {
   return <p className={cn(styles.description, className)} {...props} />;
 }
 
-interface ActionsProps extends ComponentPropsWithoutRef<"div"> {}
+type ActionsProps = ComponentPropsWithoutRef<"div">;
 
 function Actions({ className, ...props }: ActionsProps) {
   return <div className={cn(styles.actions, className)} {...props} />;
 }
 
-interface PreviewProps extends ComponentPropsWithoutRef<"div"> {}
+type PreviewProps = ComponentPropsWithoutRef<"div">;
 
 /** A grayscale miniature of the place once it has content; never interactive. */
 function Preview({ className, children, ...props }: PreviewProps) {
@@ -61,7 +61,7 @@ function Preview({ className, children, ...props }: PreviewProps) {
   );
 }
 
-interface WindowProps extends ComponentPropsWithoutRef<"div"> {}
+type WindowProps = ComponentPropsWithoutRef<"div">;
 
 /** An app window that runs off the preview's right and bottom edges. */
 function Window({ className, children, ...props }: WindowProps) {
@@ -152,7 +152,7 @@ function Block({
   );
 }
 
-interface BadgeProps extends ComponentPropsWithoutRef<"span"> {}
+type BadgeProps = ComponentPropsWithoutRef<"span">;
 
 /** A source logo pinned to a Block's corner, like the badge on a Save card. */
 function Badge({ className, ...props }: BadgeProps) {
@@ -183,7 +183,7 @@ function Pill({ variant = "outline", className, ...props }: PillProps) {
   );
 }
 
-interface CursorProps extends ComponentPropsWithoutRef<"span"> {}
+type CursorProps = ComponentPropsWithoutRef<"span">;
 
 function Cursor({ className, ...props }: CursorProps) {
   return (
@@ -202,7 +202,7 @@ function Cursor({ className, ...props }: CursorProps) {
   );
 }
 
-interface FeaturesProps extends ComponentPropsWithoutRef<"ul"> {}
+type FeaturesProps = ComponentPropsWithoutRef<"ul">;
 
 function Features({ className, ...props }: FeaturesProps) {
   return <ul className={cn(styles.features, className)} {...props} />;

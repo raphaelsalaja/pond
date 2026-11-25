@@ -2,11 +2,8 @@ import type { SplitAllProgress } from "@shared/saves-mutation-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
-import {
-  type NotifyOptions,
-  notify,
-  updateNotification,
-} from "@/shared/lib/toast";
+import { notify, updateNotification } from "@/shared/lib/toast";
+import type { NotifyOptions } from "@/shared/lib/toast";
 
 const POLL_MS = 500;
 const SAVES = { one: "save", other: "saves" };
@@ -31,11 +28,12 @@ export function splitAllDoneCopy(
     progress.failed === 0
       ? undefined
       : `${formatPlural(progress.failed, SAVES)} couldn't be split and ${progress.failed === 1 ? "is" : "are"} unchanged. Split again to retry.`;
-  if (progress.split === 0)
+  if (progress.split === 0) {
     return {
       title: failed ? "Couldn't split" : "Nothing to split",
       description: failed,
     };
+  }
   return {
     title: `Split ${formatPlural(progress.split, SAVES)} into ${formatNumber(progress.split + progress.created)}`,
     description: failed,
@@ -43,7 +41,9 @@ export function splitAllDoneCopy(
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function follow(first: SplitAllProgress): Promise<void> {

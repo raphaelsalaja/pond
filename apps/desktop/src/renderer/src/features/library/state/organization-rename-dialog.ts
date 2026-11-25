@@ -6,14 +6,14 @@ export type OrganizationRenameKind = "folders" | "saved-views";
 interface OrganizationRenameDialogState {
   id: string;
   kind: OrganizationRenameKind;
-  initialIds?: string[];
+  initialIds?: Array<string>;
 }
 
 const store = new Store<OrganizationRenameDialogState | null>(null);
 
 export function openOrganizationRenameDialog(
   kind: OrganizationRenameKind,
-  initialId?: string | string[],
+  initialId?: string | Array<string>,
 ): void {
   store.setState(() => ({
     id: crypto.randomUUID(),

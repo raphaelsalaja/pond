@@ -1,7 +1,10 @@
 import { MANUAL_NOT_SENSITIVE_MODEL } from "@pond/schema/content-safety";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
-import { isValidElement } from "react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import type { ConversionJob } from "@shared/conversion-contracts";
+import { act, createElement, isValidElement } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, describe, expect, it } from "vitest";
 import "@/app/effects/save-library-bridge";
 import { openLibraryAt } from "@/app/test/library-router";
 import {
@@ -29,20 +32,22 @@ import {
   topLevelMenuLabels as topLevelLabels,
   menuLabels as visibleLabels,
 } from "@/shared/test/menu-labels";
+import { bridge } from "@/shared/test/pond-bridge";
 import {
   buildSaveDetailMenu,
   buildSaveExportPopup,
   buildSaveMenu,
   contextMenuSaves,
-  type OpenWithApp,
   openWithKind,
 } from "./menu";
+import type { OpenWithApp } from "./menu";
 import { createSaveMenuContext } from "./menu/context";
+import { buildExportItems } from "./menu/export";
 
 function sectionItems(
-  items: MenuItemSpec[],
+  items: Array<MenuItemSpec>,
   label: string,
-): MenuItemSpec[] | null {
+): Array<MenuItemSpec> | null {
   for (const item of items) {
     if (
       (item.type === "submenu" || item.type === "group") &&
@@ -55,21 +60,21 @@ function sectionItems(
   return null;
 }
 
-function checkboxLabeled(items: MenuItemSpec[], label: string) {
+function checkboxLabeled(items: Array<MenuItemSpec>, label: string) {
   for (const item of items) {
     if (item.type === "checkbox" && item.label === label) return item;
   }
   throw new Error(`Missing ${label}`);
 }
 
-function containsSubmenu(items: MenuItemSpec[]): boolean {
+function containsSubmenu(items: Array<MenuItemSpec>): boolean {
   return items.some((item) => {
     if (item.type === "submenu") return true;
     return item.type === "group" ? containsSubmenu(item.items) : false;
   });
 }
 
-function visibleLeafItems(items: MenuItemSpec[]): MenuItemSpec[] {
+function visibleLeafItems(items: Array<MenuItemSpec>): Array<MenuItemSpec> {
   return items.flatMap((item) => {
     if ("hidden" in item && item.hidden) return [];
     if (item.type === "group") return visibleLeafItems(item.items);
@@ -77,8 +82,9 @@ function visibleLeafItems(items: MenuItemSpec[]): MenuItemSpec[] {
       item.type === "separator" ||
       item.type === "custom" ||
       item.type === "submenu"
-    )
+    ) {
       return [];
+    }
     return [item];
   });
 }
@@ -151,20 +157,41 @@ function photoSave(id: string): Save {
   });
 }
 
+function conversionJob(id: string): ConversionJob {
+  return {
+    id,
+    kind: "compression",
+    status: "running",
+    completed: 0,
+    total: 1,
+    progress: 0,
+    currentId: null,
+    directory: "",
+    outputs: [],
+    changed: 0,
+    skipped: 0,
+    failed: 0,
+    bytesBefore: 0,
+    bytesAfter: 0,
+    error: null,
+  };
+}
+
 afterEach(async () => {
-  vi.restoreAllMocks();
-  vi.unstubAllGlobals();
   selection.clear();
   pool.clear();
   closeConversionDialog();
   closeThumbnailViewer();
-  vi.stubGlobal("pond", {
-    query: async () => [],
+  bridge.use({
+    query: {
+      "folders.list": () => [],
+      "folders.memberships": () => [],
+    },
   });
   await folders.refresh();
 });
 
-function previewOpenWithApps(): OpenWithApp[] {
+function previewOpenWithApps(): Array<OpenWithApp> {
   return [
     {
       name: "Preview.app",
@@ -179,6 +206,34 @@ function previewOpenWithApps(): OpenWithApp[] {
       isDefault: false,
     },
   ];
+}
+
+function posterOnly(id: string): Save {
+  return fileSave({
+    id,
+    sourceId: id,
+    mediaType: "video",
+    files: [
+      {
+        kind: "poster",
+        path: "poster.jpg",
+        mimeType: "image/jpeg",
+        sha256: id,
+        size: 1,
+      },
+    ],
+  });
+}
+
+function row(id: string, parentId: string | null) {
+  return {
+    id,
+    name: id,
+    parentId,
+    color: null,
+    sortOrder: 0,
+    createdAt: new Date(),
+  };
 }
 
 describe("buildSaveMenu", () => {
@@ -203,8 +258,9 @@ describe("buildSaveMenu", () => {
     const exportItem = items.find(
       (item) => "label" in item && item.label === "Export",
     );
-    if (!exportItem || !("onClick" in exportItem))
+    if (!exportItem || !("onClick" in exportItem)) {
       throw new Error("Missing Export action");
+    }
     exportItem.onClick?.();
     expect(conversionDialogStore.state?.mode).toBe("files");
     expect(topLevelLabels(sectionItems(items, "Open With") ?? [])).toEqual([
@@ -256,8 +312,7 @@ describe("buildSaveMenu", () => {
   });
 
   it("corrects a sensitive result from the save menu and can mark it again", async () => {
-    const query = vi.fn(async () => ({ ok: true }));
-    vi.stubGlobal("pond", { query });
+    bridge.use({ query: { "saves.patchDerived": () => ({ ok: true }) } });
     const save = fileSave({
       mediaType: "image",
       sensitiveScore: 0.99,
@@ -282,7 +337,7 @@ describe("buildSaveMenu", () => {
     action.onCheckedChange?.(false);
     expect(pool.get(save.id)?.sensitiveScore).toBe(0);
     expect(pool.get(save.id)?.sensitiveModel).toBe(MANUAL_NOT_SENSITIVE_MODEL);
-    expect(query).toHaveBeenCalledWith("saves.patchDerived", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.patchDerived", {
       id: save.id,
       patch: {
         sensitiveScore: 0,
@@ -397,49 +452,61 @@ describe("buildSaveMenu", () => {
   });
 
   it("confirms before replacing videos with compressed copies", async () => {
-    const query = vi.fn(async (name: string) =>
-      name === "conversion.compressVideos" ? { id: "job-1" } : null,
-    );
-    const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
-    const items = buildSaveMenu(videoSave(), { clipboardEmpty: true });
-    const exports = sectionItems(items, "Export") ?? [];
-    const compress = visibleLeafItems(exports).find(
-      (item) => "label" in item && item.label === "Compress Videos",
-    );
-    if (!compress || !("onClick" in compress))
-      throw new Error("Missing Compress Videos");
-    vi.stubGlobal("pond", { query });
-
-    compress.onClick?.();
-
-    expect(query).not.toHaveBeenCalled();
-    const options = confirm.mock.calls[0]?.[0];
-    expect(options?.description).toContain("can't be undone");
-    await options?.onConfirm({ checked: false });
-    expect(query).toHaveBeenCalledWith("conversion.compressVideos", {
-      ids: ["file-save"],
-      quality: "balanced",
+    bridge.use({
+      query: {
+        "conversion.compressVideos": () => conversionJob("job-1"),
+        "conversion.status": () => null,
+      },
     });
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    await act(async () => root.render(createElement(Dialog.Host)));
+    try {
+      const items = buildSaveMenu(videoSave(), { clipboardEmpty: true });
+      const exports = sectionItems(items, "Export") ?? [];
+      const compress = visibleLeafItems(exports).find(
+        (item) => "label" in item && item.label === "Compress Videos",
+      );
+      if (!compress || !("onClick" in compress)) {
+        throw new Error("Missing Compress Videos");
+      }
+
+      await act(async () => compress.onClick?.());
+
+      expect(window.pond.query).not.toHaveBeenCalled();
+      const dialog = document.querySelector('[role="alertdialog"]');
+      expect(dialog?.textContent).toContain("can't be undone");
+      const confirmButton = [
+        ...(dialog?.querySelectorAll("button") ?? []),
+      ].find((button) => button.textContent === "Compress");
+      if (!confirmButton) {
+        throw new Error("Missing Compress button");
+      }
+      await act(async () => confirmButton.click());
+      expect(window.pond.query).toHaveBeenCalledWith(
+        "conversion.compressVideos",
+        { ids: ["file-save"], quality: "balanced" },
+      );
+    } finally {
+      await act(async () => root.unmount());
+      host.remove();
+    }
   });
 
-  it("offers Compress Videos only on macOS", async () => {
+  it("offers Compress Videos only on macOS", () => {
     const context = createSaveMenuContext(videoSave(), {
       clipboardEmpty: true,
     });
-    if (!context) throw new Error("Missing menu context");
-    Object.defineProperty(navigator, "platform", {
-      value: "Win32",
-      configurable: true,
-    });
-    try {
-      vi.resetModules();
-      const { buildExportItems } = await import("./menu/export");
-      expect(topLevelLabels(buildExportItems(context))).not.toContain(
-        "Compress Videos",
-      );
-    } finally {
-      Reflect.deleteProperty(navigator, "platform");
+    if (!context) {
+      throw new Error("Missing menu context");
     }
+    expect(topLevelLabels(buildExportItems(context, true))).toContain(
+      "Compress Videos",
+    );
+    expect(topLevelLabels(buildExportItems(context, false))).not.toContain(
+      "Compress Videos",
+    );
   });
 
   it("shows the whole post from a split Save", async () => {
@@ -470,8 +537,9 @@ describe("buildSaveMenu", () => {
     const showPost = items.find(
       (item) => "label" in item && item.label === "Show Post",
     );
-    if (!showPost || !("onClick" in showPost))
+    if (!showPost || !("onClick" in showPost)) {
       throw new Error("Missing Show Post action");
+    }
     showPost.onClick?.();
     expect(router.history.location.pathname).toBe(
       pathForLibraryNav({ kind: "post", key: "twitter:DAbC" }),
@@ -705,21 +773,6 @@ describe("buildSaveMenu", () => {
   });
 
   it("offers Download Video for a batch of poster-only video saves", () => {
-    const posterOnly = (id: string) =>
-      fileSave({
-        id,
-        sourceId: id,
-        mediaType: "video",
-        files: [
-          {
-            kind: "poster",
-            path: "poster.jpg",
-            mimeType: "image/jpeg",
-            sha256: id,
-            size: 1,
-          },
-        ],
-      });
     const labels = visibleLabels(
       buildSaveMenu([posterOnly("first"), posterOnly("second")], {
         clipboardEmpty: true,
@@ -794,8 +847,13 @@ describe("buildSaveMenu", () => {
       buildSaveMenu(save, { clipboardEmpty: true }),
       "Thumbnail",
     )?.find((item) => "label" in item && item.label === "View Thumbnail");
-    if (!viewThumbnail || !("onClick" in viewThumbnail) || viewThumbnail.hidden)
+    if (
+      !viewThumbnail ||
+      !("onClick" in viewThumbnail) ||
+      viewThumbnail.hidden
+    ) {
       throw new Error("Missing View Thumbnail");
+    }
 
     viewThumbnail.onClick?.();
     expect(thumbnailViewerStore.state?.saveId).toBe("photo");
@@ -809,8 +867,13 @@ describe("buildSaveMenu", () => {
     const viewThumbnail = items.find(
       (item) => "label" in item && item.label === "View Thumbnail",
     );
-    if (!viewThumbnail || !("onClick" in viewThumbnail) || viewThumbnail.hidden)
+    if (
+      !viewThumbnail ||
+      !("onClick" in viewThumbnail) ||
+      viewThumbnail.hidden
+    ) {
       throw new Error("Missing View Thumbnail");
+    }
 
     viewThumbnail.onClick?.();
     expect(thumbnailViewerStore.state?.saveId).toBe("photo");
@@ -865,21 +928,16 @@ describe("buildSaveMenu", () => {
   });
 
   it("lists the folder tree under Add to Folders and checks folders the save is in", async () => {
-    const row = (id: string, parentId: string | null) => ({
-      id,
-      name: id,
-      parentId,
-      color: null,
-      sortOrder: 0,
-      createdAt: new Date(),
-    });
-    vi.stubGlobal("pond", {
-      query: async (name: string) => {
-        if (name === "folders.list")
-          return [row("Refs", null), row("Shots", "Refs"), row("Inbox", null)];
-        if (name === "folders.memberships")
-          return [{ saveId: "file-save", folderId: "Refs" }];
-        return [];
+    bridge.use({
+      query: {
+        "folders.list": () => [
+          row("Refs", null),
+          row("Shots", "Refs"),
+          row("Inbox", null),
+        ],
+        "folders.memberships": () => [
+          { saveId: "file-save", folderId: "Refs" },
+        ],
       },
     });
     await folders.refresh();
@@ -909,8 +967,9 @@ describe("buildSaveMenu", () => {
     expect(action).toMatchObject({
       shortcut: shortcutGlyphs("save.assign-multiple-folders"),
     });
-    if (!action || !("onClick" in action))
+    if (!action || !("onClick" in action)) {
       throw new Error("Missing Add to Multiple Folders action");
+    }
     action.onClick?.();
     expect(folderPickerStore.state.mode).toBe("multiple");
     expect(folderPickerStore.state.ids.length).toBeGreaterThan(0);
@@ -972,22 +1031,21 @@ describe("buildSaveMenu", () => {
   });
 
   it("puts All ahead of folder names under Navigate to Folder", async () => {
-    vi.stubGlobal("pond", {
-      query: async (name: string) => {
-        if (name === "folders.list")
-          return [
-            {
-              id: "refs",
-              name: "Refs",
-              parentId: null,
-              color: null,
-              sortOrder: 0,
-              createdAt: new Date(),
-            },
-          ];
-        if (name === "folders.memberships")
-          return [{ saveId: "file-save", folderId: "refs" }];
-        return [];
+    bridge.use({
+      query: {
+        "folders.list": () => [
+          {
+            id: "refs",
+            name: "Refs",
+            parentId: null,
+            color: null,
+            sortOrder: 0,
+            createdAt: new Date(),
+          },
+        ],
+        "folders.memberships": () => [
+          { saveId: "file-save", folderId: "refs" },
+        ],
       },
     });
     await folders.refresh();
@@ -1010,7 +1068,10 @@ describe("buildSaveMenu", () => {
       );
       return (
         item?.type !== "group" &&
-        (!item || !("icon" in item) || item.icon == null)
+        (!item ||
+          !("icon" in item) ||
+          item.icon === undefined ||
+          item.icon === null)
       );
     });
     expect(missing).toEqual([]);
@@ -1086,8 +1147,7 @@ describe("buildViewerMenu", () => {
   });
 
   it("converts the WebP file selected in the viewer", () => {
-    const query = vi.fn(async () => ({ id: "job" }));
-    vi.stubGlobal("pond", { query });
+    bridge.use({ query: { "conversion.start": () => conversionJob("job") } });
     const save = fileSave({
       mediaType: "image",
       files: [
@@ -1120,11 +1180,12 @@ describe("buildViewerMenu", () => {
       const action = exports.find(
         (item) => "label" in item && item.label === label,
       );
-      if (!action || !("onClick" in action))
+      if (!action || !("onClick" in action)) {
         throw new Error(`Missing ${label}`);
+      }
       action.onClick?.();
     }
-    expect(query).toHaveBeenNthCalledWith(
+    expect(window.pond.query).toHaveBeenNthCalledWith(
       1,
       "conversion.start",
       expect.objectContaining({
@@ -1132,7 +1193,7 @@ describe("buildViewerMenu", () => {
         preset: expect.objectContaining({ format: "png" }),
       }),
     );
-    expect(query).toHaveBeenNthCalledWith(
+    expect(window.pond.query).toHaveBeenNthCalledWith(
       2,
       "conversion.start",
       expect.objectContaining({

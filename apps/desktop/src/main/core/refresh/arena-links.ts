@@ -6,12 +6,13 @@ import type {
   ArenaLinkConversion,
   ArenaLinkConversionProgress,
 } from "../../../shared/arena-link-contracts";
-import { type Db, getDb } from "../../db";
+import { getDb } from "../../db";
+import type { Db } from "../../db";
 import { refreshSave } from "./index";
 
 /** Saves stay out of the library while they refresh, so a batch caps how many are hidden at once. */
 const BATCH_SIZE = 20;
-const SETTLE_POLL_MS = 2_000;
+const SETTLE_POLL_MS = 2000;
 
 type RawDb = Pick<Db, "$raw">;
 
@@ -27,7 +28,7 @@ const SaveUrlSchema = z.object({ id: z.string(), url: z.string() });
 const CountSchema = z.object({ count: z.number() });
 
 /** Link saves harvested before Link blocks became web pages; `ingesting` ones are already converting. */
-export function listUnconvertedArenaLinks(db: RawDb): string[] {
+export function listUnconvertedArenaLinks(db: RawDb): Array<string> {
   const rows = z.array(CandidateSchema).parse(
     db.$raw
       .prepare(
@@ -60,7 +61,7 @@ export function listUnconvertedArenaLinks(db: RawDb): string[] {
     .map((row) => row.id);
 }
 
-export function countIngesting(db: RawDb, ids: readonly string[]): number {
+export function countIngesting(db: RawDb, ids: ReadonlyArray<string>): number {
   return CountSchema.parse(
     db.$raw
       .prepare(
@@ -73,7 +74,7 @@ export function countIngesting(db: RawDb, ids: readonly string[]): number {
 
 export function convertedArenaLinks(
   db: RawDb,
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Set<string> {
   const rows = z.array(SaveUrlSchema).parse(
     db.$raw
@@ -112,10 +113,10 @@ export function restoreLinkedPageHarvests(db: RawDb): void {
 
 export interface ArenaLinkJobDeps {
   batchSize: number;
-  list: () => Promise<string[]>;
+  list: () => Promise<Array<string>>;
   queue: (saveId: string) => Promise<boolean>;
-  settle: (saveIds: readonly string[]) => Promise<void>;
-  converted: (saveIds: readonly string[]) => Promise<ReadonlySet<string>>;
+  settle: (saveIds: ReadonlyArray<string>) => Promise<void>;
+  converted: (saveIds: ReadonlyArray<string>) => Promise<ReadonlySet<string>>;
   restore: () => Promise<void>;
 }
 
@@ -173,8 +174,12 @@ async function runConversion(
   onProgress?.({ ...progress });
   for (let start = 0; start < ids.length; start += deps.batchSize) {
     const batch = ids.slice(start, start + deps.batchSize);
-    const queued: string[] = [];
-    for (const id of batch) if (await deps.queue(id)) queued.push(id);
+    const queued: Array<string> = [];
+    for (const id of batch) {
+      if (await deps.queue(id)) {
+        queued.push(id);
+      }
+    }
     await deps.settle(queued);
     const converted = await deps.converted(batch);
     await deps.restore();

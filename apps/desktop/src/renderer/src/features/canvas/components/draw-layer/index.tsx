@@ -12,8 +12,8 @@ interface DrawLayerProps {
   color: CanvasColor;
   size: number;
   mode: "marker" | "highlight" | "erase";
-  onStroke(points: StrokePoint[], size: number): void;
-  onErase(points: StrokePoint[]): void;
+  onStroke: (points: Array<StrokePoint>, size: number) => void;
+  onErase: (points: Array<StrokePoint>) => void;
 }
 
 export function DrawLayer({
@@ -24,8 +24,8 @@ export function DrawLayer({
   onErase,
 }: DrawLayerProps) {
   const flow = useReactFlow();
-  const screen = useRef<StrokePoint[]>([]);
-  const client = useRef<StrokePoint[]>([]);
+  const screen = useRef<Array<StrokePoint>>([]);
+  const client = useRef<Array<StrokePoint>>([]);
   const [preview, setPreview] = useState<string | null>(null);
 
   const push = (event: React.PointerEvent<HTMLDivElement>) => {

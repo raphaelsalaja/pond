@@ -13,7 +13,7 @@ export const instagramParser: ExportParser = {
     const root = parseJsonText(text);
     if (root === null) return [];
     const listKind = /liked_posts\.json$/i.test(path) ? "liked" : "saved";
-    const out: ExportEntry[] = [];
+    const out: Array<ExportEntry> = [];
     walkJson(root, (node) => {
       const href = exportText(node.href);
       if (!href || !POST_PATTERNS.some((pattern) => pattern.test(href))) return;

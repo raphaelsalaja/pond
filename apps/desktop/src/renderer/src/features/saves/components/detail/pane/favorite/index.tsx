@@ -9,7 +9,7 @@ function keepFocus(event: React.MouseEvent) {
   event.preventDefault();
 }
 
-export function FavoriteButton({ saves }: { saves: readonly Save[] }) {
+export function FavoriteButton({ saves }: { saves: ReadonlyArray<Save> }) {
   const favorited =
     saves.length > 0 && saves.every((save) => save.favorite === true);
   return (

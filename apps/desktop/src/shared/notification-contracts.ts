@@ -4,7 +4,7 @@ import type { EmptyInput } from "./query-contracts-shared";
 /** Older read notifications drop first once the log passes this size. */
 export const NOTIFICATION_CAP = 500;
 
-const NOTIFICATION_IDS_MAX = 1_000;
+const NOTIFICATION_IDS_MAX = 1000;
 
 const NotificationIdSchema = z.string().trim().min(1).max(200);
 
@@ -22,7 +22,7 @@ export const NotificationPostSchema = z.object({
   kind: NotificationKindSchema,
   priority: z.boolean(),
   title: z.string().trim().min(1).max(200),
-  body: z.string().max(2_000).optional(),
+  body: z.string().max(2000).optional(),
   target: NotificationTargetSchema.optional(),
 });
 export type NotificationPost = z.infer<typeof NotificationPostSchema>;
@@ -65,7 +65,7 @@ export interface NotificationQueryInputs {
 }
 
 export interface NotificationQueryResults {
-  "notifications.list": InboxNotification[];
+  "notifications.list": Array<InboxNotification>;
   "notifications.post": { ok: true };
   "notifications.resolve": { ok: true };
   "notifications.markRead": { ok: true };

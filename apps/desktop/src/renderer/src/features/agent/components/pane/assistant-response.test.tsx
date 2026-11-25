@@ -63,8 +63,9 @@ it("renders semantic paragraphs, lists, tables, quotes and code", () => {
     "<table>",
     "<th>",
     "<blockquote>",
-  ])
+  ]) {
     expect(html).toContain(tag);
+  }
   expect(html).toMatch(/<pre[^>]*><code[^>]*>const x = 1;/);
 });
 it("renders only verified Save references as controls", () => {
@@ -92,7 +93,7 @@ it("leaves numbered text in code and existing links unchanged", () => {
   expect(html).toContain("[8, 1]");
 });
 it("preserves escaped citation text as literal Markdown", () => {
-  const html = render("A literal \\[1\\] is not a source control.");
+  const html = render(String.raw`A literal \[1\] is not a source control.`);
   expect(html).not.toContain('title="Open A film"');
   expect(html).toContain("[1]");
 });

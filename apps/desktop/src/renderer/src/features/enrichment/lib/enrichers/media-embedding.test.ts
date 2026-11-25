@@ -6,8 +6,8 @@ import {
   createMediaEmbeddingEnricher,
   MEDIA_EMBEDDING_AUDIO_OPTIONS,
   MEDIA_EMBEDDING_VIDEO_OPTIONS,
-  type MediaEmbeddingDependencies,
 } from "./media-embedding";
+import type { MediaEmbeddingDependencies } from "./media-embedding";
 
 function save(
   mediaType: Save["mediaType"],
@@ -104,13 +104,10 @@ describe("media embedding enricher", () => {
   });
 
   it("decodes bounded mono audio and persists one vector", async () => {
-    const decodeAudio = vi.fn(async () => new Float32Array([0.25]));
-    const persist = vi.fn(
-      async (_id: string, _vector: Float32Array, _model: string) => {},
-    );
-    const enricher = createMediaEmbeddingEnricher(
-      dependencies({ decodeAudio, persist }),
-    );
+    const deps = dependencies();
+    const decodeAudio = vi.spyOn(deps, "decodeAudio");
+    const persist = vi.spyOn(deps, "persist");
+    const enricher = createMediaEmbeddingEnricher(deps);
 
     await expect(
       enricher.run(save("audio", "audio.wav", "audio/wav")),
@@ -129,31 +126,23 @@ describe("media embedding enricher", () => {
   });
 
   it("samples video at the bounded contract and normalized-means frame and audio vectors", async () => {
-    const events: string[] = [];
-    const sampleVideo = vi.fn(async () => ({
-      duration: 2,
-      frames: [
-        { image: image(10), timestamp: 0 },
-        { image: image(20), timestamp: 1 },
-      ],
-    }));
-    const persist = vi.fn(
-      async (_id: string, _vector: Float32Array, _model: string) => {},
-    );
-    const enricher = createMediaEmbeddingEnricher(
-      dependencies({
-        sampleVideo,
-        embedVideoFrames: async () => {
-          events.push("video");
-          return unitVector(0);
-        },
-        embedAudio: async () => {
-          events.push("audio");
-          return unitVector(1);
-        },
-        persist,
-      }),
-    );
+    const events: Array<string> = [];
+    const persisted: Array<Float32Array> = [];
+    const deps = dependencies({
+      embedVideoFrames: async () => {
+        events.push("video");
+        return unitVector(0);
+      },
+      embedAudio: async () => {
+        events.push("audio");
+        return unitVector(1);
+      },
+      persist: async (_id, vector) => {
+        persisted.push(vector);
+      },
+    });
+    const sampleVideo = vi.spyOn(deps, "sampleVideo");
+    const enricher = createMediaEmbeddingEnricher(deps);
 
     await enricher.run(save("video", "video.mp4", "video/mp4"));
 
@@ -162,7 +151,7 @@ describe("media embedding enricher", () => {
       MEDIA_EMBEDDING_VIDEO_OPTIONS,
     );
     expect(events).toEqual(["video", "audio"]);
-    const written = persist.mock.calls[0]?.[1];
+    const [written] = persisted;
     expect(written?.[0]).toBeCloseTo(Math.SQRT1_2);
     expect(written?.[1]).toBeCloseTo(Math.SQRT1_2);
     expect(written).toHaveLength(768);
@@ -171,17 +160,13 @@ describe("media embedding enricher", () => {
   it("preserves the stored vector and model when inference fails", async () => {
     const oldVector = unitVector(2);
     const oldModel = "old-media-model";
-    const persist = vi.fn(
-      async (_id: string, _vector: Float32Array, _model: string) => {},
-    );
-    const enricher = createMediaEmbeddingEnricher(
-      dependencies({
-        embedAudio: async () => {
-          throw new Error("inference failed");
-        },
-        persist,
-      }),
-    );
+    const deps = dependencies({
+      embedAudio: async () => {
+        throw new Error("inference failed");
+      },
+    });
+    const persist = vi.spyOn(deps, "persist");
+    const enricher = createMediaEmbeddingEnricher(deps);
     const target = {
       ...save("audio", "audio.wav", "audio/wav", oldModel),
       clipEmbedding: Array.from(oldVector),

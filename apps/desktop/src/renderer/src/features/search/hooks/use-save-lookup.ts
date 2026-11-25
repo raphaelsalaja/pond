@@ -1,3 +1,4 @@
+import log from "electron-log/renderer";
 import { useEffect, useState } from "react";
 import { ensureSaves } from "@/features/saves/pool";
 import { searchFtsScores } from "@/features/search/lib/fts-client";
@@ -16,7 +17,7 @@ export interface SaveHit {
 
 export interface SaveLookup {
   query: string;
-  hits: readonly SaveHit[];
+  hits: ReadonlyArray<SaveHit>;
   searching: boolean;
 }
 
@@ -24,9 +25,9 @@ interface LookupState extends SaveLookup {
   key: string;
 }
 
-const cache = new Map<string, readonly SaveHit[]>();
+const cache = new Map<string, ReadonlyArray<SaveHit>>();
 
-function remember(key: string, hits: readonly SaveHit[]): void {
+function remember(key: string, hits: ReadonlyArray<SaveHit>): void {
   cache.delete(key);
   cache.set(key, hits);
   const oldest = cache.keys().next().value;
@@ -51,7 +52,7 @@ async function lookup(
   query: string,
   retrieve: boolean,
   signal: AbortSignal,
-  publish: (hits: readonly SaveHit[], done: boolean) => void,
+  publish: (hits: ReadonlyArray<SaveHit>, done: boolean) => void,
 ): Promise<void> {
   await wait(KEYWORD_DELAY_MS, signal);
   const keywordIds = [
@@ -60,7 +61,7 @@ async function lookup(
   signal.throwIfAborted();
   await ensureSaves(keywordIds);
   signal.throwIfAborted();
-  const hits: SaveHit[] = keywordIds.map((id) => ({ id, via: "keyword" }));
+  const hits: Array<SaveHit> = keywordIds.map((id) => ({ id, via: "keyword" }));
   if (!retrieve) {
     publish(hits, true);
     return;
@@ -97,9 +98,11 @@ export function useSaveLookup(
     lookup(trimmed, retrieve, controller.signal, (hits, done) => {
       if (done) remember(key, hits);
       setState({ key, query: trimmed, hits, searching: !done });
-    }).catch((error) => {
-      if (controller.signal.aborted) return;
-      console.warn("[pond search] save lookup failed", error);
+    }).catch((cause: unknown) => {
+      if (controller.signal.aborted) {
+        return;
+      }
+      log.warn("[pond search] save lookup failed", cause);
       setState({ key, query: trimmed, hits: [], searching: false });
     });
     return () => controller.abort();

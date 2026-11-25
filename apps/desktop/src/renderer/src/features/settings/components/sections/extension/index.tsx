@@ -5,9 +5,9 @@ import {
 import {
   descriptorFor,
   EXTERNAL_SOURCE_IDS,
-  type ExternalSource,
   sourceLabel,
 } from "@pond/schema/sources";
+import type { ExternalSource } from "@pond/schema/sources";
 import { Settings, Switch } from "@pond/ui";
 import { sourcesSkippingLikes } from "@shared/import-scope";
 import { Fragment } from "react";

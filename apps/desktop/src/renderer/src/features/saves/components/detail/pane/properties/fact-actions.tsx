@@ -7,6 +7,7 @@ import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { webTypeKey } from "@pond/schema/media-type";
 import type { MenuItemSpec } from "@pond/ui";
+import log from "electron-log/renderer";
 import { copyId, copyValue } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { pickPrimaryFile } from "@/features/saves/lib/media/units";
@@ -19,7 +20,7 @@ export interface FactAction {
 
 const MB = 1_000_000;
 
-type SaveTime = Save["savedAt"] | Save["createdAt"] | Save["takenAt"];
+type SaveTime = Save["savedAt"] | Save["takenAt"];
 
 interface DateField {
   field: FieldId;
@@ -40,10 +41,6 @@ const DATE_FIELDS = new Map<string, DateField>([
   ["taken", { field: "takenAt", verb: "Taken", at: (save) => save.takenAt }],
 ]);
 
-function show(label: string, predicate: Predicate): FactAction {
-  return { label, run: () => saveLibraryBridge.showMatching(predicate) };
-}
-
 function presetLabel(field: FieldId, value: string): string | null {
   return (
     FIELD_META[field].presets?.find((preset) => preset.value === value)
@@ -60,7 +57,9 @@ function extensionOf(path: string | undefined): string | null {
 }
 
 function dayRange(value: SaveTime): [number, number] | null {
-  if (value == null) return null;
+  if (value === null || value === undefined) {
+    return null;
+  }
   const start = new Date(value);
   if (Number.isNaN(start.getTime())) return null;
   start.setHours(0, 0, 0, 0);
@@ -73,10 +72,16 @@ function dayRange(value: SaveTime): [number, number] | null {
 export function factFilters(
   fact: { id: string; value: string; display: string },
   save: Save,
-): FactAction[] {
+  showMatching: (predicate: Predicate) => void = (predicate) =>
+    saveLibraryBridge.showMatching(predicate),
+): Array<FactAction> {
+  const show = (label: string, predicate: Predicate): FactAction => ({
+    label,
+    run: () => showMatching(predicate),
+  });
   switch (fact.id) {
     case "type": {
-      const out: FactAction[] = [];
+      const out: Array<FactAction> = [];
       const extension = extensionOf(pickPrimaryFile(save)?.path);
       if (extension) {
         out.push(
@@ -104,7 +109,7 @@ export function factFilters(
       return out;
     }
     case "dimensions": {
-      const out: FactAction[] = [];
+      const out: Array<FactAction> = [];
       const orientation = orientationFromDims(save.width, save.height);
       const orientationLabel = orientation
         ? presetLabel("shape", orientation)
@@ -133,8 +138,10 @@ export function factFilters(
     case "size": {
       const size =
         save.fileSize ?? save.files.reduce((sum, file) => sum + file.size, 0);
-      if (!size) return [];
-      if (size < MB)
+      if (!size) {
+        return [];
+      }
+      if (size < MB) {
         return [
           show("Show Saves Under 1 MB", {
             field: "fileSize",
@@ -142,7 +149,8 @@ export function factFilters(
             value: MB,
           }),
         ];
-      if (size < 10 * MB)
+      }
+      if (size < 10 * MB) {
         return [
           show("Show Saves Under 10 MB", {
             field: "fileSize",
@@ -150,6 +158,7 @@ export function factFilters(
             value: 10 * MB,
           }),
         ];
+      }
       return [
         show("Show Saves Over 10 MB", {
           field: "fileSize",
@@ -176,7 +185,7 @@ export function factFilters(
 export function ratingMenu(
   rating: number,
   setRating: (rating: number) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     {
       label: rating ? `Show ${rating}-Star Saves` : "Show Unrated Saves",
@@ -200,15 +209,17 @@ export function ratingMenu(
 
 export function copyFact(label: string, value: string): void {
   void (label === "ID" ? copyId(value) : copyValue(label, value)).catch(
-    () => undefined,
+    (cause: unknown) => {
+      log.warn(`[pond detail] copying ${label} failed`, cause);
+    },
   );
 }
 
 export function factMenu(
   label: string,
   value: string,
-  filters: readonly FactAction[],
-): MenuItemSpec[] {
+  filters: ReadonlyArray<FactAction>,
+): Array<MenuItemSpec> {
   return [
     ...filters.map((filter) => ({
       label: filter.label,

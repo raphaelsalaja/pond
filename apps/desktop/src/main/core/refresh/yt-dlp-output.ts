@@ -67,8 +67,8 @@ export function keepsPartialDownload(
 export async function pickProducedFiles(
   dir: string,
   only?: ReadonlySet<string>,
-): Promise<ProducedFile[]> {
-  let entries: string[];
+): Promise<Array<ProducedFile>> {
+  let entries: Array<string>;
   try {
     entries = await readdir(dir);
   } catch {
@@ -123,12 +123,14 @@ const AUDIO_EXTENSIONS = new Set([
   ".wav",
 ]);
 
-function withoutSeparateStreams(files: ProducedFile[]): ProducedFile[] {
+function withoutSeparateStreams(
+  files: Array<ProducedFile>,
+): Array<ProducedFile> {
   const finished = files.filter((file) => !isSeparateStream(file.path));
   const videoStems = new Set(
-    finished
-      .filter((file) => !isAudioExtension(file.path))
-      .map((file) => fileStem(file.path)),
+    finished.flatMap((file) =>
+      isAudioExtension(file.path) ? [] : [fileStem(file.path)],
+    ),
   );
   return finished.filter(
     (file) =>
@@ -168,9 +170,11 @@ function isSubtitle(name: string): boolean {
   return ext === ".srt" || ext === ".vtt";
 }
 
-export async function pickSubtitleFiles(dir: string): Promise<SubtitleFile[]> {
+export async function pickSubtitleFiles(
+  dir: string,
+): Promise<Array<SubtitleFile>> {
   const entries = await readdir(dir);
-  const out: SubtitleFile[] = [];
+  const out: Array<SubtitleFile> = [];
   for (const name of entries) {
     if (!isSubtitle(name)) continue;
     const full = join(dir, name);
@@ -219,7 +223,7 @@ export async function readSidecars(dir: string): Promise<{
   infoJson: RawYtdlp | null;
   poster: { path: string; mimeType: string } | null;
 }> {
-  let entries: string[];
+  let entries: Array<string>;
   try {
     entries = await readdir(dir);
   } catch {

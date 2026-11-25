@@ -4,7 +4,8 @@ import type {
   DuplicateImportChoice,
   DuplicateImportDecision,
 } from "@shared/saves-import-contracts";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { CardThumb } from "@/features/saves/components/card/media";
 import { useSave } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
@@ -91,7 +92,7 @@ function DuplicateImportReview({
   candidates,
 }: {
   open: boolean;
-  candidates: DuplicateImportCandidate[];
+  candidates: Array<DuplicateImportCandidate>;
 }) {
   const confirmRef = useRef<HTMLButtonElement>(null);
   const applyId = useId();
@@ -125,9 +126,10 @@ function DuplicateImportReview({
 
   const submit = () => {
     const next = { ...decisions };
-    for (const item of applied)
+    for (const item of applied) {
       next[item.path] =
         choice === "use-existing" && item.inTrash ? "restore" : choice;
+    }
     if (last) {
       completeDuplicateImportReview(next);
       return;
@@ -199,8 +201,9 @@ function DuplicateImportReview({
                   value={[choice]}
                   onValueChange={(value) => {
                     const next = value[0];
-                    if (next === "use-existing" || next === "keep-both")
+                    if (next === "use-existing" || next === "keep-both") {
                       setChoice(next);
+                    }
                   }}
                 >
                   <Toggle type="button" size="sm" value="use-existing">

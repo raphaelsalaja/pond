@@ -42,6 +42,9 @@ function tumbleTarget(id: string) {
   return { opacity: 0, y: 120, scale: 0.55, rotate: 8 * lean };
 }
 
+/** Leaving the card pauses the preview, which rejects a `play()` that hasn't started yet. */
+function ignoreInterruptedPreview(): void {}
+
 interface SaveCardProps {
   id: string;
   view: LibraryCardView;
@@ -90,7 +93,7 @@ export const SaveCard = memo(function SaveCard({
     audio.preload = "metadata";
     audio.volume = 0.7;
     audioRef.current = audio;
-    void audio.play().catch(() => undefined);
+    void audio.play().catch(ignoreInterruptedPreview);
   }, [audioUrl]);
   const stopAudioPreview = useCallback(() => {
     const audio = audioRef.current;

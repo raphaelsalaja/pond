@@ -11,8 +11,8 @@ export interface ClipRow {
 }
 
 /** Legacy list rows are `<li id="clip_<id>">` blocks; the first `<time datetime>` inside is when you liked or queued it. */
-export function clipRows(html: string): ClipRow[] {
-  const rows: ClipRow[] = [];
+export function clipRows(html: string): Array<ClipRow> {
+  const rows: Array<ClipRow> = [];
   const seen = new Set<string>();
   for (const part of html.split(/<li[^>]*\bid="clip_/).slice(1)) {
     const id = /^(\d+)"/.exec(part)?.[1];
@@ -76,7 +76,9 @@ export const VIDEO_FIELDS =
   "uri,name,description,release_time,duration,pictures.base_link,user.name,user.link";
 
 /** Keyed by the numeric id in `uri`, because `link` is the vanity address when one exists. */
-export function parseVideos(rows: readonly unknown[]): Map<string, VimeoVideo> {
+export function parseVideos(
+  rows: ReadonlyArray<unknown>,
+): Map<string, VimeoVideo> {
   const out = new Map<string, VimeoVideo>();
   for (const row of rows) {
     const parsed = VideoSchema.safeParse(row);

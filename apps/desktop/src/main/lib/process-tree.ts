@@ -1,4 +1,5 @@
-import { type ChildProcess, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 
 type KillableProcess = Pick<ChildProcess, "pid" | "kill">;
 
@@ -8,10 +9,10 @@ type TrackableProcess = KillableProcess & {
 
 type ProcessTreeKillDeps = {
   platform?: NodeJS.Platform;
-  spawnTaskkill?: (args: string[]) => void;
+  spawnTaskkill?: (args: Array<string>) => void;
 };
 
-function spawnTaskkill(args: string[]) {
+function spawnTaskkill(args: Array<string>) {
   const taskkill = spawn("taskkill", args, {
     windowsHide: true,
     stdio: "ignore",

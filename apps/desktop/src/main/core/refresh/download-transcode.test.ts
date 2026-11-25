@@ -17,7 +17,7 @@ function request(patch: Partial<DownloadRequest> = {}): DownloadRequest {
   };
 }
 
-function after(argv: string[], flag: string): string | undefined {
+function after(argv: Array<string>, flag: string): string | undefined {
   return argv[argv.indexOf(flag) + 1];
 }
 

@@ -53,15 +53,17 @@ export function readLibraryId(root: string): string | null {
   const file = join(root, "metadata.json");
   let raw: string;
   try {
-    raw = readFileSync(file, "utf-8");
-  } catch (cause) {
-    if (isMissing(cause)) return null;
-    throw new LibraryMetadataError(file, cause);
+    raw = readFileSync(file, "utf8");
+  } catch (error) {
+    if (isMissing(error)) {
+      return null;
+    }
+    throw new LibraryMetadataError(file, error);
   }
   try {
     return StoredMetadataSchema.parse(JSON.parse(raw)).id;
-  } catch (cause) {
-    throw new LibraryMetadataError(file, cause);
+  } catch (error) {
+    throw new LibraryMetadataError(file, error);
   }
 }
 

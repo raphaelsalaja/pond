@@ -115,7 +115,7 @@ function Composition({ t }: { t: number }) {
 export const video = defineVideo({
   title: "Pond 2.0",
   duration: DURATION,
-  poster: 29300,
+  poster: 29_300,
   media: ALL_MEDIA,
   Composition,
 });

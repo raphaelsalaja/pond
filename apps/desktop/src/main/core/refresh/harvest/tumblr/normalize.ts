@@ -97,8 +97,8 @@ export const PermalinkSchema = z.object({
   }),
 });
 
-export function parsePosts(rows: readonly unknown[]): TumblrPost[] {
-  const out: TumblrPost[] = [];
+export function parsePosts(rows: ReadonlyArray<unknown>): Array<TumblrPost> {
+  const out: Array<TumblrPost> = [];
   for (const row of rows) {
     const parsed = TumblrPostSchema.safeParse(row);
     if (parsed.success) out.push(parsed.data);
@@ -131,7 +131,7 @@ export function blogFromUrl(url: string): string | null {
 }
 
 /** Reblogs carry no blocks of their own; the original's blocks live in the trail. */
-function blocksOf(post: TumblrPost): NpfBlock[] {
+function blocksOf(post: TumblrPost): Array<NpfBlock> {
   return post.content.length > 0
     ? post.content
     : post.trail.flatMap((t) => t.content);
@@ -146,8 +146,8 @@ function largest(media: NpfBlock["media"]): NpfMedia | undefined {
   return best;
 }
 
-function mediaOf(post: TumblrPost): CaptureMedia[] {
-  const out: CaptureMedia[] = [];
+function mediaOf(post: TumblrPost): Array<CaptureMedia> {
+  const out: Array<CaptureMedia> = [];
   for (const block of blocksOf(post)) {
     if (block.type === "image") {
       const m = largest(block.media);
@@ -242,6 +242,8 @@ export function captureFromPost(post: TumblrPost): Capture {
   const publishedAt = isoFromUnix(post.timestamp);
   if (publishedAt) capture.publishedAt = publishedAt;
   /** Notes count likes and reblogs together, so they are reactions rather than likes. */
-  if (post.noteCount != null) capture.metrics = { reactions: post.noteCount };
+  if (post.noteCount !== undefined) {
+    capture.metrics = { reactions: post.noteCount };
+  }
   return capture;
 }

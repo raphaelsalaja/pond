@@ -73,8 +73,9 @@ describe("download activity", () => {
         saveId: "save",
         op: "fetch_blobs",
       });
-      for (let j = 0; j < 100; j++)
+      for (let j = 0; j < 100; j++) {
         task.report({ phase: j % 2 ? "receiving" : "processing" });
+      }
       task.finish("completed");
     }
     const snapshot = store.snapshot();
@@ -87,26 +88,26 @@ describe("download activity", () => {
     expect(store.snapshot()).toHaveLength(3);
   });
   it("ages transfer speed by received bytes instead of repeated progress messages", () => {
-    let clock = 1_000;
+    let clock = 1000;
     const store = createDownloadActivityStore(100, () => clock);
     const task = store.begin({ id: "a", saveId: "save", op: "fetch_blobs" });
     const transfer = {
       fileIndex: 1,
       state: "receiving" as const,
-      startedAt: 1_000,
-      updatedAt: 1_000,
+      startedAt: 1000,
+      updatedAt: 1000,
       receivedBytes: 50,
       bytesPerSecond: 10,
       etaSeconds: 5,
     };
     task.report({ phase: "receiving", transfer });
-    clock = 4_000;
+    clock = 4000;
     task.report({
       phase: "receiving",
       transfer: { ...transfer, updatedAt: clock },
     });
     expect(store.snapshot()[0]?.transfers[0]).toMatchObject({
-      lastByteAt: 1_000,
+      lastByteAt: 1000,
       bytesPerSecond: 0,
       etaSeconds: undefined,
     });
@@ -115,7 +116,7 @@ describe("download activity", () => {
       transfer: { ...transfer, updatedAt: clock, receivedBytes: 100 },
     });
     expect(store.snapshot()[0]?.transfers[0]).toMatchObject({
-      lastByteAt: 4_000,
+      lastByteAt: 4000,
       bytesPerSecond: 10,
     });
   });
@@ -163,20 +164,20 @@ describe("download activity", () => {
     expect(snapshot?.phase).toBe("receiving");
   });
   it("detects a transfer still receiving no bytes despite repeated progress output", () => {
-    let clock = 1_000;
+    let clock = 1000;
     const store = createDownloadActivityStore(100, () => clock);
     const task = store.begin({
       id: "a",
       saveId: "save",
       op: "fetch_video_ytdlp",
     });
-    clock = 4_000;
+    clock = 4000;
     task.report({
       phase: "receiving",
       transfer: {
         fileIndex: 1,
         state: "receiving",
-        startedAt: 1_000,
+        startedAt: 1000,
         updatedAt: clock,
         receivedBytes: 0,
         bytesPerSecond: 100,

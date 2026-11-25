@@ -6,11 +6,11 @@ import type {
 import { reviewChanges as review, reviewDependencies } from "./review";
 
 interface ReviewTestState {
-  changes: AssistantChange[];
+  changes: Array<AssistantChange>;
   title: string;
-  tags: string[];
+  tags: Array<string>;
   deletedAt: Date | null;
-  folderIds: string[];
+  folderIds: Array<string>;
   fail: boolean;
 }
 const state: ReviewTestState = {
@@ -21,27 +21,9 @@ const state: ReviewTestState = {
   folderIds: ["folder"],
   fail: false,
 };
-const mock = {
-  ...state,
-  write: vi.fn<(typeof reviewDependencies)["executeTransaction"]>(),
-  saveFolders: vi
-    .fn<(typeof reviewDependencies)["setSaveFolders"]>()
-    .mockResolvedValue({ ok: true, undoId: null }),
-  setTags: vi
-    .fn<(typeof reviewDependencies)["setSaveTags"]>()
-    .mockResolvedValue({ ok: true }),
-  createFolder: vi
-    .fn<(typeof reviewDependencies)["createFolder"]>()
-    .mockResolvedValue({
-      id: "new-folder",
-      name: "References",
-      parentId: null,
-      color: null,
-      sortOrder: 0,
-      createdAt: new Date(),
-    }),
-};
-const deps = {
+type Dependencies = typeof reviewDependencies;
+const mock = { ...state };
+const deps: Dependencies = {
   ...reviewDependencies,
   message: async () => ({
     role: "assistant",
@@ -58,7 +40,31 @@ const deps = {
   saveMetadata: async (_id: string, metadata: AssistantMetadata) => {
     mock.changes = structuredClone(metadata.changes ?? []);
   },
-  executeTransaction: mock.write,
+  executeTransaction: async (tx) => {
+    if (mock.fail) {
+      throw new Error("Disk unavailable");
+    }
+    if (
+      tx.model === "save" &&
+      tx.kind === "update" &&
+      tx.patch.title !== null &&
+      tx.patch.title !== undefined
+    ) {
+      mock.title = tx.patch.title;
+    }
+    return {
+      id: 1,
+      modelName: tx.model,
+      modelId: tx.id,
+      action: "U",
+      batchId: null,
+      data: null,
+      prevData: null,
+      actor: "agent",
+      actorReason: null,
+      createdAt: new Date(),
+    };
+  },
   folderIdsForSave: async () => mock.folderIds,
   listFolders: async () => [
     {
@@ -70,12 +76,35 @@ const deps = {
       createdAt: new Date(),
     },
   ],
-  setSaveFolders: mock.saveFolders,
-  setSaveTags: mock.setTags,
-  createFolder: mock.createFolder,
+  setSaveFolders: async () => ({ ok: true, undoId: null }),
+  setSaveTags: async () => ({ ok: true }),
+  createFolder: async () => ({
+    id: "new-folder",
+    name: "References",
+    parentId: null,
+    color: null,
+    sortOrder: 0,
+    createdAt: new Date(),
+  }),
+};
+const spy = {
+  write: vi.spyOn(deps, "executeTransaction"),
+  setTags: vi.spyOn(deps, "setSaveTags"),
+  createFolder: vi.spyOn(deps, "createFolder"),
 };
 const reviewChanges = (input: Parameters<typeof review>[0]) =>
   review(input, deps);
+
+function recordedApply(
+  outcome: () => ReturnType<Dependencies["applyPondOperation"]>,
+) {
+  const calls: Array<Parameters<Dependencies["applyPondOperation"]>> = [];
+  const apply: Dependencies["applyPondOperation"] = (...args) => {
+    calls.push(args);
+    return outcome();
+  };
+  return { calls, apply };
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -95,23 +124,6 @@ beforeEach(() => {
       status: "pending",
     },
   ];
-  mock.write.mockImplementation(async (tx) => {
-    if (mock.fail) throw new Error("Disk unavailable");
-    if (tx.model === "save" && tx.kind === "update" && tx.patch.title != null)
-      mock.title = tx.patch.title;
-    return {
-      id: 1,
-      modelName: tx.model,
-      modelId: tx.id,
-      action: "U",
-      batchId: null,
-      data: null,
-      prevData: null,
-      actor: "agent",
-      actorReason: null,
-      createdAt: new Date(),
-    };
-  });
 });
 const input = {
   messageId: "message",
@@ -122,17 +134,17 @@ const input = {
 describe("reviewed library edits", () => {
   it("applies only stored selected proposals and ignores replayed Apply", async () => {
     await reviewChanges({ ...input, changeIds: ["invented"] });
-    expect(mock.write).not.toHaveBeenCalled();
+    expect(spy.write).not.toHaveBeenCalled();
     await reviewChanges(input);
     expect(mock.title).toBe("Proposed");
     await reviewChanges(input);
-    expect(mock.write).toHaveBeenCalledTimes(1);
+    expect(spy.write).toHaveBeenCalledTimes(1);
   });
   it("keeps newer edits when a proposal is stale", async () => {
     mock.title = "User edited";
     const result = await reviewChanges(input);
     expect(result.changes[0]?.error).toMatch(/newer edit was kept/);
-    expect(mock.write).not.toHaveBeenCalled();
+    expect(spy.write).not.toHaveBeenCalled();
   });
   it("supports Undo but refuses to overwrite later edits", async () => {
     await reviewChanges(input);
@@ -159,10 +171,10 @@ describe("reviewed library edits", () => {
   });
   it("dismisses pending changes without touching the library", async () => {
     await reviewChanges({ ...input, action: "dismiss" });
-    expect(mock.write).not.toHaveBeenCalled();
+    expect(spy.write).not.toHaveBeenCalled();
     expect(mock.changes[0]?.status).toBe("dismissed");
     await reviewChanges(input);
-    expect(mock.write).not.toHaveBeenCalled();
+    expect(spy.write).not.toHaveBeenCalled();
   });
   it("applies tag, folder create, and trash proposals", async () => {
     mock.changes = [
@@ -178,7 +190,7 @@ describe("reviewed library edits", () => {
       },
     ];
     await reviewChanges({ ...input, changeIds: ["tags"] });
-    expect(mock.setTags).toHaveBeenCalledWith("save", ["design", "poster"]);
+    expect(spy.setTags).toHaveBeenCalledWith("save", ["design", "poster"]);
     mock.changes = [
       {
         id: "folder",
@@ -194,7 +206,7 @@ describe("reviewed library edits", () => {
       },
     ];
     await reviewChanges({ ...input, changeIds: ["folder"] });
-    expect(mock.createFolder).toHaveBeenCalledWith({
+    expect(spy.createFolder).toHaveBeenCalledWith({
       name: "References",
       parentId: null,
     });
@@ -211,7 +223,7 @@ describe("reviewed library edits", () => {
       },
     ];
     await reviewChanges({ ...input, changeIds: ["trash"] });
-    expect(mock.write).toHaveBeenCalledWith(
+    expect(spy.write).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "trash", id: "save" }),
     );
     mock.deletedAt = new Date();
@@ -220,38 +232,39 @@ describe("reviewed library edits", () => {
       changeIds: ["trash"],
       action: "undo",
     });
-    expect(mock.write).toHaveBeenCalledWith(
+    expect(spy.write).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "untrash", id: "save" }),
     );
   });
 });
 
-describe("Pond operation reviews", () => {
-  function operationChange(): AssistantChange {
-    return {
-      id: "operation",
-      saveId: "",
-      title: "Create a Film Folder",
-      reason: "Organize references",
-      field: "action",
-      action: "runOperation",
-      before: null,
-      after: "folders.create",
-      status: "pending",
-      undoable: false,
-      payload: {
-        operation: "folders.create",
-        arguments: { name: "Film" },
-        libraryId: "library",
-      },
-    };
-  }
+function operationChange(): AssistantChange {
+  return {
+    id: "operation",
+    saveId: "",
+    title: "Create a Film Folder",
+    reason: "Organize references",
+    field: "action",
+    action: "runOperation",
+    before: null,
+    after: "folders.create",
+    status: "pending",
+    undoable: false,
+    payload: {
+      operation: "folders.create",
+      arguments: { name: "Film" },
+      libraryId: "library",
+    },
+  };
+}
 
+describe("Pond operation reviews", () => {
   it("applies a persisted operation once and retains its result for follow-up", async () => {
     mock.changes = [operationChange()];
-    const apply = vi
-      .fn<(typeof reviewDependencies)["applyPondOperation"]>()
-      .mockResolvedValue({ id: "created-folder", name: "Film" });
+    const { calls, apply } = recordedApply(async () => ({
+      id: "created-folder",
+      name: "Film",
+    }));
     const request = {
       messageId: "message",
       changeIds: ["operation"],
@@ -259,11 +272,15 @@ describe("Pond operation reviews", () => {
     };
     await review(request, { ...deps, applyPondOperation: apply });
     await review(request, { ...deps, applyPondOperation: apply });
-    expect(apply).toHaveBeenCalledExactlyOnceWith({
-      operation: "folders.create",
-      arguments: { name: "Film" },
-      libraryId: "library",
-    });
+    expect(calls).toEqual([
+      [
+        {
+          operation: "folders.create",
+          arguments: { name: "Film" },
+          libraryId: "library",
+        },
+      ],
+    ]);
     expect(mock.changes[0]).toMatchObject({
       status: "applied",
       payload: { result: { id: "created-folder" } },
@@ -279,24 +296,27 @@ describe("Pond operation reviews", () => {
       libraryId: "library",
     };
     mock.changes = [{ ...change, after: request.operation, payload: request }];
-    const prepareTools = vi.fn(async () => {});
-    const apply = vi
-      .fn<(typeof reviewDependencies)["applyPondOperation"]>()
-      .mockResolvedValue({ text: "Created #12" });
+    let prepared = 0;
+    const prepareTools = async () => {
+      prepared += 1;
+    };
+    const { calls, apply } = recordedApply(async () => ({
+      text: "Created #12",
+    }));
     await review(
       { messageId: "message", changeIds: ["operation"], action: "apply" },
       { ...deps, prepareTools, applyPondOperation: apply },
     );
-    expect(prepareTools).toHaveBeenCalledOnce();
-    expect(apply).toHaveBeenCalledExactlyOnceWith(request);
+    expect(prepared).toBe(1);
+    expect(calls).toEqual([[request]]);
     expect(mock.changes[0]).toMatchObject({ status: "applied" });
   });
 
   it("preserves a failed operation as pending and supports dismissal without executing", async () => {
     mock.changes = [operationChange()];
-    const apply = vi
-      .fn<(typeof reviewDependencies)["applyPondOperation"]>()
-      .mockRejectedValue(new Error("The Library changed."));
+    const { calls, apply } = recordedApply(async () => {
+      throw new Error("The Library changed.");
+    });
     await review(
       { messageId: "message", changeIds: ["operation"], action: "apply" },
       { ...deps, applyPondOperation: apply },
@@ -310,7 +330,7 @@ describe("Pond operation reviews", () => {
       { ...deps, applyPondOperation: apply },
     );
     expect(mock.changes[0]).toMatchObject({ status: "dismissed" });
-    expect(apply).toHaveBeenCalledOnce();
+    expect(calls).toHaveLength(1);
   });
 
   it("does not execute malformed stored operation requests", async () => {
@@ -318,12 +338,12 @@ describe("Pond operation reviews", () => {
     if (change.field !== "action") throw new Error("Expected action fixture");
     change.payload = { operation: "folders.create", arguments: {} };
     mock.changes = [change];
-    const apply = vi.fn<(typeof reviewDependencies)["applyPondOperation"]>();
+    const { calls, apply } = recordedApply(async () => null);
     await review(
       { messageId: "message", changeIds: ["operation"], action: "apply" },
       { ...deps, applyPondOperation: apply },
     );
-    expect(apply).not.toHaveBeenCalled();
+    expect(calls).toEqual([]);
     expect(mock.changes[0]).toMatchObject({
       status: "pending",
       error: expect.any(String),

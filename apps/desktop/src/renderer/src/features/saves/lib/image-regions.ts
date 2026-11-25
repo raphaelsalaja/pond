@@ -77,7 +77,7 @@ function clamp01(value: number): number {
 
 function snapValue(
   value: number,
-  guides: readonly number[],
+  guides: ReadonlyArray<number>,
   threshold: number,
 ): number {
   let closest = value;
@@ -139,7 +139,7 @@ export function nudgeCrop(
 
 export type CropHandle = "n" | "s" | "e" | "w" | "nw" | "ne" | "sw" | "se";
 
-export const CROP_HANDLES: readonly CropHandle[] = [
+export const CROP_HANDLES: ReadonlyArray<CropHandle> = [
   "n",
   "s",
   "e",

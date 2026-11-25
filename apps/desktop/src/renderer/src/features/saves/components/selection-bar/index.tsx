@@ -10,7 +10,8 @@ import {
   IconTrashXmark,
   IconUndo,
 } from "@pond/icons";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useState } from "react";
 import { openTagPicker } from "@/features/saves/lib/actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -21,10 +22,10 @@ import { buildCanvasItems } from "@/features/saves/lib/menu/organize";
 import { glyph } from "@/features/saves/lib/menu/shared";
 import {
   loadOpenWithApps,
-  type OpenWithApp,
   openWithKind,
   peekOpenWithApps,
 } from "@/features/saves/lib/open-with-menu";
+import type { OpenWithApp } from "@/features/saves/lib/open-with-menu";
 import { rateSaves } from "@/features/saves/lib/rating";
 import { clearSaveSelection } from "@/features/saves/lib/select";
 import { selectResults } from "@/features/saves/lib/select-results";
@@ -49,18 +50,18 @@ import {
 } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
 
-function loadedSaves(ids: readonly string[]): Save[] {
+function loadedSaves(ids: ReadonlyArray<string>): Array<Save> {
   return ids.flatMap((id) => pool.get(id) ?? []);
 }
 
-function menuOptions(openWithApps: readonly OpenWithApp[] = []) {
+function menuOptions(openWithApps: ReadonlyArray<OpenWithApp> = []) {
   return {
     clipboardEmpty: tagClipboard.get().length === 0,
     openWithApps,
   };
 }
 
-function buildRatingItems(ids: readonly string[]): MenuItemSpec[] {
+function buildRatingItems(ids: ReadonlyArray<string>): Array<MenuItemSpec> {
   const rate = (rating: number) => {
     void rateSaves(ids, rating).catch(() =>
       notify({
@@ -72,14 +73,12 @@ function buildRatingItems(ids: readonly string[]): MenuItemSpec[] {
   };
   const [clear, ...stars] = RATING_COMMANDS;
   return [
-    ...stars.map(
-      (command): MenuItemSpec => ({
-        label: SHORTCUTS[command.id].label,
-        icon: glyph(IconStar),
-        shortcut: shortcutGlyphs(command.id),
-        onClick: () => rate(command.rating),
-      }),
-    ),
+    ...stars.map((command): MenuItemSpec => ({
+      label: SHORTCUTS[command.id].label,
+      icon: glyph(IconStar),
+      shortcut: shortcutGlyphs(command.id),
+      onClick: () => rate(command.rating),
+    })),
     { type: "separator" },
     {
       label: SHORTCUTS[clear.id].label,
@@ -89,7 +88,7 @@ function buildRatingItems(ids: readonly string[]): MenuItemSpec[] {
   ];
 }
 
-function confirmDeleteForever(ids: readonly string[]): void {
+function confirmDeleteForever(ids: ReadonlyArray<string>): void {
   Dialog.confirm({
     title: "Delete Forever",
     description: `${ids.length === 1 ? "This save and its file are" : `${ids.length} saves and their files are`} deleted. This cannot be undone.`,
@@ -103,7 +102,7 @@ export function SaveSelectionBar() {
   const active = useSelectionActive();
   const ids = useSelectedIds();
   const inTrash = useViewMode() === "trash";
-  const [openWithApps, setOpenWithApps] = useState<OpenWithApp[]>([]);
+  const [openWithApps, setOpenWithApps] = useState<Array<OpenWithApp>>([]);
   const count = active ? ids.length : 0;
 
   const exportItems = () => {

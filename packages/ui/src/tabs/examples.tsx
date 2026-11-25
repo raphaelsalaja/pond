@@ -1,6 +1,6 @@
 import { IconGrid, IconGridLayoutRows } from "@pond/icons";
-import type { ComponentDocs } from "../shared/docs";
 import { Tabs } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 export const docs: ComponentDocs = {
   slug: "tabs",

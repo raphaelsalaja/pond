@@ -31,12 +31,17 @@ export function inPageMarkedNormalize(validators: BrowserValidators) {
     }
   }
 
+  /** The data API wraps every reply as `{ data }`. */
+  function isReply(value: unknown): value is { data?: JsonValue } {
+    return validators.object.safeParse(value).success;
+  }
+
   function parseRef(raw: JsonValue): MarkedRef | null {
     const ref = validators.markedRef.safeParse(raw);
     return ref.success ? ref.data : null;
   }
 
-  function parseRefs(raw: JsonValue): MarkedRef[] | null {
+  function parseRefs(raw: JsonValue): Array<MarkedRef> | null {
     const refs = validators.markedRefs.safeParse(raw);
     if (!refs.success) return null;
     return refs.data.flatMap((ref) => (ref ? [ref] : []));
@@ -96,5 +101,5 @@ export function inPageMarkedNormalize(validators: BrowserValidators) {
     return entry;
   }
 
-  return { parseRef, parseRefs, refPage, refEntry };
+  return { isReply, parseRef, parseRefs, refPage, refEntry };
 }

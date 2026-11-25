@@ -1,7 +1,9 @@
 import type { CSSProperties } from "react";
-import { type CanvasColor, NOTE_FILL } from "../board/colors";
+import { NOTE_FILL } from "../board/colors";
+import type { CanvasColor } from "../board/colors";
 import type { Box } from "../card";
-import { Handles, type Side } from "../handles";
+import { Handles } from "../handles";
+import type { Side } from "../handles";
 import styles from "./styles.module.css";
 
 interface NoteProps {

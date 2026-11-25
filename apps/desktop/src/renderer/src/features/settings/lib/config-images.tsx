@@ -2,10 +2,10 @@ import type { ExternalSource } from "@pond/schema/sources";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { useImageDownloadBinding } from "@/features/settings/components/sections/downloads";
 import { SplitExistingSaves } from "@/features/settings/components/sections/split-existing";
-import {
-  type GroupConfig,
-  group,
-  type SettingsValues,
+import { group } from "@/features/settings/lib/engine-types";
+import type {
+  GroupConfig,
+  SettingsValues,
 } from "@/features/settings/lib/engine-types";
 
 const imageQuality = (v: SettingsValues) =>
@@ -17,8 +17,9 @@ const imageProgressive = (v: SettingsValues) =>
   v.format === "jpeg" || v.format === "png";
 const followsGlobal = (v: SettingsValues) => v.followsGlobal === true;
 
-export function imageDownloadGroups(source?: ExternalSource): GroupConfig[] {
-  // biome-ignore lint/correctness/noComponentHookFactories: settings configs are built once at module load, so the hook identity is stable.
+export function imageDownloadGroups(
+  source?: ExternalSource,
+): Array<GroupConfig> {
   const useBinding = () => useImageDownloadBinding(source);
   /** Source pages mix image and video groups, so their titles name the kind. */
   const title = (name: string) => (source ? `Image ${name}` : name);

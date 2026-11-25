@@ -1,10 +1,10 @@
 import {
-  type MachinePace,
   MachinePaceWireSchema,
   motionPaused,
   THERMAL_RELIEF_MS,
-  type ThermalState,
 } from "@shared/machine-pace";
+import type { MachinePace, ThermalState } from "@shared/machine-pace";
+import log from "electron-log/renderer";
 
 const idle = (): MachinePace => ({
   hidden: false,
@@ -42,7 +42,7 @@ function publish(next: MachinePace): void {
     clearTimeout(reliefTimer);
     reliefTimer = null;
   }
-  if (pace.reliefAt != null) {
+  if (pace.reliefAt !== null) {
     const delay = THERMAL_RELIEF_MS - (Date.now() - pace.reliefAt);
     if (delay > 0) {
       reliefTimer = setTimeout(() => {
@@ -78,18 +78,25 @@ function bindHost(
     memoryPressure?: MachinePace["memoryPressure"];
   }) => void,
 ): () => void {
-  if (!("window" in globalThis) || !("pond" in window)) return () => {};
-  const { machinePace, onMachinePace } = window.pond;
-  if (!machinePace || !onMachinePace) return () => {};
+  if (!("window" in globalThis) || !("pond" in window)) {
+    return () => {};
+  }
+  const api = window.pond;
+  if (!api.machinePace || !api.onMachinePace) {
+    return () => {};
+  }
   let cancelled = false;
-  void machinePace()
+  void api
+    .machinePace()
     .then((wire) => {
       if (cancelled) return;
       const parsed = MachinePaceWireSchema.safeParse(wire);
       if (parsed.success) onHost(parsed.data);
     })
-    .catch(() => {});
-  const detach = onMachinePace((wire) => {
+    .catch((cause: unknown) => {
+      log.warn("[pond machine-pace] reading the host pace failed", cause);
+    });
+  const detach = api.onMachinePace((wire) => {
     const parsed = MachinePaceWireSchema.safeParse(wire);
     if (parsed.success) onHost(parsed.data);
   });
@@ -99,11 +106,20 @@ function bindHost(
   };
 }
 
+function onVisibility(): void {
+  patch(readFocus());
+}
+
+function onFocus(): void {
+  patch({ focused: true });
+}
+
+function onBlur(): void {
+  patch({ focused: false });
+}
+
 function listen(): () => void {
   publish({ ...pace, ...readFocus() });
-  const onVisibility = (): void => patch(readFocus());
-  const onFocus = (): void => patch({ focused: true });
-  const onBlur = (): void => patch({ focused: false });
   document.addEventListener("visibilitychange", onVisibility);
   window.addEventListener("focus", onFocus);
   window.addEventListener("blur", onBlur);

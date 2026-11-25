@@ -1,5 +1,5 @@
 import { clsx as cn } from "clsx";
-import type * as React from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import styles from "./styles.module.css";
 
 export type FileKind =
@@ -89,11 +89,14 @@ const BAND = "M.5 2A1.5 1.5 0 0 1 2 .5h10A1.5 1.5 0 0 1 13.5 2v3H.5Z";
 const ZIPPER =
   "M6 .5h1v1H6Zm1 1h1v1H7ZM6 2.5h1v1H6Zm1 1h1v1H7ZM6 4.5h1v1H6Zm1 1h1v1H7Z";
 
-const ART = new Map<FileKind, React.ReactNode>([
-  ["document", <path d="M2.5 3H7M2.5 5h6M2.5 7h9M2.5 9h6" />],
+const ART = new Map<FileKind, ReactNode>([
+  ["document", <path key="document" d="M2.5 3H7M2.5 5h6M2.5 7h9M2.5 9h6" />],
   [
     "sheet",
-    <path d="M2.5 2.5h6v6h-6ZM4.5 2.5v6M6.5 2.5v6M2.5 4.5h6M2.5 6.5h6" />,
+    <path
+      key="sheet"
+      d="M2.5 2.5h6v6h-6ZM4.5 2.5v6M6.5 2.5v6M2.5 4.5h6M2.5 6.5h6"
+    />,
   ],
   [
     "slides",
@@ -133,7 +136,7 @@ function describe(name: string): FileDescription {
   };
 }
 
-interface FileIconProps extends React.ComponentPropsWithoutRef<"svg"> {
+interface FileIconProps extends ComponentPropsWithoutRef<"svg"> {
   name: string;
   size?: number;
 }

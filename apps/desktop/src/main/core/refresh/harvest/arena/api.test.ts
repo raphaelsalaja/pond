@@ -1,11 +1,8 @@
 import type { Capture } from "@pond/schema/raw";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { TerminalError } from "../../../pipeline/extractors/errors";
-import {
-  type ArenaBlock,
-  fetchArenaCapture,
-  withLinkedPageCapture,
-} from "./api";
+import { fetchArenaCapture, withLinkedPageCapture } from "./api";
+import type { ArenaBlock } from "./api";
 
 const LINKED = "https://en.wikipedia.org/wiki/Community_Memory";
 const ARENA_SHOT =
@@ -14,7 +11,7 @@ const PAGE_COVER = "https://upload.wikimedia.org/community-memory.jpg";
 const FAVICON = "https://en.wikipedia.org/favicon.ico";
 
 const linkBlock: ArenaBlock = {
-  id: 2824521,
+  id: 2_824_521,
   class: "Link",
   title: "Community Memory",
   generated_title: "Community Memory - Wikipedia",
@@ -44,9 +41,14 @@ function deps(
   block: ArenaBlock,
   extractPage: (url: URL) => Promise<Capture> = async () => page(),
 ) {
+  const pageReads: Array<string> = [];
   return {
-    fetchBlock: vi.fn(async () => ({ ok: true as const, value: block })),
-    extractPage: vi.fn(extractPage),
+    pageReads,
+    fetchBlock: async () => ({ ok: true as const, value: block }),
+    extractPage: async (url: URL) => {
+      pageReads.push(url.href);
+      return extractPage(url);
+    },
   };
 }
 
@@ -56,7 +58,7 @@ describe("Are.na Link blocks", () => {
 
     const result = await fetchArenaCapture({ sourceId: "2824521" }, d);
 
-    expect(d.extractPage.mock.calls.map(([url]) => url.href)).toEqual([LINKED]);
+    expect(d.pageReads).toEqual([LINKED]);
     expect(result).toEqual({
       ok: true,
       capture: expect.objectContaining({
@@ -155,14 +157,14 @@ describe("Are.na Link blocks", () => {
 
     await fetchArenaCapture({ sourceId: "2824521" }, d);
 
-    expect(d.extractPage).not.toHaveBeenCalled();
+    expect(d.pageReads).toEqual([]);
   });
 });
 
 describe("other Are.na blocks", () => {
   it("leaves an Image block's mapping alone and never reads its source page", async () => {
     const d = deps({
-      id: 29774986,
+      id: 29_774_986,
       class: "Image",
       title: "Group show",
       image: { original: { url: ARENA_SHOT, width: 800, height: 600 } },
@@ -171,7 +173,7 @@ describe("other Are.na blocks", () => {
 
     const result = await fetchArenaCapture({ sourceId: "29774986" }, d);
 
-    expect(d.extractPage).not.toHaveBeenCalled();
+    expect(d.pageReads).toEqual([]);
     expect(result).toMatchObject({
       ok: true,
       capture: {
@@ -185,14 +187,14 @@ describe("other Are.na blocks", () => {
 
   it("keeps a Text block on its Are.na page", async () => {
     const d = deps({
-      id: 4929062,
+      id: 4_929_062,
       class: "Text",
       content: "A note to self.",
     });
 
     const result = await fetchArenaCapture({ sourceId: "4929062" }, d);
 
-    expect(d.extractPage).not.toHaveBeenCalled();
+    expect(d.pageReads).toEqual([]);
     expect(result).toMatchObject({
       ok: true,
       capture: {
@@ -213,11 +215,15 @@ describe("other Are.na blocks", () => {
       media: [{ url: ARENA_SHOT, type: "image" }],
       extras: { blockClass: "Link" },
     };
-    const extractPage = vi.fn(async () => page());
+    const pageReads: Array<string> = [];
+    const extractPage = async (url: URL) => {
+      pageReads.push(url.href);
+      return page();
+    };
 
     const capture = await withLinkedPageCapture(stored, undefined, extractPage);
 
-    expect(extractPage).toHaveBeenCalledOnce();
+    expect(pageReads).toEqual([LINKED]);
     expect(capture).toMatchObject({
       source: "arena",
       url: LINKED,

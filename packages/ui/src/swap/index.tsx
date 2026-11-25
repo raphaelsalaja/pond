@@ -2,10 +2,10 @@ import { clsx as cn } from "clsx";
 import {
   AnimatePresence,
   motion,
-  type Transition,
   useIsPresent,
   useReducedMotionConfig,
 } from "motion/react";
+import type { Transition } from "motion/react";
 import type { Key, ReactNode } from "react";
 import { pageHidden } from "../shared/page-hidden";
 import styles from "./styles.module.css";

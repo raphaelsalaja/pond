@@ -17,15 +17,12 @@ export type DownloadColumnId = (typeof DOWNLOAD_COLUMN_CATALOG)[number]["id"];
 
 export const LOCKED_DOWNLOAD_COLUMN: DownloadColumnId = "name";
 
-const DEFAULT_VISIBLE_DOWNLOAD_COLUMNS: readonly DownloadColumnId[] = [
-  "stage",
-  "progress",
-  "added",
-];
+const DEFAULT_VISIBLE_DOWNLOAD_COLUMNS: ReadonlySet<DownloadColumnId> =
+  new Set<DownloadColumnId>(["stage", "progress", "added"]);
 
-export const DEFAULT_HIDDEN_DOWNLOAD_COLUMNS: readonly DownloadColumnId[] =
-  DOWNLOAD_COLUMN_CATALOG.map((column) => column.id).filter(
-    (id) =>
-      id !== LOCKED_DOWNLOAD_COLUMN &&
-      !DEFAULT_VISIBLE_DOWNLOAD_COLUMNS.includes(id),
+export const DEFAULT_HIDDEN_DOWNLOAD_COLUMNS: ReadonlyArray<DownloadColumnId> =
+  DOWNLOAD_COLUMN_CATALOG.flatMap(({ id }) =>
+    id !== LOCKED_DOWNLOAD_COLUMN && !DEFAULT_VISIBLE_DOWNLOAD_COLUMNS.has(id)
+      ? [id]
+      : [],
   );

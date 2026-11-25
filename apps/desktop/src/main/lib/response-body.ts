@@ -8,8 +8,10 @@ export async function readResponseBodyWithinBudget(
     return null;
   }
   const reader = response.body?.getReader();
-  if (!reader) return null;
-  const chunks: Uint8Array[] = [];
+  if (!reader) {
+    return null;
+  }
+  const chunks: Array<Uint8Array> = [];
   let byteLength = 0;
   while (true) {
     const chunk = await reader.read();

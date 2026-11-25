@@ -1,11 +1,12 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { useMediaReveal } from "./use-media-reveal";
 
 let host: HTMLDivElement;
 let root: Root;
-const seen: boolean[] = [];
+const seen: Array<boolean> = [];
 
 function Probe({ ready, source }: { ready: boolean; source: string }) {
   seen.push(useMediaReveal(ready, source));

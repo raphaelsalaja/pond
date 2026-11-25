@@ -36,10 +36,8 @@ import {
   textBodyForSave,
 } from "@/features/saves/lib/text";
 import type { Save, SaveFile } from "@/features/saves/types";
-import {
-  type ResolvedTheme,
-  resolveCurrentTheme,
-} from "@/shared/hooks/use-resolved-theme";
+import { resolveCurrentTheme } from "@/shared/hooks/use-resolved-theme";
+import type { ResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
@@ -75,7 +73,7 @@ function resolveCurrentTweetCover(): TweetCover {
 export function buildMediaUnits(
   save: Save,
   opts: MediaPickOptions = {},
-): MediaUnit[] {
+): Array<MediaUnit> {
   const units = buildOriginalMediaUnits(save);
   if (units.length > 0) return units;
 
@@ -98,7 +96,7 @@ function posterIsCrossFile(poster: SaveFile, source: Save["source"]): boolean {
 }
 
 /** The Save's own photos and videos, without the rendered post card that stands in for text-only posts. */
-export function buildOriginalMediaUnits(save: Save): MediaUnit[] {
+export function buildOriginalMediaUnits(save: Save): Array<MediaUnit> {
   const allFiles = save.files ?? [];
   const posters = allFiles.filter((f) => f.kind === "poster");
   const files = allFiles.filter(
@@ -133,7 +131,7 @@ export function buildOriginalMediaUnits(save: Save): MediaUnit[] {
     return [unit];
   }
 
-  const units: MediaUnit[] = [];
+  const units: Array<MediaUnit> = [];
   let videoSeen = 0;
   for (const f of files) {
     if (isRenderableVideoFile(f)) {
@@ -264,8 +262,9 @@ export function cardThumbnailUrl(
   const hasThumbnail = (save.files ?? []).some((file) =>
     isThumbnailKind(file.kind),
   );
-  if (!hasThumbnail && richFilePreviewKind(pickPrimaryFile(save, opts)))
+  if (!hasThumbnail && richFilePreviewKind(pickPrimaryFile(save, opts))) {
     return null;
+  }
   const unit = pickCardUnit(save, opts);
   if (!unit) return null;
   if (unit.isVideo) return unit.posterUrl ?? null;

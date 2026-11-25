@@ -12,7 +12,8 @@ import {
   LINE_ICONS,
   lineItems,
 } from "../../lib/board-menu";
-import { type ConnectorStyle, capsOf, withCap } from "../../lib/document";
+import { capsOf, withCap } from "../../lib/document";
+import type { ConnectorStyle } from "../../lib/document";
 import { Bar } from "../bar";
 import { useBoard } from "../board/context";
 import styles from "./styles.module.css";

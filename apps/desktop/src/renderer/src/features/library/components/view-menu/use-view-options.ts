@@ -7,28 +7,23 @@ import {
   useLibrarySaveRadius,
 } from "@/features/library/components/layouts/save-radius";
 import type { SortDir } from "@/features/library/hooks/use-filtered-saves";
-import { type SortKey, useView } from "@/features/library/hooks/use-view";
+import { useView } from "@/features/library/hooks/use-view";
+import type { SortKey } from "@/features/library/hooks/use-view";
 import {
   setIncludeSubfolders,
   useIncludeSubfolders,
 } from "@/features/library/state/view-store";
 import {
-  type ItemInfoField,
   setItemInfoField,
   setItemInfoVisible,
   setListColumn,
   useItemInfo,
   useListColumns,
 } from "@/features/saves";
+import type { ItemInfoField } from "@/features/saves";
 import { usePrefs } from "@/shared/state/prefs";
-import {
-  type CardDetail,
-  DETAILS,
-  type Fit,
-  PRESETS,
-  type Preset,
-  type Quality,
-} from "./options";
+import { DETAILS, PRESETS } from "./options";
+import type { CardDetail, Fit, Preset, Quality } from "./options";
 
 export function useViewOptions() {
   const { state, actions } = useView();
@@ -50,12 +45,20 @@ export function useViewOptions() {
 
   function writeDetail(detail: CardDetail, on: boolean, inList: boolean) {
     if (detail === "name") {
-      if (inList) setListColumn("name", on);
-      else actions.setDisplayPref("name", on);
-    } else if (detail === "info") setItemInfoVisible(on);
-    else if (detail === "extension") actions.setDisplayPref("type", on);
-    else if (detail === "count") actions.setDisplayPref("fileCount", on);
-    else actions.setDisplayPref("source", on);
+      if (inList) {
+        setListColumn("name", on);
+      } else {
+        actions.setDisplayPref("name", on);
+      }
+    } else if (detail === "info") {
+      setItemInfoVisible(on);
+    } else if (detail === "extension") {
+      actions.setDisplayPref("type", on);
+    } else if (detail === "count") {
+      actions.setDisplayPref("fileCount", on);
+    } else {
+      actions.setDisplayPref("source", on);
+    }
   }
 
   function setDetail(detail: CardDetail, on: boolean) {

@@ -14,10 +14,10 @@ interface AppMenuDeps {
 const RECENTS_MENU_CAP = 12;
 
 let activeDeps: AppMenuDeps | null = null;
-let recentEntries: RecentMenuEntry[] = [];
+let recentEntries: Array<RecentMenuEntry> = [];
 let unsubscribePrefs: (() => void) | undefined;
 
-export function setMenuRecents(entries: RecentMenuEntry[]): void {
+export function setMenuRecents(entries: Array<RecentMenuEntry>): void {
   recentEntries = entries.slice(0, RECENTS_MENU_CAP);
   if (activeDeps) buildAndSetMenu(activeDeps);
 }

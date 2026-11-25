@@ -60,7 +60,7 @@ const youtube = info({
       vcodec: "none",
       acodec: "mp4a.40.2",
       abr: 129,
-      filesize: 9_000,
+      filesize: 9000,
     },
     {
       format_id: "251",
@@ -277,17 +277,19 @@ describe("formats without codec names", () => {
   });
 });
 
-describe("preview streams", () => {
-  const single = (formats: ProbeFixture["formats"]) => {
-    const probe = toDownloadProbe(
-      info({ _type: "video", duration: 10, formats }),
-      "https://example.com/v",
-      "web",
-    );
-    if (probe.kind !== "single") throw new Error("expected a single probe");
-    return probe.preview;
-  };
+function single(formats: ProbeFixture["formats"]) {
+  const probe = toDownloadProbe(
+    info({ _type: "video", duration: 10, formats }),
+    "https://example.com/v",
+    "web",
+  );
+  if (probe.kind !== "single") {
+    throw new Error("expected a single probe");
+  }
+  return probe.preview;
+}
 
+describe("preview streams", () => {
   it("picks the sharpest stream up to 720p", () => {
     expect(
       single([

@@ -1,4 +1,5 @@
-import { createReadStream, createWriteStream, type ReadStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
+import type { ReadStream } from "node:fs";
 import { readdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 import { finished, pipeline } from "node:stream/promises";
@@ -32,7 +33,9 @@ export async function zipDirectory(source: string, destination: string) {
   await rm(partial, { force: true });
   const output = createWriteStream(partial, { flags: "wx" });
   /** yazl reports entry failures on the ZipFile, not its output stream. */
-  const failed = new Promise<never>((_, reject) => zip.once("error", reject));
+  const failed = new Promise<never>((_, reject) => {
+    zip.once("error", reject);
+  });
   const written = Promise.race([pipeline(zip.outputStream, output), failed]);
   let input: ReadStream | null = null;
   try {

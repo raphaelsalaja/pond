@@ -1,3 +1,4 @@
+import { isElement } from "@pond/ui/dom";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 
@@ -10,7 +11,7 @@ export function selectOnlySave(id: string): void {
 }
 
 /** Selects exactly `ids`, puts the cursor on the first, and scrolls the grid to it. */
-export function selectSaves(ids: readonly string[]): void {
+export function selectSaves(ids: ReadonlyArray<string>): void {
   const [first] = ids;
   if (!first) return;
   selection.setPicking(false);
@@ -45,7 +46,7 @@ function dropDepartedSaves(gone: ReadonlySet<string>): void {
 
 interface CollectionResults {
   key: string;
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   settled: boolean;
 }
 
@@ -110,11 +111,17 @@ export function pickSave(
 }
 
 export function isLibraryBackgroundTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
-  if (target.closest("[data-save-id]")) return false;
-  if (target.closest("[role='dialog']")) return false;
+  if (!isElement(target)) {
+    return false;
+  }
+  if (target.closest("[data-save-id]")) {
+    return false;
+  }
+  if (target.closest("[role='dialog']")) {
+    return false;
+  }
   if (target.closest("button, a, input, textarea, [contenteditable='true']")) {
     return false;
   }
-  return target.closest("[data-library-grid]") != null;
+  return target.closest("[data-library-grid]") !== null;
 }

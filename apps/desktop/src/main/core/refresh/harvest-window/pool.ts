@@ -1,4 +1,5 @@
-import { SOURCES, type Source } from "@pond/schema/db";
+import { SOURCES } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
 import type { ReportDownloadActivity } from "@shared/download-activity";
 import { BrowserWindow, session } from "electron";
 import { resolvePreload } from "../../../lib/resolve-preload";
@@ -50,7 +51,7 @@ interface Waiter {
   resolve: (slot: PoolSlot) => void;
 }
 
-const pool: PoolSlot[] = [];
+const pool: Array<PoolSlot> = [];
 const busyBySource = {
   twitter: 0,
   instagram: 0,
@@ -76,13 +77,15 @@ const busyBySource = {
   web: 0,
   local: 0,
 } satisfies Record<Source, number>;
-const waitQueues = new Map<Source, Waiter[]>();
+const waitQueues = new Map<Source, Array<Waiter>>();
 let roundRobinCursor = 0;
 
-function queueFor(source: Source): Waiter[] {
+function queueFor(source: Source): Array<Waiter> {
   const existing = waitQueues.get(source);
-  if (existing) return existing;
-  const created: Waiter[] = [];
+  if (existing) {
+    return existing;
+  }
+  const created: Array<Waiter> = [];
   waitQueues.set(source, created);
   return created;
 }
@@ -145,10 +148,15 @@ function cancelEviction(slot: PoolSlot): void {
   }
 }
 
+/** The next lease navigates the window again, which aborts this blank load. */
+function ignoreInterruptedBlank(): void {}
+
 function blankAndScheduleEviction(slot: PoolSlot): void {
   cancelEviction(slot);
-  if (slot.win.isDestroyed()) return;
-  void slot.win.loadURL("about:blank").catch(() => {});
+  if (slot.win.isDestroyed()) {
+    return;
+  }
+  void slot.win.loadURL("about:blank").catch(ignoreInterruptedBlank);
   slot.evictTimer = setTimeout(() => {
     slot.evictTimer = null;
     if (!slot.busy && !slot.win.isDestroyed()) slot.win.destroy();

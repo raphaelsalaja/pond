@@ -1,13 +1,16 @@
 import type { Query } from "@pond/schema/filters/types";
 import { folders } from "@/features/library/state/folders";
 import { descendantFolderIds } from "@/features/saves";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
 
 function go(path: string, filters?: Query): void {
   const router = getAppRouter();
-  if (!router) return;
-  router.history.push(
+  const history = getAppHistory();
+  if (!router || !history) {
+    return;
+  }
+  history.push(
     `${path}${router.options.stringifySearch(filters ? { filters } : {})}`,
   );
 }
@@ -20,7 +23,10 @@ export function enterFolder(folderId: string): void {
   go(pathForLibraryNav({ kind: "folder", id: folderId }));
 }
 
-export function enterFolders(ids: string[], includeSubfolders: boolean): void {
+export function enterFolders(
+  ids: Array<string>,
+  includeSubfolders: boolean,
+): void {
   if (ids.length === 0) {
     enterAll();
     return;

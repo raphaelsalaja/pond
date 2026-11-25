@@ -1,20 +1,25 @@
-import { EXTERNAL_SOURCE_IDS, type ExternalSource } from "@pond/schema/sources";
+import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
+import type { ExternalSource } from "@pond/schema/sources";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import type { Binding } from "@/features/settings/components/engine";
 import {
   hasSourceOverrides,
-  type ImageDownloadValues,
   imageDownloadValues,
-  type VideoDownloadValues,
   videoDownloadValues,
+} from "@/features/settings/lib/download-sources";
+import type {
+  ImageDownloadValues,
+  VideoDownloadValues,
 } from "@/features/settings/lib/download-sources";
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_VIDEO_DOWNLOAD,
-  type DownloadSettings,
-  type ImageDownloadPrefs,
-  type VideoDownloadPrefs,
+} from "@/features/settings/lib/section-types";
+import type {
+  DownloadSettings,
+  ImageDownloadPrefs,
+  VideoDownloadPrefs,
 } from "@/features/settings/lib/section-types";
 import { notify } from "@/shared/lib/toast";
 

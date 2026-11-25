@@ -2,10 +2,12 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
 import {
-  type InboxNotification,
   InboxNotificationSchema,
   NOTIFICATION_CAP,
-  type NotificationPost,
+} from "../../../shared/notification-contracts";
+import type {
+  InboxNotification,
+  NotificationPost,
 } from "../../../shared/notification-contracts";
 import { renameWithRetry } from "../../lib/rename-retry";
 
@@ -25,8 +27,12 @@ const StoredLogSchema = z.object({
 });
 
 /** Version 1 copied every toast into the log as activity, so those rows drop on upgrade. */
-function upgrade(log: z.infer<typeof StoredLogSchema>): InboxNotification[] {
-  if (log.version === LOG_VERSION) return log.notifications;
+function upgrade(
+  log: z.infer<typeof StoredLogSchema>,
+): Array<InboxNotification> {
+  if (log.version === LOG_VERSION) {
+    return log.notifications;
+  }
   return log.notifications.filter((item) => item.kind !== "activity");
 }
 
@@ -38,18 +44,22 @@ export interface NotificationLogDependencies {
 }
 
 type Change = (
-  items: readonly InboxNotification[],
+  items: ReadonlyArray<InboxNotification>,
   now: number,
-) => InboxNotification[] | null;
+) => Array<InboxNotification> | null;
 
-function newestFirst(items: readonly InboxNotification[]): InboxNotification[] {
+function newestFirst(
+  items: ReadonlyArray<InboxNotification>,
+): Array<InboxNotification> {
   return [...items].sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 export function capNotifications(
-  items: readonly InboxNotification[],
-): InboxNotification[] {
-  if (items.length <= NOTIFICATION_CAP) return [...items];
+  items: ReadonlyArray<InboxNotification>,
+): Array<InboxNotification> {
+  if (items.length <= NOTIFICATION_CAP) {
+    return [...items];
+  }
   const oldestFirst = newestFirst(items).reverse();
   const drop = new Set<string>();
   const over = () => items.length - drop.size > NOTIFICATION_CAP;
@@ -66,7 +76,8 @@ export function capNotifications(
 
 /** Notifications describe one Library, so the log lives beside its index in app data. */
 export function createNotificationLog(deps: NotificationLogDependencies) {
-  let cache: { libraryId: string; items: InboxNotification[] } | null = null;
+  let cache: { libraryId: string; items: Array<InboxNotification> } | null =
+    null;
   /** Renderer posts arrive in bursts; one queue keeps each write based on the last. */
   let queue: Promise<unknown> = Promise.resolve();
 
@@ -74,7 +85,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
     return join(deps.directory(), `${encodeURIComponent(libraryId)}.json`);
   }
 
-  async function read(libraryId: string): Promise<InboxNotification[]> {
+  async function read(libraryId: string): Promise<Array<InboxNotification>> {
     let text: string;
     try {
       text = await readFile(file(libraryId), "utf8");
@@ -91,7 +102,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
 
   async function write(
     libraryId: string,
-    items: readonly InboxNotification[],
+    items: ReadonlyArray<InboxNotification>,
   ): Promise<void> {
     await mkdir(deps.directory(), { recursive: true });
     const target = file(libraryId);
@@ -127,7 +138,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
   }
 
   function update(
-    ids: readonly string[],
+    ids: ReadonlyArray<string>,
     patch: (item: InboxNotification, now: number) => InboxNotification,
   ): Promise<void> {
     const wanted = new Set(ids);
@@ -146,7 +157,7 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
     });
   }
 
-  async function list(): Promise<InboxNotification[]> {
+  async function list(): Promise<Array<InboxNotification>> {
     await queue;
     return newestFirst((await load()).items);
   }
@@ -155,8 +166,9 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
   function post(input: NotificationPost): Promise<void> {
     return mutate((items, now) => {
       const existing = items.find((item) => item.id === input.id);
-      if (!existing)
+      if (!existing) {
         return [{ ...input, createdAt: now, updatedAt: now }, ...items];
+      }
       const reworded =
         existing.title !== input.title || existing.body !== input.body;
       const same =
@@ -181,21 +193,24 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
     });
   }
 
-  function markRead(ids: readonly string[], read: boolean): Promise<void> {
+  function markRead(ids: ReadonlyArray<string>, read: boolean): Promise<void> {
     return update(ids, (item, now) => ({
       ...item,
       readAt: read ? (item.readAt ?? now) : undefined,
     }));
   }
 
-  function snooze(ids: readonly string[], until: number | null): Promise<void> {
+  function snooze(
+    ids: ReadonlyArray<string>,
+    until: number | null,
+  ): Promise<void> {
     return update(ids, (item) => ({
       ...item,
       snoozedUntil: until ?? undefined,
     }));
   }
 
-  function resolve(ids: readonly string[]): Promise<void> {
+  function resolve(ids: ReadonlyArray<string>): Promise<void> {
     const gone = new Set(ids);
     return remove((item) => !gone.has(item.id));
   }
@@ -210,8 +225,9 @@ export function createNotificationLog(deps: NotificationLogDependencies) {
     await mutate((items, now) => {
       returned = 0;
       const next = items.map((item) => {
-        if (item.snoozedUntil === undefined || item.snoozedUntil > now)
+        if (item.snoozedUntil === undefined || item.snoozedUntil > now) {
           return item;
+        }
         returned += 1;
         return {
           ...item,

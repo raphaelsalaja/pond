@@ -7,16 +7,19 @@ import {
   captureFromTweetDraft,
   draftFromDomHarvest,
 } from "../../../capture/tweet-draft";
-import { type HarvestAdaptCtx, parsePageBlob } from "../from-page";
+import { parsePageBlob } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import {
-  type HarvestedMedia,
-  type HarvestedMeta,
-  type HarvestedPost,
   inPageThreadsNormalize,
   isThreadsLandingCopy,
   isThreadsLandingMedia,
-  type ThreadsMediaNode,
+} from "./normalize";
+import type {
+  HarvestedMedia,
+  HarvestedMeta,
+  HarvestedPost,
+  ThreadsMediaNode,
 } from "./normalize";
 
 export function buildExpression(code: string): string {
@@ -31,6 +34,9 @@ async function inPageThreadsHarvest(
   code: string,
   norm: ReturnType<typeof inPageThreadsNormalize>,
 ): Promise<HarvestedPost | null> {
+  const isMediaReply = (
+    value: unknown,
+  ): value is { items?: Array<ThreadsMediaNode> } => Object(value) === value;
   const pk = norm.shortcodeToPk(code);
   try {
     const res = await fetch(`/api/v1/media/${pk}/info/`, {
@@ -44,11 +50,15 @@ async function inPageThreadsHarvest(
       },
     });
     if (res.ok) {
-      const json: { items?: ThreadsMediaNode[] } | null = await res.json();
-      const node = json?.items?.[0] ?? null;
-      if (node) return norm.normalizeMediaNode(node);
+      const json: unknown = await res.json();
+      const node = isMediaReply(json) ? (json.items?.[0] ?? null) : null;
+      if (node) {
+        return norm.normalizeMediaNode(node);
+      }
     }
-  } catch {}
+  } catch {
+    /** A failed API read falls through to the DOM scrape below. */
+  }
 
   const articleDeadline = Date.now() + 12_000;
   let card: Element | null = null;
@@ -63,13 +73,15 @@ async function inPageThreadsHarvest(
       card = candidate;
       break;
     }
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   if (!card) return null;
   const root = card;
 
   const countMedia = () => root.querySelectorAll("picture img, video").length;
-  const mediaDeadline = Date.now() + 8_000;
+  const mediaDeadline = Date.now() + 8000;
   const stableMs = 800;
   let lastCount = 0;
   let stableSince = 0;
@@ -84,7 +96,9 @@ async function inPageThreadsHarvest(
         stableSince = 0;
       }
     }
-    await new Promise((r) => setTimeout(r, 200));
+    await new Promise((r) => {
+      setTimeout(r, 200);
+    });
   }
 
   return scrapeDom(root);
@@ -125,7 +139,7 @@ async function inPageThreadsHarvest(
       meta.lang = htmlLang;
     }
 
-    const media: HarvestedMedia[] = [];
+    const media: Array<HarvestedMedia> = [];
     const seen = new Set<string>();
     const push = (entry: HarvestedMedia) => {
       const url = entry.url;
@@ -221,9 +235,11 @@ const HarvestedPostSchema = z
   .catch({});
 
 function dropLanding(
-  items: HarvestedMediaEntry[] | undefined,
-): HarvestedMediaEntry[] | undefined {
-  if (!items) return undefined;
+  items: Array<HarvestedMediaEntry> | undefined,
+): Array<HarvestedMediaEntry> | undefined {
+  if (!items) {
+    return undefined;
+  }
   const kept = items.filter(
     (m) => m.url !== undefined && !isThreadsLandingMedia(m.url),
   );

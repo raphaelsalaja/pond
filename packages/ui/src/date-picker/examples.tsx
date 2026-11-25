@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { DatePicker } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 function ignore(): void {}
 

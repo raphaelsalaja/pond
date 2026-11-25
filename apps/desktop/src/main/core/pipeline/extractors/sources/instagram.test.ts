@@ -1,29 +1,32 @@
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { InstagramPostExtractor } from "./instagram";
 
 function probe(page: {
   viewer?: unknown;
   profileHref?: string;
-  scripts?: string[];
+  scripts?: Array<string>;
 }): string {
   const img = page.profileHref
     ? { closest: () => ({ getAttribute: () => page.profileHref }) }
     : null;
-  return runInNewContext(new InstagramPostExtractor().probeExpression, {
-    window: {
-      require: (name: string) => {
-        if (name !== "PolarisConfig" || page.viewer === undefined) {
-          throw new Error(`Requiring unknown module "${name}"`);
-        }
-        return { getViewerData_DO_NOT_USE: () => page.viewer };
+  return z.string().parse(
+    runInNewContext(new InstagramPostExtractor().probeExpression, {
+      window: {
+        require: (name: string) => {
+          if (name !== "PolarisConfig" || page.viewer === undefined) {
+            throw new Error(`Requiring unknown module "${name}"`);
+          }
+          return { getViewerData_DO_NOT_USE: () => page.viewer };
+        },
       },
-    },
-    document: {
-      querySelector: () => img,
-      scripts: (page.scripts ?? []).map((textContent) => ({ textContent })),
-    },
-  });
+      document: {
+        querySelector: () => img,
+        scripts: (page.scripts ?? []).map((textContent) => ({ textContent })),
+      },
+    }),
+  );
 }
 
 describe("InstagramPostExtractor probe", () => {

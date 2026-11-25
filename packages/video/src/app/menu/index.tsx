@@ -15,7 +15,8 @@ import {
 } from "@pond/icons";
 import type { ReactNode } from "react";
 import { ease, mix, progress } from "../../motion";
-import { hit, type Placement, type Point } from "../geometry";
+import { hit } from "../geometry";
+import type { Placement, Point } from "../geometry";
 import styles from "./styles.module.css";
 
 export interface MenuItem {
@@ -25,14 +26,14 @@ export interface MenuItem {
 }
 
 /** The New menu's top level, as `new-menu/spec.tsx` builds it. */
-export const NEW_ITEMS: MenuItem[] = [
+export const NEW_ITEMS: Array<MenuItem> = [
   { label: "New", icon: <IconFolder />, submenu: true },
   { label: "Import", icon: <IconDownload />, submenu: true },
   { label: "Sources", icon: <IconUserPlus />, submenu: true },
   { label: "Library", icon: <IconLibrary />, submenu: true },
 ];
 
-export const IMPORT_ITEMS: MenuItem[] = [
+export const IMPORT_ITEMS: Array<MenuItem> = [
   { label: "Import Files", icon: <IconFile /> },
   { label: "Import Folders", icon: <IconFolderOpen /> },
   { label: "Import from Links", icon: <IconLink2 /> },
@@ -50,7 +51,7 @@ interface PopupProps extends Placement {
   t: number;
   open: number;
   close: number;
-  items: MenuItem[];
+  items: Array<MenuItem>;
   highlighted: number;
   pressed?: number;
 }
@@ -97,7 +98,7 @@ function Popup({
 }
 
 export interface MenuLevel extends Placement {
-  items: MenuItem[];
+  items: Array<MenuItem>;
 }
 
 interface MenuProps {

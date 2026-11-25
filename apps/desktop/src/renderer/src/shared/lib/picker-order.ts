@@ -4,8 +4,10 @@
  * when nothing already matches.
  */
 export function placeCreateOptionLast<TOption, TCreate>(
-  options: readonly TOption[],
+  options: ReadonlyArray<TOption>,
   create: TCreate | null,
-): readonly (TOption | TCreate)[] {
-  return create == null ? options : [...options, create];
+): ReadonlyArray<TOption | TCreate> {
+  return create === null || create === undefined
+    ? options
+    : [...options, create];
 }

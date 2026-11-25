@@ -1,23 +1,12 @@
 import type { MenuItemSpec } from "@pond/ui";
 import { Dialog } from "@pond/ui";
-import {
-  createContext,
-  type ReactNode,
-  type RefObject,
-  use,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, use, useEffect, useRef, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 import { enterAll, selectLibraryNav } from "@/features/library";
-import {
-  buildTagMenuItems,
-  type TagMenuActions,
-} from "@/features/tags/components/context-menu";
-import {
-  buildTagGroupMenuItems,
-  type TagGroupMenuActions,
-} from "@/features/tags/components/group-context-menu";
+import { buildTagMenuItems } from "@/features/tags/components/context-menu";
+import type { TagMenuActions } from "@/features/tags/components/context-menu";
+import { buildTagGroupMenuItems } from "@/features/tags/components/group-context-menu";
+import type { TagGroupMenuActions } from "@/features/tags/components/group-context-menu";
 import { tagOperations } from "@/features/tags/operations/tag-client";
 import { eventFromEditable } from "@/shared/lib/editable-target";
 import { matchesShortcut } from "@/shared/lib/shortcuts";
@@ -31,7 +20,7 @@ interface TagRowContextValue {
   startRename: () => void;
   saveRename: (name: string) => Promise<void>;
   finishRename: () => void;
-  buildMenuItems: () => MenuItemSpec[];
+  buildMenuItems: () => Array<MenuItemSpec>;
   openTagItems: () => void;
 }
 
@@ -74,8 +63,9 @@ export function TagRowProvider({
     const element = rowRef.current;
     if (!element || renaming) return;
     function onKeyDown(event: KeyboardEvent) {
-      if (eventFromEditable(event) || !matchesShortcut(event, "tags.rename"))
+      if (eventFromEditable(event) || !matchesShortcut(event, "tags.rename")) {
         return;
+      }
       event.preventDefault();
       setRenaming(true);
     }
@@ -101,7 +91,7 @@ export function TagRowProvider({
     });
   }
 
-  function buildMenuItems(): MenuItemSpec[] {
+  function buildMenuItems(): Array<MenuItemSpec> {
     if (isGroup) {
       const actions: TagGroupMenuActions = {
         color: row.group.color,

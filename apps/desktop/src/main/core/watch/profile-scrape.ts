@@ -34,8 +34,8 @@ function profileUrl(
 function buildCollectorExpression(source: Source): string {
   const pattern =
     source === "instagram"
-      ? "/^\\/(?:[^/]+\\/)?(?:p|reel)\\/[A-Za-z0-9_-]+/"
-      : "/^\\/[A-Za-z0-9_]+\\/status\\/\\d+$/";
+      ? String.raw`/^\/(?:[^/]+\/)?(?:p|reel)\/[A-Za-z0-9_-]+/`
+      : String.raw`/^\/[A-Za-z0-9_]+\/status\/\d+$/`;
   return `
     (async () => {
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -93,21 +93,23 @@ export async function listProfileWatch(
     if (looksLikeAuthWall(landedUrl)) {
       return { ok: false, reason: "auth_required" };
     }
-    const raw = await Promise.race([
+    const raw = await Promise.race<unknown>([
       lease.win.webContents.executeJavaScript(
         buildCollectorExpression(source),
         true,
       ),
-      new Promise<string>((resolve) =>
-        setTimeout(() => resolve("__pond_watch_timeout__"), COLLECT_TIMEOUT_MS),
-      ),
+      new Promise<string>((resolve) => {
+        setTimeout(() => resolve("__pond_watch_timeout__"), COLLECT_TIMEOUT_MS);
+      }),
     ]);
     if (raw === "__pond_watch_timeout__") {
       return { ok: false, reason: "timeout" };
     }
     const page = LinksPageSchema.safeParse(raw);
-    if (!page.success) return { ok: false, reason: "unknown" };
-    const entries: WatchEntry[] = [];
+    if (!page.success) {
+      return { ok: false, reason: "unknown" };
+    }
+    const entries: Array<WatchEntry> = [];
     const seen = new Set<string>();
     for (const link of page.data.links) {
       const sourceId = sourceIdFromUrl(source, link);
@@ -116,8 +118,8 @@ export async function listProfileWatch(
       entries.push({ url: link, sourceId });
     }
     return { ok: true, entries };
-  } catch (err) {
-    log.warn("[pond watch:scrape]", source, handle, "unexpected error", err);
+  } catch (error) {
+    log.warn("[pond watch:scrape]", source, handle, "unexpected error", error);
     return { ok: false, reason: "unknown" };
   } finally {
     lease.release();

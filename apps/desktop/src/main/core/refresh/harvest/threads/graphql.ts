@@ -1,3 +1,4 @@
+import { isJsonValue } from "@pond/schema/json";
 import type { JsonObject, JsonValue } from "@pond/schema/json";
 import log from "electron-log/main.js";
 import { z } from "zod";
@@ -52,7 +53,7 @@ export interface RichThread {
   url: string;
   fullText: string;
   author: RichThreadAuthor;
-  media: RichThreadMedia[];
+  media: Array<RichThreadMedia>;
   metrics: RichThreadMetrics;
   quoted?: RichThread;
   card?: RichThreadCard;
@@ -70,7 +71,7 @@ const OptionalCount = z
   .catch(undefined);
 
 const JsonObjectSchema = z.custom<JsonObject>(
-  (value) => value instanceof Object && !Array.isArray(value),
+  (value) => Object(value) === value && !Array.isArray(value),
 );
 
 const MediaVersionSchema = z
@@ -190,18 +191,18 @@ const ThreadPostSchema = MediaNodeSchema.extend({
 type ThreadPost = z.infer<typeof ThreadPostSchema>;
 
 export function parseSavedResponses(
-  captures: SavedCapture[],
+  captures: Array<SavedCapture>,
 ): Map<string, RichThread> {
   const out = new Map<string, RichThread>();
   for (const cap of captures) {
     let json: JsonValue;
     try {
       json = parseGraphqlBody(cap.body);
-    } catch (err) {
-      log.warn("[pond threads-saved] capture body not JSON", cap.url, err);
+    } catch (error) {
+      log.warn("[pond threads-saved] capture body not JSON", cap.url, error);
       continue;
     }
-    if (json == null) {
+    if (json === null) {
       log.warn("[pond threads-saved] capture body not JSON", cap.url);
       continue;
     }
@@ -229,12 +230,13 @@ function parseGraphqlBody(body: string): JsonValue {
     const nl = s.indexOf("\n");
     s = (nl === -1 ? s.replace(/^\)\]\}'/, "") : s.slice(nl + 1)).trim();
   }
-  return JSON.parse(s);
+  const parsed: unknown = JSON.parse(s);
+  return isJsonValue(parsed) ? parsed : null;
 }
 
 /** Walks a GraphQL payload for post nodes; skips quoted/reposted children and carousel items, which carry their own `code`, so they stay nested on the parent. */
-function collectThreadPosts(json: JsonValue): JsonObject[] {
-  const out: JsonObject[] = [];
+function collectThreadPosts(json: JsonValue): Array<JsonObject> {
+  const out: Array<JsonObject> = [];
   const seen = new Set<string>();
   walk(json, false, (node) => {
     const code = OptionalText.parse(node.code);
@@ -245,8 +247,9 @@ function collectThreadPosts(json: JsonValue): JsonObject[] {
       !node.owner &&
       !node.caption &&
       !node.image_versions2
-    )
+    ) {
       return;
+    }
     seen.add(code);
     out.push(node);
   });
@@ -254,7 +257,7 @@ function collectThreadPosts(json: JsonValue): JsonObject[] {
 }
 
 function isJsonObject(value: JsonValue): value is JsonObject {
-  return value instanceof Object && !Array.isArray(value);
+  return Object(value) === value && !Array.isArray(value);
 }
 
 function walk(
@@ -308,7 +311,9 @@ export function richThreadFromNode(raw: JsonObject): RichThread | null {
     retweets: info?.repost_count ?? 0,
     replies: info?.direct_reply_count ?? node.comment_count ?? 0,
   };
-  if (info?.quote_count != null) metrics.quotes = info.quote_count;
+  if (info?.quote_count !== undefined) {
+    metrics.quotes = info.quote_count;
+  }
 
   const thread: RichThread = {
     postId,
@@ -325,14 +330,14 @@ export function richThreadFromNode(raw: JsonObject): RichThread | null {
   if (info?.reply_to_author?.username) {
     thread.replyingTo = info.reply_to_author.username;
   }
-  if (node.taken_at != null) {
+  if (node.taken_at !== undefined) {
     thread.publishedAt = new Date(node.taken_at * 1000).toISOString();
   }
   return thread;
 }
 
-function collectNodeMedia(node: ThreadPost): RichThreadMedia[] {
-  const media: RichThreadMedia[] = [];
+function collectNodeMedia(node: ThreadPost): Array<RichThreadMedia> {
+  const media: Array<RichThreadMedia> = [];
   const seen = new Set<string>();
   const push = (entry: RichThreadMedia | null) => {
     if (!entry || seen.has(entry.url) || isThreadsLandingMedia(entry.url)) {
@@ -363,10 +368,18 @@ function mediaFromVersions(node: MediaNode): RichThreadMedia | null {
     const src = video ?? img;
     if (!src) return null;
     const entry: RichThreadMedia = { url: src.url, type: "video" };
-    if (img) entry.poster = img.url;
-    if (width) entry.width = width;
-    if (height) entry.height = height;
-    if (dur != null) entry.durationSec = Math.round(dur);
+    if (img) {
+      entry.poster = img.url;
+    }
+    if (width) {
+      entry.width = width;
+    }
+    if (height) {
+      entry.height = height;
+    }
+    if (dur !== undefined) {
+      entry.durationSec = Math.round(dur);
+    }
     return entry;
   }
   if (!img) return null;
@@ -406,7 +419,7 @@ function pickBestImage(iv2: ImageVersions): PickedImage | null {
 }
 
 function pickBestVideo(
-  versions: MediaVersion[] | undefined,
+  versions: Array<MediaVersion> | undefined,
 ): PickedVideo | null {
   if (!versions) return null;
   for (const v of versions) {

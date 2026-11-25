@@ -14,12 +14,14 @@ export function AgentLibraryBridge(): null {
       selection.set(ids);
     });
     const stopOverlay = window.pond.onAgentOverlay((overlay) => {
-      if ("semanticQuery" in overlay)
+      if ("semanticQuery" in overlay) {
         setSemanticQuery(overlay.semanticQuery ?? null);
+      }
       if ("visualSaveId" in overlay) {
         const id = overlay.visualSaveId;
-        if (!id) setVisualProbe(null);
-        else {
+        if (!id) {
+          setVisualProbe(null);
+        } else {
           const save = pool.get(id);
           setVisualProbe({
             kind: "saveId",

@@ -48,7 +48,7 @@ import { selectLibraryNav } from "./navigation";
 interface FolderRowMenuInput {
   collapsed: boolean;
   creating: boolean;
-  exportIds: string[];
+  exportIds: Array<string>;
   folder: Folder;
   folderIcon?: FolderIconId;
   folderSortDir: "asc" | "desc";
@@ -58,7 +58,7 @@ interface FolderRowMenuInput {
   quickAccess?: boolean;
   sameLevelHasChildren: boolean;
   viewing: boolean;
-  quickAccessFolderIds: string[];
+  quickAccessFolderIds: Array<string>;
   onCreateFolder: (parentId?: string) => void;
   onCustomize: () => void;
   onOpenTool: (tool: FolderTool) => void;
@@ -70,7 +70,7 @@ interface FolderRowMenuInput {
 
 async function moveQuickAccess(
   folderId: string,
-  folderIds: string[],
+  folderIds: Array<string>,
   offset: -1 | 1,
 ): Promise<void> {
   const current = folderIds.indexOf(folderId);
@@ -89,7 +89,7 @@ async function moveQuickAccess(
 
 export function buildQuickAccessFolderMenuItems(input: {
   folder: Folder;
-  folderIds: string[];
+  folderIds: Array<string>;
   onOpen: () => void;
 }) {
   const index = input.folderIds.indexOf(input.folder.id);
@@ -145,11 +145,11 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
           await folders.refresh();
           input.onStartEditing(id);
         })
-        .catch((error) =>
+        .catch((cause: unknown) =>
           notify({
             id: "folder-duplicate",
             title: "Couldn't duplicate folder",
-            description: errorCopy(error, "Try again."),
+            description: errorCopy(cause, "Try again."),
           }),
         );
     },
@@ -177,8 +177,9 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
         .then(() => notify({ id: "folder-link", title: "Folder link copied" }));
     },
     onToggleSubfolders: (next) => {
-      if (input.viewing) setIncludeSubfolders(next);
-      else
+      if (input.viewing) {
+        setIncludeSubfolders(next);
+      } else {
         void saveFolderPresentation(folder.id, {
           includeSubfolders: next,
         }).catch(() =>
@@ -187,6 +188,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
             title: "Couldn't save subfolder setting",
           }),
         );
+      }
     },
     onCustomize: input.onCustomize,
     onRemove: () => {
@@ -248,12 +250,14 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
         icon: createElement(Icon),
         checked: input.folderSortKey === key,
         onCheckedChange: () => {
-          if (input.viewing) setSort({ key, dir: input.folderSortDir });
-          else
+          if (input.viewing) {
+            setSort({ key, dir: input.folderSortDir });
+          } else {
             void saveFolderPresentation(folder.id, {
               sortKey: key,
               sortDir: input.folderSortDir,
             });
+          }
         },
       })),
     },

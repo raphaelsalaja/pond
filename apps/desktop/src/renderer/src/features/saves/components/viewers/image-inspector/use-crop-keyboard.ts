@@ -1,11 +1,7 @@
 import type { ImageCrop } from "@pond/schema/db";
-import {
-  type Dispatch,
-  type RefObject,
-  type SetStateAction,
-  useEffect,
-  useRef,
-} from "react";
+import { isNode } from "@pond/ui/dom";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import type { Dispatch, RefObject, SetStateAction } from "react";
 import { containImage, nudgeCrop } from "@/features/saves/lib/image-regions";
 import type { InspectorMode } from "./types";
 
@@ -33,7 +29,9 @@ export function useCropKeyboard({
   setMode,
 }: CropKeyboardOptions): void {
   const applyRef = useRef(onApply);
-  applyRef.current = onApply;
+  useLayoutEffect(() => {
+    applyRef.current = onApply;
+  }, [onApply]);
 
   useEffect(() => {
     if (!active || mode !== "crop" || !draft) return;
@@ -43,10 +41,11 @@ export function useCropKeyboard({
       if (
         event.defaultPrevented ||
         event.isComposing ||
-        !(event.target instanceof Node) ||
+        !isNode(event.target) ||
         !frame.current?.contains(event.target)
-      )
+      ) {
         return;
+      }
       if (event.key === "Enter") {
         event.preventDefault();
         event.stopPropagation();

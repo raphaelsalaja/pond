@@ -13,17 +13,18 @@ const Page = z.object({
   total: z.number().nullish().catch(null),
 });
 
-const bootstrap = createSaveBootstrap({
-  readSnapshot,
-  scheduleSnapshotWrite,
-  applyActionCoalesced,
-  rendererReady: () => window.pond.rendererReady(),
-  onSyncAction: (callback) => window.pond.onSyncAction(callback),
-  loadAll: async () =>
-    SavePatchesSchema.parse(await window.pond.query("saves.list", {})),
-  loadPage: async (params) =>
-    Page.parse(await window.pond.query("saves.listPage", params)),
-});
+export function createPoolBootstrap() {
+  return createSaveBootstrap({
+    readSnapshot,
+    scheduleSnapshotWrite,
+    applyActionCoalesced,
+    rendererReady: () => window.pond.rendererReady(),
+    onSyncAction: (callback) => window.pond.onSyncAction(callback),
+    loadAll: async () =>
+      SavePatchesSchema.parse(await window.pond.query("saves.list", {})),
+    loadPage: async (params) =>
+      Page.parse(await window.pond.query("saves.listPage", params)),
+  });
+}
 
-export const { bootPool, pagingStore, loadNextPage, hydrateFullPool } =
-  bootstrap;
+export const { bootPool, pagingStore } = createPoolBootstrap();

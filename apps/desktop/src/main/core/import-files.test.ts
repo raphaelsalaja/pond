@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { importFiles } from "./import-files";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -22,12 +22,12 @@ async function fixture() {
     [];
   const files: Array<{
     id: string;
-    filePaths: string[];
-    tags: string[];
+    filePaths: Array<string>;
+    tags: Array<string>;
     importedFrom?: string;
-    folderIds: string[];
+    folderIds: Array<string>;
   }> = [];
-  const restored: Array<{ id: string; folderIds: string[] | null }> = [];
+  const restored: Array<{ id: string; folderIds: Array<string> | null }> = [];
   const runtime: NonNullable<Parameters<typeof importFiles>[1]> = {
     async createFolder(input) {
       const folder = { ...input, id: `folder-${folders.length}` };

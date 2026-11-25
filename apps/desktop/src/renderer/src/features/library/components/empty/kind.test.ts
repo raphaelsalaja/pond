@@ -6,7 +6,7 @@ const library = {
   navKind: "all" as const,
   hasActiveSearch: false,
   hasActiveFilter: false,
-  libraryTotal: 13144,
+  libraryTotal: 13_144,
 };
 
 describe("libraryEmptyKind", () => {

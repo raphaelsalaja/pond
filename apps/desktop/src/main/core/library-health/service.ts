@@ -1,24 +1,24 @@
 import { randomUUID } from "node:crypto";
 import type { Save } from "@pond/schema/db";
 import { isVideoFile } from "@shared/media-index";
-import {
-  HEALTH_COUNT_KEYS,
-  type HealthCountKey,
-  type HealthIndexCheck,
-  type HealthIntegrityIssue,
-  type HealthPosterGap,
-  type HealthUnverifiedSave,
-  type LibraryHealthCheck,
-  type LibraryHealthJob,
-  type LibraryHealthOverview,
-  type MediaWarmSnapshot,
+import { HEALTH_COUNT_KEYS } from "../../../shared/library-health-contracts";
+import type {
+  HealthCountKey,
+  HealthIndexCheck,
+  HealthIntegrityIssue,
+  HealthPosterGap,
+  HealthUnverifiedSave,
+  LibraryHealthCheck,
+  LibraryHealthJob,
+  LibraryHealthOverview,
+  MediaWarmSnapshot,
 } from "../../../shared/library-health-contracts";
 import { LibraryRepairKindSchema } from "../../../shared/library-repair-contracts";
-import {
-  type IntegritySave,
-  inspectSaveIntegrity,
-  type LibraryIntegrityRuntime,
-  type PayloadInspection,
+import { inspectSaveIntegrity } from "../library-integrity";
+import type {
+  IntegritySave,
+  LibraryIntegrityRuntime,
+  PayloadInspection,
 } from "../library-integrity";
 import { mediaWarmCandidates } from "../media-warm/candidates";
 
@@ -26,8 +26,8 @@ export type HealthSave = IntegritySave &
   Pick<Save, "status" | "blurhash" | "coverIndex">;
 
 export interface HealthIndexReport {
-  orphans: string[];
-  missing: string[];
+  orphans: Array<string>;
+  missing: Array<string>;
   errors: Record<string, string>;
 }
 
@@ -35,7 +35,7 @@ export interface LibraryHealthDependencies {
   now(): number;
   libraryId(): string;
   integrityRuntime: LibraryIntegrityRuntime;
-  listSaves(): Promise<HealthSave[]>;
+  listSaves(): Promise<Array<HealthSave>>;
   getSave(id: string): Promise<HealthSave | null>;
   verifyIndex(): Promise<HealthIndexReport>;
   readCheck(libraryId: string): Promise<LibraryHealthCheck | null>;
@@ -45,7 +45,7 @@ export interface LibraryHealthDependencies {
 }
 
 /** Bounds the stored file and IPC payload; counts stay exact past the cap. */
-const LIST_LIMIT = 2_000;
+const LIST_LIMIT = 2000;
 const LIBRARY_ERROR_KEY = "library";
 
 interface JobRecord {
@@ -56,9 +56,9 @@ interface JobRecord {
 
 interface Findings {
   counts: Record<HealthCountKey, number>;
-  issues: HealthIntegrityIssue[];
-  posters: HealthPosterGap[];
-  unverified: HealthUnverifiedSave[];
+  issues: Array<HealthIntegrityIssue>;
+  posters: Array<HealthPosterGap>;
+  unverified: Array<HealthUnverifiedSave>;
 }
 
 export function createLibraryHealthService(deps: LibraryHealthDependencies) {
@@ -151,8 +151,9 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
         indexError = messageOf(error, "Pond couldn't compare the index.");
       }
       throwIfAborted(signal);
-      if (job.libraryId !== deps.libraryId())
+      if (job.libraryId !== deps.libraryId()) {
         throw new Error("The active Library changed. Check the Library again.");
+      }
       const check: LibraryHealthCheck = {
         checkedAt: deps.now(),
         durationMs: Math.max(0, deps.now() - job.job.startedAt),
@@ -204,7 +205,7 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
   }
 
   async function recheck(
-    saveIds: readonly string[],
+    saveIds: ReadonlyArray<string>,
   ): Promise<LibraryHealthCheck | null> {
     const libraryId = deps.libraryId();
     const check = await current();
@@ -212,7 +213,7 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
     const ids = new Set(saveIds);
     const removed = zeroCounts();
     const keep = <T extends { saveId: string }>(
-      list: readonly T[],
+      list: ReadonlyArray<T>,
       key: (item: T) => HealthCountKey,
     ) =>
       list.filter((item) => {
@@ -230,11 +231,12 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
     }
     if (libraryId !== deps.libraryId()) return null;
     const counts = zeroCounts();
-    for (const key of HEALTH_COUNT_KEYS)
+    for (const key of HEALTH_COUNT_KEYS) {
       counts[key] = Math.max(
         0,
         check.counts[key] - removed[key] + fresh.counts[key],
       );
+    }
     const next: LibraryHealthCheck = {
       ...check,
       counts,
@@ -292,12 +294,12 @@ function posterGap(row: HealthSave): HealthPosterGap | null {
 
 function indexCheck(
   report: HealthIndexReport,
-  rows: readonly HealthSave[],
+  rows: ReadonlyArray<HealthSave>,
 ): HealthIndexCheck {
   const { [LIBRARY_ERROR_KEY]: backupError, ...unreadable } = report.errors;
   /** A download that never finished has no folder yet. */
   const unfinished = new Set(
-    rows.filter((row) => row.status !== "complete").map((row) => row.id),
+    rows.flatMap((row) => (row.status === "complete" ? [] : [row.id])),
   );
   return {
     orphans: report.orphans,
@@ -326,7 +328,7 @@ function emptyFindings(): Findings {
 function add<T>(
   findings: Findings,
   key: HealthCountKey,
-  list: T[],
+  list: Array<T>,
   item: T,
 ): void {
   findings.counts[key] += 1;
@@ -342,6 +344,7 @@ function isAbortError(cause: unknown): boolean {
 }
 
 function throwIfAborted(signal: AbortSignal): void {
-  if (signal.aborted)
+  if (signal.aborted) {
     throw new DOMException("Library check canceled.", "AbortError");
+  }
 }

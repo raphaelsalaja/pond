@@ -10,6 +10,8 @@ function styleClass(name: string | undefined): string {
   return name;
 }
 
+function noop() {}
+
 function button(host: HTMLElement, name: string) {
   return [...host.querySelectorAll<HTMLButtonElement>("button")].find(
     (element) =>
@@ -139,7 +141,7 @@ it("prevents duplicate checks and recovers when starting a check fails", async (
   document.body.append(host);
   const root = createRoot(host);
   let calls = 0;
-  let failCheck: (reason: Error) => void = () => {};
+  let failCheck: (reason: Error) => void = noop;
   const pending = new Promise<void>((_resolve, reject) => {
     failCheck = reject;
   });

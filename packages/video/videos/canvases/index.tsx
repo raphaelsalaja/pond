@@ -80,7 +80,7 @@ function Composition({ t }: { t: number }) {
 export const video = defineVideo({
   title: "Pond: Canvases",
   duration: DURATION,
-  poster: 15200,
+  poster: 15_200,
   media: Object.values(LOOKS).map((look) => media(look.id)),
   Composition,
 });

@@ -1,4 +1,5 @@
-import { createTagOperations, type TagClient } from "./tag-operations";
+import { createTagOperations } from "./tag-operations";
+import type { TagClient } from "./tag-operations";
 
 const client: TagClient = {
   async create(kind, name) {

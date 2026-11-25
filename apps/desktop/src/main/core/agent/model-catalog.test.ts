@@ -6,7 +6,7 @@ const entries = [
     id: "openai/test",
     name: "Official Name",
     type: "language",
-    context_window: 200000,
+    context_window: 200_000,
     max_tokens: 8192,
     tags: [" Vision ", "FAST"],
     reasoning_options: [
@@ -60,7 +60,7 @@ it("uses catalog names and metadata while preserving native inference IDs", () =
       id: "test",
       name: "Official Name",
       catalogId: "openai/test",
-      contextWindow: 200000,
+      contextWindow: 200_000,
       maxOutputTokens: 8192,
       capabilities: ["vision", "fast"],
       modelCapabilities: {
@@ -137,7 +137,7 @@ it("retains the last good catalog after a failed refresh and retries", async () 
     () => time,
   );
   const first = await load();
-  time = 300001;
+  time = 300_001;
   fail = true;
   const stale = await load();
   expect(stale.models).toEqual(first.models);

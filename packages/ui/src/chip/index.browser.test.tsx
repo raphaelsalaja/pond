@@ -1,10 +1,10 @@
 import { IconTag } from "@pond/icons";
 import { describe, expect, it, vi } from "vitest";
-import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { page, userEvent } from "vitest/browser";
+import { Chip } from ".";
 import { expectAccessible } from "../../test/axe";
 import { Menu } from "../menu";
-import { Chip } from ".";
 
 describe("Chip keyboard", () => {
   it("names Chip.Clear Remove by default and activates it from the keyboard", async () => {

@@ -13,10 +13,12 @@ import type {
 } from "../../../shared/media-index";
 import { getDb } from "../../db";
 import { runEnsurePoster } from "../pipeline/workers/ensure-poster";
-import { type MediaWarmCandidate, mediaWarmCandidates } from "./candidates";
-import { mediaWarmPauseReason, type ThermalState } from "./policy";
+import { mediaWarmCandidates } from "./candidates";
+import type { MediaWarmCandidate } from "./candidates";
+import { mediaWarmPauseReason } from "./policy";
+import type { ThermalState } from "./policy";
 
-const PAUSE_POLL_MS = 1_000;
+const PAUSE_POLL_MS = 1000;
 const MAX_INFLIGHT = 2;
 const SCAN_PAGE_SIZE = 100;
 const initialStatus: MediaIndexStatus = {
@@ -29,7 +31,7 @@ const initialStatus: MediaIndexStatus = {
 };
 
 let status = initialStatus;
-let candidates: MediaWarmCandidate[] = [];
+let candidates: Array<MediaWarmCandidate> = [];
 let timer: NodeJS.Timeout | null = null;
 let started = false;
 let stopped = false;
@@ -79,7 +81,7 @@ export function startMediaWarmer(): void {
   if (process.platform === "darwin") {
     powerMonitor.on("thermal-state-change", onThermalStateChange);
   }
-  void startMediaIndex().catch((err) => fail(err));
+  void startMediaIndex().catch((cause: unknown) => fail(cause));
 }
 
 export function stopMediaWarmer(): void {
@@ -150,8 +152,8 @@ async function tick(): Promise<void> {
     const generation = scanGeneration;
     try {
       await loadCandidatePage(generation);
-    } catch (err) {
-      fail(err);
+    } catch (error) {
+      fail(error);
       return;
     } finally {
       loadingPage = false;
@@ -199,9 +201,9 @@ async function processOne(candidate: MediaWarmCandidate): Promise<void> {
       remaining: Math.max(0, status.remaining - 1),
       currentTitle: activeJobs <= 1 ? null : status.currentTitle,
     });
-  } catch (err) {
+  } catch (error) {
     publish({
-      lastError: err instanceof Error ? err.message : String(err),
+      lastError: error instanceof Error ? error.message : String(error),
       remaining: Math.max(0, status.remaining - 1),
       currentTitle: activeJobs <= 1 ? null : status.currentTitle,
     });
@@ -220,16 +222,16 @@ async function attempt(candidate: MediaWarmCandidate): Promise<void> {
   try {
     await processCandidate(candidate);
     failed.delete(failureKey(candidate));
-  } catch (err) {
-    log.warn("[pond media-index] candidate failed", candidate.saveId, err);
+  } catch (error) {
+    log.warn("[pond media-index] candidate failed", candidate.saveId, error);
     failed.set(failureKey(candidate), {
       saveId: candidate.saveId,
       title: candidate.title,
       kind: candidate.kind,
-      error: err instanceof Error ? err.message : String(err),
+      error: error instanceof Error ? error.message : String(error),
       at: Date.now(),
     });
-    throw err;
+    throw error;
   } finally {
     active.delete(failureKey(candidate));
   }
@@ -247,9 +249,9 @@ export function mediaWarmSnapshot(): MediaWarmSnapshot {
 
 /** Runs outside idle-time pacing because it answers an explicit request. */
 export async function retryMediaWarm(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<number> {
-  const queued: MediaWarmCandidate[] = [];
+  const queued: Array<MediaWarmCandidate> = [];
   for (const saveId of new Set(saveIds)) {
     const save = await readCandidateSave(saveId);
     if (!save) continue;
@@ -336,7 +338,7 @@ async function readCandidateSave(
 > | null> {
   const db = await getDb();
   return (
-    (await db
+    db
       .select({
         id: saves.id,
         title: saves.title,
@@ -349,7 +351,7 @@ async function readCandidateSave(
       })
       .from(saves)
       .where(eq(saves.id, saveId))
-      .get()) ?? null
+      .get() ?? null
   );
 }
 

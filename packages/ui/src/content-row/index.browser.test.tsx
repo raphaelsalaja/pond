@@ -1,11 +1,11 @@
 import { IconDots } from "@pond/icons";
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { userEvent } from "vitest/browser";
 import { ContentRow } from ".";
 
 async function setup() {
-  const opened: string[] = [];
+  const opened: Array<string> = [];
   const screen = await render(
     <ContentRow.Root>
       <ContentRow.Trigger onClick={() => opened.push("Design")}>

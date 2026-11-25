@@ -3,14 +3,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Transaction } from "@pond/schema/tx";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  type DuplicateMergeRuntime,
-  mergeDuplicateSaves,
-  undoDuplicateMerge,
-} from "./merge-duplicates";
+import { mergeDuplicateSaves, undoDuplicateMerge } from "./merge-duplicates";
+import type { DuplicateMergeRuntime } from "./merge-duplicates";
 
 type MergeRow = Awaited<ReturnType<DuplicateMergeRuntime["read"]>>[number];
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -21,8 +18,8 @@ async function fixture() {
   const root = await mkdtemp(join(tmpdir(), "pond-merge-test-"));
   roots.push(root);
   const rows = new Map<string, MergeRow>();
-  const memberships = new Map<string, string[]>();
-  const commits: Transaction[][] = [];
+  const memberships = new Map<string, Array<string>>();
+  const commits: Array<Array<Transaction>> = [];
   for (const id of ["keep", "extra"]) {
     await mkdir(join(root, id));
     await writeFile(join(root, id, "photo.jpg"), "same image");

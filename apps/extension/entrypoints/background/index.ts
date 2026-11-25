@@ -16,10 +16,11 @@ const pondPathSchema = z
   .optional();
 
 export default defineBackground(() => {
-  browser.runtime.onInstalled.addListener(async () => {
-    await ensureSettings();
-    clearBadge();
-    createMenus();
+  browser.runtime.onInstalled.addListener(() => {
+    void ensureSettings().then(() => {
+      clearBadge();
+      createMenus();
+    });
   });
   browser.runtime.onStartup.addListener(clearBadge);
 
@@ -39,12 +40,14 @@ export default defineBackground(() => {
   });
 
   onMessage("log", ({ data }) => {
+    /* oxlint-disable no-console -- Content-script logs relay to the service worker console; the extension has no logger. */
     const fn =
       data.level === "error"
         ? console.error
         : data.level === "warn"
           ? console.warn
           : console.info;
+    /* oxlint-enable no-console */
     fn("[pond]", data.message, data.data);
   });
 
@@ -76,8 +79,9 @@ export default defineBackground(() => {
       if (tab?.id !== undefined) await browser.tabs.update(tab.id, { url });
       else await browser.tabs.create({ url });
       return true;
-    } catch (err) {
-      console.error("[pond] openPond failed", err);
+    } catch (error) {
+      // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
+      console.error("[pond] openPond failed", error);
       return false;
     }
   });

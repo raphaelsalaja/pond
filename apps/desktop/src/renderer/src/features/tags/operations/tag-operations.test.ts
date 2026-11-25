@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  createTagOperations,
-  type TagClient,
-  type TagEntity,
-} from "./tag-operations";
+import { createTagOperations } from "./tag-operations";
+import type { TagClient, TagEntity } from "./tag-operations";
 
 function setup() {
   const tags = new Set(["Animation", "Typography"]);

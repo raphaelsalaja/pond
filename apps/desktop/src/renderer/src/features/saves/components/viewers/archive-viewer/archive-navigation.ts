@@ -1,5 +1,5 @@
 export interface PageHistory {
-  entries: number[];
+  entries: Array<number>;
   cursor: number;
 }
 

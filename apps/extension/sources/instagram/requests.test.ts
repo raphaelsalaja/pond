@@ -29,6 +29,10 @@ function graphqlBody(operation: string, variables: JsonValue): string {
 
 const noHeaders = () => null;
 
+function saveRootHeaders(name: string) {
+  return name === "x-root-field-name" ? "xig_media_save" : null;
+}
+
 describe("isSaveMutation", () => {
   it.each([
     "usePolarisSaveMediaSaveMutation",
@@ -49,9 +53,7 @@ describe("isSaveMutation", () => {
   });
 
   it("accepts the save root field header", () => {
-    const headers = (name: string) =>
-      name === "x-root-field-name" ? "xig_media_save" : null;
-    expect(isSaveMutation(headers, null)).toBe(true);
+    expect(isSaveMutation(saveRootHeaders, null)).toBe(true);
   });
 });
 

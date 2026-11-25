@@ -1,7 +1,7 @@
 import { IconCopy, IconDots, IconPencil, IconTrash } from "@pond/icons";
 import { useState } from "react";
-import type { ComponentDocs } from "../shared/docs";
 import { Menu } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 function SaveActions() {
   return (

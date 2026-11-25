@@ -1,4 +1,5 @@
-import { type RefObject, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { RefObject } from "react";
 
 /** Chromium paints large originals in bands while decoding, so the image stays hidden until `decode()` settles. */
 export function useImageDecoded(

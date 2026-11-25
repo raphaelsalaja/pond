@@ -24,7 +24,7 @@ export function hasCustomBundleIcon(bundle: string): boolean {
 
 const FINDER_INFO = "com.apple.FinderInfo";
 const FINDER_FLAGS_OFFSET = 8;
-const HAS_BUNDLE = 0x2000;
+const HAS_BUNDLE = 0x20_00;
 
 export function withoutBundleFlag(finderInfo: Buffer): Buffer | null {
   if (finderInfo.length < FINDER_FLAGS_OFFSET + 2) return null;
@@ -42,11 +42,15 @@ export async function clearBundleFlag(folder: string): Promise<void> {
     FINDER_INFO,
     folder,
   ]).catch(() => null);
-  if (read == null) return;
+  if (read === null) {
+    return;
+  }
   const cleared = withoutBundleFlag(
-    Buffer.from(read.stdout.replace(/\s/g, ""), "hex"),
+    Buffer.from(read.stdout.replaceAll(/\s/g, ""), "hex"),
   );
-  if (cleared == null) return;
+  if (cleared === null) {
+    return;
+  }
   await execFileAsync("/usr/bin/xattr", [
     "-wx",
     FINDER_INFO,
@@ -59,9 +63,11 @@ export async function setBundleIcon(
   bundle: string,
   imagePath: string | null,
 ): Promise<void> {
-  if (imagePath == null && !hasCustomBundleIcon(bundle)) return;
+  if (imagePath === null && !hasCustomBundleIcon(bundle)) {
+    return;
+  }
   const image =
-    imagePath == null
+    imagePath === null
       ? "undefined"
       : `$.NSImage.alloc.initWithContentsOfFile(${JSON.stringify(imagePath)})`;
   const script = `ObjC.import("AppKit");

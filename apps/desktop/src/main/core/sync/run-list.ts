@@ -6,14 +6,13 @@ import {
   accountImportScope,
   savedSinceStart,
 } from "../../../shared/import-scope";
-import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
+import { enqueue } from "../pipeline/enqueue";
+import type { EnqueueItem } from "../pipeline/enqueue";
 import {
   dropMissingListKind,
   mergeListKindsOntoExisting,
 } from "../pipeline/list-kinds";
 import { createQueueGeneration } from "../pipeline/queue-generations";
-import type { ListHarvestResult } from "../refresh/harvest/list-types";
-import { harvestSubstackSubscriptions } from "../refresh/harvest/substack/api";
 import {
   harvestInstagramLikedList,
   harvestSourceCollections,
@@ -21,6 +20,8 @@ import {
   harvestYoutubeLikedList,
   listSourceCollections,
 } from "../refresh/harvest-window";
+import type { ListHarvestResult } from "../refresh/harvest/list-types";
+import { harvestSubstackSubscriptions } from "../refresh/harvest/substack/api";
 import { resolveAccountHandle } from "./account-key";
 import { getAccountSync, partitionForAccount } from "./accounts";
 import { fileIntoFolders } from "./collection-folders";
@@ -221,7 +222,7 @@ export async function syncListSource(
     return;
   }
 
-  const gaps: string[] = [];
+  const gaps: Array<string> = [];
   const dualHarvest = COMBINED_LISTS.has(source);
   let combined =
     dualHarvest && !plan.collections

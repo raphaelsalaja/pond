@@ -32,7 +32,7 @@ export function HoverGallery({
   onReady,
 }: {
   save: Save;
-  slides: MediaUnit[];
+  slides: Array<MediaUnit>;
   pickOptions: MediaPickOptions;
   active: number;
   seen: ReadonlySet<number>;
@@ -107,17 +107,17 @@ function GallerySlide({
     },
     [onReady, primary, save.id, unit],
   );
-  const ready = useImageReady(src, reportReady);
+  const { ref: imageRef, loaded, onLoad } = useImageReady(src, reportReady);
 
   if (failed && !primary) return null;
 
   return (
     <>
-      {primary && save.blurhash && !ready.loaded ? (
+      {primary && save.blurhash && !loaded ? (
         <BlurHash hash={save.blurhash} />
       ) : null}
       <img
-        ref={ready.ref}
+        ref={imageRef}
         src={src}
         alt=""
         loading={primary ? "eager" : "lazy"}
@@ -128,8 +128,8 @@ function GallerySlide({
         className={styles.slide}
         data-fit={viewer.galleryFit}
         data-active={active && !failed ? "true" : undefined}
-        data-loaded={!save.blurhash || ready.loaded ? "true" : "false"}
-        onLoad={ready.onLoad}
+        data-loaded={!save.blurhash || loaded ? "true" : "false"}
+        onLoad={onLoad}
         onError={
           primary
             ? onBroken

@@ -44,8 +44,9 @@ function run(file, args, options = {}) {
 }
 
 function config() {
-  if (!existsSync(join(source, "index.tsx")))
+  if (!existsSync(join(source, "index.tsx"))) {
     fail(`video: no videos/${slug}/index.tsx`);
+  }
   return {
     configFile: false,
     root: join(root, "stage"),
@@ -168,8 +169,9 @@ const commands = {
     mkdirSync(stills, { recursive: true });
     for (const file of readdirSync(out).filter((name) =>
       name.startsWith("still-"),
-    ))
+    )) {
       rmSync(join(out, file));
+    }
     capture([`--stills=${times.join(",")}`]);
     const captured = readdirSync(out)
       .filter((name) => name.startsWith("still-"))
@@ -216,8 +218,9 @@ const commands = {
     const plan = join(source, "music.json");
     if (!existsSync(plan)) fail(`video: no videos/${slug}/music.json`);
     const env = join(repo, ".env.local");
-    if (!process.env.ELEVENLABS_API_KEY && existsSync(env))
+    if (!process.env.ELEVENLABS_API_KEY && existsSync(env)) {
       process.loadEnvFile(env);
+    }
     const key = process.env.ELEVENLABS_API_KEY;
     if (!key) fail("video: set ELEVENLABS_API_KEY to compose music");
     const response = await fetch(
@@ -228,10 +231,11 @@ const commands = {
         body: readFileSync(plan, "utf8"),
       },
     );
-    if (!response.ok)
+    if (!response.ok) {
       fail(
         `video: ElevenLabs returned ${response.status}: ${await response.text()}`,
       );
+    }
     const file = join(source, "music.mp3");
     writeFileSync(file, Buffer.from(await response.arrayBuffer()));
     const song = response.headers.get("song-id");

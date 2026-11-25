@@ -1,13 +1,14 @@
-import {
-  type McpServer,
-  type ReadResourceResult,
-  ResourceTemplate,
-  type Variables,
+import { ResourceTemplate } from "@modelcontextprotocol/server";
+import type {
+  McpServer,
+  ReadResourceResult,
+  Variables,
 } from "@modelcontextprotocol/server";
 import { LibraryQueryRequestSchema } from "../../../../shared/library-query";
 import { queryActiveLibraryPage } from "../../active-library-query";
 import { libraryOverview, listLibraryFolders, readSave } from "../tools";
-import { accessError, type McpToolBody } from "./results";
+import { accessError } from "./results";
+import type { McpToolBody } from "./results";
 import {
   MCP_APP_MIME_TYPE,
   SAVES_VIEW_HTML,
@@ -37,8 +38,10 @@ async function requireSearch(): Promise<void> {
   if (denied) throw new Error(denied);
 }
 
-async function folderIds(prefix: string): Promise<string[]> {
-  if (await accessError("search")) return [];
+async function folderIds(prefix: string): Promise<Array<string>> {
+  if (await accessError("search")) {
+    return [];
+  }
   const { folders } = await listLibraryFolders();
   return folders
     .map((folder) => folder.id)

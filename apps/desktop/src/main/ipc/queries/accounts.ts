@@ -1,24 +1,27 @@
 import { IMPORT_MEDIA_KINDS } from "@pond/schema/db";
 import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { sourceLabel } from "@pond/schema/sources";
+import log from "electron-log/main.js";
 import { z } from "zod";
 import {
-  type ImportCollectionKind,
-  type ImportScopeProblem,
   importScopeOptions,
   importsAnyList,
   normalizeImportScope,
+} from "../../../shared/import-scope";
+import type {
+  ImportCollectionKind,
+  ImportScopeProblem,
 } from "../../../shared/import-scope";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
 import { MymindCredentialSchema } from "../../core/mymind/client";
 import { connectMymind } from "../../core/mymind/connect";
 import { releaseFilteredSaves } from "../../core/pipeline/import-filter";
-import type { CollectionFailureReason } from "../../core/refresh/harvest/lib/collections-reply";
 import {
   collectionsNeedHandle,
   isAccountConnected,
   listSourceCollections,
 } from "../../core/refresh/harvest-window";
+import type { CollectionFailureReason } from "../../core/refresh/harvest/lib/collections-reply";
 import { isSyncing, syncAccount } from "../../core/sync";
 import { resolveAccountHandle } from "../../core/sync/account-key";
 import {
@@ -32,12 +35,8 @@ import {
 import { fillMissingAvatars } from "../../core/sync/avatars";
 import { importScopePatch } from "../../core/sync/import-scope";
 import { countSavesForAccount } from "../../core/sync/sync-baseline";
-import {
-  type QueryHandlerMap,
-  query,
-  StringParam,
-  TrimmedTextParam,
-} from "./params";
+import { query, StringParam, TrimmedTextParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const ACCOUNT_NOT_FOUND: OkFailure = { ok: false, error: "Account not found." };
 /** Plural nouns for the collections each Source names differently. */
@@ -209,10 +208,12 @@ export const accountsQueries = {
     async (params) => {
       try {
         const result = await connectMymind(params);
-        if (result.ok)
+        if (result.ok) {
           void syncAccount(result.account.id, { trigger: "manual" }).catch(
-            () => {},
+            (cause: unknown) =>
+              log.warn("[pond accounts] mymind follow-up sync threw", cause),
           );
+        }
         return result;
       } catch (error) {
         return {
@@ -287,9 +288,8 @@ export const accountsQueries = {
     async (params) => {
       const account = await getAccount(params.accountId);
       if (account?.source !== "bluesky") return ACCOUNT_NOT_FOUND;
-      const { blueskySessionStatus } = await import(
-        "../../core/refresh/harvest/bluesky/session"
-      );
+      const { blueskySessionStatus } =
+        await import("../../core/refresh/harvest/bluesky/session");
       const status = await blueskySessionStatus(account);
       return {
         ok: true as const,
@@ -304,12 +304,14 @@ export const accountsQueries = {
     async (params) => {
       const account = await getAccount(params.accountId);
       if (account?.source !== "bluesky") return ACCOUNT_NOT_FOUND;
-      const { signInToBluesky } = await import(
-        "../../core/refresh/harvest/bluesky/session"
-      );
+      const { signInToBluesky } =
+        await import("../../core/refresh/harvest/bluesky/session");
       const result = await signInToBluesky(account);
       if (result.ok) {
-        void syncAccount(account.id, { trigger: "manual" }).catch(() => {});
+        void syncAccount(account.id, { trigger: "manual" }).catch(
+          (cause: unknown) =>
+            log.warn("[pond accounts] bluesky follow-up sync threw", cause),
+        );
         return { ok: true as const, handle: result.handle };
       }
       if (result.reason === "cancelled") {
@@ -327,9 +329,8 @@ export const accountsQueries = {
     async (params) => {
       const account = await getAccount(params.accountId);
       if (account?.source !== "bluesky") return ACCOUNT_NOT_FOUND;
-      const { signOutOfBluesky } = await import(
-        "../../core/refresh/harvest/bluesky/session"
-      );
+      const { signOutOfBluesky } =
+        await import("../../core/refresh/harvest/bluesky/session");
       await signOutOfBluesky(account);
       return { ok: true as const };
     },

@@ -11,9 +11,9 @@ export interface SaveLike {
   title?: string | null;
   description?: string | null;
   author?: string | null;
-  tags?: string[];
-  folderIds?: string[];
-  listKinds?: ListKind[];
+  tags?: Array<string>;
+  folderIds?: Array<string>;
+  listKinds?: Array<ListKind>;
   notes?: string | null;
   caption?: string | null;
   ocrText?: string | null;
@@ -32,7 +32,7 @@ export interface SaveLike {
   aperture?: number | null;
   iso?: number | null;
   takenAt?: string | Date | number | null;
-  dominantColors?: string[];
+  dominantColors?: Array<string>;
   rawJson?: RawJson | null;
   savedAt?: string | Date | number | null;
   createdAt?: string | Date | number | null;

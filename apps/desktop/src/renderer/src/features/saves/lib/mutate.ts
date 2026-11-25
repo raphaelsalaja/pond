@@ -48,13 +48,15 @@ function toNewSave(save: Save): NewSave {
     savedAt: new Date(save.savedAt),
     createdAt: new Date(save.createdAt),
     deletedAt: save.deletedAt === null ? null : new Date(save.deletedAt),
-    publishedAt: save.publishedAt == null ? null : new Date(save.publishedAt),
-    takenAt: save.takenAt == null ? null : new Date(save.takenAt),
-    ingestStartedAt:
-      save.ingestStartedAt == null ? null : new Date(save.ingestStartedAt),
-    ingestCompletedAt:
-      save.ingestCompletedAt == null ? null : new Date(save.ingestCompletedAt),
+    publishedAt: dateOrNull(save.publishedAt),
+    takenAt: dateOrNull(save.takenAt),
+    ingestStartedAt: dateOrNull(save.ingestStartedAt),
+    ingestCompletedAt: dateOrNull(save.ingestCompletedAt),
   };
+}
+
+function dateOrNull(value: number | null | undefined): Date | null {
+  return value === undefined || value === null ? null : new Date(value);
 }
 
 function snapshotBefore(prev: Save, patch: SaveEdit): Partial<NewSave> {
@@ -91,13 +93,17 @@ export async function mutateSave(
     () => pool.upsert(prev),
     async () => window.pond.tx(tx),
   );
-  if (result === null && opts.throwOnError)
+  if (result === null && opts.throwOnError) {
     throw new Error(
       "Couldn't save changes. Your previous version is unchanged.",
     );
+  }
 }
 
-export async function setSaveTags(id: string, tags: string[]): Promise<void> {
+export async function setSaveTags(
+  id: string,
+  tags: Array<string>,
+): Promise<void> {
   const prev = pool.get(id) ?? (await refetch(id));
   if (!prev) return;
   await optimistic(
@@ -134,10 +140,21 @@ export async function purgeSave(id: string): Promise<void> {
   emitFeedback("saveDeletion");
 }
 
+export interface BulkMutationDeps {
+  bulkEdit: (input: BulkEdit) => Promise<BulkEditResult>;
+  onDeletion: () => void;
+}
+
+const bulkMutationDeps: BulkMutationDeps = {
+  bulkEdit: (input) => window.pond.query("saves.bulkEdit", input),
+  onDeletion: () => emitFeedback("saveDeletion"),
+};
+
 export async function bulkMutation(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   operation: BulkEdit["operation"],
   opts: MutateOpts = {},
+  deps: BulkMutationDeps = bulkMutationDeps,
 ): Promise<BulkEditResult> {
   const targets = [...new Set(ids)];
   if (!targets.length) return { changed: 0, undoId: null };
@@ -148,32 +165,35 @@ export async function bulkMutation(
   if (operation.kind === "purge") {
     pool.bulkDelete(before.map((save) => save.id));
   } else {
-    const updates: Save[] = [];
+    const updates: Array<Save> = [];
     for (const save of before) {
-      if (operation.kind === "trash")
+      if (operation.kind === "trash") {
         updates.push({ ...save, deletedAt: Date.now() });
-      else if (operation.kind === "untrash")
+      } else if (operation.kind === "untrash") {
         updates.push({ ...save, deletedAt: null });
-      else if (operation.kind === "rating" && !save.deletedAt)
+      } else if (operation.kind === "rating" && !save.deletedAt) {
         updates.push({ ...save, rating: operation.rating || null });
-      else if (operation.kind === "favorite" && !save.deletedAt)
+      } else if (operation.kind === "favorite" && !save.deletedAt) {
         updates.push({ ...save, favorite: operation.favorite });
-      else if (operation.kind === "notes")
+      } else if (operation.kind === "notes") {
         updates.push({ ...save, notes: operation.notes });
-      else if (operation.kind === "inbox" || operation.kind === "snooze") {
+      } else if (operation.kind === "inbox" || operation.kind === "snooze") {
         const next = applyInboxChange(operation, {
           inboxState: save.inboxState ?? null,
           inboxUntil: save.inboxUntil ?? null,
           deletedAt: save.deletedAt,
         });
-        if (next) updates.push({ ...save, ...next });
-      } else if (operation.kind === "tags" && operation.mode === "replace")
+        if (next) {
+          updates.push({ ...save, ...next });
+        }
+      } else if (operation.kind === "tags" && operation.mode === "replace") {
         updates.push({ ...save, tags: operation.tags });
+      }
     }
     pool.bulkUpsert(updates);
   }
   try {
-    const result = await window.pond.query("saves.bulkEdit", {
+    const result = await deps.bulkEdit({
       ids: targets,
       operation,
       ...opts,
@@ -182,7 +202,7 @@ export async function bulkMutation(
       result.changed > 0 &&
       (operation.kind === "trash" || operation.kind === "purge")
     ) {
-      emitFeedback("saveDeletion");
+      deps.onDeletion();
     }
     return { changed: result.changed, undoId: result.undoId ?? null };
   } catch (error) {
@@ -192,19 +212,19 @@ export async function bulkMutation(
   }
 }
 export async function trashSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   opts: MutateOpts = {},
 ): Promise<BulkEditResult> {
   return bulkMutation(ids, { kind: "trash" }, opts);
 }
 export async function untrashSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   opts: MutateOpts = {},
 ): Promise<BulkEditResult> {
   return bulkMutation(ids, { kind: "untrash" }, opts);
 }
 export async function purgeSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<BulkEditResult> {
   return bulkMutation(ids, { kind: "purge" });
 }

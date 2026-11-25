@@ -53,7 +53,7 @@ function lostLinks(
 }
 
 export async function repairTweetLinks(
-  entries: readonly BookmarksEntry[],
+  entries: ReadonlyArray<BookmarksEntry>,
 ): Promise<number> {
   const byId = new Map(entries.map((e) => [e.tweetId, e]));
   if (byId.size === 0) return 0;
@@ -91,11 +91,11 @@ export async function repairTweetLinks(
       );
       try {
         await runCaptureTweet(row.id, { nativeOnly: true, force: true });
-      } catch (err) {
+      } catch (error) {
         log.warn(
           "[pond sync:twitter] link repair card redraw failed",
           row.id,
-          err,
+          error,
         );
       }
       repaired += 1;

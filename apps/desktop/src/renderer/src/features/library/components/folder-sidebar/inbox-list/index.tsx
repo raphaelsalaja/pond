@@ -1,11 +1,10 @@
 import { Loader, Sidebar } from "@pond/ui";
 import type { InboxNotification } from "@shared/notification-contracts";
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
+import type { ReactNode } from "react";
 import { SaveThumb } from "@/features/library/components/command-menu/save-thumb";
-import {
-  type InboxItem,
-  useInboxItems,
-} from "@/features/library/hooks/use-inbox-items";
+import { useInboxItems } from "@/features/library/hooks/use-inbox-items";
+import type { InboxItem } from "@/features/library/hooks/use-inbox-items";
 import {
   inboxPicker,
   inboxReview,
@@ -13,11 +12,8 @@ import {
   useInboxReviewScope,
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
-import {
-  type InboxProgress,
-  NotificationIcon,
-  notificationTone,
-} from "@/features/notifications";
+import { NotificationIcon, notificationTone } from "@/features/notifications";
+import type { InboxProgress } from "@/features/notifications";
 import {
   displayTitleForSave,
   SaveCollectionContextMenu,
@@ -194,11 +190,11 @@ function Item({
   }
 }
 
-type Run = { section: string | null; items: InboxItem[] };
+type Run = { section: string | null; items: Array<InboxItem> };
 
 /** Splits the list where the section changes; running-work rows lead with no heading. */
-function runs(items: readonly InboxItem[]): Run[] {
-  const out: Run[] = [];
+function runs(items: ReadonlyArray<InboxItem>): Array<Run> {
+  const out: Array<Run> = [];
   for (const item of items) {
     const section = item.type === "progress" ? null : (item.section ?? null);
     const last = out.at(-1);

@@ -16,8 +16,8 @@ import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 
 export interface TagMenuActions {
-  groups: string[];
-  mergeTargets: string[];
+  groups: Array<string>;
+  mergeTargets: Array<string>;
   inGroup: string | null;
   starred: boolean;
   onFilter: () => void;
@@ -31,9 +31,9 @@ export interface TagMenuActions {
 }
 
 function groupItems(
-  groups: string[],
+  groups: Array<string>,
   onSelect: (group: string) => void,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return groups.map((group) => ({
     label: group,
     icon: <Folder />,
@@ -41,7 +41,7 @@ function groupItems(
   }));
 }
 
-export function buildTagMenuItems(a: TagMenuActions): MenuItemSpec[] {
+export function buildTagMenuItems(a: TagMenuActions): Array<MenuItemSpec> {
   const targets = a.groups.filter((group) => group !== a.inGroup);
 
   return [
@@ -115,7 +115,7 @@ export function TagContextMenu({
   buildItems,
   children,
 }: {
-  buildItems: () => MenuItemSpec[];
+  buildItems: () => Array<MenuItemSpec>;
   children: ReactElement;
 }) {
   return (

@@ -19,7 +19,7 @@ const DOWNLOAD_PHASE_LABELS = {
 } satisfies Record<DownloadPhase, string>;
 
 export function downloadActivityForSave(
-  activities: readonly DownloadActivity[],
+  activities: ReadonlyArray<DownloadActivity>,
   saveId: string,
 ): DownloadActivity | undefined {
   let result: DownloadActivity | undefined;
@@ -33,8 +33,9 @@ export function downloadActivityForSave(
       (activity.state !== "running" &&
         result.state !== "running" &&
         activity.updatedAt > result.updatedAt)
-    )
+    ) {
       result = activity;
+    }
   }
   return result;
 }
@@ -63,14 +64,14 @@ export function describeDownloadActivity(
     transfer?.state === "receiving" &&
     transfer.totalBytes &&
     transfer.totalBytes > 0 &&
-    transfer.receivedBytes != null
+    transfer.receivedBytes !== undefined
       ? Math.min(1, Math.max(0, transfer.receivedBytes / transfer.totalBytes))
       : null;
   const speed =
     transferring &&
     transfer?.state === "receiving" &&
-    stale < 3_000 &&
-    transfer.bytesPerSecond != null
+    stale < 3000 &&
+    transfer.bytesPerSecond !== undefined
       ? `${formatBytes(transfer.bytesPerSecond)}/s`
       : null;
   let label = DOWNLOAD_PHASE_LABELS[activity.phase];
@@ -78,24 +79,28 @@ export function describeDownloadActivity(
     activity.phase === "receiving" &&
     (activity.op === "fetch_video_ytdlp" ||
       transfer?.request?.contentType?.startsWith("video/"))
-  )
+  ) {
     label = "Downloading video";
-  if (activity.phase === "processing" && activity.op === "ensure_poster")
+  }
+  if (activity.phase === "processing" && activity.op === "ensure_poster") {
     label = "Generating thumbnail";
-  if (activity.phase === "processing" && activity.op === "render_text_cover")
+  }
+  if (activity.phase === "processing" && activity.op === "render_text_cover") {
     label = "Rendering text cover";
+  }
   let detail: string | null = null;
-  if (stalled)
+  if (stalled) {
     detail =
       transfer?.state === "requesting"
-        ? `No response for ${formatDuration((now - transfer.startedAt) / 1_000)}`
-        : `No data received for ${formatDuration(stale / 1_000)}`;
-  else if (transferring && transfer)
+        ? `No response for ${formatDuration((now - transfer.startedAt) / 1000)}`
+        : `No data received for ${formatDuration(stale / 1000)}`;
+  } else if (transferring && transfer) {
     detail =
       moving.length > 1
         ? `${moving.length} files active`
         : transfer.fileCount && transfer.fileCount > 1
           ? `File ${transfer.fileIndex} of ${transfer.fileCount}`
           : null;
+  }
   return { label, detail, progress, speed, stalled };
 }

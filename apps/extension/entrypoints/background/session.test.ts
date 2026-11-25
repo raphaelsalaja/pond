@@ -1,35 +1,30 @@
-import { nativeRequestSchema } from "@pond/schema/native";
 import type { Source } from "@pond/schema/source-ids";
 import { afterEach, expect, it, vi } from "vitest";
 import { fakeBrowser } from "wxt/testing/fake-browser";
 import { startSessionConnect, startSessionFollow } from "./session";
+import type { SessionApi } from "./session";
+
+type CookieListener = Parameters<SessionApi["onCookieChanged"]>[0];
 
 afterEach(() => {
   vi.useRealTimers();
-  vi.restoreAllMocks();
   fakeBrowser.reset();
 });
 
 it("keeps every missed Source when a cookie changes during startup", async () => {
   vi.useFakeTimers();
-  type CookieListener = Parameters<
-    typeof browser.cookies.onChanged.addListener
-  >[0];
   let cookieListener: CookieListener | undefined;
   let releaseFirst: (() => void) | undefined;
   const firstRequest = new Promise<void>((resolve) => {
     releaseFirst = resolve;
   });
-  const requests: Source[] = [];
-  vi.spyOn(fakeBrowser.cookies, "getAll").mockImplementation(async () => []);
-  vi.spyOn(fakeBrowser.cookies.onChanged, "addListener").mockImplementation(
-    (listener: CookieListener) => {
+  const requests: Array<Source> = [];
+  const api: SessionApi = {
+    getCookies: async () => [],
+    onCookieChanged: (listener) => {
       cookieListener = listener;
     },
-  );
-  vi.spyOn(fakeBrowser.runtime, "sendNativeMessage").mockImplementation(
-    async (_host, message) => {
-      const request = nativeRequestSchema.parse(message);
+    nativeCall: async (request) => {
       if (request.type !== "session.refresh") {
         throw new Error("Unexpected native request");
       }
@@ -37,9 +32,9 @@ it("keeps every missed Source when a cookie changes during startup", async () =>
       if (requests.length === 1) await firstRequest;
       return { ok: false, error: "offline" };
     },
-  );
+  };
 
-  startSessionFollow();
+  startSessionFollow(api);
   await vi.advanceTimersByTimeAsync(0);
   expect(requests).toEqual(["twitter"]);
   if (!cookieListener) throw new Error("Cookie listener was not registered");
@@ -59,7 +54,7 @@ it("keeps every missed Source when a cookie changes during startup", async () =>
       storeId: "0",
     },
   });
-  await vi.advanceTimersByTimeAsync(5_000);
+  await vi.advanceTimersByTimeAsync(5000);
   expect(requests).toEqual(["twitter"]);
 
   releaseFirst?.();
@@ -80,16 +75,13 @@ it("keeps a newly connected Source tracked during a pending refresh", async () =
   const firstRequest = new Promise<void>((resolve) => {
     releaseFirst = resolve;
   });
-  const refreshed: Source[] = [];
+  const refreshed: Array<Source> = [];
   const imported = vi.fn();
   const connected = vi.fn();
-  vi.spyOn(fakeBrowser.cookies, "getAll").mockImplementation(async () => []);
-  vi.spyOn(fakeBrowser.cookies.onChanged, "addListener").mockImplementation(
-    () => {},
-  );
-  vi.spyOn(fakeBrowser.runtime, "sendNativeMessage").mockImplementation(
-    async (_host, message) => {
-      const request = nativeRequestSchema.parse(message);
+  const api: SessionApi = {
+    getCookies: async () => [],
+    onCookieChanged: () => {},
+    nativeCall: async (request) => {
       if (request.type === "session.pending") {
         return { ok: true, data: { source: "github" } };
       }
@@ -107,12 +99,12 @@ it("keeps a newly connected Source tracked during a pending refresh", async () =
       if (request.source === "twitter") await firstRequest;
       return { ok: true, data: { tracked: true, refreshed: true } };
     },
-  );
+  };
 
-  startSessionFollow();
+  startSessionFollow(api);
   await vi.advanceTimersByTimeAsync(0);
   expect(refreshed).toEqual(["twitter"]);
-  startSessionConnect(connected);
+  startSessionConnect(connected, api);
   await vi.advanceTimersByTimeAsync(0);
   expect(imported).toHaveBeenCalledOnce();
   expect(connected).not.toHaveBeenCalled();

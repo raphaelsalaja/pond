@@ -1,7 +1,8 @@
 import type { Source } from "@pond/schema/db";
 import type { SourceOverview } from "@shared/account-contracts";
 import type { QueryResult } from "@shared/query-contracts";
-import { type UseQueryResult, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import type { UseQueryResult } from "@tanstack/react-query";
 import { useSyncByAccount } from "@/features/sources/state/sync-monitor";
 
 export type SourceRun = QueryResult<"sync.history">["runs"][number];
@@ -21,11 +22,11 @@ function useRunRevision(id: string): string {
 export function useSourceHistory(
   source: Source,
   id: string,
-): UseQueryResult<SourceRun[]> {
+): UseQueryResult<Array<SourceRun>> {
   const revision = useRunRevision(id);
   return useQuery({
     queryKey: ["source-history", id, revision],
-    queryFn: async (): Promise<SourceRun[]> =>
+    queryFn: async (): Promise<Array<SourceRun>> =>
       (
         await window.pond.query("sync.history", {
           source,

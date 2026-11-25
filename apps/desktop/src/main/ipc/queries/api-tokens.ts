@@ -1,7 +1,8 @@
 import { ApiTokenCreateSchema } from "@pond/schema/api";
 import { z } from "zod";
 import { apiTokens } from "../../http/api-tokens";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 export const apiTokensQueries = {
   async "apiTokens.list"() {

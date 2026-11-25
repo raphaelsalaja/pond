@@ -22,7 +22,7 @@ export interface PinterestPinPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: PinterestMedia[];
+  mediaUrls?: Array<PinterestMedia>;
   mediaType?: MediaType;
   meta?: PinterestPinMeta;
 }
@@ -41,7 +41,7 @@ export function inPagePinterestNormalize() {
     const out: PinterestPinPage = {};
     const meta: PinterestPinMeta = {};
 
-    const getMeta = (selectors: readonly string[]): string | undefined => {
+    const getMeta = (selectors: ReadonlyArray<string>): string | undefined => {
       for (const sel of selectors) {
         const el = document.querySelector<HTMLMetaElement>(sel);
         const value = el?.content?.trim();

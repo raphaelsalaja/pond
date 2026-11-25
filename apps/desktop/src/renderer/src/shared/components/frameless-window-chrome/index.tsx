@@ -9,7 +9,7 @@ export function FramelessWindowChrome({
 }: {
   align?: "card" | "title";
   closeLabel: string;
-  onClose(): void;
+  onClose: () => void;
 }) {
   return (
     <div

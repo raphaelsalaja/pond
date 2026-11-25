@@ -4,8 +4,8 @@ import type { RawJson } from "@pond/schema/raw";
 import {
   captureFromTweetDraft,
   draftFromRichPost,
-  type RichPostDraft,
 } from "../capture/tweet-draft";
+import type { RichPostDraft } from "../capture/tweet-draft";
 import type { RichThread } from "../refresh/harvest/threads/graphql";
 import type { SavedEntry } from "../refresh/harvest/threads/saved-types";
 

@@ -7,8 +7,8 @@ const pivot = { x: 10, y: 12 };
 function fish() {
   let seed = 7;
   const random = () => {
-    seed = (seed * 16807) % 2147483647;
-    return seed / 2147483647;
+    seed = (seed * 16_807) % 2_147_483_647;
+    return seed / 2_147_483_647;
   };
   return createAvatar({ head, pivot, random });
 }

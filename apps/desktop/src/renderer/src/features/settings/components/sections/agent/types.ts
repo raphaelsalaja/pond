@@ -1,5 +1,6 @@
 import type { Prefs } from "@pond/schema";
-import { type AssistantProvider, assistantProvider } from "@shared/assistant";
+import { assistantProvider } from "@shared/assistant";
+import type { AssistantProvider } from "@shared/assistant";
 import { z } from "zod";
 
 export type AgentPrefs = Prefs["agent"];

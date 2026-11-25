@@ -46,8 +46,9 @@ export function TimelinePreview({ src, time }: { src: string; time: number }) {
         if (
           Math.abs(previewTime(video, target.current) - video.currentTime) >
           0.01
-        )
+        ) {
           seek(video);
+        }
       }}
     />
   );

@@ -1,7 +1,9 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
+import type { BrowserValidators } from "../lib/browser-validation";
 import { buildItemExpression } from "../lib/expression";
 
 interface SaveeItemPage {
@@ -11,33 +13,53 @@ interface SaveeItemPage {
   meta: { authorUrl?: string };
 }
 
-export function buildExpression(shortId: string): string {
-  return buildItemExpression(() => ({}), inPageSaveeHarvest, shortId);
+interface SaveeImageObject {
+  "@type"?: string;
+  name?: string;
+  contentUrl?: string;
+  creator?: { name?: string; url?: string };
 }
 
-async function inPageSaveeHarvest(): Promise<SaveeItemPage | null> {
+export function buildExpression(shortId: string): string {
+  return buildItemExpression(
+    (validators) => validators,
+    inPageSaveeHarvest,
+    shortId,
+  );
+}
+
+async function inPageSaveeHarvest(
+  _shortId: string,
+  norm: BrowserValidators,
+): Promise<SaveeItemPage | null> {
+  const isImageObject = (value: unknown): value is SaveeImageObject =>
+    norm.object.safeParse(value).success;
   const deadline = Date.now() + 10_000;
   while (Date.now() < deadline) {
-    if (document.querySelector('meta[property="og:image"]')) break;
-    await new Promise((r) => setTimeout(r, 250));
+    if (document.querySelector('meta[property="og:image"]')) {
+      break;
+    }
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   const meta = (key: string): string =>
     document
       .querySelector(`meta[property="${key}"], meta[name="${key}"]`)
       ?.getAttribute("content")
       ?.trim() ?? "";
-  let ld: {
-    name?: string;
-    contentUrl?: string;
-    creator?: { name?: string; url?: string };
-  } | null = null;
+  let ld: SaveeImageObject | null = null;
   for (const node of document.querySelectorAll(
     'script[type="application/ld+json"]',
   )) {
     try {
-      const parsed = JSON.parse(node.textContent ?? "");
-      if (parsed?.["@type"] === "ImageObject") ld = parsed;
-    } catch {}
+      const parsed: unknown = JSON.parse(node.textContent ?? "");
+      if (isImageObject(parsed) && parsed["@type"] === "ImageObject") {
+        ld = parsed;
+      }
+    } catch {
+      /** Malformed linked data falls back to the share tags. */
+    }
   }
   const page: SaveeItemPage = { mediaUrls: [], meta: {} };
   const title =

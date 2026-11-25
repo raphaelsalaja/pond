@@ -1,13 +1,13 @@
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
-interface BodyProps extends React.ComponentPropsWithoutRef<"div"> {}
+type BodyProps = React.ComponentPropsWithoutRef<"div">;
 
 function Body({ className, ...props }: BodyProps) {
   return <div className={cn(styles.body, className)} {...props} />;
 }
 
-interface MainProps extends React.ComponentPropsWithRef<"main"> {}
+type MainProps = React.ComponentPropsWithRef<"main">;
 
 function Main({ className, ...props }: MainProps) {
   return (
@@ -19,25 +19,25 @@ function Main({ className, ...props }: MainProps) {
   );
 }
 
-interface HeaderProps extends React.ComponentPropsWithoutRef<"header"> {}
+type HeaderProps = React.ComponentPropsWithoutRef<"header">;
 
 function Header({ className, ...props }: HeaderProps) {
   return <header className={cn(styles.header, className)} {...props} />;
 }
 
-interface AsideProps extends React.ComponentPropsWithoutRef<"aside"> {}
+type AsideProps = React.ComponentPropsWithoutRef<"aside">;
 
 function Aside({ className, ...props }: AsideProps) {
   return <aside className={cn(styles.aside, className)} {...props} />;
 }
 
-interface DragProps extends React.ComponentPropsWithoutRef<"div"> {}
+type DragProps = React.ComponentPropsWithoutRef<"div">;
 
 function Drag({ ...props }: DragProps) {
   return <div className={styles.drag} {...props} />;
 }
 
-interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}
+type EmptyProps = React.ComponentPropsWithoutRef<"p">;
 
 function Empty({ className, ...props }: EmptyProps) {
   return <p className={cn(styles.empty, className)} {...props} />;

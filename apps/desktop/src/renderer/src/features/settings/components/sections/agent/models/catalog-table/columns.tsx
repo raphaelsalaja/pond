@@ -42,7 +42,7 @@ export function modelColumns({
   visible: Set<string>;
   disabled: boolean;
   onCheckedChange: (model: CatalogModel, checked: boolean) => void;
-}): TableColumn<CatalogModel>[] {
+}): Array<TableColumn<CatalogModel>> {
   return [
     {
       id: "model",

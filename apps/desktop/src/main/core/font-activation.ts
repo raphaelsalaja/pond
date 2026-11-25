@@ -5,28 +5,32 @@ import { basename, dirname, extname, join, resolve, sep } from "node:path";
 import { promisify } from "node:util";
 import type { OkResult } from "@shared/query-contracts-shared";
 import type Database from "better-sqlite3";
+import { z } from "zod";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { saveDir } from "../paths";
 
 const execFileAsync = promisify(execFile);
 
-const WINDOWS_FONTS_KEY =
-  "HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts";
+const WINDOWS_FONTS_KEY = String.raw`HKCU\Software\Microsoft\Windows NT\CurrentVersion\Fonts`;
 
 type FontPlatformDeps = {
   platform?: NodeJS.Platform;
   /** Runs reg.exe; injected so tests never touch the real registry. */
-  runRegistry?: (args: string[]) => Promise<void>;
+  runRegistry?: (args: Array<string>) => Promise<void>;
   /** Refreshes fontconfig's cache on Linux; injected so tests never spawn fc-cache. */
   runFontCache?: () => Promise<void>;
 };
 
 /** An absolute path keeps a planted reg.exe earlier on PATH from running. */
 function regExecutable(): string {
-  return join(process.env.SystemRoot ?? "C:\\Windows", "System32", "reg.exe");
+  return join(
+    process.env.SystemRoot ?? String.raw`C:\Windows`,
+    "System32",
+    "reg.exe",
+  );
 }
 
-async function runRegistry(args: string[]): Promise<void> {
+async function runRegistry(args: Array<string>): Promise<void> {
   await execFileAsync(regExecutable(), args, {
     windowsHide: true,
     timeout: 10_000,
@@ -86,9 +90,12 @@ export async function activateFont(
       }
     }
     /** Windows loads per-user fonts at sign-in, so other apps see the font after that. */
-    if (platform === "win32")
+    if (platform === "win32") {
       return { ok: true, path: dest, requiresSignIn: true };
-    if (platform === "linux") await runFontCache();
+    }
+    if (platform === "linux") {
+      await runFontCache();
+    }
     return { ok: true, path: dest };
   } catch (error) {
     return {
@@ -110,12 +117,14 @@ export async function deactivateFont(
     platform === "win32" ? path.toLowerCase() : path;
   const target = resolve(input.installedPath);
   if (platform === "win32") {
-    if (normalize(dirname(target)) !== normalize(resolve(input.fontsDir)))
+    if (normalize(dirname(target)) !== normalize(resolve(input.fontsDir))) {
       return { ok: false, error: "outside_pond_fonts" };
+    }
   } else {
     const pondDir = resolve(join(input.fontsDir, "Pond"));
-    if (target === pondDir || !target.startsWith(`${pondDir}${sep}`))
+    if (target === pondDir || !target.startsWith(`${pondDir}${sep}`)) {
       return { ok: false, error: "outside_pond_fonts" };
+    }
   }
   try {
     /** Remove the file first so the registration stays intact when an app holds the file open. */
@@ -144,14 +153,17 @@ export function pondFontsDir(
   platform = process.platform,
   localAppData = process.env.LOCALAPPDATA,
 ): string {
-  if (platform === "darwin") return join(home, "Library", "Fonts");
-  if (platform === "win32")
+  if (platform === "darwin") {
+    return join(home, "Library", "Fonts");
+  }
+  if (platform === "win32") {
     return join(
       localAppData || join(home, "AppData", "Local"),
       "Microsoft",
       "Windows",
       "Fonts",
     );
+  }
   return join(home, ".local", "share", "fonts");
 }
 
@@ -159,8 +171,13 @@ function sidecarPath(id: string): string {
   return join(saveDir(id), "font-activation.json");
 }
 
+const FontActivationSchema = z.object({ path: z.string() });
+
 export function readFontActivation(id: string): string | null {
-  return readBundleJson<{ path: string }>(sidecarPath(id))?.data.path ?? null;
+  const stored = FontActivationSchema.safeParse(
+    readBundleJson(sidecarPath(id))?.data,
+  );
+  return stored.success ? stored.data.path : null;
 }
 
 export function writeFontActivation(id: string, path: string): void {

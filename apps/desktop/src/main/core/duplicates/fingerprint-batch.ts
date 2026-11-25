@@ -2,12 +2,8 @@ import { stat } from "node:fs/promises";
 import type Database from "better-sqlite3";
 import { classifyPendingAssets } from "./asset-index";
 import type { FingerprintOutcome } from "./fingerprint-compute";
-import {
-  type FingerprintAlgorithm,
-  type FingerprintJob,
-  nextFingerprintJobs,
-  recordFingerprint,
-} from "./fingerprints";
+import { nextFingerprintJobs, recordFingerprint } from "./fingerprints";
+import type { FingerprintAlgorithm, FingerprintJob } from "./fingerprints";
 
 const FINGERPRINT_BATCH_SIZE = 25;
 

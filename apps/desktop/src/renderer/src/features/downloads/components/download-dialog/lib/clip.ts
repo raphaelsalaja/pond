@@ -11,8 +11,8 @@ import { clampRange, isFullRange, mostReplayed } from "./range";
 export interface Clip {
   probe: DownloadSingleProbe;
   duration: number;
-  frames: readonly string[];
-  heatmap: readonly DownloadHeatPoint[];
+  frames: ReadonlyArray<string>;
+  heatmap: ReadonlyArray<DownloadHeatPoint>;
   replay: DownloadRange | null;
   request: DownloadRequest;
   range: DownloadRange;
@@ -24,7 +24,7 @@ export interface Clip {
 
 export function clipOf(
   probe: DownloadSingleProbe,
-  frames: readonly string[],
+  frames: ReadonlyArray<string>,
   request: DownloadRequest,
   patch: (patch: Partial<DownloadRequest>) => void,
 ): Clip {

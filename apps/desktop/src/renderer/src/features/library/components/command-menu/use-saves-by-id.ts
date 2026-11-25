@@ -1,4 +1,5 @@
 import { useSelector } from "@tanstack/react-store";
+import log from "electron-log/renderer";
 import { useEffect, useMemo } from "react";
 import {
   ensureSaves,
@@ -8,21 +9,25 @@ import {
 import type { Save } from "@/features/saves/types";
 
 function sameItems(
-  a: readonly (Save | undefined)[],
-  b: readonly (Save | undefined)[],
+  a: ReadonlyArray<Save | undefined>,
+  b: ReadonlyArray<Save | undefined>,
 ): boolean {
   return a.length === b.length && a.every((save, i) => save === b[i]);
 }
 
 /** Live, untrashed saves for these ids; re-renders only when one of them changes. */
 export function useSavesById(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   deleted = false,
-): readonly Save[] {
+): ReadonlyArray<Save> {
   const key = ids.join("\n");
   useRetainedSaves(ids);
   useEffect(() => {
-    if (key) void ensureSaves(key.split("\n")).catch(() => {});
+    if (key) {
+      void ensureSaves(key.split("\n")).catch((cause: unknown) => {
+        log.warn("[pond search] loading saves failed", cause);
+      });
+    }
   }, [key]);
   const found = useSelector(
     savesStore,

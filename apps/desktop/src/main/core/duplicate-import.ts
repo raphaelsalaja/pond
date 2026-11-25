@@ -23,8 +23,10 @@ export async function hashImportFile(path: string): Promise<string> {
   return hash.digest("hex");
 }
 
-async function importableFiles(paths: readonly string[]): Promise<string[]> {
-  const files: string[] = [];
+async function importableFiles(
+  paths: ReadonlyArray<string>,
+): Promise<Array<string>> {
+  const files: Array<string> = [];
   const visited = new Set<string>();
   async function visit(path: string): Promise<void> {
     const absolute = resolve(path);
@@ -36,22 +38,27 @@ async function importableFiles(paths: readonly string[]): Promise<string[]> {
       files.push(absolute);
       return;
     }
-    if (!details.isDirectory()) return;
-    for (const entry of await readdir(absolute, { withFileTypes: true }))
-      if (entry.isFile() || entry.isDirectory())
+    if (!details.isDirectory()) {
+      return;
+    }
+    for (const entry of await readdir(absolute, { withFileTypes: true })) {
+      if (entry.isFile() || entry.isDirectory()) {
         await visit(join(absolute, entry.name));
+      }
+    }
   }
   for (const path of paths) await visit(path);
   return files;
 }
 
 export async function reviewImportDuplicates(
-  paths: readonly string[],
-): Promise<DuplicateImportCandidate[]> {
+  paths: ReadonlyArray<string>,
+): Promise<Array<DuplicateImportCandidate>> {
   const files = await importableFiles(paths);
   const hashed: Array<{ path: string; sha256: string }> = [];
-  for (const path of files)
+  for (const path of files) {
     hashed.push({ path, sha256: (await hashImportFile(path)).toLowerCase() });
+  }
   const db = await getDb();
   const assets = findAssetsBySha256(
     db.$raw,
@@ -80,7 +87,7 @@ interface ResolvedDuplicates {
 
 /** Only the review dialog sends `restore`, so callers that ask for `use-existing` import a file whose match is in Trash as new. */
 export function resolveDuplicateDecisions(
-  candidates: readonly DuplicateImportCandidate[],
+  candidates: ReadonlyArray<DuplicateImportCandidate>,
   decisions: Readonly<Record<string, DuplicateImportDecision>>,
   policy: DuplicateImportChoice,
 ): ResolvedDuplicates {

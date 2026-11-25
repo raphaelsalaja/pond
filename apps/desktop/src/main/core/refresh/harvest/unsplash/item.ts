@@ -1,9 +1,11 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { inPageUnsplashNormalize, type UnsplashAssetPage } from "./normalize";
+import { inPageUnsplashNormalize } from "./normalize";
+import type { UnsplashAssetPage } from "./normalize";
 
 export function buildExpression(assetId: string): string {
   return buildItemExpression(
@@ -24,9 +26,10 @@ async function inPageUnsplashHarvest(
       headers: { accept: "application/json" },
     });
     if (res.ok) {
-      const body: JsonValue = await res.json();
-      const asset = norm.parseAsset(body);
-      if (asset) return norm.assetPage(asset);
+      const asset = await norm.readAsset(res);
+      if (asset) {
+        return norm.assetPage(asset);
+      }
     }
   } catch {
     /* fall through to the page's share tags */

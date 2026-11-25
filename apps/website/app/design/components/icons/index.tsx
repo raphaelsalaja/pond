@@ -1,8 +1,9 @@
 "use client";
 
+// oxlint-disable-next-line import/no-namespace -- The icon board lists every generated export, so it needs the whole module.
 import * as icons from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
-import { Input, Toggle, ToggleGroup } from "@pond/ui";
+import { cssVars, Input, Toggle, ToggleGroup } from "@pond/ui";
 import { useDeferredValue, useState } from "react";
 import { Code } from "../code";
 import { Doc } from "../doc";
@@ -83,10 +84,7 @@ function Board() {
             <span
               className={styles.glyph}
               title={`Icon${name}`}
-              style={
-                /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
-                { "--glyph-size": `${size}px` } as React.CSSProperties
-              }
+              style={cssVars({ "--glyph-size": `${size}px` })}
             >
               <Icon size={Number(size)} />
             </span>

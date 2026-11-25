@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
-import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { page, userEvent } from "vitest/browser";
+import { TokenInput } from ".";
+import type { TokenInputValue } from ".";
 import { expectAccessible } from "../../test/axe";
-import { TokenInput, type TokenInputValue } from ".";
 
 const SAVES = [
   { value: "save-1", label: "Type specimens" },

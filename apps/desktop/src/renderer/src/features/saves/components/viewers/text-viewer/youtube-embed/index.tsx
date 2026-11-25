@@ -1,13 +1,16 @@
 import {
   AutoEmbedOption,
-  type EmbedConfig,
-  type EmbedMatchResult,
   LexicalAutoEmbedPlugin,
+} from "@lexical/react/LexicalAutoEmbedPlugin";
+import type {
+  EmbedConfig,
+  EmbedMatchResult,
 } from "@lexical/react/LexicalAutoEmbedPlugin";
 import { $insertNodeToNearestRoot } from "@lexical/utils";
 import { Menu } from "@pond/ui";
 import type { LexicalEditor } from "lexical";
-import { type MouseEvent as ReactMouseEvent, useMemo } from "react";
+import { useMemo } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { createPortal } from "react-dom";
 import {
   $createYouTubeNode,
@@ -59,7 +62,7 @@ export function YouTubeEmbed() {
                   <Menu.Row
                     key={option.key}
                     id={`note-embed-${option.key}`}
-                    ref={option.setRefElement}
+                    ref={(element) => option.setRefElement(element)}
                     role="option"
                     aria-selected={selectedIndex === index}
                     tabIndex={-1}

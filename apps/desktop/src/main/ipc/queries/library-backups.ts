@@ -25,7 +25,8 @@ import {
   resumeLibraryWork,
   suspendLibraryWork,
 } from "./library-location-runtime";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 export const libraryBackupQueries = {
   "library.backupTo": query(
@@ -81,14 +82,16 @@ export const libraryBackupQueries = {
               completedAt: new Date().toISOString(),
             },
           },
-        }).catch((error) => log.warn("Could not record backup history", error));
+        }).catch((cause: unknown) =>
+          log.warn("Could not record backup history", cause),
+        );
         return { ok: true as const, path: destResolved, copied };
-      } catch (err) {
+      } catch (error) {
         return {
           ok: false as const,
           error:
-            err instanceof Error
-              ? err.message
+            error instanceof Error
+              ? error.message
               : "Couldn't back up the library.",
         };
       } finally {

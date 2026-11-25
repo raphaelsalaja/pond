@@ -46,7 +46,7 @@ export interface CombinePlacement {
 export interface CombineLayout {
   width: number;
   height: number;
-  items: CombinePlacement[];
+  items: Array<CombinePlacement>;
 }
 
 export type CombineLayoutOptions = Pick<
@@ -59,7 +59,7 @@ export type CombineLayoutOptions = Pick<
  * @remarks The cross axis wins when both are set. Margin and spacing never scale.
  */
 export function layoutCombinedImages(
-  sources: readonly CombineSource[],
+  sources: ReadonlyArray<CombineSource>,
   options: CombineLayoutOptions,
 ): CombineLayout {
   const horizontal = options.direction === "horizontal";

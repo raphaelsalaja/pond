@@ -16,8 +16,6 @@ import type {
 } from "../list-types";
 import {
   APPVIEW,
-  type AtGet,
-  type BlueskyPost,
   LikesSchema,
   PostsSchema,
   ProfileSchema,
@@ -27,6 +25,7 @@ import {
   rkeyOf,
   tidToDate,
 } from "./atproto";
+import type { AtGet, BlueskyPost } from "./atproto";
 import { captureFromPost, postEntry } from "./normalize";
 
 const MAX_PAGES = 50;
@@ -53,11 +52,11 @@ function failure(status: number): Extract<ListHarvestResult, { ok: false }> {
 /** Posts that were deleted or hidden simply don't come back, so the map leaves them out. */
 async function hydrate(
   get: AtGet,
-  uris: readonly string[],
+  uris: ReadonlyArray<string>,
 ): Promise<Map<string, BlueskyPost>> {
   const posts = new Map<string, BlueskyPost>();
   const limit = pLimit(HYDRATE_CONCURRENCY);
-  const batches: string[][] = [];
+  const batches: Array<Array<string>> = [];
   for (let i = 0; i < uris.length; i += HYDRATE_BATCH) {
     batches.push(uris.slice(i, i + HYDRATE_BATCH));
   }
@@ -95,7 +94,7 @@ export async function readBlueskyLikes(
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   let cursor = args.resumeCursor;
   let knownStreak = 0;
@@ -216,7 +215,7 @@ export async function resolveProfile(
   return handle.startsWith("did:") ? null : { did, handle };
 }
 
-const LIST_ORDER: readonly ListKind[] = ["liked", "saved"];
+const LIST_ORDER: ReadonlyArray<ListKind> = ["liked", "saved"];
 
 export type BlueskyListReaders = Record<
   "liked" | "saved",
@@ -244,7 +243,7 @@ export async function readBlueskyLists(
       wanted.includes(kind) &&
       (!resume || LIST_ORDER.indexOf(kind) >= LIST_ORDER.indexOf(resume.kind)),
   );
-  let entries: ListEntry[] = [];
+  let entries: Array<ListEntry> = [];
   for (const kind of kinds) {
     const { resumeCursor: _resumed, ...rest } = args;
     const listArgs: ListHarvestArgs = rest;
@@ -270,8 +269,9 @@ export async function readBlueskyLists(
         reachedEnd: false,
         seen: entries.length,
       };
-      if (walk.resumeCursor)
+      if (walk.resumeCursor) {
         result.resumeCursor = `${kind}:${walk.resumeCursor}`;
+      }
       return result;
     }
   }

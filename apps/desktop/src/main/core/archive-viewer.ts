@@ -1,10 +1,8 @@
-import {
-  type BrowserWindow,
-  clipboard,
-  Menu,
-  type MenuItemConstructorOptions,
-  shell,
-  type WebContents,
+import { clipboard, Menu, shell } from "electron";
+import type {
+  BrowserWindow,
+  MenuItemConstructorOptions,
+  WebContents,
 } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../shared/constants";
@@ -22,7 +20,7 @@ function httpUrl(raw: string): string | null {
 
 function attachGuestContextMenu(guest: WebContents): void {
   guest.on("context-menu", (_event, params) => {
-    const template: MenuItemConstructorOptions[] = [];
+    const template: Array<MenuItemConstructorOptions> = [];
     const link = httpUrl(params.linkURL);
 
     if (params.selectionText.trim().length > 0) {
@@ -31,7 +29,13 @@ function attachGuestContextMenu(guest: WebContents): void {
     if (link) {
       template.push({
         label: "Copy Link",
-        click: () => clipboard.writeText(link),
+        click: () => {
+          void clipboard
+            .writeText(link)
+            .catch((cause: unknown) =>
+              log.warn("[pond archive] copy link failed", cause),
+            );
+        },
       });
     }
     if (params.mediaType === "image") {

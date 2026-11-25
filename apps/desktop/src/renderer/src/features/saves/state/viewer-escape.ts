@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 /** Esc unwinds in-progress viewer actions, newest first, before it closes the save. */
 const layers: Array<() => void> = [];
@@ -17,7 +17,9 @@ export function useViewerEscapeLayer(
   cancel: () => void,
 ): void {
   const latest = useRef(cancel);
-  latest.current = cancel;
+  useLayoutEffect(() => {
+    latest.current = cancel;
+  });
   useEffect(() => {
     if (!enabled) return;
     const layer = () => latest.current();

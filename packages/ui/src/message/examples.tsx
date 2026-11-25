@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import type { ComponentDocs } from "../shared/docs";
 import { Message } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 const QUESTION = "What did I save for the cabin?";
 const ANSWER =

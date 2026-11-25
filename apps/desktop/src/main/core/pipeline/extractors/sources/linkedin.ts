@@ -36,7 +36,7 @@ export class LinkedInPostExtractor implements Extractor {
     return name === "li_at" && (value === undefined || value.length > 0);
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const [first, vanity] = segments;
     if (segments.length !== 2 || first !== "in" || !vanity) return null;
     return /^[A-Za-z0-9_-]{2,100}$/.test(vanity) ? vanity : null;

@@ -3,15 +3,14 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 /** The installer registers Pond as the per-user `pond://` handler, which records the exact executable. */
-const PROTOCOL_COMMAND_KEY =
-  "HKCU\\Software\\Classes\\pond\\shell\\open\\command";
+const PROTOCOL_COMMAND_KEY = String.raw`HKCU\Software\Classes\pond\shell\open\command`;
 
 /** Reads a registry key's default value, or null when it is absent. */
 export type RegistryReader = (key: string) => string | null;
 
 const queryRegistryDefault: RegistryReader = (key) => {
   const reg = join(
-    process.env.SystemRoot ?? "C:\\Windows",
+    process.env.SystemRoot ?? String.raw`C:\Windows`,
     "System32",
     "reg.exe",
   );

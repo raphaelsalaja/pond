@@ -3,7 +3,7 @@ import { prefersReducedMotion } from "./reduced-motion";
 const POP_ID = "pond-pop";
 const EASE_OUT = "cubic-bezier(0.23, 1, 0.32, 1)";
 
-const POP_FRAMES: Keyframe[] = [
+const POP_FRAMES: Array<Keyframe> = [
   { scale: 1, easing: EASE_OUT },
   { scale: 0.92, offset: 0.3, easing: EASE_OUT },
   { scale: 1 },

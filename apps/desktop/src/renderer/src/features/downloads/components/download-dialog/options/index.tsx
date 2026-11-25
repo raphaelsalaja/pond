@@ -4,11 +4,11 @@ import type { DownloadMode } from "@shared/downloader-contracts";
 import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
-export const MODES: readonly {
+export const MODES: ReadonlyArray<{
   value: DownloadMode;
   label: string;
   icon: ReactNode;
-}[] = [
+}> = [
   { value: "video", label: "Video", icon: <IconVideo size={16} /> },
   { value: "audio", label: "Audio", icon: <IconMusicNote size={16} /> },
   { value: "transcript", label: "Transcript", icon: <IconText size={16} /> },

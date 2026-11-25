@@ -82,6 +82,7 @@
     "./window": "./src/window/index.tsx",
     "./wordmark": "./src/wordmark/index.tsx",
     "./docs": "./src/docs.ts",
+    "./dom": "./src/dom.ts",
     "./reset.css": "./src/reset.css",
     "./scroll-fade": "./src/scroll-fade.ts"
   },

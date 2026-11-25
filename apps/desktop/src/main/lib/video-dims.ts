@@ -67,7 +67,9 @@ function runFfmpegProbe(
       settled = true;
       try {
         killProcessTree(child, "SIGKILL");
-      } catch {}
+      } catch {
+        /** The process may already have exited. */
+      }
       resolve({ code: 124, stderr });
     }, HARD_TIMEOUT_MS);
 

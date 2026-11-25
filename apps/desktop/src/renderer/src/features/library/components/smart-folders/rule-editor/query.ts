@@ -1,11 +1,11 @@
 import { FIELD_DESCRIPTORS } from "@pond/schema/filters/fields";
-import {
-  type ComparatorId,
-  type FieldId,
-  isGroup,
-  type Predicate,
-  type PredicateValue,
-  type Query,
+import { isGroup } from "@pond/schema/filters/types";
+import type {
+  ComparatorId,
+  FieldId,
+  Predicate,
+  PredicateValue,
+  Query,
 } from "@pond/schema/filters/types";
 import { z } from "zod";
 import {
@@ -59,10 +59,15 @@ export function ruleQueryReady(query: Query): boolean {
   return query.rules.every((rule) => {
     if (isGroup(rule)) return rule.rules.length > 0 && ruleQueryReady(rule);
     const field = FIELD_DESCRIPTORS[rule.field];
-    if (!field.comparators.includes(rule.operator)) return false;
-    if (rule.operator === "empty") return true;
-    if (rule.operator === "exists")
+    if (!field.comparators.includes(rule.operator)) {
+      return false;
+    }
+    if (rule.operator === "empty") {
+      return true;
+    }
+    if (rule.operator === "exists") {
       return z.boolean().safeParse(rule.value).success;
+    }
     if (rule.operator === "near") {
       const color = colorValueSchema.safeParse(rule.value);
       return color.success
@@ -80,24 +85,28 @@ export function ruleQueryReady(query: Query): boolean {
       if (
         (rule.field === "fileCount" || rule.field === "rating") &&
         values.data.some((value) => !Number.isInteger(Number(value)))
-      )
+      ) {
         return false;
+      }
       if (
         rule.field === "rating" &&
         values.data.some((value) => Number(value) > 5)
-      )
+      ) {
         return false;
+      }
       if (
         values.data.some(
           (value) => !Number.isFinite(Number(value)) || Number(value) < 0,
         )
-      )
+      ) {
         return false;
+      }
       if (
         rule.operator === "between" &&
         Number(values.data[0]) > Number(values.data[1])
-      )
+      ) {
         return false;
+      }
     }
     if (field.type === "date") {
       if (
@@ -106,14 +115,16 @@ export function ruleQueryReady(query: Query): boolean {
             !RELATIVE_DATE_PATTERN.test(String(value)) &&
             !Number.isFinite(new Date(value).getTime()),
         )
-      )
+      ) {
         return false;
+      }
       if (
         rule.operator === "between" &&
         new Date(values.data[0] ?? "").getTime() >
           new Date(values.data[1] ?? "").getTime()
-      )
+      ) {
         return false;
+      }
     }
     if (
       rule.field === "aspect" &&
@@ -124,8 +135,9 @@ export function ruleQueryReady(query: Query): boolean {
             .split(":")
             .some((part) => Number(part) <= 0),
       )
-    )
+    ) {
       return false;
+    }
     return true;
   });
 }

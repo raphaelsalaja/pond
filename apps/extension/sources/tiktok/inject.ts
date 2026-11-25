@@ -1,15 +1,7 @@
-import {
-  capture,
-  installInterceptor,
-  type RequestLens,
-} from "@/utils/intercept";
-import {
-  asNumber,
-  asText,
-  isRecord,
-  type JsonValue,
-  parseJsonValue,
-} from "@/utils/json";
+import { capture, installInterceptor } from "@/utils/intercept";
+import type { RequestLens } from "@/utils/intercept";
+import { asNumber, asText, isRecord, parseJsonValue } from "@/utils/json";
+import type { JsonValue } from "@/utils/json";
 
 /** Match the favorite/collect verb at the end of any /api/ path so prefix reshuffles keep matching. */
 const FAVORITE_RE = /\/api\/(?:[a-z_]+\/)*(?:favorite|collect)\/?(?:\?|$)/i;

@@ -1,3 +1,5 @@
+import { isHTMLTag } from "@pond/ui/dom";
+
 /** Pond accepts at most 500 items in one capture. */
 export const MAX_IMAGES = 500;
 /** Computed styles are costly, so background images come from the first few thousand elements. */
@@ -9,7 +11,7 @@ const MEDIUM_EDGE = 400;
 
 export type SizeBucket = "large" | "medium" | "small";
 
-export const SIZE_BUCKETS: readonly { id: SizeBucket; label: string }[] = [
+export const SIZE_BUCKETS: ReadonlyArray<{ id: SizeBucket; label: string }> = [
   { id: "large", label: "Large" },
   { id: "medium", label: "Medium" },
   { id: "small", label: "Small" },
@@ -71,7 +73,9 @@ export function imageName(url: string): string {
   let decoded = last;
   try {
     decoded = decodeURIComponent(last);
-  } catch {}
+  } catch {
+    /** A malformed escape keeps the raw path segment as the name. */
+  }
   return decoded.replace(/\.[a-z\d]{2,5}$/i, "") || parsed.hostname;
 }
 
@@ -98,7 +102,7 @@ function isWeb(url: string): boolean {
   return /^https?:\/\//i.test(url);
 }
 
-function backgroundUrls(value: string, base: string): string[] {
+function backgroundUrls(value: string, base: string): Array<string> {
   return [...value.matchAll(/url\(\s*(['"]?)(.*?)\1\s*\)/g)].flatMap(
     ([, , raw]) => {
       if (!raw) return [];
@@ -108,7 +112,7 @@ function backgroundUrls(value: string, base: string): string[] {
   );
 }
 
-export function collectCandidates(root: Document): Candidate[] {
+export function collectCandidates(root: Document): Array<Candidate> {
   const found = new Map<string, Candidate>();
   const base = root.baseURI;
   const add = (
@@ -133,17 +137,24 @@ export function collectCandidates(root: Document): Candidate[] {
     const largest = image.srcset ? largestSrcset(image.srcset, base) : null;
     /** `naturalWidth` divides by the chosen density, so responsive images get probed instead. */
     const responsive =
-      !!image.srcset || image.parentElement instanceof HTMLPictureElement;
-    if (largest && largest !== shown) add(largest, image.alt);
-    else if (responsive) add(shown, image.alt);
-    else add(shown, image.alt, image.naturalWidth, image.naturalHeight);
+      !!image.srcset || isHTMLTag(image.parentElement, "picture");
+    if (largest && largest !== shown) {
+      add(largest, image.alt);
+    } else if (responsive) {
+      add(shown, image.alt);
+    } else {
+      add(shown, image.alt, image.naturalWidth, image.naturalHeight);
+    }
   }
   for (const video of Array.from(root.querySelectorAll("video[poster]"))) {
-    if (video instanceof HTMLVideoElement) add(video.poster);
+    if (isHTMLTag(video, "video")) {
+      add(video.poster);
+    }
   }
   for (const link of Array.from(root.querySelectorAll("a[href]"))) {
-    if (link instanceof HTMLAnchorElement && IMAGE_LINK.test(link.pathname))
+    if (isHTMLTag(link, "a") && IMAGE_LINK.test(link.pathname)) {
       add(link.href, link.textContent?.trim() ?? "");
+    }
   }
   const share = root.querySelector<HTMLMetaElement>(
     'meta[property="og:image"]',
@@ -188,17 +199,24 @@ export function matchesFilters(
   filters: ImageFilters,
 ): boolean {
   const known = image.width > 0 && image.height > 0;
-  if (known && (image.width < MIN_EDGE || image.height < MIN_EDGE))
+  if (known && (image.width < MIN_EDGE || image.height < MIN_EDGE)) {
     return false;
-  if (known && !filters.sizes.has(sizeBucket(image.width, image.height)))
+  }
+  if (known && !filters.sizes.has(sizeBucket(image.width, image.height))) {
     return false;
+  }
   if (
     known &&
     (image.width < filters.minWidth || image.height < filters.minHeight)
-  )
+  ) {
     return false;
-  if (filters.hiddenFormats.has(image.format)) return false;
-  if (filters.hiddenDomains.has(image.domain)) return false;
+  }
+  if (filters.hiddenFormats.has(image.format)) {
+    return false;
+  }
+  if (filters.hiddenDomains.has(image.domain)) {
+    return false;
+  }
   const needle = filters.query.trim().toLowerCase();
   if (!needle) return true;
   return [image.name, image.alt, image.url].some((text) =>
@@ -213,10 +231,10 @@ export interface FacetCount {
 }
 
 export function facetCounts(
-  images: readonly PageImage[],
+  images: ReadonlyArray<PageImage>,
   selected: ReadonlySet<string>,
   facet: (image: PageImage) => string | null,
-): FacetCount[] {
+): Array<FacetCount> {
   const counts = new Map<string, FacetCount>();
   for (const image of images) {
     const id = facet(image);

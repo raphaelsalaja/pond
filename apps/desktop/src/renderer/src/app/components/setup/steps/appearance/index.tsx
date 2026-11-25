@@ -9,10 +9,11 @@ import { useId } from "react";
 import { ThemePresetSelect } from "@/features/settings";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { Demo } from "../../demo";
-import { type Appearance, previewThemes, type StepProps } from "../../model";
+import { previewThemes } from "../../model";
+import type { Appearance, StepProps } from "../../model";
 import styles from "./styles.module.css";
 
-const MODES: readonly { value: Appearance; label: string }[] = [
+const MODES: ReadonlyArray<{ value: Appearance; label: string }> = [
   { value: "system", label: "System" },
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },

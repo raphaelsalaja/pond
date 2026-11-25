@@ -9,7 +9,7 @@ export type Filter =
   | { kind: "folder"; id: string }
   | { kind: "tag"; name: string }
   | { kind: "view"; id: string }
-  | { kind: "media"; types: string[] };
+  | { kind: "media"; types: Array<string> };
 
 export const ALL_SAVES: Filter = { kind: "all" };
 
@@ -46,7 +46,11 @@ export function decodeFilter(value: string | undefined): Filter {
 }
 
 /** Resolves `null` while a saved view's definition hasn't loaded yet. */
-export function queryFor(filter: Filter, keywords: string, views?: readonly ApiView[]): ApiLibraryQueryInput | null {
+export function queryFor(
+  filter: Filter,
+  keywords: string,
+  views?: ReadonlyArray<ApiView>,
+): ApiLibraryQueryInput | null {
   const base: ApiLibraryQueryInput = {
     keywords: keywords.trim() || undefined,
     sortKey: "savedAt",

@@ -1,10 +1,12 @@
+import type { NativeRequest, NativeResponse } from "@pond/schema/native";
 import {
-  type ExtensionCookie,
   ROTATING_SESSIONS,
   sessionImportResponseSchema,
   sessionRefreshResponseSchema,
 } from "@pond/schema/session";
-import { SOURCES, type Source } from "@pond/schema/source-ids";
+import type { ExtensionCookie } from "@pond/schema/session";
+import { SOURCES } from "@pond/schema/source-ids";
+import type { Source } from "@pond/schema/source-ids";
 import { z } from "zod";
 import { isUnreachable, nativeCall } from "@/utils/native";
 import { createSingleFlightTrigger } from "@/utils/single-flight";
@@ -21,7 +23,7 @@ const IDLE_PROBE_MS = 5 * 60_000;
 const SESSION_ALARM = "pond-session";
 const SCHEDULER_STORAGE_KEY = "sessionPushScheduler";
 /** A rotation reissues several cookies at once; forward them together. */
-const ROTATION_SETTLE_MS = 5_000;
+const ROTATION_SETTLE_MS = 5000;
 const FOLLOW_STORAGE_KEY = "sessionFollow";
 
 const followStateSchema = z.object({
@@ -56,6 +58,27 @@ const DEFAULT_SCHEDULER_STATE: SchedulerState = {
   lastPushSource: null,
 };
 
+type CookieListener = Parameters<
+  typeof browser.cookies.onChanged.addListener
+>[0];
+
+/** What session following needs from the browser and the native host. */
+export type SessionApi = {
+  getCookies: (details: {
+    domain: string;
+  }) => Promise<Array<chrome.cookies.Cookie>>;
+  onCookieChanged: (listener: CookieListener) => void;
+  nativeCall: (request: NativeRequest) => Promise<NativeResponse>;
+};
+
+const browserSessionApi: SessionApi = {
+  getCookies: (details) => browser.cookies.getAll(details),
+  onCookieChanged: (listener) => {
+    browser.cookies.onChanged?.addListener(listener);
+  },
+  nativeCall,
+};
+
 function cookieFromBrowser(c: chrome.cookies.Cookie): ExtensionCookie {
   return {
     name: c.name,
@@ -78,7 +101,9 @@ function normaliseSameSite(
 }
 
 /** Live-tab cookies for explicit saves; archive_page writes them into a throwaway partition then drops them. */
-export async function cookiesForUrl(url: string): Promise<ExtensionCookie[]> {
+export async function cookiesForUrl(
+  url: string,
+): Promise<Array<ExtensionCookie>> {
   try {
     const page = new URL(url);
     if (page.protocol !== "http:" && page.protocol !== "https:") return [];
@@ -87,7 +112,7 @@ export async function cookiesForUrl(url: string): Promise<ExtensionCookie[]> {
       browser.cookies.getAll({ domain: page.hostname }),
     ]);
     const seen = new Set<string>();
-    const out: ExtensionCookie[] = [];
+    const out: Array<ExtensionCookie> = [];
     for (const c of [...byUrl, ...byDomain]) {
       const key = `${c.name}\0${c.domain}\0${c.path}`;
       if (seen.has(key)) continue;
@@ -96,22 +121,26 @@ export async function cookiesForUrl(url: string): Promise<ExtensionCookie[]> {
       if (out.length >= 500) break;
     }
     return out;
-  } catch (err) {
-    console.warn("[pond] cookiesForUrl failed", err);
+  } catch (error) {
+    // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
+    console.warn("[pond] cookiesForUrl failed", error);
     return [];
   }
 }
 
-async function pushSession(source: Source): Promise<PushSessionResult> {
+async function pushSession(
+  source: Source,
+  api: SessionApi,
+): Promise<PushSessionResult> {
   const domains = cookieDomainsForSource(source);
   if (domains.length === 0) {
     return { ok: false, reason: "no_cookies", detail: "source is public" };
   }
 
-  const raw: chrome.cookies.Cookie[] = [];
+  const raw: Array<chrome.cookies.Cookie> = [];
   try {
     const batches = await Promise.all(
-      domains.map((domain) => browser.cookies.getAll({ domain })),
+      domains.map((domain) => api.getCookies({ domain })),
     );
     const seen = new Set<string>();
     for (const cookie of batches.flat()) {
@@ -120,15 +149,15 @@ async function pushSession(source: Source): Promise<PushSessionResult> {
       seen.add(key);
       raw.push(cookie);
     }
-  } catch (err) {
+  } catch (error) {
     return {
       ok: false,
       reason: "no_cookies",
-      detail: err instanceof Error ? err.message : String(err),
+      detail: error instanceof Error ? error.message : String(error),
     };
   }
 
-  const result = await nativeCall({
+  const result = await api.nativeCall({
     type: "session.import",
     source,
     cookies: raw.map(cookieFromBrowser),
@@ -171,17 +200,17 @@ function queueSessionFollow(run: () => Promise<void>): Promise<void> {
   return next;
 }
 
-function forwardRotation(source: Source): Promise<void> {
-  return queueSessionFollow(() => refreshSession(source));
+function forwardRotation(source: Source, api: SessionApi): Promise<void> {
+  return queueSessionFollow(() => refreshSession(source, api));
 }
 
-async function refreshSession(source: Source): Promise<void> {
+async function refreshSession(source: Source, api: SessionApi): Promise<void> {
   const session = ROTATING_SESSIONS.get(source);
   const state = await readFollowState();
   if (!session || state.untracked.includes(source)) return;
 
-  const cookies = await browser.cookies.getAll({ domain: session.domain });
-  const result = await nativeCall({
+  const cookies = await api.getCookies({ domain: session.domain });
+  const result = await api.nativeCall({
     type: "session.refresh",
     source,
     cookies: cookies.slice(0, 500).map(cookieFromBrowser),
@@ -200,19 +229,22 @@ async function refreshSession(source: Source): Promise<void> {
 }
 
 /** Forwards each session your browser rotates, so Pond's copy of it stays signed in. */
-export function startSessionFollow(): void {
+export function startSessionFollow(api: SessionApi = browserSessionApi): void {
   const settling = new Map<Source, ReturnType<typeof setTimeout>>();
   void (async () => {
     for (const source of ROTATING_SESSIONS.keys()) {
       try {
-        await forwardRotation(source);
-      } catch (err) {
-        console.warn("[pond] session refresh failed", source, err);
+        await forwardRotation(source, api);
+      } catch (error) {
+        // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
+        console.warn("[pond] session refresh failed", source, error);
       }
     }
   })();
-  browser.cookies.onChanged?.addListener(({ cookie, removed }) => {
-    if (removed) return;
+  api.onCookieChanged(({ cookie, removed }) => {
+    if (removed) {
+      return;
+    }
     const source = rotatedSessionSource(cookie);
     if (!source) return;
     clearTimeout(settling.get(source));
@@ -220,9 +252,10 @@ export function startSessionFollow(): void {
       source,
       setTimeout(() => {
         settling.delete(source);
-        void forwardRotation(source).catch((err) =>
-          console.warn("[pond] session refresh failed", source, err),
-        );
+        void forwardRotation(source, api).catch((cause: unknown) => {
+          // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
+          console.warn("[pond] session refresh failed", source, cause);
+        });
       }, ROTATION_SETTLE_MS),
     );
   });
@@ -230,14 +263,18 @@ export function startSessionFollow(): void {
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== SESSION_ALARM) return;
     void readFollowState().then(({ missed }) => {
-      for (const source of missed) void forwardRotation(source);
+      for (const source of missed) {
+        void forwardRotation(source, api);
+      }
     });
   });
 }
 
-async function fetchPendingSource(): Promise<PendingProbe> {
-  const result = await nativeCall({ type: "session.pending" });
-  if (!result.ok) return { kind: "offline" };
+async function fetchPendingSource(api: SessionApi): Promise<PendingProbe> {
+  const result = await api.nativeCall({ type: "session.pending" });
+  if (!result.ok) {
+    return { kind: "offline" };
+  }
   const pending = pendingSessionSchema.safeParse(result.data);
   return pending.success
     ? { kind: "pending", source: pending.data.source }
@@ -256,7 +293,7 @@ async function writeSchedulerState(state: SchedulerState): Promise<void> {
 }
 
 function scheduleSessionAlarm(pending: boolean): void {
-  browser.alarms.create(SESSION_ALARM, {
+  void browser.alarms.create(SESSION_ALARM, {
     periodInMinutes: pending ? 0.5 : 5,
   });
 }
@@ -270,13 +307,16 @@ async function markSchedulerIdle(): Promise<void> {
 }
 
 /** Hands signed-in cookies to Pond whenever it is waiting to connect a source. */
-export function startSessionConnect(onConnected: () => void): void {
+export function startSessionConnect(
+  onConnected: () => void,
+  api: SessionApi = browserSessionApi,
+): void {
   const maybeAutoPush = createSingleFlightTrigger(async (force) => {
     const now = Date.now();
     const state = await readSchedulerState();
     if (!force && now < state.nextProbeAt) return;
 
-    const probeResult = await fetchPendingSource();
+    const probeResult = await fetchPendingSource(api);
     if (probeResult.kind === "idle") {
       await markSchedulerIdle();
       return;
@@ -320,7 +360,7 @@ export function startSessionConnect(onConnected: () => void): void {
     nextState.lastPushSource = pending;
     nextState.lastPushAt = now;
     await writeSchedulerState(nextState);
-    const result = await pushSession(pending);
+    const result = await pushSession(pending, api);
     if (result.ok && result.data.connected) {
       await markSchedulerIdle();
       onConnected();
@@ -328,6 +368,7 @@ export function startSessionConnect(onConnected: () => void): void {
     }
     if (result.ok) return;
     if (result.reason === "network") {
+      // oxlint-disable-next-line no-console -- Service worker console is the only diagnostics sink in the extension.
       console.warn("[pond] auto-push failed", result.detail);
     }
   });
@@ -356,5 +397,7 @@ export function startSessionConnect(onConnected: () => void): void {
   void readSchedulerState()
     .then((state) => scheduleSessionAlarm(state.pending))
     .catch(() => scheduleSessionAlarm(false))
-    .finally(() => maybeAutoPush(true));
+    .finally(() => {
+      void maybeAutoPush(true);
+    });
 }

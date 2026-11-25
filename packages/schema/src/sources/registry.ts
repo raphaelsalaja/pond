@@ -262,11 +262,11 @@ export const SOURCE_DESCRIPTORS = [
     /** Read the complete date window. The stream has no order or cursor guarantee. */
     sync: { strategy: "full" },
   },
-] as const satisfies readonly SourceDescriptor[];
+] as const satisfies ReadonlyArray<SourceDescriptor>;
 
 export type ExternalSource = (typeof SOURCE_DESCRIPTORS)[number]["id"];
 
-export const EXTERNAL_SOURCE_IDS: readonly ExternalSource[] =
+export const EXTERNAL_SOURCE_IDS: ReadonlyArray<ExternalSource> =
   SOURCE_DESCRIPTORS.map((d) => d.id);
 
 const BY_ID = new Map<string, SourceDescriptor>(

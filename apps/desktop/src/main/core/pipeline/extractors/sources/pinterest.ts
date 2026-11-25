@@ -83,7 +83,7 @@ export class PinterestPinExtractor implements Extractor {
     return value === undefined || value === "1";
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
     if (!first) return null;
     if (PINTEREST_RESERVED_ROOTS.has(first.toLowerCase())) return null;

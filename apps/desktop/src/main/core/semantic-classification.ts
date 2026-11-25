@@ -14,11 +14,14 @@ import { parseJsonVector } from "./vec-index";
 
 interface ClassificationCandidate {
   id: string;
-  vector: number[];
+  vector: Array<number>;
 }
 
 export interface SemanticClassificationStore {
-  candidates(ids: string[], model: string): Promise<ClassificationCandidate[]>;
+  candidates(
+    ids: Array<string>,
+    model: string,
+  ): Promise<Array<ClassificationCandidate>>;
 }
 
 export interface SemanticClassificationPreview {
@@ -26,16 +29,16 @@ export interface SemanticClassificationPreview {
     id: string;
     scores: Array<{ label: string; score: number }>;
   }>;
-  excludedIds: string[];
+  excludedIds: Array<string>;
 }
 
-type EmbedLabels = (texts: string[]) => Promise<number[][]>;
+type EmbedLabels = (texts: Array<string>) => Promise<Array<Array<number>>>;
 
-function cleanLabels(labels: string[]): string[] {
+function cleanLabels(labels: Array<string>): Array<string> {
   const seen = new Set<string>();
-  const cleaned: string[] = [];
+  const cleaned: Array<string> = [];
   for (const label of labels) {
-    const value = label.replace(/\s+/g, " ").trim();
+    const value = label.replaceAll(/\s+/g, " ").trim();
     const key = value.toLowerCase();
     if (!value || seen.has(key)) continue;
     seen.add(key);
@@ -46,7 +49,7 @@ function cleanLabels(labels: string[]): string[] {
 
 export async function classifyLabelsWithStore(
   store: SemanticClassificationStore,
-  input: { saveIds: string[]; labels: string[] },
+  input: { saveIds: Array<string>; labels: Array<string> },
   embedLabels: EmbedLabels,
   currentModel = mediaEmbeddingVersion(),
 ): Promise<SemanticClassificationPreview> {
@@ -66,7 +69,7 @@ export async function classifyLabelsWithStore(
     );
   }
 
-  const candidates = new Map<string, number[]>();
+  const candidates = new Map<string, Array<number>>();
   for (const row of rows) {
     if (!saveIds.includes(row.id) || candidates.has(row.id)) continue;
     try {
@@ -127,7 +130,7 @@ function classificationStore(db: Db): SemanticClassificationStore {
 
 export async function classifyLabels(
   db: Db,
-  input: { saveIds: string[]; labels: string[] },
+  input: { saveIds: Array<string>; labels: Array<string> },
 ): Promise<SemanticClassificationPreview> {
   return classifyLabelsWithStore(
     classificationStore(db),

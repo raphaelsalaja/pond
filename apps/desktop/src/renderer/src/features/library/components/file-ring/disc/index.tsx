@@ -3,10 +3,10 @@ import {
   HUB_RADIUS,
   RING_SIZE,
   RING_SLOTS,
-  type RingSlot,
   sectorPath,
   slotAnchor,
 } from "../geometry";
+import type { RingSlot } from "../geometry";
 import type { RingLayout } from "../slots";
 import styles from "./styles.module.css";
 
@@ -71,7 +71,7 @@ function Sectors<Folder>({
   );
 }
 
-interface SlotsProps extends React.ComponentPropsWithoutRef<"ul"> {}
+type SlotsProps = React.ComponentPropsWithoutRef<"ul">;
 
 function Slots({ className, ...props }: SlotsProps) {
   return <ul className={cn(styles.slots, className)} {...props} />;
@@ -96,19 +96,19 @@ function Slot({ slot, kind, disabled, className, style, ...props }: SlotProps) {
   );
 }
 
-interface LabelProps extends React.ComponentPropsWithoutRef<"span"> {}
+type LabelProps = React.ComponentPropsWithoutRef<"span">;
 
 function Label({ className, ...props }: LabelProps) {
   return <span className={cn(styles.label, className)} {...props} />;
 }
 
-interface ThumbsProps extends React.ComponentPropsWithoutRef<"span"> {}
+type ThumbsProps = React.ComponentPropsWithoutRef<"span">;
 
 function Thumbs({ className, ...props }: ThumbsProps) {
   return <span className={cn(styles.thumbs, className)} {...props} />;
 }
 
-interface ThumbProps extends React.ComponentPropsWithoutRef<"img"> {}
+type ThumbProps = React.ComponentPropsWithoutRef<"img">;
 
 function Thumb({ className, alt = "", ...props }: ThumbProps) {
   return (
@@ -121,21 +121,23 @@ function Thumb({ className, alt = "", ...props }: ThumbProps) {
   );
 }
 
-interface FallbackProps extends React.ComponentPropsWithoutRef<"span"> {}
+type FallbackProps = React.ComponentPropsWithoutRef<"span">;
 
 function Fallback({ className, ...props }: FallbackProps) {
   return <span className={cn(styles.fallback, className)} {...props} />;
 }
 
-interface NameProps extends React.ComponentPropsWithoutRef<"span"> {}
+type NameProps = React.ComponentPropsWithoutRef<"span">;
 
 /** Read by screen readers only; the hub shows the name to everyone else. */
 function Name({ className, ...props }: NameProps) {
   return <span className={cn(styles.name, className)} {...props} />;
 }
 
-interface HubProps
-  extends Omit<React.ComponentPropsWithoutRef<"div">, "title"> {
+interface HubProps extends Omit<
+  React.ComponentPropsWithoutRef<"div">,
+  "title"
+> {
   title: string;
   detail?: string;
 }

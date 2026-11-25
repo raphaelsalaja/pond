@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { HoverHighlight } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 const ROWS = ["Design", "Reading", "Recipes"];
 

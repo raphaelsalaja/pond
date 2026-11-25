@@ -1,11 +1,15 @@
 import { DEFAULT_PREFS } from "@pond/schema";
 import { Tooltip } from "@pond/ui";
+import { isHTMLTag } from "@pond/ui/dom";
 import { ASSISTANT_MODELS } from "@shared/assistant";
 import { modelsForChooser } from "@shared/provider-models";
+import type { QueryResult } from "@shared/query-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, type ComponentProps, type ReactNode, useState } from "react";
+import { act, useState } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ModelCatalogTable, ModelsSection } from "./index";
 
 const connectedProviders = ASSISTANT_MODELS.map((entry) => ({
@@ -24,9 +28,9 @@ function CatalogHarness({
   onSave,
 }: {
   models: ComponentProps<typeof ModelCatalogTable>["models"];
-  onSave: (next: Record<string, string[]>) => void;
+  onSave: (next: Record<string, Array<string>>) => void;
 }) {
-  const [ids, setIds] = useState<Record<string, string[]>>({});
+  const [ids, setIds] = useState<Record<string, Array<string>>>({});
   return (
     <ModelCatalogTable
       models={models}
@@ -56,24 +60,17 @@ function renderWithQuery(host: HTMLDivElement, node: ReactNode) {
   };
 }
 
-beforeEach(() => {});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
-
 it("lists local models in the catalog without install suggestions", async () => {
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") {
-        return [
-          { provider: "ollama", hasKey: true, enabled: true, masked: "local" },
-        ];
-      }
-      if (name === "agent.listModels")
-        return { ok: true, models: [{ id: "gemma4:e2b", name: "gemma4:e2b" }] };
-      throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => DEFAULT_PREFS,
+      "agent.keys": () => [
+        { provider: "ollama", hasKey: true, enabled: true, masked: "local" },
+      ],
+      "agent.listModels": () => ({
+        ok: true,
+        models: [{ id: "gemma4:e2b", name: "gemma4:e2b" }],
+      }),
     },
   });
   const host = document.createElement("div");
@@ -98,7 +95,7 @@ it("persists visibility, preserves it after rejection, and restores all models",
       name: "Alpha",
       provider: "openai" as const,
       providerName: "OpenAI",
-      contextWindow: 200000,
+      contextWindow: 200_000,
       maxOutputTokens: 8192,
       pricing: { input: "0.000002", output: "0.000008" },
     },
@@ -110,7 +107,7 @@ it("persists visibility, preserves it after rejection, and restores all models",
     },
   ];
   let reject = false;
-  let saved: Record<string, string[]> | undefined;
+  let saved: Record<string, Array<string>> | undefined;
   const host = document.createElement("div");
   document.body.append(host);
   const root = createRoot(host);
@@ -296,8 +293,9 @@ it("collapses providers independently and reveals search matches", async () => {
     expect(host.textContent).toContain("Claude Sonnet 4");
     await act(async () => anthropic.click());
     const search = host.querySelector('[aria-label="Search models"]');
-    if (!(search instanceof HTMLInputElement))
+    if (!isHTMLTag(search, "input")) {
       throw new Error("Missing search field");
+    }
     await act(async () => {
       search.focus();
       Object.getOwnPropertyDescriptor(
@@ -347,15 +345,14 @@ it("tells you to connect a provider when the catalog is empty", async () => {
 
 it("shows a retryable unavailable state when the catalog fails to load", async () => {
   let listCalls = 0;
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
-      if (name === "agent.listModels") {
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => DEFAULT_PREFS,
+      "agent.keys": () => connectedProviders,
+      "agent.listModels": () => {
         listCalls++;
         throw new Error("offline");
-      }
-      throw new Error(`Unexpected query: ${name}`);
+      },
     },
   });
   const host = document.createElement("div");
@@ -383,24 +380,18 @@ it("shows a retryable unavailable state when the catalog fails to load", async (
 });
 
 it("keeps loaded models when some providers fail", async () => {
-  vi.stubGlobal("pond", {
-    query: async (name: string, params?: { provider?: string }) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
-      if (name === "agent.listModels") {
-        if (params?.provider === "openai") {
-          return {
-            ok: true,
-            models: [{ id: "gpt-4.1", name: "GPT-4.1" }],
-          };
-        }
-        return {
-          ok: false,
-          models: [],
-          error: `Could not load models from ${params?.provider}. Try again.`,
-        };
-      }
-      throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => DEFAULT_PREFS,
+      "agent.keys": () => connectedProviders,
+      "agent.listModels": ({ provider }) =>
+        provider === "openai"
+          ? { ok: true, models: [{ id: "gpt-4.1", name: "GPT-4.1" }] }
+          : {
+              ok: false,
+              models: [],
+              error: `Could not load models from ${provider}. Try again.`,
+            },
     },
   });
   const host = document.createElement("div");
@@ -425,21 +416,20 @@ it("keeps loaded models when some providers fail", async () => {
 
 it("shows ready providers while another provider is still loading", async () => {
   const slow = Promise.withResolvers<{ ok: true; models: [] }>();
-  vi.stubGlobal("pond", {
-    query: async (name: string, params?: { provider?: string }) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
-      if (name === "agent.listModels") {
-        if (params?.provider === "lmstudio") return slow.promise;
-        return {
-          ok: true,
-          models:
-            params?.provider === "openai"
-              ? [{ id: "gpt-4.1", name: "GPT-4.1" }]
-              : [],
-        };
-      }
-      throw new Error(`Unexpected query: ${name}`);
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => DEFAULT_PREFS,
+      "agent.keys": () => connectedProviders,
+      "agent.listModels": ({ provider }) =>
+        provider === "lmstudio"
+          ? slow.promise
+          : {
+              ok: true,
+              models:
+                provider === "openai"
+                  ? [{ id: "gpt-4.1", name: "GPT-4.1" }]
+                  : [],
+            },
     },
   });
   const host = document.createElement("div");
@@ -465,25 +455,26 @@ it("keeps cached models across page visits and refreshes stale data in place", a
   let offline = false;
   const refresh = Promise.withResolvers<{
     ok: true;
-    models: { id: string; name: string }[];
+    models: Array<{ id: string; name: string }>;
   }>();
-  vi.stubGlobal("pond", {
-    query: async (name: string, params?: { provider?: string }) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
-      if (name === "agent.listModels") {
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => DEFAULT_PREFS,
+      "agent.keys": () => connectedProviders,
+      "agent.listModels": ({ provider }) => {
         calls++;
-        if (offline) throw new Error("offline");
-        if (waiting && params?.provider === "openai") return refresh.promise;
+        if (offline) {
+          throw new Error("offline");
+        }
+        if (waiting && provider === "openai") {
+          return refresh.promise;
+        }
         return {
           ok: true,
           models:
-            params?.provider === "openai"
-              ? [{ id: "gpt-4.1", name: "GPT-4.1" }]
-              : [],
+            provider === "openai" ? [{ id: "gpt-4.1", name: "GPT-4.1" }] : [],
         };
-      }
-      throw new Error(`Unexpected query: ${name}`);
+      },
     },
   });
   const host = document.createElement("div");
@@ -546,15 +537,14 @@ it("keeps cached models across page visits and refreshes stale data in place", a
 
 it("shows an accessible loading placeholder only before the first catalog arrives", async () => {
   const ready = Promise.withResolvers<void>();
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connectedProviders;
-      if (name === "agent.listModels") {
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => DEFAULT_PREFS,
+      "agent.keys": () => connectedProviders,
+      "agent.listModels": async () => {
         await ready.promise;
         return { ok: true, models: [] };
-      }
-      throw new Error(`Unexpected query: ${name}`);
+      },
     },
   });
   const host = document.createElement("div");
@@ -583,22 +573,21 @@ it("shows an accessible loading placeholder only before the first catalog arrive
 });
 
 it("only requests connected enabled providers and hides disconnected cached models", async () => {
-  let connections = [
+  let connections: QueryResult<"agent.keys"> = [
     { provider: "openai", hasKey: true, enabled: true, masked: null },
     { provider: "anthropic", hasKey: false, enabled: true, masked: null },
     { provider: "lmstudio", hasKey: false, enabled: true, masked: null },
     { provider: "gemini", hasKey: true, enabled: false, masked: null },
   ];
-  const requested: string[] = [];
-  vi.stubGlobal("pond", {
-    query: async (name: string, params?: { provider?: string }) => {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "agent.keys") return connections;
-      if (name === "agent.listModels" && params?.provider) {
-        requested.push(params.provider);
+  const requested: Array<string> = [];
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => DEFAULT_PREFS,
+      "agent.keys": () => connections,
+      "agent.listModels": ({ provider }) => {
+        requested.push(provider);
         return { ok: true, models: [{ id: "live-model", name: "Live model" }] };
-      }
-      throw new Error(`Unexpected query: ${name}`);
+      },
     },
   });
   const host = document.createElement("div");

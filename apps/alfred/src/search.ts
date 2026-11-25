@@ -3,7 +3,7 @@ import { errorItems, saveItems } from "./items";
 import { request } from "./jxa";
 import { SavesResponseSchema } from "./responses";
 
-export function run(argv: string[]): string {
+export function run(argv: Array<string>): string {
   const query = (argv[0] ?? "").trim();
   const result = request(
     query

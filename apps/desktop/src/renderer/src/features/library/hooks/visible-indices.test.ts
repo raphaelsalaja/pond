@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { computeVisible, type PositionedItem } from "./visible-indices";
+import { computeVisible } from "./visible-indices";
+import type { PositionedItem } from "./visible-indices";
 
-function row(tops: number[], height = 100): PositionedItem[] {
+function row(tops: Array<number>, height = 100): Array<PositionedItem> {
   return tops.map((top) => ({ top, height }));
 }
 
@@ -28,7 +29,7 @@ describe("computeVisible", () => {
   });
 
   it("scan finds non-monotonic waterfall-like tops", () => {
-    const items: PositionedItem[] = [
+    const items: Array<PositionedItem> = [
       { top: 0, height: 200 },
       { top: 0, height: 100 },
       { top: 100, height: 100 },

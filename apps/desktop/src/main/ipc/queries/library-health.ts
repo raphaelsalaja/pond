@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { LibraryHealthSaveIdsSchema } from "../../../shared/library-health-contracts";
 import { libraryHealthService } from "../../core/library-health";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 export const libraryHealthQueries = {
   "libraryHealth.overview": query(z.object({}), () =>

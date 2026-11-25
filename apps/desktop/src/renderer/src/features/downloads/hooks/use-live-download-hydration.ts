@@ -1,3 +1,4 @@
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { z } from "zod";
 import { protectSaves, reloadSaves } from "@/features/saves/pool";
@@ -12,7 +13,7 @@ let stopHydration: (() => void) | null = null;
 function startHydration(): () => void {
   let stopped = false;
   let inflight = new Set<string>();
-  let live: readonly string[] = [];
+  let live: ReadonlyArray<string> = [];
   const release = protectSaves(() => [...live, ...inflight]);
   const hydrate = async (
     name: "downloads.ingestingOrFailed" | "pipeline.inflight",
@@ -28,13 +29,13 @@ function startHydration(): () => void {
       const settled = [...inflight].filter((id) => !ids.includes(id));
       inflight = new Set(ids);
       await reloadSaves([...ids, ...settled]);
-    } catch (err) {
-      console.warn(`[pond downloads] ${name} refresh failed`, err);
+    } catch (error) {
+      log.warn(`[pond downloads] ${name} refresh failed`, error);
     }
   };
   void hydrate("downloads.ingestingOrFailed");
   void hydrate("pipeline.inflight");
-  const timer = setInterval(() => void hydrate("pipeline.inflight"), 2_000);
+  const timer = setInterval(() => void hydrate("pipeline.inflight"), 2000);
   return () => {
     stopped = true;
     clearInterval(timer);

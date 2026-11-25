@@ -1,4 +1,5 @@
-import { type BaseWindow, ShareMenu, type SharingItem } from "electron";
+import { ShareMenu } from "electron";
+import type { BaseWindow, SharingItem } from "electron";
 
 type ShareMenuInstance = Pick<ShareMenu, "popup">;
 type ShareMenuFactory = (sharingItem: SharingItem) => ShareMenuInstance;

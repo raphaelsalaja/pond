@@ -1,9 +1,11 @@
 import { IconBarsFilter, IconImageSparkle, IconTextToImage } from "@pond/icons";
 import type { IconComponent } from "@pond/icons/types";
 import { FIELD_META } from "@pond/schema/filters/meta";
+import { isPredicateList } from "@pond/schema/filters/types";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Menu, SplitButton, Tooltip } from "@pond/ui";
-import { Fragment, type ReactNode, useState } from "react";
+import { Fragment, useState } from "react";
+import type { ReactNode } from "react";
 import { libraryHeader } from "@/features/library/state/library-header";
 import { fieldIcon } from "@/features/search/query";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
@@ -13,11 +15,13 @@ import { editorIsSearchable, filterLayout } from "../layout";
 import {
   entryFields,
   FILTER_MENU,
-  type FilterMenuEntry,
-  type FilterMenuGroup,
-  type FilterOption,
   isFieldEntry,
   presetOptions,
+} from "../options";
+import type {
+  FilterMenuEntry,
+  FilterMenuGroup,
+  FilterOption,
 } from "../options";
 import { SemanticPanel, VisualPanel } from "../overlay";
 import {
@@ -35,21 +39,21 @@ import styles from "./styles.module.css";
 const OVERLAYS = [
   { id: "visual", label: "Visual Match", icon: IconImageSparkle },
   { id: "semantic", label: "Semantic", icon: IconTextToImage },
-] as const satisfies readonly {
+] as const satisfies ReadonlyArray<{
   id: OverlayId;
   label: string;
   icon: IconComponent;
-}[];
+}>;
 
 /** Below this, typed text only narrows field names; values join at two characters. */
 const VALUE_SEARCH_MIN = 2;
 const VALUES_PER_FIELD = 5;
 
 interface AddFilterProps {
-  choices: Partial<Record<FieldId, FilterOption[]>>;
-  rows: Predicate[];
-  onChange: (rows: Predicate[]) => void;
-  applied: readonly FilterChipId[];
+  choices: Partial<Record<FieldId, Array<FilterOption>>>;
+  rows: Array<Predicate>;
+  onChange: (rows: Array<Predicate>) => void;
+  applied: ReadonlyArray<FilterChipId>;
   segment?: boolean;
 }
 
@@ -62,7 +66,7 @@ export function AddFilter({
 }: AddFilterProps) {
   const { query: search, onValueChange, reset } = useMenuFilterQuery();
   const [open, setOpen] = useState(false);
-  const [hidden, setHidden] = useState<readonly FilterChipId[]>(applied);
+  const [hidden, setHidden] = useState<ReadonlyArray<FilterChipId>>(applied);
   const present = usePresentFields(open);
   const needle = search.trim().toLowerCase();
   const optionsFor = (field: FieldId) => choices[field] ?? presetOptions(field);
@@ -83,7 +87,7 @@ export function AddFilter({
       {...fieldProps}
     />
   );
-  const entryItems = (entry: FilterMenuEntry): ReactNode[] => {
+  const entryItems = (entry: FilterMenuEntry): Array<ReactNode> => {
     if (isFieldEntry(entry)) {
       return applies(entry) && matchesName(FIELD_META[entry].label)
         ? [fieldItem(entry)]
@@ -111,34 +115,33 @@ export function AddFilter({
     key: entryKey(section[0]),
     items: section.flatMap(entryItems),
   })).filter((section) => section.items.length > 0);
-  const searchedFields: FieldId[] =
+  const searchedFields: Array<FieldId> =
     needle.length < VALUE_SEARCH_MIN
       ? []
       : FILTER_MENU.flat().flatMap(entryFields).filter(hasData);
   const fieldCounts = useFieldCounts(searchedFields.filter(isChoiceField));
-  const values = searchedFields
-    .map((field) => {
-      const counts = fieldCounts.get(field)?.counts;
-      const countOf = (option: FilterOption) =>
-        counts?.get(optionValue(option)) ?? 0;
-      return {
-        field,
-        options: optionsFor(field)
-          .filter(
-            (option) =>
-              matchesWordStart(option.label, needle) &&
-              (!counts || countOf(option) > 0),
-          )
-          .sort((a, b) => countOf(b) - countOf(a))
-          .slice(0, VALUES_PER_FIELD)
-          .map((option) => ({
-            option,
-            count: counts ? countOf(option) : undefined,
-          })),
-      };
-    })
-    .filter((group) => group.options.length > 0);
-  const groups: { key: string; items: ReactNode }[] = [
+  const values = searchedFields.flatMap((field) => {
+    const counts = fieldCounts.get(field)?.counts;
+    const countOf = (option: FilterOption) =>
+      counts?.get(optionValue(option)) ?? 0;
+    const group = {
+      field,
+      options: optionsFor(field)
+        .filter(
+          (option) =>
+            matchesWordStart(option.label, needle) &&
+            (!counts || countOf(option) > 0),
+        )
+        .sort((a, b) => countOf(b) - countOf(a))
+        .slice(0, VALUES_PER_FIELD)
+        .map((option) => ({
+          option,
+          count: counts ? countOf(option) : undefined,
+        })),
+    };
+    return group.options.length > 0 ? [group] : [];
+  });
+  const groups: Array<{ key: string; items: ReactNode }> = [
     ...(overlays.length
       ? [
           {
@@ -322,8 +325,8 @@ export function OverlaySubmenu({
 }
 
 interface FieldProps {
-  rows: Predicate[];
-  onChange: (rows: Predicate[]) => void;
+  rows: Array<Predicate>;
+  onChange: (rows: Array<Predicate>) => void;
 }
 
 function GroupSubmenu({
@@ -333,8 +336,8 @@ function GroupSubmenu({
   ...fieldProps
 }: FieldProps & {
   group: FilterMenuGroup;
-  fields: readonly FieldId[];
-  optionsFor: (field: FieldId) => FilterOption[];
+  fields: ReadonlyArray<FieldId>;
+  optionsFor: (field: FieldId) => Array<FilterOption>;
 }) {
   return (
     <Submenu
@@ -368,7 +371,7 @@ export function FieldSubmenu({
   SubmenuExtras & {
     field: FieldId;
     crumb?: string;
-    options: FilterOption[];
+    options: Array<FilterOption>;
   }) {
   const { query, onValueChange } = useMenuFilterQuery();
   const label = FIELD_META[field].label;
@@ -416,14 +419,14 @@ function isChoiceField(field: FieldId): boolean {
 }
 
 function optionValue(option: FilterOption): string {
-  const raw = Array.isArray(option.predicate.value)
+  const raw = isPredicateList(option.predicate.value)
     ? option.predicate.value[0]
     : option.predicate.value;
   return String(raw).toLowerCase();
 }
 
-function wordStarts(text: string): number[] {
-  return [...text].flatMap((_, index) =>
+function wordStarts(text: string): Array<number> {
+  return Array.from(text).flatMap((_, index) =>
     index === 0 || !/[\p{L}\p{N}]/u.test(text[index - 1] ?? "") ? [index] : [],
   );
 }
@@ -455,9 +458,9 @@ function FieldValues({
   onChange,
 }: {
   field: FieldId;
-  options: { option: FilterOption; count?: number }[];
-  rows: Predicate[];
-  onChange: (rows: Predicate[]) => void;
+  options: Array<{ option: FilterOption; count?: number }>;
+  rows: Array<Predicate>;
+  onChange: (rows: Array<Predicate>) => void;
 }) {
   const choice = isChoiceField(field);
   const matching = selectedChoiceMode(rows, field);

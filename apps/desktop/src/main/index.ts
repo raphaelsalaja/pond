@@ -5,7 +5,8 @@ import { SAFARI_APP_GROUP } from "@pond/schema/native";
 import { app, globalShortcut, ipcMain, powerMonitor } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
-import { IPC, type RecentMenuEntry } from "../shared/constants";
+import { IPC } from "../shared/constants";
+import type { RecentMenuEntry } from "../shared/constants";
 import type { ShortcutId } from "../shared/shortcuts";
 import { fishMcp } from "./core/agent/fish-mcp/live";
 import { startAutoImport, stopAutoImport } from "./core/auto-import";
@@ -41,11 +42,8 @@ import {
   startStorageWatcher,
   stopStorageWatcher,
 } from "./core/storage-watcher";
-import {
-  recoverInterruptedSyncs,
-  type SyncStatusUpdate,
-  subscribeToSyncStatus,
-} from "./core/sync";
+import { recoverInterruptedSyncs, subscribeToSyncStatus } from "./core/sync";
+import type { SyncStatusUpdate } from "./core/sync";
 import { startLaunchSync } from "./core/sync/launch";
 import { flushTagsDump, hydrateTagsFromBundle } from "./core/tags-bundle";
 import {
@@ -107,7 +105,8 @@ import { writeNativeHostManifests } from "./native/manifests";
 import { safariSocketPath } from "./native/paths";
 import { startNativeServer, stopNativeServer } from "./native/server";
 import { flushOpenFiles, queueOpenFile } from "./open-files";
-import { libraryRoot, type PondPaths, resolvePaths } from "./paths";
+import { libraryRoot, resolvePaths } from "./paths";
+import type { PondPaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
 import { LOGIN_LAUNCH_ARG, runtimeControls } from "./runtime";
 import { configureSessionDefaults } from "./session-config";
@@ -173,7 +172,11 @@ const logFile = resolveLogFile(app);
 if (logFile) log.transports.file.resolvePathFn = () => logFile;
 else log.transports.file.level = false;
 log.initialize();
-if (!consoleLoggingEnabled(process.argv)) log.transports.console.level = false;
+/** The window forwards its console warnings here, so echoing main's log back into that console would loop forever. */
+log.transports.ipc.level = false;
+if (!consoleLoggingEnabled(process.argv)) {
+  log.transports.console.level = false;
+}
 log.info("[pond] main starting", {
   version: app.getVersion(),
   platform: process.platform,
@@ -266,8 +269,8 @@ app.on("second-instance", (_event, argv) => {
 });
 
 const flushDroppedFiles = () =>
-  void flushOpenFiles({ openLibraryWindow, getMainWindow }).catch((err) =>
-    log.error("[pond] open-file import failed", err),
+  void flushOpenFiles({ openLibraryWindow, getMainWindow }).catch(
+    (cause: unknown) => log.error("[pond] open-file import failed", cause),
   );
 
 /** macOS sends files dropped on the Dock icon here, also when they launch Pond. */
@@ -277,113 +280,125 @@ app.on("open-file", (event, path) => {
   if (launched && !quitPreparing) setImmediate(flushDroppedFiles);
 });
 
-app.whenReady().then(async () => {
-  if (!(await singleInstanceLock) || quitPreparing) return;
-  started = true;
-  markStartup("app-ready");
-  if (process.platform === "darwin" && !app.isPackaged && !wantsMcp) {
-    const { applyAppIcon } = await import("./core/app-icon");
-    await applyAppIcon(DEFAULT_APP_ICON);
-  }
+void app
+  .whenReady()
+  .then(async () => {
+    if (!(await singleInstanceLock) || quitPreparing) {
+      return;
+    }
+    started = true;
+    markStartup("app-ready");
+    if (process.platform === "darwin" && !app.isPackaged && !wantsMcp) {
+      const { applyAppIcon } = await import("./core/app-icon");
+      await applyAppIcon(DEFAULT_APP_ICON);
+    }
 
-  const paths = await openActiveLibrary();
-  if (!paths) return;
-  log.info("[pond] paths", paths);
-  const initialDestination = initialDeepLink
-    ? handleDeepLink(initialDeepLink, getMainWindow())
-    : undefined;
+    const paths = await openActiveLibrary();
+    if (!paths) return;
+    log.info("[pond] paths", paths);
+    const initialDestination = initialDeepLink
+      ? handleDeepLink(initialDeepLink, getMainWindow())
+      : undefined;
 
-  configureSessionDefaults();
+    configureSessionDefaults();
 
-  registerProtocol();
+    registerProtocol();
 
-  if (wantsMcp) {
-    if (process.platform === "darwin" && app.isPackaged) {
-      /** macOS sends a click on Pond to any running copy, this headless one included, and gives it a Dock icon. */
-      app.on("activate", () => {
-        app.dock?.hide();
-        openAppInstance({
-          execPath: process.execPath,
-          onError: (error) =>
-            log.error("[pond] could not open Pond from MCP", error),
+    if (wantsMcp) {
+      if (process.platform === "darwin" && app.isPackaged) {
+        /** macOS sends a click on Pond to any running copy, this headless one included, and gives it a Dock icon. */
+        app.on("activate", () => {
+          app.dock?.hide();
+          openAppInstance({
+            execPath: process.execPath,
+            onError: (error) =>
+              log.error("[pond] could not open Pond from MCP", error),
+          });
         });
-      });
+      }
+      await ensureIngestToken().catch((cause: unknown) =>
+        log.error(
+          "[pond] ingest token init failed; MCP starts without one",
+          cause,
+        ),
+      );
+      try {
+        const { startPondMcp } = await import("./core/agent/mcp");
+        await startPondMcp();
+      } catch (error) {
+        log.error("[pond mcp] server failed to start", error);
+        app.exit(1);
+      }
+      return;
     }
-    await ensureIngestToken().catch((err) =>
-      log.error("[pond] ingest token init failed; MCP starts without one", err),
+
+    registerIpc();
+    startMachinePace();
+    if (!process.env.POND_SANDBOX) {
+      registerAutoUpdater();
+    }
+    subscribePrefs((prefs) => broadcast(IPC.prefsChanged, prefs));
+    registerCombineImagesWindowIpc();
+    registerFileRingOverlayIpc();
+    registerQuickCaptureIpc();
+    const menuPrefs = await getPrefs();
+    installAppMenu({
+      shortcuts: menuPrefs.shortcuts,
+      focusedOrMain,
+      openLibraryWindow,
+    });
+
+    ipcMain.on(IPC.menuRecents, (_event, entries: Array<RecentMenuEntry>) => {
+      setMenuRecents(Array.isArray(entries) ? entries : []);
+    });
+
+    /** Electron reports login items on macOS and Windows only; Linux uses the XDG entry's flag. */
+    const loginItem =
+      process.platform === "linux" ? null : app.getLoginItemSettings();
+    const launchPrefs = await getPrefs().catch(() => null);
+    const wantsLaunchHidden = launchPrefs?.window.launchHidden === true;
+    setCloseToTray(launchPrefs?.window.closeToTray === true);
+    const launchedHidden = resolveLaunchHidden({
+      platform: process.platform,
+      requested:
+        wantsLaunchHidden ||
+        loginItem?.wasOpenedAtLogin === true ||
+        ((process.platform === "win32" || process.platform === "linux") &&
+          process.argv.includes(LOGIN_LAUNCH_ARG)),
+      trayEnabled: launchPrefs?.quickCapture.menuBarIcon !== false,
+    });
+    if (shouldOpenInitialWindow(launchedHidden, initialDestination)) {
+      await createWindow();
+    } else {
+      void settleDockAfterClose();
+    }
+    closeMissingLibraryWindow();
+    launched = true;
+    flushDroppedFiles();
+    watchMainThreadStalls();
+
+    const [tokenResult, dbResult] = await Promise.allSettled([
+      ensureIngestToken(),
+      getDb(),
+    ]);
+    if (tokenResult.status === "rejected") {
+      log.error("[pond] ingest token init failed", tokenResult.reason);
+    }
+    if (dbResult.status === "rejected") {
+      log.error("[pond] db init failed", dbResult.reason);
+    } else {
+      markSaveLinksReady();
+    }
+
+    app.on("activate", () => void handleActivate());
+
+    void postLaunchInit().catch((cause: unknown) =>
+      log.error("[pond] post-launch init failed", cause),
     );
-    try {
-      const { startPondMcp } = await import("./core/agent/mcp");
-      await startPondMcp();
-    } catch (error) {
-      log.error("[pond mcp] server failed to start", error);
-      app.exit(1);
-    }
-    return;
-  }
-
-  registerIpc();
-  startMachinePace();
-  if (!process.env.POND_SANDBOX) registerAutoUpdater();
-  subscribePrefs((prefs) => broadcast(IPC.prefsChanged, prefs));
-  registerCombineImagesWindowIpc();
-  registerFileRingOverlayIpc();
-  registerQuickCaptureIpc();
-  const menuPrefs = await getPrefs();
-  installAppMenu({
-    shortcuts: menuPrefs.shortcuts,
-    focusedOrMain,
-    openLibraryWindow,
+  })
+  .catch((cause: unknown) => {
+    log.error("[pond] launch failed", cause);
   });
-
-  ipcMain.on(IPC.menuRecents, (_event, entries: RecentMenuEntry[]) => {
-    setMenuRecents(Array.isArray(entries) ? entries : []);
-  });
-
-  /** Electron reports login items on macOS and Windows only; Linux uses the XDG entry's flag. */
-  const loginItem =
-    process.platform === "linux" ? null : app.getLoginItemSettings();
-  const launchPrefs = await getPrefs().catch(() => null);
-  const wantsLaunchHidden = launchPrefs?.window.launchHidden === true;
-  setCloseToTray(launchPrefs?.window.closeToTray === true);
-  const launchedHidden = resolveLaunchHidden({
-    platform: process.platform,
-    requested:
-      wantsLaunchHidden ||
-      loginItem?.wasOpenedAtLogin === true ||
-      ((process.platform === "win32" || process.platform === "linux") &&
-        process.argv.includes(LOGIN_LAUNCH_ARG)),
-    trayEnabled: launchPrefs?.quickCapture.menuBarIcon !== false,
-  });
-  if (shouldOpenInitialWindow(launchedHidden, initialDestination)) {
-    await createWindow();
-  } else {
-    void settleDockAfterClose();
-  }
-  closeMissingLibraryWindow();
-  launched = true;
-  flushDroppedFiles();
-  watchMainThreadStalls();
-
-  const [tokenResult, dbResult] = await Promise.allSettled([
-    ensureIngestToken(),
-    getDb(),
-  ]);
-  if (tokenResult.status === "rejected") {
-    log.error("[pond] ingest token init failed", tokenResult.reason);
-  }
-  if (dbResult.status === "rejected") {
-    log.error("[pond] db init failed", dbResult.reason);
-  } else {
-    markSaveLinksReady();
-  }
-
-  app.on("activate", () => void handleActivate());
-
-  void postLaunchInit().catch((err) =>
-    log.error("[pond] post-launch init failed", err),
-  );
-});
 
 async function openActiveLibrary(): Promise<PondPaths | null> {
   try {
@@ -422,28 +437,30 @@ async function postLaunchInit(): Promise<void> {
     if (existsSync(libraryRoot())) {
       snapshotBundleJsons();
     }
-  } catch (err) {
-    log.warn("[pond] recording active library failed", err);
+  } catch (error) {
+    log.warn("[pond] recording active library failed", error);
   }
 
   try {
     await hydrateTagsFromBundle();
-  } catch (err) {
-    log.warn("[pond] tags.json hydrate failed", err);
+  } catch (error) {
+    log.warn("[pond] tags.json hydrate failed", error);
   }
 
   void startDeferredMaintenance();
 
   try {
-    if (!process.env.POND_SANDBOX) await runtimeControls.startHttpServer();
-  } catch (err) {
-    log.error("[pond] http server failed to start", err);
+    if (!process.env.POND_SANDBOX) {
+      await runtimeControls.startHttpServer();
+    }
+  } catch (error) {
+    log.error("[pond] http server failed to start", error);
   }
 
   try {
     nativeServer = await startNativeServer();
-  } catch (err) {
-    log.error("[pond] native host failed to start", err);
+  } catch (error) {
+    log.error("[pond] native host failed to start", error);
   }
   /** Only a signed build carries the App Group entitlement that opens the shared container. */
   if (
@@ -457,37 +474,39 @@ async function postLaunchInit(): Promise<void> {
     }
     try {
       safariServer = await startNativeServer({ path: safariSocketPath() });
-    } catch (err) {
-      log.error("[pond] Safari native host failed to start", err);
+    } catch (error) {
+      log.error("[pond] Safari native host failed to start", error);
     }
   }
   /** Manifests must keep pointing at the real app, and registration never depends on the socket binding. */
   if (!process.env.POND_SANDBOX) {
     try {
       await writeNativeHostManifests();
-    } catch (err) {
-      log.error("[pond] native host registration failed", err);
+    } catch (error) {
+      log.error("[pond] native host registration failed", error);
     }
   }
 
-  await recoverInterruptedSyncs().catch((err) =>
-    log.warn("[pond] interrupted-sync recovery failed", err),
+  await recoverInterruptedSyncs().catch((cause: unknown) =>
+    log.warn("[pond] interrupted-sync recovery failed", cause),
   );
   registerTrashCron();
   registerInboxSnoozeCron();
   registerYtDlpUpdateCron();
   registerSyncCron();
-  await startStorageWatcher().catch((err) =>
-    log.warn("[pond] storage watcher failed to start", err),
+  await startStorageWatcher().catch((cause: unknown) =>
+    log.warn("[pond] storage watcher failed to start", cause),
   );
-  void startLaunchSync().catch((err) =>
-    log.warn("[pond] launch sync failed to start", err),
+  void startLaunchSync().catch((cause: unknown) =>
+    log.warn("[pond] launch sync failed to start", cause),
   );
   void captures
     .recover()
-    .catch((error) => log.warn("[pond] capture recovery failed", error));
-  void startAutoImport().catch((err) =>
-    log.warn("[pond] auto-import failed to start", err),
+    .catch((cause: unknown) =>
+      log.warn("[pond] capture recovery failed", cause),
+    );
+  void startAutoImport().catch((cause: unknown) =>
+    log.warn("[pond] auto-import failed to start", cause),
   );
 
   await initTray();
@@ -496,7 +515,9 @@ async function postLaunchInit(): Promise<void> {
 
   void runtimeControls
     .applyPrefsAtRuntime()
-    .catch((err) => log.warn("[pond] applyPrefsAtRuntime failed", err));
+    .catch((cause: unknown) =>
+      log.warn("[pond] applyPrefsAtRuntime failed", cause),
+    );
 
   subscribeToSyncStatus(broadcastSyncStatus);
 }
@@ -526,15 +547,16 @@ function snapshotBundleJsons(): void {
       paths.settingsFile,
       paths.tagsFile,
     ]);
-  } catch (err) {
-    log.warn("[pond] bundle backup snapshot failed", err);
+  } catch (error) {
+    log.warn("[pond] bundle backup snapshot failed", error);
   }
 }
 
+const run = (action: () => Promise<void>) => () => {
+  void action().catch((cause: unknown) => log.warn("[pond shortcut]", cause));
+};
+
 async function registerSummonHotkey() {
-  const run = (action: () => Promise<void>) => () => {
-    void action().catch((error) => log.warn("[pond shortcut]", error));
-  };
   startGlobalShortcuts(
     globalShortcut,
     {
@@ -580,8 +602,8 @@ app.on("window-all-closed", () => {
   app.quit();
 });
 
-const SERVER_CLOSE_MS = 3_000;
-const QUIT_STALL_MS = 5_000;
+const SERVER_CLOSE_MS = 3000;
+const QUIT_STALL_MS = 5000;
 
 function withDeadline(work: Promise<void>, ms: number): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -601,11 +623,11 @@ if (process.platform === "win32") {
       killTrackedProcessTrees();
       try {
         flushGovernor();
-      } catch (err) {
-        log.warn("[pond] governor flush failed", err);
+      } catch (error) {
+        log.warn("[pond] governor flush failed", error);
       }
-      void flushTagsDump().catch((err) =>
-        log.warn("[pond] tags.json flush failed", err),
+      void flushTagsDump().catch((cause: unknown) =>
+        log.warn("[pond] tags.json flush failed", cause),
       );
     });
   });
@@ -633,28 +655,28 @@ async function shutdownForQuit(): Promise<void> {
   }
   try {
     await flushTagsDump();
-  } catch (err) {
-    log.warn("[pond] tags.json flush failed", err);
+  } catch (error) {
+    log.warn("[pond] tags.json flush failed", error);
   }
   try {
     stopStorageWatcher();
-  } catch (err) {
-    log.warn("[pond] storage watcher stop failed", err);
+  } catch (error) {
+    log.warn("[pond] storage watcher stop failed", error);
   }
   try {
     flushGovernor();
-  } catch (err) {
-    log.warn("[pond] governor flush failed", err);
+  } catch (error) {
+    log.warn("[pond] governor flush failed", error);
   }
   try {
     disposeHiddenWindow();
-  } catch (err) {
-    log.warn("[pond] hidden window dispose failed", err);
+  } catch (error) {
+    log.warn("[pond] hidden window dispose failed", error);
   }
   try {
     disposeRenderCardWindow();
-  } catch (err) {
-    log.warn("[pond] render-card window dispose failed", err);
+  } catch (error) {
+    log.warn("[pond] render-card window dispose failed", error);
   }
   disposeQueueWorkerHost();
   killTrackedProcessTrees();
@@ -672,18 +694,18 @@ async function shutdownForQuit(): Promise<void> {
     );
     nativeServer = null;
     safariServer = null;
-  } catch (err) {
-    log.warn("[pond] native host close failed", err);
+  } catch (error) {
+    log.warn("[pond] native host close failed", error);
   }
   try {
     await withDeadline(runtimeControls.closeHttpServer(), SERVER_CLOSE_MS);
-  } catch (err) {
-    log.warn("[pond] http server close failed", err);
+  } catch (error) {
+    log.warn("[pond] http server close failed", error);
   }
   try {
     await withDeadline(fishMcp.closeAll(), SERVER_CLOSE_MS);
-  } catch (err) {
-    log.warn("[pond] fish MCP close failed", err);
+  } catch (error) {
+    log.warn("[pond] fish MCP close failed", error);
   }
 }
 
@@ -698,8 +720,8 @@ function prepareQuit(): Promise<void> {
       log.info("[pond] quit prepared");
       quitPrepared = true;
     },
-    (error) => {
-      log.warn("[pond] quit preparation failed", error);
+    (cause: unknown) => {
+      log.warn("[pond] quit preparation failed", cause);
       quitPrepared = true;
     },
   );
@@ -708,15 +730,20 @@ function prepareQuit(): Promise<void> {
 
 setUpdateInstallPreparation(prepareQuit);
 
-app.on("before-quit", async (event) => {
-  if (quitPrepared) return;
+app.on("before-quit", (event) => {
+  if (quitPrepared) {
+    return;
+  }
   if (!started) {
     quitPreparing = true;
     return;
   }
   event.preventDefault();
-  if (quitPreparing) return;
-  await prepareQuit();
-  armQuitStall();
-  app.quit();
+  if (quitPreparing) {
+    return;
+  }
+  void prepareQuit().then(() => {
+    armQuitStall();
+    app.quit();
+  });
 });

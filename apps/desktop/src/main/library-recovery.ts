@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { app, dialog, type OpenDialogOptions } from "electron";
+import { app, dialog } from "electron";
+import type { OpenDialogOptions } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_LIBRARY_NAME } from "../shared/constants";
 import type { MissingLibraryChoice } from "../shared/missing-library-contracts";
@@ -38,10 +39,14 @@ const UNUSABLE_LIBRARY: OpenProblem = {
 
 function checkLibrary(path: string): OpenProblem | null {
   try {
-    if (readLibraryId(path) === null) return UNUSABLE_LIBRARY;
-  } catch (cause) {
-    if (cause instanceof LibraryMetadataError) return metadataProblem(cause);
-    log.warn("[pond library-recovery] Library check failed", cause);
+    if (readLibraryId(path) === null) {
+      return UNUSABLE_LIBRARY;
+    }
+  } catch (error) {
+    if (error instanceof LibraryMetadataError) {
+      return metadataProblem(error);
+    }
+    log.warn("[pond library-recovery] Library check failed", error);
     return UNUSABLE_LIBRARY;
   }
   return checkPointerSafety(path).ok ? null : UNUSABLE_LIBRARY;

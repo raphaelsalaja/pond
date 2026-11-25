@@ -1,4 +1,5 @@
-import { API_TOKEN_SCOPE_LABELS, type ApiTokenInfo } from "@pond/schema/api";
+import { API_TOKEN_SCOPE_LABELS } from "@pond/schema/api";
+import type { ApiTokenInfo } from "@pond/schema/api";
 import { Button, Dialog, Settings } from "@pond/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";

@@ -1,5 +1,7 @@
 import { Sidebar } from "@pond/ui";
-import { type MouseEvent, Suspense, useEffect, useLayoutEffect } from "react";
+import { isNode } from "@pond/ui/dom";
+import { Suspense, useEffect, useLayoutEffect } from "react";
+import type { MouseEvent } from "react";
 import {
   CANVASES_PATH,
   CanvasesSection,
@@ -23,11 +25,13 @@ import {
 } from "@/features/library/state/folders";
 import { lastGridHrefOutsideInbox } from "@/features/library/state/last-grid";
 import {
-  type LibraryNav,
   libraryChrome,
-  type SidebarPanel,
   useLibraryNav,
   useSidebarPanel,
+} from "@/features/library/state/library-chrome";
+import type {
+  LibraryNav,
+  SidebarPanel,
 } from "@/features/library/state/library-chrome";
 import {
   useEditingSavedViewId,
@@ -42,7 +46,7 @@ import {
 } from "@/features/sources/detail";
 import { TagsSidebar } from "@/features/tags";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import {
   lazyWithPreload,
   preloadWhenIdle,
@@ -52,16 +56,14 @@ import { LibraryDestinations } from "./destinations";
 import { FolderTree } from "./folder-tree";
 import { InboxList } from "./inbox-list";
 import { selectLibraryNav } from "./navigation";
-import { isRailPage, Rail, type RailItem, type RailSection } from "./rail";
+import { isRailPage, Rail } from "./rail";
+import type { RailItem, RailSection } from "./rail";
 import { SidebarMenu } from "./sidebar-menu";
 import styles from "./styles.module.css";
 
 /** Dialogs rendered from sidebar rows portal out of the sidebar, but React still bubbles their right-clicks here. */
 function keepPortaledContextMenus(event: MouseEvent<HTMLDivElement>) {
-  if (
-    event.target instanceof Node &&
-    !event.currentTarget.contains(event.target)
-  ) {
+  if (isNode(event.target) && !event.currentTarget.contains(event.target)) {
     event.stopPropagation();
   }
 }
@@ -91,10 +93,14 @@ const lastOpened: LastOpened = {
 
 /** A rail section lands on the Canvas or fish you last had open, or the first one in its list. */
 function openable(
-  entries: readonly { id: string }[],
+  entries: ReadonlyArray<{ id: string }>,
   last: string | null,
 ): string | undefined {
   return entries.find((entry) => entry.id === last)?.id ?? entries[0]?.id;
+}
+
+function backToLibrary() {
+  getAppHistory()?.push(lastGridHrefOutsideInbox());
 }
 
 function routePanel(destination: LibraryNav | null): RoutePanel | null {
@@ -132,7 +138,7 @@ function useSidebarNav() {
   const editingFolder = useEditingFolderId();
   const [sidebar] = usePrefs("sidebar");
 
-  const visible: RailSection[] = [
+  const visible: Array<RailSection> = [
     "library",
     ...(sidebar.sections.fish ? (["fish"] as const) : []),
     ...(sidebar.sections.canvases ? (["canvases"] as const) : []),
@@ -164,17 +170,16 @@ function useSidebarNav() {
         ? (railPage ?? "library")
         : panel;
 
-  function backToLibrary() {
-    getAppRouter()?.history.push(lastGridHrefOutsideInbox());
-  }
-
   function pickSection(next: RailSection) {
     libraryChrome.setSidebarPanel(next);
     if (next === "canvases") {
       if (activeCanvasId || canvasIntro) return;
       const id = openable(canvases.snapshot(), lastOpened.canvases);
-      if (id) canvases.open(id);
-      else getAppRouter()?.history.push(CANVASES_PATH);
+      if (id) {
+        canvases.open(id);
+      } else {
+        getAppHistory()?.push(CANVASES_PATH);
+      }
     } else if (next === "fish") {
       if (activeFishId) return;
       const id = openable(fish.snapshot(), lastOpened.fish);

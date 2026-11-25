@@ -5,9 +5,8 @@ import { z } from "zod";
 import {
   MCP_DETECTED_CLIENTS,
   MCP_HOST_CATALOG,
-  type McpClientStatus,
-  type McpHostId,
 } from "../../../shared/mcp-hosts";
+import type { McpClientStatus, McpHostId } from "../../../shared/mcp-hosts";
 
 const McpConfigSchema = z.object({
   mcpServers: z.record(z.string(), z.unknown()),
@@ -15,7 +14,7 @@ const McpConfigSchema = z.object({
 
 export function pondMcpSnippet(
   command = process.execPath,
-  args: string[] = ["--mcp"],
+  args: Array<string> = ["--mcp"],
   host: McpHostId = "other",
 ) {
   /**
@@ -47,7 +46,7 @@ export function pondMcpSnippet(
 export function mcpInstallUrl(
   id: McpHostId,
   command: string,
-  args: string[],
+  args: Array<string>,
 ): string | null {
   if (id === "cursor") {
     const config = Buffer.from(JSON.stringify({ command, args })).toString(
@@ -98,7 +97,7 @@ async function claudeExtensionListsPond(configDir: string): Promise<boolean> {
 }
 
 /** A client's config folder exists once it has run, even before any MCP server is added. */
-export async function mcpClientStatus(): Promise<McpClientStatus[]> {
+export async function mcpClientStatus(): Promise<Array<McpClientStatus>> {
   return Promise.all(
     MCP_DETECTED_CLIENTS.map(async (id) => {
       const host = MCP_HOST_CATALOG.find((entry) => entry.id === id);

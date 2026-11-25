@@ -12,9 +12,9 @@ import { recordBatchForUndo } from "./undo";
 const EXTENSION = /^[a-z0-9][a-z0-9+_-]{0,15}$/i;
 
 export interface BatchExtensionRuntime {
-  read(ids: readonly string[]): Promise<ExtensionRow[]>;
-  commit(transactions: Transaction[]): Promise<void>;
-  recordUndo(transactions: Transaction[]): void;
+  read(ids: ReadonlyArray<string>): Promise<Array<ExtensionRow>>;
+  commit(transactions: Array<Transaction>): Promise<void>;
+  recordUndo(transactions: Array<Transaction>): void;
 }
 
 const runtime: BatchExtensionRuntime = {
@@ -37,19 +37,20 @@ function withExtension(path: string, extension: string): string {
 }
 
 export function planBatchExtensionEdits(
-  rows: readonly ExtensionRow[],
+  rows: ReadonlyArray<ExtensionRow>,
   rawExtension: string,
 ) {
   const extension = rawExtension.trim().replace(/^\./, "").toLowerCase();
-  if (!EXTENSION.test(extension))
+  if (!EXTENSION.test(extension)) {
     throw new Error("Enter a valid file extension.");
-  const transactions: Transaction[] = [];
+  }
+  const transactions: Array<Transaction> = [];
   let changedFiles = 0;
   let skipped = 0;
   for (const row of rows) {
     const occupied = new Set(row.files.map((file) => file.path.toLowerCase()));
     const renames: Array<{ from: string; to: string }> = [];
-    const files: SaveFile[] = [];
+    const files: Array<SaveFile> = [];
     for (const file of row.files) {
       if (isAuxiliaryKind(file.kind)) {
         files.push(file);
@@ -63,10 +64,11 @@ export function planBatchExtensionEdits(
       if (
         occupied.has(target.toLowerCase()) &&
         target.toLowerCase() !== file.path.toLowerCase()
-      )
+      ) {
         throw new Error(
           `${row.title || row.id} already contains a file named ${target}.`,
         );
+      }
       occupied.delete(file.path.toLowerCase());
       occupied.add(target.toLowerCase());
       renames.push({ from: file.path, to: target });
@@ -97,11 +99,11 @@ export function planBatchExtensionEdits(
 export interface ExtensionRow {
   id: string;
   title: string | null;
-  files: SaveFile[];
+  files: Array<SaveFile>;
 }
 
 export async function batchEditExtensions(
-  input: { ids: string[]; extension: string },
+  input: { ids: Array<string>; extension: string },
   adapter: BatchExtensionRuntime = runtime,
 ): Promise<{
   ok: true;

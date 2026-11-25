@@ -58,7 +58,7 @@ export interface Ref {
   aspect: number;
 }
 
-export const REFS: Ref[] = [
+export const REFS: Array<Ref> = [
   { id: "00", group: 0, aspect: 1.778 },
   { id: "01", group: 0, aspect: 1.905 },
   { id: "02", group: 0, aspect: 1.6 },

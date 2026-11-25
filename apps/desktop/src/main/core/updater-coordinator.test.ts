@@ -1,9 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  createUpdaterCoordinator,
-  type UpdaterDependencies,
-  type UpdaterPort,
-} from "./updater-coordinator";
+import type { UpdateNotice } from "../../shared/update-notice";
+import { createUpdaterCoordinator } from "./updater-coordinator";
+import type { UpdaterDependencies, UpdaterPort } from "./updater-coordinator";
 
 interface UpdaterListeners {
   available?: (version: string) => void;
@@ -13,15 +11,30 @@ interface UpdaterListeners {
   progress?: (percent: number) => void;
 }
 
+interface UpdaterControls {
+  download: () => Promise<void>;
+  install: () => void | Promise<void>;
+}
+
+function noop() {}
+
 function setup() {
   const listeners: UpdaterListeners = {};
+  const autoDownloads: Array<boolean> = [];
+  const published: Array<UpdateNotice> = [];
+  const calls = { checks: 0 };
+  const controls: UpdaterControls = {
+    download: async () => {},
+    install: noop,
+  };
   let autoDownload = false;
   const updater: UpdaterPort = {
     autoDownload: () => autoDownload,
-    setAutoDownload: vi.fn((value) => {
+    setAutoDownload: (value) => {
+      autoDownloads.push(value);
       autoDownload = value;
-    }),
-    setAutoInstallOnQuit: vi.fn(),
+    },
+    setAutoInstallOnQuit: noop,
     onAvailable: (listener) => {
       listeners.available = listener;
     },
@@ -37,50 +50,59 @@ function setup() {
     onProgress: (listener) => {
       listeners.progress = listener;
     },
-    check: vi.fn().mockResolvedValue({ version: "2.0.0" }),
-    download: vi.fn().mockResolvedValue(undefined),
-    install: vi.fn(),
+    check: async () => {
+      calls.checks += 1;
+      return { version: "2.0.0" };
+    },
+    download: () => controls.download(),
+    install: () => controls.install(),
   };
   const dependencies: UpdaterDependencies = {
     isPackaged: () => true,
     loadUpdater: async () => updater,
     loadPreferences: async () => ({ autoInstall: false }),
-    publish: vi.fn(),
-    scheduleTimeout: vi.fn(),
-    scheduleInterval: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
+    publish: (notice) => {
+      published.push(notice);
+    },
+    scheduleTimeout: noop,
+    scheduleInterval: noop,
+    info: noop,
+    warn: noop,
   };
   return {
     coordinator: createUpdaterCoordinator(dependencies),
     dependencies,
     listeners,
-    updater,
+    controls,
+    autoDownloads,
+    published,
+    calls,
   };
 }
 
 describe("updater coordinator", () => {
   it("applies automatic-download preferences", async () => {
-    const { coordinator, dependencies, updater } = setup();
+    const { coordinator, dependencies, autoDownloads, calls } = setup();
     await coordinator.applyPrefs();
-    expect(updater.setAutoDownload).toHaveBeenLastCalledWith(false);
+    expect(autoDownloads.at(-1)).toBe(false);
 
     dependencies.loadPreferences = async () => ({ autoInstall: true });
     await coordinator.applyPrefs();
-    expect(updater.setAutoDownload).toHaveBeenLastCalledWith(true);
-    expect(updater.check).not.toHaveBeenCalled();
+    expect(autoDownloads.at(-1)).toBe(true);
+    expect(calls.checks).toBe(0);
   });
 
   it("fails closed when update preferences cannot be read", async () => {
-    const { coordinator, dependencies, listeners, updater } = setup();
+    const { coordinator, dependencies, listeners, autoDownloads, published } =
+      setup();
     dependencies.loadPreferences = async () => {
       throw new Error("prefs unavailable");
     };
     await coordinator.start();
 
-    expect(updater.setAutoDownload).toHaveBeenLastCalledWith(false);
+    expect(autoDownloads.at(-1)).toBe(false);
     listeners.available?.("1.2.0");
-    expect(dependencies.publish).toHaveBeenCalledWith({
+    expect(published).toContainEqual({
       phase: "available",
       version: "1.2.0",
       downloading: false,
@@ -88,11 +110,11 @@ describe("updater coordinator", () => {
   });
 
   it("publishes available and downloaded notices and replays the latest", async () => {
-    const { coordinator, dependencies, listeners } = setup();
+    const { coordinator, listeners, published } = setup();
     await coordinator.start();
 
     listeners.available?.("1.2.0");
-    expect(dependencies.publish).toHaveBeenCalledWith({
+    expect(published).toContainEqual({
       phase: "available",
       version: "1.2.0",
       downloading: false,
@@ -111,16 +133,16 @@ describe("updater coordinator", () => {
   });
 
   it("publishes download progress in whole-percent steps", async () => {
-    const { coordinator, dependencies, listeners } = setup();
+    const { coordinator, listeners, published } = setup();
     await coordinator.start();
     listeners.available?.("1.2.0");
-    vi.mocked(dependencies.publish).mockClear();
+    const before = published.length;
 
     listeners.progress?.(41.2);
     listeners.progress?.(41.9);
     listeners.progress?.(42.1);
 
-    expect(dependencies.publish).toHaveBeenCalledTimes(2);
+    expect(published.slice(before)).toHaveLength(2);
     expect(coordinator.currentNotice()).toEqual({
       phase: "available",
       version: "1.2.0",
@@ -130,16 +152,14 @@ describe("updater coordinator", () => {
   });
 
   it("marks a requested download as running until it fails", async () => {
-    const { coordinator, dependencies, listeners, updater } = setup();
+    const { coordinator, listeners, controls, published } = setup();
     await coordinator.start();
     listeners.available?.("1.2.0");
-    let fail = (_error: Error): void => {};
-    vi.mocked(updater.download).mockImplementationOnce(
-      () =>
-        new Promise<void>((_resolve, reject) => {
-          fail = reject;
-        }),
-    );
+    let fail: (error: Error) => void = noop;
+    controls.download = () =>
+      new Promise<void>((_resolve, reject) => {
+        fail = reject;
+      });
 
     const pending = coordinator.download();
     await vi.waitFor(() =>
@@ -152,7 +172,7 @@ describe("updater coordinator", () => {
 
     fail(new Error("offline"));
     await expect(pending).resolves.toEqual({ ok: false, error: "offline" });
-    expect(dependencies.publish).toHaveBeenLastCalledWith({
+    expect(published.at(-1)).toEqual({
       phase: "available",
       version: "1.2.0",
       downloading: false,
@@ -169,12 +189,12 @@ describe("updater coordinator", () => {
   });
 
   it("reports install success only after the handoff releases the caller", async () => {
-    const { coordinator, updater } = setup();
-    let release = (): void => {};
+    const { coordinator, controls } = setup();
+    let release: () => void = noop;
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    vi.mocked(updater.install).mockImplementationOnce(() => gate);
+    controls.install = () => gate;
 
     let settled = false;
     const pending = coordinator.install().then((result) => {
@@ -190,13 +210,13 @@ describe("updater coordinator", () => {
   });
 
   it("returns download and install failures to callers", async () => {
-    const { coordinator, updater } = setup();
-    vi.mocked(updater.download).mockRejectedValueOnce(
-      new Error("download failed"),
-    );
-    vi.mocked(updater.install).mockImplementationOnce(() => {
+    const { coordinator, controls } = setup();
+    controls.download = async () => {
+      throw new Error("download failed");
+    };
+    controls.install = () => {
       throw new Error("install failed");
-    });
+    };
 
     await expect(coordinator.download()).resolves.toEqual({
       ok: false,

@@ -1,10 +1,5 @@
-import {
-  and as drizzleAnd,
-  or as drizzleOr,
-  type SQL,
-  type SQLWrapper,
-  sql,
-} from "drizzle-orm";
+import { and as drizzleAnd, or as drizzleOr, sql } from "drizzle-orm";
+import type { SQL, SQLWrapper } from "drizzle-orm";
 import { z } from "zod";
 import { saves } from "../db";
 import { readColorMatch } from "./color";
@@ -86,12 +81,13 @@ function folderClause(operator: ComparatorId, raw: PredicateValue): SQL | null {
       raw.map((v) => String(v).toLowerCase()).filter((v) => v.length > 0),
     ),
   ];
-  if (ids.length === 0)
+  if (ids.length === 0) {
     return operator === "exact"
       ? folderExists([])
       : operator === "some"
         ? sql`0`
         : sql`1`;
+  }
   const matches = sql`(
     select count(distinct lower(folder_id)) from save_folders
     where save_id = ${saves.id} and lower(folder_id) in (${sql.join(
@@ -218,7 +214,9 @@ function scalarClause(
       return sql`(${column} is null or ${column} <> ${v})`;
     }
     case "in": {
-      if (!Array.isArray(raw)) return null;
+      if (!isValueList(raw)) {
+        return null;
+      }
       const values = raw
         .map((v) => scalarValue(field, v))
         .filter((v): v is string | number => v !== null);
@@ -230,7 +228,9 @@ function scalarClause(
       return sql`${column} in (${inList})`;
     }
     case "nin": {
-      if (!Array.isArray(raw)) return null;
+      if (!isValueList(raw)) {
+        return null;
+      }
       const values = raw
         .map((v) => scalarValue(field, v))
         .filter((v): v is string | number => v !== null);
@@ -259,10 +259,14 @@ function scalarClause(
       return sql`${column} ${op} ${v}`;
     }
     case "between": {
-      if (!Array.isArray(raw) || raw.length !== 2) return null;
-      const lo = numericValue(field, raw[0]);
-      const hi = numericValue(field, raw[1]);
-      if (lo === null || hi === null) return null;
+      if (!isValueList(raw) || raw.length !== 2) {
+        return null;
+      }
+      const lo = numericValue(field, raw[0] ?? null);
+      const hi = numericValue(field, raw[1] ?? null);
+      if (lo === null || hi === null) {
+        return null;
+      }
       return sql`${column} between ${lo} and ${hi}`;
     }
     case "contains": {
@@ -293,15 +297,23 @@ const FiniteNumber = z.number().refine(Number.isFinite);
 const Flag = z.boolean();
 const Text = z.string();
 
+function isValueList(
+  raw: PredicateValue,
+): raw is ReadonlyArray<string | number> {
+  return Array.isArray(raw);
+}
+
 function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, "\\$&");
+  return value.replaceAll(/[\\%_]/g, String.raw`\$&`);
 }
 
 function scalarValue(
   field: FieldId,
   raw: PredicateValue,
 ): string | number | null {
-  if (raw == null) return null;
+  if (raw === null) {
+    return null;
+  }
   const flag = Flag.safeParse(raw);
   if (flag.success) return flag.data ? 1 : 0;
   if (isDateField(field)) return numericValue(field, raw);

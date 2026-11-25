@@ -27,7 +27,7 @@ export interface ListRow {
 }
 
 interface ListPageProps {
-  rows: readonly ListRow[];
+  rows: ReadonlyArray<ListRow>;
   onToggle: (url: string, selected: boolean) => void;
   onToggleAll: (selected: boolean) => void;
   request: DownloadRequest;

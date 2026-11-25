@@ -3,21 +3,24 @@ import type { DownloadPostProbe } from "@shared/downloader-contracts";
 import { useState } from "react";
 import { Columns } from "../columns";
 import { DownloadOptions } from "../export-options";
-import { type ExportDestination, saveToHint } from "../export-options/settings";
+import { saveToHint } from "../export-options/settings";
+import type { ExportDestination } from "../export-options/settings";
 import { Frame } from "../frame";
 import { useExportFolder } from "../lib/export-folder";
-import { type LinkError, LinkField, LinkStatus } from "../link-page";
+import { LinkField, LinkStatus } from "../link-page";
+import type { LinkError } from "../link-page";
 import { Summary } from "../summary";
 import styles from "./styles.module.css";
 
 const MOSAIC_LIMIT = 4;
-const LIBRARY_ONLY: readonly ExportDestination[] = ["file", "clipboard"];
+const LIBRARY_ONLY: ReadonlyArray<ExportDestination> = ["file", "clipboard"];
 
 function includesOf(probe: DownloadPostProbe): string {
-  if (probe.source === "web")
+  if (probe.source === "web") {
     return probe.images.length > 0
       ? "The page and its cover image"
       : "The page";
+  }
   const count = probe.images.length;
   const parts = [
     count === 1 ? "1 image" : count > 1 ? `${count} images` : null,
@@ -29,7 +32,7 @@ function includesOf(probe: DownloadPostProbe): string {
 }
 
 /** Up to four images in the post's own grid, with the rest counted on the last. */
-function Mosaic({ images }: { images: string[] }) {
+function Mosaic({ images }: { images: Array<string> }) {
   const shown = images.slice(0, MOSAIC_LIMIT);
   const more = images.length - shown.length;
   return (

@@ -28,11 +28,11 @@ export interface FishTarget {
 /** Everything a capture picker needs to offer folders, tags, and fish without a native round trip. */
 export interface LibraryTargets {
   name: string;
-  folders: Folder[];
-  tags: Tag[];
-  fish: FishTarget[];
-  recentFolderIds: string[];
-  recentTags: string[];
+  folders: Array<Folder>;
+  tags: Array<Tag>;
+  fish: Array<FishTarget>;
+  recentFolderIds: Array<string>;
+  recentTags: Array<string>;
 }
 
 export interface CaptureRegion {
@@ -67,8 +67,8 @@ export interface DetailsMetadata {
   title: string;
   notes: string;
   rating: number;
-  tags: string[];
-  folderIds: string[];
+  tags: Array<string>;
+  folderIds: Array<string>;
   fishId: string | null;
 }
 
@@ -81,7 +81,12 @@ export interface PageItem {
 /** What the in-page overlay reports back once the person finishes a pick. */
 export type OverlayResult =
   | { kind: "region"; region: CaptureRegion }
-  | { kind: "images"; urls: string[]; tags: string[]; folderIds: string[] }
+  | {
+      kind: "images";
+      urls: Array<string>;
+      tags: Array<string>;
+      folderIds: Array<string>;
+    }
   | { kind: "details"; draft: DetailsDraft; metadata: DetailsMetadata };
 
 export interface Gesture {

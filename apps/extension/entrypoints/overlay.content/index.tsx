@@ -6,6 +6,9 @@ import { onOverlayMessage } from "@/utils/overlay-messaging";
 import { Layer } from "./layer";
 import { createOverlayStore } from "./store";
 
+/** A face that fails to load leaves the overlay on the page's fallback fonts. */
+function keepFallbackFont() {}
+
 export default defineContentScript({
   registration: "runtime",
   matches: ["<all_urls>"],
@@ -31,7 +34,7 @@ export default defineContentScript({
         { weight: "100 900", display: "swap" },
       );
       document.fonts.add(face);
-      void face.load().catch(() => undefined);
+      void face.load().catch(keepFallbackFont);
       ctx.onInvalidated(() => document.fonts.delete(face));
     }
 

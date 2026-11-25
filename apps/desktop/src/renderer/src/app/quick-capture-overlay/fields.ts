@@ -3,7 +3,7 @@ import type { QuickCaptureSnapshot } from "../../../../shared/quick-capture-cont
 export interface QuickCaptureFields {
   text: string;
   title: string;
-  paths: string[];
+  paths: Array<string>;
   folderId: string | null;
 }
 
@@ -12,8 +12,9 @@ export function initialFields(
   snapshot: QuickCaptureSnapshot,
 ): QuickCaptureFields {
   const { draft, folders } = snapshot;
-  if (!draft)
+  if (!draft) {
     return { text: snapshot.clipboard, title: "", paths: [], folderId: null };
+  }
   const folderId = folders.some((folder) => folder.id === draft.folderId)
     ? draft.folderId
     : null;

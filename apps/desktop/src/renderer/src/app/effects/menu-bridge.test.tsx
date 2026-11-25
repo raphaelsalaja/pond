@@ -1,29 +1,21 @@
 import { PrefsSchema } from "@pond/schema";
-import type { MenuActionEvent } from "@shared/constants";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { selectOnlySave } from "@/features/saves";
+import { bridge } from "@/shared/test/pond-bridge";
 import { MenuBridge } from "./menu-bridge";
 
 describe("menu bridge inspector", () => {
   let host: HTMLDivElement;
   let root: Root;
-  let menuAction: ((action: MenuActionEvent) => void) | undefined;
 
   beforeEach(() => {
-    vi.stubGlobal("pond", {
-      query: async (name: string) =>
-        name === "settings.getPrefs" ? PrefsSchema.parse({}) : [],
-      onOpenFiles: () => () => {},
-      onMenuAction: (callback: (action: MenuActionEvent) => void) => {
-        menuAction = callback;
-        return () => {
-          menuAction = undefined;
-        };
-      },
+    bridge.use({
+      query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
     });
     host = document.createElement("div");
     document.body.append(host);
@@ -33,7 +25,6 @@ describe("menu bridge inspector", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   it("toggles details on the library without opening a save", async () => {
@@ -45,7 +36,10 @@ describe("menu bridge inspector", () => {
     });
     const open = libraryChrome.getState().detailsOpen;
     await act(async () => {
-      menuAction?.({ id: "view.inspector.toggle", source: "menu" });
+      bridge.emit("onMenuAction", {
+        id: "view.inspector.toggle",
+        source: "menu",
+      });
     });
     expect(libraryChrome.getState().detailsOpen).toBe(!open);
     expect(currentLocation(router).pathname).toBe("/");

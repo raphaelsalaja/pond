@@ -2,11 +2,11 @@ import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
 import {
   NullableStringParam,
-  type QueryHandlerMap,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const NameParams = z.object({ name: StringParam });
 const RenameParams = z.object({ from: StringParam, to: StringParam });

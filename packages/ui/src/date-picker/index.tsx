@@ -1,13 +1,9 @@
 import { IconCalendar, IconChevronLeft, IconChevronRight } from "@pond/icons";
 import { clsx as cn } from "clsx";
-import {
-  type KeyboardEvent,
-  type RefObject,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import { Button, type ButtonProps } from "../button";
+import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent, RefObject } from "react";
+import { Button } from "../button";
+import type { ButtonProps } from "../button";
 import { cssVars } from "../css-vars";
 import { Popover } from "../popover";
 import {
@@ -219,7 +215,7 @@ function Calendar({
   locale: string;
   onSelect: (day: Date) => void;
 }) {
-  const today = startOfDay(new Date());
+  const [today] = useState(() => startOfDay(new Date()));
   const [focused, setFocused] = useState(() =>
     clampDay(selected ?? today, min, max),
   );
@@ -299,7 +295,7 @@ function Calendar({
       </div>
       <table
         ref={grid}
-        // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: the WAI-ARIA date picker grid is a table with role="grid".
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role -- the WAI-ARIA date picker grid is a table with role="grid"
         role="grid"
         aria-label={monthLabel}
         className={styles.grid}
@@ -328,7 +324,7 @@ function Calendar({
                 return (
                   <td
                     key={key}
-                    // biome-ignore lint/a11y/noNoninteractiveElementToInteractiveRole: WAI-ARIA date picker days are gridcells in the table.
+                    // oxlint-disable-next-line jsx-a11y/no-redundant-roles -- WAI-ARIA date picker days are explicit gridcells in the table
                     role="gridcell"
                     className={styles.day}
                     data-day={key}

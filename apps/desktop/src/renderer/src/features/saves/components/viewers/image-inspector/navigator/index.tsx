@@ -14,6 +14,10 @@ interface NavigatorProps {
   onPose: (pose: ImagePose) => void;
 }
 
+function clampCenter(value: number, length: number) {
+  return Math.max(length / 2, Math.min(1 - length / 2, value));
+}
+
 export function Navigator({
   src,
   pose,
@@ -22,9 +26,9 @@ export function Navigator({
   onPose,
 }: NavigatorProps) {
   const box = viewportFraction(pose, stage, bounds);
-  if (!viewportOverflows(box)) return null;
-  const clampCenter = (value: number, length: number) =>
-    Math.max(length / 2, Math.min(1 - length / 2, value));
+  if (!viewportOverflows(box)) {
+    return null;
+  }
   return (
     <section className={styles.root} aria-label="Navigator">
       <button

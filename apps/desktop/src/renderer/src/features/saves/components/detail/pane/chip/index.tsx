@@ -4,7 +4,7 @@ import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 import styles from "./styles.module.css";
 
-interface ListProps extends ComponentPropsWithoutRef<"div"> {}
+type ListProps = ComponentPropsWithoutRef<"div">;
 
 function List({ className, ...props }: ListProps) {
   return <div className={cn(styles.list, className)} {...props} />;

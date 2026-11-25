@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { lockRendererZoom } from "./lock-renderer-zoom";
 
 it("locks visual zoom to 1x", () => {
-  const limits: [number, number][] = [];
+  const limits: Array<[number, number]> = [];
   lockRendererZoom({
     isDestroyed: () => false,
     setVisualZoomLevelLimits: async (min, max) => {
@@ -13,7 +13,7 @@ it("locks visual zoom to 1x", () => {
 });
 
 it("skips destroyed web contents", () => {
-  const limits: [number, number][] = [];
+  const limits: Array<[number, number]> = [];
   lockRendererZoom({
     isDestroyed: () => true,
     setVisualZoomLevelLimits: async (min, max) => {

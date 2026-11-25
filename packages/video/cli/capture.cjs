@@ -1,7 +1,7 @@
 /** Electron main: loads a built stage offscreen, seeks it frame by frame, and pipes raw frames to ffmpeg. */
 const { app, BrowserWindow, protocol, net } = require("electron");
 const { spawn } = require("node:child_process");
-const { join, normalize } = require("node:path");
+const nodePath = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { mkdirSync, writeFileSync } = require("node:fs");
 
@@ -15,7 +15,7 @@ const HEIGHT = 1080;
 const dist = arg("dist", "");
 const out = arg("out", "");
 const stills = arg("stills", "").split(",").filter(Boolean).map(Number);
-const video = arg("video", join(out, "picture.mp4"));
+const video = arg("video", nodePath.join(out, "picture.mp4"));
 if (!dist || !out) {
   console.error("capture: --dist and --out are required");
   process.exit(1);
@@ -38,12 +38,16 @@ const frame = (win) =>
       : image.resize({ width: WIDTH, height: HEIGHT, quality: "best" });
   });
 
-app.whenReady().then(async () => {
+async function capture() {
   mkdirSync(out, { recursive: true });
   protocol.handle("stage", (request) => {
     const path = decodeURIComponent(new URL(request.url).pathname);
-    const file = normalize(join(dist, path === "/" ? "index.html" : path));
-    if (!file.startsWith(dist)) return new Response("no", { status: 403 });
+    const file = nodePath.normalize(
+      nodePath.join(dist, path === "/" ? "index.html" : path),
+    );
+    if (!file.startsWith(dist)) {
+      return new Response("no", { status: 403 });
+    }
     return net.fetch(pathToFileURL(file).toString());
   });
   const win = new BrowserWindow({
@@ -67,23 +71,24 @@ app.whenReady().then(async () => {
   const meta = await stage(
     "({ duration: __stage.duration, fps: __stage.fps, poster: __stage.poster })",
   );
-  writeFileSync(join(out, "stage.json"), JSON.stringify(meta));
+  writeFileSync(nodePath.join(out, "stage.json"), JSON.stringify(meta));
   const fps = Number(arg("fps", meta.fps));
   const duration = Number(arg("to", 0)) || meta.duration;
   const from = Number(arg("from", 0));
 
   const report = () => {
-    if (errors.length)
+    if (errors.length) {
       console.log(
         `capture: ${errors.length} errors\n${errors.slice(0, 8).join("\n")}`,
       );
+    }
   };
 
   if (stills.length) {
     for (const t of stills) {
       await stage(`__stage.seek(${t})`);
       writeFileSync(
-        join(out, `still-${String(t).padStart(5, "0")}.png`),
+        nodePath.join(out, `still-${String(t).padStart(5, "0")}.png`),
         (await frame(win)).toPNG(),
       );
     }
@@ -128,15 +133,29 @@ app.whenReady().then(async () => {
   for (let index = 0; index < total; index++) {
     await stage(`__stage.seek(${from + index * step})`);
     const bitmap = (await frame(win)).toBitmap();
-    if (!ffmpeg.stdin.write(bitmap))
-      await new Promise((r) => ffmpeg.stdin.once("drain", r));
+    if (!ffmpeg.stdin.write(bitmap)) {
+      await new Promise((r) => {
+        ffmpeg.stdin.once("drain", r);
+      });
+    }
     if (index % 90 === 0) {
       const rate = (index + 1) / ((Date.now() - started) / 1000);
       console.log(`capture: frame ${index}/${total} (${rate.toFixed(1)} fps)`);
     }
   }
   ffmpeg.stdin.end();
-  await new Promise((r) => ffmpeg.on("close", r));
+  await new Promise((r) => {
+    ffmpeg.on("close", r);
+  });
   report();
   app.quit();
+}
+
+void app.whenReady().then(async () => {
+  try {
+    await capture();
+  } catch (error) {
+    console.error(error);
+    process.exit(1);
+  }
 });

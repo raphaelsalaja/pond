@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import styles from "./styles.module.css";
 
 interface ResponseAnnouncementProps {
@@ -8,35 +8,58 @@ interface ResponseAnnouncementProps {
   error?: string | null;
 }
 
+function nextAnnouncement(
+  before: ResponseAnnouncementProps,
+  { running, responseId, requiredAction, error }: ResponseAnnouncementProps,
+): string | null {
+  if (
+    error &&
+    (error !== before.error ||
+      before.running ||
+      responseId !== before.responseId)
+  ) {
+    return `Response failed: ${error}`;
+  }
+  if (running) {
+    return "";
+  }
+  if (
+    requiredAction &&
+    (before.running ||
+      requiredAction !== before.requiredAction ||
+      responseId !== before.responseId)
+  ) {
+    return requiredAction;
+  }
+  if (responseId && (before.running || responseId !== before.responseId)) {
+    return "Response complete.";
+  }
+  return null;
+}
+
 export function ResponseAnnouncement({
   running,
   responseId,
   requiredAction,
   error,
 }: ResponseAnnouncementProps) {
-  const previous = useRef({ running, responseId, requiredAction, error });
-  const [announcement, setAnnouncement] = useState("");
-  useEffect(() => {
-    const before = previous.current;
-    previous.current = { running, responseId, requiredAction, error };
-    if (
-      error &&
-      (error !== before.error ||
-        before.running ||
-        responseId !== before.responseId)
-    )
-      setAnnouncement(`Response failed: ${error}`);
-    else if (running) setAnnouncement("");
-    else if (
-      requiredAction &&
-      (before.running ||
-        requiredAction !== before.requiredAction ||
-        responseId !== before.responseId)
-    )
-      setAnnouncement(requiredAction);
-    else if (responseId && (before.running || responseId !== before.responseId))
-      setAnnouncement("Response complete.");
-  }, [running, responseId, requiredAction, error]);
+  const current = { running, responseId, requiredAction, error };
+  const [previous, setPrevious] = useState(current);
+  const [announcement, setAnnouncement] = useState(
+    () => nextAnnouncement(current, current) ?? "",
+  );
+  if (
+    running !== previous.running ||
+    responseId !== previous.responseId ||
+    requiredAction !== previous.requiredAction ||
+    error !== previous.error
+  ) {
+    setPrevious(current);
+    const next = nextAnnouncement(previous, current);
+    if (next !== null) {
+      setAnnouncement(next);
+    }
+  }
   return (
     <span
       className={styles.announcement}

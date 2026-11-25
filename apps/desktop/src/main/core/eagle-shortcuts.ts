@@ -4,9 +4,9 @@ import { z } from "zod";
 import {
   isValidShortcut,
   SHORTCUT_PLATFORM,
-  type ShortcutId,
   shortcutPlatformFromName,
 } from "../../shared/shortcuts";
+import type { ShortcutId } from "../../shared/shortcuts";
 
 const EagleSettingsSchema = z.object({
   preferences: z.object({
@@ -22,7 +22,7 @@ export type EagleShortcutDiscoveryStatus =
   | "invalid"
   | "unreadable";
 
-export interface EagleShortcutOverrides extends Record<string, string> {}
+export type EagleShortcutOverrides = Record<string, string>;
 
 export interface EagleShortcutDiscovery {
   status: EagleShortcutDiscoveryStatus;
@@ -31,10 +31,10 @@ export interface EagleShortcutDiscovery {
 
 interface ShortcutMapping {
   target: ShortcutId;
-  sources: readonly string[];
+  sources: ReadonlyArray<string>;
 }
 
-function shortcutMappings(platform: NodeJS.Platform): ShortcutMapping[] {
+function shortcutMappings(platform: NodeJS.Platform): Array<ShortcutMapping> {
   const rename =
     platform === "darwin" ? "edit.rename.darwin" : "edit.rename.win32";
   const remove =
@@ -186,7 +186,7 @@ export function normalizeEagleShortcut(
 export function mapEagleShortcuts(
   keybinds: Readonly<Record<string, string>>,
   platform: NodeJS.Platform = process.platform,
-): EagleShortcutOverrides {
+) {
   const overrides: EagleShortcutOverrides = {};
   for (const mapping of shortcutMappings(platform)) {
     for (const source of mapping.sources) {
@@ -234,9 +234,9 @@ export async function readEagleShortcuts(
 ): Promise<EagleShortcutDiscovery> {
   try {
     return parseEagleShortcuts(await readFile(path, "utf8"), platform);
-  } catch (cause) {
+  } catch (error) {
     return {
-      status: errnoCode(cause) === "ENOENT" ? "missing" : "unreadable",
+      status: errnoCode(error) === "ENOENT" ? "missing" : "unreadable",
       overrides: {},
     };
   }

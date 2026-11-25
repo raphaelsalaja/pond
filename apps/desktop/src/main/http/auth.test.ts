@@ -1,18 +1,14 @@
-import {
-  ApiErrorBodySchema,
-  ApiErrorSchema,
-  type ApiTokenInfo,
-  type ApiTokenScope,
-} from "@pond/schema/api";
+import { ApiErrorBodySchema, ApiErrorSchema } from "@pond/schema/api";
+import type { ApiTokenInfo, ApiTokenScope } from "@pond/schema/api";
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { createAuthLimiter, createRequireAuth, tokensMatch } from "./auth";
 
-function scopedInfo(scopes: ApiTokenScope[]): ApiTokenInfo {
+function scopedInfo(scopes: Array<ApiTokenScope>): ApiTokenInfo {
   return { id: "t1", name: "Script", scopes, createdAt: 0, lastUsedAt: null };
 }
 
-function server(scoped: Record<string, ApiTokenScope[]> = {}) {
+function server(scoped: Record<string, Array<ApiTokenScope>> = {}) {
   const app = new Hono();
   app.use(
     "/api/v2/*",
@@ -120,7 +116,7 @@ describe("tokensMatch", () => {
 
 describe("createAuthLimiter", () => {
   it("blocks a client after repeated failures and unblocks after the window", () => {
-    let time = 1_000;
+    let time = 1000;
     const limiter = createAuthLimiter(() => time);
     for (let attempt = 0; attempt < 10; attempt++) {
       expect(limiter.recordFailure("127.0.0.1")).toBe(false);

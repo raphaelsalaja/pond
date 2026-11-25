@@ -1,10 +1,9 @@
 import {
   NATIVE_HOST_NAME,
-  type NativeRequest,
-  type NativeResponse,
   nativeResponseSchema,
   SAFARI_HOST_NAME,
 } from "@pond/schema/native";
+import type { NativeRequest, NativeResponse } from "@pond/schema/native";
 
 export type NativeUnreachable =
   | "offline"
@@ -27,12 +26,15 @@ export function isUnreachable(error: string): error is NativeUnreachable {
 
 /** Maps Chromium's and Firefox's `sendNativeMessage` rejections onto what you can fix. */
 export function unreachableFromMessage(message: string): NativeUnreachable {
-  if (/forbidden|does not have permission/i.test(message))
+  if (/forbidden|does not have permission/i.test(message)) {
     return "host_forbidden";
-  if (/not found|no such native application/i.test(message))
+  }
+  if (/not found|no such native application/i.test(message)) {
     return "host_missing";
-  if (/exited|failed to start|communicating|disconnected/i.test(message))
+  }
+  if (/exited|failed to start|communicating|disconnected/i.test(message)) {
     return "host_failed";
+  }
   return "offline";
 }
 
@@ -44,7 +46,7 @@ export async function nativeCall(
   request: NativeRequest,
 ): Promise<NativeResponse> {
   try {
-    const response = await browser.runtime.sendNativeMessage(
+    const response: unknown = await browser.runtime.sendNativeMessage(
       HOST_NAME,
       request,
     );

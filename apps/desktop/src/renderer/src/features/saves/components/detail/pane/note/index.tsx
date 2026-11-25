@@ -1,7 +1,5 @@
-import {
-  type InspectorDrafts,
-  InspectorTextField,
-} from "@/shared/components/inspector-text-field";
+import { InspectorTextField } from "@/shared/components/inspector-text-field";
+import type { InspectorDrafts } from "@/shared/components/inspector-text-field";
 import { DetailSection } from "../detail-section";
 import styles from "./styles.module.css";
 
@@ -14,7 +12,7 @@ export function SaveNote({
   value: string | null;
   drafts: InspectorDrafts;
   cacheKey: string;
-  commit(value: string): Promise<void>;
+  commit: (value: string) => Promise<void>;
 }) {
   return (
     <DetailSection title="Note">

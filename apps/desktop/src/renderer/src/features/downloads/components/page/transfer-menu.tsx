@@ -7,7 +7,8 @@ import {
 } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import type { TransferJob } from "@shared/transfer-contracts";
-import { type QueryClient, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import { statusFeed } from "@/features/downloads/lib/status-feed";
 import {
@@ -31,13 +32,14 @@ async function runTransferAction(
   kind: keyof typeof ACTIONS,
 ) {
   const result = await window.pond.query(ACTIONS[kind], { id: job.id });
-  if (!result.ok)
+  if (!result.ok) {
     statusFeed.error(
       "Library Transfers",
       kind === "dismiss"
         ? result.error
         : "This transfer has already changed. Try again.",
     );
+  }
   await client.invalidateQueries({ queryKey: TRANSFER_JOBS_KEY });
 }
 
@@ -55,7 +57,7 @@ function copyText(text: string) {
 export function buildTransferMenuItems(
   job: TransferJob,
   client: QueryClient,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const error = job.status === "cancelled" ? "" : (job.error?.trim() ?? "");
   return [
     {

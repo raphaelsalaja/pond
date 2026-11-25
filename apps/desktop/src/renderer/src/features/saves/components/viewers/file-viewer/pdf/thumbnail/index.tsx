@@ -1,7 +1,16 @@
 import { Button } from "@pond/ui";
+import log from "electron-log/renderer";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useEffect, useRef, useState } from "react";
 import styles from "./styles.module.css";
+
+/** Scrolling the rail cancels a render, which rejects its promise on purpose. */
+function reportRenderFailure(cause: unknown): void {
+  if (cause instanceof Error && cause.name === "RenderingCancelledException") {
+    return;
+  }
+  log.warn("[pond pdf] thumbnail render failed", cause);
+}
 
 export function PdfThumbnail({
   document,
@@ -57,7 +66,7 @@ export function PdfThumbnail({
       canvas.style.width = "96px";
       canvas.style.height = `${Math.round(viewport.height / pixelRatio)}px`;
       renderTask = page.render({ canvas, canvasContext: context, viewport });
-      void renderTask.promise.catch(() => {});
+      void renderTask.promise.catch(reportRenderFailure);
     });
     return () => {
       activeRender = false;

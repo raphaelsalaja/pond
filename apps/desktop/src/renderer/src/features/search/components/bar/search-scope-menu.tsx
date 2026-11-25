@@ -27,9 +27,9 @@ const OPTIONS = [
 
 export function keywordScopesFromPrefs(
   scopes: SearchScopes,
-): KeywordSearchScope[] | undefined {
-  const active = OPTIONS.filter((option) => scopes[option.key]).map(
-    (option) => option.scope,
+): Array<KeywordSearchScope> | undefined {
+  const active = OPTIONS.flatMap((option): Array<KeywordSearchScope> =>
+    scopes[option.key] ? [option.scope] : [],
   );
   return active.length === OPTIONS.length ? undefined : active;
 }
@@ -40,7 +40,7 @@ export function buildSearchScopeItems({
 }: {
   scopes: SearchScopes;
   onChange: (scopes: SearchScopes) => void;
-}): MenuItemSpec[] {
+}): Array<MenuItemSpec> {
   const activeCount = OPTIONS.filter((option) => scopes[option.key]).length;
   const all = activeCount === OPTIONS.length;
   return [
@@ -66,16 +66,14 @@ export function buildSearchScopeItems({
       },
     },
     { type: "separator" },
-    ...OPTIONS.map(
-      (option): MenuItemSpec => ({
-        type: "checkbox",
-        label: option.label,
-        indicator: "check",
-        checked: scopes[option.key],
-        disabled: scopes[option.key] && activeCount === 1,
-        onCheckedChange: (checked) =>
-          onChange({ ...scopes, [option.key]: checked }),
-      }),
-    ),
+    ...OPTIONS.map((option): MenuItemSpec => ({
+      type: "checkbox",
+      label: option.label,
+      indicator: "check",
+      checked: scopes[option.key],
+      disabled: scopes[option.key] && activeCount === 1,
+      onCheckedChange: (checked) =>
+        onChange({ ...scopes, [option.key]: checked }),
+    })),
   ];
 }

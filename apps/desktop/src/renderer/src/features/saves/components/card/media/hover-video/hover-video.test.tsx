@@ -1,39 +1,32 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { loadPrefs } from "@/shared/state/prefs";
+import { bridge } from "@/shared/test/pond-bridge";
 import { HoverVideo } from "./";
 
 let host: HTMLDivElement;
 let root: Root;
-const frames: FrameRequestCallback[] = [];
 
 beforeEach(() => {
-  frames.length = 0;
-  vi.stubGlobal("pond", {
-    query: async (name: string) => {
-      if (name === "settings.getPrefs") {
-        return PrefsSchema.parse({
+  bridge.use({
+    machinePace: async () => ({ thermal: "nominal", onBattery: false }),
+    query: {
+      "settings.getPrefs": () =>
+        PrefsSchema.parse({
           viewer: { hoverVideo: true, thumbnailBehavior: "scrub" },
-        });
-      }
-      return { ok: true };
+        }),
     },
   });
-  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-    frames.push(callback);
-    return frames.length;
-  });
-  vi.stubGlobal("cancelAnimationFrame", () => {});
-  vi.spyOn(document, "hasFocus").mockReturnValue(true);
-  vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(() =>
-    Promise.resolve(),
-  );
-  vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
-  vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {});
+  vi.spyOn(HTMLMediaElement.prototype, "play");
+  vi.spyOn(HTMLMediaElement.prototype, "pause");
+  vi.spyOn(HTMLMediaElement.prototype, "load");
   host = document.createElement("div");
+  host.tabIndex = -1;
   document.body.append(host);
+  host.focus();
   root = createRoot(host);
 });
 
@@ -42,12 +35,12 @@ afterEach(async () => {
   host.remove();
   vi.useRealTimers();
   vi.restoreAllMocks();
-  vi.unstubAllGlobals();
 });
 
-function flushFrames(): void {
-  const pending = frames.splice(0);
-  for (const frame of pending) frame(0);
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
 }
 
 it("plays on hover and ignores pointer movement while scrub on hover stays available", async () => {
@@ -68,9 +61,6 @@ it("plays on hover and ignores pointer movement while scrub on hover stays avail
   const video = host.querySelector("video");
   if (!video) throw new Error("Missing hover video");
   Object.defineProperty(video, "duration", { configurable: true, value: 10 });
-  vi.spyOn(video, "getBoundingClientRect").mockReturnValue(
-    new DOMRect(0, 0, 200, 100),
-  );
 
   await act(async () => {
     video.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
@@ -83,7 +73,7 @@ it("plays on hover and ignores pointer movement while scrub on hover stays avail
     video.dispatchEvent(
       new MouseEvent("mousemove", { bubbles: true, clientX: 160, clientY: 40 }),
     );
-    flushFrames();
+    await nextFrame();
   });
 
   expect(video.currentTime).toBe(startedAt);

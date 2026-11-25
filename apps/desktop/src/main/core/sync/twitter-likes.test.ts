@@ -82,13 +82,14 @@ describe("harvestConfiguredTwitterLikes", () => {
       captures: [],
       reachedEnd: true,
     };
-    const harvestTwitterLikes = vi.fn(async () => result);
+    const harvester = { harvestTwitterLikes: async () => result };
+    const harvestTwitterLikes = vi.spyOn(harvester, "harvestTwitterLikes");
 
     await expect(
       harvestConfiguredTwitterLikes(
         connectedAccount,
         { aborted: false, knownIds: ["1"], partition: "account:123" },
-        { harvestTwitterLikes },
+        harvester,
       ),
     ).resolves.toBe(result);
     expect(harvestTwitterLikes).toHaveBeenCalledWith(
@@ -104,7 +105,7 @@ describe("harvestConfiguredTwitterLikes", () => {
       harvestConfiguredTwitterLikes(
         connectedAccount,
         { aborted: false, knownIds: [], partition: "account:123" },
-        { harvestTwitterLikes: vi.fn(async () => failure) },
+        { harvestTwitterLikes: async () => failure },
       ),
     ).resolves.toBe(failure);
   });

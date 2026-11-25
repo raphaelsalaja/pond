@@ -8,13 +8,14 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { inverse, type Transaction } from "@pond/schema/tx";
+import { inverse } from "@pond/schema/tx";
+import type { Transaction } from "@pond/schema/tx";
 import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 import type { LibraryIntegrityRuntime, RepairSave } from "./library-integrity";
 import { createLibraryRepairService } from "./library-repairs";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
@@ -38,7 +39,7 @@ async function applySaveFiles(
 }
 
 function createFixture() {
-  let now = 1_000;
+  let now = 1000;
   let libraryId = "pond-a";
   let root = "/library-a";
   const runtime: LibraryIntegrityRuntime = {
@@ -130,8 +131,8 @@ describe("Library repair previews", () => {
       files: [],
       deletedAt: null,
     };
-    const committed: Transaction[][] = [];
-    const undo: Transaction[][] = [];
+    const committed: Array<Array<Transaction>> = [];
+    const undo: Array<Array<Transaction>> = [];
     const runtime: LibraryIntegrityRuntime = {
       root: () => "/library",
       listSaves: async () => [row],
@@ -146,7 +147,7 @@ describe("Library repair previews", () => {
       readInfo: async () => ({ status: "missing" }),
     };
     const service = createLibraryRepairService({
-      now: () => 1_000,
+      now: () => 1000,
       libraryId: () => "pond",
       root: () => "/library",
       integrityRuntime: runtime,
@@ -193,7 +194,7 @@ describe("Library repair previews", () => {
       id: "original-save",
       title: "Sunset",
     };
-    const committed: Transaction[][] = [];
+    const committed: Array<Array<Transaction>> = [];
     const runtime: LibraryIntegrityRuntime = {
       root: () => "/library",
       listSaves: async () => [preview],
@@ -209,7 +210,7 @@ describe("Library repair previews", () => {
       eaglePreviewOriginal: async () => original,
     };
     const service = createLibraryRepairService({
-      now: () => 1_000,
+      now: () => 1000,
       libraryId: () => "pond",
       root: () => "/library",
       integrityRuntime: runtime,
@@ -275,7 +276,7 @@ describe("Library repair previews", () => {
         },
       ],
     };
-    const committed: Transaction[][] = [];
+    const committed: Array<Array<Transaction>> = [];
     const runtime: LibraryIntegrityRuntime = {
       root: () => root,
       listSaves: async () => [row],
@@ -290,7 +291,7 @@ describe("Library repair previews", () => {
       readInfo: async () => ({ status: "missing" }),
     };
     const service = createLibraryRepairService({
-      now: () => 1_000,
+      now: () => 1000,
       libraryId: () => "pond",
       root: () => root,
       integrityRuntime: runtime,

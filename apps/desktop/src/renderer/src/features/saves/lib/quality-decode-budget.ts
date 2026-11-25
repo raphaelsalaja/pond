@@ -10,7 +10,7 @@ export function createQualityDecodeBudget(
   maxActive = MAX_ACTIVE_DECODES,
   maxQueued = MAX_QUEUED_DECODES,
 ) {
-  const queue: DecodeTask[] = [];
+  const queue: Array<DecodeTask> = [];
   let active = 0;
 
   const drain = () => {

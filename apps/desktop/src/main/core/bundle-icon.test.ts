@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import {
   appBundlePath,
   clearBundleFlag,
@@ -11,7 +11,7 @@ import {
   withoutBundleFlag,
 } from "./bundle-icon";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(() => {
   for (const root of roots.splice(0)) {
@@ -62,38 +62,39 @@ function finderInfo(flags: number): Buffer {
 
 describe("withoutBundleFlag", () => {
   it("clears the bundle flag and keeps the custom icon flag", () => {
-    expect(withoutBundleFlag(finderInfo(0x2400))).toEqual(finderInfo(0x0400));
+    expect(withoutBundleFlag(finderInfo(0x24_00))).toEqual(finderInfo(0x04_00));
   });
 
   it("leaves Finder info without the bundle flag alone", () => {
-    expect(withoutBundleFlag(finderInfo(0x0400))).toBeNull();
+    expect(withoutBundleFlag(finderInfo(0x04_00))).toBeNull();
     expect(withoutBundleFlag(Buffer.alloc(4))).toBeNull();
   });
 });
 
-describe.skipIf(process.platform !== "darwin")("clearBundleFlag", () => {
-  function flagsOf(folder: string): string {
-    return execFileSync("/usr/bin/xattr", [
-      "-px",
-      "com.apple.FinderInfo",
-      folder,
-    ])
-      .toString()
-      .replace(/\s/g, "")
-      .slice(16, 20);
-  }
+function flagsOf(folder: string): string {
+  return execFileSync("/usr/bin/xattr", ["-px", "com.apple.FinderInfo", folder])
+    .toString()
+    .replaceAll(/\s/g, "")
+    .slice(16, 20);
+}
 
-  it("turns a folder synced as a package back into a folder", async () => {
+describe.skipIf(process.platform !== "darwin")("clearBundleFlag", () => {
+  let clearedFlags = "";
+
+  beforeAll(async () => {
     const folder = fakeBundle();
     execFileSync("/usr/bin/xattr", [
       "-wx",
       "com.apple.FinderInfo",
-      finderInfo(0x2400).toString("hex"),
+      finderInfo(0x24_00).toString("hex"),
       folder,
     ]);
-
     await clearBundleFlag(folder);
-    expect(flagsOf(folder)).toBe("0400");
+    clearedFlags = flagsOf(folder);
+  });
+
+  it("turns a folder synced as a package back into a folder", () => {
+    expect(clearedFlags).toBe("0400");
   });
 
   it("does nothing to a folder without Finder info", async () => {
@@ -101,28 +102,32 @@ describe.skipIf(process.platform !== "darwin")("clearBundleFlag", () => {
   });
 });
 
-/** Each case runs osascript up to twice, and each run may take the full 8s exec timeout under load. */
-describe.skipIf(process.platform !== "darwin")(
-  "setBundleIcon",
-  {
-    timeout: 20_000,
-  },
-  () => {
-    it("keeps the chosen icon on the bundle until it is reset", async () => {
-      const bundle = fakeBundle();
+/** Each osascript run may take the full 8s exec timeout under load, so each hook makes one. */
+describe.skipIf(process.platform !== "darwin")("setBundleIcon", () => {
+  let bundle = "";
+  let customAfterSet = false;
+  let customAfterReset = true;
 
-      await setBundleIcon(bundle, ICON);
-      expect(hasCustomBundleIcon(bundle)).toBe(true);
+  beforeAll(async () => {
+    bundle = fakeBundle();
+    await setBundleIcon(bundle, ICON);
+    customAfterSet = hasCustomBundleIcon(bundle);
+  });
 
-      await setBundleIcon(bundle, null);
-      expect(hasCustomBundleIcon(bundle)).toBe(false);
-    });
+  beforeAll(async () => {
+    await setBundleIcon(bundle, null);
+    customAfterReset = hasCustomBundleIcon(bundle);
+  });
 
-    it("does nothing when resetting a bundle that has no custom icon", async () => {
-      const bundle = fakeBundle();
+  it("keeps the chosen icon on the bundle until it is reset", () => {
+    expect(customAfterSet).toBe(true);
+    expect(customAfterReset).toBe(false);
+  });
 
-      await setBundleIcon(bundle, null);
-      expect(hasCustomBundleIcon(bundle)).toBe(false);
-    });
-  },
-);
+  it("does nothing when resetting a bundle that has no custom icon", async () => {
+    const empty = fakeBundle();
+
+    await setBundleIcon(empty, null);
+    expect(hasCustomBundleIcon(empty)).toBe(false);
+  });
+});

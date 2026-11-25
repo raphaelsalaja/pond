@@ -1,12 +1,15 @@
 import { IconXmark } from "@pond/icons";
 import { Button, Input, Select } from "@pond/ui";
+import { isNode } from "@pond/ui/dom";
+import log from "electron-log/renderer";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { chordGlyphs, SHORTCUT_PLATFORM } from "@/shared/lib/shortcuts";
 import type { PondCaptureApi } from "../../../../preload/quick-capture";
 import type { QuickCaptureSnapshot } from "../../../../shared/quick-capture-contracts";
 import { paintShell } from "../boot-shell";
-import { initialFields, type QuickCaptureFields } from "./fields";
+import { initialFields } from "./fields";
+import type { QuickCaptureFields } from "./fields";
 import { folderOptions } from "./folder-options";
 import styles from "./styles.module.css";
 
@@ -96,7 +99,7 @@ export function QuickCaptureOverlay() {
     void window.pondCapture?.keep(next);
   }
 
-  function addPaths(next: string[]) {
+  function addPaths(next: Array<string>) {
     edit({ paths: [...new Set([...paths, ...next.filter(Boolean)])] });
   }
 
@@ -118,23 +121,24 @@ export function QuickCaptureOverlay() {
       const count = result?.count ?? 0;
       setDone(count === 1 ? "Captured" : `Captured ${count} Saves`);
       window.setTimeout(dismiss, DONE_MS);
-    } catch (cause) {
-      console.error("[pond quick-capture] capture failed", cause);
-      setError(errorCopy(cause, CAPTURE_FAILED));
+    } catch (error_) {
+      log.error("[pond quick-capture] capture failed", error_);
+      setError(errorCopy(error_, CAPTURE_FAILED));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: the whole window is a drop target and listens for Escape.
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- the whole window is a drop target and listens for Escape
     <div
       className={styles.root}
       onKeyDown={(event) => {
         /** Escape in the portaled folder list closes the list, not the window. */
         const target = event.target;
-        if (!(target instanceof Node) || !event.currentTarget.contains(target))
+        if (!isNode(target) || !event.currentTarget.contains(target)) {
           return;
+        }
         if (event.key === "Escape") {
           event.preventDefault();
           dismiss();
@@ -150,7 +154,9 @@ export function QuickCaptureOverlay() {
       onDragEnter={() => void window.pondCapture?.drag("enter")}
       onDragLeave={(event) => {
         const next = event.relatedTarget;
-        if (next instanceof Node && event.currentTarget.contains(next)) return;
+        if (isNode(next) && event.currentTarget.contains(next)) {
+          return;
+        }
         setDragging(false);
         void window.pondCapture?.drag("leave");
       }}
@@ -160,8 +166,11 @@ export function QuickCaptureOverlay() {
         const api = window.pondCapture;
         if (!api) return;
         void api.drag("drop");
-        if (!locked)
-          addPaths([...event.dataTransfer.files].map(api.pathForFile));
+        if (!locked) {
+          addPaths(
+            [...event.dataTransfer.files].map((file) => api.pathForFile(file)),
+          );
+        }
       }}
     >
       <form
@@ -218,8 +227,9 @@ export function QuickCaptureOverlay() {
             items={folders.items}
             value={folderId ?? INBOX}
             onValueChange={(next) => {
-              if (next !== null)
+              if (next !== null) {
                 edit({ folderId: next === INBOX ? null : next });
+              }
             }}
             disabled={locked}
           >
@@ -248,7 +258,7 @@ export function QuickCaptureOverlay() {
                 ?.pick()
                 .then(addPaths)
                 .catch((cause: unknown) => {
-                  console.error("[pond quick-capture] pick failed", cause);
+                  log.error("[pond quick-capture] pick failed", cause);
                   setError("The file picker didn't open. Try again.");
                 })
             }

@@ -1,5 +1,5 @@
 import type { RawImage } from "@huggingface/transformers";
-import * as ort from "onnxruntime-web/webgpu";
+import { env, InferenceSession, Tensor } from "onnxruntime-web/webgpu";
 import { configuredWasmThreads, pickDevice } from "./inference-device";
 import {
   SENSITIVE_CONTENT_MODEL_SHA256,
@@ -14,7 +14,11 @@ const RETIRED_MODEL_URLS = [
 const INPUT_SIZE = 224;
 const INFERENCE_BATCH_SIZE = 4;
 
-let sessionPromise: Promise<ort.InferenceSession> | null = null;
+let sessionPromise: Promise<InferenceSession> | null = null;
+
+function isFloat32Array(value: unknown): value is Float32Array {
+  return Object.prototype.toString.call(value) === "[object Float32Array]";
+}
 
 async function sha256(bytes: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
@@ -38,10 +42,14 @@ async function fetchModel(): Promise<ArrayBuffer> {
   try {
     cache = (await globalThis.caches?.open(MODEL_CACHE)) ?? null;
   } catch (error) {
+    // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
     console.warn("[sensitive-content] model cache unavailable", error);
   }
   for (const url of RETIRED_MODEL_URLS) {
-    cache?.delete(url).catch(() => {});
+    cache?.delete(url).catch((cause: unknown) => {
+      // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
+      console.warn("[sensitive-content] retired model cleanup failed", cause);
+    });
   }
   const cached = await cache?.match(request);
   if (cached) {
@@ -69,30 +77,34 @@ async function fetchModel(): Promise<ArrayBuffer> {
         }),
       );
     } catch (error) {
+      // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
       console.warn("[sensitive-content] model cache write failed", error);
     }
   }
   return bytes;
 }
 
-async function createSession(): Promise<ort.InferenceSession> {
+async function createSession(): Promise<InferenceSession> {
   const bytes = await fetchModel();
-  ort.env.wasm.numThreads = configuredWasmThreads();
+  env.wasm.numThreads = configuredWasmThreads();
   const device = await pickDevice();
-  const executionProviders: ort.InferenceSession.ExecutionProviderConfig[] =
+  const executionProviders: Array<InferenceSession.ExecutionProviderConfig> =
     device === "webgpu" ? ["webgpu", "wasm"] : ["wasm"];
   try {
-    return await ort.InferenceSession.create(bytes, { executionProviders });
+    return await InferenceSession.create(bytes, { executionProviders });
   } catch (error) {
-    if (device !== "webgpu") throw error;
+    if (device !== "webgpu") {
+      throw error;
+    }
+    // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
     console.warn("[sensitive-content] WebGPU build failed; using WASM", error);
-    return ort.InferenceSession.create(bytes, {
+    return InferenceSession.create(bytes, {
       executionProviders: ["wasm"],
     });
   }
 }
 
-function getSession(): Promise<ort.InferenceSession> {
+function getSession(): Promise<InferenceSession> {
   if (!sessionPromise) {
     sessionPromise = createSession();
     sessionPromise.catch(() => {
@@ -121,10 +133,10 @@ async function squash(image: RawImage): Promise<ImageData> {
   return context.getImageData(0, 0, INPUT_SIZE, INPUT_SIZE);
 }
 
-async function batchTensor(images: RawImage[]): Promise<ort.Tensor> {
+async function batchTensor(images: Array<RawImage>): Promise<Tensor> {
   const rows = await Promise.all(
     images.map(async (image) =>
-      ort.Tensor.fromImage(await squash(image), {
+      Tensor.fromImage(await squash(image), {
         dataType: "float32",
         tensorFormat: "RGB",
         tensorLayout: "NCHW",
@@ -135,24 +147,19 @@ async function batchTensor(images: RawImage[]): Promise<ort.Tensor> {
   const rowSize = 3 * INPUT_SIZE * INPUT_SIZE;
   const data = new Float32Array(rows.length * rowSize);
   for (const [index, row] of rows.entries()) {
-    if (!(row.data instanceof Float32Array)) {
+    if (!isFloat32Array(row.data)) {
       throw new Error("Sensitive-content preprocessing returned invalid data");
     }
     data.set(row.data, index * rowSize);
     row.dispose();
   }
-  return new ort.Tensor("float32", data, [
-    rows.length,
-    3,
-    INPUT_SIZE,
-    INPUT_SIZE,
-  ]);
+  return new Tensor("float32", data, [rows.length, 3, INPUT_SIZE, INPUT_SIZE]);
 }
 
 async function classifyBatch(
-  session: ort.InferenceSession,
-  images: RawImage[],
-): Promise<number[]> {
+  session: InferenceSession,
+  images: Array<RawImage>,
+): Promise<Array<number>> {
   const input = await batchTensor(images);
   try {
     const inputName = session.inputNames[0];
@@ -164,7 +171,7 @@ async function classifyBatch(
     const output = outputs[outputName];
     if (!output) throw new Error("Sensitive-content model returned no logits");
     try {
-      if (!(output.data instanceof Float32Array)) {
+      if (!isFloat32Array(output.data)) {
         throw new Error("Sensitive-content model returned invalid logits");
       }
       return sensitiveProbabilitiesFromLogits(output.data);
@@ -176,10 +183,14 @@ async function classifyBatch(
   }
 }
 
-export async function runSensitiveModel(images: RawImage[]): Promise<number[]> {
-  if (images.length === 0) return [];
+export async function runSensitiveModel(
+  images: Array<RawImage>,
+): Promise<Array<number>> {
+  if (images.length === 0) {
+    return [];
+  }
   const session = await getSession();
-  const scores: number[] = [];
+  const scores: Array<number> = [];
   for (let index = 0; index < images.length; index += INFERENCE_BATCH_SIZE) {
     scores.push(
       ...(await classifyBatch(

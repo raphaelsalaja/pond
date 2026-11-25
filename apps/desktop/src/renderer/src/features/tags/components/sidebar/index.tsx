@@ -1,14 +1,12 @@
 import { IconFolder, IconPlus, IconStar, IconTag } from "@pond/icons";
 import { Button, Sidebar, Tooltip } from "@pond/ui";
-import { type ReactNode, useMemo } from "react";
+import { useMemo } from "react";
+import type { ReactNode } from "react";
 import { tagCreation } from "@/features/tags/state/creation";
 import { useTagGroups } from "@/features/tags/state/tag-groups";
 import { useTags } from "@/features/tags/state/tags";
-import {
-  type TagsScope,
-  tagsScope,
-  useTagsScope,
-} from "@/features/tags/state/tags-scope";
+import { tagsScope, useTagsScope } from "@/features/tags/state/tags-scope";
+import type { TagsScope } from "@/features/tags/state/tags-scope";
 
 function Row({
   scope,

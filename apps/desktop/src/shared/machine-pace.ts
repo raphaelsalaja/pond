@@ -31,13 +31,15 @@ export interface MachinePace {
 export const THERMAL_RELIEF_MS = 20_000;
 
 const REST_MIN_MS = 400;
-const REST_MAX_MS = 3_000;
+const REST_MAX_MS = 3000;
 /** Battery, a background window, and fair heat stack, but the rest stays bounded so a backlog still finishes. */
 const COOLDOWN_FACTOR_CAP = 4;
 
 function thermalHot(pace: MachinePace, now: number): boolean {
-  if (pace.thermal === "serious" || pace.thermal === "critical") return true;
-  return pace.reliefAt != null && now - pace.reliefAt < THERMAL_RELIEF_MS;
+  if (pace.thermal === "serious" || pace.thermal === "critical") {
+    return true;
+  }
+  return pace.reliefAt !== null && now - pace.reliefAt < THERMAL_RELIEF_MS;
 }
 
 /** Decorative motion stops while Pond is covered, unfocused, or the Mac is warm. */

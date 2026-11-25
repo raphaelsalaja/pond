@@ -13,7 +13,7 @@ export interface McpHostWatchInput {
   pollMs?: number;
 }
 
-const PARENT_POLL_MS = 5_000;
+const PARENT_POLL_MS = 5000;
 
 /** Electron keeps running after the stdio transport closes, so a host that quits would leave this process running forever. */
 export function watchMcpHost({

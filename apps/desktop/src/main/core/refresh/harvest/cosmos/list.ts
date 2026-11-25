@@ -9,7 +9,13 @@ interface JsonRecord {
   [key: string]: JsonValue;
 }
 
-type JsonValue = string | number | boolean | null | JsonValue[] | JsonRecord;
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Array<JsonValue>
+  | JsonRecord;
 
 export const COSMOS_LIST_URL = "https://www.cosmos.so/library";
 
@@ -52,13 +58,15 @@ async function inPageCosmosList(
     description?: string;
     author?: string;
     mediaUrl?: string;
-    mediaUrls?: CosmosEntryMedia[];
+    mediaUrls?: Array<CosmosEntryMedia>;
     mediaType?: MediaType;
     savedAt?: string;
   }
 
-  const isRecord = (value: JsonValue | undefined): value is JsonRecord =>
+  const isRecord = (value: unknown): value is JsonRecord =>
     validators.object.safeParse(value).success;
+  const isWalkable = (value: unknown): value is JsonValue =>
+    Array.isArray(value) || isRecord(value);
   const asText = (value: JsonValue | undefined): string | undefined =>
     validators.text.safeParse(value).data;
   const asNumber = (value: JsonValue | undefined): number | undefined =>
@@ -93,7 +101,7 @@ async function inPageCosmosList(
 
   const pickString = (
     record: JsonRecord,
-    keys: string[],
+    keys: Array<string>,
   ): string | undefined => {
     for (const k of keys) {
       const v = asText(record[k]);
@@ -208,8 +216,10 @@ async function inPageCosmosList(
       : undefined;
     const capText = cap ? pickString(cap, ["text"]) : undefined;
     if (capText) {
-      const cleaned = capText.replace(/<\/?n>/g, "").trim();
-      if (cleaned.length > 0) return cleaned;
+      const cleaned = capText.replaceAll(/<\/?n>/g, "").trim();
+      if (cleaned.length > 0) {
+        return cleaned;
+      }
     }
     return undefined;
   };
@@ -275,17 +285,23 @@ async function inPageCosmosList(
 
   const walk = (root: JsonValue): IngestResult => {
     let added = 0;
-    const stack: JsonValue[] = [root];
+    const stack: Array<JsonValue> = [root];
     let safety = 250_000;
     while (stack.length > 0 && safety > 0) {
       safety -= 1;
       const node = stack.pop();
-      if (node === null || node === undefined) continue;
-      if (Array.isArray(node)) {
-        for (const child of node) stack.push(child);
+      if (node === null || node === undefined) {
         continue;
       }
-      if (!isRecord(node)) continue;
+      if (Array.isArray(node)) {
+        for (const child of node) {
+          stack.push(child);
+        }
+        continue;
+      }
+      if (!isRecord(node)) {
+        continue;
+      }
       const entry = entryFromTile(node);
       if (entry && !collected.has(entry.sourceId)) {
         collected.set(entry.sourceId, entry);
@@ -294,8 +310,9 @@ async function inPageCosmosList(
       }
       for (const key of Object.keys(node)) {
         const child = node[key];
-        if (child !== undefined && (Array.isArray(child) || isRecord(child)))
+        if (child !== undefined && (Array.isArray(child) || isRecord(child))) {
           stack.push(child);
+        }
       }
     }
     return { added };
@@ -305,14 +322,17 @@ async function inPageCosmosList(
     cache?: { extract?: () => JsonValue };
   }
 
+  const isApolloClient = (value: unknown): value is ApolloDevtoolsClient =>
+    isRecord(value);
+
   const readApolloSSR = (): JsonValue | null => {
     try {
       const sym = Symbol.for("ApolloSSRDataTransport");
-      const transport: JsonValue | undefined = Object.getOwnPropertyDescriptor(
+      const transport: unknown = Object.getOwnPropertyDescriptor(
         globalThis,
         sym,
       )?.value;
-      return transport ?? null;
+      return isWalkable(transport) ? transport : null;
     } catch {
       return null;
     }
@@ -320,9 +340,13 @@ async function inPageCosmosList(
 
   const readApolloCache = (): JsonValue | null => {
     try {
-      const ac: ApolloDevtoolsClient | undefined =
-        Object.getOwnPropertyDescriptor(globalThis, "__APOLLO_CLIENT__")?.value;
-      const extracted = ac?.cache?.extract?.();
+      const client: unknown = Object.getOwnPropertyDescriptor(
+        globalThis,
+        "__APOLLO_CLIENT__",
+      )?.value;
+      const extracted = isApolloClient(client)
+        ? client.cache?.extract?.()
+        : undefined;
       return extracted ?? null;
     } catch {
       return null;
@@ -339,9 +363,15 @@ async function inPageCosmosList(
       try {
         const u = new URL(a.href, location.origin);
         id = u.pathname.match(/\/e\/(\d+)/)?.[1] ?? null;
-      } catch {}
-      if (!id) continue;
-      if (collected.has(id)) continue;
+      } catch {
+        /** A malformed link leaves `id` null and is skipped. */
+      }
+      if (!id) {
+        continue;
+      }
+      if (collected.has(id)) {
+        continue;
+      }
 
       const card =
         a.closest("article, li, [class*='Tile'], [class*='tile']") ?? a;
@@ -380,8 +410,8 @@ async function inPageCosmosList(
     collectFromDom();
   };
 
-  const freshEntries = (): CosmosEntry[] => {
-    const out: CosmosEntry[] = [];
+  const freshEntries = (): Array<CosmosEntry> => {
+    const out: Array<CosmosEntry> = [];
     for (const [id, e] of collected) {
       if (known.has(id)) continue;
       out.push(e);
@@ -424,7 +454,9 @@ async function inPageCosmosList(
       break;
     }
     publishStats("hydrate");
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   ingestAll();
   publishStats("scroll");
@@ -448,7 +480,9 @@ async function inPageCosmosList(
       top: window.innerHeight * 0.9,
       behavior: "instant",
     });
-    await new Promise((r) => setTimeout(r, 700 + Math.random() * 300));
+    await new Promise((r) => {
+      setTimeout(r, 700 + Math.random() * 300);
+    });
     stats.scrolls += 1;
     ingestAll();
     publishStats("scroll");

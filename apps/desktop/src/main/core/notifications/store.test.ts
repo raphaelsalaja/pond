@@ -2,14 +2,14 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  type InboxNotification,
-  NOTIFICATION_CAP,
-  type NotificationPost,
+import { NOTIFICATION_CAP } from "../../../shared/notification-contracts";
+import type {
+  InboxNotification,
+  NotificationPost,
 } from "../../../shared/notification-contracts";
 import { capNotifications, createNotificationLog } from "./store";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
@@ -20,7 +20,7 @@ afterEach(async () => {
 async function setup() {
   const root = await mkdtemp(join(tmpdir(), "pond-notifications-"));
   roots.push(root);
-  const clock = { now: 1_000 };
+  const clock = { now: 1000 };
   const scope = { libraryId: "library-a" };
   let changes = 0;
   const log = createNotificationLog({
@@ -44,19 +44,28 @@ function post(id: string, extra: Partial<NotificationPost> = {}) {
   };
 }
 
+const storedRow = (id: string, kind: string) => ({
+  id,
+  kind,
+  priority: false,
+  title: `Title ${id}`,
+  createdAt: 1000,
+  updatedAt: 1000,
+});
+
 describe("notification log", () => {
   it("adds a notification and updates it in place when posted again", async () => {
     const { log, clock, changes } = await setup();
     await log.post(post("a", { body: "First" }));
-    clock.now = 2_000;
+    clock.now = 2000;
     await log.post(post("a", { body: "Second" }));
     const items = await log.list();
     expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({
       id: "a",
       body: "Second",
-      createdAt: 1_000,
-      updatedAt: 2_000,
+      createdAt: 1000,
+      updatedAt: 2000,
     });
     expect(changes()).toBe(2);
   });
@@ -72,8 +81,8 @@ describe("notification log", () => {
     const { log, clock } = await setup();
     await log.post(post("a", { body: "One" }));
     await log.markRead(["a"], true);
-    expect((await log.list())[0]?.readAt).toBe(1_000);
-    clock.now = 5_000;
+    expect((await log.list())[0]?.readAt).toBe(1000);
+    clock.now = 5000;
     await log.post(post("a", { body: "Two" }));
     expect((await log.list())[0]?.readAt).toBeUndefined();
   });
@@ -140,22 +149,14 @@ describe("notification log", () => {
 
   it("drops activity and retired kinds from a version 1 log", async () => {
     const { log, root } = await setup();
-    const row = (id: string, kind: string) => ({
-      id,
-      kind,
-      priority: false,
-      title: `Title ${id}`,
-      createdAt: 1_000,
-      updatedAt: 1_000,
-    });
     await writeFile(
       join(root, "library-a.json"),
       JSON.stringify({
         version: 1,
         notifications: [
-          row("toast", "activity"),
-          row("failure", "attention"),
-          row("notice", "announcement"),
+          storedRow("toast", "activity"),
+          storedRow("failure", "attention"),
+          storedRow("notice", "announcement"),
         ],
       }),
       "utf8",
@@ -172,25 +173,25 @@ describe("notification log", () => {
   });
 });
 
-describe("capNotifications", () => {
-  function item(index: number, read: boolean): InboxNotification {
-    return {
-      id: `n${index}`,
-      kind: "activity",
-      priority: false,
-      title: "Title",
-      createdAt: index,
-      updatedAt: index,
-      readAt: read ? index : undefined,
-    };
-  }
+function notificationAt(index: number, read: boolean): InboxNotification {
+  return {
+    id: `n${index}`,
+    kind: "activity",
+    priority: false,
+    title: "Title",
+    createdAt: index,
+    updatedAt: index,
+    readAt: read ? index : undefined,
+  };
+}
 
+describe("capNotifications", () => {
   it("drops the oldest read notifications first", () => {
     const items = [
-      item(0, false),
-      item(1, true),
+      notificationAt(0, false),
+      notificationAt(1, true),
       ...Array.from({ length: NOTIFICATION_CAP }, (_, index) =>
-        item(index + 2, false),
+        notificationAt(index + 2, false),
       ),
     ];
     const capped = capNotifications(items);

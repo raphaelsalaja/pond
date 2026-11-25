@@ -6,7 +6,8 @@ import type {
   StoredVideoDownload,
   VideoDownloadSettings,
 } from "@pond/schema/db";
-import { EXTERNAL_SOURCE_IDS, type ExternalSource } from "@pond/schema/sources";
+import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
+import type { ExternalSource } from "@pond/schema/sources";
 import { z } from "zod";
 
 const ALLOWED_HEIGHTS = new Set([
@@ -103,7 +104,7 @@ export function normalizeImage(
     lossless: stored.lossless ?? false,
     progressive: stored.progressive ?? false,
     preserveMetadata: stored.preserveMetadata ?? false,
-    maxFileSizeMb: clampFilesize(stored.maxFileSizeMb, 1_000),
+    maxFileSizeMb: clampFilesize(stored.maxFileSizeMb, 1000),
     splitPosts: stored.splitPosts ?? false,
     splitMinMedia:
       snapToSet(stored.splitMinMedia, ALLOWED_SPLIT_MIN_MEDIA, 2) ?? 2,
@@ -140,12 +141,16 @@ function sourceOverrides<T>(
   const out: SourceOverrides<T> = {};
   if (!sources) return out;
   for (const source of EXTERNAL_SOURCE_IDS) {
-    if (!(source in sources)) continue;
-    const parsed = schema.parse(sources[source] ?? {});
-    /** SAFETY: entries come from `parsed`, a Partial<T>, with only undefined values dropped. */
-    out[source] = Object.fromEntries(
-      Object.entries(parsed).filter(([, value]) => value !== undefined),
-    ) as Partial<T>;
+    if (!(source in sources)) {
+      continue;
+    }
+    const parsed: Partial<T> = { ...schema.parse(sources[source] ?? {}) };
+    for (const key in parsed) {
+      if (parsed[key] === undefined) {
+        delete parsed[key];
+      }
+    }
+    out[source] = parsed;
   }
   return out;
 }
@@ -165,7 +170,9 @@ export function imageSourceOverrides(
 function isExternal(
   source: Source | null | undefined,
 ): source is ExternalSource {
-  return source != null && EXTERNAL_SOURCES.has(source);
+  return (
+    source !== null && source !== undefined && EXTERNAL_SOURCES.has(source)
+  );
 }
 
 export function resolveVideo(

@@ -5,7 +5,7 @@ describe("addCollectionEntry", () => {
   it("keeps the first copy and records every collection", () => {
     const entries = new Map<
       string,
-      { title: string; collectionIds?: string[] }
+      { title: string; collectionIds?: Array<string> }
     >();
     addCollectionEntry(entries, "1", { title: "first" }, "a");
     addCollectionEntry(entries, "1", { title: "second" }, "b");

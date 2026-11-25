@@ -3,10 +3,9 @@
 
 import { mkdir, readdir, stat } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(import.meta.dirname, "..");
 const tintsRoot = resolve(root, "../../packages/icons/brand/tints");
 const outRoot = resolve(root, "build/dock-icons");
 const appIconsRoot = resolve(root, "build/app-icons");
@@ -29,10 +28,11 @@ const SHADOW = { blur: 17, offsetY: 8, opacity: 0.25 };
 async function tintImages(dir) {
   const images = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
-    if (entry.isFile() && /^(default|dark)\.png$/.test(entry.name))
+    if (entry.isFile() && /^(default|dark)\.png$/.test(entry.name)) {
       images.push(join(dir, entry.name));
-    else if (entry.isDirectory() && /^macos-\d+$/.test(entry.name))
+    } else if (entry.isDirectory() && /^macos-\d+$/.test(entry.name)) {
       images.push(...(await tintImages(join(dir, entry.name))));
+    }
   }
   return images;
 }

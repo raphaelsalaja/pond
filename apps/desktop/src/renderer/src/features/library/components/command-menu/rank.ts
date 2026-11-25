@@ -2,13 +2,14 @@ import { MIN_SCORE, matchItem } from "./score";
 import type { MenuEntry, MenuModel, MenuRow, RankedEntry } from "./types";
 
 export function rankEntries(
-  entries: readonly MenuEntry[],
+  entries: ReadonlyArray<MenuEntry>,
   query: string,
-): RankedEntry[] {
+): Array<RankedEntry> {
   const trimmed = query.trim();
-  if (!trimmed)
+  if (!trimmed) {
     return entries.map((entry) => ({ entry, score: 1, ranges: [] }));
-  const ranked: RankedEntry[] = [];
+  }
+  const ranked: Array<RankedEntry> = [];
   for (const entry of entries) {
     const match = matchItem(entry, trimmed);
     const weight = entry.scoreWeight ?? 1;
@@ -22,7 +23,7 @@ export function rankEntries(
 }
 
 interface ModelInput {
-  ranked: readonly RankedEntry[];
+  ranked: ReadonlyArray<RankedEntry>;
   /** Orders groups and entries by score; otherwise they keep input order. */
   byScore: boolean;
   limits?: Readonly<Record<string, number>>;
@@ -38,7 +39,7 @@ export function buildModel({
   status = null,
   footer = null,
 }: ModelInput): MenuModel {
-  const groups = new Map<string, RankedEntry[]>();
+  const groups = new Map<string, Array<RankedEntry>>();
   for (const item of ranked) {
     const list = groups.get(item.entry.group);
     if (list) list.push(item);
@@ -50,16 +51,17 @@ export function buildModel({
     ordered.sort(([, a], [, b]) => (b[0]?.score ?? 0) - (a[0]?.score ?? 0));
   }
 
-  const rows: MenuRow[] = [];
-  const entries: RankedEntry[] = [];
+  const rows: Array<MenuRow> = [];
+  const entries: Array<RankedEntry> = [];
   for (const [label, items] of ordered) {
-    if (label)
+    if (label) {
       rows.push({
         kind: "group",
         key: `group:${label}`,
         label,
         divided: rows.length > 0,
       });
+    }
     for (const item of items.slice(0, limits[label] ?? items.length)) {
       rows.push({
         kind: "entry",

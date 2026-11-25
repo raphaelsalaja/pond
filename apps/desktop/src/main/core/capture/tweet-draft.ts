@@ -18,7 +18,7 @@ export interface TweetDraft {
   author?: CaptureAuthor;
   publishedAt?: string;
   lang?: string;
-  media: CaptureMedia[];
+  media: Array<CaptureMedia>;
   metrics?: CaptureMetrics;
   quoted?: TweetDraft;
   replyTo?: TweetDraft;
@@ -118,7 +118,7 @@ export interface RichPostDraft {
     avatarUrl?: string;
     verified?: boolean;
   };
-  media: RichPostMedia[];
+  media: Array<RichPostMedia>;
   metrics?: CaptureMetrics;
   quoted?: RichPostDraft;
   replyTo?: RichPostDraft;
@@ -314,10 +314,10 @@ function draftFromQuotedMeta(
 }
 
 function buildMedia(
-  metaMedia: HarvestMedia[] | undefined,
+  metaMedia: Array<HarvestMedia> | undefined,
   mediaUrls: Array<{ url: string; type?: string; poster?: string }> | undefined,
-): CaptureMedia[] {
-  const out: CaptureMedia[] = [];
+): Array<CaptureMedia> {
+  const out: Array<CaptureMedia> = [];
   const seen = new Set<string>();
   const push = (m: CaptureMedia): void => {
     if (seen.has(m.url)) return;

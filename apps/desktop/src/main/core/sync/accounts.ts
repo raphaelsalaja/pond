@@ -1,8 +1,8 @@
-import {
-  type ConnectedAccount,
-  DEFAULT_SOURCE_SYNC_PREFS,
-  type Source,
-  type SourceSyncPrefs,
+import { DEFAULT_SOURCE_SYNC_PREFS } from "@pond/schema/db";
+import type {
+  ConnectedAccount,
+  Source,
+  SourceSyncPrefs,
 } from "@pond/schema/db";
 import { session } from "electron";
 import log from "electron-log/main.js";
@@ -18,7 +18,7 @@ export function partitionForAccount(accountId: string): string {
   return `persist:pond-acct-${accountId}`;
 }
 
-export async function listAccounts(): Promise<ConnectedAccount[]> {
+export async function listAccounts(): Promise<Array<ConnectedAccount>> {
   const prefs = await getPrefs();
   return Object.values(prefs.sync.accounts ?? {}).sort((a, b) =>
     a.addedAt.localeCompare(b.addedAt),
@@ -27,7 +27,7 @@ export async function listAccounts(): Promise<ConnectedAccount[]> {
 
 export async function listAccountsForSource(
   source: Source,
-): Promise<ConnectedAccount[]> {
+): Promise<Array<ConnectedAccount>> {
   return (await listAccounts()).filter((a) => a.source === source);
 }
 
@@ -147,8 +147,8 @@ export async function removeAccount(accountId: string): Promise<void> {
     await session
       .fromPartition(partitionForAccount(accountId))
       .clearStorageData();
-  } catch (err) {
-    log.warn("[pond accounts] partition wipe failed", accountId, err);
+  } catch (error) {
+    log.warn("[pond accounts] partition wipe failed", accountId, error);
   }
 }
 

@@ -1,40 +1,38 @@
-import {
-  type DuplicateDismissal,
-  type DuplicateGroup,
-  type DuplicatePair,
-  relationRank,
+import { relationRank } from "../../../shared/duplicate-contracts";
+import type {
+  DuplicateDismissal,
+  DuplicateGroup,
+  DuplicatePair,
 } from "../../../shared/duplicate-contracts";
 import { buildPairs } from "./classify";
 import { groupPairs } from "./group";
 import { audioMatches } from "./matchers/audio";
 import { imageMatches } from "./matchers/image";
-import { type NeighborStore, semanticMatches } from "./matchers/semantic";
+import { semanticMatches } from "./matchers/semantic";
+import type { NeighborStore } from "./matchers/semantic";
 import { sha256Matches } from "./matchers/sha256";
-import { type ClassifyUrl, sourceMatches } from "./matchers/source";
+import { sourceMatches } from "./matchers/source";
+import type { ClassifyUrl } from "./matchers/source";
 import { videoMatches } from "./matchers/video";
-import {
-  type FingerprintSets,
-  type Found,
-  type LibrarySave,
-  pairKey,
-} from "./types";
+import { pairKey } from "./types";
+import type { FingerprintSets, Found, LibrarySave } from "./types";
 
 export interface MatchOptions {
   classifyUrl: ClassifyUrl;
   fingerprints?: FingerprintSets;
   semantic?: { store: NeighborStore; model: string };
   scope?: ReadonlySet<string>;
-  dismissed?: readonly DuplicateDismissal[];
+  dismissed?: ReadonlyArray<DuplicateDismissal>;
 }
 
 export interface MatchResult {
-  pairs: DuplicatePair[];
-  groups: DuplicateGroup[];
+  pairs: Array<DuplicatePair>;
+  groups: Array<DuplicateGroup>;
 }
 
 /** A dismissed pair comes back only once newer evidence makes the relation stronger than the one dismissed. */
 function dismissedFilter(
-  dismissed: readonly DuplicateDismissal[] | undefined,
+  dismissed: ReadonlyArray<DuplicateDismissal> | undefined,
 ): (pair: DuplicatePair) => boolean {
   if (!dismissed?.length) return () => true;
   const weakest = new Map<string, number>();
@@ -49,7 +47,7 @@ function dismissedFilter(
   };
 }
 
-function sortPairs(pairs: DuplicatePair[]): DuplicatePair[] {
+function sortPairs(pairs: Array<DuplicatePair>): Array<DuplicatePair> {
   return pairs.sort(
     (left, right) =>
       relationRank(left.relation) - relationRank(right.relation) ||
@@ -60,10 +58,10 @@ function sortPairs(pairs: DuplicatePair[]): DuplicatePair[] {
 
 /** Groups are built over the whole Library first, so a scoped scan still sees the links between out-of-scope partners. */
 export function matchLibrary(
-  saves: readonly LibrarySave[],
+  saves: ReadonlyArray<LibrarySave>,
   options: MatchOptions,
 ): MatchResult {
-  const found: Found[] = [
+  const found: Array<Found> = [
     ...sha256Matches(saves),
     ...sourceMatches(saves, options.classifyUrl),
   ];
@@ -96,7 +94,7 @@ export function matchLibrary(
     group.ids.some((id) => scope.has(id)),
   );
   const remap = new Map<number, number>();
-  const scopedPairs: DuplicatePair[] = [];
+  const scopedPairs: Array<DuplicatePair> = [];
   for (const group of scopedGroups) {
     for (const position of group.pairs) {
       const pair = pairs[position];

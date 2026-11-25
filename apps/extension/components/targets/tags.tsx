@@ -8,16 +8,16 @@ import styles from "./styles.module.css";
 const SUGGESTIONS = 40;
 
 interface TagsProps {
-  tags: Tag[];
-  recent: string[];
-  value: string[];
-  onValueChange: (value: string[]) => void;
+  tags: Array<Tag>;
+  recent: Array<string>;
+  value: Array<string>;
+  onValueChange: (value: Array<string>) => void;
   /** Popups render in the shadow root when the picker lives on a page. */
   container?: HTMLElement | null;
   className?: string;
 }
 
-function merge(current: string[], added: string[]): string[] {
+function merge(current: Array<string>, added: Array<string>): Array<string> {
   const seen = new Set(current.map((tag) => tag.toLowerCase()));
   const next = [...current];
   for (const tag of added) {

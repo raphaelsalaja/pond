@@ -1,7 +1,7 @@
 import { IconFolderPlus } from "@pond/icons";
 import { describe, expect, it, vi } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { userEvent } from "vitest/browser";
 import { Button } from ".";
 
 describe("Button keyboard", () => {

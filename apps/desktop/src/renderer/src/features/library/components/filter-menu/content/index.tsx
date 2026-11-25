@@ -11,15 +11,16 @@ export function ContentFilter({
   onChange,
 }: {
   field: FieldId;
-  rows: Predicate[];
+  rows: Array<Predicate>;
   search: string;
-  onChange: (rows: Predicate[]) => void;
+  onChange: (rows: Array<Predicate>) => void;
 }) {
   const label = FIELD_META[field].label;
   const Icon = fieldIcon(field);
   const rules = rows.filter((row) => row.field === field);
   const contains = rules.find((row) => row.operator === "contains")?.value;
-  const phrase = contains == null ? null : String(contains);
+  const phrase =
+    contains === null || contains === undefined ? null : String(contains);
   const draft = search.trim();
   const apply = (rule?: Predicate) =>
     onChange([

@@ -1,12 +1,12 @@
 import {
   createContext,
-  type ReactNode,
   use,
   useCallback,
   useEffect,
   useLayoutEffect,
   useState,
 } from "react";
+import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   HudBarVariant,

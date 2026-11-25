@@ -1,18 +1,19 @@
 import {
   createTokenInputController,
   fromText,
-  type Token,
-  type TokenCodec,
   TokenInputEditor,
   TokenInput as TokenInputRoot,
   TokenInputToken,
   TokenInputTokenRemove,
-  type TokenInputValue,
   toText,
+} from "@ui-sdk/react/token-input";
+import type {
+  Token,
+  TokenCodec,
+  TokenInputValue,
 } from "@ui-sdk/react/token-input";
 import {
   createTriggerMenuController,
-  type TriggerDefinition,
   TriggerMenu,
   TriggerMenuContent,
   TriggerMenuEmpty,
@@ -23,6 +24,7 @@ import {
   TriggerMenuList,
   TriggerMenuStatus,
 } from "@ui-sdk/react/trigger-menu";
+import type { TriggerDefinition } from "@ui-sdk/react/trigger-menu";
 import { clsx as cn } from "clsx";
 import type { ComponentProps, ComponentPropsWithoutRef } from "react";
 import { withClass } from "../shared/state-class";

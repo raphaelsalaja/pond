@@ -1,10 +1,8 @@
 import sharp from "sharp";
 import { beforeAll, describe, expect, it } from "vitest";
 import { hamming64 } from "../../lib/fingerprint/bits";
-import {
-  decodeImagePrint,
-  type ImagePrint,
-} from "../../lib/fingerprint/image-print";
+import { decodeImagePrint } from "../../lib/fingerprint/image-print";
+import type { ImagePrint } from "../../lib/fingerprint/image-print";
 import { matchLibrary } from "./engine";
 import { imageFingerprint } from "./fingerprint-compute";
 import { IMAGE_CENTER_DISTANCE, IMAGE_FULL_DISTANCE } from "./matchers/image";
@@ -65,8 +63,9 @@ beforeAll(async () => {
     .png()
     .toBuffer();
   images.inverted = await raw(scenePixels(true)).png().toBuffer();
-  for (const [name, image] of Object.entries(images))
+  for (const [name, image] of Object.entries(images)) {
     prints[name] = await printOf(image);
+  }
 });
 
 function print(name: string): ImagePrint {
@@ -75,13 +74,16 @@ function print(name: string): ImagePrint {
   return found;
 }
 
+const sha = (index: number) => String(index + 1).padEnd(64, "0");
+
 describe("image fingerprints", () => {
   it("survives resizing, re-encoding and EXIF rotation", () => {
     const original = print("original");
-    for (const name of ["resized", "jpeg", "rotated"])
+    for (const name of ["resized", "jpeg", "rotated"]) {
       expect(hamming64(print(name).full, original.full)).toBeLessThanOrEqual(
         IMAGE_FULL_DISTANCE,
       );
+    }
   });
 
   it("lines up a bordered copy through its center print", () => {
@@ -105,8 +107,7 @@ describe("image fingerprints", () => {
 
   it("matches the copies and leaves the different image out", async () => {
     const names = ["original", "resized", "bordered", "inverted"];
-    const sha = (index: number) => String(index + 1).padEnd(64, "0");
-    const saves: LibrarySave[] = names.map((name, index) => ({
+    const saves: Array<LibrarySave> = names.map((name, index) => ({
       id: name,
       source: "local",
       sourceId: "",

@@ -1,10 +1,15 @@
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
 
-export function viewAccountItems(accountId: string | readonly string[]): void {
-  const ids = Array.isArray(accountId) ? [...accountId] : [accountId];
+export function viewAccountItems(
+  accountId: string | ReadonlyArray<string>,
+): void {
+  const ids = [accountId].flat();
   const id = ids[0];
   const router = getAppRouter();
-  if (!id || !router) return;
+  const history = getAppHistory();
+  if (!id || !router || !history) {
+    return;
+  }
   const filters = {
     combinator: "and",
     rules: [
@@ -13,5 +18,5 @@ export function viewAccountItems(accountId: string | readonly string[]): void {
         : { field: "account", operator: "in", value: ids },
     ],
   };
-  router.history.push(`/${router.options.stringifySearch({ filters })}`);
+  history.push(`/${router.options.stringifySearch({ filters })}`);
 }

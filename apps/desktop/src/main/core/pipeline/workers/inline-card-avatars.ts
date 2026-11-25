@@ -99,8 +99,8 @@ async function inlineCardMedia(capture: Capture, save: Save): Promise<void> {
   }
 }
 
-function collectCardImageUrls(capture: Capture): string[] {
-  const urls: string[] = [];
+function collectCardImageUrls(capture: Capture): Array<string> {
+  const urls: Array<string> = [];
   const add = (url: string | undefined) => {
     if (url && isHttpUrl(url)) urls.push(url);
   };
@@ -149,7 +149,7 @@ async function resolveCardImage(
   return null;
 }
 
-function twimgCandidates(url: string): string[] {
+function twimgCandidates(url: string): Array<string> {
   const out = [url];
   try {
     const u = new URL(url);

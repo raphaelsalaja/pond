@@ -29,14 +29,21 @@ function keyOf(value: string): string {
   return value.trim().toLowerCase().replace(/^@+/, "");
 }
 
-function aliases(ref: AccountRef): string[] {
-  const out: string[] = [
+function aliases(ref: AccountRef): Array<string> {
+  const out: Array<string> = [
     ref.id,
     localName(ref),
     ref.handle ?? "",
     ref.label ?? "",
   ];
-  return [...new Set(out.map(keyOf).filter(Boolean))];
+  return [
+    ...new Set(
+      out.flatMap((value) => {
+        const key = keyOf(value);
+        return key ? [key] : [];
+      }),
+    ),
+  ];
 }
 
 export function accountRefsFromSync(
@@ -66,8 +73,8 @@ export function accountRefsFromSync(
       }
     | null
     | undefined,
-): AccountRef[] {
-  const refs: AccountRef[] = [];
+): Array<AccountRef> {
+  const refs: Array<AccountRef> = [];
   for (const row of Object.values(sync?.accounts ?? {})) {
     refs.push({
       id: row.id,
@@ -91,19 +98,22 @@ export function accountRefsFromSync(
   return refs;
 }
 
-function liveRefs(): AccountRef[] {
+function liveRefs(): Array<AccountRef> {
   return accountRefsFromSync(getPrefsSnapshot()?.sync);
 }
 
 export function findAccountRef(
   id: string,
-  refs: readonly AccountRef[],
+  refs: ReadonlyArray<AccountRef>,
 ): AccountRef | undefined {
   const key = id.toLowerCase();
   return refs.find((row) => row.id.toLowerCase() === key);
 }
 
-function hitsFor(raw: string, refs: readonly AccountRef[]): AccountRef[] {
+function hitsFor(
+  raw: string,
+  refs: ReadonlyArray<AccountRef>,
+): Array<AccountRef> {
   const slash = raw.indexOf("/");
   if (slash > 0) {
     const source = raw.slice(0, slash).toLowerCase();
@@ -120,7 +130,7 @@ function hitsFor(raw: string, refs: readonly AccountRef[]): AccountRef[] {
 
 export function displayAccountToken(
   id: string,
-  refs: readonly AccountRef[] = liveRefs(),
+  refs: ReadonlyArray<AccountRef> = liveRefs(),
 ): string {
   const ref = findAccountRef(id, refs);
   if (!ref) return id;
@@ -135,7 +145,7 @@ export function accountDisplayName(ref: AccountRef): string {
 
 export function accountChipLabel(
   id: string,
-  refs: readonly AccountRef[] = liveRefs(),
+  refs: ReadonlyArray<AccountRef> = liveRefs(),
 ): string {
   const ref = findAccountRef(id, refs);
   if (!ref) return id;
@@ -146,7 +156,7 @@ export function accountChipLabel(
 
 export function resolveAccountToken(
   raw: string,
-  refs: readonly AccountRef[] = liveRefs(),
+  refs: ReadonlyArray<AccountRef> = liveRefs(),
 ): string {
   const matched = hitsFor(raw, refs);
   const hit = matched.length === 1 ? matched[0] : undefined;

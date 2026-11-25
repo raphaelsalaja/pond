@@ -1,7 +1,7 @@
+import { Settings } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
 import { Switch } from "../switch";
-import { Settings } from ".";
 
 function SyncSection() {
   return (

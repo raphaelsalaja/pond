@@ -1,7 +1,6 @@
-import {
-  CROP_HANDLES,
-  type CropHandle,
-} from "@/features/saves/lib/image-regions";
+import { isElement } from "@pond/ui/dom";
+import { CROP_HANDLES } from "@/features/saves/lib/image-regions";
+import type { CropHandle } from "@/features/saves/lib/image-regions";
 
 export const CROP_HANDLE_LABEL = {
   n: "Resize Top",
@@ -17,7 +16,9 @@ export const CROP_HANDLE_LABEL = {
 export function cropHandleFromTarget(
   target: EventTarget | null,
 ): CropHandle | null {
-  if (!(target instanceof Element)) return null;
+  if (!isElement(target)) {
+    return null;
+  }
   const value = target.closest("[data-handle]")?.getAttribute("data-handle");
   return CROP_HANDLES.find((handle) => handle === value) ?? null;
 }

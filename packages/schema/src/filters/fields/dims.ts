@@ -1,4 +1,5 @@
-import { type SQL, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { saves } from "../../db";
 import { defineField } from "./descriptor";
 
@@ -58,7 +59,16 @@ export function orientationFromDims(
   width: number | null | undefined,
   height: number | null | undefined,
 ): MediaOrientation | null {
-  if (width == null || height == null || width <= 0 || height <= 0) return null;
+  if (
+    width === null ||
+    width === undefined ||
+    height === null ||
+    height === undefined ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return null;
+  }
   const r = width / height;
   if (r >= 2) return "panoramic-landscape";
   if (r <= 0.5) return "panoramic-portrait";
@@ -71,7 +81,16 @@ export function aspectFromDims(
   width: number | null | undefined,
   height: number | null | undefined,
 ): string | null {
-  if (width == null || height == null || width <= 0 || height <= 0) return null;
+  if (
+    width === null ||
+    width === undefined ||
+    height === null ||
+    height === undefined ||
+    width <= 0 ||
+    height <= 0
+  ) {
+    return null;
+  }
   const r = width / height;
   for (const preset of ASPECT_PRESETS) {
     const target = ASPECT_TARGETS[preset.value];

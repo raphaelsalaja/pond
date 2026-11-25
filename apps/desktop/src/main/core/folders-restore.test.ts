@@ -1,15 +1,13 @@
 import type { Transaction } from "@pond/schema/tx";
 import { expect, it } from "vitest";
-import {
-  type RestoreSaveIntoFoldersRuntime,
-  restoreSaveIntoFolders,
-} from "./folders";
+import { restoreSaveIntoFolders } from "./folders";
+import type { RestoreSaveIntoFoldersRuntime } from "./folders";
 
 function fixture(
   planAssignments: RestoreSaveIntoFoldersRuntime["planAssignments"],
 ) {
-  const executed: Transaction[][] = [];
-  const recorded: Transaction[][] = [];
+  const executed: Array<Array<Transaction>> = [];
+  const recorded: Array<Array<Transaction>> = [];
   const runtime: RestoreSaveIntoFoldersRuntime = {
     run: (operation) => operation(),
     planAssignments,

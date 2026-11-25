@@ -91,10 +91,10 @@ export type ImportMediaKind = (typeof IMPORT_MEDIA_KINDS)[number];
 
 /** What an Account sync imports. An omitted part imports everything it covers. */
 export interface ImportScope {
-  listKinds?: ListKind[];
+  listKinds?: Array<ListKind>;
   /** Narrows the saved list to these collections. */
-  collections?: ImportCollection[];
-  mediaKinds?: ImportMediaKind[];
+  collections?: Array<ImportCollection>;
+  mediaKinds?: Array<ImportMediaKind>;
   /** Local calendar day (`YYYY-MM-DD`); posts published before it are skipped. */
   since?: string;
   /** Picked collections file under their Source unless this is false; with none picked, true files every collection. */
@@ -138,7 +138,7 @@ export interface SourceSyncPrefs {
 /** Where saves new to the library from one source are filed as they arrive. */
 export interface IncomingSaveRule {
   folderId?: string;
-  tags?: string[];
+  tags?: Array<string>;
 }
 
 export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
@@ -228,7 +228,7 @@ export interface WindowBounds {
 
 export type SourceMetricDisplay = "card" | "chip";
 
-export const DEFAULT_SOURCE_METRICS: string[] = [
+export const DEFAULT_SOURCE_METRICS: Array<string> = [
   "itemsSynced",
   "successRate",
   "runsToday",

@@ -26,7 +26,7 @@ describe("split all copy", () => {
     expect(splittableDescription(1)).toBe(
       "Splits 1 save with several images or videos, which can't be undone.",
     );
-    expect(splittableDescription(1_200)).toBe(
+    expect(splittableDescription(1200)).toBe(
       "Splits 1,200 saves with several images or videos, which can't be undone.",
     );
   });

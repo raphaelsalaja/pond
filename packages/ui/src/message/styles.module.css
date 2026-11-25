@@ -90,9 +90,7 @@
 /* Your messages are short, so they read as pills. */
 .message[data-from="user"] .bubble {
   border-radius: calc(
-    var(--message-line-height) /
-    2 +
-    var(--message-padding-block)
+    var(--message-line-height) / 2 + var(--message-padding-block)
   );
 }
 

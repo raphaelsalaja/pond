@@ -80,8 +80,9 @@ export interface UpdaterDeps {
 
 function defaultDeps(): UpdaterDeps {
   const asset = ytDlpAsset(process.platform, process.arch);
-  if (!asset && process.platform === "win32")
+  if (!asset && process.platform === "win32") {
     log.warn("[pond yt-dlp-update] no yt-dlp build for", process.arch);
+  }
   return {
     dir: userBinDir(),
     asset,
@@ -131,7 +132,9 @@ export async function ensureYtDlp(): Promise<void> {
  */
 export function recoverYtDlp(): Promise<void> {
   recovering ??= recoverFiles(defaultDeps())
-    .catch((err) => log.warn("[pond yt-dlp-update] recovery failed", err))
+    .catch((cause: unknown) =>
+      log.warn("[pond yt-dlp-update] recovery failed", cause),
+    )
     .finally(() => {
       recovering = null;
     });
@@ -179,9 +182,9 @@ export async function runUpdate(
         await deps.fetchBinary(assetUrl(tag, asset)),
         tmp,
       );
-    } catch (err) {
+    } catch (error) {
       await rm(tmp, { force: true });
-      throw err;
+      throw error;
     }
     if (actualSha !== expectedSha) {
       log.warn("[pond yt-dlp-update] sha256 mismatch, refusing", {
@@ -203,20 +206,20 @@ export async function runUpdate(
     if (existsSync(active)) await rotateToPrevious(dir, active, previous, move);
     try {
       await move(tmp, active);
-    } catch (err) {
+    } catch (error) {
       await rm(tmp, { force: true });
       if (!existsSync(active) && existsSync(previous)) {
         await move(previous, active);
         invalidateBinariesCache();
       }
-      throw err;
+      throw error;
     }
     await writeFile(join(dir, VERSION_FILE), tag, "utf8");
     invalidateBinariesCache();
     await markChecked(dir);
     log.info("[pond yt-dlp-update] updated to", tag);
-  } catch (err) {
-    log.warn("[pond yt-dlp-update] check failed", err);
+  } catch (error) {
+    log.warn("[pond yt-dlp-update] check failed", error);
   }
 }
 
@@ -236,15 +239,17 @@ export async function recoverFiles(
   }
 
   if (existsSync(active) && (await deps.smokeTest(active))) {
-    if (!existsSync(previous))
+    if (!existsSync(previous)) {
       await rm(join(dir, VERSION_PREVIOUS_FILE), { force: true });
+    }
     return;
   }
   if (!existsSync(previous)) {
-    if (existsSync(active))
+    if (existsSync(active)) {
       log.warn(
         "[pond yt-dlp-update] active binary failed --version, no backup",
       );
+    }
     return;
   }
   /** A backup that cannot run would only replace one broken state with another. */
@@ -311,14 +316,16 @@ export async function renameWithRetry(
   for (let attempt = 1; ; attempt++) {
     try {
       return await move(from, to);
-    } catch (err) {
-      const code = z.object({ code: z.string() }).safeParse(err).data?.code;
+    } catch (error) {
+      const code = z.object({ code: z.string() }).safeParse(error).data?.code;
       const retry =
         platform === "win32" &&
         attempt < RENAME_ATTEMPTS &&
         code !== undefined &&
         RETRYABLE_RENAME_CODES.has(code);
-      if (!retry) throw err;
+      if (!retry) {
+        throw error;
+      }
       await sleep(Math.min(500, 100 * attempt));
     }
   }
@@ -397,7 +404,9 @@ function smokeTest(binaryPath: string): Promise<boolean> {
     const timer = setTimeout(() => {
       try {
         killProcessTree(child, "SIGKILL");
-      } catch {}
+      } catch {
+        /** The smoke test already failed; a process that won't die changes nothing. */
+      }
       resolve(false);
     }, SMOKE_TIMEOUT_MS);
     child.on("error", () => {
@@ -423,7 +432,9 @@ async function markChecked(dir: string): Promise<void> {
   try {
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, LAST_CHECK_FILE), new Date().toISOString());
-  } catch {}
+  } catch {
+    /** A missing marker only means the next launch checks again. */
+  }
 }
 
 async function readText(path: string): Promise<string | null> {

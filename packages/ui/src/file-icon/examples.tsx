@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { FileIcon } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 const FILES = [
   "brief.docx",

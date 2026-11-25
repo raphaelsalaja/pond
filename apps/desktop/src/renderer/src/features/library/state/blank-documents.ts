@@ -6,14 +6,14 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 interface BlankDocumentsState {
-  kinds: BlankDocumentKind[];
+  kinds: Array<BlankDocumentKind>;
   icons: BlankDocumentIcons;
 }
 
 const store = new Store<BlankDocumentsState>({ kinds: [], icons: {} });
 
 export const blankDocuments = {
-  kinds(): BlankDocumentKind[] {
+  kinds(): Array<BlankDocumentKind> {
     return store.state.kinds;
   },
   icons(): BlankDocumentIcons {

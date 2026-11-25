@@ -1,5 +1,6 @@
 import { IconBookmark, IconFilterOff } from "@pond/icons";
-import { isPredicate, type Predicate } from "@pond/schema/filters/types";
+import { isPredicate } from "@pond/schema/filters/types";
+import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Button, SplitButton, Tooltip } from "@pond/ui";
 import { useMemo } from "react";
 import { useFolders } from "@/features/library/state/folders";
@@ -26,35 +27,32 @@ import { AddFilter } from "./add";
 import { AppliedFilters } from "./applied";
 import { FilterCategory } from "./category";
 import { CustomizeFilters } from "./customize";
-import { choiceOptions, type FilterOption, presetOptions } from "./options";
+import { choiceOptions, presetOptions } from "./options";
+import type { FilterOption } from "./options";
 import { SemanticChip, VisualChip } from "./overlay";
 import { sourceOptions } from "./source-options";
-import {
-  type FilterChipId,
-  filterToolbar,
-  type OverlayId,
-  useFilterToolbar,
-} from "./toolbar-state";
+import { filterToolbar, useFilterToolbar } from "./toolbar-state";
+import type { FilterChipId, OverlayId } from "./toolbar-state";
 import { clearFilters, saveFilterView, saveViewLabel } from "./view-actions";
 
 interface FilterChoices {
-  tags: FilterOption[];
-  folder: FilterOption[];
-  source: FilterOption[];
-  creator: FilterOption[];
-  account: FilterOption[];
+  tags: Array<FilterOption>;
+  folder: Array<FilterOption>;
+  source: Array<FilterOption>;
+  creator: Array<FilterOption>;
+  account: Array<FilterOption>;
 }
 
 interface FilterBarData {
-  tags: readonly { name: string }[];
-  tagGroups: readonly { name: string; tagNames: readonly string[] }[];
-  folders: readonly {
+  tags: ReadonlyArray<{ name: string }>;
+  tagGroups: ReadonlyArray<{ name: string; tagNames: ReadonlyArray<string> }>;
+  folders: ReadonlyArray<{
     id: string;
     name: string;
     parentId?: string | null;
     color?: string | null;
     icon?: string;
-  }[];
+  }>;
   facets: ReturnType<typeof useNlFacets>;
   refs: ReturnType<typeof accountRefsFromSync>;
 }
@@ -97,7 +95,7 @@ export function FilterToggleView(data: FilterBarData) {
   const rows = useMemo(() => query.rules.filter(isPredicate), [query.rules]);
   const choices = useMemo(() => filterChoices(data, rows), [data, rows]);
   if (layout === "applied") {
-    const applied: FilterChipId[] = [
+    const applied: Array<FilterChipId> = [
       ...(visual ? (["visual"] as const) : []),
       ...(semantic ? (["semantic"] as const) : []),
       ...new Set(
@@ -130,7 +128,7 @@ export function FilterToggleView(data: FilterBarData) {
 
 function filterChoices(
   { tags, tagGroups, folders, facets, refs }: FilterBarData,
-  rows: readonly Predicate[],
+  rows: ReadonlyArray<Predicate>,
 ): FilterChoices {
   const selectedSources = rows
     .filter((row) => row.field === "source")
@@ -138,10 +136,13 @@ function filterChoices(
       (Array.isArray(row.value) ? row.value : [row.value]).map(String),
     );
   const tagGroupOf = new Map<string, string>();
-  for (const group of tagGroups)
-    for (const name of group.tagNames)
-      if (!tagGroupOf.has(name.toLowerCase()))
+  for (const group of tagGroups) {
+    for (const name of group.tagNames) {
+      if (!tagGroupOf.has(name.toLowerCase())) {
         tagGroupOf.set(name.toLowerCase(), group.name);
+      }
+    }
+  }
   const folderNames = new Map(
     folders.map((folder) => [folder.id, folder.name]),
   );
@@ -201,7 +202,10 @@ export function FilterBarView(data: FilterBarData) {
   const activeViewId = useActiveViewId();
   const rows = useMemo(() => query.rules.filter(isPredicate), [query.rules]);
   const choices = useMemo(() => filterChoices(data, rows), [data, rows]);
-  if (layout === "applied") return null;
+  const fieldChoices: Partial<Record<FieldId, Array<FilterOption>>> = choices;
+  if (layout === "applied") {
+    return null;
+  }
   const activeFields = rows.map((row) =>
     row.field === "height" ? "width" : row.field,
   );
@@ -212,13 +216,13 @@ export function FilterBarView(data: FilterBarData) {
       ),
     ),
   ];
-  const shownOverlays: OverlayId[] = [
+  const shownOverlays: Array<OverlayId> = [
     ...(overlays.includes("visual") || visual ? (["visual"] as const) : []),
     ...(overlays.includes("semantic") || semantic
       ? (["semantic"] as const)
       : []),
   ];
-  const chips: FilterChipId[] = [
+  const chips: Array<FilterChipId> = [
     ...fields.filter((field) => field === "color"),
     ...shownOverlays,
     ...fields.filter((field) => field !== "color"),
@@ -274,10 +278,7 @@ export function FilterBarView(data: FilterBarData) {
           <FilterCategory
             key={chip}
             field={chip}
-            options={
-              Object.entries(choices).find(([field]) => field === chip)?.[1] ??
-              presetOptions(chip)
-            }
+            options={fieldChoices[chip] ?? presetOptions(chip)}
             rows={rows}
             onChange={updateLocalFilters}
           />

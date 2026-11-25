@@ -50,6 +50,6 @@ export type CancellableResult<Data = NoData> =
   | ReasonFailure<"cancelled">;
 
 export type BatchRenameInput = RenameOptions & {
-  ids: string[];
+  ids: Array<string>;
   pattern: string;
 };

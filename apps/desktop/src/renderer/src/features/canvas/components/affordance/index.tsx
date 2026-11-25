@@ -1,24 +1,23 @@
 import { useReactFlow, useStore, ViewportPortal } from "@xyflow/react";
-import { type PointerEvent, useRef } from "react";
+import { useRef } from "react";
+import type { PointerEvent } from "react";
 import { turnOf } from "../../lib/edit";
 import {
-  type Box,
   CORNERS,
-  type Corner,
   cornerAt,
   cursorFor,
   resizeTurned,
-  type Size,
 } from "../../lib/transform";
+import type { Box, Corner, Size } from "../../lib/transform";
 import styles from "./styles.module.css";
 
 interface AffordanceProps {
   frame: Box;
   rotation: number | undefined;
   min: Size;
-  onStart(): void;
-  onRotate(rotation: number | undefined): void;
-  onResize(frame: Box): void;
+  onStart: () => void;
+  onRotate: (rotation: number | undefined) => void;
+  onResize: (frame: Box) => void;
 }
 
 type Grab =

@@ -67,10 +67,10 @@ void main() {
 `;
 
 export interface GlowColors {
-  start: readonly number[];
-  middle: readonly number[];
-  end: readonly number[];
-  core: readonly number[];
+  start: ReadonlyArray<number>;
+  middle: ReadonlyArray<number>;
+  end: ReadonlyArray<number>;
+  core: ReadonlyArray<number>;
 }
 
 const RESOLUTION = 0.5;
@@ -100,8 +100,9 @@ export function startGlow(
   gl.attachShader(program, vertex);
   gl.attachShader(program, fragment);
   gl.linkProgram(program);
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return () => {};
-  // biome-ignore lint/correctness/useHookAtTopLevel: WebGL method, not a React hook
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    return () => {};
+  }
   gl.useProgram(program);
 
   const buffer = gl.createBuffer();

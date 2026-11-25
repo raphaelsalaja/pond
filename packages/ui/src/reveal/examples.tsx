@@ -1,6 +1,6 @@
+import { Reveal } from ".";
 import { Badge } from "../badge";
 import type { ComponentDocs } from "../shared/docs";
-import { Reveal } from ".";
 
 export const docs: ComponentDocs = {
   slug: "reveal",

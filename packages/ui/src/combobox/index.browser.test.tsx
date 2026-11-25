@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
-import { expectAccessible } from "../../test/axe";
+import { page, userEvent } from "vitest/browser";
 import { Combobox } from ".";
+import { expectAccessible } from "../../test/axe";
 
 const TAGS = ["Reference", "Design", "Typography", "Moodboard"];
 
@@ -10,7 +10,7 @@ function TagField({
   defaultValue = [],
   disabled,
 }: {
-  defaultValue?: string[];
+  defaultValue?: Array<string>;
   disabled?: boolean;
 }) {
   return (
@@ -22,7 +22,7 @@ function TagField({
     >
       <Combobox.InputGroup>
         <Combobox.Value>
-          {(selected: string[]) => (
+          {(selected: Array<string>) => (
             <Combobox.Chips>
               {selected.map((tag) => (
                 <Combobox.Chip key={tag}>

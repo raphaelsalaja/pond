@@ -60,8 +60,9 @@ export async function renameWithRetry(
           attempt,
           platform,
         )
-      )
+      ) {
         throw error;
+      }
       await sleep(delayFor(attempt));
     }
   }
@@ -93,8 +94,9 @@ export function renameSyncWithRetry(
           attempt,
           platform,
         )
-      )
+      ) {
         throw error;
+      }
       sleep(delayFor(attempt));
     }
   }

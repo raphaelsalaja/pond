@@ -31,9 +31,15 @@ export function CaptureProgress({ result, url, title }: { result: EnqueueResult;
       if (!active) return;
       if (next) setState(next);
       const settled = next && (next.pendingTasks === 0 || next.status === "failed");
-      if (settled) return;
-      if (Date.now() - started > POLL_LIMIT_MS) return setTimedOut(true);
-      timer = setTimeout(poll, POLL_MS);
+      if (settled) {
+        return;
+      }
+      if (Date.now() - started > POLL_LIMIT_MS) {
+        return setTimedOut(true);
+      }
+      timer = setTimeout(() => {
+        void poll();
+      }, POLL_MS);
     }
     void poll();
     return () => {

@@ -1,19 +1,15 @@
-import {
-  type Active,
-  type Announcements,
-  type CollisionDetection,
-  closestCenter,
-  type Over,
-  pointerWithin,
+import { closestCenter, pointerWithin } from "@dnd-kit/core";
+import type {
+  Active,
+  Announcements,
+  CollisionDetection,
+  Over,
 } from "@dnd-kit/core";
 import type { SortingStrategy } from "@dnd-kit/sortable";
 import type { Folder } from "@pond/schema/db";
 import type { RefObject } from "react";
-import {
-  FOLDER_ROOT_DROP_ID,
-  type FolderDropKind,
-  folderDropKind,
-} from "../folder-drop";
+import { FOLDER_ROOT_DROP_ID, folderDropKind } from "../folder-drop";
+import type { FolderDropKind } from "../folder-drop";
 import type { FolderDropState } from "../use-folder-drag-drop";
 
 /** The row under the pointer is the target, so drop zones match what it rests on. Keyboard drags have no pointer. */
@@ -30,7 +26,9 @@ export function dndFolderDropOffset(
   over: Over,
   pointerY?: number | null,
 ): number {
-  if (pointerY != null) return pointerY - over.rect.top;
+  if (pointerY !== null && pointerY !== undefined) {
+    return pointerY - over.rect.top;
+  }
   const activeRect =
     active.rect.current.translated ?? active.rect.current.initial;
   return activeRect
@@ -54,7 +52,7 @@ function relationFor(kind: FolderDropKind) {
 }
 
 export function folderDndAnnouncements(
-  folderRows: Folder[],
+  folderRows: Array<Folder>,
   drop: RefObject<FolderDropState | null>,
 ): Announcements {
   const destination = (target: FolderDropState) => {
@@ -73,8 +71,9 @@ export function folderDndAnnouncements(
       return `Move folder ${destination(drop.current)}.`;
     },
     onDragEnd: ({ over }) => {
-      if (!over || !drop.current)
+      if (!over || !drop.current) {
         return "The folder was dropped without moving.";
+      }
       return `Moved folder ${destination(drop.current)}.`;
     },
     onDragCancel: ({ active }) => {

@@ -1,5 +1,5 @@
 interface CollectionTagged {
-  collectionIds?: string[];
+  collectionIds?: Array<string>;
 }
 
 /** Keeps the first copy of an entry seen in several collections and records every collection it came from. */

@@ -6,7 +6,7 @@ import {
   saveOwnsKeyboard,
 } from "./keyboard-owner";
 
-const nodes: HTMLElement[] = [];
+const nodes: Array<HTMLElement> = [];
 function surface(attribute: string, value = "") {
   const node = document.createElement("div");
   node.setAttribute(attribute, value);
@@ -93,12 +93,13 @@ it("keeps the open save in charge after the focused control unmounts", () => {
   expect(saveOwnsKeyboard(key())).toBe(false);
 });
 
+function press(target: HTMLElement, key: string) {
+  const event = new KeyboardEvent("keydown", { key, bubbles: true });
+  target.dispatchEvent(event);
+  return controlKeepsKey(event);
+}
+
 it("passes arrow keys from a plain button to the open Save but keeps them in arrow widgets", () => {
-  const press = (target: HTMLElement, key: string) => {
-    const event = new KeyboardEvent("keydown", { key, bubbles: true });
-    target.dispatchEvent(event);
-    return controlKeepsKey(event);
-  };
   const tool = document.createElement("button");
   const toolbar = surface("role", "toolbar");
   toolbar.append(tool);

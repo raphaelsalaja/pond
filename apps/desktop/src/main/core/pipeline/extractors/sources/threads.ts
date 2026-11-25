@@ -24,7 +24,7 @@ export class ThreadsPostExtractor implements Extractor {
     return name === "sessionid";
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
     if (!first) return null;
     if (first.startsWith("@")) return first.slice(1);

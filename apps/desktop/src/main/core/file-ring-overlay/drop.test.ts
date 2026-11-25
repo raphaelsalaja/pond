@@ -1,22 +1,35 @@
-import { describe, expect, it, vi } from "vitest";
-import { dropIntoFolder, type OverlayDropDeps } from "./drop";
+import { describe, expect, it } from "vitest";
+import { dropIntoFolder } from "./drop";
+import type { OverlayDropDeps } from "./drop";
 
-function deps(): OverlayDropDeps {
-  return {
-    hasFolder: vi.fn(async (id: string) => id === "moodboard"),
+function deps() {
+  const addedSaves: Array<[string, Array<string>]> = [];
+  const importedFiles: Array<[Array<string>, string]> = [];
+  const quickAdds: Array<[string, string]> = [];
+  const d: OverlayDropDeps = {
+    hasFolder: async (id: string) => id === "moodboard",
     saveIdFor: (path) => (path.startsWith("/library/") ? "save-1" : null),
-    addSaves: vi.fn(async () => {}),
-    importFiles: vi.fn(async (paths: string[]) => ({
-      ids: paths.filter((path) => !path.endsWith(".broken")),
-      failed: paths.filter((path) => path.endsWith(".broken")).length,
-    })),
-    quickAdd: vi.fn(async (url: string) => !url.includes("offline")),
+    addSaves: async (folderId: string, saveIds: Array<string>) => {
+      addedSaves.push([folderId, saveIds]);
+    },
+    importFiles: async (paths: Array<string>, folderId: string) => {
+      importedFiles.push([paths, folderId]);
+      return {
+        ids: paths.filter((path) => !path.endsWith(".broken")),
+        failed: paths.filter((path) => path.endsWith(".broken")).length,
+      };
+    },
+    quickAdd: async (url: string, folderId: string) => {
+      quickAdds.push([url, folderId]);
+      return !url.includes("offline");
+    },
   };
+  return { d, addedSaves, importedFiles, quickAdds };
 }
 
 describe("overlay drops", () => {
   it("imports files from another app into the folder", async () => {
-    const d = deps();
+    const { d, addedSaves, importedFiles } = deps();
     const result = await dropIntoFolder(
       {
         kind: "files",
@@ -31,15 +44,15 @@ describe("overlay drops", () => {
       imported: 1,
       failed: 1,
     });
-    expect(d.importFiles).toHaveBeenCalledWith(
+    expect(importedFiles).toContainEqual([
       ["/Desktop/a.png", "/Desktop/b.broken"],
       "moodboard",
-    );
-    expect(d.addSaves).not.toHaveBeenCalled();
+    ]);
+    expect(addedSaves).toEqual([]);
   });
 
   it("files Saves dragged out of the Library without importing them again", async () => {
-    const d = deps();
+    const { d, addedSaves, importedFiles } = deps();
     const result = await dropIntoFolder(
       {
         kind: "files",
@@ -54,12 +67,12 @@ describe("overlay drops", () => {
       imported: 1,
       failed: 0,
     });
-    expect(d.addSaves).toHaveBeenCalledWith("moodboard", ["save-1"]);
-    expect(d.importFiles).not.toHaveBeenCalled();
+    expect(addedSaves).toContainEqual(["moodboard", ["save-1"]]);
+    expect(importedFiles).toEqual([]);
   });
 
   it("adds each link to the folder and counts the ones that fail", async () => {
-    const d = deps();
+    const { d, quickAdds } = deps();
     const result = await dropIntoFolder(
       {
         kind: "urls",
@@ -69,16 +82,16 @@ describe("overlay drops", () => {
       d,
     );
     expect(result).toEqual({ ok: true, kind: "urls", imported: 1, failed: 1 });
-    expect(d.quickAdd).toHaveBeenCalledWith("https://example.com", "moodboard");
+    expect(quickAdds).toContainEqual(["https://example.com", "moodboard"]);
   });
 
   it("refuses a folder deleted while the ring was open", async () => {
-    const d = deps();
+    const { d, quickAdds } = deps();
     const result = await dropIntoFolder(
       { kind: "urls", folderId: "gone", urls: ["https://example.com"] },
       d,
     );
     expect(result).toEqual({ ok: false, reason: "folder_unavailable" });
-    expect(d.quickAdd).not.toHaveBeenCalled();
+    expect(quickAdds).toEqual([]);
   });
 });

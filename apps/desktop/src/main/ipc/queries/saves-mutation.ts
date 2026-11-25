@@ -35,11 +35,11 @@ import { saveFile } from "../../paths";
 import {
   FlagParam,
   NullableStringParam,
-  type QueryHandlerMap,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 async function analyzeSaveMetadata(
   row: typeof saves.$inferSelect,
@@ -85,9 +85,8 @@ export const savesMutationQueries = {
       extension: z.string().trim().min(1).max(16),
     }),
     async (params) => {
-      const { batchEditExtensions } = await import(
-        "../../core/batch-extensions"
-      );
+      const { batchEditExtensions } =
+        await import("../../core/batch-extensions");
       return batchEditExtensions(params);
     },
   ),
@@ -97,8 +96,10 @@ export const savesMutationQueries = {
       .select()
       .from(saves)
       .where(isNotNull(saves.deletedAt));
-    if (rows.length === 0) return { ok: true, count: 0 };
-    const txs: Transaction[] = rows.map((row) => ({
+    if (rows.length === 0) {
+      return { ok: true, count: 0 };
+    }
+    const txs: Array<Transaction> = rows.map((row) => ({
       kind: "purge",
       model: "save",
       id: row.id,
@@ -116,8 +117,10 @@ export const savesMutationQueries = {
       .select({ id: saves.id })
       .from(saves)
       .where(isNotNull(saves.deletedAt));
-    if (rows.length === 0) return { ok: true, count: 0 };
-    const txs: Transaction[] = rows.map((row) => ({
+    if (rows.length === 0) {
+      return { ok: true, count: 0 };
+    }
+    const txs: Array<Transaction> = rows.map((row) => ({
       kind: "untrash",
       model: "save",
       id: row.id,
@@ -189,9 +192,12 @@ export const savesMutationQueries = {
   "saves.patchDerived": query(
     z.object({ id: StringParam, patch: SavesDerivedPatchSchema.catch({}) }),
     async (params): Promise<QueryResult<"saves.patchDerived">> => {
-      if (!params.id) return SAVE_NOT_FOUND;
-      if (Object.keys(params.patch).length === 0)
+      if (!params.id) {
+        return SAVE_NOT_FOUND;
+      }
+      if (Object.keys(params.patch).length === 0) {
         return { ok: false, error: "Nothing to update." };
+      }
       const updated = await persistSave(params.id, params.patch, {
         actorReason: "enrichment:derived",
       });
@@ -255,8 +261,9 @@ export const savesMutationQueries = {
         !(row.dominantColors ?? []).some(
           (candidate) => candidate.toLowerCase() === primaryColor,
         )
-      )
+      ) {
         return { ok: false, error: "Choose one of this Save's colors." };
+      }
       await persistSave(
         id,
         { primaryColor },
@@ -278,12 +285,14 @@ export const savesMutationQueries = {
       if (
         !file ||
         classifyLibraryFile(file.path, file.mimeType).mediaType !== "text"
-      )
+      ) {
         return { ok: false, error: "This Save has no text file." };
+      }
       const bytes = await readLibraryMedia(saveFile(id, file.path));
       const decoded = decodeTextBytes(bytes);
-      if (decoded.encoding === "utf-8" && !decoded.hadBom)
+      if (decoded.encoding === "utf8" && !decoded.hadBom) {
         return { ok: true, updated: false };
+      }
       const directory = await mkdtemp(join(tmpdir(), "pond-text-"));
       const path = join(directory, basename(file.path));
       try {
@@ -384,9 +393,8 @@ export const savesMutationQueries = {
         .max(10_000),
     }),
     async ({ pairs }) => {
-      const { addDismissals } = await import(
-        "../../core/duplicates/dismissals"
-      );
+      const { addDismissals } =
+        await import("../../core/duplicates/dismissals");
       return { ok: true as const, dismissed: addDismissals(pairs) };
     },
   ),
@@ -397,7 +405,7 @@ export const savesMutationQueries = {
   ),
 
   "saves.split": query(
-    z.object({ ids: z.array(StringParam).min(1).max(1_000) }),
+    z.object({ ids: z.array(StringParam).min(1).max(1000) }),
     async ({ ids }) => {
       const { splitSaves } = await import("../../core/split-save");
       return splitSaves(ids);

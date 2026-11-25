@@ -10,11 +10,11 @@ import type { TransferOptions } from "../../../lib/download-transfer";
 import { probeImageDims } from "../../../lib/image-process";
 import { buildFirstFramePoster } from "../../../lib/poster-from-frame";
 import {
-  type PosterWrite,
   posterFilename,
   usesPlatformPoster,
   videoFilename,
 } from "../../../lib/poster-policy";
+import type { PosterWrite } from "../../../lib/poster-policy";
 import { probeVideoDims } from "../../../lib/video-dims";
 import { persistSave } from "../../persist-save";
 import { getVideoDownloadPrefs } from "../../prefs";
@@ -24,13 +24,15 @@ import {
   parseCaptions,
 } from "../../refresh/captions-transcript";
 import type { transcodeItems } from "../../refresh/download-transcode";
-import { type DownloadedVideoItem, downloadVideo } from "../../refresh/yt-dlp";
+import { downloadVideo } from "../../refresh/yt-dlp";
+import type { DownloadedVideoItem } from "../../refresh/yt-dlp";
 import type { downloadCaptions } from "../../refresh/yt-dlp-captions";
 import { isAutoVideoBlockedByStorageGuard } from "../../storage-watcher";
 import { TerminalError, TransientError } from "../extractors/errors";
 import { expectedVideoDownloads, resolveYtDlpTarget } from "../specs";
 import { saveAuthorFrom, withYtdlpAuthor } from "../ytdlp-author";
-import { readSave, type WriteFileArgs } from "./apply";
+import { readSave } from "./apply";
+import type { WriteFileArgs } from "./apply";
 import { fileSizeAfterMediaWrite } from "./media-file-size";
 
 export interface FetchVideoPayload {
@@ -149,7 +151,7 @@ export async function runFetchVideoYtdlp(
   try {
     ctx?.signal?.throwIfAborted();
     ctx?.reportActivity?.({ phase: "processing" });
-    const newFiles: WriteFileArgs[] = [];
+    const newFiles: Array<WriteFileArgs> = [];
 
     for (let i = 0; i < dl.items.length; i++) {
       const item = dl.items[i];
@@ -266,7 +268,7 @@ async function runRequestedDownload(
     /** A clip of something already saved sits beside the full video rather than replacing it. */
     const addsBeside = !audio && (gif || Boolean(request.range)) && hasVideo;
 
-    const newFiles: WriteFileArgs[] = [];
+    const newFiles: Array<WriteFileArgs> = [];
     for (let i = 0; i < converted.items.length; i++) {
       const item = converted.items[i];
       if (!item) continue;
@@ -316,7 +318,7 @@ async function runRequestedDownload(
 
     ctx?.signal?.throwIfAborted();
     ctx?.reportActivity?.({ phase: "saving" });
-    const replace: WriteFileArgs["kind"][] = audio
+    const replace: Array<WriteFileArgs["kind"]> = audio
       ? ["audio"]
       : addsBeside || gif
         ? []
@@ -365,7 +367,7 @@ async function runCaptionsDownload(
       );
     }
     const files = save.files ?? [];
-    const newFiles: WriteFileArgs[] = [
+    const newFiles: Array<WriteFileArgs> = [
       {
         kind: "text_file",
         filename: "transcript.txt",
@@ -483,7 +485,7 @@ async function filesForItem(
     filename: videoFilename(index, extname(item.path).toLowerCase() || ".mp4"),
     poster: "auto",
   },
-): Promise<WriteFileArgs[] | null> {
+): Promise<Array<WriteFileArgs> | null> {
   const [mediaBuf, platformPosterBuf, ...subtitleBufs] = await Promise.all([
     readPath(item.path),
     item.posterPath && plan.poster !== "none"
@@ -499,7 +501,7 @@ async function filesForItem(
       : plan.kind === "image"
         ? await probeImageDims(mediaBuf)
         : null;
-  const out: WriteFileArgs[] = [
+  const out: Array<WriteFileArgs> = [
     {
       kind: plan.kind,
       filename: plan.filename,
@@ -577,7 +579,7 @@ async function resolvePoster(args: {
   );
 }
 
-function readCaptureMedia(rawJson: RawJson | null): CaptureMedia[] | null {
+function readCaptureMedia(rawJson: RawJson | null): Array<CaptureMedia> | null {
   const media = rawJson?.capture?.media;
   return Array.isArray(media) ? media : null;
 }

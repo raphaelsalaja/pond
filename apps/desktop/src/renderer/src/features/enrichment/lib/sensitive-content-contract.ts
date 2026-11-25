@@ -17,11 +17,11 @@ const SENSITIVE_LABELS = new Set<(typeof LABELS)[number]>([
 
 export function sensitiveProbabilitiesFromLogits(
   logits: ArrayLike<number>,
-): number[] {
+): Array<number> {
   if (logits.length === 0 || logits.length % LABELS.length !== 0) {
     throw new Error("Expected sensitive-content logits for every label");
   }
-  const probabilities: number[] = [];
+  const probabilities: Array<number> = [];
   for (let row = 0; row < logits.length; row += LABELS.length) {
     const values = Array.from(LABELS, (_, index) => logits[row + index] ?? 0);
     if (!values.every(Number.isFinite)) {
@@ -41,7 +41,7 @@ export function sensitiveProbabilitiesFromLogits(
 }
 
 export function aggregateSensitiveScores(
-  scores: readonly number[],
+  scores: ReadonlyArray<number>,
 ): number | null {
   const finite = scores.filter(Number.isFinite);
   return finite.length > 0 ? Math.max(...finite) : null;

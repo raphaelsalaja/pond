@@ -30,7 +30,7 @@ function NavLink({ href, className, onClick, ...props }: NavLinkProps) {
   );
 }
 
-interface NavProps extends React.ComponentPropsWithoutRef<"nav"> {}
+type NavProps = React.ComponentPropsWithoutRef<"nav">;
 
 export function Nav({ className, ...props }: NavProps) {
   const { preference, setPreference } = useTheme();
@@ -77,8 +77,9 @@ export function Nav({ className, ...props }: NavProps) {
           value={[preference]}
           onValueChange={(value) => {
             const next = value[0];
-            if (next === "system" || next === "light" || next === "dark")
+            if (next === "system" || next === "light" || next === "dark") {
               setPreference(next);
+            }
           }}
         >
           <Toggle type="button" size="sm" value="system">

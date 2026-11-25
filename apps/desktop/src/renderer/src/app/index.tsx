@@ -124,7 +124,9 @@ function AppContent() {
       const loc = router.state.location;
       try {
         localStorage.setItem(LAST_PATH_KEY, loc.href);
-      } catch {}
+      } catch {
+        /** Storage can be full or disabled; the next launch then opens the default page. */
+      }
       syncPrimaryFromSearch(loc.search);
       setAppRouter(router);
     });
@@ -155,7 +157,9 @@ function LibraryApp() {
     if (!startupPage) return;
     try {
       localStorage.setItem(STARTUP_PAGE_KEY, startupPage);
-    } catch {}
+    } catch {
+      /** Storage can be full or disabled; the next launch then falls back to Continue. */
+    }
   }, [startupPage]);
   useEffect(
     () =>

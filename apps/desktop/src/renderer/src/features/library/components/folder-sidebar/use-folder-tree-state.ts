@@ -1,7 +1,15 @@
 import type { Folder } from "@pond/schema/db";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { z } from "zod";
-import { type FolderListSort, flattenFolderTree, sortFolderRows } from "./tree";
+import { flattenFolderTree, sortFolderRows } from "./tree";
+import type { FolderListSort } from "./tree";
 import type { FolderDropState } from "./use-folder-drag-drop";
 
 const COLLAPSED_FOLDERS_KEY = "pond:collapsed-folders";
@@ -25,7 +33,9 @@ function loadCollapsedFolders(): Set<string> {
 function persistCollapsedFolders(next: Set<string>): Set<string> {
   try {
     localStorage.setItem(COLLAPSED_FOLDERS_KEY, JSON.stringify([...next]));
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked; the in-memory state still applies. */
+  }
   return next;
 }
 
@@ -36,15 +46,19 @@ function loadFolderListSort(): FolderListSort {
 function persistFolderListSort(next: FolderListSort): FolderListSort {
   try {
     localStorage.setItem(FOLDER_LIST_SORT_KEY, next);
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked; the in-memory state still applies. */
+  }
   return next;
 }
 
-export function useFolderTreeState(folderRows: Folder[]) {
+export function useFolderTreeState(folderRows: Array<Folder>) {
   const [collapsed, setCollapsed] = useState(loadCollapsedFolders);
   const [sort, setSortState] = useState(loadFolderListSort);
   const folderRowsRef = useRef(folderRows);
-  folderRowsRef.current = folderRows;
+  useLayoutEffect(() => {
+    folderRowsRef.current = folderRows;
+  });
   const sortedRows = useMemo(
     () => sortFolderRows(folderRows, sort),
     [folderRows, sort],

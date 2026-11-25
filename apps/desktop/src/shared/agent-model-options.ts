@@ -35,11 +35,17 @@ export function agentModelOptionsFor(
 
 export function contextChoicesFor(
   contextWindow: number | undefined,
-): AgentContextChoice[] {
-  const choices: AgentContextChoice[] = ["auto"];
-  if (!contextWindow) return choices;
-  if (contextWindow >= 64_000) choices.push(64_000);
-  if (contextWindow >= 256_000) choices.push(256_000);
+): Array<AgentContextChoice> {
+  const choices: Array<AgentContextChoice> = ["auto"];
+  if (!contextWindow) {
+    return choices;
+  }
+  if (contextWindow >= 64_000) {
+    choices.push(64_000);
+  }
+  if (contextWindow >= 256_000) {
+    choices.push(256_000);
+  }
   choices.push(contextWindow);
   return [...new Set(choices)];
 }
@@ -61,7 +67,7 @@ export function reasoningLabel(reasoning: AgentReasoning): string {
 
 export function reasoningChoicesFor(
   model: ProviderModel | undefined,
-): AgentReasoning[] {
+): Array<AgentReasoning> {
   return ["provider-default", ...new Set(model?.reasoningOptions ?? [])];
 }
 
@@ -121,8 +127,8 @@ export function compactTokens(value: number): string {
     const millions = value / 1_000_000;
     return `${Number.isInteger(millions) ? millions : millions.toFixed(1)}M`;
   }
-  if (value >= 1_000) {
-    const thousands = value / 1_000;
+  if (value >= 1000) {
+    const thousands = value / 1000;
     return `${Number.isInteger(thousands) ? thousands : thousands.toFixed(1)}K`;
   }
   return String(value);

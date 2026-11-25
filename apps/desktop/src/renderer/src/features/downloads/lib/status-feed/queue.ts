@@ -4,8 +4,8 @@ import type { Save } from "@/features/saves/types";
 type RowStatus = "saving" | "failed";
 
 export interface QueueProjection {
-  saving: QueueRow[];
-  failed: QueueRow[];
+  saving: Array<QueueRow>;
+  failed: Array<QueueRow>;
 }
 
 export interface QueueRow {
@@ -59,9 +59,11 @@ function toRow(save: Save): QueueRow | null {
   let stage: string | null = null;
   let error: string | null = null;
   for (const t of tasks) {
-    if (t.status === "done") done += 1;
-    else if (t.status === "running") stage = stageLabel(t.op, save.source);
-    else if (t.status === "dead" || t.status === "blocked") {
+    if (t.status === "done") {
+      done += 1;
+    } else if (t.status === "running") {
+      stage = stageLabel(t.op, save.source);
+    } else if (t.status === "dead" || t.status === "blocked") {
       stage ??= stageLabel(t.op, save.source);
       error = preferIngestError(error, t.lastError);
     }
@@ -91,10 +93,12 @@ export function humanizeError(error: string | null): string {
   return tail.charAt(0).toUpperCase() + tail.slice(1);
 }
 
-export function projectQueue(saves: readonly Save[]): QueueProjection {
-  const rows: QueueRow[] = [];
+export function projectQueue(saves: ReadonlyArray<Save>): QueueProjection {
+  const rows: Array<QueueRow> = [];
   for (const save of saves) {
-    if (save.deletedAt != null) continue;
+    if (save.deletedAt !== null) {
+      continue;
+    }
     const row = toRow(save);
     if (row) rows.push(row);
   }

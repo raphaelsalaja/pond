@@ -12,23 +12,33 @@ export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
         url: m.url,
         type: m.type,
       };
-      if (m.durationSec != null) media.durationSec = m.durationSec;
+      if (m.durationSec !== undefined) {
+        media.durationSec = m.durationSec;
+      }
       return media;
     }),
   };
-  if (cap.author?.avatarUrl)
+  if (cap.author?.avatarUrl) {
     capture.author = { avatarUrl: cap.author.avatarUrl };
-  if (cap.duration != null) capture.duration = cap.duration;
-  if (cap.extras?.product) capture.extras = { product: true };
+  }
+  if (cap.duration !== undefined) {
+    capture.duration = cap.duration;
+  }
+  if (cap.extras?.product) {
+    capture.extras = { product: true };
+  }
 
   const slim: RawJson = {
     capture,
     extractorId: raw.extractorId,
     extractedAt: raw.extractedAt,
   };
-  if (raw.ytdlp?.duration != null)
+  if (raw.ytdlp?.duration !== undefined) {
     slim.ytdlp = { duration: raw.ytdlp.duration };
-  if (raw.split) slim.split = raw.split;
+  }
+  if (raw.split) {
+    slim.split = raw.split;
+  }
   return slim;
 }
 

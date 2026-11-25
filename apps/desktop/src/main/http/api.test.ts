@@ -1,10 +1,10 @@
-import * as schema from "@pond/schema/db";
-import * as eventsSchema from "@pond/schema/events";
+import { saves } from "@pond/schema/db";
 import type { JsonObject } from "@pond/schema/json";
 import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { z } from "zod";
 import type { BulkEdit } from "../../shared/bulk-contracts";
+import { wrapSqlite } from "../database/client";
 import { initializePondSchema } from "../db";
 import type { ApiRuntime, FolderAssignment } from "./api-runtime";
 import { libraryRoutes } from "./library";
@@ -20,15 +20,20 @@ function nativeSqliteAvailable(): boolean {
   }
 }
 
+const FavoriteResponseSchema = z.object({
+  data: z.object({ favorite: z.boolean() }),
+});
+
+async function readFavorite(response: Response): Promise<boolean> {
+  return FavoriteResponseSchema.parse(await response.json()).data.favorite;
+}
+
 function library() {
   const sqlite = new Database(":memory:");
   initializePondSchema(sqlite, () => false);
-  const db = Object.assign(
-    drizzle(sqlite, { schema: { ...schema, ...eventsSchema } }),
-    { $raw: sqlite },
-  );
-  const bulkEdits: BulkEdit[] = [];
-  const assignments: FolderAssignment[] = [];
+  const db = wrapSqlite(sqlite);
+  const bulkEdits: Array<BulkEdit> = [];
+  const assignments: Array<FolderAssignment> = [];
   const runtime: ApiRuntime = {
     getDb: async () => db,
     libraryId: () => "lib-1",
@@ -36,14 +41,17 @@ function library() {
       bulkEdits.push(input);
       const { operation } = input;
       if (operation.kind === "tags" && operation.mode === "add") {
-        const rows = db.select().from(schema.saves).all();
-        for (const row of rows.filter((entry) => input.ids.includes(entry.id)))
+        const rows = db.select().from(saves).all();
+        for (const row of rows.filter((entry) =>
+          input.ids.includes(entry.id),
+        )) {
           sqlite
             .prepare("UPDATE saves SET tags = ? WHERE id = ?")
             .run(
               JSON.stringify([...new Set([...row.tags, ...operation.tags])]),
               row.id,
             );
+        }
       }
       return { changed: input.ids.length };
     },
@@ -58,7 +66,7 @@ type Library = ReturnType<typeof library>;
 
 interface SaveColumns {
   title?: string;
-  tags?: string[];
+  tags?: Array<string>;
   status?: string;
   source?: string;
   notes?: string;
@@ -217,10 +225,8 @@ describe.skipIf(!nativeSqliteAvailable())("Local API", () => {
   it("reads and writes favorites", async () => {
     seed(lib, "a", { favorite: 1 });
     seed(lib, "b");
-    const favorite = async (id: string) =>
-      (await (await get(`/info?id=${id}`)).json()).data.favorite;
-    expect(await favorite("a")).toBe(true);
-    expect(await favorite("b")).toBe(false);
+    expect(await readFavorite(await get("/info?id=a"))).toBe(true);
+    expect(await readFavorite(await get("/info?id=b"))).toBe(false);
 
     const response = await post(lib, "/favorite", {
       ids: ["b"],

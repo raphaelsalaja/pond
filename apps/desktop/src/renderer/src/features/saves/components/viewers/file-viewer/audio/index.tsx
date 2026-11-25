@@ -7,6 +7,7 @@ import {
   IconVolumeOff,
 } from "@pond/icons";
 import { Select, Slider } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect, useRef, useState } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
@@ -72,7 +73,9 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
           });
         }
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond audio] waveform analysis failed", cause);
+      });
     return () => {
       active = false;
       void context.close();
@@ -141,6 +144,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
             }
           }}
         />
+        {/* oxlint-disable-next-line jsx-a11y/media-has-caption -- saved audio files carry no caption track */}
         <audio
           ref={audioRef}
           preload="metadata"
@@ -196,7 +200,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
               step={0.01}
               value={currentTime}
               onValueChange={(value) => {
-                const next = Array.isArray(value) ? (value[0] ?? 0) : value;
+                const next = isValueList(value) ? (value[0] ?? 0) : value;
                 setCurrentTime(next);
                 if (audioRef.current) audioRef.current.currentTime = next;
               }}
@@ -213,8 +217,9 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
               onValueChange={(value) => {
                 if (value === null) return;
                 setSpeed(value);
-                if (audioRef.current)
+                if (audioRef.current) {
                   audioRef.current.playbackRate = Number(value);
+                }
               }}
             >
               <Select.Trigger variant="chip" aria-label="Playback Speed">
@@ -240,7 +245,7 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
               step={0.05}
               value={volume}
               onValueChange={(value) => {
-                const next = Array.isArray(value) ? (value[0] ?? 1) : value;
+                const next = isValueList(value) ? (value[0] ?? 1) : value;
                 setVolume(next);
                 setMuted(false);
                 if (audioRef.current) audioRef.current.volume = next;
@@ -279,6 +284,12 @@ export function AudioViewer(props: ViewerProps & { url: string }) {
 }
 
 const WAVEFORM_SEEK_SECONDS = 5;
+
+function isValueList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return Array.isArray(value);
+}
 
 function waveformSeekTarget(
   key: string,

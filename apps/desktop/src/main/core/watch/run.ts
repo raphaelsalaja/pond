@@ -2,7 +2,8 @@ import type { Source, SourceSyncPrefs, WatchedAccount } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { WATCH_NEEDS_SESSION } from "@pond/schema/watches";
-import { and, count, eq, inArray, or, type SQL, sql } from "drizzle-orm";
+import { and, count, eq, inArray, or, sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
@@ -66,7 +67,9 @@ export async function watchNow(
   inFlight.set(watchId, { controller, startedAt, watchdog, source });
   void patchWatchSync(watchId, {
     runningSince: new Date(startedAt).toISOString(),
-  }).catch(() => {});
+  }).catch((cause: unknown) => {
+    log.warn("[pond watch] running mark failed", watchId, cause);
+  });
   const ev: SyncRunEvent = startSyncEvent({
     source,
     accountId: watchId,
@@ -93,9 +96,9 @@ export async function watchNow(
         lastError: watchdogTripped ? "watchdog_timeout" : cfg.lastError,
       });
     }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    log.error("[pond watch] fatal error", source, watchId, err);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    log.error("[pond watch] fatal error", source, watchId, error);
     await patchWatchSync(watchId, { lastError: msg });
     emit({
       accountId: watchId,
@@ -105,12 +108,16 @@ export async function watchNow(
       lastError: msg,
     });
     ev.outcome = "error";
-    ev.error = toErrorInfo(err);
+    ev.error = toErrorInfo(error);
   } finally {
     const entry = inFlight.get(watchId);
     if (entry) clearTimeout(entry.watchdog);
     inFlight.delete(watchId);
-    void patchWatchSync(watchId, { runningSince: null }).catch(() => {});
+    void patchWatchSync(watchId, { runningSince: null }).catch(
+      (cause: unknown) => {
+        log.warn("[pond watch] running clear failed", watchId, cause);
+      },
+    );
     ev.durationMs = Date.now() - startedAt;
     ev.lockHeldMs = ev.durationMs;
     ev.watchdogTripped = watchdogTripped;
@@ -191,7 +198,7 @@ async function runWatch(
         ? feedEntriesFilter(harvest.entries, source)
         : sourceFilter,
     );
-  const totalRow = await db
+  const totalRow = db
     .select({ c: count() })
     .from(saves)
     .where(and(sourceFilter, eq(saves.accountId, watchId)))
@@ -273,9 +280,12 @@ async function harvestWatch(
   signal: AbortSignal,
 ): Promise<WatchHarvestResult> {
   const { source, handle, kind } = watch;
-  if (source === "web" && kind === "feed")
+  if (source === "web" && kind === "feed") {
     return readFeed(handle, fetch, signal);
-  if (source === "arena") return listArenaWatch(handle, kind);
+  }
+  if (source === "arena") {
+    return listArenaWatch(handle, kind);
+  }
   if (source === "youtube" || source === "tiktok") {
     return listYtdlpWatch(source, handle, kind, signal);
   }
@@ -291,10 +301,10 @@ async function harvestWatch(
 
 /** Feed entries span Sources, so match each Source's IDs to stay on the `(source, source_id)` index. */
 function feedEntriesFilter(
-  entries: readonly WatchEntry[],
+  entries: ReadonlyArray<WatchEntry>,
   fallback: Source,
 ): SQL {
-  const idsBySource = new Map<Source, string[]>();
+  const idsBySource = new Map<Source, Array<string>>();
   for (const entry of entries) {
     const source = entry.source ?? fallback;
     const ids = idsBySource.get(source);

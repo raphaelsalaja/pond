@@ -1,14 +1,12 @@
 import { useSelector } from "@tanstack/react-store";
 import type { RowData } from "@tanstack/react-table";
-import {
-  memo,
-  type MouseEvent as ReactMouseEvent,
-  type ReactNode,
-} from "react";
+import { memo } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import { isElement } from "../dom";
 import { CaretCell, SelectCell } from "./cells";
 import type { RowApi } from "./context";
-import styles from "./styles.module.css";
 import type { CellContext, RenderRowArgs } from "./types";
+import styles from "./styles.module.css";
 
 interface RowProps<T extends RowData> {
   api: RowApi<T>;
@@ -41,18 +39,18 @@ function RowImpl<T extends RowData>({
     api.selectionStore,
     (s) =>
       s.selectedIds.has(rowId) &&
-      (prevId == null || !s.selectedIds.has(prevId)),
+      (prevId === undefined || !s.selectedIds.has(prevId)),
   );
   const selectedEnd = useSelector(
     api.selectionStore,
     (s) =>
       s.selectedIds.has(rowId) &&
-      (nextId == null || !s.selectedIds.has(nextId)),
+      (nextId === undefined || !s.selectedIds.has(nextId)),
   );
 
   const cellCtx: CellContext = { depth, expanded, canExpand };
 
-  const cells: ReactNode[] = [];
+  const cells: Array<ReactNode> = [];
   if (api.selectionEnabled && api.selectionCheckboxes) {
     cells.push(
       <SelectCell
@@ -89,12 +87,13 @@ function RowImpl<T extends RowData>({
 
   const onClick = (e: ReactMouseEvent) => {
     if (
-      !(e.target instanceof Element) ||
+      !isElement(e.target) ||
       !e.target.closest(
         "button, input, select, textarea, a, [contenteditable=true]",
       )
-    )
+    ) {
       api.focusRow(rowId);
+    }
     if (e.metaKey || e.ctrlKey || e.shiftKey) {
       if (api.selectionEnabled) api.toggleRow(rowId, e.shiftKey);
       return;
@@ -141,4 +140,5 @@ function RowImpl<T extends RowData>({
 
 export const Row =
   /** SAFETY: `memo` renders `RowImpl` with the same props; only the type parameter is lost, because React types `memo` without one. */
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- React's `memo` type erases generics; `RowApi<T>` is contravariant in T, so no assertion-free form type-checks.
   memo(RowImpl) as typeof RowImpl;

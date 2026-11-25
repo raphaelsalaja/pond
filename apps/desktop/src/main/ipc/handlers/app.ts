@@ -42,7 +42,9 @@ export function registerAppHandlers(): void {
           .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
           .join(" ");
       }
-    } catch {}
+    } catch {
+      /** `userInfo` throws for a user with no passwd entry; the default name stands. */
+    }
     return {
       name: "pond",
       version: app.getVersion(),
@@ -60,23 +62,26 @@ export function registerAppHandlers(): void {
       tx.model === "save" &&
       tx.patch.title !== undefined &&
       !tx.titleLock
-    )
+    ) {
       tx.titleLock = { before: hasUserTitle(tx.id), after: true };
+    }
     const action = await executeTransaction(tx);
     recordForUndo(tx);
     return action;
   });
 
-  safeHandle(IPC.txBatch, async (_, txs: Transaction[]) => {
+  safeHandle(IPC.txBatch, async (_, txs: Array<Transaction>) => {
     assertRendererTransactions(txs);
-    for (const tx of txs)
+    for (const tx of txs) {
       if (
         tx.kind === "update" &&
         tx.model === "save" &&
         tx.patch.title !== undefined &&
         !tx.titleLock
-      )
+      ) {
         tx.titleLock = { before: hasUserTitle(tx.id), after: true };
+      }
+    }
     const actions = await executeBatch(txs);
     recordBatchForUndo(txs);
     return actions;
@@ -117,8 +122,8 @@ export function registerAppHandlers(): void {
       }
       await shell.openExternal(parsed.toString());
       return { ok: true };
-    } catch (err) {
-      log.warn("[pond ipc] openExternal failed", err);
+    } catch (error) {
+      log.warn("[pond ipc] openExternal failed", error);
       return { ok: false };
     }
   });

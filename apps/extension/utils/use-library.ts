@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { sendMessage } from "./messaging";
 import { paintTheme, resolveAppearance } from "./paint-theme";
-import { OFFLINE, type ProbeResult } from "./probe";
+import { OFFLINE } from "./probe";
+import type { ProbeResult } from "./probe";
 import { useSettings } from "./use-settings";
 
 /** Probes Pond through the background and paints the theme the settings ask for. */
@@ -17,8 +18,12 @@ export function useLibrary() {
   }, []);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    void sendMessage("probe", undefined)
+      .catch((): ProbeResult => OFFLINE)
+      .then((next) => {
+        setResult(next);
+      });
+  }, []);
 
   const theme =
     result?.state === "connected" ? (result.library.theme ?? null) : null;

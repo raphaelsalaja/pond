@@ -1,19 +1,16 @@
 import type { Source } from "@pond/schema/db";
-import {
-  type PipelineEventRow,
-  pipelineEvents,
-  type SyncRunEvent,
-} from "@pond/schema/events";
+import { pipelineEvents } from "@pond/schema/events";
+import type { PipelineEventRow, SyncRunEvent } from "@pond/schema/events";
 import { and, desc, eq, gte } from "drizzle-orm";
 import { z } from "zod";
 import { getDb } from "../../db";
 import {
   NonEmptyTextParam,
   OptionalNumberParam,
-  type QueryHandlerMap,
   query,
   SourceParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 interface SyncRunHistoryEntry {
   id: number;
@@ -73,8 +70,32 @@ interface SyncStats {
   lastRunAt: number | null;
 }
 
-function toEntries(rows: PipelineEventRow[]): SyncRunHistoryEntry[] {
-  return rows.map(toEntry).filter((entry) => entry !== null);
+function toEntries(rows: Array<PipelineEventRow>): Array<SyncRunHistoryEntry> {
+  return rows.flatMap((row) => {
+    const entry = toEntry(row);
+    return entry ? [entry] : [];
+  });
+}
+
+function sumItems(runs: Array<SyncRunHistoryEntry>): number {
+  return runs.reduce((acc, r) => acc + itemsOf(r), 0);
+}
+
+function successRate(runs: Array<SyncRunHistoryEntry>): number {
+  if (runs.length === 0) {
+    return 0;
+  }
+  const ok = runs.filter((r) => OK_OUTCOMES.has(r.outcome)).length;
+  return Math.round((ok / runs.length) * 100);
+}
+
+function avgMs(runs: Array<SyncRunHistoryEntry>): number {
+  if (runs.length === 0) {
+    return 0;
+  }
+  return Math.round(
+    runs.reduce((acc, r) => acc + (r.durationMs || 0), 0) / runs.length,
+  );
 }
 
 function clampWindow(value: number, ceiling: number, fallback: number): number {
@@ -179,20 +200,6 @@ export const syncHistoryQueries = {
 
     const current = rows.filter((r) => r.ts >= cur);
     const previous = rows.filter((r) => r.ts >= prev && r.ts < cur);
-
-    const sumItems = (runs: SyncRunHistoryEntry[]) =>
-      runs.reduce((acc, r) => acc + itemsOf(r), 0);
-    const successRate = (runs: SyncRunHistoryEntry[]) => {
-      if (runs.length === 0) return 0;
-      const ok = runs.filter((r) => OK_OUTCOMES.has(r.outcome)).length;
-      return Math.round((ok / runs.length) * 100);
-    };
-    const avgMs = (runs: SyncRunHistoryEntry[]) => {
-      if (runs.length === 0) return 0;
-      return Math.round(
-        runs.reduce((acc, r) => acc + (r.durationMs || 0), 0) / runs.length,
-      );
-    };
 
     const stats: SyncStats = {
       itemsSynced: sumItems(current),

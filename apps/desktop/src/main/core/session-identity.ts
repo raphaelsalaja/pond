@@ -9,7 +9,7 @@ interface NamedCookie {
 
 export function identityKeyFromCookies(
   source: Source,
-  cookies: NamedCookie[],
+  cookies: Array<NamedCookie>,
 ): string | null {
   const get = (name: string): string | null => {
     const hit = cookies.find((c) => c.name === name);

@@ -57,11 +57,11 @@ export const SIDEBAR_DESTINATION_GROUPS = [
     heading: true,
     destinations: ["sources", "downloads"],
   },
-] as const satisfies readonly {
+] as const satisfies ReadonlyArray<{
   label: string;
   heading: boolean;
-  destinations: readonly SidebarDestination[];
-}[];
+  destinations: ReadonlyArray<SidebarDestination>;
+}>;
 
 export const SIDEBAR_DESTINATION_LABELS = {
   all: "All",
@@ -79,12 +79,12 @@ export const SIDEBAR_DESTINATION_LABELS = {
 } as const satisfies Record<SidebarDestination, string>;
 
 export function moveVisibleSidebarDestination(
-  order: readonly SidebarDestination[],
-  group: readonly SidebarDestination[],
-  visible: readonly SidebarDestination[],
+  order: ReadonlyArray<SidebarDestination>,
+  group: ReadonlyArray<SidebarDestination>,
+  visible: ReadonlyArray<SidebarDestination>,
   destination: SidebarDestination,
   over: SidebarDestination,
-): SidebarDestination[] {
+): Array<SidebarDestination> {
   const visibleOrder = order.filter(
     (item) => group.includes(item) && visible.includes(item),
   );

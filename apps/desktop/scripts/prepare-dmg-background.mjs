@@ -5,11 +5,10 @@
  */
 
 import { mkdir } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import sharp from "sharp";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 const width = 720;
 const height = 440;
 const outDir = resolve(__dirname, "../packaging/dmg");

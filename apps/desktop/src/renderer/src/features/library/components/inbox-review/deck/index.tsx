@@ -1,9 +1,7 @@
 import {
   AnimatePresence,
   animate,
-  type MotionValue,
   motion,
-  type PanInfo,
   useIsPresent,
   useMotionValue,
   useMotionValueEvent,
@@ -11,18 +9,14 @@ import {
   useSpring,
   useTransform,
 } from "motion/react";
-import {
-  type CSSProperties,
-  type ReactNode,
-  useId,
-  useLayoutEffect,
-  useRef,
-} from "react";
+import type { MotionValue, PanInfo } from "motion/react";
+import { useId, useLayoutEffect, useState } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ReviewActions } from "@/features/library/components/inbox-review/actions";
-import {
-  type Departure,
-  type Review,
-  useReview,
+import { useReview } from "@/features/library/components/inbox-review/use-review";
+import type {
+  Departure,
+  Review,
 } from "@/features/library/components/inbox-review/use-review";
 import type { ReviewQueue } from "@/features/library/lib/review-queue";
 import { Card, CardThumb, useSaveCardModel } from "@/features/saves";
@@ -79,13 +73,14 @@ const slot = {
         },
       };
     }
-    if (outcome === "skip")
+    if (outcome === "skip") {
       return {
         y: FLY * 0.6,
         opacity: 0,
         zIndex: DEPTH + 1,
         transition: { y: fly(fling.y), ...fade },
       };
+    }
     return {
       y: 220,
       scale: 0.4,
@@ -105,7 +100,7 @@ function useDepth(depth: number, pull: MotionValue<number>, arrive: boolean) {
     if (reduce) level.jump(depth);
     else level.set(depth);
   }, [depth, level, pull, reduce]);
-  const shown = useTransform([level, pull], ([at, by]: number[]) =>
+  const shown = useTransform([level, pull], ([at, by]: Array<number>) =>
     Math.max(0, (at ?? 0) - (depth > 0 ? (by ?? 0) : 0)),
   );
   return {
@@ -205,10 +200,13 @@ function ReviewCard({ id, depth, pull, arrive, review }: ReviewCardProps) {
     const across = Math.abs(lead.x) > Math.abs(lead.y);
     const dx = offset.x + fling.x * PROJECT;
     const dy = offset.y + fling.y * PROJECT;
-    if (across && dx > THROW) review.actions.keep(fling);
-    else if (across && dx < -THROW) review.actions.trash(fling);
-    else if (!across && dy > THROW) review.actions.skip(fling);
-    else {
+    if (across && dx > THROW) {
+      review.actions.keep(fling);
+    } else if (across && dx < -THROW) {
+      review.actions.trash(fling);
+    } else if (!across && dy > THROW) {
+      review.actions.skip(fling);
+    } else {
       settle(fling);
       if (!across && dy < -THROW) review.setChoosing(true);
     }
@@ -274,21 +272,29 @@ export function ReviewDeck({
   onStep,
   finished,
 }: ReviewDeckProps) {
-  const review = useReview(queue, onExit, onStep);
+  const { ref: stageRef, ...review } = useReview(queue, onExit, onStep);
   const instructionsId = useId();
   const pull = useMotionValue(0);
-  const shown = useRef(false);
   const stack = queue.ids.slice(queue.index, queue.index + DEPTH);
+  /** Cards from the deck's first render start in place; later cards rise into the stack. */
+  const [firstStack, setFirstStack] = useState<{
+    top: string | null;
+    ids: ReadonlySet<string>;
+  } | null>(() => ({ top: review.id, ids: new Set(stack) }));
+  if (firstStack && firstStack.top !== review.id) {
+    setFirstStack(null);
+  }
 
   /** Runs after each card's own layout effect has read the pull it was released at. */
   useLayoutEffect(() => {
-    shown.current = true;
-    if (review.id) pull.jump(0);
+    if (review.id) {
+      pull.jump(0);
+    }
   }, [review.id, pull]);
 
   return (
     <div
-      ref={review.ref}
+      ref={stageRef}
       className={styles.stage}
       role="application"
       aria-label="Review Inbox"
@@ -313,7 +319,7 @@ export function ReviewDeck({
                     id={id}
                     depth={depth}
                     pull={pull}
-                    arrive={shown.current}
+                    arrive={!firstStack?.ids.has(id)}
                     review={review}
                   />
                 ))

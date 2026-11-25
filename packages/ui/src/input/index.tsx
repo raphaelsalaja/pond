@@ -34,7 +34,7 @@ function Root({
   );
 }
 
-interface IconProps extends React.ComponentPropsWithoutRef<"span"> {}
+type IconProps = React.ComponentPropsWithoutRef<"span">;
 
 function Icon({ className, ...props }: IconProps) {
   return (
@@ -47,7 +47,7 @@ function Icon({ className, ...props }: IconProps) {
   );
 }
 
-interface SlotProps extends React.ComponentPropsWithoutRef<"div"> {}
+type SlotProps = React.ComponentPropsWithoutRef<"div">;
 
 function Action({ className, ...props }: SlotProps) {
   return (

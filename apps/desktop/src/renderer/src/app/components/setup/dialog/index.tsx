@@ -1,7 +1,9 @@
 import { Button, Dialog } from "@pond/ui";
+import { isElement } from "@pond/ui/dom";
 import { Calligraph } from "calligraph";
 import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
-import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { setupFlow } from "@/shared/state/setup";
 import {
   connectAssistant,
@@ -9,7 +11,8 @@ import {
   openExistingLibrary,
   relaunchesLibrary,
 } from "../apply";
-import { type Session, type SetupChoices, STEP_IDS } from "../model";
+import { STEP_IDS } from "../model";
+import type { Session, SetupChoices } from "../model";
 import { setupResume } from "../resume";
 import { stepSpec } from "../steps";
 import styles from "./styles.module.css";
@@ -94,9 +97,12 @@ export function SetupDialog({
   };
 
   const next = async () => {
-    if (busy || opening) return;
-    if (id === "assistant" && !(await run(() => connectAssistant(choices))))
+    if (busy || opening) {
       return;
+    }
+    if (id === "assistant" && !(await run(() => connectAssistant(choices)))) {
+      return;
+    }
     if (id === "library") {
       const relaunching = relaunchesLibrary(choices, library, profile);
       if (relaunching) setupResume.mark();
@@ -112,9 +118,12 @@ export function SetupDialog({
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
-    if (event.target instanceof Element && event.target.closest(OWNS_ENTER))
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) {
       return;
+    }
+    if (isElement(event.target) && event.target.closest(OWNS_ENTER)) {
+      return;
+    }
     event.preventDefault();
     void next();
   };

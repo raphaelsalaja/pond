@@ -1,12 +1,13 @@
-import { Children, Fragment, isValidElement, type ReactNode } from "react";
+import { Children, Fragment, isValidElement } from "react";
+import type { ReactNode } from "react";
 
-type MenuShortcut = string | string[];
+type MenuShortcut = string | Array<string>;
 
 interface MenuActionItem {
   type?: "item";
   id?: string;
   label: ReactNode;
-  breadcrumb?: ReactNode[];
+  breadcrumb?: Array<ReactNode>;
   icon?: ReactNode;
   variant?: "default" | "destructive";
   shortcut?: MenuShortcut;
@@ -27,7 +28,7 @@ interface MenuGroupItem {
   label?: ReactNode;
   hidden?: boolean;
   keywords?: string;
-  items: MenuItemSpec[];
+  items: Array<MenuItemSpec>;
 }
 
 interface MenuSubmenuItem {
@@ -38,13 +39,13 @@ interface MenuSubmenuItem {
   disabled?: boolean;
   hidden?: boolean;
   keywords?: string;
-  items: MenuItemSpec[];
+  items: Array<MenuItemSpec>;
 }
 
 interface MenuCheckboxItem {
   type: "checkbox";
   label: ReactNode;
-  breadcrumb?: ReactNode[];
+  breadcrumb?: Array<ReactNode>;
   icon?: ReactNode;
   indicator?: "checkbox" | "check";
   checked: boolean;
@@ -59,7 +60,7 @@ interface MenuCheckboxItem {
 interface MenuRadioOption {
   value: string;
   label: ReactNode;
-  breadcrumb?: ReactNode[];
+  breadcrumb?: Array<ReactNode>;
   icon?: ReactNode;
   keywords?: string;
   disabled?: boolean;
@@ -70,7 +71,7 @@ interface MenuRadioItem {
   /** `null` checks no option, such as a mixed value across a selection. */
   value: string | null;
   onValueChange: (value: string) => void;
-  options: MenuRadioOption[];
+  options: Array<MenuRadioOption>;
   hidden?: boolean;
   closeOnClick?: boolean;
 }
@@ -78,7 +79,7 @@ interface MenuRadioItem {
 interface MenuLinkItem {
   type: "link";
   label: ReactNode;
-  breadcrumb?: ReactNode[];
+  breadcrumb?: Array<ReactNode>;
   href: string;
   icon?: ReactNode;
   shortcut?: MenuShortcut;
@@ -168,28 +169,32 @@ interface MenuParts {
   Popup: React.ComponentType<{ children?: ReactNode }>;
 }
 
-function pruneSpecs(items: MenuItemSpec[]): MenuItemSpec[] {
+function pruneSpecs(items: Array<MenuItemSpec>): Array<MenuItemSpec> {
   const visible = items.filter(
     (spec) =>
       spec.type === "separator" || spec.type === "custom" || !spec.hidden,
   );
-  const out: MenuItemSpec[] = [];
+  const out: Array<MenuItemSpec> = [];
   for (const spec of visible) {
     if (spec.type === "separator") {
-      if (out.length === 0 || out[out.length - 1]?.type === "separator") {
+      if (out.length === 0 || out.at(-1)?.type === "separator") {
         continue;
       }
     }
     out.push(spec);
   }
-  while (out[out.length - 1]?.type === "separator") out.pop();
+  while (out.at(-1)?.type === "separator") {
+    out.pop();
+  }
   return out;
 }
 
 export function menuLabelText(value: ReactNode): string | null {
   const values = Children.toArray(value);
   const text = values.length === 1 ? values[0] : null;
-  return text != null && !isValidElement(text) ? String(text) : null;
+  return text !== null && text !== undefined && !isValidElement(text)
+    ? String(text)
+    : null;
 }
 
 function specKey(spec: MenuItemSpec, index: number): string | number {
@@ -198,11 +203,17 @@ function specKey(spec: MenuItemSpec, index: number): string | number {
   if (!("label" in spec)) return index;
 
   const label = menuLabelText(spec.label);
-  if (label == null) return index;
-  if (!("breadcrumb" in spec) || !spec.breadcrumb?.length) return label;
+  if (label === null) {
+    return index;
+  }
+  if (!("breadcrumb" in spec) || !spec.breadcrumb?.length) {
+    return label;
+  }
 
   const breadcrumb = spec.breadcrumb.map(menuLabelText);
-  if (breadcrumb.some((segment) => segment == null)) return index;
+  if (breadcrumb.some((segment) => segment === null)) {
+    return index;
+  }
   return [...breadcrumb, label].join(" › ");
 }
 
@@ -217,7 +228,7 @@ function filterLabel(
 ): string | undefined {
   if (!spec.keywords) return undefined;
   const label = menuLabelText(spec.label);
-  return label == null ? undefined : `${label} ${spec.keywords}`;
+  return label === null ? undefined : `${label} ${spec.keywords}`;
 }
 
 function renderItemLabel(
@@ -265,7 +276,7 @@ function renderSpec(
   if (spec.type === "group") {
     return (
       <parts.Group key={key}>
-        {spec.label != null ? (
+        {spec.label !== null && spec.label !== undefined ? (
           <parts.GroupLabel>{spec.label}</parts.GroupLabel>
         ) : null}
         {pruneSpecs(spec.items).map((child, i) =>
@@ -287,11 +298,11 @@ function renderSpec(
         closeOnClick={spec.closeOnClick}
       >
         {indicator === "checkbox" ? <parts.CheckboxItemIndicator /> : null}
-        {spec.icon != null ? (
+        {spec.icon !== null && spec.icon !== undefined ? (
           <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
         ) : null}
         {renderItemLabel(spec, parts)}
-        {spec.shortcut != null ? (
+        {spec.shortcut !== null && spec.shortcut !== undefined ? (
           <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
         ) : null}
         {indicator === "check" ? (
@@ -316,7 +327,7 @@ function renderSpec(
             disabled={option.disabled}
             closeOnClick={spec.closeOnClick}
           >
-            {option.icon != null ? (
+            {option.icon !== null && option.icon !== undefined ? (
               <parts.ItemIcon>{option.icon}</parts.ItemIcon>
             ) : null}
             {renderItemLabel(option, parts)}
@@ -344,11 +355,11 @@ function renderSpec(
             : undefined
         }
       >
-        {spec.icon != null ? (
+        {spec.icon !== null && spec.icon !== undefined ? (
           <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
         ) : null}
         {renderItemLabel(spec, parts)}
-        {spec.shortcut != null ? (
+        {spec.shortcut !== null && spec.shortcut !== undefined ? (
           <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
         ) : null}
       </parts.LinkItem>
@@ -362,7 +373,7 @@ function renderSpec(
           label={filterLabel(spec)}
           disabled={spec.disabled}
         >
-          {spec.icon != null ? (
+          {spec.icon !== null && spec.icon !== undefined ? (
             <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
           ) : null}
           <parts.ItemLabel>{spec.label}</parts.ItemLabel>
@@ -395,9 +406,11 @@ function renderSpec(
       closeOnClick={spec.closeOnClick}
       onClick={spec.onClick}
     >
-      {spec.icon != null ? <parts.ItemIcon>{spec.icon}</parts.ItemIcon> : null}
+      {spec.icon !== null && spec.icon !== undefined ? (
+        <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
+      ) : null}
       {renderItemLabel(spec, parts)}
-      {spec.shortcut != null ? (
+      {spec.shortcut !== null && spec.shortcut !== undefined ? (
         <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
       ) : null}
     </parts.Item>
@@ -405,7 +418,7 @@ function renderSpec(
 }
 
 export function renderMenuSpec(
-  items: MenuItemSpec[],
+  items: Array<MenuItemSpec>,
   parts: MenuParts,
 ): ReactNode {
   return pruneSpecs(items).map((spec, i) =>

@@ -1,6 +1,6 @@
 import { IconArrowRotateAnticlockwise, IconMinus, IconPlus } from "@pond/icons";
-import type { ComponentDocs } from "../shared/docs";
 import { Stepper } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 function ignore(): void {}
 

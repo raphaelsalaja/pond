@@ -3,36 +3,36 @@
   font-family: Chirp;
   font-style: normal;
   font-weight: 400;
-  font-display: swap;
   src: url("../../../../../components/assets/fonts/chirp/chirp-Regular.woff")
     format("woff");
+  font-display: swap;
 }
 
 @font-face {
   font-family: Chirp;
   font-style: normal;
   font-weight: 500;
-  font-display: swap;
   src: url("../../../../../components/assets/fonts/chirp/chirp-Medium.woff")
     format("woff");
+  font-display: swap;
 }
 
 @font-face {
   font-family: Chirp;
   font-style: normal;
   font-weight: 700;
-  font-display: swap;
   src: url("../../../../../components/assets/fonts/chirp/chirp-Bold.woff")
     format("woff");
+  font-display: swap;
 }
 
 @font-face {
   font-family: Chirp;
   font-style: normal;
   font-weight: 800;
-  font-display: swap;
   src: url("../../../../../components/assets/fonts/chirp/chirp-Heavy.woff")
     format("woff");
+  font-display: swap;
 }
 
 .card {

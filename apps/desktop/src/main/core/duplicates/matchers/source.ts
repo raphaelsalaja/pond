@@ -1,6 +1,7 @@
 import type { Source } from "@pond/schema/db";
 import type { SaveEvidence } from "../../../../shared/duplicate-contracts";
-import { type Found, fanoutPairs, type LibrarySave } from "../types";
+import { fanoutPairs } from "../types";
+import type { Found, LibrarySave } from "../types";
 
 export interface SourceIdentity {
   source: Source;
@@ -25,9 +26,9 @@ function evidenceFor(identity: SourceIdentity): SaveEvidence {
 
 /** Two Saves of the same post or page, found by re-deriving each Save's source identity from its URLs. */
 export function sourceMatches(
-  saves: readonly LibrarySave[],
+  saves: ReadonlyArray<LibrarySave>,
   classify: ClassifyUrl,
-): Found[] {
+): Array<Found> {
   const owners = new Map<
     string,
     { identity: SourceIdentity; ids: Set<string> }
@@ -50,12 +51,13 @@ export function sourceMatches(
     }
   }
 
-  const found: Found[] = [];
+  const found: Array<Found> = [];
   for (const { identity, ids } of owners.values()) {
     if (ids.size < 2) continue;
     const save = evidenceFor(identity);
-    for (const pair of fanoutPairs([...ids].sort()))
+    for (const pair of fanoutPairs([...ids].sort())) {
       found.push({ ids: pair, save });
+    }
   }
   return found;
 }

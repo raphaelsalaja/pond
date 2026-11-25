@@ -1,7 +1,8 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 
 interface SubstackPostPage {
@@ -21,8 +22,12 @@ async function inPageSubstackHarvest(): Promise<SubstackPostPage | null> {
   const body = (): HTMLElement | null =>
     document.querySelector(".available-content, .body.markup");
   while (Date.now() < deadline) {
-    if (body() || document.querySelector('meta[property="og:title"]')) break;
-    await new Promise((r) => setTimeout(r, 250));
+    if (body() || document.querySelector('meta[property="og:title"]')) {
+      break;
+    }
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   const meta = (name: string): string =>
     document
@@ -30,7 +35,6 @@ async function inPageSubstackHarvest(): Promise<SubstackPostPage | null> {
       ?.getAttribute("content")
       ?.trim() ?? "";
   const subtitle = document.querySelector("h3.subtitle")?.textContent?.trim();
-  // biome-ignore lint/performance/useDomNodeTextContent: the saved text needs rendered line breaks between paragraphs.
   const text = [subtitle, body()?.innerText?.trim()]
     .filter(Boolean)
     .join("\n\n");

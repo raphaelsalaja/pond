@@ -27,16 +27,18 @@ import { useLiveDownloadHydration } from "@/features/downloads/hooks/use-live-do
 import {
   downloadFiltersActive,
   downloadRowSource,
-  type HistoryCursor,
   HistoryPageSchema,
   historyToDownloadRow,
   matchesDownloadFilters,
   PipelineStatusSchema,
   projectLiveDownloads,
   STATUS_FILTER_OPTIONS,
-  type StatusFilter,
   showsCompletedDownloads,
   statusFeed,
+} from "@/features/downloads/lib/status-feed";
+import type {
+  HistoryCursor,
+  StatusFilter,
 } from "@/features/downloads/lib/status-feed";
 import { downloadDialog } from "@/features/downloads/state/download-dialog";
 import {
@@ -59,12 +61,12 @@ import { useSourceGates } from "../../hooks/use-source-gates";
 import { transferActive, transferToDownloadRow } from "../../lib/transfer-rows";
 import { DownloadOptionsMenu } from "./options";
 import { DownloadSelectionBar } from "./selection-bar";
-import styles from "./styles.module.css";
 import { TRANSFER_JOBS_KEY } from "./transfer-menu";
 import { DownloadsView } from "./view";
+import styles from "./styles.module.css";
 
 const initialHistoryCursor: HistoryCursor = null;
-const NO_GATES: readonly QueueSourceGate[] = [];
+const NO_GATES: ReadonlyArray<QueueSourceGate> = [];
 type PipelineStatus = z.infer<typeof PipelineStatusSchema>;
 
 export function DownloadsPage() {
@@ -88,13 +90,13 @@ export function DownloadsPage() {
         }),
       ),
     getNextPageParam: (page) => page.nextCursor ?? undefined,
-    refetchInterval: 5_000,
+    refetchInterval: 5000,
   });
   const transferJobs = useQuery({
     queryKey: TRANSFER_JOBS_KEY,
     queryFn: () => window.pond.query("transferJobs.list", {}),
     refetchInterval: (query) =>
-      query.state.data?.some(transferActive) ? 1_000 : 5_000,
+      query.state.data?.some(transferActive) ? 1000 : 5000,
   });
   const transfers = useMemo(
     () => (transferJobs.data ?? []).map(transferToDownloadRow),
@@ -294,14 +296,14 @@ export function DownloadsPage() {
             icon={<IconCircleCheck />}
             options={STATUS_FILTER_OPTIONS}
             selected={filters.statuses}
-            onChange={downloadsFilters.setStatuses}
+            onChange={(statuses) => downloadsFilters.setStatuses(statuses)}
           />
           <TableFilterChip
             name="Source"
             icon={<IconLink2 />}
             options={sourceOptions}
             selected={filters.sources}
-            onChange={downloadsFilters.setSources}
+            onChange={(sources) => downloadsFilters.setSources(sources)}
           />
         </TableFilterBar>
       }
@@ -358,7 +360,7 @@ export function DownloadsPage() {
               <MatchesEmpty
                 query={filters.q}
                 filtered={tableFiltersActive}
-                onReset={downloadsFilters.reset}
+                onReset={() => downloadsFilters.reset()}
               />
             </div>
           ) : null

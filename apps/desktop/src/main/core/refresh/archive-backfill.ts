@@ -1,10 +1,5 @@
-import {
-  CANCEL_REASON,
-  type NewTask,
-  queueGenerations,
-  saves,
-  tasks,
-} from "@pond/schema/db";
+import { CANCEL_REASON, queueGenerations, saves, tasks } from "@pond/schema/db";
+import type { NewTask } from "@pond/schema/db";
 import { isWebPageSave } from "@shared/web-page-save";
 import { and, eq, inArray, isNull, ne, notInArray, or } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -38,9 +33,8 @@ export async function startArchiveBackfill(
 }> {
   if (!(await autoArchive())) return { ok: true, queued: 0 };
   /** archive-page pulls in the WARC stack; IPC handlers import this module at launch. */
-  const { ARCHIVE_VERSION, hasWarcArchive, readArchivedMeta } = await import(
-    "../pipeline/workers/archive-page"
-  );
+  const { ARCHIVE_VERSION, hasWarcArchive, readArchivedMeta } =
+    await import("../pipeline/workers/archive-page");
   const db = await runtime.getDb();
   /** Settled saves only: ingesting saves already have live tasks, and pending archive_page behind non-done peers would deadlock the sequential gate. */
   const rows = db
@@ -61,7 +55,7 @@ export async function startArchiveBackfill(
     .all()
     .filter((row) => isWebPageSave(row));
 
-  const candidates: { id: string }[] = [];
+  const candidates: Array<{ id: string }> = [];
   for (const r of rows) {
     if (!hasWarcArchive(r.files)) {
       candidates.push({ id: r.id });

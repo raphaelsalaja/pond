@@ -46,7 +46,7 @@ const LOUNGE: Shot = {
 };
 
 /** The Recent group on an empty query, newest first. */
-export const RECENT: Shot[] = [
+export const RECENT: Array<Shot> = [
   {
     id: "01KXPDEGV9YA8Q39G77V3HS3AA",
     title: "Kiladalen cabin",
@@ -80,7 +80,7 @@ export const RECENT: Shot[] = [
 ];
 
 /** The library grid behind the menu, in the order the waterfall places it. */
-export const GRID: Shot[] = [
+export const GRID: Array<Shot> = [
   WICKER,
   {
     id: "01M1Z5EJM0DK2SN3NBPY1SKNYD",
@@ -170,7 +170,7 @@ export const GRID: Shot[] = [
 ];
 
 /** Every save the keyword lookup can return, deduplicated by id. */
-export const SAVES: Shot[] = [
+export const SAVES: Array<Shot> = [
   ...new Map(
     [...RECENT, WICKER, LOUNGE, ...GRID].map((shot) => [shot.id, shot]),
   ).values(),
@@ -181,7 +181,7 @@ export interface Folder {
   count: number;
 }
 
-export const FOLDERS: Folder[] = [
+export const FOLDERS: Array<Folder> = [
   { name: "Chairs", count: 23 },
   { name: "Interiors", count: 58 },
   { name: "Cars", count: 12 },
@@ -201,11 +201,11 @@ export interface Command {
   detail?: string;
   keywords: string;
   icon: ComponentType<{ "aria-hidden"?: boolean }>;
-  shortcut?: string[][];
+  shortcut?: Array<Array<string>>;
 }
 
 /** `command-menu/commands.ts`, with each shortcut as the menu draws it. */
-export const COMMANDS: Command[] = [
+export const COMMANDS: Array<Command> = [
   {
     group: "Create",
     label: "New Folder",

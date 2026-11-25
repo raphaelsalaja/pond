@@ -1,10 +1,11 @@
-import { Action, type Tool } from "@raycast/api";
+import { Action } from "@raycast/api";
+import type { Tool } from "@raycast/api";
 import { pond } from "../api/client";
 import { describeSaves } from "../api/tools";
 
 type Input = {
   /** Save IDs from Search Saves, all from the same library. Only saves the user asked to remove. */
-  ids: string[];
+  ids: Array<string>;
   /** Library ID returned with the saves. */
   libraryId: string;
 };

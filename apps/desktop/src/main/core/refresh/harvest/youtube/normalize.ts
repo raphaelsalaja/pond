@@ -21,7 +21,7 @@ interface YoutubePlayerResponse {
       publishDate?: string;
       thumbnail?: {
         isOriginalAspectRatio?: boolean;
-        thumbnails?: YoutubeThumbnail[];
+        thumbnails?: Array<YoutubeThumbnail>;
       };
     };
   };
@@ -60,20 +60,26 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
       if (u.pathname.startsWith("/shorts/")) {
         return u.pathname.split("/")[2] ?? null;
       }
-    } catch {}
+    } catch {
+      /** An unparseable href has no video id. */
+    }
     return null;
   }
 
   function parseCount(text: string | null | undefined): number | undefined {
-    if (!text) return undefined;
-    const m = text.replace(/,/g, "").match(/([\d.]+)\s*([KMB]?)/i);
-    if (!m?.[1]) return undefined;
+    if (!text) {
+      return undefined;
+    }
+    const m = text.replaceAll(",", "").match(/([\d.]+)\s*([KMB]?)/i);
+    if (!m?.[1]) {
+      return undefined;
+    }
     const num = Number.parseFloat(m[1]);
     if (!Number.isFinite(num)) return undefined;
     const suffix = (m[2] ?? "").toUpperCase();
     const mult =
       suffix === "K"
-        ? 1_000
+        ? 1000
         : suffix === "M"
           ? 1_000_000
           : suffix === "B"
@@ -223,13 +229,15 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     const out: Pick<YoutubeWatchMeta, "views" | "publishedAt" | "durationSec"> =
       {};
     const views = validators.text.safeParse(player?.videoDetails?.viewCount);
-    if (views.success && /^\d+$/.test(views.data))
+    if (views.success && /^\d+$/.test(views.data)) {
       out.views = Number(views.data);
+    }
     const length = validators.text.safeParse(
       player?.videoDetails?.lengthSeconds,
     );
-    if (length.success && /^[1-9]\d*$/.test(length.data))
+    if (length.success && /^[1-9]\d*$/.test(length.data)) {
       out.durationSec = Number(length.data);
+    }
     const published = validators.text.safeParse(
       player?.microformat?.playerMicroformatRenderer?.publishDate,
     );
@@ -266,7 +274,7 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
   }
 
   function elementText(el: HTMLElement): string {
-    const parts: string[] = [];
+    const parts: Array<string> = [];
     function walk(node: Node) {
       if (node.nodeType === 3) {
         parts.push(node.textContent ?? "");
@@ -279,11 +287,10 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
       }
       for (const next of Array.from(node.childNodes)) walk(next);
     }
-    for (const child of Array.from(el.childNodes)) walk(child);
-    return parts
-      .join("")
-      .replace(/\u00a0/g, " ")
-      .trim();
+    for (const child of Array.from(el.childNodes)) {
+      walk(child);
+    }
+    return parts.join("").replaceAll("\u00A0", " ").trim();
   }
 
   function isHidden(el: HTMLElement): boolean {
@@ -299,18 +306,22 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
   }
 
   function stripDescriptionChrome(raw: string): string {
-    const kept: string[] = [];
+    const kept: Array<string> = [];
     for (const line of raw.split(/\n/)) {
       const trimmed = line.trim();
       if (isDescriptionChrome(trimmed)) continue;
       kept.push(trimmed);
     }
-    while (kept[0] === "") kept.shift();
-    while (kept[kept.length - 1] === "") kept.pop();
+    while (kept[0] === "") {
+      kept.shift();
+    }
+    while (kept.at(-1) === "") {
+      kept.pop();
+    }
     return kept
       .join("\n")
       .replace(/[ \t]*(?:\.{3}|…)\s*more\s*$/i, "")
-      .replace(/\n{3,}/g, "\n\n")
+      .replaceAll(/\n{3,}/g, "\n\n")
       .trim();
   }
 
@@ -326,8 +337,10 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
   }
 
   function isDigitProbe(line: string): boolean {
-    if (!/^[\d\s]+(?:[KMB])?$/i.test(line)) return false;
-    return line.replace(/\D/g, "").length >= 10;
+    if (!/^[\d\s]+(?:[KMB])?$/i.test(line)) {
+      return false;
+    }
+    return line.replaceAll(/\D/g, "").length >= 10;
   }
 
   return { extractVideoId, parseCount, extractWatchPageMeta };

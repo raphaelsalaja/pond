@@ -4,6 +4,6 @@ import { fishPath } from "@/features/fish";
 
 export const Route = createFileRoute("/_library/assistant")({
   beforeLoad: () => {
-    throw redirect({ href: fishPath(DEFAULT_FISH_ID) });
+    redirect({ href: fishPath(DEFAULT_FISH_ID), throw: true });
   },
 });

@@ -3,14 +3,8 @@ import { existsSync } from "node:fs";
 import { promisify } from "node:util";
 import { saves } from "@pond/schema/db";
 import { inArray } from "drizzle-orm";
-import {
-  app,
-  BrowserWindow,
-  clipboard,
-  dialog,
-  type NativeImage,
-  nativeImage,
-} from "electron";
+import { app, BrowserWindow, clipboard, dialog, nativeImage } from "electron";
+import type { NativeImage } from "electron";
 import { z } from "zod";
 import { librarySaveLink } from "../../../shared/library-links";
 import type { QueryResult } from "../../../shared/query-contracts";
@@ -18,31 +12,33 @@ import { runLibraryTransfer } from "../../core/library-transfers";
 import { savesPrompt } from "../../core/save-prompt";
 import { getDb } from "../../db";
 import {
-  type OpenWithAppInfo,
   openWithListingKey,
   parseOpenWithPayload,
   rankOpenWithApps,
 } from "../../lib/open-with-apps";
+import type { OpenWithAppInfo } from "../../lib/open-with-apps";
 import { libraryId as activeLibraryId } from "../../paths";
 import { resolveOriginalFilePaths, resolveSaveFilePath } from "../helpers";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const run = promisify(execFile);
-const listedAppsByKind = new Map<string, OpenWithAppInfo[]>();
+const listedAppsByKind = new Map<string, Array<OpenWithAppInfo>>();
 const iconByPath = new Map<string, string | null>();
 
 async function resolveFiles(
-  ids: string[],
+  ids: Array<string>,
   fileIndex: number | undefined,
-): Promise<{ ok: true; files: string[] } | { ok: false; error: string }> {
-  const files: string[] = [];
+): Promise<{ ok: true; files: Array<string> } | { ok: false; error: string }> {
+  const files: Array<string> = [];
   for (const id of new Set(ids)) {
     const target = await resolveSaveFilePath(id, fileIndex);
-    if (!target.ok)
+    if (!target.ok) {
       return {
         ok: false,
         error: "A selected Save has no available original file.",
       };
+    }
     files.push(target.path);
   }
   return { ok: true, files };
@@ -66,7 +62,7 @@ JSON.stringify({ defaultPath: fallback ? ObjC.unwrap(fallback.path) : null, path
   return rankOpenWithApps(parseOpenWithPayload(stdout.trim()));
 }
 
-async function listedApps(filePath: string): Promise<OpenWithAppInfo[]> {
+async function listedApps(filePath: string): Promise<Array<OpenWithAppInfo>> {
   const key = openWithListingKey(filePath);
   const cached = listedAppsByKind.get(key);
   if (cached) return cached;
@@ -120,16 +116,17 @@ function encodeIcon(image: NativeImage): string | null {
 }
 
 async function openFilesWith(
-  files: string[],
+  files: Array<string>,
   application: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    for (let offset = 0; offset < files.length; offset += 100)
+    for (let offset = 0; offset < files.length; offset += 100) {
       await run("/usr/bin/open", [
         "-a",
         application,
         ...files.slice(offset, offset + 100),
       ]);
+    }
     return { ok: true };
   } catch (error) {
     return {
@@ -149,11 +146,13 @@ export const openWithQueries = {
       fileIndex: z.number().int().nonnegative().optional(),
     }),
     async ({ id, fileIndex }, event) => {
-      if (process.platform !== "darwin")
+      if (process.platform !== "darwin") {
         return { ok: false as const, error: "Quick Look requires macOS." };
+      }
       const target = await resolveSaveFilePath(id, fileIndex);
-      if (!target.ok)
+      if (!target.ok) {
         return { ok: false as const, error: "This Save has no original file." };
+      }
       const window =
         (event ? BrowserWindow.fromWebContents(event.sender) : null) ??
         BrowserWindow.getFocusedWindow();
@@ -166,7 +165,7 @@ export const openWithQueries = {
     z.object({ ids: z.array(z.string().min(1)).min(1) }),
     async ({ ids }) => {
       const libraryId = activeLibraryId();
-      clipboard.writeText(
+      await clipboard.writeText(
         [...new Set(ids)]
           .map((id) => librarySaveLink(libraryId, id))
           .join("\n"),
@@ -196,8 +195,10 @@ export const openWithQueries = {
           },
         ];
       });
-      if (!entries.length) return { ok: false as const, error: "not_found" };
-      clipboard.writeText(savesPrompt(entries));
+      if (!entries.length) {
+        return { ok: false as const, error: "not_found" };
+      }
+      await clipboard.writeText(savesPrompt(entries));
       return { ok: true as const };
     },
   ),
@@ -241,20 +242,23 @@ export const openWithQueries = {
         const { files } = resolved;
         try {
           if (process.platform === "win32") {
-            for (const file of files)
+            for (const file of files) {
               await run("rundll32.exe", ["shell32.dll,OpenAs_RunDLL", file]);
+            }
             return { ok: true };
           }
-          if (process.platform !== "darwin")
+          if (process.platform !== "darwin") {
             return {
               ok: false,
               error:
                 "Choose an application from your file manager to open this Save.",
             };
+          }
           if (application) {
-            if (!application.endsWith(".app") || !existsSync(application))
+            if (!application.endsWith(".app") || !existsSync(application)) {
               return { ok: false, error: "Could not find that application." };
-            return openFilesWith(files, application);
+            }
+            return await openFilesWith(files, application);
           }
           const picked = await dialog.showOpenDialog({
             title: "Open With",
@@ -263,9 +267,10 @@ export const openWithQueries = {
             properties: ["openFile"],
             filters: [{ name: "Applications", extensions: ["app"] }],
           });
-          if (picked.canceled || !picked.filePaths[0])
+          if (picked.canceled || !picked.filePaths[0]) {
             return { ok: false, reason: "cancelled" };
-          return openFilesWith(files, picked.filePaths[0]);
+          }
+          return await openFilesWith(files, picked.filePaths[0]);
         } catch (error) {
           return {
             ok: false,

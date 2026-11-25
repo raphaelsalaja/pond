@@ -1,21 +1,15 @@
-import {
-  CANVAS_COLORS,
-  type CanvasColor,
-  type CanvasConnector,
-  type CanvasCrop,
-  type CanvasItem,
-  type CanvasOutline,
-  type CanvasSide,
+import { CANVAS_COLORS } from "@shared/canvas-contracts";
+import type {
+  CanvasColor,
+  CanvasConnector,
+  CanvasCrop,
+  CanvasItem,
+  CanvasOutline,
+  CanvasSide,
 } from "@shared/canvas-contracts";
 import type { XYPosition } from "@xyflow/react";
-import {
-  CONNECTOR_STYLE,
-  drawingFrom,
-  GRID,
-  newId,
-  type StrokePoint,
-  snap,
-} from "./document";
+import { CONNECTOR_STYLE, drawingFrom, GRID, newId, snap } from "./document";
+import type { StrokePoint } from "./document";
 
 const GAP = 48;
 const CELL = { width: 144, height: 48 };
@@ -135,8 +129,9 @@ export function quickPair(
     item.kind !== "figure" &&
     item.kind !== "text" &&
     item.kind !== "topic"
-  )
+  ) {
     return null;
+  }
   const { locked: _locked, group: _group, ...rest } = item;
   const created = {
     ...rest,
@@ -191,14 +186,14 @@ export function noteFromText(
 
 /** Notes land in color order, in rows of four, from the selection's top left. */
 export function notesSorted(
-  notes: readonly {
+  notes: ReadonlyArray<{
     id: string;
     color: CanvasColor;
     x: number;
     y: number;
     width: number;
     height: number;
-  }[],
+  }>,
 ): Map<string, XYPosition> {
   const rank = new Map(CANVAS_COLORS.map((color, index) => [color, index]));
   const ordered = [...notes].sort(
@@ -231,7 +226,7 @@ export function notesSorted(
 
 function hits(
   point: StrokePoint,
-  eraser: readonly StrokePoint[],
+  eraser: ReadonlyArray<StrokePoint>,
   radius: number,
 ): boolean {
   return eraser.some(
@@ -241,11 +236,11 @@ function hits(
 
 function splitDrawing(
   item: Extract<CanvasItem, { kind: "drawing" }>,
-  eraser: readonly StrokePoint[],
+  eraser: ReadonlyArray<StrokePoint>,
   radius: number,
-): CanvasItem[] | null {
-  const runs: StrokePoint[][] = [];
-  let current: StrokePoint[] = [];
+): Array<CanvasItem> | null {
+  const runs: Array<Array<StrokePoint>> = [];
+  let current: Array<StrokePoint> = [];
   let removed = false;
   for (const [x, y, pressure] of item.points) {
     const absolute: StrokePoint = [x + item.x, y + item.y, pressure];
@@ -272,13 +267,15 @@ function splitDrawing(
 
 /** Cuts marker strokes where the eraser passed. `null` means nothing changed. */
 export function eraseDrawings(
-  items: readonly CanvasItem[],
-  eraser: readonly StrokePoint[],
+  items: ReadonlyArray<CanvasItem>,
+  eraser: ReadonlyArray<StrokePoint>,
   radius: number,
-): CanvasItem[] | null {
-  if (!eraser.length) return null;
+): Array<CanvasItem> | null {
+  if (!eraser.length) {
+    return null;
+  }
   let changed = false;
-  const next: CanvasItem[] = [];
+  const next: Array<CanvasItem> = [];
   for (const item of items) {
     if (item.kind !== "drawing") {
       next.push(item);
@@ -295,6 +292,10 @@ export function eraseDrawings(
   return changed ? next : null;
 }
 
+function fraction(value: number): number {
+  return Math.round(Math.min(1, Math.max(0, value)) * 10_000) / 10_000;
+}
+
 export function cropOf(
   start: { x: number; y: number },
   end: { x: number; y: number },
@@ -303,9 +304,9 @@ export function cropOf(
   const y = Math.min(start.y, end.y);
   const width = Math.abs(end.x - start.x);
   const height = Math.abs(end.y - start.y);
-  if (width < 0.02 || height < 0.02) return null;
-  const fraction = (value: number) =>
-    Math.round(Math.min(1, Math.max(0, value)) * 10000) / 10000;
+  if (width < 0.02 || height < 0.02) {
+    return null;
+  }
   const crop = {
     x: fraction(x),
     y: fraction(y),

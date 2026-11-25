@@ -1,9 +1,11 @@
 /** @vitest-environment jsdom */
 
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DataTable } from ".";
+import { isHTMLElement } from "../dom";
 import type { TableColumn } from "./types";
 
 interface TestRow {
@@ -12,7 +14,7 @@ interface TestRow {
   status: string;
 }
 
-const columns: TableColumn<TestRow>[] = [
+const columns: Array<TableColumn<TestRow>> = [
   {
     id: "name",
     header: "Name",
@@ -34,9 +36,12 @@ const columns: TableColumn<TestRow>[] = [
   },
 ];
 
-class ResizeObserverStub {
-  observe() {}
-  disconnect() {}
+async function click(node: HTMLElement, init: MouseEventInit = {}) {
+  await act(() =>
+    node.dispatchEvent(
+      new MouseEvent("click", { bubbles: true, cancelable: true, ...init }),
+    ),
+  );
 }
 
 describe("DataTable", () => {
@@ -45,20 +50,22 @@ describe("DataTable", () => {
 
   beforeEach(() => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-    vi.stubGlobal("ResizeObserver", ResizeObserverStub);
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
   });
 
   afterEach(async () => {
-    await act(() => root.unmount());
+    await act(async () => {
+      root.unmount();
+    });
     host.remove();
-    vi.unstubAllGlobals();
   });
 
-  async function renderTable(onColumnOrderChange?: (order: string[]) => void) {
-    await act(() =>
+  async function renderTable(
+    onColumnOrderChange?: (order: Array<string>) => void,
+  ) {
+    await act(async () => {
       root.render(
         <DataTable.Provider
           data={[{ id: "one", name: "First", status: "Waiting" }]}
@@ -70,8 +77,28 @@ describe("DataTable", () => {
         >
           <DataTable.Root aria-label="Test records" />
         </DataTable.Provider>,
-      ),
+      );
+    });
+  }
+
+  function checkbox(label: string): HTMLElement {
+    const node = host.querySelector<HTMLElement>(
+      `[role="checkbox"][aria-label="${label}"]`,
     );
+    if (!node) {
+      throw new Error(`Missing ${label} checkbox`);
+    }
+    return node;
+  }
+
+  function rowCheckbox(id: string): HTMLElement {
+    const node = [...host.querySelectorAll('[role="rowgroup"] [role="row"]')]
+      .find((row) => row.textContent?.includes(id))
+      ?.querySelector<HTMLElement>('[role="checkbox"]');
+    if (!node) {
+      throw new Error(`Missing ${id} row checkbox`);
+    }
+    return node;
   }
 
   it("keeps the header and rows on one horizontal scroll", async () => {
@@ -84,12 +111,7 @@ describe("DataTable", () => {
     const dataRow = viewport?.querySelector<HTMLElement>(
       '[role="row"][aria-selected]',
     );
-    if (
-      !viewport ||
-      !(sheet instanceof HTMLElement) ||
-      !headerRow ||
-      !dataRow
-    ) {
+    if (!viewport || !isHTMLElement(sheet) || !headerRow || !dataRow) {
       throw new Error("Missing shared table viewport");
     }
 
@@ -108,7 +130,9 @@ describe("DataTable", () => {
     );
     const nameHeader = sort?.closest<HTMLElement>('[role="columnheader"]');
     expect(nameHeader?.getAttribute("aria-sort")).toBe("none");
-    await act(() => sort?.click());
+    await act(async () => {
+      sort?.click();
+    });
     expect(nameHeader?.getAttribute("aria-sort")).toBe("ascending");
 
     const resize = host.querySelector<HTMLButtonElement>(
@@ -150,16 +174,16 @@ describe("DataTable", () => {
   });
 
   describe("selection checkboxes", () => {
-    const rows: TestRow[] = ["one", "two", "three", "four"].map((id) => ({
+    const rows: Array<TestRow> = ["one", "two", "three", "four"].map((id) => ({
       id,
       name: id,
       status: "Waiting",
     }));
 
     async function renderSelectable(
-      onSelectionChange: (ids: string[]) => void,
+      onSelectionChange: (ids: Array<string>) => void,
     ) {
-      await act(() =>
+      await act(async () => {
         root.render(
           <DataTable.Provider
             data={rows}
@@ -170,32 +194,8 @@ describe("DataTable", () => {
           >
             <DataTable.Root aria-label="Test records" />
           </DataTable.Provider>,
-        ),
-      );
-    }
-
-    function checkbox(label: string): HTMLElement {
-      const node = host.querySelector<HTMLElement>(
-        `[role="checkbox"][aria-label="${label}"]`,
-      );
-      if (!node) throw new Error(`Missing ${label} checkbox`);
-      return node;
-    }
-
-    function rowCheckbox(id: string): HTMLElement {
-      const node = [...host.querySelectorAll('[role="rowgroup"] [role="row"]')]
-        .find((row) => row.textContent?.includes(id))
-        ?.querySelector<HTMLElement>('[role="checkbox"]');
-      if (!node) throw new Error(`Missing ${id} row checkbox`);
-      return node;
-    }
-
-    async function click(node: HTMLElement, init: MouseEventInit = {}) {
-      await act(() =>
-        node.dispatchEvent(
-          new MouseEvent("click", { bubbles: true, cancelable: true, ...init }),
-        ),
-      );
+        );
+      });
     }
 
     it("selects and clears every row from the header checkbox", async () => {

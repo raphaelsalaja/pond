@@ -1,4 +1,6 @@
-import { describe, expect, it, type TestContext } from "vitest";
+import Database from "better-sqlite3";
+import { describe, expect, it } from "vitest";
+import type { TestContext } from "vitest";
 import { embeddingDimensions } from "../../shared/embeddings";
 import {
   backfillVecBatch,
@@ -17,9 +19,8 @@ import {
 const nativeRequired =
   Boolean(process.versions.electron) || process.env.POND_REQUIRE_NATIVE === "1";
 
-async function openMemoryDb(context: TestContext) {
+function openMemoryDb(context: TestContext) {
   try {
-    const Database = (await import("better-sqlite3")).default;
     return new Database(":memory:");
   } catch (error) {
     if (nativeRequired) throw error;
@@ -46,8 +47,8 @@ describe("vec-index packing", () => {
 });
 
 describe("vec-index knn", () => {
-  it("ranks the nearest neighbor in sqlite-vec", async (context) => {
-    const db = await openMemoryDb(context);
+  it("ranks the nearest neighbor in sqlite-vec", (context) => {
+    const db = openMemoryDb(context);
     expect(loadSqliteVec(db)).toBe(true);
     ensureVecTables(db, { text: 4, clip: 4 });
     upsertVec(db, "text", "near", [1, 0, 0, 0]);
@@ -60,8 +61,8 @@ describe("vec-index knn", () => {
     db.close();
   });
 
-  it("backfills JSON embeddings into vec0", async (context) => {
-    const db = await openMemoryDb(context);
+  it("backfills JSON embeddings into vec0", (context) => {
+    const db = openMemoryDb(context);
     expect(loadSqliteVec(db)).toBe(true);
     db.exec(`
       CREATE TABLE saves (
@@ -80,8 +81,8 @@ describe("vec-index knn", () => {
     db.close();
   });
 
-  it("keeps embedding-sized tables when reopened with defaults", async (context) => {
-    const db = await openMemoryDb(context);
+  it("keeps embedding-sized tables when reopened with defaults", (context) => {
+    const db = openMemoryDb(context);
     expect(loadSqliteVec(db)).toBe(true);
     const vector = Array.from({ length: embeddingDimensions() }, (_, index) =>
       index === 0 ? 1 : 0,

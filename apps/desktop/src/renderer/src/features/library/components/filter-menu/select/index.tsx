@@ -11,7 +11,7 @@ export function FilterSelect<Value extends string>({
 }: {
   label: string;
   value: Value;
-  items: { value: Value; label: string }[];
+  items: Array<{ value: Value; label: string }>;
   className?: string;
   onChange: (value: Value) => void;
 }) {

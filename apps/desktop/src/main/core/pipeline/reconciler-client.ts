@@ -1,12 +1,14 @@
 import log from "electron-log/main.js";
 import type { PipelineSnapshot } from "./reconciler";
 
-type Reconciler = typeof import("./reconciler");
+function importReconciler() {
+  return import("./reconciler");
+}
 
-let reconcilerPromise: Promise<Reconciler> | null = null;
+let reconcilerPromise: ReturnType<typeof importReconciler> | null = null;
 
-function loadReconciler(): Promise<Reconciler> {
-  reconcilerPromise ??= import("./reconciler");
+function loadReconciler(): ReturnType<typeof importReconciler> {
+  reconcilerPromise ??= importReconciler();
   return reconcilerPromise;
 }
 
@@ -38,7 +40,7 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
 }
 
 export async function cancelSavesIngest(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<number> {
   return (await loadReconciler()).cancelSavesIngest(saveIds);
 }
@@ -51,7 +53,7 @@ export async function cancelGeneration(generationId: string): Promise<number> {
   return (await loadReconciler()).cancelGeneration(generationId);
 }
 
-export async function skipSaves(ids: readonly string[]): Promise<number> {
+export async function skipSaves(ids: ReadonlyArray<string>): Promise<number> {
   return (await loadReconciler()).skipSaves(ids);
 }
 

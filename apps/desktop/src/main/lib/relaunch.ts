@@ -4,7 +4,7 @@ export const RELAUNCH_ARG = "--pond-relaunch";
 
 export interface RelaunchOptions {
   execPath: string;
-  args: string[];
+  args: Array<string>;
 }
 
 /** The AppImage runtime exports these for the mount it runs from, so a replacement must not inherit the old ones. */
@@ -13,7 +13,7 @@ const APPIMAGE_MOUNT_ENV = ["APPIMAGE", "APPDIR", "ARGV0", "OWD"] as const;
 export function appRelaunchOptions(
   platform: NodeJS.Platform = process.platform,
   appImage = process.env.APPIMAGE,
-  argv: readonly string[] = process.argv,
+  argv: ReadonlyArray<string> = process.argv,
 ): RelaunchOptions | undefined {
   if (platform !== "linux" || !appImage) return undefined;
   return {
@@ -33,7 +33,7 @@ export function appRelaunchEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 
 export interface RelaunchSpawn {
   command: string;
-  args: string[];
+  args: Array<string>;
   env: NodeJS.ProcessEnv;
 }
 
@@ -47,7 +47,7 @@ export type RelaunchPlan =
 export function planRelaunch(
   platform: NodeJS.Platform = process.platform,
   appImage = process.env.APPIMAGE,
-  argv: readonly string[] = process.argv,
+  argv: ReadonlyArray<string> = process.argv,
   env: NodeJS.ProcessEnv = process.env,
 ): RelaunchPlan {
   const options = appRelaunchOptions(platform, appImage, argv);
@@ -67,7 +67,7 @@ interface RelaunchChild {
 
 export type SpawnRelaunchProcess = (
   command: string,
-  args: readonly string[],
+  args: ReadonlyArray<string>,
   options: {
     detached: true;
     stdio: "ignore";

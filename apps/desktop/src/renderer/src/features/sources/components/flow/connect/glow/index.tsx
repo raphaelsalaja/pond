@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useConnectCompleted } from "@/features/sources/state/connect-flow";
-import { type GlowColors, startGlow } from "./shader";
+import { startGlow } from "./shader";
+import type { GlowColors } from "./shader";
 import styles from "./styles.module.css";
 
-function accentColor(element: Element, amount: number): number[] {
+function accentColor(element: Element, amount: number): Array<number> {
   const probe = document.createElement("span");
   probe.style.color = `color-mix(in oklab, var(--ds-accent) ${amount}%, var(--ds-background-primary))`;
   element.append(probe);

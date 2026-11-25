@@ -32,11 +32,12 @@ import {
   IconUserPlus,
   IconWindow,
 } from "@pond/icons";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
-import {
-  BLANK_DOCUMENTS,
-  type BlankDocumentIcons,
-  type BlankDocumentKind,
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { BLANK_DOCUMENTS } from "@shared/blank-documents";
+import type {
+  BlankDocumentIcons,
+  BlankDocumentKind,
 } from "@shared/blank-documents";
 import { downloadDialog } from "@/features/downloads";
 import { newMenuDialog } from "@/features/library/state/new-menu-dialog";
@@ -76,11 +77,11 @@ import {
 const DOCUMENT_LOGO_STYLE = { width: 22, height: 22 } as const;
 
 export function buildNewMenuItems(
-  installedDocuments: readonly BlankDocumentKind[] = [],
+  installedDocuments: ReadonlyArray<BlankDocumentKind> = [],
   documentIcons: BlankDocumentIcons = {},
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const installed = new Set(installedDocuments);
-  const documents: MenuItemSpec[] = [
+  const documents: Array<MenuItemSpec> = [
     {
       id: "note",
       label: "New Note",
@@ -122,7 +123,9 @@ export function buildNewMenuItems(
           icon: <IconFolder />,
           keywords: "organize directory",
           shortcut: shortcutGlyphs("library.new-folder"),
-          onClick: () => newFolder(),
+          onClick: () => {
+            void newFolder();
+          },
         },
         {
           id: "folder-template",

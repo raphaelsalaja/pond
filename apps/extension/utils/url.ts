@@ -1,5 +1,6 @@
 import { ROTATING_SESSIONS } from "@pond/schema/session";
-import { SOURCES, type Source } from "@pond/schema/source-ids";
+import { SOURCES } from "@pond/schema/source-ids";
+import type { Source } from "@pond/schema/source-ids";
 
 /** The Source whose session the browser just rotated, when this cookie change is one. */
 export function rotatedSessionSource(cookie: {
@@ -16,7 +17,7 @@ export function rotatedSessionSource(cookie: {
   return null;
 }
 
-export function cookieDomainsForSource(source: Source): string[] {
+export function cookieDomainsForSource(source: Source): Array<string> {
   switch (source) {
     case "twitter":
       return ["x.com", "twitter.com"];

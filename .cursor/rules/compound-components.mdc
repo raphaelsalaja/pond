@@ -10,7 +10,7 @@ Presentational primitives under `components/` and `@pond/ui` export one PascalCa
 ## Do
 
 ```tsx
-interface TitleProps extends React.ComponentPropsWithoutRef<"h1"> {}
+type TitleProps = React.ComponentPropsWithoutRef<"h1">;
 
 function Title({ className, ...props }: TitleProps) {
   return <h1 className={cn(styles.title, className)} {...props} />;

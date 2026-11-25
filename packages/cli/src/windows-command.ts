@@ -11,14 +11,18 @@ const CMD_META_CHARS = /([()\][%!^"`<>&|;, *?])/g;
  * new cross-package dependency.
  */
 export function quoteCmdArg(arg: string, passes = 2): string {
-  if (/[\r\n%!]/.test(arg) || arg.includes("\0"))
+  if (/[\r\n%!]/.test(arg) || arg.includes("\0")) {
     throw new Error(
       "An argument contains characters Windows cannot pass safely.",
     );
-  const escaped = arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, "$1$1");
+  }
+  const escaped = arg
+    .replaceAll(/(\\*)"/g, String.raw`$1$1\"`)
+    .replace(/(\\+)$/, "$1$1");
   let quoted = `"${escaped}"`;
-  for (let pass = 0; pass < passes; pass++)
-    quoted = quoted.replace(CMD_META_CHARS, "^$1");
+  for (let pass = 0; pass < passes; pass++) {
+    quoted = quoted.replaceAll(CMD_META_CHARS, "^$1");
+  }
   return quoted;
 }
 
@@ -53,11 +57,12 @@ export function resolveWindowsCommand(
  */
 export function windowsInvocation(
   executable: string,
-  args: readonly string[],
+  args: ReadonlyArray<string>,
   env: NodeJS.ProcessEnv = process.env,
 ) {
-  if (!/\.(cmd|bat)$/i.test(executable))
+  if (!/\.(cmd|bat)$/i.test(executable)) {
     return { file: executable, args: [...args], verbatim: false };
+  }
   const commandLine = [
     quoteCmdArg(executable, 1),
     ...args.map((arg) => quoteCmdArg(arg)),

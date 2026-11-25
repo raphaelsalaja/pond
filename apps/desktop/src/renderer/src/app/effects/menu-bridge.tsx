@@ -69,7 +69,7 @@ import { primarySelection, selection } from "@/features/saves/state/selection";
 import { CONNECTABLE, WATCH_MENU_SOURCES } from "@/features/sources/lib/create";
 import { openSources } from "@/features/sources/lib/open";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
 import { usePrefs } from "@/shared/state/prefs";
 import {
@@ -116,15 +116,15 @@ export function MenuBridge() {
       }
       switch (id) {
         case "history.back":
-          getAppRouter()?.history.back();
+          getAppHistory()?.back();
           return;
 
         case "history.forward":
-          getAppRouter()?.history.forward();
+          getAppHistory()?.forward();
           return;
 
         case "history.clear":
-          patchSaveRecents({ entries: [] });
+          void patchSaveRecents({ entries: [] });
           return;
 
         case "view.inspector.toggle":
@@ -181,7 +181,7 @@ export function MenuBridge() {
           return;
 
         case "nav.agent":
-          getAppRouter()?.history.push(fishPath(DEFAULT_FISH_ID));
+          getAppHistory()?.push(fishPath(DEFAULT_FISH_ID));
           return;
 
         case "nav.trash":
@@ -215,19 +215,19 @@ export function MenuBridge() {
           return;
 
         case "theme.light":
-          patchPreferences({
+          void patchPreferences({
             appearance: "light",
           });
           return;
 
         case "theme.dark":
-          patchPreferences({
+          void patchPreferences({
             appearance: "dark",
           });
           return;
 
         case "theme.system":
-          patchPreferences({ appearance: "system" });
+          void patchPreferences({ appearance: "system" });
           return;
 
         case "refresh.all":
@@ -277,7 +277,7 @@ export function MenuBridge() {
           return;
 
         case "library.new-folder":
-          newFolder();
+          void newFolder();
           return;
 
         case "library.new-smart-folder":
@@ -467,6 +467,9 @@ export function MenuBridge() {
           void purgeForever(save);
           return;
         }
+
+        default:
+          return;
       }
     });
   }, [patchPreferences, patchSaveRecents]);

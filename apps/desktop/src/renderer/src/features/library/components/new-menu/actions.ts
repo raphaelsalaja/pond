@@ -20,7 +20,7 @@ import {
 import { selection } from "@/features/saves/navigation";
 import { openSources } from "@/features/sources";
 import { tagCreation } from "@/features/tags";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
@@ -37,6 +37,24 @@ const LIST_FORMAT = new Intl.ListFormat("en", { type: "conjunction" });
 const SAVES = { one: "Save", other: "Saves" };
 const ITEMS = { one: "item", other: "items" };
 
+function parseImportLinks(text: string): Array<string> {
+  const urls = asUrlList(text);
+  if (
+    !urls ||
+    urls.some((value) => {
+      try {
+        const url = new URL(value);
+        return !url.hostname || !["https:", "http:"].includes(url.protocol);
+      } catch {
+        return true;
+      }
+    })
+  ) {
+    throw new Error("Enter valid website links, one per line.");
+  }
+  return [...new Set(urls)];
+}
+
 export interface NewActionServices {
   notify: typeof notify;
   updateNotification: typeof updateNotification;
@@ -46,7 +64,7 @@ export interface NewActionServices {
   openSavedViewEditor: (kind: "smart_folder" | "group") => void;
   openSource: (kind: "connect" | "watch", source: Source) => void;
   selectSave: (id: string) => void;
-  showSaves: (ids: readonly string[], folderId?: string) => void;
+  showSaves: (ids: ReadonlyArray<string>, folderId?: string) => void;
   currentFolderId: () => string | null;
   onEagleImportProgress: (
     callback: (progress: EagleImportProgress) => void,
@@ -66,7 +84,7 @@ export function createNewActions({
   currentFolderId,
   onEagleImportProgress,
 }: NewActionServices) {
-  function reportSaved(ids: string[], folderId?: string): void {
+  function reportSaved(ids: Array<string>, folderId?: string): void {
     notify({
       id: "new-import",
       title:
@@ -80,7 +98,7 @@ export function createNewActions({
     });
   }
 
-  function reportDownloading(ids: string[]): void {
+  function reportDownloading(ids: Array<string>): void {
     notify({
       id: "new-import",
       title:
@@ -135,7 +153,7 @@ export function createNewActions({
   }
 
   async function importFilePaths(
-    paths: string[],
+    paths: Array<string>,
     folderId?: string,
   ): Promise<void> {
     const result = SaveResultSchema.parse(
@@ -374,8 +392,9 @@ export function createNewActions({
         mediaType: "text",
       }),
     );
-    if (!result.ok || !result.id)
+    if (!result.ok || !result.id) {
       throw new Error("Couldn't save the note. Try again.");
+    }
     await placeCreatedSave(result.id);
   }
 
@@ -386,8 +405,9 @@ export function createNewActions({
         folderId: currentFolderId(),
       }),
     );
-    if (!result.ok || !result.id)
+    if (!result.ok || !result.id) {
       throw new Error("Couldn't create the document. Try again.");
+    }
     selectSave(result.id);
   }
 
@@ -489,7 +509,7 @@ export function createNewActions({
       });
       return;
     }
-    const happened: string[] = [];
+    const happened: Array<string> = [];
     if (missing > 0) {
       happened.push(
         `${formatPlural(missing, { one: "save is", other: "saves are" })} missing from disk`,
@@ -515,33 +535,18 @@ export function createNewActions({
 
   async function exportDebugReport(): Promise<void> {
     const result = await window.pond.query("library.exportDebugReport", {});
-    if (!result.ok && result.reason !== "cancelled")
+    if (!result.ok && result.reason !== "cancelled") {
       throw new Error("Couldn't export the debug report.");
-    if (result.ok)
+    }
+    if (result.ok) {
       notify({ id: "debug-report", title: "Debug Report Exported" });
+    }
   }
 
-  function parseImportLinks(text: string): string[] {
-    const urls = asUrlList(text);
-    if (
-      !urls ||
-      urls.some((value) => {
-        try {
-          const url = new URL(value);
-          return !url.hostname || !["https:", "http:"].includes(url.protocol);
-        } catch {
-          return true;
-        }
-      })
-    )
-      throw new Error("Enter valid website links, one per line.");
-    return [...new Set(urls)];
-  }
-
-  async function importLinks(text: string): Promise<string[]> {
+  async function importLinks(text: string): Promise<Array<string>> {
     const urls = parseImportLinks(text);
-    const failed: string[] = [];
-    const added: string[] = [];
+    const failed: Array<string> = [];
+    const added: Array<string> = [];
     for (const url of urls) {
       try {
         const result = SaveResultSchema.parse(
@@ -618,7 +623,7 @@ export const {
   refreshFolders: () => folders.refresh(),
   startEditingFolder: (id) => folders.startEditing(id),
   openTagCreation: (kind) => {
-    getAppRouter()?.history.push("/tags");
+    getAppHistory()?.push("/tags");
     tagCreation.request(kind);
   },
   openSavedViewEditor: (kind) => savedViews.openEditor({ kind }),

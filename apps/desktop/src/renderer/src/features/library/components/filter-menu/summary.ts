@@ -1,4 +1,5 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
+import { isPredicateList } from "@pond/schema/filters/types";
 import type {
   ComparatorId,
   FieldId,
@@ -129,13 +130,14 @@ function dateSummary(rule: Predicate, exact: string | undefined): string {
   const name = FIELD_META[rule.field].label.replace(/^Date\s+/i, "");
   if (exact) return `${name} ${exact}`;
   const { operator, value } = rule;
-  if (operator === "between" && Array.isArray(value)) {
+  if (operator === "between" && isPredicateList(value)) {
     const from = dateText(value[0]);
     const to = dateText(value[1]);
     return from === to ? `${name} On ${from}` : `${name} ${from}–${to}`;
   }
-  if (operator === "gte" && /^-P/i.test(String(value)))
+  if (operator === "gte" && /^-P/i.test(String(value))) {
     return `${name} ${dateText(value)}`;
+  }
   const word = DATE_COMPARATOR_WORDS.get(operator);
   return `${name} ${word ? `${word} ` : ""}${dateText(value)}`;
 }
@@ -145,13 +147,14 @@ function optionLabel(option: FilterOption): string {
 }
 
 export function filterSummary(
-  rules: readonly Predicate[],
-  options: readonly FilterOption[],
+  rules: ReadonlyArray<Predicate>,
+  options: ReadonlyArray<FilterOption>,
 ): string {
   return rules
     .map((rule) => {
-      if (rule.negate)
+      if (rule.negate) {
         return `Not ${filterSummary([{ ...rule, negate: false }], options)}`;
+      }
       const type = FIELD_META[rule.field].type;
       const exact = options.find(
         (option) =>
@@ -164,7 +167,7 @@ export function filterSummary(
       if (rule.operator === "contains") return `“${String(rule.value)}”`;
       if (type === "number") return numberSummary(rule);
       if (type === "enum" || type === "stringArray") {
-        const values = Array.isArray(rule.value) ? rule.value : [rule.value];
+        const values = isPredicateList(rule.value) ? rule.value : [rule.value];
         const label = values
           .map((value) => {
             const candidate = { ...rule, operator: "eq" as const, value };

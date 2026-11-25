@@ -29,8 +29,8 @@ const ChatSchema = z.object({ id: z.string() });
 
 interface DraftSnapshot {
   content: string;
-  attachments: AssistantSource[];
-  files: AssistantFileAttachment[];
+  attachments: Array<AssistantSource>;
+  files: Array<AssistantFileAttachment>;
   provider: AssistantProvider;
   modelId?: AssistantSend["modelId"];
   controls?: AssistantSend["controls"];
@@ -46,17 +46,17 @@ export interface AssistantState {
   chatId: string | null;
   chats: z.infer<typeof ChatsSchema>;
   referenceMessageId: string | null;
-  messages: AssistantMessage[];
+  messages: Array<AssistantMessage>;
   draft: string;
-  attachments: AssistantSource[];
-  files: AssistantFileAttachment[];
+  attachments: Array<AssistantSource>;
+  files: Array<AssistantFileAttachment>;
   busy: boolean;
   loading: boolean;
   requestId: string | null;
-  sources: AssistantSource[];
+  sources: Array<AssistantSource>;
   activity: AssistantActivity;
-  results: AssistantResultSet[];
-  steps: AssistantToolStep[];
+  results: Array<AssistantResultSet>;
+  steps: Array<AssistantToolStep>;
   error: string | null;
   failed: DraftSnapshot | null;
   /** Sent on its own once the running reply finishes. */
@@ -99,7 +99,7 @@ let cancelledRequest: string | null = null;
 const isBusy = () => store.state.sending;
 const currentMessages = () => store.state.messages;
 
-function setMessages(messages: AssistantMessage[]) {
+function setMessages(messages: Array<AssistantMessage>) {
   patch({ messages });
 }
 
@@ -164,7 +164,7 @@ function composerFor(
 }
 
 function snapshotContext(
-  attachments: AssistantSource[],
+  attachments: Array<AssistantSource>,
 ): DraftSnapshot["context"] {
   return {
     scope: { kind: "library" },
@@ -179,12 +179,13 @@ function restoreDraft(sent: DraftSnapshot) {
     !store.state.draft &&
     !store.state.attachments.length &&
     !store.state.files.length
-  )
+  ) {
     patch({
       draft: sent.content,
       attachments: sent.attachments,
       files: sent.files,
     });
+  }
 }
 
 export const assistant = {
@@ -192,8 +193,9 @@ export const assistant = {
     const message = currentMessages().find(
       (message) => message.id === messageId && message.role === "assistant",
     );
-    if (message?.metadata?.sources?.length)
+    if (message?.metadata?.sources?.length) {
       patch({ referenceMessageId: messageId });
+    }
   },
   closeReferences() {
     patch({ referenceMessageId: null });
@@ -206,7 +208,7 @@ export const assistant = {
   },
   appendDraft(content: string) {
     const draft = [store.state.draft, content].filter(Boolean).join("\n\n");
-    if (draft.length > 32000) {
+    if (draft.length > 32_000) {
       patch({
         error: "This text is too long to add. Shorten the message first.",
       });
@@ -221,7 +223,7 @@ export const assistant = {
       .map((line) => `> ${line}`)
       .join("\n");
     const draft = `${[store.state.draft, quote].filter(Boolean).join("\n\n")}\n\n`;
-    if (draft.length > 32000) {
+    if (draft.length > 32_000) {
       patch({
         error:
           "This quote is too long for the message. Copy a shorter passage instead.",
@@ -234,7 +236,7 @@ export const assistant = {
   clearError() {
     patch({ error: null });
   },
-  attach(saves: AssistantSource[]) {
+  attach(saves: Array<AssistantSource>) {
     const merged = [
       ...new Map(
         [...store.state.attachments, ...saves].map((save) => [save.id, save]),
@@ -253,7 +255,7 @@ export const assistant = {
       attachments: store.state.attachments.filter((save) => save.id !== id),
     });
   },
-  attachFiles(files: AssistantFileAttachment[]) {
+  attachFiles(files: Array<AssistantFileAttachment>) {
     const merged = [
       ...new Map(
         [...store.state.files, ...files].map((file) => [file.id, file]),
@@ -270,7 +272,7 @@ export const assistant = {
   removeFile(id: string) {
     patch({ files: store.state.files.filter((file) => file.id !== id) });
   },
-  async attachIds(ids: string[]) {
+  async attachIds(ids: Array<string>) {
     try {
       assistant.attach(
         assistantSources.parse(
@@ -351,9 +353,12 @@ export const assistant = {
   async deleteChat(chatId: string) {
     if (isBusy()) throw new Error("Wait for the reply to finish.");
     const result = await window.pond.query("agent.deleteChat", { chatId });
-    if (!result.ok)
+    if (!result.ok) {
       throw new Error(result.error || "Could not delete this chat.");
-    if (store.state.chatId === chatId) assistant.newChat();
+    }
+    if (store.state.chatId === chatId) {
+      assistant.newChat();
+    }
     composers.delete(chatId);
     await refreshChats();
   },
@@ -377,11 +382,12 @@ export const assistant = {
         loading: false,
       });
     } catch {
-      if (version === historyVersion)
+      if (version === historyVersion) {
         patch({
           error: "Could not load this conversation. Try again.",
           loading: false,
         });
+      }
     }
   },
   async send(
@@ -417,12 +423,13 @@ export const assistant = {
         store.state.draft === sent.content &&
         store.state.attachments === sent.attachments &&
         store.state.files === sent.files)
-    )
+    ) {
       patch({
         draft: "",
         attachments: [],
         files: [],
       });
+    }
     let chatId = store.state.chatId;
     try {
       if (!chatId) {
@@ -575,12 +582,13 @@ export const assistant = {
   },
   async retry() {
     const sent = store.state.failed;
-    if (sent)
+    if (sent) {
       await assistant.send(
         sent.provider,
         { modelId: sent.modelId, controls: sent.controls },
         sent,
       );
+    }
   },
   /** Replaces the latest reply by running its request again with the current model. */
   async regenerate(
@@ -609,7 +617,7 @@ export const assistant = {
   },
   async review(
     messageId: string,
-    changeIds: string[],
+    changeIds: Array<string>,
     action: "apply" | "undo" | "dismiss",
   ) {
     const result = await window.pond.query("agent.review", {
@@ -642,12 +650,21 @@ export function useAssistant() {
     }
     const unsubscribe = window.pond.onAgentChunk((chunk) => {
       /** A reply can finish in a chat the user has since left. */
-      if (store.state.runChatId && chunk.chatId !== store.state.runChatId)
+      if (store.state.runChatId && chunk.chatId !== store.state.runChatId) {
         return;
-      if (chunk.type === "activity") patch({ activity: chunk.activity });
-      if (chunk.type === "sources") patch({ sources: chunk.sources });
-      if (chunk.type === "results") patch({ results: chunk.results });
-      if (chunk.type === "steps") patch({ steps: chunk.steps });
+      }
+      if (chunk.type === "activity") {
+        patch({ activity: chunk.activity });
+      }
+      if (chunk.type === "sources") {
+        patch({ sources: chunk.sources });
+      }
+      if (chunk.type === "results") {
+        patch({ results: chunk.results });
+      }
+      if (chunk.type === "steps") {
+        patch({ steps: chunk.steps });
+      }
     });
     return () => {
       unsubscribe();

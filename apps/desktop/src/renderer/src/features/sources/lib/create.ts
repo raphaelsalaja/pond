@@ -1,15 +1,16 @@
-import { SOURCES, type Source } from "@pond/schema/db";
+import { SOURCES } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
 import { isWatchableSource } from "@pond/schema/watches";
 import { connectFlow } from "@/features/sources/state/connect-flow";
 import { mymindConnectFlow } from "@/features/sources/state/mymind-connect-flow";
 import { sourceFlow } from "@/features/sources/state/source-flow";
 import { watchFlow } from "@/features/sources/state/watch-flow";
 
-export const CONNECTABLE: readonly Source[] = SOURCES.filter(
+export const CONNECTABLE: ReadonlyArray<Source> = SOURCES.filter(
   (source) => source !== "local" && source !== "web",
 );
 
-export const WATCH_MENU_SOURCES: readonly Source[] =
+export const WATCH_MENU_SOURCES: ReadonlyArray<Source> =
   SOURCES.filter(isWatchableSource);
 
 export async function startConnect(
@@ -20,7 +21,7 @@ export async function startConnect(
     mymindConnectFlow.start(undefined, whenConnected);
     return;
   }
-  let connected: string[] = [];
+  let connected: Array<string>;
   try {
     const result = await window.pond.query("accounts.list", {});
     connected = (result.accounts ?? [])

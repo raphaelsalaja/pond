@@ -55,7 +55,7 @@ describe("capture media wait", () => {
     );
 
     loadLater(dom, PHOTO);
-    const settled = await settle(dom, 2_000);
+    const settled = await settle(dom, 2000);
 
     expect(settled).toBe(true);
   });
@@ -66,7 +66,7 @@ describe("capture media wait", () => {
     );
 
     loadLater(dom, POSTER);
-    const settled = await settle(dom, 2_000);
+    const settled = await settle(dom, 2000);
 
     expect(settled).toBe(true);
   });

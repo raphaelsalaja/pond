@@ -6,8 +6,8 @@ import styles from "./styles.module.css";
 export interface FilePager {
   index: number;
   count: number;
-  onPrevious(): void;
-  onNext(): void;
+  onPrevious: () => void;
+  onNext: () => void;
 }
 
 export function FileSwitcher({

@@ -3,9 +3,9 @@ import type { Source } from "@pond/schema/db";
 import { Button, Empty, EmptyPreview, Loader, Settings } from "@pond/ui";
 import {
   runFreshCount,
-  type SourceRun,
   useSourceHistory,
 } from "@/features/sources/hooks/use-source-activity";
+import type { SourceRun } from "@/features/sources/hooks/use-source-activity";
 import { formatPlural } from "@/shared/lib/format";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import { notify } from "@/shared/lib/toast";

@@ -9,10 +9,8 @@ import {
   THUMBNAIL_KIND,
 } from "@shared/save-file-names";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
-import {
-  type ViewerCapability,
-  viewerCapabilityFor,
-} from "@/features/saves/lib/media/viewer-capability";
+import { viewerCapabilityFor } from "@/features/saves/lib/media/viewer-capability";
+import type { ViewerCapability } from "@/features/saves/lib/media/viewer-capability";
 import type { Save } from "@/features/saves/types";
 import type { ResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 
@@ -31,7 +29,7 @@ interface ViewerItemOptions {
 export function buildViewerItems(
   save: Save,
   options: ViewerItemOptions = {},
-): ViewerItem[] {
+): Array<ViewerItem> {
   const posters = save.files.filter((file) => file.kind === "poster");
   let videoIndex = 0;
 

@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Source } from "@pond/schema/db";
+import { isJsonValue } from "@pond/schema/json";
 import type { JsonValue } from "@pond/schema/json";
 import log from "electron-log/main.js";
 import { markAtRisk } from "../../pipeline/rate-governor";
@@ -39,16 +40,19 @@ export async function runOnSourcePage(
       );
       return { ok: false, reason: "auth_required" };
     }
-    if (looksLikeAuthWall(landed))
+    if (looksLikeAuthWall(landed)) {
       return { ok: false, reason: "auth_required" };
-    const value: JsonValue = await Promise.race([
+    }
+    const value: unknown = await Promise.race([
       lease.win.webContents.executeJavaScript(expression, true),
       sleep(opts.timeoutMs ?? 30_000).then(() => TIMED_OUT),
     ]);
-    if (value === TIMED_OUT) return { ok: false, reason: "timeout" };
-    return { ok: true, value };
-  } catch (err) {
-    log.warn("[pond page-run]", source, "unexpected error", err);
+    if (value === TIMED_OUT) {
+      return { ok: false, reason: "timeout" };
+    }
+    return { ok: true, value: isJsonValue(value) ? value : null };
+  } catch (error) {
+    log.warn("[pond page-run]", source, "unexpected error", error);
     return { ok: false, reason: "unknown" };
   } finally {
     lease.release();

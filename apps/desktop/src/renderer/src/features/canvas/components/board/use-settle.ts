@@ -1,14 +1,14 @@
 import type { NodeChange, NodePositionChange, XYPosition } from "@xyflow/react";
 import { useCallback, useRef, useState } from "react";
 import {
-  type Bounds,
-  type CanvasNode,
   groupChanges,
   isLocked,
   sectionContents,
   snap,
 } from "../../lib/document";
-import { type Guide, snapResize, snapToObjects } from "../../lib/snap";
+import type { Bounds, CanvasNode } from "../../lib/document";
+import { snapResize, snapToObjects } from "../../lib/snap";
+import type { Guide } from "../../lib/snap";
 
 /** On-screen pixels within which a dragged edge or centre pulls to another item's. */
 const SNAP_DISTANCE = 6;
@@ -30,17 +30,17 @@ function rectOf(node: CanvasNode): Bounds {
 
 /** Rewrites React Flow's node changes so groups select together, drags snap, and sections carry their contents. */
 export function useSettle(
-  nodesNow: () => readonly CanvasNode[],
+  nodesNow: () => ReadonlyArray<CanvasNode>,
   zoomNow: () => number,
 ) {
-  const [guides, setGuides] = useState<Guide[]>([]);
+  const [guides, setGuides] = useState<Array<Guide>>([]);
   const carry = useRef<Carry | null>(null);
 
   const settleDrag = useCallback(
     (
-      changes: NodeChange<CanvasNode>[],
-      drags: readonly NodePositionChange[],
-    ): NodeChange<CanvasNode>[] => {
+      changes: Array<NodeChange<CanvasNode>>,
+      drags: ReadonlyArray<NodePositionChange>,
+    ): Array<NodeChange<CanvasNode>> => {
       const nodes = nodesNow();
       const byId = new Map(nodes.map((node) => [node.id, node]));
       const moving = new Set(drags.map((change) => change.id));
@@ -83,22 +83,26 @@ export function useSettle(
             }
           : change,
       );
-      if (!carried) return shifted;
-      const extra: NodeChange<CanvasNode>[] = [];
+      if (!carried) {
+        return shifted;
+      }
+      const extra: Array<NodeChange<CanvasNode>> = [];
       for (const change of shifted) {
         if (change.type !== "position" || !change.position) continue;
         const start = carried.sections.get(change.id);
         if (!start) continue;
         const dx = change.position.x - start.x;
         const dy = change.position.y - start.y;
-        for (const [id, member] of carried.members)
-          if (member.section === change.id && !moving.has(id))
+        for (const [id, member] of carried.members) {
+          if (member.section === change.id && !moving.has(id)) {
             extra.push({
               type: "position",
               id,
               position: { x: member.start.x + dx, y: member.start.y + dy },
               dragging: change.dragging,
             });
+          }
+        }
       }
       return [...shifted, ...extra];
     },
@@ -106,7 +110,7 @@ export function useSettle(
   );
 
   const settleResize = useCallback(
-    (changes: NodeChange<CanvasNode>[]): NodeChange<CanvasNode>[] => {
+    (changes: Array<NodeChange<CanvasNode>>): Array<NodeChange<CanvasNode>> => {
       const byId = new Map(nodesNow().map((node) => [node.id, node]));
       const frames = new Map<string, Bounds>();
       for (const change of changes) {
@@ -114,8 +118,9 @@ export function useSettle(
           change.type !== "dimensions" ||
           change.resizing === undefined ||
           !change.dimensions
-        )
+        ) {
           continue;
+        }
         const node = byId.get(change.id);
         if (!node) continue;
         const position = changes.find(
@@ -137,14 +142,18 @@ export function useSettle(
       return changes.map((change) => {
         if (change.type === "add") return change;
         const frame = frames.get(change.id);
-        if (!frame) return change;
-        if (change.type === "position" && change.position)
+        if (!frame) {
+          return change;
+        }
+        if (change.type === "position" && change.position) {
           return { ...change, position: { x: frame.x, y: frame.y } };
-        if (change.type === "dimensions" && change.dimensions)
+        }
+        if (change.type === "dimensions" && change.dimensions) {
           return {
             ...change,
             dimensions: { width: frame.width, height: frame.height },
           };
+        }
         return change;
       });
     },
@@ -152,7 +161,9 @@ export function useSettle(
   );
 
   const settle = useCallback(
-    (incoming: NodeChange<CanvasNode>[]): NodeChange<CanvasNode>[] => {
+    (
+      incoming: Array<NodeChange<CanvasNode>>,
+    ): Array<NodeChange<CanvasNode>> => {
       const changes = groupChanges(nodesNow(), incoming);
       /** A drag's final change keeps React Flow's raw position, so it settles again rather than passing through. */
       const drags = changes.filter(
@@ -167,7 +178,7 @@ export function useSettle(
   );
 
   const begin = useCallback(
-    (dragged: readonly CanvasNode[]) => {
+    (dragged: ReadonlyArray<CanvasNode>) => {
       const ids = new Set(dragged.map((node) => node.id));
       const sections = dragged.filter((node) => node.type === "section");
       if (!sections.length) {
@@ -180,12 +191,14 @@ export function useSettle(
       const frames = loose.map(rectOf);
       const starts = new Map(loose.map((node) => [node.id, node.position]));
       const members: Carry["members"] = new Map();
-      for (const section of sections)
+      for (const section of sections) {
         for (const id of sectionContents(rectOf(section), frames)) {
           const start = starts.get(id);
-          if (start && !members.has(id))
+          if (start && !members.has(id)) {
             members.set(id, { section: section.id, start });
+          }
         }
+      }
       carry.current = {
         sections: new Map(sections.map((node) => [node.id, node.position])),
         members,

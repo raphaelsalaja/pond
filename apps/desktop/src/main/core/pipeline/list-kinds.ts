@@ -1,4 +1,5 @@
-import { type ListKind, type Source, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { ListKind, Source } from "@pond/schema/db";
 import {
   listKindsEqual,
   mergeListKinds,
@@ -16,9 +17,15 @@ const EXPLICIT_SAVED = new Set([
   "user:quickAdd",
 ]);
 
-export function listKindsFromTrigger(trigger: string | undefined): ListKind[] {
-  if (!trigger) return [];
-  if (EXPLICIT_SAVED.has(trigger)) return ["saved"];
+export function listKindsFromTrigger(
+  trigger: string | undefined,
+): Array<ListKind> {
+  if (!trigger) {
+    return [];
+  }
+  if (EXPLICIT_SAVED.has(trigger)) {
+    return ["saved"];
+  }
   const suffix = trigger.includes(":")
     ? trigger.slice(trigger.lastIndexOf(":") + 1)
     : trigger;
@@ -38,19 +45,21 @@ export function listKindsFromTrigger(trigger: string | undefined): ListKind[] {
 /** A slide split from a post answers to the post's Source ID, which is what a list walk reports. */
 const postSourceId = sql<string>`coalesce(json_extract(${saves.rawSlim}, '$.split.sourceId'), ${saves.sourceId})`;
 
-function chunk<T>(rows: T[], size: number): T[][] {
-  const out: T[][] = [];
-  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, size + i));
+function chunk<T>(rows: Array<T>, size: number): Array<Array<T>> {
+  const out: Array<Array<T>> = [];
+  for (let i = 0; i < rows.length; i += size) {
+    out.push(rows.slice(i, size + i));
+  }
   return out;
 }
 
 /** Returns the source ids of list-filtered saves found on another list; they're purged so the run queues them as new. */
 export async function mergeListKindsOntoExisting(
   source: Source,
-  entries: ReadonlyArray<{ sourceId: string; listKinds?: ListKind[] }>,
+  entries: ReadonlyArray<{ sourceId: string; listKinds?: Array<ListKind> }>,
 ): Promise<Set<string>> {
   const relisted = new Set<string>();
-  const incoming = new Map<string, ListKind[]>();
+  const incoming = new Map<string, Array<ListKind>>();
   for (const entry of entries) {
     const next = normalizeListKinds(entry.listKinds);
     if (next.length === 0) continue;
@@ -62,7 +71,7 @@ export async function mergeListKindsOntoExisting(
   if (incoming.size === 0) return relisted;
 
   const db = await getDb();
-  const released: string[] = [];
+  const released: Array<string> = [];
   for (const idChunk of chunk([...incoming.keys()], 400)) {
     const rows = db
       .select({

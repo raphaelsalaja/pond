@@ -1,12 +1,8 @@
 import { createHash } from "node:crypto";
-import {
-  CANCEL_REASON,
-  type ConnectedAccount,
-  queueGenerations,
-  saves,
-  tasks,
-} from "@pond/schema/db";
-import { type ExtensionCookie, ROTATING_SESSIONS } from "@pond/schema/session";
+import { CANCEL_REASON, queueGenerations, saves, tasks } from "@pond/schema/db";
+import type { ConnectedAccount } from "@pond/schema/db";
+import { ROTATING_SESSIONS } from "@pond/schema/session";
+import type { ExtensionCookie } from "@pond/schema/session";
 import { and, eq, inArray, isNull, like, notExists, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
 import { getDb } from "../db";
@@ -25,17 +21,22 @@ const seenCredentials = new Map<string, string>();
 
 function credentialDigest(
   account: ConnectedAccount,
-  cookies: readonly ExtensionCookie[],
+  cookies: ReadonlyArray<ExtensionCookie>,
 ): string {
   const rotating = ROTATING_SESSIONS.get(account.source);
   const values = cookies
-    .filter(
-      (cookie) =>
-        isAuthCookieName(account.source, cookie.name, cookie.value) ||
-        rotating?.rotates.includes(cookie.name),
-    )
-    .map((cookie) =>
-      JSON.stringify([cookie.name, cookie.domain, cookie.path, cookie.value]),
+    .flatMap((cookie) =>
+      isAuthCookieName(account.source, cookie.name, cookie.value) ||
+      rotating?.rotates.includes(cookie.name)
+        ? [
+            JSON.stringify([
+              cookie.name,
+              cookie.domain,
+              cookie.path,
+              cookie.value,
+            ]),
+          ]
+        : [],
     )
     .sort();
   return createHash("sha256").update(JSON.stringify(values)).digest("hex");
@@ -43,7 +44,7 @@ function credentialDigest(
 
 export async function resumeSessionDownloads(
   account: ConnectedAccount,
-  cookies?: readonly ExtensionCookie[],
+  cookies?: ReadonlyArray<ExtensionCookie>,
 ): Promise<number> {
   const credentialKey = `${currentLibraryId()}:${account.id}`;
   const digest = cookies ? credentialDigest(account, cookies) : null;

@@ -1,4 +1,5 @@
-import { MEDIA_TYPES, type Source } from "@pond/schema/db";
+import { MEDIA_TYPES } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
 import type { JsonValue } from "@pond/schema/json";
 import type {
   Capture,
@@ -152,7 +153,10 @@ export function captureFromPageDom(
   return capture;
 }
 
-function mediaFromPage(page: PageBlob, ctx: HarvestAdaptCtx): CaptureMedia[] {
+function mediaFromPage(
+  page: PageBlob,
+  ctx: HarvestAdaptCtx,
+): Array<CaptureMedia> {
   if (ctx.source === "youtube") {
     const posterUrl =
       page.mediaUrl && page.mediaUrl.length > 0
@@ -161,7 +165,7 @@ function mediaFromPage(page: PageBlob, ctx: HarvestAdaptCtx): CaptureMedia[] {
     return [{ url: ctx.url, type: "video", posterUrl }];
   }
 
-  const media: CaptureMedia[] = (page.mediaUrls ?? []).map((m) => {
+  const media: Array<CaptureMedia> = (page.mediaUrls ?? []).map((m) => {
     const entry: CaptureMedia = {
       url: m.url,
       type: m.type === "video" ? "video" : "image",

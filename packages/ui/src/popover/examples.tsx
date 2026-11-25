@@ -1,7 +1,7 @@
 import { IconCircleInfo } from "@pond/icons";
+import { Popover } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Popover } from ".";
 
 function SourceDetails() {
   return (

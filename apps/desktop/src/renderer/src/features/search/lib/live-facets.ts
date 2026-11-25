@@ -10,7 +10,7 @@ function bump(map: Map<string, number>, key: string, delta: number): void {
   else map.set(key, next);
 }
 
-function ranked(map: Map<string, number>): string[] {
+function ranked(map: Map<string, number>): Array<string> {
   return Array.from(map, ([value, count]) => ({ value, count }))
     .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
     .map((e) => e.value);
@@ -59,7 +59,7 @@ function rebuildFromPool(): void {
   cached = null;
 }
 
-function patchIds(ids: readonly string[]): void {
+function patchIds(ids: ReadonlyArray<string>): void {
   for (const id of ids) {
     const prev = contributed.get(id);
     if (prev) applySave(prev, -1);
@@ -79,8 +79,11 @@ function ensureAttached(): void {
   attached = true;
   rebuildFromPool();
   onPoolDirty((ids) => {
-    if (ids.length > 2_000) rebuildFromPool();
-    else patchIds(ids);
+    if (ids.length > 2000) {
+      rebuildFromPool();
+    } else {
+      patchIds(ids);
+    }
   });
 }
 

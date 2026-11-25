@@ -13,17 +13,17 @@ interface FormatDefinition {
   adapter: ConversionCapability["adapter"];
   extension: string;
   mimeType: string;
-  encoders: readonly string[];
-  muxers: readonly string[];
+  encoders: ReadonlyArray<string>;
+  muxers: ReadonlyArray<string>;
   sharpFormat: string | null;
   supportsLossless: boolean;
   ffmpegFallback?: {
-    encoders: readonly string[];
-    muxers: readonly string[];
+    encoders: ReadonlyArray<string>;
+    muxers: ReadonlyArray<string>;
   };
 }
 
-const CONVERSION_FORMATS: readonly FormatDefinition[] = [
+const CONVERSION_FORMATS: ReadonlyArray<FormatDefinition> = [
   {
     format: "jpeg",
     category: "image",
@@ -234,7 +234,7 @@ export function createConversionCapabilities(input: {
   ffmpegAvailable: boolean;
   ffmpegEncoders: ReadonlySet<string>;
   ffmpegMuxers: ReadonlySet<string>;
-}): ConversionCapability[] {
+}): Array<ConversionCapability> {
   return CONVERSION_FORMATS.map((definition) => {
     const sharpOutputAvailable = Boolean(
       definition.sharpFormat && input.sharpOutputs.has(definition.sharpFormat),
@@ -251,8 +251,8 @@ export function createConversionCapabilities(input: {
     };
     const ffmpegAvailable = Boolean(
       input.ffmpegAvailable &&
-        ffmpeg.encoders.every((encoder) => input.ffmpegEncoders.has(encoder)) &&
-        ffmpeg.muxers.every((muxer) => input.ffmpegMuxers.has(muxer)),
+      ffmpeg.encoders.every((encoder) => input.ffmpegEncoders.has(encoder)) &&
+      ffmpeg.muxers.every((muxer) => input.ffmpegMuxers.has(muxer)),
     );
     const canUseFfmpeg =
       (definition.adapter === "ffmpeg" || Boolean(definition.ffmpegFallback)) &&
@@ -306,13 +306,13 @@ export function createConversionCapabilities(input: {
 let cached:
   | {
       ffmpegPath: string | null;
-      value: Promise<ConversionCapability[]>;
+      value: Promise<Array<ConversionCapability>>;
     }
   | undefined;
 
 export function conversionCapabilities(input?: {
   ffmpegPath?: string | null;
-}): Promise<ConversionCapability[]> {
+}): Promise<Array<ConversionCapability>> {
   const ffmpegPath = input?.ffmpegPath ?? binariesAvailable().ffmpeg;
   if (cached?.ffmpegPath === ffmpegPath) return cached.value;
   const value = loadConversionCapabilities(ffmpegPath);
@@ -320,30 +320,40 @@ export function conversionCapabilities(input?: {
   return value;
 }
 
+function isSharpFormat(format: string): format is keyof typeof sharp.format {
+  return Object.hasOwn(sharp.format, format);
+}
+
 async function loadConversionCapabilities(
   ffmpegPath: string | null,
-): Promise<ConversionCapability[]> {
+): Promise<Array<ConversionCapability>> {
   const sharpOutputs = new Set(
-    Object.entries(sharp.format)
-      .filter(([, details]) =>
-        Boolean(
-          details.output.file || details.output.buffer || details.output.stream,
-        ),
-      )
-      .map(([format]) => format),
-  );
-  const sharpAdapters = new Set<ConversionFormat>();
-  await Promise.all(
-    CONVERSION_FORMATS.filter(
-      (definition) =>
-        definition.adapter === "sharp" &&
-        definition.sharpFormat &&
-        sharpOutputs.has(definition.sharpFormat),
-    ).map(async (definition) => {
-      if (await probeSharpAdapter(definition.format))
-        sharpAdapters.add(definition.format);
+    Object.keys(sharp.format).filter((format) => {
+      if (!isSharpFormat(format)) {
+        return false;
+      }
+      const { output } = sharp.format[format];
+      return Boolean(output.file || output.buffer || output.stream);
     }),
   );
+  const sharpAdapters = new Set<ConversionFormat>();
+  const probes: Array<Promise<void>> = [];
+  for (const definition of CONVERSION_FORMATS) {
+    if (
+      definition.adapter === "sharp" &&
+      definition.sharpFormat &&
+      sharpOutputs.has(definition.sharpFormat)
+    ) {
+      probes.push(
+        probeSharpAdapter(definition.format).then((available) => {
+          if (available) {
+            sharpAdapters.add(definition.format);
+          }
+        }),
+      );
+    }
+  }
+  await Promise.all(probes);
   const [ffmpegEncoders, ffmpegMuxers] = ffmpegPath
     ? await Promise.all([
         readFfmpegList(ffmpegPath, "-encoders", /^\s*[A-Z.]{6}\s+(\S+)/),
@@ -429,10 +439,13 @@ export async function requireConversionCapability(
 ): Promise<ConversionCapability> {
   const capabilities = await conversionCapabilities({ ffmpegPath });
   const capability = capabilities.find((item) => item.format === format);
-  if (!capability) throw new Error(`Unsupported conversion format: ${format}.`);
-  if (!capability.available)
+  if (!capability) {
+    throw new Error(`Unsupported conversion format: ${format}.`);
+  }
+  if (!capability.available) {
     throw new Error(
       capability.unavailableReason ?? `${format} conversion is unavailable.`,
     );
+  }
   return capability;
 }

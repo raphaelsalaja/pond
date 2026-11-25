@@ -17,9 +17,15 @@ export const DETAILS_WIDTH_MAX = 480;
 function readFlag(key: string, fallback: boolean): boolean {
   try {
     const stored = window.localStorage.getItem(key);
-    if (stored === "0") return false;
-    if (stored === "1") return true;
-  } catch {}
+    if (stored === "0") {
+      return false;
+    }
+    if (stored === "1") {
+      return true;
+    }
+  } catch {
+    /** Storage can be blocked; the default applies. */
+  }
   return fallback;
 }
 
@@ -31,7 +37,9 @@ function readWidth(
 ): number {
   try {
     const stored = window.localStorage.getItem(key);
-    if (stored == null) return fallback;
+    if (stored === null) {
+      return fallback;
+    }
     const next = Number.parseInt(stored, 10);
     if (!Number.isFinite(next)) return fallback;
     return Math.min(max, Math.max(min, next));
@@ -43,7 +51,9 @@ function readWidth(
 function writeWidth(key: string, width: number): void {
   try {
     window.localStorage.setItem(key, String(width));
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked; the in-memory state still applies. */
+  }
 }
 
 export type SidebarPanel =
@@ -96,7 +106,9 @@ export const libraryChrome = {
       const sidebarOpen = !s.sidebarOpen;
       try {
         window.localStorage.setItem("pond.sidebar", sidebarOpen ? "1" : "0");
-      } catch {}
+      } catch {
+        /** Storage can be full or blocked; the in-memory state still applies. */
+      }
       return { ...s, sidebarOpen };
     });
   },
@@ -115,7 +127,9 @@ export const libraryChrome = {
     beginLibraryLayoutTransition();
     try {
       window.localStorage.setItem("pond.details", detailsOpen ? "1" : "0");
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the in-memory state still applies. */
+    }
     store.setState((s) => ({ ...s, detailsOpen }));
   },
   toggleDetails(): void {

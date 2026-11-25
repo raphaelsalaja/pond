@@ -6,7 +6,8 @@ import {
   draftFromDomHarvest,
   draftFromRichPost,
 } from "../../../capture/tweet-draft";
-import { type HarvestAdaptCtx, parsePageBlob } from "../from-page";
+import { parsePageBlob } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { draftFromRichTweet } from "./draft";
 import { parseBookmarksResponses } from "./graphql";
 import { harvestSource } from "./item-source";

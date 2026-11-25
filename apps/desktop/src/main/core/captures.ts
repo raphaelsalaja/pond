@@ -10,6 +10,7 @@ import { saves } from "@pond/schema/db";
 import type { ExtensionCookie } from "@pond/schema/session";
 import type { Transaction } from "@pond/schema/tx";
 import { eq } from "drizzle-orm";
+import log from "electron-log/main.js";
 import { getDb } from "../db";
 import { libraryRoot } from "../paths";
 import { captureAsset } from "./capture-asset";
@@ -26,7 +27,7 @@ import { hasUserTitle } from "./user-metadata";
 
 type CaptureItem = CaptureDraft["items"][number];
 
-const captureCookies = new Map<string, ExtensionCookie[]>();
+const captureCookies = new Map<string, Array<ExtensionCookie>>();
 const completeListeners = new Set<
   (receipt: CaptureReceipt) => void | Promise<void>
 >();
@@ -39,7 +40,7 @@ async function readCaptureQueue(path: string): Promise<string> {
 }
 export function attachCaptureCookies(
   id: string,
-  cookies: ExtensionCookie[],
+  cookies: Array<ExtensionCookie>,
 ): void {
   captureCookies.set(id, cookies);
   setTimeout(() => captureCookies.delete(id), 30 * 60_000).unref();
@@ -58,8 +59,12 @@ export const captures = createCaptureQueue({
   writeStored: writeCaptureQueue,
   transfer: runLibraryTransfer,
   async onComplete(receipt) {
-    emitFeedback("extensionCapture");
-    for (const listener of completeListeners) await listener(receipt);
+    void emitFeedback("extensionCapture").catch((cause: unknown) =>
+      log.warn("[pond capture] feedback failed", cause),
+    );
+    for (const listener of completeListeners) {
+      await listener(receipt);
+    }
   },
   async process(item, metadata, identity, originUrl, trigger) {
     let id: string;
@@ -126,8 +131,9 @@ export const captures = createCaptureQueue({
     }
     const db = await getDb();
     const row = db.select().from(saves).where(eq(saves.id, id)).get();
-    if (!row)
+    if (!row) {
       throw new Error("The captured Save is missing. Retry this capture.");
+    }
     return applyAfterSave({ id, duplicate }, () =>
       applyCaptureMetadata(id, row, item, metadata),
     );
@@ -140,7 +146,9 @@ async function applyCaptureMetadata(
   item: CaptureItem,
   metadata: CaptureMetadata,
 ): Promise<void> {
-  const txs: Transaction[] = await prepareTagRegistryUpdates(metadata.tags);
+  const txs: Array<Transaction> = await prepareTagRegistryUpdates(
+    metadata.tags,
+  );
   const update: Extract<Transaction, { kind: "update"; model: "save" }> = {
     kind: "update",
     model: "save",
@@ -155,8 +163,9 @@ async function applyCaptureMetadata(
     update.patch.title = metadata.title || item.title;
     update.before.title = row.title;
   }
-  if (metadata.title)
+  if (metadata.title) {
     update.titleLock = { before: hasUserTitle(id), after: true };
+  }
   if (metadata.notes) {
     update.patch.notes = metadata.notes;
     update.before.notes = row.notes;

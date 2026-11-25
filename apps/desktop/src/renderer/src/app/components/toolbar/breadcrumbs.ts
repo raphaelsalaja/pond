@@ -8,7 +8,8 @@ import {
 import type { IconComponent } from "@pond/icons/types";
 import { SETTINGS_SECTIONS } from "@pond/schema";
 import type { Folder } from "@pond/schema/db";
-import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 import type { RouteMeta } from "@/shared/lib/route-meta";
 
 export interface Breadcrumb {
@@ -29,7 +30,7 @@ export interface BreadcrumbLabels {
 interface BreadcrumbInput {
   meta: Pick<RouteMeta, "routeId" | "nav" | "crumb" | "params" | "surface">;
   pathname: string;
-  folders: readonly Pick<Folder, "id" | "name" | "parentId">[];
+  folders: ReadonlyArray<Pick<Folder, "id" | "name" | "parentId">>;
   /** Set while a Save is open over the route. */
   saveOpen?: boolean;
   labels?: BreadcrumbLabels;
@@ -43,15 +44,16 @@ const SETTINGS_BY_ID = new Map(
   SETTINGS_SECTIONS.map((section) => [section.id, section]),
 );
 
-function settingsCrumbs(section: string | undefined): Breadcrumb[] {
-  const crumbs: Breadcrumb[] = [
+function settingsCrumbs(section: string | undefined): Array<Breadcrumb> {
+  const crumbs: Array<Breadcrumb> = [
     { label: "Settings", path: "/settings", icon: IconNut },
   ];
   if (!section) return crumbs;
   const entry = SETTINGS_BY_PATH.get(section);
   const parent = entry?.parent ? SETTINGS_BY_ID.get(entry.parent) : null;
-  if (parent)
+  if (parent) {
     crumbs.push({ label: parent.label, path: `/settings/${parent.path}` });
+  }
   crumbs.push({
     label: entry?.label ?? "Settings",
     path: `/settings/${section}`,
@@ -79,9 +81,9 @@ const SPLIT_POSTS: Breadcrumb = {
 function folderCrumbs(
   id: string,
   folders: BreadcrumbInput["folders"],
-): Breadcrumb[] {
+): Array<Breadcrumb> {
   const byId = new Map(folders.map((folder) => [folder.id, folder]));
-  const ancestors: Breadcrumb[] = [];
+  const ancestors: Array<Breadcrumb> = [];
   const seen = new Set<string>();
   let folder = byId.get(id);
   while (folder && !seen.has(folder.id)) {
@@ -98,7 +100,7 @@ function navCrumbs(
   nav: LibraryNav,
   meta: BreadcrumbInput["meta"],
   input: BreadcrumbInput,
-): Breadcrumb[] {
+): Array<Breadcrumb> {
   const labels = input.labels ?? {};
   switch (nav.kind) {
     case "folder":
@@ -123,37 +125,46 @@ function navCrumbs(
   }
 }
 
-function routeCrumbs(input: BreadcrumbInput): Breadcrumb[] {
+function routeCrumbs(input: BreadcrumbInput): Array<Breadcrumb> {
   const { meta, pathname, labels = {} } = input;
   const routeId = meta.routeId ?? "";
-  if (routeId.startsWith("/_library/settings"))
+  if (routeId.startsWith("/_library/settings")) {
     return settingsCrumbs(meta.params.section);
-  if (routeId === "/_library/canvas/$id")
+  }
+  if (routeId === "/_library/canvas/$id") {
     return [
       { label: labels.canvas || "Canvas", path: pathname, icon: IconCanvas },
     ];
-  if (routeId === "/_library/fish/$fishId")
+  }
+  if (routeId === "/_library/fish/$fishId") {
     return [{ label: labels.fish || "Fish", path: pathname }];
-  if (routeId === "/_library/sources_/$kind/$id")
+  }
+  if (routeId === "/_library/sources_/$kind/$id") {
     return [SOURCES, { label: labels.source || "Source", path: pathname }];
-  if (meta.nav) return navCrumbs(meta.nav, meta, input);
-  if (meta.crumb)
+  }
+  if (meta.nav) {
+    return navCrumbs(meta.nav, meta, input);
+  }
+  if (meta.crumb) {
     return [{ label: meta.crumb.label, path: pathname, icon: meta.crumb.icon }];
+  }
   return [ALL];
 }
 
-export function buildBreadcrumbs(input: BreadcrumbInput): Breadcrumb[] {
+export function buildBreadcrumbs(input: BreadcrumbInput): Array<Breadcrumb> {
   const crumbs = routeCrumbs(input);
   if (
     !input.saveOpen &&
     input.meta.surface === "grid" &&
     input.searchResultCount !== undefined
-  )
+  ) {
     crumbs.push({
       label: `Search results (${input.searchResultCount})`,
       path: input.pathname,
     });
-  if (input.saveOpen)
+  }
+  if (input.saveOpen) {
     crumbs.push({ label: input.labels?.save || "Save", path: input.pathname });
+  }
   return crumbs;
 }

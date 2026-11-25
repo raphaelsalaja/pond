@@ -22,19 +22,23 @@ export function createTagOperations(client: TagClient) {
       if (!to) return;
       if (
         kind === "group" ? from === to : from.toLowerCase() === to.toLowerCase()
-      )
+      ) {
         return;
+      }
       await client.rename(kind, from, to);
     },
-    async deleteTags(names: string[]) {
-      for (const name of names) await client.deleteTag(name);
+    async deleteTags(names: Array<string>) {
+      for (const name of names) {
+        await client.deleteTag(name);
+      }
     },
-    async mergeTags(names: string[], raw: string) {
+    async mergeTags(names: Array<string>, raw: string) {
       const to = normalizeLabelName(raw);
       if (!to) return;
       for (const name of names) {
-        if (name.toLowerCase() !== to.toLowerCase())
+        if (name.toLowerCase() !== to.toLowerCase()) {
           await client.merge(name, to);
+        }
       }
     },
     async addToGroup(tag: string, group: string) {

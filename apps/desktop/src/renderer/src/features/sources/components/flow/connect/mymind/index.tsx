@@ -39,13 +39,19 @@ export function MymindConnectForm({
   const submitting = useRef(false);
   const request = useRef(0);
   const reduceMotion = useReducedMotion();
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    if (!active) {
+      setKid("");
+      setSecret("");
+      setError(null);
+    }
+  }
 
   useEffect(() => {
     if (!active) {
       request.current += 1;
-      setKid("");
-      setSecret("");
-      setError(null);
     }
     return () => {
       request.current += 1;
@@ -74,8 +80,9 @@ export function MymindConnectForm({
       setSecret("");
       onConnected(result.account.id);
     } catch {
-      if (revision === request.current)
+      if (revision === request.current) {
         setError("Pond could not connect to mymind. Try again.");
+      }
     } finally {
       submitting.current = false;
       if (revision === request.current) setBusy(false);

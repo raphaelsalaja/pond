@@ -12,9 +12,14 @@ export interface Rect {
   height: number;
 }
 
+export interface Viewport {
+  width: number;
+  height: number;
+}
+
 export type Handle = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
 
-export const HANDLES: readonly Handle[] = [
+export const HANDLES: ReadonlyArray<Handle> = [
   "nw",
   "n",
   "ne",
@@ -27,10 +32,18 @@ export const HANDLES: readonly Handle[] = [
 
 const MIN_SIZE = 8;
 
-export function clampPoint(x: number, y: number): Point {
+function currentViewport(): Viewport {
+  return { width: innerWidth, height: innerHeight };
+}
+
+export function clampPoint(
+  x: number,
+  y: number,
+  viewport: Viewport = currentViewport(),
+): Point {
   return {
-    x: Math.min(innerWidth, Math.max(0, x)),
-    y: Math.min(innerHeight, Math.max(0, y)),
+    x: Math.min(viewport.width, Math.max(0, x)),
+    y: Math.min(viewport.height, Math.max(0, y)),
   };
 }
 
@@ -44,9 +57,12 @@ export function rectBetween(a: Point, b: Point): Rect {
 }
 
 /** Screenshots only see the viewport, so clip to it and drop slivers too small to save. */
-export function viewportRegion(rect: Rect): CaptureRegion | null {
-  const start = clampPoint(rect.x, rect.y);
-  const end = clampPoint(rect.x + rect.width, rect.y + rect.height);
+export function viewportRegion(
+  rect: Rect,
+  viewport: Viewport = currentViewport(),
+): CaptureRegion | null {
+  const start = clampPoint(rect.x, rect.y, viewport);
+  const end = clampPoint(rect.x + rect.width, rect.y + rect.height, viewport);
   const width = end.x - start.x;
   const height = end.y - start.y;
   if (width < 2 || height < 2) return null;
@@ -54,15 +70,19 @@ export function viewportRegion(rect: Rect): CaptureRegion | null {
     ...start,
     width,
     height,
-    viewportWidth: innerWidth,
-    viewportHeight: innerHeight,
+    viewportWidth: viewport.width,
+    viewportHeight: viewport.height,
   };
 }
 
-export function clipRect(rect: Rect): Rect | null {
-  const region = viewportRegion(rect);
-  if (!region || region.width < MIN_SIZE || region.height < MIN_SIZE)
+export function clipRect(
+  rect: Rect,
+  viewport: Viewport = currentViewport(),
+): Rect | null {
+  const region = viewportRegion(rect, viewport);
+  if (!region || region.width < MIN_SIZE || region.height < MIN_SIZE) {
     return null;
+  }
   return {
     x: region.x,
     y: region.y,
@@ -71,11 +91,16 @@ export function clipRect(rect: Rect): Rect | null {
   };
 }
 
-export function moveRect(rect: Rect, dx: number, dy: number): Rect {
+export function moveRect(
+  rect: Rect,
+  dx: number,
+  dy: number,
+  viewport: Viewport = currentViewport(),
+): Rect {
   return {
     ...rect,
-    x: Math.min(innerWidth - rect.width, Math.max(0, rect.x + dx)),
-    y: Math.min(innerHeight - rect.height, Math.max(0, rect.y + dy)),
+    x: Math.min(viewport.width - rect.width, Math.max(0, rect.x + dx)),
+    y: Math.min(viewport.height - rect.height, Math.max(0, rect.y + dy)),
   };
 }
 
@@ -85,17 +110,26 @@ export function resizeRect(
   handle: Handle,
   dx: number,
   dy: number,
+  viewport: Viewport = currentViewport(),
 ): Rect {
   let left = rect.x;
   let top = rect.y;
   let right = rect.x + rect.width;
   let bottom = rect.y + rect.height;
-  if (handle.includes("w")) left += dx;
-  if (handle.includes("e")) right += dx;
-  if (handle.includes("n")) top += dy;
-  if (handle.includes("s")) bottom += dy;
-  const a = clampPoint(left, top);
-  const b = clampPoint(right, bottom);
+  if (handle.includes("w")) {
+    left += dx;
+  }
+  if (handle.includes("e")) {
+    right += dx;
+  }
+  if (handle.includes("n")) {
+    top += dy;
+  }
+  if (handle.includes("s")) {
+    bottom += dy;
+  }
+  const a = clampPoint(left, top, viewport);
+  const b = clampPoint(right, bottom, viewport);
   const next = rectBetween(a, b);
   return {
     ...next,

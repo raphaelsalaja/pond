@@ -1,5 +1,6 @@
 import type { SaveFile } from "@pond/schema/db";
-import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
+import { walkCaptureMedia } from "@pond/schema/raw";
+import type { RawJson } from "@pond/schema/raw";
 import { isVideoFile } from "@shared/media-index";
 
 export { posterFilename, videoFilename } from "@shared/save-file-names";
@@ -17,9 +18,12 @@ export function hasMediaDims(
   dims: Pick<SaveFile, "width" | "height"> | null | undefined,
 ): boolean {
   return (
-    dims != null &&
-    dims.width != null &&
-    dims.height != null &&
+    dims !== null &&
+    dims !== undefined &&
+    dims.width !== null &&
+    dims.width !== undefined &&
+    dims.height !== null &&
+    dims.height !== undefined &&
     Number.isFinite(dims.width) &&
     Number.isFinite(dims.height) &&
     dims.width > 0 &&
@@ -29,15 +33,17 @@ export function hasMediaDims(
 
 export { usesPlatformPoster } from "@shared/poster-policy";
 
-export function videoPosterSlots(files: readonly SaveFile[]) {
+export function videoPosterSlots(files: ReadonlyArray<SaveFile>) {
   const videos = files.filter(isVideoFile);
   const posters = files.filter((f) => f.kind === "poster");
   return { videos, posters };
 }
 
-export function posterRepairIndexes(files: readonly SaveFile[]): number[] {
+export function posterRepairIndexes(
+  files: ReadonlyArray<SaveFile>,
+): Array<number> {
   const { videos, posters } = videoPosterSlots(files);
-  const indexes: number[] = [];
+  const indexes: Array<number> = [];
   for (let index = 0; index < videos.length; index += 1) {
     if (!videos[index]) continue;
     if (!posters[index]) indexes.push(index);
@@ -45,7 +51,7 @@ export function posterRepairIndexes(files: readonly SaveFile[]): number[] {
   return indexes;
 }
 
-export function needsPosterRepair(files: readonly SaveFile[]): boolean {
+export function needsPosterRepair(files: ReadonlyArray<SaveFile>): boolean {
   return posterRepairIndexes(files).length > 0;
 }
 

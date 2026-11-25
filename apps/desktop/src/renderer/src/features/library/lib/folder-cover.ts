@@ -9,10 +9,8 @@ import {
   thumbUrlFor,
 } from "@/features/saves/media";
 import type { Save, SaveFile } from "@/features/saves/types";
-import {
-  type ResolvedTheme,
-  resolveCurrentTheme,
-} from "@/shared/hooks/use-resolved-theme";
+import { resolveCurrentTheme } from "@/shared/hooks/use-resolved-theme";
+import type { ResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 
 /** Card units skip this file so a text save can draw its own preview. */
 function textCoverFile(save: Save, theme: ResolvedTheme): SaveFile | null {

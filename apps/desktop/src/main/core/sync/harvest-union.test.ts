@@ -9,7 +9,7 @@ import {
 
 describe("defaultListKind", () => {
   it("labels only entries that carry no list of their own", () => {
-    const entries: Array<{ id: string; listKinds?: ListKind[] }> = [
+    const entries: Array<{ id: string; listKinds?: Array<ListKind> }> = [
       { id: "a" },
       { id: "b", listKinds: ["liked"] },
     ];

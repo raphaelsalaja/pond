@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  expire,
-  retarget,
-  type Stage,
-  type StageEntry,
-  settle,
-  stageLayers,
-} from "./use-held-stage";
+import { expire, retarget, settle, stageLayers } from "./use-held-stage";
+import type { Stage, StageEntry } from "./use-held-stage";
 
 function media(key: string): StageEntry<string> {
   return { key, holds: true, value: key };

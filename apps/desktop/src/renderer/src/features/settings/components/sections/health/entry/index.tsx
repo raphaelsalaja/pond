@@ -1,16 +1,17 @@
 import { IconChevronRight } from "@pond/icons";
 import { Badge, Button, Reveal } from "@pond/ui";
 import type { QueueAttempt } from "@shared/queue-contracts";
-import { type ReactNode, useId, useState } from "react";
+import { useId, useState } from "react";
+import type { ReactNode } from "react";
 import { formatNumber } from "@/shared/lib/format";
 import { systemLocale } from "@/shared/lib/system-locale";
 import {
   describeFinding,
   describeSize,
-  type HealthEntry,
   RESOLUTION_LABELS,
   STATUS_LABELS,
 } from "../categories";
+import type { HealthEntry } from "../categories";
 import { STATUS_TONES } from "../tones";
 import styles from "./styles.module.css";
 
@@ -39,7 +40,7 @@ function attemptLabel(attempt: QueueAttempt): string {
 }
 
 function Attempts({ saveId }: { saveId: string }) {
-  const [attempts, setAttempts] = useState<QueueAttempt[] | null>(null);
+  const [attempts, setAttempts] = useState<Array<QueueAttempt> | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
 
@@ -72,7 +73,7 @@ function Attempts({ saveId }: { saveId: string }) {
           Show Attempts
         </Button>
         {failed ? (
-          <span className={styles.error}>Couldn't load attempts.</span>
+          <span className={styles.error}>Couldn&apos;t load attempts.</span>
         ) : null}
       </div>
     );

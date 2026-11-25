@@ -9,7 +9,7 @@ import {
   writeLibraryMedia,
 } from "./library-media-storage";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
@@ -24,8 +24,10 @@ async function createRoot(): Promise<string> {
 }
 
 async function collect(chunks: AsyncIterable<Buffer>): Promise<Buffer> {
-  const values: Buffer[] = [];
-  for await (const chunk of chunks) values.push(chunk);
+  const values: Array<Buffer> = [];
+  for await (const chunk of chunks) {
+    values.push(chunk);
+  }
   return Buffer.concat(values);
 }
 

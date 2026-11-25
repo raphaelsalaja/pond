@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
-import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { page, userEvent } from "vitest/browser";
+import { Dialog } from ".";
 import { expectAccessible } from "../../test/axe";
 import { Button } from "../button";
-import { Dialog } from ".";
 
 function RenameFolder() {
   return (

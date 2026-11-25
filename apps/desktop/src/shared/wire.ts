@@ -14,7 +14,7 @@ export type WireJson =
   | boolean
   | null
   | Date
-  | readonly WireJson[]
+  | ReadonlyArray<WireJson>
   | { readonly [key: string]: WireJson | undefined };
 
 export interface WireRow {
@@ -63,10 +63,10 @@ export type WireSave = Omit<
   takenAt: number | null;
   ingestStartedAt: number | null;
   ingestCompletedAt: number | null;
-  tasks?: WireTask[];
+  tasks?: Array<WireTask>;
 };
 
-export type WireSyncPayload = WireRow | readonly WireRow[] | null;
+export type WireSyncPayload = WireRow | ReadonlyArray<WireRow> | null;
 
 export type WireSyncAction = Omit<
   SyncAction,

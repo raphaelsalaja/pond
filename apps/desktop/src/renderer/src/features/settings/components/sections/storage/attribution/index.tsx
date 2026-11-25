@@ -62,7 +62,7 @@ function shareRows(data: StorageAttributionResult) {
       saves: row.saves,
       open: () => showFolderInLibrary(row.id),
     })),
-  } satisfies Record<string, Share[]>;
+  } satisfies Record<string, Array<Share>>;
 }
 
 function ShareList({
@@ -72,7 +72,7 @@ function ShareList({
   emptyTitle,
 }: {
   label: string;
-  rows: Share[];
+  rows: Array<Share>;
   total: number;
   emptyTitle: string;
 }) {

@@ -1,9 +1,11 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, vi } from "vitest";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
+import { afterEach, beforeEach } from "vitest";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ImageInspector } from "./";
 
 export const IMAGE_INSPECTOR_SAVE: Save = {
@@ -27,27 +29,43 @@ export const IMAGE_INSPECTOR_SAVE: Save = {
   crop: { x: 0.1, y: 0.2, w: 0.5, h: 0.6 },
 };
 
+async function flushPose() {
+  await act(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
+
 export function setupImageInspectorTest() {
   let host: HTMLDivElement;
   let root: Root;
-  const tx = vi.fn(async () => ({ ok: true }));
+  /** jsdom lays nothing out, so the frame reports this rect once a test prepares it. */
+  let frameRect = new DOMRect();
+  const measureFrame = () => frameRect;
 
   beforeEach(() => {
-    vi.stubGlobal("pond", {
-      query: async () => PrefsSchema.parse({}),
-      tx,
-      appInfo: async () => ({ username: "Raphael Salaja" }),
+    bridge.use({
+      query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
+      tx: async () => {},
+      appInfo: async () => ({
+        name: "Pond",
+        version: "0.0.0",
+        platform: "linux",
+        arch: "arm64",
+        username: "Raphael Salaja",
+        isPackaged: false,
+      }),
     });
+    frameRect = new DOMRect();
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
     pool.upsert(IMAGE_INSPECTOR_SAVE);
-    tx.mockClear();
   });
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   const button = (label: string): HTMLButtonElement => {
@@ -74,30 +92,23 @@ export function setupImageInspectorTest() {
           active
           onRatio={() => {}}
           onError={() => {}}
+          measureFrame={measureFrame}
         />,
       ),
     );
   };
   const prepareFrame = (): Element => {
     const frame = host.querySelector("[data-background]");
-    if (!frame) throw new Error("Missing image inspection frame");
-    vi.spyOn(frame, "getBoundingClientRect").mockReturnValue(
-      new DOMRect(0, 0, 400, 400),
-    );
+    if (!frame) {
+      throw new Error("Missing image inspection frame");
+    }
+    frameRect = new DOMRect(0, 0, 400, 400);
     Object.defineProperties(frame, {
       setPointerCapture: { value: () => {} },
       hasPointerCapture: { value: () => false },
     });
     return frame;
   };
-  const flushPose = async () => {
-    await act(async () => {
-      await new Promise<void>((resolve) => {
-        requestAnimationFrame(() => resolve());
-      });
-    });
-  };
-
   return {
     button,
     flushPose,
@@ -106,6 +117,8 @@ export function setupImageInspectorTest() {
     },
     prepareFrame,
     render,
-    tx,
+    get tx() {
+      return bridge.spy("tx");
+    },
   };
 }

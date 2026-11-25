@@ -1,11 +1,11 @@
 import type { DownloadRequest } from "@shared/downloader-contracts";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import {
-  type NotifyOptions,
   notify,
   TOAST_TIMEOUT_MS,
   updateNotification,
 } from "@/shared/lib/toast";
+import type { NotifyOptions } from "@/shared/lib/toast";
 import type { ExportDestination } from "../export-options/settings";
 
 const START_FAILED = "Pond couldn't add this link. Try again.";
@@ -28,7 +28,7 @@ async function toLibrary(url: string, title: string, request: DownloadRequest) {
       description: title,
       action: {
         label: "Show Downloads",
-        onClick: () => getAppRouter()?.history.push("/downloads"),
+        onClick: () => getAppHistory()?.push("/downloads"),
       },
     });
   } catch {
@@ -71,11 +71,12 @@ async function toDisk(
     description: path ? nameOf(path) : title,
     timeout: TOAST_TIMEOUT_MS,
   };
-  if (destination === "file" && path)
+  if (destination === "file" && path) {
     done.action = {
       label: "Show in Finder",
       onClick: () => void window.pond.query("downloader.reveal", { path }),
     };
+  }
   updateNotification(done);
 }
 

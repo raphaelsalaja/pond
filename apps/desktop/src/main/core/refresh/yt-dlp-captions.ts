@@ -8,11 +8,8 @@ import { partitionForIngest } from "../sync/accounts";
 import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
 import { cookieAttempts } from "./yt-dlp-format";
-import {
-  pickSubtitleFiles,
-  readSidecars,
-  type SubtitleFile,
-} from "./yt-dlp-output";
+import { pickSubtitleFiles, readSidecars } from "./yt-dlp-output";
+import type { SubtitleFile } from "./yt-dlp-output";
 import { runWithTimeout } from "./yt-dlp-process";
 import { ensureYtDlp } from "./yt-dlp-updater";
 
@@ -101,8 +98,8 @@ export async function downloadCaptions(args: {
       log.info("[pond yt-dlp] no captions", args.url, code, stderr.slice(-300));
       if (args.signal?.aborted) break;
     }
-  } catch (err) {
-    log.warn("[pond yt-dlp] captions failed", args.url, err);
+  } catch (error) {
+    log.warn("[pond yt-dlp] captions failed", args.url, error);
   }
   await cleanup();
   return null;

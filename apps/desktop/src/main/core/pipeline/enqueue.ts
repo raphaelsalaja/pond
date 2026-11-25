@@ -9,12 +9,14 @@ import { restoreSave } from "../restore-save";
 import { listAccounts } from "../sync/accounts";
 import { fileIncomingSaves } from "../sync/incoming";
 import {
-  type EnqueueCandidate,
-  type EnqueueItem,
-  type EnqueueOptions,
   enqueueCandidateKey,
   normalizeEnqueueItems,
   normalizeUrl,
+} from "./enqueue-input";
+import type {
+  EnqueueCandidate,
+  EnqueueItem,
+  EnqueueOptions,
 } from "./enqueue-input";
 import {
   createEnqueueBundle,
@@ -51,15 +53,12 @@ export {
   type EnqueueOptions,
   normalizeUrl,
 } from "./enqueue-input";
-export {
-  resetTasksForSave,
-  retryFailedSaves,
-} from "./enqueue-scheduling";
+export { resetTasksForSave, retryFailedSaves } from "./enqueue-scheduling";
 
 function stashWebCookiesThenKick(
   saveId: string,
   source: Source,
-  cookies: ImportableCookie[] | undefined,
+  cookies: Array<ImportableCookie> | undefined,
 ): void {
   if (source === "web" && cookies && cookies.length > 0) {
     stashPageCookies(saveId, cookies);
@@ -76,8 +75,9 @@ async function adoptOrphanedSave(
   const connected = new Set((await listAccounts()).map((a) => a.id));
   if (
     !harvestShouldAdoptSave(current, accountId, connected, opts.adoptOrphaned)
-  )
+  ) {
     return;
+  }
   await persistSave(
     current.id,
     { accountId },
@@ -101,12 +101,12 @@ export interface EnqueueManyResult {
   created: number;
   existing: number;
   failed: number;
-  createdIds: string[];
+  createdIds: Array<string>;
 }
 
 function isItemList(
-  input: string | readonly EnqueueItem[],
-): input is readonly EnqueueItem[] {
+  input: string | ReadonlyArray<EnqueueItem>,
+): input is ReadonlyArray<EnqueueItem> {
   return Array.isArray(input);
 }
 
@@ -115,11 +115,11 @@ export function enqueue(
   opts?: EnqueueOptions,
 ): Promise<EnqueueOneResult>;
 export function enqueue(
-  items: readonly EnqueueItem[],
+  items: ReadonlyArray<EnqueueItem>,
   opts?: EnqueueOptions,
 ): Promise<EnqueueManyResult>;
 export async function enqueue(
-  input: string | readonly EnqueueItem[],
+  input: string | ReadonlyArray<EnqueueItem>,
   opts: EnqueueOptions = {},
 ): Promise<EnqueueOneResult | EnqueueManyResult> {
   if (isItemList(input)) return enqueueMany(input, opts);
@@ -275,7 +275,7 @@ async function enqueueOne(
 const BULK_INSERT_CHUNK = 100;
 
 async function enqueueMany(
-  items: readonly EnqueueItem[],
+  items: ReadonlyArray<EnqueueItem>,
   opts: EnqueueOptions = {},
 ): Promise<EnqueueManyResult> {
   const persistence = await openEnqueuePersistence();
@@ -292,8 +292,8 @@ async function enqueueMany(
 
   const existingKeys = await persistence.loadExistingCandidateKeys(candidates);
 
-  const fresh: EnqueueCandidate[] = [];
-  const existing: EnqueueCandidate[] = [];
+  const fresh: Array<EnqueueCandidate> = [];
+  const existing: Array<EnqueueCandidate> = [];
   for (const candidate of candidates) {
     if (existingKeys.has(enqueueCandidateKey(candidate))) {
       existing.push(candidate);
@@ -314,12 +314,12 @@ async function enqueueMany(
       if (candidate.seed) one.seed = candidate.seed;
       await enqueueOne(candidate.url, one);
       result.existing += 1;
-    } catch (err) {
+    } catch (error) {
       result.failed += 1;
       log.warn(
         "[pond pipeline:enqueue] many existing item failed",
         candidate.url,
-        err,
+        error,
       );
     }
   }
@@ -342,8 +342,10 @@ async function enqueueMany(
 
   result.created = fresh.length;
   result.createdIds = bundles.map((bundle) => bundle.save.id);
-  for (const action of insertedActions) broadcastSyncAction(action);
-  const idsBySource = new Map<Source, string[]>();
+  for (const action of insertedActions) {
+    broadcastSyncAction(action);
+  }
+  const idsBySource = new Map<Source, Array<string>>();
   for (const bundle of bundles) {
     const ids = idsBySource.get(bundle.save.source) ?? [];
     ids.push(bundle.save.id);

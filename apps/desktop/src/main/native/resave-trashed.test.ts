@@ -2,14 +2,14 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { CaptureReceiptSchema } from "@pond/schema/capture";
 import type { CaptureReceipt, CaptureWebDraft } from "@pond/schema/capture";
 import { saves } from "@pond/schema/db";
 import type { NativeResponse } from "@pond/schema/native";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
-import { app } from "electron";
 import sharp from "sharp";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { executeBatch } from "../core/executor";
 import { createManualSave } from "../core/manual-import";
 import { enqueue } from "../core/pipeline/enqueue";
@@ -51,7 +51,7 @@ async function trash(id: string) {
 async function saveFromExtension(
   draftId: string,
   item: CaptureWebDraft["items"][number],
-  tags: string[] = [],
+  tags: Array<string> = [],
 ): Promise<CaptureReceipt> {
   const ports = liveNativePorts();
   const accepted: NativeResponse = await dispatchNative(
@@ -73,12 +73,16 @@ async function saveFromExtension(
       { type: "capture.status", id: draftId },
       ports,
     );
-    if (!status.ok) throw new Error(`capture.status failed: ${status.error}`);
-    /** SAFETY: `capture.status` answers with the queue's CaptureReceipt. */
-    const receipt = status.data as CaptureReceipt;
-    if (receipt.state !== "accepted" && receipt.state !== "processing")
+    if (!status.ok) {
+      throw new Error(`capture.status failed: ${status.error}`);
+    }
+    const receipt = CaptureReceiptSchema.parse(status.data);
+    if (receipt.state !== "accepted" && receipt.state !== "processing") {
       return receipt;
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 10);
+    });
   }
   throw new Error("capture never settled");
 }
@@ -90,14 +94,12 @@ describe.skipIf(!nativeSqliteAvailable())(
 
     beforeAll(() => {
       dir = mkdtempSync(join(tmpdir(), "pond-trash-resave-"));
-      vi.spyOn(app, "getPath").mockReturnValue(dir);
       invalidatePaths();
-      resolvePaths(join(dir, "Trash Resave.pond"));
+      resolvePaths(join(dir, "Trash Resave.pond"), dir);
     });
 
     afterAll(() => {
       closeDb();
-      vi.restoreAllMocks();
       invalidatePaths();
       try {
         rmSync(dir, { recursive: true, force: true });

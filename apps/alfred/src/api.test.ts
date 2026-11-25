@@ -3,7 +3,7 @@ import { curlCommand, failureFor, parseCurl, shellQuote } from "./api";
 
 describe("shellQuote", () => {
   it("escapes single quotes", () => {
-    expect(shellQuote("it's")).toBe("'it'\\''s'");
+    expect(shellQuote("it's")).toBe(String.raw`'it'\''s'`);
   });
 });
 

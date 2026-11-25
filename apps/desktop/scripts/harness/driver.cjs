@@ -2,13 +2,18 @@
 const { app, BrowserWindow, screen } = require("electron");
 const { mkdirSync, mkdtempSync, rmSync } = require("node:fs");
 const { tmpdir } = require("node:os");
-const { join } = require("node:path");
+const nodePath = require("node:path");
 const { setTimeout: sleep } = require("node:timers/promises");
 const sharp = require("sharp");
 
+/** Every function, async and bound ones included, inherits `call` from `Function.prototype`. */
+function isFunction(value) {
+  return value?.call === Function.prototype.call;
+}
+
 /** The app moves userData, sessionData, logs, home, the Library and the instance lock under this directory. */
 function createSandbox(prefix) {
-  const sandbox = mkdtempSync(join(tmpdir(), prefix));
+  const sandbox = mkdtempSync(nodePath.join(tmpdir(), prefix));
   process.env.POND_SANDBOX = sandbox;
   process.once("exit", () => {
     try {
@@ -63,7 +68,7 @@ function keepOffscreen(win) {
 
 async function mainWindow() {
   const started = Date.now();
-  while (Date.now() - started < 30000) {
+  while (Date.now() - started < 30_000) {
     const win = BrowserWindow.getAllWindows().find((w) =>
       w.webContents.getURL().includes("/index.html"),
     );
@@ -73,7 +78,7 @@ async function mainWindow() {
   throw new Error("The Library window did not open");
 }
 
-function evalIn(win, js, ms = 15000) {
+function evalIn(win, js, ms = 15_000) {
   return within(
     ms,
     win.webContents.executeJavaScript(js, true),
@@ -93,7 +98,7 @@ async function rendered(win) {
       };
       poll();
     })`,
-    25000,
+    25_000,
   );
 }
 
@@ -135,7 +140,7 @@ async function openLibrary(sandbox, { prefs, size, onStep = () => {} } = {}) {
 
 function fixturePng(directory, name, size, colors) {
   const [from, to] = colors;
-  const file = join(directory, `${name}.png`);
+  const file = nodePath.join(directory, `${name}.png`);
   mkdirSync(directory, { recursive: true });
   const r = Math.min(size.width, size.height) / 3;
   return sharp(
@@ -170,9 +175,13 @@ const FOLDER_VIEW = {
 };
 
 function resolveWindow(main, target) {
-  if (!target) return main;
-  if (target instanceof BrowserWindow) return target;
-  if (target instanceof Function) {
+  if (!target) {
+    return main;
+  }
+  if (target.webContents !== undefined) {
+    return target;
+  }
+  if (isFunction(target)) {
     const found = BrowserWindow.getAllWindows().find(target);
     if (!found) throw new Error("No window matches the predicate");
     return found;
@@ -182,21 +191,10 @@ function resolveWindow(main, target) {
   return found;
 }
 
-/** Every call is reported to `onStep` before it runs, so a failure names the step that hung. */
-function driver(main, { sandbox, onStep = () => {} }) {
-  const query = (name, input) =>
-    evalIn(
-      main,
-      `window.pond.query(${JSON.stringify(name)}${input === undefined ? "" : `, ${JSON.stringify(input)}`})`,
-      60000,
-    );
-
-  const windowFor = (target) => resolveWindow(main, target);
-
-  const center = async (win, selector) => {
-    const point = await evalIn(
-      win,
-      `(() => {
+async function center(win, selector) {
+  const point = await evalIn(
+    win,
+    `(() => {
         const el = document.querySelector(${JSON.stringify(selector)});
         if (!el) return null;
         el.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -205,59 +203,87 @@ function driver(main, { sandbox, onStep = () => {} }) {
         const y = Math.round(r.top + r.height / 2);
         return { x, y, hit: el.contains(document.elementFromPoint(x, y)), draggable: Boolean(el.closest('[draggable="true"]')) };
       })()`,
-    );
-    if (!point) throw new Error(`No element matches ${selector}`);
-    return point;
-  };
+  );
+  if (!point) {
+    throw new Error(`No element matches ${selector}`);
+  }
+  return point;
+}
 
-  const waitFor = async (target, ms = 10000, options = {}) => {
+function modifiersFor(parts) {
+  return parts.map((part) => {
+    const name = part.toLowerCase();
+    if (["mod", "cmdorctrl", "commandorcontrol"].includes(name)) {
+      return process.platform === "darwin" ? "meta" : "control";
+    }
+    if (["cmd", "command", "meta", "super"].includes(name)) {
+      return "meta";
+    }
+    if (["ctrl", "control"].includes(name)) {
+      return "control";
+    }
+    if (["alt", "option"].includes(name)) {
+      return "alt";
+    }
+    if (name === "shift") {
+      return "shift";
+    }
+    throw new Error(`Unknown modifier ${part}`);
+  });
+}
+
+function send(win, event) {
+  return win.webContents.sendInputEvent(event);
+}
+
+/** Every call is reported to `onStep` before it runs, so a failure names the step that hung. */
+function driver(main, { sandbox, onStep = () => {} }) {
+  const query = (name, input) =>
+    evalIn(
+      main,
+      `window.pond.query(${JSON.stringify(name)}${input === undefined ? "" : `, ${JSON.stringify(input)}`})`,
+      60_000,
+    );
+
+  const windowFor = (target) => resolveWindow(main, target);
+
+  const waitFor = async (target, ms = 10_000, options = {}) => {
     const win = windowFor(options.window);
     const started = Date.now();
     while (Date.now() - started < ms) {
-      const value =
-        target instanceof Function
-          ? await target()
-          : await evalIn(
-              win,
-              `Boolean(document.querySelector(${JSON.stringify(target)}))`,
-            );
-      if (value) return value;
+      const value = isFunction(target)
+        ? await target()
+        : await evalIn(
+            win,
+            `Boolean(document.querySelector(${JSON.stringify(target)}))`,
+          );
+      if (value) {
+        return value;
+      }
       await sleep(50);
     }
     throw new Error(
-      `waitFor ${target instanceof Function ? "predicate" : target} timed out after ${ms} ms`,
+      `waitFor ${isFunction(target) ? "predicate" : target} timed out after ${ms} ms`,
     );
   };
-
-  const modifiersFor = (parts) =>
-    parts.map((part) => {
-      const name = part.toLowerCase();
-      if (["mod", "cmdorctrl", "commandorcontrol"].includes(name)) {
-        return process.platform === "darwin" ? "meta" : "control";
-      }
-      if (["cmd", "command", "meta", "super"].includes(name)) return "meta";
-      if (["ctrl", "control"].includes(name)) return "control";
-      if (["alt", "option"].includes(name)) return "alt";
-      if (name === "shift") return "shift";
-      throw new Error(`Unknown modifier ${part}`);
-    });
-
-  const send = (win, event) => win.webContents.sendInputEvent(event);
 
   const mouse = async (x, y, type = "move", options = {}) => {
     const win = windowFor(options.window);
     const button = options.button ?? "left";
     const base = { x, y, button, modifiers: options.modifiers ?? [] };
-    if (type === "move") send(win, { ...base, type: "mouseMove" });
-    else if (type === "down")
+    if (type === "move") {
+      send(win, { ...base, type: "mouseMove" });
+    } else if (type === "down") {
       send(win, { ...base, type: "mouseDown", clickCount: 1 });
-    else if (type === "up")
+    } else if (type === "up") {
       send(win, { ...base, type: "mouseUp", clickCount: 1 });
-    else if (type === "click") {
+    } else if (type === "click") {
       send(win, { ...base, type: "mouseMove" });
       send(win, { ...base, type: "mouseDown", clickCount: 1 });
       send(win, { ...base, type: "mouseUp", clickCount: 1 });
-    } else throw new Error(`Unknown mouse event ${type}`);
+    } else {
+      throw new Error(`Unknown mouse event ${type}`);
+    }
     await sleep(16);
   };
 
@@ -278,7 +304,7 @@ function driver(main, { sandbox, onStep = () => {} }) {
     },
     async click(selector, options = {}) {
       const win = windowFor(options.window);
-      await waitFor(selector, options.timeout ?? 10000, options);
+      await waitFor(selector, options.timeout ?? 10_000, options);
       /** A closing pane can still cover the target or reflow it, so click only once it is on top and has stopped moving. */
       let last = null;
       const point = await waitFor(
@@ -289,7 +315,7 @@ function driver(main, { sandbox, onStep = () => {} }) {
           last = next;
           return settled ? next : null;
         },
-        options.timeout ?? 10000,
+        options.timeout ?? 10_000,
         options,
       );
       await mouse(point.x, point.y, "click", options);
@@ -318,8 +344,8 @@ function driver(main, { sandbox, onStep = () => {} }) {
     },
     async drag(from, to, options = {}) {
       const win = windowFor(options.window);
-      await waitFor(from, options.timeout ?? 10000, options);
-      await waitFor(to, options.timeout ?? 10000, options);
+      await waitFor(from, options.timeout ?? 10_000, options);
+      await waitFor(to, options.timeout ?? 10_000, options);
       const start = await center(win, from);
       const end = await center(win, to);
       const mode = options.mode ?? (start.draggable ? "html5" : "pointer");
@@ -373,8 +399,8 @@ function driver(main, { sandbox, onStep = () => {} }) {
       const title = options.title ?? `Fixture ${index + 1}`;
       const [w, h] = options.size ?? [1400, 1000];
       const file = await fixturePng(
-        join(sandbox, "fixtures"),
-        `${index}-${title.replace(/\W+/g, "-")}`,
+        nodePath.join(sandbox, "fixtures"),
+        `${index}-${title.replaceAll(/\W+/g, "-")}`,
         { width: w, height: h },
         options.colors ?? ["#334155", "#cbd5e1"],
       );
@@ -448,7 +474,7 @@ function track(target, onStep, names) {
     const fn = target[name];
     target[name] = async (...args) => {
       const shown = args
-        .filter((a) => !(a instanceof Function))
+        .filter((a) => !isFunction(a))
         .map((a) => JSON.stringify(a) ?? String(a));
       onStep(`${name}(${shown.join(", ")})`);
       return fn(...args);
@@ -471,6 +497,7 @@ module.exports = {
   driver,
   evalIn,
   frameSettled,
+  isFunction,
   keepOffscreen,
   keepPainting,
   openLibrary,

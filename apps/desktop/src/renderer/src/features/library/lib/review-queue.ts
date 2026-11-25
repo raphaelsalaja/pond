@@ -1,7 +1,7 @@
 export type ReviewOutcome = "keep" | "trash" | "collection" | "skip";
 
 export interface ReviewQueue {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   index: number;
   outcomes: Readonly<Record<string, ReviewOutcome>>;
 }
@@ -19,7 +19,7 @@ type ReviewKey =
 
 export const REVIEW_FOLDER_SLOTS = 4;
 
-export function startQueue(ids: readonly string[]): ReviewQueue {
+export function startQueue(ids: ReadonlyArray<string>): ReviewQueue {
   return { ids: [...new Set(ids)], index: 0, outcomes: {} };
 }
 
@@ -72,12 +72,19 @@ export function reviewKey(
   >,
   options: { fromButton: boolean },
 ): ReviewKey | null {
-  if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey)
+  if (
+    event.defaultPrevented ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.altKey
+  ) {
     return null;
+  }
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   const slot = Number.parseInt(key, 10);
-  if (slot >= 1 && slot <= REVIEW_FOLDER_SLOTS)
+  if (slot >= 1 && slot <= REVIEW_FOLDER_SLOTS) {
     return { kind: "folder", slot: slot - 1 };
+  }
   switch (key) {
     case "ArrowLeft":
     case "Backspace":

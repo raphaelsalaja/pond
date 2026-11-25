@@ -1,8 +1,6 @@
 import type { ImportMediaKind, ImportScope, Source } from "@pond/schema/db";
-import {
-  type ImportCollectionKind,
-  importScopeOptions,
-} from "@shared/import-scope";
+import { importScopeOptions } from "@shared/import-scope";
+import type { ImportCollectionKind } from "@shared/import-scope";
 import type { OkResult } from "@shared/query-contracts-shared";
 import { refetchAccounts } from "@/features/sources/hooks/use-accounts";
 import { syncMonitor } from "@/features/sources/state/sync-monitor";

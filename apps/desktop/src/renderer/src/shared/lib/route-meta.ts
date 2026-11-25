@@ -1,5 +1,6 @@
 import type { IconComponent } from "@pond/icons/types";
-import { type AnyRouter, useLocation, useRouter } from "@tanstack/react-router";
+import { useLocation, useRouter } from "@tanstack/react-router";
+import type { AnyRouter } from "@tanstack/react-router";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { getAppRouter } from "@/shared/lib/app-router";
 import type { LibraryNav } from "@/shared/lib/library-nav";
@@ -47,6 +48,10 @@ export interface RouteMeta {
   routeId: string | null;
 }
 
+function isRouteId(value: unknown): value is string {
+  return typeof value === "string";
+}
+
 const resolved = new WeakMap<AnyRouter, Map<string, RouteMeta>>();
 const CACHE_SIZE = 32;
 
@@ -58,10 +63,12 @@ function resolve(router: AnyRouter, pathname: string): RouteMeta {
     const data = branch[index]?.options.staticData;
     if (!data) continue;
     surface ??= data.surface;
-    if (details === undefined && data.details !== undefined)
+    if (details === undefined && data.details !== undefined) {
       details = data.details;
+    }
   }
   const data = leaf?.options.staticData;
+  const routeId: unknown = leaf?.id;
   return {
     surface: surface ?? (data?.railPage ? "rail" : "page"),
     details: details === undefined ? "save" : details,
@@ -71,7 +78,7 @@ function resolve(router: AnyRouter, pathname: string): RouteMeta {
     nav: data?.nav?.(params) ?? null,
     crumb: data?.crumb ?? null,
     params,
-    routeId: leaf?.id ?? null,
+    routeId: isRouteId(routeId) ? routeId : null,
   };
 }
 

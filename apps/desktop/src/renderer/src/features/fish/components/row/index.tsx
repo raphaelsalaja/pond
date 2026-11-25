@@ -7,6 +7,7 @@ import {
 } from "@/shared/components/spec-context-menu";
 import { fishItems } from "../../lib/menu";
 import { rowPreview, rowTime, rowTimestamp } from "../../lib/row";
+import { useNow } from "../../lib/use-now";
 import { fish as fishStore } from "../../state/fish";
 import { FishMark, fishMood } from "../mark";
 import type { FishDragProps } from "../sortable";
@@ -25,6 +26,7 @@ export function FishRow({
   const mood = fishMood(fish);
   const preview = rowPreview(fish);
   const at = fish.activity ? null : rowTimestamp(fish);
+  const now = useNow();
 
   return (
     <SpecContextMenu
@@ -64,7 +66,7 @@ export function FishRow({
           </Sidebar.ItemText>
           {at ? (
             <time className={styles.time} dateTime={new Date(at).toISOString()}>
-              {rowTime(at, new Date())}
+              {rowTime(at, now)}
             </time>
           ) : null}
           {mood === "worried" ? (

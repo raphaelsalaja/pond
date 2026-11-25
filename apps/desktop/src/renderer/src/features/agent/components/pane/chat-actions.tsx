@@ -1,5 +1,6 @@
 import { IconBroom, IconCopy, IconDots, IconDownload } from "@pond/icons";
-import { Dialog, Menu, type MenuItemSpec, Tooltip } from "@pond/ui";
+import { Dialog, Menu, Tooltip } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import type { AssistantMessage } from "@shared/assistant";
 import { conversationMarkdown } from "@shared/conversation-markdown";
 import { DEFAULT_FISH_NAME } from "@shared/fish-contracts";
@@ -31,9 +32,9 @@ export function ChatActions({
 }: {
   chatId: string | null;
   title: string | null;
-  messages: AssistantMessage[];
+  messages: Array<AssistantMessage>;
   disabled: boolean;
-  items?: MenuItemSpec[];
+  items?: Array<MenuItemSpec>;
 }) {
   async function transfer(kind: "copy" | "export") {
     if (!chatId) return;

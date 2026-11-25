@@ -34,7 +34,7 @@ export const youtubeParser: ExportParser = {
     const timeAt = header.findIndex((cell) => /time|timestamp/i.test(cell));
     const name = playlistName(path);
     const liked = /^liked videos$/i.test(name);
-    return rows.slice(headerAt + 1).flatMap((row): ExportEntry[] => {
+    return rows.slice(headerAt + 1).flatMap((row): Array<ExportEntry> => {
       const id = row[idAt]?.trim();
       if (!id || !VIDEO_ID.test(id)) return [];
       const entry: ExportEntry = {

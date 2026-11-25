@@ -200,8 +200,10 @@ async function loadUpdateView(
     client.appInfo(),
     client.checkNow(),
   ]);
-  if (!result.ok) return failureView(result);
-  let notice: UpdateNotice | null = null;
+  if (!result.ok) {
+    return failureView(result);
+  }
+  let notice: UpdateNotice | null;
   try {
     notice = await client.currentNotice();
   } catch {

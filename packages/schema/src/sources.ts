@@ -1,11 +1,8 @@
-import { SOURCES, type Source } from "./source-ids";
+import { SOURCES } from "./source-ids";
+import type { Source } from "./source-ids";
 import { descriptorFor } from "./sources/registry";
 
-export {
-  canonicalHost,
-  domainFromUrl,
-  sourceIdentity,
-} from "./domain";
+export { canonicalHost, domainFromUrl, sourceIdentity } from "./domain";
 export { hostToSource, sourceLabel } from "./source-ids";
 export {
   DEFAULT_RATE_PROFILE,

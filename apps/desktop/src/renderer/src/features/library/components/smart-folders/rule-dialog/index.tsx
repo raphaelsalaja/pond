@@ -7,10 +7,10 @@ import { formatPlural } from "@/shared/lib/format";
 import {
   compileRuleQuery,
   editableQuery,
-  type RuleChoices,
   RuleEditor,
   ruleQueryReady,
 } from "../rule-editor";
+import type { RuleChoices } from "../rule-editor";
 import styles from "./styles.module.css";
 
 export interface RuleDialogProps {
@@ -69,6 +69,7 @@ export function RuleDialog(props: RuleDialogProps) {
   const editor = useRef<HTMLFieldSetElement>(null);
   const [open, setOpen] = useState(false);
   useLayoutEffect(() => {
+    // oxlint-disable-next-line react/set-state-in-effect -- The dialog mounts closed and opens before paint so its enter transition runs.
     setOpen(true);
   }, []);
   const label = kind === "group" ? "Group" : "Smart Folder";
@@ -80,7 +81,9 @@ export function RuleDialog(props: RuleDialogProps) {
   );
   const queryKey = JSON.stringify(effectiveQuery);
   const queryRef = useRef(effectiveQuery);
-  queryRef.current = effectiveQuery;
+  useLayoutEffect(() => {
+    queryRef.current = effectiveQuery;
+  });
   const [preview, setPreview] = useState<PreviewState>({
     key: queryKey,
     revision: libraryRevision,
@@ -106,18 +109,19 @@ export function RuleDialog(props: RuleDialogProps) {
       );
       void count(request).then(
         (total) => {
-          if (current)
+          if (current) {
             setPreview({
               key,
               revision: libraryRevision,
               status: "ready",
               count: total,
             });
+          }
         },
         () => {
           if (!current) return;
           setPreview((currentPreview) =>
-            currentPreview.key === key && currentPreview.count != null
+            currentPreview.key === key && currentPreview.count !== null
               ? { ...currentPreview, revision: libraryRevision }
               : {
                   key,
@@ -137,7 +141,7 @@ export function RuleDialog(props: RuleDialogProps) {
 
   const countText = !ready
     ? "Complete the rules to preview matches."
-    : preview.key === queryKey && preview.count != null
+    : preview.key === queryKey && preview.count !== null
       ? `Found ${formatPlural(preview.count, { one: "save", other: "saves" })}`
       : preview.key === queryKey && preview.status === "failed"
         ? "Couldn't count matches. Your rules can still be saved."
@@ -161,8 +165,8 @@ export function RuleDialog(props: RuleDialogProps) {
     try {
       await onSave(name.trim(), compileRuleQuery(query));
       setOpen(false);
-    } catch (failure) {
-      setError(errorCopy(failure, "Couldn't save these rules. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't save these rules. Try again."));
     } finally {
       pending.current = false;
       setBusy(false);
@@ -209,8 +213,9 @@ export function RuleDialog(props: RuleDialogProps) {
                     value={name}
                     onValueChange={(value) => {
                       setName(value);
-                      if (value.trim())
+                      if (value.trim()) {
                         setInvalid((current) => ({ ...current, name: false }));
+                      }
                     }}
                     disabled={busy}
                   />

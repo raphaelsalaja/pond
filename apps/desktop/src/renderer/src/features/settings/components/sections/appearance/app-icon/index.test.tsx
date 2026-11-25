@@ -3,15 +3,14 @@ import type { AppIconStyle } from "@shared/app-icons";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { AppIconRow } from "./";
 
 async function swatchFor(style: AppIconStyle | null, label: string) {
-  vi.stubGlobal("pond", {
-    async query(name: string) {
-      if (name === "settings.appIconAppearance")
-        return { style, macosMajor: 26 };
-      throw new Error(`unexpected query ${name}`);
+  bridge.use({
+    query: {
+      "settings.appIconAppearance": () => ({ style, macosMajor: 26 }),
     },
   });
   const host = document.createElement("div");
@@ -26,7 +25,12 @@ async function swatchFor(style: AppIconStyle | null, label: string) {
       </QueryClientProvider>,
     ),
   );
-  await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+  await act(
+    () =>
+      new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      }),
+  );
   const src =
     host
       .querySelector(`button[aria-label="${label}"] img`)
@@ -48,11 +52,9 @@ it("keeps the colored images in the Default, Clear, and Tinted styles", async ()
 
 it("switches the swatches when the icon style changes while Pond was in the background", async () => {
   let style: AppIconStyle = "light";
-  vi.stubGlobal("pond", {
-    async query(name: string) {
-      if (name === "settings.appIconAppearance")
-        return { style, macosMajor: 26 };
-      throw new Error(`unexpected query ${name}`);
+  bridge.use({
+    query: {
+      "settings.appIconAppearance": () => ({ style, macosMajor: 26 }),
     },
   });
   const host = document.createElement("div");
@@ -74,7 +76,12 @@ it("switches the swatches when the icon style changes while Pond was in the back
         </QueryClientProvider>,
       ),
     );
-    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await act(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        }),
+    );
     expect(grapeSrc()).not.toContain(".dark");
     style = "dark";
     await act(async () => {
@@ -82,7 +89,12 @@ it("switches the swatches when the icon style changes while Pond was in the back
     });
     // The refetch settles on its own schedule; give it up to a second.
     for (let tries = 0; tries < 50 && !grapeSrc().includes(".dark"); tries++) {
-      await act(() => new Promise((resolve) => setTimeout(resolve, 20)));
+      await act(
+        () =>
+          new Promise((resolve) => {
+            setTimeout(resolve, 20);
+          }),
+      );
     }
     expect(grapeSrc()).toContain("grape.dark");
   } finally {

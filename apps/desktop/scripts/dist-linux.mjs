@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 
 /** Packages for the host arch only, because native modules rebuild against the build host's toolchain. */
-const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const appRoot = resolve(import.meta.dirname, "..");
 const publish = process.argv.includes("--publish");
 const arch =
   process.arch === "arm64" ? "arm64" : process.arch === "x64" ? "x64" : null;

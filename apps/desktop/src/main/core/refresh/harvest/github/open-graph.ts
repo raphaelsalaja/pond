@@ -14,8 +14,8 @@ export function isGithubGeneratedOpenGraph(url: string): boolean {
 
 /** A custom og:image when the repository set one, otherwise GitHub's generated card. */
 export function selectRepositoryPreview<T extends { url: string }>(
-  media: readonly T[],
-): T[] {
+  media: ReadonlyArray<T>,
+): Array<T> {
   const custom = media.find((entry) => !isGithubGeneratedOpenGraph(entry.url));
   const chosen = custom ?? media[0];
   return chosen ? [chosen] : [];

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
-import { Input } from "../input";
+import { userEvent } from "vitest/browser";
 import { Field } from ".";
+import { Input } from "../input";
 
 describe("Field keyboard", () => {
   it("names and describes its control", async () => {

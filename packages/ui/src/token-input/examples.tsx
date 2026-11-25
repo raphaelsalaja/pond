@@ -1,7 +1,8 @@
 import { IconFile } from "@pond/icons";
+import { TokenInput } from ".";
+import type { TokenInputValue } from ".";
 import { Chip } from "../chip";
 import type { ComponentDocs } from "../shared/docs";
-import { TokenInput, type TokenInputValue } from ".";
 
 const SAVES = [
   { value: "save-1", label: "Brutalist type specimens" },

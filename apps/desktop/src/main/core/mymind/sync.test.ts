@@ -14,16 +14,25 @@ function object(id: string, offset: number): MymindObject {
   };
 }
 
-function fixture(objects: MymindObject[]) {
+function fixture(objects: Array<MymindObject>) {
   const state = createMymindSyncState(connectedAt);
-  const requests: { start: number; end: number }[] = [];
-  const persist = vi.fn(async () => {});
-  const importObject = vi.fn(async (item: MymindObject) => {
-    const id = `save-${item.id}`;
-    state.imports[item.id] = { saveId: id, complete: true };
-    await persist();
-    return { id, imported: true };
-  });
+  const requests: Array<{ start: number; end: number }> = [];
+  const importFailures: Array<Error> = [];
+  const store = { persist: async () => {} };
+  const persist = vi.spyOn(store, "persist");
+  const importer = {
+    importObject: async (item: MymindObject) => {
+      const failure = importFailures.shift();
+      if (failure) {
+        throw failure;
+      }
+      const id = `save-${item.id}`;
+      state.imports[item.id] = { saveId: id, complete: true };
+      await persist();
+      return { id, imported: true };
+    },
+  };
+  const importObject = vi.spyOn(importer, "importObject");
   const dependencies = {
     client: {
       async *listCreatedObjects(request: { start: number; end: number }) {
@@ -35,7 +44,14 @@ function fixture(objects: MymindObject[]) {
     persist,
     now: end,
   };
-  return { state, requests, dependencies, importObject, persist };
+  return {
+    state,
+    requests,
+    dependencies,
+    importObject,
+    persist,
+    importFailures,
+  };
 }
 
 describe("new mymind imports", () => {
@@ -92,7 +108,7 @@ describe("new mymind imports", () => {
 
   it("keeps the lower bound after an import failure and retries incomplete work", async () => {
     const f = fixture([object("new", 100)]);
-    f.importObject.mockRejectedValueOnce(new Error("Disk is full."));
+    f.importFailures.push(new Error("Disk is full."));
     await expect(
       importNewMymindObjects(
         f.state,

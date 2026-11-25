@@ -38,13 +38,13 @@ function Grid({
   );
 }
 
-interface SectionsProps extends React.ComponentPropsWithoutRef<"div"> {}
+type SectionsProps = React.ComponentPropsWithoutRef<"div">;
 
 function Sections({ className, ...props }: SectionsProps) {
   return <div className={cn(styles.sections, className)} {...props} />;
 }
 
-interface DividerProps extends React.ComponentPropsWithRef<"div"> {}
+type DividerProps = React.ComponentPropsWithRef<"div">;
 
 function Divider({ className, ...props }: DividerProps) {
   return <div className={cn(styles.divider, className)} {...props} />;

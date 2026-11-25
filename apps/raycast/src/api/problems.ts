@@ -12,6 +12,10 @@ export class PondProblem extends Error {
   }
 }
 
+function isPondProblem(error: Error): error is PondProblem {
+  return error.name === "PondProblem";
+}
+
 /** Every route the extension calls shipped in Local API 2.1. */
 export function supportsApi(version: string | undefined): boolean {
   const [major, minor] = (version ?? "").split(".").map(Number);
@@ -19,7 +23,9 @@ export function supportsApi(version: string | undefined): boolean {
 }
 
 export function problemOf(error: Error): PondProblem {
-  if (error instanceof PondProblem) return error;
+  if (isPondProblem(error)) {
+    return error;
+  }
   if (error instanceof PondApiError) {
     if (error.kind === "authentication") return new PondProblem("unauthorized", error.message);
     if (error.kind === "connection") return new PondProblem("not-running", error.message);

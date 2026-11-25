@@ -1,4 +1,5 @@
-import { type ImportScope, type Save, saves, tasks } from "@pond/schema/db";
+import { saves, tasks } from "@pond/schema/db";
+import type { ImportScope, Save } from "@pond/schema/db";
 import { majorityMediaType } from "@pond/schema/media-type";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import type { Transaction } from "@pond/schema/tx";
@@ -6,10 +7,10 @@ import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import {
   accountImportScope,
-  type ImportFilterReason,
   importFilterReason,
   listFilterReason,
 } from "../../../shared/import-scope";
+import type { ImportFilterReason } from "../../../shared/import-scope";
 import { getDb } from "../../db";
 import { executeBatch } from "../executor";
 import { persistSave } from "../persist-save";
@@ -122,7 +123,7 @@ export async function releaseFilteredSaves(accountId: string): Promise<number> {
 
 /** Purges saves skipped for their list, so the walk that found them on another list queues them again. */
 export async function releaseListFilteredSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   if (ids.length === 0) return;
   const db = await getDb();
@@ -139,16 +140,16 @@ export async function releaseListFilteredSaves(
   await purgeReleased(rows);
 }
 
-async function purgeReleased(rows: Save[]): Promise<void> {
-  if (rows.length === 0) return;
-  const transactions = rows.map(
-    (row): Transaction => ({
-      kind: "purge",
-      model: "save",
-      id: row.id,
-      before: row,
-      meta: { actor: "system", actorReason: "sync:import-filter:release" },
-    }),
-  );
+async function purgeReleased(rows: Array<Save>): Promise<void> {
+  if (rows.length === 0) {
+    return;
+  }
+  const transactions = rows.map((row): Transaction => ({
+    kind: "purge",
+    model: "save",
+    id: row.id,
+    before: row,
+    meta: { actor: "system", actorReason: "sync:import-filter:release" },
+  }));
   await executeBatch(transactions);
 }

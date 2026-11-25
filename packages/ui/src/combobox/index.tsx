@@ -5,7 +5,8 @@ import {
   IconXmark,
 } from "@pond/icons";
 import { clsx as cn } from "clsx";
-import { Button, type ButtonProps } from "../button";
+import { Button } from "../button";
+import type { ButtonProps } from "../button";
 import { stopPageHotkeys } from "../stop-page-hotkeys";
 import styles from "./styles.module.css";
 

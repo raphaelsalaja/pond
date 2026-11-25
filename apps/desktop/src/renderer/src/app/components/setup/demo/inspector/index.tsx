@@ -4,9 +4,9 @@ import styles from "./styles.module.css";
 
 export type InspectorField =
   | { label: string; value: string; from?: string }
-  | { label: string; chips: readonly string[] };
+  | { label: string; chips: ReadonlyArray<string> };
 
-const DEFAULT_FIELDS: readonly InspectorField[] = [
+const DEFAULT_FIELDS: ReadonlyArray<InspectorField> = [
   { label: "Title", value: "Sunset over the bay", from: "IMG_4821.jpg" },
   { label: "Tags", chips: ["Sunset", "Beach", "Golden Hour"] },
 ];
@@ -14,7 +14,7 @@ const DEFAULT_FIELDS: readonly InspectorField[] = [
 export function Inspector({
   fields = DEFAULT_FIELDS,
 }: {
-  fields?: readonly InspectorField[];
+  fields?: ReadonlyArray<InspectorField>;
 }) {
   return (
     <div className={styles.inspector}>

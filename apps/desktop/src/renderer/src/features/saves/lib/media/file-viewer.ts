@@ -1,5 +1,6 @@
 import type { SaveFile } from "@/features/saves/types";
-import { type FileViewerKind, viewerCapabilityFor } from "./viewer-capability";
+import { viewerCapabilityFor } from "./viewer-capability";
+import type { FileViewerKind } from "./viewer-capability";
 
 export type StoredFileViewerKind = Exclude<FileViewerKind, "media">;
 

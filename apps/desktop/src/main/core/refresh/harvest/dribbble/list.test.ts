@@ -31,7 +31,7 @@ const VIDEO_SHOT = `<li id="screenshot-27838898" data-thumbnail-id="27838898" cl
   </div>
 </li>`;
 
-function page(ids: number[]): string {
+function page(ids: Array<number>): string {
   return `${ids.map(imageShot).join("\n")}<script>var newestShots = [];</script>`;
 }
 
@@ -44,13 +44,13 @@ interface Reply {
 
 async function walk(
   args: Partial<ListHarvestArgs>,
-  replies: Map<string, Reply[]>,
-): Promise<{ result: ListHarvestResult; requested: string[] }> {
+  replies: Map<string, Array<Reply>>,
+): Promise<{ result: ListHarvestResult; requested: Array<string> }> {
   const dom = new JSDOM("<!doctype html><body class='logged-in'></body>", {
     url: dribbbleLikesUrl("simplebits"),
     runScripts: "outside-only",
   });
-  const requested: string[] = [];
+  const requested: Array<string> = [];
   Object.assign(dom.window, {
     setTimeout: (fn: () => void) => setTimeout(fn, 0),
     fetch: async (url: string) => {
@@ -72,7 +72,7 @@ async function walk(
   return { result, requested };
 }
 
-function ids(result: ListHarvestResult): string[] {
+function ids(result: ListHarvestResult): Array<string> {
   return result.ok ? result.entries.map((entry) => entry.sourceId) : [];
 }
 

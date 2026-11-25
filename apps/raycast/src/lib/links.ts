@@ -18,7 +18,7 @@ export function searchLink(query: string): string {
 
 /** Pond's keyword syntax scopes a quoted phrase to one field. */
 export function tagSearchLink(tag: string): string {
-  return searchLink(`tags:"${tag.replace(/"/g, "")}"`);
+  return searchLink(`tags:"${tag.replaceAll('"', "")}"`);
 }
 
 export const LIBRARY_LINK = "pond://library";
@@ -38,5 +38,5 @@ export function hostname(url: string): string {
 }
 
 export function markdownLink(title: string, url: string): string {
-  return `[${title.replace(/[[\]]/g, "\\$&")}](${url.replace(/\)/g, "%29")})`;
+  return `[${title.replaceAll(/[[\]]/g, String.raw`\$&`)}](${url.replaceAll(")", "%29")})`;
 }

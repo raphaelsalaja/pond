@@ -1,13 +1,13 @@
-import { useRef } from "react";
+import { useState } from "react";
 import type { Save } from "@/features/saves/types";
 
-const NO_DEPARTED_IDS: readonly string[] = [];
+const NO_DEPARTED_IDS: ReadonlyArray<string> = [];
 
 export interface RetainedTagPickerSaves {
-  rows: readonly Save[];
+  rows: ReadonlyArray<Save>;
   /** Saves kept on screen only while the tag picker still has them. */
-  departedIds: readonly string[];
-  previous: readonly Save[];
+  departedIds: ReadonlyArray<string>;
+  previous: ReadonlyArray<Save>;
 }
 
 /**
@@ -16,9 +16,9 @@ export interface RetainedTagPickerSaves {
  * the picker closes.
  */
 export function retainTagPickerSaves(
-  current: readonly Save[],
-  heldIds: readonly string[],
-  previous: readonly Save[],
+  current: ReadonlyArray<Save>,
+  heldIds: ReadonlyArray<string>,
+  previous: ReadonlyArray<Save>,
 ): RetainedTagPickerSaves {
   if (heldIds.length === 0) {
     return { rows: current, departedIds: NO_DEPARTED_IDS, previous: current };
@@ -57,21 +57,22 @@ export function retainTagPickerSaves(
 }
 
 export function useRetainedTagPickerSaves(
-  current: readonly Save[],
-  heldIds: readonly string[],
+  current: ReadonlyArray<Save>,
+  heldIds: ReadonlyArray<string>,
 ): RetainedTagPickerSaves {
-  const memory = useRef<readonly Save[]>([]);
-  const cache = useRef<{
-    current: readonly Save[];
-    heldIds: readonly string[];
+  const [cached, setCached] = useState<{
+    current: ReadonlyArray<Save>;
+    heldIds: ReadonlyArray<string>;
     result: RetainedTagPickerSaves;
   } | null>(null);
-  const cached = cache.current;
   if (cached && cached.current === current && cached.heldIds === heldIds) {
     return cached.result;
   }
-  const result = retainTagPickerSaves(current, heldIds, memory.current);
-  memory.current = result.previous;
-  cache.current = { current, heldIds, result };
+  const result = retainTagPickerSaves(
+    current,
+    heldIds,
+    cached?.result.previous ?? [],
+  );
+  setCached({ current, heldIds, result });
   return result;
 }

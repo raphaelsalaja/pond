@@ -4,14 +4,16 @@ import { join } from "node:path";
 import log from "electron-log/main.js";
 import {
   CANVAS_ITEM_LIMIT,
-  type Canvas,
-  type CanvasContentInput,
   CanvasContentSchema,
   CanvasIdSchema,
-  type CanvasItem,
   CanvasSchema,
-  type CanvasSummary,
   saveGridColumns,
+} from "../../shared/canvas-contracts";
+import type {
+  Canvas,
+  CanvasContentInput,
+  CanvasItem,
+  CanvasSummary,
 } from "../../shared/canvas-contracts";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { resolvePaths } from "../paths";
@@ -57,7 +59,7 @@ function requireCanvas(id: string, root: string): Canvas {
   return canvas;
 }
 
-function uniqueName(base: string, taken: readonly string[]): string {
+function uniqueName(base: string, taken: ReadonlyArray<string>): string {
   const names = new Set(taken.map((name) => name.toLocaleLowerCase()));
   if (!names.has(base.toLocaleLowerCase())) return base;
   let suffix = 2;
@@ -66,7 +68,10 @@ function uniqueName(base: string, taken: readonly string[]): string {
 }
 
 /** New Saves land in a grid to the right of everything already on the Canvas, so nothing overlaps. */
-function placeSaves(canvas: Canvas, saveIds: readonly string[]): CanvasItem[] {
+function placeSaves(
+  canvas: Canvas,
+  saveIds: ReadonlyArray<string>,
+): Array<CanvasItem> {
   const present = new Set(
     canvas.items.flatMap((item) => (item.kind === "save" ? [item.saveId] : [])),
   );
@@ -93,7 +98,7 @@ function placeSaves(canvas: Canvas, saveIds: readonly string[]): CanvasItem[] {
 
 export function readCanvas(id: string, root = libraryRoot()): Canvas | null {
   const file = canvasFile(root, id);
-  const stored = readBundleJson<unknown>(file);
+  const stored = readBundleJson(file);
   if (!stored) {
     if (existsSync(file)) throw new Error("This canvas could not be read.");
     return null;
@@ -101,10 +106,12 @@ export function readCanvas(id: string, root = libraryRoot()): Canvas | null {
   return CanvasSchema.parse(stored.data);
 }
 
-export function listCanvases(root = libraryRoot()): CanvasSummary[] {
+export function listCanvases(root = libraryRoot()): Array<CanvasSummary> {
   const directory = join(root, "canvases");
-  if (!existsSync(directory)) return [];
-  const summaries: CanvasSummary[] = [];
+  if (!existsSync(directory)) {
+    return [];
+  }
+  const summaries: Array<CanvasSummary> = [];
   for (const name of readdirSync(directory)) {
     const id = name.endsWith(".json") ? name.slice(0, -".json".length) : "";
     if (!CanvasIdSchema.safeParse(id).success) continue;
@@ -122,7 +129,7 @@ export function listCanvases(root = libraryRoot()): CanvasSummary[] {
 }
 
 export function createCanvas(
-  input: { name?: string; saveIds?: readonly string[] },
+  input: { name?: string; saveIds?: ReadonlyArray<string> },
   root = libraryRoot(),
   now = Date.now(),
 ): Canvas {
@@ -169,7 +176,7 @@ export function updateCanvas(
 
 export function addSavesToCanvas(
   id: string,
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
   root = libraryRoot(),
   now = Date.now(),
 ): Canvas {

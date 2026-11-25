@@ -6,15 +6,13 @@ import {
   DirectionalLight,
   GridHelper,
   HemisphereLight,
-  type Material,
-  Mesh,
   PerspectiveCamera,
   Scene,
   SRGBColorSpace,
-  Texture,
   Vector3,
   WebGLRenderer,
 } from "three";
+import type { Material, Mesh, Object3D, Texture } from "three";
 import type { LibraryCardView } from "@/features/saves/components/card/types";
 import { loadModel } from "@/features/saves/components/viewers/model-viewer/load-model";
 import styles from "./styles.module.css";
@@ -39,7 +37,7 @@ export function ModelCardPreview({
     let alive = true;
     let loaded: Awaited<ReturnType<typeof loadModel>>["object"] | null = null;
     const scene = new Scene();
-    scene.background = new Color(0x20252d);
+    scene.background = new Color(0x20_25_2d);
     const camera = new PerspectiveCamera(34, 1, 0.01, 100_000);
     const renderer = new WebGLRenderer({ antialias: true });
     renderer.outputColorSpace = SRGBColorSpace;
@@ -48,14 +46,14 @@ export function ModelCardPreview({
     renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio || 1, 2));
     root.append(renderer.domElement);
 
-    scene.add(new HemisphereLight(0xffffff, 0x334155, 2.8));
-    const key = new DirectionalLight(0xffffff, 4);
+    scene.add(new HemisphereLight(0xff_ff_ff, 0x33_41_55, 2.8));
+    const key = new DirectionalLight(0xff_ff_ff, 4);
     key.position.set(5, 8, 6);
     scene.add(key);
-    const rim = new DirectionalLight(0x93c5fd, 2);
+    const rim = new DirectionalLight(0x93_c5_fd, 2);
     rim.position.set(-5, 3, -4);
     scene.add(rim);
-    const grid = new GridHelper(10, 16, 0x667085, 0x343b47);
+    const grid = new GridHelper(10, 16, 0x66_70_85, 0x34_3b_47);
     scene.add(grid);
 
     const render = () => {
@@ -85,7 +83,7 @@ export function ModelCardPreview({
         scene.add(result.object);
         const radius = Math.max(size.x, size.y, size.z, 0.01) * 0.5;
         const distance = radius / Math.tan((camera.fov * Math.PI) / 360);
-        camera.near = Math.max(radius / 1_000, 0.001);
+        camera.near = Math.max(radius / 1000, 0.001);
         camera.far = Math.max(distance * 20, 100);
         camera.position.set(distance * 0.82, distance * 0.58, distance * 1.1);
         camera.lookAt(0, 0, 0);
@@ -125,7 +123,9 @@ function disposeObject(
   object: Awaited<ReturnType<typeof loadModel>>["object"],
 ) {
   object.traverse((child) => {
-    if (!(child instanceof Mesh)) return;
+    if (!isMesh(child)) {
+      return;
+    }
     child.geometry.dispose();
     const materials = Array.isArray(child.material)
       ? child.material
@@ -134,9 +134,23 @@ function disposeObject(
   });
 }
 
+function isMesh(object: Object3D): object is Mesh {
+  return "isMesh" in object && object.isMesh === true;
+}
+
+function isTexture(value: unknown): value is Texture {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "isTexture" in value &&
+    value.isTexture === true
+  );
+}
+
 function disposeMaterial(material: Material) {
-  for (const value of Object.values(material)) {
-    if (value instanceof Texture) {
+  const values: Array<unknown> = Object.values(material);
+  for (const value of values) {
+    if (isTexture(value)) {
       value.dispose();
     }
   }

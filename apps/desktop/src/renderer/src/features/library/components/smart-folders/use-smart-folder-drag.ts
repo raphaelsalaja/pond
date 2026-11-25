@@ -13,7 +13,8 @@ import {
 } from "@dnd-kit/core";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { SavedView } from "@pond/schema/db";
-import { type RefObject, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import type { RefObject } from "react";
 import { dndFolderDropKind } from "@/features/library/components/folder-sidebar/folder-tree/folder-dnd";
 import {
   groupMoveChoices,
@@ -23,17 +24,13 @@ import { savedViews } from "@/features/library/state/saved-views";
 import { SIDEBAR_SORTABLE_KEYBOARD_CODES } from "@/shared/lib/dnd-kit";
 import { createDragHaptics } from "@/shared/lib/haptics";
 import { runAction } from "./menu-items";
-import {
-  keyboardSiblingReorderKind,
-  planSmartFolderReorder,
-  type SmartFolderDrop,
-  type smartFolderRows,
-} from "./reorder";
+import { keyboardSiblingReorderKind, planSmartFolderReorder } from "./reorder";
+import type { SmartFolderDrop, smartFolderRows } from "./reorder";
 
 interface UseSmartFolderDragInput {
-  views: SavedView[];
+  views: Array<SavedView>;
   rows: ReturnType<typeof smartFolderRows>;
-  selectedIds: string[];
+  selectedIds: Array<string>;
   onReveal: (id: string) => void;
 }
 
@@ -45,7 +42,7 @@ function relation(kind: SmartFolderDrop["kind"] | null): string {
 }
 
 function smartFolderAnnouncements(
-  views: readonly SavedView[],
+  views: ReadonlyArray<SavedView>,
   rows: UseSmartFolderDragInput["rows"],
   pointerY: RefObject<number | null>,
   keyboard: RefObject<boolean>,
@@ -66,14 +63,16 @@ function smartFolderAnnouncements(
       return `Picked up ${name(String(active.id))}.`;
     },
     onDragOver({ active, over }) {
-      if (!over)
+      if (!over) {
         return `${name(String(active.id))} is no longer over a target.`;
+      }
       const kind = kindFor(String(active.id), String(over.id), active, over);
       return `Move ${name(String(active.id))} ${relation(kind)} ${name(String(over.id))}.`;
     },
     onDragEnd({ active, over }) {
-      if (!over)
+      if (!over) {
         return `${name(String(active.id))} was dropped without moving.`;
+      }
       const kind = kindFor(String(active.id), String(over.id), active, over);
       return `Moved ${name(String(active.id))} ${relation(kind)} ${name(String(over.id))}.`;
     },
@@ -134,7 +133,7 @@ export function useSmartFolderDrag({
 
   function move({ delta }: DragMoveEvent): void {
     pointerY.current =
-      pointerStartY.current == null ? null : pointerStartY.current + delta.y;
+      pointerStartY.current === null ? null : pointerStartY.current + delta.y;
   }
 
   function show(next: SmartFolderDrop | null): void {
@@ -211,6 +210,7 @@ export function useSmartFolderDrag({
   }
 
   return {
+    // oxlint-disable-next-line react/refs -- The announcements read the refs only when dnd-kit announces a drag, never during render.
     announcements: smartFolderAnnouncements(views, rows, pointerY, keyboard),
     cancel: reset,
     drop,

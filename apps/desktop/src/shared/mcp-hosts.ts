@@ -40,7 +40,7 @@ export interface McpHostDefinition {
   addLabel: string;
 }
 
-export const MCP_HOST_CATALOG: readonly McpHostDefinition[] = [
+export const MCP_HOST_CATALOG: ReadonlyArray<McpHostDefinition> = [
   {
     id: "claude-code",
     name: "Claude Code",
@@ -87,7 +87,7 @@ export const MCP_HOST_CATALOG: readonly McpHostDefinition[] = [
     featured: false,
     configPath:
       "~/Library/Application Support/Claude/claude_desktop_config.json",
-    windowsConfigPath: "%APPDATA%\\Claude\\claude_desktop_config.json",
+    windowsConfigPath: String.raw`%APPDATA%\Claude\claude_desktop_config.json`,
     hint: "Claude Desktop opens an install window. Settings, Extensions lists Pond once it's installed.",
     addLabel: "Add to Claude Desktop",
   },
@@ -96,7 +96,7 @@ export const MCP_HOST_CATALOG: readonly McpHostDefinition[] = [
     name: "VS Code",
     featured: false,
     configPath: "~/Library/Application Support/Code/User/mcp.json",
-    windowsConfigPath: "%APPDATA%\\Code\\User\\mcp.json",
+    windowsConfigPath: String.raw`%APPDATA%\Code\User\mcp.json`,
     hint: "VS Code MCP shows Pond when connected.",
     addLabel: "Add to VS Code",
   },
@@ -125,18 +125,20 @@ export interface McpSetupCommand {
 }
 
 function shellToken(value: string): string {
-  return /[\s"']/.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value;
+  return /[\s"']/.test(value)
+    ? `"${value.replaceAll('"', String.raw`\"`)}"`
+    : value;
 }
 
-export function pondLaunchLine(command: string, args: string[]): string {
+export function pondLaunchLine(command: string, args: Array<string>): string {
   return [command, ...args].map(shellToken).join(" ");
 }
 
 export function hostSetupCommands(
   id: McpHostId,
   command: string,
-  args: string[],
-): McpSetupCommand[] {
+  args: Array<string>,
+): Array<McpSetupCommand> {
   const launch = pondLaunchLine(command, args);
   if (id === "claude-code") {
     return [

@@ -6,7 +6,7 @@ function Root({ className, ...props }: Base.Root.Props) {
   return <Base.Root className={cn(styles.root, className)} {...props} />;
 }
 
-interface RowProps extends React.ComponentPropsWithoutRef<"div"> {}
+type RowProps = React.ComponentPropsWithoutRef<"div">;
 
 function Row({ className, ...props }: RowProps) {
   return <div className={cn(styles.row, className)} {...props} />;

@@ -8,9 +8,9 @@ import { useEffect } from "react";
 import {
   applyNoteBlock,
   insertNoteFiles,
-  type NoteBlock,
   OPEN_NOTE_LINK_COMMAND,
 } from "./commands";
+import type { NoteBlock } from "./commands";
 
 function isMod(event: KeyboardEvent): boolean {
   return event.metaKey || event.ctrlKey;

@@ -1,8 +1,5 @@
-import {
-  capture,
-  installInterceptor,
-  type RequestLens,
-} from "@/utils/intercept";
+import { capture, installInterceptor } from "@/utils/intercept";
+import type { RequestLens } from "@/utils/intercept";
 import { pinIdFromBody } from "./save-request";
 
 const SAVE_RE =

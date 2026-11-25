@@ -1,9 +1,9 @@
+import type { WireSyncAction } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { useTagGroups } from "./tag-groups";
-
-type SyncHandler = (event: { modelName: string; action: string }) => void;
 
 const rows = [
   {
@@ -13,31 +13,24 @@ const rows = [
     color: null,
     sortOrder: 0,
     collapsed: false,
+    createdAt: new Date(0),
     tagIds: [],
     tagNames: [],
   },
 ];
 
-let handler: SyncHandler | null = null;
-let listCalls = 0;
-let releaseRefetch: (() => void) | null = null;
-
-const query = vi.fn((name: string) => {
-  if (name !== "tagGroups.list") return Promise.resolve([]);
-  listCalls += 1;
-  if (listCalls === 1) return Promise.resolve(rows);
-  return new Promise((resolve) => {
-    releaseRefetch = () => resolve(rows);
-  });
-});
-
-vi.stubGlobal("pond", {
-  query,
-  onSyncAction(callback: SyncHandler) {
-    handler = callback;
-    return () => {};
-  },
-});
+const membershipChange: WireSyncAction = {
+  id: 1,
+  batchId: null,
+  modelName: "tag_group_member",
+  modelId: "design",
+  action: "I",
+  data: null,
+  prevData: null,
+  actor: "user",
+  actorReason: null,
+  createdAt: 0,
+};
 
 function Harness() {
   const groups = useTagGroups();
@@ -45,29 +38,37 @@ function Harness() {
 }
 
 it("keeps the group list on screen while a membership change refetches", async () => {
+  let listCalls = 0;
+  const refetch = Promise.withResolvers<typeof rows>();
+  bridge.use({
+    query: {
+      "tagGroups.list": () => {
+        listCalls += 1;
+        return listCalls === 1 ? rows : refetch.promise;
+      },
+    },
+  });
   const host = document.createElement("div");
   const root = createRoot(host);
   try {
     await act(async () => root.render(<Harness />));
     expect(host.textContent).toBe("Design");
-    if (!handler) throw new Error("Tag groups never subscribed to sync events");
+    expect(bridge.listening("onSyncAction")).toBe(true);
 
     await act(async () => {
-      handler?.({ modelName: "tag_group_member", action: "I" });
+      bridge.emit("onSyncAction", membershipChange);
       await Promise.resolve();
     });
 
-    // A page keeps its selected group by id. If the refetch emptied the list
-    // here, that page would fall back to All.
+    /** A page keeps its selected group by id; an emptied list would send it back to All. */
     expect(host.textContent).toBe("Design");
 
-    releaseRefetch?.();
+    refetch.resolve(rows);
     await act(async () => {
       await Promise.resolve();
     });
     expect(host.textContent).toBe("Design");
   } finally {
     await act(async () => root.unmount());
-    vi.unstubAllGlobals();
   }
 });

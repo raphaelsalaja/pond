@@ -4,10 +4,10 @@ import { extractDates } from "@/features/search/lib/nl-chrono";
 
 const REF = new Date(2024, 5, 15);
 
-const preds = (input: string): Predicate[] =>
+const preds = (input: string): Array<Predicate> =>
   extractDates(input, REF).predicates;
 const rest = (input: string): string =>
-  extractDates(input, REF).rest.replace(/\s+/g, " ").trim();
+  extractDates(input, REF).rest.replaceAll(/\s+/g, " ").trim();
 
 describe("extractDates — rolling windows", () => {
   it("maps curated phrases to relative ISO durations (>= now - N)", () => {

@@ -20,7 +20,7 @@ const requireNative = createRequire(import.meta.url);
  */
 export type RunCommand = (
   command: string,
-  args: string[],
+  args: Array<string>,
 ) => Promise<{ stdout: string; stderr: string }>;
 
 const runCommand: RunCommand = async (command, args) => {
@@ -92,8 +92,8 @@ export interface RegisteredExtension {
  * properties on their own indented lines instead, so both shapes are accepted. Kept pure
  * so it can be tested without `pluginkit` present.
  */
-export function parsePluginkit(output: string): RegisteredExtension[] {
-  const found: RegisteredExtension[] = [];
+export function parsePluginkit(output: string): Array<RegisteredExtension> {
+  const found: Array<RegisteredExtension> = [];
   let previous: RegisteredExtension | null = null;
   for (const line of output.split("\n")) {
     const single = line.match(/^([+ -]?)\s*(\S+)\((\d[\d.]*)\)(?:\t(.*))?$/);
@@ -132,8 +132,8 @@ async function plistText(
       return stdout;
     }
     return raw.toString("utf8");
-  } catch (cause) {
-    log.warn("[pond safari] could not read Info.plist", path, cause);
+  } catch (error) {
+    log.warn("[pond safari] could not read Info.plist", path, error);
     return null;
   }
 }
@@ -151,8 +151,10 @@ async function bundledExtension(
 } | null> {
   if (!resources) return null;
   const plugIns = join(resources, "..", "PlugIns");
-  if (!existsSync(plugIns)) return null;
-  let entries: string[];
+  if (!existsSync(plugIns)) {
+    return null;
+  }
+  let entries: Array<string>;
   try {
     entries = readdirSync(plugIns);
   } catch {
@@ -174,7 +176,7 @@ async function bundledExtension(
 
 async function registeredExtensions(
   run: RunCommand,
-): Promise<RegisteredExtension[]> {
+): Promise<Array<RegisteredExtension>> {
   try {
     const { stdout } = await run("pluginkit", [
       "-m",
@@ -183,9 +185,9 @@ async function registeredExtensions(
       SAFARI_EXTENSION_POINT,
     ]);
     return parsePluginkit(stdout);
-  } catch (cause) {
+  } catch (error) {
     /** pluginkit exits non-zero with empty output when nothing matches, so a failure means none. */
-    log.debug("[pond safari] pluginkit returned nothing", cause);
+    log.debug("[pond safari] pluginkit returned nothing", error);
     return [];
   }
 }
@@ -217,9 +219,12 @@ async function signatureKind(
     captureOf,
   );
   const report = `${stdout}\n${stderr}`;
-  if (report.includes("Authority=Developer ID Application"))
+  if (report.includes("Authority=Developer ID Application")) {
     return "developer-id";
-  if (report.includes("Signature=adhoc")) return "ad-hoc";
+  }
+  if (report.includes("Signature=adhoc")) {
+    return "ad-hoc";
+  }
   return "unknown";
 }
 
@@ -254,6 +259,15 @@ export async function safariExtensionStatus(
   };
 }
 
+function isSafariSettingsModule(value: unknown): value is SafariSettingsModule {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "showPreferences" in value &&
+    typeof value.showPreferences === "function"
+  );
+}
+
 /** Gives the dialog a way out if Safari never calls back. */
 const SETTINGS_TIMEOUT_MS = 15_000;
 
@@ -270,10 +284,17 @@ function loadSettingsModule(
   const path = join(resources, "safari-settings.node");
   if (!existsSync(path)) return null;
   try {
-    /** SAFETY: safari-settings.m exports exactly `showPreferences(identifier): Promise<void>`. */
-    return requireNative(path) as SafariSettingsModule;
-  } catch (cause) {
-    log.warn("[pond safari] could not load the settings module", path, cause);
+    const loaded: unknown = requireNative(path);
+    if (!isSafariSettingsModule(loaded)) {
+      log.warn(
+        "[pond safari] the settings module has no showPreferences",
+        path,
+      );
+      return null;
+    }
+    return loaded;
+  } catch (error) {
+    log.warn("[pond safari] could not load the settings module", path, error);
     return null;
   }
 }
@@ -338,9 +359,9 @@ export async function openSafariSettings(
   try {
     await answeredInTime(settings.showPreferences(status.bundleId));
     return { ok: true };
-  } catch (cause) {
+  } catch (error) {
     /** Safari's own text reads "SFErrorDomain error 1", which only belongs in the log. */
-    log.warn("[pond safari] Safari did not open the settings", cause);
+    log.warn("[pond safari] Safari did not open the settings", error);
     /** An ad-hoc build is refused for the signature reason, so point at that setting. */
     return status.signature === "ad-hoc"
       ? {
@@ -368,8 +389,8 @@ export async function openSafari(): Promise<OkResult> {
   try {
     await execFileAsync("open", ["-b", "com.apple.Safari"]);
     return { ok: true };
-  } catch (cause) {
-    log.warn("[pond safari] could not open Safari", cause);
+  } catch (error) {
+    log.warn("[pond safari] could not open Safari", error);
     return {
       ok: false,
       error:

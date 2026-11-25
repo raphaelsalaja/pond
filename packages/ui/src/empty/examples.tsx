@@ -1,7 +1,7 @@
 import { IconTrash } from "@pond/icons";
+import { Empty, EmptyPreview } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Empty, EmptyPreview } from ".";
 
 export const docs: ComponentDocs = {
   slug: "empty",
@@ -85,7 +85,7 @@ export const docs: ComponentDocs = {
               </EmptyPreview.Column>
             </EmptyPreview.Root>
           </Empty.Media>
-          <Empty.Title>You're All Caught Up</Empty.Title>
+          <Empty.Title>You&apos;re All Caught Up</Empty.Title>
           <Empty.Description>
             New saves wait here until you process them.
           </Empty.Description>

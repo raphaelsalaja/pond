@@ -4,7 +4,8 @@ import { clsx as cn } from "clsx";
 import { Checkbox } from "../checkbox";
 import { Keyboard } from "../keyboard";
 import { Menu } from "../menu";
-import { type MenuItemSpec, renderMenuSpec } from "../menu/items";
+import { renderMenuSpec } from "../menu/items";
+import type { MenuItemSpec } from "../menu/items";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -171,7 +172,7 @@ function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   );
 }
 
-function Items({ items }: { items: MenuItemSpec[] }) {
+function Items({ items }: { items: Array<MenuItemSpec> }) {
   return (
     <>
       {renderMenuSpec(items, {

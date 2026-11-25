@@ -4,7 +4,7 @@ import { exportDate, exportText, parseJsonText, walkJson } from "./walk";
 
 const VIDEO_ID = /tiktokv?\.com\/(?:share\/video|@[^/]*\/video|video)\/(\d+)/i;
 
-function listKindFor(keys: readonly string[]): ListKind | null {
+function listKindFor(keys: ReadonlyArray<string>): ListKind | null {
   const path = keys.join("/").toLowerCase();
   if (path.includes("favorite video")) return "saved";
   if (path.includes("like list")) return "liked";
@@ -17,8 +17,10 @@ export const tiktokParser: ExportParser = {
   matches: (path) => /(^|\/)user_data(_tiktok)?\.json$/i.test(path),
   parse: (_path, text) => {
     const root = parseJsonText(text);
-    if (root === null) return [];
-    const out: ExportEntry[] = [];
+    if (root === null) {
+      return [];
+    }
+    const out: Array<ExportEntry> = [];
     walkJson(root, (node, keys) => {
       const link = exportText(node.Link ?? node.link);
       if (!link) return;

@@ -47,7 +47,7 @@ export interface TransferQueryInputs {
   "transferJobs.reveal": { path: string };
 }
 export interface TransferQueryResults {
-  "transferJobs.list": TransferJob[];
+  "transferJobs.list": Array<TransferJob>;
   "transferJobs.cancel": OkResult;
   "transferJobs.dismiss": OkResult;
   "transferJobs.retry": OkResult;

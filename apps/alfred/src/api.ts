@@ -1,3 +1,5 @@
+import { z } from "zod/mini";
+
 const BASE = "http://127.0.0.1:41610/api/v2";
 
 type JsonValue =
@@ -5,11 +7,11 @@ type JsonValue =
   | number
   | boolean
   | null
-  | JsonValue[]
+  | Array<JsonValue>
   | { [key: string]: JsonValue };
 
 export function shellQuote(value: string): string {
-  return `'${value.replace(/'/g, "'\\''")}'`;
+  return `'${value.replaceAll("'", String.raw`'\''`)}'`;
 }
 
 /** The token goes through curl's config on stdin so it never shows up in `ps`. */
@@ -33,13 +35,18 @@ export function parseCurl(output: string): CurlResult {
   const split = output.lastIndexOf("\n");
   const status = Number(output.slice(split + 1));
   const text = output.slice(0, split);
-  let body: JsonValue = null;
+  return { status, body: parseBody(text) };
+}
+
+const JsonSchema = z.json();
+
+function parseBody(text: string): JsonValue {
   try {
-    body = JSON.parse(text);
+    const parsed = JsonSchema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : null;
   } catch {
-    body = null;
+    return null;
   }
-  return { status, body };
 }
 
 export type ApiFailure = "offline" | "unauthorized" | "forbidden" | "failed";

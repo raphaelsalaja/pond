@@ -1,6 +1,7 @@
 import { $isCodeNode, CodeNode } from "@lexical/code";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import { $getRoot, $isElementNode, type LexicalNode } from "lexical";
+import { $getRoot, $isElementNode } from "lexical";
+import type { LexicalNode } from "lexical";
 import { useEffect } from "react";
 import styles from "./styles.module.css";
 
@@ -14,7 +15,7 @@ export function MermaidPreview() {
 
     const sync = () => {
       const seen = new Set<string>();
-      const pending: { key: string; source: string }[] = [];
+      const pending: Array<{ key: string; source: string }> = [];
       editor.getEditorState().read(() => {
         const visit = (node: LexicalNode) => {
           if ($isCodeNode(node) && node.getLanguage() === "mermaid") {

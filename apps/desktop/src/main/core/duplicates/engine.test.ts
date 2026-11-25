@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
-  type DuplicateGroup,
   describeDuplicate,
   describeDuplicateGroup,
 } from "../../../shared/duplicate-contracts";
+import type { DuplicateGroup } from "../../../shared/duplicate-contracts";
 import { encodeImagePrint } from "../../lib/fingerprint/image-print";
 import { matchLibrary } from "./engine";
 import type { ClassifyUrl } from "./matchers/source";
@@ -28,7 +28,7 @@ function asset(
 
 function save(
   id: string,
-  seeds: readonly string[],
+  seeds: ReadonlyArray<string>,
   extra: Partial<LibrarySave> = {},
 ): LibrarySave {
   return {
@@ -48,7 +48,7 @@ function save(
 
 const noUrls: ClassifyUrl = () => null;
 
-function single(relation: DuplicateGroup["relation"], ids: string[]) {
+function single(relation: DuplicateGroup["relation"], ids: Array<string>) {
   return [{ relation, ids, pairs: [0] }];
 }
 
@@ -116,10 +116,17 @@ describe("exact matching", () => {
   });
 });
 
-describe("source identity", () => {
-  const classify: ClassifyUrl = (url) =>
-    url.includes("/status/42") ? { source: "twitter", sourceId: "42" } : null;
+const classify: ClassifyUrl = (url) =>
+  url.includes("/status/42") ? { source: "twitter", sourceId: "42" } : null;
 
+const piece = (sourceId: string) => ({
+  source: "twitter" as const,
+  sourceId,
+  url: "https://x.com/u/status/42",
+  splitSourceId: "42",
+});
+
+describe("source identity", () => {
   it("pairs a capture with a link Save of the same post", () => {
     const { groups, pairs } = matchLibrary(
       [
@@ -140,12 +147,6 @@ describe("source identity", () => {
   });
 
   it("never pairs split pieces through the post URL they share", () => {
-    const piece = (sourceId: string) => ({
-      source: "twitter" as const,
-      sourceId,
-      url: "https://x.com/u/status/42",
-      splitSourceId: "42",
-    });
     const { pairs } = matchLibrary(
       [
         save("first", ["a"], piece("42:1")),
@@ -157,13 +158,13 @@ describe("source identity", () => {
   });
 });
 
-describe("semantic evidence", () => {
-  const vector = (lead: number) => {
-    const values = Array.from({ length: 4 }, () => 0);
-    values[0] = lead;
-    return values;
-  };
+const vector = (lead: number) => {
+  const values = Array.from({ length: 4 }, () => 0);
+  values[0] = lead;
+  return values;
+};
 
+describe("semantic evidence", () => {
   it("keeps the nearest current-model pair and labels it related", () => {
     const saves = [
       save("alpha", ["a"], { clip: vector(1) }),
@@ -176,17 +177,19 @@ describe("semantic evidence", () => {
         model: "current",
         store: {
           neighbors: (values) => {
-            if (values[0] === 1)
+            if (values[0] === 1) {
               return [
                 { id: "alpha", distance: 0 },
                 { id: "bravo", distance: 0.03 },
                 { id: "charlie", distance: 0.5 },
               ];
-            if (values[0] === 0.9)
+            }
+            if (values[0] === 0.9) {
               return [
                 { id: "alpha", distance: 0.02 },
                 { id: "gone", distance: 0 },
               ];
+            }
             return [];
           },
         },
@@ -222,18 +225,21 @@ describe("semantic evidence", () => {
   });
 });
 
-describe("near grouping", () => {
-  const print = (full: bigint, center: bigint) =>
-    encodeImagePrint({ full, center });
-  const near = (id: string, seed: string) => save(id, [seed]);
+const print = (full: bigint, center: bigint) =>
+  encodeImagePrint({ full, center });
+const near = (id: string, seed: string) => save(id, [seed]);
 
+describe("near grouping", () => {
   it("only admits Saves that match every member", () => {
-    const base = 0x0f0f_0f0f_0f0f_0f0fn;
+    const base = 0x0f_0f_0f_0f_0f_0f_0f_0fn;
     const fingerprints = {
       image: new Map([
         [sha("a"), print(base, base)],
         [sha("b"), print(base ^ 0b111n, base)],
-        [sha("c"), print(base ^ 0b1111_1000n, ~base & 0xffff_ffff_ffff_ffffn)],
+        [
+          sha("c"),
+          print(base ^ 0b1111_1000n, ~base & 0xff_ff_ff_ff_ff_ff_ff_ffn),
+        ],
       ]),
       video: new Map(),
       audio: new Map(),
@@ -249,7 +255,7 @@ describe("near grouping", () => {
   });
 
   it("folds exact copies into the near group they belong to", () => {
-    const base = 0x00ff_00ff_00ff_00ffn;
+    const base = 0x00_ff_00_ff_00_ff_00_ffn;
     const fingerprints = {
       image: new Map([
         [sha("a"), print(base, base)],

@@ -1,6 +1,7 @@
 import { QUOTE_DEPTH_CAP, walkCaptureMedia } from "@pond/schema/raw";
 import { describe, expect, it } from "vitest";
-import { captureFromTweetDraft, type TweetDraft } from "./tweet-draft";
+import { captureFromTweetDraft } from "./tweet-draft";
+import type { TweetDraft } from "./tweet-draft";
 
 const parentMedia = {
   url: "https://cdn.example.com/parent.jpg",

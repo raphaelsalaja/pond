@@ -132,7 +132,11 @@ describe("Eagle documented metadata conversion", () => {
     ).toEqual({
       combinator: "and",
       rules: [
-        { field: "fileSize", operator: "between", value: [2097152, 4194304] },
+        {
+          field: "fileSize",
+          operator: "between",
+          value: [2_097_152, 4_194_304],
+        },
       ],
     });
   });
@@ -172,7 +176,7 @@ describe("Eagle documented metadata conversion", () => {
         {
           field: "takenAt",
           operator: "between",
-          value: [day, day + 86399999],
+          value: [day, day + 86_399_999],
         },
       ],
     });

@@ -1,4 +1,5 @@
-import { type Avatar, frameGap, type Pose } from "./face";
+import { frameGap } from "./face";
+import type { Avatar, Pose } from "./face";
 
 export interface Rig {
   element: Element;

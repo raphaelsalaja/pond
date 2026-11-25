@@ -7,7 +7,8 @@ import { addSavesToFolder } from "../core/folders";
 import { UnsupportedError } from "../core/pipeline/extractors/errors";
 import { setSaveTags } from "../core/tags";
 import { getDb } from "../db";
-import { type EnqueueOptions, enqueue } from "../ops";
+import { enqueue } from "../ops";
+import type { EnqueueOptions } from "../ops";
 import { apiError, invalidRequest } from "./errors";
 
 export async function enqueueHandler(c: Context) {
@@ -24,7 +25,9 @@ export async function enqueueHandler(c: Context) {
     if (cookies && cookies.length > 0) options.cookies = cookies;
     const result = await enqueue(parsed.data.url, options);
     if (parsed.data.tags?.length) {
-      const [row] = await (await getDb())
+      const [row] = await (
+        await getDb()
+      )
         .select({ tags: saves.tags })
         .from(saves)
         .where(eq(saves.id, result.id))
@@ -34,7 +37,9 @@ export async function enqueueHandler(c: Context) {
     if (parsed.data.folderId) {
       await addSavesToFolder(parsed.data.folderId, [result.id]);
     }
-    const [row] = await (await getDb())
+    const [row] = await (
+      await getDb()
+    )
       .select({ status: saves.status })
       .from(saves)
       .where(eq(saves.id, result.id))
@@ -43,14 +48,14 @@ export async function enqueueHandler(c: Context) {
       status: "success",
       data: { ...result, status: row?.status ?? "ingesting" },
     });
-  } catch (err) {
-    if (err instanceof UnsupportedError) {
+  } catch (error) {
+    if (error instanceof UnsupportedError) {
       return apiError(
         c,
         "unsupported_url",
         "Pond can't save from this link yet.",
       );
     }
-    throw err;
+    throw error;
   }
 }

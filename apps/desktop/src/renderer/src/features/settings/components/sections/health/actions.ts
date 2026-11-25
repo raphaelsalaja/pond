@@ -1,7 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { DownloadHealthRow } from "@/features/downloads/health";
 import { rescanLibrary, runNewAction } from "@/features/library/maintenance";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
 import type { HealthCategoryId, HealthEntry } from "./categories";
 import {
@@ -25,27 +25,27 @@ export interface HealthAction {
   run: () => void | Promise<void>;
 }
 
-function ids(entries: readonly HealthEntry[]): string[] {
+function ids(entries: ReadonlyArray<HealthEntry>): Array<string> {
   return [...new Set(entries.map((entry) => entry.saveId))];
 }
 
 export function healthActions(
   category: HealthCategoryId,
-  entries: readonly HealthEntry[],
-  context: { qc: QueryClient; downloads: readonly DownloadHealthRow[] },
-): HealthAction[] {
+  entries: ReadonlyArray<HealthEntry>,
+  context: { qc: QueryClient; downloads: ReadonlyArray<DownloadHealthRow> },
+): Array<HealthAction> {
   const { qc, downloads } = context;
   const action = (
     id: string,
     label: string,
-    targets: readonly HealthEntry[],
+    targets: ReadonlyArray<HealthEntry>,
     run: HealthAction["run"],
     options: {
       primary?: boolean;
       navigates?: boolean;
       bulkOnly?: boolean;
     } = {},
-  ): HealthAction[] =>
+  ): Array<HealthAction> =>
     targets.length === 0
       ? []
       : [
@@ -65,7 +65,7 @@ export function healthActions(
     case "records":
     case "file-names":
     case "duplicates": {
-      const repairable = entries.filter((entry) => entry.repair != null);
+      const repairable = entries.filter((entry) => entry.repair !== null);
       const kind = repairable[0]?.repair;
       return [
         ...(kind
@@ -134,7 +134,7 @@ export function healthActions(
           "Open Downloads",
           entries,
           () => {
-            getAppRouter()?.history.push("/downloads");
+            getAppHistory()?.push("/downloads");
           },
           { navigates: true },
         ),

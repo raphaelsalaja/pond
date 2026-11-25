@@ -1,5 +1,6 @@
 import { folderMetadata, folders, saveFolders, saves } from "@pond/schema/db";
-import { type SQL, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 
 export type KeywordScope =
   | "title"
@@ -46,9 +47,11 @@ function isKeywordScope(value: string): value is KeywordScope {
   return SCOPES.has(value);
 }
 
-function tokenize(query: string): Token[] {
-  if (query.length > 4096) throw new Error("Search is too long.");
-  const tokens: Token[] = [];
+function tokenize(query: string): Array<Token> {
+  if (query.length > 4096) {
+    throw new Error("Search is too long.");
+  }
+  const tokens: Array<Token> = [];
   let offset = 0;
   while (offset < query.length) {
     const char = query[offset];
@@ -84,14 +87,16 @@ function tokenize(query: string): Token[] {
       if (
         !phrase &&
         (/\s|[()]/.test(current) || query.slice(offset, offset + 2) === "||")
-      )
+      ) {
         break;
+      }
       if (
         phrase &&
         current === "\\" &&
         ['"', "\\"].includes(query[offset + 1] ?? "")
-      )
+      ) {
         offset += 1;
+      }
       value += query[offset] ?? "";
       offset += 1;
     }
@@ -101,8 +106,9 @@ function tokenize(query: string): Token[] {
       });
     } else {
       value = value.replaceAll("*", "").trim();
-      if (/[\p{L}\p{N}]/u.test(value))
+      if (/[\p{L}\p{N}]/u.test(value)) {
         tokens.push({ kind: "term", value, phrase, scope });
+      }
     }
     if (tokens.length > 128) throw new Error("Search has too many conditions.");
   }
@@ -121,13 +127,18 @@ function parse(query: string, mode: "all" | "any"): Keyword | null {
     if (depth > 32) throw new Error("Search groups are nested too deeply.");
     const token = tokens[position++];
     let result: Keyword;
-    if (token?.kind === "term") result = token;
-    else if (token?.kind === "not") result = { kind: "not", child: operand() };
-    else if (token?.kind === "open") {
+    if (token?.kind === "term") {
+      result = token;
+    } else if (token?.kind === "not") {
+      result = { kind: "not", child: operand() };
+    } else if (token?.kind === "open") {
       result = disjunction();
-      if (tokens[position++]?.kind !== "close")
+      if (tokens[position++]?.kind !== "close") {
         throw new Error("Close the search group with a parenthesis.");
-    } else throw new Error("Enter a keyword after the search operator.");
+      }
+    } else {
+      throw new Error("Enter a keyword after the search operator.");
+    }
     depth -= 1;
     return result;
   }
@@ -158,8 +169,9 @@ function parse(query: string, mode: "all" | "any"): Keyword | null {
 
   if (!tokens.length) return null;
   const result = disjunction();
-  if (position !== tokens.length)
+  if (position !== tokens.length) {
     throw new Error("Unexpected search operator or parenthesis.");
+  }
   return result;
 }
 
@@ -179,55 +191,57 @@ function termQuery(term: Extract<Keyword, { kind: "term" }>): string {
     term.scope === "folder" ||
     term.scope === "folder-description" ||
     term.scope === "extension"
-  )
+  ) {
     return value;
+  }
   return `${columns[term.scope]} : ${value}`;
+}
+
+function compileTerm(
+  term: Extract<Keyword, { kind: "term" }>,
+  scope = term.scope,
+): SQL {
+  if (!scope) {
+    const indexed = sql`${saves.id} in (
+      select id from saves_fts
+      where saves_fts match ${termQuery(term)}
+    )`;
+    return sql`(${indexed})
+      or (${compileTerm(term, "folder")})
+      or (${compileTerm(term, "folder-description")})
+      or (${compileTerm(term, "extension")})`;
+  }
+  if (scope === "folder" || scope === "folder-description") {
+    const column =
+      scope === "folder" ? folders.name : folderMetadata.description;
+    const value = `%${term.value.toLowerCase()}%`;
+    return sql`exists (
+      select 1 from ${saveFolders}
+      inner join ${folders} on ${folders.id} = ${saveFolders.folderId}
+      left join ${folderMetadata} on ${folderMetadata.folderId} = ${folders.id}
+      where ${saveFolders.saveId} = ${saves.id}
+        and lower(coalesce(${column}, '')) like ${value}
+    )`;
+  }
+  if (scope === "extension") {
+    const value = `%.${term.value.toLowerCase()}%`;
+    return sql`exists (
+      select 1 from json_each(${saves.files})
+      where lower(json_extract(value, '$.path')) like ${value}
+    )`;
+  }
+  return sql`${saves.id} in (
+    select id from saves_fts
+    where saves_fts match ${termQuery({ ...term, scope })}
+  )`;
 }
 
 export function compileKeywordWhere(
   query: string,
   mode: "all" | "any" = "all",
-  scopes?: readonly KeywordScope[],
+  scopes?: ReadonlyArray<KeywordScope>,
 ): SQL | undefined {
   const tree = parse(query, mode);
-  function compileTerm(
-    term: Extract<Keyword, { kind: "term" }>,
-    scope = term.scope,
-  ): SQL {
-    if (!scope) {
-      const indexed = sql`${saves.id} in (
-        select id from saves_fts
-        where saves_fts match ${termQuery(term)}
-      )`;
-      return sql`(${indexed})
-        or (${compileTerm(term, "folder")})
-        or (${compileTerm(term, "folder-description")})
-        or (${compileTerm(term, "extension")})`;
-    }
-    if (scope === "folder" || scope === "folder-description") {
-      const column =
-        scope === "folder" ? folders.name : folderMetadata.description;
-      const value = `%${term.value.toLowerCase()}%`;
-      return sql`exists (
-        select 1 from ${saveFolders}
-        inner join ${folders} on ${folders.id} = ${saveFolders.folderId}
-        left join ${folderMetadata} on ${folderMetadata.folderId} = ${folders.id}
-        where ${saveFolders.saveId} = ${saves.id}
-          and lower(coalesce(${column}, '')) like ${value}
-      )`;
-    }
-    if (scope === "extension") {
-      const value = `%.${term.value.toLowerCase()}%`;
-      return sql`exists (
-        select 1 from json_each(${saves.files})
-        where lower(json_extract(value, '$.path')) like ${value}
-      )`;
-    }
-    return sql`${saves.id} in (
-      select id from saves_fts
-      where saves_fts match ${termQuery({ ...term, scope })}
-    )`;
-  }
   function compile(node: Keyword): SQL {
     if (node.kind === "term") {
       const selected = node.scope ? [node.scope] : scopes;
@@ -253,19 +267,25 @@ interface Literal {
   negative: boolean;
 }
 
-function alternatives(node: Keyword, negative = false): Literal[][] {
-  if (node.kind === "term") return [[{ term: node, negative }]];
-  if (node.kind === "not") return alternatives(node.child, !negative);
+function alternatives(node: Keyword, negative = false): Array<Array<Literal>> {
+  if (node.kind === "term") {
+    return [[{ term: node, negative }]];
+  }
+  if (node.kind === "not") {
+    return alternatives(node.child, !negative);
+  }
   const left = alternatives(node.left, negative);
   const right = alternatives(node.right, negative);
   const union = (node.kind === "or") !== negative;
   if (union) {
-    if (left.length + right.length > 128)
+    if (left.length + right.length > 128) {
       throw new Error("Search has too many alternatives.");
+    }
     return [...left, ...right];
   }
-  if (left.length * right.length > 128)
+  if (left.length * right.length > 128) {
     throw new Error("Search has too many alternatives.");
+  }
   return left.flatMap((a) => right.map((b) => [...a, ...b]));
 }
 
@@ -281,8 +301,9 @@ export function toFtsMatchQuery(
       : node.kind === "not"
         ? hasFolderScope(node.child)
         : hasFolderScope(node.left) || hasFolderScope(node.right);
-  if (hasFolderScope(tree))
+  if (hasFolderScope(tree)) {
     throw new Error("Folder fields require the full-library keyword query.");
+  }
   const branches = alternatives(tree).map((branch) => {
     const include = branch
       .filter((literal) => !literal.negative)
@@ -290,10 +311,11 @@ export function toFtsMatchQuery(
     const exclude = branch
       .filter((literal) => literal.negative)
       .map((literal) => termQuery(literal.term));
-    if (!include.length)
+    if (!include.length) {
       throw new Error(
         "This search needs the full-library keyword query to evaluate exclusions.",
       );
+    }
     const positive = include.join(" AND ");
     return exclude.length
       ? `(${positive}) NOT (${exclude.join(" OR ")})`

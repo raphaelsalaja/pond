@@ -1,11 +1,12 @@
 import {
   AUDIO_PRINT_ALGORITHM,
   AUDIO_PRINT_VERSION,
-  type AudioPrint,
   compareAudioPrints,
   decodeAudioPrint,
 } from "../../../lib/fingerprint/audio-print";
-import { assetRef, type Found, type LibrarySave } from "../types";
+import type { AudioPrint } from "../../../lib/fingerprint/audio-print";
+import { assetRef } from "../types";
+import type { Found, LibrarySave } from "../types";
 import { assetsBySha, expandShaMatch } from "./expand";
 
 const ALGORITHM = `${AUDIO_PRINT_ALGORITHM}@${AUDIO_PRINT_VERSION}`;
@@ -17,16 +18,20 @@ const MAX_BUCKET = 64;
 const MIN_VOTES = 2;
 
 /** Copies share sub-fingerprints that match exactly or one bit off, so only files with a few of those are slid over each other. */
-function candidates(prints: readonly AudioPrint[]): Array<[number, number]> {
-  const lookup = new Map<number, number[]>();
+function candidates(
+  prints: ReadonlyArray<AudioPrint>,
+): Array<[number, number]> {
+  const lookup = new Map<number, Array<number>>();
   for (const [position, print] of prints.entries()) {
     const end = Math.min(print.frames.length, INDEX_FRAMES);
     for (let frame = 0; frame < end; frame += INDEX_STRIDE) {
       const value = print.frames[frame] ?? 0;
       const list = lookup.get(value);
-      if (!list) lookup.set(value, [position]);
-      else if (list.length <= MAX_BUCKET && list.at(-1) !== position)
+      if (!list) {
+        lookup.set(value, [position]);
+      } else if (list.length <= MAX_BUCKET && list.at(-1) !== position) {
         list.push(position);
+      }
     }
   }
   const pairs: Array<[number, number]> = [];
@@ -51,9 +56,9 @@ function candidates(prints: readonly AudioPrint[]): Array<[number, number]> {
 
 /** A shared soundtrack does not make two videos the same, so audio between two videos only supports a frame match. */
 export function audioMatches(
-  saves: readonly LibrarySave[],
+  saves: ReadonlyArray<LibrarySave>,
   prints: ReadonlyMap<string, Uint8Array>,
-): Found[] {
+): Array<Found> {
   const bySha = assetsBySha(
     saves,
     (asset) =>
@@ -70,7 +75,7 @@ export function audioMatches(
     (left, right) => left.print.durationSeconds - right.print.durationSeconds,
   );
 
-  const found: Found[] = [];
+  const found: Array<Found> = [];
   for (const [from, to] of candidates(decoded.map((entry) => entry.print))) {
     const left = decoded[from];
     const right = decoded[to];

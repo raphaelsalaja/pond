@@ -1,5 +1,6 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Source } from "@pond/schema/db";
+import { isJsonValue } from "@pond/schema/json";
 import type { Capture } from "@pond/schema/raw";
 import { sourceLabel } from "@pond/schema/sources";
 import type { ReportDownloadActivity } from "@shared/download-activity";
@@ -87,7 +88,7 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
     }
 
     const expr = harv.buildExpression(sourceId);
-    const raw = await Promise.race([
+    const raw: unknown = await Promise.race([
       lease.win.webContents.executeJavaScript(expr, true),
       sleep(HARVEST_TIMEOUT_MS).then(() => "__pond_harvest_timeout__"),
     ]);
@@ -99,7 +100,7 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
       return { ok: false, reason: "timeout", sourceId };
     }
 
-    const capture = harv.adapt(raw, {
+    const capture = harv.adapt(isJsonValue(raw) ? raw : null, {
       source: args.source,
       url: args.url,
       sourceId,
@@ -117,8 +118,8 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
       return { ok: false, reason: "harvest_failed", sourceId };
     }
     return { ok: true, capture, sourceId };
-  } catch (err) {
-    log.warn("[pond refresh:window] unexpected error", args.url, err);
+  } catch (error) {
+    log.warn("[pond refresh:window] unexpected error", args.url, error);
     return { ok: false, reason: "harvest_failed", sourceId };
   } finally {
     lease.release();

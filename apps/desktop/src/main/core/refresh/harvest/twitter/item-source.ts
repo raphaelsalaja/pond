@@ -19,7 +19,7 @@ interface TweetPageQuoted {
   authorName?: string;
   authorAvatar?: string;
   text?: string;
-  media?: TweetPageMedia[];
+  media?: Array<TweetPageMedia>;
 }
 
 interface TweetPageCard {
@@ -55,7 +55,7 @@ interface TweetPageMeta {
   conversationId?: string;
   quotedTweet?: TweetPageQuoted;
   metrics?: TweetPageMetrics;
-  media?: TweetPageMedia[];
+  media?: Array<TweetPageMedia>;
   card?: TweetPageCard;
 }
 
@@ -65,7 +65,7 @@ interface TweetPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: TweetPageMedia[];
+  mediaUrls?: Array<TweetPageMedia>;
   mediaType?: "image" | "video";
   meta?: TweetPageMeta;
 }
@@ -83,7 +83,7 @@ export function harvestSource(): string {
 
     const out: TweetPage = {};
     const meta: TweetPageMeta = {};
-    const mediaItems: TweetPageMedia[] = [];
+    const mediaItems: Array<TweetPageMedia> = [];
 
     function notInNested(el: Element): boolean {
       const closest = el.closest("article");
@@ -125,7 +125,7 @@ export function harvestSource(): string {
         }
       });
       if (handleLink) {
-        const handle = new URL(handleLink.href).pathname.replace(/\//g, "");
+        const handle = new URL(handleLink.href).pathname.replaceAll("/", "");
         if (handle) {
           out.author = `@${handle}`;
           meta.authorUrl = `https://x.com/${handle}`;
@@ -134,8 +134,10 @@ export function harvestSource(): string {
 
       const nameLink = handleLink;
       if (nameLink) {
-        const raw = nameLink.textContent?.replace(/\s+/g, " ").trim();
-        if (raw) meta.authorName = raw;
+        const raw = nameLink.textContent?.replaceAll(/\s+/g, " ").trim();
+        if (raw) {
+          meta.authorName = raw;
+        }
       }
 
       meta.verified = !!userName.querySelector(
@@ -196,7 +198,7 @@ export function harvestSource(): string {
       }
       const parentId = parentLink?.href.match(/\/status\/(\d+)/)?.[1];
       if (parentLink && parentId) {
-        let pathname = `/i/status/${parentId}`;
+        let pathname: string;
         try {
           pathname = new URL(parentLink.href).pathname;
         } catch {
@@ -249,11 +251,11 @@ export function harvestSource(): string {
         }
       });
       if (innerHandle) {
-        const h = new URL(innerHandle.href).pathname.replace(/\//g, "");
+        const h = new URL(innerHandle.href).pathname.replaceAll("/", "");
         if (h) {
           quoted.author = `@${h}`;
           const innerName = innerHandle.textContent
-            ?.replace(/\s+/g, " ")
+            ?.replaceAll(/\s+/g, " ")
             .trim();
           if (innerName) quoted.authorName = innerName;
         }
@@ -337,7 +339,7 @@ export function harvestSource(): string {
     if (quotes !== undefined) metrics.quotes = quotes;
     if (Object.keys(metrics).length > 0) meta.metrics = metrics;
 
-    const media: TweetPageMedia[] = [];
+    const media: Array<TweetPageMedia> = [];
     const seen = new Set<string>();
     const push = (m: TweetPageMedia) => {
       if (!m.url || seen.has(m.url)) return;
@@ -385,7 +387,6 @@ export function harvestSource(): string {
         if (videoWidth) item.width = videoWidth;
         if (videoHeight) item.height = videoHeight;
         mediaItems.push(item);
-        capturedVideoPoster = true;
       }
     }
 
@@ -410,7 +411,7 @@ export function harvestSource(): string {
     }
 
     if (innerArticle) {
-      const quotedMedia: TweetPageMedia[] = [];
+      const quotedMedia: Array<TweetPageMedia> = [];
       const pushQuoted = (m: TweetPageMedia) => {
         push(m);
         mediaItems.push(m);
@@ -551,7 +552,7 @@ export function harvestSource(): string {
         el.childNodes.forEach((n) => {
           if (n.nodeType === 3) s += n.textContent ?? "";
         });
-        return s.replace(/\s+/g, " ").trim();
+        return s.replaceAll(/\s+/g, " ").trim();
       };
       const rows = Array.from(detail.querySelectorAll<HTMLElement>("span"))
         .map(directText)

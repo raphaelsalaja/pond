@@ -1,7 +1,7 @@
 import { IconBarsFilter } from "@pond/icons";
+import { SplitButton } from ".";
 import { Menu } from "../menu";
 import type { ComponentDocs } from "../shared/docs";
-import { SplitButton } from ".";
 
 function SaveMenu() {
   return (

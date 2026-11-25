@@ -1,15 +1,30 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import "@/app/effects/save-library-bridge";
 import { primarySelection } from "@/features/saves/state/selection";
 import { ToastHost } from "@/shared/components/toast-host";
 import { toastManager } from "@/shared/lib/toast";
+import { bridge } from "@/shared/test/pond-bridge";
 import { useCardActions } from "./use-card-actions";
+
+beforeEach(() => {
+  bridge.use({
+    pathForFile: () => "/tmp/drop image.png",
+    query: {
+      "saves.reviewImportDuplicates": () => ({ candidates: [] }),
+      "saves.importFiles": () => ({ ok: true, ids: ["new-save"] }),
+      "saves.quickAdd": () => ({ ok: true, id: "new-save" }),
+      "saves.stageClipboard": () => ({
+        ok: true,
+        paths: ["/tmp/pond-clip/clipboard.png"],
+      }),
+    },
+  });
+});
 
 afterEach(() => {
   toastManager.close();
-  vi.unstubAllGlobals();
 });
 
 function toastText(): string {
@@ -34,53 +49,42 @@ function PasteTarget() {
   return null;
 }
 
-it.each(["native file", "file URI"])(
-  "imports a dropped %s and confirms the save",
-  async (kind) => {
-    const query = vi.fn(async (operation: string) =>
-      operation === "saves.reviewImportDuplicates"
-        ? { candidates: [] }
-        : { ok: true, ids: ["new-save"] },
+it.each([
+  { kind: "native file", files: [new File(["image"], "drop image.png")] },
+  { kind: "file URI", files: [] },
+])("imports a dropped $kind and confirms the save", async ({ files }) => {
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  try {
+    await act(async () =>
+      root.render(
+        <>
+          <DropTarget />
+          <ToastHost />
+        </>,
+      ),
     );
-    vi.stubGlobal("pond", { query, pathForFile: () => "/tmp/drop image.png" });
-    const host = document.createElement("div");
-    const root = createRoot(host);
-    try {
-      await act(async () =>
-        root.render(
-          <>
-            <DropTarget />
-            <ToastHost />
-          </>,
-        ),
-      );
-      const event = new Event("drop", { bubbles: true, cancelable: true });
-      Object.defineProperty(event, "dataTransfer", {
-        value: {
-          files:
-            kind === "native file"
-              ? [new File(["image"], "drop image.png")]
-              : [],
-          getData: (type: string) =>
-            type === "text/uri-list" ? "file:///tmp/drop%20image.png" : "",
-        },
-      });
-      await act(async () => {
-        host.firstElementChild?.dispatchEvent(event);
-      });
-      expect(query).toHaveBeenCalledWith("saves.importFiles", {
-        paths: ["/tmp/drop image.png"],
-      });
-      expect(toastText()).toContain("Saved to Pond");
-    } finally {
-      await act(async () => root.unmount());
-    }
-  },
-);
+    const event = new Event("drop", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "dataTransfer", {
+      value: {
+        files,
+        getData: (type: string) =>
+          type === "text/uri-list" ? "file:///tmp/drop%20image.png" : "",
+      },
+    });
+    await act(async () => {
+      host.firstElementChild?.dispatchEvent(event);
+    });
+    expect(window.pond.query).toHaveBeenCalledWith("saves.importFiles", {
+      paths: ["/tmp/drop image.png"],
+    });
+    expect(toastText()).toContain("Saved to Pond");
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
 
 it("starts a dropped link immediately and does not claim it is saved", async () => {
-  const query = vi.fn().mockResolvedValue({ ok: true, id: "pasted-save" });
-  vi.stubGlobal("pond", { query });
   const host = document.createElement("div");
   const root = createRoot(host);
   try {
@@ -103,7 +107,7 @@ it("starts a dropped link immediately and does not claim it is saved", async () 
     await act(async () => {
       host.firstElementChild?.dispatchEvent(event);
     });
-    expect(query).toHaveBeenCalledWith("saves.quickAdd", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.quickAdd", {
       url: "https://example.com/clip",
     });
     expect(toastText()).toContain("Downloading");
@@ -114,10 +118,6 @@ it("starts a dropped link immediately and does not claim it is saved", async () 
 });
 
 it("starts a pasted link without selecting it", async () => {
-  const query = vi.fn(async (operation: string) =>
-    operation === "saves.quickAdd" ? { ok: true, id: "pasted-save" } : {},
-  );
-  vi.stubGlobal("pond", { query });
   const host = document.createElement("div");
   const root = createRoot(host);
   try {
@@ -141,7 +141,7 @@ it("starts a pasted link without selecting it", async () => {
     await act(async () => {
       document.dispatchEvent(event);
     });
-    expect(query).toHaveBeenCalledWith("saves.quickAdd", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.quickAdd", {
       url: "https://example.com/clip",
     });
     expect(toastText()).toContain("Downloading");
@@ -152,26 +152,13 @@ it("starts a pasted link without selecting it", async () => {
 });
 
 interface FakeTransfer {
-  files: File[];
-  types?: string[];
+  files: Array<File>;
+  types?: Array<string>;
   getData: (type: string) => string;
 }
 
 describe("inside an open folder", () => {
   const folder = { id: "type", name: "Type" };
-
-  function stubPond() {
-    const query = vi.fn(async (operation: string) => {
-      if (operation === "saves.reviewImportDuplicates")
-        return { candidates: [] };
-      if (operation === "saves.quickAdd") return { ok: true, id: "new-save" };
-      if (operation === "saves.stageClipboard")
-        return { ok: true, paths: ["/tmp/pond-clip/clipboard.png"] };
-      return { ok: true, ids: ["new-save"] };
-    });
-    vi.stubGlobal("pond", { query, pathForFile: () => "/tmp/drop image.png" });
-    return query;
-  }
 
   async function mount() {
     const host = document.createElement("div");
@@ -206,7 +193,6 @@ describe("inside an open folder", () => {
   }
 
   it("files a pasted link into the folder", async () => {
-    const query = stubPond();
     const view = await mount();
     try {
       await view.paste({
@@ -215,7 +201,7 @@ describe("inside an open folder", () => {
         getData: (type: string) =>
           type === "text/plain" ? "https://example.com/clip" : "",
       });
-      expect(query).toHaveBeenCalledWith("saves.quickAdd", {
+      expect(window.pond.query).toHaveBeenCalledWith("saves.quickAdd", {
         folderId: "type",
         url: "https://example.com/clip",
       });
@@ -228,11 +214,10 @@ describe("inside an open folder", () => {
   it.each(["image/png", "Files"])(
     "files a pasted %s clipboard item into the folder",
     async (type) => {
-      const query = stubPond();
       const view = await mount();
       try {
         await view.paste({ files: [], types: [type], getData: () => "" });
-        expect(query).toHaveBeenCalledWith("saves.importFiles", {
+        expect(window.pond.query).toHaveBeenCalledWith("saves.importFiles", {
           paths: ["/tmp/pond-clip/clipboard.png"],
           folderIds: ["type"],
           origin: "clipboard",
@@ -245,14 +230,13 @@ describe("inside an open folder", () => {
   );
 
   it("files a dropped file into the folder", async () => {
-    const query = stubPond();
     const view = await mount();
     try {
       await view.drop({
         files: [new File(["image"], "drop image.png")],
         getData: () => "",
       });
-      expect(query).toHaveBeenCalledWith("saves.importFiles", {
+      expect(window.pond.query).toHaveBeenCalledWith("saves.importFiles", {
         paths: ["/tmp/drop image.png"],
         folderIds: ["type"],
       });
@@ -263,7 +247,6 @@ describe("inside an open folder", () => {
   });
 
   it("files a dropped link into the folder", async () => {
-    const query = stubPond();
     const view = await mount();
     try {
       await view.drop({
@@ -271,7 +254,7 @@ describe("inside an open folder", () => {
         getData: (type: string) =>
           type === "text/uri-list" ? "https://example.com/clip" : "",
       });
-      expect(query).toHaveBeenCalledWith("saves.quickAdd", {
+      expect(window.pond.query).toHaveBeenCalledWith("saves.quickAdd", {
         folderId: "type",
         url: "https://example.com/clip",
       });

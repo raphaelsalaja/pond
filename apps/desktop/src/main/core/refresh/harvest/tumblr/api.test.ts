@@ -1,8 +1,17 @@
 import type { JsonValue } from "@pond/schema/json";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { readTumblrCapture, readTumblrLikes, type TumblrGet } from "./api";
+import { afterEach, describe, expect, it } from "vitest";
+import { readTumblrCapture, readTumblrLikes } from "./api";
+import type { TumblrGet } from "./api";
 
-const get = vi.fn<TumblrGet>();
+const missing: TumblrGet = async () => new Response("missing", { status: 404 });
+
+let respond: TumblrGet = missing;
+const calls: Array<Parameters<TumblrGet>> = [];
+
+const get: TumblrGet = async (url, headers) => {
+  calls.push([url, headers]);
+  return respond(url, headers);
+};
 
 const HOME = `<html><script type="application/json" id="___INITIAL_STATE___">${JSON.stringify(
   { apiFetchStore: { API_TOKEN: "tok" } },
@@ -23,7 +32,7 @@ function post(id: string, likedTimestamp: number) {
 }
 
 function serve(pages: Record<string, JsonValue>, status = 200) {
-  get.mockImplementation(async (raw) => {
+  respond = async (raw) => {
     const url = new URL(raw);
     if (url.pathname === "/") return new Response(HOME);
     if (url.pathname === "/api/v2/user/info") {
@@ -44,11 +53,12 @@ function serve(pages: Record<string, JsonValue>, status = 200) {
       return json(pages[before] ?? { response: { likedPosts: [] } });
     }
     return new Response("missing", { status: 404 });
-  });
+  };
 }
 
-beforeEach(() => {
-  get.mockReset();
+afterEach(() => {
+  respond = missing;
+  calls.length = 0;
 });
 
 describe("readTumblrLikes", () => {
@@ -69,7 +79,7 @@ describe("readTumblrLikes", () => {
       "2",
       "1",
     ]);
-    const likesCall = get.mock.calls.find(([u]) => u.includes("/user/likes"));
+    const likesCall = calls.find(([u]) => u.includes("/user/likes"));
     expect(likesCall?.[1].authorization).toBe("Bearer tok");
   });
 
@@ -137,7 +147,7 @@ describe("readTumblrLikes", () => {
 
 describe("readTumblrCapture", () => {
   it("reads the permalink timeline for the blog in the URL", async () => {
-    get.mockImplementation(async (raw) => {
+    respond = async (raw) => {
       const url = new URL(raw);
       if (url.pathname === "/") return new Response(HOME);
       if (url.pathname === "/api/v2/blog/pascalcampion/posts/1/permalink") {
@@ -146,7 +156,7 @@ describe("readTumblrCapture", () => {
         });
       }
       return new Response("missing", { status: 404 });
-    });
+    };
     const result = await readTumblrCapture(
       "1",
       "https://pascalcampion.tumblr.com/post/1/slug",
@@ -158,11 +168,10 @@ describe("readTumblrCapture", () => {
   });
 
   it("reports a post that is gone", async () => {
-    get.mockImplementation(async (raw) =>
+    respond = async (raw) =>
       new URL(raw).pathname === "/"
         ? new Response(HOME)
-        : new Response("missing", { status: 404 }),
-    );
+        : new Response("missing", { status: 404 });
     expect(
       await readTumblrCapture(
         "1",

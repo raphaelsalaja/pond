@@ -5,14 +5,13 @@ import { pathEnvKey, withCliDirectories } from "../cli-runtime";
 import {
   createFishMcpManager,
   McpCallResultSchema,
-  type McpConnection,
-  type McpTool,
   McpToolSchema,
 } from "./client";
+import type { McpConnection, McpTool } from "./client";
 import { getFishMcpStore } from "./store";
 
 const SWEEP_MS = 60_000;
-const STDERR_TAIL = 2_000;
+const STDERR_TAIL = 2000;
 
 /** A GUI app on macOS gets a minimal PATH, so `npx` and friends need the user's install folders. */
 async function stdioEnvironment(
@@ -78,10 +77,11 @@ async function connectLive(
   return {
     async listTools(cursor) {
       const page = await client.listTools(cursor ? { cursor } : undefined);
-      const tools: McpTool[] = page.tools.flatMap((tool) => {
+      const tools: Array<McpTool> = page.tools.flatMap((tool) => {
         const parsed = McpToolSchema.safeParse(tool);
-        if (!parsed.success)
+        if (!parsed.success) {
           log.warn("[pond fish-mcp] unreadable tool", server.name, tool.name);
+        }
         return parsed.success ? [parsed.data] : [];
       });
       return { tools, nextCursor: page.nextCursor };

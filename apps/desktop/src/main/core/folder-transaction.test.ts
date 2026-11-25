@@ -1,12 +1,13 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
-import { inverse, type Transaction } from "@pond/schema/tx";
+import { saveFolders } from "@pond/schema/db";
+import { inverse } from "@pond/schema/tx";
+import type { Transaction } from "@pond/schema/tx";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
 import { StoredInfoDocSchema } from "../lib/library-format";
 import { runRecoverableBatch } from "./batch-journal";
@@ -24,12 +25,15 @@ function nativeAvailable() {
     return false;
   }
 }
-const roots: string[] = [];
-const opened: Database.Database[] = [];
+const roots: Array<string> = [];
+const opened: Array<Database.Database> = [];
 afterEach(async () => {
-  for (const db of opened.splice(0)) db.close();
-  for (const root of roots.splice(0))
+  for (const db of opened.splice(0)) {
+    db.close();
+  }
+  for (const root of roots.splice(0)) {
     await rm(root, { recursive: true, force: true });
+  }
 });
 
 describe.skipIf(!nativeAvailable())("folder membership transactions", () => {
@@ -51,7 +55,7 @@ describe.skipIf(!nativeAvailable())("folder membership transactions", () => {
     opened.push(sqlite);
     initializePondSchema(sqlite, () => false);
     const db = Object.assign(
-      drizzle(sqlite, { schema: { ...schema, ...events } }),
+      drizzle(sqlite, { schema: { ...libraryTables, ...eventTables } }),
       { $raw: sqlite },
     );
     sqlite.exec(
@@ -65,8 +69,9 @@ describe.skipIf(!nativeAvailable())("folder membership transactions", () => {
       before: { folderIds: ["a"] },
     };
     async function commit(tx: Transaction) {
-      if (tx.model !== "save_folder")
+      if (tx.model !== "save_folder") {
         throw new Error("Expected membership transaction");
+      }
       await runRecoverableBatch({
         root,
         batchId: crypto.randomUUID(),
@@ -83,17 +88,17 @@ describe.skipIf(!nativeAvailable())("folder membership transactions", () => {
       });
     }
     await commit(transaction);
-    expect(db.select().from(schema.saveFolders).all()).toEqual([
+    expect(db.select().from(saveFolders).all()).toEqual([
       { saveId: "save", folderId: "b" },
     ]);
     await commit(inverse(transaction));
-    expect(db.select().from(schema.saveFolders).all()).toEqual([
+    expect(db.select().from(saveFolders).all()).toEqual([
       { saveId: "save", folderId: "a" },
     ]);
     await expect(
       commit({ ...transaction, patch: { folderIds: ["missing"] } }),
     ).rejects.toThrow("no longer exists");
-    expect(db.select().from(schema.saveFolders).all()).toEqual([
+    expect(db.select().from(saveFolders).all()).toEqual([
       { saveId: "save", folderId: "a" },
     ]);
     expect(

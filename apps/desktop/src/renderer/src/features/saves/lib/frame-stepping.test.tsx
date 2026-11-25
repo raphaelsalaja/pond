@@ -1,7 +1,7 @@
 import { useVideo, Video } from "@pond/ui";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 
 function Step({ delta }: { delta: number }) {
   const { actions } = useVideo();
@@ -11,10 +11,14 @@ function Step({ delta }: { delta: number }) {
     </button>
   );
 }
-afterEach(() => vi.unstubAllGlobals());
-it.each([24, 30, 60, null])(
-  "uses %s fps metadata and never assumes a missing frame rate",
-  async (fps) => {
+it.each([
+  { fps: 24, forward: 2 + 1 / 24, back: 2 - 9 / 24 },
+  { fps: 30, forward: 2 + 1 / 30, back: 2 - 9 / 30 },
+  { fps: 60, forward: 2 + 1 / 60, back: 2 - 9 / 60 },
+  { fps: null, forward: 2, back: 2 },
+])(
+  "uses $fps fps metadata and never assumes a missing frame rate",
+  async ({ fps, forward, back }) => {
     const host = document.createElement("div");
     document.body.append(host);
     const root = createRoot(host);
@@ -49,7 +53,7 @@ it.each([24, 30, 60, null])(
       Object.defineProperty(video, "duration", { value: 10 });
       video.currentTime = 2;
       await act(async () => button.click());
-      expect(video.currentTime).toBeCloseTo(fps ? 2 + 1 / fps : 2, 10);
+      expect(video.currentTime).toBeCloseTo(forward, 10);
       await act(async () =>
         root.render(
           <Video.Root frameRate={fps}>
@@ -61,7 +65,7 @@ it.each([24, 30, 60, null])(
         ),
       );
       await act(async () => button.click());
-      expect(video.currentTime).toBeCloseTo(fps ? 2 - 9 / fps : 2, 10);
+      expect(video.currentTime).toBeCloseTo(back, 10);
     } finally {
       await act(async () => root.unmount());
       host.remove();

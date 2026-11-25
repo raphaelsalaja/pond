@@ -13,7 +13,7 @@ import type { SplitPostSummary } from "./split-posts";
 import type { WireSave } from "./wire";
 
 export interface SavesReadQueryInputs {
-  "saves.sidebarCounts": { recentIds?: string[] };
+  "saves.sidebarCounts": { recentIds?: Array<string> };
   "saves.queryPage": LibraryQueryRequest;
   "saves.queryIds": LibraryQueryRequest;
   "saves.queryCount": { query: Query };
@@ -33,12 +33,12 @@ export interface SavesReadQueryInputs {
   "saves.retrieve": SavesRetrievalInput;
   "saves.related": { id: string; limit?: number };
   "saves.semanticClusters": {
-    saveIds?: string[];
+    saveIds?: Array<string>;
     folderId?: string;
     distance: number;
     limit: number;
   };
-  "saves.classifyLabels": { saveIds: string[]; labels: string[] };
+  "saves.classifyLabels": { saveIds: Array<string>; labels: Array<string> };
   "saves.query": {
     query: Query;
     deletedOnly?: boolean;
@@ -59,17 +59,17 @@ export interface SavesReadQueryInputs {
 export interface SavesReadQueryResults {
   "saves.sidebarCounts": LibrarySidebarCounts;
   "saves.queryPage": LibraryQueryPage;
-  "saves.queryIds": { ids: string[]; revision: number; libraryId: string };
+  "saves.queryIds": { ids: Array<string>; revision: number; libraryId: string };
   "saves.queryCount": { count: number };
-  "saves.splitPosts": SplitPostSummary[];
+  "saves.splitPosts": Array<SplitPostSummary>;
   "saves.get": WireSave | null;
-  "saves.list": WireSave[];
+  "saves.list": Array<WireSave>;
   "saves.listPage": {
-    rows: WireSave[];
+    rows: Array<WireSave>;
     nextCursor: { savedAt: number; id: string } | null;
     total: number | null;
   };
-  "saves.searchFts": { ids: string[]; scores: Record<string, number> };
+  "saves.searchFts": { ids: Array<string>; scores: Record<string, number> };
   "saves.related": {
     items: Array<{
       id: string;
@@ -80,37 +80,37 @@ export interface SavesReadQueryResults {
   "saves.semanticClusters": {
     clusters: Array<{
       id: string;
-      labels: string[];
-      memberIds: string[];
+      labels: Array<string>;
+      memberIds: Array<string>;
     }>;
-    unclustered: string[];
+    unclustered: Array<string>;
   };
   "saves.classifyLabels": {
     items: Array<{
       id: string;
       scores: Array<{ label: string; score: number }>;
     }>;
-    excludedIds: string[];
+    excludedIds: Array<string>;
   };
-  "saves.query": { ids: string[] };
-  "saves.getMany": WireSave[];
+  "saves.query": { ids: Array<string> };
+  "saves.getMany": Array<WireSave>;
   "saves.rawJson": { id: string; rawJson: RawJson | null };
   "saves.filePath": { ok: true; path: string } | { ok: false; reason: string };
   "saves.getEmbedding": {
     id: string;
-    embedding: number[] | null;
+    embedding: Array<number> | null;
     embeddingModel: string | null;
   };
   "saves.publicImageUrl": OkResult<{ url: string | null }>;
   "saves.fontStatus": { activated: boolean; path?: string };
-  "saves.embeddings": {
+  "saves.embeddings": Array<{
     id: string;
     embedding: null;
     embeddingModel: string | null;
-  }[];
-  "saves.clipEmbeddings": {
+  }>;
+  "saves.clipEmbeddings": Array<{
     id: string;
     clipEmbedding: null;
     clipModel: string | null;
-  }[];
+  }>;
 }

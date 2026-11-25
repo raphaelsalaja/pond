@@ -3,7 +3,8 @@ import type { ApiSave, ApiTag } from "pond-api";
 import type { ReactNode } from "react";
 import { pond } from "../api/client";
 import { toError } from "../api/problems";
-import { type FolderPath, saveTitle, sourceName } from "../lib/display";
+import { saveTitle, sourceName } from "../lib/display";
+import type { FolderPath } from "../lib/display";
 import type { SaveEditor } from "../lib/edits";
 import { downloadFile } from "../lib/files";
 import type { Filter } from "../lib/filters";
@@ -19,8 +20,8 @@ const TAG_LIMIT = 300;
 export interface SaveActionsProps {
   save: ApiSave;
   editor: SaveEditor;
-  tags: readonly ApiTag[];
-  folders: readonly FolderPath[];
+  tags: ReadonlyArray<ApiTag>;
+  folders: ReadonlyArray<FolderPath>;
   onRefresh: () => void;
   onFilter?: (filter: Filter) => void;
   onToggleDetail?: () => void;
@@ -46,8 +47,10 @@ async function copyText(save: ApiSave) {
   try {
     const text = await pond().text(save.id);
     const body = [text.description, text.caption, text.ocr, text.transcript, text.note]
-      .map((part) => part.trim())
-      .filter(Boolean)
+      .flatMap((part) => {
+        const trimmed = part.trim();
+        return trimmed ? [trimmed] : [];
+      })
       .join("\n\n");
     if (!body) throw new Error("Pond hasn't found any text in this save yet.");
     await Clipboard.copy(body);
@@ -58,7 +61,7 @@ async function copyText(save: ApiSave) {
   }
 }
 
-function tagChoices(save: ApiSave, tags: readonly ApiTag[]): string[] {
+function tagChoices(save: ApiSave, tags: ReadonlyArray<ApiTag>): Array<string> {
   const names = new Set(save.tags.map((tag) => tag.toLowerCase()));
   const rest = [...tags]
     .filter((tag) => !names.has(tag.name.toLowerCase()))

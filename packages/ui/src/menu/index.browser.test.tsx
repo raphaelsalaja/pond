@@ -1,9 +1,9 @@
 import { IconDots } from "@pond/icons";
 import { describe, expect, it } from "vitest";
-import { page, userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
-import { expectAccessible } from "../../test/axe";
+import { page, userEvent } from "vitest/browser";
 import { Menu } from ".";
+import { expectAccessible } from "../../test/axe";
 
 function SaveActions({ onSelect }: { onSelect?: (label: string) => void }) {
   return (
@@ -29,7 +29,7 @@ function SaveActions({ onSelect }: { onSelect?: (label: string) => void }) {
 const item = (name: string) => page.getByRole("menuitem", { name });
 
 async function setup() {
-  const selected: string[] = [];
+  const selected: Array<string> = [];
   const screen = await render(
     <SaveActions onSelect={(label) => selected.push(label)} />,
   );

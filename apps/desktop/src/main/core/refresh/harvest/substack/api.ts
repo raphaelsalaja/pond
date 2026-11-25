@@ -25,8 +25,8 @@ import {
   ProfileSchema,
   postEntry,
   ReaderPageSchema,
-  type SubstackPublication,
 } from "./normalize";
+import type { SubstackPublication } from "./normalize";
 
 const CHROME_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
@@ -58,8 +58,8 @@ async function substackFetch(
   try {
     const res = await get(url, accept);
     return res.ok ? { ok: true, res } : { ok: false, status: res.status };
-  } catch (err) {
-    log.warn("[pond substack-api] fetch threw", url, err);
+  } catch (error) {
+    log.warn("[pond substack-api] fetch threw", url, error);
     return { ok: false, status: 0 };
   }
 }
@@ -104,7 +104,7 @@ function failure(status: number, first: boolean): ListHarvestResult | null {
 }
 
 type Walk =
-  | { ok: true; entries: ListEntry[]; reachedEnd: boolean }
+  | { ok: true; entries: Array<ListEntry>; reachedEnd: boolean }
   | Extract<ListHarvestResult, { ok: false }>;
 
 async function walkSaved(
@@ -112,7 +112,7 @@ async function walkSaved(
   known: ReadonlySet<string>,
   earlyStop: boolean,
 ): Promise<Walk> {
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
     const query = new URLSearchParams({ inboxType: "saved", limit: "20" });
@@ -135,7 +135,7 @@ async function walkSaved(
     const posts = (result.json.posts ?? []).flatMap((p) => (p ? [p] : []));
     for (const post of posts) {
       const pub =
-        post.publication_id != null
+        post.publication_id !== undefined && post.publication_id !== null
           ? publications.get(post.publication_id)
           : undefined;
       const entry = postEntry(post, pub, known);
@@ -161,7 +161,7 @@ async function walkLiked(
   known: ReadonlySet<string>,
   earlyStop: boolean,
 ): Promise<Walk> {
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
     const query = new URLSearchParams({ types: "like" });
@@ -238,9 +238,9 @@ export async function readSubstackLists(
   if (!profile) return { ok: false, reason: "auth_required" };
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
-  const kinds: readonly ListKind[] = args.listKinds ?? ["saved", "liked"];
+  const kinds: ReadonlyArray<ListKind> = args.listKinds ?? ["saved", "liked"];
 
-  let entries: ListEntry[] = [];
+  let entries: Array<ListEntry> = [];
   let reachedEnd = true;
   if (kinds.includes("saved")) {
     const saved = await walkSaved(get, known, earlyStop);

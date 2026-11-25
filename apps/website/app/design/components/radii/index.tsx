@@ -15,7 +15,7 @@ const RADII = [
   "--ds-radius-full",
 ] as const;
 
-interface RadiiProps extends React.ComponentPropsWithoutRef<"ul"> {}
+type RadiiProps = React.ComponentPropsWithoutRef<"ul">;
 
 export function Radii({ className, ...props }: RadiiProps) {
   const [ref, values] = useTokenValues<HTMLUListElement>(RADII);

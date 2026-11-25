@@ -2,17 +2,18 @@ import type { ExternalSource } from "@pond/schema/sources";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { MissingVideos } from "@/features/settings/components/sections/download-sources";
 import { useVideoDownloadBinding } from "@/features/settings/components/sections/downloads";
-import {
-  type GroupConfig,
-  group,
-  type SettingsValues,
+import { group } from "@/features/settings/lib/engine-types";
+import type {
+  GroupConfig,
+  SettingsValues,
 } from "@/features/settings/lib/engine-types";
 
 const subtitlesEnabled = (v: SettingsValues) => v.subtitles !== "off";
 const followsGlobal = (v: SettingsValues) => v.followsGlobal === true;
 
-export function videoDownloadGroups(source?: ExternalSource): GroupConfig[] {
-  // biome-ignore lint/correctness/noComponentHookFactories: settings configs are built once at module load, so the hook identity is stable.
+export function videoDownloadGroups(
+  source?: ExternalSource,
+): Array<GroupConfig> {
   const useBinding = () => useVideoDownloadBinding(source);
   /** Source pages mix image and video groups, so their titles name the kind. */
   const title = (name: string) => (source ? `Video ${name}` : name);

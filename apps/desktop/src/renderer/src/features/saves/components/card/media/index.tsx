@@ -13,16 +13,18 @@ import { RichFilePreview } from "@/features/saves/components/card/rich-file-prev
 import type { LibraryCardView } from "@/features/saves/components/card/types";
 import { useMediaPickOptions } from "@/features/saves/hooks/use-media-pick-options";
 import { ensureTextCover } from "@/features/saves/lib/ensure-text-cover";
+import { orientedThumbStyle } from "@/features/saves/lib/media-transform";
 import { richFilePreviewKind } from "@/features/saves/lib/media/rich-file-preview";
 import {
   buildMediaUnits,
-  type MediaPickOptions,
-  type MediaUnit,
   pickCardUnit,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
+import type {
+  MediaPickOptions,
+  MediaUnit,
+} from "@/features/saves/lib/media/units";
 import { buildPondUrl } from "@/features/saves/lib/media/url";
-import { orientedThumbStyle } from "@/features/saves/lib/media-transform";
 import { shouldBlurSensitiveThumbnail } from "@/features/saves/lib/sensitive-content";
 import { isTextOnlySave, textBodyForSave } from "@/features/saves/lib/text";
 import { aspectDimsFor, aspectFor } from "@/features/saves/state/aspect";
@@ -77,7 +79,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   save: Save;
   view?: LibraryCardView;
   width?: number;
-  mediaUnits: MediaUnit[];
+  mediaUnits: Array<MediaUnit>;
   pickOptions: MediaPickOptions;
   unit: MediaUnit | null;
   primary: SaveFile | null;

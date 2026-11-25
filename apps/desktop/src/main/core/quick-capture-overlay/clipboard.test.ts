@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { type ClipboardReader, clipboardPrefill } from "./clipboard";
+import { clipboardPrefill } from "./clipboard";
+import type { ClipboardReader } from "./clipboard";
 
 function raw(type: string): string {
   return `electron application/osclipboard;format="${type}"`;
@@ -7,7 +8,7 @@ function raw(type: string): string {
 
 function reader(
   text: string,
-  formats: string[] = ["text/plain"],
+  formats: Array<string> = ["text/plain"],
 ): ClipboardReader {
   return {
     has: async (format) => formats.includes(format),

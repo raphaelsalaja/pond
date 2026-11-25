@@ -19,8 +19,16 @@ const THUMB_MAX = 1536;
 /** Main clamps `tw` to 2048, so the sharpest step stops there. */
 const SHARPER_BUCKETS = [...THUMB_BUCKETS, THUMB_MAX, 2048] as const;
 
-export function thumbUrlFor(url: string, cssWidth: number | undefined): string {
-  const width = thumbnailWidth(cssWidth);
+function screenPixelRatio(): number {
+  return globalThis.devicePixelRatio || 1;
+}
+
+export function thumbUrlFor(
+  url: string,
+  cssWidth: number | undefined,
+  pixelRatio = screenPixelRatio(),
+): string {
+  const width = thumbnailWidth(cssWidth, pixelRatio);
   return width ? withThumbWidth(url, width) : url;
 }
 
@@ -28,9 +36,12 @@ export function thumbUrlFor(url: string, cssWidth: number | undefined): string {
 export function sharperThumbUrlFor(
   url: string,
   cssWidth: number | undefined,
+  pixelRatio = screenPixelRatio(),
 ): string {
-  const width = thumbnailWidth(cssWidth);
-  if (!width) return url;
+  const width = thumbnailWidth(cssWidth, pixelRatio);
+  if (!width) {
+    return url;
+  }
   const sharper = SHARPER_BUCKETS.find((bucket) => bucket > width) ?? width;
   return withThumbWidth(url, sharper);
 }
@@ -51,9 +62,14 @@ export function previewThumbUrlFor(
   return previewUrlFor(url, thumbnailWidth(cssWidth) ?? 1024);
 }
 
-function thumbnailWidth(cssWidth: number | undefined): number | null {
-  if (!cssWidth || cssWidth <= 0) return null;
-  const wanted = cssWidth * (globalThis.devicePixelRatio || 1);
+function thumbnailWidth(
+  cssWidth: number | undefined,
+  pixelRatio = screenPixelRatio(),
+): number | null {
+  if (!cssWidth || cssWidth <= 0) {
+    return null;
+  }
+  const wanted = cssWidth * pixelRatio;
   return THUMB_BUCKETS.find((bucket) => bucket >= wanted) ?? THUMB_MAX;
 }
 

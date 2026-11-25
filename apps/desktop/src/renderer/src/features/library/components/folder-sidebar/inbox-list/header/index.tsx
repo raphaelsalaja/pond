@@ -1,5 +1,6 @@
 import { IconDots, IconEnvelope, IconTrash } from "@pond/icons";
-import { Menu, type MenuItemSpec, Sidebar, Toggle, Tooltip } from "@pond/ui";
+import { Menu, Sidebar, Toggle, Tooltip } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
 import type { InboxScope } from "@/features/library/state/inbox-review";
 import { notifications } from "@/features/notifications";
@@ -9,7 +10,7 @@ import { InboxDisplayMenu } from "../display";
 
 const UNREAD_ONLY = "Show Unreads Only";
 
-function moreItems(): MenuItemSpec[] {
+function moreItems(): Array<MenuItemSpec> {
   return [
     {
       label: "Mark All as Read",

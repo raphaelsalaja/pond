@@ -4,8 +4,8 @@ export function inPageScrollCollect() {
   return async function scrollCollect<
     T extends { sourceId: string; url: string },
   >(opts: {
-    collectFn: () => T[];
-    knownIds: string[];
+    collectFn: () => Array<T>;
+    knownIds: Array<string>;
     hydrateSelector: string;
     hydrateTimeoutMs?: number;
     scrollTimeoutMs?: number;
@@ -37,7 +37,7 @@ export function inPageScrollCollect() {
     const earlyStopEnabled = stopAfterKnownBatches > 0 && known.size > 0;
     let knownBatchStreak = 0;
 
-    function ingest(rows: T[]): boolean {
+    function ingest(rows: Array<T>): boolean {
       let addedAny = false;
       let addedFresh = false;
       for (const r of rows) {
@@ -65,8 +65,12 @@ export function inPageScrollCollect() {
 
     const hydrateDeadline = Date.now() + hydrateTimeoutMs;
     while (Date.now() < hydrateDeadline) {
-      if (document.querySelector(hydrateSelector)) break;
-      await new Promise((r) => setTimeout(r, 250));
+      if (document.querySelector(hydrateSelector)) {
+        break;
+      }
+      await new Promise((r) => {
+        setTimeout(r, 250);
+      });
     }
 
     ingest(collectFn());
@@ -83,8 +87,12 @@ export function inPageScrollCollect() {
               );
         if (!next) break;
         next.click();
-        await new Promise((r) => setTimeout(r, nextDelayMs));
-        if (ingest(collectFn())) return result(true);
+        await new Promise((r) => {
+          setTimeout(r, nextDelayMs);
+        });
+        if (ingest(collectFn())) {
+          return result(true);
+        }
       }
       return result(true);
     }
@@ -94,8 +102,12 @@ export function inPageScrollCollect() {
     let stable = 0;
     while (Date.now() < scrollDeadline) {
       window.scrollBy({ top: window.innerHeight * 0.9, behavior: "instant" });
-      await new Promise((r) => setTimeout(r, scrollDelayMs));
-      if (ingest(collectFn())) return result(true);
+      await new Promise((r) => {
+        setTimeout(r, scrollDelayMs);
+      });
+      if (ingest(collectFn())) {
+        return result(true);
+      }
       const sh = document.documentElement.scrollHeight;
       if (sh === lastHeight) {
         stable += 1;

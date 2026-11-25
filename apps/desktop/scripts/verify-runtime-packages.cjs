@@ -6,7 +6,7 @@ const {
   readSync,
 } = require("node:fs");
 const { builtinModules } = require("node:module");
-const { join } = require("node:path");
+const nodePath = require("node:path");
 const { parseSync, Visitor } = require("oxc-parser");
 const { z } = require("zod");
 
@@ -49,8 +49,10 @@ const RUNTIME_CODE = /^out\/(?:main|preload)\/.+\.(?:c|m)?js$/;
  * The renderer is bundled whole by Vite and cannot require packages, so it is not scanned.
  */
 async function verifyRuntimePackages(resourcesDir) {
-  const asarPath = join(resourcesDir, "app.asar");
-  if (!existsSync(asarPath)) return;
+  const asarPath = nodePath.join(resourcesDir, "app.asar");
+  if (!existsSync(asarPath)) {
+    return;
+  }
   const archive = openArchive(asarPath);
   try {
     const references = new Map();
@@ -70,11 +72,11 @@ async function verifyRuntimePackages(resourcesDir) {
     const required = [...references].filter(
       ([name]) => !OPTIONAL_PACKAGES.has(name),
     );
-    const missing = required
-      .filter(
-        ([name]) => !hasPackage(archive, resourcesDir, `node_modules/${name}`),
-      )
-      .map(([name, paths]) => `${name} (${[...paths].join(", ")})`);
+    const missing = required.flatMap(([name, paths]) =>
+      hasPackage(archive, resourcesDir, `node_modules/${name}`)
+        ? []
+        : [`${name} (${[...paths].join(", ")})`],
+    );
     missing.push(
       ...missingDependencies(
         archive,
@@ -90,7 +92,7 @@ async function verifyRuntimePackages(resourcesDir) {
       );
     }
     console.log(
-      `[pond verify] runtime packages OK (${[...references.keys()].sort().join(", ")})`,
+      `[pond verify] runtime packages OK (${[...references.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)).join(", ")})`,
     );
   } finally {
     archive.close();
@@ -187,9 +189,13 @@ function hasPackage(archive, resourcesDir, dir) {
 /** A package counts as shipped when its manifest is packed, or unpacked and still on disk after afterPack pruning. */
 function readManifest(archive, resourcesDir, dir) {
   const entry = archive.files.get(`${dir}/package.json`);
-  if (!entry) return null;
-  if (!entry.unpacked) return Manifest.parse(JSON.parse(archive.read(entry)));
-  const path = join(
+  if (!entry) {
+    return null;
+  }
+  if (!entry.unpacked) {
+    return Manifest.parse(JSON.parse(archive.read(entry)));
+  }
+  const path = nodePath.join(
     resourcesDir,
     "app.asar.unpacked",
     ...dir.split("/"),

@@ -1,5 +1,6 @@
 import { cssVars } from "@pond/ui";
-import { type NodeProps, NodeResizer } from "@xyflow/react";
+import { NodeResizer } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
 import { NOTE_FILL } from "../../lib/colors";
 import type { NoteNode } from "../../lib/document";
 import { MIN_SIZE } from "../../lib/transform";

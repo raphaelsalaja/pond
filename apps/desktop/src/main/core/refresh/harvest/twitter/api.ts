@@ -33,11 +33,11 @@ interface TimelineEntry {
 interface TimelineInstruction {
   type?: string;
   __typename?: string;
-  entries?: TimelineEntry[];
+  entries?: Array<TimelineEntry>;
 }
 
 interface Timeline {
-  timeline?: { instructions?: TimelineInstruction[] };
+  timeline?: { instructions?: Array<TimelineInstruction> };
 }
 
 interface BookmarksResponse {
@@ -132,7 +132,13 @@ async function inPageBookmarksApi(
   }
 
   const sleep = (ms: number): Promise<void> =>
-    new Promise((r) => setTimeout(r, ms));
+    new Promise((r) => {
+      setTimeout(r, ms);
+    });
+  const isVariables = (value: unknown): value is BookmarksVariables =>
+    Object(value) === value;
+  const isResponse = (value: unknown): value is BookmarksResponse =>
+    Object(value) === value;
 
   const retryAfterFromHeaders = (res: Response): number | null => {
     const retryAfter = res.headers.get("retry-after");
@@ -171,11 +177,13 @@ async function inPageBookmarksApi(
   const waitDeadline = waitStart + 20_000;
   let lastNudge = waitStart;
   while (!template && Date.now() < waitDeadline) {
-    if (Date.now() - lastNudge > 1_500) {
+    if (Date.now() - lastNudge > 1500) {
       lastNudge = Date.now();
       try {
-        window.scrollBy({ top: 2_000, behavior: "instant" });
-      } catch {}
+        window.scrollBy({ top: 2000, behavior: "instant" });
+      } catch {
+        /** The nudge only hurries the page; the wait loop still times out without it. */
+      }
     }
     await sleep(250);
     template = getRequest();
@@ -194,8 +202,15 @@ async function inPageBookmarksApi(
   let baseVariables: BookmarksVariables = {};
   try {
     const raw = base.searchParams.get("variables");
-    if (raw) baseVariables = JSON.parse(raw);
-  } catch {}
+    if (raw) {
+      const parsed: unknown = JSON.parse(raw);
+      if (isVariables(parsed)) {
+        baseVariables = parsed;
+      }
+    }
+  } catch {
+    /** Unparseable variables start the walk from the first page. */
+  }
 
   const headers: Record<string, string> = {};
   for (const [k, v] of Object.entries(template.headers ?? {})) {
@@ -212,7 +227,7 @@ async function inPageBookmarksApi(
     return u.toString();
   };
 
-  const addedEntries = (json: BookmarksResponse): TimelineEntry[] => {
+  const addedEntries = (json: BookmarksResponse): Array<TimelineEntry> => {
     const user = json.data?.user?.result;
     const ins =
       json.data?.bookmark_timeline_v2?.timeline?.instructions ??
@@ -221,8 +236,10 @@ async function inPageBookmarksApi(
         ?.timeline?.instructions ??
       user?.timeline_v2?.timeline?.instructions ??
       user?.timeline?.timeline?.instructions;
-    if (!Array.isArray(ins)) return [];
-    const out: TimelineEntry[] = [];
+    if (!Array.isArray(ins)) {
+      return [];
+    }
+    const out: Array<TimelineEntry> = [];
     for (const ix of ins) {
       const kind = ix.type ?? ix.__typename;
       if (kind !== "TimelineAddEntries" || !Array.isArray(ix.entries)) {
@@ -239,8 +256,8 @@ async function inPageBookmarksApi(
     }
     return null;
   };
-  const pageTweetIds = (json: BookmarksResponse): string[] => {
-    const ids: string[] = [];
+  const pageTweetIds = (json: BookmarksResponse): Array<string> => {
+    const ids: Array<string> = [];
     for (const e of addedEntries(json)) {
       const entryId = e.entryId ?? e.entry_id;
       if (entryId?.startsWith("tweet-")) {
@@ -261,7 +278,7 @@ async function inPageBookmarksApi(
   };
   globalThis.__pondHarvestStats = stats;
 
-  const captures: BookmarksCapture[] = [];
+  const captures: Array<BookmarksCapture> = [];
   const deadline = Date.now() + args.deadlineMs;
   const known = new Set<string>((args.knownIds ?? []).map(String));
   const earlyStopEnabled = known.size > 0;
@@ -314,7 +331,8 @@ async function inPageBookmarksApi(
     const body = await res.text();
     let json: BookmarksResponse;
     try {
-      json = JSON.parse(body);
+      const parsed: unknown = JSON.parse(body);
+      json = isResponse(parsed) ? parsed : {};
     } catch {
       if (pages === 0) {
         return { ok: false, reason: "fallback", detail: "parse_error" };

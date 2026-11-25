@@ -3,7 +3,7 @@ import { useView } from "@/features/library/hooks/use-view";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import { ViewMenuRow } from "../row";
 
-const OPTIONS: { value: LayoutValue; label: string }[] = [
+const OPTIONS: Array<{ value: LayoutValue; label: string }> = [
   { value: "waterfall", label: "Waterfall" },
   { value: "grid", label: "Grid" },
   { value: "justified", label: "Justified" },

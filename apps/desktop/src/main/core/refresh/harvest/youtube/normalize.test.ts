@@ -2,6 +2,7 @@ import { runInNewContext } from "node:vm";
 import { JSDOM } from "jsdom";
 import { describe, expect, it } from "vitest";
 import { buildExpression } from "./item";
+import type { YoutubeWatchPage } from "./normalize";
 
 const caption = `#gregdoucette #leenbeefpatty #fitness
 
@@ -42,14 +43,18 @@ async function harvest(html: string, player?: PlayerResponse) {
     `<!doctype html><html><body>${html}</body></html>`,
     { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
   );
-  return runInNewContext(buildExpression("dQw4w9WgXcQ"), {
-    document: window.document,
-    location: window.location,
-    ytInitialPlayerResponse: player,
-    URL,
-    setTimeout,
-    clearTimeout,
-  });
+  const page: Promise<YoutubeWatchPage | null> = runInNewContext(
+    buildExpression("dQw4w9WgXcQ"),
+    {
+      document: window.document,
+      location: window.location,
+      ytInitialPlayerResponse: player,
+      URL,
+      setTimeout,
+      clearTimeout,
+    },
+  );
+  return page;
 }
 
 describe("youtube watch description", () => {

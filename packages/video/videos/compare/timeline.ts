@@ -5,12 +5,12 @@ const ROW_STEP = 2400;
 const ROW_COUNT = 9;
 const FIRST_ROW = 5400;
 const LAST_ROW = FIRST_ROW + (ROW_COUNT - 1) * ROW_STEP;
-const LOGO = 31400;
+const LOGO = 31_400;
 
 export const { start, end } = scenes({
   hook: [0, 3000],
-  table: [3000, 30800],
-  outro: [30800, LOGO + LOCKUP_LENGTH],
+  table: [3000, 30_800],
+  outro: [30_800, LOGO + LOCKUP_LENGTH],
 });
 
 export const DURATION = end("outro");

@@ -1,5 +1,6 @@
 import { IconClock } from "@pond/icons";
 import { Button, Empty, EmptyPreview, Loader } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { ReviewDeck } from "@/features/library/components/inbox-review/deck";
 import { ReviewFinished } from "@/features/library/components/inbox-review/finished";
@@ -7,13 +8,13 @@ import { useInboxNavigation } from "@/features/library/hooks/use-inbox-items";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
 import type { ReviewQueue } from "@/features/library/lib/review-queue";
 import {
-  type InboxScope,
   inboxPicker,
   inboxReview,
   useInboxReview,
   useInboxReviewScope,
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
+import type { InboxScope } from "@/features/library/state/inbox-review";
 import { lastGridHrefOutsideInbox } from "@/features/library/state/last-grid";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
@@ -24,11 +25,11 @@ import {
 } from "@/features/notifications";
 import { useOpenSaveId } from "@/features/saves/navigation";
 import { ensureSaves } from "@/features/saves/pool";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import styles from "./styles.module.css";
 
 function leaveInbox() {
-  getAppRouter()?.history.push(lastGridHrefOutsideInbox());
+  getAppHistory()?.push(lastGridHrefOutsideInbox());
 }
 
 export function InboxReview() {
@@ -67,7 +68,11 @@ function InboxPage({
 
   const ids = queue?.ids;
   useEffect(() => {
-    if (ids) void ensureSaves(ids).catch(() => {});
+    if (ids) {
+      void ensureSaves(ids).catch((cause: unknown) => {
+        log.warn("[pond inbox] loading review saves failed", cause);
+      });
+    }
   }, [ids]);
 
   /** A resolved notification or settled work drops back to the deck instead of a blank pane. */
@@ -81,8 +86,10 @@ function InboxPage({
   /** With no Saves to review, the first notification opens rather than an empty state. */
   const autoOpen = queue !== null && total === 0 && !navigation.empty;
   useEffect(() => {
-    if (autoOpen && !inboxPicker.selected()) navigation.step(1);
-  });
+    if (autoOpen && !inboxPicker.selected()) {
+      navigation.step(1);
+    }
+  }, [autoOpen, navigation]);
 
   return (
     <div className={styles.page} data-inbox>
@@ -95,15 +102,15 @@ function InboxPage({
         <NotificationDetail
           key={notification.id}
           notification={notification}
-          onLeave={navigation.leave}
-          onStep={navigation.step}
+          onLeave={() => navigation.leave()}
+          onStep={(by) => navigation.step(by)}
           onClose={close}
         />
       ) : progress ? (
         <ProgressDetail
           key={progress.id}
           progress={progress}
-          onStep={navigation.step}
+          onStep={(by) => navigation.step(by)}
           onClose={close}
         />
       ) : queue === null ? (
@@ -156,7 +163,7 @@ function InboxPage({
         <ReviewDeck
           queue={queue}
           onExit={leaveInbox}
-          onStep={navigation.step}
+          onStep={(by) => navigation.step(by)}
           finished={
             <ReviewFinished
               queue={queue}

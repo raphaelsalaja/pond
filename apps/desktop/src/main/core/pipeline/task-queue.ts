@@ -1,11 +1,5 @@
-import {
-  type NewTask,
-  OPS,
-  queueGenerations,
-  SOURCES,
-  saves,
-  tasks,
-} from "@pond/schema/db";
+import { OPS, queueGenerations, SOURCES, saves, tasks } from "@pond/schema/db";
+import type { NewTask } from "@pond/schema/db";
 import type Database from "better-sqlite3";
 import { and, eq, inArray, isNull, ne, notExists, or } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -42,7 +36,7 @@ export interface ClaimDueTasksOptions {
 
 export async function claimDueTasks(
   options: ClaimDueTasksOptions,
-): Promise<DueTask[]> {
+): Promise<Array<DueTask>> {
   const db = await getDb();
   const at = Date.now();
   const leaseExpiresAt = at + TASK_LEASE_MS;
@@ -123,7 +117,7 @@ export async function claimDueTasks(
       );
       const ordered = fairCandidates(candidates);
       const available = { ...options.availableByOp };
-      const claimed: string[] = [];
+      const claimed: Array<string> = [];
       let claimedInteractive = 0;
       let claimedBackground = 0;
       for (const candidate of ordered) {
@@ -263,10 +257,10 @@ export async function claimDueTasks(
 type ClaimCandidate = z.infer<typeof ClaimCandidateSchema>;
 
 function fairCandidates(
-  candidates: readonly ClaimCandidate[],
-): ClaimCandidate[] {
-  const interactive: ClaimCandidate[] = [];
-  const background: ClaimCandidate[] = [];
+  candidates: ReadonlyArray<ClaimCandidate>,
+): Array<ClaimCandidate> {
+  const interactive: Array<ClaimCandidate> = [];
+  const background: Array<ClaimCandidate> = [];
   for (const candidate of candidates) {
     if (isCandidateInteractive(candidate)) interactive.push(candidate);
     else background.push(candidate);
@@ -275,16 +269,16 @@ function fairCandidates(
 }
 
 function roundRobinLanes(
-  candidates: readonly ClaimCandidate[],
-): ClaimCandidate[] {
-  const lanes = new Map<string, ClaimCandidate[]>();
+  candidates: ReadonlyArray<ClaimCandidate>,
+): Array<ClaimCandidate> {
+  const lanes = new Map<string, Array<ClaimCandidate>>();
   for (const candidate of candidates) {
     const key = `${candidate.source}:${candidate.op}`;
     const lane = lanes.get(key);
     if (lane) lane.push(candidate);
     else lanes.set(key, [candidate]);
   }
-  const ordered: ClaimCandidate[] = [];
+  const ordered: Array<ClaimCandidate> = [];
   let found = true;
   while (found) {
     found = false;
@@ -422,7 +416,7 @@ export async function ingestLeaseStillRunnable(
     row?.status === "running" &&
     row.leaseToken === task.leaseToken &&
     row.cancellationFence === task.cancellationFence &&
-    row.deletedAt == null
+    row.deletedAt === null
   );
 }
 
@@ -436,9 +430,9 @@ function isBlockedBySourceCooldown(row: DueTask, sourceUntil: number): boolean {
 
 const DISPATCH_BATCH = 20;
 
-export function scheduleDueTasks(rows: readonly DueTask[]): DueTask[] {
-  const interactive: DueTask[] = [];
-  const background: DueTask[] = [];
+export function scheduleDueTasks(rows: ReadonlyArray<DueTask>): Array<DueTask> {
+  const interactive: Array<DueTask> = [];
+  const background: Array<DueTask> = [];
   for (const row of rows) {
     if (isInteractiveTask(row)) interactive.push(row);
     else background.push(row);
@@ -451,14 +445,17 @@ export function scheduleDueTasks(rows: readonly DueTask[]): DueTask[] {
   ];
 }
 
-function interleaveBySave(rows: readonly DueTask[], limit: number): DueTask[] {
-  const buckets = new Map<string, DueTask[]>();
+function interleaveBySave(
+  rows: ReadonlyArray<DueTask>,
+  limit: number,
+): Array<DueTask> {
+  const buckets = new Map<string, Array<DueTask>>();
   for (const row of rows) {
     const bucket = buckets.get(row.saveId);
     if (bucket) bucket.push(row);
     else buckets.set(row.saveId, [row]);
   }
-  const interleaved: DueTask[] = [];
+  const interleaved: Array<DueTask> = [];
   let progress = true;
   while (progress && interleaved.length < limit) {
     progress = false;
@@ -554,7 +551,7 @@ export async function sweepTasklessIngestingSaves(): Promise<void> {
       );
       continue;
     }
-    const taskRows: NewTask[] = ops.map((op) => ({
+    const taskRows: Array<NewTask> = ops.map((op) => ({
       id: ulid(),
       saveId: id,
       source,

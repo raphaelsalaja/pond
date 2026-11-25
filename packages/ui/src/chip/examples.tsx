@@ -1,8 +1,8 @@
 import { IconTag } from "@pond/icons";
+import { Chip } from ".";
 import { FileIcon } from "../file-icon";
 import { Menu } from "../menu";
 import type { ComponentDocs } from "../shared/docs";
-import { Chip } from ".";
 
 function ignore(): void {}
 

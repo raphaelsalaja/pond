@@ -35,9 +35,9 @@ function isRenderable(save: Save): boolean {
 }
 
 export function applyModeFilter(
-  saves: readonly Save[],
+  saves: ReadonlyArray<Save>,
   { mode, sourceFilter, recentsOrder }: ModeFilterOptions,
-): Save[] {
+): Array<Save> {
   return saves.filter((save) => {
     if (mode === "trash") {
       if (!save.deletedAt) return false;

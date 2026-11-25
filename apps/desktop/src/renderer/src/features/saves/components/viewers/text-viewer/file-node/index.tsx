@@ -1,12 +1,11 @@
 import { Chip, FileIcon } from "@pond/ui";
-import {
-  $applyNodeReplacement,
-  DecoratorNode,
-  type EditorConfig,
-  type LexicalNode,
-  type NodeKey,
-  type SerializedLexicalNode,
-  type Spread,
+import { $applyNodeReplacement, DecoratorNode } from "lexical";
+import type {
+  EditorConfig,
+  LexicalNode,
+  NodeKey,
+  SerializedLexicalNode,
+  Spread,
 } from "lexical";
 import type { JSX } from "react";
 import styles from "./styles.module.css";
@@ -99,5 +98,5 @@ export function $createFileNode(opts: {
 export function $isFileNode(
   node: LexicalNode | null | undefined,
 ): node is FileNode {
-  return node instanceof FileNode;
+  return node?.getType() === FileNode.getType();
 }

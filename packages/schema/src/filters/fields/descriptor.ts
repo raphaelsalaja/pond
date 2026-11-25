@@ -1,10 +1,10 @@
 import type { SQL } from "drizzle-orm";
-import {
-  COMPARATORS_BY_TYPE,
-  type ComparatorId,
-  type FieldId,
-  type FieldTypeId,
-  type PredicateValue,
+import { COMPARATORS_BY_TYPE } from "../types";
+import type {
+  ComparatorId,
+  FieldId,
+  FieldTypeId,
+  PredicateValue,
 } from "../types";
 import type { SaveLike } from "./save-like";
 
@@ -20,7 +20,7 @@ export type FieldValue =
   | string
   | number
   | boolean
-  | string[]
+  | Array<string>
   | null
   | undefined;
 
@@ -30,13 +30,13 @@ export interface FieldDescriptor {
   label: string;
   group: FieldGroup;
   presets?: ReadonlyArray<FieldPreset>;
-  comparators: readonly ComparatorId[];
+  comparators: ReadonlyArray<ComparatorId>;
   project(save: SaveLike): FieldValue;
   sqlProjection?: () => SQL | null;
 }
 
 type FieldDescriptorInput = Omit<FieldDescriptor, "comparators"> & {
-  comparators?: readonly ComparatorId[];
+  comparators?: ReadonlyArray<ComparatorId>;
 };
 
 export function defineField(input: FieldDescriptorInput): FieldDescriptor {

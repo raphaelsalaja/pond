@@ -3,10 +3,10 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { z } from "zod";
 import { orientAspectRatio } from "@/features/saves/lib/image-orientation";
-import {
-  type MediaPickOptions,
-  type MediaUnit,
-  pickCardUnit,
+import { pickCardUnit } from "@/features/saves/lib/media/units";
+import type {
+  MediaPickOptions,
+  MediaUnit,
 } from "@/features/saves/lib/media/units";
 import type { Save } from "@/features/saves/types";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
@@ -88,8 +88,10 @@ function dimPair(
   h: number | null | undefined,
 ): { w: number; h: number } | null {
   if (
-    w == null ||
-    h == null ||
+    w === undefined ||
+    w === null ||
+    h === undefined ||
+    h === null ||
     !Number.isFinite(w) ||
     !Number.isFinite(h) ||
     w <= 0 ||
@@ -132,7 +134,9 @@ function hydrateFromStorage(): void {
     for (const [id, value] of entries.slice(start)) {
       measuredAspects.set(id, value);
     }
-  } catch {}
+  } catch {
+    /** An unreadable cache starts empty; cards measure again. */
+  }
 }
 
 const persistSoon = debounce(
@@ -142,7 +146,9 @@ const persistSoon = debounce(
       const obj: Record<string, number> = {};
       for (const [id, ratio] of measuredAspects) obj[id] = ratio;
       localStorage.setItem(MASONRY_ASPECT_CACHE_KEY, JSON.stringify(obj));
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; measured aspects still apply for this session. */
+    }
   },
   { wait: PERSIST_DEBOUNCE_MS },
 );

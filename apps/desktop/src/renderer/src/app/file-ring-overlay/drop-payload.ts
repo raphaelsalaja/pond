@@ -24,8 +24,9 @@ export function dropPayload(
   if (paths.length > 0) return { kind: "files", folderId, paths };
   const text = data.getData("text/uri-list") || data.getData("text/plain");
   const textPaths = filePathsFromText(text);
-  if (textPaths.length > 0)
+  if (textPaths.length > 0) {
     return { kind: "files", folderId, paths: textPaths };
+  }
   const urls = asUrlList(text);
   return urls ? { kind: "urls", folderId, urls } : null;
 }

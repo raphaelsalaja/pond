@@ -10,7 +10,8 @@ import { parseCsvRows } from "../lib/csv";
 import { hashImportFile } from "./duplicate-import";
 import { createManualSave } from "./manual-import";
 import { persistSave } from "./persist-save";
-import { type EnqueueOneResult, enqueue } from "./pipeline/enqueue";
+import { enqueue } from "./pipeline/enqueue";
+import type { EnqueueOneResult } from "./pipeline/enqueue";
 import { setSaveTags } from "./tags";
 
 const FILE_CARD_TYPES = new Set([
@@ -45,12 +46,17 @@ function looksLikeEncodedBlob(tag: string): boolean {
   return /[+/=]/.test(tag) || tag.length >= 64;
 }
 
-function parseMymindTags(cell: string): string[] {
+function parseMymindTags(cell: string): Array<string> {
   const trimmed = cell.trim();
-  if (!trimmed) return [];
-  if (CONTROL_CHARS.test(trimmed)) return [];
-  if (trimmed.length > MAX_MYMIND_TAG_LENGTH && !trimmed.includes(","))
+  if (!trimmed) {
     return [];
+  }
+  if (CONTROL_CHARS.test(trimmed)) {
+    return [];
+  }
+  if (trimmed.length > MAX_MYMIND_TAG_LENGTH && !trimmed.includes(",")) {
+    return [];
+  }
   return trimmed
     .split(",")
     .map((tag) => tag.trim().replace(/^#/, ""))
@@ -64,11 +70,11 @@ interface MymindCard {
   url: string;
   content: string;
   note: string;
-  tags: string[];
+  tags: Array<string>;
   created: Date | null;
 }
 
-function parseMymindCards(csv: string): MymindCard[] | null {
+function parseMymindCards(csv: string): Array<MymindCard> | null {
   const rows = parseCsvRows(csv);
   const header = rows[0]?.map((name) => name.trim().toLowerCase());
   if (!header) return null;
@@ -138,7 +144,7 @@ export interface MymindImportDependencies {
     id: string,
     patch: Partial<NewSave>,
   ) => Promise<boolean>;
-  setLinkTags: (id: string, tags: string[]) => Promise<OkResult>;
+  setLinkTags: (id: string, tags: Array<string>) => Promise<OkResult>;
 }
 
 const defaultDependencies: MymindImportDependencies = {
@@ -149,7 +155,7 @@ const defaultDependencies: MymindImportDependencies = {
   setLinkTags: setSaveTags,
 };
 
-function fileCounts(files: readonly string[]): Map<string, number> {
+function fileCounts(files: ReadonlyArray<string>): Map<string, number> {
   const counts = new Map<string, number>();
   for (const file of files) {
     const key = file.toLocaleLowerCase();
@@ -171,14 +177,14 @@ export async function importMymindExport(
   directory: string,
   dependencies: MymindImportDependencies = defaultDependencies,
 ): Promise<MymindImportResult> {
-  let files: Dirent[];
+  let files: Array<Dirent>;
   try {
     files = await readdir(directory, { withFileTypes: true });
   } catch {
     return failedImport("that mymind export", "the folder couldn't be read");
   }
 
-  let cards: MymindCard[] | null = null;
+  let cards: Array<MymindCard> | null = null;
   const cardsFile = files.find(
     (entry) => entry.isFile() && entry.name.toLowerCase() === "cards.csv",
   );
@@ -190,8 +196,9 @@ export async function importMymindExport(
     } catch {
       return failedImport("cards.csv", "the file couldn't be read");
     }
-    if (!cards)
+    if (!cards) {
       return failedImport("cards.csv", "the file isn't a mymind export");
+    }
   }
   const media = files.filter(
     (entry) => entry.isFile() && isMymindMediaFile(entry.name),
@@ -207,7 +214,7 @@ export async function importMymindExport(
       entry.name.toLocaleLowerCase(),
     ]),
   );
-  const fileCards = new Map<string, MymindCard[]>();
+  const fileCards = new Map<string, Array<MymindCard>>();
   const claimFile = (filename: string, card: MymindCard) => {
     availableMedia.set(filename, (availableMedia.get(filename) ?? 0) - 1);
     const queued = fileCards.get(filename) ?? [];
@@ -259,10 +266,14 @@ export async function importMymindExport(
       savedAt: card.created ?? undefined,
       createdAt: card.created ?? undefined,
     });
-    if (!result.ok)
+    if (!result.ok) {
       return failedImport(card.title || "a mymind Save", result.error);
-    if (result.skipped) skipped += 1;
-    else imported += 1;
+    }
+    if (result.skipped) {
+      skipped += 1;
+    } else {
+      imported += 1;
+    }
   }
   for (const file of media) {
     const path = join(directory, file.name);
@@ -311,11 +322,12 @@ async function importMymindLink(
   try {
     if (card.tags.length > 0) {
       const tagged = await dependencies.setLinkTags(result.id, card.tags);
-      if (!tagged.ok)
+      if (!tagged.ok) {
         return failedImport(
           card.title || card.url,
           tagged.error ?? "its tags couldn't be saved",
         );
+      }
     }
     const patch: Partial<NewSave> = { importedFrom: "mymind" };
     if (note) patch.notes = note;
@@ -324,11 +336,12 @@ async function importMymindLink(
       patch.createdAt = card.created;
     }
     const persisted = await dependencies.persistLinkMetadata(result.id, patch);
-    if (!persisted)
+    if (!persisted) {
       return failedImport(
         card.title || card.url,
         "its details couldn't be saved",
       );
+    }
   } catch {
     return failedImport(
       card.title || card.url,

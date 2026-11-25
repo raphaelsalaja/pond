@@ -45,7 +45,7 @@ function decodeCosmosToken(value: string): CosmosTokenPayload | null {
 }
 
 function base64UrlToBase64(segment: string): string {
-  const normalized = segment.replace(/-/g, "+").replace(/_/g, "/");
+  const normalized = segment.replaceAll("-", "+").replaceAll("_", "/");
   const pad = normalized.length % 4;
   return pad === 0 ? normalized : normalized + "=".repeat(4 - pad);
 }

@@ -57,7 +57,7 @@ async function harvest(script: string, head = "") {
     { url: SHOT_URL, runScripts: "dangerously" },
   );
   let now = 0;
-  const clock = { now: () => (now += 1_000) };
+  const clock = { now: () => (now += 1000) };
   Object.assign(dom.window, {
     setTimeout: (fn: () => void) => setTimeout(fn, 0),
     Date: Object.assign(dom.window.Date, clock),

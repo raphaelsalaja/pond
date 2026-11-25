@@ -12,8 +12,8 @@ import {
   $isRangeSelection,
   $setSelection,
   createCommand,
-  type LexicalEditor,
 } from "lexical";
+import type { LexicalEditor } from "lexical";
 import { $applyMarkdownBlock } from "@/shared/markdown-editor/blocks";
 import { $insertCollapsible } from "./collapsible";
 import { $createFileNode } from "./file-node";
@@ -93,8 +93,9 @@ export function $applyNoteBlock(block: NoteBlock): void {
     $insertCollapsible();
   } else if (block === "diagram") {
     const selection = $getSelection();
-    if ($isRangeSelection(selection))
+    if ($isRangeSelection(selection)) {
       $setBlocksType(selection, () => $createCodeNode("mermaid"));
+    }
   } else {
     $applyMarkdownBlock(block);
   }

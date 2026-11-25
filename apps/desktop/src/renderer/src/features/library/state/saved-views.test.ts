@@ -1,13 +1,12 @@
 import type { SavedView } from "@pond/schema/db";
 import { matches } from "@pond/schema/filters/match";
-import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  currentLocation,
-  type LibraryTestRouter,
-  openLibraryAt,
-} from "@/app/test/library-router";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { currentLocation, openLibraryAt } from "@/app/test/library-router";
+import type { LibraryTestRouter } from "@/app/test/library-router";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import { bridge } from "@/shared/test/pond-bridge";
 import { combineQueries } from "../lib/smart-folders";
 import { savedViews } from "./saved-views";
 import {
@@ -49,33 +48,13 @@ const design: Query = {
   rules: [{ field: "tags", operator: "some", value: ["design"] }],
 };
 
-interface ViewCommand extends Partial<SavedView> {
-  patch?: Partial<SavedView>;
-}
+const failed = { ok: false, error: "Mutation failed" } as const;
 
 describe("saved smart folder operations", () => {
-  let records: SavedView[];
+  let records: Array<SavedView>;
   let failMutation: boolean;
   let router: LibraryTestRouter;
   let stopUrlSync: () => void;
-  const query = vi.fn(async (name: string, input: ViewCommand) => {
-    if (name === "savedViews.list") return records;
-    if (failMutation) return { ok: false };
-    if (name === "savedViews.create") {
-      const created = { ...view("new", null, "saved_view"), ...input };
-      records = [...records, created];
-      return { ok: true, id: created.id };
-    }
-    if (name === "savedViews.update") {
-      records = records.map((entry) =>
-        entry.id === input.id ? { ...entry, ...input.patch } : entry,
-      );
-    }
-    if (name === "savedViews.delete") {
-      records = records.filter((entry) => entry.id !== input.id);
-    }
-    return { ok: true };
-  });
 
   beforeEach(async () => {
     resetFilters();
@@ -87,14 +66,46 @@ describe("saved smart folder operations", () => {
       view("other", null, "group", design),
     ];
     failMutation = false;
-    query.mockClear();
-    vi.stubGlobal("pond", { query });
+    bridge.use({
+      query: {
+        "savedViews.list": () => records,
+        "savedViews.create": (input) => {
+          if (failMutation) {
+            return failed;
+          }
+          const created: SavedView = {
+            ...view("new", null, "saved_view"),
+            ...input,
+            query: input.query ?? EMPTY_QUERY,
+          };
+          records = [...records, created];
+          return { ok: true, id: created.id };
+        },
+        "savedViews.update": ({ id, patch }) => {
+          if (failMutation) {
+            return failed;
+          }
+          records = records.map((entry) =>
+            entry.id === id
+              ? { ...entry, ...patch, query: patch.query ?? entry.query }
+              : entry,
+          );
+          return { ok: true };
+        },
+        "savedViews.delete": ({ id }) => {
+          if (failMutation) {
+            return failed;
+          }
+          records = records.filter((entry) => entry.id !== id);
+          return { ok: true };
+        },
+      },
+    });
     await savedViews.refresh();
   });
 
   afterEach(() => {
     stopUrlSync();
-    vi.unstubAllGlobals();
   });
 
   it("opens the selected item at its own path", () => {
@@ -228,7 +239,7 @@ describe("saved smart folder operations", () => {
     setLayout("list");
     setSort({ key: "title", dir: "asc" });
     await savedViews.updateCurrent("child");
-    expect(query).toHaveBeenCalledWith("savedViews.update", {
+    expect(window.pond.query).toHaveBeenCalledWith("savedViews.update", {
       id: "child",
       patch: { query: design },
     });

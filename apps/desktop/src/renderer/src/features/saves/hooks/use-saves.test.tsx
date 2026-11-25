@@ -21,25 +21,27 @@ it("re-renders paging readers only when a field they read changes", async () => 
   const host = document.createElement("div");
   const root = createRoot(host);
   try {
-    await act(() =>
+    await act(async () => {
       root.render(
         <Reader
           onRender={() => {
             renders++;
           }}
         />,
-      ),
-    );
+      );
+    });
     const before = renders;
-    await act(() =>
-      pagingStore.setState((state) => ({ ...state, ready: !state.ready })),
-    );
+    await act(async () => {
+      pagingStore.setState((state) => ({ ...state, ready: !state.ready }));
+    });
     expect(renders).toBe(before);
-    await act(() =>
-      pagingStore.setState((state) => ({ ...state, total: state.total + 1 })),
-    );
+    await act(async () => {
+      pagingStore.setState((state) => ({ ...state, total: state.total + 1 }));
+    });
     expect(renders).toBe(before + 1);
   } finally {
-    await act(() => root.unmount());
+    await act(async () => {
+      root.unmount();
+    });
   }
 });

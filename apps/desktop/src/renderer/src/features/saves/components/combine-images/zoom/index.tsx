@@ -1,5 +1,6 @@
 import { IconArrowsExpandDiagonal, IconMinus, IconPlus } from "@pond/icons";
-import { Button, Menu, type MenuItemSpec, Slider } from "@pond/ui";
+import { Button, Menu, Slider } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
 
@@ -8,13 +9,20 @@ const ZOOM_MIN = 0.05;
 const ZOOM_MAX = 8;
 const SLIDER_MAX = 1000;
 
+function isValueList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return Array.isArray(value);
+}
+
 export function clampZoom(scale: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, scale));
 }
 
 export function stepZoom(scale: number, direction: 1 | -1): number {
-  if (direction > 0)
+  if (direction > 0) {
     return PRESETS.find((preset) => preset > scale * 1.001) ?? ZOOM_MAX;
+  }
   return (
     [...PRESETS].reverse().find((preset) => preset < scale * 0.999) ?? ZOOM_MIN
   );
@@ -47,16 +55,14 @@ export function ZoomBar({
   onZoom: (scale: number) => void;
   onFit: () => void;
 }) {
-  const items: MenuItemSpec[] = [
-    ...PRESETS.map(
-      (preset): MenuItemSpec => ({
-        type: "checkbox",
-        indicator: "check",
-        label: percent(preset),
-        checked: !fit && Math.abs(scale - preset) < 0.0005,
-        onCheckedChange: () => onZoom(preset),
-      }),
-    ),
+  const items: Array<MenuItemSpec> = [
+    ...PRESETS.map((preset): MenuItemSpec => ({
+      type: "checkbox",
+      indicator: "check",
+      label: percent(preset),
+      checked: !fit && Math.abs(scale - preset) < 0.0005,
+      onCheckedChange: () => onZoom(preset),
+    })),
     { type: "separator" },
     {
       type: "checkbox",
@@ -92,7 +98,7 @@ export function ZoomBar({
         max={SLIDER_MAX}
         value={toSlider(scale)}
         onValueChange={(value) =>
-          onZoom(fromSlider(Array.isArray(value) ? (value[0] ?? 0) : value))
+          onZoom(fromSlider(isValueList(value) ? (value[0] ?? 0) : value))
         }
       >
         <Slider.Control>

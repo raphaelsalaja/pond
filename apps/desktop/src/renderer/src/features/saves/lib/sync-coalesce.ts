@@ -1,7 +1,9 @@
+import log from "electron-log/renderer";
 import { bulkUpsertSaves, deleteSave, pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { reloadSaves } from "./ensure-saves";
-import { applyAction, normalise, type SyncActionEvent } from "./reconcile";
+import { applyAction, normalise } from "./reconcile";
+import type { SyncActionEvent } from "./reconcile";
 
 const pending = new Map<string, Save>();
 const pendingDeletes = new Set<string>();
@@ -22,8 +24,8 @@ function scheduleFlush(): void {
     for (const id of deletes) deleteSave(id);
     if (upserts.length > 0) bulkUpsertSaves(upserts);
     if (refresh.length > 0) {
-      reloadSaves(refresh).catch((err) =>
-        console.warn("[pond saves] task refresh failed", err),
+      reloadSaves(refresh).catch((cause: unknown) =>
+        log.warn("[pond saves] task refresh failed", cause),
       );
     }
   };

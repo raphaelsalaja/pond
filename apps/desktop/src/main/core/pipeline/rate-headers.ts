@@ -1,7 +1,13 @@
 export type HeaderBag = Record<string, string> | Headers;
 
+function isHeaders(bag: HeaderBag): bag is Headers {
+  return Object.prototype.toString.call(bag) === "[object Headers]";
+}
+
 function header(bag: HeaderBag, name: string): string | null {
-  if (bag instanceof Headers) return bag.get(name);
+  if (isHeaders(bag)) {
+    return bag.get(name);
+  }
   const lower = name.toLowerCase();
   for (const [k, v] of Object.entries(bag)) {
     if (k.toLowerCase() === lower) return v;
@@ -35,11 +41,11 @@ export function parseRateSignal(bag: HeaderBag): RateSignal {
   const remainingRaw =
     header(bag, "x-rate-limit-remaining") ??
     header(bag, "x-ratelimit-remaining");
-  const remaining = remainingRaw != null ? Number(remainingRaw) : null;
+  const remaining = remainingRaw !== null ? Number(remainingRaw) : null;
 
   if (
-    retryAfterSec == null &&
-    remaining != null &&
+    retryAfterSec === null &&
+    remaining !== null &&
     Number.isFinite(remaining) &&
     remaining <= 1 &&
     resetRaw
@@ -54,6 +60,6 @@ export function parseRateSignal(bag: HeaderBag): RateSignal {
   return {
     retryAfterSec,
     remaining:
-      remaining != null && Number.isFinite(remaining) ? remaining : null,
+      remaining !== null && Number.isFinite(remaining) ? remaining : null,
   };
 }

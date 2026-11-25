@@ -67,11 +67,11 @@ export type TweetCardData = z.infer<typeof TweetCardDataSchema>;
 /** X wraps media and cards as t.co; the native UI hides those tokens. */
 export function stripTwitterShortUrls(text: string): string {
   return text
-    .replace(/https?:\/\/t\.co\/\S+/gi, "")
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n[ \t]+/g, "\n")
-    .replace(/[^\S\n]{2,}/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
+    .replaceAll(/https?:\/\/t\.co\/\S+/gi, "")
+    .replaceAll(/[ \t]+\n/g, "\n")
+    .replaceAll(/\n[ \t]+/g, "\n")
+    .replaceAll(/[^\S\n]{2,}/g, " ")
+    .replaceAll(/\n{3,}/g, "\n\n")
     .trim();
 }
 
@@ -115,10 +115,12 @@ function isRenderableImageUrl(url: string): boolean {
 }
 
 function mapMedia(
-  media: readonly CaptureMedia[] | undefined,
-): TweetCardMedia[] {
-  if (!media) return [];
-  const out: TweetCardMedia[] = [];
+  media: ReadonlyArray<CaptureMedia> | undefined,
+): Array<TweetCardMedia> {
+  if (!media) {
+    return [];
+  }
+  const out: Array<TweetCardMedia> = [];
   for (const m of media) {
     if (m.type === "link") continue;
     if (isAvatarUrl(m.url)) continue;

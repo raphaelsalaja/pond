@@ -29,12 +29,16 @@ function restoredTitle(count: number): string {
 }
 
 /** Favorites every target unless all of them already are, matching how mixed toggles resolve elsewhere. */
-function nextFavorite(ids: readonly string[]): boolean {
+function nextFavorite(ids: ReadonlyArray<string>): boolean {
   return !ids.every((id) => pool.get(id)?.favorite === true);
 }
 
-export async function toggleFavorite(ids: readonly string[]): Promise<void> {
-  if (!ids.length) return;
+export async function toggleFavorite(
+  ids: ReadonlyArray<string>,
+): Promise<void> {
+  if (!ids.length) {
+    return;
+  }
   const favorite = nextFavorite(ids);
   try {
     const { undoId } = await bulkMutation(ids, {
@@ -59,7 +63,9 @@ export async function toggleFavorite(ids: readonly string[]): Promise<void> {
 }
 
 /** Trash stays recoverable, so it runs without a confirmation and offers a scoped Undo instead. */
-export async function moveSavesToTrash(ids: readonly string[]): Promise<void> {
+export async function moveSavesToTrash(
+  ids: ReadonlyArray<string>,
+): Promise<void> {
   const targets = ids.filter((id) => !pool.get(id)?.deletedAt);
   if (!targets.length) return;
   await tumbleToTrash(targets);
@@ -83,7 +89,7 @@ export async function moveSavesToTrash(ids: readonly string[]): Promise<void> {
 }
 
 export async function moveSelectionToTrash(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<void> {
   await moveSavesToTrash(ids);
   selection.clear();

@@ -47,7 +47,7 @@ interface Route {
 
 interface Transport {
   get: AtGet;
-  urls: URL[];
+  urls: Array<URL>;
 }
 
 interface LikesBody {
@@ -55,8 +55,8 @@ interface LikesBody {
   cursor?: string;
 }
 
-function transport(routes: Route[]): Transport {
-  const urls: URL[] = [];
+function transport(routes: Array<Route>): Transport {
+  const urls: Array<URL> = [];
   const get: AtGet = async (raw) => {
     const url = new URL(raw);
     urls.push(url);

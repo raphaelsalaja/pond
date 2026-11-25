@@ -12,7 +12,8 @@ import {
 import { Nav } from "../nav";
 import { Pager } from "../pager";
 import { INTRODUCTION } from "../pages";
-import { type Theme, ThemeContext, type ThemePreference } from "../theme";
+import { ThemeContext } from "../theme";
+import type { Theme, ThemePreference } from "../theme";
 import styles from "./styles.module.css";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
@@ -31,7 +32,7 @@ function useSystemTheme(): Theme {
   );
 }
 
-interface FrameProps extends React.ComponentPropsWithoutRef<"div"> {}
+type FrameProps = React.ComponentPropsWithoutRef<"div">;
 
 export function Frame({ className, children, ...props }: FrameProps) {
   const [preference, setPreference] = useState<ThemePreference>("system");
@@ -45,7 +46,6 @@ export function Frame({ className, children, ...props }: FrameProps) {
 
   const scroller = useRef<HTMLElement>(null);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: each new page lands at its hash or the top
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       const id = window.location.hash.slice(1);

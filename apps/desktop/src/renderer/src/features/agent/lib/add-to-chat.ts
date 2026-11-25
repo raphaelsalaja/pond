@@ -1,13 +1,18 @@
 import { fishPath } from "@/features/fish";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 
 /** The Assistant runtime pulls in the AI SDK; menus load at launch, so import it on use. */
-export function addSavesToChat(ids: readonly string[], target?: string): void {
-  if (!ids.length) return;
+export function addSavesToChat(
+  ids: ReadonlyArray<string>,
+  target?: string,
+): void {
+  if (!ids.length) {
+    return;
+  }
   void import("@/features/agent/state/assistant").then(({ assistant }) => {
     const fishId = target ?? assistant.fishId();
     assistant.selectFish(fishId);
-    getAppRouter()?.history.push(fishPath(fishId));
+    getAppHistory()?.push(fishPath(fishId));
     return assistant.attachIds([...ids]);
   });
 }

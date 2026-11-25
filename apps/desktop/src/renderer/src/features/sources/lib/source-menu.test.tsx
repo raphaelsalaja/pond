@@ -1,11 +1,14 @@
-import { Dialog, type MenuItemSpec } from "@pond/ui";
-import { Children, isValidElement, type ReactNode } from "react";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { Children, isValidElement } from "react";
+import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
 import { sourceDetail } from "@/features/sources/state/source-detail";
 import { sourceFlow } from "@/features/sources/state/source-flow";
+import { bridge } from "@/shared/test/pond-bridge";
 import {
   accountMenuTarget,
   buildSourceActionMenu,
@@ -24,7 +27,9 @@ const ready: CardModel = {
 function labelText(label: ReactNode): string | null {
   const labels = Children.toArray(label);
   const value = labels.length === 1 ? labels[0] : null;
-  return value != null && !isValidElement(value) ? String(value) : null;
+  return value !== null && value !== undefined && !isValidElement(value)
+    ? String(value)
+    : null;
 }
 
 function account(model = ready): ReturnType<typeof accountMenuTarget> {
@@ -58,7 +63,7 @@ function watch(model = ready): ReturnType<typeof watchMenuTarget> {
   return watchMenuTarget(row, model);
 }
 
-function groupItems(items: MenuItemSpec[]): string[][] {
+function groupItems(items: Array<MenuItemSpec>): Array<Array<string>> {
   return items.flatMap((item) => {
     if (item.type !== "group") return [];
     return [
@@ -71,20 +76,20 @@ function groupItems(items: MenuItemSpec[]): string[][] {
   });
 }
 
-function expectUntitledGroups(items: MenuItemSpec[]): void {
+function expectUntitledGroups(items: Array<MenuItemSpec>): void {
   expect(
     items
       .filter((item) => item.type === "group")
-      .every((item) => item.label == null),
+      .every((item) => item.label === null || item.label === undefined),
   ).toBe(true);
 }
 
-function groups(items: MenuItemSpec[]): string[][] {
+function groups(items: Array<MenuItemSpec>): Array<Array<string>> {
   expectUntitledGroups(items);
   return groupItems(items);
 }
 
-function fetchGroup(items: MenuItemSpec[]): string[] {
+function fetchGroup(items: Array<MenuItemSpec>): Array<string> {
   return (
     groupItems(items).find((labels) =>
       labels.some((label) => /Fetch$|Fetch /.test(label)),
@@ -92,7 +97,10 @@ function fetchGroup(items: MenuItemSpec[]): string[] {
   );
 }
 
-function findItem(items: MenuItemSpec[], label: string): MenuItemSpec | null {
+function findItem(
+  items: Array<MenuItemSpec>,
+  label: string,
+): MenuItemSpec | null {
   for (const item of items) {
     if ("label" in item && item.label === label) return item;
     if (item.type === "group" || item.type === "submenu") {
@@ -104,20 +112,19 @@ function findItem(items: MenuItemSpec[], label: string): MenuItemSpec | null {
 }
 
 beforeEach(() => {
-  vi.stubGlobal("pond", {
-    clearPendingSession: vi.fn(async () => undefined),
-    connectSource: vi.fn(async () => ({ ok: true })),
-    openExternal: vi.fn(async () => ({ ok: true })),
-    refreshBackfillStart: vi.fn(async () => ({ ok: true })),
-    syncCancel: vi.fn(async () => ({ ok: true, running: false })),
-    syncRunNow: vi.fn(async () => ({ ok: true })),
-    query: vi.fn(async () => ({ ok: true })),
+  bridge.use({
+    clearPendingSession: async () => ({ ok: true }),
+    connectSource: async () => ({ ok: true, mode: "external" }),
+    openExternal: async () => ({ ok: true }),
+    refreshBackfillStart: async () => ({ ok: true, total: 0 }),
+    syncCancel: async () => ({ ok: true, running: false }),
+    syncRunNow: async () => ({ ok: true }),
+    query: { "clipboard.writeText": () => ({ ok: true }) },
   });
 });
 
 afterEach(() => {
   sourceFlow.close();
-  vi.unstubAllGlobals();
 });
 
 describe("buildSourceActionMenu", () => {
@@ -129,23 +136,21 @@ describe("buildSourceActionMenu", () => {
     expect(findItem(items, "Fetch Save Details")).toBeNull();
     expect(findItem(items, "Fetch Original Media")).toBeNull();
     const older = findItem(items, "Import Older Saves");
-    if (!older || !("onClick" in older))
+    if (!older || !("onClick" in older)) {
       throw new Error("Missing export action");
-    vi.stubGlobal("pond", {
-      ...window.pond,
-      query: vi.fn(async () => ({ ok: true, imported: 0, skipped: 0 })),
+    }
+    const imported = Promise.withResolvers<void>();
+    bridge.use({
+      query: {
+        "saves.importMymind": () => {
+          imported.resolve();
+          return { ok: true, imported: 0, skipped: 0 };
+        },
+      },
     });
     older.onClick?.();
-    /** The click lazy-loads the library import module, which compiles cold in a small test shard. */
-    await vi.waitFor(
-      () => {
-        expect(window.pond.query).toHaveBeenCalledWith(
-          "saves.importMymind",
-          {},
-        );
-      },
-      { timeout: 10_000 },
-    );
+    await imported.promise;
+    expect(window.pond.query).toHaveBeenCalledWith("saves.importMymind", {});
     expect(window.pond.syncRunNow).not.toHaveBeenCalled();
     expect(buildSourceActionRows(target).fetch.map((row) => row.title)).toEqual(
       ["Fetch New Saves", "Import Older Saves"],
@@ -155,8 +160,9 @@ describe("buildSourceActionMenu", () => {
   it("opens key setup when reconnecting mymind", () => {
     const items = buildSourceActionMenu({ ...account(), source: "mymind" });
     const reconnect = findItem(items, "Reconnect");
-    if (!reconnect || !("onClick" in reconnect))
+    if (!reconnect || !("onClick" in reconnect)) {
       throw new Error("Missing reconnect action");
+    }
     reconnect.onClick?.();
     expect(sourceFlow.current()).toBe("connect-mymind");
     expect(window.pond.connectSource).not.toHaveBeenCalled();
@@ -226,7 +232,7 @@ describe("buildSourceActionMenu", () => {
   });
 
   it("asks before replacing every save's media", async () => {
-    const confirm = vi.spyOn(Dialog, "confirm").mockImplementation(() => {});
+    const confirm = vi.spyOn(Dialog, "confirm");
     const media = findItem(
       buildSourceActionMenu(account()),
       "Fetch Original Media",
@@ -272,11 +278,10 @@ describe("buildSourceActionMenu", () => {
       disabled: true,
     });
     const start = findItem(items, "Choose What to Import");
-    if (!start || !("onClick" in start))
+    if (!start || !("onClick" in start)) {
       throw new Error("Missing Choose What to Import");
-    const open = vi
-      .spyOn(sourceDetail, "openAccount")
-      .mockImplementation(() => {});
+    }
+    const open = vi.spyOn(sourceDetail, "openAccount");
     start.onClick?.();
     expect(open).toHaveBeenCalledWith("acc-instagram", "filters");
     open.mockRestore();
@@ -350,12 +355,19 @@ describe("buildSourceActionMenu", () => {
   it("starts the source sign-in flow from the connection group", async () => {
     const items = buildSourceActionMenu(account(), { accounts: [] });
     const signIn = findItem(items, "Sign In Again");
-    if (!signIn || !("onClick" in signIn))
+    if (!signIn || !("onClick" in signIn)) {
       throw new Error("Missing Sign In Again");
+    }
+    const requested = Promise.withResolvers<string>();
+    bridge.use({
+      connectSource: async (source) => {
+        requested.resolve(source);
+        return { ok: true, mode: "external" };
+      },
+    });
     signIn.onClick?.();
     expect(sourceFlow.current()).toBe("connect-wait");
-    await vi.waitFor(() => {
-      expect(window.pond.connectSource).toHaveBeenCalledWith("instagram");
-    });
+    await expect(requested.promise).resolves.toBe("instagram");
+    expect(window.pond.connectSource).toHaveBeenCalledWith("instagram");
   });
 });

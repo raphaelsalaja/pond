@@ -21,9 +21,8 @@ import {
   VIDEO_FIELDS,
   VideosSchema,
   ViewerSchema,
-  type VimeoVideo,
-  type VimeoViewer,
 } from "./normalize";
+import type { VimeoVideo, VimeoViewer } from "./normalize";
 
 const WEB = "https://vimeo.com";
 const API = "https://api.vimeo.com";
@@ -31,7 +30,7 @@ const API_ACCEPT = "application/vnd.vimeo.*+json;version=3.4.10";
 const ROWS_PER_PAGE = 12;
 const MAX_PAGES = 100;
 const PAGE_GAP_MS = 600;
-const LIST_ORDER: readonly ListKind[] = ["liked", "saved"];
+const LIST_ORDER: ReadonlyArray<ListKind> = ["liked", "saved"];
 
 interface VimeoHeaders {
   accept: string;
@@ -52,7 +51,7 @@ interface ApiAuth {
 }
 
 interface WalkResult {
-  entries: ListEntry[];
+  entries: Array<ListEntry>;
   reachedEnd: boolean;
   nextPage: number;
 }
@@ -75,8 +74,8 @@ async function safeGet(
 ): Promise<Response | null> {
   try {
     return await get(url, headers);
-  } catch (err) {
-    log.warn("[pond vimeo-api] fetch threw", url, err);
+  } catch (error) {
+    log.warn("[pond vimeo-api] fetch threw", url, error);
     return null;
   }
 }
@@ -125,7 +124,7 @@ async function apiGet(
 async function hydrate(
   get: VimeoGet,
   auth: ApiAuth,
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): Promise<Map<string, VimeoVideo>> {
   const query = new URLSearchParams({
     uris: ids.map((id) => `/videos/${id}`).join(","),
@@ -165,7 +164,7 @@ async function walkClips(
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   let knownPageStreak = 0;
 
   for (let page = firstPage; page < firstPage + MAX_PAGES; page++) {
@@ -257,7 +256,7 @@ export async function readVimeoLists(
       (!resume || LIST_ORDER.indexOf(kind) >= LIST_ORDER.indexOf(resume.kind)),
   );
 
-  let entries: ListEntry[] = [];
+  let entries: Array<ListEntry> = [];
   for (const kind of kinds) {
     if (kind === "liked" && !handle) {
       log.warn("[pond vimeo-api] no handle for likes");

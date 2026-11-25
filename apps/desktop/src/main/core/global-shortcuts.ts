@@ -1,9 +1,11 @@
 import {
   defaultGlobalKeys,
   GLOBAL_SHORTCUTS,
-  type GlobalShortcutId,
-  type GlobalShortcutStatus,
   LAYOUT_CYCLE_SHORTCUT,
+} from "../../shared/global-shortcuts";
+import type {
+  GlobalShortcutId,
+  GlobalShortcutStatus,
 } from "../../shared/global-shortcuts";
 
 interface NativeShortcuts {
@@ -54,8 +56,9 @@ function accelerator(chord: string, isMac: boolean): string {
     !/^(?:[a-z0-9,./;[\]'\\`=-]|F(?:[1-9]|1\d|2[0-4])|Space|Enter|Escape|Tab|Backspace|Delete|Insert|Home|End|PageUp|PageDown|Arrow(?:Up|Down|Left|Right))$/i.test(
       key,
     )
-  )
+  ) {
     throw new Error("Global shortcuts need a modifier and a supported key.");
+  }
   return [...modifiers]
     .sort()
     .concat(key.replace(/^Arrow/, "").toUpperCase())
@@ -86,7 +89,7 @@ export function summonShortcutTarget(
 export class GlobalShortcutController {
   private active = new Map<string, GlobalShortcutId>();
   private configured = new Map<string, GlobalShortcutId>();
-  private errors: string[] = [];
+  private errors: Array<string> = [];
   constructor(
     private readonly native: NativeShortcuts,
     private readonly actions: Actions,
@@ -100,10 +103,11 @@ export class GlobalShortcutController {
       if (!chord) continue;
       const key = accelerator(chord, this.isMac);
       const conflict = desired.get(key);
-      if (conflict)
+      if (conflict) {
         throw new Error(
           `${GLOBAL_SHORTCUTS[id].label} shares a shortcut with ${GLOBAL_SHORTCUTS[conflict].label}. Choose another shortcut.`,
         );
+      }
       desired.set(key, id);
     }
     return desired;
@@ -125,8 +129,9 @@ export class GlobalShortcutController {
     this.errors = [];
     for (const [key, id] of desired) {
       try {
-        if (!this.native.register(key, () => this.dispatch(key)))
+        if (!this.native.register(key, () => this.dispatch(key))) {
           throw new Error("Unavailable");
+        }
         this.active.set(key, id);
       } catch {
         this.errors.push(
@@ -147,15 +152,16 @@ export class GlobalShortcutController {
 
   prepare(overrides: Bindings): Change {
     const desired = this.desired(overrides);
-    const staged: string[] = [];
+    const staged: Array<string> = [];
     const rollback = () => {
       for (const key of staged) this.native.unregister(key);
     };
     for (const [key, id] of desired) {
       if (this.active.has(key) || this.configured.get(key) === id) continue;
       try {
-        if (!this.native.register(key, () => this.dispatch(key)))
+        if (!this.native.register(key, () => this.dispatch(key))) {
           throw new Error("Unavailable");
+        }
         staged.push(key);
       } catch {
         rollback();
@@ -174,14 +180,18 @@ export class GlobalShortcutController {
           ),
         );
         this.configured = desired;
-        this.errors = [...desired]
-          .filter(([key]) => !this.active.has(key))
-          .map(
-            ([key, id]) =>
-              `${GLOBAL_SHORTCUTS[id].label} (${key}) is unavailable. Choose another shortcut.`,
-          );
-        for (const key of previous.keys())
-          if (!desired.has(key)) this.native.unregister(key);
+        this.errors = [...desired].flatMap(([key, id]) =>
+          this.active.has(key)
+            ? []
+            : [
+                `${GLOBAL_SHORTCUTS[id].label} (${key}) is unavailable. Choose another shortcut.`,
+              ],
+        );
+        for (const key of previous.keys()) {
+          if (!desired.has(key)) {
+            this.native.unregister(key);
+          }
+        }
       },
     };
   }

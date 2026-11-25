@@ -1,5 +1,6 @@
 import { Badge, Toggle, Tooltip } from "@pond/ui";
-import { type ReactNode, useRef } from "react";
+import { useRef } from "react";
+import type { ReactNode } from "react";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import type { ShortcutId } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";

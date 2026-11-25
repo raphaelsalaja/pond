@@ -1,16 +1,15 @@
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
-import { type Db, initializePondSchema } from "../db";
+import { wrapSqlite } from "../database/client";
+import { initializePondSchema } from "../db";
+import type { Db } from "../db";
 import {
   duplicateStorage,
-  type LargestFilesInput,
   largestFiles,
   largestSaves,
   storageAttribution,
 } from "./storage-insights";
+import type { LargestFilesInput } from "./storage-insights";
 
 function nativeAvailable() {
   try {
@@ -22,7 +21,7 @@ function nativeAvailable() {
   }
 }
 
-const opened: Database.Database[] = [];
+const opened: Array<Database.Database> = [];
 afterEach(() => {
   for (const db of opened.splice(0)) db.close();
 });
@@ -41,14 +40,14 @@ interface SaveFixture {
   title?: string | null;
   mediaType?: string;
   fileSize?: number;
-  files?: FileFixture[];
+  files?: Array<FileFixture>;
   deleted?: boolean;
-  folders?: string[];
+  folders?: Array<string>;
 }
 
 function open(
-  fixtures: SaveFixture[],
-  folders: { id: string; parentId: string | null }[] = [],
+  fixtures: Array<SaveFixture>,
+  folders: Array<{ id: string; parentId: string | null }> = [],
 ): Db {
   const raw = new Database(":memory:");
   opened.push(raw);
@@ -80,9 +79,7 @@ function open(
     );
     for (const id of save.folders ?? []) member.run(save.id, id);
   }
-  return Object.assign(drizzle(raw, { schema: { ...schema, ...events } }), {
-    $raw: raw,
-  });
+  return wrapSqlite(raw);
 }
 
 function file(
@@ -119,6 +116,46 @@ function searchable(): Db {
 
 function ids(db: Db, search: string) {
   return largestSaves(db, { limit: 10, search }).saves.map((save) => save.id);
+}
+
+function attributionDb() {
+  return open([
+    {
+      id: "clip",
+      source: "local",
+      mediaType: "video",
+      files: [file("clip.mp4", 700, "video"), file("clip.jpg", 100)],
+    },
+    {
+      id: "still",
+      source: "local",
+      mediaType: "image",
+      fileSize: 50,
+      files: [file("still.jpg", 200), file("still-2.jpg", undefined)],
+    },
+    { id: "trashed", deleted: true, files: [file("old.mp4", 9000)] },
+  ]);
+}
+
+function folderDb() {
+  return open(
+    [
+      { id: "a", files: [file("a.jpg", 100)], folders: ["work", "client"] },
+      { id: "b", files: [file("b.jpg", 40)], folders: ["client"] },
+      { id: "c", files: [file("c.jpg", 10)], folders: ["home"] },
+      {
+        id: "gone",
+        deleted: true,
+        files: [file("gone.jpg", 999)],
+        folders: ["work"],
+      },
+    ],
+    [
+      { id: "work", parentId: null },
+      { id: "client", parentId: "work" },
+      { id: "home", parentId: null },
+    ],
+  );
 }
 
 describe.skipIf(!nativeAvailable())("largest Saves", () => {
@@ -197,26 +234,8 @@ describe.skipIf(!nativeAvailable())("largest files", () => {
 });
 
 describe.skipIf(!nativeAvailable())("storage attribution", () => {
-  const db = () =>
-    open([
-      {
-        id: "clip",
-        source: "local",
-        mediaType: "video",
-        files: [file("clip.mp4", 700, "video"), file("clip.jpg", 100)],
-      },
-      {
-        id: "still",
-        source: "local",
-        mediaType: "image",
-        fileSize: 50,
-        files: [file("still.jpg", 200), file("still-2.jpg", undefined)],
-      },
-      { id: "trashed", deleted: true, files: [file("old.mp4", 9000)] },
-    ]);
-
   it("sums every recorded file size, not the first file alone", () => {
-    const result = storageAttribution(db());
+    const result = storageAttribution(attributionDb());
     expect(result.totalBytes).toBe(1000);
     expect(result.saves).toBe(2);
     expect(result.types).toEqual([
@@ -226,46 +245,26 @@ describe.skipIf(!nativeAvailable())("storage attribution", () => {
   });
 
   it("groups by the source identity the Library filters on", () => {
-    expect(storageAttribution(db()).sources).toEqual([
+    expect(storageAttribution(attributionDb()).sources).toEqual([
       { key: "local", bytes: 1000, saves: 2 },
     ]);
   });
 
   it("groups by file extension and counts each Save once", () => {
-    expect(storageAttribution(db()).extensions).toEqual([
+    expect(storageAttribution(attributionDb()).extensions).toEqual([
       { key: "mp4", bytes: 700, saves: 1 },
       { key: "jpg", bytes: 300, saves: 2 },
     ]);
   });
 
   it("reports files without a recorded size instead of counting them", () => {
-    expect(storageAttribution(db()).unsizedFiles).toBe(1);
+    expect(storageAttribution(attributionDb()).unsizedFiles).toBe(1);
   });
 });
 
 describe.skipIf(!nativeAvailable())("folder storage", () => {
-  const db = () =>
-    open(
-      [
-        { id: "a", files: [file("a.jpg", 100)], folders: ["work", "client"] },
-        { id: "b", files: [file("b.jpg", 40)], folders: ["client"] },
-        { id: "c", files: [file("c.jpg", 10)], folders: ["home"] },
-        {
-          id: "gone",
-          deleted: true,
-          files: [file("gone.jpg", 999)],
-          folders: ["work"],
-        },
-      ],
-      [
-        { id: "work", parentId: null },
-        { id: "client", parentId: "work" },
-        { id: "home", parentId: null },
-      ],
-    );
-
   it("rolls subfolders into their top-level folder once per Save", () => {
-    expect(storageAttribution(db()).folders).toEqual([
+    expect(storageAttribution(folderDb()).folders).toEqual([
       { id: "work", name: "work", bytes: 140, saves: 2 },
       { id: "home", name: "home", bytes: 10, saves: 1 },
     ]);

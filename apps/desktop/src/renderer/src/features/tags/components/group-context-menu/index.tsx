@@ -1,5 +1,6 @@
 import { IconBarsFilter, IconMerge, IconPencil, IconTrash } from "@pond/icons";
-import { Button, Chip, type MenuItemSpec } from "@pond/ui";
+import { Button, Chip } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { FOLDER_SWATCHES } from "@/shared/lib/folder-icons";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
@@ -10,7 +11,7 @@ export interface TagGroupMenuActions {
   onFilter: () => void;
   onRename: () => void;
   onChangeColor: (color: string | null) => void;
-  mergeTargets: string[];
+  mergeTargets: Array<string>;
   onMerge: (group: string) => void;
   onRequestDelete: () => void;
 }
@@ -42,7 +43,9 @@ function ColorSwatches({
   );
 }
 
-export function buildTagGroupMenuItems(a: TagGroupMenuActions): MenuItemSpec[] {
+export function buildTagGroupMenuItems(
+  a: TagGroupMenuActions,
+): Array<MenuItemSpec> {
   return [
     {
       label: "Filter Items with the Tag(s)",

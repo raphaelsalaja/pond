@@ -18,7 +18,7 @@ import type { AssetMedia, FingerprintSets } from "./types";
 export interface FingerprintAlgorithm {
   algorithm: string;
   version: number;
-  media: readonly AssetMedia[];
+  media: ReadonlyArray<AssetMedia>;
   needsFfmpeg: boolean;
 }
 
@@ -60,7 +60,7 @@ const LIVE_ASSETS = `
   JOIN saves s ON s.id = a.save_id AND s.deleted_at IS NULL
   WHERE length(a.sha256) = 64`;
 
-function mediaList(media: readonly AssetMedia[]): string {
+function mediaList(media: ReadonlyArray<AssetMedia>): string {
   return media.map((item) => `'${item}'`).join(", ");
 }
 
@@ -86,8 +86,8 @@ export function nextFingerprintJobs(
   sqlite: Database.Database,
   limit: number,
   now = Date.now(),
-): FingerprintJob[] {
-  const jobs: FingerprintJob[] = [];
+): Array<FingerprintJob> {
+  const jobs: Array<FingerprintJob> = [];
   for (const algorithm of Object.values(FINGERPRINT_ALGORITHMS)) {
     if (jobs.length >= limit) break;
     const rows = z.array(JobRowSchema).parse(
@@ -113,7 +113,7 @@ export function nextFingerprintJobs(
           limit: limit - jobs.length,
         }),
     );
-    for (const row of rows)
+    for (const row of rows) {
       jobs.push({
         sha256: row.sha256,
         saveId: row.save_id,
@@ -122,6 +122,7 @@ export function nextFingerprintJobs(
         media: row.media,
         algorithm,
       });
+    }
   }
   return jobs;
 }

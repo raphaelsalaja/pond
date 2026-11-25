@@ -4,6 +4,6 @@ export interface SplitPostSummary {
   source: string;
   title: string | null;
   /** Live Saves in the post, in post order. */
-  saveIds: string[];
+  saveIds: Array<string>;
   savedAt: number;
 }

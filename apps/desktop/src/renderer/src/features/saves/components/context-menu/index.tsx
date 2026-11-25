@@ -1,4 +1,5 @@
 import type { MenuItemSpec } from "@pond/ui";
+import { isElement } from "@pond/ui/dom";
 import type { ReactElement } from "react";
 import { createContext, useContext, useState } from "react";
 import { useSave } from "@/features/saves/hooks/use-saves";
@@ -6,10 +7,10 @@ import {
   buildSaveMenu,
   contextMenuSaves,
   loadOpenWithApps,
-  type OpenWithApp,
   openWithKind,
   peekOpenWithApps,
 } from "@/features/saves/lib/menu";
+import type { OpenWithApp } from "@/features/saves/lib/menu";
 import { selectOnlySave } from "@/features/saves/lib/select";
 import { pool } from "@/features/saves/state/pool";
 import { selection } from "@/features/saves/state/selection";
@@ -23,7 +24,7 @@ const SAVE_MENU_SEARCH_LABEL = "Search save operations";
 const HostedContext = createContext(false);
 
 function useSaveMenu() {
-  const [openWithApps, setOpenWithApps] = useState<OpenWithApp[]>([]);
+  const [openWithApps, setOpenWithApps] = useState<Array<OpenWithApp>>([]);
   return {
     open(save: Save) {
       if (!selection.has(save.id)) selectOnlySave(save.id);
@@ -68,12 +69,14 @@ export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
 }
 
 function targetSaveId(target: EventTarget | null): string | null {
-  if (!(target instanceof Element)) return null;
+  if (!isElement(target)) {
+    return null;
+  }
   return target.closest<HTMLElement>("[data-save-id]")?.dataset.saveId ?? null;
 }
 
 interface SaveCollectionContextMenuProps {
-  buildBackgroundItems: () => MenuItemSpec[];
+  buildBackgroundItems: () => Array<MenuItemSpec>;
   acceptsBackground: (target: EventTarget | null) => boolean;
   onOpenSave?: (save: Save) => void;
   children: ReactElement;
@@ -103,7 +106,9 @@ export function SaveCollectionContextMenu({
           if (save) {
             menu.open(save);
             onOpenSave?.(save);
-          } else if (!acceptsBackground(element)) eventDetails.cancel();
+          } else if (!acceptsBackground(element)) {
+            eventDetails.cancel();
+          }
         }}
         buildItems={() =>
           target ? menu.items(target) : buildBackgroundItems()

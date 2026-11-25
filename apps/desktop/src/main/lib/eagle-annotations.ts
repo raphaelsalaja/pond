@@ -42,8 +42,8 @@ function formatTimestamp(seconds: number): string {
 function annotationLines(
   comments: EagleComments = [],
   videoNotes: EagleVideoNotes = [],
-): string[] {
-  const lines: string[] = [];
+): Array<string> {
+  const lines: Array<string> = [];
   for (const comment of comments) {
     if (!comment) continue;
     const texts = [
@@ -59,8 +59,9 @@ function annotationLines(
       return [{ time: note.timeSec ?? note.time ?? note.duration ?? 0, text }];
     })
     .sort((a, b) => a.time - b.time);
-  for (const note of timed)
+  for (const note of timed) {
     lines.push(`${formatTimestamp(note.time)} ${note.text}`);
+  }
   return lines;
 }
 

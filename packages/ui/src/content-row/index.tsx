@@ -1,14 +1,15 @@
 import { clsx as cn } from "clsx";
-import { Button, type ButtonProps } from "../button";
+import { Button } from "../button";
+import type { ButtonProps } from "../button";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentPropsWithoutRef<"article"> {}
+type RootProps = React.ComponentPropsWithoutRef<"article">;
 
 function Root({ className, ...props }: RootProps) {
   return <article className={cn(styles.root, className)} {...props} />;
 }
 
-interface TriggerProps extends React.ComponentPropsWithoutRef<"button"> {}
+type TriggerProps = React.ComponentPropsWithoutRef<"button">;
 
 function Trigger({ className, ...props }: TriggerProps) {
   return (
@@ -30,19 +31,19 @@ function Media({ className, size = "icon", ...props }: MediaProps) {
   );
 }
 
-interface ContentProps extends React.ComponentPropsWithoutRef<"span"> {}
+type ContentProps = React.ComponentPropsWithoutRef<"span">;
 
 function Content({ className, ...props }: ContentProps) {
   return <span className={cn(styles.content, className)} {...props} />;
 }
 
-interface TitleProps extends React.ComponentPropsWithoutRef<"span"> {}
+type TitleProps = React.ComponentPropsWithoutRef<"span">;
 
 function Title({ className, ...props }: TitleProps) {
   return <span className={cn(styles.title, className)} {...props} />;
 }
 
-interface DescriptionProps extends React.ComponentPropsWithoutRef<"span"> {}
+type DescriptionProps = React.ComponentPropsWithoutRef<"span">;
 
 function Description({ className, ...props }: DescriptionProps) {
   return <span className={cn(styles.description, className)} {...props} />;

@@ -1,8 +1,5 @@
-import {
-  type AnyRouter,
-  type ParsedLocation,
-  useRouter,
-} from "@tanstack/react-router";
+import { useRouter } from "@tanstack/react-router";
+import type { AnyRouter, ParsedLocation } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { RouteSearch } from "@/shared/lib/route-search";

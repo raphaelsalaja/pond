@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const { existsSync, readdirSync } = require("node:fs");
 const { mkdir, mkdtemp, rm, writeFile } = require("node:fs/promises");
 const { tmpdir } = require("node:os");
-const { join } = require("node:path");
+const path = require("node:path");
 const test = require("node:test");
 const verifyBinaries = require("./verify-binaries.cjs");
 
@@ -13,7 +13,7 @@ function buildContext(appOutDir, electronPlatformName, arch = "x64") {
     electronPlatformName,
     packager: {
       appInfo: { productFilename: "Pond" },
-      info: { buildResourcesDir: join(appOutDir, "build") },
+      info: { buildResourcesDir: path.join(appOutDir, "build") },
     },
   };
 }
@@ -34,7 +34,7 @@ function verify(context) {
 }
 
 async function withTemporaryDirectory(run) {
-  const directory = await mkdtemp(join(tmpdir(), "pond-packaging-test-"));
+  const directory = await mkdtemp(path.join(tmpdir(), "pond-packaging-test-"));
   try {
     await run(directory);
   } finally {
@@ -43,20 +43,23 @@ async function withTemporaryDirectory(run) {
 }
 
 async function writeTintIcon(resourcesDirectory) {
-  const tint = join(resourcesDirectory, "app-icons", "aqua");
+  const tint = path.join(resourcesDirectory, "app-icons", "aqua");
   await mkdir(tint, { recursive: true });
-  await writeFile(join(tint, "default.png"), "binary");
+  await writeFile(path.join(tint, "default.png"), "binary");
 }
 
 async function writeWindowsRuntime(resourcesDirectory, options = {}) {
-  const binaryDirectory = join(resourcesDirectory, "bin");
+  const binaryDirectory = path.join(resourcesDirectory, "bin");
   await mkdir(binaryDirectory, { recursive: true });
-  await writeFile(join(binaryDirectory, "ffmpeg.exe"), "binary");
+  await writeFile(path.join(binaryDirectory, "ffmpeg.exe"), "binary");
   if (options.nativeHost !== false) {
-    await writeFile(join(binaryDirectory, "pond-native-host.exe"), "binary");
+    await writeFile(
+      path.join(binaryDirectory, "pond-native-host.exe"),
+      "binary",
+    );
   }
   await mkdir(
-    join(
+    path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/better-sqlite3/prebuilds",
     ),
@@ -71,35 +74,35 @@ async function writeWindowsRuntime(resourcesDirectory, options = {}) {
     "win32",
     "x64",
   );
-  await mkdir(join(sqliteVec, ".."), { recursive: true });
+  await mkdir(path.join(sqliteVec, ".."), { recursive: true });
   await writeFile(sqliteVec, "binary");
   if (options.sharp !== false) {
-    const lib = join(
+    const lib = path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/@img/sharp-win32-x64/lib",
     );
     await mkdir(lib, { recursive: true });
-    await writeFile(join(lib, "sharp-win32-x64.node"), "binary");
-    await writeFile(join(lib, "libvips-42.dll"), "binary");
+    await writeFile(path.join(lib, "sharp-win32-x64.node"), "binary");
+    await writeFile(path.join(lib, "libvips-42.dll"), "binary");
   }
   if (options.onnx !== false) {
-    const bin = join(
+    const bin = path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/win32/x64",
     );
     await mkdir(bin, { recursive: true });
-    await writeFile(join(bin, "onnxruntime_binding.node"), "binary");
-    await writeFile(join(bin, "onnxruntime.dll"), "binary");
+    await writeFile(path.join(bin, "onnxruntime_binding.node"), "binary");
+    await writeFile(path.join(bin, "onnxruntime.dll"), "binary");
   }
   if (options.tints !== false) await writeTintIcon(resourcesDirectory);
   if (options.icon !== false) {
-    const build = join(resourcesDirectory, "..", "build");
+    const build = path.join(resourcesDirectory, "..", "build");
     await mkdir(build, { recursive: true });
-    await writeFile(join(build, "icon.png"), "binary");
+    await writeFile(path.join(build, "icon.png"), "binary");
   }
 }
 
-test("uses the executable name required by each packaged platform", () => {
+void test("uses the executable name required by each packaged platform", () => {
   assert.equal(verifyBinaries.ffmpegName("darwin"), "ffmpeg");
   assert.equal(verifyBinaries.ffmpegName("linux"), "ffmpeg");
   assert.equal(verifyBinaries.ffmpegName("win32"), "ffmpeg.exe");
@@ -108,20 +111,20 @@ test("uses the executable name required by each packaged platform", () => {
   assert.equal(verifyBinaries.nativeHostName("win32"), "pond-native-host.exe");
 });
 
-test("accepts the Windows ffmpeg executable in the packaged resources", async () => {
+void test("accepts the Windows ffmpeg executable in the packaged resources", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeWindowsRuntime(join(appOutDir, "resources"));
+    await writeWindowsRuntime(path.join(appOutDir, "resources"));
 
     await verify(buildContext(appOutDir, "win32"));
   });
 });
 
-test("rejects a Windows package containing only the Unix ffmpeg name", async () => {
+void test("rejects a Windows package containing only the Unix ffmpeg name", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    const binaryDirectory = join(appOutDir, "resources", "bin");
-    await writeWindowsRuntime(join(appOutDir, "resources"));
-    await rm(join(binaryDirectory, "ffmpeg.exe"));
-    await writeFile(join(binaryDirectory, "ffmpeg"), "binary");
+    const binaryDirectory = path.join(appOutDir, "resources", "bin");
+    await writeWindowsRuntime(path.join(appOutDir, "resources"));
+    await rm(path.join(binaryDirectory, "ffmpeg.exe"));
+    await writeFile(path.join(binaryDirectory, "ffmpeg"), "binary");
 
     await assert.rejects(
       verify(buildContext(appOutDir, "win32")),
@@ -130,9 +133,9 @@ test("rejects a Windows package containing only the Unix ffmpeg name", async () 
   });
 });
 
-test("rejects a Windows package without its native-host executable", async () => {
+void test("rejects a Windows package without its native-host executable", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeWindowsRuntime(join(appOutDir, "resources"), {
+    await writeWindowsRuntime(path.join(appOutDir, "resources"), {
       nativeHost: false,
     });
 
@@ -143,9 +146,11 @@ test("rejects a Windows package without its native-host executable", async () =>
   });
 });
 
-test("rejects a Windows package without the sharp runtime", async () => {
+void test("rejects a Windows package without the sharp runtime", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeWindowsRuntime(join(appOutDir, "resources"), { sharp: false });
+    await writeWindowsRuntime(path.join(appOutDir, "resources"), {
+      sharp: false,
+    });
 
     await assert.rejects(
       verify(buildContext(appOutDir, "win32")),
@@ -154,9 +159,11 @@ test("rejects a Windows package without the sharp runtime", async () => {
   });
 });
 
-test("rejects a Windows package without the onnxruntime libraries", async () => {
+void test("rejects a Windows package without the onnxruntime libraries", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeWindowsRuntime(join(appOutDir, "resources"), { onnx: false });
+    await writeWindowsRuntime(path.join(appOutDir, "resources"), {
+      onnx: false,
+    });
 
     await assert.rejects(
       verify(buildContext(appOutDir, "win32")),
@@ -165,9 +172,11 @@ test("rejects a Windows package without the onnxruntime libraries", async () => 
   });
 });
 
-test("rejects a Windows package built without the app icon", async () => {
+void test("rejects a Windows package built without the app icon", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeWindowsRuntime(join(appOutDir, "resources"), { icon: false });
+    await writeWindowsRuntime(path.join(appOutDir, "resources"), {
+      icon: false,
+    });
 
     await assert.rejects(
       verify(buildContext(appOutDir, "win32")),
@@ -176,9 +185,11 @@ test("rejects a Windows package built without the app icon", async () => {
   });
 });
 
-test("rejects a package without the tint icons", async () => {
+void test("rejects a package without the tint icons", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeWindowsRuntime(join(appOutDir, "resources"), { tints: false });
+    await writeWindowsRuntime(path.join(appOutDir, "resources"), {
+      tints: false,
+    });
 
     await assert.rejects(
       verify(buildContext(appOutDir, "win32")),
@@ -188,12 +199,12 @@ test("rejects a package without the tint icons", async () => {
 });
 
 async function writeMacRuntime(resourcesDirectory, arch, options = {}) {
-  const binaryDirectory = join(resourcesDirectory, "bin");
+  const binaryDirectory = path.join(resourcesDirectory, "bin");
   await mkdir(binaryDirectory, { recursive: true });
-  await writeFile(join(binaryDirectory, "ffmpeg"), "binary");
-  await writeFile(join(binaryDirectory, "pond-native-host"), "binary");
+  await writeFile(path.join(binaryDirectory, "ffmpeg"), "binary");
+  await writeFile(path.join(binaryDirectory, "pond-native-host"), "binary");
   await mkdir(
-    join(
+    path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/better-sqlite3/prebuilds",
     ),
@@ -208,51 +219,61 @@ async function writeMacRuntime(resourcesDirectory, arch, options = {}) {
     "darwin",
     arch,
   );
-  await mkdir(join(sqliteVec, ".."), { recursive: true });
+  await mkdir(path.join(sqliteVec, ".."), { recursive: true });
   await writeFile(sqliteVec, "binary");
-  const sharpDir = join(
+  const sharpDir = path.join(
     resourcesDirectory,
     `app.asar.unpacked/node_modules/@img/sharp-darwin-${arch}/lib`,
   );
   await mkdir(sharpDir, { recursive: true });
-  await writeFile(join(sharpDir, `sharp-darwin-${arch}.node`), "binary");
-  const libvipsDir = join(
+  await writeFile(path.join(sharpDir, `sharp-darwin-${arch}.node`), "binary");
+  const libvipsDir = path.join(
     resourcesDirectory,
     `app.asar.unpacked/node_modules/@img/sharp-libvips-darwin-${arch}/lib`,
   );
   await mkdir(libvipsDir, { recursive: true });
-  await writeFile(join(libvipsDir, "libvips.dylib"), "binary");
+  await writeFile(path.join(libvipsDir, "libvips.dylib"), "binary");
   if (arch === "arm64") {
-    const onnxDir = join(
+    const onnxDir = path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/darwin/arm64",
     );
     await mkdir(onnxDir, { recursive: true });
-    await writeFile(join(onnxDir, "onnxruntime_binding.node"), "binary");
-    await writeFile(join(onnxDir, "libonnxruntime.1.dylib"), "binary");
+    await writeFile(path.join(onnxDir, "onnxruntime_binding.node"), "binary");
+    await writeFile(path.join(onnxDir, "libonnxruntime.1.dylib"), "binary");
   }
   await writeTintIcon(resourcesDirectory);
   if (options.catalog !== false) {
     await writeFile(
-      join(resourcesDirectory, "Assets.car"),
+      path.join(resourcesDirectory, "Assets.car"),
       options.catalog ?? "binary",
     );
   }
 }
 
 for (const arch of ["arm64", "x64"]) {
-  test(`accepts a macOS ${arch} package with the Icon Composer catalog`, async () => {
+  void test(`accepts a macOS ${arch} package with the Icon Composer catalog`, async () => {
     await withTemporaryDirectory(async (appOutDir) => {
-      const resources = join(appOutDir, "Pond.app", "Contents", "Resources");
+      const resources = path.join(
+        appOutDir,
+        "Pond.app",
+        "Contents",
+        "Resources",
+      );
       await writeMacRuntime(resources, arch);
 
       await verify(buildContext(appOutDir, "darwin", arch));
     });
   });
 
-  test(`rejects a macOS ${arch} package without the Icon Composer catalog`, async () => {
+  void test(`rejects a macOS ${arch} package without the Icon Composer catalog`, async () => {
     await withTemporaryDirectory(async (appOutDir) => {
-      const resources = join(appOutDir, "Pond.app", "Contents", "Resources");
+      const resources = path.join(
+        appOutDir,
+        "Pond.app",
+        "Contents",
+        "Resources",
+      );
       await writeMacRuntime(resources, arch, { catalog: false });
 
       await assert.rejects(
@@ -263,9 +284,9 @@ for (const arch of ["arm64", "x64"]) {
   });
 }
 
-test("rejects a macOS package with an empty Icon Composer catalog", async () => {
+void test("rejects a macOS package with an empty Icon Composer catalog", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    const resources = join(appOutDir, "Pond.app", "Contents", "Resources");
+    const resources = path.join(appOutDir, "Pond.app", "Contents", "Resources");
     await writeMacRuntime(resources, "arm64", { catalog: "" });
 
     await assert.rejects(
@@ -276,14 +297,14 @@ test("rejects a macOS package with an empty Icon Composer catalog", async () => 
 });
 
 async function writeLinuxRuntime(resourcesDirectory, options = {}) {
-  const binaryDirectory = join(resourcesDirectory, "bin");
+  const binaryDirectory = path.join(resourcesDirectory, "bin");
   await mkdir(binaryDirectory, { recursive: true });
-  await writeFile(join(binaryDirectory, "ffmpeg"), "binary");
+  await writeFile(path.join(binaryDirectory, "ffmpeg"), "binary");
   if (options.nativeHost !== false) {
-    await writeFile(join(binaryDirectory, "pond-native-host"), "binary");
+    await writeFile(path.join(binaryDirectory, "pond-native-host"), "binary");
   }
   await mkdir(
-    join(
+    path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/better-sqlite3/prebuilds",
     ),
@@ -298,48 +319,48 @@ async function writeLinuxRuntime(resourcesDirectory, options = {}) {
     "linux",
     "x64",
   );
-  await mkdir(join(sqliteVec, ".."), { recursive: true });
+  await mkdir(path.join(sqliteVec, ".."), { recursive: true });
   await writeFile(sqliteVec, "binary");
   if (options.sharp !== false) {
-    const sharp = join(
+    const sharp = path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/@img/sharp-linux-x64/lib",
     );
     await mkdir(sharp, { recursive: true });
-    await writeFile(join(sharp, "sharp-linux-x64.node"), "binary");
-    const libvips = join(
+    await writeFile(path.join(sharp, "sharp-linux-x64.node"), "binary");
+    const libvips = path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/@img/sharp-libvips-linux-x64/lib",
     );
     await mkdir(libvips, { recursive: true });
-    await writeFile(join(libvips, "libvips-cpp.so.8.18.6"), "binary");
+    await writeFile(path.join(libvips, "libvips-cpp.so.8.18.6"), "binary");
   }
   if (options.onnx !== false) {
-    const bin = join(
+    const bin = path.join(
       resourcesDirectory,
       "app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/linux/x64",
     );
     await mkdir(bin, { recursive: true });
-    await writeFile(join(bin, "onnxruntime_binding.node"), "binary");
-    await writeFile(join(bin, "libonnxruntime.so.1"), "binary");
+    await writeFile(path.join(bin, "onnxruntime_binding.node"), "binary");
+    await writeFile(path.join(bin, "libonnxruntime.so.1"), "binary");
   }
   await writeTintIcon(resourcesDirectory);
-  const build = join(resourcesDirectory, "..", "build");
+  const build = path.join(resourcesDirectory, "..", "build");
   await mkdir(build, { recursive: true });
-  await writeFile(join(build, "icon.png"), "binary");
+  await writeFile(path.join(build, "icon.png"), "binary");
 }
 
-test("accepts a Linux package with every native runtime", async () => {
+void test("accepts a Linux package with every native runtime", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeLinuxRuntime(join(appOutDir, "resources"));
+    await writeLinuxRuntime(path.join(appOutDir, "resources"));
 
     await verify(buildContext(appOutDir, "linux"));
   });
 });
 
-test("rejects a Linux package without its native-host executable", async () => {
+void test("rejects a Linux package without its native-host executable", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeLinuxRuntime(join(appOutDir, "resources"), {
+    await writeLinuxRuntime(path.join(appOutDir, "resources"), {
       nativeHost: false,
     });
 
@@ -350,9 +371,11 @@ test("rejects a Linux package without its native-host executable", async () => {
   });
 });
 
-test("rejects a Linux package without the sharp runtime", async () => {
+void test("rejects a Linux package without the sharp runtime", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeLinuxRuntime(join(appOutDir, "resources"), { sharp: false });
+    await writeLinuxRuntime(path.join(appOutDir, "resources"), {
+      sharp: false,
+    });
 
     await assert.rejects(
       verify(buildContext(appOutDir, "linux")),
@@ -361,9 +384,9 @@ test("rejects a Linux package without the sharp runtime", async () => {
   });
 });
 
-test("rejects a Linux package without the onnxruntime libraries", async () => {
+void test("rejects a Linux package without the onnxruntime libraries", async () => {
   await withTemporaryDirectory(async (appOutDir) => {
-    await writeLinuxRuntime(join(appOutDir, "resources"), { onnx: false });
+    await writeLinuxRuntime(path.join(appOutDir, "resources"), { onnx: false });
 
     await assert.rejects(
       verify(buildContext(appOutDir, "linux")),
@@ -372,54 +395,67 @@ test("rejects a Linux package without the onnxruntime libraries", async () => {
   });
 });
 
-test("rejects a bundled ffmpeg that does not run", {
-  skip: process.platform !== "win32",
-}, async () => {
-  await withTemporaryDirectory(async (appOutDir) => {
-    await writeWindowsRuntime(join(appOutDir, "resources"));
+void test(
+  "rejects a bundled ffmpeg that does not run",
+  {
+    skip: process.platform !== "win32",
+  },
+  async () => {
+    await withTemporaryDirectory(async (appOutDir) => {
+      await writeWindowsRuntime(path.join(appOutDir, "resources"));
 
-    await assert.rejects(
-      verifyBinaries.verify(buildContext(appOutDir, "win32"), {
-        runFfmpeg: () => ({ status: 1 }),
-        runOnnx: () => ({ status: 0 }),
-      }),
-      /does not run/,
-    );
-  });
-});
+      await assert.rejects(
+        verifyBinaries.verify(buildContext(appOutDir, "win32"), {
+          runFfmpeg: () => ({ status: 1 }),
+          runOnnx: () => ({ status: 0 }),
+        }),
+        /does not run/,
+      );
+    });
+  },
+);
 
 const hostPlatform =
   process.platform === "win32" || process.platform === "linux"
     ? process.platform
     : null;
 
-test("rejects an onnxruntime that cannot run a CPU session", {
-  skip: !hostPlatform || process.arch !== "x64",
-}, async () => {
-  await withTemporaryDirectory(async (appOutDir) => {
-    const resources = join(appOutDir, "resources");
-    if (hostPlatform === "win32") await writeWindowsRuntime(resources);
-    else await writeLinuxRuntime(resources);
+void test(
+  "rejects an onnxruntime that cannot run a CPU session",
+  {
+    skip: !hostPlatform || process.arch !== "x64",
+  },
+  async () => {
+    await withTemporaryDirectory(async (appOutDir) => {
+      const resources = path.join(appOutDir, "resources");
+      if (hostPlatform === "win32") {
+        await writeWindowsRuntime(resources);
+      } else {
+        await writeLinuxRuntime(resources);
+      }
 
-    await assert.rejects(
-      verifyBinaries.verify(buildContext(appOutDir, hostPlatform), {
-        runFfmpeg: () => ({ status: 0 }),
-        runOnnx: () => ({ status: 1, stderr: "missing DirectML.dll" }),
-      }),
-      /cannot run a CPU session/,
-    );
-  });
-});
+      await assert.rejects(
+        verifyBinaries.verify(buildContext(appOutDir, hostPlatform), {
+          runFfmpeg: () => ({ status: 0 }),
+          runOnnx: () => ({ status: 1, stderr: "missing DirectML.dll" }),
+        }),
+        /cannot run a CPU session/,
+      );
+    });
+  },
+);
 
 async function writeOnnxFiles(resourcesDirectory, platform, arch, files) {
-  const directory = join(
+  const directory = path.join(
     resourcesDirectory,
     "app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6",
     platform,
     arch,
   );
   await mkdir(directory, { recursive: true });
-  for (const file of files) await writeFile(join(directory, file), "binary");
+  for (const file of files) {
+    await writeFile(path.join(directory, file), "binary");
+  }
   return directory;
 }
 
@@ -447,18 +483,18 @@ for (const [platform, kept, pruned] of [
     ["DirectML.dll", "dxcompiler.dll", "dxil.dll"],
   ],
 ]) {
-  test(`prunes onnxruntime libraries a ${platform} CPU session never loads`, async () => {
+  void test(`prunes onnxruntime libraries a ${platform} CPU session never loads`, async () => {
     await withTemporaryDirectory(async (resources) => {
       const directory = await writeOnnxFiles(resources, platform, "x64", [
-        ...kept,
-        ...pruned,
+        ...Array.from(kept),
+        ...Array.from(pruned),
       ]);
       await writeOnnxFiles(resources, platform, "arm64", kept);
 
       verifyBinaries.pruneOnnxRuntime(resources, platform, "x64");
 
-      assert.deepEqual(readdirSync(directory).sort(), [...kept].sort());
-      assert.equal(existsSync(join(directory, "..", "arm64")), false);
+      assert.deepEqual(readdirSync(directory).sort(), Array.from(kept).sort());
+      assert.equal(existsSync(path.join(directory, "..", "arm64")), false);
     });
   });
 }

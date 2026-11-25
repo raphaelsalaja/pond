@@ -1,7 +1,8 @@
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type Cookie, session } from "electron";
+import { session } from "electron";
+import type { Cookie } from "electron";
 import log from "electron-log/main.js";
 import { LEGACY_PARTITION } from "../sync/accounts";
 
@@ -33,16 +34,16 @@ export async function writeNetscapeCookies(
   const cleanup = async () => {
     try {
       await rm(dir, { recursive: true, force: true });
-    } catch (err) {
-      log.warn("[pond cookies] cleanup failed", dir, err);
+    } catch (error) {
+      log.warn("[pond cookies] cleanup failed", dir, error);
     }
   };
 
-  let allCookies: Cookie[] = [];
+  let allCookies: Array<Cookie> = [];
   try {
     const persistent = session.fromPartition(partition);
     const buckets = await Promise.all(
-      COOKIE_HOSTS.map(async (url): Promise<Cookie[]> => {
+      COOKIE_HOSTS.map(async (url): Promise<Array<Cookie>> => {
         try {
           return await persistent.cookies.get({ url });
         } catch {
@@ -59,8 +60,8 @@ export async function writeNetscapeCookies(
         allCookies.push(c);
       }
     }
-  } catch (err) {
-    log.warn("[pond cookies] enumerate failed; writing empty jar", err);
+  } catch (error) {
+    log.warn("[pond cookies] enumerate failed; writing empty jar", error);
     allCookies = [];
   }
 
@@ -105,7 +106,11 @@ function formatNetscapeLine(c: Cookie): string | null {
 }
 
 function sanitise(s: string): string | null {
-  if (s == null) return null;
-  if (s.includes("\n") || s.includes("\r") || s.includes("\t")) return null;
+  if (s === null || s === undefined) {
+    return null;
+  }
+  if (s.includes("\n") || s.includes("\r") || s.includes("\t")) {
+    return null;
+  }
   return s;
 }

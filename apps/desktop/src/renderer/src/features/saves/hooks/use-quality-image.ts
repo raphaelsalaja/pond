@@ -6,24 +6,32 @@ export function useQualityImage(
   sharper: string,
   enabled: boolean,
 ): string {
-  const [source, setSource] = useState(thumbnail);
+  const key = `${enabled}\n${thumbnail}\n${sharper}`;
+  const [decoded, setDecoded] = useState({ key, sharp: false });
+  if (decoded.key !== key) {
+    setDecoded({ key, sharp: false });
+  }
+  const source = decoded.key === key && decoded.sharp ? sharper : thumbnail;
 
   useEffect(() => {
-    setSource(thumbnail);
-    if (!enabled || thumbnail === sharper) return;
+    if (!enabled || thumbnail === sharper) {
+      return;
+    }
     let current = true;
     const cancel = qualityDecodeBudget.schedule(async () => {
       const image = new Image();
       image.decoding = "async";
       image.src = sharper;
       await image.decode();
-      if (current) setSource(sharper);
+      if (current) {
+        setDecoded({ key, sharp: true });
+      }
     });
     return () => {
       current = false;
       cancel();
     };
-  }, [enabled, sharper, thumbnail]);
+  }, [enabled, key, sharper, thumbnail]);
 
   return source;
 }

@@ -1,8 +1,5 @@
-import {
-  API_TOKEN_SCOPE_LABELS,
-  API_TOKEN_SCOPES,
-  type ApiTokenScope,
-} from "@pond/schema/api";
+import { API_TOKEN_SCOPE_LABELS, API_TOKEN_SCOPES } from "@pond/schema/api";
+import type { ApiTokenScope } from "@pond/schema/api";
 import { Button, Checkbox, Dialog, Field, Input } from "@pond/ui";
 import { useId, useRef, useState } from "react";
 import { errorCopy } from "@/shared/lib/error-copy";
@@ -26,7 +23,7 @@ export function CreateTokenDialog({
 }: CreateTokenDialogProps) {
   const id = useId();
   const [name, setName] = useState("");
-  const [scopes, setScopes] = useState<ApiTokenScope[]>(["search"]);
+  const [scopes, setScopes] = useState<Array<ApiTokenScope>>(["search"]);
   const [token, setToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -67,8 +64,8 @@ export function CreateTokenDialog({
       });
       setToken(result.token);
       await onCreated();
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't create the token. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't create the token. Try again."));
     } finally {
       setBusy(false);
     }
@@ -100,7 +97,7 @@ export function CreateTokenDialog({
               </Dialog.Header>
               <Dialog.Content>
                 <Dialog.Description>
-                  Pond won't show it again. Treat it like a password.
+                  Pond won&apos;t show it again. Treat it like a password.
                 </Dialog.Description>
                 <Input.Root size="md">
                   <Input.Field

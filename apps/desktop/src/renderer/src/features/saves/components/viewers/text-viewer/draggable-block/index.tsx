@@ -25,16 +25,10 @@ import {
   DRAGOVER_COMMAND,
   DROP_COMMAND,
   KEY_DOWN_COMMAND,
-  type LexicalEditor,
-  type LexicalNode,
 } from "lexical";
-import {
-  type DragEvent as ReactDragEvent,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import type { LexicalEditor, LexicalNode } from "lexical";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { DragEvent as ReactDragEvent } from "react";
 import { createPortal } from "react-dom";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
 import {
@@ -73,8 +67,8 @@ function $walkable(node: LexicalNode): boolean {
   );
 }
 
-function $draggableKeys(): string[] {
-  const keys: string[] = [];
+function $draggableKeys(): Array<string> {
+  const keys: Array<string> = [];
   const walk = (node: LexicalNode) => {
     if ($isDraggable(node)) keys.push(node.getKey());
     if ($isElementNode(node) && ($isRootNode(node) || $walkable(node))) {
@@ -106,8 +100,9 @@ function $blockOf(node: LexicalNode | null | undefined): LexicalNode | null {
       $isDraggable(current) &&
       parent &&
       ($isRootNode(parent) || $walkable(parent))
-    )
+    ) {
       return current;
+    }
     current = parent;
   }
   return null;
@@ -266,6 +261,13 @@ function setLine(
   line.style.opacity = "1";
 }
 
+function styleBlock(
+  block: HTMLElement,
+  patch: Partial<Pick<CSSStyleDeclaration, "opacity" | "transform">>,
+): void {
+  Object.assign(block.style, patch);
+}
+
 export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
   const [editor] = useLexicalComposerContext();
   const handleRef = useRef<HTMLButtonElement>(null);
@@ -365,17 +367,21 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
       editor.registerCommand(
         KEY_DOWN_COMMAND,
         (event) => {
-          if (!(event.metaKey || event.ctrlKey) || !event.shiftKey)
+          if (!(event.metaKey || event.ctrlKey) || !event.shiftKey) {
             return false;
-          if (event.altKey) return false;
+          }
+          if (event.altKey) {
+            return false;
+          }
           const direction: Direction | null =
             event.key === "ArrowUp" ? -1 : event.key === "ArrowDown" ? 1 : null;
           if (!direction) return false;
           const selected = $selectedBlock();
           if (!selected) return false;
           event.preventDefault();
-          if ($moveBy(selected, direction))
+          if ($moveBy(selected, direction)) {
             setAnnouncement($movedLabel(selected));
+          }
           return true;
         },
         COMMAND_PRIORITY_LOW,
@@ -410,11 +416,10 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
     const transfer = event.dataTransfer;
     if (!transfer || !block) return;
     const transform = block.style.transform;
-    block.style.transform = "translateZ(0)";
-    block.style.opacity = "0.4";
+    styleBlock(block, { transform: "translateZ(0)", opacity: "0.4" });
     transfer.setDragImage(block, 0, 0);
     window.setTimeout(() => {
-      block.style.transform = transform;
+      styleBlock(block, { transform });
     });
     let key = "";
     editor.update(() => {
@@ -427,7 +432,9 @@ export function DraggableBlockPlugin({ anchor }: { anchor: HTMLElement }) {
 
   function onDragEnd() {
     dragging.current = false;
-    if (block) block.style.opacity = "";
+    if (block) {
+      styleBlock(block, { opacity: "" });
+    }
     const line = lineRef.current;
     if (line) {
       line.style.opacity = "0";

@@ -18,7 +18,7 @@ export function visibleArea(viewport: Viewport, size: Size): Box {
 }
 
 /** The visible area is part of the bounds so the viewport rectangle never leaves the map. */
-export function boardBounds(items: readonly Box[], visible: Box): Box {
+export function boardBounds(items: ReadonlyArray<Box>, visible: Box): Box {
   let left = visible.x;
   let top = visible.y;
   let right = visible.x + visible.width;

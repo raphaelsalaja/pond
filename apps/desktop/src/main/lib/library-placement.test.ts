@@ -14,7 +14,7 @@ import {
   resetLibraryPlacement,
 } from "./library-placement";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(async () => {
   resetLibraryPlacement();
@@ -86,6 +86,8 @@ it("notifies once when the open library disappears", async () => {
   await rm(root, { recursive: true });
   expect(refreshLibraryPlacement(root)).toBe("missing");
   expect(refreshLibraryPlacement(root)).toBe("missing");
-  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => {
+    setImmediate(resolve);
+  });
   expect(calls).toBe(1);
 });

@@ -7,20 +7,17 @@ import type {
   LibraryRepairJob,
   LibraryRepairKind,
 } from "@shared/library-repair-contracts";
-import {
-  type QueryClient,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect, useMemo } from "react";
 import {
   canRetryDownload,
-  type DownloadHealthRow,
   retryDownloadRows,
   useDownloadHealth,
 } from "@/features/downloads/health";
+import type { DownloadHealthRow } from "@/features/downloads/health";
 import { useEnrichmentStatus } from "@/features/enrichment/status";
 import { savesStore } from "@/features/saves/pool";
 import { errorCopy } from "@/shared/lib/error-copy";
@@ -31,12 +28,8 @@ import {
   TOAST_TIMEOUT_MS,
   updateNotification,
 } from "@/shared/lib/toast";
-import {
-  buildHealthCategories,
-  type HealthCategory,
-  type HealthCategoryId,
-  healthTotals,
-} from "./categories";
+import { buildHealthCategories, healthTotals } from "./categories";
+import type { HealthCategory, HealthCategoryId } from "./categories";
 
 const OVERVIEW_KEY = ["libraryHealth.overview"];
 
@@ -66,7 +59,7 @@ const running = new Store<ReadonlySet<HealthCategoryId>>(
 );
 
 export function useCategoryRunning(id: HealthCategoryId | null): boolean {
-  return useSelector(running, (state) => id != null && state.has(id));
+  return useSelector(running, (state) => id !== null && state.has(id));
 }
 
 /** One run per category, so a second click never starts a duplicate repair. */
@@ -91,7 +84,7 @@ function title(saveId: string): string | null {
   return savesStore.state.byId.get(saveId)?.title?.trim() || null;
 }
 
-function useHealthOverview(idleMs = 5_000) {
+function useHealthOverview(idleMs = 5000) {
   return useQuery({
     queryKey: OVERVIEW_KEY,
     queryFn: () => window.pond.query("libraryHealth.overview", {}),
@@ -102,8 +95,8 @@ function useHealthOverview(idleMs = 5_000) {
 
 function useCategories(
   overview: LibraryHealthOverview | null,
-  downloads: readonly DownloadHealthRow[],
-): HealthCategory[] {
+  downloads: ReadonlyArray<DownloadHealthRow>,
+): Array<HealthCategory> {
   const enrichment = useEnrichmentStatus();
   const missingIds = useMemo(
     () => new Set(enrichment.missingOriginals.map((save) => save.id)),
@@ -139,7 +132,7 @@ export function useHealthCategories() {
   };
 }
 
-const NO_DOWNLOADS: readonly DownloadHealthRow[] = [];
+const NO_DOWNLOADS: ReadonlyArray<DownloadHealthRow> = [];
 
 /** Drives an always-mounted indicator: polls once a minute and leaves out downloads, which would subscribe it to every Save. */
 export function useHealthSignal() {
@@ -149,7 +142,7 @@ export function useHealthSignal() {
   const job = overview.data?.job ?? null;
   return {
     categories,
-    loaded: overview.data != null,
+    loaded: overview.data !== null && overview.data !== undefined,
     checking: job?.status === "running" ? job : null,
     attention: totals.attention > 0,
     working: job?.status === "running" || totals.progress > 0,
@@ -175,11 +168,11 @@ export async function startCheck(qc: QueryClient): Promise<void> {
   try {
     const job = await window.pond.query("libraryHealth.check", {});
     setJob(qc, job);
-  } catch (cause) {
+  } catch (error) {
     notify({
       id: "library-health",
       title: "Couldn't check your library",
-      description: errorCopy(cause, "Try again."),
+      description: errorCopy(error, "Try again."),
     });
   }
 }
@@ -198,7 +191,7 @@ function setJob(qc: QueryClient, job: LibraryHealthJob): void {
 
 export async function recheckSaves(
   qc: QueryClient,
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<void> {
   const unique = [...new Set(saveIds)];
   try {
@@ -207,11 +200,11 @@ export async function recheckSaves(
         saveIds: unique.slice(start, start + RECHECK_BATCH),
       });
     }
-  } catch (cause) {
+  } catch (error) {
     notify({
       id: "library-health",
       title: "Couldn't recheck these Saves",
-      description: errorCopy(cause, "Try again."),
+      description: errorCopy(error, "Try again."),
     });
   }
   await qc.invalidateQueries({ queryKey: OVERVIEW_KEY });
@@ -221,7 +214,7 @@ export function repairSaves(
   qc: QueryClient,
   category: HealthCategoryId,
   kind: LibraryRepairKind,
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<void> {
   const unique = [...new Set(saveIds)];
   const start = () =>
@@ -239,7 +232,9 @@ export function repairSaves(
 }
 
 function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function followRepair(
@@ -270,7 +265,7 @@ async function followRepair(
 async function repairInBackground(
   qc: QueryClient,
   kind: LibraryRepairKind,
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<void> {
   const noun = REPAIR_NOUNS[kind];
   const title = `Repairing ${noun}`;
@@ -324,11 +319,11 @@ async function repairInBackground(
         timeout: TOAST_TIMEOUT_MS,
       });
     }
-  } catch (cause) {
+  } catch (error) {
     updateNotification({
       id,
       title: `Couldn't repair ${noun}`,
-      description: errorCopy(cause, "Try again."),
+      description: errorCopy(error, "Try again."),
       timeout: 5000,
     });
   }
@@ -337,7 +332,7 @@ async function repairInBackground(
 
 export function retryPosters(
   qc: QueryClient,
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): void {
   const unique = [...new Set(saveIds)].slice(0, RECHECK_BATCH);
   Dialog.confirm({
@@ -349,12 +344,14 @@ export function retryPosters(
         await window.pond.query("libraryHealth.retryPosters", {
           saveIds: unique,
         });
-        for (const id of unique) awaitingPosters.add(id);
-      } catch (cause) {
+        for (const id of unique) {
+          awaitingPosters.add(id);
+        }
+      } catch (error) {
         notify({
           id: "library-health",
           title: "Couldn't retry posters",
-          description: errorCopy(cause, "Try again."),
+          description: errorCopy(error, "Try again."),
         });
       }
       await qc.invalidateQueries({ queryKey: OVERVIEW_KEY });
@@ -363,14 +360,14 @@ export function retryPosters(
 }
 
 export async function retryDownloads(
-  rows: readonly DownloadHealthRow[],
-  saveIds: readonly string[],
+  rows: ReadonlyArray<DownloadHealthRow>,
+  saveIds: ReadonlyArray<string>,
 ): Promise<void> {
   const ids = new Set(saveIds);
   await retryDownloadRows(
-    rows
-      .map((item) => item.row)
-      .filter((row) => ids.has(row.saveId) && canRetryDownload(row)),
+    rows.flatMap(({ row }) =>
+      ids.has(row.saveId) && canRetryDownload(row) ? [row] : [],
+    ),
   );
 }
 

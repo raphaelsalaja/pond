@@ -73,9 +73,16 @@ function CaptureCard() {
     let cancelled = false;
     const run = async () => {
       try {
-        if (document.fonts?.ready) await document.fonts.ready;
-      } catch {}
-      if (ref.current) await waitForImages(ref.current);
+        const fontsReady = document.fonts?.ready;
+        if (fontsReady !== undefined) {
+          await fontsReady;
+        }
+      } catch {
+        /** A font that fails to load falls back to the system face; the capture still proceeds. */
+      }
+      if (ref.current) {
+        await waitForImages(ref.current);
+      }
       /** A hidden window can stop delivering frames, so rAF alone may never fire and the capture waits to time out. */
       await new Promise((resolve) => {
         const timer = setTimeout(resolve, 250);

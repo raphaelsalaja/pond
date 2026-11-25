@@ -7,7 +7,6 @@
 
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
 
 export function electronNodeInvocation(electronPath, args, env = process.env) {
   return {
@@ -18,7 +17,7 @@ export function electronNodeInvocation(electronPath, args, env = process.env) {
 }
 
 const invokedPath = process.argv[1];
-if (invokedPath && fileURLToPath(import.meta.url) === invokedPath) {
+if (invokedPath && import.meta.filename === invokedPath) {
   const electronPath = createRequire(import.meta.url)("electron");
   const { command, args, env } = electronNodeInvocation(
     electronPath,

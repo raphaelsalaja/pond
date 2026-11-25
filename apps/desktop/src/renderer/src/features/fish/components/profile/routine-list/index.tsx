@@ -39,12 +39,13 @@ export function RoutineList({
   onEditRoutine?: (routine: FishRoutine) => void;
 }) {
   const now = useNow();
-  if (!fish.routines.length)
+  if (!fish.routines.length) {
     return (
       <Empty.Root size="inline" variant="dashed">
         <Empty.Description>No Routines Yet</Empty.Description>
       </Empty.Root>
     );
+  }
   return (
     <ul className={styles.list}>
       {fish.routines.map((routine) => (

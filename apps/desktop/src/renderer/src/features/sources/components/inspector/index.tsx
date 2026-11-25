@@ -17,7 +17,8 @@ import { Button, Input, Settings, Sidebar, Switch } from "@pond/ui";
 import type { SourceTargetInput } from "@shared/account-contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import Fuse from "fuse.js";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useCommandContext } from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
 import {
@@ -28,28 +29,20 @@ import {
 } from "@/features/sources/components/flow/import-scope";
 import { SourceActivity } from "@/features/sources/components/inspector/activity";
 import { SourceOrganize } from "@/features/sources/components/inspector/organize";
-import {
-  type SourceIdentity,
-  SourceOverview,
-} from "@/features/sources/components/inspector/overview";
+import { SourceOverview } from "@/features/sources/components/inspector/overview";
+import type { SourceIdentity } from "@/features/sources/components/inspector/overview";
 import { SourceSchedule } from "@/features/sources/components/inspector/schedule";
 import { buildFolderRows } from "@/features/sources/components/page/lib/folder-menu";
-import {
-  type CardModel,
-  cardModel,
-} from "@/features/sources/components/sync-monitor/lib/helpers";
-import {
-  type AccountRow,
-  useAccounts,
-} from "@/features/sources/hooks/use-accounts";
+import { cardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
+import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
+import { useAccounts } from "@/features/sources/hooks/use-accounts";
+import type { AccountRow } from "@/features/sources/hooks/use-accounts";
 import {
   useWatchedFolder,
   watchedFolderName,
 } from "@/features/sources/hooks/use-watched-folder";
-import {
-  useWatches,
-  type WatchRow,
-} from "@/features/sources/hooks/use-watches";
+import { useWatches } from "@/features/sources/hooks/use-watches";
+import type { WatchRow } from "@/features/sources/hooks/use-watches";
 import type { SourceFetchPrefs } from "@/features/sources/lib/fetch-prefs";
 import {
   hasImportChoices,
@@ -61,20 +54,24 @@ import {
   accountMenuTarget,
   buildSourceActionMenu,
   buildSourceActionRows,
-  type SourceActionRow,
-  type SourceActionSections,
   watchMenuTarget,
 } from "@/features/sources/lib/source-menu";
+import type {
+  SourceActionRow,
+  SourceActionSections,
+} from "@/features/sources/lib/source-menu";
 import {
-  type SourceDetailsKind,
-  type SourceDetailsPage,
-  type SourceDetailTarget,
   sourceDetail,
   sourceDetailHref,
 } from "@/features/sources/state/source-detail";
+import type {
+  SourceDetailsKind,
+  SourceDetailsPage,
+  SourceDetailTarget,
+} from "@/features/sources/state/source-detail";
 import { useSyncByAccount } from "@/features/sources/state/sync-monitor";
 import { SearchChrome } from "@/shared/components/search-chrome";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory } from "@/shared/lib/app-router";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import { openSettings } from "@/shared/lib/open-settings";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
@@ -96,7 +93,7 @@ export interface SourceDetailPageDef {
   group?: SourceDetailGroup;
   description?: string;
   /** Row titles on the page, so sidebar search finds the page by them. */
-  items?: string[];
+  items?: Array<string>;
   /** The page draws its own heading. */
   bare?: boolean;
   content: ReactNode;
@@ -104,13 +101,13 @@ export interface SourceDetailPageDef {
 
 interface PageResult {
   page: SourceDetailPageDef;
-  items: string[];
+  items: Array<string>;
 }
 
 function searchPages(
-  pages: readonly SourceDetailPageDef[],
+  pages: ReadonlyArray<SourceDetailPageDef>,
   needle: string,
-): PageResult[] {
+): Array<PageResult> {
   const entries = pages.flatMap((page) => [
     { page, title: page.label, description: page.description ?? "" },
     ...(page.items ?? []).map((title) => ({ page, title, description: "" })),
@@ -137,22 +134,23 @@ function searchPages(
   return [...byPage.values()];
 }
 
-function groupPages(
-  pages: readonly SourceDetailPageDef[],
-): { group: SourceDetailGroup | "top"; pages: SourceDetailPageDef[] }[] {
-  const order: (SourceDetailGroup | "top")[] = [
+function groupPages(pages: ReadonlyArray<SourceDetailPageDef>): Array<{
+  group: SourceDetailGroup | "top";
+  pages: Array<SourceDetailPageDef>;
+}> {
+  const order: Array<SourceDetailGroup | "top"> = [
     "top",
     "import",
     "fetching",
     "end",
   ];
-  return order
-    .map((group) => ({
-      group,
-      pages: pages.filter((page) => (page.group ?? "top") === group),
-    }))
-    .filter((entry) => entry.pages.length > 0);
+  return order.flatMap((group) => {
+    const grouped = pages.filter((page) => (page.group ?? "top") === group);
+    return grouped.length > 0 ? [{ group, pages: grouped }] : [];
+  });
 }
+
+const NO_PAGES: ReadonlyArray<SourceDetailPageDef> = [];
 
 export type SourceDetailModel =
   | { status: "loading" }
@@ -160,7 +158,7 @@ export type SourceDetailModel =
   | {
       status: "ready";
       name: string;
-      pages: SourceDetailPageDef[];
+      pages: Array<SourceDetailPageDef>;
       initialPage: SourceDetailsPage;
       /** Mounted beside every page so switching pages keeps shared state. */
       effect?: ReactNode;
@@ -174,7 +172,7 @@ export function SourceDetailSidebar({ kind, id, page }: SourceDetailTarget) {
           model={model}
           page={page}
           onSelect={(next) =>
-            getAppRouter()?.history.replace(sourceDetailHref(kind, id, next))
+            getAppHistory()?.replace(sourceDetailHref(kind, id, next))
           }
         />
       )}
@@ -241,7 +239,7 @@ export function SourceDetailNavView({
   const active = resolveSourceDetailPage(model, page);
   const [query, setQuery] = useState("");
   const needle = query.trim();
-  const pages = model.status === "ready" ? model.pages : [];
+  const pages = model.status === "ready" ? model.pages : NO_PAGES;
   const results = useMemo(
     () => (needle ? searchPages(pages, needle) : null),
     [pages, needle],
@@ -381,7 +379,7 @@ function FolderData({
     sourceDetailModel({
       title: name,
       description:
-        lastMs == null
+        lastMs === null
           ? "Nothing imported yet"
           : `Last imported ${relativeTimeFromMs(lastMs)}`,
       source: "local",
@@ -439,7 +437,7 @@ function AccountData({
   const filters = hasImportFilters(account.source);
   const lists = hasImportLists(account.source) || !filters;
   const target = { kind: "account", id: account.id } as const;
-  const pages: SourceDetailPageDef[] = [];
+  const pages: Array<SourceDetailPageDef> = [];
   if (imports) {
     pages.push({
       id: "filters",
@@ -588,10 +586,10 @@ function accountLabel(account: AccountRow): string {
 
 function watchProperties(
   watch: WatchRow,
-  accounts: readonly AccountRow[],
-): SourceInspectorProperty[] {
+  accounts: ReadonlyArray<AccountRow>,
+): Array<SourceInspectorProperty> {
   const kind = watchKindLabel(watch.kind);
-  const properties: SourceInspectorProperty[] = [
+  const properties: Array<SourceInspectorProperty> = [
     { label: "Source", value: watchSourceLabel(watch.source) },
     { label: "Type", value: kind.charAt(0).toUpperCase() + kind.slice(1) },
     { label: "Added", value: addedLabel(watch.addedAt) },
@@ -635,11 +633,11 @@ export interface SourceDetailsProps {
   avatarUrl?: string | null;
   nickname?: string;
   actions?: SourceActionSections;
-  properties?: SourceInspectorProperty[];
+  properties?: Array<SourceInspectorProperty>;
   /** Leads the sidebar, before General. */
   overview?: SourceDetailPageDef;
   /** Pages after General; Connection always comes last. */
-  pages?: SourceDetailPageDef[];
+  pages?: Array<SourceDetailPageDef>;
   initialPage?: SourceDetailsPage;
   effect?: ReactNode;
   onNicknameSave?: (value: string) => Promise<void>;
@@ -710,7 +708,7 @@ export function sourceDetailModel({
   };
 }
 
-function ActionRows({ rows }: { rows: SourceActionRow[] }) {
+function ActionRows({ rows }: { rows: Array<SourceActionRow> }) {
   return (
     <Settings.List>
       {rows.map((row) => (
@@ -803,7 +801,7 @@ function organizePage(
 function schedulePage(
   target: SourceTargetInput,
   sync: SourceFetchPrefs,
-  rows: SourceActionRow[],
+  rows: Array<SourceActionRow>,
   model: CardModel,
   onChanged: () => void,
 ): SourceDetailPageDef {
@@ -855,7 +853,7 @@ function GeneralPage({
   "handle" | "source" | "avatarUrl" | "actions" | "onNicknameSave"
 > & {
   nickname: string;
-  properties: SourceInspectorProperty[];
+  properties: Array<SourceInspectorProperty>;
 }) {
   const picture = source !== "local" && source !== "web";
   return (
@@ -968,7 +966,7 @@ function NicknameItem({
         <Settings.ItemTitle>Nickname</Settings.ItemTitle>
         {status === "error" ? (
           <span className={styles["field-status"]} role="alert">
-            Couldn't save. Focus the field and press Enter to try again.
+            Couldn&apos;t save. Focus the field and press Enter to try again.
           </span>
         ) : (
           <Settings.ItemDescription>
@@ -988,8 +986,9 @@ function NicknameItem({
             onChange={() => setStatus("idle")}
             onBlur={(event) => void save(event.currentTarget.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter" && !event.nativeEvent.isComposing)
+              if (event.key === "Enter" && !event.nativeEvent.isComposing) {
                 event.currentTarget.blur();
+              }
             }}
           />
         </Input.Root>

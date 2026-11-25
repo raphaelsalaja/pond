@@ -22,7 +22,8 @@ import {
   IconWindow,
 } from "@pond/icons";
 import type { SavedView } from "@pond/schema/db";
-import { Chip, type MenuItemSpec } from "@pond/ui";
+import { Chip } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { librarySavedViewLink } from "@shared/library-links";
 import { filterToolbar } from "@/features/library/components/filter-menu/toolbar-state";
 import {
@@ -75,8 +76,12 @@ export function creationItems(
   onCreated: () => void,
   openEditor: OpenEditor,
   onStartRenaming: (id: string) => void,
-): MenuItemSpec[] {
-  const kinds: SavedView["kind"][] = ["smart_folder", "group", "saved_view"];
+): Array<MenuItemSpec> {
+  const kinds: Array<SavedView["kind"]> = [
+    "smart_folder",
+    "group",
+    "saved_view",
+  ];
   return kinds.map((kind) => {
     const { label } = ENTRY_TYPES[kind];
     const Icon = CREATE_ENTRY_ICONS[kind];
@@ -104,7 +109,7 @@ export function creationItems(
 
 interface EntryActions {
   view: SavedView;
-  views: SavedView[];
+  views: Array<SavedView>;
   active: boolean;
   onSelect: () => void;
   onCreated: () => void;
@@ -112,13 +117,13 @@ interface EntryActions {
   onStartRenaming: (id: string) => void;
   openEditor: OpenEditor;
   presentation: SavedViewPresentation;
-  quickAccessIds: string[];
+  quickAccessIds: Array<string>;
 }
 
 export async function saveIdsForView(
   view: SavedView,
-  views: SavedView[],
-): Promise<string[]> {
+  views: Array<SavedView>,
+): Promise<Array<string>> {
   const result = await window.pond.query("saves.queryIds", {
     query: combineQueries([inheritedQueryFor(view, views), view.query]),
   });
@@ -127,7 +132,7 @@ export async function saveIdsForView(
 
 async function moveSavedViewQuickAccess(
   id: string,
-  ids: string[],
+  ids: Array<string>,
   offset: -1 | 1,
 ): Promise<void> {
   const current = ids.indexOf(id);
@@ -145,9 +150,9 @@ async function moveSavedViewQuickAccess(
 }
 
 export function quickAccessIdsFor(
-  views: readonly SavedView[],
+  views: ReadonlyArray<SavedView>,
   presentations: Record<string, SavedViewPresentation>,
-): string[] {
+): Array<string> {
   return views
     .filter((view) => presentations[view.id]?.quickAccess)
     .toSorted(
@@ -172,7 +177,7 @@ export function entryItems({
   openEditor,
   presentation,
   quickAccessIds,
-}: EntryActions): MenuItemSpec[] {
+}: EntryActions): Array<MenuItemSpec> {
   const quickAccessIndex = quickAccessIds.indexOf(view.id);
   return [
     ...(view.kind === "group"

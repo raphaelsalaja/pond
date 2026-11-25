@@ -22,7 +22,7 @@ function save(id: string): Save {
   };
 }
 
-function ids(rows: readonly Save[]): string[] {
+function ids(rows: ReadonlyArray<Save>): Array<string> {
   return rows.map((row) => row.id);
 }
 
