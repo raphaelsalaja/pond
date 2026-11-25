@@ -72,11 +72,15 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     async refresh() {
       try {
         const inflight = pipelineSnapshot().inflight;
-        const { menu, ingesting } = await buildMenu(opts, inflight);
+        const {
+          menu,
+          ingesting,
+          inflight: running,
+        } = await buildMenu(opts, inflight);
         tray.setContextMenu(menu);
         tray.setToolTip(await buildTooltip());
-        setTrayCount(inflight);
-        scheduleBusyPoll(ingesting > 0 || inflight > 0);
+        setTrayCount(tray, running);
+        scheduleBusyPoll(ingesting > 0 || running > 0);
       } catch (err) {
         log.warn("[pond tray] refresh failed", err);
       }
@@ -95,9 +99,8 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   return instance;
 }
 
-function setTrayCount(inflight: number): void {
-  const tray = handle?.tray;
-  if (!tray || process.platform !== "darwin") return;
+function setTrayCount(tray: Tray, inflight: number): void {
+  if (process.platform !== "darwin") return;
   tray.setTitle(trayBadge({ inflight }), {
     fontType: "monospacedDigit",
   });
