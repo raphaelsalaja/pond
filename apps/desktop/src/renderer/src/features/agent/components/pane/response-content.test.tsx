@@ -30,6 +30,21 @@ function buttonLabel(button: Element) {
   return copy.textContent;
 }
 
+/** The confirmation is labelled by its own heading, so find it from the question it asks. */
+function questionCard(title: string) {
+  return [...host.querySelectorAll("section h3")]
+    .find((heading) => heading.textContent === title)
+    ?.closest("section");
+}
+
+/** Clicks the first button whose words match, ignoring decorative hints. */
+async function press(label: string) {
+  const button = [...host.querySelectorAll("button")].find((item) =>
+    buttonLabel(item)?.includes(label),
+  );
+  await act(async () => button?.click());
+}
+
 async function renderReview(changes: AssistantChange[]) {
   await act(async () =>
     root.render(
@@ -139,12 +154,10 @@ it("shows proposed tags as chips and leaves changed Saves out of the consulted l
       />,
     ),
   );
-  expect(
-    host.querySelector('[aria-label="Apply 1 change to your library?"]'),
-  ).not.toBeNull();
-  const row = host.querySelector('[aria-label="Open Clock 1"]');
-  expect(row?.textContent).toContain("+Clock");
-  expect(row?.textContent).not.toContain("Design");
+  expect(questionCard("Apply 1 change to your library?")).not.toBeNull();
+  expect(host.textContent).toContain("I'll tag Clock 1 with Clock.");
+  expect(host.textContent).not.toContain("Design");
+  expect(host.querySelector('[aria-label="Open Clock 1"]')).not.toBeNull();
   expect(
     [...host.querySelectorAll('[aria-label^="Preview Clock"]')].map((node) =>
       node.getAttribute("aria-label"),
@@ -152,95 +165,85 @@ it("shows proposed tags as chips and leaves changed Saves out of the consulted l
   ).toEqual(["Preview Clock 2", "Preview Clock 3"]);
 });
 
-it("captions resolved rows with their status and leaves a lone pending change to the footer", async () => {
-  const change = (
-    index: number,
-    status: "pending" | "applied" | "dismissed",
-  ) => ({
-    id: `save-${index}:tags`,
-    saveId: `save-${index}`,
-    title: `Clock ${index}`,
-    reason: "A clock interface.",
-    status,
-    field: "tags" as const,
-    before: [],
-    after: ["Clock"],
-  });
-  await act(async () =>
-    root.render(
-      <ResponseContent
-        message={{
-          id: "reply",
-          chatId: "chat",
-          role: "assistant",
-          content: "Proposed tags.",
-          metadata: {
-            changes: [
-              change(1, "pending"),
-              change(2, "applied"),
-              change(3, "dismissed"),
-            ],
-          },
-        }}
-        questionDisabled
-        provider="openai"
-        attachedIds={[]}
-        busy={false}
-        attach={vi.fn()}
-      />,
-    ),
-  );
-  const tile = (title: string) =>
-    host.querySelector(`[aria-label="Open ${title}"]`)?.closest("li");
-  const labels = (title: string) =>
-    [...(tile(title)?.querySelectorAll("button[aria-label]") ?? [])]
-      .map((button) => button.getAttribute("aria-label"))
-      .filter((label) => !label?.startsWith("Open"));
-
-  expect(tile("Clock 1")?.textContent).toContain("+Clock");
-  expect(labels("Clock 1")).toEqual([]);
-  expect(
-    [
-      ...host.querySelectorAll(
-        '[aria-label="Apply 1 change to your library?"] button',
-      ),
-    ].map(buttonLabel),
-  ).toContain("Apply");
-  expect(tile("Clock 2")?.textContent).toContain("Applied");
-  expect(tile("Clock 2")?.textContent).not.toContain("+Clock");
-  expect(labels("Clock 2")).toEqual(["Undo change to Clock 2"]);
-  expect(tile("Clock 3")?.textContent).toContain("Dismissed");
-  expect(labels("Clock 3")).toEqual([]);
+const tagChange = (
+  index: number,
+  status: AssistantChange["status"],
+  tag = "Clock",
+): AssistantChange => ({
+  id: `save-${index}:tags`,
+  saveId: `save-${index}`,
+  title: `Clock ${index}`,
+  reason: "",
+  status,
+  field: "tags",
+  before: [],
+  after: [tag],
 });
 
-it("folds a decided review into a receipt that unfolds to its rows", async () => {
-  await renderReview(
-    (["applied", "dismissed"] as const).map((status, i) => ({
-      id: `save-${i}:tags`,
-      saveId: `save-${i}`,
-      title: `Clock ${i}`,
-      reason: "",
-      status,
-      field: "tags" as const,
-      before: [],
-      after: ["Clock"],
-    })),
+it("says the proposal as prose, citing each Save and folding the rest into a count", async () => {
+  await renderReview([
+    tagChange(1, "pending"),
+    tagChange(2, "pending"),
+    tagChange(3, "pending"),
+    tagChange(4, "pending"),
+    {
+      ...tagChange(5, "pending"),
+      id: "save-5:trash",
+      field: "trash",
+      before: "active",
+      after: "trashed",
+    },
+  ]);
+  expect(host.textContent).toContain(
+    "I'll tag Clock 1, Clock 2, Clock 3 and 1 more with Clock and move Clock 5 to Trash.",
   );
+  const more = [...host.querySelectorAll("button")].find(
+    (button) => button.textContent === "1 more",
+  );
+  await act(async () => more?.click());
+  expect(host.querySelector('[aria-label="Open Clock 4"]')).not.toBeNull();
+});
+
+it("sends a longer proposal as a lead and one bubble per change", async () => {
+  await renderReview([
+    tagChange(1, "pending"),
+    tagChange(2, "pending", "Wood"),
+    tagChange(3, "pending", "Glass"),
+  ]);
+  const bubbles = [
+    ...host.querySelectorAll('[data-slot="message-bubble"]'),
+  ].map((bubble) => bubble.textContent);
+  expect(bubbles).toEqual([
+    "Here's how I'll tag them:",
+    "Clock 1 with Clock",
+    "Clock 2 with Wood",
+    "Clock 3 with Glass",
+  ]);
+});
+
+it("approves the whole proposal", async () => {
+  const run = vi.spyOn(review, "run").mockResolvedValue();
+  const changes = [tagChange(1, "pending"), tagChange(2, "pending", "Wood")];
+  await renderReview(changes);
+  await press("Approve");
+  expect(run).toHaveBeenCalledWith("reply", changes, "apply", undefined);
+});
+
+it("denies the whole proposal", async () => {
+  const run = vi.spyOn(review, "run").mockResolvedValue();
+  const changes = [tagChange(1, "pending")];
+  await renderReview(changes);
+  await press("Deny");
+  expect(run).toHaveBeenCalledWith("reply", changes, "dismiss", undefined);
+});
+
+it("settles a decided proposal into a receipt", async () => {
+  await renderReview([tagChange(0, "applied"), tagChange(1, "dismissed")]);
   const card = host.querySelector('[aria-label="Applied 1, dismissed 1"]');
   expect(card?.textContent).toContain("Applied 1, dismissed 1");
-  expect(card?.textContent).not.toContain("Clock 0Applied");
-  expect(card?.querySelector('[aria-label^="Apply"]')).toBeNull();
-
-  const toggle = card?.querySelector<HTMLButtonElement>(
-    "button[aria-expanded]",
-  );
-  await act(async () => toggle?.click());
-  expect(toggle?.getAttribute("aria-expanded")).toBe("true");
-  expect(card?.textContent).toContain("Clock 0Applied");
-  expect(card?.textContent).toContain("Clock 1Dismissed");
   expect(
-    card?.querySelector('[aria-label="Undo change to Clock 0"]'),
-  ).not.toBeNull();
+    host.querySelector('[aria-label="What to change instead"]'),
+  ).toBeNull();
 });
 
 it("undoes every applied change from the receipt", async () => {
@@ -314,18 +317,16 @@ it("applies and dismisses a pending review from the keyboard", async () => {
     after: ["Clock"],
   };
   await renderReview([change]);
-  const card = host.querySelector(
-    '[aria-label="Apply 1 change to your library?"]',
-  );
-  const press = (init: KeyboardEventInit) =>
+  const card = questionCard("Apply 1 change to your library?");
+  const key = (init: KeyboardEventInit) =>
     act(async () =>
       card?.dispatchEvent(
         new KeyboardEvent("keydown", { bubbles: true, ...init }),
       ),
     );
-  await press({ key: "Enter", metaKey: true });
+  await key({ key: "Enter", metaKey: true });
   expect(run).toHaveBeenLastCalledWith("reply", [change], "apply", undefined);
-  await press({ key: "Escape" });
+  await key({ key: "Escape" });
   expect(run).toHaveBeenLastCalledWith("reply", [change], "dismiss", undefined);
 });
 

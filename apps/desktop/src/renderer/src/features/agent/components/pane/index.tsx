@@ -1,11 +1,13 @@
 import { useChat } from "@ai-sdk/react";
 import type { AgentModelOptions } from "@pond/schema";
+import { Pane } from "@pond/ui";
 import {
   agentModelOptionsFor,
   agentModelOptionsKey,
   runControlsForOptions,
 } from "@shared/agent-model-options";
 import {
+  ASSISTANT_ACTIVITY_LABELS,
   ASSISTANT_MODELS,
   type AssistantActivity,
   type AssistantProvider,
@@ -36,6 +38,7 @@ import { usePrefs } from "@/shared/state/prefs";
 import type { ComposerEditorHandle } from "../composer";
 import { Thread } from "../thread";
 import { AgentMessage } from "./agent-message";
+import { FishChatActions } from "./chat-actions";
 import { ChatEvent } from "./chat-event";
 import { routineEventText } from "./chat-event/events";
 import { ComposeArea } from "./compose-area";
@@ -49,6 +52,8 @@ interface AgentPersona {
   name: string;
   icon: ReactNode;
   color?: FishColor;
+  /** What the fish is doing right now, in this chat or a routine run; null while idle. */
+  activity: AssistantActivity | null;
   avatar?: (activity: AssistantActivity) => ReactNode;
 }
 
@@ -171,6 +176,12 @@ function AgentPaneContent({
     });
   }
 
+  const presence = persona.activity
+    ? `${ASSISTANT_ACTIVITY_LABELS[persona.activity]}…`
+    : running
+      ? "Working…"
+      : null;
+
   return (
     <MotionConfig
       reducedMotion={reduceMotion ? "always" : "never"}
@@ -182,6 +193,21 @@ function AgentPaneContent({
         aria-label={persona.name}
         {...(persona.color ? fishAccent(persona.color) : null)}
       >
+        <Pane.Header
+          className={styles.header}
+          title={
+            <>
+              <span className={styles["header-name"]}>{persona.name}</span>
+              {presence ? (
+                <span className={styles.status} role="status">
+                  {presence}
+                </span>
+              ) : null}
+            </>
+          }
+        >
+          <FishChatActions />
+        </Pane.Header>
         <div className={styles.workspace}>
           <Thread.Conversation
             key={state.chatId ?? draftKey}
@@ -297,6 +323,7 @@ export function AgentPane() {
   const persona: AgentPersona = {
     name: fish?.name ?? DEFAULT_FISH_NAME,
     color: fish?.color,
+    activity: fish?.activity ?? null,
     icon: fish ? (
       <FishMark
         color={fish.color}

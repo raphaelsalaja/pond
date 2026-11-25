@@ -569,16 +569,6 @@ export const assistant = {
       keepDraft: true,
     });
   },
-  async suggest(content: string, provider: AssistantProvider) {
-    await assistant.send(provider, undefined, {
-      content,
-      attachments: [],
-      files: [],
-      context: snapshotContext([]),
-      provider,
-      keepDraft: true,
-    });
-  },
   stop() {
     cancelledRequest = store.state.requestId;
     stopAssistant(store.state.chatId, store.state.requestId);

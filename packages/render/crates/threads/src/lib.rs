@@ -314,30 +314,33 @@ impl Ctx<'_> {
         self.icon("threads-muted", px + 8.0, py + 8.0, 12.0, Rgba::hex(0xffffff));
     }
 
-    /// Like, Comment, Repost and Share in a 36px row; each count takes tabular-digit width.
+    /// Like, Reply, Repost, Share and Save in a 36px row, laid out like threads.com's buttons:
+    /// 12px padding, 18px icons (Like is 18.75), a 4px gap before a count that takes
+    /// tabular-digit width, 44px for a button without a count, and 4px overlap between buttons.
     fn actions(&mut self, metrics: &[Metric], x: f32, y: f32) {
         let count = self.style(13.0, 18.2).color(self.p.icon);
         let color = self.p.icon;
-        let mut bx = x;
+        let mut start = x - 12.0;
         for m in metrics.iter().filter(|m| !m.icon.is_empty()) {
-            let share = m.icon == "threads-share";
-            let has_count = !m.value.is_empty();
-            if share {
-                let nudge = if has_count { 0.0 } else { 1.0 };
-                self.icon(&m.icon, bx + nudge, y + 9.0, 18.0, color);
+            let size = if m.icon == "threads-like" { 18.75 } else { 18.0 };
+            let top = y + 18.0 - size / 2.0;
+            let end = if m.value.is_empty() {
+                let left = start + (44.0 - size) / 2.0;
+                self.icon(&m.icon, left, top, size, color);
+                self.reach(left + size);
+                start + 44.0
             } else {
-                self.icon(&m.icon, bx, y + 8.0, 20.0, color);
-            }
-            let mut end = bx + 20.0;
-            if has_count {
-                let gap = if share { 22.0 } else { 24.0 };
+                let left = start + 12.0;
+                self.icon(&m.icon, left, top, size, color);
+                let cx = left + size + 4.0;
                 let block = count.text(&m.value, 200.0);
-                self.list.push_text(&block, bx + gap, y + 8.9);
+                self.list.push_text(&block, cx, y + 8.9);
                 let tabular: String = m.value.chars().map(|c| if c.is_ascii_digit() { '0' } else { c }).collect();
-                end = bx + gap + count.text(&tabular, 200.0).width;
-            }
-            self.reach(end);
-            bx = end + 24.0;
+                let width = count.text(&tabular, 200.0).width;
+                self.reach(cx + width);
+                cx + width + 12.0
+            };
+            start = end - 4.0;
         }
     }
 
