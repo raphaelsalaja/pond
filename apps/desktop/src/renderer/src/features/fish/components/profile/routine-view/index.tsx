@@ -80,9 +80,7 @@ export function RoutineView({
               </PropertyList.Row>
               <PropertyList.Row>
                 <PropertyList.Label>Ran</PropertyList.Label>
-                <PropertyList.Value>
-                  {rowTime(run.at, now)}
-                </PropertyList.Value>
+                <PropertyList.Value>{rowTime(run.at, now)}</PropertyList.Value>
               </PropertyList.Row>
               <PropertyList.Row>
                 <PropertyList.Label>Changes</PropertyList.Label>

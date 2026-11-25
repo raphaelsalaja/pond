@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { draftInChat, openFishChat } from "@/features/agent";
+import { draftInChat } from "@/features/agent";
 import {
   fishIdFromPath,
   useFishEditingId,
@@ -38,7 +38,6 @@ export function FishDetails() {
       onEditRoutine={(routine) =>
         draftInChat(`Edit your routine: ${routine.name}. `)
       }
-      onOpenChat={(chatId) => openFishChat(fishId, chatId)}
     />
   );
 }
