@@ -12,10 +12,13 @@
   animation: reveal-in var(--ds-duration-slow) var(--ds-easing-decelerate) both;
 }
 
+/* The card draws its own edge, so the popup pads around it instead of clipping it into the corners. */
 .popup {
   --ds-popup-min-width: min(320px, calc(100vw - 32px));
   --ds-popup-width: min(380px, calc(100vw - 32px));
   --ds-popup-max-width: 420px;
+  --popup-padding-block: var(--ds-space-md);
+  --popup-padding-inline: var(--ds-space-md);
 }
 
 .rows {
@@ -138,26 +141,28 @@
   border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
+/* A content popup, not a menu: room around the type instead of menu-item padding. */
 .preview {
-  width: min(340px, calc(100vw - 32px));
-  padding: var(--ds-space-xl);
+  width: min(380px, calc(100vw - 32px));
+  padding: var(--ds-space-2xl);
   font-size: var(--ds-text-body);
 }
 
 .heading {
   font-size: inherit;
-  font-weight: var(--ds-weight-medium);
+  font-weight: var(--ds-weight-strong);
   overflow-wrap: anywhere;
 }
 
 .description {
-  margin-block: var(--ds-space-md) var(--ds-space-lg);
-  color: var(--ds-foreground-tertiary);
+  margin-block: var(--ds-space-md) var(--ds-space-xl);
+  color: var(--ds-foreground-secondary);
   overflow-wrap: anywhere;
 }
 
 .actions {
   display: flex;
   gap: var(--ds-space-md);
+  align-items: center;
   justify-content: space-between;
 }
