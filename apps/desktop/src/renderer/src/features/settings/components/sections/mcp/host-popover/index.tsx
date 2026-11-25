@@ -6,29 +6,35 @@ import {
   type McpHostDefinition,
   mcpHostConfigPath,
 } from "@shared/mcp-hosts";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { z } from "zod";
 import { CopyLine } from "../copy-line";
 import { JsonBlock } from "../json-block";
 import styles from "./styles.module.css";
 
-type PondSnippet = {
-  command: string;
-  args: string[];
-  json: string;
-};
+const McpSnippetSchema = z.object({
+  command: z.string().min(1),
+  args: z.array(z.string()),
+  json: z.string().min(1),
+});
 
-export function HostPopover({
-  host,
-  snippet,
-}: {
-  host: McpHostDefinition;
-  snippet?: PondSnippet;
-}) {
+export function HostPopover({ host }: { host: McpHostDefinition }) {
   const [error, setError] = useState("");
-  const commands = snippet
-    ? hostSetupCommands(host.id, snippet.command, snippet.args)
+  const snippet = useQuery({
+    queryKey: ["mcp-snippet", host.id],
+    queryFn: async () =>
+      McpSnippetSchema.parse(
+        await window.pond.query("agent.mcpSnippet", { host: host.id }),
+      ),
+    retry: false,
+  });
+  const commands = snippet.data
+    ? hostSetupCommands(host.id, snippet.data.command, snippet.data.args)
     : [];
-  const json = snippet?.json ?? "";
+  const json = snippet.data?.json ?? "";
+  /** OpenCode users get the launch line and the mergeable config both. */
+  const showMerge = commands.length === 0 || host.id === "opencode";
   const installable = isMcpInstallHost(host.id) ? host.id : null;
   const configPath = mcpHostConfigPath(
     host,
@@ -80,7 +86,7 @@ export function HostPopover({
                 value={command.value}
               />
             ))}
-            {commands.length === 0 ? (
+            {showMerge ? (
               <>
                 <p className={styles.merge}>
                   {installable

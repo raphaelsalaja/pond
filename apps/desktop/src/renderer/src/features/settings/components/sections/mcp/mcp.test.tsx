@@ -53,6 +53,7 @@ it("shows all setup hosts without detecting installs or expanding a disclosure",
     expect(host.textContent).toContain("Claude Code");
     expect(host.textContent).toContain("OpenAI Codex");
     expect(host.textContent).toContain("Gemini CLI");
+    expect(host.textContent).toContain("OpenCode");
     expect(host.textContent).toContain("Claude Desktop");
     expect(host.textContent).toContain("VS Code");
     expect(host.textContent).not.toContain("More Agents");

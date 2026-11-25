@@ -4,7 +4,7 @@ import { z } from "zod";
 import { assistantProvider, assistantSend } from "../../../shared/assistant";
 import { conversationMarkdown } from "../../../shared/conversation-markdown";
 import { FishIdSchema } from "../../../shared/fish-contracts";
-import { MCP_INSTALL_HOSTS } from "../../../shared/mcp-hosts";
+import { MCP_HOST_IDS, MCP_INSTALL_HOSTS } from "../../../shared/mcp-hosts";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { type QueryHandlerMap, query } from "./params";
 
@@ -196,10 +196,16 @@ export const agentQueries = {
     return reviewChanges(reviewInput.parse(params));
   }),
 
-  "agent.mcpSnippet": query(Params, async () => {
-    const { pondMcpSnippet } = await import("../../core/agent/mcp-hosts");
-    return { ...pondMcpSnippet(), app: app.getName() };
-  }),
+  "agent.mcpSnippet": query(
+    z.looseObject({ host: z.enum(MCP_HOST_IDS).optional() }),
+    async (params) => {
+      const { pondMcpSnippet } = await import("../../core/agent/mcp-hosts");
+      return {
+        ...pondMcpSnippet(process.execPath, ["--mcp"], params.host ?? "other"),
+        app: app.getName(),
+      };
+    },
+  ),
 
   "agent.mcpClients": query(Params, async () => {
     const { mcpClientStatus } = await import("../../core/agent/mcp-hosts");
