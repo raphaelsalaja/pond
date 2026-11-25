@@ -134,6 +134,16 @@ function useInboxEntries(): Entry[] {
     (state) => ids.map((id) => state.byId.get(id)?.savedAt ?? 0),
     { compare: shallow },
   );
+  const states = useSelector(
+    savesStore,
+    (state) =>
+      ids.map((id) => {
+        const save = state.byId.get(id);
+        if (!save) return "unloaded";
+        return save.deletedAt != null ? "deleted" : (save.inboxState ?? null);
+      }),
+    { compare: shallow },
+  );
 
   return useMemo(() => {
     const current = selected === null ? (queue?.index ?? -1) : -1;
@@ -145,13 +155,19 @@ function useInboxEntries(): Entry[] {
         ? entry.index === current
         : entry.key === selected);
 
+    /** Resolved outcomes and saves whose state left the scope drop out; an unloaded save stays as a placeholder. */
+    const scopeState = scope === "snoozed" ? "snoozed" : "review";
     const saves = ids.flatMap((id, index): Entry[] => {
+      const outcome = queue?.outcomes[id];
+      const state = states[index];
+      if (outcome !== undefined && outcome !== "skip") return [];
+      if (state !== "unloaded" && state !== scopeState) return [];
       const entry: Entry = {
         type: "save",
         key: `save:${id}`,
         id,
         index,
-        unread: queue?.outcomes[id] === undefined,
+        unread: outcome === undefined,
         at: savedAt[index] ?? 0,
       };
       return shown(entry) ? [entry] : [];
@@ -168,7 +184,7 @@ function useInboxEntries(): Entry[] {
       return shown(entry) ? [entry] : [];
     });
     return group(merge(saves, listed, display), display.groupBy);
-  }, [ids, savedAt, queue, notifications, scope, selected, display]);
+  }, [ids, savedAt, states, queue, notifications, scope, selected, display]);
 }
 
 export function useInboxItems(): InboxItem[] {
