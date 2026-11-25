@@ -10,7 +10,7 @@ import metascraperTitle from "metascraper-title";
 import metascraperUrl from "metascraper-url";
 import { z } from "zod";
 import { renderPageHtml } from "../../../refresh/web-page-renderer";
-import { TerminalError, TransientError } from "../errors";
+import { RateLimitedError, TerminalError, TransientError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { searchPageQuery } from "./search-page";
 import { fetchHtml } from "./web-fetch";
@@ -299,7 +299,10 @@ function assertPageStatus(status: number, label: string): void {
   if (status < 400) {
     return;
   }
-  if (status >= 500 || status === 429) {
+  if (status === 429) {
+    throw new RateLimitedError(undefined, `${label} 429`);
+  }
+  if (status >= 500) {
     throw new TransientError(`${label} ${status}`);
   }
   throw new TerminalError(`${label} ${status}`);

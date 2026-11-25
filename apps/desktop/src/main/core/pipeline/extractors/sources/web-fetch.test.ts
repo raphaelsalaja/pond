@@ -1,5 +1,21 @@
 import { describe, expect, it } from "vitest";
+import { RateLimitedError } from "../errors";
 import { fetchHtml } from "./web-fetch";
+
+/** Resolves with the rate-limit error a fetch rejects with, so a test can read its retry-after. */
+async function rateLimited(
+  pending: Promise<unknown>,
+): Promise<RateLimitedError> {
+  try {
+    await pending;
+  } catch (cause) {
+    if (cause instanceof RateLimitedError) {
+      return cause;
+    }
+    throw cause;
+  }
+  throw new Error("Expected the fetch to be rate limited");
+}
 
 function htmlResponse(body: string, status = 200) {
   return new Response(body, {
@@ -66,6 +82,51 @@ describe("fetchHtml", () => {
         throw networkError("ECONNRESET");
       }),
     ).rejects.toThrow("web fetch failed: fetch failed (ECONNRESET)");
+  });
+
+  it("defers a 429 as rate limited with the response retry-after", async () => {
+    const error = await rateLimited(
+      fetchHtml(
+        "https://example.com/",
+        async () =>
+          new Response("", {
+            status: 429,
+            headers: { "retry-after": "60" },
+          }),
+      ),
+    );
+    expect(error).toBeInstanceOf(RateLimitedError);
+    expect(error.retryAfterSec).toBe(60);
+    expect(error.message).toContain("web fetch 429");
+  });
+
+  it("parses a retry-after HTTP date into seconds", async () => {
+    const error = await rateLimited(
+      fetchHtml(
+        "https://example.com/",
+        async () =>
+          new Response("", {
+            status: 429,
+            headers: {
+              "retry-after": new Date(Date.now() + 120_000).toUTCString(),
+            },
+          }),
+      ),
+    );
+    expect(error).toBeInstanceOf(RateLimitedError);
+    expect(error.retryAfterSec).toBeGreaterThan(100);
+    expect(error.retryAfterSec).toBeLessThanOrEqual(120);
+  });
+
+  it("defers a 429 without a retry-after header", async () => {
+    const error = await rateLimited(
+      fetchHtml(
+        "https://example.com/",
+        async () => new Response("", { status: 429 }),
+      ),
+    );
+    expect(error).toBeInstanceOf(RateLimitedError);
+    expect(error.retryAfterSec).toBeUndefined();
   });
 
   it("treats a server error as transient and a missing page as terminal", async () => {

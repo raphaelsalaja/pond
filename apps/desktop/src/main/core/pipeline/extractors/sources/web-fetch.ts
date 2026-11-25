@@ -1,5 +1,5 @@
 import { browserUserAgent } from "../../../refresh/web-page-renderer";
-import { TerminalError, TransientError } from "../errors";
+import { RateLimitedError, TerminalError, TransientError } from "../errors";
 import { convertTextDocument } from "./text-document";
 import type { TextDocument } from "./text-document";
 
@@ -60,6 +60,12 @@ export async function fetchHtml(
 
   if (res.status === 403) {
     return null;
+  }
+  if (res.status === 429) {
+    throw new RateLimitedError(
+      parseRetryAfter(res.headers.get("retry-after")),
+      "web fetch 429",
+    );
   }
   assertPageStatus(res.status, "web fetch");
 
@@ -155,8 +161,24 @@ function assertPageStatus(status: number, label: string): void {
   if (status < 400) {
     return;
   }
-  if (status >= 500 || status === 429) {
+  if (status >= 500) {
     throw new TransientError(`${label} ${status}`);
   }
   throw new TerminalError(`${label} ${status}`);
+}
+
+/** Retry-After is either delta-seconds or an HTTP date. */
+function parseRetryAfter(header: string | null): number | undefined {
+  if (!header) {
+    return undefined;
+  }
+  const seconds = Number(header);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.round(seconds);
+  }
+  const date = Date.parse(header);
+  if (!Number.isNaN(date)) {
+    return Math.max(0, Math.round((date - Date.now()) / 1000));
+  }
+  return undefined;
 }

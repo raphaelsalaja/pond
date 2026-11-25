@@ -1,5 +1,5 @@
-import { saves, tasks } from "@pond/schema/db";
-import type { Task } from "@pond/schema/db";
+import { OPS, saves, tasks } from "@pond/schema/db";
+import type { Op, Task } from "@pond/schema/db";
 import { buildWhere, isEmptyQuery } from "@pond/schema/filters";
 import type { RawJson } from "@pond/schema/raw";
 import {
@@ -82,6 +82,19 @@ function derivePublicImageUrl(raw: RawJson | null): string | null {
   return null;
 }
 
+const PIPELINE_OP_ORDER = new Map(OPS.map((op, index) => [op, index]));
+
+/** Consumers treat the first unfinished task as the blocking step, but row order is unspecified, so wire order follows the pipeline. */
+export function orderTasksInPipelineOrder<T extends { op: Op }>(
+  list: ReadonlyArray<T>,
+): Array<T> {
+  return [...list].sort(
+    (a, b) =>
+      (PIPELINE_OP_ORDER.get(a.op) ?? OPS.length) -
+      (PIPELINE_OP_ORDER.get(b.op) ?? OPS.length),
+  );
+}
+
 /** SQLite caps bound parameters (~32k), so chunk the IN list; large libraries would otherwise throw "too many SQL variables". */
 const TASK_ID_CHUNK = 10_000;
 
@@ -107,6 +120,9 @@ async function loadTasksFor(
         grouped.set(t.saveId, [t]);
       }
     }
+  }
+  for (const [saveId, list] of grouped) {
+    grouped.set(saveId, orderTasksInPipelineOrder(list));
   }
   return grouped;
 }

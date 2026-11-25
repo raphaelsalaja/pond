@@ -5,6 +5,7 @@ import {
   saveFolders,
   saves,
   syncActions,
+  tasks,
 } from "@pond/schema/db";
 import type { SyncAction } from "@pond/schema/db";
 import { isAuxiliaryKind } from "@shared/save-file-names";
@@ -154,7 +155,9 @@ export async function reconcileLibraryIndex(
         };
         const scanned = restoreCompleteStatus(
           updateSet,
-          prior[0]?.status === "failed" && present,
+          prior[0]?.status === "failed" &&
+            present &&
+            !hasUnfinishedTasks(db, id),
         );
 
         const action = db.transaction((tx) => {
@@ -286,6 +289,16 @@ async function markMissingOriginalsFailed(
     runtime.changed(action);
   }
   return true;
+}
+
+/** Scan revival is for missing originals returning; unfinished tasks mean the failure came from ingest, not disk repair. */
+function hasUnfinishedTasks(db: Db, saveId: string): boolean {
+  const rows = db
+    .select({ status: tasks.status })
+    .from(tasks)
+    .where(eq(tasks.saveId, saveId))
+    .all();
+  return rows.some((task) => task.status !== "done");
 }
 
 function restoreCompleteStatus<T extends object>(

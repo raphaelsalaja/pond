@@ -1,20 +1,10 @@
 import { Settings, Switch } from "@pond/ui";
 import { MCP_HOST_CATALOG } from "@shared/mcp-hosts";
 import type { McpHostDefinition } from "@shared/mcp-hosts";
-import { useQuery } from "@tanstack/react-query";
-import { z } from "zod";
 import { usePrefs } from "@/shared/state/prefs";
 import { FishServersSection } from "./fish-servers";
 import { HostPopover } from "./host-popover";
 import { HostLogo } from "./logo";
-
-const McpSnippetSchema = z.object({
-  command: z.string().min(1),
-  args: z.array(z.string()),
-  json: z.string().min(1),
-});
-
-type PondSnippet = z.infer<typeof McpSnippetSchema>;
 
 const ACCESS = [
   {
@@ -37,12 +27,6 @@ const ACCESS = [
 ] as const;
 
 export function McpSection() {
-  const snippet = useQuery({
-    queryKey: ["mcp-snippet"],
-    queryFn: async () =>
-      McpSnippetSchema.parse(await window.pond.query("agent.mcpSnippet", {})),
-    retry: false,
-  });
   return (
     <Settings.Page>
       <Settings.Header>
@@ -55,7 +39,7 @@ export function McpSection() {
         </Settings.HeaderText>
       </Settings.Header>
       <AccessSection />
-      <AgentsSection snippet={snippet.data} />
+      <AgentsSection />
       <FishServersSection />
     </Settings.Page>
   );
@@ -91,26 +75,20 @@ function AccessSection() {
   );
 }
 
-function AgentsSection({ snippet }: { snippet?: PondSnippet }) {
+function AgentsSection() {
   return (
     <Settings.Section>
       <Settings.SectionTitle>Agents</Settings.SectionTitle>
       <Settings.List>
         {MCP_HOST_CATALOG.map((host) => (
-          <HostRow key={host.id} host={host} snippet={snippet} />
+          <HostRow key={host.id} host={host} />
         ))}
       </Settings.List>
     </Settings.Section>
   );
 }
 
-function HostRow({
-  host,
-  snippet,
-}: {
-  host: McpHostDefinition;
-  snippet?: PondSnippet;
-}) {
+function HostRow({ host }: { host: McpHostDefinition }) {
   return (
     <Settings.Item>
       <HostLogo id={host.id} />
@@ -118,7 +96,7 @@ function HostRow({
         <Settings.ItemTitle>{host.name}</Settings.ItemTitle>
       </Settings.ItemDetails>
       <Settings.ItemControl>
-        <HostPopover host={host} snippet={snippet} />
+        <HostPopover host={host} />
       </Settings.ItemControl>
     </Settings.Item>
   );
