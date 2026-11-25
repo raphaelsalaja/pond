@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ModelPicker } from ".";
@@ -38,6 +38,14 @@ beforeEach(() => {
                   id: "legacy-test",
                   name: "Legacy Test",
                 },
+              ],
+            },
+            {
+              provider: "groq",
+              ok: true,
+              models: [
+                { id: "gpt-oss-120b", name: "GPT OSS 120B" },
+                { id: "qwen/qwen3.8-27b", name: "Qwen/Qwen3.8-27B" },
               ],
             },
             {
@@ -97,6 +105,8 @@ async function renderPicker(
   onChange = vi.fn(),
   onOptionsChange = vi.fn(),
   onManageModels = vi.fn(),
+  provider: ComponentProps<typeof ModelPicker>["provider"] = "openai",
+  modelId = "gpt-5.6-sol",
 ) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -105,8 +115,8 @@ async function renderPicker(
     root.render(
       <QueryClientProvider client={client}>
         <ModelPicker
-          provider="openai"
-          modelId="gpt-5.6-sol"
+          provider={provider}
+          modelId={modelId}
           options={{ fast: false, context: "auto", reasoning: "low" }}
           onChange={onChange}
           onOptionsChange={onOptionsChange}
@@ -118,13 +128,13 @@ async function renderPicker(
   return { onChange, onOptionsChange, onManageModels };
 }
 
-async function openPicker() {
+async function openPicker(expectedLabel = "GPT-5.6 Sol") {
   const trigger = host.querySelector('button[aria-label^="Choose model"]');
   if (!(trigger instanceof HTMLElement))
     throw new Error("Missing model picker");
   await act(async () => trigger.click());
   await vi.waitFor(() =>
-    expect(trigger.getAttribute("aria-label")).toContain("GPT-5.6 Sol"),
+    expect(trigger.getAttribute("aria-label")).toContain(expectedLabel),
   );
 }
 
@@ -138,10 +148,10 @@ it("splits provider and model choices into separate submenus", async () => {
   expect(menuItem("Provider")?.textContent).toContain("OpenAI");
   expect(menuItem("Model")).toBeTruthy();
   expect(document.body.textContent).not.toContain("200K tokens");
-  expect(document.body.textContent).not.toContain("Legacy Test");
 
   await act(async () => menuItem("Provider")?.click());
   expect(document.body.textContent).toContain("OpenAI");
+  expect(document.body.textContent).toContain("Groq");
   expect(document.body.textContent).toContain("Anthropic");
   expect(document.body.textContent).toContain("Ollama");
   expect(document.body.textContent).toContain("OpenCode Go");
@@ -169,6 +179,7 @@ it("splits provider and model choices into separate submenus", async () => {
   expect(document.body.textContent).not.toContain("Anthropic");
   expect(document.body.textContent).not.toContain("Claude Test");
   expect(document.body.textContent).not.toContain("gemma4:26b");
+  expect(document.body.textContent).toContain("Legacy Test");
   const selectedModel = menuItem("GPT-5.6 Sol");
   const modelMenu = selectedModel?.closest<HTMLElement>('[role="dialog"]');
   if (!selectedModel || !modelMenu)
@@ -274,4 +285,35 @@ it("keeps unsupported controls visibly unavailable", async () => {
   ).not.toBeNull();
   expect(menuItem("Context")?.getAttribute("aria-disabled")).toBe("true");
   expect(menuItem("Reasoning")?.getAttribute("aria-disabled")).toBe("true");
+});
+
+it("shows native models a gateway provider does not describe", async () => {
+  vi.stubGlobal("pond", {
+    query: async () => ({
+      providers: [
+        {
+          provider: "groq",
+          ok: true,
+          models: [
+            { id: "gpt-oss-120b", name: "GPT OSS 120B" },
+            { id: "safety-gpt-oss-20b", name: "Safety GPT OSS 20B" },
+          ],
+        },
+      ],
+    }),
+  });
+  const onChange = vi.fn();
+  await renderPicker(onChange, vi.fn(), vi.fn(), "groq", "gpt-oss-120b");
+  await openPicker("GPT OSS 120B");
+
+  await act(async () => menuItem("Model")?.click());
+  expect(document.body.textContent).toContain("GPT OSS 120B");
+  expect(document.body.textContent).toContain("Safety GPT OSS 20B");
+  expect(document.body.textContent).not.toContain("No models shown");
+
+  await act(async () => menuItem("Safety GPT OSS 20B")?.click());
+  expect(onChange).toHaveBeenCalledWith({
+    provider: "groq",
+    modelId: "safety-gpt-oss-20b",
+  });
 });
