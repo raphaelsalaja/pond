@@ -340,7 +340,6 @@ export function VideoPlayer({
             </div>
             <Video.Duration aria-label="Duration" />
             <Video.MuteButton />
-            <Video.FullscreenButton />
           </Video.Row>
         </Video.Controls>
       ) : null}
