@@ -14,6 +14,15 @@ describe("looksLikeAuthWall", () => {
     expect(looksLikeAuthWall("https://www.linkedin.com/authwall")).toBe(true);
   });
 
+  it("catches X's onboarding sign-in redirect", () => {
+    expect(
+      looksLikeAuthWall(
+        "https://x.com/i/jf/onboarding/web?redirect_after_login=%2Fi%2Fbookmarks&mode=login",
+      ),
+    ).toBe(true);
+    expect(looksLikeAuthWall("https://x.com/i/history")).toBe(false);
+  });
+
   it("leaves content pages alone", () => {
     expect(looksLikeAuthWall("https://dribbble.com/simplebits/likes")).toBe(
       false,

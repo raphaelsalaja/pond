@@ -1454,6 +1454,24 @@
       }
     ]
   },
+  "chevron-up-down": {
+    "concept": "Choose One",
+    "tags": [
+      "select",
+      "picker",
+      "dropdown",
+      "choose",
+      "up down",
+      "switch"
+    ],
+    "variants": [
+      {
+        "style": "outline",
+        "size": 18,
+        "file": "chevron-up-down/outline-18.svg"
+      }
+    ]
+  },
   "chevron": {
     "concept": "Chevron Shape",
     "tags": [
