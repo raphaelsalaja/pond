@@ -1,0 +1,24 @@
+/* The fish's own bubbles, so the proposal reads as something it said. */
+.proposal {
+  text-wrap: pretty;
+}
+
+/* A change sent on its own starts with its verb or its Save; capitalise the first letter without changing the clause. */
+.item::first-letter {
+  text-transform: uppercase;
+}
+
+.value {
+  font-weight: var(--ds-weight-medium);
+}
+
+.more {
+  padding: 0;
+  font: inherit;
+  vertical-align: baseline;
+  color: var(--ds-foreground-secondary);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in oklab, currentcolor 22%, transparent);
+  text-underline-offset: 3px;
+}

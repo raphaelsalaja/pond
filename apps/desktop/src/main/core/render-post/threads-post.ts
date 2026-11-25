@@ -127,10 +127,14 @@ export function cardDataToThreadsPost(data: TweetCardData): ThreadsPost | null {
   const post: ThreadsPost = {
     ...nested(data, false),
     time: relativeTime(data.publishedAt),
-    metrics: METRICS.map(({ key, icon }) => {
-      const value = data.metrics?.[key];
-      return { icon, value: value ? compact(value) : "" };
-    }),
+    metrics: [
+      ...METRICS.map(({ key, icon }) => {
+        const value = data.metrics?.[key];
+        return { icon, value: value ? compact(value) : "" };
+      }),
+      /** threads.com shows Save without a count. */
+      { icon: "threads-save", value: "" },
+    ],
   };
   if (data.replyTo) post.parent = nested(data.replyTo, false);
   if (data.quoted) post.quoted = nested(data.quoted, true);
