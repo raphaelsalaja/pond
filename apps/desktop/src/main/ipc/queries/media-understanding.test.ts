@@ -1,13 +1,33 @@
 import { DEFAULT_PREFS } from "@pond/schema/db";
 import type { Prefs } from "@pond/schema/db";
 import { describe, expect, it, vi } from "vitest";
+import { isAuxiliaryKind } from "../../../shared/save-file-names";
 import { MediaUnderstandingError } from "../../core/media-understanding";
 import type { MediaUnderstanding } from "../../core/media-understanding";
 import { queryOperationAccess } from "./agent-operation-access";
 import { agentOperationsForQueries } from "./agent-operations";
 import { createMediaUnderstandingQueries } from "./media-understanding";
 
-const IMAGE_PATH = "/library/items/save-1/image.png";
+const SAVE_DIR = "/library/items/save-1";
+
+type SaveFileRef = { kind: string; path: string };
+
+/** Mirrors the main-process contract: the picked file must exist, and only a poster may be auxiliary. */
+function libraryFiles(files: ReadonlyArray<SaveFileRef>) {
+  return async (
+    _saveId: string,
+    pick: (files: ReadonlyArray<SaveFileRef>) => number,
+  ) => {
+    if (files.length === 0)
+      return { ok: false as const, reason: "no_files" as const };
+    const file = files[pick(files)];
+    if (!file) return { ok: false as const, reason: "out_of_range" as const };
+    if (isAuxiliaryKind(file.kind) && file.kind !== "poster") {
+      return { ok: false as const, reason: "auxiliary_file" as const };
+    }
+    return { ok: true as const, path: `${SAVE_DIR}/${file.path}` };
+  };
+}
 
 function prefs(
   agent: Partial<Prefs["agent"]> = {},
@@ -42,6 +62,7 @@ function prefs(
 function setup(
   overrides: {
     prefs?: Pick<Prefs, "agent" | "ai">;
+    files?: ReadonlyArray<SaveFileRef>;
     resolve?: () => Promise<
       | { ok: true; path: string }
       | { ok: false; reason: "not_found" | "missing" | "unsafe_path" }
@@ -103,8 +124,9 @@ function setup(
     }),
     libraryMediaMetadata,
     readLibraryMedia,
-    resolveSaveFilePath:
-      overrides.resolve ?? (async () => ({ ok: true, path: IMAGE_PATH })),
+    resolvePickedSaveFilePath:
+      overrides.resolve ??
+      libraryFiles(overrides.files ?? [{ kind: "image", path: "image.png" }]),
     service,
   });
   return {
@@ -155,6 +177,87 @@ describe("saves.understandMedia", () => {
     },
   );
 
+  it.each(["article", "avatar", "thumbnail"])(
+    "reads the post's image when file 0 is a %s",
+    async (kind) => {
+      const { queries, caption, libraryMediaMetadata } = setup({
+        files: [
+          { kind, path: kind === "article" ? "article.html" : `${kind}.jpg` },
+          { kind: "image", path: "media-1.jpeg" },
+        ],
+      });
+
+      await expect(
+        queries["saves.understandMedia"]({ saveId: "save-1", task: "caption" }),
+      ).resolves.toMatchObject({ ok: true });
+      expect(libraryMediaMetadata).toHaveBeenCalledExactlyOnceWith(
+        `${SAVE_DIR}/media-1.jpeg`,
+      );
+      expect(caption).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ mimeType: "image/jpeg" }),
+      );
+    },
+  );
+
+  it("reads a locally imported image whose kind is not image", async () => {
+    const { queries, libraryMediaMetadata } = setup({
+      files: [
+        { kind: "thumbnail", path: "photo.jpg_thumbnail.webp" },
+        { kind: "other", path: "photo.jpg" },
+      ],
+    });
+
+    await expect(
+      queries["saves.understandMedia"]({ saveId: "save-1", task: "caption" }),
+    ).resolves.toMatchObject({ ok: true });
+    expect(libraryMediaMetadata).toHaveBeenCalledExactlyOnceWith(
+      `${SAVE_DIR}/photo.jpg`,
+    );
+  });
+
+  it("reads a video Save through its poster", async () => {
+    const { queries, caption, libraryMediaMetadata } = setup({
+      files: [
+        { kind: "avatar", path: "avatar.jpg" },
+        { kind: "video", path: "video-1.mp4" },
+        { kind: "poster", path: "poster-1.jpg" },
+      ],
+    });
+
+    await expect(
+      queries["saves.understandMedia"]({ saveId: "save-1", task: "caption" }),
+    ).resolves.toMatchObject({ ok: true });
+    expect(libraryMediaMetadata).toHaveBeenCalledExactlyOnceWith(
+      `${SAVE_DIR}/poster-1.jpg`,
+    );
+    expect(caption).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ mimeType: "image/jpeg" }),
+    );
+  });
+
+  it.each([
+    [[], "no_files"],
+    [
+      [
+        { kind: "article", path: "article.html" },
+        { kind: "avatar", path: "avatar.jpg" },
+      ],
+      "auxiliary_file",
+    ],
+    [[{ kind: "video", path: "video-1.mp4" }], "unsupported_media"],
+  ] as const)(
+    "reports why a Save with files %j has nothing to read",
+    async (files, reason) => {
+      const { queries, caption, readLibraryMedia } = setup({ files });
+
+      await expect(
+        queries["saves.understandMedia"]({ saveId: "save-1", task: "caption" }),
+      ).resolves.toEqual({ ok: false, reason });
+      expect(readLibraryMedia).not.toHaveBeenCalled();
+      expect(caption).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     ["not_found", "not_found"],
     ["missing", "missing"],
@@ -173,10 +276,7 @@ describe("saves.understandMedia", () => {
 
   it("rejects unsupported media before reading it", async () => {
     const { queries, caption, readLibraryMedia } = setup({
-      resolve: async () => ({
-        ok: true,
-        path: "/library/items/save-1/document.pdf",
-      }),
+      files: [{ kind: "other", path: "document.pdf" }],
     });
 
     await expect(

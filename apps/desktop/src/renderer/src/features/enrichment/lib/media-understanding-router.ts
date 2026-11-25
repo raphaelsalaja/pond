@@ -66,10 +66,17 @@ function gemmaFailure(result: Extract<MediaUnderstandResult, { ok: false }>) {
   return new GemmaMediaUnderstandingError(result);
 }
 
-/** These files cannot be sent to the local model, so a failed attempt must not stay eligible. */
+/** The Save has no file the local model can read, so a failed attempt must not stay eligible. Transient failures stay out so the next sweep retries them. */
 const UNREADABLE_MEDIA = new Set<
   Extract<MediaUnderstandResult, { ok: false }>["reason"]
->(["unsupported_media", "too_large"]);
+>([
+  "unsupported_media",
+  "too_large",
+  "auxiliary_file",
+  "no_files",
+  "missing",
+  "out_of_range",
+]);
 
 export function createMediaUnderstandingRouter(
   dependencies: Partial<MediaUnderstandingRouterDependencies> = {},

@@ -123,11 +123,15 @@ describe("media-understanding router", () => {
     expect(runFlorence).not.toHaveBeenCalled();
   });
 
-  it("finishes unreadable media so the sweep does not retry it", async () => {
-    const { router, runFlorence } = setup({
-      ok: false,
-      reason: "unsupported_media",
-    });
+  it.each([
+    "unsupported_media",
+    "too_large",
+    "auxiliary_file",
+    "no_files",
+    "missing",
+    "out_of_range",
+  ] as const)("finishes %s so the sweep does not retry it", async (reason) => {
+    const { router, runFlorence } = setup({ ok: false, reason });
 
     await expect(
       router.run({
@@ -139,6 +143,22 @@ describe("media-understanding router", () => {
     ).resolves.toEqual({ text: "", model: "ollama/gemma4:e2b:caption:v1" });
     expect(runFlorence).not.toHaveBeenCalled();
   });
+
+  it.each(["read_failed", "model_unavailable", "internal_error"] as const)(
+    "keeps %s retryable",
+    async (reason) => {
+      const { router } = setup({ ok: false, reason });
+
+      await expect(
+        router.run({
+          saveId: "save-1",
+          imageUrl: "pond://save-1/image.png",
+          task: "caption",
+          prefs: ai("gemma4"),
+        }),
+      ).rejects.toThrow(reason);
+    },
+  );
 
   it("stamps eligibility with the active primary model", () => {
     const { router } = setup();
