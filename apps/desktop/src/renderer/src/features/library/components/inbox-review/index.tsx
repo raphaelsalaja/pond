@@ -22,6 +22,7 @@ import {
   useInboxProgress,
   useNotification,
 } from "@/features/notifications";
+import { useOpenSaveId } from "@/features/saves/navigation";
 import { ensureSaves } from "@/features/saves/pool";
 import { getAppRouter } from "@/shared/lib/app-router";
 import styles from "./styles.module.css";
@@ -36,13 +37,15 @@ export function InboxReview() {
     nav?.kind === "inbox" ? (nav.snoozed ? "snoozed" : "review") : null;
   const queue = useInboxReview();
   const loaded = useInboxReviewScope();
+  const saveOpen = useOpenSaveId() !== null;
 
   useEffect(() => {
     if (scope) void inboxReview.start(scope);
     else inboxReview.exit();
   }, [scope]);
 
-  if (!scope) return null;
+  /** Stay mounted under the Save overlay: unmounting restarts the review effect and the queue loses its place. */
+  if (!scope || saveOpen) return null;
   return <InboxPage scope={scope} queue={loaded === scope ? queue : null} />;
 }
 
@@ -82,7 +85,7 @@ function InboxPage({
   });
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-inbox>
       {total > 0 ? (
         <p className={styles.progress} aria-live="polite">
           {position} / {total}

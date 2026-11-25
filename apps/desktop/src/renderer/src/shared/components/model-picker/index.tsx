@@ -1,4 +1,4 @@
-import { IconCheck, IconChevronDown } from "@pond/icons";
+import { IconCheck, IconChevronDown, IconChevronUpDown } from "@pond/icons";
 import type {
   AgentContextChoice,
   AgentModelOptions,
@@ -460,14 +460,14 @@ export function ModelPicker({
       ) : (
         <Menu.Trigger
           disabled={disabled}
-          size="xs"
-          variant="ghost"
+          size="sm"
+          variant="secondary"
           rounding="full"
           className={styles.trigger}
           aria-label={`Choose model, ${label}`}
         >
           <span className={styles.name}>{label}</span>
-          <IconChevronDown size={12} className={styles.chevron} aria-hidden />
+          <IconChevronUpDown size={12} className={styles.expand} aria-hidden />
         </Menu.Trigger>
       )}
       <Menu.Portal>

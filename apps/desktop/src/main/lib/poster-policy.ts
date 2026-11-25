@@ -1,4 +1,4 @@
-import type { SaveFile, Source } from "@pond/schema/db";
+import type { SaveFile } from "@pond/schema/db";
 import { type RawJson, walkCaptureMedia } from "@pond/schema/raw";
 import { isVideoFile } from "@shared/media-index";
 
@@ -27,9 +27,7 @@ export function hasMediaDims(
   );
 }
 
-export function usesPlatformPoster(source: Source | null | undefined): boolean {
-  return source === "youtube";
-}
+export { usesPlatformPoster } from "@shared/poster-policy";
 
 export function videoPosterSlots(files: readonly SaveFile[]) {
   const videos = files.filter(isVideoFile);

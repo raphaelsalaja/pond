@@ -433,6 +433,18 @@ it("puts the whole viewer, playback toolbar included, in full screen", async () 
   }
 });
 
+it("leaves fullscreen to the host when the viewer chrome is disabled", async () => {
+  await act(async () => {
+    root.render(
+      <ViewerChrome enabled={false}>
+        <VideoPlayer src="pond://test/clip.mp4" active />
+      </ViewerChrome>,
+    );
+  });
+  expect(host.querySelector('[aria-label="Playback"]')).not.toBeNull();
+  expect(host.querySelector('button[aria-label="Full screen"]')).toBeNull();
+});
+
 it("shows the video over the poster once the first frame loads", async () => {
   await act(async () => {
     root.render(

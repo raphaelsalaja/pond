@@ -98,22 +98,71 @@
   }
 }
 
-.icon {
-  flex-shrink: 0;
-  align-self: center;
-  width: 12px;
-  height: 12px;
-}
-
-.title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .citation,
   .citation > span {
+    transition: none;
+  }
+}
+
+/*
+ * An inline reference reads as part of the sentence: a small picture or icon, then the name with a
+ * faint underline, in the text's own weight. It stays inline so a long name wraps with the line.
+ * `button.` outranks the Button's own inline-flex, which would keep the name on one line.
+ */
+button.reference {
+  display: inline;
+  padding: 0;
+  font: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
+  color: var(--ds-foreground-primary);
+  text-align: start;
+  white-space: normal;
+}
+
+.media {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-inline-end: var(--ds-space-xs);
+  overflow: hidden;
+  vertical-align: -2px;
+  color: var(--ds-foreground-tertiary);
+  border-radius: 3px;
+
+  & > * {
+    flex-basis: 100%;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+  }
+}
+
+/* An icon in place of a picture, for tags and folders. */
+.reference .media > svg {
+  width: 13px;
+  height: 13px;
+}
+
+.label {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in oklab, currentcolor 22%, transparent);
+  text-underline-offset: 3px;
+  box-decoration-break: clone;
+  transition: text-decoration-color var(--ds-duration-fast)
+    var(--ds-easing-standard);
+
+  .reference:hover &,
+  .reference:focus-visible & {
+    text-decoration-color: color-mix(in oklab, currentcolor 70%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .label {
     transition: none;
   }
 }

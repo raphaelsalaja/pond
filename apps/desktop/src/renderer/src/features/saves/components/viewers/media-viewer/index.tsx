@@ -90,6 +90,7 @@ export function MediaViewer({
               file?.mimeType === "image/gif" ||
               /\.gif$/i.test(file?.path ?? ""),
             posterUrl: u.posterUrl,
+            posterIsCrossFile: u.posterIsCrossFile,
             width: size?.width ?? undefined,
             height: size?.height ?? undefined,
           },

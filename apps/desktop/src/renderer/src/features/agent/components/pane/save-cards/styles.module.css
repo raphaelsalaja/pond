@@ -1,149 +1,25 @@
-.cards {
+/*
+ * A strip of Library cards that scrolls sideways, snapping to each card. A sideways scroller also
+ * crops what spills out of it, and a card draws its edge, lift and focus ring just outside its box,
+ * so the strip pads itself and gives the space back with a negative margin. `section.` outranks the
+ * message body's 100% cap on its children, which would take the extra width away again.
+ */
+section.cards {
   display: flex;
   gap: var(--ds-space-md);
-  width: 100%;
-  margin-block: var(--ds-space-md);
+  align-items: flex-start;
+  width: calc(100% + var(--ds-space-md) * 2);
+  max-width: none;
+  padding: var(--ds-space-md);
+  margin: 0 calc(var(--ds-space-md) * -1);
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--ds-space-md);
   scrollbar-width: none;
-}
 
-.card {
-  position: relative;
-  display: flex;
-  flex: 0 0 156px;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-  min-width: 0;
-  height: auto;
-  padding: 0;
-  overflow: hidden;
-  text-align: left;
-  scroll-snap-align: start;
-  background: var(--ds-background-primary);
-  border-radius: var(--ds-radius-2xl);
-  transition: background var(--ds-duration-fast) var(--ds-easing-standard);
-  animation: card-in var(--ds-duration-emphasized) var(--ds-easing-decelerate)
-    both;
-
-  /* Drawn over the image so the cover never hides the edge. */
-  &::after {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    content: "";
-    border-radius: inherit;
-    box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-border-subtle);
+  & > * {
+    flex: 0 0 156px;
+    scroll-snap-align: start;
   }
-
-  &:hover {
-    background: var(--ds-background-secondary);
-  }
-
-  /* Gaps shrink down the row so the stagger reads as one motion, not a queue. */
-  &:nth-child(2) {
-    animation-delay: calc(var(--ds-duration-fast) * 0.6);
-  }
-
-  &:nth-child(3) {
-    animation-delay: calc(var(--ds-duration-fast) * 1.1);
-  }
-
-  &:nth-child(n + 4) {
-    animation-delay: calc(var(--ds-duration-fast) * 1.5);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation-name: card-fade;
-  }
-}
-
-@keyframes card-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
-@keyframes card-fade {
-  from {
-    opacity: 0;
-  }
-}
-
-.media {
-  display: block;
-  flex: none;
-  aspect-ratio: 1;
-  overflow: hidden;
-  background: var(--ds-background-secondary);
-}
-
-.card .media > * {
-  flex: none;
-  width: 100%;
-  height: 100%;
-  aspect-ratio: auto;
-  background: transparent;
-  border-radius: 0;
-
-  &::after {
-    display: none;
-  }
-}
-
-.card .media img {
-  object-fit: contain;
-}
-
-.text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-2xs);
-  min-width: 0;
-  padding: var(--ds-space-lg) var(--ds-space-lg) 0;
-}
-
-.title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-weight: var(--ds-weight-medium);
-  color: var(--ds-foreground-primary);
-  white-space: nowrap;
-}
-
-.meta {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  -webkit-line-clamp: 2;
-  font-size: var(--ds-text-small);
-  line-height: var(--ds-leading-small);
-  color: var(--ds-foreground-tertiary);
-  overflow-wrap: anywhere;
-}
-
-.origin {
-  display: flex;
-  gap: var(--ds-space-xs);
-  align-items: center;
-  min-width: 0;
-  padding: var(--ds-space-md) var(--ds-space-lg) var(--ds-space-lg);
-  margin-top: auto;
-  font-size: var(--ds-text-small);
-  color: var(--ds-foreground-tertiary);
-
-  & svg {
-    flex: none;
-    border-radius: var(--ds-radius-xs);
-  }
-}
-
-.label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }

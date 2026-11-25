@@ -40,6 +40,16 @@ it("retries a GitHub star's generated card, then uses the text cover", () => {
   );
   expect(gone).toEqual({
     fetched: [],
+    transientMisses: 1,
+    generatedCardMissed: false,
+  });
+
+  const goneFinal = settleMediaFetches(
+    [{ url: generated, file: null, miss: "permanent" }],
+    { optionalGeneratedCard: true, finalAttempt: true },
+  );
+  expect(goneFinal).toEqual({
+    fetched: [],
     transientMisses: 0,
     generatedCardMissed: true,
   });

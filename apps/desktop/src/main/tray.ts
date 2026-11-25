@@ -4,6 +4,7 @@ import type { MenuActionId } from "../shared/constants";
 import { pipelineSnapshot } from "./core/pipeline/reconciler";
 import { loadTrayIcon } from "./tray-icon";
 import { buildMenu, buildTooltip } from "./tray-menu";
+import { trayBadge } from "./tray-status";
 
 const BUSY_POLL_MS = 1_000;
 
@@ -71,10 +72,15 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     async refresh() {
       try {
         const inflight = pipelineSnapshot().inflight;
-        const { menu, ingesting } = await buildMenu(opts, inflight);
+        const {
+          menu,
+          ingesting,
+          inflight: running,
+        } = await buildMenu(opts, inflight);
         tray.setContextMenu(menu);
         tray.setToolTip(await buildTooltip());
-        scheduleBusyPoll(ingesting > 0 || inflight > 0);
+        setTrayCount(tray, running);
+        scheduleBusyPoll(ingesting > 0 || running > 0);
       } catch (err) {
         log.warn("[pond tray] refresh failed", err);
       }
@@ -82,6 +88,7 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     destroy() {
       clearBusyPoll();
       nativeTheme.off("updated", onThemeUpdated);
+      if (process.platform === "darwin") tray.setTitle("");
       tray.destroy();
       handle = null;
     },
@@ -90,6 +97,13 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   handle = instance;
   await instance.refresh();
   return instance;
+}
+
+function setTrayCount(tray: Tray, inflight: number): void {
+  if (process.platform !== "darwin") return;
+  tray.setTitle(trayBadge({ inflight }), {
+    fontType: "monospacedDigit",
+  });
 }
 
 function scheduleBusyPoll(busy: boolean): void {

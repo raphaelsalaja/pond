@@ -126,6 +126,8 @@ export interface CaptureArticle {
   canonicalUrl?: string;
   /** The source served a paywall preview, not the whole post. */
   preview?: boolean;
+  /** The verbatim bytes of a converted text document, written beside the article so the original survives. */
+  source?: { text: string; filename: string; mimeType: string };
 }
 
 export const QUOTE_DEPTH_CAP = 3;
@@ -152,6 +154,8 @@ export interface CaptureExtras {
   replyRecaptureQueued?: boolean;
   /** The page is a search engine's results for this query. */
   search?: { engine: string; query: string };
+  /** The URL served a markdown or plain-text document, converted to the save's article. */
+  textDocument?: boolean;
   subreddit?: string;
   tileType?: string;
 }

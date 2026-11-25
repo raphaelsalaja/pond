@@ -12,6 +12,7 @@ import {
 import { folders } from "@/features/library/state/folders";
 import { inboxReview } from "@/features/library/state/inbox-review";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
+import { closeSave, openSave } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/state/pool";
 import { ToastHost } from "@/shared/components/toast-host";
 import { InboxReview } from ".";
@@ -237,6 +238,26 @@ it("rewinds to the Save whose change the toast undid", async () => {
   expect(progress()).toBe("1 / 2");
   expect(topCard()?.textContent).toContain("First");
   expect(document.activeElement).toBe(stage());
+});
+
+it("keeps the review position when a Save preview opens and closes", async () => {
+  await mount();
+  await act(async () => press("ArrowDown"));
+  expect(progress()).toBe("2 / 2");
+  expect(topCard()?.textContent).toContain("Second");
+  const queries = requests.filter(
+    (request) => request.name === "saves.queryPage",
+  ).length;
+
+  await act(async () => openSave("b"));
+  expect(stage()).toBeNull();
+
+  await act(async () => closeSave());
+  expect(progress()).toBe("2 / 2");
+  expect(topCard()?.textContent).toContain("Second");
+  expect(
+    requests.filter((request) => request.name === "saves.queryPage"),
+  ).toHaveLength(queries);
 });
 
 it("closes on Escape and returns to the Library", async () => {

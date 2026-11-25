@@ -122,6 +122,12 @@ function buildAddItems(ids: string[], batch: boolean): MenuItemSpec[] {
       items: buildFolderItems(ids, batch),
     },
     {
+      label: "Add to Multiple Folders",
+      icon: glyph(IconFolderPlus),
+      shortcut: shortcutGlyphs("save.assign-multiple-folders"),
+      onClick: () => saveLibraryBridge.openFolderPicker(ids, "multiple"),
+    },
+    {
       label: `New Folder with ${formatPlural(ids.length, { one: "Save", other: "Saves" })}`,
       icon: glyph(IconFolderPlus),
       hidden: !batch,

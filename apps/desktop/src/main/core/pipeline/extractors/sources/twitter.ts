@@ -8,10 +8,10 @@ export class TwitterTweetExtractor implements Extractor {
   readonly source = "twitter" as const;
   readonly validUrl = TWITTER_PATTERNS;
   readonly cookieDomain = ".x.com";
-  /** The signed-in left nav's Profile tab links to /<handle>; the testid is stable across x.com redesigns. */
+  /** The signed-in left nav's Profile tab links to /<handle>; x-web dropped the test id, so fall back to the nav link's label. */
   readonly probeExpression = `(() => {
         try {
-          const a = document.querySelector('a[data-testid="AppTabBar_Profile_Link"]');
+          const a = document.querySelector('a[data-testid="AppTabBar_Profile_Link"], nav a[aria-label="Profile"]');
           const m = (a?.getAttribute('href') || '').match(/^\\/([A-Za-z0-9_]+)\\/?$/);
           return m ? m[1] : '';
         } catch { return ''; }
