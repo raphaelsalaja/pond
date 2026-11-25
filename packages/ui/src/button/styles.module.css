@@ -34,17 +34,31 @@
   align-items: center;
   justify-content: center;
   height: var(--button-height);
-  font-weight: var(--ds-weight-strong);
+  font-weight: var(--ds-weight-medium);
   line-height: 1;
   text-wrap: nowrap;
   user-select: none;
+  corner-shape: superellipse(1.125);
   transition:
-    background-color var(--ds-duration-fast) var(--ds-easing-standard),
-    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background-color var(--ds-duration-snap) var(--ds-easing-in-out),
+    color var(--ds-duration-snap) var(--ds-easing-in-out),
     outline-color var(--ds-duration-snap) var(--ds-easing-snap),
     outline-offset var(--ds-duration-snap) var(--ds-easing-snap),
-    box-shadow var(--ds-duration-fast) var(--ds-easing-standard),
-    opacity var(--ds-duration-snap) var(--ds-easing-standard);
+    box-shadow var(--ds-duration-snap) var(--ds-easing-in-out),
+    opacity var(--ds-duration-snap) var(--ds-easing-in-out),
+    scale var(--ds-duration-snap) var(--ds-easing-in-out);
+
+  /* Visitors' buttons give a little under the pointer. */
+  &:where(
+      :not(
+        [data-variant="bare"],
+        [data-variant="link"],
+        [data-disabled],
+        :disabled
+      )
+    ):active {
+    scale: 0.99;
+  }
 
   &:not(:focus-visible, [data-demo-state="focus"]) {
     outline: var(--ds-focus-width) solid transparent;
@@ -159,22 +173,29 @@
     }
   }
 
+  /* The page colour with a hairline ring and no shadow; the ring firms up on hover. */
   &:where([data-variant="secondary"]) {
     color: var(--ds-foreground-primary);
-    background-color: var(--ds-background-primary);
-    box-shadow:
-      0 0 0 1px var(--ds-border-subtle),
-      var(--ds-shadow-outline);
+    background-color: light-dark(
+      var(--ds-background-primary),
+      var(--ds-background-tertiary)
+    );
+    box-shadow: 0 0 0 1px var(--ds-border-subtle);
 
     &:hover,
     &[data-demo-state="hover"] {
-      background-color: var(--ds-background-secondary);
+      box-shadow: 0 0 0 1px var(--ds-border-strong);
     }
   }
 
+  /* Visitors' ghost: a faint tinted fill with muted text, a step darker on hover. */
   &:where([data-variant="tertiary"]) {
     color: var(--ds-foreground-secondary);
-    background-color: var(--ds-surface-primary);
+    background-color: color-mix(
+      in oklab,
+      var(--ds-surface-primary) 90%,
+      transparent
+    );
 
     &:hover,
     &[data-demo-state="hover"] {
@@ -183,25 +204,17 @@
     }
   }
 
+  /* Solid buttons are a flat fill with no gradient or shadow, easing to 90% on hover. */
   &:where(
       [data-variant="primary"],
       [data-variant="accent"],
       [data-variant="destructive"]
     ) {
     background-color: var(--button-solid);
-    background-image: var(--ds-gloss);
-    box-shadow:
-      0 0 0 1px var(--button-solid),
-      var(--ds-shadow-button);
 
     &:hover,
     &[data-demo-state="hover"] {
-      background-color: var(--button-solid-hover);
-      background-image: none;
-    }
-
-    &:active {
-      background-image: var(--ds-gloss);
+      opacity: 0.9;
     }
   }
 
@@ -237,11 +250,16 @@
       color: var(--ds-foreground-tertiary);
     }
 
+    /* Visitors' transparent button: no fill until the pointer arrives. */
     &:hover,
     &[data-pressed],
     &[data-demo-state="hover"] {
       color: var(--ds-foreground-primary);
-      background-color: var(--ds-surface-primary);
+      background-color: color-mix(
+        in oklab,
+        var(--ds-surface-secondary) 70%,
+        transparent
+      );
     }
 
     &[data-pressed] {

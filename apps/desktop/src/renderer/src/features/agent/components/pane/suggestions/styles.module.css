@@ -1,9 +1,0 @@
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ds-space-sm);
-  min-width: 0;
-  padding: 0;
-  margin: var(--ds-space-md) 0 0;
-  border: 0;
-}
