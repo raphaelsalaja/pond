@@ -12,7 +12,16 @@ export interface QuerySessionState {
 export interface QuerySessionRuntime {
   page(request: LibraryQueryRequest): Promise<LibraryQueryPage>;
   ids(request: LibraryQueryRequest): Promise<{ ids: Array<string> }>;
+  /** Reloads these Saves into the pool. */
   refresh(ids: ReadonlyArray<string>): Promise<void>;
+  /** Loads only the Saves the pool doesn't hold. */
+  ensure(ids: ReadonlyArray<string>): Promise<void>;
+}
+
+interface LoadMode {
+  append: boolean;
+  /** A sync reload: the pool already applied the changed rows, and results stay on screen without a loading state. */
+  background: boolean;
 }
 function scopeKey(request: LibraryQueryRequest): string {
   return JSON.stringify({ ...request, keywords: undefined });
@@ -67,14 +76,14 @@ export function createQuerySession(
     state = { ...state, ...patch };
     emit(state);
   }
-  async function load(append = false): Promise<void> {
+  async function run({ append, background }: LoadMode): Promise<void> {
     if (!request || (append && (active || !state.page?.nextCursor))) return;
     const captured = request;
     const capturedKey = key;
     const ticket = ++sequence;
     active = true;
     const previous = pageKey === capturedKey ? state.page : null;
-    update({ loading: true, error: null });
+    if (!background) update({ loading: true, error: null });
     const current = () => ticket === sequence && capturedKey === key;
     try {
       let result = await runtime.page({
@@ -94,7 +103,8 @@ export function createQuerySession(
         if (!current()) return;
         result = { ...next, ids: [...result.ids, ...next.ids] };
       }
-      await runtime.refresh(result.ids);
+      if (background) await runtime.ensure(result.ids);
+      else await runtime.refresh(result.ids);
       if (!current()) return;
       const page = {
         ...result,
@@ -115,7 +125,7 @@ export function createQuerySession(
       }
       if (append) {
         active = false;
-        await load(false);
+        await run({ append: false, background: false });
         return;
       }
       update({
@@ -124,9 +134,12 @@ export function createQuerySession(
     } finally {
       if (current()) {
         active = false;
-        update({ loading: false });
+        if (state.loading) update({ loading: false });
       }
     }
+  }
+  function load(append = false): Promise<void> {
+    return run({ append, background: false });
   }
   return {
     snapshot: () => state,
@@ -149,6 +162,8 @@ export function createQuerySession(
       return retyped;
     },
     load,
+    /** Re-runs the current query after sync actions, reusing rows the pool already updated. */
+    reload: () => run({ append: false, background: true }),
     async allIds() {
       if (!request) return null;
       const capturedKey = key;

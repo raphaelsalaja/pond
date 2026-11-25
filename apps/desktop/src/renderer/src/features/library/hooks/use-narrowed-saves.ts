@@ -36,7 +36,7 @@ import {
 } from "@/features/library/state/view-store";
 import type { SaveListMode } from "@/features/saves";
 import { descendantFolderIds, useRecents } from "@/features/saves";
-import { reloadSaves, useSaves } from "@/features/saves/pool";
+import { ensureSaves, reloadSaves, useSaves } from "@/features/saves/pool";
 import {
   syncDepartingSaveIds,
   useTagPickerIds,
@@ -46,12 +46,15 @@ import { keywordScopesFromPrefs, useRetrievalOverlay } from "@/features/search";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
 import { inboxScope } from "@/shared/lib/library-nav";
 import type { LibraryNav } from "@/shared/lib/library-nav";
+import { onSyncRefetch } from "@/shared/lib/sync-refetch";
 import { usePrefs } from "@/shared/state/prefs";
 import { useRetainedTagPickerSaves } from "./retain-tag-picker-saves";
 
 /** Long enough to span a pause between keystrokes, so results swap once typing stops. */
 const KEYWORD_DEBOUNCE_MS = 250;
 const NO_PINS: ReadonlyArray<string> = [];
+/** Results depend on Save rows, folder membership, the folder tree, and tag names. */
+const LIBRARY_PAGE_MODELS = ["save", "save_folder", "folder", "tag"] as const;
 
 const ALL: LibraryNav = { kind: "all" };
 
@@ -59,6 +62,7 @@ const runtime: QuerySessionRuntime = {
   page: (request) => window.pond.query("saves.queryPage", request),
   ids: (request) => window.pond.query("saves.queryIds", request),
   refresh: reloadSaves,
+  ensure: ensureSaves,
 };
 
 export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
@@ -179,20 +183,15 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
       session.cancel();
     };
   }, [request, session]);
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const unsubscribe = window.pond.onSyncAction(() => {
-      if (timer) return;
-      timer = setTimeout(() => {
-        timer = undefined;
-        void session.load();
-      }, 100);
-    });
-    return () => {
-      unsubscribe();
-      clearTimeout(timer);
-    };
-  }, [session]);
+  useEffect(
+    () =>
+      onSyncRefetch({
+        models: LIBRARY_PAGE_MODELS,
+        delayMs: 100,
+        run: () => session.reload(),
+      }),
+    [session],
+  );
   const manualOrder = folderId ? folderViews[folderId]?.manualOrder : undefined;
   const previousOrder = useRef(manualOrder);
   useEffect(() => {

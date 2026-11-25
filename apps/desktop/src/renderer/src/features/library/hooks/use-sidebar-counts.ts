@@ -53,6 +53,12 @@ let stopListening: (() => void) | undefined;
 let pending = false;
 let dirty = false;
 let timer: ReturnType<typeof setTimeout> | undefined;
+/** Tags, saved views and settings never change a count. */
+const COUNTED_MODELS: ReadonlySet<string> = new Set([
+  "save",
+  "save_folder",
+  "folder",
+]);
 
 function schedule(): void {
   if (timer) return;
@@ -88,7 +94,11 @@ export function useSidebarCounts(): LibrarySidebarCounts {
     .join("\0");
   useEffect(() => {
     users += 1;
-    if (users === 1) stopListening = window.pond.onSyncAction(schedule);
+    if (users === 1) {
+      stopListening = window.pond.onSyncAction((action) => {
+        if (COUNTED_MODELS.has(action.modelName)) schedule();
+      });
+    }
     return () => {
       users -= 1;
       if (users > 0) return;

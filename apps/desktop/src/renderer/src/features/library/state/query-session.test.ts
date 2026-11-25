@@ -33,6 +33,7 @@ describe("query session", () => {
         refresh: async (ids) => {
           hydrated.push([...ids]);
         },
+        ensure: async () => {},
       },
       () => {},
     );
@@ -58,6 +59,7 @@ describe("query session", () => {
         page: async () => pages[calls++] ?? page([]),
         ids: async () => ({ ids: [] }),
         refresh: async () => {},
+        ensure: async () => {},
       },
       () => {},
     );
@@ -74,6 +76,7 @@ describe("query session", () => {
         page: async () => page([]),
         ids: () => response.promise,
         refresh: async () => {},
+        ensure: async () => {},
       },
       () => {},
     );
@@ -90,6 +93,7 @@ describe("query session", () => {
           page(request.keywords ? ["match"] : ["a", "b"]),
         ids: async () => ({ ids: [] }),
         refresh: async () => {},
+        ensure: async () => {},
       },
       () => {},
     );
@@ -109,6 +113,7 @@ describe("query session", () => {
         page: async () => page(["a"]),
         ids: async () => ({ ids: [] }),
         refresh: async () => {},
+        ensure: async () => {},
       },
       () => {},
     );
@@ -123,6 +128,7 @@ describe("query session", () => {
         page: async () => page(["a"]),
         ids: async () => ({ ids: [] }),
         refresh: async () => {},
+        ensure: async () => {},
       },
       () => {},
     );
@@ -148,6 +154,7 @@ describe("query session", () => {
         },
         ids: async () => ({ ids: [] }),
         refresh: async () => {},
+        ensure: async () => {},
       },
       () => {},
     );
@@ -165,6 +172,7 @@ describe("query session", () => {
         page: async () => structuredClone(next),
         ids: async () => ({ ids: [] }),
         refresh: async () => {},
+        ensure: async () => {},
       },
       () => {},
     );
@@ -185,6 +193,7 @@ describe("query session", () => {
         },
         ids: async () => ({ ids: [] }),
         refresh: async () => {},
+        ensure: async () => {},
       },
       () => {},
     );
@@ -195,5 +204,33 @@ describe("query session", () => {
       error: "Couldn't complete the search. Try again.",
       page: null,
     });
+  });
+  it("reloads after sync actions without reloading rows the pool already holds", async () => {
+    const refreshed: Array<Array<string>> = [];
+    const ensured: Array<Array<string>> = [];
+    const states: Array<boolean> = [];
+    let next = page(["a", "b"]);
+    const session = createQuerySession(
+      {
+        page: async () => next,
+        ids: async () => ({ ids: [] }),
+        refresh: async (ids) => {
+          refreshed.push([...ids]);
+        },
+        ensure: async (ids) => {
+          ensured.push([...ids]);
+        },
+      },
+      (state) => states.push(state.loading),
+    );
+    session.setRequest({ query: EMPTY_QUERY });
+    await session.load();
+    states.length = 0;
+    next = page(["c", "a", "b"]);
+    await session.reload();
+    expect(session.snapshot().page?.ids).toEqual(["c", "a", "b"]);
+    expect(refreshed).toEqual([["a", "b"]]);
+    expect(ensured).toEqual([["c", "a", "b"]]);
+    expect(states).toEqual([false]);
   });
 });
