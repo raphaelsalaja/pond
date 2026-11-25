@@ -137,6 +137,46 @@ describe("parseSavedResponses", () => {
     expect(rich.get("SecondPage1")?.author.handle).toBe("carol");
   });
 
+  it("keeps carousel items inside their post instead of reading them as posts", () => {
+    const slide = (code: string, url: string) => ({
+      code,
+      user: { username: "alice" },
+      image_versions2: { candidates: [{ url, width: 800, height: 800 }] },
+    });
+    const carouselPayload = {
+      data: {
+        mediaData: {
+          edges: [
+            {
+              node: {
+                thread_items: [
+                  {
+                    post: {
+                      ...parentNode,
+                      carousel_media: [
+                        slide("SlideCode001", "https://cdn.example.com/1.jpg"),
+                        slide("SlideCode002", "https://cdn.example.com/2.jpg"),
+                      ],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    };
+
+    const rich = parseSavedResponses([
+      {
+        url: "https://www.threads.com/saved",
+        body: JSON.stringify(carouselPayload),
+      },
+    ]);
+
+    expect([...rich.keys()]).toEqual(["ParentCode01"]);
+  });
+
   it("parses bodies with an anti-hijack prefix", () => {
     const rich = parseSavedResponses([
       {
