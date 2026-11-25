@@ -124,21 +124,138 @@ async function inPageSavedApi(
     return req;
   };
 
+  const pageCursor = (json: JsonValue): string | null => {
+    let found: string | null = null;
+    const visit = (value: JsonValue): void => {
+      if (found) return;
+      if (Array.isArray(value)) {
+        for (const item of value) visit(item);
+        return;
+      }
+      if (!isJsonObject(value)) return;
+      const pageInfo = value.page_info;
+      const endCursor = isJsonObject(pageInfo)
+        ? jsonString(pageInfo.end_cursor)
+        : undefined;
+      if (endCursor) {
+        found = endCursor;
+        return;
+      }
+      for (const child of Object.values(value)) visit(child);
+    };
+    visit(json);
+    return found;
+  };
+
+  const pagePostIds = (json: JsonValue): string[] => {
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    const visit = (value: JsonValue, skip: boolean): void => {
+      if (Array.isArray(value)) {
+        for (const item of value) visit(item, skip);
+        return;
+      }
+      if (!isJsonObject(value)) return;
+      const code = jsonString(value.code);
+      if (
+        !skip &&
+        code &&
+        !seen.has(code) &&
+        (value.text_post_app_info || value.user || value.owner)
+      ) {
+        seen.add(code);
+        ids.push(code);
+      }
+      for (const [key, child] of Object.entries(value)) {
+        const nestedSkip =
+          skip ||
+          key === "share_info" ||
+          key === "quoted_post" ||
+          key === "reposted_post" ||
+          key === "carousel_media";
+        visit(child, nestedSkip);
+      }
+    };
+    visit(json, false);
+    return ids;
+  };
+
+  /** The list's own `page_info` sits beside its `edges`; other connections in the payload have their own. */
+  const listHasNextPage = (json: JsonValue): boolean | undefined => {
+    let found: boolean | undefined;
+    const visit = (value: JsonValue): void => {
+      if (found !== undefined) return;
+      if (Array.isArray(value)) {
+        for (const item of value) visit(item);
+        return;
+      }
+      if (!isJsonObject(value)) return;
+      const pageInfo = value.page_info;
+      if (Array.isArray(value.edges) && isJsonObject(pageInfo)) {
+        const next = pageInfo.has_next_page;
+        if (next === true || next === false) {
+          found = next;
+          return;
+        }
+      }
+      for (const child of Object.values(value)) visit(child);
+    };
+    visit(json);
+    return found;
+  };
+
+  /** Threads renders a list's first page into the HTML from its `…PageViewerQuery` preloader and only requests later pages, so read that page from the document. */
+  const preloaded: SavedCapture[] = [];
+  let preloadedIds: string[] = [];
+  let preloadedLastPage = false;
+  for (const script of Array.from(
+    document.querySelectorAll('script[type="application/json"]'),
+  )) {
+    const body = script.textContent ?? "";
+    if (
+      !/adp_Barcelona(?:Saved|Liked)PageViewerQueryRelayPreloader/.test(body)
+    ) {
+      continue;
+    }
+    try {
+      const json: JsonValue = JSON.parse(body);
+      const ids = pagePostIds(json);
+      if (ids.length === 0) continue;
+      preloaded.push({ url: location.href, body, status: 200 });
+      preloadedIds = preloadedIds.concat(ids);
+      if (listHasNextPage(json) === false) preloadedLastPage = true;
+    } catch {}
+  }
+
   let template = getRequest();
-  const waitDeadline = Date.now() + 20_000;
-  let nudged = false;
+  const waitStart = Date.now();
+  const waitDeadline = waitStart + (preloadedLastPage ? 0 : 20_000);
+  let lastNudge = waitStart;
   while (!template && Date.now() < waitDeadline) {
-    if (!nudged && Date.now() - (waitDeadline - 20_000) > 4_000) {
-      nudged = true;
+    if (Date.now() - lastNudge > 1_500) {
+      lastNudge = Date.now();
       try {
-        window.scrollBy({ top: 600, behavior: "instant" });
+        window.scrollBy({ top: 2_000, behavior: "instant" });
       } catch {}
     }
     await sleep(250);
     template = getRequest();
   }
-  if (!template) {
-    return { ok: false, reason: "fallback", detail: "no_request" };
+  if (!template || preloadedLastPage) {
+    if (preloaded.length === 0) {
+      return { ok: false, reason: "fallback", detail: "no_request" };
+    }
+    return {
+      ok: true,
+      entries: [],
+      captures: preloaded,
+      reachedEnd: preloadedLastPage,
+      apiDebug: {
+        pages: preloaded.length,
+        posts: preloadedIds.length,
+        reason: preloadedLastPage ? "exhausted" : "no_request",
+      },
+    };
   }
 
   let base: URL;
@@ -219,61 +336,6 @@ async function inPageSavedApi(
     };
   };
 
-  const pageCursor = (json: JsonValue): string | null => {
-    let found: string | null = null;
-    const visit = (value: JsonValue): void => {
-      if (found) return;
-      if (Array.isArray(value)) {
-        for (const item of value) visit(item);
-        return;
-      }
-      if (!isJsonObject(value)) return;
-      const pageInfo = value.page_info;
-      const endCursor = isJsonObject(pageInfo)
-        ? jsonString(pageInfo.end_cursor)
-        : undefined;
-      if (endCursor) {
-        found = endCursor;
-        return;
-      }
-      for (const child of Object.values(value)) visit(child);
-    };
-    visit(json);
-    return found;
-  };
-
-  const pagePostIds = (json: JsonValue): string[] => {
-    const ids: string[] = [];
-    const seen = new Set<string>();
-    const visit = (value: JsonValue, skip: boolean): void => {
-      if (Array.isArray(value)) {
-        for (const item of value) visit(item, skip);
-        return;
-      }
-      if (!isJsonObject(value)) return;
-      const code = jsonString(value.code);
-      if (
-        !skip &&
-        code &&
-        !seen.has(code) &&
-        (value.text_post_app_info || value.user || value.owner)
-      ) {
-        seen.add(code);
-        ids.push(code);
-      }
-      for (const [key, child] of Object.entries(value)) {
-        const nestedSkip =
-          skip ||
-          key === "share_info" ||
-          key === "quoted_post" ||
-          key === "reposted_post";
-        visit(child, nestedSkip);
-      }
-    };
-    visit(json, false);
-    return ids;
-  };
-
   const stats: HarvestStats = {
     seen: 0,
     fresh: 0,
@@ -285,7 +347,7 @@ async function inPageSavedApi(
   };
   Object.assign(globalThis, { __pondHarvestStats: stats });
 
-  const captures: SavedCapture[] = [];
+  const captures: SavedCapture[] = [...preloaded];
   const deadline = Date.now() + args.deadlineMs;
   const known = new Set<string>((args.knownIds ?? []).map(String));
   const earlyStopEnabled = known.size > 0;
@@ -295,7 +357,7 @@ async function inPageSavedApi(
     jsonString(baseVariables.after) ?? jsonString(baseVariables.cursor) ?? null;
   let prevCursor: string | null = null;
   let pages = 0;
-  let postTotal = 0;
+  let postTotal = preloadedIds.length;
   let firstStatus: number | undefined;
   let reason: SavedApiDebug["reason"] = "exhausted";
 

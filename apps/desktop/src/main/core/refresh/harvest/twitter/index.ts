@@ -3,6 +3,7 @@ export {
   buildBookmarksApiExpression,
   buildLikesApiExpression,
 } from "./api";
+export { draftFromRichTweet } from "./draft";
 export {
   buildOpenBookmarkFolderExpression,
   buildReadBookmarkFoldersExpression,
