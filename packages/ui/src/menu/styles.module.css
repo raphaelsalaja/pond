@@ -42,8 +42,9 @@
 
 .popup {
   composes: popup from "../shared/styles/popup/styles.module.css";
-  max-width: var(--available-width);
-  max-height: var(--available-height);
+  /* Anchor-positioned popups get the vars from the positioner; fallback keeps non-anchored menus inside the viewport. */
+  max-width: var(--available-width, 100vw);
+  max-height: var(--available-height, 100vh);
 }
 
 /* Transition container per Base UI guidance: clip morphing content while the popup resizes. */
