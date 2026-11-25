@@ -177,6 +177,8 @@ if (logFile) {
   log.transports.file.level = false;
 }
 log.initialize();
+/** The window forwards its console warnings here, so echoing main's log back into that console would loop forever. */
+log.transports.ipc.level = false;
 if (!consoleLoggingEnabled(process.argv)) {
   log.transports.console.level = false;
 }

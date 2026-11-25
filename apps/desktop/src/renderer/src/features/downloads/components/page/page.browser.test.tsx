@@ -992,8 +992,9 @@ it("ignores in-flight reloads captured before running downloads were cleared", a
 });
 
 it("bounds the initial render before the downloads table is measured", async () => {
+  /** Twice the row bound below is enough to show virtualization; more only slows slow runners. */
   setSaves(
-    Array.from({ length: 1000 }, (_, index) =>
+    Array.from({ length: 200 }, (_, index) =>
       save(`Failed video ${index}`, "failed", "dead"),
     ),
   );
