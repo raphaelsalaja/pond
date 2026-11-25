@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  createWebHostSlots,
-  type WebHostTask,
-  webHostFor,
-} from "./web-host-slots";
+import { createWebHostSlots, webHostFor } from "./web-host-slots";
+import type { WebHostTask } from "./web-host-slots";
 
 function web(url: string, op: WebHostTask["op"] = "harvest_metadata") {
   return { saveSource: "web", op, url } satisfies WebHostTask;

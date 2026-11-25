@@ -9,12 +9,12 @@ import { domainFromUrl } from "@pond/schema/domain";
 export const MAX_INFLIGHT_PER_WEB_HOST = 2;
 
 /** Ops that request the Save's page or its media from the Save's site. */
-const HOST_LIMITED_OPS: readonly Op[] = [
+const HOST_LIMITED_OPS: ReadonlySet<Op> = new Set<Op>([
   "harvest_metadata",
   "archive_page",
   "fetch_blobs",
   "fetch_video_ytdlp",
-];
+]);
 
 export interface WebHostTask {
   /** The Source of the Save, which owns the URL. */
@@ -26,7 +26,7 @@ export interface WebHostTask {
 /** The host whose budget a task spends, or null when it has no per-host limit. */
 export function webHostFor(task: WebHostTask): string | null {
   if (task.saveSource !== "web") return null;
-  if (!HOST_LIMITED_OPS.includes(task.op)) return null;
+  if (!HOST_LIMITED_OPS.has(task.op)) return null;
   return domainFromUrl(task.url);
 }
 

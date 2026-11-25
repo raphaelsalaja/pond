@@ -8,11 +8,13 @@ import { z } from "zod";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import { isInteractiveTask, TaskPayloadSchema } from "./priority";
-import { type DueTask, POLL_INTERVAL_MS } from "./reconciler-config";
+import { POLL_INTERVAL_MS } from "./reconciler-config";
+import type { DueTask } from "./reconciler-config";
 import { claimSourceProbe, inspectSourceAdmission } from "./source-admission";
 import { isSourceTask } from "./source-tasks";
 import { maxAttemptsFor, planOps } from "./specs";
-import { createWebHostSlots, type WebHostTask } from "./web-host-slots";
+import { createWebHostSlots } from "./web-host-slots";
+import type { WebHostTask } from "./web-host-slots";
 
 const ClaimCandidateSchema = z.object({
   id: z.string(),
@@ -285,7 +287,7 @@ export async function claimDueTasks(
 
 type ClaimCandidate = z.infer<typeof ClaimCandidateSchema>;
 
-function runningWebHostTasks(sqlite: Database.Database): WebHostTask[] {
+function runningWebHostTasks(sqlite: Database.Database): Array<WebHostTask> {
   return z.array(RunningHostTaskSchema).parse(
     sqlite
       .prepare(

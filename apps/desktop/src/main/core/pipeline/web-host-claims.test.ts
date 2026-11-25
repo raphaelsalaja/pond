@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import Database from "better-sqlite3";
 import { app } from "electron";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { closeDb, getDb } from "../../db";
 import { invalidatePaths, resolvePaths } from "../../paths";
@@ -21,54 +21,53 @@ function nativeSqliteAvailable(): boolean {
   }
 }
 
+async function seedWebHarvest(
+  id: string,
+  url: string,
+  createdAt: number,
+  status = "pending",
+): Promise<void> {
+  const { $raw } = await getDb();
+  $raw
+    .prepare(
+      `INSERT INTO saves (id, source, source_id, url, status)
+      VALUES (?, 'web', ?, ?, 'ingesting')`,
+    )
+    .run(id, id, url);
+  $raw
+    .prepare(
+      `INSERT INTO tasks (
+        id, save_id, source, op, status, max_attempts, next_run_at, created_at
+      ) VALUES (?, ?, 'web', 'harvest_metadata', ?, 5, ?, ?)`,
+    )
+    .run(`task-${id}`, id, status, createdAt, createdAt);
+}
+
+function claim(limit: number) {
+  return claimDueTasks({
+    owner: "test",
+    limit,
+    availableInteractive: 0,
+    availableBackground: limit,
+    availableByOp: { harvest_metadata: limit },
+  });
+}
+
 describe.skipIf(!nativeSqliteAvailable())("web harvest per-host limit", () => {
   let directory = "";
 
   beforeEach(() => {
     directory = mkdtempSync(join(tmpdir(), "pond-web-host-claims-"));
-    vi.spyOn(app, "getPath").mockReturnValue(directory);
+    app.setPath("userData", directory);
     invalidatePaths();
     resolvePaths(join(directory, "Hosts.pond"));
   });
 
   afterEach(() => {
     closeDb();
-    vi.restoreAllMocks();
     invalidatePaths();
     rmSync(directory, { recursive: true, force: true });
   });
-
-  async function seedWebHarvest(
-    id: string,
-    url: string,
-    createdAt: number,
-    status = "pending",
-  ): Promise<void> {
-    const { $raw } = await getDb();
-    $raw
-      .prepare(
-        `INSERT INTO saves (id, source, source_id, url, status)
-        VALUES (?, 'web', ?, ?, 'ingesting')`,
-      )
-      .run(id, id, url);
-    $raw
-      .prepare(
-        `INSERT INTO tasks (
-          id, save_id, source, op, status, max_attempts, next_run_at, created_at
-        ) VALUES (?, ?, 'web', 'harvest_metadata', ?, 5, ?, ?)`,
-      )
-      .run(`task-${id}`, id, status, createdAt, createdAt);
-  }
-
-  function claim(limit: number) {
-    return claimDueTasks({
-      owner: "test",
-      limit,
-      availableInteractive: 0,
-      availableBackground: limit,
-      availableByOp: { harvest_metadata: limit },
-    });
-  }
 
   it("spreads a bulk refresh across sites instead of one storefront", async () => {
     const at = Date.now() - 60_000;
