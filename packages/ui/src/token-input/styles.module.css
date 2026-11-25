@@ -1,0 +1,94 @@
+.editor {
+  min-height: 24px;
+  max-height: 288px;
+  overflow-y: auto;
+  font: inherit;
+  line-height: 24px;
+  color: var(--ds-foreground-primary);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  cursor: text;
+  outline: none;
+  scrollbar-width: thin;
+
+  &[data-empty]::before {
+    color: var(--ds-foreground-tertiary);
+    pointer-events: none;
+    content: attr(aria-placeholder);
+  }
+
+  &[data-disabled] {
+    color: var(--ds-foreground-tertiary);
+    cursor: default;
+  }
+}
+
+.token {
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: middle;
+  user-select: none;
+  border-radius: var(--ds-radius-sm);
+
+  &[data-selected] {
+    outline: 2px solid var(--ds-accent);
+    outline-offset: 1px;
+  }
+
+  &[data-pending] {
+    opacity: 0.6;
+  }
+}
+
+.popup {
+  --ds-popup-width: min(380px, calc(100vw - 32px));
+  composes: popup from "../shared/styles/popup/styles.module.css";
+  margin: 0;
+  overflow: hidden;
+  color: inherit;
+  border: 0;
+}
+
+.list {
+  max-height: min(360px, 45vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: var(--ds-space-xs);
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &[aria-busy="true"] {
+    opacity: 0.6;
+  }
+}
+
+.item {
+  composes: item from "../shared/styles/popup/styles.module.css";
+}
+
+.icon {
+  composes: icon from "../shared/styles/popup/styles.module.css";
+  overflow: hidden;
+  border-radius: var(--ds-radius-xs);
+}
+
+.label {
+  composes: label from "../shared/styles/popup/styles.module.css";
+}
+
+.heading {
+  composes: heading from "../shared/styles/popup/styles.module.css";
+}
+
+.empty {
+  padding: var(--ds-space-md) var(--ds-space-lg);
+  color: var(--ds-foreground-tertiary);
+}
+
+.status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}

@@ -1,30 +1,25 @@
-import { IconXmark } from "@pond/icons";
-import { Button, Pane, Tabs } from "@pond/ui";
+import { IconPlus, IconTag } from "@pond/icons";
+import { Button } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
-import { useEffect, useRef, useState } from "react";
-import { Section } from "@/shared/components/inspector-section";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   type InspectorDrafts,
   InspectorTextField,
 } from "@/shared/components/inspector-text-field";
-import { ModelPicker } from "@/shared/components/model-picker";
+import { FolderIcon } from "@/shared/lib/folder-icons";
 import { updateFish } from "../../lib/menu";
-import {
-  fish as fishStore,
-  useFish,
-  useFishEditingId,
-  useOpenRoutineId,
-} from "../../state/fish";
-import { FishActivity } from "./activity";
+import { fish as fishStore, useFish, useFishEditingId } from "../../state/fish";
 import { FishAppearance } from "./appearance";
+import { FishPane } from "./pane";
 import { RoutineList } from "./routine-list";
-import { RoutineView } from "./routine-view";
 import { FishSelect } from "./select";
 import styles from "./styles.module.css";
 
 export interface FishProfileFolder {
   id: string;
   name: string;
+  parentId?: string | null;
+  color?: string | null;
 }
 
 interface FishProfileProps {
@@ -32,8 +27,8 @@ interface FishProfileProps {
   folders: ReadonlyArray<FishProfileFolder>;
   tagNames: ReadonlyArray<string>;
   onClose: () => void;
+  onNewRoutine?: () => void;
   onEditRoutine?: (routine: FishRoutine) => void;
-  onOpenChat?: (chatId: string) => void;
 }
 
 export function FishProfile({
@@ -41,157 +36,115 @@ export function FishProfile({
   folders,
   tagNames,
   onClose,
+  onNewRoutine,
   onEditRoutine,
-  onOpenChat,
 }: FishProfileProps) {
   const target = useFish(fishId);
-  const openRoutineId = useOpenRoutineId(fishId);
   const [drafts] = useState<InspectorDrafts>(() => new Map());
   const editingId = useFishEditingId();
-  const rootRef = useRef<HTMLElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (editingId !== fishId) return;
     const frame = requestAnimationFrame(() => {
-      const name = rootRef.current?.querySelector<HTMLInputElement>(
-        'input[aria-label="Name"]',
-      );
-      name?.focus();
-      name?.select();
+      nameRef.current?.focus();
+      nameRef.current?.select();
       fishStore.finishEditing();
     });
     return () => cancelAnimationFrame(frame);
   }, [editingId, fishId]);
 
   if (!target) return null;
-  const openRoutine = target.routines.find(
-    (routine) => routine.id === openRoutineId,
-  );
-  if (openRoutine)
-    return (
-      <section className={styles.root} aria-label={openRoutine.name}>
-        <RoutineView
-          fish={target}
-          routine={openRoutine}
-          onBack={() => fishStore.closeRoutine()}
-          onClose={onClose}
-          onEdit={onEditRoutine}
-        />
-      </section>
-    );
-
   return (
-    <Tabs.Root
-      render={
-        <section
-          ref={rootRef}
-          className={styles.root}
-          aria-label={target.name}
-        />
-      }
-      defaultValue="details"
-    >
-      <Pane.Header className={styles.header} title={null}>
-        <Button
-          type="button"
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="Close Details"
-          onClick={onClose}
-        >
-          <IconXmark />
-        </Button>
-      </Pane.Header>
-      <div className={styles.hero}>
-        <FishAppearance fish={target} />
-        <InspectorTextField
-          className={styles.name}
+    <section className={styles.root} aria-label={target.name}>
+      <FishPane.Header onClose={onClose} />
+      <FishPane.Body>
+        <div className={styles.hero}>
+          <FishAppearance fish={target} />
+          <InspectorTextField
+            className={styles.name}
+            inputRef={nameRef}
+            drafts={drafts}
+            cacheKey={`${target.id}:name`}
+            label="Name"
+            value={target.name}
+            variant="borderless"
+            appearance="bare"
+            size="md"
+            maxLength={40}
+            commit={async (value) => {
+              const name = value.trim();
+              if (!name) throw new Error("Give this fish a name.");
+              await fishStore.update(target.id, { name });
+            }}
+          />
+        </div>
+        <Details
+          fish={target}
           drafts={drafts}
-          cacheKey={`${target.id}:name`}
-          label="Name"
-          value={target.name}
-          variant="borderless"
-          appearance="bare"
-          size="md"
-          maxLength={40}
-          commit={async (value) => {
-            const name = value.trim();
-            if (!name) throw new Error("Give this fish a name.");
-            await fishStore.update(target.id, { name });
-          }}
+          onNewRoutine={onNewRoutine}
+          onEditRoutine={onEditRoutine}
         />
-      </div>
-      <Tabs.List className={styles.tabs} aria-label="Fish Views">
-        <Tabs.Tab value="details">Details</Tabs.Tab>
-        <Tabs.Tab value="library">Library</Tabs.Tab>
-        <Tabs.Tab value="activity">Activity</Tabs.Tab>
-      </Tabs.List>
-      <div className={styles.panels}>
-        <Tabs.Panel value="details" className={styles.panel}>
-          <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
-            <Details fish={target} drafts={drafts} />
-          </Pane.Body>
-        </Tabs.Panel>
-        <Tabs.Panel value="library" className={styles.panel}>
-          <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
-            <Scope fish={target} folders={folders} tagNames={tagNames} />
-          </Pane.Body>
-        </Tabs.Panel>
-        <Tabs.Panel value="activity" className={styles.panel}>
-          <Pane.Body className={styles.scroll} data-scroll-fade="vertical">
-            <FishActivity
-              fish={target}
-              sectionClassName={styles.section}
-              onOpenChat={onOpenChat}
-            />
-          </Pane.Body>
-        </Tabs.Panel>
-      </div>
-    </Tabs.Root>
+        <Scope fish={target} folders={folders} tagNames={tagNames} />
+      </FishPane.Body>
+    </section>
   );
 }
 
 function Details({
   fish,
   drafts,
+  onNewRoutine,
+  onEditRoutine,
 }: {
   fish: FishSummary;
   drafts: InspectorDrafts;
+  onNewRoutine?: () => void;
+  onEditRoutine?: (routine: FishRoutine) => void;
 }) {
+  const instructionsId = useId();
+  const routinesId = useId();
   return (
     <>
-      <Section
-        title="Instructions"
-        className={styles.section}
-        collapsible={false}
-      >
+      <section className={styles.note} aria-labelledby={instructionsId}>
+        <h3 id={instructionsId} className={styles["note-title"]}>
+          Instructions
+        </h3>
         <InspectorTextField
+          className={styles["note-field"]}
           drafts={drafts}
           cacheKey={`${fish.id}:instructions`}
           label="Instructions"
           value={fish.instructions}
           multiline
-          clamp={6}
+          variant="raised"
+          padding="compact"
           maxLength={8000}
           placeholder="How it talks, what it cares about, and what it should never touch."
           commit={async (value) => {
             await fishStore.update(fish.id, { instructions: value.trim() });
           }}
         />
-      </Section>
-      <Section title="Model" className={styles.section} collapsible={false}>
-        <ModelPicker
-          layout="field"
-          provider={fish.model?.provider ?? ""}
-          modelId={fish.model?.modelId}
-          onChange={(model) => updateFish(fish, { model })}
-          onUseDefault={() => updateFish(fish, { model: null })}
-        />
-      </Section>
-      <Section title="Routines" className={styles.section} collapsible={false}>
-        <RoutineList fish={fish} />
-      </Section>
+      </section>
+      <section className={styles.note} aria-labelledby={routinesId}>
+        <div className={styles["section-header"]}>
+          <h3 id={routinesId} className={styles["note-title"]}>
+            Routines
+          </h3>
+          {onNewRoutine ? (
+            <Button
+              icon
+              variant="ghost"
+              size="xs"
+              aria-label="New Routine"
+              onClick={onNewRoutine}
+            >
+              <IconPlus />
+            </Button>
+          ) : null}
+        </div>
+        <RoutineList fish={fish} onEditRoutine={onEditRoutine} />
+      </section>
     </>
   );
 }
@@ -206,37 +159,37 @@ function Scope({
   tagNames: ReadonlyArray<string>;
 }) {
   const { folderIds, tags } = fish.scope;
+  const byId = new Map(folders.map((folder) => [folder.id, folder]));
   const folderItems = folders.map((folder) => ({
     value: folder.id,
     label: folder.name,
+    crumb: folder.parentId ? byId.get(folder.parentId)?.name : undefined,
+    icon: <FolderIcon color={folder.color} />,
   }));
   const tagItems = [...new Set([...tagNames, ...tags])].map((tag) => ({
     value: tag,
     label: tag,
+    icon: <IconTag />,
   }));
 
   return (
-    <Section title="Reads" className={styles.section} collapsible={false}>
-      <div className={styles.fields}>
-        <FishSelect.Multi
-          label="Folders"
-          empty="Any Folder"
-          value={folderIds}
-          items={folderItems}
-          onChange={(next) =>
-            updateFish(fish, { scope: { folderIds: next, tags } })
-          }
-        />
-        <FishSelect.Multi
-          label="Tags"
-          empty="Any Tag"
-          value={tags}
-          items={tagItems}
-          onChange={(next) =>
-            updateFish(fish, { scope: { folderIds, tags: next } })
-          }
-        />
-      </div>
-    </Section>
+    <>
+      <FishSelect.Field
+        noun="Folder"
+        value={folderIds}
+        items={folderItems}
+        onChange={(next) =>
+          updateFish(fish, { scope: { folderIds: next, tags } })
+        }
+      />
+      <FishSelect.Field
+        noun="Tag"
+        value={tags}
+        items={tagItems}
+        onChange={(next) =>
+          updateFish(fish, { scope: { folderIds, tags: next } })
+        }
+      />
+    </>
   );
 }
