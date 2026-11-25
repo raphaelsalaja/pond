@@ -40,11 +40,30 @@
   color: var(--ds-foreground-secondary);
 }
 
+/* A heading with an add action, laid out like the Folders and Tags headings. */
+.section-header {
+  display: flex;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  justify-content: space-between;
+  height: var(--ds-leading-small);
+  padding-inline: var(--ds-space-lg) var(--ds-space-xs);
+
+  & .note-title {
+    padding-inline: 0;
+  }
+
+  /* The 24px action overhangs the 18px heading row, so the heading-to-content gap stays put. */
+  & > :not(.note-title) {
+    margin-block: -3px;
+  }
+}
+
 .note-field [data-slot="root"] {
   --input-radius: var(--ds-radius-xl);
 }
 
 .note-field textarea[data-multiline][data-padding] {
   min-height: 64px;
-  padding-block: var(--ds-space-md);
+  padding: var(--ds-space-lg);
 }

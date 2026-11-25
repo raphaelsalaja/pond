@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { draftInChat } from "@/features/agent";
 import {
+  fish,
   fishIdFromPath,
   useFishEditingId,
   useOpenRoutineId,
@@ -25,6 +26,7 @@ export function FishDetails() {
 
   useEffect(() => {
     if (editingId || routineId) libraryChrome.setDetailsOpen(true);
+    if (routineId) fish.closeRoutine();
   }, [editingId, routineId]);
 
   if (!fishId) return null;

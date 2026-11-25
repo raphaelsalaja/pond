@@ -9,7 +9,13 @@ interface HeaderProps
   onClose: () => void;
 }
 
-function Header({ title = null, onClose, className, ...props }: HeaderProps) {
+/** The same header as a Save's Details pane, so the right pane reads alike across the app. */
+function Header({
+  title = "Details",
+  onClose,
+  className,
+  ...props
+}: HeaderProps) {
   return (
     <Pane.Header
       className={cn(styles.header, className)}

@@ -1,23 +1,17 @@
-import { IconTag } from "@pond/icons";
+import { IconPlus, IconTag } from "@pond/icons";
+import { Button } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { useEffect, useId, useRef, useState } from "react";
-import { Section } from "@/shared/components/inspector-section";
 import {
   type InspectorDrafts,
   InspectorTextField,
 } from "@/shared/components/inspector-text-field";
 import { FolderIcon } from "@/shared/lib/folder-icons";
 import { updateFish } from "../../lib/menu";
-import {
-  fish as fishStore,
-  useFish,
-  useFishEditingId,
-  useOpenRoutineId,
-} from "../../state/fish";
+import { fish as fishStore, useFish, useFishEditingId } from "../../state/fish";
 import { FishAppearance } from "./appearance";
 import { FishPane } from "./pane";
 import { RoutineList } from "./routine-list";
-import { RoutineView } from "./routine-view";
 import { FishSelect } from "./select";
 import styles from "./styles.module.css";
 
@@ -46,7 +40,6 @@ export function FishProfile({
   onEditRoutine,
 }: FishProfileProps) {
   const target = useFish(fishId);
-  const openRoutineId = useOpenRoutineId(fishId);
   const [drafts] = useState<InspectorDrafts>(() => new Map());
   const editingId = useFishEditingId();
   const nameRef = useRef<HTMLInputElement>(null);
@@ -62,22 +55,6 @@ export function FishProfile({
   }, [editingId, fishId]);
 
   if (!target) return null;
-  const openRoutine = target.routines.find(
-    (routine) => routine.id === openRoutineId,
-  );
-  if (openRoutine)
-    return (
-      <section className={styles.root} aria-label={openRoutine.name}>
-        <RoutineView
-          fish={target}
-          routine={openRoutine}
-          onBack={() => fishStore.closeRoutine()}
-          onClose={onClose}
-          onEdit={onEditRoutine}
-        />
-      </section>
-    );
-
   return (
     <section className={styles.root} aria-label={target.name}>
       <FishPane.Header onClose={onClose} />
@@ -102,7 +79,12 @@ export function FishProfile({
             }}
           />
         </div>
-        <Details fish={target} drafts={drafts} onNewRoutine={onNewRoutine} />
+        <Details
+          fish={target}
+          drafts={drafts}
+          onNewRoutine={onNewRoutine}
+          onEditRoutine={onEditRoutine}
+        />
         <Scope fish={target} folders={folders} tagNames={tagNames} />
       </FishPane.Body>
     </section>
@@ -113,12 +95,15 @@ function Details({
   fish,
   drafts,
   onNewRoutine,
+  onEditRoutine,
 }: {
   fish: FishSummary;
   drafts: InspectorDrafts;
   onNewRoutine?: () => void;
+  onEditRoutine?: (routine: FishRoutine) => void;
 }) {
   const instructionsId = useId();
+  const routinesId = useId();
   return (
     <>
       <section className={styles.note} aria-labelledby={instructionsId}>
@@ -141,9 +126,25 @@ function Details({
           }}
         />
       </section>
-      <Section title="Routines" collapsible={false}>
-        <RoutineList fish={fish} onNewRoutine={onNewRoutine} />
-      </Section>
+      <section className={styles.note} aria-labelledby={routinesId}>
+        <div className={styles["section-header"]}>
+          <h3 id={routinesId} className={styles["note-title"]}>
+            Routines
+          </h3>
+          {onNewRoutine ? (
+            <Button
+              icon
+              variant="ghost"
+              size="xs"
+              aria-label="New Routine"
+              onClick={onNewRoutine}
+            >
+              <IconPlus />
+            </Button>
+          ) : null}
+        </div>
+        <RoutineList fish={fish} onEditRoutine={onEditRoutine} />
+      </section>
     </>
   );
 }

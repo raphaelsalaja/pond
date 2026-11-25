@@ -1,11 +1,16 @@
+/* Matches the left panel's header: the window header's height and divider, the title 16px in at body size and regular weight, and actions resting at the muted tone. */
 .header {
-  height: var(--window-header-height);
-  min-height: 0;
-  padding: var(--ds-space-xs) var(--ds-space-2xl);
-  border-bottom: none;
+  height: var(--window-header-height, 44px);
+  min-height: var(--window-header-height, 44px);
+  padding-block: 0;
 
   & [data-slot="pane-header-title"] {
-    padding-left: 0;
+    font-weight: var(--ds-weight-regular);
+    color: var(--ds-foreground-primary);
+  }
+
+  & :where([data-variant="ghost"]):not(:hover, [data-pressed]) {
+    color: var(--ds-foreground-tertiary);
   }
 }
 
@@ -15,6 +20,6 @@
   flex-direction: column;
   gap: var(--ds-space-lg);
   min-height: 0;
-  padding-block: var(--ds-space-xs) var(--ds-space-2xl);
+  padding-block: var(--ds-space-xl) var(--ds-space-2xl);
   overflow-y: auto;
 }
