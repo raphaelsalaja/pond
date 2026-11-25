@@ -13,7 +13,7 @@ import type { DueTask } from "./reconciler-config";
 import { claimSourceProbe, inspectSourceAdmission } from "./source-admission";
 import { isSourceTask } from "./source-tasks";
 import { maxAttemptsFor, planOps } from "./specs";
-import { createWebHostSlots } from "./web-host-slots";
+import { createWebHostSlots, webHostFor } from "./web-host-slots";
 import type { WebHostTask } from "./web-host-slots";
 
 const ClaimCandidateSchema = z.object({
@@ -301,6 +301,56 @@ function runningWebHostTasks(sqlite: Database.Database): Array<WebHostTask> {
       )
       .all(),
   );
+}
+
+const HostWaiterSchema = RunningHostTaskSchema.extend({ id: z.string() });
+/** Bounds the scan for the next waiter; a deeper backlog waits for the regular poll. */
+const HOST_WAITER_SCAN = 500;
+
+/**
+ * A claim defers work for a full host one poll later, so a slot that frees mid-poll would
+ * sit idle until then. When host-limited web work settles, the oldest task waiting on that
+ * host becomes due now; one per freed slot, so the cap per host still holds.
+ */
+export async function releaseWebHostWaiter(
+  finished: Pick<DueTask, "saveId" | "op">,
+  at = Date.now(),
+): Promise<boolean> {
+  const { $raw } = await getDb();
+  const save = z
+    .object({ saveSource: z.enum(SOURCES), url: z.string() })
+    .optional()
+    .parse(
+      $raw
+        .prepare("SELECT source AS saveSource, url FROM saves WHERE id = ?")
+        .get(finished.saveId),
+    );
+  if (!save) return false;
+  const host = webHostFor({ ...save, op: finished.op });
+  if (!host) return false;
+  const waiters = z.array(HostWaiterSchema).parse(
+    $raw
+      .prepare(
+        `SELECT tasks.id, tasks.op, saves.source AS saveSource, saves.url AS url
+        FROM tasks
+        INNER JOIN saves ON saves.id = tasks.save_id
+        WHERE tasks.status = 'deferred'
+          AND tasks.deferred_reason = 'worker_capacity'
+          AND saves.source = 'web'
+        ORDER BY tasks.next_run_at ASC, tasks.created_at ASC
+        LIMIT ?`,
+      )
+      .all(HOST_WAITER_SCAN),
+  );
+  const next = waiters.find((waiter) => webHostFor(waiter) === host);
+  if (!next) return false;
+  const result = $raw
+    .prepare(
+      `UPDATE tasks SET next_run_at = ?, updated_at = ?
+      WHERE id = ? AND status = 'deferred' AND deferred_reason = 'worker_capacity'`,
+    )
+    .run(at, at, next.id);
+  return result.changes === 1;
 }
 
 function fairCandidates(

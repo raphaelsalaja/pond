@@ -8,7 +8,7 @@ import { z } from "zod";
 import { closeDb, getDb } from "../../db";
 import { invalidatePaths, resolvePaths } from "../../paths";
 import { POLL_INTERVAL_MS } from "./reconciler-config";
-import { claimDueTasks } from "./task-queue";
+import { claimDueTasks, releaseWebHostWaiter } from "./task-queue";
 import { MAX_INFLIGHT_PER_WEB_HOST } from "./web-host-slots";
 
 function nativeSqliteAvailable(): boolean {
@@ -149,5 +149,54 @@ describe.skipIf(!nativeSqliteAvailable())("web harvest per-host limit", () => {
       .run(at);
 
     expect((await claim(4)).map((task) => task.saveId)).toEqual(["third"]);
+  });
+
+  it("lets the next task for a host run as soon as one of its slots frees", async () => {
+    const at = Date.now() - 60_000;
+    await seedWebHarvest("first", "https://balolo.de/a", at);
+    await seedWebHarvest("second", "https://balolo.de/b", at + 1);
+    await seedWebHarvest("third", "https://balolo.de/c", at + 2);
+    await seedWebHarvest("fourth", "https://balolo.de/d", at + 3);
+    await seedWebHarvest("elsewhere-1", "https://example.com/a", at + 4);
+    await seedWebHarvest("elsewhere-2", "https://example.com/b", at + 5);
+
+    expect((await claim(8)).map((task) => task.saveId).toSorted()).toEqual([
+      "elsewhere-1",
+      "elsewhere-2",
+      "first",
+      "second",
+    ]);
+
+    const { $raw } = await getDb();
+    $raw
+      .prepare("UPDATE tasks SET status = 'done' WHERE save_id = 'first'")
+      .run();
+    expect(
+      await releaseWebHostWaiter({ saveId: "first", op: "harvest_metadata" }),
+    ).toBe(true);
+
+    expect((await claim(8)).map((task) => task.saveId)).toEqual(["third"]);
+    const fourth = z
+      .object({ status: z.string(), reason: z.string().nullable() })
+      .parse(
+        $raw
+          .prepare(
+            "SELECT status, deferred_reason AS reason FROM tasks WHERE id = 'task-fourth'",
+          )
+          .get(),
+      );
+    expect(fourth).toEqual({ status: "deferred", reason: "worker_capacity" });
+  });
+
+  it("releases nothing for work with no per-host limit", async () => {
+    const at = Date.now() - 60_000;
+    await seedWebHarvest("first", "https://balolo.de/a", at);
+    const { $raw } = await getDb();
+    $raw
+      .prepare("UPDATE saves SET source = 'twitter' WHERE id = 'first'")
+      .run();
+    expect(
+      await releaseWebHostWaiter({ saveId: "first", op: "harvest_metadata" }),
+    ).toBe(false);
   });
 });
