@@ -1,11 +1,8 @@
-import { IconCircleCheck, IconCircleQuestion } from "@pond/icons";
-import { Badge, Button, Reveal } from "@pond/ui";
-import { Prompt } from "@pond/ui/prompt";
-import { useState } from "react";
+import { Badge, Button } from "@pond/ui";
+import { useId, useState } from "react";
 import { cardKeys } from "../card-keys";
+import { QuestionCard } from "../question-card";
 import styles from "./styles.module.css";
-
-const FREEFORM = Symbol("freeform");
 
 export function KoiQuestion({
   question,
@@ -22,13 +19,13 @@ export function KoiQuestion({
   disabled?: boolean;
   onAnswer: (answer: string) => Promise<void>;
 }) {
-  const [choice, setChoice] = useState<string | typeof FREEFORM | null>(null);
-  const [text, setText] = useState("");
+  const [choice, setChoice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [later, setLater] = useState(false);
   const [open, setOpen] = useState(false);
-  const answer = choice === FREEFORM ? text.trim() : choice;
+  const titleId = useId();
+  const answer = choice;
   const locked = busy || disabled;
   const folded = Boolean(answered) || later;
 
@@ -52,69 +49,57 @@ export function KoiQuestion({
   const onKeyDown = cardKeys({
     submit: () => void submit(),
     cancel: answered || disabled ? undefined : () => setLater(true),
-    pick: (index, card) => {
+    pick: (index) => {
       if (locked || answered || later) return false;
       const option = options[index];
-      if (option !== undefined) {
-        setChoice(option);
-        void submit(option);
-        return true;
-      }
-      if (index !== options.length) return false;
-      card.querySelector("input")?.focus();
+      if (option === undefined) return false;
+      setChoice(option);
+      void submit(option);
       return true;
     },
   });
 
   return (
-    <Prompt.Root aria-label={question} aria-busy={busy} onKeyDown={onKeyDown}>
-      <Reveal visible={folded} initial={false}>
-        {answered ? (
-          <>
-            <Prompt.Receipt
-              icon={<IconCircleCheck size={16} />}
-              label={answered}
-              detail={question}
-              open={open}
-              onOpenChange={setOpen}
-            />
-            <Reveal visible={open} initial={false}>
-              <Prompt.Answers>
-                <Prompt.Answer>
-                  <Prompt.AnswerQuestion>{question}</Prompt.AnswerQuestion>
-                  <Prompt.AnswerText>{answered}</Prompt.AnswerText>
-                </Prompt.Answer>
-              </Prompt.Answers>
-            </Reveal>
-          </>
-        ) : (
-          <Prompt.Receipt
-            icon={<IconCircleQuestion size={16} />}
-            label="Question waiting"
-            detail={question}
-            action={
-              <Button
-                size="xs"
-                variant="secondary"
-                onClick={() => setLater(false)}
-              >
-                Answer
-              </Button>
-            }
-          />
-        )}
-      </Reveal>
-      <Reveal visible={!folded} initial={false}>
-        <Prompt.Body>
-          <Prompt.Title>{question}</Prompt.Title>
-          <Prompt.Choices>
+    <div className={styles.question} aria-busy={busy}>
+      {answered ? (
+        <QuestionCard.Summary
+          aria-label={question}
+          label={answered}
+          detail={question}
+          open={open}
+          onOpenChange={setOpen}
+        >
+          <p className={styles.asked}>{question}</p>
+          <p className={styles.answer}>{answered}</p>
+        </QuestionCard.Summary>
+      ) : later ? (
+        <QuestionCard.Summary
+          aria-label={question}
+          label="Question waiting"
+          detail={question}
+          action={
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setLater(false)}
+            >
+              Answer
+            </Button>
+          }
+        />
+      ) : null}
+      {/* Enters on its own; a height reveal would clip the card's shadow. */}
+      {folded ? null : (
+        <QuestionCard.Root aria-labelledby={titleId} onKeyDown={onKeyDown}>
+          <QuestionCard.Header title={question} titleId={titleId} />
+          <QuestionCard.Options aria-labelledby={titleId}>
             {options.map((option, index) => (
-              <Prompt.Choice
+              <QuestionCard.Option
                 key={option}
-                marker={index + 1}
                 selected={choice === option}
+                shortcut={index + 1}
                 disabled={locked}
-                hint={
+                aside={
                   index === recommended ? (
                     <Badge.Root>Recommended</Badge.Root>
                   ) : null
@@ -133,56 +118,31 @@ export function KoiQuestion({
                 }}
               >
                 {option}
-              </Prompt.Choice>
+              </QuestionCard.Option>
             ))}
-            {disabled ? null : (
-              <Prompt.Freeform
-                marker={options.length + 1}
-                selected={choice === FREEFORM}
-                disabled={busy}
-                aria-label="Your answer"
-                placeholder="Other"
-                value={text}
-                onFocus={() => setChoice(FREEFORM)}
-                onChange={(event) => {
-                  setText(event.target.value);
-                  setChoice(FREEFORM);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.nativeEvent.isComposing) {
-                    event.preventDefault();
-                    void submit();
-                  }
-                }}
-              />
-            )}
-          </Prompt.Choices>
-          {error ? (
-            <p className={styles.error} role="alert">
-              {error}
-            </p>
-          ) : null}
-        </Prompt.Body>
-        <Prompt.Footer>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={locked}
-            onClick={() => setLater(true)}
-          >
-            Later
-          </Button>
-          <Button
-            size="sm"
-            variant="accent"
-            disabled={!answer || locked}
-            loading={busy}
-            onClick={() => void submit()}
-          >
-            Continue
-          </Button>
-        </Prompt.Footer>
-      </Reveal>
-    </Prompt.Root>
+          </QuestionCard.Options>
+          {error ? <QuestionCard.Alert>{error}</QuestionCard.Alert> : null}
+          <QuestionCard.Footer>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={locked}
+              onClick={() => setLater(true)}
+            >
+              Later
+            </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              disabled={!answer || locked}
+              loading={busy}
+              onClick={() => void submit()}
+            >
+              Continue
+            </Button>
+          </QuestionCard.Footer>
+        </QuestionCard.Root>
+      )}
+    </div>
   );
 }

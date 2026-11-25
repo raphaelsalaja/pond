@@ -1,4 +1,4 @@
-/** Checks svg/manifest.json and migration.json, then generates index.ts, concepts.md, the README counts, and lab/data.js. */
+/** Checks svg/manifest.json and migration.json, then generates index.ts, concepts.md, and the README counts. */
 import { execFileSync } from "node:child_process";
 import {
   existsSync,
@@ -279,88 +279,6 @@ emit(
   ],
   { check, command },
 );
-
-if (!check) writeLab();
-
-/** The lab page opens from disk, where it can't fetch, so its data is a classic script. */
-function writeLab() {
-  const svgs = {};
-  for (const [name, entry] of Object.entries(manifest)) {
-    for (const variant of entry.variants) {
-      if (variant.size !== 18) continue;
-      const key = [name, variant.style === "duo" && "duo", variant.state]
-        .filter(Boolean)
-        .join("-");
-      svgs[key] = readFileSync(
-        resolve(packageRoot, "svg", variant.file),
-        "utf8",
-      );
-    }
-  }
-  const icons = Object.fromEntries(
-    all.map(([glyph, { style, nodes }]) => [fileName(glyph), { style, nodes }]),
-  );
-  const seed = {};
-  for (const name of existsSync(seedRoot) ? readdirSync(seedRoot) : []) {
-    const read = (file) => {
-      const path = resolve(seedRoot, name, file);
-      return existsSync(path) ? readFileSync(path, "utf8") : null;
-    };
-    if (!read("outline-18.svg")) continue;
-    seed[name] = { outline: read("outline-18.svg"), duo: read("duo-18.svg") };
-  }
-  const staged = {};
-  for (const name of existsSync(nextRoot) ? readdirSync(nextRoot) : []) {
-    const read = (file) => {
-      const path = resolve(nextRoot, name, file);
-      return existsSync(path) ? readFileSync(path, "utf8") : null;
-    };
-    const files = {
-      outline: read("outline-18.svg"),
-      duo: read("duo-18.svg"),
-      open: read("outline-18-open.svg"),
-      duoOpen: read("duo-18-open.svg"),
-      fill: read("fill-18.svg"),
-    };
-    if (files.outline || files.fill) staged[name] = files;
-  }
-  const readJson = (path) =>
-    existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : {};
-  const data = {
-    manifest,
-    migration,
-    icons,
-    svgs,
-    seed,
-    parts: Object.fromEntries(registered),
-    seedParts: Object.fromEntries(
-      [...seedParts.keys()].map((name) => [
-        name,
-        readFileSync(resolve(seedRoot, "parts", `${name}.svg`), "utf8"),
-      ]),
-    ),
-    seedManifest: readJson(resolve(seedRoot, "manifest.json")),
-    next: staged,
-    nextManifest: readJson(resolve(nextRoot, "manifest.json")),
-    nextFamilies: readJson(resolve(packageRoot, "draw/families.json")),
-    nextAttempts: Object.fromEntries(
-      (existsSync(resolve(nextRoot, ".meta"))
-        ? readdirSync(resolve(nextRoot, ".meta"))
-        : []
-      )
-        .filter((file) => file.endsWith(".json"))
-        .flatMap((file) =>
-          Object.entries(readJson(resolve(nextRoot, ".meta", file))),
-        )
-        .filter(([, entry]) => entry.attempts?.length)
-        .map(([name, entry]) => [name, entry.attempts]),
-    ),
-  };
-  writeFileSync(
-    resolve(packageRoot, "lab/data.js"),
-    `window.POND_ICONS = ${JSON.stringify(data)};\n`,
-  );
-}
 
 const used = imported();
 const unused = all

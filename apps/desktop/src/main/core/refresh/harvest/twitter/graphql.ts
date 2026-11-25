@@ -94,14 +94,57 @@ const UserSchema = z
       .optional()
       .catch(undefined),
     avatar: z.object({ image_url: scrapedText }).optional().catch(undefined),
+    is_blue_verified: z.boolean().optional().catch(undefined),
+    verification: z
+      .object({ is_blue_verified: z.boolean().optional().catch(undefined) })
+      .optional()
+      .catch(undefined),
   })
   .optional()
   .catch(undefined);
 
+const UserRefSchema = z
+  .object({
+    rest_id: scrapedText,
+    result: z
+      .object({
+        core: z
+          .object({ screen_name: scrapedText })
+          .optional()
+          .catch(undefined),
+      })
+      .optional()
+      .catch(undefined),
+  })
+  .optional()
+  .catch(undefined);
+
+/** Reads both shapes: the legacy GraphQL `legacy.*` fields and the x-web client's `details`, `counts`, and `*_entities` fields. */
 const TweetNodeSchema = z
   .object({
     __typename: scrapedText,
     rest_id: scrapedText,
+    details: z
+      .object({ full_text: scrapedText, created_at_ms: scrapedNumber })
+      .optional()
+      .catch(undefined),
+    counts: z
+      .object({
+        favorite_count: scrapedNumber,
+        retweet_count: scrapedNumber,
+        reply_count: scrapedNumber,
+        quote_count: scrapedNumber,
+        bookmark_count: scrapedNumber,
+      })
+      .optional()
+      .catch(undefined),
+    media_entities2: z.array(MediaEntrySchema).optional().catch(undefined),
+    url_entities: UrlEntitiesSchema,
+    reply_to_results: z
+      .object({ rest_id: scrapedText })
+      .optional()
+      .catch(undefined),
+    reply_to_user_results: UserRefSchema,
     legacy: z
       .object({
         id_str: scrapedText,
@@ -177,27 +220,37 @@ const TweetNodeSchema = z
       .object({ result: NestedNodeSchema })
       .optional()
       .catch(undefined),
+    quoted_tweet_results: z
+      .object({ result: NestedNodeSchema })
+      .optional()
+      .catch(undefined),
   })
   .catch({});
 
 export type TweetNode = z.infer<typeof TweetNodeSchema>;
 
+const ItemContentSchema = z
+  .object({
+    __typename: scrapedText,
+    tweet_results: z
+      .object({ result: NestedNodeSchema })
+      .optional()
+      .catch(undefined),
+  })
+  .optional()
+  .catch(undefined);
+
+/** The legacy shape names fields `entryId`/`entryType`/`itemContent`; x-web uses `entry_id`, `__typename`, and `content.content`. */
 const TimelineEntrySchema = z
   .object({
     entryId: scrapedText,
+    entry_id: scrapedText,
     content: z
       .object({
         entryType: scrapedText,
-        itemContent: z
-          .object({
-            __typename: scrapedText,
-            tweet_results: z
-              .object({ result: NestedNodeSchema })
-              .optional()
-              .catch(undefined),
-          })
-          .optional()
-          .catch(undefined),
+        __typename: scrapedText,
+        itemContent: ItemContentSchema,
+        content: ItemContentSchema,
       })
       .optional()
       .catch(undefined),
@@ -209,24 +262,25 @@ type TimelineEntry = z.infer<typeof TimelineEntrySchema>;
 const TimelineInstructionSchema = z
   .object({
     type: scrapedText,
+    __typename: scrapedText,
     entries: z.array(TimelineEntrySchema).optional().catch(undefined),
   })
   .catch({});
 
 type TimelineInstruction = z.infer<typeof TimelineInstructionSchema>;
 
-const TimelineSchema = z
+const InstructionsSchema = z
   .object({
-    timeline: z
-      .object({
-        instructions: z
-          .array(TimelineInstructionSchema)
-          .optional()
-          .catch(undefined),
-      })
+    instructions: z
+      .array(TimelineInstructionSchema)
       .optional()
       .catch(undefined),
   })
+  .optional()
+  .catch(undefined);
+
+const TimelineSchema = z
+  .object({ timeline: InstructionsSchema })
   .optional()
   .catch(undefined);
 
@@ -243,6 +297,20 @@ const BookmarksResponseSchema = z
               .optional()
               .catch(undefined),
           })
+          .optional()
+          .catch(undefined),
+        user_result_by_rest_id: z
+          .object({
+            result: z
+              .object({ favorites_by_time_timeline_v2: TimelineSchema })
+              .optional()
+              .catch(undefined),
+          })
+          .optional()
+          .catch(undefined),
+        threaded_conversation_with_injections_v2: InstructionsSchema,
+        tweet_result_by_rest_id: z
+          .object({ result: NestedNodeSchema })
           .optional()
           .catch(undefined),
       })
@@ -288,8 +356,14 @@ export interface RichTweet {
   tweetId: string;
   url: string;
   bookmarkedAt?: string;
+  publishedAt?: string;
   fullText: string;
-  author: { handle: string; name: string; avatarUrl?: string };
+  author: {
+    handle: string;
+    name: string;
+    avatarUrl?: string;
+    verified?: boolean;
+  };
   media: RichTweetMedia[];
   metrics: RichTweetMetrics;
   quoted?: RichTweet;
@@ -298,6 +372,7 @@ export interface RichTweet {
   raw: TweetNode;
 }
 
+/** Reads tweets from list timelines (Bookmarks, Likes, folders) and from a post page's TweetResultByRestId and TweetDetail responses. */
 export function parseBookmarksResponses(
   captures: BookmarksCapture[],
 ): Map<string, RichTweet> {
@@ -320,10 +395,15 @@ export function parseBookmarksResponses(
       );
     }
     const data = BookmarksResponseSchema.parse(json).data;
+    const single = resolveTweet(data?.tweet_result_by_rest_id?.result);
+    if (single) out.set(single.tweetId, single);
     const user = data?.user?.result;
     const instructions =
       data?.bookmark_timeline_v2?.timeline?.instructions ??
       data?.bookmark_collection_timeline?.timeline?.instructions ??
+      data?.user_result_by_rest_id?.result?.favorites_by_time_timeline_v2
+        ?.timeline?.instructions ??
+      data?.threaded_conversation_with_injections_v2?.instructions ??
       user?.timeline_v2?.timeline?.instructions ??
       user?.timeline?.timeline?.instructions;
     if (!instructions) continue;
@@ -340,17 +420,18 @@ function* iterateAddedEntries(
   instructions: TimelineInstruction[],
 ): Generator<TimelineEntry> {
   for (const ix of instructions) {
-    if (ix.type !== "TimelineAddEntries") continue;
+    if ((ix.type ?? ix.__typename) !== "TimelineAddEntries") continue;
     for (const entry of ix.entries ?? []) {
-      if (entry.content?.entryType !== "TimelineTimelineItem") continue;
-      if (!entry.entryId?.startsWith("tweet-")) continue;
+      const kind = entry.content?.entryType ?? entry.content?.__typename;
+      if (kind !== "TimelineTimelineItem") continue;
+      if (!(entry.entryId ?? entry.entry_id)?.startsWith("tweet-")) continue;
       yield entry;
     }
   }
 }
 
 function extractEntryTweet(entry: TimelineEntry): RichTweet | null {
-  const itemContent = entry.content?.itemContent;
+  const itemContent = entry.content?.itemContent ?? entry.content?.content;
   if (itemContent?.__typename !== "TimelineTweet") return null;
   return resolveTweet(itemContent.tweet_results?.result);
 }
@@ -366,8 +447,8 @@ function resolveTweet(raw: NestedNode): RichTweet | null {
 }
 
 function richTweetFromNode(tweet: TweetNode): RichTweet | null {
-  if (!tweet?.legacy?.id_str) return null;
-  const tweetId = tweet.legacy.id_str;
+  const tweetId = tweet.legacy?.id_str ?? tweet.rest_id;
+  if (!tweetId) return null;
   const handle = pickAuthorHandle(tweet);
   const avatarUrl = pickAuthorAvatar(tweet);
   const card = pickCard(tweet);
@@ -377,6 +458,7 @@ function richTweetFromNode(tweet: TweetNode): RichTweet | null {
     name: pickAuthorName(tweet) ?? handle ?? "",
   };
   if (avatarUrl) author.avatarUrl = avatarUrl;
+  if (pickAuthorVerified(tweet)) author.verified = true;
 
   const rich: RichTweet = {
     tweetId,
@@ -387,14 +469,22 @@ function richTweetFromNode(tweet: TweetNode): RichTweet | null {
     author,
     media: pickMedia(tweet),
     metrics: pickMetrics(tweet),
-    quoted: tweet.quoted_status_result?.result
-      ? (resolveTweet(tweet.quoted_status_result.result) ?? undefined)
-      : undefined,
+    quoted:
+      resolveTweet(
+        tweet.quoted_status_result?.result ??
+          tweet.quoted_tweet_results?.result,
+      ) ?? undefined,
     raw: tweet,
   };
   if (card) rich.card = card;
-  const replyId = tweet.legacy.in_reply_to_status_id_str;
-  const replyHandle = tweet.legacy.in_reply_to_screen_name ?? "";
+  const publishedAt = pickPublishedAt(tweet);
+  if (publishedAt) rich.publishedAt = publishedAt;
+  const replyId =
+    tweet.legacy?.in_reply_to_status_id_str ?? tweet.reply_to_results?.rest_id;
+  const replyHandle =
+    tweet.legacy?.in_reply_to_screen_name ??
+    tweet.reply_to_user_results?.result?.core?.screen_name ??
+    "";
   if (replyId) {
     rich.replyTo = {
       tweetId: replyId,
@@ -461,6 +551,13 @@ function pickCard(tweet: TweetNode): RichTweetCard | undefined {
   return card;
 }
 
+function pickPublishedAt(tweet: TweetNode): string | undefined {
+  const ms = tweet.details?.created_at_ms;
+  const parsed =
+    ms !== undefined ? ms : Date.parse(tweet.legacy?.created_at ?? "");
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString() : undefined;
+}
+
 function pickFullText(tweet: TweetNode): string {
   const note = tweet.note_tweet?.note_tweet_results?.result;
   if (note?.text && note.text.trim().length > 0) {
@@ -468,8 +565,8 @@ function pickFullText(tweet: TweetNode): string {
   }
   return expandShortUrls(
     tweet,
-    tweet.legacy?.full_text ?? "",
-    tweet.legacy?.entities?.urls,
+    tweet.details?.full_text ?? tweet.legacy?.full_text ?? "",
+    tweet.url_entities ?? tweet.legacy?.entities?.urls,
   );
 }
 
@@ -498,6 +595,14 @@ function pickAuthorName(tweet: TweetNode): string | null {
   return user?.core?.name || (user?.legacy?.name ?? null);
 }
 
+function pickAuthorVerified(tweet: TweetNode): boolean {
+  const user = tweet.core?.user_results?.result;
+  return (
+    user?.verification?.is_blue_verified === true ||
+    user?.is_blue_verified === true
+  );
+}
+
 function pickAuthorAvatar(tweet: TweetNode): string | null {
   const user = tweet.core?.user_results?.result;
   const raw = user?.avatar?.image_url ?? user?.legacy?.profile_image_url_https;
@@ -507,6 +612,7 @@ function pickAuthorAvatar(tweet: TweetNode): string | null {
 
 function pickMedia(tweet: TweetNode): RichTweetMedia[] {
   const list =
+    tweet.media_entities2 ??
     tweet.legacy?.extended_entities?.media ??
     tweet.legacy?.entities?.media ??
     [];
@@ -595,14 +701,14 @@ function upgradeTwimg(url: string): string {
 }
 
 function pickMetrics(tweet: TweetNode): RichTweetMetrics {
-  const legacy = tweet.legacy;
+  const counts = tweet.counts ?? tweet.legacy;
   const views = tweet.views?.count;
   return {
-    likes: legacy?.favorite_count ?? 0,
-    retweets: legacy?.retweet_count ?? 0,
-    replies: legacy?.reply_count ?? 0,
-    quotes: legacy?.quote_count,
-    bookmarks: legacy?.bookmark_count,
+    likes: counts?.favorite_count ?? 0,
+    retweets: counts?.retweet_count ?? 0,
+    replies: counts?.reply_count ?? 0,
+    quotes: counts?.quote_count,
+    bookmarks: counts?.bookmark_count,
     views: views ? Number.parseInt(views, 10) || undefined : undefined,
   };
 }
