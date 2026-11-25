@@ -61,10 +61,11 @@ function htmlAssetSize(htmlPath, assetRoot, pattern, filter = () => true) {
 }
 
 const desktopOut = join(workspace, "apps/desktop/out");
+/** The main graph ships unminified, so the braces oxfmt adds around every `if` body count here as bytes, not code. */
 addResult(
   "desktop main static graph",
   mainStaticGraph(join(desktopOut, "main/index.js")),
-  3_700_000,
+  3_850_000,
 );
 addResult(
   "desktop renderer initial JS/CSS",
