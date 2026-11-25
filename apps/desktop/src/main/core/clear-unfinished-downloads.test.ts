@@ -52,10 +52,9 @@ describe.skipIf(!nativeAvailable())("clear unfinished downloads", () => {
       (transactions) => undo.push(transactions),
     );
 
-    expect(result).toEqual({
-      changed: 3,
-      ids: ["running", "failed", "skipped"],
-    });
+    /** The query has no order; which index answers it decides the row order. */
+    expect(result.changed).toBe(3);
+    expect(result.ids.toSorted()).toEqual(["failed", "running", "skipped"]);
     expect(commits).toHaveLength(1);
     expect(commits[0]?.map((transaction) => transaction.id)).toEqual(
       result.ids,

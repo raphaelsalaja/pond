@@ -29,6 +29,7 @@ export function querySidebarCounts(
       .from(saves)
       .where(live)
       .get();
+    /** Matching Save IDs come from a narrow index; joining `saves` per membership would read each wide row. */
     const folderCounts = (where: SQL | undefined) =>
       z.array(z.object({ id: z.string(), n: z.number() })).parse(
         db.all(
@@ -42,8 +43,7 @@ export function querySidebarCounts(
             select folder_tree.root_id as id,count(distinct save_folders.save_id) as n
             from folder_tree
             join save_folders on save_folders.folder_id=folder_tree.folder_id
-            join saves on saves.id=save_folders.save_id
-            where ${where}
+            where save_folders.save_id in (select ${saves.id} from ${saves} where ${where})
             group by folder_tree.root_id`,
         ),
       );

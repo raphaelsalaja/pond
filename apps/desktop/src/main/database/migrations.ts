@@ -354,7 +354,23 @@ export function migratePond(sqlite: Database.Database): void {
   ensureImportedFrom(sqlite);
   ensureFavorite(sqlite);
   ensureInboxColumns(sqlite);
+  ensureLiveSaveIndexes(sqlite);
   ensureSavesFts(sqlite);
+}
+
+/**
+ * `saves` rows hold raw JSON and two embeddings as text ahead of `status`, `deleted_at` and `saved_at`,
+ * so a count read from the table walks every row's overflow pages. Leading with the columns every
+ * Library query matches by equality lets live-Save counts and the default page order read only
+ * this narrow index. Account counts get their own.
+ */
+function ensureLiveSaveIndexes(sqlite: Database.Database): void {
+  sqlite.exec(`
+    CREATE INDEX IF NOT EXISTS saves_live_idx
+      ON saves(status, deleted_at, saved_at, id, inbox_state, tags);
+    CREATE INDEX IF NOT EXISTS saves_live_account_idx
+      ON saves(deleted_at, source, account_id);
+  `);
 }
 
 function savesColumns(sqlite: Database.Database): Array<string> {

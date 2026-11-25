@@ -40,8 +40,10 @@ const InboxRowSchema = z.object({
   inbox_state: z.string().nullable(),
   inbox_until: z.number().nullable(),
 });
+/** An index from before the Inbox has neither its columns nor the indexes that cover them. */
 const DROP_INBOX = [
   "DROP INDEX saves_inbox_idx",
+  "DROP INDEX saves_live_idx",
   "ALTER TABLE saves DROP COLUMN inbox_state",
   "ALTER TABLE saves DROP COLUMN inbox_until",
 ].join(";");
