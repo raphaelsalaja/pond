@@ -77,6 +77,10 @@ export function traySavingLabel(
   return `Saving ${inflight} of ${ingesting} items`;
 }
 
+export function trayBadge(input: Pick<TrayStatusInput, "inflight">): string {
+  return input.inflight > 0 ? String(input.inflight) : "";
+}
+
 export function trayVersionLabel(version: string): string {
   return `Pond v${version}`;
 }
