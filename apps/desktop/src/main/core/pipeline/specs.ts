@@ -8,7 +8,8 @@ const MAX_ATTEMPTS = {
   harvest_metadata: 5,
   capture_tweet: 4,
   render_text_cover: 3,
-  fetch_blobs: 5,
+  /* Generated cards and CDN media can stay inside a rate-limit window past the 5-attempt hour; 7 attempts stretches coverage to roughly 13 hours. */
+  fetch_blobs: 7,
   archive_page: 3,
   fetch_video_ytdlp: 3,
   ensure_poster: 4,
