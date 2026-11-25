@@ -1,5 +1,5 @@
 /*
- * A strip of Library cards that scrolls sideways, snapping to each card. A sideways scroller also
+ * A strip of Library cards that scrolls sideways with the wheel. A sideways scroller also
  * crops what spills out of it, and a card draws its edge, lift and focus ring just outside its box,
  * so the strip pads itself and gives the space back with a negative margin. `section.` outranks the
  * message body's 100% cap on its children, which would take the extra width away again.
@@ -14,12 +14,9 @@ section.cards {
   margin: 0 calc(var(--ds-space-md) * -1);
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: var(--ds-space-md);
   scrollbar-width: none;
 
   & > * {
     flex: 0 0 156px;
-    scroll-snap-align: start;
   }
 }
