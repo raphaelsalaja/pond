@@ -4,6 +4,7 @@ export interface TextDocument {
   format: "markdown" | "plain";
   title?: string;
   bodyHtml: string;
+  source: { text: string; filename: string; mimeType: string };
 }
 
 /** Converts a served text document into HTML so the rest of the pipeline can treat it as a page. */
@@ -21,7 +22,26 @@ export function convertTextDocument(
     format,
     title: documentTitle(bodyHtml, format, url),
     bodyHtml,
+    source: {
+      text,
+      filename: sourceFilename(format, url),
+      mimeType: format === "markdown" ? "text/markdown" : "text/plain",
+    },
   };
+}
+
+/** Deterministic so a re-harvest overwrites the same file rather than duplicating it. */
+function sourceFilename(format: "markdown" | "plain", url: string): string {
+  try {
+    const segment = new URL(url).pathname.split("/").filter(Boolean).at(-1);
+    if (segment) {
+      const decoded = decodeURIComponent(segment);
+      if (/\.[a-z0-9]+$/i.test(decoded)) return decoded;
+    }
+  } catch {
+    /* The URL already parsed for the fetch itself. */
+  }
+  return format === "markdown" ? "document.md" : "document.txt";
 }
 
 /** A text document has no markup of its own, so the title comes from its first heading or its filename. */

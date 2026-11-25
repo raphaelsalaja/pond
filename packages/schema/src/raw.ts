@@ -126,6 +126,8 @@ export interface CaptureArticle {
   canonicalUrl?: string;
   /** The source served a paywall preview, not the whole post. */
   preview?: boolean;
+  /** The verbatim bytes of a converted text document, written beside the article so the original survives. */
+  source?: { text: string; filename: string; mimeType: string };
 }
 
 export const QUOTE_DEPTH_CAP = 3;

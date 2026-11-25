@@ -241,6 +241,7 @@ export class WebPageExtractor implements Extractor {
       capture.article = {
         html: fetched.document.bodyHtml,
         canonicalUrl: canonical,
+        source: fetched.document.source,
       };
     }
     return capture;
