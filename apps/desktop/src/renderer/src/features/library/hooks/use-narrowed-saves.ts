@@ -11,6 +11,7 @@ import {
 } from "react";
 import { searchViewFor } from "@/features/library/lib/search-view";
 import { combineQueries } from "@/features/library/lib/smart-folders";
+import { createRowJoiner } from "@/features/library/lib/stable-rows";
 import {
   useFolderMemberships,
   useFolders,
@@ -213,21 +214,22 @@ export function useNarrowedSaves(mode: SaveListMode, sourceFilter: string) {
     previousPins.current = { scope: pinScope, ids: pinnedIds };
   }, [pinScope, pinnedIds, session]);
   const { page, loading, error } = state;
+  const [joinRows] = useState(createRowJoiner);
   const filtered = useMemo(() => {
-    const rows: Array<Save> = [];
+    const listed: Array<Save> = [];
     const byId = new Map(saves.map((save) => [save.id, save]));
     for (const id of page?.ids ?? []) {
       const save = byId.get(id);
-      if (save) rows.push({ ...save, folderIds: memberships[id] ?? [] });
+      if (save) listed.push(save);
     }
     if (mode === "recents") {
       const order = new Map(
         recents.map((entry, index) => [entry.saveId, index]),
       );
-      rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+      listed.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
     }
-    return rows;
-  }, [page, saves, memberships, mode, recents]);
+    return joinRows(listed, memberships);
+  }, [page, saves, memberships, mode, recents, joinRows]);
   const ranked = useRetrievalOverlay(filtered, request);
   const heldIds = useTagPickerIds();
   const retained = useRetainedTagPickerSaves(ranked, heldIds);
