@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { LibraryGrid } from "@/features/library/components/layouts/grid";
 import type { GridLayout } from "@/features/library/components/layouts/grid";
 import { stackSections } from "@/features/library/components/layouts/packing";
@@ -467,6 +467,27 @@ interface SavePackedGridProps {
   divider?: ReactNode;
 }
 
+type CardSlot = ComponentProps<typeof SaveCard>["slot"];
+const slots = new WeakMap<PackedItem, CardSlot>();
+
+/**
+ * One slot object per packed item, so `memo(SaveCard)` skips mounted cards when scrolling
+ * changes which bands are visible. A repack makes new items and so new slots.
+ */
+function cardSlot(item: PackedItem): CardSlot {
+  const cached = slots.get(item);
+  if (cached) return cached;
+  const slot = {
+    width: item.width,
+    height: item.height,
+    previewHeight: item.mediaHeight,
+    top: item.top,
+    left: item.left,
+  };
+  slots.set(item, slot);
+  return slot;
+}
+
 export function SavePackedGrid({
   layout,
   items: restItems,
@@ -511,13 +532,7 @@ export function SavePackedGrid({
         view={layout}
         position={positions.get(it.id)}
         total={setSize}
-        slot={{
-          width: it.width,
-          height: it.height,
-          previewHeight: it.mediaHeight,
-          top: it.top,
-          left: it.left,
-        }}
+        slot={cardSlot(it)}
       />
     ),
     [layout, positions, setSize],
