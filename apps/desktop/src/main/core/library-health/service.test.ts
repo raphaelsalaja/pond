@@ -139,10 +139,14 @@ async function fixture(
 }
 
 async function settled(service: ReturnType<typeof createLibraryHealthService>) {
-  await vi.waitFor(async () => {
-    const { job } = await service.overview();
-    expect(job?.status).not.toBe("running");
-  });
+  /** The check walks real files, which can take seconds on the Windows runner. */
+  await vi.waitFor(
+    async () => {
+      const { job } = await service.overview();
+      expect(job?.status).not.toBe("running");
+    },
+    { timeout: 10_000 },
+  );
   return service.overview();
 }
 

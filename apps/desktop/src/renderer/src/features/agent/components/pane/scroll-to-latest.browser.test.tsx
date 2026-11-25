@@ -53,8 +53,9 @@ async function render(reducedMotion: "always" | "never" = "never") {
 }
 
 async function scrollUp(viewport: HTMLElement) {
-  viewport.scrollTop = 100;
+  /** The view may still be settling onto the bottom on a slow runner, so keep scrolling up like a reader would. */
   await vi.waitFor(() => {
+    viewport.scrollTop = 100;
     expect(latest()).not.toBeNull();
   });
   const button = latest();
