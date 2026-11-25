@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
-import { createReadStream, existsSync } from "node:fs";
-import { mkdir, rm, stat } from "node:fs/promises";
+import { createHash, webcrypto } from "node:crypto";
+import { createReadStream } from "node:fs";
+import { mkdir, rename, rm, stat } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { saves, syncActions } from "@pond/schema/db";
 import type { NewSave, Save, SaveFile } from "@pond/schema/db";
@@ -35,9 +35,79 @@ export type WriteFileArgs = WriteFileMetadata &
     | { bytes?: never; sourcePath: string }
   );
 
+interface StagedFile extends WriteFileMetadata {
+  stagingPath: string;
+  sha256: string;
+  size: number;
+}
+
+/** New files written and hashed next to a Save before its write lock is taken. */
+export interface StagedSaveFiles {
+  readonly dir: string;
+  readonly files: ReadonlyArray<StagedFile>;
+  /** Removes staged files that were never moved into the Save. */
+  discard(): Promise<void>;
+}
+
+const STAGING_PREFIX = ".pond-staging-";
+
+/**
+ * Writing media into the Library, often on iCloud, and hashing it takes far longer than the
+ * index update. Doing it here, before `withMutationScope`, keeps every other edit and ingest
+ * task from queuing behind the copy; the scoped step only renames the staged files.
+ */
+export async function stageSaveFiles(
+  saveId: string,
+  files: ReadonlyArray<WriteFileArgs>,
+): Promise<StagedSaveFiles> {
+  const blocked = libraryWriteBlock(libraryRoot());
+  if (blocked) throw userError(blocked);
+  const dir = saveDir(saveId);
+  const staged: Array<StagedFile> = [];
+  const discard = async () => {
+    await Promise.all(
+      staged.map((file) =>
+        rm(file.stagingPath, { force: true }).catch((cause: unknown) => {
+          log.warn("[pond pipeline] failed to remove staged file", cause);
+        }),
+      ),
+    );
+  };
+  try {
+    await mkdir(dir, { recursive: true });
+    for (const file of files) {
+      const stagingPath = join(dir, `${STAGING_PREFIX}${ulid()}`);
+      const details = await persistWriteFile(file, stagingPath);
+      if (!details) {
+        log.warn(
+          "[pond pipeline] applySavePatch: empty file skipped",
+          saveId,
+          file.filename,
+        );
+        continue;
+      }
+      staged.push({
+        kind: file.kind,
+        filename: file.filename,
+        mimeType: file.mimeType,
+        width: file.width,
+        height: file.height,
+        sourceUrl: file.sourceUrl,
+        custom: file.custom,
+        stagingPath,
+        ...details,
+      });
+    }
+  } catch (error) {
+    await discard();
+    throw error;
+  }
+  return { dir, files: staged, discard };
+}
+
 interface ApplyPatchOptions {
   actorReason: string;
-  newFiles?: Array<WriteFileArgs>;
+  staged?: StagedSaveFiles;
   replaceFilesWithKind?: SaveFile["kind"] | Array<SaveFile["kind"]>;
 }
 
@@ -78,31 +148,25 @@ export async function applySavePatch(
               : [opts.replaceFilesWithKind],
           );
     const written: Array<SaveFile> = [];
-    if (opts.newFiles && opts.newFiles.length > 0) {
-      const blocked = libraryWriteBlock(libraryRoot());
-      if (blocked) throw userError(blocked);
+    const staged = opts.staged?.files ?? [];
+    if (staged.length > 0) {
       const dir = saveDir(saveId);
-      if (!existsSync(dir)) await mkdir(dir, { recursive: true });
+      if (resolve(dir) !== resolve(opts.staged?.dir ?? "")) {
+        throw new Error(
+          "The Library changed while this Save's files were written.",
+        );
+      }
       const existingForNames = replaceKinds
         ? (current.files ?? []).filter((file) => !replaceKinds.has(file.kind))
         : (current.files ?? []);
-      for (const file of opts.newFiles) {
+      for (const file of staged) {
         const target = uniqueFilename(file.filename, existingForNames, written);
-        const targetPath = join(dir, target);
-        const details = await persistWriteFile(file, targetPath);
-        if (!details) {
-          log.warn(
-            "[pond pipeline] applySavePatch: empty file skipped",
-            saveId,
-            file.filename,
-          );
-          continue;
-        }
+        await rename(file.stagingPath, join(dir, target));
         const entry: SaveFile = {
           kind: file.kind,
           path: target,
-          sha256: details.sha256,
-          size: details.size,
+          sha256: file.sha256,
+          size: file.size,
         };
         if (file.mimeType) entry.mimeType = file.mimeType;
         if (file.width) entry.width = file.width;
@@ -183,9 +247,13 @@ export async function persistWriteFile(
 ): Promise<{ sha256: string; size: number } | null> {
   if (file.bytes) {
     if (file.bytes.byteLength === 0) return null;
-    await writeLibraryMedia(targetPath, file.bytes);
+    /** Web Crypto hashes on a worker thread, so a large video doesn't block the main thread. */
+    const [digest] = await Promise.all([
+      webcrypto.subtle.digest("SHA-256", file.bytes),
+      writeLibraryMedia(targetPath, file.bytes),
+    ]);
     return {
-      sha256: createHash("sha256").update(file.bytes).digest("hex"),
+      sha256: Buffer.from(digest).toString("hex"),
       size: file.bytes.byteLength,
     };
   }

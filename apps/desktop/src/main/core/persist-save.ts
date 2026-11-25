@@ -6,8 +6,8 @@ import {
   writeEnrichmentSidecar,
 } from "./enrichment-sidecar";
 import { withMutationScope } from "./executor";
-import { applySavePatch } from "./pipeline/workers/apply";
-import type { WriteFileArgs } from "./pipeline/workers/apply";
+import { applySavePatch, stageSaveFiles } from "./pipeline/workers/apply";
+import type { StagedSaveFiles, WriteFileArgs } from "./pipeline/workers/apply";
 
 interface PersistSaveOptions {
   actorReason: string;
@@ -21,10 +21,27 @@ export async function persistSave(
   patch: Partial<NewSave>,
   opts: PersistSaveOptions,
 ): Promise<Save | null> {
+  const staged =
+    opts.newFiles && opts.newFiles.length > 0
+      ? await stageSaveFiles(id, opts.newFiles)
+      : undefined;
+  try {
+    return await persistStaged(id, patch, opts, staged);
+  } finally {
+    await staged?.discard();
+  }
+}
+
+function persistStaged(
+  id: string,
+  patch: Partial<NewSave>,
+  opts: PersistSaveOptions,
+  staged: StagedSaveFiles | undefined,
+): Promise<Save | null> {
   return withMutationScope(async () => {
     const updated = await applySavePatch(id, patch, {
       actorReason: opts.actorReason,
-      newFiles: opts.newFiles,
+      staged,
       replaceFilesWithKind: opts.replaceFilesWithKind,
     });
     if (!updated) return null;
