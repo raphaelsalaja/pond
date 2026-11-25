@@ -43,6 +43,7 @@
 .popup {
   composes: popup from "../shared/styles/popup/styles.module.css";
   max-width: var(--available-width);
+  max-height: var(--available-height);
 }
 
 /* Transition container per Base UI guidance: clip morphing content while the popup resizes. */
