@@ -8,10 +8,13 @@ import { z } from "zod";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
 import { isInteractiveTask, TaskPayloadSchema } from "./priority";
+import { POLL_INTERVAL_MS } from "./reconciler-config";
 import type { DueTask } from "./reconciler-config";
 import { claimSourceProbe, inspectSourceAdmission } from "./source-admission";
 import { isSourceTask } from "./source-tasks";
 import { maxAttemptsFor, planOps } from "./specs";
+import { createWebHostSlots } from "./web-host-slots";
+import type { WebHostTask } from "./web-host-slots";
 
 const ClaimCandidateSchema = z.object({
   id: z.string(),
@@ -21,6 +24,14 @@ const ClaimCandidateSchema = z.object({
   payload: z.string().nullable(),
   cancellationFence: z.number(),
   generationId: z.string().nullable(),
+  saveSource: z.enum(SOURCES),
+  url: z.string(),
+});
+
+const RunningHostTaskSchema = z.object({
+  saveSource: z.enum(SOURCES),
+  op: z.enum(OPS),
+  url: z.string(),
 });
 
 const CLAIM_CANDIDATE_LIMIT = 500;
@@ -53,7 +64,9 @@ export async function claimDueTasks(
               tasks.op,
               tasks.payload,
               tasks.cancellation_fence AS cancellationFence,
-              tasks.generation_id AS generationId
+              tasks.generation_id AS generationId,
+              saves.source AS saveSource,
+              saves.url AS url
             FROM tasks
             INNER JOIN saves ON saves.id = tasks.save_id
             LEFT JOIN queue_generations
@@ -116,6 +129,7 @@ export async function claimDueTasks(
           .all(at, CLAIM_CANDIDATE_LIMIT),
       );
       const ordered = fairCandidates(candidates);
+      const hostSlots = createWebHostSlots(runningWebHostTasks(db.$raw));
       const available = { ...options.availableByOp };
       const claimed: Array<string> = [];
       let claimedInteractive = 0;
@@ -133,6 +147,22 @@ export async function claimDueTasks(
         const op = candidate.op;
         const room = available[op] ?? 0;
         if (room <= 0) continue;
+        if (!hostSlots.admits(candidate)) {
+          /* Moving it a poll later lets other sites' work into the next
+             candidate window instead of re-reading this host's backlog. */
+          db.$raw
+            .prepare(
+              `UPDATE tasks
+              SET
+                status = 'deferred',
+                deferred_reason = 'worker_capacity',
+                next_run_at = ?,
+                updated_at = ?
+              WHERE id = ? AND status IN ('pending', 'deferred')`,
+            )
+            .run(at + POLL_INTERVAL_MS, at, candidate.id);
+          continue;
+        }
         const leaseToken = ulid();
         if (isSourceTask(op)) {
           const admission = inspectSourceAdmission(
@@ -221,6 +251,7 @@ export async function claimDueTasks(
           }
         }
         available[op] = room - 1;
+        hostSlots.occupy(candidate);
         if (interactive) claimedInteractive += 1;
         else claimedBackground += 1;
         if (candidate.generationId) {
@@ -255,6 +286,22 @@ export async function claimDueTasks(
 }
 
 type ClaimCandidate = z.infer<typeof ClaimCandidateSchema>;
+
+function runningWebHostTasks(sqlite: Database.Database): Array<WebHostTask> {
+  return z.array(RunningHostTaskSchema).parse(
+    sqlite
+      .prepare(
+        `SELECT
+          saves.source AS saveSource,
+          tasks.op,
+          saves.url AS url
+        FROM tasks
+        INNER JOIN saves ON saves.id = tasks.save_id
+        WHERE tasks.status = 'running' AND saves.source = 'web'`,
+      )
+      .all(),
+  );
+}
 
 function fairCandidates(
   candidates: ReadonlyArray<ClaimCandidate>,

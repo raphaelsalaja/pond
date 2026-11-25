@@ -43,6 +43,11 @@ screenshot navigation — is gated by one shared governor in
   `x-rate-limit-remaining` / `x-rate-limit-reset` and adjusts pacing (AIMD) and
   cooldowns. Harvesters return `rate_limited` on HTTP 429 and **never** escalate
   to the noisier scroll path.
+- **One site at a time, per site.** The web Source spans every site, so its
+  budgets cannot stop a bulk refresh from hitting one storefront in parallel.
+  The task queue also caps running network work for web Saves per host
+  ([`web-host-slots.ts`](../pipeline/web-host-slots.ts)). Work past the cap
+  waits a poll as `worker_capacity`, so other sites keep running.
 - **Persisted.** Cooldowns and at-risk state live in `userData/rate-governor.json`
   so a crash/relaunch loop can't re-hammer a penalised account.
 - **Danger detection.** A login/challenge/checkpoint/captcha redirect mid-harvest
