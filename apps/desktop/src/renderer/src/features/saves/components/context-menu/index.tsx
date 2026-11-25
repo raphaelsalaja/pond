@@ -67,15 +67,15 @@ export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
   );
 }
 
-function cardSaveId(target: EventTarget | null): string | null {
+function targetSaveId(target: EventTarget | null): string | null {
   if (!(target instanceof Element)) return null;
-  const card = target.closest<HTMLElement>("[data-library-card][data-save-id]");
-  return card?.dataset.saveId ?? null;
+  return target.closest<HTMLElement>("[data-save-id]")?.dataset.saveId ?? null;
 }
 
 interface SaveCollectionContextMenuProps {
   buildBackgroundItems: () => MenuItemSpec[];
   acceptsBackground: (target: EventTarget | null) => boolean;
+  onOpenSave?: (save: Save) => void;
   children: ReactElement;
 }
 
@@ -83,6 +83,7 @@ interface SaveCollectionContextMenuProps {
 export function SaveCollectionContextMenu({
   buildBackgroundItems,
   acceptsBackground,
+  onOpenSave,
   children,
 }: SaveCollectionContextMenuProps) {
   const menu = useSaveMenu();
@@ -96,11 +97,13 @@ export function SaveCollectionContextMenu({
         minWidth={target ? SAVE_MENU_WIDTH : undefined}
         onOpen={(eventDetails) => {
           const element = eventDetails.event?.target ?? null;
-          const id = cardSaveId(element);
+          const id = targetSaveId(element);
           const save = id ? pool.get(id) : undefined;
           setTargetId(save ? save.id : null);
-          if (save) menu.open(save);
-          else if (!acceptsBackground(element)) eventDetails.cancel();
+          if (save) {
+            menu.open(save);
+            onOpenSave?.(save);
+          } else if (!acceptsBackground(element)) eventDetails.cancel();
         }}
         buildItems={() =>
           target ? menu.items(target) : buildBackgroundItems()

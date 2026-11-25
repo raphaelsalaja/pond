@@ -342,14 +342,33 @@ export function SaveHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "save.mark-processed"),
-        callback: () => void markProcessed(waitingInInbox(targetIds())),
+        callback: () => {
+          const ids = waitingInInbox(targetIds());
+          if (!ids.length) {
+            notify({
+              id: "inbox-change",
+              title: "Nothing to process",
+              description: "No selected saves are waiting in the Inbox.",
+            });
+            return;
+          }
+          void markProcessed(ids);
+        },
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "save.snooze"),
         callback: () => {
           const ids = waitingInInbox(targetIds());
-          if (ids.length > 0) openSnoozeDialog(ids);
+          if (!ids.length) {
+            notify({
+              id: "inbox-change",
+              title: "Nothing to snooze",
+              description: "No selected saves are waiting in the Inbox.",
+            });
+            return;
+          }
+          openSnoozeDialog(ids);
         },
         options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
       },

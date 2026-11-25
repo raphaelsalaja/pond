@@ -82,7 +82,7 @@ function InboxPage({
   });
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-inbox>
       {total > 0 ? (
         <p className={styles.progress} aria-live="polite">
           {position} / {total}
