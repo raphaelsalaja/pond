@@ -1,4 +1,5 @@
 import {
+  IconArrowsExpandDiagonal,
   IconChevronLeft,
   IconChevronRight,
   IconExport,
@@ -26,6 +27,7 @@ interface PreviewBarProps {
   onClose: () => void;
   onStep: (delta: number) => void;
   onFullScreen?: () => void;
+  onExpand?: () => void;
   children?: ReactNode;
 }
 
@@ -35,6 +37,7 @@ function Bar({
   onClose,
   onStep,
   onFullScreen,
+  onExpand,
   children,
 }: PreviewBarProps) {
   const paged = position && position.count > 1 ? position : null;
@@ -48,6 +51,11 @@ function Bar({
           {onFullScreen ? (
             <Tool label="Full Screen" onClick={onFullScreen}>
               <IconFullScreen />
+            </Tool>
+          ) : null}
+          {onExpand ? (
+            <Tool label="Open Save" onClick={onExpand}>
+              <IconArrowsExpandDiagonal />
             </Tool>
           ) : null}
           {paged ? (

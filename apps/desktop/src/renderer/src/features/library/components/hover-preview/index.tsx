@@ -18,6 +18,7 @@ import {
   inspect,
   MediaViewer,
   onQuickPreviewRequest,
+  openSave,
   type PreviewStepBinding,
   previewFileIndex,
   previewStepRuns,
@@ -342,6 +343,14 @@ export function HoverPreview() {
                       ?.querySelector<HTMLElement>("[data-viewer-root]")
                       ?.requestFullscreen()
                       .catch(() => {});
+                  }
+            }
+            onExpand={
+              comparing || !save
+                ? undefined
+                : () => {
+                    close();
+                    openSave(save.id);
                   }
             }
           >
