@@ -77,7 +77,8 @@ function AgentPaneContent({
   reduceMotion: boolean;
 }) {
   const input = useRef<ComposerEditorHandle>(null);
-  const chat = pondChatSession(state.chatId ?? "draft");
+  const draftKey = `new:${state.fishId}`;
+  const chat = pondChatSession(state.chatId ?? draftKey);
   const { messages, status, error: chatError } = useChat({ chat });
   const running =
     status === "submitted" || status === "streaming" || state.busy;
@@ -146,7 +147,8 @@ function AgentPaneContent({
   function submit(content = state.draft) {
     if (!provider || running) return;
     assistant.setDraft(content);
-    void assistant.send(provider, {
+    /** queue sends immediately unless another fish's reply is still running. */
+    void assistant.queue(provider, {
       modelId,
       controls: runControlsForOptions(modelOptions),
     });
@@ -208,7 +210,7 @@ function AgentPaneContent({
         </Pane.Header>
         <div className={styles.workspace}>
           <Thread.Conversation
-            key={state.chatId ?? "new"}
+            key={state.chatId ?? draftKey}
             className={styles.body}
             marks={marks}
             viewportProps={{ className: styles.viewport }}
