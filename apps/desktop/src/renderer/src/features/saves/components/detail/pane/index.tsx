@@ -6,7 +6,10 @@ import { useEffect, useMemo, useState } from "react";
 import { DISABLED_HINTS, TASK_ENABLED } from "@/features/enrichment";
 import { KebabMenu } from "@/features/saves/components/detail/kebab";
 import { RelatedSaves } from "@/features/saves/components/detail/related-saves";
-import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
+import {
+  useRetainedSaves,
+  useSavesById,
+} from "@/features/saves/hooks/use-saves";
 import { ensureSaves, reloadSaves } from "@/features/saves/lib/ensure-saves";
 import { changeSaveFolders } from "@/features/saves/lib/folder-actions";
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
@@ -110,7 +113,6 @@ export function SaveInspector({
   const ids = useStableStrings(saveIds?.length ? saveIds : [saveId]);
   const targetKey = JSON.stringify(ids);
   useRetainedSaves(ids);
-  const available = useSaves();
   const [drafts] = useState<InspectorDrafts>(() => new Map());
   const [attempt, setAttempt] = useState(0);
   const [loadFailure, setLoadFailure] = useState<{
@@ -130,11 +132,7 @@ export function SaveInspector({
   } | null>(null);
   const fileIndex = useSaveViewerFileIndex();
   const [view, setView] = useState<InspectorView>("details");
-  const byId = new Map(available.map((save) => [save.id, save]));
-  const saves = ids.flatMap((id) => {
-    const save = byId.get(id);
-    return save ? [save] : [];
-  });
+  const saves = useSavesById(ids);
   const complete = saves.length === ids.length;
   const single = ids.length === 1 ? saves[0] : undefined;
   const indexed = single?.clipModel === mediaEmbeddingVersion();

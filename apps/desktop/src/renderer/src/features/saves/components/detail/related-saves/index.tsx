@@ -3,7 +3,10 @@ import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { CardThumb } from "@/features/saves/components/card/media";
 import { Card } from "@/features/saves/components/card/parts";
-import { useRetainedSaves, useSaves } from "@/features/saves/hooks/use-saves";
+import {
+  useRetainedSaves,
+  useSavesById,
+} from "@/features/saves/hooks/use-saves";
 import { loadRelated, peekRelated } from "@/features/saves/lib/related";
 import type { RelatedItem } from "@/features/saves/lib/related";
 import { openSave } from "@/features/saves/lib/save-nav";
@@ -49,7 +52,6 @@ function RelatedCard({ item, save }: { item: RelatedItem; save: Save }) {
 const LOADING_DELAY_MS = 400;
 
 export function RelatedSaves({ saveId }: { saveId: string }) {
-  const saves = useSaves();
   const [attempt, setAttempt] = useState(0);
   const request = `${attempt}:${saveId}`;
   const [result, setResult] = useState<{
@@ -66,7 +68,9 @@ export function RelatedSaves({ saveId }: { saveId: string }) {
       : attempt === 0
         ? peekRelated(saveId)
         : null;
-  useRetainedSaves(items?.map((item) => item.id) ?? []);
+  const itemIds = items?.map((item) => item.id) ?? [];
+  useRetainedSaves(itemIds);
+  const saves = useSavesById(itemIds);
 
   useEffect(() => {
     let active = true;
