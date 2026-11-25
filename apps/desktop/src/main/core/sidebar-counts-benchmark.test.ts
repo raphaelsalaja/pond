@@ -106,6 +106,12 @@ for (const size of [20_000, 50_000]) {
           limit: 250,
         };
         const first = await queryLibraryPage(db, "bench", request, [], []);
+        let edits = 0;
+        let deletes = 0;
+        const renameSave = sqlite.prepare(
+          "update saves set title = ? where id = ?",
+        );
+        const deleteSave = sqlite.prepare("delete from saves where id = ?");
         const accountCount = sqlite.prepare(
           "select count(*) as n from saves where source = 'twitter' and (account_id = 'account-a' or account_id is null) and deleted_at is null",
         );
@@ -136,6 +142,14 @@ for (const size of [20_000, 50_000]) {
           }),
           accountCount: time(() => {
             accountCount.get();
+          }),
+          titleEdit: time(() => {
+            edits += 1;
+            renameSave.run(`renamed ${edits}`, String(edits).padStart(7, "0"));
+          }),
+          trashDelete: time(() => {
+            deletes += 1;
+            deleteSave.run(String(size - deletes).padStart(7, "0"));
           }),
         };
         process.stdout.write(
