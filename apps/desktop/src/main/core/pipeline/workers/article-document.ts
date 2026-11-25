@@ -16,19 +16,25 @@ interface SplitArticle {
 export function splitArticle(harvested: Capture): SplitArticle {
   const { article, ...capture } = harvested;
   if (!article) return { capture, files: {} };
+  const newFiles: WriteFileArgs[] = [
+    {
+      kind: ARTICLE_KIND,
+      filename: ARTICLE_FILE,
+      mimeType: "text/html",
+      bytes: Buffer.from(articleDocument(capture, article), "utf8"),
+    },
+  ];
+  if (article.source) {
+    newFiles.push({
+      kind: "original",
+      filename: article.source.filename,
+      mimeType: article.source.mimeType,
+      bytes: Buffer.from(article.source.text, "utf8"),
+    });
+  }
   return {
     capture,
-    files: {
-      newFiles: [
-        {
-          kind: ARTICLE_KIND,
-          filename: ARTICLE_FILE,
-          mimeType: "text/html",
-          bytes: Buffer.from(articleDocument(capture, article), "utf8"),
-        },
-      ],
-      replaceFilesWithKind: ARTICLE_KIND,
-    },
+    files: { newFiles, replaceFilesWithKind: ARTICLE_KIND },
   };
 }
 

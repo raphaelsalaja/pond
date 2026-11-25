@@ -1,4 +1,10 @@
-import { PrefsSchema, type SaveFile, type Source } from "@pond/schema/db";
+import {
+  PrefsSchema,
+  type Save,
+  type SaveFile,
+  type Source,
+} from "@pond/schema/db";
+import { storedAsRawJson } from "@pond/schema/raw-schema";
 import { describe, expect, it, vi } from "vitest";
 import type { WriteFileArgs } from "./apply";
 import { hasWarcArchive, runArchivePage } from "./archive-page";
@@ -23,6 +29,8 @@ function setup(
     description: "A short page",
     mediaUrl: "https://example.com/preview.jpg",
     files: [preview],
+    /** SAFETY: null is a valid `rawJson`; the assertion only widens the literal so tests can assign a document capture. */
+    rawJson: null as Save["rawJson"],
   };
   const readSave = vi.fn(async () => save);
   const autoArchivePages = vi.fn(async () => autoArchive);
@@ -83,6 +91,29 @@ describe("archive_page automatic archive", () => {
       description: "A short page",
       mediaUrl: "https://example.com/preview.jpg",
     });
+  });
+
+  it("skips the browser crawl for a converted text document", async () => {
+    const { save, readSave, autoArchivePages, crawlSite, persistArchive } =
+      setup(true);
+    save.rawJson = storedAsRawJson({
+      capture: {
+        id: save.url,
+        source: "web",
+        url: save.url,
+        extras: { textDocument: true },
+      },
+    });
+
+    await runArchivePage("save-1", {}, ctx, {
+      readSave,
+      autoArchive: autoArchivePages,
+      crawlSite,
+      persistArchive,
+    });
+
+    expect(crawlSite).not.toHaveBeenCalled();
+    expect(persistArchive).not.toHaveBeenCalled();
   });
 
   it("finishes the save without an archive when the page sits behind a login wall", async () => {

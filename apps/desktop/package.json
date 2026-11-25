@@ -137,6 +137,7 @@
     "hono": "^4.13.8",
     "jszip": "^3.10.2",
     "lexical": "0.50.0",
+    "marked": "18.2.1",
     "mermaid": "^12.0.0",
     "metascraper": "^5.56.2",
     "metascraper-author": "^5.56.2",
