@@ -349,7 +349,7 @@ button.label:hover {
   &[data-status="active"],
   &[data-popup-open] {
     color: var(--ds-foreground-primary);
-    background: var(--ds-surface-secondary);
+    background: var(--ds-surface-primary);
   }
 
   .text {
