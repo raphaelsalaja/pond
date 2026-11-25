@@ -12,6 +12,34 @@
   }
 }
 
+/* Matches the Fish and Details headers: the window header's height and divider, the name at body size and regular weight, actions resting muted. */
+.header {
+  height: var(--window-header-height, 44px);
+  min-height: var(--window-header-height, 44px);
+  padding-block: 0;
+
+  & [data-slot="pane-header-title"] {
+    font-weight: var(--ds-weight-regular);
+    color: var(--ds-foreground-primary);
+  }
+
+  & :where([data-variant="ghost"]):not(:hover, [data-pressed]) {
+    color: var(--ds-foreground-tertiary);
+  }
+}
+
+.header-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status {
+  flex: none;
+  color: var(--ds-foreground-tertiary);
+}
+
 .workspace {
   position: relative;
   display: flex;
@@ -28,8 +56,9 @@
   min-height: 0;
 }
 
+/* No end padding: the thread's sticky footer sits on the bottom edge and owns the space under the composer. */
 .viewport {
-  padding: var(--ds-space-2xl);
+  padding: var(--ds-space-2xl) var(--ds-space-2xl) 0;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: none;

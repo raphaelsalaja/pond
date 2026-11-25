@@ -1,55 +1,68 @@
+/*
+ * Aave Pro's prompt input: one elevated card on a hairline ring that lifts while you type in it, the
+ * message on its own row, and a footer of round controls under it.
+ */
 .root {
-  --composer-ring: var(--ds-border-strong);
-
+  --composer-shadow-low: light-dark(
+    color-mix(in oklab, var(--ds-shadow-color) 15%, transparent),
+    color-mix(in oklab, var(--ds-shadow-color) 42%, transparent)
+  );
+  --composer-shadow-medium: light-dark(
+    color-mix(in oklab, var(--ds-shadow-color) 25%, transparent),
+    color-mix(in oklab, var(--ds-shadow-color) 84%, transparent)
+  );
+  --composer-stroke: light-dark(
+    color-mix(in oklab, var(--ds-border-subtle) 57%, transparent),
+    var(--ds-border-subtle)
+  );
   display: grid;
   grid-template-areas:
     "extra extra extra"
     "leading field trailing";
   grid-template-columns: auto minmax(0, 1fr) auto;
-  column-gap: var(--ds-space-sm);
+  column-gap: var(--ds-space-xs);
   align-items: center;
-  padding: var(--ds-space-md);
+  padding: calc(var(--ds-space-md) + var(--ds-space-2xs));
   font-size: var(--ds-text-body);
   font-weight: var(--ds-weight-regular);
-  line-height: 24px;
+  line-height: var(--ds-leading-body);
   color: var(--ds-foreground-primary);
+  cursor: text;
   caret-color: var(--ds-accent);
-  background: light-dark(
-    var(--ds-background-primary),
-    var(--ds-background-secondary)
+  background: var(--ds-background-elevated);
+  /* Half of one row's height, so a one-line composer is a pill. */
+  border-radius: calc(
+    var(--ds-size-md) /
+    2 +
+    var(--ds-space-md) +
+    var(--ds-space-2xs)
   );
-  /* Half of one line's height, so the empty composer is a pill. */
-  border-radius: calc(var(--ds-size-sm) / 2 + var(--ds-space-md));
   box-shadow:
-    0 0 0 0.5px var(--composer-ring),
-    0 1px 2px color-mix(in oklab, var(--ds-shadow-color) 15%, transparent),
-    0 2px 8px -1px color-mix(in oklab, var(--ds-shadow-color) 25%, transparent);
+    0 2px 4px 0 var(--composer-shadow-low),
+    0 0 0 1px var(--composer-stroke);
   transition:
     border-radius var(--ds-duration-medium) var(--ds-easing-snap),
-    box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
-
-  &:is(:hover, :focus-within) {
-    --composer-ring: color-mix(
-      in oklab,
-      var(--ds-foreground-tertiary) 40%,
-      transparent
-    );
-  }
+    box-shadow var(--ds-duration-snap) var(--ds-easing-decelerate);
 
   &[data-expanded] {
     grid-template-areas:
       "extra extra extra"
       "field field field"
       "leading . trailing";
-    row-gap: var(--ds-space-md);
     border-radius: var(--ds-radius-2xl);
+  }
+
+  &:focus-within {
+    box-shadow:
+      0 4px 16px 0 var(--composer-shadow-medium),
+      0 0 0 1px light-dark(var(--ds-border-subtle), var(--ds-border-strong));
   }
 }
 
 .extra {
   grid-area: extra;
   min-width: 0;
-  padding: var(--ds-space-xs) var(--ds-space-xs) 0;
+  padding: var(--ds-space-2xs) var(--ds-space-2xs) 0;
   margin-bottom: var(--ds-space-md);
 
   &:empty {
@@ -60,6 +73,15 @@
 .field {
   grid-area: field;
   min-width: 0;
+}
+
+.root[data-expanded] .field {
+  min-height: 44px;
+}
+
+/* Spacing lives on the rows, not as a grid gap, so the empty extra row adds nothing. */
+.root[data-expanded] :is(.leading, .trailing) {
+  margin-top: var(--ds-space-md);
 }
 
 .leading,
@@ -76,17 +98,18 @@
 
 .trailing {
   grid-area: trailing;
+  gap: var(--ds-space-md);
   justify-content: flex-end;
 }
 
 .input {
   display: block;
   width: 100%;
-  min-height: 24px;
+  min-height: 32px;
   max-height: 200px;
-  padding: var(--ds-space-2xs) var(--ds-space-sm) 0;
+  padding: var(--ds-space-sm);
   font: inherit;
-  line-height: 24px;
+  line-height: var(--ds-leading-body);
   color: inherit;
   resize: none;
   outline: none;
@@ -128,7 +151,8 @@
 .attachments {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--ds-space-sm);
+  gap: var(--ds-space-md) var(--ds-space-lg);
+  align-items: center;
 }
 
 .send {
@@ -169,22 +193,64 @@
   -webkit-line-clamp: 2;
 }
 
+/* Add and the model picker are secondary pills; Send is a solid circle. */
+.leading button,
 .trailing > button:not(.send) {
-  --button-icon-size: 14px;
-  height: var(--ds-size-sm);
+  --button-icon-size: 16px;
+  height: var(--ds-size-md);
   font-size: var(--ds-text-body);
-  font-weight: var(--ds-weight-regular);
-  color: var(--ds-foreground-tertiary);
+  border-radius: 999px;
 }
 
-.trailing > button[data-icon] {
-  width: var(--ds-size-sm);
-  min-width: var(--ds-size-sm);
+.leading button,
+.trailing > button[data-icon]:not(.send) {
+  width: var(--ds-size-md);
+  min-width: var(--ds-size-md);
+  padding-inline: 0;
 }
 
-.trailing > button[aria-expanded="true"] {
-  color: var(--ds-foreground-primary);
-  background: var(--ds-background-tertiary);
+.trailing > button:not(.send, [data-icon]) {
+  padding: 0 var(--ds-space-md) 0 var(--ds-space-lg);
+}
+
+.trailing > .send {
+  --button-solid: var(--ds-foreground-primary);
+  --button-icon-size: 16px;
+  width: var(--ds-size-md);
+  height: var(--ds-size-md);
+  color: var(--ds-background-primary);
+  border-radius: 50%;
+  transition:
+    opacity var(--ds-duration-snap) var(--ds-easing-decelerate),
+    scale var(--ds-duration-snap) var(--ds-easing-decelerate);
+
+  &:hover:not(:disabled) {
+    background-image: linear-gradient(
+      color-mix(in oklab, var(--ds-background-primary) 16%, transparent),
+      color-mix(in oklab, var(--ds-background-primary) 16%, transparent)
+    );
+    opacity: 1;
+  }
+
+  &:active:not(:disabled) {
+    scale: 0.96;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root,
+  .leading button,
+  .trailing > button {
+    transition: none;
+  }
+
+  .trailing > .send:active:not(:disabled) {
+    scale: none;
+  }
 }
 
 @media (forced-colors: active) {

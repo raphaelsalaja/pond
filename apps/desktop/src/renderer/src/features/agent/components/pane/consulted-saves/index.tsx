@@ -89,7 +89,7 @@ export function SavePreview({
   );
 }
 
-export function fileType(path: string | undefined) {
+function fileType(path: string | undefined) {
   const dot = path?.lastIndexOf(".") ?? -1;
   return path && dot >= 0 ? path.slice(dot + 1).toUpperCase() : null;
 }

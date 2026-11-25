@@ -25,7 +25,10 @@ async function inPageOpenBookmarkFolder(folderId: string): Promise<boolean> {
   ) {
     await sleep(250);
   }
-  if (!document.querySelector('[data-testid="primaryColumn"]')) return false;
+  /** x-web dropped the `primaryColumn` test id; its timeline renders inside `main`. */
+  if (!document.querySelector('[data-testid="primaryColumn"], main')) {
+    return false;
+  }
   globalThis.__pondBookmarkFolderRequest = null;
   /** The main list shares this buffer, and its posts must not be filed into the folder. */
   globalThis.__pondBookmarksCaptures = [];
