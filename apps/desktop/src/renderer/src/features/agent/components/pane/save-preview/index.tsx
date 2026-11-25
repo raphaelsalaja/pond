@@ -1,8 +1,8 @@
-import { IconBookmark, IconFile } from "@pond/icons";
+import { IconFile } from "@pond/icons";
 import { Button } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
-import type { CSSProperties } from "react";
+import type { ComponentProps, CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   aspectFor,
@@ -120,6 +120,57 @@ export function SourceThumbnail({
   );
 }
 
+/** An inline reference in running text: a small picture or icon, then an underlined name. */
+export function InlineReference({
+  media,
+  label,
+  className,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "children"> & {
+  media: ReactNode;
+  label: ReactNode;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="bare"
+      className={
+        className ? `${styles.reference} ${className}` : styles.reference
+      }
+      {...props}
+    >
+      <span className={styles.media} aria-hidden>
+        {media}
+      </span>
+      <span className={styles.label}>{label}</span>
+    </Button>
+  );
+}
+
+/** A Save named inline by its own thumbnail and title. */
+export function SaveReference({
+  id,
+  title,
+  fullTitle = title,
+  onOpenSave,
+}: {
+  id: string;
+  title: string;
+  /** The untrimmed title, for the accessible name and the hover tooltip. */
+  fullTitle?: string;
+  onOpenSave: (id: string) => void;
+}) {
+  return (
+    <InlineReference
+      media={<SourceThumbnail id={id} size="compact" />}
+      label={title}
+      title={fullTitle}
+      aria-label={`Open ${fullTitle}`}
+      onClick={() => onOpenSave(id)}
+    />
+  );
+}
+
 export function SaveCitation({
   source,
   reference,
@@ -132,28 +183,38 @@ export function SaveCitation({
   compact?: boolean;
 }) {
   const title = sourceExcerpt(source.title, 200) || "Untitled";
+  const hover = {
+    onPointerEnter: (event: { currentTarget: HTMLElement }) =>
+      showCitedSentence(event.currentTarget),
+    onPointerLeave: hideCitedSentence,
+    onFocus: (event: { currentTarget: HTMLElement }) =>
+      showCitedSentence(event.currentTarget),
+    onBlur: hideCitedSentence,
+  };
+  if (compact)
+    return (
+      <Button
+        type="button"
+        variant="bare"
+        className={styles.citation}
+        data-citation=""
+        aria-label={`Open source ${reference}: ${title}`}
+        onClick={() => onOpenSave(source.id)}
+        title={`Open ${title}`}
+        {...hover}
+      >
+        <span>{reference}</span>
+      </Button>
+    );
   return (
-    <Button
-      type="button"
-      variant="bare"
-      className={styles.citation}
+    <InlineReference
       data-citation=""
+      media={<SourceThumbnail id={source.id} size="compact" />}
+      label={title}
       aria-label={`Open source ${reference}: ${title}`}
       onClick={() => onOpenSave(source.id)}
-      onPointerEnter={(event) => showCitedSentence(event.currentTarget)}
-      onPointerLeave={hideCitedSentence}
-      onFocus={(event) => showCitedSentence(event.currentTarget)}
-      onBlur={hideCitedSentence}
       title={`Open ${title}`}
-    >
-      {compact ? (
-        <span>{reference}</span>
-      ) : (
-        <>
-          <IconBookmark size={12} className={styles.icon} />
-          <span className={styles.title}>{title}</span>
-        </>
-      )}
-    </Button>
+      {...hover}
+    />
   );
 }

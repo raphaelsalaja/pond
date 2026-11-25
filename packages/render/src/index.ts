@@ -287,13 +287,40 @@ const SCRIPT_PACKS = new Set([
 const SYSTEM = "/System/Library/Fonts";
 const EMOJI_TTC = `${SYSTEM}/Apple Color Emoji.ttc`;
 
+interface MacFace {
+  path: string;
+  index?: number;
+  /** A script fallback; without it those characters draw as boxes, so a Mac that lacks it still renders. */
+  optional?: boolean;
+}
+
 /** macOS files for the faces xeet ships but Pond may not redistribute. */
-const MAC_FACES = new Map<string, { path: string; index?: number }>([
+const MAC_FACES = new Map<string, MacFace>([
   ["Arial.ttf", { path: `${SYSTEM}/Supplemental/Arial.ttf` }],
   ["Arial-Bold.ttf", { path: `${SYSTEM}/Supplemental/Arial Bold.ttf` }],
   ["HiraginoSans-Regular.otf", { path: `${SYSTEM}/ヒラギノ角ゴシック W3.ttc` }],
   ["HiraginoSans-Bold.otf", { path: `${SYSTEM}/ヒラギノ角ゴシック W6.ttc` }],
   ["SFNS.ttf", { path: `${SYSTEM}/SFNS.ttf` }],
+  [
+    "NotoSansOriya.ttf",
+    { path: `${SYSTEM}/NotoSansOriya.ttc`, index: 0, optional: true },
+  ],
+  [
+    "NotoSansKannada.ttf",
+    { path: `${SYSTEM}/NotoSansKannada.ttc`, index: 3, optional: true },
+  ],
+  [
+    "Thonburi.ttf",
+    { path: `${SYSTEM}/ThonburiUI.ttc`, index: 0, optional: true },
+  ],
+  [
+    "KohinoorDevanagari.ttf",
+    { path: `${SYSTEM}/Kohinoor.ttc`, index: 0, optional: true },
+  ],
+  [
+    "KohinoorBangla.ttf",
+    { path: `${SYSTEM}/KohinoorBangla.ttc`, index: 0, optional: true },
+  ],
 ]);
 
 const encoder = new TextEncoder();
@@ -378,6 +405,7 @@ export async function createPostRenderer(
     const bundled = join(config.fontsDir, face.file);
     const source = MAC_FACES.get(face.file) ?? { path: bundled };
     if (!existsSync(source.path)) {
+      if (source.optional) return;
       throw new Error(`Font ${face.file} not found at ${source.path}`);
     }
     register(face.file, await readFile(source.path), source.index ?? 0);

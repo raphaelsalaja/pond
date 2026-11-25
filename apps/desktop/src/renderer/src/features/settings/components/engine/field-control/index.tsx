@@ -192,7 +192,10 @@ function FieldControl({
                 );
                 patch({ [item.key]: n });
               }}
-              style={{ width: 44, textAlign: "right" }}
+              style={{
+                width: `${String(item.max).length + 2}ch`,
+                textAlign: "right",
+              }}
             />
           </Input.Root>
         </Slider.Root>

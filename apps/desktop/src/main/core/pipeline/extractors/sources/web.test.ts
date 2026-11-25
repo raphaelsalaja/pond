@@ -33,7 +33,7 @@ const amazonCover = (attrs: string) =>
 
 function extractFrom(url: string, html: string) {
   const extractor = new WebPageExtractor({
-    fetchHtml: async () => html,
+    fetchHtml: async () => ({ html }),
     renderHtml: renderRecorder().renderHtml,
   });
   return extractor.extract({ url: new URL(url) });
@@ -223,7 +223,7 @@ it("keeps the og:image when the JSON-LD describes an article", async () => {
 it("does not acquire a browser when the direct fetch succeeds", async () => {
   const { renders, renderHtml } = renderRecorder();
   const extractor = new WebPageExtractor({
-    fetchHtml: async () => fetchedHtml,
+    fetchHtml: async () => ({ html: fetchedHtml }),
     renderHtml,
   });
 
@@ -249,4 +249,28 @@ it("titles a search results page with its query instead of the engine's favicon"
     },
   });
   expect(capture.description).toBeUndefined();
+});
+
+it("captures a converted text document as the save's article", async () => {
+  const extractor = new WebPageExtractor({
+    fetchHtml: async () => ({
+      html: "<html><head><title>Design Principles</title></head><body><h1>Design Principles</h1><p>Body.</p></body></html>",
+      document: {
+        format: "markdown",
+        title: "Design Principles",
+        bodyHtml: "<h1>Design Principles</h1><p>Body.</p>",
+      },
+    }),
+    renderHtml: renderRecorder().renderHtml,
+  });
+
+  const capture = await extractor.extract({
+    url: new URL("https://vercel.com/design.md"),
+  });
+  expect(capture.title).toBe("Design Principles");
+  expect(capture.article).toEqual({
+    html: "<h1>Design Principles</h1><p>Body.</p>",
+    canonicalUrl: "https://vercel.com/design.md",
+  });
+  expect(capture.extras?.textDocument).toBe(true);
 });

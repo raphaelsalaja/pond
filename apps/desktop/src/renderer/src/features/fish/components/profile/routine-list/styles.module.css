@@ -1,98 +1,65 @@
+/* One card of routines: the name over its schedule, and the switch that pauses it. */
 .list {
-  position: relative;
   display: flex;
   flex-direction: column;
-  padding: var(--ds-space-xs);
+  gap: var(--ds-space-md);
+  padding: var(--ds-space-lg);
   margin: 0;
   list-style: none;
+  border: 1px solid var(--ds-border-subtle);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-border);
-  isolation: isolate;
 }
 
 .row {
-  position: relative;
   display: flex;
-  gap: var(--ds-space-md);
+  gap: var(--ds-space-lg);
   align-items: center;
-  padding: var(--ds-space-sm) var(--ds-space-md);
-  border-radius: var(--ds-radius-md);
+  min-width: 0;
 }
 
-/* The button's hit area stretches over the row; the switch sits above it. */
-.open {
+.text {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 0;
-  align-items: flex-start;
   min-width: 0;
-
-  &::after {
-    position: absolute;
-    inset: 0;
-    content: "";
-    border-radius: inherit;
-  }
-
-  &:active {
-    scale: none;
-  }
-
-  &:focus-visible {
-    outline: none;
-  }
-
-  &:focus-visible::after {
-    outline: var(--ds-focus-width) solid var(--ds-focus-outline);
-  }
 }
 
-.name {
+.name,
+.schedule,
+.run {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: var(--ds-text-body);
-  line-height: 18px;
-  color: var(--ds-foreground-primary);
   white-space: nowrap;
 }
 
-.schedule {
-  max-width: 100%;
-  font-size: var(--ds-text-small);
-  line-height: var(--ds-leading-small);
+.name {
+  font-size: var(--ds-text-body);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-primary);
+}
+
+.schedule,
+.run {
+  font-size: var(--ds-text-body);
+  line-height: var(--ds-leading-body);
   color: var(--ds-foreground-tertiary);
-  text-align: start;
-  text-wrap: pretty;
 }
 
 .run {
   display: flex;
   gap: var(--ds-space-sm);
-  align-items: baseline;
-  max-width: 100%;
-  margin-top: var(--ds-space-2xs);
-  font-size: var(--ds-text-small);
-  line-height: var(--ds-leading-small);
-  color: var(--ds-foreground-tertiary);
-  text-align: start;
-  text-wrap: pretty;
+  align-items: center;
+
+  &[data-tone="error"] {
+    color: var(--ds-danger-foreground);
+  }
 
   & > :first-child {
     flex: none;
-    align-self: center;
   }
 }
 
 .switch {
-  position: relative;
-  z-index: 1;
-}
-
-.empty {
-  margin: 0;
-  font-size: var(--ds-text-small);
-  line-height: 1.45;
-  color: var(--ds-foreground-tertiary);
+  flex: none;
 }

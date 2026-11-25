@@ -19,7 +19,7 @@ export const docs: ComponentDocs = {
   name: "Message",
   tier: "composite",
   summary:
-    "One turn in a Fish conversation. Your bubbles take the fish's color, and its replies sit in gray bubbles that join into one group.",
+    "One turn in a Fish conversation. Its replies sit in a quiet gray bubble about a reading column wide, and yours in a pill in the fish's color.",
   parts: [
     {
       name: "Message.Root",

@@ -49,9 +49,11 @@ export const FishIdSchema = z
   .string()
   .regex(/^[a-z0-9-]{1,64}$/, "Invalid fish id");
 
+export const FISH_SCOPE_CAP = 200;
+
 export const FishScopeSchema = z.object({
-  folderIds: z.array(z.string().min(1).max(200)).max(200),
-  tags: z.array(z.string().min(1).max(200)).max(200),
+  folderIds: z.array(z.string().min(1).max(200)).max(FISH_SCOPE_CAP),
+  tags: z.array(z.string().min(1).max(200)).max(FISH_SCOPE_CAP),
 });
 export type FishScope = z.infer<typeof FishScopeSchema>;
 

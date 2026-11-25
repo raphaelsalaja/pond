@@ -1,20 +1,23 @@
-import { IconCircleCheck, IconCircleXmark, IconTrash } from "@pond/icons";
-import { Button, HoverHighlight, Reveal, Swap } from "@pond/ui";
-import { Prompt } from "@pond/ui/prompt";
+import { Button } from "@pond/ui";
 import type { AssistantChange } from "@shared/assistant";
-import { useState } from "react";
-import { review, useReview } from "@/features/agent/state/review";
-import type { ReviewPerform } from "@/features/agent/state/review";
+import {
+  type ReviewPerform,
+  review,
+  useReview,
+} from "@/features/agent/state/review";
 import { useFolders } from "@/features/library";
 import { cardKeys } from "../card-keys";
+import { QuestionCard } from "../question-card";
 import { useSourceCovers } from "../save-preview";
+import { Confirm } from "./confirm";
 import {
   isPurgeTrash,
+  proposalClauses,
   reviewOutcome,
   reviewQuestion,
   reviewSummary,
 } from "./lib";
-import { ChangeRow } from "./row";
+import { Proposal } from "./proposal";
 import styles from "./styles.module.css";
 
 function useFolderName() {
@@ -71,6 +74,7 @@ export function ChangeReview({
   );
 }
 
+/** The fish says what it will change, citing each Save, then asks you to approve it or say what to do instead. */
 function LibraryReview({
   messageId,
   changes,
@@ -83,62 +87,38 @@ function LibraryReview({
   perform?: ReviewPerform;
 }) {
   const folderName = useFolderName();
-  const { working } = useReview();
   const pending = changes.filter((change) => change.status === "pending");
-  const [first] = pending;
   const outcome = reviewOutcome(changes);
-  const title = first ? reviewQuestion(pending.length) : outcome.text;
-  const summary = reviewSummary(first ? pending : changes);
-  const all = pending.length > 1;
-  const [open, setOpen] = useState(false);
   const undoable = changes.filter(
     (change) => change.status === "applied" && change.undoable !== false,
   );
-  const rows = (
-    <ul className={styles.rows}>
-      {changes.map((change) => (
-        <ChangeRow
-          key={change.id}
-          change={change}
-          busy={busy}
-          working={working.includes(change.id)}
-          folderName={folderName}
-          onAction={(action) =>
-            void review.run(messageId, [change], action, perform)
-          }
-          actions={all}
-        />
-      ))}
-      <HoverHighlight render={<li />} />
-    </ul>
-  );
-  const act = (action: "apply" | "dismiss") =>
-    void review.run(messageId, pending, action, perform);
-  const onKeyDown = cardKeys(
-    first && !busy
-      ? { submit: () => act("apply"), cancel: () => act("dismiss") }
-      : {},
-  );
+  const approve = () => void review.run(messageId, pending, "apply", perform);
   return (
-    <Prompt.Root aria-label={title} onKeyDown={onKeyDown}>
-      <Reveal visible={!first} initial={false}>
-        <Prompt.Receipt
-          icon={
-            outcome.tone === "muted" ? (
-              <IconCircleXmark size={16} />
-            ) : (
-              <IconCircleCheck size={16} />
-            )
+    <div className={styles.library}>
+      <Proposal clauses={proposalClauses(changes, folderName)} />
+      {/* Enters on its own; a height reveal would clip the card's shadow. */}
+      {pending.length ? (
+        <Confirm
+          title={reviewQuestion(pending.length)}
+          description={reviewSummary(pending)}
+          busy={busy}
+          onApprove={approve}
+          onDismiss={() =>
+            void review.run(messageId, pending, "dismiss", perform)
           }
-          tone={outcome.tone}
+        />
+      ) : null}
+      {pending.length === 0 ? (
+        <QuestionCard.Summary
+          className={styles.card}
+          aria-label={outcome.text}
           label={outcome.text}
-          detail={summary}
-          open={open}
-          onOpenChange={setOpen}
+          detail={reviewSummary(changes)}
+          muted={outcome.tone === "muted"}
           action={
             undoable.length ? (
               <Button
-                size="xs"
+                size="sm"
                 variant="secondary"
                 disabled={busy}
                 onClick={() =>
@@ -150,40 +130,8 @@ function LibraryReview({
             ) : null
           }
         />
-        <Reveal visible={open} initial={false}>
-          <div className={styles.unfolded}>{rows}</div>
-        </Reveal>
-      </Reveal>
-      <Reveal visible={Boolean(first)} initial={false}>
-        <Prompt.Body>
-          <Prompt.Title>
-            <Swap value={title}>{title}</Swap>
-          </Prompt.Title>
-          <Prompt.Description>
-            <Swap value={summary}>{summary}</Swap>
-          </Prompt.Description>
-          {rows}
-        </Prompt.Body>
-        <Prompt.Footer>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={busy}
-            onClick={() => act("dismiss")}
-          >
-            {all ? "Dismiss All" : "Dismiss"}
-          </Button>
-          <Button
-            size="sm"
-            variant="accent"
-            disabled={busy}
-            onClick={() => act("apply")}
-          >
-            {all ? "Apply All" : "Apply"}
-          </Button>
-        </Prompt.Footer>
-      </Reveal>
-    </Prompt.Root>
+      ) : null}
+    </div>
   );
 }
 
@@ -207,47 +155,40 @@ function TrashPrompt({
       ? { submit: () => act("apply"), cancel: () => act("dismiss") }
       : {},
   );
+  if (!pending)
+    return (
+      <QuestionCard.Summary
+        label={emptied ? "Emptied Trash" : "Kept Trash"}
+        detail={
+          emptied ? "Every Save in Trash was deleted" : "Nothing was deleted"
+        }
+        muted={!emptied}
+      />
+    );
   return (
-    <Prompt.Root
-      tone={pending ? "destructive" : undefined}
-      aria-label={pending ? "Empty Trash?" : undefined}
-      onKeyDown={onKeyDown}
-    >
-      <Reveal visible={!pending} initial={false}>
-        <Prompt.Receipt
-          icon={
-            emptied ? <IconTrash size={16} /> : <IconCircleXmark size={16} />
-          }
-          tone={emptied ? "default" : "muted"}
-          label={emptied ? "Emptied Trash" : "Kept Trash"}
-        />
-      </Reveal>
-      <Reveal visible={pending} initial={false}>
-        <Prompt.Body>
-          <Prompt.Title>Empty Trash?</Prompt.Title>
-          <Prompt.Description>
-            Every Save in Trash is deleted for good. You can&apos;t undo this.
-          </Prompt.Description>
-        </Prompt.Body>
-        <Prompt.Footer>
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={busy}
-            onClick={() => act("dismiss")}
-          >
-            Keep Trash
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            disabled={busy}
-            onClick={() => act("apply")}
-          >
-            Empty Trash
-          </Button>
-        </Prompt.Footer>
-      </Reveal>
-    </Prompt.Root>
+    <QuestionCard.Root aria-label="Empty Trash?" onKeyDown={onKeyDown}>
+      <QuestionCard.Header
+        title="Empty Trash?"
+        description="Every Save in Trash is deleted for good. You can't undo this."
+      />
+      <QuestionCard.Footer>
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={busy}
+          onClick={() => act("dismiss")}
+        >
+          Keep Trash
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          disabled={busy}
+          onClick={() => act("apply")}
+        >
+          Empty Trash
+        </Button>
+      </QuestionCard.Footer>
+    </QuestionCard.Root>
   );
 }

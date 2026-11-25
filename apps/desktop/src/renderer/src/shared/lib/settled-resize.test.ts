@@ -156,8 +156,11 @@ describe("observeSettledSize", () => {
     vi.useFakeTimers();
     const root = document.createElement("div");
     root.dataset.slot = "window";
+    const panes = document.createElement("div");
+    panes.dataset.slot = "panes";
+    root.append(panes);
     let running = true;
-    Object.defineProperty(root, "getAnimations", {
+    Object.defineProperty(panes, "getAnimations", {
       value: () =>
         running
           ? [
@@ -169,7 +172,7 @@ describe("observeSettledSize", () => {
           : [],
     });
     const el = document.createElement("div");
-    root.append(el);
+    panes.append(el);
     document.body.append(root);
     const onSize = vi.fn();
     const stop = observeSettledSize(el, onSize, { continuous: true }, host);

@@ -64,48 +64,45 @@ export function FishAppearance({ fish }: { fish: FishSummary }) {
               >
                 <div className={styles.grid}>
                   {FISH_SPECIES.map((species) => (
-                    <Tooltip key={species} label={SPECIES_LABELS[species]}>
-                      <Button
-                        type="button"
-                        icon
-                        size="md"
-                        width="full"
-                        variant={
-                          fish.species === species ? "tertiary" : "ghost"
-                        }
-                        aria-label={SPECIES_LABELS[species]}
-                        aria-pressed={fish.species === species}
-                        onClick={() => updateFish(fish, { species })}
-                      >
-                        <FishMark
-                          color={fish.color}
-                          species={species}
-                          size={28}
-                        />
-                      </Button>
-                    </Tooltip>
+                    <Button
+                      key={species}
+                      type="button"
+                      icon
+                      size="md"
+                      className={styles.cell}
+                      variant={fish.species === species ? "tertiary" : "ghost"}
+                      aria-label={SPECIES_LABELS[species]}
+                      aria-pressed={fish.species === species}
+                      onClick={() => updateFish(fish, { species })}
+                    >
+                      <FishMark
+                        color={fish.color}
+                        species={species}
+                        size={28}
+                      />
+                    </Button>
                   ))}
                 </div>
-                <div className={styles.swatches}>
+                <div className={styles.divider} aria-hidden />
+                <div className={styles.grid}>
                   {FISH_COLORS.map((color) => (
-                    <Tooltip key={color} label={COLOR_LABELS[color]}>
-                      <Button
-                        type="button"
-                        icon
-                        size="md"
-                        width="full"
-                        variant="ghost"
-                        aria-label={COLOR_LABELS[color]}
-                        aria-pressed={fish.color === color}
-                        onClick={() => updateFish(fish, { color })}
-                      >
-                        <Chip.Swatch
-                          className={styles.swatch}
-                          color={fishColorCss(color)}
-                          selected={fish.color === color}
-                        />
-                      </Button>
-                    </Tooltip>
+                    <Button
+                      key={color}
+                      type="button"
+                      icon
+                      size="md"
+                      className={styles.cell}
+                      variant="ghost"
+                      aria-label={COLOR_LABELS[color]}
+                      aria-pressed={fish.color === color}
+                      onClick={() => updateFish(fish, { color })}
+                    >
+                      <Chip.Swatch
+                        className={styles.swatch}
+                        color={fishColorCss(color)}
+                        selected={fish.color === color}
+                      />
+                    </Button>
                   ))}
                 </div>
               </Popover.Popup>

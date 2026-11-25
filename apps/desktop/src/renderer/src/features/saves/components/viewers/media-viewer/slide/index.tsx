@@ -20,6 +20,7 @@ export interface MediaSlide {
   isAnimation?: boolean;
   generated?: boolean;
   posterUrl?: string;
+  posterIsCrossFile?: boolean;
   width?: number;
   height?: number;
 }
@@ -200,6 +201,7 @@ function VideoSlide({
         saveId={saveId}
         fileIndex={slide.fileIndex}
         poster={slide.posterUrl}
+        posterIsCrossFile={slide.posterIsCrossFile}
         title={title}
         artist={artist}
         active={active}

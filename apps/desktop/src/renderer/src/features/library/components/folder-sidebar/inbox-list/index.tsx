@@ -12,9 +12,15 @@ import {
   useInboxReviewScope,
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
-import { NotificationIcon, notificationTone } from "@/features/notifications";
-import type { InboxProgress } from "@/features/notifications";
-import { displayTitleForSave } from "@/features/saves";
+import {
+  type InboxProgress,
+  NotificationIcon,
+  notificationTone,
+} from "@/features/notifications";
+import {
+  displayTitleForSave,
+  SaveCollectionContextMenu,
+} from "@/features/saves";
 import { useSave } from "@/features/saves/pool";
 import { formatDayMonth } from "@/shared/lib/format";
 import { compactAge } from "@/shared/lib/relative-time";
@@ -67,6 +73,8 @@ function SaveItem({
       size="lg"
       className={styles.item}
       data-kind="save"
+      data-save-id={id}
+      data-inbox
       data-status={current ? "active" : undefined}
       data-unread={unread || undefined}
       aria-current={current ? "true" : undefined}
@@ -211,31 +219,42 @@ export function InboxList() {
 
   return (
     <Sidebar.Group>
-      <InboxHeader scope={scope} />
-      {runs(items).map((run) => (
-        <Fragment key={run.section ?? ""}>
-          {run.section ? (
-            <Sidebar.GroupLabel className={styles.section}>
-              {run.section}
-            </Sidebar.GroupLabel>
+      <SaveCollectionContextMenu
+        acceptsBackground={() => false}
+        buildBackgroundItems={() => []}
+        onOpenSave={(save) => {
+          const index = queue?.ids.indexOf(save.id) ?? -1;
+          if (index >= 0) inboxReview.jump(index);
+        }}
+      >
+        <div>
+          <InboxHeader scope={scope} />
+          {runs(items).map((run) => (
+            <Fragment key={run.section ?? ""}>
+              {run.section ? (
+                <Sidebar.GroupLabel className={styles.section}>
+                  {run.section}
+                </Sidebar.GroupLabel>
+              ) : null}
+              <Sidebar.GroupContent aria-label={run.section ?? label}>
+                {run.items.map((item) => (
+                  <Item
+                    key={item.key}
+                    item={item}
+                    selected={selected}
+                    index={queue?.index ?? null}
+                  />
+                ))}
+              </Sidebar.GroupContent>
+            </Fragment>
+          ))}
+          {queue && items.length === 0 ? (
+            <Sidebar.Empty>
+              {scope === "snoozed" ? "Nothing snoozed" : "Nothing to review"}
+            </Sidebar.Empty>
           ) : null}
-          <Sidebar.GroupContent aria-label={run.section ?? label}>
-            {run.items.map((item) => (
-              <Item
-                key={item.key}
-                item={item}
-                selected={selected}
-                index={queue?.index ?? null}
-              />
-            ))}
-          </Sidebar.GroupContent>
-        </Fragment>
-      ))}
-      {queue && items.length === 0 ? (
-        <Sidebar.Empty>
-          {scope === "snoozed" ? "Nothing snoozed" : "Nothing to review"}
-        </Sidebar.Empty>
-      ) : null}
+        </div>
+      </SaveCollectionContextMenu>
     </Sidebar.Group>
   );
 }

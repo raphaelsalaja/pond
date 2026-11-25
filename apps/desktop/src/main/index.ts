@@ -73,6 +73,7 @@ import {
 } from "./ipc/quick-capture-overlay";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
+import { applyChromiumMemoryLimits } from "./lib/chromium-memory";
 import { rotateBundleBackups } from "./lib/library-config";
 import { LibraryMetadataError } from "./lib/library-id";
 import { readLibraryPointer } from "./lib/library-pointer";
@@ -142,6 +143,7 @@ markStartup("modules-loaded");
 app.setName("Pond");
 disableMenuActionImages();
 limitSharpMemory();
+applyChromiumMemoryLimits(app.commandLine);
 
 if (process.env.POND_SANDBOX) {
   const sandbox = resolvePath(process.env.POND_SANDBOX);

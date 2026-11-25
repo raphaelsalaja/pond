@@ -1,11 +1,13 @@
 import { createParts } from "@ui-sdk/react/primitive";
 import { clsx as cn } from "clsx";
-import { useId, useLayoutEffect, useMemo, useRef } from "react";
-import type {
-  ComponentProps,
-  ComponentPropsWithoutRef,
-  ReactNode,
-  RefObject,
+import {
+  type ComponentProps,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
 } from "react";
 import { isHTMLElement } from "../dom";
 import { Tooltip } from "../tooltip";
@@ -21,8 +23,8 @@ interface RootProps extends ComponentPropsWithoutRef<"div"> {
   rightOpen?: boolean;
   /** Skips the column animation for one layout change, like a navigation that adds or removes a column. */
   instant?: boolean;
-  /** `rounded` has the center draw the corner, for a left column with no panel of its own to carry it. */
-  leftEdge?: "divider" | "rounded";
+  /** `island` rounds Panes and insets it from the window edges. */
+  surface?: "flush" | "island";
 }
 
 function Root({
@@ -31,7 +33,7 @@ function Root({
   leftOpen = false,
   rightOpen = false,
   instant = false,
-  leftEdge = "divider",
+  surface = "flush",
   ...props
 }: RootProps) {
   const value = useMemo(
@@ -47,7 +49,7 @@ function Root({
         data-left-open={leftOpen || undefined}
         data-right-open={rightOpen || undefined}
         data-instant={instant || undefined}
-        data-left-edge={leftEdge === "rounded" ? leftEdge : undefined}
+        data-surface={surface === "island" ? surface : undefined}
         {...props}
       >
         {children}
@@ -56,71 +58,23 @@ function Root({
   );
 }
 
-/** Sums padding, gaps and children, since the element itself stretches to the column under it. */
-function naturalWidth(element: HTMLElement): number {
-  const style = getComputedStyle(element);
-  const children = [...element.children].filter((child): child is HTMLElement =>
-    isHTMLElement(child),
-  );
-  const gap = Number.parseFloat(style.columnGap) || 0;
-  let width =
-    (Number.parseFloat(style.paddingLeft) || 0) +
-    (Number.parseFloat(style.paddingRight) || 0) +
-    gap * Math.max(0, children.length - 1);
-  for (const child of children) {
-    width += child.getBoundingClientRect().width;
-  }
-  return Math.ceil(width);
-}
+interface ToolbarProps extends ComponentPropsWithoutRef<"div"> {}
 
-/** Publishes a pinned control cluster's width on the root so the center bar starts after it. */
-function useNaturalWidth(
-  ref: RefObject<HTMLElement | null>,
-  property: "--window-leading-width" | "--window-trailing-width",
-) {
-  useLayoutEffect(() => {
-    const element = ref.current;
-    const root = element?.closest<HTMLElement>('[data-slot="window"]');
-    if (!element || !root) {
-      return;
-    }
-    let last = "";
-    const write = () => {
-      const next = `${naturalWidth(element)}px`;
-      if (next === last) {
-        return;
-      }
-      last = next;
-      root.style.setProperty(property, next);
-    };
-    const resize = new ResizeObserver(write);
-    const observe = () => {
-      resize.disconnect();
-      resize.observe(element);
-      for (const child of element.children) {
-        resize.observe(child);
-      }
-      write();
-    };
-    const mutation = new MutationObserver(observe);
-    mutation.observe(element, { childList: true });
-    observe();
-    return () => {
-      resize.disconnect();
-      mutation.disconnect();
-      root.style.removeProperty(property);
-    };
-  }, [ref, property]);
+function Toolbar({ className, ...props }: ToolbarProps) {
+  return (
+    <div
+      className={cn(styles.toolbar, className)}
+      data-slot="toolbar"
+      {...props}
+    />
+  );
 }
 
 type ClusterProps = ComponentPropsWithoutRef<"div">;
 
 function Leading({ className, ...props }: ClusterProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  useNaturalWidth(ref, "--window-leading-width");
   return (
     <div
-      ref={ref}
       className={cn(styles.leading, className)}
       data-slot="leading"
       {...props}
@@ -129,15 +83,20 @@ function Leading({ className, ...props }: ClusterProps) {
 }
 
 function Trailing({ className, ...props }: ClusterProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  useNaturalWidth(ref, "--window-trailing-width");
   return (
     <div
-      ref={ref}
       className={cn(styles.trailing, className)}
       data-slot="trailing"
       {...props}
     />
+  );
+}
+
+interface PanesProps extends ComponentPropsWithoutRef<"div"> {}
+
+function Panes({ className, ...props }: PanesProps) {
+  return (
+    <div className={cn(styles.panes, className)} data-slot="panes" {...props} />
   );
 }
 
@@ -217,6 +176,33 @@ function Left({ minWidth = 180, maxWidth = 420, ...props }: SideProps) {
 function Right({ minWidth = 280, maxWidth = 560, ...props }: SideProps) {
   return (
     <Side edge="right" minWidth={minWidth} maxWidth={maxWidth} {...props} />
+  );
+}
+
+/** Publishes its width on the root so Leading spans it along with the sidebar. */
+function Rail({ className, ...props }: ComponentPropsWithoutRef<"div">) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    const root = element?.closest<HTMLElement>('[data-slot="window"]');
+    if (!element || !root) return;
+    const write = () =>
+      root.style.setProperty("--window-rail-width", `${element.offsetWidth}px`);
+    const resize = new ResizeObserver(write);
+    resize.observe(element);
+    write();
+    return () => {
+      resize.disconnect();
+      root.style.removeProperty("--window-rail-width");
+    };
+  }, []);
+  return (
+    <div
+      ref={ref}
+      className={cn(styles.rail, className)}
+      data-slot="rail"
+      {...props}
+    />
   );
 }
 
@@ -306,8 +292,11 @@ function Body({ className, ...props }: PartProps) {
 
 export const Window = {
   Root,
+  Toolbar,
   Leading,
   Trailing,
+  Rail,
+  Panes,
   Left,
   Center,
   Right,

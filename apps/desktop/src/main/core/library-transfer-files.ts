@@ -15,10 +15,13 @@ import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { ulid } from "ulid";
 import { z } from "zod";
 import { writeBundleJson } from "../lib/library-config";
-import { INFO_SCHEMA, StoredInfoDocSchema } from "../lib/library-format";
-import type { InfoDoc } from "../lib/library-format";
-import { exportFiles } from "./export-files";
-import type { ExportItem } from "./export-files";
+import {
+  INFO_SCHEMA,
+  type InfoDoc,
+  StoredInfoDocSchema,
+} from "../lib/library-format";
+import { isSaveFolderName } from "../lib/library-sidecars";
+import { type ExportItem, exportFiles } from "./export-files";
 import { verifyLibraryBackup } from "./library-backup";
 import { runLibraryTransfer } from "./library-transfers";
 import { OrganizationBundleSchema } from "./organization-bundle";
@@ -61,9 +64,7 @@ async function readSaves(root: string, includeTrash = false) {
     for (const entry of await readdir(join(root, bucket), {
       withFileTypes: true,
     }).catch(() => [])) {
-      if (!entry.isDirectory() || !entry.name.endsWith(".info")) {
-        continue;
-      }
+      if (!entry.isDirectory() || !isSaveFolderName(entry.name)) continue;
       const directory = join(root, bucket, entry.name);
       const infoPath = join(directory, "info.json");
       const info = StoredInfoDocSchema.parse(

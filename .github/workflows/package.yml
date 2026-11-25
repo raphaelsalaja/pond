@@ -171,7 +171,8 @@ jobs:
           retention-days: 7
 
   macos:
-    runs-on: macos-latest
+    # icon.icon uses the Icon Composer 2.0 refractivity feature, which needs Xcode 27 actool.
+    runs-on: xcode-27
 
     steps:
       - uses: actions/checkout@v6

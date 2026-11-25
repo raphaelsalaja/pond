@@ -3,6 +3,7 @@ import { readdir, stat, statfs } from "node:fs/promises";
 import { join } from "node:path";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
+import { isLibrarySidecar } from "../lib/library-sidecars";
 import { createMemoCache } from "../lib/memo-cache";
 import { libraryRoot, savesRoot, thumbnailCacheRoot } from "../paths";
 
@@ -102,13 +103,13 @@ async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
   let entries: Array<{ name: string; isDir: boolean; abs: string }>;
   try {
     const dirents = await readdir(root, { withFileTypes: true });
-    entries = dirents.map((d) => ({
-      name: d.name,
-      isDir: d.isDirectory(),
-      abs: join(root, d.name),
-    }));
-  } catch (error) {
-    log.warn("[pond storage-stats] failed to read library root", error);
+    entries = dirents.flatMap((d) =>
+      isLibrarySidecar(d.name)
+        ? []
+        : [{ name: d.name, isDir: d.isDirectory(), abs: join(root, d.name) }],
+    );
+  } catch (err) {
+    log.warn("[pond storage-stats] failed to read library root", err);
     return { ...buckets, total: 0 };
   }
 
@@ -184,9 +185,7 @@ async function sumDirSizes(dir: string): Promise<number> {
   }
   const sizes = await Promise.all(
     dirents.map((entry) => {
-      if (entry.isSymbolicLink()) {
-        return 0;
-      }
+      if (isLibrarySidecar(entry.name) || entry.isSymbolicLink()) return 0;
       const abs = join(dir, entry.name);
       if (entry.isDirectory()) {
         return sumDirSizes(abs);

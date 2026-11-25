@@ -20,6 +20,7 @@ const IDLE_DISPOSE_MS = 60_000;
 
 let renderer: Promise<PostRenderer | null> | null = null;
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
+let reportedMissing = false;
 
 function resourcesDir(): string | null {
   const candidates = app.isPackaged
@@ -28,21 +29,27 @@ function resourcesDir(): string | null {
         join(app.getAppPath(), "resources", "render"),
         join(process.cwd(), "resources", "render"),
       ];
-  return (
-    candidates.find((dir) => existsSync(join(dir, "pond-render.wasm"))) ?? null
+  const found = candidates.find((dir) =>
+    existsSync(join(dir, "pond-render.wasm")),
   );
+  if (!found && !reportedMissing) {
+    reportedMissing = true;
+    log.warn(
+      "[pond render-post] no pond-render.wasm; X and Threads use the React card and Bluesky gets none. Run `node packages/render/scripts/build.mjs`.",
+      candidates,
+    );
+  }
+  return found ?? null;
 }
 
 /** Arial, Apple Color Emoji and Hiragino are read from macOS; Pond may not ship them. */
 function getRenderer(): Promise<PostRenderer | null> {
-  if (process.platform !== "darwin") {
-    return Promise.resolve(null);
-  }
+  if (process.platform !== "darwin") return Promise.resolve(null);
+  /** Without a build there is nothing to cache, so one built later is picked up without a restart. */
+  const dir = renderer ? null : resourcesDir();
+  if (!renderer && !dir) return Promise.resolve(null);
   renderer ??= (async () => {
-    const dir = resourcesDir();
-    if (!dir) {
-      return null;
-    }
+    if (!dir) return null;
     try {
       return await createPostRenderer({
         wasmPath: join(dir, "pond-render.wasm"),

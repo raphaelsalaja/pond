@@ -37,7 +37,7 @@ export async function buildTooltip(): Promise<string> {
 export async function buildMenu(
   opts: TrayOptions,
   inflight: number,
-): Promise<{ menu: Menu; ingesting: number }> {
+): Promise<{ menu: Menu; ingesting: number; inflight: number }> {
   const [status, prefs] = await Promise.all([
     loadTrayStatus(inflight),
     getPrefs().catch(() => null),
@@ -58,6 +58,7 @@ export async function buildMenu(
   return {
     menu: Menu.buildFromTemplate(template),
     ingesting: status.ingesting,
+    inflight: status.inflight,
   };
 }
 

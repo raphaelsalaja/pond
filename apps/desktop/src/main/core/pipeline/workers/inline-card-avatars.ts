@@ -7,6 +7,7 @@ import sharp from "sharp";
 import { fetchAvatarToTxFile } from "../../../lib/blob";
 import { saveFile } from "../../../paths";
 import { readLibraryMedia } from "../../storage/library-media-storage";
+import { mediaFilesByUrl } from "./card-media-files";
 
 export interface InlinedAvatars {
   capture: Capture;
@@ -83,13 +84,12 @@ async function inlineCardMedia(capture: Capture, save: Save): Promise<void> {
     return;
   }
 
+  const byPosition = mediaFilesByUrl(capture, save.files ?? []);
   const rewritten = new Map<string, string>();
   await Promise.all(
     urls.map(async (url) => {
-      const dataUrl = await resolveCardImage(url, save);
-      if (dataUrl) {
-        rewritten.set(url, dataUrl);
-      }
+      const dataUrl = await resolveCardImage(url, save, byPosition.get(url));
+      if (dataUrl) rewritten.set(url, dataUrl);
     }),
   );
   if (rewritten.size === 0) {
@@ -161,11 +161,12 @@ function rewriteMedia(
 async function resolveCardImage(
   url: string,
   save: Save,
+  positional: SaveFile | undefined,
 ): Promise<string | null> {
-  const fromDisk = await readDiskBySourceUrl(save, url);
-  if (fromDisk) {
-    return bytesToCardDataUrl(fromDisk.bytes, fromDisk.mime);
-  }
+  const fromDisk =
+    (await readDiskBySourceUrl(save, url)) ??
+    (positional ? await readSaveFileBytes(save, positional) : null);
+  if (fromDisk) return bytesToCardDataUrl(fromDisk.bytes, fromDisk.mime);
 
   for (const candidate of twimgCandidates(url)) {
     const fetched = await fetchCardImage(candidate);

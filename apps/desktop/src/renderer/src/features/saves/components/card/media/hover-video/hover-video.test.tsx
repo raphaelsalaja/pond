@@ -161,6 +161,41 @@ it("never loads a video the pointer only passes over", async () => {
   expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
 });
 
+it("re-arms on movement after a drag vetoes the hover activation", async () => {
+  const video = await renderClip("pond://clip/poster.jpg");
+
+  document.body.dataset.saveDragging = "1";
+  await dispatch(video, new MouseEvent("mouseover", { bubbles: true }));
+  await act(async () => {
+    vi.runOnlyPendingTimers();
+  });
+  expect(video.hasAttribute("src")).toBe(false);
+  expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+
+  delete document.body.dataset.saveDragging;
+  await dispatch(video, new MouseEvent("mousemove", { bubbles: true }));
+  await act(async () => {
+    vi.runOnlyPendingTimers();
+  });
+  expect(video.getAttribute("src")).toBe("pond://clip/video.mp4");
+  expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+});
+
+it("does not restart the hover delay when the pointer keeps moving", async () => {
+  const video = await renderClip("pond://clip/poster.jpg");
+
+  await dispatch(video, new MouseEvent("mouseover", { bubbles: true }));
+  await act(async () => {
+    vi.advanceTimersByTime(200);
+  });
+  await dispatch(video, new MouseEvent("mousemove", { bubbles: true }));
+  await act(async () => {
+    vi.advanceTimersByTime(300);
+  });
+  expect(video.getAttribute("src")).toBe("pond://clip/video.mp4");
+  expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+});
+
 it("releases the original after the pointer leaves a video with a poster", async () => {
   const video = await renderClip("pond://clip/poster.jpg");
   expect(video.hasAttribute("src")).toBe(false);

@@ -7,9 +7,11 @@ const PANE_PROPERTIES = new Set([
 ]);
 
 function isAnimatingPane(node: Element): boolean {
-  const root = node.closest("[data-slot=window]");
+  const panes = node
+    .closest("[data-slot=window]")
+    ?.querySelector(":scope > [data-slot=panes]");
   return (
-    root
+    panes
       ?.getAnimations?.()
       .some(
         (animation) =>

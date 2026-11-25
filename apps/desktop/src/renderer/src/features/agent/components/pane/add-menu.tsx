@@ -53,7 +53,7 @@ export function AddMenu({
         <Menu.Trigger
           icon
           size="sm"
-          variant="tertiary"
+          variant="secondary"
           rounding="full"
           aria-label="Add"
           aria-busy={busy || undefined}

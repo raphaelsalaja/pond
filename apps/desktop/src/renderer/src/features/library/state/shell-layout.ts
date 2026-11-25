@@ -42,7 +42,7 @@ export function useShellLayout(): ShellLayout {
     details,
     railOnly,
     sidebarHidden,
-    leftOpen: sidebarOpen && !sidebarHidden,
+    leftOpen: sidebarOpen && !sidebarHidden && !railOnly,
     rightOpen: detailsOpen && details !== null,
   };
 }

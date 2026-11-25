@@ -2,14 +2,14 @@ import type { AgentModelOptions } from "@pond/schema";
 import { Button } from "@pond/ui";
 import { isNode } from "@pond/ui/dom";
 import type { AssistantProvider, AssistantSource } from "@shared/assistant";
-import { useRef, useState } from "react";
-import type { RefObject } from "react";
-import { assistant } from "@/features/agent/state/assistant";
-import type { AssistantState } from "@/features/agent/state/assistant";
+import { lazy, type RefObject, Suspense, useRef, useState } from "react";
+import {
+  type AssistantState,
+  assistant,
+} from "@/features/agent/state/assistant";
 import { isLibrarySaveDrag, saveDropIds } from "@/features/saves";
 import { ModelPicker } from "@/shared/components/model-picker";
 import { openSettings } from "@/shared/lib/open-settings";
-import { ComposerEditor } from "../../composer";
 import type { ComposerEditorHandle } from "../../composer";
 import { ComposerView } from "../../composer-view";
 import { ErrorNotice } from "../../error-notice";
@@ -20,6 +20,12 @@ import { FileAttachments } from "../file-attachments";
 import { QueuedMessage } from "../queued-message";
 import { ResponseAnnouncement } from "../response-announcement";
 import styles from "./styles.module.css";
+
+const ComposerEditor = lazy(() =>
+  import("../../composer").then((module) => ({
+    default: module.ComposerEditor,
+  })),
+);
 
 interface ComposeAreaProps {
   name: string;
@@ -76,7 +82,7 @@ export function ComposeArea({
   return (
     <div className={styles["compose-area"]}>
       <ResponseAnnouncement
-        key={state.chatId ?? "draft"}
+        key={state.chatId ?? `new:${state.fishId}`}
         running={running}
         responseId={lastAssistantId}
         requiredAction={requiredAction}
@@ -207,25 +213,33 @@ export function ComposeArea({
             />
           }
           editor={
-            <ComposerEditor
-              key={state.chatId ?? "draft"}
-              ref={inputRef}
-              value={state.draft}
-              disabled={state.loading || !provider}
-              running={running}
-              placeholder={`Message ${name}`}
-              attachments={state.attachments}
-              anchorRef={composer}
-              onChange={(value) => assistant.setDraft(value)}
-              onSend={send}
-              onQueue={queue}
-              onAttach={attach}
-              onRemove={(id) => assistant.removeAttachment(id)}
-              onDropIds={(ids) => {
-                void assistant.attachIds(ids);
-                requestAnimationFrame(focus);
-              }}
-            />
+            <Suspense
+              fallback={
+                <div className={styles.pending} aria-hidden>
+                  Message {name}
+                </div>
+              }
+            >
+              <ComposerEditor
+                key={state.chatId ?? `new:${state.fishId}`}
+                ref={inputRef}
+                value={state.draft}
+                disabled={state.loading || !provider}
+                running={running}
+                placeholder={`Message ${name}`}
+                attachments={state.attachments}
+                anchorRef={composer}
+                onChange={(value) => assistant.setDraft(value)}
+                onSend={send}
+                onQueue={queue}
+                onAttach={attach}
+                onRemove={(id) => assistant.removeAttachment(id)}
+                onDropIds={(ids) => {
+                  void assistant.attachIds(ids);
+                  requestAnimationFrame(focus);
+                }}
+              />
+            </Suspense>
           }
         >
           <FileAttachments

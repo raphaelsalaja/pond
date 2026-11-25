@@ -344,9 +344,8 @@ export function settleMediaFetches(
         generatedCardMissed: false,
       };
     }
-    const transientMisses = generated.filter(
-      (result) => result.miss === "transient",
-    ).length;
+    /* GitHub renders these cards on demand, so any miss is a generation or rate-limit window rather than evidence the card is gone for good. */
+    const transientMisses = generated.filter((result) => !result.file).length;
     if (transientMisses > 0 && opts.finalAttempt !== true) {
       return { fetched: [], transientMisses, generatedCardMissed: false };
     }

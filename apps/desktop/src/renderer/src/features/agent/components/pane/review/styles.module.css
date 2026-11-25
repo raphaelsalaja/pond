@@ -1,27 +1,28 @@
+/* Message bodies don't stretch their children, so the review asks for the full width its cards size against. */
 .review {
   display: flex;
   flex-direction: column;
   gap: var(--ds-space-md);
+  width: 100%;
 }
 
-.rows {
-  position: relative;
+/* The proposal's bubbles stack like any messages sent together; the card below stands a step apart. */
+.library {
   display: flex;
   flex-direction: column;
-  gap: var(--ds-space-2xs);
-  padding: 0;
-  margin: 0 calc(var(--ds-space-sm) * -1);
-  list-style: none;
-  isolation: isolate;
-}
-
-.unfolded {
-  padding: var(--ds-space-sm) var(--ds-space-lg);
-  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+  gap: var(--ds-space-xs);
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
 }
 
 .error {
   margin: 0;
   font-size: var(--ds-text-small);
   color: var(--ds-danger-foreground);
+}
+
+/* A card stands a step apart from the bubbles above it. */
+.card {
+  margin-top: var(--ds-space-md);
 }

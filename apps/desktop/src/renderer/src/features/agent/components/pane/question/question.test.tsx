@@ -51,13 +51,13 @@ async function press(target: Element | null | undefined, key: string) {
   );
 }
 
-it("numbers each option, then a freeform row", async () => {
+it("lists each option with its number key and no free-text field", async () => {
   await renderQuestion();
   expect(choices().map((choice) => choice.textContent)).toEqual([
-    "1Grid",
-    "2List",
+    "Grid1",
+    "List2",
   ]);
-  expect(host.querySelector('input[aria-label="Your answer"]')).not.toBeNull();
+  expect(host.querySelector("input")).toBeNull();
   expect(buttonNamed("Continue")?.disabled).toBe(true);
 });
 
@@ -85,28 +85,18 @@ it("sends the option a number key names", async () => {
   expect(onAnswer).toHaveBeenCalledWith("List");
 });
 
-it("focuses the freeform row on the number after the last option", async () => {
+it("ignores a number key past the last option", async () => {
   const onAnswer = vi.fn<Answer>();
   await renderQuestion({ onAnswer });
   await press(choices()[0], "3");
-  expect(document.activeElement).toBe(
-    host.querySelector('input[aria-label="Your answer"]'),
-  );
-  expect(onAnswer).not.toHaveBeenCalled();
-});
-
-it("ignores number keys while typing an answer", async () => {
-  const onAnswer = vi.fn<Answer>();
-  await renderQuestion({ onAnswer });
-  await press(host.querySelector("input"), "1");
   expect(onAnswer).not.toHaveBeenCalled();
 });
 
 it("marks the recommended option", async () => {
   await renderQuestion({ recommended: 1 });
   expect(choices().map((choice) => choice.textContent)).toEqual([
-    "1Grid",
-    "2ListRecommended",
+    "Grid1",
+    "ListRecommended2",
   ]);
 });
 
@@ -116,11 +106,6 @@ it("folds into a waiting receipt on Esc and reopens on Answer", async () => {
   expect(host.textContent).toContain("Question waiting");
   await act(async () => buttonNamed("Answer")?.click());
   expect(choices()).toHaveLength(2);
-});
-
-it("hides freeform on older questions", async () => {
-  await renderQuestion({ disabled: true });
-  expect(host.querySelector("input")).toBeNull();
 });
 
 it("shows an answered question as a receipt that unfolds to the answer", async () => {

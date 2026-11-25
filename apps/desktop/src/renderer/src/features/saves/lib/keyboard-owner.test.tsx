@@ -64,6 +64,19 @@ it("keeps the inspector bound to the displayed Save rather than a background bat
   expect(saveOwnsKeyboard(key())).toBe(false);
 });
 
+it("lets the Inbox keep Save commands on its own surfaces", () => {
+  const inbox = surface("data-inbox");
+  expect(saveOwnsKeyboard(key())).toBe(true);
+  const row = document.createElement("button");
+  inbox.append(row);
+  row.focus();
+  expect(saveOwnsKeyboard(key())).toBe(true);
+  inbox.blur();
+  row.blur();
+  expect(document.activeElement).toBe(document.body);
+  expect(saveOwnsKeyboard(key())).toBe(true);
+});
+
 it("keeps the open save in charge after the focused control unmounts", () => {
   const button = document.createElement("button");
   document.body.append(button);

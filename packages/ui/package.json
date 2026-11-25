@@ -71,6 +71,7 @@
     "./text-reveal": "./src/text-reveal/index.ts",
     "./title-bar": "./src/title-bar/index.tsx",
     "./toast": "./src/toast/index.tsx",
+    "./token-input": "./src/token-input/index.tsx",
     "./toggle": "./src/toggle/index.tsx",
     "./toggle-group": "./src/toggle-group/index.tsx",
     "./toolbar": "./src/toolbar/index.tsx",
@@ -104,8 +105,8 @@
     "@tanstack/react-table": "^9.2.4",
     "@tanstack/react-virtual": "catalog:",
     "@tanstack/store": "catalog:",
-    "@ui-sdk/core": "0.1.0-beta.2",
-    "@ui-sdk/react": "0.1.0-beta.2",
+    "@ui-sdk/core": "0.1.0-beta.16",
+    "@ui-sdk/react": "0.1.0-beta.16",
     "@web-kits/audio": "^0.2.0",
     "clsx": "catalog:",
     "motion": "catalog:"

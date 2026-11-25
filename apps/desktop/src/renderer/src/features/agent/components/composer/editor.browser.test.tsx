@@ -1,14 +1,5 @@
-import { $convertToMarkdownString } from "@lexical/mdast";
-import { Dialog } from "@pond/ui";
+import { TokenInput } from "@pond/ui/token-input";
 import type { AssistantSource } from "@shared/assistant";
-import {
-  $getRoot,
-  $getSelection,
-  $isRangeSelection,
-  FORMAT_TEXT_COMMAND,
-  getNearestEditorFromDOMNode,
-  UNDO_COMMAND,
-} from "lexical";
 import { act, createRef, useRef, useState } from "react";
 import type { Ref } from "react";
 import { createRoot } from "react-dom/client";
@@ -18,11 +9,19 @@ import { bridge } from "@/shared/test/pond-bridge";
 import { ComposerView } from "../composer-view";
 import { ComposerEditor } from "./";
 import type { ComposerEditorHandle } from "./";
+import { saveMentionCodec } from "./mention";
 
 const send = vi.fn();
-let searched: PromiseWithResolvers<void>;
+const queue = vi.fn();
+const save: AssistantSource = {
+  id: "film",
+  title: "Suspiria",
+  url: "https://example.com/film",
+  source: "arena",
+};
 let host: HTMLDivElement;
 let root: Root;
+
 function Harness({
   initial = "",
   running = false,
@@ -61,50 +60,42 @@ function Harness({
                 )
               }
               onSend={send}
+              onQueue={queue}
               onDropIds={() => {}}
             />
           }
         />
       </div>
-      <Dialog.Host />
       <output>{value}</output>
       <aside>{attachments.map((item) => item.title).join(", ")}</aside>
-      <button type="button" onClick={() => setValue("Restored **draft**")}>
+      <button type="button" onClick={() => setValue("Restored draft")}>
         Restore draft
+      </button>
+      <button type="button" onClick={() => setAttachments([save])}>
+        Attach Suspiria
       </button>
     </>
   );
 }
+
 function editable() {
-  const node = host.querySelector<HTMLElement>('[contenteditable="true"]');
-  if (!node) {
-    throw new Error("Missing composer");
-  }
+  const node = host.querySelector<HTMLElement>('[role="textbox"]');
+  if (!node) throw new Error("Missing composer");
   return node;
 }
-function editor() {
-  const instance = getNearestEditorFromDOMNode(editable());
-  if (!instance) {
-    throw new Error("Missing editor");
-  }
-  return instance;
+
+function output() {
+  return host.querySelector("output")?.textContent ?? "";
 }
-function markdown() {
-  return editor().read(() => $convertToMarkdownString());
+
+async function click(name: string) {
+  const button = [...host.querySelectorAll("button")].find(
+    (item) => item.textContent === name,
+  );
+  if (!button) throw new Error(`Missing ${name}`);
+  await act(async () => button.click());
 }
-async function type(text: string) {
-  await act(async () => {
-    editable().focus();
-    editor().update(() => {
-      const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        selection.insertText(text);
-      } else {
-        $getRoot().selectEnd().insertText(text);
-      }
-    });
-  });
-}
+
 async function press(key: string, options: KeyboardEventInit = {}) {
   await act(async () => {
     editable().dispatchEvent(
@@ -117,266 +108,101 @@ async function press(key: string, options: KeyboardEventInit = {}) {
     );
   });
 }
+
 async function mount(initial = "", running = false) {
   await act(async () =>
     root.render(<Harness initial={initial} running={running} />),
   );
 }
-async function searchResults() {
-  await act(async () => {
-    await searched.promise;
-  });
-  await vi.waitFor(() => {
-    expect(document.querySelector('[role="option"]')?.textContent).toContain(
-      "Suspiria",
-    );
-  });
-}
-function paste(text: string) {
-  const clipboardData = new DataTransfer();
-  clipboardData.setData("text/plain", text);
-  return new ClipboardEvent("paste", {
-    bubbles: true,
-    cancelable: true,
-    clipboardData,
-  });
-}
 
 beforeEach(() => {
   send.mockClear();
-  searched = Promise.withResolvers<void>();
+  queue.mockClear();
   bridge.use({
     query: {
-      "agent.searchSaves": () => {
-        searched.resolve();
-        return {
-          saves: [
-            {
-              id: "film",
-              title: "Suspiria",
-              url: "https://example.com/film",
-              source: "arena",
-              author: null,
-              notes: null,
-              description: null,
-            },
-          ],
-        };
-      },
+      "agent.searchSaves": () => ({
+        saves: [{ ...save, author: null, notes: null, description: null }],
+      }),
     },
   });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
 });
+
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
 });
 
-it("renders and round-trips document Markdown without fetching remote images", async () => {
-  await mount(
-    "# Brief\n\n**Bold** and *italic* with [a link](https://example.com).\n\n- one\n- two\n\n- [x] done\n\n> quote\n\n```js\nconst size = 13;\n```\n\n| Name | Size |\n| --- | --- |\n| Body | 13 |\n\n![remote](https://example.com/image.png)",
+it("writes Save mentions as pond-save links and reads them back", () => {
+  const value = TokenInput.fromText(
+    "Compare [Suspiria \\[1977\\]](pond-save:film%2F1) and [Inferno](pond-save:inferno).",
+    saveMentionCodec,
   );
-  expect(editable().querySelectorAll("li")).toHaveLength(3);
-  expect(editable().querySelector("table")).not.toBeNull();
-  expect(editable().querySelector("img")).toBeNull();
-  expect(markdown()).toContain("**Bold**");
-  expect(markdown()).toContain("const size = 13;");
-  expect(markdown()).toContain("- [x] done");
-});
-
-it("selects a slash command with Enter and continues the list with Shift+Enter", async () => {
-  await mount();
-  await type("/bullet");
-  expect(document.querySelector('[role="option"]')?.textContent).toContain(
-    "Bulleted List",
+  expect(value).toEqual([
+    "Compare ",
+    { type: "save", value: "film/1", label: "Suspiria [1977]" },
+    " and ",
+    { type: "save", value: "inferno", label: "Inferno" },
+    ".",
+  ]);
+  expect(TokenInput.toText(value, saveMentionCodec)).toBe(
+    "Compare [Suspiria \\[1977\\]](pond-save:film%2F1) and [Inferno](pond-save:inferno).",
   );
-  await press("Enter");
-  expect(send).not.toHaveBeenCalled();
-  await type("First bullet");
-  await press("Enter", { shiftKey: true });
-  await type("Second bullet");
-  expect(editable().querySelectorAll("li")).toHaveLength(2);
-  await press("Enter");
-  expect(send).toHaveBeenCalledWith("- First bullet\n- Second bullet");
 });
 
-it("inserts an editable table, then retains its Markdown in the draft", async () => {
-  await mount();
-  await type("/table");
-  await press("Enter");
-  expect(editable().querySelectorAll("tr")).toHaveLength(3);
-  await type("Title");
-  await press("Tab");
-  await type("Size");
-  expect(markdown()).toMatch(/\| Title\s+\| Size/);
-  expect(host.querySelector("output")?.textContent).toBe(markdown());
+it("leaves ordinary Markdown links as text", () => {
+  expect(
+    TokenInput.fromText("See [docs](https://example.com)", saveMentionCodec),
+  ).toEqual(["See [docs](https://example.com)"]);
 });
 
-it("keeps code newlines and literal slash text inside code", async () => {
-  await mount();
-  await type("/code");
-  await press("Enter");
-  await type("const size = 13;");
-  await press("Enter", { shiftKey: true });
-  await type("/table");
-  expect(markdown()).toContain("const size = 13;\n/table");
-  expect(document.querySelector('[role="option"]')).toBeNull();
-  await press("Enter");
-  expect(send).toHaveBeenCalledWith(expect.stringContaining("```"));
-});
-
-it("inserts a Save mention chip from @ and keeps it in the draft", async () => {
-  await mount();
-  await type("Compare @sus");
-  await searchResults();
-  expect(window.pond.query).toHaveBeenCalledWith("agent.searchSaves", {
-    query: "sus",
-    limit: 12,
-  });
-  await press("Enter");
-  expect(host.querySelector("aside")?.textContent).toBe("Suspiria");
-  expect(editable().textContent).toContain("Compare");
+it("restores a Save mention chip from draft Markdown", async () => {
+  await mount("Watch [Suspiria](pond-save:film) tonight");
   expect(editable().textContent).toContain("Suspiria");
-  expect(markdown()).toContain("[Suspiria](pond-save:film)");
-  expect(send).not.toHaveBeenCalled();
+  expect(editable().textContent).toContain("tonight");
+  expect(output()).toBe("Watch [Suspiria](pond-save:film) tonight");
 });
 
-it("opens the Save search when Add Saves types @ after a word", async () => {
-  const handle = createRef<ComposerEditorHandle>();
-  await act(async () => root.render(<Harness handle={handle} />));
-  await type("Compare");
-  await act(async () => handle.current?.mention());
-  await searchResults();
-  expect(editable().textContent).toBe("Compare @");
-  expect(window.pond.query).toHaveBeenCalledWith("agent.searchSaves", {
-    query: "",
-    limit: 12,
-  });
-});
-
-it("restores a Save mention from draft Markdown", async () => {
-  await mount("Compare [Suspiria](pond-save:film)");
+it("inserts a chip for a Save attached from outside and drafts its link", async () => {
+  await mount("Compare ");
+  await click("Attach Suspiria");
   expect(editable().textContent).toContain("Suspiria");
-  expect(markdown()).toContain("[Suspiria](pond-save:film)");
+  expect(output()).toContain("[Suspiria](pond-save:film)");
 });
 
-it("limits slash commands to formatting", async () => {
-  await mount();
-  await type("/");
-  expect(document.body.textContent).toContain("Bulleted List");
-  expect(document.body.textContent).not.toContain("Attach Saves");
-  expect(document.body.textContent).not.toContain("Connect Ideas");
+it("sends the draft as Markdown with Enter", async () => {
+  await mount("Watch [Suspiria](pond-save:film)");
+  await press("Enter");
+  expect(send).toHaveBeenCalledWith("Watch [Suspiria](pond-save:film)");
 });
 
-it("does not send during IME composition or while a response is running", async () => {
+it("queues instead of sending while a reply runs, and waits for IME composition", async () => {
   await mount("Draft", true);
   await press("Enter");
   expect(send).not.toHaveBeenCalled();
+  expect(queue).toHaveBeenCalledWith("Draft");
+  queue.mockClear();
   await mount("Draft", false);
   await press("Enter", { isComposing: true });
   expect(send).not.toHaveBeenCalled();
 });
 
-it("restores external Markdown without stealing focus or undoing into the old draft", async () => {
-  await mount();
-  await type("Old draft");
-  const button = [...host.querySelectorAll("button")].find(
-    (node) => node.textContent === "Restore draft",
+it("restores an external draft", async () => {
+  await mount("Old draft");
+  await click("Restore draft");
+  expect(editable().textContent).toContain("Restored draft");
+  expect(output()).toBe("Restored draft");
+});
+
+it("opens the Save search from the Add Saves handle", async () => {
+  const handle = createRef<ComposerEditorHandle>();
+  await act(async () =>
+    root.render(<Harness initial="Compare" handle={handle} />),
   );
-  await act(async () => {
-    button?.focus();
-    button?.click();
-  });
-  expect(markdown()).toBe("Restored **draft**");
-  expect(document.activeElement).toBe(button);
-  await act(async () => {
-    editor().dispatchCommand(UNDO_COMMAND, undefined);
-  });
-  expect(markdown()).toBe("Restored **draft**");
-});
-
-it("serializes selection formatting instead of losing it on submit", async () => {
-  await mount();
-  await type("Hello");
-  await act(async () => {
-    editor().update(() => {
-      $getRoot().select(0, $getRoot().getChildrenSize());
-    });
-    editor().dispatchCommand(FORMAT_TEXT_COMMAND, "bold");
-  });
-  await press("Enter");
-  expect(send).toHaveBeenCalledWith("**Hello**");
-});
-
-it("dismisses commands with Escape and does not send an empty search", async () => {
-  await mount();
-  await type("/no-such-command");
-  await press("Enter");
-  expect(send).not.toHaveBeenCalled();
-  await press("Escape");
-  expect(editable().hasAttribute("aria-controls")).toBe(false);
-  expect(editable().textContent).toBe("/no-such-command");
-});
-
-it("does not select a slash command when Enter commits IME composition", async () => {
-  await mount();
-  await type("/bullet");
-  await press("Enter", { isComposing: true });
-  expect(editable().textContent).toBe("/bullet");
-  expect(send).not.toHaveBeenCalled();
-});
-
-it("pastes Markdown as blocks and pastes literal text within code", async () => {
-  await mount();
-  await act(async () => {
-    editable().focus();
-    editable().dispatchEvent(paste("## Brief\n\n- **one**\n- two"));
-  });
-  expect(editable().querySelector("h2")?.textContent).toBe("Brief");
-  expect(editable().querySelectorAll("li")).toHaveLength(2);
-  await act(async () => {
-    editor().update(() => {
-      $getRoot().select(0, $getRoot().getChildrenSize());
-    });
-  });
-  await type("/code");
-  await press("Enter");
-  await act(async () => {
-    editable().dispatchEvent(paste("**literal**\n- literal"));
-  });
-  expect(markdown()).toContain("**literal**\n- literal");
-  expect(editable().querySelector("li")).toBeNull();
-});
-
-it("applies a link to the selected text with the document-style shortcut", async () => {
-  await mount();
-  await type("Example");
-  await act(async () => {
-    editor().update(() => {
-      $getRoot().select(0, $getRoot().getChildrenSize());
-    });
-  });
-  await press("k", { code: "KeyK", ctrlKey: true });
-  const field = document.querySelector<HTMLInputElement>(
-    'input[placeholder="https://example.com"]',
-  );
-  expect(field).not.toBeNull();
-  await act(async () => {
-    Object.getOwnPropertyDescriptor(
-      HTMLInputElement.prototype,
-      "value",
-    )?.set?.call(field, "https://example.com");
-    field?.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-  const apply = [...document.querySelectorAll("button")].find(
-    (button) => button.textContent === "Apply",
-  );
-  await act(async () => {
-    apply?.click();
-  });
-  expect(markdown()).toBe("[Example](https://example.com)");
+  await act(async () => handle.current?.mention());
+  expect(output()).toContain("@");
 });
 
 it("does not leak typing keys to page hotkeys", async () => {

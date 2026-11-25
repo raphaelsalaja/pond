@@ -1,15 +1,17 @@
 import { useChat } from "@ai-sdk/react";
 import type { AgentModelOptions } from "@pond/schema";
+import { Pane } from "@pond/ui";
 import {
   agentModelOptionsFor,
   agentModelOptionsKey,
   runControlsForOptions,
 } from "@shared/agent-model-options";
-import { ASSISTANT_MODELS } from "@shared/assistant";
-import type {
-  AssistantActivity,
-  AssistantProvider,
-  AssistantSource,
+import {
+  ASSISTANT_ACTIVITY_LABELS,
+  ASSISTANT_MODELS,
+  type AssistantActivity,
+  type AssistantProvider,
+  type AssistantSource,
 } from "@shared/assistant";
 import { DEFAULT_FISH_NAME } from "@shared/fish-contracts";
 import type { FishColor } from "@shared/fish-contracts";
@@ -35,6 +37,7 @@ import { usePrefs } from "@/shared/state/prefs";
 import type { ComposerEditorHandle } from "../composer";
 import { Thread } from "../thread";
 import { AgentMessage } from "./agent-message";
+import { FishChatActions } from "./chat-actions";
 import { ChatEvent } from "./chat-event";
 import { routineEventText } from "./chat-event/events";
 import { ComposeArea } from "./compose-area";
@@ -48,6 +51,8 @@ interface AgentPersona {
   name: string;
   icon: ReactNode;
   color?: FishColor;
+  /** What the fish is doing right now, in this chat or a routine run; null while idle. */
+  activity: AssistantActivity | null;
   avatar?: (activity: AssistantActivity) => ReactNode;
 }
 
@@ -86,7 +91,8 @@ function AgentPaneContent({
   reduceMotion: boolean;
 }) {
   const input = useRef<ComposerEditorHandle>(null);
-  const chat = pondChatSession(state.chatId ?? "draft");
+  const draftKey = `new:${state.fishId}`;
+  const chat = pondChatSession(state.chatId ?? draftKey);
   const { messages, status, error: chatError } = useChat({ chat });
   const running =
     status === "submitted" || status === "streaming" || state.busy;
@@ -173,7 +179,8 @@ function AgentPaneContent({
       return;
     }
     assistant.setDraft(content);
-    void assistant.send(provider, {
+    /** queue sends immediately unless another fish's reply is still running. */
+    void assistant.queue(provider, {
       modelId,
       controls: runControlsForOptions(modelOptions),
     });
@@ -207,6 +214,12 @@ function AgentPaneContent({
     });
   }
 
+  const presence = persona.activity
+    ? `${ASSISTANT_ACTIVITY_LABELS[persona.activity]}…`
+    : running
+      ? "Working…"
+      : null;
+
   return (
     <MotionConfig
       reducedMotion={reduceMotion ? "always" : "never"}
@@ -218,9 +231,24 @@ function AgentPaneContent({
         aria-label={persona.name}
         {...(persona.color ? fishAccent(persona.color) : null)}
       >
+        <Pane.Header
+          className={styles.header}
+          title={
+            <>
+              <span className={styles["header-name"]}>{persona.name}</span>
+              {presence ? (
+                <span className={styles.status} role="status">
+                  {presence}
+                </span>
+              ) : null}
+            </>
+          }
+        >
+          <FishChatActions />
+        </Pane.Header>
         <div className={styles.workspace}>
           <Thread.Conversation
-            key={state.chatId ?? "new"}
+            key={state.chatId ?? draftKey}
             className={styles.body}
             marks={marks}
             viewportProps={{ className: styles.viewport }}
@@ -334,6 +362,7 @@ export function AgentPane() {
   const persona: AgentPersona = {
     name: fish?.name ?? DEFAULT_FISH_NAME,
     color: fish?.color,
+    activity: fish?.activity ?? null,
     icon: fish ? (
       <FishMark
         color={fish.color}

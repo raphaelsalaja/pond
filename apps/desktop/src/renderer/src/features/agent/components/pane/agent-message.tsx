@@ -40,7 +40,6 @@ export function AgentMessage({
   entering = false,
   latest,
   onAnswer,
-  onSuggest,
   onRegenerate,
   avatar,
 }: {
@@ -53,7 +52,6 @@ export function AgentMessage({
   entering?: boolean;
   latest: boolean;
   onAnswer: (messageId: string, answer: string) => Promise<void>;
-  onSuggest?: (suggestion: string) => void;
   /** Only the latest settled reply can run again. */
   onRegenerate?: () => void;
   avatar?: (activity: AssistantActivity) => ReactNode;
@@ -153,7 +151,6 @@ export function AgentMessage({
             busy={state.busy}
             attach={attach}
             onAnswer={(answer) => onAnswer(extras.id, answer)}
-            onSuggest={onSuggest}
           />
         ) : null
       }

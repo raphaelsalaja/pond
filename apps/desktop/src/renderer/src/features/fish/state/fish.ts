@@ -162,7 +162,7 @@ export const fish = {
       fish.closeRoutine();
     }
   },
-  /** Opens the fish's page with one of its routines showing in the details pane. */
+  /** Opens the fish's page with its details pane, where the routine is listed. */
   openRoutine(fishId: string, routineId: string): void {
     const router = getAppRouter();
     if (router && fishIdFromPath(router.state.location.pathname) !== fishId) {

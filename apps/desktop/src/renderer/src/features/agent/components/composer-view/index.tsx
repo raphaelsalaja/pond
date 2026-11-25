@@ -14,8 +14,8 @@ import styles from "./styles.module.css";
 const GLYPH_EASE = { duration: 0.3, ease: [0.22, 1, 0.36, 1] } as const;
 const LAYOUT_EASE: Transition = { type: "spring", duration: 0.3, bounce: 0 };
 
-/** Taller than one 24px line plus the editor's top padding, so only a second line expands the composer. */
-const ONE_LINE_MAX_HEIGHT = 36;
+/** Taller than one 20px line plus the editor's 6px padding above and below, so only a second line expands the composer. */
+const ONE_LINE_MAX_HEIGHT = 40;
 
 interface RootProps extends ComponentPropsWithoutRef<typeof motion.form> {
   onSend?: () => void;
@@ -58,8 +58,8 @@ function Send({ children, ...props }: ActionProps) {
     <Button
       type="submit"
       icon
-      variant="accent"
-      size="sm"
+      variant="primary"
+      size="md"
       rounding="full"
       {...props}
     >

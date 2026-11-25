@@ -9,16 +9,33 @@ const TWITTER_HOOK = `
     globalThis.__pondBookmarksCaptures = [];
     globalThis.__pondLikesCaptures = [];
     globalThis.__pondBookmarkFoldersCaptures = [];
+    globalThis.__pondTweetCaptures = [];
     /** Capture the page's first Bookmarks/Likes request verbatim; X validates auth via bearer + csrf + per-request transaction id, so cloning its headers beats rebuilding them. */
     globalThis.__pondBookmarksRequest = null;
     globalThis.__pondLikesRequest = null;
     globalThis.__pondBookmarkFolderRequest = null;
 
+    /** x-web sends GraphQL to api.x.com/graphql/<id>/<op> under new operation names; map each to the list it serves. */
+    const TWITTER_OPS = {
+      Bookmarks: "Bookmarks",
+      BookmarkTimeline: "Bookmarks",
+      Likes: "Likes",
+      likesQuery: "Likes",
+      BookmarkFolderTimeline: "BookmarkFolderTimeline",
+      bookmarkCollectionQuery: "BookmarkFolderTimeline",
+      BookmarkFoldersSlice: "BookmarkFoldersSlice",
+      bookmarkFoldersQuery: "BookmarkFoldersSlice",
+      TweetDetail: "Tweet",
+      TweetResultByRestId: "Tweet",
+    };
+
     const twitterListOp = (u) => {
       try {
         if (typeof u !== "string") return null;
-        const m = u.match(/\\/i\\/api\\/graphql\\/[^\\/]+\\/(Bookmarks|Likes|BookmarkFolderTimeline|BookmarkFoldersSlice)(?:\\?|$)/);
-        return m ? m[1] : null;
+        const m = u.match(/\\/graphql\\/[^\\/]+\\/([A-Za-z]+)(?:\\?|$)/);
+        return m && Object.prototype.hasOwnProperty.call(TWITTER_OPS, m[1])
+          ? TWITTER_OPS[m[1]]
+          : null;
       } catch (e) {
         return null;
       }
@@ -37,10 +54,13 @@ const TWITTER_HOOK = `
         ? "__pondLikesCaptures"
         : op === "BookmarkFoldersSlice"
           ? "__pondBookmarkFoldersCaptures"
-          : "__pondBookmarksCaptures";
+          : op === "Tweet"
+            ? "__pondTweetCaptures"
+            : "__pondBookmarksCaptures";
 
     const captureRequest = (op, url, method, headers) => {
       try {
+        if (op === "Tweet") return;
         const key = requestKey(op);
         if (globalThis[key]) return;
         globalThis[key] = {
@@ -280,11 +300,19 @@ const THREADS_HOOK = `
       }
     };
 
+    /** Queries every page fires (post counts, badges, subscriptions) never page a list, though their bodies name the open route, so they must not stand in for it. */
+    const NOT_A_LIST = /PostCounts|NotificationBadge|Subscription|Mutation/i;
+
     /** A query named for the open page beats one named for another list, which beats an unnamed query on a list page. */
     const requestRank = (url, body, headers) => {
       try {
+        const bodyName = /(?:^|&)fb_api_req_friendly_name=([^&]*)/.exec(
+          String(body || ""),
+        );
         const friendly =
-          (headers && headers["x-fb-friendly-name"]) || "";
+          (headers && headers["x-fb-friendly-name"]) ||
+          (bodyName ? decodeURIComponent(bodyName[1]) : "");
+        if (NOT_A_LIST.test(friendly)) return 0;
         const blob = String(url || "") + "\\n" + String(body || "") + "\\n" + String(friendly);
         const list = currentList();
         if (list && list.query.test(blob)) return 3;

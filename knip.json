@@ -48,10 +48,7 @@
       "ignoreDependencies": ["@pond/theme"]
     },
     "packages/icons": {
-      "entry": ["src/**/*.mjs", "scripts/*.mjs", "lab/lab.js"]
-    },
-    "packages/ui": {
-      "entry": ["lab/lab.js"]
+      "entry": ["src/**/*.mjs", "scripts/*.mjs"]
     },
     "packages/cli": {
       "project": ["src/**/*.ts"],

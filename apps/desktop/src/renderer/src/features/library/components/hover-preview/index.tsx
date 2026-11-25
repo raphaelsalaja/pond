@@ -19,6 +19,8 @@ import {
   inspect,
   MediaViewer,
   onQuickPreviewRequest,
+  openSave,
+  type PreviewStepBinding,
   previewFileIndex,
   previewStepRuns,
   runViewerAction,
@@ -392,6 +394,14 @@ export function HoverPreview() {
                           cause,
                         );
                       });
+                  }
+            }
+            onExpand={
+              comparing || !save
+                ? undefined
+                : () => {
+                    close();
+                    openSave(save.id);
                   }
             }
           >

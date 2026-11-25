@@ -56,6 +56,7 @@ Each concept has one icon, and each icon answers one concept. A solid twin share
 | Check | `check` | outline | check, checked, done, confirm |
 | Checklist | `check-list` | outline | checklist, tasks, todo |
 | Chevron Shape | `chevron` | outline | chevron, arrow shape, shape |
+| Choose One | `chevron-up-down` | outline | select, picker, dropdown, choose, up down, switch |
 | Clear | `broom` | outline | clear, tidy, clean, sweep |
 | Clear Filters | `filter-off` | outline | clear filters, reset, remove filter |
 | Clipboard | `clipboard` | outline | clipboard, paste, copy to |

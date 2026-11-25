@@ -13,7 +13,6 @@ import {
   assistantQuestion,
   assistantResultSet,
   assistantSource,
-  assistantSuggestionInput,
 } from "../../../shared/assistant";
 import type { AssistantQuestion } from "../../../shared/assistant";
 import { folderIdsForSave, listFolders } from "../folders";
@@ -93,8 +92,7 @@ export function libraryContext(
   const sources = new Map<string, AssistantSource>();
   const changes = new Map<string, AssistantChange>();
   let question: AssistantQuestion | undefined;
-  let suggestions: Array<string> | undefined;
-  let results: Array<AssistantResultSet> = [];
+  let results: AssistantResultSet[] = [];
   const forModel = (save: AssistantSource) =>
     boundedSource(save, [...sources.keys()].indexOf(save.id) + 1);
   function collect(rows: Array<AssistantSource>) {
@@ -197,18 +195,6 @@ export function libraryContext(
           requested: true,
           message: "The question is shown to the user. Wait for their answer.",
         };
-      },
-    },
-    {
-      name: "suggestReplies",
-      description:
-        'Offer one to three short follow-ups the user is likely to send next, shown as tappable chips under your reply. Write each the way the user would say it, under 40 characters, like "Tag these as posters". Skip it when no next step is obvious or when you asked a question. Do not repeat them in prose.',
-      schema: assistantSuggestionInput,
-      execute: async (args) => {
-        input.signal.throwIfAborted();
-        const parsed = assistantSuggestionInput.parse(args);
-        suggestions = [...new Set(parsed.suggestions)];
-        return { shown: suggestions.length };
       },
     },
     {
@@ -522,6 +508,5 @@ export function libraryContext(
     sources: () => [...sources.values()],
     changes: () => [...changes.values()],
     question: () => question,
-    suggestions: () => suggestions,
   };
 }

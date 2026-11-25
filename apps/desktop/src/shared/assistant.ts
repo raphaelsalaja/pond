@@ -355,14 +355,6 @@ export const assistantQuestion = z
   );
 export type AssistantQuestion = z.infer<typeof assistantQuestion>;
 
-const assistantSuggestions = z
-  .array(z.string().trim().min(1).max(40))
-  .min(1)
-  .max(3);
-export const assistantSuggestionInput = z.object({
-  suggestions: assistantSuggestions,
-});
-
 const assistantChangeProposal = z.discriminatedUnion("field", [
   z.object({
     saveId: z.string(),
@@ -584,7 +576,6 @@ export const assistantMetadata = z.object({
     .optional(),
   question: assistantQuestion.optional(),
   replyToQuestion: z.string().optional(),
-  suggestions: assistantSuggestions.optional(),
   /** Set on the message a routine sends in your place, so the chat can show it as an event. */
   routine: assistantRoutine.optional(),
   routineEvents: z.array(assistantRoutineEvent).optional(),

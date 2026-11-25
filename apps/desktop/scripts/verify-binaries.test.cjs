@@ -6,10 +6,10 @@ const path = require("node:path");
 const test = require("node:test");
 const verifyBinaries = require("./verify-binaries.cjs");
 
-function buildContext(appOutDir, electronPlatformName) {
+function buildContext(appOutDir, electronPlatformName, arch = "x64") {
   return {
     appOutDir,
-    arch: "x64",
+    arch,
     electronPlatformName,
     packager: {
       appInfo: { productFilename: "Pond" },
@@ -18,11 +18,18 @@ function buildContext(appOutDir, electronPlatformName) {
   };
 }
 
-/** Packaging hosts that are not Windows skip the ffmpeg and onnx runs; the fakes keep both identical. */
+/** Packaging hosts that are not the target platform skip host-only probes; the fakes keep runs identical. */
 function verify(context) {
+  const slices =
+    context.arch === "arm64"
+      ? ["arm64"]
+      : context.arch === "universal"
+        ? ["arm64", "x86_64"]
+        : ["x86_64"];
   return verifyBinaries.verify(context, {
     runFfmpeg: () => ({ status: 0 }),
     runOnnx: () => ({ status: 0 }),
+    readArchs: () => slices,
   });
 }
 
@@ -189,6 +196,94 @@ void test("rejects a package without the tint icons", async () => {
     await assert.rejects(
       verify(buildContext(appOutDir, "win32")),
       /no tint icons/,
+    );
+  });
+});
+
+async function writeMacRuntime(resourcesDirectory, arch, options = {}) {
+  const binaryDirectory = join(resourcesDirectory, "bin");
+  await mkdir(binaryDirectory, { recursive: true });
+  await writeFile(join(binaryDirectory, "ffmpeg"), "binary");
+  await writeFile(join(binaryDirectory, "pond-native-host"), "binary");
+  await mkdir(
+    join(
+      resourcesDirectory,
+      "app.asar.unpacked/node_modules/better-sqlite3/prebuilds",
+    ),
+    { recursive: true },
+  );
+  await writeFile(
+    verifyBinaries.betterSqlitePath(resourcesDirectory, "darwin", arch),
+    "binary",
+  );
+  const sqliteVec = verifyBinaries.sqliteVecPath(
+    resourcesDirectory,
+    "darwin",
+    arch,
+  );
+  await mkdir(join(sqliteVec, ".."), { recursive: true });
+  await writeFile(sqliteVec, "binary");
+  const sharpDir = join(
+    resourcesDirectory,
+    `app.asar.unpacked/node_modules/@img/sharp-darwin-${arch}/lib`,
+  );
+  await mkdir(sharpDir, { recursive: true });
+  await writeFile(join(sharpDir, `sharp-darwin-${arch}.node`), "binary");
+  const libvipsDir = join(
+    resourcesDirectory,
+    `app.asar.unpacked/node_modules/@img/sharp-libvips-darwin-${arch}/lib`,
+  );
+  await mkdir(libvipsDir, { recursive: true });
+  await writeFile(join(libvipsDir, "libvips.dylib"), "binary");
+  if (arch === "arm64") {
+    const onnxDir = join(
+      resourcesDirectory,
+      "app.asar.unpacked/node_modules/onnxruntime-node/bin/napi-v6/darwin/arm64",
+    );
+    await mkdir(onnxDir, { recursive: true });
+    await writeFile(join(onnxDir, "onnxruntime_binding.node"), "binary");
+    await writeFile(join(onnxDir, "libonnxruntime.1.dylib"), "binary");
+  }
+  await writeTintIcon(resourcesDirectory);
+  if (options.catalog !== false) {
+    await writeFile(
+      join(resourcesDirectory, "Assets.car"),
+      options.catalog ?? "binary",
+    );
+  }
+}
+
+for (const arch of ["arm64", "x64"]) {
+  test(`accepts a macOS ${arch} package with the Icon Composer catalog`, async () => {
+    await withTemporaryDirectory(async (appOutDir) => {
+      const resources = join(appOutDir, "Pond.app", "Contents", "Resources");
+      await writeMacRuntime(resources, arch);
+
+      await verify(buildContext(appOutDir, "darwin", arch));
+    });
+  });
+
+  test(`rejects a macOS ${arch} package without the Icon Composer catalog`, async () => {
+    await withTemporaryDirectory(async (appOutDir) => {
+      const resources = join(appOutDir, "Pond.app", "Contents", "Resources");
+      await writeMacRuntime(resources, arch, { catalog: false });
+
+      await assert.rejects(
+        verify(buildContext(appOutDir, "darwin", arch)),
+        /missing .*Assets\.car/,
+      );
+    });
+  });
+}
+
+test("rejects a macOS package with an empty Icon Composer catalog", async () => {
+  await withTemporaryDirectory(async (appOutDir) => {
+    const resources = join(appOutDir, "Pond.app", "Contents", "Resources");
+    await writeMacRuntime(resources, "arm64", { catalog: "" });
+
+    await assert.rejects(
+      verify(buildContext(appOutDir, "darwin", "arm64")),
+      /Assets\.car is empty/,
     );
   });
 });

@@ -238,9 +238,9 @@ function parseGraphqlBody(body: string): JsonValue {
   return isJsonValue(parsed) ? parsed : null;
 }
 
-/** Walks a GraphQL payload for post nodes; skips quoted/reposted children so they stay nested on the parent. */
-function collectThreadPosts(json: JsonValue): Array<JsonObject> {
-  const out: Array<JsonObject> = [];
+/** Walks a GraphQL payload for post nodes; skips quoted/reposted children and carousel items, which carry their own `code`, so they stay nested on the parent. */
+function collectThreadPosts(json: JsonValue): JsonObject[] {
+  const out: JsonObject[] = [];
   const seen = new Set<string>();
   walk(json, false, (node) => {
     const code = OptionalText.parse(node.code);
@@ -288,7 +288,8 @@ function walk(
       skipCollect ||
       key === "share_info" ||
       key === "quoted_post" ||
-      key === "reposted_post";
+      key === "reposted_post" ||
+      key === "carousel_media";
     walk(child, nestedSkip, visit);
   }
 }

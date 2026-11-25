@@ -15,6 +15,7 @@ import {
 } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { z } from "zod";
+import { isLibrarySidecar } from "../lib/library-sidecars";
 import { isPathInside, isSamePath } from "../lib/path-identity";
 
 const MANIFEST = "pond-backup-manifest.json";
@@ -54,6 +55,7 @@ async function inventory(
 ): Promise<Array<BackupEntry>> {
   const files: Array<BackupEntry> = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
+    if (isLibrarySidecar(entry.name)) continue;
     const path = join(directory, entry.name);
     if (path === join(root, MANIFEST)) {
       continue;

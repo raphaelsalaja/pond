@@ -21,7 +21,16 @@ import { selection } from "@/features/saves/navigation";
 import { ToastHost } from "@/shared/components/toast-host";
 import { bridge } from "@/shared/test/pond-bridge";
 import type { QueryHandlers } from "@/shared/test/pond-bridge";
-import { FolderSidebar } from ".";
+import { FolderRail, FolderSidebar } from ".";
+
+function RailAndSidebar() {
+  return (
+    <>
+      <FolderRail />
+      <FolderSidebar />
+    </>
+  );
+}
 
 interface SidebarFixtures {
   folders: Array<Folder>;
@@ -324,7 +333,7 @@ export function createFolderSidebarHarness() {
         throw new Error("Sidebar harness isn't set up");
       }
       const next = createLibraryTestRouter(path, {
-        component: FolderSidebar,
+        component: RailAndSidebar,
         routes: (library) => [
           createRoute({
             getParentRoute: () => library,

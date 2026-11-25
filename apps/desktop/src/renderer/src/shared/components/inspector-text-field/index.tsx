@@ -34,6 +34,7 @@ export function InspectorTextField({
   mixedPlaceholder,
   maxLength,
   clamp,
+  inputRef,
   commit,
 }: {
   className?: string;
@@ -53,7 +54,8 @@ export function InspectorTextField({
   mixedPlaceholder?: string;
   maxLength?: number;
   clamp?: number;
-  commit: (value: string) => Promise<void>;
+  inputRef?: React.Ref<HTMLInputElement>;
+  commit(value: string): Promise<void>;
 }) {
   const [, update] = useState(0);
   const cancelled = useRef(false);
@@ -171,6 +173,7 @@ export function InspectorTextField({
         ) : (
           <Input.Field
             {...props}
+            ref={inputRef}
             appearance={appearance}
             maxLength={maxLength ?? 255}
           />

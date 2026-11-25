@@ -23,14 +23,17 @@ interface BookmarksVariables {
   cursor?: string;
 }
 
+/** Legacy responses name fields `entryId` and `type`; x-web responses name them `entry_id` and `__typename`. */
 interface TimelineEntry {
   entryId?: string;
+  entry_id?: string;
   content?: { value?: string };
 }
 
 interface TimelineInstruction {
   type?: string;
-  entries?: Array<TimelineEntry>;
+  __typename?: string;
+  entries?: TimelineEntry[];
 }
 
 interface Timeline {
@@ -42,6 +45,9 @@ interface BookmarksResponse {
     bookmark_timeline_v2?: Timeline;
     bookmark_collection_timeline?: Timeline;
     user?: { result?: { timeline_v2?: Timeline; timeline?: Timeline } };
+    user_result_by_rest_id?: {
+      result?: { favorites_by_time_timeline_v2?: Timeline };
+    };
   };
 }
 
@@ -119,7 +125,8 @@ async function inPageBookmarksApi(
   if (
     location.pathname.startsWith("/i/flow/login") ||
     location.pathname.startsWith("/login") ||
-    location.pathname.startsWith("/i/flow/signup")
+    location.pathname.startsWith("/i/flow/signup") ||
+    location.pathname.startsWith("/i/jf/onboarding")
   ) {
     return { ok: false, reason: "auth_required" };
   }
@@ -166,17 +173,17 @@ async function inPageBookmarksApi(
     return req?.url ? req : null;
   };
 
+  /** x-web renders the first page on the server, so the page only sends a request Pond can copy once it scrolls toward the second page. */
   let template = getRequest();
-  const waitDeadline = Date.now() + 20_000;
-  let nudged = false;
+  const waitStart = Date.now();
+  const waitDeadline = waitStart + 20_000;
+  let lastNudge = waitStart;
   while (!template && Date.now() < waitDeadline) {
-    if (!nudged && Date.now() - (waitDeadline - 20_000) > 4000) {
-      nudged = true;
+    if (Date.now() - lastNudge > 1_500) {
+      lastNudge = Date.now();
       try {
-        window.scrollBy({ top: 600, behavior: "instant" });
-      } catch {
-        /** The nudge only hurries the page's own request; waiting still works without it. */
-      }
+        window.scrollBy({ top: 2_000, behavior: "instant" });
+      } catch {}
     }
     await sleep(250);
     template = getRequest();
@@ -230,6 +237,8 @@ async function inPageBookmarksApi(
     const ins =
       json.data?.bookmark_timeline_v2?.timeline?.instructions ??
       json.data?.bookmark_collection_timeline?.timeline?.instructions ??
+      json.data?.user_result_by_rest_id?.result?.favorites_by_time_timeline_v2
+        ?.timeline?.instructions ??
       user?.timeline_v2?.timeline?.instructions ??
       user?.timeline?.timeline?.instructions;
     if (!Array.isArray(ins)) {
@@ -237,7 +246,8 @@ async function inPageBookmarksApi(
     }
     const out: Array<TimelineEntry> = [];
     for (const ix of ins) {
-      if (ix.type !== "TimelineAddEntries" || !Array.isArray(ix.entries)) {
+      const kind = ix.type ?? ix.__typename;
+      if (kind !== "TimelineAddEntries" || !Array.isArray(ix.entries)) {
         continue;
       }
       out.push(...ix.entries);
@@ -246,20 +256,17 @@ async function inPageBookmarksApi(
   };
   const extractCursor = (json: BookmarksResponse): string | null => {
     for (const e of addedEntries(json)) {
-      if (!e.entryId?.startsWith("cursor-bottom")) {
-        continue;
-      }
-      if (e.content?.value !== undefined) {
-        return e.content.value;
-      }
+      if (!(e.entryId ?? e.entry_id)?.startsWith("cursor-bottom")) continue;
+      if (e.content?.value !== undefined) return e.content.value;
     }
     return null;
   };
   const pageTweetIds = (json: BookmarksResponse): Array<string> => {
     const ids: Array<string> = [];
     for (const e of addedEntries(json)) {
-      if (e.entryId?.startsWith("tweet-")) {
-        ids.push(e.entryId.slice("tweet-".length));
+      const entryId = e.entryId ?? e.entry_id;
+      if (entryId?.startsWith("tweet-")) {
+        ids.push(entryId.slice("tweet-".length));
       }
     }
     return ids;
@@ -282,7 +289,8 @@ async function inPageBookmarksApi(
   const earlyStopEnabled = known.size > 0;
   const STOP_AFTER_KNOWN_PAGES = 2;
   let knownPageStreak = 0;
-  let cursor: string | null = baseVariables.cursor ?? null;
+  /** The copied request may already be for a later page; start from the first so server-rendered posts aren't skipped. */
+  let cursor: string | null = null;
   let prevCursor: string | null = null;
   let pages = 0;
   let tweetTotal = 0;

@@ -3,39 +3,22 @@
   min-width: 0;
 }
 
-.root > [aria-hidden="true"] {
-  position: static;
+.root .editor {
+  min-height: 32px;
+  max-height: 200px;
+  padding: var(--ds-space-sm);
+  line-height: var(--ds-leading-body);
 }
 
-.editor {
-  min-height: 24px;
-  max-height: 288px;
-  padding: var(--ds-space-2xs) var(--ds-space-sm) 0;
-  overflow-y: auto;
-  font: inherit;
-  line-height: 24px;
-  color: var(--ds-foreground-primary);
-  overflow-wrap: anywhere;
-  outline: none;
-  scrollbar-width: thin;
+.media > * {
+  width: 16px;
+  height: 16px;
+  border: 0;
 }
 
-.link {
-  display: flex;
-  gap: var(--ds-space-md);
-  align-items: center;
-  padding: 0 var(--ds-space-sm) var(--ds-space-sm);
-}
-
-.link > :first-child {
-  flex: 1;
-  min-width: 0;
-}
-
-.placeholder {
-  position: absolute;
-  top: 2px;
-  left: 6px;
-  color: var(--ds-foreground-tertiary);
-  pointer-events: none;
+.media img,
+.media svg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }

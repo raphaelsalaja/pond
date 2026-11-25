@@ -61,6 +61,8 @@ export interface AssistantState {
   failed: DraftSnapshot | null;
   /** Sent on its own once the running reply finishes. */
   queued: DraftSnapshot | null;
+  /** The chat the in-flight reply belongs to, which may differ from the open chat. */
+  runChatId: string | null;
   /** Bumped when something outside the composer wants it focused. */
   focusRequest: number;
 }
@@ -86,6 +88,7 @@ const store = new Store<AssistantWorkspace>({
   error: null,
   failed: null,
   queued: null,
+  runChatId: null,
   focusRequest: 0,
 });
 const patch = (value: Partial<AssistantWorkspace>) =>
@@ -126,7 +129,7 @@ async function refreshMessages(chatId: string, version = historyVersion) {
 
 type ComposerSnapshot = Pick<
   AssistantWorkspace,
-  "draft" | "attachments" | "files" | "failed" | "error"
+  "draft" | "attachments" | "files" | "failed" | "error" | "queued"
 >;
 const composers = new Map<string, ComposerSnapshot>();
 let fishSelected = false;
@@ -136,13 +139,15 @@ function composerKey(chatId: string | null, fishId = store.state.fishId) {
 }
 
 function saveComposer() {
-  const { chatId, draft, attachments, files, failed, error } = store.state;
+  const { chatId, draft, attachments, files, failed, error, queued } =
+    store.state;
   composers.set(composerKey(chatId), {
     draft,
     attachments,
     files,
     failed,
     error,
+    queued,
   });
 }
 
@@ -157,6 +162,7 @@ function composerFor(
       files: [],
       failed: null,
       error: null,
+      queued: null,
     }
   );
 }
@@ -291,13 +297,8 @@ export const assistant = {
       return;
     }
     fishSelected = true;
-    if (isBusy()) {
-      patch({ fishId, chats: [] });
-      void refreshChats().catch(() =>
-        patch({ error: "Could not load recent chats." }),
-      );
-      return;
-    }
+    /** A reply from another fish can still be running. Keep it running, but stop showing its chat here. */
+    const wasBusy = isBusy();
     saveComposer();
     const version = ++historyVersion;
     patch({
@@ -319,14 +320,23 @@ export const assistant = {
     };
     void refreshChats()
       .then(() => {
-        if (version !== historyVersion || isBusy()) {
-          return;
-        }
+        if (version !== historyVersion) return settle();
         const chatId = store.state.chats[0]?.id;
-        if (!chatId) {
-          return settle();
-        }
-        void assistant.openChat(chatId);
+        if (!chatId) return settle();
+        if (!wasBusy) return void assistant.openChat(chatId);
+        /** openChat is blocked while a reply runs, so load this fish's own chat directly. */
+        void loadMessages(chatId)
+          .then((messages) => {
+            if (version !== historyVersion) return;
+            hydratePondChat(chatId, messages);
+            patch({
+              chatId,
+              messages,
+              ...composerFor(chatId, fishId),
+              loading: false,
+            });
+          })
+          .catch(settle);
       })
       .catch(() => {
         settle();
@@ -459,6 +469,7 @@ export const assistant = {
         return;
       }
       const threadId = chatId;
+      patch({ runChatId: threadId });
       const message: AssistantMessage = {
         id: requestId,
         chatId: threadId,
@@ -507,10 +518,13 @@ export const assistant = {
         });
       }
     } finally {
-      if (cancelledRequest === requestId) {
-        cancelledRequest = null;
-      }
-      patch({ sending: false, requestId: null, sources: [] });
+      if (cancelledRequest === requestId) cancelledRequest = null;
+      patch({
+        sending: false,
+        requestId: null,
+        runChatId: null,
+        sources: [],
+      });
       await Promise.all([
         chatId
           ? refreshMessages(chatId).catch(() => undefined)
@@ -594,16 +608,6 @@ export const assistant = {
       keepDraft: true,
     });
   },
-  async suggest(content: string, provider: AssistantProvider) {
-    await assistant.send(provider, undefined, {
-      content,
-      attachments: [],
-      files: [],
-      context: snapshotContext([]),
-      provider,
-      keepDraft: true,
-    });
-  },
   stop() {
     cancelledRequest = store.state.requestId;
     stopAssistant(store.state.chatId, store.state.requestId);
@@ -683,18 +687,13 @@ export function useAssistant() {
       );
     }
     const unsubscribe = window.pond.onAgentChunk((chunk) => {
-      if (chunk.type === "activity") {
-        patch({ activity: chunk.activity });
-      }
-      if (chunk.type === "sources") {
-        patch({ sources: chunk.sources });
-      }
-      if (chunk.type === "results") {
-        patch({ results: chunk.results });
-      }
-      if (chunk.type === "steps") {
-        patch({ steps: chunk.steps });
-      }
+      /** A reply can finish in a chat the user has since left. */
+      if (store.state.runChatId && chunk.chatId !== store.state.runChatId)
+        return;
+      if (chunk.type === "activity") patch({ activity: chunk.activity });
+      if (chunk.type === "sources") patch({ sources: chunk.sources });
+      if (chunk.type === "results") patch({ results: chunk.results });
+      if (chunk.type === "steps") patch({ steps: chunk.steps });
     });
     return () => {
       unsubscribe();
@@ -704,6 +703,8 @@ export function useAssistant() {
   const state = useSelector(store, (state) => state);
   return {
     ...state,
-    busy: state.sending,
+    /** Only the chat that owns the reply is busy; another fish stays usable. */
+    busy:
+      state.sending && (!state.runChatId || state.runChatId === state.chatId),
   };
 }

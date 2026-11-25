@@ -3,6 +3,7 @@ import type { WireSave } from "@shared/wire";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it } from "vitest";
+import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { resultNavigation, selection } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/pool";
@@ -151,6 +152,60 @@ it("dims the grid for a peek and closes on a click outside", async () => {
     ).toBeNull();
   } finally {
     await act(async () => root.unmount());
+    selection.clear();
+    host.remove();
+  }
+});
+
+it("opens the save details from the expand button and closes the preview", async () => {
+  const save = normalise({
+    id: "quick-expand",
+    source: "web",
+    sourceId: "expand",
+    url: "https://fixture.test/expand",
+    title: "Expand reference",
+    files: [],
+  });
+  if (!save) throw new Error("Invalid fixture");
+  pool.upsert(save);
+  bridge.use({
+    query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
+  });
+  const router = await openLibraryAt("/");
+  selection.setAnchor(save.id);
+  selection.setCursor(save.id);
+  resultNavigation.setSource({ ids: [save.id] });
+  const host = document.createElement("div");
+  host.setAttribute("data-save-collection", "");
+  host.tabIndex = 0;
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(async () => root.render(<HoverPreview />));
+    host.focus();
+    await act(async () =>
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: " ",
+          code: "Space",
+          bubbles: true,
+        }),
+      ),
+    );
+    const expand = document.querySelector(
+      "[data-quick-preview] [aria-label='Open Save']",
+    );
+    expect(expand).not.toBeNull();
+    await act(async () =>
+      expand?.dispatchEvent(new MouseEvent("click", { bubbles: true })),
+    );
+    expect(currentLocation(router).search.save).toBe(save.id);
+    expect(
+      document.querySelector("[data-quick-preview][data-open]"),
+    ).toBeNull();
+  } finally {
+    await act(async () => root.unmount());
+    resultNavigation.setSource({ ids: [] });
     selection.clear();
     host.remove();
   }

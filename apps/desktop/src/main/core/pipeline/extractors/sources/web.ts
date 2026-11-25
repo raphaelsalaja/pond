@@ -13,13 +13,14 @@ import { renderPageHtml } from "../../../refresh/web-page-renderer";
 import { TerminalError, TransientError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { searchPageQuery } from "./search-page";
-import { fetchHtml } from "./web-fetch";
+import { type FetchHtmlSuccess, fetchHtml } from "./web-fetch";
 
 type WebExtras = {
   publisher?: string;
   faviconUrl?: string;
   product?: boolean;
   search?: { engine: string; query: string };
+  textDocument?: boolean;
 };
 
 const PRODUCT_FLAG = "true";
@@ -175,7 +176,7 @@ const scrape = metascraper([
 ]);
 
 interface WebPageExtractorDependencies {
-  fetchHtml: (url: string) => Promise<string | null>;
+  fetchHtml: (url: string) => Promise<FetchHtmlSuccess | null>;
   renderHtml: (url: string, signal?: AbortSignal) => Promise<string>;
 }
 
@@ -203,8 +204,9 @@ export class WebPageExtractor implements Extractor {
   }
 
   async extract(input: ExtractInput): Promise<Capture> {
+    const fetched = await this.dependencies.fetchHtml(input.url.href);
     const html =
-      (await this.dependencies.fetchHtml(input.url.href)) ??
+      fetched?.html ??
       (await this.dependencies.renderHtml(input.url.href, input.signal));
     const meta = await scrape({ url: input.url.href, html });
 
@@ -226,18 +228,11 @@ export class WebPageExtractor implements Extractor {
     const publisher = search?.engine ?? pickString(meta.publisher);
 
     const extras: WebExtras = {};
-    if (publisher) {
-      extras.publisher = publisher;
-    }
-    if (faviconUrl) {
-      extras.faviconUrl = faviconUrl;
-    }
-    if (meta.product === PRODUCT_FLAG) {
-      extras.product = true;
-    }
-    if (search) {
-      extras.search = search;
-    }
+    if (publisher) extras.publisher = publisher;
+    if (faviconUrl) extras.faviconUrl = faviconUrl;
+    if (meta.product === PRODUCT_FLAG) extras.product = true;
+    if (search) extras.search = search;
+    if (fetched?.document) extras.textDocument = true;
 
     const title = search?.query ?? pickString(meta.title);
     /** A results page's description is boilerplate, and one would open the Save as text instead of the page. */
@@ -248,20 +243,17 @@ export class WebPageExtractor implements Extractor {
       url: canonical,
       media,
     };
-    if (title) {
-      capture.title = title;
-    }
-    if (description) {
-      capture.description = description;
-    }
-    if (author) {
-      capture.author = author;
-    }
-    if (publishedAt) {
-      capture.publishedAt = publishedAt;
-    }
-    if (Object.keys(extras).length > 0) {
-      capture.extras = extras;
+    if (title) capture.title = title;
+    if (description) capture.description = description;
+    if (author) capture.author = author;
+    if (publishedAt) capture.publishedAt = publishedAt;
+    if (Object.keys(extras).length > 0) capture.extras = extras;
+    if (fetched?.document) {
+      capture.article = {
+        html: fetched.document.bodyHtml,
+        canonicalUrl: canonical,
+        source: fetched.document.source,
+      };
     }
     return capture;
   }

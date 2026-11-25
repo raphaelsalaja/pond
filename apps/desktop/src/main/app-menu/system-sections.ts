@@ -88,14 +88,6 @@ export function buildDeveloperSections(
           label: "Toggle React Scan",
           click: context.developer.toggleReactScan,
         },
-        {
-          label: "Update Flow",
-          click: context.navTo("/dev/update-flow"),
-        },
-        {
-          label: "What's New Variants",
-          click: context.navTo("/dev/whats-new"),
-        },
       ],
     },
   ];

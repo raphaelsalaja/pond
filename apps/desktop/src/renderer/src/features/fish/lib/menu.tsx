@@ -10,15 +10,15 @@ import {
   IconSection,
   IconTrash,
 } from "@pond/icons";
-import { Dialog } from "@pond/ui";
-import type { MenuItemSpec } from "@pond/ui";
-import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
-import type {
-  Fish,
-  FishPatch,
-  FishPlacement,
-  FishRoutine,
-  FishSection,
+import { Dialog, type MenuItemSpec } from "@pond/ui";
+import {
+  DEFAULT_FISH_ID,
+  type Fish,
+  type FishPatch,
+  type FishPlacement,
+  type FishRoutine,
+  type FishSection,
+  type FishSummary,
 } from "@shared/fish-contracts";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
@@ -204,7 +204,7 @@ function moveToItems(target: Fish): MenuItemSpec {
   };
 }
 
-export function runRoutine(target: Fish, routine: FishRoutine): void {
+function runRoutine(target: Fish, routine: FishRoutine): void {
   void runFishAction(async () => {
     await fish.run(target.id, routine.id);
     notify({
@@ -229,7 +229,7 @@ export function setRoutinePaused(
   void runFishAction(() => fish.pauseRoutine(target.id, routine.id, paused));
 }
 
-export function confirmDeleteRoutine(target: Fish, routine: FishRoutine): void {
+function confirmDeleteRoutine(target: Fish, routine: FishRoutine): void {
   Dialog.confirm({
     title: `Delete "${routine.name}"`,
     description: `${target.name} stops running it. You can't undo this.`,
@@ -241,6 +241,38 @@ export function confirmDeleteRoutine(target: Fish, routine: FishRoutine): void {
         "Couldn't delete the routine",
       ),
   });
+}
+
+/** Run Now, Edit and Delete for a routine row; the row's switch pauses it. */
+export function routineItems(
+  target: FishSummary,
+  routine: FishRoutine,
+  onEdit?: (routine: FishRoutine) => void,
+): MenuItemSpec[] {
+  const items: MenuItemSpec[] = [
+    {
+      label: "Run Now",
+      icon: <IconArrowRight />,
+      disabled: Boolean(target.activity),
+      onClick: () => runRoutine(target, routine),
+    },
+  ];
+  if (onEdit)
+    items.push({
+      label: "Edit",
+      icon: <IconPencil />,
+      onClick: () => onEdit(routine),
+    });
+  items.push(
+    { type: "separator" },
+    {
+      label: "Delete",
+      icon: <IconTrash />,
+      variant: "destructive",
+      onClick: () => confirmDeleteRoutine(target, routine),
+    },
+  );
+  return items;
 }
 
 function confirmDeleteFish(target: Fish): void {

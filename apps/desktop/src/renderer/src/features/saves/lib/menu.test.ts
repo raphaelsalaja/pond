@@ -11,6 +11,10 @@ import {
   closeConversionDialog,
   conversionDialogStore,
 } from "@/features/library/state/conversion-dialog";
+import {
+  closeFolderPicker,
+  folderPickerStore,
+} from "@/features/library/state/folder-picker";
 import { folders } from "@/features/library/state/folders";
 import { buildViewerMenu } from "@/features/saves/components/viewers/media-viewer/lib/menu";
 import { pool } from "@/features/saves/state/pool";
@@ -22,6 +26,7 @@ import {
 import type { Save } from "@/features/saves/types";
 import { pathForLibraryNav } from "@/shared/lib/library-nav";
 import { REVEAL_LABEL } from "@/shared/lib/platform";
+import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import {
   menuLabelsWithoutIcons,
   topLevelMenuLabels as topLevelLabels,
@@ -300,6 +305,7 @@ describe("buildSaveMenu", () => {
       expect.arrayContaining([
         "Add Tags",
         "Add to Folders",
+        "Add to Multiple Folders",
         "Add to Other Library",
         "Rename",
         "Paste Tags",
@@ -567,6 +573,7 @@ describe("buildSaveMenu", () => {
       "Add to Inbox",
       "Add Tags",
       "Add to Folders",
+      "Add to Multiple Folders",
       "Add to Canvas",
       "Add to Other Library",
       "Export",
@@ -957,6 +964,23 @@ describe("buildSaveMenu", () => {
     const refs = sectionItems(items, "Refs") ?? [];
     expect(refs[0]).toMatchObject({ type: "checkbox", checked: true });
     expect(refs[2]).toMatchObject({ label: "Shots", checked: false });
+  });
+
+  it("opens the multi-folder picker from the menu", () => {
+    closeFolderPicker();
+    const items = buildSaveMenu(fileSave(), { clipboardEmpty: true });
+    const action = visibleLeafItems(items).find(
+      (item) => "label" in item && item.label === "Add to Multiple Folders",
+    );
+    expect(action).toMatchObject({
+      shortcut: shortcutGlyphs("save.assign-multiple-folders"),
+    });
+    if (!action || !("onClick" in action))
+      throw new Error("Missing Add to Multiple Folders action");
+    action.onClick?.();
+    expect(folderPickerStore.state.mode).toBe("multiple");
+    expect(folderPickerStore.state.ids.length).toBeGreaterThan(0);
+    closeFolderPicker();
   });
 
   it("processes and snoozes a Save waiting in the Inbox", () => {

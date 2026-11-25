@@ -1,8 +1,8 @@
-import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { saves } from "@pond/schema/db";
 import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "../../db";
+import { directoryExists } from "../../lib/library-sidecars";
 import { appDataRoot, saveDir } from "../../paths";
 import { libraryIntegrityRuntime } from "../library-integrity";
 import { currentLibraryId } from "../prefs-scope";
@@ -59,5 +59,5 @@ export const libraryHealthService = createLibraryHealthService({
     const { mediaWarmSnapshot } = await import("../media-warm/service");
     return mediaWarmSnapshot();
   },
-  folderExists: (saveId) => existsSync(saveDir(saveId)),
+  folderExists: (saveId) => directoryExists(saveDir(saveId)),
 });

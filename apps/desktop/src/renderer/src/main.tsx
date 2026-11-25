@@ -7,8 +7,8 @@ import "./styles.css";
 
 void bootPool();
 if (import.meta.env.DEV) {
-  void import("./lab/figma/bridge");
-  void import("./lab/react-scan");
+  void import("./dev/figma/bridge");
+  void import("./dev/react-scan");
 }
 
 const root = document.getElementById("root");

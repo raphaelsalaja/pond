@@ -1,8 +1,13 @@
 import type { Prefs } from "@pond/schema";
 import type { Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
-import { contextBridge, ipcRenderer, webUtils } from "electron";
-import type { IpcRendererEvent } from "electron";
+import {
+  contextBridge,
+  type IpcRendererEvent,
+  ipcRenderer,
+  webFrame,
+  webUtils,
+} from "electron";
 import type { AgentStreamEvent } from "../shared/agent-stream";
 import type { ArenaLinkProgressEvent } from "../shared/arena-link-contracts";
 import type { AssistantChunk } from "../shared/assistant";
@@ -442,6 +447,10 @@ const api = {
       cb(payload);
     ipcRenderer.on(IPC.sessionImportFailed, listener);
     return () => ipcRenderer.off(IPC.sessionImportFailed, listener);
+  },
+
+  releaseDecodedImages(): void {
+    webFrame.clearCache();
   },
 
   machinePace(): Promise<MachinePaceWire> {

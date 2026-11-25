@@ -1,4 +1,4 @@
-import { IconCheck, IconChevronDown } from "@pond/icons";
+import { IconCheck, IconChevronDown, IconChevronUpDown } from "@pond/icons";
 import type {
   AgentContextChoice,
   AgentModelOptions,
@@ -13,10 +13,8 @@ import {
   reasoningLabel,
   supportsNativeFast,
 } from "@shared/agent-model-options";
-import { ASSISTANT_MODELS, gatewayCreator } from "@shared/assistant";
-import type { AssistantProvider } from "@shared/assistant";
-import { displayName } from "@shared/provider-models";
-import type { ProviderModel } from "@shared/provider-models";
+import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
+import { displayName, type ProviderModel } from "@shared/provider-models";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -40,17 +38,10 @@ function liveItems(
   const items: Array<PickerModel> = [];
   for (const row of providers) {
     const catalog = ASSISTANT_MODELS.find((model) => model.id === row.provider);
-    if (!catalog || !row.ok || !row.models.length) {
-      continue;
-    }
-    /** Only gateway-cataloged providers get descriptions, so a missing one marks a legacy model there. */
-    const hideUndescribed = Boolean(gatewayCreator(row.provider));
+    if (!catalog || !row.ok || !row.models.length) continue;
     for (const model of [...row.models].sort((a, b) =>
       a.name.localeCompare(b.name),
     )) {
-      if (hideUndescribed && !model.description?.trim()) {
-        continue;
-      }
       items.push({
         ...model,
         key: `${row.provider}:${model.id}`,
@@ -475,14 +466,14 @@ export function ModelPicker({
       ) : (
         <Menu.Trigger
           disabled={disabled}
-          size="xs"
-          variant="ghost"
+          size="sm"
+          variant="secondary"
           rounding="full"
           className={styles.trigger}
           aria-label={`Choose model, ${label}`}
         >
           <span className={styles.name}>{label}</span>
-          <IconChevronDown size={12} className={styles.chevron} aria-hidden />
+          <IconChevronUpDown size={12} className={styles.expand} aria-hidden />
         </Menu.Trigger>
       )}
       <Menu.Portal>

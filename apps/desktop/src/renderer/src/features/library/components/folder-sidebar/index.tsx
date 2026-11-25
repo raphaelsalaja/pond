@@ -23,7 +23,7 @@ import {
   useEditingFolderId,
   useFolders,
 } from "@/features/library/state/folders";
-import { lastGridHref } from "@/features/library/state/last-grid";
+import { lastGridHrefOutsideInbox } from "@/features/library/state/last-grid";
 import {
   libraryChrome,
   useLibraryNav,
@@ -37,7 +37,6 @@ import {
   useEditingSavedViewId,
   useHydrateSavedViews,
 } from "@/features/library/state/saved-views";
-import { useRailOnlySidebar } from "@/features/library/state/shell-layout";
 import { useActiveViewId } from "@/features/library/state/view-store";
 import { SourcesSidebar } from "@/features/sources";
 import {
@@ -116,18 +115,16 @@ function routePanel(destination: LibraryNav | null): RoutePanel | null {
   }
 }
 
-export function FolderSidebar() {
+/** The route state the rail and the panel both read, so they always agree on the section. */
+function useSidebarNav() {
   const nav = useLibraryNav();
-  const activeViewId = useActiveViewId();
   const pathname = useRouteLocation((location) => location.pathname);
   const detailPage = useRouteLocation(
     (location) => SourceDetailsPageSchema.safeParse(location.search.page).data,
   );
-  const folderRows = useFolders();
   const activeCanvasId = canvasIdFromPath(pathname);
   const canvasIntro = pathname === CANVASES_PATH;
   const activeFishId = fishIdFromPath(pathname);
-  const railOnly = useRailOnlySidebar();
   const sourceDetail = parseSourceDetailPath(pathname, detailPage);
   const settings = pathname.startsWith("/settings");
   const destination: LibraryNav | null = settings
@@ -135,16 +132,11 @@ export function FolderSidebar() {
     : sourceDetail
       ? SOURCES_NAV
       : nav;
-  useEffect(() => preloadWhenIdle(SettingsSidebar.preload), []);
   const editingFish = useFishEditingId();
   const editingCanvas = useCanvasEditingId();
   const editingView = useEditingSavedViewId();
   const editingFolder = useEditingFolderId();
   const [sidebar] = usePrefs("sidebar");
-  useHydrateSavedViews();
-  /** The rail opens a Canvas or fish before its sidebar panel has ever mounted. */
-  useHydrateCanvases();
-  useHydrateFish();
 
   const visible: Array<RailSection> = [
     "library",
@@ -175,11 +167,6 @@ export function FolderSidebar() {
 
   const follow = followedSection();
   const picked = useSidebarPanel();
-  useLayoutEffect(() => {
-    if (follow) {
-      libraryChrome.setSidebarPanel(follow);
-    }
-  }, [follow]);
   const rail = visible.find((item) => item === picked) ?? null;
   const section: SidebarPanel =
     rail ?? (picked === route && route ? route : "library");
@@ -193,14 +180,9 @@ export function FolderSidebar() {
         ? (railPage ?? "library")
         : panel;
 
-  useLayoutEffect(() => {
-    if (activeCanvasId) {
-      lastOpened.canvases = activeCanvasId;
-    }
-    if (activeFishId) {
-      lastOpened.fish = activeFishId;
-    }
-  }, [activeCanvasId, activeFishId]);
+  function backToLibrary() {
+    getAppRouter()?.history.push(lastGridHrefOutsideInbox());
+  }
 
   function pickSection(next: RailSection) {
     libraryChrome.setSidebarPanel(next);
@@ -230,6 +212,51 @@ export function FolderSidebar() {
       backToLibrary();
     }
   }
+
+  return {
+    activeCanvasId,
+    activeFishId,
+    destination,
+    follow,
+    panel,
+    pickSection,
+    railValue,
+    sourceDetail,
+    visible,
+  };
+}
+
+export function FolderRail() {
+  const { activeCanvasId, activeFishId, railValue, visible, pickSection } =
+    useSidebarNav();
+  /** The rail opens a Canvas or fish before their sidebar panels have ever rendered. */
+  useHydrateCanvases();
+  useHydrateFish();
+  useLayoutEffect(() => {
+    if (activeCanvasId) lastOpened.canvases = activeCanvasId;
+    if (activeFishId) lastOpened.fish = activeFishId;
+  }, [activeCanvasId, activeFishId]);
+  return (
+    <Rail value={railValue} sections={visible} onSectionChange={pickSection} />
+  );
+}
+
+export function FolderSidebar() {
+  const {
+    activeCanvasId,
+    activeFishId,
+    destination,
+    follow,
+    panel,
+    sourceDetail,
+  } = useSidebarNav();
+  const activeViewId = useActiveViewId();
+  const folderRows = useFolders();
+  useEffect(() => preloadWhenIdle(SettingsSidebar.preload), []);
+  useHydrateSavedViews();
+  useLayoutEffect(() => {
+    if (follow) libraryChrome.setSidebarPanel(follow);
+  }, [follow]);
 
   const scroll = (
     <Sidebar.Scroll
@@ -283,20 +310,13 @@ export function FolderSidebar() {
       role="navigation"
       aria-label="Library"
     >
-      <Rail
-        value={railValue}
-        sections={visible}
-        onSectionChange={pickSection}
-      />
-      <div className={styles.panel} data-hidden={railOnly || undefined}>
-        {panel === "library" ? (
-          <SidebarMenu>
-            <div className={styles.background}>{scroll}</div>
-          </SidebarMenu>
-        ) : (
-          scroll
-        )}
-      </div>
+      {panel === "library" ? (
+        <SidebarMenu>
+          <div className={styles.background}>{scroll}</div>
+        </SidebarMenu>
+      ) : (
+        scroll
+      )}
     </Sidebar.Root>
   );
 }

@@ -81,7 +81,7 @@ export function hasWarcArchive(
   );
 }
 
-type ArchivePageSave = Pick<Save, "source" | "url" | "files">;
+type ArchivePageSave = Pick<Save, "source" | "url" | "files" | "rawJson">;
 
 interface ArchivePageRuntime {
   readSave: (saveId: string) => Promise<ArchivePageSave | null>;
@@ -156,6 +156,15 @@ export async function runArchivePage(
   const scope: ArchiveScope = payload.scope === "site" ? "site" : "page";
   const save = await runtime.readSave(saveId);
   if (!save || !isWebPageSave(save)) {
+    dropPageCookies(saveId);
+    return;
+  }
+
+  /** A converted text document is already stored as the save's article; the browser would only download the source bytes. */
+  if (save.rawJson?.capture?.extras?.textDocument) {
+    log.debug("[pond pipeline:archive-page] text document save, skipping", {
+      saveId,
+    });
     dropPageCookies(saveId);
     return;
   }
