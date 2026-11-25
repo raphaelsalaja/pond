@@ -992,9 +992,11 @@ it("ignores in-flight reloads captured before running downloads were cleared", a
 });
 
 it("bounds the initial render before the downloads table is measured", async () => {
-  /** Twice the row bound below is enough to show virtualization; more only slows slow runners. */
+  /** The page fills a fixed-height window in the app; an unbounded host lets the table grow toward every row, one measure at a time. */
+  host.style.cssText =
+    "display: flex; flex-direction: column; height: 800px; overflow: hidden";
   setSaves(
-    Array.from({ length: 200 }, (_, index) =>
+    Array.from({ length: 1000 }, (_, index) =>
       save(`Failed video ${index}`, "failed", "dead"),
     ),
   );
