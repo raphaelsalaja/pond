@@ -21,7 +21,9 @@ describe("fetchHtml", () => {
   it("returns the page markup when the request succeeds", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(htmlResponse("<html/>")));
 
-    await expect(fetchHtml("https://example.com/")).resolves.toBe("<html/>");
+    await expect(fetchHtml("https://example.com/")).resolves.toEqual({
+      html: "<html/>",
+    });
   });
 
   it("reports no html on a bot wall so the caller can render the page", async () => {
@@ -66,6 +68,59 @@ describe("fetchHtml", () => {
     );
     await expect(fetchHtml("https://example.com/")).rejects.not.toThrow(
       "web fetch failed",
+    );
+  });
+
+  it("converts a markdown document instead of rejecting it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("# Design Principles\n\nSome **bold** text.", {
+          status: 200,
+          headers: { "content-type": "text/markdown; charset=utf-8" },
+        }),
+      ),
+    );
+
+    const result = await fetchHtml("https://vercel.com/design.md");
+    expect(result?.document?.format).toBe("markdown");
+    expect(result?.document?.title).toBe("Design Principles");
+    expect(result?.document?.bodyHtml).toContain("<h1>");
+    expect(result?.document?.bodyHtml).toContain("<strong>bold</strong>");
+    expect(result?.html).toContain("<title>Design Principles</title>");
+  });
+
+  it("parses markdown served as plain text when the URL names it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("# Readme", {
+          status: 200,
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        }),
+      ),
+    );
+
+    const result = await fetchHtml("https://example.com/readme.md");
+    expect(result?.document?.format).toBe("markdown");
+  });
+
+  it("wraps plain text in a pre block and titles it from the filename", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("line one\nline <two>", {
+          status: 200,
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        }),
+      ),
+    );
+
+    const result = await fetchHtml("https://example.com/llms.txt");
+    expect(result?.document?.format).toBe("plain");
+    expect(result?.document?.title).toBe("llms");
+    expect(result?.document?.bodyHtml).toBe(
+      "<pre>line one\nline &lt;two&gt;</pre>",
     );
   });
 

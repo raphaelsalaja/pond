@@ -152,6 +152,8 @@ export interface CaptureExtras {
   replyRecaptureQueued?: boolean;
   /** The page is a search engine's results for this query. */
   search?: { engine: string; query: string };
+  /** The URL served a markdown or plain-text document, converted to the save's article. */
+  textDocument?: boolean;
   subreddit?: string;
   tileType?: string;
 }
